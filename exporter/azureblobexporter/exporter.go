@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -462,48 +463,101 @@ func (*azureBlobExporter) Capabilities() consumer.Capabilities {
 }
 
 func (e *azureBlobExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	var errs error
-	for _, metrics := range e.partitionMetricsByBlobName(md) {
-		// Marshal the metrics data
-		data, err := e.marshaller.marshalMetrics(metrics)
-		if err != nil {
-			errs = errors.Join(errs, fmt.Errorf("failed to marshal metrics: %w", err))
-			continue
-		}
-
-		errs = errors.Join(errs, e.consumeData(ctx, metrics, data, pipeline.SignalMetrics))
-	}
-	return errs
+	return uploadGroups(ctx, e, pipeline.SignalMetrics, e.partitionMetricsByBlobName(md),
+		e.marshaller.marshalMetrics,
+		func(err error, failed []pmetric.Metrics) error {
+			combined := pmetric.NewMetrics()
+			for _, f := range failed {
+				f.ResourceMetrics().MoveAndAppendTo(combined.ResourceMetrics())
+			}
+			return consumererror.NewMetrics(err, combined)
+		})
 }
 
 func (e *azureBlobExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	var errs error
-	for _, logs := range e.partitionLogsByBlobName(ld) {
-		// Marshal the logs data
-		data, err := e.marshaller.marshalLogs(logs)
-		if err != nil {
-			errs = errors.Join(errs, fmt.Errorf("failed to marshal logs: %w", err))
-			continue
-		}
-
-		errs = errors.Join(errs, e.consumeData(ctx, logs, data, pipeline.SignalLogs))
-	}
-	return errs
+	return uploadGroups(ctx, e, pipeline.SignalLogs, e.partitionLogsByBlobName(ld),
+		e.marshaller.marshalLogs,
+		func(err error, failed []plog.Logs) error {
+			combined := plog.NewLogs()
+			for _, f := range failed {
+				f.ResourceLogs().MoveAndAppendTo(combined.ResourceLogs())
+			}
+			return consumererror.NewLogs(err, combined)
+		})
 }
 
 func (e *azureBlobExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	var errs error
-	for _, traces := range e.partitionTracesByBlobName(td) {
-		// Marshal the trace data
-		data, err := e.marshaller.marshalTraces(traces)
-		if err != nil {
-			errs = errors.Join(errs, fmt.Errorf("failed to marshal traces: %w", err))
-			continue
-		}
+	return uploadGroups(ctx, e, pipeline.SignalTraces, e.partitionTracesByBlobName(td),
+		e.marshaller.marshalTraces,
+		func(err error, failed []ptrace.Traces) error {
+			combined := ptrace.NewTraces()
+			for _, f := range failed {
+				f.ResourceSpans().MoveAndAppendTo(combined.ResourceSpans())
+			}
+			return consumererror.NewTraces(err, combined)
+		})
+}
 
-		errs = errors.Join(errs, e.consumeData(ctx, traces, data, pipeline.SignalTraces))
+// maxConcurrentUploads bounds the number of parallel uploads for a partitioned
+// payload. It matches the connection pool size of the default transport
+// (MaxIdleConnsPerHost) so concurrent uploads reuse pooled connections.
+const maxConcurrentUploads = 10
+
+// uploadGroups marshals and uploads each partitioned group. A single group is
+// uploaded synchronously and any error is returned as-is, preserving the
+// non-partitioned behavior. Multiple groups are uploaded concurrently since
+// each group addresses a distinct blob. If some groups fail, the returned
+// error carries only the failed groups' data (via wrapRetryable, which wraps
+// it in the signal's consumererror type), so that the retry sender re-sends
+// only the failed data and succeeded groups are not uploaded twice.
+func uploadGroups[T any](
+	ctx context.Context,
+	e *azureBlobExporter,
+	signal pipeline.Signal,
+	groups []T,
+	marshal func(T) ([]byte, error),
+	wrapRetryable func(err error, failed []T) error,
+) error {
+	if len(groups) == 1 {
+		data, err := marshal(groups[0])
+		if err != nil {
+			return fmt.Errorf("failed to marshal %s: %w", signal.String(), err)
+		}
+		return e.consumeData(ctx, groups[0], data, signal)
 	}
-	return errs
+
+	uploadErrs := make([]error, len(groups))
+	sem := make(chan struct{}, maxConcurrentUploads)
+	var wg sync.WaitGroup
+	for i, group := range groups {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(i int, group T) {
+			defer wg.Done()
+			defer func() { <-sem }()
+
+			data, err := marshal(group)
+			if err != nil {
+				uploadErrs[i] = fmt.Errorf("failed to marshal %s: %w", signal.String(), err)
+				return
+			}
+			uploadErrs[i] = e.consumeData(ctx, group, data, signal)
+		}(i, group)
+	}
+	wg.Wait()
+
+	var failed []T
+	var errs []error
+	for i, err := range uploadErrs {
+		if err != nil {
+			failed = append(failed, groups[i])
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	return wrapRetryable(errors.Join(errs...), failed)
 }
 
 // renderBlobNameTemplate executes the blob name template for the given signal

@@ -62,7 +62,7 @@ The following settings can be optionally configured and have default values:
 
 When `template_enabled` is `true`, you can use Go templates in `metrics_format`, `logs_format`, and `traces_format` to create dynamic blob names based on telemetry data. The root object for the template is the telemetry data itself (`pmetric.Metrics`, `plog.Logs`, or `ptrace.Traces`).
 
-When a payload contains multiple resource entries, the exporter groups the resource entries by their rendered blob name and performs one upload per distinct name, so that each group is written to the blob it is addressed to. If rendering fails for any resource entry, the whole payload is uploaded once using the default (non-template) name format.
+When a payload contains multiple resource entries, the exporter groups the resource entries by their rendered blob name and performs one upload per distinct name, so that each group is written to the blob it is addressed to. Groups are uploaded concurrently (up to 10 at a time). If some groups fail to upload, only the failed groups' data is retried, so data from succeeded groups is not uploaded twice. If rendering fails for any resource entry, the whole payload is uploaded once using the default (non-template) name format.
 
 The following template functions are available:
 
