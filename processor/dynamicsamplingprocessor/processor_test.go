@@ -176,7 +176,7 @@ func TestProcessor_FirstMatchRouting(t *testing.T) {
 			{
 				Name: "drop-rest",
 				Sampler: SamplerConfig{
-					Type:               Deterministic,
+					Type:               Probabilistic,
 					SamplingPercentage: 100,
 				},
 			},
@@ -240,7 +240,7 @@ func TestProcessor_StampsRuleAndTraceState(t *testing.T) {
 	assert.Contains(t, ts, "th:")
 }
 
-func TestProcessor_DeterministicDropsAtRate(t *testing.T) {
+func TestProcessor_ProbabilisticDropsAtRate(t *testing.T) {
 	sink := &consumertest.TracesSink{}
 	const n = 500
 	cfg := &Config{
@@ -254,7 +254,7 @@ func TestProcessor_DeterministicDropsAtRate(t *testing.T) {
 			{
 				Name: "fixed",
 				Sampler: SamplerConfig{
-					Type:               Deterministic,
+					Type:               Probabilistic,
 					SamplingPercentage: 10, // 1-in-10
 				},
 			},
@@ -671,7 +671,7 @@ func TestProcessor_HonoursIncomingThreshold(t *testing.T) {
 			{
 				Name: "fixed",
 				Sampler: SamplerConfig{
-					Type:               Deterministic,
+					Type:               Probabilistic,
 					SamplingPercentage: 10, // rate 10 = keep 10% of population
 				},
 			},
@@ -716,7 +716,7 @@ func TestProcessor_UpstreamStricterThanRate_UpstreamWins(t *testing.T) {
 			{
 				Name: "loose",
 				Sampler: SamplerConfig{
-					Type:               Deterministic,
+					Type:               Probabilistic,
 					SamplingPercentage: 50, // rate 2 = 50% of population
 				},
 			},

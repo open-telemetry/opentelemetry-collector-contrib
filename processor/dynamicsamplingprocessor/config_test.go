@@ -37,20 +37,20 @@ func TestConfig_Validate(t *testing.T) {
 			cfg: baseCfg(RuleConfig{
 				Name: "rule1",
 				Sampler: SamplerConfig{
-					Type:               Deterministic,
+					Type:               Probabilistic,
 					SamplingPercentage: 10,
 				},
 			}),
 		},
 		{
-			name: "valid_ema_dynamic",
+			name: "valid_dynamic_percentage",
 			cfg: baseCfg(RuleConfig{
 				Name: "rule1",
 				Sampler: SamplerConfig{
-					Type:                   EMADynamic,
-					GoalSamplingPercentage: 10,
-					KeyAttributes:          []string{"service.name"},
-					Weight:                 0.5,
+					Type:           DynamicPercentage,
+					GoalPercentage: 10,
+					KeyAttributes:  []string{"service.name"},
+					Weight:         0.5,
 				},
 			}),
 		},
@@ -145,7 +145,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "deterministic_zero_rate",
 			cfg: baseCfg(RuleConfig{
 				Name:    "r",
-				Sampler: SamplerConfig{Type: Deterministic},
+				Sampler: SamplerConfig{Type: Probabilistic},
 			}),
 			wantErr: "sampling_percentage",
 		},
@@ -153,7 +153,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "deterministic_too_high",
 			cfg: baseCfg(RuleConfig{
 				Name:    "r",
-				Sampler: SamplerConfig{Type: Deterministic, SamplingPercentage: 150},
+				Sampler: SamplerConfig{Type: Probabilistic, SamplingPercentage: 150},
 			}),
 			wantErr: "sampling_percentage",
 		},
@@ -162,8 +162,8 @@ func TestConfig_Validate(t *testing.T) {
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:                   EMADynamic,
-					GoalSamplingPercentage: 10,
+					Type:           DynamicPercentage,
+					GoalPercentage: 10,
 				},
 			}),
 			wantErr: "key_attributes",
@@ -173,44 +173,44 @@ func TestConfig_Validate(t *testing.T) {
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:                   EMADynamic,
-					GoalSamplingPercentage: 10,
-					KeyAttributes:          []string{"a"},
-					Weight:                 1.5,
+					Type:           DynamicPercentage,
+					GoalPercentage: 10,
+					KeyAttributes:  []string{"a"},
+					Weight:         1.5,
 				},
 			}),
 			wantErr: "weight",
 		},
 		{
-			name: "valid_ema_throughput",
+			name: "valid_dynamic_throughput",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:                 EMAThroughput,
-					GoalThroughputPerSec: 100,
-					KeyAttributes:        []string{"service.name"},
-					Weight:               0.5,
+					Type:           DynamicThroughput,
+					GoalThroughput: 100,
+					KeyAttributes:  []string{"service.name"},
+					Weight:         0.5,
 				},
 			}),
 		},
 		{
-			name: "ema_throughput_missing_goal",
+			name: "dynamic_throughput_missing_goal",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:          EMAThroughput,
+					Type:          DynamicThroughput,
 					KeyAttributes: []string{"a"},
 				},
 			}),
-			wantErr: "goal_throughput_per_sec",
+			wantErr: "goal_throughput",
 		},
 		{
-			name: "ema_throughput_missing_key_attributes",
+			name: "dynamic_throughput_missing_key_attributes",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:                 EMAThroughput,
-					GoalThroughputPerSec: 100,
+					Type:           DynamicThroughput,
+					GoalThroughput: 100,
 				},
 			}),
 			wantErr: "key_attributes",
@@ -220,60 +220,128 @@ func TestConfig_Validate(t *testing.T) {
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:                 WindowedThroughput,
-					GoalThroughputPerSec: 100,
-					KeyAttributes:        []string{"service.name"},
-					UpdateFrequency:      time.Second,
-					LookbackFrequency:    30 * time.Second,
+					Type:              DynamicThroughput,
+					Algorithm:         AlgorithmWindowed,
+					GoalThroughput:    100,
+					KeyAttributes:     []string{"service.name"},
+					UpdateFrequency:   time.Second,
+					LookbackFrequency: 30 * time.Second,
 				},
 			}),
+		},
+		{
+			name: "algorithm_rejected_on_probabilistic",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:               Probabilistic,
+					Algorithm:          AlgorithmEMA,
+					SamplingPercentage: 10,
+				},
+			}),
+			wantErr: "probabilistic does not use algorithm",
+		},
+		{
+			name: "windowed_rejected_on_dynamic_percentage",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:           DynamicPercentage,
+					Algorithm:      AlgorithmWindowed,
+					GoalPercentage: 10,
+					KeyAttributes:  []string{"service.name"},
+				},
+			}),
+			wantErr: "does not support the windowed algorithm",
+		},
+		{
+			name: "unknown_algorithm",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:           DynamicThroughput,
+					Algorithm:      "sliding",
+					GoalThroughput: 100,
+					KeyAttributes:  []string{"service.name"},
+				},
+			}),
+			wantErr: "unknown algorithm",
+		},
+		{
+			name: "windowed_rejects_ema_tuning",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:           DynamicThroughput,
+					Algorithm:      AlgorithmWindowed,
+					GoalThroughput: 100,
+					KeyAttributes:  []string{"service.name"},
+					Weight:         0.5,
+				},
+			}),
+			wantErr: "dynamic_throughput (windowed) does not use weight",
+		},
+		{
+			name: "ema_rejects_windowed_tuning",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:            DynamicThroughput,
+					GoalThroughput:  100,
+					KeyAttributes:   []string{"service.name"},
+					UpdateFrequency: time.Second,
+				},
+			}),
+			wantErr: "dynamic_throughput (ema) does not use update_frequency",
 		},
 		{
 			name: "windowed_throughput_missing_goal",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:          WindowedThroughput,
+					Type:          DynamicThroughput,
+					Algorithm:     AlgorithmWindowed,
 					KeyAttributes: []string{"a"},
 				},
 			}),
-			wantErr: "goal_throughput_per_sec",
+			wantErr: "goal_throughput",
 		},
 		{
 			name: "windowed_throughput_missing_key_attributes",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:                 WindowedThroughput,
-					GoalThroughputPerSec: 100,
+					Type:           DynamicThroughput,
+					Algorithm:      AlgorithmWindowed,
+					GoalThroughput: 100,
 				},
 			}),
 			wantErr: "key_attributes",
 		},
 		{
-			name: "deterministic_rejects_ema_field",
+			name: "probabilistic_rejects_ema_field",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:               Deterministic,
+					Type:               Probabilistic,
 					SamplingPercentage: 10,
 					KeyAttributes:      []string{"service.name"},
 				},
 			}),
-			wantErr: "deterministic does not use key_attributes",
+			wantErr: "probabilistic does not use key_attributes",
 		},
 		{
-			name: "ema_dynamic_rejects_windowed_field",
+			name: "dynamic_percentage_rejects_windowed_field",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:                   EMADynamic,
-					GoalSamplingPercentage: 10,
-					KeyAttributes:          []string{"service.name"},
-					UpdateFrequency:        time.Second,
+					Type:            DynamicPercentage,
+					GoalPercentage:  10,
+					KeyAttributes:   []string{"service.name"},
+					UpdateFrequency: time.Second,
 				},
 			}),
-			wantErr: "ema_dynamic does not use update_frequency",
+			wantErr: "dynamic_percentage does not use update_frequency",
 		},
 		{
 			name: "eviction_evaluate_default_valid",

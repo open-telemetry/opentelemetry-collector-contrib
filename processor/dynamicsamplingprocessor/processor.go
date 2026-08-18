@@ -224,30 +224,31 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []string, error) {
 	switch sc.Type {
 	case AlwaysSample:
 		return sampler.NewAlwaysSample(), nil, nil
-	case Deterministic:
+	case Probabilistic:
 		s, err := sampler.NewDeterministic(sc.SamplingPercentage)
 		return s, nil, err
-	case EMADynamic:
+	case DynamicPercentage:
 		s, err := sampler.NewEMADynamic(sampler.EMADynamicConfig{
-			GoalSamplingPercentage: sc.GoalSamplingPercentage,
+			GoalSamplingPercentage: sc.GoalPercentage,
 			AdjustmentInterval:     sc.AdjustmentInterval,
 			Weight:                 sc.Weight,
 			MaxKeys:                sc.MaxKeys,
 		})
 		return s, append([]string(nil), sc.KeyAttributes...), err
-	case EMAThroughput:
+	case DynamicThroughput:
+		if sc.effectiveAlgorithm() == AlgorithmWindowed {
+			s, err := sampler.NewWindowedThroughput(sampler.WindowedThroughputConfig{
+				GoalThroughputPerSec: float64(sc.GoalThroughput),
+				UpdateFrequency:      sc.UpdateFrequency,
+				LookbackFrequency:    sc.LookbackFrequency,
+				MaxKeys:              sc.MaxKeys,
+			})
+			return s, append([]string(nil), sc.KeyAttributes...), err
+		}
 		s, err := sampler.NewEMAThroughput(sampler.EMAThroughputConfig{
-			GoalThroughputPerSec: sc.GoalThroughputPerSec,
+			GoalThroughputPerSec: sc.GoalThroughput,
 			AdjustmentInterval:   sc.AdjustmentInterval,
 			Weight:               sc.Weight,
-			MaxKeys:              sc.MaxKeys,
-		})
-		return s, append([]string(nil), sc.KeyAttributes...), err
-	case WindowedThroughput:
-		s, err := sampler.NewWindowedThroughput(sampler.WindowedThroughputConfig{
-			GoalThroughputPerSec: float64(sc.GoalThroughputPerSec),
-			UpdateFrequency:      sc.UpdateFrequency,
-			LookbackFrequency:    sc.LookbackFrequency,
 			MaxKeys:              sc.MaxKeys,
 		})
 		return s, append([]string(nil), sc.KeyAttributes...), err
