@@ -32,11 +32,11 @@ type topicPartition struct {
 }
 
 // partitionControl transfers a rewind request from one partition worker to the
-// poll loop and lets the worker wait until it is complete.
+// poll loop and reports whether the poll loop applied it.
 type partitionControl struct {
-	tp   topicPartition
-	pc   *pc
-	done chan struct{}
+	tp      topicPartition
+	pc      *pc
+	applied chan bool
 }
 
 // brokerReadKey is the cache key for OnBrokerRead/OnBrokerWrite metric options.
@@ -350,10 +350,10 @@ func (c *franzConsumer) pollRecords(ctx context.Context, size int) kgo.Fetches {
 	return fetch
 }
 
-// sendControl hands an offset operation to the poll loop and waits for it to
-// complete, unless this partition or the receiver is stopping.
+// sendControl hands an offset operation to the poll loop and reports whether
+// it was applied, unless this partition or the receiver is stopping.
 func (c *franzConsumer) sendControl(control partitionControl) bool {
-	control.done = make(chan struct{})
+	control.applied = make(chan bool, 1)
 	select {
 	case c.controls <- control:
 		// PollRecords may otherwise wait indefinitely while this worker needs
@@ -365,8 +365,8 @@ func (c *franzConsumer) sendControl(control partitionControl) bool {
 		return false
 	}
 	select {
-	case <-control.done:
-		return true
+	case applied := <-control.applied:
+		return applied
 	case <-control.pc.ctx.Done():
 		return false
 	case <-c.closing:
@@ -409,7 +409,11 @@ func (c *franzConsumer) processControls() {
 }
 
 func (c *franzConsumer) processControlLocked(control partitionControl) {
-	defer close(control.done)
+	applied := false
+	defer func() {
+		control.applied <- applied
+	}()
+
 	c.mu.RLock()
 	current := c.assignments[control.tp]
 	c.mu.RUnlock()
@@ -421,6 +425,7 @@ func (c *franzConsumer) processControlLocked(control partitionControl) {
 		c.client.SetOffsets(map[string]map[int32]kgo.EpochOffset{
 			control.tp.topic: {control.tp.partition: *offset},
 		})
+		applied = true
 	}
 }
 
@@ -597,17 +602,20 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 	c.mu.Unlock()
 
 	// Legacy fatal loss returns immediately so the callback stays inside the
-	// rebalance timeout. Independent mode waits: a replacement worker must not
-	// start until this one has exited.
-	if fatal && !independent {
+	// rebalance timeout. Independent mode has a persistent worker, so wait for
+	// it before allowing a replacement worker to start.
+	if fatal {
+		if independent {
+			c.waitForPartitionConsumers(ctx, stopping)
+			// Pointer identity prevents this cleanup from deleting a newer
+			// assignment if one appeared while the callback was waiting.
+			c.deleteStoppingAssignments(stopping)
+		}
 		return
 	}
+
 	for _, pc := range stopping {
 		pc.wg.Wait()
-	}
-	if fatal {
-		c.deleteStoppingAssignments(stopping)
-		return
 	}
 
 	c.opsMu.Lock()
@@ -632,6 +640,32 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 	if err != nil {
 		c.settings.Logger.Error("failed to commit offsets", zap.Error(err))
 		c.reportRecoverable(err)
+	}
+}
+
+// waitForPartitionConsumers waits outside the assignment lock so assignment
+// state remains available while workers react to cancellation. The timeout
+// prevents a downstream consumer that ignores cancellation from blocking the
+// Kafka group callback indefinitely.
+func (c *franzConsumer) waitForPartitionConsumers(ctx context.Context, stopping map[topicPartition]*pc) {
+	workersDone := make(chan struct{})
+	go func() {
+		defer close(workersDone)
+		for _, pc := range stopping {
+			pc.wg.Wait()
+		}
+	}()
+
+	timer := time.NewTimer(c.config.ConsumerConfig.SessionTimeout)
+	defer timer.Stop()
+	select {
+	case <-workersDone:
+	case <-ctx.Done():
+	case <-timer.C:
+		c.settings.Logger.Warn(
+			"partition workers did not stop before fatal loss timeout",
+			zap.Duration("timeout", c.config.ConsumerConfig.SessionTimeout),
+		)
 	}
 }
 

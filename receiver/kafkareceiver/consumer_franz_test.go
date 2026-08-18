@@ -150,6 +150,77 @@ func TestPartitionProcessing(t *testing.T) {
 		}, 5*time.Second, 10*time.Millisecond)
 	})
 
+	t.Run("rewind control reports whether offset was applied", func(t *testing.T) {
+		cases := []struct {
+			name        string
+			current     bool
+			wantApplied bool
+			wantPending bool
+			wantPaused  bool
+		}{
+			{
+				name:        "current partition",
+				current:     true,
+				wantApplied: true,
+				wantPending: false,
+				wantPaused:  false,
+			},
+			{
+				name:        "stale partition",
+				current:     false,
+				wantApplied: false,
+				wantPending: true,
+				wantPaused:  true,
+			},
+		}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				client, _ := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
+				tp := topicPartition{topic: "test", partition: 0}
+				partitionConsumer := &pc{
+					ctx:     t.Context(),
+					mailbox: newPartitionMailbox(t.Context(), 1),
+				}
+				partitionConsumer.addPauseReason(partitionPauseRewind)
+				partitionConsumer.mailbox.requestRewind(
+					&kgo.Record{Topic: "test", Partition: 0, Offset: 1},
+					true,
+					func() {},
+				)
+
+				current := partitionConsumer
+				if !tc.current {
+					current = &pc{ctx: t.Context()}
+				}
+				consumer := franzConsumer{
+					client:      client,
+					assignments: map[topicPartition]*pc{tp: current},
+					controls:    make(chan partitionControl, 1),
+					closing:     make(chan struct{}),
+				}
+
+				applied := make(chan bool, 1)
+				go func() {
+					applied <- consumer.applyMailboxRewind(
+						partitionConsumer,
+						tp,
+						map[string][]int32{"test": {0}},
+					)
+				}()
+
+				control := <-consumer.controls
+				consumer.opsMu.Lock()
+				consumer.processControlLocked(control)
+				consumer.opsMu.Unlock()
+
+				require.Equal(t, tc.wantApplied, <-applied)
+				require.Equal(t, tc.wantPending, partitionConsumer.mailbox.hasPendingOffsetChange())
+				require.Equal(t, tc.wantPaused, partitionConsumer.pauseReasons.Load() != 0)
+			})
+		}
+	})
+
 	t.Run("ignores control after cancellation", func(t *testing.T) {
 		// A cancelled partition does not apply a rewind.
 		client, _ := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
@@ -163,10 +234,12 @@ func TestPartitionProcessing(t *testing.T) {
 			client:      client,
 			assignments: map[topicPartition]*pc{tp: partitionConsumer},
 		}
+		applied := make(chan bool, 1)
 		consumer.opsMu.Lock()
-		consumer.processControlLocked(partitionControl{tp: tp, pc: partitionConsumer, done: make(chan struct{})})
+		consumer.processControlLocked(partitionControl{tp: tp, pc: partitionConsumer, applied: applied})
 		consumer.opsMu.Unlock()
 		// The rewind is still pending, so processControlLocked did not take it.
+		require.False(t, <-applied)
 		require.NotNil(t, partitionConsumer.mailbox.takeOffsetChange())
 	})
 
@@ -883,13 +956,12 @@ func TestLost(t *testing.T) {
 	c.lost(t.Context(), nil, map[string][]int32{"404": {0}}, true)
 }
 
-// TestLostFatalWaitsOnlyForIndependentProcessing proves fatal loss waits for an independent worker.
-// Legacy mode returns immediately.
-func TestLostFatalWaitsOnlyForIndependentProcessing(t *testing.T) {
+func TestLostFatalWait(t *testing.T) {
 	cases := []struct {
-		name        string
-		independent bool
-		wantWait    bool
+		name           string
+		independent    bool
+		sessionTimeout time.Duration
+		wantWait       bool
 	}{
 		{
 			name: "legacy returns immediately",
@@ -899,12 +971,20 @@ func TestLostFatalWaitsOnlyForIndependentProcessing(t *testing.T) {
 			independent: true,
 			wantWait:    true,
 		},
+		{
+			name:           "independent wait is bounded",
+			independent:    true,
+			sessionTimeout: 20 * time.Millisecond,
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			_, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
 			cfg.PartitionProcessing.Independent = tc.independent
+			if tc.sessionTimeout > 0 {
+				cfg.ConsumerConfig.SessionTimeout = tc.sessionTimeout
+			}
 			settings, _, _ := mustNewSettings(t)
 			c, err := newFranzKafkaConsumer(cfg, settings, []string{"test"}, nil, nil)
 			require.NoError(t, err)
@@ -922,6 +1002,10 @@ func TestLostFatalWaitsOnlyForIndependentProcessing(t *testing.T) {
 				defer close(done)
 				c.lost(t.Context(), nil, map[string][]int32{"test": {0}}, true)
 			}()
+			t.Cleanup(func() {
+				partitionConsumer.wg.Done()
+				<-done
+			})
 			// lost() cancels the partition before it waits or returns.
 			require.Eventually(t, func() bool {
 				return partitionConsumer.ctx.Err() != nil
@@ -937,11 +1021,12 @@ func TestLostFatalWaitsOnlyForIndependentProcessing(t *testing.T) {
 					}
 				}, 200*time.Millisecond, 10*time.Millisecond)
 			} else {
-				waitSignal(t, done, "fatal partition loss waited for legacy processing")
+				select {
+				case <-done:
+				case <-time.After(200 * time.Millisecond):
+					t.Fatal("fatal partition loss exceeded its wait bound")
+				}
 			}
-
-			partitionConsumer.wg.Done()
-			waitSignal(t, done, "fatal partition loss did not finish")
 		})
 	}
 }
