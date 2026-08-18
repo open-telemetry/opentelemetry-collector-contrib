@@ -21,8 +21,9 @@ subtext: |
   entries wrote all of them to the blob addressed by the first one. Exports whose resource
   entries all render to the same blob name are unaffected, as are configurations without
   `template_enabled`.
-  Partitioned groups are uploaded concurrently (up to 10 at a time), and when only some
-  groups fail, the error carries just the failed groups' data so the retry sender does not
+  Partitioned groups are uploaded concurrently (bounded by the new
+  `max_concurrent_uploads` option, default 10), and when only some groups fail,
+  the error carries just the failed groups' data so the retry sender does not
   upload succeeded groups twice.
 
 # If your change doesn't affect end users or the exported elements of any package,

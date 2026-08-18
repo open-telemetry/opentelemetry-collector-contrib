@@ -92,3 +92,9 @@ azure_blob/err-compression:
     type: "connection_string"
     connection_string: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net"
   compression: "foo"
+azure_blob/err-max-concurrent-uploads:
+  url: "https://fakeaccount.blob.core.windows.net/"
+  auth:
+    type: "connection_string"
+    connection_string: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net"
+  max_concurrent_uploads: 0

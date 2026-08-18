@@ -64,9 +64,12 @@ func createDefaultConfig() component.Config {
 			Enabled:   false,
 			Separator: "\n",
 		},
-		Encodings:     Encodings{},
-		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		Compression:   "",
+		Encodings: Encodings{},
+		// Matches the connection pool size of the default transport
+		// (MaxIdleConnsPerHost) so concurrent uploads reuse pooled connections.
+		MaxConcurrentUploads: 10,
+		BackOffConfig:        configretry.NewDefaultBackOffConfig(),
+		Compression:          "",
 	}
 }
 

@@ -751,7 +751,8 @@ func newPartitionTestConfig(logsFormat string, templateEnabled bool) *Config {
 			Enabled:   true,
 			Separator: "\n",
 		},
-		Encodings: Encodings{},
+		Encodings:            Encodings{},
+		MaxConcurrentUploads: 10,
 	}
 }
 
@@ -924,6 +925,8 @@ type recordingAzBlobClient struct {
 	mu                sync.Mutex
 	remainingFailures map[string]int
 	uploads           map[string][][]byte
+	inflight          int
+	maxInflight       int
 }
 
 func newRecordingAzBlobClient(failures map[string]int) *recordingAzBlobClient {
@@ -937,7 +940,18 @@ func (*recordingAzBlobClient) URL() string { return "http://mock" }
 
 func (c *recordingAzBlobClient) record(blobName string, data []byte) error {
 	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.inflight++
+	if c.inflight > c.maxInflight {
+		c.maxInflight = c.inflight
+	}
+	c.mu.Unlock()
+	// Hold the upload open briefly so concurrent uploads overlap observably.
+	time.Sleep(time.Millisecond)
+	c.mu.Lock()
+	defer func() {
+		c.inflight--
+		c.mu.Unlock()
+	}()
 	if c.remainingFailures[blobName] > 0 {
 		c.remainingFailures[blobName]--
 		return errors.New("injected failure for " + blobName)
@@ -1167,4 +1181,26 @@ func TestPartitionWithQueueBatching(t *testing.T) {
 			[]string{"log 0 for " + activity, "log 1 for " + activity},
 			bodies, "blob for %s must hold exactly its two records", activity)
 	}
+}
+
+func TestConsumeLogsHonorsMaxConcurrentUploads(t *testing.T) {
+	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
+	c.MaxConcurrentUploads = 1
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
+
+	client := newRecordingAzBlobClient(nil)
+	ae.client = client
+
+	activities := make([]string, 0, 8)
+	for i := range 8 {
+		activities = append(activities, fmt.Sprintf("activity-%d", i))
+	}
+	require.NoError(t, ae.ConsumeLogs(t.Context(), generateLogsWithActivities(activities...)))
+
+	client.mu.Lock()
+	defer client.mu.Unlock()
+	require.Len(t, client.uploads, 8)
+	assert.Equal(t, 1, client.maxInflight, "uploads must be serialized when max_concurrent_uploads is 1")
 }

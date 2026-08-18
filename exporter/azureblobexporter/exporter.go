@@ -498,18 +498,14 @@ func (e *azureBlobExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces)
 		})
 }
 
-// maxConcurrentUploads bounds the number of parallel uploads for a partitioned
-// payload. It matches the connection pool size of the default transport
-// (MaxIdleConnsPerHost) so concurrent uploads reuse pooled connections.
-const maxConcurrentUploads = 10
-
 // uploadGroups marshals and uploads each partitioned group. A single group is
 // uploaded synchronously and any error is returned as-is, preserving the
 // non-partitioned behavior. Multiple groups are uploaded concurrently since
-// each group addresses a distinct blob. If some groups fail, the returned
-// error carries only the failed groups' data (via wrapRetryable, which wraps
-// it in the signal's consumererror type), so that the retry sender re-sends
-// only the failed data and succeeded groups are not uploaded twice.
+// each group addresses a distinct blob, bounded by max_concurrent_uploads. If
+// some groups fail, the returned error carries only the failed groups' data
+// (via wrapRetryable, which wraps it in the signal's consumererror type), so
+// that the retry sender re-sends only the failed data and succeeded groups are
+// not uploaded twice.
 func uploadGroups[T any](
 	ctx context.Context,
 	e *azureBlobExporter,
@@ -527,7 +523,7 @@ func uploadGroups[T any](
 	}
 
 	uploadErrs := make([]error, len(groups))
-	sem := make(chan struct{}, maxConcurrentUploads)
+	sem := make(chan struct{}, e.config.MaxConcurrentUploads)
 	var wg sync.WaitGroup
 	for i, group := range groups {
 		wg.Add(1)
