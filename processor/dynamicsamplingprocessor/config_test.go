@@ -166,7 +166,7 @@ func TestConfig_Validate(t *testing.T) {
 					GoalPercentage: 10,
 				},
 			}),
-			wantErr: "key_attributes",
+			wantErr: "fingerprint",
 		},
 		{
 			name: "dynamic_percentage_invalid_weight",
@@ -213,7 +213,7 @@ func TestConfig_Validate(t *testing.T) {
 					GoalThroughput: 100,
 				},
 			}),
-			wantErr: "key_attributes",
+			wantErr: "fingerprint",
 		},
 		{
 			name: "valid_dynamic_throughput_windowed",
@@ -316,7 +316,7 @@ func TestConfig_Validate(t *testing.T) {
 					GoalThroughput: 100,
 				},
 			}),
-			wantErr: "key_attributes",
+			wantErr: "fingerprint",
 		},
 		{
 			name: "probabilistic_rejects_fingerprint_field",
