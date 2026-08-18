@@ -494,14 +494,14 @@ func TestInputJournaldOtelAttributes(t *testing.T) {
 		assert.Equal(t, "unit_log_success", e.Attributes["code.function.name"])
 		assert.Equal(t, "../src/core/unit.c", e.Attributes["code.file.path"])
 		assert.Equal(t, int64(5487), e.Attributes["code.line.number"])
-		assert.Equal(t, "systemd", e.Attributes["syslog.msg.id"])
 		assert.Equal(t, int64(3), e.Attributes["syslog.facility.code"])
+		assert.Equal(t, "systemd", e.Attributes["syslog.identifier"])
 
 		// OTel resource attributes from trusted journald fields
 		require.NotNil(t, e.Resource)
 		assert.Equal(t, "myhostname", e.Resource["host.name"])
 		assert.Equal(t, int64(13894), e.Resource["process.pid"])
-		assert.Equal(t, "systemd", e.Resource["process.command"])
+		assert.Equal(t, "systemd", e.Resource["process.executable.name"])
 		assert.Equal(t, "/usr/lib/systemd/systemd", e.Resource["process.executable.path"])
 		assert.Equal(t, "/lib/systemd/systemd --user", e.Resource["process.command_line"])
 
@@ -612,8 +612,9 @@ func TestInputJournaldOtelAttributes_ConvertMessageBytesWithOtelAttrs(t *testing
 	}
 }
 
-func TestInputJournaldOtelAttributes_ErrnoAndThreadID(t *testing.T) {
-	// ERRNO and TID should land in attributes as int64.
+func TestInputJournaldOtelAttributes_UnmappedFields(t *testing.T) {
+	// ERRNO and TID have no semantic convention mapping, so they keep their
+	// original journald names under the "journald." prefix.
 	const line = `{"MESSAGE":"io error","PRIORITY":"3","ERRNO":"5","TID":"777","_HOSTNAME":"h","_PID":"1","_COMM":"c","_EXE":"/c","_CMDLINE":"c","__REALTIME_TIMESTAMP":"1587047866229555","__CURSOR":"s=1"}` + "\n"
 
 	cfg := NewConfigWithID("my_journald_input")
@@ -627,7 +628,7 @@ func TestInputJournaldOtelAttributes_ErrnoAndThreadID(t *testing.T) {
 	select {
 	case e := <-received:
 		assert.Equal(t, "5", e.Attributes["journald.ERRNO"])
-		assert.Equal(t, int64(777), e.Attributes["thread.id"])
+		assert.Equal(t, "777", e.Attributes["journald.TID"])
 		assert.Equal(t, entry.Error, e.Severity)
 	case <-time.After(time.Second):
 		require.FailNow(t, "timed out waiting for entry")

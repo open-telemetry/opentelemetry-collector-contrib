@@ -49,7 +49,7 @@ The journald receiver **requires the journalctl binary** to be available in the 
 | `namespace`                         |                                      | Will query the given namespace. See man page [`systemd-journald.service(8)`](https://www.man7.org/linux/man-pages/man8/systemd-journald.service.8.html#JOURNAL_NAMESPACES) for details.                                                  |
 | `convert_message_bytes`             | 'false'                              | If `true` and if the `MESSAGE` field is read [as an array of bytes](https://github.com/systemd/systemd/blob/main/docs/JOURNAL_EXPORT_FORMATS.md#journal-json-format), the array will be converted to string.                             |
 | `include_log_record_original`       | 'false'                              | If `true`, the raw data read from journalctl is added as the 'log.record.original' attribute                                                                                                                                             |
-| `convert_to_semantic_conventions`   | 'false'                              | If `true`, well-known journald fields are mapped to OpenTelemetry semantic convention attributes instead of being placed in the log body. `MESSAGE` becomes the log body, `PRIORITY` sets the severity, process/host fields become resource attributes (e.g. `process.pid`, `host.name`), and code/thread/syslog fields become log attributes (e.g. `code.file.path`, `syslog.facility.code`). Remaining fields are kept as log attributes with their original journald field names, prefixed with `journald.` (e.g. `journald._BOOT_ID`). |
+| `convert_to_semantic_conventions`   | 'false'                              | If `true`, well-known journald fields are mapped to OpenTelemetry semantic convention attributes instead of being placed in the log body. `MESSAGE` becomes the log body, `PRIORITY` sets the severity, process/host fields become resource attributes (e.g. `process.pid`, `host.name`), and code/syslog fields become log attributes (e.g. `code.file.path`, `syslog.facility.code`). Remaining fields are kept as log attributes with their original journald field names, prefixed with `journald.` (e.g. `journald._BOOT_ID`). |
 | `merge`                             | 'false'                              | If `true`, read from all available journals, including remote ones.                                                                                                                                                                      |
 | `retry_on_failure.enabled`          | `false`                              | If `true`, the receiver will pause reading a file and attempt to resend the current batch of logs if it encounters an error from downstream components.                                                                                  |
 | `retry_on_failure.initial_interval` | `1 second`                           | Time to wait after the first failure before retrying.                                                                                                                                                                                    |
@@ -63,10 +63,14 @@ The journald receiver **requires the journalctl binary** to be available in the 
 
 When `convert_to_semantic_conventions` is set to `true`, well-known journald fields are mapped to OpenTelemetry semantic convention attributes instead of placing the entire raw journal record in the log body. This provides better interoperability with OpenTelemetry tools and follows established conventions.
 
+The journald fields are described in [`systemd.journal-fields(7)`](https://www.freedesktop.org/software/systemd/man/latest/systemd.journal-fields.html). The mapping follows the [OpenTelemetry logs data model appendix](https://opentelemetry.io/docs/specs/otel/logs/data-model-appendix/).
+
 #### Log Body and Severity
 
 - `MESSAGE` → The log body (string)
-- `PRIORITY` → Sets the log severity level and severity text:
+- `PRIORITY` → Sets the log severity level and severity text, following the
+  [syslog severity mapping](https://opentelemetry.io/docs/specs/otel/logs/data-model-appendix/#appendix-b-severitynumber-example-mappings)
+  of the data model. The original syslog level name is kept as the severity text:
   - `0` (emerg) → `FATAL` / `emerg`
   - `1` (alert) → `ERROR3` / `alert`
   - `2` (crit) → `ERROR2` / `crit`
@@ -82,21 +86,23 @@ Process and host information from journald becomes OpenTelemetry resource attrib
 
 - `_HOSTNAME` → `host.name`
 - `_PID` → `process.pid` (converted to int64)
-- `_COMM` → `process.command`
+- `_COMM` → `process.executable.name`
 - `_EXE` → `process.executable.path`
 - `_CMDLINE` → `process.command_line`
 
 #### Log Attributes
 
-Code, thread, and syslog information becomes log attributes:
+Code and syslog information becomes log attributes:
 
 - `CODE_FILE` → `code.file.path`
 - `CODE_FUNC` → `code.function.name`
 - `CODE_LINE` → `code.line.number` (converted to int64)
-- `TID` → `thread.id` (converted to int64)
 - `SYSLOG_FACILITY` → `syslog.facility.code` (converted to int64)
-- `SYSLOG_IDENTIFIER` → `syslog.msg.id`
-- `SYSLOG_PID` → `syslog.pid` (converted to int64)
+- `SYSLOG_IDENTIFIER` → `syslog.identifier` (it is the equivalent of the RFC 5424 `APP-NAME`)
+- `SYSLOG_PID` → `syslog.pid` (converted to int64). journald defines this as a
+  numeric client PID, so it maps to `syslog.pid` rather than the RFC 5424
+  `syslog.procid`, which is an implementation-defined string.
+- `SYSLOG_TIMESTAMP` → `syslog.timestamp`
 
 #### Remaining Fields
 

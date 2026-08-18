@@ -13,7 +13,9 @@ import (
 
 // priorityToSeverity maps journald PRIORITY (syslog severity) values to OTel entry.Severity.
 // Journald/syslog PRIORITY: 0=emerg, 1=alert, 2=crit, 3=err, 4=warning, 5=notice, 6=info, 7=debug.
-// See: https://www.freedesktop.org/software/systemd/man/latest/systemd.journal-fields.html
+// The severity numbers follow the syslog mapping from the OTel logs data model:
+// https://opentelemetry.io/docs/specs/otel/logs/data-model-appendix/#appendix-b-severitynumber-example-mappings
+// See also: https://www.freedesktop.org/software/systemd/man/latest/systemd.journal-fields.html
 var priorityToSeverity = map[string]entry.Severity{
 	"0": entry.Fatal,  // emerg
 	"1": entry.Error3, // alert
@@ -26,43 +28,55 @@ var priorityToSeverity = map[string]entry.Severity{
 }
 
 // priorityToSeverityText maps journald PRIORITY values to OTel severity text.
+// The original syslog level name is kept as the severity text, as recommended by
+// https://opentelemetry.io/docs/specs/otel/logs/data-model-appendix/#appendix-b-severitynumber-example-mappings
 var priorityToSeverityText = map[string]string{
-	"0": "fatal;",
-	"1": "error3",
-	"2": "error2",
-	"3": "error",
-	"4": "warn",
-	"5": "info2",
+	"0": "emerg",
+	"1": "alert",
+	"2": "crit",
+	"3": "err",
+	"4": "warning",
+	"5": "notice",
 	"6": "info",
 	"7": "debug",
 }
 
 // attributeMapping maps journald well-known field names to OTel semantic convention log attribute names.
-// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model-appendix.md#rfc5424-syslog
+// Journald fields: https://www.freedesktop.org/software/systemd/man/latest/systemd.journal-fields.html
+// The syslog.* attribute names follow the RFC5424 syslog mapping of the OTel logs data model:
+// https://opentelemetry.io/docs/specs/otel/logs/data-model-appendix/#rfc5424-syslog
+// They are not (yet) part of the semantic conventions registry.
 var attributeMapping = map[string]string{
-	"CODE_FILE":         "code.file.path",
-	"CODE_FUNC":         "code.function.name",
-	"CODE_LINE":         "code.line.number",
-	"TID":               "thread.id",
-	"SYSLOG_FACILITY":   "syslog.facility.code",
-	"SYSLOG_IDENTIFIER": "syslog.msg.id",
-	"SYSLOG_PID":        "syslog.pid",
+	"CODE_FILE":       "code.file.path",
+	"CODE_FUNC":       "code.function.name",
+	"CODE_LINE":       "code.line.number",
+	"SYSLOG_FACILITY": "syslog.facility.code",
+	// SYSLOG_IDENTIFIER is documented as the equivalent of the RFC5424 APP-NAME,
+	// which the OTel logs data model maps to syslog.identifier.
+	"SYSLOG_IDENTIFIER": "syslog.identifier",
+	// SYSLOG_PID maps to syslog.pid rather than the RFC5424 syslog.procid because
+	// journald defines it as a numeric client PID, while RFC5424 PROCID is an
+	// implementation-defined string that is not necessarily a process ID.
+	"SYSLOG_PID":       "syslog.pid",
+	"SYSLOG_TIMESTAMP": "syslog.timestamp",
 }
 
-// resourceMapping maps journald trusted field names (prefixed with _) to OTel semantic convention resource attribute names.
-// See: https://opentelemetry.io/docs/specs/semconv/resource/process/ and https://opentelemetry.io/docs/specs/semconv/resource/host/
+// resourceMapping maps journald field names to OTel semantic convention resource attribute names.
+// See: https://opentelemetry.io/docs/specs/semconv/registry/attributes/process/ and
+// https://opentelemetry.io/docs/specs/semconv/registry/attributes/host/
 var resourceMapping = map[string]string{
 	"_HOSTNAME": "host.name",
 	"_PID":      "process.pid",
-	"_COMM":     "process.command",
-	"_EXE":      "process.executable.path",
-	"_CMDLINE":  "process.command_line",
+	// _COMM is the base name of the executable as reported by /proc/[pid]/comm,
+	// which systemd truncates to 15 characters.
+	"_COMM":    "process.executable.name",
+	"_EXE":     "process.executable.path",
+	"_CMDLINE": "process.command_line",
 }
 
 // numericFields are OTel attribute/resource keys whose journald string values should be converted to int64.
 var numericFields = map[string]bool{
 	"code.line.number":     true,
-	"thread.id":            true,
 	"syslog.facility.code": true,
 	"syslog.pid":           true,
 	"process.pid":          true,
