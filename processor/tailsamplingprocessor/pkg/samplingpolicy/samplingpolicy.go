@@ -116,29 +116,6 @@ type ThresholdEvaluator interface {
 	EvaluateWithThreshold(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, sampling.Threshold, error)
 }
 
-// BatchEvaluator is implemented by policies whose threshold depends on the
-// whole group of traces eligible for a decision at once, rather than a
-// single trace in isolation. rate_limiting is the canonical example: to
-// report a consistent threshold it must sort the group by randomness and
-// cut where the span budget runs out.
-//
-// It does not decide any trace itself -- it only updates the threshold its
-// ordinary EvaluateWithThreshold calls compare against afterward. Deciding
-// stays in the normal per-trace, per-policy loop, so a trace a
-// higher-priority policy already decided (a drop policy, or an earlier
-// match under sample_on_first_match) never reaches EvaluateWithThreshold
-// and correctly never spends budget. The caller must exclude such traces
-// from the batch too, so they don't shift the threshold for traces that
-// will actually be asked.
-type BatchEvaluator interface {
-	ThresholdEvaluator
-	// CalculateThreshold is called once per tick with every trace that will
-	// actually reach EvaluateWithThreshold this tick, before any of those
-	// calls happen. It updates internal state (typically just the
-	// threshold) and decides nothing itself.
-	CalculateThreshold(ctx context.Context, batch []*TraceData)
-}
-
 type Extension interface {
 	NewEvaluator(policyName string, cfg map[string]any) (Evaluator, error)
 }

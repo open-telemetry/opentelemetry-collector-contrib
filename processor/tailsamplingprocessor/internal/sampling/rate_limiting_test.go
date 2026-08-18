@@ -189,7 +189,7 @@ func TestLimitingPolicyImplementationSelection(t *testing.T) {
 		rl := NewRateLimitingWithBurstCapacity(settings, 10, 20)
 		_, isThresholdEvaluator := rl.(samplingpolicy.ThresholdEvaluator)
 		assert.False(t, isThresholdEvaluator)
-		_, isBatchEvaluator := rl.(samplingpolicy.BatchEvaluator)
+		_, isBatchEvaluator := rl.(BatchEvaluator)
 		assert.False(t, isBatchEvaluator)
 	})
 

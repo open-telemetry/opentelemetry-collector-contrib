@@ -17,6 +17,33 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
+// BatchEvaluator is implemented by policies whose threshold depends on the
+// whole group of traces eligible for a decision at once, rather than a
+// single trace in isolation. rate_limiting is the canonical example: to
+// report a consistent threshold it must sort the group by randomness and
+// cut where the span budget runs out.
+//
+// It does not decide any trace itself -- it only updates the threshold its
+// ordinary EvaluateWithThreshold calls compare against afterward. Deciding
+// stays in the normal per-trace, per-policy loop, so a trace a
+// higher-priority policy already decided (a drop policy, or an earlier
+// match under sample_on_first_match) never reaches EvaluateWithThreshold
+// and correctly never spends budget. The caller must exclude such traces
+// from the batch too, so they don't shift the threshold for traces that
+// will actually be asked.
+//
+// Kept here rather than in pkg/samplingpolicy deliberately: this shape is
+// still likely to change, and isn't meant to be a stable contract for
+// external policy implementations yet.
+type BatchEvaluator interface {
+	samplingpolicy.ThresholdEvaluator
+	// CalculateThreshold is called once per tick with every trace that will
+	// actually reach EvaluateWithThreshold this tick, before any of those
+	// calls happen. It updates internal state (typically just the
+	// threshold) and decides nothing itself.
+	CalculateThreshold(ctx context.Context, batch []*samplingpolicy.TraceData)
+}
+
 // traceCostFunc reports how much of a limiter's budget a single trace
 // consumes: spans for rate_limiting, protobuf-marshaled bytes for
 // bytes_limiting.
@@ -91,7 +118,7 @@ func newBudgetLimiter(settings component.TelemetrySettings, tokensPerSecond, bur
 var (
 	_ samplingpolicy.Evaluator          = (*budgetLimiter)(nil)
 	_ samplingpolicy.ThresholdEvaluator = (*budgetLimiter)(nil)
-	_ samplingpolicy.BatchEvaluator     = (*budgetLimiter)(nil)
+	_ BatchEvaluator                    = (*budgetLimiter)(nil)
 )
 
 // CalculateThreshold spends the currently available budget on the

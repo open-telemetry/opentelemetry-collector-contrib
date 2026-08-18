@@ -40,7 +40,7 @@ func NewAnd(
 	// (e.g. a nested rate_limiting), so plain `and` policies are not
 	// pulled into the processor's batch pre-pass.
 	for _, sub := range wrapped {
-		if _, ok := sub.(samplingpolicy.BatchEvaluator); ok {
+		if _, ok := sub.(BatchEvaluator); ok {
 			return &batchAnd{And: and}
 		}
 	}
@@ -96,8 +96,8 @@ type batchAnd struct {
 }
 
 var (
-	_ samplingpolicy.Evaluator      = (*batchAnd)(nil)
-	_ samplingpolicy.BatchEvaluator = (*batchAnd)(nil)
+	_ samplingpolicy.Evaluator = (*batchAnd)(nil)
+	_ BatchEvaluator           = (*batchAnd)(nil)
 )
 
 // CalculateThreshold narrows the batch to traces that pass every non-batch
@@ -117,7 +117,7 @@ func (c *batchAnd) CalculateThreshold(ctx context.Context, batch []*samplingpoli
 		}
 	}
 	for _, sub := range c.subpolicies {
-		if be, ok := sub.(samplingpolicy.BatchEvaluator); ok {
+		if be, ok := sub.(BatchEvaluator); ok {
 			be.CalculateThreshold(ctx, candidates)
 		}
 	}
@@ -128,7 +128,7 @@ func (c *batchAnd) CalculateThreshold(ctx context.Context, batch []*samplingpoli
 func (c *batchAnd) candidate(ctx context.Context, td *samplingpolicy.TraceData) bool {
 	id := td.TraceID()
 	for _, sub := range c.subpolicies {
-		if _, ok := sub.(samplingpolicy.BatchEvaluator); ok {
+		if _, ok := sub.(BatchEvaluator); ok {
 			// Decided by the batch pass below, not part of the filter.
 			continue
 		}

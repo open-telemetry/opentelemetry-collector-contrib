@@ -732,9 +732,9 @@ type tickCandidate struct {
 // each can compute a threshold from exactly the traces it will actually be
 // asked to judge. A no-op for any policy that is not batch-aware.
 func (tsp *tailSamplingSpanProcessor) runBatchPolicies(ctx context.Context, candidates []tickCandidate) {
-	var batchPolicies []samplingpolicy.BatchEvaluator
+	var batchPolicies []sampling.BatchEvaluator
 	for _, p := range tsp.policies {
-		if be, ok := p.evaluator.(samplingpolicy.BatchEvaluator); ok {
+		if be, ok := p.evaluator.(sampling.BatchEvaluator); ok {
 			batchPolicies = append(batchPolicies, be)
 		}
 	}
