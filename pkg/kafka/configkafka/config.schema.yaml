@@ -7,18 +7,10 @@ $defs:
         description: Kerberos holds Kerberos authentication configuration.
         x-pointer: true
         $ref: kerberos_config
-      plain_text:
-        description: 'PlainText is an alias for SASL/PLAIN authentication. Deprecated [v0.123.0]: use SASL with Mechanism set to PLAIN instead.'
-        x-pointer: true
-        $ref: plain_text_config
       sasl:
         description: SASL holds SASL authentication configuration.
         x-pointer: true
         $ref: sasl_config
-      tls:
-        description: 'TLS holds TLS configuration for connecting to Kafka brokers. Deprecated [v0.124.0]: use ClientConfig.TLS instead. This will be used only if ClientConfig.TLS is not set.'
-        x-pointer: true
-        $ref: go.opentelemetry.io/collector/config/configtls.client_config
   auto_commit_config:
     type: object
     properties:
