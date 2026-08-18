@@ -33,22 +33,17 @@ func traceSpanCount(trace *samplingpolicy.TraceData) int64 {
 // eligible for a decision and differ only in what a token measures, so the
 // batch machinery is parameterized by a cost function.
 //
-// CalculateThreshold computes a single threshold from the whole group of
-// traces that will actually reach this policy this tick (see
-// samplingpolicy.BatchEvaluator); the ordinary, per-trace
-// EvaluateWithThreshold call then just compares a trace's own randomness
-// against it. Deciding stays where every other policy already decides -- in
-// the normal per-trace, per-policy evaluation loop -- so a trace that a
-// higher-priority policy (a drop policy, or an earlier match under
-// sample_on_first_match) already decides never reaches this policy's
-// EvaluateWithThreshold at all, and correctly never spends its budget: it
-// is the caller's job to exclude such traces from the batch for the same
-// reason a trace that will not actually be asked should not shift the
-// threshold computed for the traces that will be.
+// CalculateThreshold computes one threshold from the traces that will
+// actually reach this policy this tick; EvaluateWithThreshold then just
+// compares a trace's own randomness against it, in the normal per-trace
+// evaluation loop. A trace a higher-priority policy already decided (a drop
+// policy, or an earlier match under sample_on_first_match) never reaches
+// EvaluateWithThreshold, so it correctly never spends budget -- callers must
+// exclude such traces from the batch for the same reason.
 //
-// This implementation is only constructed when the usetracestate feature gate
-// is enabled; with the gate disabled the limiting policies stay on their
-// original per-trace token bucket, untouched.
+// Only constructed when the usetracestate feature gate is enabled; with the
+// gate disabled the limiting policies stay on their original per-trace
+// token bucket, untouched.
 type budgetLimiter struct {
 	// Token bucket implemented by golang.org/x/time/rate.
 	limiter *rate.Limiter
@@ -58,22 +53,18 @@ type budgetLimiter struct {
 	// logMsg is recorded at debug level on each per-trace evaluation.
 	logMsg string
 
-	// threshold is the live cutoff computed by the most recent
-	// CalculateThreshold call. Its zero value is AlwaysSampleThreshold, so
-	// a policy that has been batched at least once but whose last batch
-	// fit entirely within budget correctly imposes no restriction.
+	// threshold is the cutoff from the most recent CalculateThreshold call.
+	// Its zero value is AlwaysSampleThreshold, so a batch that fit entirely
+	// within budget correctly imposes no restriction.
 	//
-	// Access is confined to the single decision-tick goroutine (batch
-	// sampling is not used in span-ingest mode), so no additional
-	// synchronization is required.
+	// Confined to the single decision-tick goroutine (batch sampling isn't
+	// used in span-ingest mode), so no synchronization is needed.
 	threshold sampling.Threshold
-	// primed is set the first time CalculateThreshold is ever called, and
-	// never cleared afterward. A policy that is never reachable through
-	// the processor's batch pre-pass at all (nested inside a composite
-	// policy, which does not support batching -- see the tracestate
-	// handling docs) stays unprimed forever and falls back to live
-	// per-trace token bucket admission instead of comparing against a
-	// threshold that would otherwise never be updated.
+	// primed latches true on the first CalculateThreshold call and never
+	// clears. A policy never reachable through the batch pre-pass at all
+	// (nested inside composite, which doesn't support batching -- see the
+	// tracestate handling docs) stays unprimed and falls back to live
+	// per-trace token bucket admission instead.
 	primed bool
 }
 
@@ -156,13 +147,10 @@ func (b *budgetLimiter) CalculateThreshold(_ context.Context, batch []*samplingp
 		b.threshold = sampling.NeverSampleThreshold
 		cumulative = 0
 	default:
-		// A threshold cannot separate traces that share the same
-		// randomness. If the first dropped trace ties the smallest kept
-		// one, drop the whole tied group so every kept trace is strictly
-		// above every dropped trace and the reported threshold sorts them
-		// exactly (kept: th <= R, dropped: th > R). Exact ties in 56-bit
-		// randomness are vanishingly unlikely; this just keeps the
-		// invariant airtight.
+		// A threshold can't separate traces with equal randomness, so if
+		// the first dropped trace ties the last kept one, drop the whole
+		// tied group -- keeps the invariant exact (kept: th <= R, dropped:
+		// th > R) even though 56-bit ties are vanishingly unlikely.
 		boundary := items[kept].randomness.Unsigned()
 		for kept > 0 && items[kept-1].randomness.Unsigned() == boundary {
 			kept--
@@ -177,9 +165,9 @@ func (b *budgetLimiter) CalculateThreshold(_ context.Context, batch []*samplingp
 		}
 	}
 
-	// Deduct the kept cost from the bucket so the limit is enforced across
-	// batches. cumulative <= budget <= burst, so AllowN always succeeds and
-	// consumes exactly the kept tokens; its bool is not meaningful here.
+	// Deduct the kept cost so the limit holds across ticks. cumulative <=
+	// budget <= burst, so AllowN always succeeds; its bool return isn't
+	// meaningful here.
 	if cumulative > 0 {
 		b.limiter.AllowN(now, int(cumulative))
 	}

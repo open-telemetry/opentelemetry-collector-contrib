@@ -117,31 +117,25 @@ type ThresholdEvaluator interface {
 }
 
 // BatchEvaluator is implemented by policies whose threshold depends on the
-// whole group of traces eligible for a decision at once, rather than on a
-// single trace in isolation. The rate_limiting policy is the canonical
-// example: to report a consistent sampling threshold it must sort the
-// group by randomness and pick a threshold at the point where the span
-// budget runs out.
+// whole group of traces eligible for a decision at once, rather than a
+// single trace in isolation. rate_limiting is the canonical example: to
+// report a consistent threshold it must sort the group by randomness and
+// cut where the span budget runs out.
 //
-// Unlike a policy that only implements ThresholdEvaluator, a BatchEvaluator
-// does not decide any trace itself: it only updates the threshold that its
-// ordinary, per-trace EvaluateWithThreshold calls compare against
-// afterward. Deciding stays where it already happens, in the normal
-// per-trace, per-policy evaluation loop, so a trace that a higher-priority
-// policy already decides (e.g. under sample_on_first_match, or a drop
-// policy) never reaches this policy's EvaluateWithThreshold at all and
-// correctly never spends its budget -- exactly like any other policy a
-// trace never reaches today. CalculateThreshold's caller is responsible
-// for excluding such traces from the batch for the same reason: a trace
-// that will not actually be asked should not shift the threshold computed
-// for the traces that will be.
+// It does not decide any trace itself -- it only updates the threshold its
+// ordinary EvaluateWithThreshold calls compare against afterward. Deciding
+// stays in the normal per-trace, per-policy loop, so a trace a
+// higher-priority policy already decided (a drop policy, or an earlier
+// match under sample_on_first_match) never reaches EvaluateWithThreshold
+// and correctly never spends budget. The caller must exclude such traces
+// from the batch too, so they don't shift the threshold for traces that
+// will actually be asked.
 type BatchEvaluator interface {
 	ThresholdEvaluator
-	// CalculateThreshold is called once per decision tick with every trace
-	// that will actually reach this policy's EvaluateWithThreshold this
-	// tick, before any of those calls happen. It updates internal state
-	// (typically just the threshold) but returns nothing and decides
-	// nothing itself.
+	// CalculateThreshold is called once per tick with every trace that will
+	// actually reach EvaluateWithThreshold this tick, before any of those
+	// calls happen. It updates internal state (typically just the
+	// threshold) and decides nothing itself.
 	CalculateThreshold(ctx context.Context, batch []*TraceData)
 }
 

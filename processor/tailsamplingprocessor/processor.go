@@ -680,20 +680,16 @@ func (tsp *tailSamplingSpanProcessor) waitForSpace(tickChan <-chan time.Time) {
 	}
 }
 
-// decidedBeforePosition reports whether some policy before position pos in
-// tsp.policies would already terminate makeDecision's loop for this trace,
-// mirroring exactly the conditions that loop breaks on: a Dropped decision
-// always wins, and -- when sample_on_first_match is configured -- an
-// earlier Sampled decision wins too. A trace this is true for will never
-// actually reach the policy at pos in the real per-trace evaluation, so it
-// must be excluded from that policy's batch: including it would let a
-// trace that is never asked shift the threshold computed for the traces
-// that are.
+// decidedBeforePosition reports whether some policy before pos in
+// tsp.policies would already terminate makeDecision's loop for this trace --
+// a Dropped decision always wins, and (under sample_on_first_match) so does
+// an earlier Sampled one. Such a trace never reaches the policy at pos in
+// the real per-trace evaluation, so it must be excluded from that policy's
+// batch, or it would shift the threshold for traces that are actually asked.
 //
-// Drop policies are always sorted to the front of tsp.policies (see
-// loadSamplingPolicies), so without sample_on_first_match this only ever
-// needs to check them, and stops at the first non-drop policy rather than
-// evaluating positions [0, pos) that cannot affect the answer.
+// Drop policies always sort to the front (see loadSamplingPolicies), so
+// without sample_on_first_match this only needs to check them and stops at
+// the first non-drop policy.
 func (tsp *tailSamplingSpanProcessor) decidedBeforePosition(ctx context.Context, pos int, id pcommon.TraceID, td *samplingpolicy.TraceData) bool {
 	for i := 0; i < pos; i++ {
 		p := tsp.policies[i]
@@ -725,17 +721,13 @@ type tickCandidate struct {
 	data  *samplingpolicy.TraceData
 }
 
-// runBatchPolicies runs any BatchEvaluator policies (e.g. rate_limiting or
-// bytes_limiting with the tracestate gate on) over the whole tick's
-// candidates at once, before any per-trace EvaluateWithThreshold call, so
-// each can compute a threshold from exactly the traces it will actually be
-// asked to judge. A no-op for any policy that is not batch-aware.
-//
-// Each batch policy gets its own candidate list, built with
-// decidedBeforePosition at that policy's own index: a policy near the end
-// of a long list, or configured with sample_on_first_match, can have a
-// smaller candidate pool than one earlier in the list, since more traces
-// may already be decided by the time evaluation would reach it.
+// runBatchPolicies runs each BatchEvaluator policy (rate_limiting or
+// bytes_limiting with the tracestate gate on) over the tick's candidates
+// before any per-trace EvaluateWithThreshold call, so it can compute a
+// threshold from exactly the traces it will actually judge. Each gets its
+// own candidate list via decidedBeforePosition at its own index, since a
+// later or sample_on_first_match-affected policy can see fewer candidates
+// than an earlier one.
 func (tsp *tailSamplingSpanProcessor) runBatchPolicies(ctx context.Context, candidates []tickCandidate) {
 	for pos, p := range tsp.policies {
 		be, ok := p.evaluator.(samplingpolicy.BatchEvaluator)
