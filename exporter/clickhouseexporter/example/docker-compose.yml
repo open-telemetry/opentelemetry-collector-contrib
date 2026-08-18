@@ -30,7 +30,7 @@ services:
       - otel-clickhouse
 
   clickhouse:
-    image: clickhouse/clickhouse-server:latest@sha256:f90a77560f72b10802106ee49e9870e41668cbc496e280c3911f6e3b216657f3
+    image: clickhouse/clickhouse-server:26.7.3@sha256:f90a77560f72b10802106ee49e9870e41668cbc496e280c3911f6e3b216657f3
     ports:
       - "9000:9000"
       - "8123:8123"
@@ -43,7 +43,7 @@ services:
       - CLICKHOUSE_PASSWORD=default
 
   grafana:
-    image: grafana/grafana:latest@sha256:3fd54ae1214669f8355f065ec9f6445d5279a3d77095ab048ca045685272429b
+    image: grafana/grafana:13.2@sha256:3fd54ae1214669f8355f065ec9f6445d5279a3d77095ab048ca045685272429b
     volumes:
       - ./grafana.ini:/etc/grafana/grafana.ini
       - ./datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
