@@ -127,7 +127,7 @@ func (b *bearerTokenAuth) Start(ctx context.Context, host component.Host) error 
 		b.startWG.Go(func() {
 			if err := b.tokenResolver.Start(ctx); err != nil {
 				b.logger.Error("failed to start token resolver", zap.Error(err))
-				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+				componentstatus.ReportStatus(host, componentstatus.NewPermanentErrorEvent(err))
 			}
 		})
 	})
