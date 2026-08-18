@@ -193,8 +193,14 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *ctypes.MemoryStats) {
 	totalUsage := calculateMemUsageNoCache(memoryStats)
 	r.mb.RecordContainerMemoryUsageTotalDataPoint(now, int64(totalUsage))
+	// The cache-excluded usage (totalUsage) is the working set, per the container
+	// semantic conventions, while container.memory.usage is the raw memory usage
+	// (including cache).
+	r.mb.RecordContainerMemoryWorkingSetDataPoint(now, int64(totalUsage))
+	r.mb.RecordContainerMemoryUsageDataPoint(now, int64(memoryStats.Usage))
 
 	r.mb.RecordContainerMemoryUsageLimitDataPoint(now, int64(memoryStats.Limit))
+	r.mb.RecordContainerMemoryAvailableDataPoint(now, int64(memoryStats.Limit-totalUsage))
 
 	r.mb.RecordContainerMemoryPercentDataPoint(now, calculateMemoryPercent(memoryStats.Limit, totalUsage))
 
@@ -244,6 +250,8 @@ func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats
 			recorder(now, int64(val))
 		}
 	}
+
+	r.mb.RecordContainerMemoryPagingFaultsDataPoint(now, int64(memoryStats.Stats["total_pgfault"]))
 }
 
 type blkioRecorder func(now pcommon.Timestamp, val int64, devMaj, devMin, operation string)
@@ -252,6 +260,7 @@ func (r *metricsReceiver) recordBlkioMetrics(now pcommon.Timestamp, blkioStats *
 	recordSingleBlkioStat(now, blkioStats.IoMergedRecursive, r.mb.RecordContainerBlockioIoMergedRecursiveDataPoint)
 	recordSingleBlkioStat(now, blkioStats.IoQueuedRecursive, r.mb.RecordContainerBlockioIoQueuedRecursiveDataPoint)
 	recordSingleBlkioStat(now, blkioStats.IoServiceBytesRecursive, r.mb.RecordContainerBlockioIoServiceBytesRecursiveDataPoint)
+	recordSingleBlkioStat(now, blkioStats.IoServiceBytesRecursive, r.recordContainerDiskIo)
 	recordSingleBlkioStat(now, blkioStats.IoServiceTimeRecursive, r.mb.RecordContainerBlockioIoServiceTimeRecursiveDataPoint)
 	recordSingleBlkioStat(now, blkioStats.IoServicedRecursive, r.mb.RecordContainerBlockioIoServicedRecursiveDataPoint)
 	recordSingleBlkioStat(now, blkioStats.IoTimeRecursive, r.mb.RecordContainerBlockioIoTimeRecursiveDataPoint)
@@ -271,6 +280,16 @@ func recordSingleBlkioStat(now pcommon.Timestamp, statEntries []ctypes.BlkioStat
 	}
 }
 
+// recordContainerDiskIo records the container.disk.io metric from a block IO
+// stat entry. It only covers the read/write directions per the semantic
+// conventions; the other operations (sync, async, discard, total) are skipped.
+func (r *metricsReceiver) recordContainerDiskIo(now pcommon.Timestamp, val int64, devMaj, devMin, operation string) {
+	if operation != "read" && operation != "write" {
+		return
+	}
+	r.mb.RecordContainerDiskIoDataPoint(now, val, devMaj+":"+devMin, operation)
+}
+
 func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, networks *map[string]ctypes.NetworkStats) {
 	if networks == nil || *networks == nil {
 		return
@@ -279,6 +298,8 @@ func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, networks *
 	for netInterface, stats := range *networks {
 		r.mb.RecordContainerNetworkIoUsageRxBytesDataPoint(now, int64(stats.RxBytes), netInterface)
 		r.mb.RecordContainerNetworkIoUsageTxBytesDataPoint(now, int64(stats.TxBytes), netInterface)
+		r.mb.RecordContainerNetworkIoDataPoint(now, int64(stats.RxBytes), "receive", netInterface)
+		r.mb.RecordContainerNetworkIoDataPoint(now, int64(stats.TxBytes), "transmit", netInterface)
 		r.mb.RecordContainerNetworkIoUsageRxDroppedDataPoint(now, int64(stats.RxDropped), netInterface)
 		r.mb.RecordContainerNetworkIoUsageTxDroppedDataPoint(now, int64(stats.TxDropped), netInterface)
 		r.mb.RecordContainerNetworkIoUsageRxPacketsDataPoint(now, int64(stats.RxPackets), netInterface)
@@ -291,13 +312,18 @@ func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, networks *
 func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, v *ctypes.StatsResponse) {
 	cpuStats := v.CPUStats
 	r.mb.RecordContainerCPUUsageSystemDataPoint(now, int64(cpuStats.SystemUsage))
+	r.mb.RecordContainerCPUTimeDataPoint(now, float64(cpuStats.SystemUsage)/1_000_000_000, metadata.WithCPUModeMetricAttribute("system"))
 	r.mb.RecordContainerCPUUsageTotalDataPoint(now, int64(cpuStats.CPUUsage.TotalUsage))
+	r.mb.RecordContainerCPUTimeDataPoint(now, float64(cpuStats.CPUUsage.TotalUsage)/1_000_000_000)
 	r.mb.RecordContainerCPUUsageKernelmodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInKernelmode))
+	r.mb.RecordContainerCPUTimeDataPoint(now, float64(cpuStats.CPUUsage.UsageInKernelmode)/1_000_000_000, metadata.WithCPUModeMetricAttribute("kernel"))
 	r.mb.RecordContainerCPUUsageUsermodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInUsermode))
+	r.mb.RecordContainerCPUTimeDataPoint(now, float64(cpuStats.CPUUsage.UsageInUsermode)/1_000_000_000, metadata.WithCPUModeMetricAttribute("user"))
 	r.mb.RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledPeriods))
 	r.mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.Periods))
 	r.mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledTime))
 	r.mb.RecordContainerCPUUtilizationDataPoint(now, calculateCPUPercent(v))
+	r.mb.RecordContainerCPUUsageDataPoint(now, calculateCPUPercent(v)/100)
 	r.mb.RecordContainerCPULogicalCountDataPoint(now, int64(cpuStats.OnlineCPUs))
 
 	for coreNum, v := range cpuStats.CPUUsage.PercpuUsage {
