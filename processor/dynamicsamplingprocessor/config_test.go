@@ -33,7 +33,7 @@ func TestConfig_Validate(t *testing.T) {
 			}),
 		},
 		{
-			name: "valid_deterministic",
+			name: "valid_probabilistic",
 			cfg: baseCfg(RuleConfig{
 				Name: "rule1",
 				Sampler: SamplerConfig{
@@ -142,7 +142,7 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: "unknown sampler.type",
 		},
 		{
-			name: "deterministic_zero_rate",
+			name: "probabilistic_zero_rate",
 			cfg: baseCfg(RuleConfig{
 				Name:    "r",
 				Sampler: SamplerConfig{Type: Probabilistic},
@@ -150,7 +150,7 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: "sampling_percentage",
 		},
 		{
-			name: "deterministic_too_high",
+			name: "probabilistic_too_high",
 			cfg: baseCfg(RuleConfig{
 				Name:    "r",
 				Sampler: SamplerConfig{Type: Probabilistic, SamplingPercentage: 150},
@@ -158,7 +158,7 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: "sampling_percentage",
 		},
 		{
-			name: "ema_missing_key_attributes",
+			name: "dynamic_percentage_missing_key_attributes",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
@@ -169,7 +169,7 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: "key_attributes",
 		},
 		{
-			name: "ema_invalid_weight",
+			name: "dynamic_percentage_invalid_weight",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
