@@ -194,6 +194,54 @@ func TestConfig_Validate(t *testing.T) {
 			}),
 		},
 		{
+			name: "ema_throughput_invalid_weight",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                 EMAThroughput,
+					GoalThroughputPerSec: 100,
+					KeyAttributes:        []string{"service.name"},
+					Weight:               1.0,
+				},
+			}),
+			wantErr: "weight",
+		},
+		{
+			name: "windowed_throughput_negative_update_frequency",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                 WindowedThroughput,
+					GoalThroughputPerSec: 100,
+					KeyAttributes:        []string{"service.name"},
+					UpdateFrequency:      -time.Second,
+				},
+			}),
+			wantErr: "update_frequency",
+		},
+		{
+			name: "windowed_throughput_negative_lookback_frequency",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                 WindowedThroughput,
+					GoalThroughputPerSec: 100,
+					KeyAttributes:        []string{"service.name"},
+					LookbackFrequency:    -time.Second,
+				},
+			}),
+			wantErr: "lookback_frequency",
+		},
+		{
+			name: "invalid_match_mode",
+			cfg: baseCfg(RuleConfig{
+				Name:    "r",
+				Match:   "some_span",
+				Sampler: SamplerConfig{Type: AlwaysSample},
+			}),
+			wantErr: "match",
+		},
+		{
 			name: "ema_throughput_missing_goal",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
