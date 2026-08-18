@@ -16,7 +16,7 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
   # OpenTelemetry Collector
   otelcollector:
-    image: otel/opentelemetry-collector-contrib-dev:latest@sha256:8c779b368c0c1b8f92e838550f6109218188664731b91e2837809b50e26ee58d
+    image: otel/opentelemetry-collector-contrib-dev:v0.159.0@sha256:8c779b368c0c1b8f92e838550f6109218188664731b91e2837809b50e26ee58d
     container_name: otelcollector
     command: ["--config=/etc/otel-collector-config.yml"]
     volumes:
