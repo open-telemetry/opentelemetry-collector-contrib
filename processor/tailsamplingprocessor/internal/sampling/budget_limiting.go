@@ -53,10 +53,10 @@ type budgetLimiter struct {
 	batchDecisions map[pcommon.TraceID]batchDecision
 	// batchPrimed is set once EvaluateBatch has run for the current tick.
 	// When primed, a trace absent from batchDecisions was deliberately
-	// excluded from the batch (e.g. it did not match a sibling filter in
-	// an `and` policy) and must be treated as NotSampled rather than
-	// falling back to per-trace admission, which would wrongly spend
-	// budget on a trace the batch already rejected.
+	// excluded from the batch (a drop policy will remove it; see
+	// tailSamplingSpanProcessor.runBatchPolicies) and must be treated as
+	// NotSampled rather than falling back to per-trace admission, which
+	// would wrongly spend budget on a trace the batch already rejected.
 	batchPrimed bool
 }
 

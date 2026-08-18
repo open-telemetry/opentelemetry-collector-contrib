@@ -680,13 +680,41 @@ func (tsp *tailSamplingSpanProcessor) waitForSpace(tickChan <-chan time.Time) {
 	}
 }
 
-// evaluateBatchPolicies runs any BatchEvaluator policies (e.g.
-// rate_limiting) over the whole batch before per-trace evaluation, so
-// they can make a consistent decision across the group. It takes each
-// trace's spans from storage once and returns them in a held map so the
-// per-trace loop can reuse them instead of taking again. Returns nil when
-// no batch policies are configured.
-func (tsp *tailSamplingSpanProcessor) evaluateBatchPolicies(ctx context.Context, batch idbatcher.Batch) map[pcommon.TraceID]ptrace.Traces {
+// droppedByPolicy reports whether any drop policy would drop this trace. It
+// mirrors the precedence in makeDecision, where drop policies run first and
+// a Dropped decision wins, so a batch-aware policy should not spend its
+// budget on a trace a drop policy will remove. Drop policies are always
+// sorted to the front of tsp.policies (see loadSamplingPolicies), so this
+// stops at the first non-drop policy rather than scanning everything.
+func (tsp *tailSamplingSpanProcessor) droppedByPolicy(ctx context.Context, id pcommon.TraceID, td *samplingpolicy.TraceData) bool {
+	for _, p := range tsp.policies {
+		if !p.isDrop {
+			break
+		}
+		if decision, err := p.evaluator.Evaluate(ctx, id, td); err == nil && decision == samplingpolicy.Dropped {
+			return true
+		}
+	}
+	return false
+}
+
+// tickCandidate is a trace resolved once per tick: its spans have been taken
+// from storage and it is ready for a decision. Batch-aware policies (see
+// runBatchPolicies) and the per-trace decision loop in samplingPolicyOnTick
+// both work from this same resolved list, so a trace's spans are taken from
+// storage exactly once per tick regardless of how many policies look at it.
+type tickCandidate struct {
+	id    pcommon.TraceID
+	trace *TraceData
+	data  *samplingpolicy.TraceData
+}
+
+// runBatchPolicies runs any BatchEvaluator policies (e.g. rate_limiting or
+// bytes_limiting with the tracestate gate on) over the whole tick's
+// candidates at once, before any per-trace EvaluateWithThreshold call, so
+// they can make a decision consistent across the group. A no-op when no
+// policy is batch-aware.
+func (tsp *tailSamplingSpanProcessor) runBatchPolicies(ctx context.Context, candidates []tickCandidate) {
 	var batchPolicies []samplingpolicy.BatchEvaluator
 	for _, p := range tsp.policies {
 		if be, ok := p.evaluator.(samplingpolicy.BatchEvaluator); ok {
@@ -694,60 +722,22 @@ func (tsp *tailSamplingSpanProcessor) evaluateBatchPolicies(ctx context.Context,
 		}
 	}
 	if len(batchPolicies) == 0 {
-		return nil
+		return
 	}
 
-	held := make(map[pcommon.TraceID]ptrace.Traces, len(batch))
-	items := make([]*samplingpolicy.TraceData, 0, len(batch))
-	for id := range batch {
-		trace, ok := tsp.idToTrace[id]
-		if !ok || trace.FinalDecision != samplingpolicy.Unspecified {
-			continue
-		}
-		allSpans, err := tsp.tailStorage.Take(id)
-		if err != nil {
-			tsp.logger.Error("Failed to retrieve trace from tail storage", zap.Error(err))
-			continue
-		}
-		if allSpans.ResourceSpans().Len() == 0 {
-			continue
-		}
-		held[id] = allSpans
-		td := &samplingpolicy.TraceData{
-			SpanCount:       trace.SpanCount,
-			SizeBytes:       trace.SizeBytes,
-			ReceivedBatches: allSpans,
-		}
+	items := make([]*samplingpolicy.TraceData, 0, len(candidates))
+	for _, c := range candidates {
 		// Drop policies take precedence and are evaluated before all others
 		// in makeDecision, so a dropped trace must not spend batch budget
-		// (e.g. rate-limiting tokens). Exclude such traces from the batch;
-		// they stay in held so the per-trace loop still drops them.
-		if tsp.droppedByPolicy(ctx, id, td) {
-			continue
+		// (e.g. rate-limiting tokens). Excluding it here still lets the
+		// per-trace decision loop below drop it normally.
+		if !tsp.droppedByPolicy(ctx, c.id, c.data) {
+			items = append(items, c.data)
 		}
-		items = append(items, td)
 	}
-
 	for _, be := range batchPolicies {
 		be.EvaluateBatch(ctx, items)
 	}
-	return held
-}
-
-// droppedByPolicy reports whether any drop policy would drop this trace.
-// It mirrors the precedence in makeDecision, where drop policies run first
-// and a Dropped decision wins, so batch policies should not consider a
-// trace a drop policy will remove.
-func (tsp *tailSamplingSpanProcessor) droppedByPolicy(ctx context.Context, id pcommon.TraceID, td *samplingpolicy.TraceData) bool {
-	for _, p := range tsp.policies {
-		if !p.isDrop {
-			continue
-		}
-		if decision, err := p.evaluator.Evaluate(ctx, id, td); err == nil && decision == samplingpolicy.Dropped {
-			return true
-		}
-	}
-	return false
 }
 
 // samplingPolicyOnTick takes the next batch and process all traces in that batch. Returns if there are more batches in the batcher.
@@ -767,14 +757,11 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 		defer span.End()
 	}
 
-	// Batch-aware policies decide across the whole group at once. Run them
-	// first; heldSpans holds the spans taken from storage so the per-trace
-	// loop below reuses them rather than taking a second time.
-	var heldSpans map[pcommon.TraceID]ptrace.Traces
-	if tsp.useTracestate && tsp.cfg.SamplingStrategy != samplingStrategySpanIngest {
-		heldSpans = tsp.evaluateBatchPolicies(ctx, batch)
-	}
-
+	// Resolve every trace due a decision this tick, taking its spans from
+	// storage once. In span-ingest mode, tick is a terminal cleanup path
+	// instead: finalize any still-pending trace as implicit not sampled
+	// without policy evaluation, so no candidate is collected for it.
+	candidates := make([]tickCandidate, 0, batchLen)
 	for id := range batch {
 		trace, ok := tsp.idToTrace[id]
 		if !ok {
@@ -788,8 +775,6 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 			continue
 		}
 
-		// In span-ingest mode, tick is a terminal cleanup path. Finalize any
-		// still-pending trace as implicit not sampled without policy evaluation.
 		if tsp.cfg.SamplingStrategy == samplingStrategySpanIngest {
 			trace.decisionTime = time.Now()
 			trace.FinalDecision = samplingpolicy.NotSampled
@@ -807,47 +792,49 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 			continue
 		}
 
-		allSpans, ok := heldSpans[id]
-		if ok {
-			// Release the held reference as we consume it so span data is
-			// reclaimable during the loop rather than pinned until the tick
-			// completes.
-			delete(heldSpans, id)
-		} else {
-			var err error
-			allSpans, err = tsp.tailStorage.Take(id)
-			if err != nil {
-				tsp.logger.Error("Failed to retrieve trace from tail storage", zap.Error(err))
-				continue
-			}
+		allSpans, err := tsp.tailStorage.Take(id)
+		if err != nil {
+			tsp.logger.Error("Failed to retrieve trace from tail storage", zap.Error(err))
+			continue
 		}
 		if allSpans.ResourceSpans().Len() == 0 {
 			metrics.idNotFoundOnMapCount++
 			continue
 		}
 
-		trace.decisionTime = time.Now()
-		traceForDecision := samplingpolicy.TraceData{
-			SpanCount:       trace.SpanCount,
-			SizeBytes:       trace.SizeBytes,
-			ReceivedBatches: allSpans,
-		}
-		decision, policyName := tsp.makeDecision(ctx, id, &traceForDecision, metrics)
+		candidates = append(candidates, tickCandidate{
+			id:    id,
+			trace: trace,
+			data: &samplingpolicy.TraceData{
+				SpanCount:       trace.SpanCount,
+				SizeBytes:       trace.SizeBytes,
+				ReceivedBatches: allSpans,
+			},
+		})
+	}
+
+	if tsp.useTracestate {
+		tsp.runBatchPolicies(ctx, candidates)
+	}
+
+	for _, c := range candidates {
+		c.trace.decisionTime = time.Now()
+		decision, policyName := tsp.makeDecision(ctx, c.id, c.data, metrics)
 		globalTracesSampledByDecision[decision]++
 		// Keep release paths working with tail storage by attaching the
 		// retrieved batches back to trace state for this decision.
-		trace.ReceivedBatches = traceForDecision.ReceivedBatches
-		trace.FinalDecision = decision
-		trace.PolicyName = policyName
+		c.trace.ReceivedBatches = c.data.ReceivedBatches
+		c.trace.FinalDecision = decision
+		c.trace.PolicyName = policyName
 
 		if decision == samplingpolicy.Sampled {
-			tsp.releaseSampledTrace(ctx, id, trace)
+			tsp.releaseSampledTrace(ctx, c.id, c.trace)
 		} else {
-			tsp.releaseNotSampledTrace(id, trace)
+			tsp.releaseNotSampledTrace(c.id, c.trace)
 		}
 
 		// Sampled or not, remove the batches
-		trace.ReceivedBatches = ptrace.NewTraces()
+		c.trace.ReceivedBatches = ptrace.NewTraces()
 	}
 
 	tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, time.Since(startTime).Milliseconds())
