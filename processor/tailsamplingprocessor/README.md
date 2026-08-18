@@ -64,7 +64,7 @@ The following configuration options can also be modified:
   - `non_sampled_cache_size` (default = 0) Configures amount of trace IDs to be kept in an LRU cache,
     persisting the "drop" decisions for traces that may have already been released from memory.
     By default, the size is 0 and the cache is inactive.
-- `sample_on_first_match`: Make decision as soon as a policy matches. Do not combine with the `processor.tailsamplingprocessor.usetracestate` feature gate; see [Tracestate handling](#tracestate-handling).
+- `sample_on_first_match`: Make decision as soon as a policy matches. Do not combine with the `processor.tailsamplingprocessor.usetracestate` feature gate: stopping at the first match can skip a later policy that would have reported a less strict sampling threshold, throwing off downstream adjusted counts; see [Tracestate handling](#tracestate-handling).
 - `drop_pending_traces_on_shutdown`: Drop pending traces on shutdown instead of making a decision with the partial data
   already ingested.
 - `maximum_trace_size_bytes`: The maximum size a trace can reach in bytes, traces larger than this size will be immediately dropped from the tail sampling processor in order to protect the system.
@@ -328,7 +328,7 @@ This configuration allows:
 
 ## Tracestate handling
 
-The `processor.tailsamplingprocessor.usetracestate` feature gate (alpha, off by default) opts the processor into reading and writing the OpenTelemetry probability sampling fields (`rv` and `th` in the `ot` section) of the W3C `tracestate`. This lets the tail sampler interoperate with upstream samplers (for example, an SDK or another collector running the [probabilistic sampling processor][probabilistic_sampling_processor]) so that adjusted counts remain correct end-to-end. Do not combine this gate with `sample_on_first_match`; the two are not compatible.
+The `processor.tailsamplingprocessor.usetracestate` feature gate (alpha, off by default) opts the processor into reading and writing the OpenTelemetry probability sampling fields (`rv` and `th` in the `ot` section) of the W3C `tracestate`. This lets the tail sampler interoperate with upstream samplers (for example, an SDK or another collector running the [probabilistic sampling processor][probabilistic_sampling_processor]) so that adjusted counts remain correct end-to-end. Do not combine this gate with `sample_on_first_match`: getting adjusted counts right depends on checking every policy that could sample a trace, and `sample_on_first_match` stops as soon as one does.
 
 When the gate is enabled:
 
