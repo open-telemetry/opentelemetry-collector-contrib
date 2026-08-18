@@ -1901,23 +1901,23 @@ func (ms *ContainerRestartsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ContainerStatusMetricAttributeKey specifies the key of an attribute for the container.status metric.
-type ContainerStatusMetricAttributeKey string
+// ContainerStateStatusMetricAttributeKey specifies the key of an attribute for the container.state.status metric.
+type ContainerStateStatusMetricAttributeKey string
 
 const (
-	ContainerStatusMetricAttributeKeyContainerState ContainerStatusMetricAttributeKey = "container.state"
+	ContainerStateStatusMetricAttributeKeyContainerStateStatus ContainerStateStatusMetricAttributeKey = "container.state.status"
 )
 
-// ContainerStatusMetricConfig provides config for the container.status metric.
-type ContainerStatusMetricConfig struct {
+// ContainerStateStatusMetricConfig provides config for the container.state.status metric.
+type ContainerStateStatusMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ContainerStatusMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ContainerStateStatusMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ContainerStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerStateStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1931,12 +1931,12 @@ func (ms *ContainerStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *ContainerStatusMetricConfig) Validate() error {
+func (ms *ContainerStateStatusMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ContainerStatusMetricAttributeKeyContainerState:
+		case ContainerStateStatusMetricAttributeKeyContainerStateStatus:
 		default:
-			return fmt.Errorf("metric container.status doesn't have an attribute %v, valid attributes: [container.state]", val)
+			return fmt.Errorf("metric container.state.status doesn't have an attribute %v, valid attributes: [container.state.status]", val)
 		}
 	}
 
@@ -2041,7 +2041,7 @@ type MetricsConfig struct {
 	ContainerPidsCount                         ContainerPidsCountMetricConfig                         `mapstructure:"container.pids.count"`
 	ContainerPidsLimit                         ContainerPidsLimitMetricConfig                         `mapstructure:"container.pids.limit"`
 	ContainerRestarts                          ContainerRestartsMetricConfig                          `mapstructure:"container.restarts"`
-	ContainerStatus                            ContainerStatusMetricConfig                            `mapstructure:"container.status"`
+	ContainerStateStatus                       ContainerStateStatusMetricConfig                       `mapstructure:"container.state.status"`
 	ContainerUptime                            ContainerUptimeMetricConfig                            `mapstructure:"container.uptime"`
 }
 
@@ -2291,10 +2291,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerRestarts: ContainerRestartsMetricConfig{
 			Enabled: false,
 		},
-		ContainerStatus: ContainerStatusMetricConfig{
+		ContainerStateStatus: ContainerStateStatusMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ContainerStatusMetricAttributeKey{ContainerStatusMetricAttributeKeyContainerState},
+			EnabledAttributes:   []ContainerStateStatusMetricAttributeKey{ContainerStateStatusMetricAttributeKeyContainerStateStatus},
 		},
 		ContainerUptime: ContainerUptimeMetricConfig{
 			Enabled: false,

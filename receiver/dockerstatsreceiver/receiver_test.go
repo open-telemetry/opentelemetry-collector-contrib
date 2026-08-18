@@ -106,7 +106,7 @@ var (
 		cfg.ContainerPidsLimit.Enabled = true
 		cfg.ContainerRestarts.Enabled = true
 		cfg.ContainerUptime.Enabled = true
-		cfg.ContainerStatus.Enabled = true
+		cfg.ContainerStateStatus.Enabled = true
 		return cfg
 	}()
 

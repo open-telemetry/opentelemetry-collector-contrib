@@ -158,9 +158,9 @@ all_set:
       enabled: true
     container.restarts:
       enabled: true
-    container.status:
+    container.state.status:
       enabled: true
-      attributes: ["container.state"]
+      attributes: ["container.state.status"]
     container.uptime:
       enabled: true
   resource_attributes:
@@ -337,7 +337,7 @@ reaggregate_set:
       enabled: true
     container.restarts:
       enabled: true
-    container.status:
+    container.state.status:
       enabled: true
       attributes: []
     container.uptime:
@@ -516,9 +516,9 @@ none_set:
       enabled: false
     container.restarts:
       enabled: false
-    container.status:
+    container.state.status:
       enabled: false
-      attributes: ["container.state"]
+      attributes: ["container.state.status"]
     container.uptime:
       enabled: false
   resource_attributes:

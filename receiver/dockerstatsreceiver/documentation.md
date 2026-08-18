@@ -740,7 +740,7 @@ Number of restarts for the container.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {restarts} | Sum | Int | Cumulative | true | Development |
 
-### container.status
+### container.state.status
 
 Number of containers in a given state. State is one of - created, running, paused, restarting, removing, exited and dead
 
@@ -752,7 +752,7 @@ Number of containers in a given state. State is one of - created, running, pause
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| container.state | Container State | Str: ``created``, ``running``, ``paused``, ``restarting``, ``removing``, ``exited``, ``dead`` | Recommended | - |
+| container.state.status | Container State | Str: ``created``, ``running``, ``paused``, ``restarting``, ``removing``, ``exited``, ``dead`` | Recommended | - |
 
 ### container.uptime
 

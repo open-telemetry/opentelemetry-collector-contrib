@@ -59,7 +59,7 @@ resource_attributes:
     enabled: true
 
 attributes:
-  container.state:
+  container.state.status:
     description: "Container State"
     type: string
     enum: ["created", "running", "paused", "restarting", "removing", "exited", "dead"]
@@ -794,7 +794,7 @@ metrics:
       aggregation_temporality: cumulative
 
   # Container status
-  container.status:
+  container.state.status:
     enabled: false
     stability: development
     description: "Number of containers in a given state. State is one of - created, running, paused, restarting, removing, exited and dead"
@@ -803,7 +803,7 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-    attributes: [container.state]
+    attributes: [container.state.status]
 
   # Base
   container.uptime:

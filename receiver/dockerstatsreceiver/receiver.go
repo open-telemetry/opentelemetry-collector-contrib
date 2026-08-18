@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	ctypes "github.com/moby/moby/api/types/container"
@@ -41,7 +42,6 @@ type metricsReceiver struct {
 	client   *docker.Client
 	mb       *metadata.MetricsBuilder
 	cancel   context.CancelFunc
-	statusMX sync.Mutex
 }
 
 func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver {
@@ -95,7 +95,7 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// holds the value for number of containers in each state
-	containerStatus := make(map[string]int64)
+	containerStatus := make(map[string]*atomic.Uint64)
 
 	if r.config.StreamStats {
 		for _, container := range containers {
@@ -160,7 +160,7 @@ func (r *metricsReceiver) recordContainerStats(
 	now pcommon.Timestamp,
 	containerStats *ctypes.StatsResponse,
 	container *docker.Container,
-	containerStatus map[string]int64,
+	containerStatus map[string]*atomic.Uint64,
 ) error {
 	var errs error
 	r.recordCPUMetrics(now, containerStats)
@@ -198,19 +198,23 @@ func (r *metricsReceiver) recordContainerStats(
 		}
 	}
 
-	r.statusMX.Lock()
 	// increment counter of container status
-	containerStatus[string(container.State.Status)]++
-	r.statusMX.Unlock()
+	status := string(container.State.Status)
+	counter, ok := containerStatus[status]
+	if !ok {
+		counter = &atomic.Uint64{}
+		containerStatus[status] = counter
+	}
+	counter.Add(1)
 
 	r.mb.EmitForResource(metadata.WithResource(resource))
 	return errs
 }
 
 // recordContainerStatus records number of containers in each state
-func (r *metricsReceiver) recordContainerStatus(now pcommon.Timestamp, containerStatus map[string]int64) {
+func (r *metricsReceiver) recordContainerStatus(now pcommon.Timestamp, containerStatus map[string]*atomic.Uint64) {
 	for status, count := range containerStatus {
-		r.mb.RecordContainerStatusDataPoint(now, count, metadata.MapAttributeContainerState[status])
+		r.mb.RecordContainerStateStatusDataPoint(now, int64(count.Load()), metadata.MapAttributeContainerStateStatus[status])
 	}
 }
 

@@ -84,7 +84,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["container.network.io.usage.tx_dropped"] = mb.metricContainerNetworkIoUsageTxDropped.config.AggregationStrategy
 			aggMap["container.network.io.usage.tx_errors"] = mb.metricContainerNetworkIoUsageTxErrors.config.AggregationStrategy
 			aggMap["container.network.io.usage.tx_packets"] = mb.metricContainerNetworkIoUsageTxPackets.config.AggregationStrategy
-			aggMap["container.status"] = mb.metricContainerStatus.config.AggregationStrategy
+			aggMap["container.state.status"] = mb.metricContainerStateStatus.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -356,9 +356,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordContainerRestartsDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerStatusDataPoint(ts, 1, AttributeContainerStateCreated)
+			mb.RecordContainerStateStatusDataPoint(ts, 1, AttributeContainerStateStatusCreated)
 			if tt.name == "reaggregate_set" {
-				mb.RecordContainerStatusDataPoint(ts, 3, AttributeContainerStateRunning)
+				mb.RecordContainerStateStatusDataPoint(ts, 3, AttributeContainerStateStatusRunning)
 			}
 
 			allMetricsCount++
@@ -392,7 +392,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricContainerNetworkIoUsageTxDropped.aggDataPoints)
 				assert.Empty(t, mb.metricContainerNetworkIoUsageTxErrors.aggDataPoints)
 				assert.Empty(t, mb.metricContainerNetworkIoUsageTxPackets.aggDataPoints)
-				assert.Empty(t, mb.metricContainerStatus.aggDataPoints)
+				assert.Empty(t, mb.metricContainerStateStatus.aggDataPoints)
 			}
 
 			if tt.expectEmpty {
@@ -1980,10 +1980,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "container.status":
+				case "container.state.status":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["container.status"], "Found a duplicate in the metrics slice: container.status")
-						validatedMetrics["container.status"] = true
+						assert.False(t, validatedMetrics["container.state.status"], "Found a duplicate in the metrics slice: container.state.status")
+						validatedMetrics["container.state.status"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Number of containers in a given state. State is one of - created, running, paused, restarting, removing, exited and dead", mi.Description())
@@ -1995,12 +1995,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						containerStateAttrVal, ok := dp.Attributes().Get("container.state")
+						containerStateStatusAttrVal, ok := dp.Attributes().Get("container.state.status")
 						assert.True(t, ok)
-						assert.Equal(t, "created", containerStateAttrVal.Str())
+						assert.Equal(t, "created", containerStateStatusAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["container.status"], "Found a duplicate in the metrics slice: container.status")
-						validatedMetrics["container.status"] = true
+						assert.False(t, validatedMetrics["container.state.status"], "Found a duplicate in the metrics slice: container.state.status")
+						validatedMetrics["container.state.status"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Number of containers in a given state. State is one of - created, running, paused, restarting, removing, exited and dead", mi.Description())
@@ -2011,7 +2011,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["container.status"] {
+						switch aggMap["container.state.status"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":
@@ -2021,7 +2021,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("container.state")
+						_, ok := dp.Attributes().Get("container.state.status")
 						assert.False(t, ok)
 					}
 				case "container.uptime":
