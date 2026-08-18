@@ -569,6 +569,55 @@ func TestBearerStartWithRetryOnFailureGivesUp(t *testing.T) {
 	assert.NoError(t, bauth.Shutdown(t.Context()))
 }
 
+func TestBearerStartWaitsForTokenFileUntilItAppears(t *testing.T) {
+	dir := t.TempDir()
+	tokenPath := filepath.Join(dir, "delayed.token")
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Filename = tokenPath
+	cfg.RetryOnFailure = credentialsfile.RetryOnFailureConfig{
+		Enabled:    true,
+		MaxRetries: 50,
+		Interval:   50 * time.Millisecond,
+	}
+	cfg.WaitForTokenFile = true
+	require.NoError(t, cfg.Validate())
+
+	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+	assert.NotNil(t, bauth)
+
+	// Create the file from a goroutine after a delay. Start must block until the
+	// file appears, so once Start returns the token is already available.
+	go func() {
+		time.Sleep(200 * time.Millisecond)
+		assert.NoError(t, os.WriteFile(tokenPath, []byte("delayed-token"), 0o600))
+	}()
+
+	require.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
+
+	assert.Equal(t, "Bearer delayed-token", bauth.authorizationValue())
+	assert.NoError(t, bauth.Shutdown(t.Context()))
+}
+
+func TestBearerStartWaitForTokenFileReturnsErrorWhenExhausted(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Filename = filepath.Join(t.TempDir(), "never-appears.token")
+	cfg.RetryOnFailure = credentialsfile.RetryOnFailureConfig{
+		Enabled:    true,
+		MaxRetries: 2,
+		Interval:   50 * time.Millisecond,
+	}
+	cfg.WaitForTokenFile = true
+	require.NoError(t, cfg.Validate())
+
+	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+	assert.NotNil(t, bauth)
+
+	err := bauth.Start(t.Context(), componenttest.NewNopHost())
+	require.Error(t, err)
+	assert.NoError(t, bauth.Shutdown(t.Context()))
+}
+
 // statusRecordingHost is a component.Host that records the last reported
 // component status event, implementing the componentstatus.Reporter interface.
 type statusRecordingHost struct {

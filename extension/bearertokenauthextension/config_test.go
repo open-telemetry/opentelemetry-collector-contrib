@@ -112,6 +112,20 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "withwaitfortokenfile"),
+			expected: &Config{
+				Header:           defaultHeader,
+				Scheme:           "Bearer",
+				Filename:         "file-containing.token",
+				WaitForTokenFile: true,
+				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
+					Enabled:    true,
+					MaxRetries: 5,
+					Interval:   2 * time.Second,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -205,6 +219,34 @@ func TestValidate_RetryOnFailure(t *testing.T) {
 				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
 					MaxRetries: 0,
 					Interval:   0,
+				},
+			},
+		},
+		{
+			name: "wait_for_token_file without filename",
+			cfg: &Config{
+				BearerToken:      "sometoken",
+				WaitForTokenFile: true,
+			},
+			wantErr: errRetryOnFailureNoFile,
+		},
+		{
+			name: "wait_for_token_file without retry enabled",
+			cfg: &Config{
+				Filename:         "file.token",
+				WaitForTokenFile: true,
+			},
+			wantErr: errWaitForTokenFileRequiresRetry,
+		},
+		{
+			name: "wait_for_token_file with retry enabled",
+			cfg: &Config{
+				Filename:         "file.token",
+				WaitForTokenFile: true,
+				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
+					Enabled:    true,
+					MaxRetries: 3,
+					Interval:   time.Second,
 				},
 			},
 		},

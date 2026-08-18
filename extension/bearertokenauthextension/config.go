@@ -33,15 +33,22 @@ type Config struct {
 	// Filename is not yet available. Disabled by default.
 	RetryOnFailure credentialsfile.RetryOnFailureConfig `mapstructure:"retry_on_failure,omitempty"`
 
+	// WaitForTokenFile makes Start block until the token file is read successfully
+	// (respecting RetryOnFailure) instead of retrying in the background. If the
+	// file cannot be read within the retry budget, Start returns an error and
+	// collector startup fails. Disabled by default.
+	WaitForTokenFile bool `mapstructure:"wait_for_token_file,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
 var (
-	_                         component.Config = (*Config)(nil)
-	errNoTokenProvided                         = errors.New("no bearer token provided")
-	errTokensAndTokenProvided                  = errors.New("either tokens or token should be provided, not both")
-	errRetryOnFailureNoFile                    = errors.New("requires filename to be set")
+	_                                component.Config = (*Config)(nil)
+	errNoTokenProvided                                = errors.New("no bearer token provided")
+	errTokensAndTokenProvided                         = errors.New("either tokens or token should be provided, not both")
+	errRetryOnFailureNoFile                           = errors.New("requires filename to be set")
+	errWaitForTokenFileRequiresRetry                  = errors.New("wait_for_token_file requires retry_on_failure to be enabled")
 )
 
 // Validate checks if the extension configuration is valid
@@ -58,6 +65,14 @@ func (cfg *Config) Validate() error {
 		}
 		if err := cfg.RetryOnFailure.Validate(); err != nil {
 			return err
+		}
+	}
+	if cfg.WaitForTokenFile {
+		if cfg.Filename == "" {
+			return errRetryOnFailureNoFile
+		}
+		if !cfg.RetryOnFailure.Enabled {
+			return errWaitForTokenFileRequiresRetry
 		}
 	}
 	return nil
