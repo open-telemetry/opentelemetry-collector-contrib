@@ -194,6 +194,56 @@ func TestConfig_Validate(t *testing.T) {
 			}),
 		},
 		{
+			name: "dynamic_throughput_invalid_weight",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:           DynamicThroughput,
+					GoalThroughput: 100,
+					KeyAttributes:  []string{"service.name"},
+					Weight:         1.0,
+				},
+			}),
+			wantErr: "weight",
+		},
+		{
+			name: "dynamic_throughput_windowed_negative_update_frequency",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:            DynamicThroughput,
+					Algorithm:       AlgorithmWindowed,
+					GoalThroughput:  100,
+					KeyAttributes:   []string{"service.name"},
+					UpdateFrequency: -time.Second,
+				},
+			}),
+			wantErr: "update_frequency",
+		},
+		{
+			name: "dynamic_throughput_windowed_negative_lookback_frequency",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:              DynamicThroughput,
+					Algorithm:         AlgorithmWindowed,
+					GoalThroughput:    100,
+					KeyAttributes:     []string{"service.name"},
+					LookbackFrequency: -time.Second,
+				},
+			}),
+			wantErr: "lookback_frequency",
+		},
+		{
+			name: "invalid_match_mode",
+			cfg: baseCfg(RuleConfig{
+				Name:    "r",
+				Match:   "some_span",
+				Sampler: SamplerConfig{Type: AlwaysSample},
+			}),
+			wantErr: "match",
+		},
+		{
 			name: "dynamic_throughput_missing_goal",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",

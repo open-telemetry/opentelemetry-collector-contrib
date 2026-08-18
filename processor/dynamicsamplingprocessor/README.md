@@ -319,7 +319,7 @@ sampler:
 
 ### Sampling keys
 
-For samplers that accept `key_attributes`, the sampling key for a trace is built by collecting distinct values of each named attribute (across resource and span attributes), sorting them, and joining with the `•` separator. Missing attributes are replaced with `<missing>`.
+For samplers that accept `key_attributes`, the sampling key for a trace is built by collecting distinct values of each named attribute (across resource and span attributes), sorting and joining them with `,` within each attribute, then joining the attributes with the `•` separator. Missing attributes are replaced with `<missing>`. A trace whose spans carry several values for one attribute therefore keys as the combination (e.g. `checkout,billing•/api`), which is worth knowing when debugging unexpectedly high key cardinality.
 
 ## Worked examples
 
