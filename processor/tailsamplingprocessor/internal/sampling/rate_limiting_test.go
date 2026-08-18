@@ -108,7 +108,7 @@ func rlTrace(tag byte, randomness uint64, spanCount int64) *samplingpolicy.Trace
 }
 
 // TestRateLimiterBatchThreshold verifies that, with the tracestate gate
-// on, EvaluateBatch spends the span budget on the highest-randomness
+// on, CalculateThreshold spends the span budget on the highest-randomness
 // traces first and reports a threshold at the boundary such that every
 // kept trace satisfies threshold.ShouldSample(randomness) and every
 // dropped trace does not.
@@ -122,7 +122,7 @@ func TestRateLimiterBatchThreshold(t *testing.T) {
 	a := rlTrace(1, 100, 2)
 	b := rlTrace(2, 50, 2)
 	c := rlTrace(3, 10, 2)
-	rl.EvaluateBatch(t.Context(), []*samplingpolicy.TraceData{a, b, c})
+	rl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{a, b, c})
 
 	wantThreshold, err := sampling.UnsignedToThreshold(50)
 	require.NoError(t, err)
@@ -161,7 +161,7 @@ func TestRateLimiterBatchWholeBatchFits(t *testing.T) {
 	rl := NewRateLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), 10, 10).(*budgetLimiter)
 
 	traces := []*samplingpolicy.TraceData{rlTrace(1, 100, 2), rlTrace(2, 50, 2)}
-	rl.EvaluateBatch(t.Context(), traces)
+	rl.CalculateThreshold(t.Context(), traces)
 
 	for _, td := range traces {
 		decision, th, err := rl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
@@ -210,7 +210,7 @@ func TestRateLimiterBatchLargeTraceDropped(t *testing.T) {
 	rl := NewRateLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), 2, 2).(*budgetLimiter)
 
 	td := rlTrace(1, 100, 5) // 5 spans > budget of 2
-	rl.EvaluateBatch(t.Context(), []*samplingpolicy.TraceData{td})
+	rl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{td})
 
 	decision, _, err := rl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
 	require.NoError(t, err)
@@ -228,7 +228,7 @@ func TestRateLimiterBatchNonUniformSpanCounts(t *testing.T) {
 	a := rlTrace(1, 100, 2)
 	b := rlTrace(2, 50, 1)
 	c := rlTrace(3, 10, 2)
-	rl.EvaluateBatch(t.Context(), []*samplingpolicy.TraceData{a, b, c})
+	rl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{a, b, c})
 
 	wantThreshold, err := sampling.UnsignedToThreshold(50)
 	require.NoError(t, err)
@@ -265,7 +265,7 @@ func TestRateLimiterBatchBoundaryTie(t *testing.T) {
 	b := rlTrace(2, 50, 1)
 	c := rlTrace(3, 50, 1)
 	d := rlTrace(4, 10, 1)
-	rl.EvaluateBatch(t.Context(), []*samplingpolicy.TraceData{a, b, c, d})
+	rl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{a, b, c, d})
 
 	wantThreshold, err := sampling.UnsignedToThreshold(100)
 	require.NoError(t, err)
@@ -306,7 +306,7 @@ func TestRateLimiterBatchCrossTick(t *testing.T) {
 
 	// First batch keeps both single-span traces, consuming 2 of 4 tokens.
 	first := []*samplingpolicy.TraceData{rlTrace(1, 100, 1), rlTrace(2, 90, 1)}
-	rl.EvaluateBatch(t.Context(), first)
+	rl.CalculateThreshold(t.Context(), first)
 	for _, td := range first {
 		decision, _, err := rl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
 		require.NoError(t, err)
@@ -318,7 +318,7 @@ func TestRateLimiterBatchCrossTick(t *testing.T) {
 	high := rlTrace(3, 100, 1)
 	mid := rlTrace(4, 50, 1)
 	low := rlTrace(5, 10, 1)
-	rl.EvaluateBatch(t.Context(), []*samplingpolicy.TraceData{high, mid, low})
+	rl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{high, mid, low})
 	assertDecision := func(td *samplingpolicy.TraceData, want samplingpolicy.Decision, msg string) {
 		decision, _, err := rl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
 		require.NoError(t, err)
@@ -329,21 +329,22 @@ func TestRateLimiterBatchCrossTick(t *testing.T) {
 	assertDecision(low, samplingpolicy.NotSampled, "budget carried over should drop the lowest-randomness trace")
 }
 
-// TestRateLimiterBatchEmpty verifies EvaluateBatch handles an empty batch
-// without panicking. Once the batch has run, a trace that was not part of
-// it is treated as NotSampled rather than falling back to per-trace
-// admission (which would let an excluded trace spend budget).
+// TestRateLimiterBatchEmpty verifies CalculateThreshold handles an empty
+// batch without panicking, leaving the threshold at AlwaysSample so traffic
+// evaluated before any real data was available is not limited -- the same
+// "nothing observed yet" convention used elsewhere (e.g. a fresh collector
+// not limiting traffic until it has something to measure).
 func TestRateLimiterBatchEmpty(t *testing.T) {
 	enableTracestateFeatureGate(t)
 
 	rl := NewRateLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), 2, 2).(*budgetLimiter)
-	rl.EvaluateBatch(t.Context(), nil)
-	assert.Empty(t, rl.batchDecisions)
+	rl.CalculateThreshold(t.Context(), nil)
 
 	td := rlTrace(1, 100, 1)
-	decision, _, err := rl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+	decision, th, err := rl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
 	require.NoError(t, err)
-	assert.Equal(t, samplingpolicy.NotSampled, decision)
+	assert.Equal(t, samplingpolicy.Sampled, decision)
+	assert.Equal(t, sampling.AlwaysSampleThreshold, th)
 }
 
 // TestResolveRandomness verifies the shared randomness resolution used to

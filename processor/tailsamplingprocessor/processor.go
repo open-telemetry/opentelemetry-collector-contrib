@@ -680,18 +680,34 @@ func (tsp *tailSamplingSpanProcessor) waitForSpace(tickChan <-chan time.Time) {
 	}
 }
 
-// droppedByPolicy reports whether any drop policy would drop this trace. It
-// mirrors the precedence in makeDecision, where drop policies run first and
-// a Dropped decision wins, so a batch-aware policy should not spend its
-// budget on a trace a drop policy will remove. Drop policies are always
-// sorted to the front of tsp.policies (see loadSamplingPolicies), so this
-// stops at the first non-drop policy rather than scanning everything.
-func (tsp *tailSamplingSpanProcessor) droppedByPolicy(ctx context.Context, id pcommon.TraceID, td *samplingpolicy.TraceData) bool {
-	for _, p := range tsp.policies {
-		if !p.isDrop {
+// decidedBeforePosition reports whether some policy before position pos in
+// tsp.policies would already terminate makeDecision's loop for this trace,
+// mirroring exactly the conditions that loop breaks on: a Dropped decision
+// always wins, and -- when sample_on_first_match is configured -- an
+// earlier Sampled decision wins too. A trace this is true for will never
+// actually reach the policy at pos in the real per-trace evaluation, so it
+// must be excluded from that policy's batch: including it would let a
+// trace that is never asked shift the threshold computed for the traces
+// that are.
+//
+// Drop policies are always sorted to the front of tsp.policies (see
+// loadSamplingPolicies), so without sample_on_first_match this only ever
+// needs to check them, and stops at the first non-drop policy rather than
+// evaluating positions [0, pos) that cannot affect the answer.
+func (tsp *tailSamplingSpanProcessor) decidedBeforePosition(ctx context.Context, pos int, id pcommon.TraceID, td *samplingpolicy.TraceData) bool {
+	for i := 0; i < pos; i++ {
+		p := tsp.policies[i]
+		if !tsp.sampleOnFirstMatch && !p.isDrop {
 			break
 		}
-		if decision, err := p.evaluator.Evaluate(ctx, id, td); err == nil && decision == samplingpolicy.Dropped {
+		decision, err := p.evaluator.Evaluate(ctx, id, td)
+		if err != nil {
+			continue
+		}
+		if decision == samplingpolicy.Dropped {
+			return true
+		}
+		if tsp.sampleOnFirstMatch && decision == samplingpolicy.Sampled {
 			return true
 		}
 	}
@@ -712,31 +728,27 @@ type tickCandidate struct {
 // runBatchPolicies runs any BatchEvaluator policies (e.g. rate_limiting or
 // bytes_limiting with the tracestate gate on) over the whole tick's
 // candidates at once, before any per-trace EvaluateWithThreshold call, so
-// they can make a decision consistent across the group. A no-op when no
-// policy is batch-aware.
+// each can compute a threshold from exactly the traces it will actually be
+// asked to judge. A no-op for any policy that is not batch-aware.
+//
+// Each batch policy gets its own candidate list, built with
+// decidedBeforePosition at that policy's own index: a policy near the end
+// of a long list, or configured with sample_on_first_match, can have a
+// smaller candidate pool than one earlier in the list, since more traces
+// may already be decided by the time evaluation would reach it.
 func (tsp *tailSamplingSpanProcessor) runBatchPolicies(ctx context.Context, candidates []tickCandidate) {
-	var batchPolicies []samplingpolicy.BatchEvaluator
-	for _, p := range tsp.policies {
-		if be, ok := p.evaluator.(samplingpolicy.BatchEvaluator); ok {
-			batchPolicies = append(batchPolicies, be)
+	for pos, p := range tsp.policies {
+		be, ok := p.evaluator.(samplingpolicy.BatchEvaluator)
+		if !ok {
+			continue
 		}
-	}
-	if len(batchPolicies) == 0 {
-		return
-	}
-
-	items := make([]*samplingpolicy.TraceData, 0, len(candidates))
-	for _, c := range candidates {
-		// Drop policies take precedence and are evaluated before all others
-		// in makeDecision, so a dropped trace must not spend batch budget
-		// (e.g. rate-limiting tokens). Excluding it here still lets the
-		// per-trace decision loop below drop it normally.
-		if !tsp.droppedByPolicy(ctx, c.id, c.data) {
-			items = append(items, c.data)
+		items := make([]*samplingpolicy.TraceData, 0, len(candidates))
+		for _, c := range candidates {
+			if !tsp.decidedBeforePosition(ctx, pos, c.id, c.data) {
+				items = append(items, c.data)
+			}
 		}
-	}
-	for _, be := range batchPolicies {
-		be.EvaluateBatch(ctx, items)
+		be.CalculateThreshold(ctx, items)
 	}
 }
 

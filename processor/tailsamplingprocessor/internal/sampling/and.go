@@ -100,17 +100,21 @@ var (
 	_ samplingpolicy.BatchEvaluator = (*batchAnd)(nil)
 )
 
-// EvaluateBatch narrows the batch to the traces that pass every non-batch
-// sub-policy (the "candidates") and forwards that subset to each nested
-// batch sub-policy. The per-trace EvaluateWithThreshold pass then combines
-// the nested policy's cached decision with the other sub-policies as usual.
+// CalculateThreshold narrows the batch to the traces that pass every
+// non-batch sub-policy (the "candidates") and forwards that subset to each
+// nested batch sub-policy so it can compute its own threshold. The normal
+// per-trace EvaluateWithThreshold pass then combines that threshold
+// comparison with the other sub-policies as usual, in order -- a trace this
+// And's own short-circuiting (on the first NotSampled) never reaches the
+// nested batch sub-policy for either, so excluding it here keeps it from
+// shifting a threshold it will never actually be judged against.
 //
 // Non-batch sub-policies must be deterministic with respect to a trace:
 // they are evaluated here to pick candidates and again during the
 // per-trace pass. This holds for the filter-style policies typically
 // combined with rate_limiting; a stateful non-batch sub-policy would be
 // evaluated twice.
-func (c *batchAnd) EvaluateBatch(ctx context.Context, batch []*samplingpolicy.TraceData) {
+func (c *batchAnd) CalculateThreshold(ctx context.Context, batch []*samplingpolicy.TraceData) {
 	candidates := make([]*samplingpolicy.TraceData, 0, len(batch))
 	for _, td := range batch {
 		if c.candidate(ctx, td) {
@@ -119,7 +123,7 @@ func (c *batchAnd) EvaluateBatch(ctx context.Context, batch []*samplingpolicy.Tr
 	}
 	for _, sub := range c.subpolicies {
 		if be, ok := sub.(samplingpolicy.BatchEvaluator); ok {
-			be.EvaluateBatch(ctx, candidates)
+			be.CalculateThreshold(ctx, candidates)
 		}
 	}
 }

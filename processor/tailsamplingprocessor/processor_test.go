@@ -1388,6 +1388,98 @@ func TestRateLimitingBatchExcludesDroppedTraces(t *testing.T) {
 	assert.Contains(t, sampled, keepBID, "both keepers should fit the budget; the dropped trace must not consume it")
 }
 
+// TestRateLimitingBatchRespectsSampleOnFirstMatch verifies that a trace
+// already decided Sampled by an earlier, higher-priority policy under
+// sample_on_first_match never reaches rate_limiting's EvaluateWithThreshold
+// at all, so it must not consume its budget or shift its threshold -- the
+// ordering bug the CalculateThreshold/EvaluateWithThreshold split (in place
+// of a single EvaluateBatch that decided and cached everything up front)
+// exists to fix.
+func TestRateLimitingBatchRespectsSampleOnFirstMatch(t *testing.T) {
+	gate := metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate
+	prev := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
+	})
+
+	settings := componenttest.NewNopTelemetrySettings()
+	priorityFilter, err := sampling.NewStringAttributeFilter(settings, "priority", []string{"high"}, false, 0, false)
+	require.NoError(t, err)
+	rl := sampling.NewRateLimitingWithBurstCapacity(settings, 2, 2)
+
+	// The filter comes first: under sample_on_first_match, a trace it
+	// matches is decided immediately and rate_limiting is never asked.
+	policies := []*policy{
+		{name: "priority-filter", evaluator: samplingpolicy.AsThresholdEvaluator(priorityFilter), attribute: metric.WithAttributes(attribute.String("policy", "priority-filter"))},
+		{name: "rate-limiting", evaluator: samplingpolicy.AsThresholdEvaluator(rl), attribute: metric.WithAttributes(attribute.String("policy", "rate-limiting"))},
+	}
+
+	traceIDWithRandomness := func(tag, msb byte) pcommon.TraceID {
+		var id [16]byte
+		id[0] = tag
+		id[9] = msb
+		return pcommon.TraceID(id)
+	}
+	// highPriorityID has the highest randomness of all four traces. If it
+	// wrongly consumed rate_limiting's budget (the bug this test guards
+	// against), it would take a slot from a or b, leaving room for only
+	// one of them instead of both.
+	highPriorityID := traceIDWithRandomness(1, 0xff)
+	aID := traceIDWithRandomness(2, 0xc0)
+	bID := traceIDWithRandomness(3, 0x80)
+	cID := traceIDWithRandomness(4, 0x40)
+
+	mkTrace := func(id pcommon.TraceID, highPriority bool) ptrace.Traces {
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetTraceID(id)
+		if highPriority {
+			span.Attributes().PutStr("priority", "high")
+		}
+		return traces
+	}
+
+	controller := newTestTSPController()
+	cfg := Config{
+		SamplingStrategy:        samplingStrategyTraceComplete,
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               defaultNumTraces,
+		ExpectedNewTracesPerSec: 64,
+		SampleOnFirstMatch:      true,
+		Options: []Option{
+			withPolicies(policies),
+			withUseTracestate(),
+			withTestController(controller),
+		},
+	}
+	nextConsumer := new(consumertest.TracesSink)
+	sp, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+	require.NoError(t, sp.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, sp.Shutdown(t.Context()))
+	}()
+
+	require.NoError(t, sp.ConsumeTraces(t.Context(), mkTrace(highPriorityID, true)))
+	require.NoError(t, sp.ConsumeTraces(t.Context(), mkTrace(aID, false)))
+	require.NoError(t, sp.ConsumeTraces(t.Context(), mkTrace(bID, false)))
+	require.NoError(t, sp.ConsumeTraces(t.Context(), mkTrace(cID, false)))
+
+	controller.waitForTick()
+	controller.waitForTick()
+
+	sampled := make(map[pcommon.TraceID]struct{})
+	for _, trace := range nextConsumer.AllTraces() {
+		sampled[trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()] = struct{}{}
+	}
+
+	assert.Contains(t, sampled, highPriorityID, "matched by the priority filter, decided before rate_limiting is ever asked")
+	assert.Contains(t, sampled, aID, "highest-randomness of the rate-limited traces")
+	assert.Contains(t, sampled, bID, "second-highest-randomness of the rate-limited traces")
+	assert.NotContains(t, sampled, cID, "budget of 2 should drop the lowest-randomness rate-limited trace, not one bumped out by highPriorityID")
+}
+
 func simpleTraces() ptrace.Traces {
 	return simpleTracesWithID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
 }

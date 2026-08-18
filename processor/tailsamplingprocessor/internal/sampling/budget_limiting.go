@@ -33,6 +33,19 @@ func traceSpanCount(trace *samplingpolicy.TraceData) int64 {
 // eligible for a decision and differ only in what a token measures, so the
 // batch machinery is parameterized by a cost function.
 //
+// CalculateThreshold computes a single threshold from the whole group of
+// traces that will actually reach this policy this tick (see
+// samplingpolicy.BatchEvaluator); the ordinary, per-trace
+// EvaluateWithThreshold call then just compares a trace's own randomness
+// against it. Deciding stays where every other policy already decides -- in
+// the normal per-trace, per-policy evaluation loop -- so a trace that a
+// higher-priority policy (a drop policy, or an earlier match under
+// sample_on_first_match) already decides never reaches this policy's
+// EvaluateWithThreshold at all, and correctly never spends its budget: it
+// is the caller's job to exclude such traces from the batch for the same
+// reason a trace that will not actually be asked should not shift the
+// threshold computed for the traces that will be.
+//
 // This implementation is only constructed when the usetracestate feature gate
 // is enabled; with the gate disabled the limiting policies stay on their
 // original per-trace token bucket, untouched.
@@ -45,34 +58,28 @@ type budgetLimiter struct {
 	// logMsg is recorded at debug level on each per-trace evaluation.
 	logMsg string
 
-	// batchDecisions holds the per-trace decisions precomputed by the
-	// most recent EvaluateBatch call, keyed by trace ID. It is rebuilt
-	// on every EvaluateBatch call. Access is confined to the single
-	// decision-tick goroutine (batch sampling is not used in span-ingest
-	// mode), so no additional synchronization is required.
-	batchDecisions map[pcommon.TraceID]batchDecision
-	// batchPrimed is set once EvaluateBatch has run for the current tick.
-	// When primed, a trace absent from batchDecisions was deliberately
-	// excluded from the batch (a drop policy will remove it, see
-	// tailSamplingSpanProcessor.runBatchPolicies, or it did not match a
-	// sibling filter in an enclosing `and` policy) and must be treated as
-	// NotSampled rather than falling back to per-trace admission, which
-	// would wrongly spend budget on a trace the batch already rejected.
-	batchPrimed bool
-}
-
-// batchDecision is a decision precomputed for a single trace during a
-// batch evaluation. threshold is only meaningful when decision is
-// Sampled.
-type batchDecision struct {
-	decision  samplingpolicy.Decision
+	// threshold is the live cutoff computed by the most recent
+	// CalculateThreshold call. Its zero value is AlwaysSampleThreshold, so
+	// a policy that has been batched at least once but whose last batch
+	// fit entirely within budget correctly imposes no restriction.
+	//
+	// Access is confined to the single decision-tick goroutine (batch
+	// sampling is not used in span-ingest mode), so no additional
+	// synchronization is required.
 	threshold sampling.Threshold
+	// primed is set the first time CalculateThreshold is ever called, and
+	// never cleared afterward. A policy that is never reachable through
+	// the processor's batch pre-pass at all (nested inside a composite
+	// policy, which does not support batching -- see the tracestate
+	// handling docs) stays unprimed forever and falls back to live
+	// per-trace token bucket admission instead of comparing against a
+	// threshold that would otherwise never be updated.
+	primed bool
 }
 
 // budgetItem is the per-trace data the batch sort works over, resolved
 // once from each trace so randomness and cost aren't recomputed.
 type budgetItem struct {
-	id         pcommon.TraceID
 	randomness sampling.Randomness
 	cost       int64
 }
@@ -96,26 +103,25 @@ var (
 	_ samplingpolicy.BatchEvaluator     = (*budgetLimiter)(nil)
 )
 
-// EvaluateBatch precomputes limiting decisions for a whole group of traces
-// so the policy can report a consistent sampling threshold. It spends the
-// currently available budget on the highest-randomness traces first and sets
-// the threshold at the point where the budget runs out; every kept trace then
-// satisfies threshold.ShouldSample(randomness) and every dropped trace does
-// not.
-func (b *budgetLimiter) EvaluateBatch(_ context.Context, batch []*samplingpolicy.TraceData) {
+// CalculateThreshold spends the currently available budget on the
+// highest-randomness traces in batch first and sets the threshold at the
+// point where the budget runs out: every trace in batch with randomness at
+// or above the result satisfies ShouldSample, and every trace below it does
+// not. It decides nothing itself and returns nothing; EvaluateWithThreshold
+// applies the result afterward.
+func (b *budgetLimiter) CalculateThreshold(_ context.Context, batch []*samplingpolicy.TraceData) {
+	b.primed = true
 	now := time.Now()
 	// The token bucket's current fill is the budget for this batch. Reading
 	// it here (rather than a fixed rate*interval) preserves the existing
 	// continuous-refill and burst behavior across ticks.
 	budget := int64(b.limiter.TokensAt(now))
 
-	// Resolve each trace's id, randomness, and cost once.
+	// Resolve each trace's randomness and cost once.
 	items := make([]budgetItem, len(batch))
 	for i, td := range batch {
-		id := td.TraceID()
 		items[i] = budgetItem{
-			id:         id,
-			randomness: ResolveRandomness(id, td.ReceivedBatches),
+			randomness: ResolveRandomness(td.TraceID(), td.ReceivedBatches),
 			cost:       b.cost(td),
 		}
 	}
@@ -141,11 +147,15 @@ func (b *budgetLimiter) EvaluateBatch(_ context.Context, batch []*samplingpolicy
 		cumulative += it.cost
 	}
 
-	// Threshold: AlwaysSample when the whole batch fits (nothing is
-	// limited, adjusted count 1). Otherwise the smallest randomness among
-	// the kept prefix, so kept traces pass and dropped ones do not.
-	threshold := sampling.AlwaysSampleThreshold
-	if kept < len(items) && kept > 0 {
+	switch {
+	case kept == len(items):
+		// Everything fit; nothing is limited.
+		b.threshold = sampling.AlwaysSampleThreshold
+	case kept == 0:
+		// Nothing fit, not even the single highest-randomness item alone.
+		b.threshold = sampling.NeverSampleThreshold
+		cumulative = 0
+	default:
 		// A threshold cannot separate traces that share the same
 		// randomness. If the first dropped trace ties the smallest kept
 		// one, drop the whole tied group so every kept trace is strictly
@@ -158,10 +168,12 @@ func (b *budgetLimiter) EvaluateBatch(_ context.Context, batch []*samplingpolicy
 			kept--
 			cumulative -= items[kept].cost
 		}
-		if kept > 0 {
+		if kept == 0 {
+			b.threshold = sampling.NeverSampleThreshold
+		} else {
 			// Error is unreachable: Randomness.Unsigned() is always in
 			// [0, MaxAdjustedCount), the valid threshold range.
-			threshold, _ = sampling.UnsignedToThreshold(items[kept-1].randomness.Unsigned())
+			b.threshold, _ = sampling.UnsignedToThreshold(items[kept-1].randomness.Unsigned())
 		}
 	}
 
@@ -171,45 +183,31 @@ func (b *budgetLimiter) EvaluateBatch(_ context.Context, batch []*samplingpolicy
 	if cumulative > 0 {
 		b.limiter.AllowN(now, int(cumulative))
 	}
-
-	decisions := make(map[pcommon.TraceID]batchDecision, len(items))
-	for i, it := range items {
-		if i < kept {
-			decisions[it.id] = batchDecision{decision: samplingpolicy.Sampled, threshold: threshold}
-		} else {
-			decisions[it.id] = batchDecision{decision: samplingpolicy.NotSampled}
-		}
-	}
-	b.batchDecisions = decisions
-	b.batchPrimed = true
 }
 
-// Evaluate looks at the trace data and returns a corresponding SamplingDecision based on token bucket consumption.
+// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (b *budgetLimiter) Evaluate(ctx context.Context, id pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	d, _, err := b.EvaluateWithThreshold(ctx, id, trace)
 	return d, err
 }
 
-// EvaluateWithThreshold returns the decision precomputed by EvaluateBatch
-// for this trace, along with the effective threshold. Traces that were never
-// part of a batch fall back to per-trace token-bucket admission reported as
-// always-sample; that happens in span-ingest mode, where the processor makes
-// decisions as spans arrive rather than over a group.
+// EvaluateWithThreshold compares this trace's own randomness against the
+// threshold CalculateThreshold last computed. A policy that has never been
+// reached through the batch pre-pass at all falls back to live per-trace
+// token bucket admission instead, so it still limits something.
 func (b *budgetLimiter) EvaluateWithThreshold(_ context.Context, id pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, sampling.Threshold, error) {
 	b.logger.Debug(b.logMsg)
 
-	if bd, ok := b.batchDecisions[id]; ok {
-		return bd.decision, bd.threshold, nil
-	}
-	if b.batchPrimed {
-		// The batch ran this tick but excluded this trace (it did not
-		// match a sibling filter), so it is not sampled. Do not fall
-		// through to per-trace admission and spend budget on it.
+	if !b.primed {
+		if b.limiter.AllowN(time.Now(), int(b.cost(trace))) {
+			return samplingpolicy.Sampled, sampling.AlwaysSampleThreshold, nil
+		}
 		return samplingpolicy.NotSampled, sampling.AlwaysSampleThreshold, nil
 	}
 
-	if b.limiter.AllowN(time.Now(), int(b.cost(trace))) {
-		return samplingpolicy.Sampled, sampling.AlwaysSampleThreshold, nil
+	randomness := ResolveRandomness(id, trace.ReceivedBatches)
+	if b.threshold.ShouldSample(randomness) {
+		return samplingpolicy.Sampled, b.threshold, nil
 	}
 	return samplingpolicy.NotSampled, sampling.AlwaysSampleThreshold, nil
 }

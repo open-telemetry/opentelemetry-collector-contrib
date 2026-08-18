@@ -209,7 +209,7 @@ func blTrace(tag byte, randomness uint64, padding int) *samplingpolicy.TraceData
 }
 
 // TestBytesLimiterBatchThreshold verifies that, with the tracestate gate on,
-// EvaluateBatch spends the byte budget on the highest-randomness traces first
+// CalculateThreshold spends the byte budget on the highest-randomness traces first
 // and reports a threshold at the boundary such that every kept trace
 // satisfies threshold.ShouldSample(randomness) and every dropped trace does
 // not.
@@ -225,7 +225,7 @@ func TestBytesLimiterBatchThreshold(t *testing.T) {
 	size := calculateTraceSize(a)
 	bl := NewBytesLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), size*2, size*2).(*budgetLimiter)
 
-	bl.EvaluateBatch(t.Context(), []*samplingpolicy.TraceData{a, b, c})
+	bl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{a, b, c})
 
 	wantThreshold, err := sampling.UnsignedToThreshold(50)
 	require.NoError(t, err)
@@ -262,7 +262,7 @@ func TestBytesLimiterBatchWholeBatchFits(t *testing.T) {
 	size := calculateTraceSize(traces[0])
 	bl := NewBytesLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), size*4, size*4).(*budgetLimiter)
 
-	bl.EvaluateBatch(t.Context(), traces)
+	bl.CalculateThreshold(t.Context(), traces)
 
 	for _, td := range traces {
 		decision, th, err := bl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
@@ -281,7 +281,7 @@ func TestBytesLimiterBatchLargeTraceDropped(t *testing.T) {
 	size := calculateTraceSize(td)
 	bl := NewBytesLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), size-1, size-1).(*budgetLimiter)
 
-	bl.EvaluateBatch(t.Context(), []*samplingpolicy.TraceData{td})
+	bl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{td})
 
 	decision, _, err := bl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
 	require.NoError(t, err)
@@ -308,7 +308,7 @@ func TestBytesLimiterBatchNonUniformSizes(t *testing.T) {
 	require.GreaterOrEqual(t, budget, small*2)
 	bl := NewBytesLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), budget, budget).(*budgetLimiter)
 
-	bl.EvaluateBatch(t.Context(), []*samplingpolicy.TraceData{a, b, c})
+	bl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{a, b, c})
 
 	// Only a is kept, so the threshold is a's own randomness.
 	wantThreshold, err := sampling.UnsignedToThreshold(100)
@@ -345,7 +345,7 @@ func TestBytesLimiterBatchCrossTick(t *testing.T) {
 	bl := NewBytesLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), 1, size*2).(*budgetLimiter)
 
 	first := []*samplingpolicy.TraceData{a, blTrace(2, 90, 0)}
-	bl.EvaluateBatch(t.Context(), first)
+	bl.CalculateThreshold(t.Context(), first)
 	for _, td := range first {
 		decision, _, err := bl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
 		require.NoError(t, err)
@@ -354,7 +354,7 @@ func TestBytesLimiterBatchCrossTick(t *testing.T) {
 
 	// Budget is spent, so nothing in the next batch is kept.
 	second := []*samplingpolicy.TraceData{blTrace(3, 80, 0), blTrace(4, 70, 0)}
-	bl.EvaluateBatch(t.Context(), second)
+	bl.CalculateThreshold(t.Context(), second)
 	for _, td := range second {
 		decision, _, err := bl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
 		require.NoError(t, err)

@@ -183,7 +183,7 @@ func TestAndBatchRateLimitingWithFilter(t *testing.T) {
 			ba, ok := and.(*batchAnd)
 			require.True(t, ok, "and containing a rate_limiting sub-policy should be batch-aware")
 
-			ba.EvaluateBatch(t.Context(), batch)
+			ba.CalculateThreshold(t.Context(), batch)
 
 			te := and.(samplingpolicy.ThresholdEvaluator)
 			for _, td := range batch {

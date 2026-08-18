@@ -116,22 +116,33 @@ type ThresholdEvaluator interface {
 	EvaluateWithThreshold(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, sampling.Threshold, error)
 }
 
-// BatchEvaluator is implemented by policies whose decision depends on
-// the whole group of traces eligible for a decision at once, rather
-// than on a single trace in isolation. The rate_limiting policy is the
-// canonical example: to report a consistent sampling threshold it must
-// sort the group by randomness and pick a threshold at the point where
-// the span budget runs out.
+// BatchEvaluator is implemented by policies whose threshold depends on the
+// whole group of traces eligible for a decision at once, rather than on a
+// single trace in isolation. The rate_limiting policy is the canonical
+// example: to report a consistent sampling threshold it must sort the
+// group by randomness and pick a threshold at the point where the span
+// budget runs out.
+//
+// Unlike a policy that only implements ThresholdEvaluator, a BatchEvaluator
+// does not decide any trace itself: it only updates the threshold that its
+// ordinary, per-trace EvaluateWithThreshold calls compare against
+// afterward. Deciding stays where it already happens, in the normal
+// per-trace, per-policy evaluation loop, so a trace that a higher-priority
+// policy already decides (e.g. under sample_on_first_match, or a drop
+// policy) never reaches this policy's EvaluateWithThreshold at all and
+// correctly never spends its budget -- exactly like any other policy a
+// trace never reaches today. CalculateThreshold's caller is responsible
+// for excluding such traces from the batch for the same reason: a trace
+// that will not actually be asked should not shift the threshold computed
+// for the traces that will be.
 type BatchEvaluator interface {
 	ThresholdEvaluator
-	// EvaluateBatch is called once per decision tick with every trace
-	// eligible for a decision, before any EvaluateWithThreshold call for
-	// those traces in the same tick. The policy precomputes and caches a
-	// decision for each trace (keyed by TraceData.TraceID()); the
-	// subsequent EvaluateWithThreshold call for a given trace ID returns
-	// the cached result. Traces that were not part of the batch fall back
-	// to per-trace evaluation.
-	EvaluateBatch(ctx context.Context, batch []*TraceData)
+	// CalculateThreshold is called once per decision tick with every trace
+	// that will actually reach this policy's EvaluateWithThreshold this
+	// tick, before any of those calls happen. It updates internal state
+	// (typically just the threshold) but returns nothing and decides
+	// nothing itself.
+	CalculateThreshold(ctx context.Context, batch []*TraceData)
 }
 
 type Extension interface {
