@@ -196,6 +196,8 @@ go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0 h1:LMuyCAy
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0/go.mod h1:085m8qbm4hgc8rZWGDEa4vmyyo2c3nPxUslYUKUIU04=
 go.opentelemetry.io/ebpf-profiler v0.0.202632 h1:CogE7a2G+6S4+949vN2dZNTM0qU4UBr+Hgx27LHPxHo=
 go.opentelemetry.io/ebpf-profiler v0.0.202632/go.mod h1:pdYPF2WfZh24GOpi3qvuvp4SIh85dOKTmq/ZBXKhy3g=
+go.opentelemetry.io/ebpf-profiler v0.0.202633 h1:mAksNG8iLtWref5JB+U/v6i+ccJ5nYBY6tC3H6Qcb9c=
+go.opentelemetry.io/ebpf-profiler v0.0.202633/go.mod h1:3xIBez3NMXJxkirokGdBykPMsZZEx+IaAVy8VTyFlrQ=
 go.opentelemetry.io/otel v1.45.0 h1:pdrWmLHofpubmArBv1LgFSv1Z0Ie/ppdZzu+kUN5EeU=
 go.opentelemetry.io/otel v1.45.0/go.mod h1:XZxIqPapzEYnhNSScF5DIqXhm/rYi0FzCe2XddAwZfQ=
 go.opentelemetry.io/otel/metric v1.45.0 h1:7Eg1uH7CJ5cXv9is6tnBe1FI6rj1nwUdbFypRm3br/M=
