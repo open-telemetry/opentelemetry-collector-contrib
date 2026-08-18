@@ -29,7 +29,7 @@ func TestConvertFieldValue(t *testing.T) {
 		},
 		{
 			name:     "numeric field with negative integer",
-			otelKey:  "thread.id",
+			otelKey:  "syslog.pid",
 			input:    "-2",
 			expected: int64(-2),
 		},
@@ -41,7 +41,7 @@ func TestConvertFieldValue(t *testing.T) {
 		},
 		{
 			name:     "numeric field with non-string value passes through",
-			otelKey:  "thread.id",
+			otelKey:  "syslog.pid",
 			input:    int64(42),
 			expected: int64(42),
 		},
@@ -181,10 +181,10 @@ func TestMapJournalEntryAttributes_KnownLogAttributes(t *testing.T) {
 		"CODE_FILE":         "/src/unit.c",
 		"CODE_FUNC":         "unit_log_success",
 		"CODE_LINE":         "42",
-		"TID":               "100",
 		"SYSLOG_FACILITY":   "3",
 		"SYSLOG_IDENTIFIER": "myapp",
 		"SYSLOG_PID":        "5678",
+		"SYSLOG_TIMESTAMP":  "Apr 16 15:17:06",
 	}
 	mapJournalEntryAttributes(e, body)
 
@@ -192,19 +192,19 @@ func TestMapJournalEntryAttributes_KnownLogAttributes(t *testing.T) {
 	assert.Equal(t, "/src/unit.c", e.Attributes["code.file.path"])
 	assert.Equal(t, "unit_log_success", e.Attributes["code.function.name"])
 	assert.Equal(t, int64(42), e.Attributes["code.line.number"])
-	assert.Equal(t, int64(100), e.Attributes["thread.id"])
 	assert.Equal(t, int64(3), e.Attributes["syslog.facility.code"])
-	assert.Equal(t, "myapp", e.Attributes["syslog.msg.id"])
+	assert.Equal(t, "myapp", e.Attributes["syslog.identifier"])
 	assert.Equal(t, int64(5678), e.Attributes["syslog.pid"])
+	assert.Equal(t, "Apr 16 15:17:06", e.Attributes["syslog.timestamp"])
 
 	// Original journald field names must not appear
 	assert.NotContains(t, e.Attributes, "CODE_FILE")
 	assert.NotContains(t, e.Attributes, "CODE_FUNC")
 	assert.NotContains(t, e.Attributes, "CODE_LINE")
-	assert.NotContains(t, e.Attributes, "TID")
 	assert.NotContains(t, e.Attributes, "SYSLOG_FACILITY")
 	assert.NotContains(t, e.Attributes, "SYSLOG_IDENTIFIER")
 	assert.NotContains(t, e.Attributes, "SYSLOG_PID")
+	assert.NotContains(t, e.Attributes, "SYSLOG_TIMESTAMP")
 }
 
 func TestMapJournalEntryAttributes_KnownResourceAttributes(t *testing.T) {
@@ -221,9 +221,10 @@ func TestMapJournalEntryAttributes_KnownResourceAttributes(t *testing.T) {
 	require.NotNil(t, e.Resource)
 	assert.Equal(t, "myhost", e.Resource["host.name"])
 	assert.Equal(t, int64(1234), e.Resource["process.pid"])
-	assert.Equal(t, "myapp", e.Resource["process.command"])
+	assert.Equal(t, "myapp", e.Resource["process.executable.name"])
 	assert.Equal(t, "/usr/bin/myapp", e.Resource["process.executable.path"])
 	assert.Equal(t, "/usr/bin/myapp --config /etc/myapp.conf", e.Resource["process.command_line"])
+	assert.NotContains(t, e.Resource, "service.name")
 
 	// Original trusted field names must not appear in resource
 	assert.NotContains(t, e.Resource, "_HOSTNAME")
@@ -297,6 +298,7 @@ func TestMapJournalEntryAttributes_FullEntry(t *testing.T) {
 		"CODE_LINE":         "100",
 		"TID":               "200",
 		"SYSLOG_FACILITY":   "1",
+		"SYSLOG_TIMESTAMP":  "Apr 16 15:17:06",
 		"SYSLOG_IDENTIFIER": "kernel",
 		"SYSLOG_PID":        "1",
 		"_HOSTNAME":         "box",
@@ -321,20 +323,22 @@ func TestMapJournalEntryAttributes_FullEntry(t *testing.T) {
 	assert.Equal(t, "main.c", e.Attributes["code.file.path"])
 	assert.Equal(t, "main", e.Attributes["code.function.name"])
 	assert.Equal(t, int64(100), e.Attributes["code.line.number"])
-	assert.Equal(t, int64(200), e.Attributes["thread.id"])
 	assert.Equal(t, int64(1), e.Attributes["syslog.facility.code"])
-	assert.Equal(t, "kernel", e.Attributes["syslog.msg.id"])
+	assert.Equal(t, "kernel", e.Attributes["syslog.identifier"])
 	assert.Equal(t, int64(1), e.Attributes["syslog.pid"])
+	assert.Equal(t, "Apr 16 15:17:06", e.Attributes["syslog.timestamp"])
 
 	// Resource attributes with OTel names
 	assert.Equal(t, "box", e.Resource["host.name"])
 	assert.Equal(t, int64(42), e.Resource["process.pid"])
-	assert.Equal(t, "init", e.Resource["process.command"])
+	assert.Equal(t, "init", e.Resource["process.executable.name"])
 	assert.Equal(t, "/sbin/init", e.Resource["process.executable.path"])
 	assert.Equal(t, "/sbin/init splash", e.Resource["process.command_line"])
+	assert.NotContains(t, e.Resource, "service.name")
 
 	// Unmapped fields land in attributes with "journald." prefix
 	assert.Equal(t, "kernel", e.Attributes["journald._TRANSPORT"])
+	assert.Equal(t, "200", e.Attributes["journald.TID"])
 	assert.Equal(t, "deadbeef", e.Attributes["journald._BOOT_ID"])
 	assert.Equal(t, "s=abc;i=1", e.Attributes["journald.__CURSOR"])
 

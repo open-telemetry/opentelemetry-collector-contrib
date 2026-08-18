@@ -252,18 +252,20 @@ func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, err
 		return nil, "", errors.New("journald field for cursor is not a string")
 	}
 
-	var e *entry.Entry
+	// When converting to semantic conventions the body is not used as-is, its
+	// fields are mapped onto the entry below instead.
+	var entryBody any
+	if !operator.ConvertToSemanticConventions {
+		entryBody = body
+	}
+
+	e, err := operator.NewEntry(entryBody)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to create entry: %w", err)
+	}
+
 	if operator.ConvertToSemanticConventions {
-		e, err = operator.NewEntry(nil)
-		if err != nil {
-			return nil, "", fmt.Errorf("failed to create entry: %w", err)
-		}
 		mapJournalEntryAttributes(e, body)
-	} else {
-		e, err = operator.NewEntry(body)
-		if err != nil {
-			return nil, "", fmt.Errorf("failed to create entry: %w", err)
-		}
 	}
 
 	e.Timestamp = time.Unix(0, timestampInt*1000) // in microseconds
