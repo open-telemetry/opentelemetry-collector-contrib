@@ -225,6 +225,7 @@ components:
     - processor/resource_detection
     - processor/scalewaydetector
     - processor/schema
+    - processor/signing
     - processor/span
     - processor/span_pruning
     - processor/sumologic
