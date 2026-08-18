@@ -59,5 +59,5 @@ var FilelogWindowsKeepFilesOpenFeatureGate = featuregate.GlobalRegistry().MustRe
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("On Windows, keep file handles open between poll cycles so that data written to a file that was rotated out of the matching pattern can still be read, matching the behavior on other platforms. When disabled (the default), files are closed immediately after each poll on Windows."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49213"),
-	featuregate.WithRegisterFromVersion("v0.159.0"),
+	featuregate.WithRegisterFromVersion("v0.160.0"),
 )
