@@ -3748,7 +3748,7 @@ func TestExporterTimeout_NoRetryOnTimeout(t *testing.T) {
 	var count atomic.Int32
 	done := make(chan struct{}, 1)
 	defer close(done)
-	server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
+	server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, _ *http.Request) {
 		if count.Add(1) == 1 {
 			<-done
 		}
@@ -3779,7 +3779,7 @@ func TestExporterTimeout_Independent(t *testing.T) {
 	// checking the total time elapsed across attempts exceeds configured timeout
 	successfulOnAttempt := 3
 	var count atomic.Int32
-	server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
+	server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, _ *http.Request) {
 		if int(count.Add(1)) < successfulOnAttempt {
 			w.WriteHeader(http.StatusTooManyRequests)
 			return
@@ -3812,5 +3812,5 @@ func TestExporterTimeout_Independent(t *testing.T) {
 	assert.ErrorAs(t, err, &errFlushFailed)
 	assert.ErrorContains(t, err, "418")
 	assert.Equal(t, int32(successfulOnAttempt), count.Load())
-	assert.GreaterOrEqual(t, time.Now().Sub(start), timeout)
+	assert.GreaterOrEqual(t, time.Since(start), timeout)
 }
