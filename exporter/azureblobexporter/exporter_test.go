@@ -25,8 +25,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -1108,5 +1111,60 @@ func TestConsumeLogsManyGroupsConcurrentUploads(t *testing.T) {
 	require.Len(t, client.uploads, 25)
 	for _, activity := range activities {
 		assert.Equal(t, []string{"log for " + activity}, uploadedLogBodies(t, client.uploads[activity+".json"]))
+	}
+}
+
+// TestPartitionWithQueueBatching wires the exporter behind the real
+// exporterhelper queue batcher, exactly as createLogsExporter does, and
+// verifies that requests merged by the batcher are partitioned back out to
+// their own blobs with no mixed or duplicated log records.
+func TestPartitionWithQueueBatching(t *testing.T) {
+	cfg := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
+	qCfg := exporterhelper.NewDefaultQueueConfig()
+	// Merge exactly the six records sent below into one request. The flush
+	// timeout is long so the batch is released by min_size, deterministically.
+	qCfg.Batch = configoptional.Some(exporterhelper.BatchConfig{
+		Sizer:        exporterhelper.RequestSizerTypeItems,
+		MinSize:      6,
+		FlushTimeout: 10 * time.Second,
+	})
+	cfg.QueueSettings = configoptional.Some(qCfg)
+
+	ae := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+	le, err := exporterhelper.NewLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg,
+		ae.ConsumeLogs,
+		exporterhelper.WithStart(ae.start),
+		exporterhelper.WithQueue(cfg.QueueSettings))
+	require.NoError(t, err)
+
+	require.NoError(t, le.Start(t.Context(), componenttest.NewNopHost()))
+	client := newRecordingAzBlobClient(nil)
+	ae.client = client
+
+	// Six single-record payloads, two per activity, interleaved. Each becomes
+	// its own queue request; the batcher merges them before ConsumeLogs runs.
+	for i := 0; i < 2; i++ {
+		for _, activity := range []string{"activity-a", "activity-b", "activity-c"} {
+			logs := plog.NewLogs()
+			rl := logs.ResourceLogs().AppendEmpty()
+			rl.Resource().Attributes().PutStr("activity-id", activity)
+			rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(fmt.Sprintf("log %d for %s", i, activity))
+			require.NoError(t, le.ConsumeLogs(t.Context(), logs))
+		}
+	}
+	require.NoError(t, le.Shutdown(t.Context()))
+
+	client.mu.Lock()
+	defer client.mu.Unlock()
+	require.Len(t, client.uploads, 3)
+	for _, activity := range []string{"activity-a", "activity-b", "activity-c"} {
+		payloads := client.uploads[activity+".json"]
+		// One upload per blob proves the batcher merged the six requests before
+		// partitioning; without merging there would be two appends per blob.
+		require.Len(t, payloads, 1, "expected one merged upload for %s", activity)
+		bodies := uploadedLogBodies(t, payloads)
+		require.ElementsMatch(t,
+			[]string{"log 0 for " + activity, "log 1 for " + activity},
+			bodies, "blob for %s must hold exactly its two records", activity)
 	}
 }
