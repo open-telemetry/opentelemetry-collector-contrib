@@ -10,13 +10,13 @@ import (
 	"math"
 	"slices"
 	"sort"
-	"strconv"
 	"time"
 	"unicode/utf8"
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/otlptranslator"
+	promLabels "github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
@@ -323,7 +323,7 @@ func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 			if pt.Flags().NoRecordedValue() {
 				bucket.Value = math.Float64frombits(value.StaleNaN)
 			}
-			boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
+			boundStr := promLabels.FormatOpenMetricsFloat(bound)
 			labels := createLabels(baseName+bucketStr, baseLabels, leStr, boundStr)
 			ts := c.addSample(bucket, labels)
 
@@ -495,7 +495,7 @@ func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDat
 			if pt.Flags().NoRecordedValue() {
 				quantile.Value = math.Float64frombits(value.StaleNaN)
 			}
-			percentileStr := strconv.FormatFloat(qt.Quantile(), 'f', -1, 64)
+			percentileStr := promLabels.FormatOpenMetricsFloat(qt.Quantile())
 			qtlabels := createLabels(baseName, baseLabels, quantileStr, percentileStr)
 			c.addSample(quantile, qtlabels)
 		}
