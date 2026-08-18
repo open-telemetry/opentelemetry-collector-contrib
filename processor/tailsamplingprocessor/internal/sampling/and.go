@@ -85,12 +85,8 @@ func (c *And) IsStateful() bool {
 }
 
 // batchAnd is an And that contains at least one batch sub-policy (e.g. a
-// rate_limiting policy). It exists so that a nested batch policy still
-// sees the group of traces as a batch, but restricted to the traces that
-// pass this And's other sub-policies. This makes the common
-// "rate-limit traces matching some attributes" configuration
-// (`and: [<attribute filter>, rate_limiting]`) spend its budget only on
-// the matching traces.
+// rate_limiting policy). It only passes traces that match the non-batch
+// sub-policies to the BatchEvaluator.
 type batchAnd struct {
 	*And
 }
@@ -101,14 +97,7 @@ var (
 )
 
 // CalculateThreshold narrows the batch to traces that pass every non-batch
-// sub-policy and forwards that subset to each nested batch sub-policy, so a
-// trace this And's own short-circuiting would never reach doesn't shift a
-// threshold it will never be judged against.
-//
-// Non-batch sub-policies must be deterministic: they are evaluated here to
-// pick candidates and again during the real per-trace pass. Fine for the
-// filter-style policies typically combined with rate_limiting; a stateful
-// one would be evaluated twice.
+// sub-policy and forwards that subset to each nested batch sub-policy.
 func (c *batchAnd) CalculateThreshold(ctx context.Context, batch []*samplingpolicy.TraceData) {
 	candidates := make([]*samplingpolicy.TraceData, 0, len(batch))
 	for _, td := range batch {

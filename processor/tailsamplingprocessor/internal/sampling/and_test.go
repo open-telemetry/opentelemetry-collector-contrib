@@ -128,25 +128,6 @@ func TestAndIsStatefulIfAnySubpolicyIsStateful(t *testing.T) {
 	assert.True(t, and.IsStateful())
 }
 
-// andSvcTrace builds single-span trace data carrying a "svc" attribute,
-// with a trace ID that encodes the given randomness in its low bytes and a
-// unique tag in its first byte.
-func andSvcTrace(tag byte, svc string, randomness uint64) *samplingpolicy.TraceData {
-	var id [16]byte
-	id[0] = tag
-	binary.BigEndian.PutUint64(id[8:], randomness)
-	traces := ptrace.NewTraces()
-	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	span.SetTraceID(pcommon.TraceID(id))
-	span.Attributes().PutStr("svc", svc)
-	return &samplingpolicy.TraceData{SpanCount: 1, ReceivedBatches: traces}
-}
-
-// TestAndBatchRateLimitingWithFilter covers the common "rate-limit traces
-// matching some attributes" configuration: and(<attribute filter>,
-// rate_limiting). Only traces that pass the filter compete for the rate
-// budget, and traces that fail the filter neither sample nor consume
-// budget regardless of sub-policy order.
 func TestAndBatchRateLimitingWithFilter(t *testing.T) {
 	enableTracestateFeatureGate(t)
 
@@ -193,4 +174,18 @@ func TestAndBatchRateLimitingWithFilter(t *testing.T) {
 			}
 		})
 	}
+}
+
+// andSvcTrace builds single-span trace data carrying a "svc" attribute,
+// with a trace ID that encodes the given randomness in its low bytes and a
+// unique tag in its first byte.
+func andSvcTrace(tag byte, svc string, randomness uint64) *samplingpolicy.TraceData {
+	var id [16]byte
+	id[0] = tag
+	binary.BigEndian.PutUint64(id[8:], randomness)
+	traces := ptrace.NewTraces()
+	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetTraceID(pcommon.TraceID(id))
+	span.Attributes().PutStr("svc", svc)
+	return &samplingpolicy.TraceData{SpanCount: 1, ReceivedBatches: traces}
 }

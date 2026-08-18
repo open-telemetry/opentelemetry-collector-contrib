@@ -37,7 +37,7 @@ func NewBytesLimiting(settings component.TelemetrySettings, bytesPerSecond int64
 // decision so kept traces can report the threshold that admitted them.
 func NewBytesLimitingWithBurstCapacity(settings component.TelemetrySettings, bytesPerSecond, burstCapacity int64) samplingpolicy.Evaluator {
 	if metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate.IsEnabled() {
-		return newBudgetLimiter(settings, bytesPerSecond, burstCapacity, calculateTraceSize, "Evaluating spans in bytes-limiting filter")
+		return newBudgetLimiter(settings, bytesPerSecond, burstCapacity, calculateTraceSize)
 	}
 
 	// Create rate limiter with specified rate and burst capacity

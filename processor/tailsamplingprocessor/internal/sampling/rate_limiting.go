@@ -40,7 +40,7 @@ func NewRateLimiting(settings component.TelemetrySettings, spansPerSecond int64)
 // decision so kept traces can report the threshold that admitted them.
 func NewRateLimitingWithBurstCapacity(settings component.TelemetrySettings, spansPerSecond, burstCapacity int64) samplingpolicy.Evaluator {
 	if metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate.IsEnabled() {
-		return newBudgetLimiter(settings, spansPerSecond, burstCapacity, traceSpanCount, "Evaluating spans in rate-limiting filter")
+		return newBudgetLimiter(settings, spansPerSecond, burstCapacity, traceSpanCount)
 	}
 	return &rateLimiting{
 		limiter: rate.NewLimiter(rate.Limit(spansPerSecond), int(burstCapacity)),
