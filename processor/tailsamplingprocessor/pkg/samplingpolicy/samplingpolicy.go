@@ -22,22 +22,6 @@ type TraceData struct {
 	ReceivedBatches ptrace.Traces
 }
 
-// TraceID returns the trace ID carried by the trace's spans, or the zero
-// ID if the trace has no spans. All spans in a trace share the same trace
-// ID, so the first span found is authoritative.
-func (td *TraceData) TraceID() pcommon.TraceID {
-	rss := td.ReceivedBatches.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
-		sss := rss.At(i).ScopeSpans()
-		for j := 0; j < sss.Len(); j++ {
-			if spans := sss.At(j).Spans(); spans.Len() > 0 {
-				return spans.At(0).TraceID()
-			}
-		}
-	}
-	return pcommon.TraceID{}
-}
-
 // Decision gives the status of sampling decision.
 type Decision int32
 

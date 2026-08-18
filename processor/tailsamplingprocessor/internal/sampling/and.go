@@ -126,7 +126,7 @@ func (c *batchAnd) CalculateThreshold(ctx context.Context, batch []*samplingpoli
 // candidate reports whether a trace passes every non-batch sub-policy, and
 // is therefore eligible to be considered by the nested batch sub-policy.
 func (c *batchAnd) candidate(ctx context.Context, td *samplingpolicy.TraceData) bool {
-	id := td.TraceID()
+	id := traceIDOf(td)
 	for _, sub := range c.subpolicies {
 		if _, ok := sub.(BatchEvaluator); ok {
 			// Decided by the batch pass below, not part of the filter.

@@ -160,10 +160,10 @@ func TestAndBatchRateLimitingWithFilter(t *testing.T) {
 	batch := []*samplingpolicy.TraceData{d, a, b, c}
 
 	want := map[pcommon.TraceID]samplingpolicy.Decision{
-		a.TraceID(): samplingpolicy.Sampled,    // matches filter, within budget of 2
-		b.TraceID(): samplingpolicy.Sampled,    // matches filter, within budget of 2
-		c.TraceID(): samplingpolicy.NotSampled, // matches filter, over budget
-		d.TraceID(): samplingpolicy.NotSampled, // fails filter, no budget spent
+		traceIDOf(a): samplingpolicy.Sampled,    // matches filter, within budget of 2
+		traceIDOf(b): samplingpolicy.Sampled,    // matches filter, within budget of 2
+		traceIDOf(c): samplingpolicy.NotSampled, // matches filter, over budget
+		traceIDOf(d): samplingpolicy.NotSampled, // fails filter, no budget spent
 	}
 
 	// Run with the filter first and with the rate limiter first to confirm
@@ -187,9 +187,9 @@ func TestAndBatchRateLimitingWithFilter(t *testing.T) {
 
 			te := and.(samplingpolicy.ThresholdEvaluator)
 			for _, td := range batch {
-				decision, _, err := te.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+				decision, _, err := te.EvaluateWithThreshold(t.Context(), traceIDOf(td), td)
 				require.NoError(t, err)
-				assert.Equalf(t, want[td.TraceID()], decision, "trace %x", td.TraceID())
+				assert.Equalf(t, want[traceIDOf(td)], decision, "trace %x", traceIDOf(td))
 			}
 		})
 	}

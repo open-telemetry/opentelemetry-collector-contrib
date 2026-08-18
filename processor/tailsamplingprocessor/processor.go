@@ -171,11 +171,6 @@ func (*tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
 func (tsp *tailSamplingSpanProcessor) Start(_ context.Context, host component.Host) error {
 	tsp.host = host
 	if tsp.sampleOnFirstMatch && tsp.useTracestate {
-		// Not rejected outright: a config that orders policies so no later
-		// one could ever report a smaller (less strict) threshold than an
-		// earlier match is still correct, but that ordering can't be
-		// verified here (later policies' thresholds vary at runtime, e.g.
-		// a batch-aware rate_limiting policy's changes tick to tick).
 		tsp.logger.Warn("sample_on_first_match is enabled together with the tracestate feature gate; " +
 			"the reported sampling threshold is only correct if no policy after an earlier match " +
 			"could ever report a smaller (less strict) threshold for the same trace, since " +
@@ -697,12 +692,6 @@ func (tsp *tailSamplingSpanProcessor) waitForSpace(tickChan <-chan time.Time) {
 // budget on a trace a drop policy will remove. Drop policies are always
 // sorted to the front of tsp.policies (see loadSamplingPolicies), so this
 // stops at the first non-drop policy rather than scanning everything.
-//
-// This is the only case a batch policy's candidates need to account for:
-// Config.Validate rejects sample_on_first_match together with the
-// tracestate gate, since sample_on_first_match's early exit is also
-// incompatible with reporting the correct (smallest) threshold across every
-// policy that would sample a trace, batch-aware or not.
 func (tsp *tailSamplingSpanProcessor) droppedByPolicy(ctx context.Context, id pcommon.TraceID, td *samplingpolicy.TraceData) bool {
 	for _, p := range tsp.policies {
 		if !p.isDrop {

@@ -139,7 +139,7 @@ func TestRateLimiterBatchThreshold(t *testing.T) {
 		{"b", b, 50, samplingpolicy.Sampled},
 		{"c", c, 10, samplingpolicy.NotSampled},
 	} {
-		decision, th, err := rl.EvaluateWithThreshold(t.Context(), tc.td.TraceID(), tc.td)
+		decision, th, err := rl.EvaluateWithThreshold(t.Context(), traceIDOf(tc.td), tc.td)
 		require.NoError(t, err)
 		assert.Equal(t, tc.want, decision, tc.name)
 		if tc.want == samplingpolicy.Sampled {
@@ -164,7 +164,7 @@ func TestRateLimiterBatchWholeBatchFits(t *testing.T) {
 	rl.CalculateThreshold(t.Context(), traces)
 
 	for _, td := range traces {
-		decision, th, err := rl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+		decision, th, err := rl.EvaluateWithThreshold(t.Context(), traceIDOf(td), td)
 		require.NoError(t, err)
 		assert.Equal(t, samplingpolicy.Sampled, decision)
 		assert.Equal(t, sampling.AlwaysSampleThreshold, th)
@@ -212,7 +212,7 @@ func TestRateLimiterBatchLargeTraceDropped(t *testing.T) {
 	td := rlTrace(1, 100, 5) // 5 spans > budget of 2
 	rl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{td})
 
-	decision, _, err := rl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+	decision, _, err := rl.EvaluateWithThreshold(t.Context(), traceIDOf(td), td)
 	require.NoError(t, err)
 	assert.Equal(t, samplingpolicy.NotSampled, decision)
 }
@@ -242,7 +242,7 @@ func TestRateLimiterBatchNonUniformSpanCounts(t *testing.T) {
 		{"b", b, samplingpolicy.Sampled},
 		{"c", c, samplingpolicy.NotSampled},
 	} {
-		decision, th, err := rl.EvaluateWithThreshold(t.Context(), tc.td.TraceID(), tc.td)
+		decision, th, err := rl.EvaluateWithThreshold(t.Context(), traceIDOf(tc.td), tc.td)
 		require.NoError(t, err)
 		assert.Equal(t, tc.want, decision, tc.name)
 		if tc.want == samplingpolicy.Sampled {
@@ -281,7 +281,7 @@ func TestRateLimiterBatchBoundaryTie(t *testing.T) {
 		{"c", c, 50, samplingpolicy.NotSampled},
 		{"d", d, 10, samplingpolicy.NotSampled},
 	} {
-		decision, th, err := rl.EvaluateWithThreshold(t.Context(), tc.td.TraceID(), tc.td)
+		decision, th, err := rl.EvaluateWithThreshold(t.Context(), traceIDOf(tc.td), tc.td)
 		require.NoError(t, err)
 		assert.Equal(t, tc.want, decision, tc.name)
 		if tc.want == samplingpolicy.Sampled {
@@ -308,7 +308,7 @@ func TestRateLimiterBatchCrossTick(t *testing.T) {
 	first := []*samplingpolicy.TraceData{rlTrace(1, 100, 1), rlTrace(2, 90, 1)}
 	rl.CalculateThreshold(t.Context(), first)
 	for _, td := range first {
-		decision, _, err := rl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+		decision, _, err := rl.EvaluateWithThreshold(t.Context(), traceIDOf(td), td)
 		require.NoError(t, err)
 		assert.Equal(t, samplingpolicy.Sampled, decision)
 	}
@@ -320,7 +320,7 @@ func TestRateLimiterBatchCrossTick(t *testing.T) {
 	low := rlTrace(5, 10, 1)
 	rl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{high, mid, low})
 	assertDecision := func(td *samplingpolicy.TraceData, want samplingpolicy.Decision, msg string) {
-		decision, _, err := rl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+		decision, _, err := rl.EvaluateWithThreshold(t.Context(), traceIDOf(td), td)
 		require.NoError(t, err)
 		assert.Equal(t, want, decision, msg)
 	}
@@ -341,7 +341,7 @@ func TestRateLimiterBatchEmpty(t *testing.T) {
 	rl.CalculateThreshold(t.Context(), nil)
 
 	td := rlTrace(1, 100, 1)
-	decision, th, err := rl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+	decision, th, err := rl.EvaluateWithThreshold(t.Context(), traceIDOf(td), td)
 	require.NoError(t, err)
 	assert.Equal(t, samplingpolicy.Sampled, decision)
 	assert.Equal(t, sampling.AlwaysSampleThreshold, th)
@@ -356,7 +356,7 @@ func TestResolveRandomness(t *testing.T) {
 	// No tracestate: derived from the trace ID.
 	td := ptrace.NewTraces()
 	td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
-	assert.Equal(t, sampling.TraceIDToRandomness(traceID), ResolveRandomness(traceID, td))
+	assert.Equal(t, sampling.TraceIDToRandomness(traceID), resolveRandomness(traceID, td))
 
 	// Explicit rv in tracestate takes precedence over the trace ID.
 	tdRV := ptrace.NewTraces()
@@ -365,5 +365,5 @@ func TestResolveRandomness(t *testing.T) {
 	span.TraceState().FromRaw("ot=rv:ffffffffffffff")
 	want, err := sampling.RValueToRandomness("ffffffffffffff")
 	require.NoError(t, err)
-	assert.Equal(t, want, ResolveRandomness(traceID, tdRV))
+	assert.Equal(t, want, resolveRandomness(traceID, tdRV))
 }

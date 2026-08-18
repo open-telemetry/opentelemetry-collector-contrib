@@ -240,7 +240,7 @@ func TestBytesLimiterBatchThreshold(t *testing.T) {
 		{"b", b, 50, samplingpolicy.Sampled},
 		{"c", c, 10, samplingpolicy.NotSampled},
 	} {
-		decision, th, err := bl.EvaluateWithThreshold(t.Context(), tc.td.TraceID(), tc.td)
+		decision, th, err := bl.EvaluateWithThreshold(t.Context(), traceIDOf(tc.td), tc.td)
 		require.NoError(t, err)
 		assert.Equal(t, tc.want, decision, tc.name)
 		if tc.want == samplingpolicy.Sampled {
@@ -265,7 +265,7 @@ func TestBytesLimiterBatchWholeBatchFits(t *testing.T) {
 	bl.CalculateThreshold(t.Context(), traces)
 
 	for _, td := range traces {
-		decision, th, err := bl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+		decision, th, err := bl.EvaluateWithThreshold(t.Context(), traceIDOf(td), td)
 		require.NoError(t, err)
 		assert.Equal(t, samplingpolicy.Sampled, decision)
 		assert.Equal(t, sampling.AlwaysSampleThreshold, th)
@@ -283,7 +283,7 @@ func TestBytesLimiterBatchLargeTraceDropped(t *testing.T) {
 
 	bl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{td})
 
-	decision, _, err := bl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+	decision, _, err := bl.EvaluateWithThreshold(t.Context(), traceIDOf(td), td)
 	require.NoError(t, err)
 	assert.Equal(t, samplingpolicy.NotSampled, decision)
 }
@@ -323,7 +323,7 @@ func TestBytesLimiterBatchNonUniformSizes(t *testing.T) {
 		{"b", b, samplingpolicy.NotSampled},
 		{"c", c, samplingpolicy.NotSampled},
 	} {
-		decision, th, err := bl.EvaluateWithThreshold(t.Context(), tc.td.TraceID(), tc.td)
+		decision, th, err := bl.EvaluateWithThreshold(t.Context(), traceIDOf(tc.td), tc.td)
 		require.NoError(t, err)
 		assert.Equal(t, tc.want, decision, tc.name)
 		if tc.want == samplingpolicy.Sampled {
@@ -347,7 +347,7 @@ func TestBytesLimiterBatchCrossTick(t *testing.T) {
 	first := []*samplingpolicy.TraceData{a, blTrace(2, 90, 0)}
 	bl.CalculateThreshold(t.Context(), first)
 	for _, td := range first {
-		decision, _, err := bl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+		decision, _, err := bl.EvaluateWithThreshold(t.Context(), traceIDOf(td), td)
 		require.NoError(t, err)
 		assert.Equal(t, samplingpolicy.Sampled, decision)
 	}
@@ -356,7 +356,7 @@ func TestBytesLimiterBatchCrossTick(t *testing.T) {
 	second := []*samplingpolicy.TraceData{blTrace(3, 80, 0), blTrace(4, 70, 0)}
 	bl.CalculateThreshold(t.Context(), second)
 	for _, td := range second {
-		decision, _, err := bl.EvaluateWithThreshold(t.Context(), td.TraceID(), td)
+		decision, _, err := bl.EvaluateWithThreshold(t.Context(), traceIDOf(td), td)
 		require.NoError(t, err)
 		assert.Equal(t, samplingpolicy.NotSampled, decision)
 	}

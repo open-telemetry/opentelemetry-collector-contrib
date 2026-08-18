@@ -56,23 +56,15 @@ func traceSpanCount(trace *samplingpolicy.TraceData) int64 {
 }
 
 // budgetLimiter is the token-bucket sampling shared by the rate_limiting and
-// bytes_limiting policies. Both spend a per-second budget across the traces
-// eligible for a decision and differ only in what a token measures, so the
-// batch machinery is parameterized by a cost function.
-//
-// CalculateThreshold computes one threshold from the traces that will
-// actually reach this policy this tick; EvaluateWithThreshold then just
-// compares a trace's own randomness against it, in the normal per-trace
-// evaluation loop. A trace a higher-priority policy already decided (a drop
-// policy, or an earlier match under sample_on_first_match) never reaches
-// EvaluateWithThreshold, so it correctly never spends budget -- callers must
-// exclude such traces from the batch for the same reason.
+// bytes_limiting policies (see BatchEvaluator for how it decides). Both
+// spend a per-second budget across the traces eligible for a decision and
+// differ only in what a token measures, so the batch machinery is
+// parameterized by a cost function.
 //
 // Only constructed when the usetracestate feature gate is enabled; with the
 // gate disabled the limiting policies stay on their original per-trace
 // token bucket, untouched.
 type budgetLimiter struct {
-	// Token bucket implemented by golang.org/x/time/rate.
 	limiter *rate.Limiter
 	// cost reports the tokens a single trace consumes from the bucket.
 	cost   traceCostFunc
@@ -135,11 +127,10 @@ func (b *budgetLimiter) CalculateThreshold(_ context.Context, batch []*samplingp
 	// continuous-refill and burst behavior across ticks.
 	budget := int64(b.limiter.TokensAt(now))
 
-	// Resolve each trace's randomness and cost once.
 	items := make([]budgetItem, len(batch))
 	for i, td := range batch {
 		items[i] = budgetItem{
-			randomness: ResolveRandomness(td.TraceID(), td.ReceivedBatches),
+			randomness: resolveRandomness(traceIDOf(td), td.ReceivedBatches),
 			cost:       b.cost(td),
 		}
 	}
@@ -220,7 +211,7 @@ func (b *budgetLimiter) EvaluateWithThreshold(_ context.Context, id pcommon.Trac
 		return samplingpolicy.NotSampled, sampling.AlwaysSampleThreshold, nil
 	}
 
-	randomness := ResolveRandomness(id, trace.ReceivedBatches)
+	randomness := resolveRandomness(id, trace.ReceivedBatches)
 	if b.threshold.ShouldSample(randomness) {
 		return samplingpolicy.Sampled, b.threshold, nil
 	}
