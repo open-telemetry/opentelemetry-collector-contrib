@@ -12,6 +12,7 @@ import (
 	"github.com/shirou/gopsutil/v4/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/scraper"
@@ -92,6 +93,17 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	oCfg := cfg.(*Config)
+
+	if metadata.ReceiverHostmetricsDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+		if err := featuregate.GlobalRegistry().Set("scraper.process.DontEmitV0SystemConventions", true); err != nil {
+			return nil, fmt.Errorf("failed to disable the process scraper v0 conventions: %w", err)
+		}
+	}
+	if metadata.ReceiverHostmetricsEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if err := featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", true); err != nil {
+			return nil, fmt.Errorf("failed to enable the process scraper v1 conventions: %w", err)
+		}
+	}
 
 	addScraperOptions, err := createAddScraperOptions(ctx, oCfg, scraperFactories)
 	if err != nil {
