@@ -35,7 +35,7 @@ func (h handler) OnAdd(obj any, _ bool) {
 
 	switch object := obj.(type) {
 	case *discoveryv1.EndpointSlice:
-		ok, endpoints = convertToEndpoints(h.returnNames, object)
+		ok, endpoints = convertToEndpoints(h.logger, h.returnNames, object)
 		if !ok {
 			// Some endpoints were missing hostnames and were skipped. Still add
 			// the ones we could resolve; the rest are picked up on a later event
@@ -52,6 +52,7 @@ func (h handler) OnAdd(obj any, _ bool) {
 	changed := false
 	for ep := range endpoints {
 		if _, loaded := h.endpoints.LoadOrStore(ep, true); !loaded {
+			h.logger.Info("adding ready endpoint to load balancing", zap.String("endpoint", ep))
 			changed = true
 		}
 	}
@@ -70,8 +71,8 @@ func (h handler) OnUpdate(oldObj, newObj any) {
 			return
 		}
 
-		_, oldEndpoints := convertToEndpoints(h.returnNames, oldEps)
-		newOk, newEndpoints := convertToEndpoints(h.returnNames, newEps)
+		_, oldEndpoints := convertToEndpoints(h.logger, h.returnNames, oldEps)
+		newOk, newEndpoints := convertToEndpoints(h.logger,h.returnNames, newEps)
 		if !newOk {
 			// The new slice has endpoint(s) without a hostname yet. Those are
 			// skipped and picked up on a later event once their hostname is
@@ -88,9 +89,13 @@ func (h handler) OnUpdate(oldObj, newObj any) {
 		changed := false
 
 		// Iterate through old endpoints and remove those that are not in the new list.
+		// An endpoint that turned not-ready (e.g. its pod started terminating) is filtered
+		// out of newEndpoints by convertToEndpoints and removed here, before the pod object
+		// is deleted.
 		for ep := range oldEndpoints {
 			if _, ok := newEndpoints[ep]; !ok {
 				h.endpoints.Delete(ep)
+				h.logger.Info("removing endpoint from load balancing", zap.String("endpoint", ep))
 				changed = true
 			}
 		}
@@ -98,6 +103,7 @@ func (h handler) OnUpdate(oldObj, newObj any) {
 		// Iterate through new endpoints and add those that are not in the endpoints map already.
 		for ep := range newEndpoints {
 			if _, loaded := h.endpoints.LoadOrStore(ep, true); !loaded {
+				h.logger.Info("adding ready endpoint to load balancing", zap.String("endpoint", ep))
 				changed = true
 			}
 		}
@@ -125,7 +131,7 @@ func (h handler) OnDelete(obj any) {
 		return
 	case *discoveryv1.EndpointSlice:
 		if object != nil {
-			ok, endpoints = convertToEndpoints(h.returnNames, object)
+			ok, endpoints = convertToEndpoints(h.logger, h.returnNames, object)
 			if !ok {
 				// Some endpoints lacked hostnames (and so were never tracked);
 				// still remove the ones we can resolve.
@@ -141,6 +147,7 @@ func (h handler) OnDelete(obj any) {
 	if len(endpoints) != 0 {
 		for endpoint := range endpoints {
 			h.endpoints.Delete(endpoint)
+			h.logger.Info("removing endpoint from load balancing", zap.String("endpoint", endpoint))
 		}
 		_, _ = h.callback(context.Background())
 	}
@@ -157,11 +164,22 @@ func (h handler) OnDelete(obj any) {
 // is populated during a rollout, and dropping the whole slice in that window
 // meant pods that churned out were never removed from the resolver's store,
 // leaking dead pod hostnames without bound.
-func convertToEndpoints(retNames bool, eps ...*discoveryv1.EndpointSlice) (bool, map[string]bool) {
+func convertToEndpoints(logger *zap.Logger, retNames bool, eps ...*discoveryv1.EndpointSlice) (bool, map[string]bool) {
 	res := map[string]bool{}
 	ok := true
 	for _, ep := range eps {
 		for _, endpoint := range ep.Endpoints {
+			// Per the EndpointSlice API, a nil Ready condition means "unknown" and
+			// consumers should treat it as ready. Skip only endpoints that are
+			// explicitly not ready (e.g. their pod is terminating or failing its
+			// readiness probe) so they leave the ring before delivery starts failing.
+			if endpoint.Conditions.Ready != nil && !*endpoint.Conditions.Ready {
+				logger.Debug("skipping endpoint that is not ready",
+					zap.Strings("addresses", endpoint.Addresses),
+					zap.Boolp("serving", endpoint.Conditions.Serving),
+					zap.Boolp("terminating", endpoint.Conditions.Terminating))
+				continue
+			}
 			for _, addr := range endpoint.Addresses {
 				if retNames {
 					if endpoint.Hostname == nil || *endpoint.Hostname == "" {
