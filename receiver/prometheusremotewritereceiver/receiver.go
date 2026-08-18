@@ -980,15 +980,18 @@ func convertNHCBBuckets(histogram *writev2.Histogram) []uint64 {
 	if histogram.IsFloatHistogram() {
 		// Float histograms: values are absolute counts
 		bucketIdx := 0
+		countIdx := 0
+
 		for _, span := range histogram.PositiveSpans {
 			// Skip empty buckets based on offset
 			bucketIdx += int(span.Offset)
 
 			// Fill buckets for this span
-			for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && i < uint32(len(histogram.PositiveCounts)); i++ {
+			for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && countIdx < len(histogram.PositiveCounts); i++ {
 				if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
-					bucketCounts[bucketIdx] = uint64(histogram.PositiveCounts[i])
+					bucketCounts[bucketIdx] = uint64(histogram.PositiveCounts[countIdx])
 				}
+				countIdx++
 				bucketIdx++
 			}
 		}

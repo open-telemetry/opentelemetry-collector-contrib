@@ -1200,6 +1200,77 @@ func TestTranslateV2(t *testing.T) {
 			}(),
 		},
 		{
+			name: "NHCB translation with float counts across multiple spans",
+			// The second span must read the bucket values that follow the first span's, so bucket
+			// 0 gets 10 and bucket 2 gets 20. The integer path above already does this.
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__",
+					"test_hncb_histogram",
+					"job",
+					"test",
+					"instance",
+					"localhost:8080",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Timestamp:      123456789,
+								StartTimestamp: 123456000,
+								Schema:         -53,
+								Sum:            30.0,
+								Count:          &writev2.Histogram_CountFloat{CountFloat: 30},
+								CustomValues:   []float64{1.0, 2.0, 5.0},
+								PositiveSpans: []writev2.BucketSpan{
+									{Offset: 0, Length: 1},
+									{Offset: 1, Length: 1},
+								},
+								PositiveCounts: []float64{10, 20},
+							},
+						},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Histograms: 1,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "localhost:8080")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m1 := sm.Metrics().AppendEmpty()
+				m1.SetName("test_hncb_histogram")
+				m1.SetUnit("")
+				m1.SetDescription("")
+				m1.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+				hist := m1.SetEmptyHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(pcommon.Timestamp(123456000 * int64(time.Millisecond)))
+				dp.SetTimestamp(pcommon.Timestamp(123456789 * int64(time.Millisecond)))
+				dp.SetSum(30.0)
+				dp.SetCount(30)
+				dp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 5.0})
+				dp.BucketCounts().FromRaw([]uint64{10, 0, 20, 0})
+
+				return metrics
+			}(),
+		},
+		{
 			name: "NHCB translation with stale NaN",
 			request: &writev2.Request{
 				Symbols: []string{

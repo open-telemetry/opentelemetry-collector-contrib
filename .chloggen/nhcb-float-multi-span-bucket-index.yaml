@@ -1,0 +1,14 @@
+change_type: bug_fix
+
+component: receiver/prometheus_remote_write
+
+note: Read the correct bucket values for float custom bucket histograms that use more than one span.
+
+issues: [50331]
+
+subtext: |
+  The float branch restarted the bucket value index at every span, so the second
+  and later spans of a Native Histogram with Custom Buckets were filled with the
+  values belonging to the first span. The integer branch was already correct.
+
+change_logs: [user]
