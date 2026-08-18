@@ -88,6 +88,41 @@ func TestScraper(t *testing.T) {
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
+// TestScraperClusterUUID verifies that when the opt-in elasticsearch.cluster.uuid resource
+// attribute is enabled, every emitted resource carries the cluster UUID from the metadata endpoint.
+func TestScraperClusterUUID(t *testing.T) {
+	t.Parallel()
+
+	config := createDefaultConfig().(*Config)
+	config.MetricsBuilderConfig.ResourceAttributes.ElasticsearchClusterUUID.Enabled = true
+
+	sc := newElasticSearchScraper(receivertest.NewNopSettings(metadata.Type), config)
+	require.NoError(t, sc.start(t.Context(), componenttest.NewNopHost()))
+
+	mockClient := mocks.MockElasticsearchClient{}
+	mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
+	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
+	mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
+	mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
+	mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStatsLinux(t), nil)
+	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
+	sc.client = &mockClient
+
+	expectedUUID := clusterMetadata(t).ClusterUUID
+	require.NotEmpty(t, expectedUUID)
+
+	actualMetrics, err := sc.scrape(t.Context())
+	require.NoError(t, err)
+
+	resourceMetrics := actualMetrics.ResourceMetrics()
+	require.Positive(t, resourceMetrics.Len())
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		uuid, ok := resourceMetrics.At(i).Resource().Attributes().Get("elasticsearch.cluster.uuid")
+		require.True(t, ok, "elasticsearch.cluster.uuid attribute missing on resource %d", i)
+		require.Equal(t, expectedUUID, uuid.Str())
+	}
+}
+
 func TestScraperNoIOStats(t *testing.T) {
 	t.Parallel()
 
