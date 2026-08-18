@@ -321,7 +321,7 @@ sampler:
 
 The `fingerprint` names the attributes that identify what kind of trace this is for sampling purposes. Each distinct fingerprint value gets its own adaptive sample rate, so choose attributes that classify traffic (route, status code, method, service) rather than identify individual requests (user IDs, request IDs, raw URLs), which would give every trace its own key and defeat the adaptation.
 
-The fingerprint for a trace is built by collecting distinct values of each named attribute, sorting and joining them with `,` within each attribute, then joining the attributes with the `•` separator. Values are collected from resource attributes and from every span of the trace, so the fingerprint reflects the whole trace rather than any single span: a trace whose spans carry several values for one attribute keys as the combination (e.g. `checkout,billing•/api`). Missing attributes are replaced with `<missing>`.
+The fingerprint for a trace is built by collecting distinct values of each named attribute, sorting and joining them with `,` within each attribute, then joining the attributes with the `•` separator. Values are collected from resource attributes and from every span of the trace, so the fingerprint reflects the whole trace rather than any single span: a trace whose spans carry several values for one attribute keys as the combination (e.g. `checkout,billing•/api`), which is worth knowing when debugging unexpectedly high key cardinality. Missing attributes are replaced with `<missing>`.
 
 ## Worked examples
 

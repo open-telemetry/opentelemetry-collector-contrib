@@ -1140,3 +1140,232 @@ func TestProcessor_Eviction_TriggeredTraceNotDoubleCounted(t *testing.T) {
 		metricdatatest.IgnoreExemplars(),
 	)
 }
+
+func TestProcessor_RuleConditionRuntimeEvalError(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  10 * time.Millisecond,
+		DecisionDelay: time.Millisecond,
+		NumTraces:     10,
+		DecisionCache: DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
+		Rules: []RuleConfig{
+			// Compiles, but errors at eval time: Double() cannot convert the
+			// non-numeric string attribute. No catch-all, so an errored (and
+			// therefore non-matching) condition means the trace is dropped.
+			{Name: "bad-eval", Conditions: []string{`Double(span.attributes["s"]) > 0.5`}, Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
+
+	td := newTrace(pcommon.TraceID([16]byte{0xF1}), ptrace.StatusCodeUnset)
+	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("s", "not-a-number")
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	// The trace times out, the condition errors, the rule does not match, and
+	// the trace is dropped rather than wedged.
+	assert.Eventually(t, func() bool {
+		p.mu.Lock()
+		defer p.mu.Unlock()
+		return len(p.traces) == 0
+	}, time.Second, 10*time.Millisecond)
+	assert.Equal(t, 0, sink.SpanCount(), "errored condition must be treated as non-match")
+	metadatatest.AssertEqualProcessorDynamicSamplingOttlEvalErrors(t, tt,
+		[]metricdata.DataPoint[int64]{{
+			Value:      1,
+			Attributes: attribute.NewSet(attribute.String("rule", "bad-eval")),
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
+}
+
+func TestProcessor_RootSpanConditionRuntimeEvalError(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:      10 * time.Millisecond,
+		DecisionDelay:     time.Millisecond,
+		NumTraces:         10,
+		DecisionCache:     DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
+		RootSpanCondition: `Double(span.attributes["s"]) > 0.5`,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
+
+	td := newRootTrace(pcommon.TraceID([16]byte{0xF2}))
+	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("s", "not-a-number")
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	// The erroring condition is a non-match, so the trace is not root-span
+	// triggered; it still gets decided by trace_timeout and forwarded.
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 1
+	}, time.Second, 10*time.Millisecond)
+	metadatatest.AssertEqualProcessorDynamicSamplingOttlEvalErrors(t, tt,
+		[]metricdata.DataPoint[int64]{{
+			Value:      1,
+			Attributes: attribute.NewSet(attribute.String("rule", "_root_span_condition")),
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
+	metadatatest.AssertEqualProcessorDynamicSamplingDecisionTriggers(t, tt,
+		[]metricdata.DataPoint[int64]{{
+			Value:      1,
+			Attributes: attribute.NewSet(attribute.String("trigger", "trace_timeout")),
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
+}
+
+func TestProcessor_MultiResourceTraceInOneBatch(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Millisecond,
+		NumTraces:     10,
+		DecisionCache: DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	id := pcommon.TraceID([16]byte{0xF3})
+	td := ptrace.NewTraces()
+	// Resource A: the root span.
+	rsA := td.ResourceSpans().AppendEmpty()
+	rsA.Resource().Attributes().PutStr("service.name", "frontend")
+	spanA := rsA.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	spanA.SetTraceID(id)
+	spanA.SetSpanID([8]byte{1})
+	spanA.SetName("root")
+	// Resource B: a child span of the same trace in the same batch.
+	rsB := td.ResourceSpans().AppendEmpty()
+	rsB.Resource().Attributes().PutStr("service.name", "backend")
+	spanB := rsB.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	spanB.SetTraceID(id)
+	spanB.SetSpanID([8]byte{2})
+	spanB.SetParentSpanID([8]byte{1})
+	spanB.SetName("child")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 2
+	}, time.Second, 10*time.Millisecond)
+
+	out := sink.AllTraces()[0]
+	require.Equal(t, 2, out.ResourceSpans().Len(), "both resources must survive into the decided trace")
+	services := map[string]bool{}
+	for i := 0; i < out.ResourceSpans().Len(); i++ {
+		rs := out.ResourceSpans().At(i)
+		v, ok := rs.Resource().Attributes().Get("service.name")
+		require.True(t, ok)
+		services[v.AsString()] = true
+		span := rs.ScopeSpans().At(0).Spans().At(0)
+		rule, ok := span.Attributes().Get(ruleAttributeKey)
+		require.True(t, ok, "every span must carry the rule attribute")
+		assert.Equal(t, "default", rule.AsString())
+		assert.Contains(t, span.TraceState().AsRaw(), "th:")
+	}
+	assert.True(t, services["frontend"] && services["backend"], "distinct resource attributes must be preserved")
+
+	// Late batch for the same (sampled) trace, again split across two
+	// resources: both parts must be stamped and forwarded via the cache path.
+	late := ptrace.NewTraces()
+	for i, svc := range []string{"frontend", "backend"} {
+		rs := late.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("service.name", svc)
+		sp := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		sp.SetTraceID(id)
+		sp.SetSpanID([8]byte{byte(10 + i)})
+		sp.SetParentSpanID([8]byte{1})
+		sp.SetName("late")
+	}
+	require.NoError(t, p.ConsumeTraces(t.Context(), late))
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 4
+	}, time.Second, 10*time.Millisecond)
+	// Late spans forward one Traces per (trace, resource) bucket rather than
+	// one merged payload; what must hold is that every late span is stamped
+	// and its resource preserved.
+	lateServices := map[string]bool{}
+	lateSpans := 0
+	for _, out := range sink.AllTraces()[1:] {
+		for i := 0; i < out.ResourceSpans().Len(); i++ {
+			rs := out.ResourceSpans().At(i)
+			v, ok := rs.Resource().Attributes().Get("service.name")
+			require.True(t, ok)
+			lateServices[v.AsString()] = true
+			span := rs.ScopeSpans().At(0).Spans().At(0)
+			assert.Contains(t, span.TraceState().AsRaw(), "th:", "late spans must be stamped with the original threshold")
+			lateSpans++
+		}
+	}
+	assert.Equal(t, 2, lateSpans)
+	assert.True(t, lateServices["frontend"] && lateServices["backend"], "late spans must keep their own resource attributes")
+}
+
+func TestProcessor_ThroughputSamplersEndToEnd(t *testing.T) {
+	for _, alg := range []SamplerAlgorithm{AlgorithmEMA, AlgorithmWindowed} {
+		t.Run(string(alg), func(t *testing.T) {
+			sink := &consumertest.TracesSink{}
+			cfg := &Config{
+				TraceTimeout:  time.Hour,
+				DecisionDelay: time.Millisecond,
+				NumTraces:     10,
+				DecisionCache: DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
+				Rules: []RuleConfig{
+					{Name: "default", Sampler: SamplerConfig{
+						Type:           DynamicThroughput,
+						Algorithm:      alg,
+						GoalThroughput: 1000,
+						Fingerprint:    []string{"service.name"},
+					}},
+				},
+			}
+			p := newTestProcessor(t, cfg, sink)
+
+			// All traces forward regardless of the sampler's initial rate
+			// (the trace IDs carry maximal randomness), each with a valid
+			// ot=th. This pins the end-to-end wiring (keying, GetSampleRate,
+			// threshold composition) for both types.
+			for i := range 3 {
+				// Max out the randomness bytes so the traces are kept at any
+				// initial rate the sampler chooses; the test pins the wiring,
+				// not the rate.
+				id := [16]byte{0xF4, byte(i)}
+				for j := 9; j < 16; j++ {
+					id[j] = 0xFF
+				}
+				td := newRootTrace(pcommon.TraceID(id))
+				td.ResourceSpans().At(0).Resource().Attributes().PutStr("service.name", "svc")
+				require.NoError(t, p.ConsumeTraces(t.Context(), td))
+			}
+			assert.Eventually(t, func() bool {
+				return sink.SpanCount() == 3
+			}, time.Second, 10*time.Millisecond)
+			span := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+			assert.Contains(t, span.TraceState().AsRaw(), "ot=th:", "kept spans must carry a threshold")
+		})
+	}
+}
