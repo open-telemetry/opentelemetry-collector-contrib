@@ -198,8 +198,8 @@ github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee h1:W5t00kpgFd
 github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
-github.com/open-telemetry/otel-arrow/go v0.50.0 h1:pIuhxiZMRq8H7HcpSvU7eb3/ysAzjUd1JezHcv1ZN1Q=
-github.com/open-telemetry/otel-arrow/go v0.50.0/go.mod h1:MumAhbE7/t6lAKkYSUN5ox80/iQVUQanxPPcVgPuvEI=
+github.com/open-telemetry/otel-arrow/go v0.51.0 h1:R5NmrJ3X8RdqkR+UNAaUSuHID37MHKk9MvIAiBr0H4U=
+github.com/open-telemetry/otel-arrow/go v0.51.0/go.mod h1:IU5tda493/mJCHAYk43uCcouIEiSEjjXQnefH7/3G6g=
 github.com/openzipkin/zipkin-go v0.4.3 h1:9EGwpqkgnwdEIJ+Od7QVSEIH+ocmm5nPat0G7sjsSdg=
 github.com/openzipkin/zipkin-go v0.4.3/go.mod h1:M9wCJZFWCo2RiY+o1eBCEMe0Dp2S5LDHcMZmk3RmK7c=
 github.com/pierrec/lz4/v4 v4.1.28 h1:pPEPwRJ4kybBTfGt28q7lQsRJQHhC08axprdLD5Ppio=
