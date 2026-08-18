@@ -798,8 +798,8 @@ func TestConsumeLogsPartitionsByRenderedBlobName(t *testing.T) {
 	require.True(t, ok, "expected an upload for activity-a.json, got %v", uploads)
 	assert.Equal(t, 2, logsA.ResourceLogs().Len())
 	for i := 0; i < logsA.ResourceLogs().Len(); i++ {
-		val, ok := logsA.ResourceLogs().At(i).Resource().Attributes().Get("activity-id")
-		require.True(t, ok)
+		val, attrOK := logsA.ResourceLogs().At(i).Resource().Attributes().Get("activity-id")
+		require.True(t, attrOK)
 		assert.Equal(t, "activity-a", val.Str())
 	}
 
@@ -933,7 +933,7 @@ func newRecordingAzBlobClient(failures map[string]int) *recordingAzBlobClient {
 	}
 }
 
-func (c *recordingAzBlobClient) URL() string { return "http://mock" }
+func (*recordingAzBlobClient) URL() string { return "http://mock" }
 
 func (c *recordingAzBlobClient) record(blobName string, data []byte) error {
 	c.mu.Lock()
@@ -1102,7 +1102,7 @@ func TestConsumeLogsManyGroupsConcurrentUploads(t *testing.T) {
 
 	// More groups than maxConcurrentUploads to exercise the semaphore.
 	activities := make([]string, 0, 25)
-	for i := 0; i < 25; i++ {
+	for i := range 25 {
 		activities = append(activities, fmt.Sprintf("activity-%02d", i))
 	}
 	logs := generateLogsWithActivities(activities...)
@@ -1143,7 +1143,7 @@ func TestPartitionWithQueueBatching(t *testing.T) {
 
 	// Six single-record payloads, two per activity, interleaved. Each becomes
 	// its own queue request; the batcher merges them before ConsumeLogs runs.
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		for _, activity := range []string{"activity-a", "activity-b", "activity-c"} {
 			logs := plog.NewLogs()
 			rl := logs.ResourceLogs().AppendEmpty()

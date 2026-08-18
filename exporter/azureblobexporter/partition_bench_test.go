@@ -16,7 +16,7 @@ import (
 func benchLogs(resources, recordsPerResource int, distinctNames bool) plog.Logs {
 	logs := plog.NewLogs()
 	body := strings.Repeat("x", 100)
-	for i := 0; i < resources; i++ {
+	for i := range resources {
 		rl := logs.ResourceLogs().AppendEmpty()
 		name := "same-activity"
 		if distinctNames {
@@ -24,7 +24,7 @@ func benchLogs(resources, recordsPerResource int, distinctNames bool) plog.Logs 
 		}
 		rl.Resource().Attributes().PutStr("activity-id", name)
 		sl := rl.ScopeLogs().AppendEmpty()
-		for j := 0; j < recordsPerResource; j++ {
+		for range recordsPerResource {
 			sl.LogRecords().AppendEmpty().Body().SetStr(body)
 		}
 	}
@@ -69,7 +69,7 @@ func BenchmarkMarshalLogsBaseline(b *testing.B) {
 	logs := benchLogs(10, 100, false)
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if _, err := e.marshaller.marshalLogs(logs); err != nil {
 			b.Fatal(err)
 		}
