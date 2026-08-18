@@ -64,7 +64,7 @@ The following configuration options can also be modified:
   - `non_sampled_cache_size` (default = 0) Configures amount of trace IDs to be kept in an LRU cache,
     persisting the "drop" decisions for traces that may have already been released from memory.
     By default, the size is 0 and the cache is inactive.
-- `sample_on_first_match`: Make decision as soon as a policy matches
+- `sample_on_first_match`: Make decision as soon as a policy matches. Do not combine with the `processor.tailsamplingprocessor.usetracestate` feature gate; see [Tracestate handling](#tracestate-handling).
 - `drop_pending_traces_on_shutdown`: Drop pending traces on shutdown instead of making a decision with the partial data
   already ingested.
 - `maximum_trace_size_bytes`: The maximum size a trace can reach in bytes, traces larger than this size will be immediately dropped from the tail sampling processor in order to protect the system.
@@ -328,14 +328,13 @@ This configuration allows:
 
 ## Tracestate handling
 
-The `processor.tailsamplingprocessor.usetracestate` feature gate (alpha, off by default) opts the processor into reading and writing the OpenTelemetry probability sampling fields (`rv` and `th` in the `ot` section) of the W3C `tracestate`. This lets the tail sampler interoperate with upstream samplers (for example, an SDK or another collector running the [probabilistic sampling processor][probabilistic_sampling_processor]) so that adjusted counts remain correct end-to-end.
+The `processor.tailsamplingprocessor.usetracestate` feature gate (alpha, off by default) opts the processor into reading and writing the OpenTelemetry probability sampling fields (`rv` and `th` in the `ot` section) of the W3C `tracestate`. This lets the tail sampler interoperate with upstream samplers (for example, an SDK or another collector running the [probabilistic sampling processor][probabilistic_sampling_processor]) so that adjusted counts remain correct end-to-end. Do not combine this gate with `sample_on_first_match`; the two are not compatible.
 
 When the gate is enabled:
 
 - The `probabilistic` policy makes its decision against the trace's randomness from `tracestate`: it uses the explicit `rv` value if present, or otherwise the W3C-derived randomness from the trace ID, compared against the configured threshold. If no probability sampling information is present, the policy falls back to FNV-hashing the trace ID with the configured `hash_salt`.
 - The `rate_limiting` and `bytes_limiting` policies report the sampling threshold they actually applied, instead of always-sample, whether configured as top-level policies or nested inside an `and` policy (for example, rate-limiting only the traces that match an attribute filter). The underlying token bucket is unchanged — same continuous refill, same `burst_capacity` — so the limit is still respected exactly, not just on average. When there's enough budget for every trace up for a decision, nothing is throttled; when there isn't, the highest-randomness traces are kept (the same selection a probabilistic sampler would make), and the reported threshold matches that selection so adjusted counts stay correct. Nesting either policy inside a `composite` policy does not currently get this treatment and falls back to today's always-sample reporting.
 - When a trace is sampled, the processor rewrites each span's outgoing `th` to the smallest effective threshold across all sampling policies that voted to sample. Filter-style policies (those that don't sample probabilistically) imply `th=0` / always-sample. Spans whose existing `th` is already stricter are left alone.
-- Combining `sample_on_first_match` with the gate logs a warning at startup: computing the smallest threshold above requires evaluating every policy that could sample a trace, but `sample_on_first_match` stops at the first match. The reported threshold is only correct if policies are ordered so a later one could never report a smaller threshold than an earlier match for the same trace — safe if every policy involved has a fixed, known probability, but not something the processor can verify for you.
 
 ## A Practical Example
 
