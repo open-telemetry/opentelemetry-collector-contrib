@@ -205,11 +205,12 @@ type SamplerConfig struct {
 	// Used by: dynamic_throughput.
 	GoalThroughput int `mapstructure:"goal_throughput"`
 
-	// KeyAttributes is the list of attribute names used to build the sampling
-	// key. Values are sourced from resource attributes and span attributes
-	// across the accumulated trace.
+	// FingerprintAttributes is the list of attribute names that identify what kind of
+	// trace this is for sampling purposes. Values are collected from resource
+	// attributes and from every span of the accumulated trace, so the
+	// fingerprint reflects the whole trace rather than any single span.
 	// Used by: dynamic_percentage, dynamic_throughput.
-	KeyAttributes []string `mapstructure:"key_attributes"`
+	FingerprintAttributes []string `mapstructure:"fingerprint_attributes"`
 
 	// MaxKeys caps the number of distinct sampling keys the sampler tracks.
 	// 0 means unlimited.
@@ -379,8 +380,8 @@ func (s *SamplerConfig) validate(ruleName string) error {
 		if s.GoalPercentage <= 0 || s.GoalPercentage > 100 {
 			return fmt.Errorf("rule %q: goal_percentage must be in (0, 100]", ruleName)
 		}
-		if len(s.KeyAttributes) == 0 {
-			return fmt.Errorf("rule %q: key_attributes must contain at least one entry", ruleName)
+		if len(s.FingerprintAttributes) == 0 {
+			return fmt.Errorf("rule %q: fingerprint_attributes must contain at least one entry", ruleName)
 		}
 		if s.Weight < 0 || s.Weight >= 1 {
 			return fmt.Errorf("rule %q: weight must be in [0, 1)", ruleName)
@@ -389,19 +390,19 @@ func (s *SamplerConfig) validate(ruleName string) error {
 			return fmt.Errorf("rule %q: max_keys must be non-negative", ruleName)
 		}
 		return s.rejectUnusedFields(ruleName, "dynamic_percentage", map[string]bool{
-			"algorithm":           true,
-			"goal_percentage":     true,
-			"key_attributes":      true,
-			"max_keys":            true,
-			"adjustment_interval": true,
-			"weight":              true,
+			"algorithm":              true,
+			"goal_percentage":        true,
+			"fingerprint_attributes": true,
+			"max_keys":               true,
+			"adjustment_interval":    true,
+			"weight":                 true,
 		})
 	case DynamicThroughput:
 		if s.GoalThroughput <= 0 {
 			return fmt.Errorf("rule %q: goal_throughput must be greater than zero", ruleName)
 		}
-		if len(s.KeyAttributes) == 0 {
-			return fmt.Errorf("rule %q: key_attributes must contain at least one entry", ruleName)
+		if len(s.FingerprintAttributes) == 0 {
+			return fmt.Errorf("rule %q: fingerprint_attributes must contain at least one entry", ruleName)
 		}
 		if s.MaxKeys < 0 {
 			return fmt.Errorf("rule %q: max_keys must be non-negative", ruleName)
@@ -412,12 +413,12 @@ func (s *SamplerConfig) validate(ruleName string) error {
 				return fmt.Errorf("rule %q: weight must be in [0, 1)", ruleName)
 			}
 			return s.rejectUnusedFields(ruleName, "dynamic_throughput (ema)", map[string]bool{
-				"algorithm":           true,
-				"goal_throughput":     true,
-				"key_attributes":      true,
-				"max_keys":            true,
-				"adjustment_interval": true,
-				"weight":              true,
+				"algorithm":              true,
+				"goal_throughput":        true,
+				"fingerprint_attributes": true,
+				"max_keys":               true,
+				"adjustment_interval":    true,
+				"weight":                 true,
 			})
 		case AlgorithmWindowed:
 			if s.UpdateFrequency < 0 {
@@ -427,12 +428,12 @@ func (s *SamplerConfig) validate(ruleName string) error {
 				return fmt.Errorf("rule %q: lookback_frequency must be non-negative", ruleName)
 			}
 			return s.rejectUnusedFields(ruleName, "dynamic_throughput (windowed)", map[string]bool{
-				"algorithm":          true,
-				"goal_throughput":    true,
-				"key_attributes":     true,
-				"max_keys":           true,
-				"update_frequency":   true,
-				"lookback_frequency": true,
+				"algorithm":              true,
+				"goal_throughput":        true,
+				"fingerprint_attributes": true,
+				"max_keys":               true,
+				"update_frequency":       true,
+				"lookback_frequency":     true,
 			})
 		default:
 			return fmt.Errorf("rule %q: unknown algorithm %q (must be %q or %q)", ruleName, s.Algorithm, AlgorithmEMA, AlgorithmWindowed)
@@ -474,7 +475,7 @@ func (s *SamplerConfig) rejectUnusedFields(ruleName, typeName string, allowed ma
 	if err := set("goal_throughput", s.GoalThroughput != 0); err != nil {
 		return err
 	}
-	if err := set("key_attributes", len(s.KeyAttributes) > 0); err != nil {
+	if err := set("fingerprint_attributes", len(s.FingerprintAttributes) > 0); err != nil {
 		return err
 	}
 	if err := set("max_keys", s.MaxKeys != 0); err != nil {

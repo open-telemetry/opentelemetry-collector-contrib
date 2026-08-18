@@ -1336,10 +1336,10 @@ func TestProcessor_ThroughputSamplersEndToEnd(t *testing.T) {
 				DecisionCache: DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
 				Rules: []RuleConfig{
 					{Name: "default", Sampler: SamplerConfig{
-						Type:           DynamicThroughput,
-						Algorithm:      alg,
-						GoalThroughput: 1000,
-						KeyAttributes:  []string{"service.name"},
+						Type:                  DynamicThroughput,
+						Algorithm:             alg,
+						GoalThroughput:        1000,
+						FingerprintAttributes: []string{"service.name"},
 					}},
 				},
 			}
