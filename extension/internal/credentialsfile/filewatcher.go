@@ -70,7 +70,7 @@ func (w *fileWatcher) Start(ctx context.Context) error {
 				return w.start(ctx)
 			}
 			counter++
-			if counter > w.retryCfg.MaxRetries {
+			if w.retryCfg.MaxRetries != 0 && counter > w.retryCfg.MaxRetries {
 				return fmt.Errorf("failed to read credentials file %q after reaching out max number of retries", w.path)
 			}
 			timer.Reset(w.retryCfg.Interval)

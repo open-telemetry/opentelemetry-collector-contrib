@@ -155,7 +155,7 @@ func TestValidate_RetryOnFailure(t *testing.T) {
 			wantErr: errRetryOnFailureNoFile,
 		},
 		{
-			name: "enabled with zero max_retries",
+			name: "enabled with zero max_retries retries indefinitely",
 			cfg: &Config{
 				Filename: "file.token",
 				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
@@ -163,7 +163,18 @@ func TestValidate_RetryOnFailure(t *testing.T) {
 					Interval: time.Second,
 				},
 			},
-			wantErrContains: "retry_on_failure.max_retries must be greater than 0",
+		},
+		{
+			name: "enabled with negative max_retries",
+			cfg: &Config{
+				Filename: "file.token",
+				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
+					Enabled:    true,
+					MaxRetries: -1,
+					Interval:   time.Second,
+				},
+			},
+			wantErrContains: "retry_on_failure.max_retries must be greater or equal to 0",
 		},
 		{
 			name: "enabled with zero interval",
