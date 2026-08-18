@@ -2,7 +2,7 @@ change_type: breaking
 
 component: processor/dynamic_sampling
 
-note: Rename the sampler `key_attributes` field to `fingerprint`
+note: Rename the sampler `key_attributes` field to `fingerprint_attributes`
 
 issues: [49311]
 
