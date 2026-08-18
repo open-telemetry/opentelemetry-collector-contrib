@@ -518,7 +518,7 @@ func TestBearerStartWithRetryOnFailure(t *testing.T) {
 	cfg.RetryOnFailure = credentialsfile.RetryOnFailureConfig{
 		Enabled:    true,
 		MaxRetries: 20,
-		Offset:     100 * time.Millisecond,
+		Interval:     100 * time.Millisecond,
 	}
 
 	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
@@ -546,7 +546,7 @@ func TestBearerStartWithRetryOnFailureGivesUp(t *testing.T) {
 	cfg.RetryOnFailure = credentialsfile.RetryOnFailureConfig{
 		Enabled:    true,
 		MaxRetries: 2,
-		Offset:     50 * time.Millisecond,
+		Interval:     50 * time.Millisecond,
 	}
 
 	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))

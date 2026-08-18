@@ -38,4 +38,4 @@ bearertokenauth/withretryonfailure:
   retry_on_failure:
     enabled: true
     max_retries: 5
-    offset: 2s
+    interval: 2s

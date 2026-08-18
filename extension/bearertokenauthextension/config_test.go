@@ -108,7 +108,7 @@ func TestLoadConfig(t *testing.T) {
 				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
 					Enabled:    true,
 					MaxRetries: 5,
-					Offset:     2 * time.Second,
+					Interval:     2 * time.Second,
 				},
 			},
 		},
@@ -149,7 +149,7 @@ func TestValidate_RetryOnFailure(t *testing.T) {
 				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
 					Enabled:    true,
 					MaxRetries: 1,
-					Offset:     time.Second,
+					Interval:     time.Second,
 				},
 			},
 			wantErr: errRetryOnFailureNoFile,
@@ -160,13 +160,13 @@ func TestValidate_RetryOnFailure(t *testing.T) {
 				Filename: "file.token",
 				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
 					Enabled: true,
-					Offset:  time.Second,
+					Interval:  time.Second,
 				},
 			},
 			wantErrContains: "retry_on_failure.max_retries must be greater than 0",
 		},
 		{
-			name: "enabled with zero offset",
+			name: "enabled with zero interval",
 			cfg: &Config{
 				Filename: "file.token",
 				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
@@ -174,7 +174,7 @@ func TestValidate_RetryOnFailure(t *testing.T) {
 					MaxRetries: 1,
 				},
 			},
-			wantErrContains: "retry_on_failure.offset must be greater than 0",
+			wantErrContains: "retry_on_failure.interval must be greater than 0",
 		},
 		{
 			name: "enabled with valid values",
@@ -183,7 +183,7 @@ func TestValidate_RetryOnFailure(t *testing.T) {
 				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
 					Enabled:    true,
 					MaxRetries: 3,
-					Offset:     time.Second,
+					Interval:     time.Second,
 				},
 			},
 		},
@@ -193,7 +193,7 @@ func TestValidate_RetryOnFailure(t *testing.T) {
 				Filename: "file.token",
 				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
 					MaxRetries: 0,
-					Offset:     0,
+					Interval:     0,
 				},
 			},
 		},

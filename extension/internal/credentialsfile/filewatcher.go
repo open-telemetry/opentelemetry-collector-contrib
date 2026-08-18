@@ -54,16 +54,14 @@ func (w *fileWatcher) Start(ctx context.Context) error {
 		return w.start(ctx)
 	}
 
-	// Retry reading the file, waiting Offset between each attempt, up to
-	// MaxRetries times before giving up.
-	timer := time.NewTimer(w.retryCfg.Offset)
+	// Try reading the file immediately, then retry waiting Interval between
+	// each attempt, up to MaxRetries times before giving up. The Interval is
+	// only applied after a failed attempt, so an already-present file is read
+	// without any delay.
+	timer := time.NewTimer(0)
 	defer timer.Stop()
 	counter := 0
 	for {
-		if counter > w.retryCfg.MaxRetries {
-			return fmt.Errorf("failed to read credentials file %q after reaching out max number of retries", w.path)
-		}
-
 		select {
 		case <-ctx.Done():
 			return fmt.Errorf("failed to read credentials file %q after %d retry", w.path, counter)
@@ -72,7 +70,10 @@ func (w *fileWatcher) Start(ctx context.Context) error {
 				return w.start(ctx)
 			}
 			counter++
-			timer.Reset(w.retryCfg.Offset)
+			if counter > w.retryCfg.MaxRetries {
+				return fmt.Errorf("failed to read credentials file %q after reaching out max number of retries", w.path)
+			}
+			timer.Reset(w.retryCfg.Interval)
 		}
 	}
 }

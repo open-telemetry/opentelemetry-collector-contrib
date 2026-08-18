@@ -17,7 +17,7 @@ issues: [50122]
 # Use pipe (|) for multiline entries.
 subtext: |
   Useful when the token file (e.g. a Kubernetes-mounted secret) is provisioned shortly after the
-  collector starts. Configure `enabled`, `max_retries`, and `offset` under `retry_on_failure`.
+  collector starts. Configure `enabled`, `max_retries`, and `interval` under `retry_on_failure`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

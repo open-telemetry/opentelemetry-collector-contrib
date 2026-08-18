@@ -61,7 +61,7 @@ func TestFileWatcher_StartFailsMissingFile(t *testing.T) {
 func TestFileWatcher_StartWithRetryOptionToleratesMissingFile(t *testing.T) {
 	t.Parallel()
 	r, err := NewValueResolver("", "/nonexistent/path/secret", zaptest.NewLogger(t),
-		WithRetry(RetryOnFailureConfig{Enabled: true, MaxRetries: 1, Offset: time.Second}))
+		WithRetry(RetryOnFailureConfig{Enabled: true, MaxRetries: 1, Interval: time.Second}))
 	require.NoError(t, err)
 	require.Error(t, r.Start(t.Context()))
 }
@@ -73,7 +73,7 @@ func TestFileWatcher_PicksUpFileAfterItAppears(t *testing.T) {
 	f := filepath.Join(dir, "secret")
 
 	r, err := NewValueResolver("", f, zaptest.NewLogger(t),
-		WithRetry(RetryOnFailureConfig{Enabled: true, MaxRetries: 5, Offset: 100 * time.Millisecond}))
+		WithRetry(RetryOnFailureConfig{Enabled: true, MaxRetries: 5, Interval: 100 * time.Millisecond}))
 	require.NoError(t, err)
 	defer func() { require.NoError(t, r.Shutdown()) }()
 
@@ -96,6 +96,27 @@ func TestFileWatcher_PicksUpFileAfterItAppears(t *testing.T) {
 	case <-ctx.Done():
 		t.Fatal("timeout waiting for Start with retry")
 	}
+}
+
+func TestFileWatcher_RetryDoesNotWaitWhenFileExists(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	f := filepath.Join(dir, "secret")
+	require.NoError(t, os.WriteFile(f, []byte("secret"), 0o600))
+
+	// A large Interval must not delay startup when the file already exists:
+	// the interval is only applied after a failed read attempt.
+	r, err := NewValueResolver("", f, zaptest.NewLogger(t),
+		WithRetry(RetryOnFailureConfig{Enabled: true, MaxRetries: 1, Interval: time.Hour}))
+	require.NoError(t, err)
+	defer func() { require.NoError(t, r.Shutdown()) }()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	require.NoError(t, r.Start(ctx))
+	assert.Equal(t, "secret", r.Value())
 }
 
 func TestFileWatcher_StartFailsEmptyFile(t *testing.T) {

@@ -33,7 +33,7 @@ The authenticator type has to be set to `bearertokenauth`.
 - `retry_on_failure`: Optional. Controls retry behaviour during startup when the file referenced by `filename` is not yet available (e.g., the secret is mounted shortly after the collector starts).
   - `enabled`: When true, startup waits for the file to appear instead of failing immediately. Defaults to `false`.
   - `max_retries`: Maximum number of retry attempts before giving up.
-  - `offset`: Interval between retry attempts (e.g., `1s`, `500ms`).
+  - `interval`: Interval between retry attempts (e.g., `1s`, `500ms`).
 
 Either one of `token` or `filename` field is required. If both are specified, then the `token` field value is **ignored**. In any case, the value of the token will be prepended by `${scheme}` before being sent as a value of "authorization" key in the request header in case of HTTP and metadata in case of gRPC.
 

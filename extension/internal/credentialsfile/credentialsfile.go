@@ -16,7 +16,7 @@ import (
 var (
 	errNoValueProvided                 = errors.New("no value or file path provided")
 	errRetryOnFailureInvalidMaxRetries = errors.New("retry_on_failure.max_retries must be greater than 0 when retry_on_failure.enabled is true")
-	errRetryOnFailureInvalidOffset     = errors.New("retry_on_failure.offset must be greater than 0 when retry_on_failure.enabled is true")
+	errRetryOnFailureInvalidInterval   = errors.New("retry_on_failure.interval must be greater than 0 when retry_on_failure.enabled is true")
 )
 
 // ValueResolver provides access to a secret value that may come from
@@ -39,8 +39,8 @@ type RetryOnFailureConfig struct {
 	// MaxRetries is the maximum number of times to retry reading the file.
 	MaxRetries int `mapstructure:"max_retries,omitempty"`
 
-	// Offset is the interval between retries.
-	Offset time.Duration `mapstructure:"offset,omitempty"`
+	// Interval is the interval between retries.
+	Interval time.Duration `mapstructure:"interval,omitempty"`
 }
 
 func (rfg *RetryOnFailureConfig) Validate() error {
@@ -48,8 +48,8 @@ func (rfg *RetryOnFailureConfig) Validate() error {
 		if rfg.MaxRetries <= 0 {
 			return errRetryOnFailureInvalidMaxRetries
 		}
-		if rfg.Offset <= 0 {
-			return errRetryOnFailureInvalidOffset
+		if rfg.Interval <= 0 {
+			return errRetryOnFailureInvalidInterval
 		}
 	}
 	return nil
