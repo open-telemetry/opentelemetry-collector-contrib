@@ -99,6 +99,14 @@ As mentioned in [Histogram Atomicity](#histogram-atomicity), Prometheus Classic 
 
 Summaries suffer from the same problem, a working Summary is composed by several time series just like Classic Histograms. The only difference is that instead of bucket boundaries, these time series represent pre-calculated quantiles. Since the quantiles can be sent in separate Remote Write requests, it's impossible to determine if the amount of quantiles received are enough to generate a complete Summary.
 
+### Only integer, counter flavored Native Histograms are translated
+
+The Prometheus compatibility specification requires native histograms of the float or gauge flavors to be dropped, for both the standard schemas and custom buckets. A histogram whose reset hint is `GAUGE`, or whose counts arrive as floats, is therefore not translated. Float bucket populations can be fractional or non-finite and have no faithful representation in an OpenTelemetry histogram, whose bucket counts are unsigned integers.
+
+A custom bucket histogram that carries no bounds is translated rather than dropped. The bounds sit between buckets, so a histogram with none of them still has the bucket above the last one, which is the shape Prometheus produces for a classic histogram whose only bucket was `+Inf`.
+
+The data point count is rebuilt from what the translated histogram holds, rather than copied from the count Prometheus sent. For the exponential schemas that is the zero count plus the retained bucket populations, and for custom buckets it is the bucket counts. The two differ whenever an observation is not represented by a bucket, which happens for observations of NaN and for the overflow bucket. When nothing at all could be represented the count is zero, and the sum is then left unset, since OpenTelemetry requires the sum to be zero once the count is.
+
 ### Native Histogram bucket spans
 
 Prometheus encodes Native Histogram buckets sparsely, as spans of populated buckets separated by gaps, while OTLP encodes them densely, as one contiguous list of bucket counts per range. A short list of spans can therefore describe a very wide dense range. Two limits bound the memory and CPU spent on that expansion:

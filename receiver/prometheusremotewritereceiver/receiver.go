@@ -568,6 +568,19 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			continue
 		}
 
+		// The compatibility specification requires native histograms of the float flavor to be
+		// dropped; the gauge flavor is already rejected above. This has to come before the stale
+		// check, otherwise a stale float histogram would be accepted by accident.
+		if histogram.IsFloatHistogram() {
+			prw.settings.Logger.Debug(
+				"Dropping float flavored Native Histogram",
+				zapcore.Field{Key: "metric_name", Type: zapcore.StringType, String: metricName},
+				zapcore.Field{Key: "job", Type: zapcore.StringType, String: ls.Get("job")},
+				zapcore.Field{Key: "instance", Type: zapcore.StringType, String: ls.Get("instance")},
+			)
+			continue
+		}
+
 		// Validate everything that can be checked without allocating, so that a histogram which
 		// is going to be dropped never reserves budget or leaves an empty metric behind. A stale
 		// marker is exempt because its remaining fields are ignored rather than translated.
@@ -656,7 +669,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		exemplarSlice := pmetric.NewExemplarSlice()
 		// Process the individual histogram
 		if histogramType == "nhcb" {
-			prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, attrs, stats)
+			prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, attrs, ls, stats)
 			if histMetric.Histogram().DataPoints().Len() > 0 {
 				exemplarSlice = histMetric.Histogram().DataPoints().At(0).Exemplars()
 			}
@@ -742,90 +755,71 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 		return
 	}
 
-	dp := datapoints.AppendEmpty()
+	// Built aside from the slice so that a histogram whose population cannot be represented is
+	// never published as a half filled data point.
+	dp := pmetric.NewExponentialHistogramDataPoint()
 	dp.SetStartTimestamp(pcommon.Timestamp(histogram.StartTimestamp * int64(time.Millisecond)))
 	dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
 	dp.SetScale(histogram.Schema)
 	dp.SetZeroThreshold(histogram.ZeroThreshold)
-	setCountAndSum(histogram, dp)
 
-	var droppedCount uint64
+	zeroCount := histogram.GetZeroCountInt()
+	dp.SetZeroCount(zeroCount)
 
-	// The difference between float and integer histograms is that float histograms are stored as absolute counts
-	// while integer histograms are stored as deltas.
-	if histogram.IsFloatHistogram() {
-		// Float histograms
-		zeroCountFloat := histogram.GetZeroCountFloat()
-		dp.SetZeroCount(uint64(zeroCountFloat))
+	positive, positiveOK := convertDeltaBuckets(histogram.PositiveSpans, histogram.PositiveDeltas, dp.Positive(), layout.positive)
+	negative, negativeOK := convertDeltaBuckets(histogram.NegativeSpans, histogram.NegativeDeltas, dp.Negative(), layout.negative)
 
-		droppedCount += convertAbsoluteBuckets(histogram.PositiveSpans, histogram.PositiveCounts, dp.Positive(), layout.positive)
-		droppedCount += convertAbsoluteBuckets(histogram.NegativeSpans, histogram.NegativeCounts, dp.Negative(), layout.negative)
-	} else {
-		// Integer histograms
-		zeroCountInt := histogram.GetZeroCountInt()
-		dp.SetZeroCount(zeroCountInt)
-
-		droppedCount += convertDeltaBuckets(histogram.PositiveSpans, histogram.PositiveDeltas, dp.Positive(), layout.positive)
-		droppedCount += convertDeltaBuckets(histogram.NegativeSpans, histogram.NegativeDeltas, dp.Negative(), layout.negative)
+	// The compatibility specification derives Count from what the data point actually holds,
+	// rather than from the count Prometheus sent. The two differ whenever observations are not
+	// represented by a bucket, which happens for NaN observations and for the overflow bucket.
+	count, ok := addPopulations(zeroCount, positive, negative)
+	if !positiveOK || !negativeOK || !ok {
+		prw.settings.Logger.Info("Dropping Native Histogram whose bucket population is too large to represent",
+			zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
+		return
 	}
-
-	if droppedCount > 0 {
-		count := dp.Count()
-		if droppedCount > count {
-			prw.settings.Logger.Info("Clamping Native Histogram count to zero due to inconsistent dropped overflow bucket count",
-				zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
-			dp.SetCount(0)
-		} else {
-			dp.SetCount(count - droppedCount)
-		}
+	dp.SetCount(count)
+	if count > 0 {
+		// OTLP requires the sum to be zero when the count is, so a histogram whose observations
+		// all landed outside the representable range is left without one rather than carrying a
+		// sum it cannot account for.
+		dp.SetSum(histogram.Sum)
 	}
 
 	attrs.CopyTo(dp.Attributes())
+	dp.MoveTo(datapoints.AppendEmpty())
 	stats.Histograms++
 }
 
-// hasNegativeCounts checks if a histogram has any negative counts
+// addPopulations sums bucket populations, reporting false if the total cannot be represented.
+func addPopulations(values ...uint64) (uint64, bool) {
+	var total uint64
+	for _, v := range values {
+		sum := total + v
+		if sum < total {
+			return 0, false
+		}
+		total = sum
+	}
+	return total, true
+}
+
+// hasNegativeCounts reports whether any bucket of an integer histogram resolves to a negative
+// population. Float histograms are dropped before they reach this.
 func hasNegativeCounts(histogram *writev2.Histogram) bool {
-	if histogram.IsFloatHistogram() {
-		// Check overall count
-		if histogram.GetCountFloat() < 0 {
+	var absolute int64
+	for _, delta := range histogram.NegativeDeltas {
+		absolute += delta
+		if absolute < 0 {
 			return true
 		}
+	}
 
-		// Check zero count
-		if histogram.GetZeroCountFloat() < 0 {
+	absolute = 0
+	for _, delta := range histogram.PositiveDeltas {
+		absolute += delta
+		if absolute < 0 {
 			return true
-		}
-
-		// Check positive bucket counts
-		for _, count := range histogram.PositiveCounts {
-			if count < 0 {
-				return true
-			}
-		}
-
-		// Check negative bucket counts
-		for _, count := range histogram.NegativeCounts {
-			if count < 0 {
-				return true
-			}
-		}
-	} else {
-		// Integer histograms
-		var absolute int64
-		for _, delta := range histogram.NegativeDeltas {
-			absolute += delta
-			if absolute < 0 {
-				return true
-			}
-		}
-
-		absolute = 0
-		for _, delta := range histogram.PositiveDeltas {
-			absolute += delta
-			if absolute < 0 {
-				return true
-			}
 		}
 	}
 
@@ -909,9 +903,6 @@ func validateExponentialHistogram(histogram *writev2.Histogram) (exponentialHist
 	finiteLimit := exponentialHistogramFiniteLimit(histogram.Schema)
 
 	positiveValues, negativeValues := len(histogram.PositiveDeltas), len(histogram.NegativeDeltas)
-	if histogram.IsFloatHistogram() {
-		positiveValues, negativeValues = len(histogram.PositiveCounts), len(histogram.NegativeCounts)
-	}
 
 	positive, err := validateBucketSpanLayout(histogram.PositiveSpans, positiveValues, finiteLimit)
 	if err != nil {
@@ -1011,18 +1002,20 @@ func validateBucketSpanLayout(spans []writev2.BucketSpan, valueCount int, finite
 }
 
 // convertDeltaBuckets converts Prometheus native histogram spans and deltas to OTLP bucket counts,
-// returning the total count of the overflow buckets it dropped. Integer bucket values are deltas,
-// i.e. 1,2,-2 means counts of 1,3,1. layout must come from validateBucketSpanLayout for the same
-// spans and deltas.
-func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, dest pmetric.ExponentialHistogramDataPointBuckets, layout bucketSpanLayout) uint64 {
+// returning the population it actually emitted. Buckets outside the layout, which is to say the
+// overflow bucket, are consumed but left out of that total, so the caller can rebuild Count from
+// what the data point holds. Integer bucket values are deltas, i.e. 1,2,-2 means counts of 1,3,1.
+// layout must come from validateBucketSpanLayout for the same spans and deltas. It reports false
+// if the emitted population is too large for a uint64, in which case no valid data point exists.
+func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, dest pmetric.ExponentialHistogramDataPointBuckets, layout bucketSpanLayout) (uint64, bool) {
 	buckets := prepareBuckets(dest, layout)
 
 	var (
-		bucketIdx    int
-		bucketCount  int64
-		droppedCount uint64
-		nextIndex    int64
-		nextAppend   = layout.firstIndex
+		bucketIdx     int
+		bucketCount   int64
+		retainedCount uint64
+		nextIndex     int64
+		nextAppend    = layout.firstIndex
 	)
 
 	for spanIdx, span := range spans {
@@ -1040,52 +1033,19 @@ func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, dest pmetri
 
 			index := start + int64(i)
 			if !layout.hasBuckets || index > layout.lastIndex {
-				droppedCount += uint64(bucketCount)
 				continue
 			}
 			nextAppend = appendGap(buckets, nextAppend, index)
 			buckets.Append(uint64(bucketCount))
-		}
-	}
-	return droppedCount
-}
 
-// convertAbsoluteBuckets converts Prometheus native histogram spans and absolute counts to OTLP
-// bucket counts, returning the total count of the overflow buckets it dropped. Float bucket values
-// are absolute and must be 0 or positive. layout must come from validateBucketSpanLayout for the
-// same spans and counts.
-func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, dest pmetric.ExponentialHistogramDataPointBuckets, layout bucketSpanLayout) uint64 {
-	buckets := prepareBuckets(dest, layout)
-
-	var (
-		bucketIdx    int
-		droppedCount uint64
-		nextIndex    int64
-		nextAppend   = layout.firstIndex
-	)
-
-	for spanIdx, span := range spans {
-		start := int64(span.Offset)
-		if spanIdx > 0 {
-			start = nextIndex + int64(span.Offset)
-		}
-		// A zero length span appends nothing but still shifts the spans after it.
-		nextIndex = start + int64(span.Length)
-
-		for i := uint32(0); i < span.Length; i++ {
-			count := uint64(counts[bucketIdx])
-			bucketIdx++
-
-			index := start + int64(i)
-			if !layout.hasBuckets || index > layout.lastIndex {
-				droppedCount += count
-				continue
+			total, ok := addPopulations(retainedCount, uint64(bucketCount))
+			if !ok {
+				return 0, false
 			}
-			nextAppend = appendGap(buckets, nextAppend, index)
-			buckets.Append(count)
+			retainedCount = total
 		}
 	}
-	return droppedCount
+	return retainedCount, true
 }
 
 // prepareBuckets sets the OTLP offset and reserves exactly what the validated layout needs.
@@ -1163,23 +1123,43 @@ func applyScopeInfo(sm pmetric.ScopeMetrics, si scopeInfo) {
 }
 
 // addNHCBDatapoint converts a single Native Histogram Custom Buckets (NHCB) to OpenTelemetry histogram datapoints
-func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *writev2.Histogram, attrs pcommon.Map, stats *promremote.WriteResponseStats) {
-	if len(histogram.CustomValues) == 0 {
-		return
+func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *writev2.Histogram, attrs pcommon.Map, ls labels.Labels, stats *promremote.WriteResponseStats) {
+	// The bounds sit between buckets, so a histogram carrying none of them still has the bucket
+	// above the last one. Prometheus produces that for a classic histogram that only ever had
+	// its +Inf bucket.
+	bucketCounts := convertNHCBBuckets(histogram)
+
+	// Counted before the data point exists so that a population which cannot be represented is
+	// never published as a half filled one. A stale marker has no population to count.
+	var count uint64
+	stale := value.IsStaleNaN(histogram.Sum)
+	if !stale {
+		var ok bool
+		if count, ok = addPopulations(bucketCounts...); !ok {
+			prw.settings.Logger.Info("Dropping Native Histogram whose bucket population is too large to represent",
+				zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
+			return
+		}
 	}
 
 	dp := datapoints.AppendEmpty()
 	dp.SetStartTimestamp(pcommon.Timestamp(histogram.StartTimestamp * int64(time.Millisecond)))
 	dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
 
-	if value.IsStaleNaN(histogram.Sum) {
+	if stale {
 		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	} else {
-		setCountAndSum(histogram, dp)
+		// OTLP wants the count to be the sum of the bucket counts. Prometheus counts an
+		// observation of NaN without putting it in any bucket, so the count it sends can be
+		// larger than the buckets account for.
+		dp.SetCount(count)
+		if count > 0 {
+			// OTLP requires the sum to be zero when the count is.
+			dp.SetSum(histogram.Sum)
+		}
 	}
 
 	dp.ExplicitBounds().FromRaw(histogram.CustomValues)
-	bucketCounts := convertNHCBBuckets(histogram)
 	dp.BucketCounts().FromRaw(bucketCounts)
 
 	attrs.CopyTo(dp.Attributes())
@@ -1196,61 +1176,26 @@ func convertNHCBBuckets(histogram *writev2.Histogram) []uint64 {
 		return bucketCounts
 	}
 
-	if histogram.IsFloatHistogram() {
-		// Float histograms: values are absolute counts
-		bucketIdx := 0
-		for _, span := range histogram.PositiveSpans {
-			// Skip empty buckets based on offset
-			bucketIdx += int(span.Offset)
+	// Values are deltas between buckets. Float flavored histograms are dropped earlier.
+	bucketIdx := 0
+	bucketCount := int64(0)
+	deltaIdx := 0
 
-			// Fill buckets for this span
-			for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && i < uint32(len(histogram.PositiveCounts)); i++ {
-				if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
-					bucketCounts[bucketIdx] = uint64(histogram.PositiveCounts[i])
-				}
-				bucketIdx++
+	for _, span := range histogram.PositiveSpans {
+		// Skip empty buckets based on offset
+		bucketIdx += int(span.Offset)
+
+		// Fill buckets for this span
+		for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && deltaIdx < len(histogram.PositiveDeltas); i++ {
+			bucketCount += histogram.PositiveDeltas[deltaIdx]
+			deltaIdx++
+
+			if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
+				bucketCounts[bucketIdx] = uint64(bucketCount)
 			}
-		}
-	} else {
-		// Integer histograms: values are deltas between buckets
-		bucketIdx := 0
-		bucketCount := int64(0)
-		deltaIdx := 0
-
-		for _, span := range histogram.PositiveSpans {
-			// Skip empty buckets based on offset
-			bucketIdx += int(span.Offset)
-
-			// Fill buckets for this span
-			for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && deltaIdx < len(histogram.PositiveDeltas); i++ {
-				bucketCount += histogram.PositiveDeltas[deltaIdx]
-				deltaIdx++
-
-				if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
-					bucketCounts[bucketIdx] = uint64(bucketCount)
-				}
-				bucketIdx++
-			}
+			bucketIdx++
 		}
 	}
 
 	return bucketCounts
-}
-
-// setCountAndSum sets count and sum for histogram datapoints (common interface)
-type countSumSetter interface {
-	SetSum(float64)
-	SetCount(uint64)
-}
-
-func setCountAndSum(histogram *writev2.Histogram, dp countSumSetter) {
-	dp.SetSum(histogram.Sum)
-
-	if histogram.IsFloatHistogram() {
-		countFloat := histogram.GetCountFloat()
-		dp.SetCount(uint64(countFloat))
-	} else {
-		countInt := histogram.GetCountInt()
-		dp.SetCount(countInt)
-	}
 }
