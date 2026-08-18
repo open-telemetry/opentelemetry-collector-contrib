@@ -1,7 +1,0 @@
-change_type: enhancement
-
-component: receiver/oracledb
-
-note: Add example_config.yaml with annotated configuration covering on-host, RDS, and Autonomous DB connection options.
-
-issues: [0]
