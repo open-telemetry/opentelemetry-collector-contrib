@@ -50,7 +50,7 @@ type Deterministic struct {
 // NewDeterministic constructs a deterministic sampler from a target percentage in (0, 100].
 func NewDeterministic(percentage float64) (Sampler, error) {
 	if percentage <= 0 || percentage > 100 {
-		return nil, errors.New("deterministic sampler: percentage must be in (0, 100]")
+		return nil, errors.New("probabilistic sampler: sampling_percentage must be in (0, 100]")
 	}
 	rate := max(int(100.0/percentage), 1)
 	return &Deterministic{rate: rate}, nil
@@ -116,7 +116,7 @@ type EMADynamicConfig struct {
 // NewEMADynamic constructs an EMA dynamic sampler from the supplied config.
 func NewEMADynamic(cfg EMADynamicConfig) (Sampler, error) {
 	if cfg.GoalSamplingPercentage <= 0 || cfg.GoalSamplingPercentage > 100 {
-		return nil, errors.New("ema_dynamic sampler: goal_sampling_percentage must be in (0, 100]")
+		return nil, errors.New("dynamic_percentage sampler: goal_percentage must be in (0, 100]")
 	}
 	goalRate := max(int(100.0/cfg.GoalSamplingPercentage), 1)
 	return &dynsamplerWrapper{
@@ -130,7 +130,7 @@ func NewEMADynamic(cfg EMADynamicConfig) (Sampler, error) {
 }
 
 // EMAThroughputConfig configures the EMA throughput sampler, which targets a
-// fixed events-per-second rate while preserving per-key proportions via EMA.
+// fixed spans-per-second rate while preserving per-key proportions via EMA.
 type EMAThroughputConfig struct {
 	GoalThroughputPerSec int
 	InitialSamplingRate  int
@@ -142,7 +142,7 @@ type EMAThroughputConfig struct {
 // NewEMAThroughput constructs an EMA throughput sampler.
 func NewEMAThroughput(cfg EMAThroughputConfig) (Sampler, error) {
 	if cfg.GoalThroughputPerSec <= 0 {
-		return nil, errors.New("ema_throughput sampler: goal_throughput_per_sec must be greater than zero")
+		return nil, errors.New("dynamic_throughput (ema) sampler: goal_throughput must be greater than zero")
 	}
 	return &dynsamplerWrapper{
 		inner: &dynsampler.EMAThroughput{
@@ -168,7 +168,7 @@ type WindowedThroughputConfig struct {
 // NewWindowedThroughput constructs a windowed throughput sampler.
 func NewWindowedThroughput(cfg WindowedThroughputConfig) (Sampler, error) {
 	if cfg.GoalThroughputPerSec <= 0 {
-		return nil, errors.New("windowed_throughput sampler: goal_throughput_per_sec must be greater than zero")
+		return nil, errors.New("dynamic_throughput (windowed) sampler: goal_throughput must be greater than zero")
 	}
 	return &dynsamplerWrapper{
 		inner: &dynsampler.WindowedThroughput{
