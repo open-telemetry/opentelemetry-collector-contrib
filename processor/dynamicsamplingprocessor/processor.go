@@ -234,7 +234,7 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []string, error) {
 			Weight:                 sc.Weight,
 			MaxKeys:                sc.MaxKeys,
 		})
-		return s, append([]string(nil), sc.KeyAttributes...), err
+		return s, append([]string(nil), sc.Fingerprint...), err
 	case DynamicThroughput:
 		if sc.effectiveAlgorithm() == AlgorithmWindowed {
 			s, err := sampler.NewWindowedThroughput(sampler.WindowedThroughputConfig{
@@ -243,7 +243,7 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []string, error) {
 				LookbackFrequency:    sc.LookbackFrequency,
 				MaxKeys:              sc.MaxKeys,
 			})
-			return s, append([]string(nil), sc.KeyAttributes...), err
+			return s, append([]string(nil), sc.Fingerprint...), err
 		}
 		s, err := sampler.NewEMAThroughput(sampler.EMAThroughputConfig{
 			GoalThroughputPerSec: sc.GoalThroughput,
@@ -251,7 +251,7 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []string, error) {
 			Weight:               sc.Weight,
 			MaxKeys:              sc.MaxKeys,
 		})
-		return s, append([]string(nil), sc.KeyAttributes...), err
+		return s, append([]string(nil), sc.Fingerprint...), err
 	default:
 		return nil, nil, fmt.Errorf("unknown sampler type %q", sc.Type)
 	}

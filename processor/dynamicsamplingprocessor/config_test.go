@@ -49,7 +49,7 @@ func TestConfig_Validate(t *testing.T) {
 				Sampler: SamplerConfig{
 					Type:           DynamicPercentage,
 					GoalPercentage: 10,
-					KeyAttributes:  []string{"service.name"},
+					Fingerprint:    []string{"service.name"},
 					Weight:         0.5,
 				},
 			}),
@@ -158,7 +158,7 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: "sampling_percentage",
 		},
 		{
-			name: "dynamic_percentage_missing_key_attributes",
+			name: "dynamic_percentage_missing_fingerprint",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
@@ -175,7 +175,7 @@ func TestConfig_Validate(t *testing.T) {
 				Sampler: SamplerConfig{
 					Type:           DynamicPercentage,
 					GoalPercentage: 10,
-					KeyAttributes:  []string{"a"},
+					Fingerprint:    []string{"a"},
 					Weight:         1.5,
 				},
 			}),
@@ -188,7 +188,7 @@ func TestConfig_Validate(t *testing.T) {
 				Sampler: SamplerConfig{
 					Type:           DynamicThroughput,
 					GoalThroughput: 100,
-					KeyAttributes:  []string{"service.name"},
+					Fingerprint:    []string{"service.name"},
 					Weight:         0.5,
 				},
 			}),
@@ -198,14 +198,14 @@ func TestConfig_Validate(t *testing.T) {
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:          DynamicThroughput,
-					KeyAttributes: []string{"a"},
+					Type:        DynamicThroughput,
+					Fingerprint: []string{"a"},
 				},
 			}),
 			wantErr: "goal_throughput",
 		},
 		{
-			name: "dynamic_throughput_missing_key_attributes",
+			name: "dynamic_throughput_missing_fingerprint",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
@@ -223,7 +223,7 @@ func TestConfig_Validate(t *testing.T) {
 					Type:              DynamicThroughput,
 					Algorithm:         AlgorithmWindowed,
 					GoalThroughput:    100,
-					KeyAttributes:     []string{"service.name"},
+					Fingerprint:       []string{"service.name"},
 					UpdateFrequency:   time.Second,
 					LookbackFrequency: 30 * time.Second,
 				},
@@ -249,7 +249,7 @@ func TestConfig_Validate(t *testing.T) {
 					Type:           DynamicPercentage,
 					Algorithm:      AlgorithmWindowed,
 					GoalPercentage: 10,
-					KeyAttributes:  []string{"service.name"},
+					Fingerprint:    []string{"service.name"},
 				},
 			}),
 			wantErr: "does not support the windowed algorithm",
@@ -262,7 +262,7 @@ func TestConfig_Validate(t *testing.T) {
 					Type:           DynamicThroughput,
 					Algorithm:      "sliding",
 					GoalThroughput: 100,
-					KeyAttributes:  []string{"service.name"},
+					Fingerprint:    []string{"service.name"},
 				},
 			}),
 			wantErr: "unknown algorithm",
@@ -275,7 +275,7 @@ func TestConfig_Validate(t *testing.T) {
 					Type:           DynamicThroughput,
 					Algorithm:      AlgorithmWindowed,
 					GoalThroughput: 100,
-					KeyAttributes:  []string{"service.name"},
+					Fingerprint:    []string{"service.name"},
 					Weight:         0.5,
 				},
 			}),
@@ -288,7 +288,7 @@ func TestConfig_Validate(t *testing.T) {
 				Sampler: SamplerConfig{
 					Type:            DynamicThroughput,
 					GoalThroughput:  100,
-					KeyAttributes:   []string{"service.name"},
+					Fingerprint:     []string{"service.name"},
 					UpdateFrequency: time.Second,
 				},
 			}),
@@ -299,15 +299,15 @@ func TestConfig_Validate(t *testing.T) {
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:          DynamicThroughput,
-					Algorithm:     AlgorithmWindowed,
-					KeyAttributes: []string{"a"},
+					Type:        DynamicThroughput,
+					Algorithm:   AlgorithmWindowed,
+					Fingerprint: []string{"a"},
 				},
 			}),
 			wantErr: "goal_throughput",
 		},
 		{
-			name: "dynamic_throughput_windowed_missing_key_attributes",
+			name: "dynamic_throughput_windowed_missing_fingerprint",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
@@ -319,16 +319,16 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: "key_attributes",
 		},
 		{
-			name: "probabilistic_rejects_ema_field",
+			name: "probabilistic_rejects_fingerprint_field",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
 					Type:               Probabilistic,
 					SamplingPercentage: 10,
-					KeyAttributes:      []string{"service.name"},
+					Fingerprint:        []string{"service.name"},
 				},
 			}),
-			wantErr: "probabilistic does not use key_attributes",
+			wantErr: "probabilistic does not use fingerprint",
 		},
 		{
 			name: "dynamic_percentage_rejects_windowed_field",
@@ -337,7 +337,7 @@ func TestConfig_Validate(t *testing.T) {
 				Sampler: SamplerConfig{
 					Type:            DynamicPercentage,
 					GoalPercentage:  10,
-					KeyAttributes:   []string{"service.name"},
+					Fingerprint:     []string{"service.name"},
 					UpdateFrequency: time.Second,
 				},
 			}),
