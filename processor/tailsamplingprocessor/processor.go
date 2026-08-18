@@ -691,7 +691,7 @@ func (tsp *tailSamplingSpanProcessor) waitForSpace(tickChan <-chan time.Time) {
 // without sample_on_first_match this only needs to check them and stops at
 // the first non-drop policy.
 func (tsp *tailSamplingSpanProcessor) decidedBeforePosition(ctx context.Context, pos int, id pcommon.TraceID, td *samplingpolicy.TraceData) bool {
-	for i := 0; i < pos; i++ {
+	for i := range pos {
 		p := tsp.policies[i]
 		if !tsp.sampleOnFirstMatch && !p.isDrop {
 			break
