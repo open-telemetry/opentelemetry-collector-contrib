@@ -4,8 +4,10 @@
 package otlpjsonfilereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 
 import (
+	"context"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -22,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
@@ -380,4 +384,127 @@ func TestEmptyLine(t *testing.T) {
 			require.Empty(tt, ls.AllLogs())
 		}, time.Second, 10*time.Millisecond)
 	})
+}
+
+// movingTracesConsumer takes ownership of the traces it is handed the way
+// batchprocessor's background goroutine does: it moves the resource spans out
+// of the caller's ptrace.Traces, leaving it empty.
+type movingTracesConsumer struct {
+	mu   sync.Mutex
+	held ptrace.Traces
+}
+
+func (*movingTracesConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
+func (c *movingTracesConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	td.ResourceSpans().MoveAndAppendTo(c.held.ResourceSpans())
+	return nil
+}
+
+func (c *movingTracesConsumer) spanCount() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.held.SpanCount()
+}
+
+// movingMetricsConsumer is the metrics counterpart of movingTracesConsumer.
+type movingMetricsConsumer struct {
+	mu   sync.Mutex
+	held pmetric.Metrics
+}
+
+func (*movingMetricsConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
+func (c *movingMetricsConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	md.ResourceMetrics().MoveAndAppendTo(c.held.ResourceMetrics())
+	return nil
+}
+
+func (c *movingMetricsConsumer) metricCount() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.held.MetricCount()
+}
+
+func assertReceiverCount(t *testing.T, tel *componenttest.Telemetry, metricName string, want int64) {
+	t.Helper()
+	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
+		got, err := tel.GetMetric(metricName)
+		if !assert.NoError(tt, err) {
+			return
+		}
+		sum, ok := got.Data.(metricdata.Sum[int64])
+		if !assert.True(tt, ok) {
+			return
+		}
+		if assert.Len(tt, sum.DataPoints, 1) {
+			assert.Equal(tt, want, sum.DataPoints[0].Value)
+		}
+	}, 5*time.Second, 10*time.Millisecond)
+}
+
+func TestFileTracesReceiverCountsSpansBeforeConsuming(t *testing.T) {
+	tempFolder := t.TempDir()
+	cfg := createDefaultConfig().(*Config)
+	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.Config.StartAt = "beginning"
+
+	tel := componenttest.NewTelemetry()
+	set := receivertest.NewNopSettings(metadata.Type)
+	set.TelemetrySettings = tel.NewTelemetrySettings()
+
+	sink := &movingTracesConsumer{held: ptrace.NewTraces()}
+	rcvr, err := NewFactory().CreateTraces(t.Context(), set, cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, rcvr.Shutdown(t.Context())) })
+
+	td := testdata.GenerateTraces(3)
+	want := int64(td.SpanCount())
+	require.NotZero(t, want)
+	b, err := (&ptrace.JSONMarshaler{}).MarshalTraces(td)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(tempFolder, "traces.json"), append(b, '\n'), 0o600))
+
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		assert.Equal(tt, int(want), sink.spanCount())
+	}, 5*time.Second, 10*time.Millisecond)
+	assertReceiverCount(t, tel, "otelcol_receiver_accepted_spans", want)
+}
+
+func TestFileMetricsReceiverCountsMetricsBeforeConsuming(t *testing.T) {
+	tempFolder := t.TempDir()
+	cfg := createDefaultConfig().(*Config)
+	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.Config.StartAt = "beginning"
+
+	tel := componenttest.NewTelemetry()
+	set := receivertest.NewNopSettings(metadata.Type)
+	set.TelemetrySettings = tel.NewTelemetrySettings()
+
+	sink := &movingMetricsConsumer{held: pmetric.NewMetrics()}
+	rcvr, err := NewFactory().CreateMetrics(t.Context(), set, cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, rcvr.Shutdown(t.Context())) })
+
+	md := testdata.GenerateMetrics(3)
+	want := int64(md.MetricCount())
+	require.NotZero(t, want)
+	b, err := (&pmetric.JSONMarshaler{}).MarshalMetrics(md)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(tempFolder, "metrics.json"), append(b, '\n'), 0o600))
+
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		assert.Equal(tt, int(want), sink.metricCount())
+	}, 5*time.Second, 10*time.Millisecond)
+	assertReceiverCount(t, tel, "otelcol_receiver_accepted_metric_points", want)
 }
