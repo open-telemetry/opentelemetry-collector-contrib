@@ -216,7 +216,7 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: "key_attributes",
 		},
 		{
-			name: "valid_windowed_throughput",
+			name: "valid_dynamic_throughput_windowed",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
@@ -295,7 +295,7 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: "dynamic_throughput (ema) does not use update_frequency",
 		},
 		{
-			name: "windowed_throughput_missing_goal",
+			name: "dynamic_throughput_windowed_missing_goal",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
@@ -307,7 +307,7 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: "goal_throughput",
 		},
 		{
-			name: "windowed_throughput_missing_key_attributes",
+			name: "dynamic_throughput_windowed_missing_key_attributes",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
