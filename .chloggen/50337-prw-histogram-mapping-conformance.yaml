@@ -1,0 +1,23 @@
+change_type: bug_fix
+
+component: receiver/prometheus_remote_write
+
+note: Drop float flavored native histograms and rebuild the data point count from the translated buckets.
+
+issues: [50337]
+
+subtext: |
+  The Prometheus compatibility specification requires native histograms of the
+  float or gauge flavors to be dropped; float ones were being converted, with
+  fractional and non-finite bucket populations forced through an unsigned
+  integer conversion. It also derives the count from the zero count plus the
+  retained bucket populations, while the receiver copied the count Prometheus
+  sent and then subtracted the overflow buckets, which does not agree whenever
+  an observation is not represented by a bucket. Custom bucket histograms copied
+  the count without adjusting it at all, so one that observed NaN was emitted
+  with a count larger than its buckets account for. A custom bucket histogram
+  carrying no bounds was dropped rather than translated, and a stale marker was
+  lost when the buckets it carries could not be summed. The sum is now left
+  unset when the count is zero, which OpenTelemetry requires.
+
+change_logs: [user]
