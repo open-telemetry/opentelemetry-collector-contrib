@@ -31,10 +31,6 @@ func NewBytesLimiting(settings component.TelemetrySettings, bytesPerSecond int64
 
 // NewBytesLimitingWithBurstCapacity creates a policy evaluator with custom burst capacity.
 // Uses golang.org/x/time/rate.Limiter for efficient, thread-safe token bucket implementation.
-//
-// When the usetracestate feature gate is enabled the policy is instead a budgetLimiter,
-// which spends the same token bucket across the whole group of traces eligible for a
-// decision so kept traces can report the threshold that admitted them.
 func NewBytesLimitingWithBurstCapacity(settings component.TelemetrySettings, bytesPerSecond, burstCapacity int64) samplingpolicy.Evaluator {
 	if metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate.IsEnabled() {
 		return newBudgetLimiter(settings, bytesPerSecond, burstCapacity, calculateTraceSize)

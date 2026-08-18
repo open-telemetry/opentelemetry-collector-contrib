@@ -686,12 +686,7 @@ func (tsp *tailSamplingSpanProcessor) waitForSpace(tickChan <-chan time.Time) {
 	}
 }
 
-// droppedByPolicy reports whether any drop policy would drop this trace. It
-// mirrors the precedence in makeDecision, where drop policies run first and
-// a Dropped decision wins, so a batch-aware policy should not spend its
-// budget on a trace a drop policy will remove. Drop policies are always
-// sorted to the front of tsp.policies (see loadSamplingPolicies), so this
-// stops at the first non-drop policy rather than scanning everything.
+// droppedByPolicy reports whether any drop policy would drop this trace.
 func (tsp *tailSamplingSpanProcessor) droppedByPolicy(ctx context.Context, id pcommon.TraceID, td *samplingpolicy.TraceData) bool {
 	for _, p := range tsp.policies {
 		if !p.isDrop {

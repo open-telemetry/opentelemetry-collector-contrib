@@ -86,32 +86,6 @@ func TestRateLimiterTokenRefill(t *testing.T) {
 	assert.Equal(t, samplingpolicy.Sampled, decision)
 }
 
-func mustRandomness(t *testing.T, u uint64) sampling.Randomness {
-	t.Helper()
-	r, err := sampling.UnsignedToRandomness(u)
-	require.NoError(t, err)
-	return r
-}
-
-// rlTrace builds a single-span trace whose trace ID encodes the given
-// randomness in its low 7 bytes (the bytes TraceIDToRandomness reads) and a
-// unique tag in its first byte, so traces with equal randomness still have
-// distinct IDs.
-func rlTrace(tag byte, randomness uint64, spanCount int64) *samplingpolicy.TraceData {
-	var id [16]byte
-	id[0] = tag
-	binary.BigEndian.PutUint64(id[8:], randomness)
-	traces := ptrace.NewTraces()
-	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	span.SetTraceID(pcommon.TraceID(id))
-	return &samplingpolicy.TraceData{SpanCount: spanCount, ReceivedBatches: traces}
-}
-
-// TestRateLimiterBatchThreshold verifies that, with the tracestate gate
-// on, CalculateThreshold spends the span budget on the highest-randomness
-// traces first and reports a threshold at the boundary such that every
-// kept trace satisfies threshold.ShouldSample(randomness) and every
-// dropped trace does not.
 func TestRateLimiterBatchThreshold(t *testing.T) {
 	enableTracestateFeatureGate(t)
 
@@ -151,10 +125,6 @@ func TestRateLimiterBatchThreshold(t *testing.T) {
 	}
 }
 
-// TestRateLimiterBatchWholeBatchFits verifies that when the entire batch
-// fits within the budget nothing is limited and the reported threshold is
-// AlwaysSample (adjusted count 1), matching how always-sample policies
-// behave today.
 func TestRateLimiterBatchWholeBatchFits(t *testing.T) {
 	enableTracestateFeatureGate(t)
 
@@ -171,12 +141,6 @@ func TestRateLimiterBatchWholeBatchFits(t *testing.T) {
 	}
 }
 
-// TestLimitingPolicyImplementationSelection verifies the constructors pick the
-// implementation by feature gate: the original per-trace token bucket with the
-// gate off, the batch-aware budgetLimiter with it on. With the gate off no
-// batch code runs at all, so existing deployments keep the token bucket
-// behavior covered by TestRateLimiterTokenBucket and
-// TestBytesLimitingTokenBucket.
 func TestLimitingPolicyImplementationSelection(t *testing.T) {
 	settings := componenttest.NewNopTelemetrySettings()
 
@@ -202,8 +166,6 @@ func TestLimitingPolicyImplementationSelection(t *testing.T) {
 	})
 }
 
-// TestRateLimiterBatchLargeTraceDropped verifies that a single trace whose
-// span count exceeds the budget is dropped and no trace is kept.
 func TestRateLimiterBatchLargeTraceDropped(t *testing.T) {
 	enableTracestateFeatureGate(t)
 
@@ -217,8 +179,6 @@ func TestRateLimiterBatchLargeTraceDropped(t *testing.T) {
 	assert.Equal(t, samplingpolicy.NotSampled, decision)
 }
 
-// TestRateLimiterBatchNonUniformSpanCounts verifies the span budget is
-// tracked across traces with differing span counts, not just trace counts.
 func TestRateLimiterBatchNonUniformSpanCounts(t *testing.T) {
 	enableTracestateFeatureGate(t)
 
@@ -251,9 +211,6 @@ func TestRateLimiterBatchNonUniformSpanCounts(t *testing.T) {
 	}
 }
 
-// TestRateLimiterBatchBoundaryTie verifies that traces sharing the same
-// randomness at the kept/dropped boundary are dropped together, so the
-// reported threshold cleanly separates kept (th <= R) from dropped (th > R).
 func TestRateLimiterBatchBoundaryTie(t *testing.T) {
 	enableTracestateFeatureGate(t)
 
@@ -295,9 +252,6 @@ func TestRateLimiterBatchBoundaryTie(t *testing.T) {
 	}
 }
 
-// TestRateLimiterBatchCrossTick verifies the span budget carries across
-// batches: spans kept in one batch are deducted from the token bucket so a
-// following batch sees a smaller budget.
 func TestRateLimiterBatchCrossTick(t *testing.T) {
 	enableTracestateFeatureGate(t)
 
@@ -329,11 +283,6 @@ func TestRateLimiterBatchCrossTick(t *testing.T) {
 	assertDecision(low, samplingpolicy.NotSampled, "budget carried over should drop the lowest-randomness trace")
 }
 
-// TestRateLimiterBatchEmpty verifies CalculateThreshold handles an empty
-// batch without panicking, leaving the threshold at AlwaysSample so traffic
-// evaluated before any real data was available is not limited -- the same
-// "nothing observed yet" convention used elsewhere (e.g. a fresh collector
-// not limiting traffic until it has something to measure).
 func TestRateLimiterBatchEmpty(t *testing.T) {
 	enableTracestateFeatureGate(t)
 
@@ -347,9 +296,6 @@ func TestRateLimiterBatchEmpty(t *testing.T) {
 	assert.Equal(t, sampling.AlwaysSampleThreshold, th)
 }
 
-// TestResolveRandomness verifies the shared randomness resolution used to
-// build batch items: an explicit rv in tracestate wins, otherwise the value
-// is derived from the trace ID.
 func TestResolveRandomness(t *testing.T) {
 	traceID := pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0xaa, 0, 0, 0, 0, 0, 0})
 
@@ -366,4 +312,25 @@ func TestResolveRandomness(t *testing.T) {
 	want, err := sampling.RValueToRandomness("ffffffffffffff")
 	require.NoError(t, err)
 	assert.Equal(t, want, resolveRandomness(traceID, tdRV))
+}
+
+func mustRandomness(t *testing.T, u uint64) sampling.Randomness {
+	t.Helper()
+	r, err := sampling.UnsignedToRandomness(u)
+	require.NoError(t, err)
+	return r
+}
+
+// rlTrace builds a single-span trace whose trace ID encodes the given
+// randomness in its low 7 bytes (the bytes TraceIDToRandomness reads) and a
+// unique tag in its first byte, so traces with equal randomness still have
+// distinct IDs.
+func rlTrace(tag byte, randomness uint64, spanCount int64) *samplingpolicy.TraceData {
+	var id [16]byte
+	id[0] = tag
+	binary.BigEndian.PutUint64(id[8:], randomness)
+	traces := ptrace.NewTraces()
+	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetTraceID(pcommon.TraceID(id))
+	return &samplingpolicy.TraceData{SpanCount: spanCount, ReceivedBatches: traces}
 }

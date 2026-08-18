@@ -1227,10 +1227,6 @@ func (s *syncIDBatcher) Stop() {
 	close(s.batchPipe)
 }
 
-// TestRateLimitingBatchThresholdOnTick exercises the batch rate-limiting
-// path end to end: with the tracestate gate on, a tick with more spans
-// than the budget keeps the highest-randomness traces, drops the rest,
-// and writes an effective threshold onto the kept traces.
 func TestRateLimitingBatchThresholdOnTick(t *testing.T) {
 	gate := metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate
 	prev := gate.IsEnabled()
@@ -1310,10 +1306,6 @@ func TestRateLimitingBatchThresholdOnTick(t *testing.T) {
 	}
 }
 
-// TestRateLimitingBatchExcludesDroppedTraces verifies that a trace a drop
-// policy will drop does not consume the rate limiter's batch budget. Drop
-// policies take precedence and are evaluated first, so a dropped trace must
-// not push a legitimately-sampled trace out of the budget.
 func TestRateLimitingBatchExcludesDroppedTraces(t *testing.T) {
 	gate := metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate
 	prev := gate.IsEnabled()
@@ -1388,14 +1380,6 @@ func TestRateLimitingBatchExcludesDroppedTraces(t *testing.T) {
 	assert.Contains(t, sampled, keepBID, "both keepers should fit the budget; the dropped trace must not consume it")
 }
 
-// TestStartWarnsOnSampleOnFirstMatchWithTracestate verifies that starting
-// the processor with sample_on_first_match enabled together with the
-// tracestate gate logs a warning rather than failing outright: a config
-// that orders policies so no later one could ever report a smaller (less
-// strict) threshold than an earlier match is still correct, and that
-// ordering isn't something Start can verify (later policies' thresholds can
-// vary at runtime, e.g. a batch-aware rate_limiting policy's threshold
-// changes tick to tick), so it's a warning, not a rejection.
 func TestStartWarnsOnSampleOnFirstMatchWithTracestate(t *testing.T) {
 	gate := metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate
 	prev := gate.IsEnabled()

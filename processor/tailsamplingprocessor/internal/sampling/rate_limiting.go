@@ -34,10 +34,6 @@ func NewRateLimiting(settings component.TelemetrySettings, spansPerSecond int64)
 // burst capacity, using a token bucket algorithm. Tokens (spans) refill continuously at
 // spansPerSecond and the bucket holds at most burstCapacity tokens. A single trace whose span
 // count exceeds the burst capacity will not pass.
-//
-// When the usetracestate feature gate is enabled the policy is instead a budgetLimiter,
-// which spends the same token bucket across the whole group of traces eligible for a
-// decision so kept traces can report the threshold that admitted them.
 func NewRateLimitingWithBurstCapacity(settings component.TelemetrySettings, spansPerSecond, burstCapacity int64) samplingpolicy.Evaluator {
 	if metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate.IsEnabled() {
 		return newBudgetLimiter(settings, spansPerSecond, burstCapacity, traceSpanCount)

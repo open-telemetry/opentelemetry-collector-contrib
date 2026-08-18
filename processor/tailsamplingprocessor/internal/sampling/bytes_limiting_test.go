@@ -190,29 +190,6 @@ func TestCalculateTraceSize(t *testing.T) {
 	assert.Positive(t, size)
 }
 
-// blTrace builds a single-span trace whose trace ID encodes the given
-// randomness in its low 8 bytes (the bytes TraceIDToRandomness reads) and a
-// unique tag in its first byte, so traces with equal randomness still have
-// distinct IDs. padding bytes of span attribute value grow the marshaled
-// size, which is what the bytes_limiting policy budgets in.
-func blTrace(tag byte, randomness uint64, padding int) *samplingpolicy.TraceData {
-	var id [16]byte
-	id[0] = tag
-	binary.BigEndian.PutUint64(id[8:], randomness)
-	traces := ptrace.NewTraces()
-	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	span.SetTraceID(pcommon.TraceID(id))
-	if padding > 0 {
-		span.Attributes().PutStr("pad", strings.Repeat("x", padding))
-	}
-	return &samplingpolicy.TraceData{SpanCount: 1, ReceivedBatches: traces}
-}
-
-// TestBytesLimiterBatchThreshold verifies that, with the tracestate gate on,
-// CalculateThreshold spends the byte budget on the highest-randomness traces first
-// and reports a threshold at the boundary such that every kept trace
-// satisfies threshold.ShouldSample(randomness) and every dropped trace does
-// not.
 func TestBytesLimiterBatchThreshold(t *testing.T) {
 	enableTracestateFeatureGate(t)
 
@@ -252,9 +229,6 @@ func TestBytesLimiterBatchThreshold(t *testing.T) {
 	}
 }
 
-// TestBytesLimiterBatchWholeBatchFits verifies that when the entire batch
-// fits within the budget nothing is limited and the reported threshold is
-// AlwaysSample (adjusted count 1).
 func TestBytesLimiterBatchWholeBatchFits(t *testing.T) {
 	enableTracestateFeatureGate(t)
 
@@ -272,8 +246,6 @@ func TestBytesLimiterBatchWholeBatchFits(t *testing.T) {
 	}
 }
 
-// TestBytesLimiterBatchLargeTraceDropped verifies that a single trace whose
-// size exceeds the budget is dropped and no trace is kept.
 func TestBytesLimiterBatchLargeTraceDropped(t *testing.T) {
 	enableTracestateFeatureGate(t)
 
@@ -288,9 +260,6 @@ func TestBytesLimiterBatchLargeTraceDropped(t *testing.T) {
 	assert.Equal(t, samplingpolicy.NotSampled, decision)
 }
 
-// TestBytesLimiterBatchNonUniformSizes verifies the budget is spent in bytes
-// rather than trace counts: a large trace at the boundary ends the kept
-// prefix even though the same budget would have admitted two small traces.
 func TestBytesLimiterBatchNonUniformSizes(t *testing.T) {
 	enableTracestateFeatureGate(t)
 
@@ -332,9 +301,6 @@ func TestBytesLimiterBatchNonUniformSizes(t *testing.T) {
 	}
 }
 
-// TestBytesLimiterBatchCrossTick verifies the byte budget carries across
-// batches: bytes kept in one batch are deducted from the token bucket so a
-// following batch sees a smaller budget.
 func TestBytesLimiterBatchCrossTick(t *testing.T) {
 	enableTracestateFeatureGate(t)
 
@@ -360,6 +326,24 @@ func TestBytesLimiterBatchCrossTick(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, samplingpolicy.NotSampled, decision)
 	}
+}
+
+// blTrace builds a single-span trace whose trace ID encodes the given
+// randomness in its low 8 bytes (the bytes TraceIDToRandomness reads) and a
+// unique tag in its first byte, so traces with equal randomness still have
+// distinct IDs. padding bytes of span attribute value grow the marshaled
+// size, which is what the bytes_limiting policy budgets in.
+func blTrace(tag byte, randomness uint64, padding int) *samplingpolicy.TraceData {
+	var id [16]byte
+	id[0] = tag
+	binary.BigEndian.PutUint64(id[8:], randomness)
+	traces := ptrace.NewTraces()
+	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetTraceID(pcommon.TraceID(id))
+	if padding > 0 {
+		span.Attributes().PutStr("pad", strings.Repeat("x", padding))
+	}
+	return &samplingpolicy.TraceData{SpanCount: 1, ReceivedBatches: traces}
 }
 
 // newTraceBytesFilter creates a trace for testing bytes limiting
