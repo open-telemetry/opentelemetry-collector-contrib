@@ -274,8 +274,10 @@ func TestLoadDeprecatedConfig(t *testing.T) {
 				},
 				PerfCounters: []ObjectConfig{
 					{
-						Object:   "object1",
-						Counters: []CounterConfig{counterConfig},
+						Object:          "object1",
+						Instances:       []string{"*", "_Global_"},
+						AggregationName: "_Global_",
+						Counters:        []CounterConfig{counterConfig},
 					},
 					{
 						Object: "object2",
