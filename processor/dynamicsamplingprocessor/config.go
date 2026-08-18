@@ -196,16 +196,20 @@ type SamplerConfig struct {
 	AdjustmentInterval time.Duration `mapstructure:"adjustment_interval"`
 
 	// Weight is the EMA weighting factor in [0, 1). Higher values weight recent
-	// observations more heavily.
+	// observations more heavily. 0 (or omitting the field) uses the sampler
+	// default of 0.5.
 	// Used by: ema_dynamic, ema_throughput.
 	Weight float64 `mapstructure:"weight"`
 
 	// UpdateFrequency is how often the windowed sampler recalculates rates.
+	// 0 (or omitting the field) uses the sampler default of 1s.
 	// Used by: windowed_throughput.
 	UpdateFrequency time.Duration `mapstructure:"update_frequency"`
 
 	// LookbackFrequency is the historical window the windowed sampler uses to
-	// compute rates. Must be a multiple of UpdateFrequency.
+	// compute rates. Values that are not a multiple of UpdateFrequency are
+	// floored to the nearest lower multiple by the sampler; 0 (or omitting the
+	// field) uses 30x UpdateFrequency.
 	// Used by: windowed_throughput.
 	LookbackFrequency time.Duration `mapstructure:"lookback_frequency"`
 
