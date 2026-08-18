@@ -359,17 +359,13 @@ func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal, telemetryDa
 	}
 
 	var format string
-	var tmpl *template.Template
 	switch signal {
 	case pipeline.SignalMetrics:
 		format = e.config.BlobNameFormat.MetricsFormat
-		tmpl = e.blobNameTemplate.metrics
 	case pipeline.SignalLogs:
 		format = e.config.BlobNameFormat.LogsFormat
-		tmpl = e.blobNameTemplate.logs
 	case pipeline.SignalTraces:
 		format = e.config.BlobNameFormat.TracesFormat
-		tmpl = e.blobNameTemplate.traces
 	default:
 		return "", fmt.Errorf("unsupported signal type: %v", signal)
 	}
@@ -377,13 +373,12 @@ func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal, telemetryDa
 
 	// if template enabled, parse and apply template. if met error, fallback to default blob name format
 	if e.config.BlobNameFormat.TemplateEnabled {
-		// Parse and apply template with telemetry data
-		var buf bytes.Buffer
-		err := tmpl.Execute(&buf, telemetryData)
+		// Render template with telemetry data
+		rendered, err := e.renderBlobNameTemplate(signal, telemetryData)
 		if err != nil {
 			e.logger.Warn("Failed to execute blob name template, using default blob name format", zap.Error(err))
 		} else {
-			blobName = buf.String()
+			blobName = rendered
 			format = blobName
 		}
 	}
@@ -467,33 +462,198 @@ func (*azureBlobExporter) Capabilities() consumer.Capabilities {
 }
 
 func (e *azureBlobExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	// Marshal the metrics data
-	data, err := e.marshaller.marshalMetrics(md)
-	if err != nil {
-		return fmt.Errorf("failed to marshal metrics: %w", err)
-	}
+	var errs error
+	for _, metrics := range e.partitionMetricsByBlobName(md) {
+		// Marshal the metrics data
+		data, err := e.marshaller.marshalMetrics(metrics)
+		if err != nil {
+			errs = errors.Join(errs, fmt.Errorf("failed to marshal metrics: %w", err))
+			continue
+		}
 
-	return e.consumeData(ctx, md, data, pipeline.SignalMetrics)
+		errs = errors.Join(errs, e.consumeData(ctx, metrics, data, pipeline.SignalMetrics))
+	}
+	return errs
 }
 
 func (e *azureBlobExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	// Marshal the logs data
-	data, err := e.marshaller.marshalLogs(ld)
-	if err != nil {
-		return fmt.Errorf("failed to marshal logs: %w", err)
-	}
+	var errs error
+	for _, logs := range e.partitionLogsByBlobName(ld) {
+		// Marshal the logs data
+		data, err := e.marshaller.marshalLogs(logs)
+		if err != nil {
+			errs = errors.Join(errs, fmt.Errorf("failed to marshal logs: %w", err))
+			continue
+		}
 
-	return e.consumeData(ctx, ld, data, pipeline.SignalLogs)
+		errs = errors.Join(errs, e.consumeData(ctx, logs, data, pipeline.SignalLogs))
+	}
+	return errs
 }
 
 func (e *azureBlobExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	// Marshal the trace data
-	data, err := e.marshaller.marshalTraces(td)
-	if err != nil {
-		return fmt.Errorf("failed to marshal traces: %w", err)
+	var errs error
+	for _, traces := range e.partitionTracesByBlobName(td) {
+		// Marshal the trace data
+		data, err := e.marshaller.marshalTraces(traces)
+		if err != nil {
+			errs = errors.Join(errs, fmt.Errorf("failed to marshal traces: %w", err))
+			continue
+		}
+
+		errs = errors.Join(errs, e.consumeData(ctx, traces, data, pipeline.SignalTraces))
+	}
+	return errs
+}
+
+// renderBlobNameTemplate executes the blob name template for the given signal
+// against telemetryData and returns the rendered output.
+func (e *azureBlobExporter) renderBlobNameTemplate(signal pipeline.Signal, telemetryData any) (string, error) {
+	var tmpl *template.Template
+	switch signal {
+	case pipeline.SignalMetrics:
+		tmpl = e.blobNameTemplate.metrics
+	case pipeline.SignalLogs:
+		tmpl = e.blobNameTemplate.logs
+	case pipeline.SignalTraces:
+		tmpl = e.blobNameTemplate.traces
+	default:
+		return "", fmt.Errorf("unsupported signal type: %v", signal)
 	}
 
-	return e.consumeData(ctx, td, data, pipeline.SignalTraces)
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, telemetryData); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+// partitionLogsByBlobName splits the payload into groups of resource entries
+// whose blob name templates render to the same value, so that each group is
+// uploaded to the blob it is addressed to. Without this, the blob name would
+// be rendered once from the first resource entry and data belonging to other
+// resource entries would be written to that same blob.
+//
+// The original payload is returned as a single group when the template is
+// disabled, when every resource entry renders to the same blob name, or when
+// rendering fails for any resource entry. In the failure case the upload path
+// falls back to the default blob name format, matching generateBlobName.
+func (e *azureBlobExporter) partitionLogsByBlobName(ld plog.Logs) []plog.Logs {
+	if !e.config.BlobNameFormat.TemplateEnabled || ld.ResourceLogs().Len() <= 1 {
+		return []plog.Logs{ld}
+	}
+
+	groups := make(map[string]plog.Logs)
+	var order []string
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		single := plog.NewLogs()
+		rls.At(i).CopyTo(single.ResourceLogs().AppendEmpty())
+
+		name, err := e.renderBlobNameTemplate(pipeline.SignalLogs, single)
+		if err != nil {
+			return []plog.Logs{ld}
+		}
+
+		group, ok := groups[name]
+		if !ok {
+			group = plog.NewLogs()
+			groups[name] = group
+			order = append(order, name)
+		}
+		single.ResourceLogs().At(0).MoveTo(group.ResourceLogs().AppendEmpty())
+	}
+
+	if len(order) == 1 {
+		// Every resource entry addresses the same blob: upload the original payload.
+		return []plog.Logs{ld}
+	}
+
+	out := make([]plog.Logs, 0, len(order))
+	for _, name := range order {
+		out = append(out, groups[name])
+	}
+	return out
+}
+
+// partitionMetricsByBlobName is the pmetric.Metrics equivalent of
+// partitionLogsByBlobName.
+func (e *azureBlobExporter) partitionMetricsByBlobName(md pmetric.Metrics) []pmetric.Metrics {
+	if !e.config.BlobNameFormat.TemplateEnabled || md.ResourceMetrics().Len() <= 1 {
+		return []pmetric.Metrics{md}
+	}
+
+	groups := make(map[string]pmetric.Metrics)
+	var order []string
+	rms := md.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		single := pmetric.NewMetrics()
+		rms.At(i).CopyTo(single.ResourceMetrics().AppendEmpty())
+
+		name, err := e.renderBlobNameTemplate(pipeline.SignalMetrics, single)
+		if err != nil {
+			return []pmetric.Metrics{md}
+		}
+
+		group, ok := groups[name]
+		if !ok {
+			group = pmetric.NewMetrics()
+			groups[name] = group
+			order = append(order, name)
+		}
+		single.ResourceMetrics().At(0).MoveTo(group.ResourceMetrics().AppendEmpty())
+	}
+
+	if len(order) == 1 {
+		// Every resource entry addresses the same blob: upload the original payload.
+		return []pmetric.Metrics{md}
+	}
+
+	out := make([]pmetric.Metrics, 0, len(order))
+	for _, name := range order {
+		out = append(out, groups[name])
+	}
+	return out
+}
+
+// partitionTracesByBlobName is the ptrace.Traces equivalent of
+// partitionLogsByBlobName.
+func (e *azureBlobExporter) partitionTracesByBlobName(td ptrace.Traces) []ptrace.Traces {
+	if !e.config.BlobNameFormat.TemplateEnabled || td.ResourceSpans().Len() <= 1 {
+		return []ptrace.Traces{td}
+	}
+
+	groups := make(map[string]ptrace.Traces)
+	var order []string
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		single := ptrace.NewTraces()
+		rss.At(i).CopyTo(single.ResourceSpans().AppendEmpty())
+
+		name, err := e.renderBlobNameTemplate(pipeline.SignalTraces, single)
+		if err != nil {
+			return []ptrace.Traces{td}
+		}
+
+		group, ok := groups[name]
+		if !ok {
+			group = ptrace.NewTraces()
+			groups[name] = group
+			order = append(order, name)
+		}
+		single.ResourceSpans().At(0).MoveTo(group.ResourceSpans().AppendEmpty())
+	}
+
+	if len(order) == 1 {
+		// Every resource entry addresses the same blob: upload the original payload.
+		return []ptrace.Traces{td}
+	}
+
+	out := make([]ptrace.Traces, 0, len(order))
+	for _, name := range order {
+		out = append(out, groups[name])
+	}
+	return out
 }
 
 func (e *azureBlobExporter) consumeData(ctx context.Context, telemetryData any, data []byte, signal pipeline.Signal) error {
