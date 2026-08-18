@@ -3775,7 +3775,8 @@ func TestExporterTimeout_NoRetryOnTimeout(t *testing.T) {
 
 func TestExporterTimeout_Independent(t *testing.T) {
 	// Server responds with HTTP 429 for first few attempts.
-	// Ensure timeout is not shared across retries by checking the last attempt exceeds configured timeout
+	// Ensure timeout is not shared across retries by
+	// checking the total time elapsed across attempts exceeds configured timeout
 	successfulOnAttempt := 3
 	var count atomic.Int32
 	server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
