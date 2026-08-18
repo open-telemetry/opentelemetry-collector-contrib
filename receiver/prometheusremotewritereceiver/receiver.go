@@ -338,7 +338,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		modifiedResourceMetric = make(map[uint64]pmetric.ResourceMetrics)
 
 		// exemplarMap keeps track of exemplars and key is composed by scope_name:scope_version:metric_name:type
-		exemplarMap = collectExemplars(req, prw.settings, &stats)
+		exemplarMap = prw.collectExemplars(req)
 	)
 
 	for i := range req.Timeseries {
@@ -475,17 +475,26 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts, &stats)
 			attrsHash := pdatautil.MapHash(extractAttributes(ls))
 			key := exemplarKey{
-				ScopeName:    si.Name,
-				ScopeVersion: si.Version,
-				MetricName:   metricName,
-				MetricType:   ts.Metadata.Type,
-				AttrsHash:    attrsHash,
+				Job:            ls.Get("job"),
+				Instance:       ls.Get("instance"),
+				ScopeName:      si.Name,
+				ScopeVersion:   si.Version,
+				ScopeSchemaURL: si.SchemaURL,
+				ScopeAttrs:     scopeAttrsKey(si.scopeAttrs),
+				MetricName:     metricName,
+				Unit:           unit,
+				MetricType:     ts.Metadata.Type,
+				AttrsHash:      attrsHash,
 			}
 			if ex, ok := exemplarMap[key.hash()]; ok && ex.Len() > 0 {
 				dataPoints := metric.Sum().DataPoints()
 				for i := 0; i < dataPoints.Len(); i++ {
 					if pdatautil.MapHash(dataPoints.At(i).Attributes()) == attrsHash {
 						ex.CopyTo(dataPoints.At(i).Exemplars())
+						// Reported as written only now, and consumed so that a repeated series
+						// cannot have the same exemplars counted or attached twice.
+						stats.Exemplars += ex.Len()
+						delete(exemplarMap, key.hash())
 						break
 					}
 				}
@@ -617,30 +626,47 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			// Reference to this behavior: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model-producer-recommendations
 			histMetric.SetDescription(description)
 		}
-		// all the exemplars for a given histogram are attached to first data point.
-		exemplarSlice := pmetric.NewExemplarSlice()
-		// Process the individual histogram
+		// A metric holds a data point per series, so the exemplars of this histogram belong to
+		// the data point it just appended, not to the one at the front of the slice.
+		var exemplarSlice pmetric.ExemplarSlice
+		var added bool
 		if histogramType == "nhcb" {
-			prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, attrs, stats)
-			if histMetric.Histogram().DataPoints().Len() > 0 {
-				exemplarSlice = histMetric.Histogram().DataPoints().At(0).Exemplars()
+			dps := histMetric.Histogram().DataPoints()
+			before := dps.Len()
+			prw.addNHCBDatapoint(dps, histogram, attrs, stats)
+			if added = dps.Len() > before; added {
+				exemplarSlice = dps.At(dps.Len() - 1).Exemplars()
 			}
 		} else {
-			prw.addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, attrs, ls, stats)
-			if histMetric.ExponentialHistogram().DataPoints().Len() > 0 {
-				exemplarSlice = histMetric.ExponentialHistogram().DataPoints().At(0).Exemplars()
+			dps := histMetric.ExponentialHistogram().DataPoints()
+			before := dps.Len()
+			prw.addExponentialHistogramDatapoint(dps, histogram, attrs, ls, stats)
+			if added = dps.Len() > before; added {
+				exemplarSlice = dps.At(dps.Len() - 1).Exemplars()
 			}
+		}
+		if !added {
+			// The histogram was dropped, so its exemplars were not written either.
+			continue
 		}
 
 		key := exemplarKey{
-			ScopeName:    si.Name,
-			ScopeVersion: si.Version,
-			MetricName:   metricName,
-			MetricType:   ts.Metadata.Type,
+			Job:            ls.Get("job"),
+			Instance:       ls.Get("instance"),
+			ScopeName:      si.Name,
+			ScopeVersion:   si.Version,
+			ScopeSchemaURL: si.SchemaURL,
+			ScopeAttrs:     scopeAttrsKey(si.scopeAttrs),
+			MetricName:     metricName,
+			Unit:           unit,
+			MetricType:     ts.Metadata.Type,
+			AttrsHash:      pdatautil.MapHash(attrs),
 		}
 
 		if ex, ok := exemplarMap[key.hash()]; ok && ex.Len() > 0 {
 			ex.CopyTo(exemplarSlice)
+			stats.Exemplars += ex.Len()
+			delete(exemplarMap, key.hash())
 		}
 	}
 }

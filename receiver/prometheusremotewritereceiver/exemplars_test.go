@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
-	promremote "github.com/prometheus/prometheus/storage/remote"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -179,16 +178,22 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			obs.TakeAll() // clear logs between subtests
 
-			stats := &promremote.WriteResponseStats{}
 			settings := receiver.Settings{
 				TelemetrySettings: component.TelemetrySettings{
 					Logger: logger,
 				},
 			}
 
-			result := collectExemplars(tt.req, settings, stats)
+			prwReceiver := &prometheusRemoteWriteReceiver{settings: settings}
+			result := prwReceiver.collectExemplars(tt.req)
 
-			assert.Equal(t, tt.expectedExemplars, stats.Exemplars)
+			// Collection does not touch the response stats: an exemplar counts as written
+			// only once it has been attached to a data point.
+			collected := 0
+			for _, slice := range result {
+				collected += slice.Len()
+			}
+			assert.Equal(t, tt.expectedExemplars, collected)
 			assert.Len(t, result, tt.expectedGroups)
 
 			warns := obs.FilterLevelExact(zapcore.WarnLevel).All()
