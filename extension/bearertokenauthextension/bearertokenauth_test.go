@@ -518,7 +518,7 @@ func TestBearerStartWithRetryOnFailure(t *testing.T) {
 	cfg.RetryOnFailure = credentialsfile.RetryOnFailureConfig{
 		Enabled:    true,
 		MaxRetries: 20,
-		Interval:     100 * time.Millisecond,
+		Interval:   100 * time.Millisecond,
 	}
 
 	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
@@ -546,7 +546,7 @@ func TestBearerStartWithRetryOnFailureGivesUp(t *testing.T) {
 	cfg.RetryOnFailure = credentialsfile.RetryOnFailureConfig{
 		Enabled:    true,
 		MaxRetries: 2,
-		Interval:     50 * time.Millisecond,
+		Interval:   50 * time.Millisecond,
 	}
 
 	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
@@ -561,7 +561,7 @@ func TestBearerStartWithRetryOnFailureGivesUp(t *testing.T) {
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		ev := host.lastEvent()
 		if assert.NotNil(c, ev) {
-			assert.Equal(c, componentstatus.StatusFatalError, ev.Status())
+			assert.Equal(c, componentstatus.StatusPermanentError, ev.Status())
 			assert.Error(c, ev.Err())
 		}
 	}, 5*time.Second, 50*time.Millisecond)

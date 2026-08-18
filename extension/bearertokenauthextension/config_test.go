@@ -108,7 +108,7 @@ func TestLoadConfig(t *testing.T) {
 				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
 					Enabled:    true,
 					MaxRetries: 5,
-					Interval:     2 * time.Second,
+					Interval:   2 * time.Second,
 				},
 			},
 		},
@@ -149,7 +149,7 @@ func TestValidate_RetryOnFailure(t *testing.T) {
 				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
 					Enabled:    true,
 					MaxRetries: 1,
-					Interval:     time.Second,
+					Interval:   time.Second,
 				},
 			},
 			wantErr: errRetryOnFailureNoFile,
@@ -159,8 +159,8 @@ func TestValidate_RetryOnFailure(t *testing.T) {
 			cfg: &Config{
 				Filename: "file.token",
 				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
-					Enabled: true,
-					Interval:  time.Second,
+					Enabled:  true,
+					Interval: time.Second,
 				},
 			},
 			wantErrContains: "retry_on_failure.max_retries must be greater than 0",
@@ -183,7 +183,7 @@ func TestValidate_RetryOnFailure(t *testing.T) {
 				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
 					Enabled:    true,
 					MaxRetries: 3,
-					Interval:     time.Second,
+					Interval:   time.Second,
 				},
 			},
 		},
@@ -193,7 +193,7 @@ func TestValidate_RetryOnFailure(t *testing.T) {
 				Filename: "file.token",
 				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
 					MaxRetries: 0,
-					Interval:     0,
+					Interval:   0,
 				},
 			},
 		},
