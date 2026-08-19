@@ -55,7 +55,6 @@ func (s *sdnotify) Start(_ context.Context, host component.Host) error {
 	// protocol is no-op.
 	//
 	// See the link below for the relevant man page:
-	//
 	// https://www.man7.org/linux/man-pages/man3/sd_notify.3.html
 	if os.Getenv("NOTIFY_SOCKET") == "" {
 		s.logger.Warn("NOTIFY_SOCKET is not set; sd_notify support is disabled")
