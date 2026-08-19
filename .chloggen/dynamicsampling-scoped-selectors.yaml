@@ -12,7 +12,9 @@ subtext: |
   span-context path names; root reads from spans matching the configured
   root_span_condition and any searches resource, scope, and span attributes. Bare
   attribute names are rejected at validation with an error suggesting the scoped
-  form; the previous bare-name behaviour maps to `any.attributes["<name>"]` minus
-  instrumentation-scope attributes, or more precisely per attribute origin.
+  form. Migrating a bare name: use the scope the attribute actually lives at
+  (e.g. resource.attributes["service.name"]), or any.attributes["<name>"] to keep
+  search-everywhere behaviour (which now also includes instrumentation-scope
+  attributes).
 
 change_logs: [user]
