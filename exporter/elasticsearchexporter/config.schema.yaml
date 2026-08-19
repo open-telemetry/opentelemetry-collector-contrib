@@ -91,8 +91,13 @@ $defs:
       max_retries:
         description: MaxRetries configures how many times an HTTP request is retried.
         type: integer
+      retry_on_document_status:
+        description: RetryOnDocumentStatus configures the status codes that trigger document level retries. If unset, RetryOnDocumentStatus defaults to RetryOnStatus.
+        type: array
+        items:
+          type: integer
       retry_on_status:
-        description: RetryOnStatus configures the status codes that trigger request or document level retries.
+        description: RetryOnStatus configures the status codes that trigger request level retries.
         type: array
         items:
           type: integer
@@ -171,6 +176,9 @@ properties:
   suppress_conflict_errors:
     description: SuppressConflictErrors configures whether 409 Conflict responses are logged as errors. If set to true, document level version conflict exceptions (409) will not be logged.
     type: boolean
+  telemetry:
+    description: TelemetrySettings contains settings useful for testing/debugging purposes. This is experimental and may change at any time.
+    $ref: telemetry_settings
   traces_dynamic_id:
     description: TracesDynamicID configures whether span attribute `elasticsearch.document_id` is set as the document ID in ES.
     $ref: dynamic_id_settings
@@ -182,4 +190,3 @@ properties:
 allOf:
   - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
   - $ref: authentication_settings
-  - $ref: telemetry_settings

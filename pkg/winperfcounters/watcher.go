@@ -10,10 +10,12 @@ import (
 	"fmt"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters/internal/third_party/telegraf/win_perf_counters"
 )
 
-const totalInstanceName = "_Total"
+const defaultAggregationName = "_Total"
 
 var _ PerfCounterWatcher = (*perfCounter)(nil)
 
@@ -38,20 +40,49 @@ type (
 	RawCounterValue = win_perf_counters.RawCounterValue
 )
 
+// WithAggregationName sets the instance name treated as the aggregate of all
+// other instances. By default, the aggregate is omitted when it is returned
+// with other instances and its name is cleared when it is the only returned
+// instance. Watchers use "_Total" when name is empty.
+func WithAggregationName(name string) WatcherOption {
+	return func(pc *perfCounter) {
+		if name != "" {
+			pc.aggregationName = name
+		}
+	}
+}
+
+// WithIncludeAggregationInstance configures the watcher to retain the
+// aggregation instance and its name when it is returned by a query.
+func WithIncludeAggregationInstance() WatcherOption {
+	return func(pc *perfCounter) {
+		pc.includeAggregationInstance = true
+	}
+}
+
 type perfCounter struct {
-	path   string
-	query  win_perf_counters.PerformanceQuery
-	handle win_perf_counters.PDH_HCOUNTER
+	path                       string
+	query                      win_perf_counters.PerformanceQuery
+	handle                     win_perf_counters.PDH_HCOUNTER
+	aggregationName            string
+	logger                     *zap.Logger
+	includeAggregationInstance bool
+}
+
+type WatcherOption func(*perfCounter)
+
+func WithLogger(l *zap.Logger) WatcherOption {
+	return func(pc *perfCounter) { pc.logger = l }
 }
 
 // NewWatcher creates new PerfCounterWatcher by provided parts of its path.
-func NewWatcher(object, instance, counterName string) (PerfCounterWatcher, error) {
-	return NewWatcherFromPath(counterPath(object, instance, counterName))
+func NewWatcher(object, instance, counterName string, opts ...WatcherOption) (PerfCounterWatcher, error) {
+	return NewWatcherFromPath(counterPath(object, instance, counterName), opts...)
 }
 
 // NewWatcherFromPath creates new PerfCounterWatcher by provided path.
-func NewWatcherFromPath(path string) (PerfCounterWatcher, error) {
-	counter, err := newPerfCounter(path, true)
+func NewWatcherFromPath(path string, opts ...WatcherOption) (PerfCounterWatcher, error) {
+	counter, err := newPerfCounter(path, true, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create perf counter with path %v: %w", path, err)
 	}
@@ -67,16 +98,20 @@ func counterPath(object, instance, counterName string) string {
 }
 
 // newPerfCounter returns a new performance counter for the specified descriptor.
-func newPerfCounter(counterPath string, collectOnStartup bool) (*perfCounter, error) {
+func newPerfCounter(counterPath string, collectOnStartup bool, opts ...WatcherOption) (*perfCounter, error) {
 	query, handle, err := initQuery(counterPath, collectOnStartup)
 	if err != nil {
 		return nil, err
 	}
 
 	counter := &perfCounter{
-		path:   counterPath,
-		query:  query,
-		handle: *handle,
+		path:            counterPath,
+		query:           query,
+		handle:          *handle,
+		aggregationName: defaultAggregationName,
+	}
+	for _, option := range opts {
+		option(counter)
 	}
 
 	return counter, nil
@@ -144,10 +179,17 @@ func (pc *perfCounter) ScrapeData() ([]CounterValue, error) {
 
 	vals, err := pc.query.GetFormattedCounterArrayDouble(pc.handle)
 	if err != nil {
+		if IsIgnorableError(err) {
+			if pc.logger != nil {
+				pc.logger.Debug("Transient error scraping performance counter", zap.String("counter", pc.path), zap.Error(err))
+			}
+			return nil, err
+		}
+
 		return nil, fmt.Errorf("failed to format data for performance counter '%s': %w", pc.path, err)
 	}
 
-	vals = cleanupScrapedValues(vals)
+	vals = cleanupScrapedValues(vals, pc.aggregationName, pc.includeAggregationInstance)
 	return vals, nil
 }
 
@@ -162,10 +204,17 @@ func (pc *perfCounter) ScrapeRawValues() ([]RawCounterValue, error) {
 
 	vals, err := pc.query.GetRawCounterArray(pc.handle)
 	if err != nil {
+		if IsIgnorableError(err) {
+			if pc.logger != nil {
+				pc.logger.Debug("Transient error scraping raw performance counter", zap.String("counter", pc.path), zap.Error(err))
+			}
+			return nil, err
+		}
+
 		return nil, fmt.Errorf("failed to get raw data for performance counter '%s': %w", pc.path, err)
 	}
 
-	vals = cleanupScrapedValues(vals)
+	vals = cleanupScrapedValues(vals, pc.aggregationName, pc.includeAggregationInstance)
 	return vals, nil
 }
 
@@ -181,10 +230,33 @@ func (pc *perfCounter) ScrapeRawValue(rawValue *int64) (bool, error) {
 
 	*rawValue, err = pc.query.GetRawCounterValue(pc.handle)
 	if err != nil {
+		if IsIgnorableError(err) {
+			if pc.logger != nil {
+				pc.logger.Debug("Transient error scraping raw performance counter value", zap.String("counter", pc.path), zap.Error(err))
+			}
+			return false, err
+		}
+
 		return false, fmt.Errorf("failed to get raw data for performance counter '%s': %w", pc.path, err)
 	}
 
 	return true, nil
+}
+
+// IsIgnorableError checks if an error is a transient PDH error that can be safely ignored.
+func IsIgnorableError(err error) bool {
+	var pdhErr *win_perf_counters.PdhError
+	if errors.As(err, &pdhErr) && (pdhErr.ErrorCode == win_perf_counters.PDH_INVALID_DATA || pdhErr.ErrorCode == win_perf_counters.PDH_NO_DATA || pdhErr.ErrorCode == win_perf_counters.PDH_CALC_NEGATIVE_DENOMINATOR) {
+		return true
+	}
+	type ignorable interface {
+		IsIgnorable() bool
+	}
+	var ignErr ignorable
+	if errors.As(err, &ignErr) {
+		return ignErr.IsIgnorable()
+	}
+	return false
 }
 
 // ExpandWildCardPath examines the local computer and returns those counter paths that match the given counter path which contains wildcard characters.
@@ -216,26 +288,26 @@ func setInstanceName(ctr any, name string) {
 
 // cleanupScrapedValues handles instance name collisions and standardizes names.
 // It cleans up the list in-place to avoid unnecessary copies.
-func cleanupScrapedValues[C CounterValue | RawCounterValue](vals []C) []C {
+func cleanupScrapedValues[C CounterValue | RawCounterValue](vals []C, aggregationName string, includeAggregationInstance bool) []C {
 	if len(vals) == 0 {
 		return vals
 	}
 
-	// If there is only one "_Total" instance, clear the instance name.
-	if len(vals) == 1 && getInstanceName(vals[0]) == totalInstanceName {
+	// If there is only one aggregation instance, clear the instance name.
+	if !includeAggregationInstance && len(vals) == 1 && getInstanceName(vals[0]) == aggregationName {
 		setInstanceName(&vals[0], "")
 		return vals
 	}
 
 	occurrences := map[string]int{}
-	totalIndex := -1
+	aggregationIndex := -1
 
 	for i := range vals {
 		instanceName := getInstanceName(vals[i])
 
-		if instanceName == totalInstanceName {
-			// Remember if a "_Total" instance was present.
-			totalIndex = i
+		if !includeAggregationInstance && instanceName == aggregationName {
+			// Remember if the aggregation instance was present.
+			aggregationIndex = i
 		}
 
 		if n, ok := occurrences[instanceName]; ok {
@@ -247,9 +319,9 @@ func cleanupScrapedValues[C CounterValue | RawCounterValue](vals []C) []C {
 		}
 	}
 
-	// Remove the "_Total" instance, as it can be computed with a sum aggregation.
-	if totalIndex >= 0 {
-		return removeItemAt(vals, totalIndex)
+	// Remove the aggregation instance, as it can be computed with an aggregation.
+	if aggregationIndex >= 0 {
+		return removeItemAt(vals, aggregationIndex)
 	}
 
 	return vals
@@ -270,6 +342,9 @@ func (pc *perfCounter) collectDataForScrape() (bool, error) {
 		}
 
 		if pdhErr.ErrorCode == win_perf_counters.PDH_NO_DATA {
+			if pc.logger != nil {
+				pc.logger.Debug("Transient error collecting data for performance counter", zap.String("counter", pc.path), zap.Error(err))
+			}
 			// No data is available for the counter, so no error but also no data
 			return false, nil
 		}
@@ -280,6 +355,9 @@ func (pc *perfCounter) collectDataForScrape() (bool, error) {
 			// Wait one second and retry once
 			time.Sleep(time.Second)
 			if retryErr := pc.query.CollectData(); retryErr != nil {
+				if pc.logger != nil {
+					pc.logger.Debug("Transient error collecting data for performance counter after retry", zap.String("counter", pc.path), zap.Error(err))
+				}
 				return false, fmt.Errorf("failed retry for performance counter '%s': %w", pc.path, err)
 			}
 		}

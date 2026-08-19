@@ -193,7 +193,7 @@ Gauge tracking the average rate of indexed data. **Note:** Search is best run ag
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| KBy | Gauge | Double | Development |
+| kBy | Gauge | Double | Development |
 
 #### Attributes
 
@@ -409,6 +409,7 @@ Replication status of the KV store.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | splunk.kvstore.status.value | The string value of the status returned when reporting on KV store using the introspection endpoint | Any Str | Recommended | - |
+| splunk.kvstore.storage_engine | The backend storage used by the KV store | Any Str | Recommended | - |
 | splunk.splunkd.build | The build number for this Splunk instance version | Any Str | Recommended | - |
 | splunk.splunkd.version | The splunkd version number | Any Str | Recommended | - |
 
@@ -424,7 +425,7 @@ This is the overall status of the kvstore for the given deployment.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| splunk.kvstore.storage.engine | The backend storage used by the KV store | Any Str | Recommended | - |
+| splunk.kvstore.storage_engine | The backend storage used by the KV store | Any Str | Recommended | - |
 | splunk.kvstore.external | Value denoting if the KV store is using an external service | Any Str | Recommended | - |
 | splunk.kvstore.status.value | The string value of the status returned when reporting on KV store using the introspection endpoint | Any Str | Recommended | - |
 | splunk.splunkd.build | The build number for this Splunk instance version | Any Str | Recommended | - |
@@ -486,7 +487,7 @@ Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| KBy | Gauge | Int | Development |
+| kBy | Gauge | Int | Development |
 
 #### Attributes
 

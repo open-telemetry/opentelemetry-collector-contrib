@@ -62,7 +62,7 @@ func TestNewFactory_PprofConversion(t *testing.T) {
 			ControllerConfig: defaultControllerConfig(),
 			Include:          pprofFile,
 		}
-		fileCfg.CollectionInterval = 100 * time.Millisecond
+		fileCfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
 		cfg.Remote = configoptional.None[RemoteConfig]()
 		cfg.Self = configoptional.None[SelfConfig]()
 		cfg.Server = configoptional.None[ServerConfig]()

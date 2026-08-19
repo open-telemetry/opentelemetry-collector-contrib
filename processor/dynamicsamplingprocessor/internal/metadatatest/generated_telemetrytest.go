@@ -39,7 +39,7 @@ func AssertEqualProcessorDynamicSamplingDecisionSampleRate(t *testing.T, tt *com
 func AssertEqualProcessorDynamicSamplingDecisionTriggers(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_dynamic_sampling_decision_triggers",
-		Description: "Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout). [Development]",
+		Description: "Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction, shutdown). [Development]",
 		Unit:        "{decisions}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -48,6 +48,38 @@ func AssertEqualProcessorDynamicSamplingDecisionTriggers(t *testing.T, tt *compo
 		},
 	}
 	got, err := tt.GetMetric("otelcol_processor_dynamic_sampling_decision_triggers")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorDynamicSamplingIncomingTracestateUnparseable(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_dynamic_sampling_incoming_tracestate_unparseable",
+		Description: "Number of spans whose incoming W3C tracestate could not be parsed when applying the sampling threshold. [Development]",
+		Unit:        "{spans}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_dynamic_sampling_incoming_tracestate_unparseable")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorDynamicSamplingOttlEvalErrors(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_dynamic_sampling_ottl_eval_errors",
+		Description: "Number of OTTL condition evaluation errors, labelled by the rule the condition belongs to (_root_span_condition for the root-span condition). [Development]",
+		Unit:        "{errors}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_dynamic_sampling_ottl_eval_errors")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
@@ -69,7 +101,7 @@ func AssertEqualProcessorDynamicSamplingTracesActive(t *testing.T, tt *component
 func AssertEqualProcessorDynamicSamplingTracesDropped(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_dynamic_sampling_traces_dropped",
-		Description: "Number of traces that were dropped, labelled by the rule that selected them. [Development]",
+		Description: "Number of traces that were dropped, labelled by the rule that selected them. Sentinel rule values are prefixed with an underscore (e.g. _unmatched, _eviction). [Development]",
 		Unit:        "{traces}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -85,7 +117,7 @@ func AssertEqualProcessorDynamicSamplingTracesDropped(t *testing.T, tt *componen
 func AssertEqualProcessorDynamicSamplingTracesEvicted(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_dynamic_sampling_traces_evicted",
-		Description: "Number of traces evicted from the buffer before a decision could be made. [Development]",
+		Description: "Number of traces evicted from the buffer due to num_traces pressure. Evicted traces are decided immediately per the configured eviction policy. [Development]",
 		Unit:        "{traces}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -101,7 +133,7 @@ func AssertEqualProcessorDynamicSamplingTracesEvicted(t *testing.T, tt *componen
 func AssertEqualProcessorDynamicSamplingTracesSampled(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_dynamic_sampling_traces_sampled",
-		Description: "Number of traces that were sampled, labelled by the rule that selected them. [Development]",
+		Description: "Number of traces that were sampled, labelled by the rule that selected them. Sentinel rule values are prefixed with an underscore (e.g. _eviction). [Development]",
 		Unit:        "{traces}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

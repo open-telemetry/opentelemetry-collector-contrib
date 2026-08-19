@@ -21,6 +21,20 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetDbSystemName sets provided value as "db.system.name" attribute.
+func (rb *ResourceBuilder) SetDbSystemName(val string) {
+	if rb.config.DbSystemName.Enabled {
+		rb.res.Attributes().PutStr("db.system.name", val)
+	}
+}
+
+// SetDbSystemVersion sets provided value as "db.system.version" attribute.
+func (rb *ResourceBuilder) SetDbSystemVersion(val string) {
+	if rb.config.DbSystemVersion.Enabled {
+		rb.res.Attributes().PutStr("db.system.version", val)
+	}
+}
+
 // SetMysqlInstanceEndpoint sets provided value as "mysql.instance.endpoint" attribute.
 func (rb *ResourceBuilder) SetMysqlInstanceEndpoint(val string) {
 	if rb.config.MysqlInstanceEndpoint.Enabled {
@@ -28,8 +42,30 @@ func (rb *ResourceBuilder) SetMysqlInstanceEndpoint(val string) {
 	}
 }
 
+// SetServiceInstanceID sets provided value as "service.instance.id" attribute.
+func (rb *ResourceBuilder) SetServiceInstanceID(val string) {
+	if rb.config.ServiceInstanceID.Enabled {
+		rb.res.Attributes().PutStr("service.instance.id", val)
+	}
+}
+
+// SetServiceName sets provided value as "service.name" attribute.
+func (rb *ResourceBuilder) SetServiceName(val string) {
+	if rb.config.ServiceName.Enabled {
+		rb.res.Attributes().PutStr("service.name", val)
+	}
+}
+
+// SetServiceNamespace sets provided value as "service.namespace" attribute.
+func (rb *ResourceBuilder) SetServiceNamespace(val string) {
+	if rb.config.ServiceNamespace.Enabled {
+		rb.res.Attributes().PutStr("service.namespace", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
+	rb.config.applyOverrideValues(rb.res)
 	r := rb.res
 	rb.res = pcommon.NewResource()
 	return r

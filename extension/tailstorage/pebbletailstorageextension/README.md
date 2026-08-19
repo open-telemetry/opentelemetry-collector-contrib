@@ -9,7 +9,8 @@ Stores pending trace data for tail sampling in a local Pebble database.
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fpebbletailstorage%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fpebbletailstorage) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fpebbletailstorage%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fpebbletailstorage) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_pebbletailstorage)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_pebbletailstorage&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@carsonip](https://www.github.com/carsonip), [@jmacd](https://www.github.com/jmacd), [@axw](https://www.github.com/axw) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@carsonip](https://www.github.com/carsonip), [@jmacd](https://www.github.com/jmacd), [@lahsivjar](https://www.github.com/lahsivjar) |
+| Emeritus      | [@axw](https://www.github.com/axw) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -33,6 +34,13 @@ treat the directory as ephemeral.
 ## Configuration
 
 - `directory` (required): directory used to store Pebble DB files.
+- `max_storage_size_mib` (optional): maximum on-disk size observed for the Pebble tail
+  store. The limit is best-effort because Pebble may perform filesystem operations
+  asynchronously. After the last periodic size observation exceeds the limit, new
+  appends fail. `0` keeps the existing unlimited behavior.
+
+The size limit protects normal runtime disk usage for this extension. It does not make
+the storage durable across restarts. Startup still clears any existing Pebble database.
 
 ## Example
 
@@ -51,6 +59,7 @@ policies.
 extensions:
   pebble_tail_storage:
     directory: /var/lib/otelcol/pebble-tail-storage
+    max_storage_size_mib: 10240
 
 receivers:
   otlp:

@@ -88,8 +88,26 @@ func createTracesExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	oCfg := *(cfg.(*Config)) // Clone the config
+	oCfg := *cfg.(*Config) // Clone the config
 	exp := newTracesExporter(oCfg, set)
+
+	if metadata.ExporterKafkaUseRequestTypeFeatureGate.IsEnabled() {
+		// Persistent queue support is intentionally omitted; if the user
+		// configures sending_queue.storage with this gate enabled, the
+		// exporterhelper returns a clear error at startup.
+		return xexporterhelper.NewTracesRequest(
+			ctx,
+			set,
+			newRequestConverter(exp),
+			newRequestPusher(exp),
+			exporterhelperOptions(
+				oCfg,
+				xexporterhelper.QueueBatchSettings{},
+				exp.Start, exp.Close,
+			)...,
+		)
+	}
+
 	return exporterhelper.NewTraces(
 		ctx,
 		set,
@@ -108,8 +126,26 @@ func createMetricsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	oCfg := *(cfg.(*Config)) // Clone the config
+	oCfg := *cfg.(*Config) // Clone the config
 	exp := newMetricsExporter(oCfg, set)
+
+	if metadata.ExporterKafkaUseRequestTypeFeatureGate.IsEnabled() {
+		// Persistent queue support is intentionally omitted; if the user
+		// configures sending_queue.storage with this gate enabled, the
+		// exporterhelper returns a clear error at startup.
+		return xexporterhelper.NewMetricsRequest(
+			ctx,
+			set,
+			newRequestConverter(exp),
+			newRequestPusher(exp),
+			exporterhelperOptions(
+				oCfg,
+				xexporterhelper.QueueBatchSettings{},
+				exp.Start, exp.Close,
+			)...,
+		)
+	}
+
 	return exporterhelper.NewMetrics(
 		ctx,
 		set,
@@ -128,8 +164,26 @@ func createLogsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	oCfg := *(cfg.(*Config)) // Clone the config
+	oCfg := *cfg.(*Config) // Clone the config
 	exp := newLogsExporter(oCfg, set)
+
+	if metadata.ExporterKafkaUseRequestTypeFeatureGate.IsEnabled() {
+		// Persistent queue support is intentionally omitted; if the user
+		// configures sending_queue.storage with this gate enabled, the
+		// exporterhelper returns a clear error at startup.
+		return xexporterhelper.NewLogsRequest(
+			ctx,
+			set,
+			newRequestConverter(exp),
+			newRequestPusher(exp),
+			exporterhelperOptions(
+				oCfg,
+				xexporterhelper.QueueBatchSettings{},
+				exp.Start, exp.Close,
+			)...,
+		)
+	}
+
 	return exporterhelper.NewLogs(
 		ctx,
 		set,
@@ -148,8 +202,26 @@ func createProfilesExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (xexporter.Profiles, error) {
-	oCfg := *(cfg.(*Config)) // Clone the config
+	oCfg := *cfg.(*Config) // Clone the config
 	exp := newProfilesExporter(oCfg, set)
+
+	if metadata.ExporterKafkaUseRequestTypeFeatureGate.IsEnabled() {
+		// Persistent queue support is intentionally omitted; if the user
+		// configures sending_queue.storage with this gate enabled, the
+		// exporterhelper returns a clear error at startup.
+		return xexporterhelper.NewProfilesRequest(
+			ctx,
+			set,
+			newRequestConverter(exp),
+			newRequestPusher(exp),
+			exporterhelperOptions(
+				oCfg,
+				xexporterhelper.QueueBatchSettings{},
+				exp.Start, exp.Close,
+			)...,
+		)
+	}
+
 	return xexporterhelper.NewProfiles(
 		ctx,
 		set,
