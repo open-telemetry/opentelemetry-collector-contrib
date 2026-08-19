@@ -647,6 +647,16 @@ Every span in a sampled trace is annotated with:
 | Attribute                                            | Type    | Example      | Description                                            |
 |------------------------------------------------------|---------|--------------|--------------------------------------------------------|
 | `otelcol.processor.dynamic_sampling.rule`            | string  | `keep-errors`| Name of the rule that selected this trace.             |
+| `otelcol.processor.dynamic_sampling.fingerprint`     | string  | `9f86d081884c7d65` | The matched rule's fingerprint, raw or hashed, when `record_fingerprint` is enabled. |
+
+### Recording the fingerprint
+
+`record_fingerprint` (default `none`) stamps the matched rule's fingerprint on every span of a kept trace, the same way the rule name is recorded:
+
+- `value` records the raw fingerprint (eg `checkout,billing•/api`). Long combination keys grow the sampled decision cache, which stores the recorded string for late spans.
+- `hash` records the first 8 bytes of the fingerprint's SHA-256 as 16 hex characters. The size is fixed and the hash is deterministic across instances and restarts, so grouping works fleet-wide. Verify a span's hash by recomputing it from the raw fingerprint, `echo -n '<fingerprint>' | sha256sum | cut -c1-16`.
+
+Hashing obfuscates values and fixes the attribute size. It does not protect guessable values, anyone who knows the attribute space can enumerate candidate fingerprints and hash them. Rules whose sampler has no `fingerprint_attributes` (`always_sample`, `probabilistic`) never produce the attribute, and enabling either mode adds one attribute write per span on kept traces.
 
 The sample rate is encoded in W3C TraceState as `ot=th:<hex>` per the OTel consistent probability sampling spec. The `spanmetrics` connector (`enable_metrics_sampling_method: true`) reads this field to produce correctly weighted R.E.D metrics from sampled data.
 
