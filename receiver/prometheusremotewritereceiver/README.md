@@ -91,6 +91,28 @@ In Prometheus Remote Write v2, this problem is solved since the time series are 
 
 `Created Timestamp` is a feature in Prometheus that works similarly and is translated to OTel's `StartTimeUnixNano`. Prometheus Remote Write v1 doesn't send Created Timestamps, so we can never populate the StartTimeUnixNano field from that protocol.
 
+## Rejected data is reported as rejected
+
+A remote write request is translated as a whole. If any part of it cannot be written, including the histograms this receiver does not support, the request is answered with a non-2xx status, nothing is handed to the pipeline, and the `X-Prometheus-Remote-Write-*-Written` headers report zero. That follows the Remote-Write 2.0 rule that a receiver must not answer 2xx when data it understood was not written, and that the headers carry the number actually written.
+
+The same applies once the data reaches the rest of the collector: the counts are only reported after the next consumer has accepted the batch, and the resource attributes a request carries in `target_info` are only remembered once that has happened. A request that fails therefore leaves no trace for later requests to pick up. A request that succeeds only replaces what the cache holds for a target when it actually learned something from `target_info`, so a slow request cannot undo attributes another one committed while it was waiting.
+
+The counts are reported on every response once the request has been recognised as Remote-Write 2.0, including the ones that could not be decoded. A sender reading no header at all cannot tell that apart from a receiver that does not report them.
+
+### What a series is allowed to carry
+
+Remote-Write 2.0 lets a series hold samples or histograms and never both, and the metric type decides which of the two the receiver goes looking for. A series that breaks either rule carries data the receiver would walk past without translating, so the request is rejected rather than half written.
+
+### Custom bucket histograms
+
+Native Histograms with custom buckets are checked with Prometheus' own `Validate`, which is what a Prometheus server runs on every histogram it accepts over remote write, and whose failures it answers with 400. It covers the bucket bounds being finite, distinct and in increasing order, the implicit `+Inf` bound not being sent explicitly, the spans matching the bounds and the values, and the count matching the buckets. The compatibility specification defines exactly this shape, and OTLP requires the count to equal the sum of the bucket counts, so a histogram that fails any of these has no valid translation and is rejected.
+
+A histogram whose bucket populations add up past what a count can hold is rejected as well. That is the one check `Validate` cannot make, because it adds them with wrapping arithmetic.
+
+### Fields that would be read past
+
+Two shapes are turned away because translating them would leave data behind without saying so. A histogram whose count is an integer but whose zero bucket carries a float loses those observations, since nothing reads the float side once the flavor is decided. And the Native Histograms specification defines the zero threshold as a `float64 >= 0`, so a negative one has no meaning to carry over.
+
 ## Known Limitations
 
 ### Summaries and Classic Histograms are unsupported
@@ -101,7 +123,7 @@ Summaries suffer from the same problem, a working Summary is composed by several
 
 ### Only integer, counter flavored Native Histograms are translated
 
-The Prometheus compatibility specification requires native histograms of the float or gauge flavors to be dropped, for both the standard schemas and custom buckets. A histogram whose reset hint is `GAUGE`, or whose counts arrive as floats, is therefore not translated. Float bucket populations can be fractional or non-finite and have no faithful representation in an OpenTelemetry histogram, whose bucket counts are unsigned integers.
+The Prometheus compatibility specification requires native histograms of the float or gauge flavors to be dropped, for both the standard schemas and custom buckets. A histogram whose reset hint is `GAUGE`, or whose counts arrive as floats, is not translated, and the request carrying it is rejected. Float bucket populations can be fractional or non-finite and have no faithful representation in an OpenTelemetry histogram, whose bucket counts are unsigned integers.
 
 A custom bucket histogram that carries no bounds is translated rather than dropped. The bounds sit between buckets, so a histogram with none of them still has the bucket above the last one, which is the shape Prometheus produces for a classic histogram whose only bucket was `+Inf`.
 
@@ -114,7 +136,7 @@ Prometheus sends Native Histogram buckets as spans of populated buckets separate
     - A single histogram may expand to 16384 buckets, counting its positive and negative ranges together.
     - All histograms in one request share a budget of 4194304 expanded buckets.
 
-Histograms past either limit are dropped, are not counted in the `X-Prometheus-Remote-Write-Histograms-Written` response header, and are logged. Both limits are hardcoded and not configurable for now.
+A histogram past either limit rejects the request, so the outcome does not depend on the order the histograms arrived in. Both limits are hardcoded and not configurable for now.
 
 ### Resource Metrics Cache
 
