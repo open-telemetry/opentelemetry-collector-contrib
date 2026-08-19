@@ -20,3 +20,7 @@ time_zone_locations:
     time_zone_locations:
       PDT: America/Los_Angeles
       NZST: Pacific/Auckland
+drop_field:
+  type: helpers_test
+  time:
+    drop_field: true

@@ -13,6 +13,7 @@ If a timestamp block is specified, the parser operator will perform the timestam
 | `layout`               | required   | The exact layout of the timestamp to be parsed. |
 | `location`             | `Local`    | The geographic location (timezone) to use when parsing a timestamp that does not include a timezone. The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`. |
 | `time_zone_locations`  |            | An optional map of timezone abbreviations to IANA location names (e.g. `PDT: America/Los_Angeles`). When the `%Z` directive is used and the parsed abbreviation matches a key in this map, the corresponding IANA location is used for parsing instead of `location`. This allows correct parsing of log streams that contain timestamps from multiple timezones. |
+| `drop_field`           | `false`    | If `true`, the `parse_from` field will be removed from the entry after parsing. |
 
 ## Layout Types
 
@@ -142,7 +143,7 @@ service:
 ```
 
 Note that this configuration has a side effect of creating a `timestamp_field` attribute for each log record.
-To get rid of the attribute, use the `remove` operator:
+To get rid of the attribute, add `drop_field: true` to the `timestamp` block (or use the `remove` operator):
 
 ```yaml
 exporters:

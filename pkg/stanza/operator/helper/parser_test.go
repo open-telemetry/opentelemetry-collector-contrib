@@ -658,6 +658,110 @@ func TestParserFields(t *testing.T) {
 				return e
 			},
 		},
+		{
+			"ParseFromBodyFieldWithDrop",
+			func(cfg *ParserConfig) {
+				cfg.ParseFrom = entry.NewBodyField("one", "two")
+				cfg.DropField = true
+			},
+			func() *entry.Entry {
+				e := entry.New()
+				e.ObservedTimestamp = now
+				e.Body = map[string]any{
+					"one": map[string]any{
+						"two": keyValue,
+					},
+				}
+				return e
+			},
+			func() *entry.Entry {
+				e := entry.New()
+				e.ObservedTimestamp = now
+				e.Body = map[string]any{
+					"one": map[string]any{},
+				}
+				e.Attributes = map[string]any{
+					"key": "value",
+				}
+				return e
+			},
+		},
+		{
+			"ParseFromAttributeFieldWithDrop",
+			func(cfg *ParserConfig) {
+				cfg.ParseFrom = entry.NewAttributeField("one", "two")
+				cfg.DropField = true
+			},
+			func() *entry.Entry {
+				e := entry.New()
+				e.ObservedTimestamp = now
+				e.Attributes = map[string]any{
+					"one": map[string]any{
+						"two": keyValue,
+					},
+				}
+				return e
+			},
+			func() *entry.Entry {
+				e := entry.New()
+				e.ObservedTimestamp = now
+				e.Attributes = map[string]any{
+					"key": "value",
+					"one": map[string]any{},
+				}
+				return e
+			},
+		},
+		{
+			"ParseFromResourceFieldWithDrop",
+			func(cfg *ParserConfig) {
+				cfg.ParseFrom = entry.NewResourceField("one", "two")
+				cfg.DropField = true
+			},
+			func() *entry.Entry {
+				e := entry.New()
+				e.ObservedTimestamp = now
+				e.Resource = map[string]any{
+					"one": map[string]any{
+						"two": keyValue,
+					},
+				}
+				return e
+			},
+			func() *entry.Entry {
+				e := entry.New()
+				e.ObservedTimestamp = now
+				e.Attributes = map[string]any{
+					"key": "value",
+				}
+				e.Resource = map[string]any{
+					"one": map[string]any{},
+				}
+				return e
+			},
+		},
+		{
+			"ParseFromBodyRootWithDrop",
+			func(cfg *ParserConfig) {
+				cfg.ParseFrom = entry.NewBodyField()
+				cfg.DropField = true
+			},
+			func() *entry.Entry {
+				e := entry.New()
+				e.ObservedTimestamp = now
+				e.Body = keyValue
+				return e
+			},
+			func() *entry.Entry {
+				e := entry.New()
+				e.ObservedTimestamp = now
+				e.Body = nil
+				e.Attributes = map[string]any{
+					"key": "value",
+				}
+				return e
+			},
+		},
 	}
 
 	parse := func(i any) (any, error) {
