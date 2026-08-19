@@ -194,6 +194,11 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 		return
 	}
 
+	// Content negotiation has succeeded, so every response from here on has to carry the written
+	// counts. Nothing has been written yet, and a sender that sees no header at all cannot tell
+	// that apart from a receiver that does not report them.
+	promremote.WriteResponseStats{}.SetHeaders(w)
+
 	// After parsing the content-type header, the next step would be to handle content-encoding.
 	// Luckly confighttp's Server has middleware that already decompress the request body for us.
 	buf := prw.bodyBufferPool.Get().(*bytes.Buffer)
@@ -212,15 +217,20 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 		return
 	}
 
-	m, stats, err := prw.translateV2(req.Context(), &prw2Req)
-	stats.SetHeaders(w)
+	m, stats, cacheUpdates, err := prw.translateV2(req.Context(), &prw2Req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest) // Following instructions at https://prometheus.io/docs/specs/remote_write_spec_2_0/#invalid-samples
+		// Nothing was handed to the consumer, so nothing was written. The specification wants the
+		// counts to be what was actually written, which is zero.
+		// https://prometheus.io/docs/specs/remote_write_spec_2_0/#invalid-samples
+		promremote.WriteResponseStats{}.SetHeaders(w)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Return early if metric count is 0.
-	if m.MetricCount() == 0 {
+	// Return early if there is nothing to hand over.
+	if m.DataPointCount() == 0 {
+		stats.SetHeaders(w)
+		prw.commitResourceCache(cacheUpdates)
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
@@ -230,6 +240,9 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.DataPointCount(), err)
 	if err != nil {
 		prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+		// The consumer reports one error for the whole batch and no partial count, so the batch
+		// counts as unwritten and the resource cache is not updated either.
+		promremote.WriteResponseStats{}.SetHeaders(w)
 		if consumererror.IsPermanent(err) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		} else {
@@ -238,7 +251,31 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 		return
 	}
 
+	stats.SetHeaders(w)
+	prw.commitResourceCache(cacheUpdates)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// commitResourceCache publishes the resource snapshots a request staged, once that request has
+// been accepted. Staging them keeps a rejected request from changing what later ones see.
+// stagedResource is a resource snapshot waiting for the request to be accepted.
+type stagedResource struct {
+	snapshot pmetric.ResourceMetrics
+	// learned marks a snapshot carrying attributes this request read from target_info. Those
+	// replace whatever the cache holds. A snapshot derived only from job and instance does not,
+	// because another request may have committed a richer one while this one was still in the
+	// consumer, and overwriting it would lose those attributes for every later request.
+	learned bool
+}
+
+func (prw *prometheusRemoteWriteReceiver) commitResourceCache(updates map[uint64]stagedResource) {
+	for hashedLabels, staged := range updates {
+		if staged.learned {
+			prw.rmCache.Add(hashedLabels, staged.snapshot)
+			continue
+		}
+		prw.rmCache.ContainsOrAdd(hashedLabels, staged.snapshot)
+	}
 }
 
 // parseProto parses the content-type header and returns the version of the remote-write protocol.
@@ -284,7 +321,7 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (remoteapi.
 // This function always creates new ResourceMetrics per request, only copying attributes
 // from the LRU cache when available. Never returns cached objects to avoid shared
 // mutation across concurrent requests.
-func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMetrics pmetric.Metrics, reqRM map[uint64]pmetric.ResourceMetrics) (pmetric.ResourceMetrics, uint64) {
+func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMetrics pmetric.Metrics, reqRM map[uint64]pmetric.ResourceMetrics, cacheUpdates map[uint64]stagedResource) (pmetric.ResourceMetrics, uint64) {
 	// Hash job+instance directly to avoid allocating a temporary pcommon.Resource
 	// on every call (which happens once per time series).
 	job := ls.Get("job")
@@ -300,7 +337,14 @@ func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMe
 	}
 
 	rm := otelMetrics.ResourceMetrics().AppendEmpty()
-	if existingRM, ok := prw.rmCache.Get(hashedLabels); ok {
+	var existingRM pmetric.ResourceMetrics
+	staged, ok := cacheUpdates[hashedLabels]
+	if ok {
+		existingRM = staged.snapshot
+	} else {
+		existingRM, ok = prw.rmCache.Get(hashedLabels)
+	}
+	if ok {
 		// When the ResourceMetrics already exists in the global cache, we can reuse the previous snapshots and perpass the already seen attributes to the current request.
 		existingRM.Resource().Attributes().CopyTo(rm.Resource().Attributes())
 	} else {
@@ -309,7 +353,7 @@ func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMe
 		parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
 		snapshot := pmetric.NewResourceMetrics()
 		rm.Resource().Attributes().CopyTo(snapshot.Resource().Attributes())
-		prw.rmCache.Add(hashedLabels, snapshot)
+		cacheUpdates[hashedLabels] = stagedResource{snapshot: snapshot}
 	}
 
 	reqRM[hashedLabels] = rm
@@ -318,7 +362,7 @@ func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMe
 
 // translateV2 translates a v2 remote-write request into OTLP metrics.
 // translate is not feature complete.
-func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
+func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, map[uint64]stagedResource, error) {
 	var (
 		badRequestErrors error
 		// otelMetrics represents the final metrics, after all the processing, that will be returned by the receiver.
@@ -336,6 +380,10 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Once the request is fully processed, only the resource attributes contained in the request’s ResourceMetrics are snapshotted back into the LRU cache.
 		// This ensures that future requests start with the enriched resource attributes already applied.
 		modifiedResourceMetric = make(map[uint64]pmetric.ResourceMetrics)
+
+		// cacheUpdates holds the resource snapshots this request wants to publish. They are only
+		// written to the shared cache once the request has been accepted.
+		cacheUpdates = make(map[uint64]stagedResource)
 
 		// exemplarMap keeps track of exemplars and key is composed by scope_name:scope_version:metric_name:type
 		exemplarMap = collectExemplars(req, prw.settings, &stats)
@@ -360,11 +408,15 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("duplicate label %q in labels", duplicateLabel))
 			continue
 		}
+		if err := validateTimeSeriesPayload(ts, metadata.Name); err != nil {
+			badRequestErrors = errors.Join(badRequestErrors, err)
+			continue
+		}
 
 		// If the metric name is equal to target_info, we use its labels as attributes of the resource
 		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
 		if metadata.Name == "target_info" {
-			rm, hashed := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric)
+			rm, hashed := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric, cacheUpdates)
 			attrs := rm.Resource().Attributes()
 
 			// Add the remaining labels as resource attributes
@@ -376,7 +428,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 			snapshot := pmetric.NewResourceMetrics()
 			attrs.CopyTo(snapshot.Resource().Attributes())
-			prw.rmCache.Add(hashed, snapshot)
+			cacheUpdates[hashed] = stagedResource{snapshot: snapshot, learned: true}
 			// target_info is not stored as a metric but PRW requires the response
 			// to report all received samples, including target_info, to avoid a stats mismatch
 			stats.Samples += len(ts.Samples)
@@ -401,12 +453,17 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Handle histograms separately due to their complex mixed-schema processing
 		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_HISTOGRAM ||
 			ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_UNSPECIFIED && len(ts.Histograms) > 0 {
-			prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, scopeCache, &stats, modifiedResourceMetric, exemplarMap, &bucketBudget)
+			if err := prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, scopeCache, &stats, modifiedResourceMetric, exemplarMap, &bucketBudget, cacheUpdates); err != nil {
+				// The whole request is rejected either way, so there is nothing to gain from
+				// translating the rest of it, and collecting an error per histogram would let a
+				// request full of invalid ones inflate the response several times over.
+				return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil, err
+			}
 			continue
 		}
 
 		// Handle regular metrics (gauge, counter, summary)
-		rm, _ := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric)
+		rm, _ := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric, cacheUpdates)
 
 		resourceID := identity.OfResource(rm.Resource())
 		metricID := createMetricIdentity(
@@ -459,8 +516,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 					metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "stateset")
 				}
 			case writev2.Metadata_METRIC_TYPE_SUMMARY:
-				// Drop summary series as we will not handle them.
-				continue
+				return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil,
+					fmt.Errorf("summary metric %q is not supported by this receiver, its quantile series can arrive in separate requests and cannot be reassembled", metricName)
 			default:
 				badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
 				continue
@@ -496,19 +553,38 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			}
 
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
-			// Drop summary series as we will not handle them.
-			continue
+			return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil,
+				fmt.Errorf("summary metric %q is not supported by this receiver, its quantile series can arrive in separate requests and cannot be reassembled", metricName)
 		default:
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
 		}
 	}
 
-	if bucketBudget.exhausted {
-		prw.settings.Logger.Warn("Dropped Native Histograms that did not fit the request bucket budget",
-			zapcore.Field{Key: "max_buckets", Type: zapcore.Int64Type, Integer: maxExponentialHistogramBucketsPerRequest})
+	if badRequestErrors != nil {
+		// Nothing is published when any known data could not be written.
+		return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil, badRequestErrors
 	}
 
-	return otelMetrics, stats, badRequestErrors
+	return otelMetrics, stats, cacheUpdates, badRequestErrors
+}
+
+// validateTimeSeriesPayload checks what a series carries against what the protocol allows it to.
+// A series holds samples or histograms and never both, and the metric type decides which of the
+// two the receiver goes looking for, so histograms attached to a sample type are data the
+// receiver would silently walk past.
+func validateTimeSeriesPayload(ts *writev2.TimeSeries, name string) error {
+	hasSamples, hasHistograms := len(ts.Samples) > 0, len(ts.Histograms) > 0
+	if hasSamples && hasHistograms {
+		return fmt.Errorf("timeseries %q carries both samples and histograms", name)
+	}
+	if hasHistograms {
+		switch ts.Metadata.Type {
+		case writev2.Metadata_METRIC_TYPE_HISTOGRAM, writev2.Metadata_METRIC_TYPE_GAUGEHISTOGRAM, writev2.Metadata_METRIC_TYPE_UNSPECIFIED:
+		default:
+			return fmt.Errorf("timeseries %q is typed %s but carries histograms", name, ts.Metadata.Type)
+		}
+	}
+	return nil
 }
 
 // processHistogramTimeSeries handles all histogram processing, including validation and mixed schemas.
@@ -524,12 +600,11 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	modifiedRM map[uint64]pmetric.ResourceMetrics,
 	exemplarMap map[uint64]pmetric.ExemplarSlice,
 	bucketBudget *histogramBucketBudget,
-) {
+	cacheUpdates map[uint64]stagedResource,
+) error {
 	// Drop classic histogram series (those with samples)
 	if len(ts.Samples) != 0 {
-		prw.settings.Logger.Info("Dropping classic histogram series. Please configure Prometheus to convert classic histograms into Native Histograms Custom Buckets",
-			zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
-		return
+		return fmt.Errorf("classic histogram series %q is not supported, configure Prometheus to send Native Histograms with Custom Buckets", ls.Get("__name__"))
 	}
 	attrs := extractAttributes(ls)
 
@@ -543,7 +618,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	for i := range ts.Histograms {
 		histogram := &ts.Histograms[i]
 		if histogram.ResetHint == writev2.Histogram_RESET_HINT_GAUGE {
-			continue
+			return fmt.Errorf("gauge flavored Native Histogram %q at timestamp %d is not supported", metricName, histogram.Timestamp)
 		}
 
 		var histogramType string
@@ -556,7 +631,8 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		case -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8:
 			histogramType = "exponential"
 		default:
-			// Skip invalid schema - log at debug level for details
+			// Kept from #48027: operators asked for the detail at debug level, and the error
+			// carries the same information back to the sender.
 			prw.settings.Logger.Debug(
 				"Dropping histogram with invalid schema",
 				zapcore.Field{Key: "metric_name", Type: zapcore.StringType, String: metricName},
@@ -565,48 +641,49 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 				zapcore.Field{Key: "instance", Type: zapcore.StringType, String: ls.Get("instance")},
 				zapcore.Field{Key: "timestamp", Type: zapcore.Int64Type, Integer: histogram.Timestamp},
 			)
-			continue
+			return fmt.Errorf("Native Histogram %q at timestamp %d has unsupported schema %d", metricName, histogram.Timestamp, histogram.Schema)
 		}
 
 		// The compatibility specification requires native histograms of the float flavor to be
 		// dropped; the gauge flavor is already rejected above. This has to come before the stale
 		// check, otherwise a stale float histogram would be accepted by accident.
 		if histogram.IsFloatHistogram() {
-			prw.settings.Logger.Debug(
-				"Dropping float flavored Native Histogram",
-				zapcore.Field{Key: "metric_name", Type: zapcore.StringType, String: metricName},
-				zapcore.Field{Key: "job", Type: zapcore.StringType, String: ls.Get("job")},
-				zapcore.Field{Key: "instance", Type: zapcore.StringType, String: ls.Get("instance")},
-			)
-			continue
+			return fmt.Errorf("float flavored Native Histogram %q at timestamp %d is not supported", metricName, histogram.Timestamp)
+		}
+		// The zero bucket has to agree with the rest of the histogram. Anything the sender put in
+		// the float side of it is invisible to an integer histogram, which is the only flavor left
+		// by the time we get here, so those observations would go missing without a word.
+		if _, floatZero := histogram.GetZeroCount().(*writev2.Histogram_ZeroCountFloat); floatZero {
+			return fmt.Errorf("Native Histogram %q at timestamp %d carries a float zero count on an integer histogram", metricName, histogram.Timestamp)
+		}
+		// The zero threshold is written to the data point whether or not the histogram carries a
+		// stale marker, and the Native Histograms specification defines it as a float64 >= 0.
+		if histogram.ZeroThreshold < 0 {
+			return fmt.Errorf("Native Histogram %q at timestamp %d has a negative zero threshold %v", metricName, histogram.Timestamp, histogram.ZeroThreshold)
 		}
 
-		// Validate everything that can be checked without allocating, so that a histogram which
-		// is going to be dropped never reserves budget or leaves an empty metric behind. A stale
+		// Validate before any resource, scope or metric is built, so that a histogram which is
+		// going to be dropped never reserves budget or leaves an empty metric behind. A stale
 		// marker is exempt because its remaining fields are ignored rather than translated.
 		var expLayout exponentialHistogramLayout
-		if histogramType == "exponential" && !value.IsStaleNaN(histogram.Sum) {
+		if !value.IsStaleNaN(histogram.Sum) {
 			var err error
-			expLayout, err = validateExponentialHistogram(histogram)
-			if err != nil {
-				prw.settings.Logger.Info(
-					"Dropping Native Histogram that cannot be converted",
-					zapcore.Field{Key: "metric_name", Type: zapcore.StringType, String: metricName},
-					zapcore.Field{Key: "job", Type: zapcore.StringType, String: ls.Get("job")},
-					zapcore.Field{Key: "instance", Type: zapcore.StringType, String: ls.Get("instance")},
-					zapcore.Field{Key: "timestamp", Type: zapcore.Int64Type, Integer: histogram.Timestamp},
-					zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err},
-				)
-				continue
+			if histogramType == "nhcb" {
+				err = validateNHCB(histogram)
+			} else {
+				expLayout, err = validateExponentialHistogram(histogram)
 			}
-			if !bucketBudget.reserve(expLayout) {
-				// Logged once for the request rather than once per histogram.
-				continue
+			if err != nil {
+				return fmt.Errorf("Native Histogram %q at timestamp %d cannot be converted: %w", metricName, histogram.Timestamp, err)
+			}
+			if histogramType == "exponential" && !bucketBudget.reserve(expLayout) {
+				return fmt.Errorf("Native Histogram %q at timestamp %d does not fit the remaining request budget of %d buckets",
+					metricName, histogram.Timestamp, bucketBudget.remaining)
 			}
 		}
 
 		if hashedLabels == 0 {
-			rm, hashedLabels = prw.getOrCreateRM(ls, otelMetrics, modifiedRM)
+			rm, hashedLabels = prw.getOrCreateRM(ls, otelMetrics, modifiedRM, cacheUpdates)
 			resourceID := identity.OfResource(rm.Resource())
 			is := pcommon.NewInstrumentationScope()
 			is.SetName(si.Name)
@@ -669,12 +746,16 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		exemplarSlice := pmetric.NewExemplarSlice()
 		// Process the individual histogram
 		if histogramType == "nhcb" {
-			prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, attrs, ls, stats)
+			if err := prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, attrs, stats); err != nil {
+				return fmt.Errorf("Native Histogram %q at timestamp %d cannot be converted: %w", metricName, histogram.Timestamp, err)
+			}
 			if histMetric.Histogram().DataPoints().Len() > 0 {
 				exemplarSlice = histMetric.Histogram().DataPoints().At(0).Exemplars()
 			}
 		} else {
-			prw.addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, expLayout, attrs, ls, stats)
+			if err := prw.addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, expLayout, attrs, stats); err != nil {
+				return fmt.Errorf("Native Histogram %q at timestamp %d cannot be converted: %w", metricName, histogram.Timestamp, err)
+			}
 			if histMetric.ExponentialHistogram().DataPoints().Len() > 0 {
 				exemplarSlice = histMetric.ExponentialHistogram().DataPoints().At(0).Exemplars()
 			}
@@ -691,6 +772,8 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			ex.CopyTo(exemplarSlice)
 		}
 	}
+
+	return nil
 }
 
 // setMetric append a new empty metric and assign the name, unit and description to it.
@@ -739,7 +822,7 @@ func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labe
 
 // addExponentialHistogramDatapoint converts one exponential Native Histogram to an OTLP data
 // point. layout must come from validateExponentialHistogram for the same histogram.
-func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram *writev2.Histogram, layout exponentialHistogramLayout, attrs pcommon.Map, ls labels.Labels, stats *promremote.WriteResponseStats) {
+func (*prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram *writev2.Histogram, layout exponentialHistogramLayout, attrs pcommon.Map, stats *promremote.WriteResponseStats) error {
 	// A stale marker carries no distribution. The specification says the remaining histogram
 	// fields are ignored when the sum is the stale NaN, so none of them are read here and no
 	// bucket work is done for it.
@@ -752,7 +835,7 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 		attrs.CopyTo(dp.Attributes())
 		stats.Histograms++
-		return
+		return nil
 	}
 
 	// Built aside from the slice so that a histogram whose population cannot be represented is
@@ -774,9 +857,7 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 	// represented by a bucket, which happens for NaN observations and for the overflow bucket.
 	count, ok := addPopulations(zeroCount, positive, negative)
 	if !positiveOK || !negativeOK || !ok {
-		prw.settings.Logger.Info("Dropping Native Histogram whose bucket population is too large to represent",
-			zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
-		return
+		return errors.New("bucket population is too large to represent")
 	}
 	dp.SetCount(count)
 	if count > 0 {
@@ -789,6 +870,7 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 	attrs.CopyTo(dp.Attributes())
 	dp.MoveTo(datapoints.AppendEmpty())
 	stats.Histograms++
+	return nil
 }
 
 // addPopulations sums bucket populations, reporting false if the total cannot be represented.
@@ -846,14 +928,12 @@ const maxExponentialHistogramBucketsPerRequest = 4 * 1024 * 1024
 // histogramBucketBudget is the share of maxExponentialHistogramBucketsPerRequest left in a request.
 type histogramBucketBudget struct {
 	remaining int
-	exhausted bool
 }
 
 // reserve claims the buckets one data point needs, reporting whether they were still available.
 func (b *histogramBucketBudget) reserve(layout exponentialHistogramLayout) bool {
 	needed := layout.positive.numBuckets + layout.negative.numBuckets
 	if needed > b.remaining {
-		b.exhausted = true
 		return false
 	}
 	b.remaining -= needed
@@ -956,8 +1036,9 @@ func validateBucketSpanLayout(spans []writev2.BucketSpan, valueCount int, finite
 		nextIndex = start + int64(span.Length)
 		if span.Length == 0 {
 			// An empty span produces no bucket, so its index never has to be representable.
-			// Saturating keeps a run of them from walking out of int64, and lands far enough
-			// above the overflow limit that any later bucket is dropped anyway.
+			// Saturating keeps a run of them from walking out of int64. It is purely defensive:
+			// any later bucket built on a saturated index is already past the overflow bucket
+			// and rejected below, so this has no observable effect on the output.
 			nextIndex = min(nextIndex, unrepresentableBucketIndex)
 			continue
 		}
@@ -1122,8 +1203,17 @@ func applyScopeInfo(sm pmetric.ScopeMetrics, si scopeInfo) {
 	}
 }
 
+// validateNHCB checks a custom bucket histogram the way Prometheus checks the ones it accepts over
+// remote write: the spans against the bounds, the bounds against each other, and the count against
+// the buckets. The dense form is as long as the bounds, so unlike the exponential schemas it needs
+// no separate limit.
+func validateNHCB(histogram *writev2.Histogram) error {
+	// The float flavor is turned away before this, so the integer conversion always succeeds.
+	return histogram.ToIntHistogram().Validate()
+}
+
 // addNHCBDatapoint converts a single Native Histogram Custom Buckets (NHCB) to OpenTelemetry histogram datapoints
-func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *writev2.Histogram, attrs pcommon.Map, ls labels.Labels, stats *promremote.WriteResponseStats) {
+func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *writev2.Histogram, attrs pcommon.Map, stats *promremote.WriteResponseStats) error {
 	// The bounds sit between buckets, so a histogram carrying none of them still has the bucket
 	// above the last one. Prometheus produces that for a classic histogram that only ever had
 	// its +Inf bucket.
@@ -1136,9 +1226,7 @@ func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Hi
 	if !stale {
 		var ok bool
 		if count, ok = addPopulations(bucketCounts...); !ok {
-			prw.settings.Logger.Info("Dropping Native Histogram whose bucket population is too large to represent",
-				zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
-			return
+			return errors.New("bucket population is too large to represent")
 		}
 	}
 
@@ -1164,6 +1252,7 @@ func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Hi
 
 	attrs.CopyTo(dp.Attributes())
 	stats.Histograms++
+	return nil
 }
 
 // convertNHCBBuckets converts NHCB bucket data to OpenTelemetry bucket counts
