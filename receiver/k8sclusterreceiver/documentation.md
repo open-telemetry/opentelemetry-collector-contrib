@@ -312,6 +312,14 @@ Number of desired pods in the stateful set (the `spec.replicas` field)
 | ---- | ----------- | ---------- | --------- |
 | {pod} | Gauge | Int | Development |
 
+### k8s.statefulset.pod.available
+
+The number of available pods per stateful set (the `status.availableReplicas` field). A pod is available once it has been `Ready` for at least `spec.minReadySeconds`.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pod} | Gauge | Int | Development |
+
 ### k8s.statefulset.ready_pods
 
 Number of pods created by the stateful set that have the `Ready` condition

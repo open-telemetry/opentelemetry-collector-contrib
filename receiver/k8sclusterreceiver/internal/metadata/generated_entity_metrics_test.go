@@ -302,6 +302,7 @@ func TestEntityBuilders(t *testing.T) {
 		eb := mb.ForK8sStatefulset(e)
 		eb.RecordK8sStatefulsetCurrentPodsDataPoint(ts, 1)
 		eb.RecordK8sStatefulsetDesiredPodsDataPoint(ts, 1)
+		eb.RecordK8sStatefulsetPodAvailableDataPoint(ts, 1)
 		eb.RecordK8sStatefulsetReadyPodsDataPoint(ts, 1)
 		eb.RecordK8sStatefulsetUpdatedPodsDataPoint(ts, 1)
 		eb.Emit()
@@ -325,7 +326,7 @@ func TestEntityBuilders(t *testing.T) {
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
-		assert.Equal(t, 4, ms.Len())
+		assert.Equal(t, 5, ms.Len())
 	})
 	t.Run("k8s.statefulset/disabled_identity_attr", func(t *testing.T) {
 		// When an identity attribute is disabled, the entity is not produced but
@@ -340,6 +341,7 @@ func TestEntityBuilders(t *testing.T) {
 		eb := mb.ForK8sStatefulset(e)
 		eb.RecordK8sStatefulsetCurrentPodsDataPoint(ts, 1)
 		eb.RecordK8sStatefulsetDesiredPodsDataPoint(ts, 1)
+		eb.RecordK8sStatefulsetPodAvailableDataPoint(ts, 1)
 		eb.RecordK8sStatefulsetReadyPodsDataPoint(ts, 1)
 		eb.RecordK8sStatefulsetUpdatedPodsDataPoint(ts, 1)
 		eb.Emit()
@@ -369,6 +371,7 @@ func TestEntityBuilders(t *testing.T) {
 		eb := mb.ForK8sStatefulset(e)
 		eb.RecordK8sStatefulsetCurrentPodsDataPoint(ts, 1)
 		eb.RecordK8sStatefulsetDesiredPodsDataPoint(ts, 1)
+		eb.RecordK8sStatefulsetPodAvailableDataPoint(ts, 1)
 		eb.RecordK8sStatefulsetReadyPodsDataPoint(ts, 1)
 		eb.RecordK8sStatefulsetUpdatedPodsDataPoint(ts, 1)
 		eb.Emit()
