@@ -14,6 +14,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dynamicsamplingprocessor/internal/sampler"
 )
 
 // SamplerType identifies the kind of sampler attached to a rule.
@@ -205,10 +206,12 @@ type SamplerConfig struct {
 	// Used by: dynamic_throughput.
 	GoalThroughput int `mapstructure:"goal_throughput"`
 
-	// FingerprintAttributes is the list of attribute names that identify what kind of
-	// trace this is for sampling purposes. Values are collected from resource
-	// attributes and from every span of the accumulated trace, so the
-	// fingerprint reflects the whole trace rather than any single span.
+	// FingerprintAttributes is the list of scoped attribute selectors that
+	// identify what kind of trace this is for sampling purposes. Each entry
+	// has the form `<scope>.attributes["<name>"]` where scope is one of
+	// resource, scope, span, root, or any. Values are collected across the
+	// accumulated trace, so the fingerprint reflects the whole trace rather
+	// than any single span.
 	// Used by: dynamic_percentage, dynamic_throughput.
 	FingerprintAttributes []string `mapstructure:"fingerprint_attributes"`
 
@@ -383,6 +386,9 @@ func (s *SamplerConfig) validate(ruleName string) error {
 		if len(s.FingerprintAttributes) == 0 {
 			return fmt.Errorf("rule %q: fingerprint_attributes must contain at least one entry", ruleName)
 		}
+		if _, err := sampler.ParseSelectors(s.FingerprintAttributes); err != nil {
+			return fmt.Errorf("rule %q: %w", ruleName, err)
+		}
 		if s.Weight < 0 || s.Weight >= 1 {
 			return fmt.Errorf("rule %q: weight must be in [0, 1)", ruleName)
 		}
@@ -403,6 +409,9 @@ func (s *SamplerConfig) validate(ruleName string) error {
 		}
 		if len(s.FingerprintAttributes) == 0 {
 			return fmt.Errorf("rule %q: fingerprint_attributes must contain at least one entry", ruleName)
+		}
+		if _, err := sampler.ParseSelectors(s.FingerprintAttributes); err != nil {
+			return fmt.Errorf("rule %q: %w", ruleName, err)
 		}
 		if s.MaxKeys < 0 {
 			return fmt.Errorf("rule %q: max_keys must be non-negative", ruleName)

@@ -22,11 +22,11 @@ import (
 // rule is a compiled rule: OTTL conditions, a match mode, and the sampler to
 // invoke when the rule matches.
 type rule struct {
-	name       string
-	conditions []*ottl.Condition[*ottlspan.TransformContext]
-	matchMode  MatchMode
-	sampler    sampler.Sampler
-	keyFields  []string
+	name        string
+	conditions  []*ottl.Condition[*ottlspan.TransformContext]
+	matchMode   MatchMode
+	sampler     sampler.Sampler
+	fingerprint []sampler.Selector
 
 	logger      *zap.Logger
 	evalErrs    metric.Int64Counter
@@ -123,7 +123,7 @@ func (r *rule) recordEvalErr(ctx context.Context, err error) {
 // compileRule turns a config rule into a runtime rule. The sampler must be
 // supplied by the caller because constructing it depends on processor-wide
 // resources.
-func compileRule(cfg *RuleConfig, s sampler.Sampler, keyFields []string, settings component.TelemetrySettings, evalErrs metric.Int64Counter) (*rule, error) {
+func compileRule(cfg *RuleConfig, s sampler.Sampler, fingerprint []sampler.Selector, settings component.TelemetrySettings, evalErrs metric.Int64Counter) (*rule, error) {
 	matchMode := cfg.Match
 	if matchMode == "" {
 		matchMode = MatchAnySpan
@@ -131,7 +131,7 @@ func compileRule(cfg *RuleConfig, s sampler.Sampler, keyFields []string, setting
 	r := &rule{
 		name:        cfg.Name,
 		sampler:     s,
-		keyFields:   keyFields,
+		fingerprint: fingerprint,
 		matchMode:   matchMode,
 		logger:      settings.Logger,
 		evalErrs:    evalErrs,

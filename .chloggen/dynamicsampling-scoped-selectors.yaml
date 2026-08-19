@@ -1,0 +1,18 @@
+change_type: breaking
+
+component: processor/dynamic_sampling
+
+note: Require fingerprint_attributes entries to be scoped attribute selectors
+
+issues: [49311]
+
+subtext: |
+  Entries now have the form `<scope>.attributes["<name>"]` where scope is one of
+  resource, scope, span, root, or any. The resource/scope/span prefixes match OTTL's
+  span-context path names; root reads from spans matching the configured
+  root_span_condition and any searches resource, scope, and span attributes. Bare
+  attribute names are rejected at validation with an error suggesting the scoped
+  form; the previous bare-name behaviour maps to `any.attributes["<name>"]` minus
+  instrumentation-scope attributes, or more precisely per attribute origin.
+
+change_logs: [user]
