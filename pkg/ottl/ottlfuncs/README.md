@@ -80,9 +80,30 @@ Resulting field is always of type `pcommon.Slice` and will not convert the types
 
 `clear(target)`
 
-The `clear` function infers the zero-value of the `target` and passes it to the `target`'s setter. How the zero-value is handled depends entirely on the specific target's implementation. 
+The `clear` function reads the current value of `target`, computes that value's default empty form, and passes it to the target's setter. How that value is ultimately applied depends on the specific target implementation.
 
-For example, clearing a string field will set it to `""`, and clearing an integer field will set it to `0`. If the target's value is `nil` or the zero-value cannot be inferred, an error may be returned.
+The table below shows what `clear` passes to setters for the common target types supported by OTTL paths.
+
+| Current target value type | Value passed by `clear` |
+| --- | --- |
+| `string` | `""` |
+| `int64` | `0` |
+| `float64` | `0` |
+| `bool` | `false` |
+| `[]byte` | `nil` |
+| slices (for example `[]any`) | `nil` |
+| maps (for example `map[string]any`) | `nil` |
+| `pcommon.Map` | empty `pcommon.Map` |
+| `pcommon.Slice` | empty `pcommon.Slice` |
+| `pcommon.Value` | empty `pcommon.Value` |
+| `pcommon.TraceID` | empty TraceID (`[16]byte{}`) |
+| `pcommon.SpanID` | empty SpanID (`[8]byte{}`) |
+| `time.Time` | `time.Time{}` |
+| `time.Duration` | `0` |
+| pointers | `nil` pointer |
+| `nil` | `nil` |
+
+Whether `nil` is accepted depends on the target setter. Some setters treat `nil` as "clear the field", while others return an error.
 
 **Examples:**
 - `clear(attributes["http.method"])`
