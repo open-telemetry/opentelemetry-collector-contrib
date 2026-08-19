@@ -59,6 +59,16 @@ all_set:
       attributes: ["operation"]
     mysql.max_used_connections:
       enabled: true
+    mysql.myisam.key_cache.block.max_used:
+      enabled: true
+    mysql.myisam.key_cache.block.unused:
+      enabled: true
+    mysql.myisam.key_cache.disk.operation.count:
+      enabled: true
+      attributes: ["operation"]
+    mysql.myisam.key_cache.request:
+      enabled: true
+      attributes: ["operation"]
     mysql.mysqlx_connections:
       enabled: true
       attributes: ["status"]
@@ -229,6 +239,16 @@ reaggregate_set:
       attributes: []
     mysql.max_used_connections:
       enabled: true
+    mysql.myisam.key_cache.block.max_used:
+      enabled: true
+    mysql.myisam.key_cache.block.unused:
+      enabled: true
+    mysql.myisam.key_cache.disk.operation.count:
+      enabled: true
+      attributes: []
+    mysql.myisam.key_cache.request:
+      enabled: true
+      attributes: []
     mysql.mysqlx_connections:
       enabled: true
       attributes: []
@@ -399,6 +419,16 @@ none_set:
       attributes: ["operation"]
     mysql.max_used_connections:
       enabled: false
+    mysql.myisam.key_cache.block.max_used:
+      enabled: false
+    mysql.myisam.key_cache.block.unused:
+      enabled: false
+    mysql.myisam.key_cache.disk.operation.count:
+      enabled: false
+      attributes: ["operation"]
+    mysql.myisam.key_cache.request:
+      enabled: false
+      attributes: ["operation"]
     mysql.mysqlx_connections:
       enabled: false
       attributes: ["status"]
