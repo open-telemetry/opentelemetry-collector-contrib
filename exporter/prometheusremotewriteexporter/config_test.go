@@ -17,8 +17,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
@@ -56,8 +56,12 @@ func TestLoadConfig(t *testing.T) {
 		enableSendingRW2 bool
 	}{
 		{
-			id:       component.NewIDWithName(metadata.Type, ""),
-			expected: createDefaultConfig(),
+			id: component.NewIDWithName(metadata.Type, ""),
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.ClientConfig = confighttp.ClientConfig{}
+				return cfg
+			}(),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),
@@ -81,7 +85,8 @@ func TestLoadConfig(t *testing.T) {
 				AddMetricSuffixes:           false,
 				Namespace:                   "test-space",
 				ExternalLabels:              map[string]string{"key1": "value1", "key2": "value2"},
-				ClientConfig:                clientConfigWithHeaders,
+				ClientConfig:                confighttp.ClientConfig{},
+				HTTP:                        clientConfigWithHeaders,
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 				TargetInfo: TargetInfo{
 					Enabled: true,
@@ -111,7 +116,8 @@ func TestLoadConfig(t *testing.T) {
 				ExternalLabels:      map[string]string{},
 				AddMetricSuffixes:   true,
 				TranslationStrategy: "NoTranslation",
-				ClientConfig: func() confighttp.ClientConfig {
+				ClientConfig:        confighttp.ClientConfig{},
+				HTTP: func() confighttp.ClientConfig {
 					cc := confighttp.NewDefaultClientConfig()
 					cc.Endpoint = "localhost:8888"
 					cc.WriteBufferSize = 512 * 1024
@@ -188,7 +194,8 @@ func TestLoadConfig(t *testing.T) {
 				IncludeMetadataKeys: []string{"target-id", "x-org-id"},
 				ExternalLabels:      map[string]string{},
 				AddMetricSuffixes:   true,
-				ClientConfig: func() confighttp.ClientConfig {
+				ClientConfig:        confighttp.ClientConfig{},
+				HTTP: func() confighttp.ClientConfig {
 					cc := confighttp.NewDefaultClientConfig()
 					cc.Endpoint = "localhost:8888"
 					cc.WriteBufferSize = 512 * 1024
@@ -219,10 +226,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.errorMessage)
+				assert.ErrorContains(t, confmap.Validate(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -252,6 +259,100 @@ func TestDisabledTargetInfo(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.False(t, cfg.(*Config).TargetInfo.Enabled)
+}
+
+func TestHTTPOverridesFlatConfig(t *testing.T) {
+	flatEndpoint := "http://flat.example.com"
+	httpEndpoint := "http://http.example.com"
+	flatTimeout := 15 * time.Second
+	httpTimeout := 10 * time.Second
+
+	testCases := []struct {
+		name                string
+		featureGateEnabled  bool
+		conf                map[string]any
+		wantErr             string
+		wantEndpoint        string
+		wantTimeout         time.Duration
+		wantExporterTimeout time.Duration
+		checkDefaults       bool
+	}{
+		{
+			name:               "gate disabled, http block set overrides flat",
+			featureGateEnabled: false,
+			conf: map[string]any{
+				"endpoint": flatEndpoint,
+				"timeout":  flatTimeout.String(),
+				"http": map[string]any{
+					"endpoint": httpEndpoint,
+				},
+			},
+			wantEndpoint: httpEndpoint,
+			// This also ensures that if http.timeout is not set, we fallback to correct defaults
+			wantTimeout: getDefaultHTTPClientConfig().Timeout,
+			// Top-level timeout still configures the exporter helper; http owns the client timeout.
+			wantExporterTimeout: flatTimeout,
+			checkDefaults:       true,
+		},
+		{
+			name:               "gate disabled, http block unset keeps flat",
+			featureGateEnabled: false,
+			conf: map[string]any{
+				"endpoint": flatEndpoint,
+				"timeout":  flatTimeout.String(),
+			},
+			wantEndpoint: flatEndpoint,
+			wantTimeout:  flatTimeout,
+		},
+		{
+			name:               "gate enabled, http block set without flat",
+			featureGateEnabled: true,
+			conf: map[string]any{
+				"http": map[string]any{
+					"endpoint": httpEndpoint,
+					"timeout":  httpTimeout.String(),
+				},
+			},
+			wantEndpoint:  httpEndpoint,
+			wantTimeout:   httpTimeout,
+			checkDefaults: true,
+		},
+		{
+			name:               "gate enabled, flat settings rejected even when http is set",
+			featureGateEnabled: true,
+			conf: map[string]any{
+				"endpoint": flatEndpoint,
+				"http": map[string]any{
+					"endpoint": httpEndpoint,
+					"timeout":  httpTimeout.String(),
+				},
+			},
+			wantErr: "top-level HTTP client settings are not allowed",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterRemoveTopLevelHTTPSettingsFeatureGate, tc.featureGateEnabled)()
+
+			cfg := createDefaultConfig().(*Config)
+			err := confmap.NewFromStringMap(tc.conf).Unmarshal(cfg)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.wantEndpoint, cfg.HTTP.Endpoint)
+			require.Equal(t, tc.wantTimeout, cfg.HTTP.Timeout)
+			if tc.wantExporterTimeout != 0 {
+				require.Equal(t, tc.wantExporterTimeout, cfg.TimeoutSettings.Timeout)
+			}
+			if tc.checkDefaults {
+				require.Equal(t, getDefaultHTTPClientConfig().WriteBufferSize, cfg.HTTP.WriteBufferSize)
+				require.Equal(t, getDefaultHTTPClientConfig().MaxIdleConns, cfg.HTTP.MaxIdleConns)
+			}
+		})
+	}
 }
 
 func toPtr[T any](val T) *T {
