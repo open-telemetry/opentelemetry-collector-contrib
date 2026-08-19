@@ -291,6 +291,38 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 	}
 }
 
+func TestMetricGroupData_toDistributionDropsNegativeOverflow(t *testing.T) {
+	mg := metricGroup{
+		hasCount: true,
+		count:    10,
+		complexValue: []*dataPoint{
+			{boundary: 1, value: 5},
+			{boundary: 2, value: 11},
+		},
+	}
+
+	dest := pmetric.NewHistogramDataPointSlice()
+	mg.toDistributionPoint(dest)
+
+	require.Zero(t, dest.Len())
+}
+
+func TestMetricGroupData_toDistributionDropsNegativeBucketDelta(t *testing.T) {
+	mg := metricGroup{
+		hasCount: true,
+		count:    12,
+		complexValue: []*dataPoint{
+			{boundary: 1, value: 10},
+			{boundary: 2, value: 9},
+		},
+	}
+
+	dest := pmetric.NewHistogramDataPointSlice()
+	mg.toDistributionPoint(dest)
+
+	require.Zero(t, dest.Len())
+}
+
 func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 	tests := []struct {
 		name                string
