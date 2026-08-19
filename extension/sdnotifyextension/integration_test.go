@@ -84,13 +84,19 @@ func startSystemdContainer(
 		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.Privileged = true
 			// Both kernel capabilities are required to run systemd in a container.
+			//
+			// See link below for more details:
 			// https://github.com/systemd/systemd/blob/main/docs/CONTAINER_INTERFACE.md#what-you-shouldnt-do
 			hc.CapAdd = []string{"SYS_ADMIN", "MKNOD"}
 			// Run without the default seccomp profile, because it denies mounting.
+			//
+			// See link below for more details:
 			// https://docs.docker.com/engine/security/seccomp
 			hc.SecurityOpt = []string{"seccomp=unconfined"}
 			// Either pre-mount all cgroup hierarchies into the container, or leave
 			// that to systemd which will do so if they are missing.
+			//
+			// See link below for more details:
 			// https://github.com/systemd/systemd/blob/main/docs/CONTAINER_INTERFACE.md#execution-environment
 			hc.CgroupnsMode = container.CgroupnsModeHost
 			hc.Mounts = []mount.Mount{
