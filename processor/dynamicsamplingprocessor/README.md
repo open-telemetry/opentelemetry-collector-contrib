@@ -342,7 +342,7 @@ Each entry is a scoped attribute selector of the form `<scope>.attributes["<name
 | `scope.`    | each instrumentation scope's attributes |
 | `span.`     | every span's attributes |
 | `root.`     | the spans matching the configured `root_span_condition` |
-| `any.`      | resource, instrumentation scope, and span attributes |
+| `any.`      | the union of resource, instrumentation scope, and span attributes |
 
 The `resource.`, `scope.`, and `span.` prefixes match OTTL's span-context path names, so conditions and fingerprint entries share one spelling; `root.` and `any.` are trace-level scopes OTTL cannot express (fingerprints are built from the whole trace, while OTTL evaluates one span at a time). Note that fingerprint entries are selectors, not OTTL expressions.
 
@@ -353,7 +353,9 @@ fingerprint_attributes:
   - root.attributes["http.status_code"]
 ```
 
-The fingerprint for a trace is built by collecting the distinct values each selector matches, sorting and joining them with `,` within each entry, then joining the entries with the `•` separator. A trace whose spans carry several values for one selector keys as the combination (e.g. `checkout,billing•/api`), which is worth knowing when debugging unexpectedly high key cardinality. Selectors that match nothing are replaced with `<missing>`.
+Every scope collects **all** distinct matching values, there is no first-match or precedence: `any.` is simply the widest search, and a value present at several origins appears once. The fingerprint for a trace is built by sorting the distinct values each selector matched and joining them with `,` within each entry, then joining the entries with the `•` separator. A trace whose spans carry several values for one selector keys as the combination (e.g. `checkout,billing•/api`), which is worth knowing when debugging unexpectedly high key cardinality. Selectors that match nothing are replaced with `<missing>`.
+
+Extraction cost scales with the scope: `resource.` and `scope.` are independent of trace size, while `span.`, `any.`, and `root.` walk every span of the trace at decision time. `root.` additionally evaluates the root-span condition per span, which is cheap for the default condition but costs an OTTL evaluation per span for custom ones.
 
 ## Worked examples
 
