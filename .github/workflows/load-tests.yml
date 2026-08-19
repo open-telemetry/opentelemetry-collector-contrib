@@ -18,7 +18,8 @@ env:
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 
-permissions: read-all
+permissions:
+  contents: read
 
 jobs:
   setup-environment:
