@@ -35,10 +35,12 @@ const (
 )
 
 // ContainerMetricsConfig controls which non-primary pod containers are included when collecting
-// k8s.container metrics and entities.
+// k8s.container metrics and entities. All are opt-in to preserve the receiver's default output.
 type ContainerMetricsConfig struct {
-	// CollectAllInitContainers includes all init containers when true. When false, only sidecar
-	// containers (init containers with restartPolicy: Always) are included.
+	// CollectSidecarContainers includes sidecar containers (init containers with
+	// restartPolicy: Always) when true.
+	CollectSidecarContainers bool
+	// CollectAllInitContainers includes all init containers (regular and sidecar) when true.
 	CollectAllInitContainers bool
 	// CollectEphemeralContainers includes ephemeral (debug) containers when true.
 	CollectEphemeralContainers bool
@@ -81,10 +83,9 @@ func Transform(pod *corev1.Pod, cfg ContainerMetricsConfig) *corev1.Pod {
 		})
 	}
 
-	// Sidecar containers (init containers with restartPolicy: Always) run for the lifetime of
-	// the pod like regular containers, so keep them and their statuses around for metric
-	// collection. Regular init containers are only kept when CollectAllInitContainers is set,
-	// since they are short-lived and complete before the pod's main containers start.
+	// Init containers to collect: sidecars (init containers with restartPolicy: Always) when
+	// CollectSidecarContainers is set, and every init container when CollectAllInitContainers is
+	// set. All are opt-in, so the default output is unchanged.
 	initNames := make(map[string]struct{})
 	for _, c := range collectedInitContainers(pod, cfg) {
 		initNames[c.Name] = struct{}{}
@@ -146,12 +147,14 @@ func Transform(pod *corev1.Pod, cfg ContainerMetricsConfig) *corev1.Pod {
 
 // collectedInitContainers returns the init containers whose metrics should be collected given cfg:
 // all init containers when CollectAllInitContainers is set, otherwise only sidecars (init
-// containers with restartPolicy: Always, GA since Kubernetes 1.29).
+// containers with restartPolicy: Always, GA since Kubernetes 1.29) when CollectSidecarContainers
+// is set.
 func collectedInitContainers(pod *corev1.Pod, cfg ContainerMetricsConfig) []*corev1.Container {
 	var containers []*corev1.Container
 	for i := range pod.Spec.InitContainers {
 		c := &pod.Spec.InitContainers[i]
-		if cfg.CollectAllInitContainers || (c.RestartPolicy != nil && *c.RestartPolicy == corev1.ContainerRestartPolicyAlways) {
+		isSidecar := c.RestartPolicy != nil && *c.RestartPolicy == corev1.ContainerRestartPolicyAlways
+		if cfg.CollectAllInitContainers || (cfg.CollectSidecarContainers && isSidecar) {
 			containers = append(containers, c)
 		}
 	}
