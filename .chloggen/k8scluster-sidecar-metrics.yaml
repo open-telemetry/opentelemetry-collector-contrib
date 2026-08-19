@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/k8s_cluster
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Collect `k8s.container` metrics for sidecar containers, and optionally for all init containers and ephemeral containers."
+note: "Add opt-in collection of `k8s.container` metrics for sidecar, init and ephemeral containers."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [42571]
@@ -16,9 +16,10 @@ issues: [42571]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Sidecar containers (init containers with `restartPolicy: Always`) are now collected by default.
-  Set `collect_all_init_container_metrics: true` to also collect regular init containers, and
-  `collect_ephemeral_container_metrics: true` to collect ephemeral (debug) containers.
+  The receiver's default output is unchanged. Set `collect_sidecar_container_metrics: true` to collect
+  sidecar containers (init containers with `restartPolicy: Always`), `collect_all_init_container_metrics: true`
+  to collect all init containers, and `collect_ephemeral_container_metrics: true` to collect ephemeral
+  (debug) containers.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
