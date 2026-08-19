@@ -326,7 +326,7 @@ func TestEntityBuilders(t *testing.T) {
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
-		assert.Equal(t, 5, ms.Len())
+		assert.Equal(t, 4, ms.Len())
 	})
 	t.Run("k8s.statefulset/disabled_identity_attr", func(t *testing.T) {
 		// When an identity attribute is disabled, the entity is not produced but

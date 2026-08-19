@@ -1388,7 +1388,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		K8sStatefulsetPodAvailable: K8sStatefulsetPodAvailableMetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		K8sStatefulsetReadyPods: K8sStatefulsetReadyPodsMetricConfig{
 			Enabled: true,

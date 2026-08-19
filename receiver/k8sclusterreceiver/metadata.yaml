@@ -988,7 +988,7 @@ metrics:
     entity: k8s.statefulset
 
   k8s.statefulset.pod.available:
-    enabled: true
+    enabled: false
     description: The number of available pods per stateful set (the `status.availableReplicas` field). A pod is available once it has been `Ready` for at least `spec.minReadySeconds`.
     unit: "{pod}"
     stability: development

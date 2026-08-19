@@ -23,7 +23,9 @@ func TestStatefulsetMetrics(t *testing.T) {
 	ss := testutils.NewStatefulset("1")
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.K8sStatefulsetPodAvailable.Enabled = true
+	mb := metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(mb, ss, ts)
 	m := mb.Emit()
 

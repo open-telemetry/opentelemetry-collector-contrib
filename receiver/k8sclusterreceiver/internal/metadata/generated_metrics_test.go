@@ -239,7 +239,7 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sStatefulset.RecordK8sStatefulsetDesiredPodsDataPoint(ts, 1)
-			defaultMetricsCount++
+
 			allMetricsCount++
 			ebK8sStatefulset.RecordK8sStatefulsetPodAvailableDataPoint(ts, 1)
 			defaultMetricsCount++
