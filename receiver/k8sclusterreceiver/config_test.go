@@ -46,6 +46,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MetadataCollectionInterval:       30 * time.Minute,
 				MetricsBuilderConfig:             metadata.NewDefaultMetricsBuilderConfig(),
+				CollectSidecarContainerMetrics:   true,
 				CollectAllInitContainerMetrics:   true,
 				CollectEphemeralContainerMetrics: true,
 			},
