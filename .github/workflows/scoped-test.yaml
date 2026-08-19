@@ -78,9 +78,12 @@ jobs:
     steps:
       - name: Echo changed files
         shell: bash
+        env:
+          CHANGED_GOLANG_SOURCES: ${{ needs.changedfiles.outputs.go_sources }}
+          CHANGED_GOLANG_TESTS: ${{ needs.changedfiles.outputs.go_tests }}
         run: |
-          echo "go_sources: ${{ needs.changedfiles.outputs.go_sources }}"
-          echo "go_tests: ${{ needs.changedfiles.outputs.go_tests }}"
+          echo "go_sources: ${CHANGED_GOLANG_SOURCES}"
+          echo "go_tests: ${CHANGED_GOLANG_TESTS}"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-go-tools
         with:
