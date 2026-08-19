@@ -84,9 +84,10 @@ func TestTelemetryResourceConfigUnmarshal(t *testing.T) {
 
 		var cfg ResourceConfig
 		require.NoError(t, conf.Unmarshal(&cfg))
-		require.NotNil(t, cfg.DetectionDevelopment)
-		require.Len(t, cfg.DetectionDevelopment.Detectors, 1)
-		assert.NotNil(t, cfg.DetectionDevelopment.Detectors[0].Host)
+		require.True(t, cfg.DetectionDevelopment.HasValue())
+		detection := cfg.DetectionDevelopment.Get()
+		require.Len(t, detection.Detectors, 1)
+		assert.NotNil(t, detection.Detectors[0].Host)
 	})
 }
 
@@ -108,9 +109,9 @@ func TestTelemetryResourceConfigLoadDetectionDevelopment(t *testing.T) {
 
 	cfg := DefaultSupervisor()
 	require.NoError(t, conf.Unmarshal(&cfg))
-	require.NotNil(t, cfg.Telemetry.Resource.DetectionDevelopment)
+	require.True(t, cfg.Telemetry.Resource.DetectionDevelopment.HasValue())
 	assert.Equal(t, "custom-supervisor", cfg.Telemetry.Resource.Attributes[0].Value)
-	assert.Equal(t, xotelconf.ExperimentalHostResourceDetector{}, cfg.Telemetry.Resource.DetectionDevelopment.Detectors[0].Host)
+	assert.Equal(t, xotelconf.ExperimentalHostResourceDetector{}, cfg.Telemetry.Resource.DetectionDevelopment.Get().Detectors[0].Host)
 }
 
 func TestTelemetryResourceConfigMarshal(t *testing.T) {

@@ -4,14 +4,18 @@
 package supervisor
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
@@ -82,11 +86,11 @@ func TestInitTelemetrySettingsWithHostResourceDetection(t *testing.T) {
 			ErrorOutputPaths: []string{"stderr"},
 		},
 		Resource: config.ResourceConfig{
-			DetectionDevelopment: &xotelconf.ExperimentalResourceDetection{
+			DetectionDevelopment: configoptional.Some(xotelconf.ExperimentalResourceDetection{
 				Detectors: []xotelconf.ExperimentalResourceDetector{
 					{Host: xotelconf.ExperimentalHostResourceDetector{}},
 				},
-			},
+			}),
 		},
 	})
 	require.NoError(t, err)
@@ -142,11 +146,11 @@ func TestInitTelemetrySettingsResourceDetectionKeepsSupervisorServiceAttributes(
 					},
 				},
 			},
-			DetectionDevelopment: &xotelconf.ExperimentalResourceDetection{
+			DetectionDevelopment: configoptional.Some(xotelconf.ExperimentalResourceDetection{
 				Detectors: []xotelconf.ExperimentalResourceDetector{
 					{Service: xotelconf.ExperimentalServiceResourceDetector{}},
 				},
-			},
+			}),
 		},
 	})
 	require.NoError(t, err)
@@ -176,12 +180,61 @@ func TestInitTelemetrySettingsReturnsResourceDetectionErrors(t *testing.T) {
 			ErrorOutputPaths: []string{"stderr"},
 		},
 		Resource: config.ResourceConfig{
-			DetectionDevelopment: &xotelconf.ExperimentalResourceDetection{
+			DetectionDevelopment: configoptional.Some(xotelconf.ExperimentalResourceDetection{
 				Detectors: []xotelconf.ExperimentalResourceDetector{
 					{Host: xotelconf.ExperimentalHostResourceDetector{}},
 				},
-			},
+			}),
 		},
 	})
 	assert.ErrorIs(t, err, assert.AnError)
+}
+
+func TestInitTelemetrySettingsWarnsOnExperimentalConfigFileEnvVar(t *testing.T) {
+	t.Setenv(experimentalConfigFileEnvVar, writeSDKConfigFile(t))
+
+	core, logs := observer.New(zap.WarnLevel)
+	_, err := initTelemetrySettings(t.Context(), zap.New(core), config.Telemetry{
+		Logs: config.Logs{
+			Level:            zap.InfoLevel,
+			OutputPaths:      []string{"stdout"},
+			ErrorOutputPaths: []string{"stderr"},
+		},
+		Resource: config.ResourceConfig{
+			DetectionDevelopment: configoptional.Some(xotelconf.ExperimentalResourceDetection{
+				Detectors: []xotelconf.ExperimentalResourceDetector{
+					{Host: xotelconf.ExperimentalHostResourceDetector{}},
+				},
+			}),
+		},
+	})
+	require.NoError(t, err)
+
+	warnings := logs.FilterFieldKey("env_var").All()
+	require.Len(t, warnings, 1)
+	assert.Equal(t, experimentalConfigFileEnvVar, warnings[0].ContextMap()["env_var"])
+}
+
+func TestInitTelemetrySettingsNoWarningWithoutResourceDetection(t *testing.T) {
+	t.Setenv(experimentalConfigFileEnvVar, writeSDKConfigFile(t))
+
+	core, logs := observer.New(zap.WarnLevel)
+	_, err := initTelemetrySettings(t.Context(), zap.New(core), config.Telemetry{
+		Logs: config.Logs{
+			Level:            zap.InfoLevel,
+			OutputPaths:      []string{"stdout"},
+			ErrorOutputPaths: []string{"stderr"},
+		},
+	})
+	require.NoError(t, err)
+
+	assert.Zero(t, logs.Len())
+}
+
+// writeSDKConfigFile writes a minimal declarative configuration file and returns its path.
+func writeSDKConfigFile(t *testing.T) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "sdk-config.yaml")
+	require.NoError(t, os.WriteFile(path, []byte("file_format: \"0.4\"\n"), 0o600))
+	return path
 }

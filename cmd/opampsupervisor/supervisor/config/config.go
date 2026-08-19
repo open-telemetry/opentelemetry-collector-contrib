@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -377,7 +378,7 @@ type Telemetry struct {
 
 type ResourceConfig struct {
 	otelconftelemetry.ResourceConfig `mapstructure:",squash"`
-	DetectionDevelopment             *xotelconf.ExperimentalResourceDetection `mapstructure:"detection/development,omitempty"`
+	DetectionDevelopment             configoptional.Optional[xotelconf.ExperimentalResourceDetection] `mapstructure:"detection/development,omitempty"`
 }
 
 type HealthCheck struct {
