@@ -54,31 +54,31 @@ func startFakeNotifySocket(t *testing.T) <-chan string {
 func TestStart_NoNotifySocket_IsNoop(t *testing.T) {
 	t.Setenv("NOTIFY_SOCKET", "")
 	s := newSDNotify(&Config{}, zaptest.NewLogger(t))
-	require.NoError(t, s.Start(context.Background(), noopHost{}))
-	require.NoError(t, s.Shutdown(context.Background()))
+	require.NoError(t, s.Start(t.Context(), noopHost{}))
+	require.NoError(t, s.Shutdown(t.Context()))
 }
 
 func TestShutdown_BeforeStart_IsNoop(t *testing.T) {
 	s := newSDNotify(&Config{}, zaptest.NewLogger(t))
-	require.NoError(t, s.Shutdown(context.Background()))
+	require.NoError(t, s.Shutdown(t.Context()))
 }
 
 func TestShutdown_IsIdempotent(t *testing.T) {
 	_ = startFakeNotifySocket(t)
 
 	s := newSDNotify(&Config{}, zaptest.NewLogger(t))
-	require.NoError(t, s.Start(context.Background(), noopHost{}))
+	require.NoError(t, s.Start(t.Context(), noopHost{}))
 
-	require.NoError(t, s.Shutdown(context.Background()))
-	require.NoError(t, s.Shutdown(context.Background()))
+	require.NoError(t, s.Shutdown(t.Context()))
+	require.NoError(t, s.Shutdown(t.Context()))
 }
 
 func TestReady_SendsREADY(t *testing.T) {
 	msgs := startFakeNotifySocket(t)
 
 	s := newSDNotify(&Config{}, zaptest.NewLogger(t))
-	require.NoError(t, s.Start(context.Background(), noopHost{}))
-	t.Cleanup(func() { _ = s.Shutdown(context.Background()) })
+	require.NoError(t, s.Start(t.Context(), noopHost{}))
+	t.Cleanup(func() { _ = s.Shutdown(t.Context()) })
 
 	require.NoError(t, s.Ready())
 	select {
@@ -93,8 +93,8 @@ func TestSIGTERM_SendsSTOPPING(t *testing.T) {
 	msgs := startFakeNotifySocket(t)
 
 	s := newSDNotify(&Config{}, zaptest.NewLogger(t))
-	require.NoError(t, s.Start(context.Background(), noopHost{}))
-	t.Cleanup(func() { _ = s.Shutdown(context.Background()) })
+	require.NoError(t, s.Start(t.Context(), noopHost{}))
+	t.Cleanup(func() { _ = s.Shutdown(t.Context()) })
 
 	require.NoError(t, syscall.Kill(os.Getpid(), syscall.SIGTERM))
 	select {
@@ -109,8 +109,8 @@ func TestSIGHUP_SendsRELOADING(t *testing.T) {
 	msgs := startFakeNotifySocket(t)
 
 	s := newSDNotify(&Config{}, zaptest.NewLogger(t))
-	require.NoError(t, s.Start(context.Background(), noopHost{}))
-	t.Cleanup(func() { _ = s.Shutdown(context.Background()) })
+	require.NoError(t, s.Start(t.Context(), noopHost{}))
+	t.Cleanup(func() { _ = s.Shutdown(t.Context()) })
 
 	require.NoError(t, syscall.Kill(os.Getpid(), syscall.SIGHUP))
 	select {
@@ -129,10 +129,10 @@ func TestWatchdog_SendsWATCHDOG(t *testing.T) {
 	t.Setenv("WATCHDOG_PID", strconv.Itoa(os.Getpid()))
 
 	s := newSDNotify(&Config{}, zaptest.NewLogger(t))
-	require.NoError(t, s.Start(context.Background(), noopHost{}))
-	t.Cleanup(func() { _ = s.Shutdown(context.Background()) })
+	require.NoError(t, s.Start(t.Context(), noopHost{}))
+	t.Cleanup(func() { _ = s.Shutdown(t.Context()) })
 
-	ctx, cancel := context.WithTimeout(context.Background(), 325*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 325*time.Millisecond)
 	defer cancel()
 
 	// We expect to receive 6 notifications because:
