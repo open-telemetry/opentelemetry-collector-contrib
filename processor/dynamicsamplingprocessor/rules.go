@@ -27,6 +27,9 @@ type rule struct {
 	matchMode   MatchMode
 	sampler     sampler.Sampler
 	fingerprint []sampler.Selector
+	// needsRootMatcher is precomputed so evaluate only constructs the
+	// ctx-capturing root matcher closure when a root.-scoped selector exists.
+	needsRootMatcher bool
 
 	logger      *zap.Logger
 	evalErrs    metric.Int64Counter
@@ -128,14 +131,22 @@ func compileRule(cfg *RuleConfig, s sampler.Sampler, fingerprint []sampler.Selec
 	if matchMode == "" {
 		matchMode = MatchAnySpan
 	}
+	needsRoot := false
+	for _, sel := range fingerprint {
+		if sel.Scope == sampler.ScopeRoot {
+			needsRoot = true
+			break
+		}
+	}
 	r := &rule{
-		name:        cfg.Name,
-		sampler:     s,
-		fingerprint: fingerprint,
-		matchMode:   matchMode,
-		logger:      settings.Logger,
-		evalErrs:    evalErrs,
-		ruleAttrSet: metric.WithAttributes(attribute.String("rule", cfg.Name)),
+		name:             cfg.Name,
+		sampler:          s,
+		fingerprint:      fingerprint,
+		needsRootMatcher: needsRoot,
+		matchMode:        matchMode,
+		logger:           settings.Logger,
+		evalErrs:         evalErrs,
+		ruleAttrSet:      metric.WithAttributes(attribute.String("rule", cfg.Name)),
 	}
 	if len(cfg.Conditions) == 0 {
 		return r, nil

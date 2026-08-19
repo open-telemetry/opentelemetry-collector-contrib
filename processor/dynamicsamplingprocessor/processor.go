@@ -795,9 +795,13 @@ func (p *dynamicSamplingProcessor) evaluate(ctx context.Context, pt *pendingTrac
 		}
 		var key string
 		if len(r.fingerprint) > 0 {
-			key = sampler.ExtractKey(pt.spans, r.fingerprint, func(rs ptrace.ResourceSpans, ss ptrace.ScopeSpans, span ptrace.Span) bool {
-				return p.evalRootSpanCondition(ctx, rs, ss, span)
-			})
+			var isRoot sampler.RootMatcher
+			if r.needsRootMatcher {
+				isRoot = func(rs ptrace.ResourceSpans, ss ptrace.ScopeSpans, span ptrace.Span) bool {
+					return p.evalRootSpanCondition(ctx, rs, ss, span)
+				}
+			}
+			key = sampler.ExtractKey(pt.spans, r.fingerprint, isRoot)
 		}
 		rate := max(r.sampler.GetSampleRate(key, pt.spanCount), 1)
 		return r, rate

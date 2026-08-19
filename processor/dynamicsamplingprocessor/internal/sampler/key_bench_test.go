@@ -5,6 +5,7 @@ package sampler
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -19,6 +20,7 @@ func BenchmarkExtractKey(b *testing.B) {
 		`resource.attributes["service.name"]`,
 		`scope.attributes["lib.name"]`,
 		`span.attributes["http.route"]`,
+		`span.attributes["missing.key"]`,
 		`root.attributes["http.route"]`,
 		`any.attributes["service.name"]`,
 	}
@@ -32,7 +34,8 @@ func BenchmarkExtractKey(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			b.Run(fmt.Sprintf("%dspans/%s", size, sel[:findDot(sel)]), func(b *testing.B) {
+			name := strings.ReplaceAll(strings.ReplaceAll(sel, `.attributes["`, ":"), `"]`, "")
+			b.Run(fmt.Sprintf("%dspans/%s", size, name), func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
 					ExtractKey(spans, selectors, isRoot)
@@ -40,15 +43,6 @@ func BenchmarkExtractKey(b *testing.B) {
 			})
 		}
 	}
-}
-
-func findDot(s string) int {
-	for i, c := range s {
-		if c == '.' {
-			return i
-		}
-	}
-	return len(s)
 }
 
 func benchTrace(spanCount int) []ptrace.ResourceSpans {
