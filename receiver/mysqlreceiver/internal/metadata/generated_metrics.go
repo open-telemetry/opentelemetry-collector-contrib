@@ -163,9 +163,13 @@ type AttributeCommand int
 
 const (
 	_ AttributeCommand = iota
+	AttributeCommandAlterTable
+	AttributeCommandCreateIndex
+	AttributeCommandCreateTable
 	AttributeCommandDelete
 	AttributeCommandDeleteMulti
 	AttributeCommandInsert
+	AttributeCommandOptimize
 	AttributeCommandSelect
 	AttributeCommandUpdate
 	AttributeCommandUpdateMulti
@@ -174,12 +178,20 @@ const (
 // String returns the string representation of the AttributeCommand.
 func (av AttributeCommand) String() string {
 	switch av {
+	case AttributeCommandAlterTable:
+		return "alter_table"
+	case AttributeCommandCreateIndex:
+		return "create_index"
+	case AttributeCommandCreateTable:
+		return "create_table"
 	case AttributeCommandDelete:
 		return "delete"
 	case AttributeCommandDeleteMulti:
 		return "delete_multi"
 	case AttributeCommandInsert:
 		return "insert"
+	case AttributeCommandOptimize:
+		return "optimize"
 	case AttributeCommandSelect:
 		return "select"
 	case AttributeCommandUpdate:
@@ -192,9 +204,13 @@ func (av AttributeCommand) String() string {
 
 // MapAttributeCommand is a helper map of string to AttributeCommand attribute value.
 var MapAttributeCommand = map[string]AttributeCommand{
+	"alter_table":  AttributeCommandAlterTable,
+	"create_index": AttributeCommandCreateIndex,
+	"create_table": AttributeCommandCreateTable,
 	"delete":       AttributeCommandDelete,
 	"delete_multi": AttributeCommandDeleteMulti,
 	"insert":       AttributeCommandInsert,
+	"optimize":     AttributeCommandOptimize,
 	"select":       AttributeCommandSelect,
 	"update":       AttributeCommandUpdate,
 	"update_multi": AttributeCommandUpdateMulti,
@@ -330,6 +346,32 @@ func (av AttributeDirection) String() string {
 var MapAttributeDirection = map[string]AttributeDirection{
 	"received": AttributeDirectionReceived,
 	"sent":     AttributeDirectionSent,
+}
+
+// AttributeDiskIoDirection specifies the value disk.io.direction attribute.
+type AttributeDiskIoDirection int
+
+const (
+	_ AttributeDiskIoDirection = iota
+	AttributeDiskIoDirectionRead
+	AttributeDiskIoDirectionWrite
+)
+
+// String returns the string representation of the AttributeDiskIoDirection.
+func (av AttributeDiskIoDirection) String() string {
+	switch av {
+	case AttributeDiskIoDirectionRead:
+		return "read"
+	case AttributeDiskIoDirectionWrite:
+		return "write"
+	}
+	return ""
+}
+
+// MapAttributeDiskIoDirection is a helper map of string to AttributeDiskIoDirection attribute value.
+var MapAttributeDiskIoDirection = map[string]AttributeDiskIoDirection{
+	"read":  AttributeDiskIoDirectionRead,
+	"write": AttributeDiskIoDirectionWrite,
 }
 
 // AttributeDoubleWrites specifies the value double_writes attribute.
@@ -636,6 +678,32 @@ var MapAttributeLogOperations = map[string]AttributeLogOperations{
 	"write_requests": AttributeLogOperationsWriteRequests,
 	"writes":         AttributeLogOperationsWrites,
 	"fsyncs":         AttributeLogOperationsFsyncs,
+}
+
+// AttributeMysqlReplicaThreadType specifies the value mysql.replica.thread.type attribute.
+type AttributeMysqlReplicaThreadType int
+
+const (
+	_ AttributeMysqlReplicaThreadType = iota
+	AttributeMysqlReplicaThreadTypeIo
+	AttributeMysqlReplicaThreadTypeSQL
+)
+
+// String returns the string representation of the AttributeMysqlReplicaThreadType.
+func (av AttributeMysqlReplicaThreadType) String() string {
+	switch av {
+	case AttributeMysqlReplicaThreadTypeIo:
+		return "io"
+	case AttributeMysqlReplicaThreadTypeSQL:
+		return "sql"
+	}
+	return ""
+}
+
+// MapAttributeMysqlReplicaThreadType is a helper map of string to AttributeMysqlReplicaThreadType attribute value.
+var MapAttributeMysqlReplicaThreadType = map[string]AttributeMysqlReplicaThreadType{
+	"io":  AttributeMysqlReplicaThreadTypeIo,
+	"sql": AttributeMysqlReplicaThreadTypeSQL,
 }
 
 // AttributeMysqlxThreads specifies the value mysqlx_threads attribute.
@@ -1098,6 +1166,9 @@ var MetricsInfo = metricsInfo{
 		Name:       "mysql.double_writes",
 		Attributes: []string{"double_writes"},
 	},
+	MysqlFileOpen: metricInfo{
+		Name: "mysql.file.open",
+	},
 	MysqlHandlers: metricInfo{
 		Name:       "mysql.handlers",
 		Attributes: []string{"handler"},
@@ -1109,6 +1180,14 @@ var MetricsInfo = metricsInfo{
 	MysqlIndexIoWaitTime: metricInfo{
 		Name:       "mysql.index.io.wait.time",
 		Attributes: []string{"io_waits_operations", "table_name", "schema", "index_name"},
+	},
+	MysqlInnodbDataFileIo: metricInfo{
+		Name:       "mysql.innodb.data_file.io",
+		Attributes: []string{"disk.io.direction"},
+	},
+	MysqlInnodbOperationPending: metricInfo{
+		Name:       "mysql.innodb.operation.pending",
+		Attributes: []string{"operations"},
 	},
 	MysqlJoins: metricInfo{
 		Name:       "mysql.joins",
@@ -1164,6 +1243,13 @@ var MetricsInfo = metricsInfo{
 	MysqlReplicaSQLDelay: metricInfo{
 		Name: "mysql.replica.sql_delay",
 	},
+	MysqlReplicaTempTableOpen: metricInfo{
+		Name: "mysql.replica.temp_table.open",
+	},
+	MysqlReplicaThreadRunning: metricInfo{
+		Name:       "mysql.replica.thread.running",
+		Attributes: []string{"mysql.replica.thread.type", "mysql.replica.channel.name"},
+	},
 	MysqlReplicaTimeBehindSource: metricInfo{
 		Name: "mysql.replica.time_behind_source",
 	},
@@ -1215,6 +1301,9 @@ var MetricsInfo = metricsInfo{
 		Name:       "mysql.table.lock_wait.write.time",
 		Attributes: []string{"schema", "table_name", "write_lock_type"},
 	},
+	MysqlTableOpen: metricInfo{
+		Name: "mysql.table.open",
+	},
 	MysqlTableRows: metricInfo{
 		Name:       "mysql.table.rows",
 		Attributes: []string{"table_name", "schema"},
@@ -1226,6 +1315,9 @@ var MetricsInfo = metricsInfo{
 	MysqlTableOpenCache: metricInfo{
 		Name:       "mysql.table_open_cache",
 		Attributes: []string{"cache_status"},
+	},
+	MysqlThreadSlowLaunch: metricInfo{
+		Name: "mysql.thread.slow_launch",
 	},
 	MysqlThreads: metricInfo{
 		Name:       "mysql.threads",
@@ -1252,9 +1344,12 @@ type metricsInfo struct {
 	MysqlConnectionCount         metricInfo
 	MysqlConnectionErrors        metricInfo
 	MysqlDoubleWrites            metricInfo
+	MysqlFileOpen                metricInfo
 	MysqlHandlers                metricInfo
 	MysqlIndexIoWaitCount        metricInfo
 	MysqlIndexIoWaitTime         metricInfo
+	MysqlInnodbDataFileIo        metricInfo
+	MysqlInnodbOperationPending  metricInfo
 	MysqlJoins                   metricInfo
 	MysqlLocks                   metricInfo
 	MysqlLogOperations           metricInfo
@@ -1270,6 +1365,8 @@ type metricsInfo struct {
 	MysqlQueryCount              metricInfo
 	MysqlQuerySlowCount          metricInfo
 	MysqlReplicaSQLDelay         metricInfo
+	MysqlReplicaTempTableOpen    metricInfo
+	MysqlReplicaThreadRunning    metricInfo
 	MysqlReplicaTimeBehindSource metricInfo
 	MysqlRowLocks                metricInfo
 	MysqlRowOperations           metricInfo
@@ -1283,9 +1380,11 @@ type metricsInfo struct {
 	MysqlTableLockWaitReadTime   metricInfo
 	MysqlTableLockWaitWriteCount metricInfo
 	MysqlTableLockWaitWriteTime  metricInfo
+	MysqlTableOpen               metricInfo
 	MysqlTableRows               metricInfo
 	MysqlTableSize               metricInfo
 	MysqlTableOpenCache          metricInfo
+	MysqlThreadSlowLaunch        metricInfo
 	MysqlThreads                 metricInfo
 	MysqlTmpResources            metricInfo
 	MysqlUptime                  metricInfo
@@ -2180,6 +2279,56 @@ func newMetricMysqlDoubleWrites(cfg MysqlDoubleWritesMetricConfig) metricMysqlDo
 	return m
 }
 
+type metricMysqlFileOpen struct {
+	data     pmetric.Metric            // data buffer for generated metric.
+	config   MysqlFileOpenMetricConfig // metric config provided by user.
+	capacity int                       // max observed number of data points added to the metric.
+}
+
+// init fills mysql.file.open metric with initial data.
+func (m *metricMysqlFileOpen) init() {
+	m.data.SetName("mysql.file.open")
+	m.data.SetDescription("The number of currently open files.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlFileOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlFileOpen) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlFileOpen) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlFileOpen(cfg MysqlFileOpenMetricConfig) metricMysqlFileOpen {
+	m := metricMysqlFileOpen{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlHandlers struct {
 	data          pmetric.Metric            // data buffer for generated metric.
 	config        MysqlHandlersMetricConfig // metric config provided by user.
@@ -2463,6 +2612,188 @@ func (m *metricMysqlIndexIoWaitTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlIndexIoWaitTime(cfg MysqlIndexIoWaitTimeMetricConfig) metricMysqlIndexIoWaitTime {
 	m := metricMysqlIndexIoWaitTime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbDataFileIo struct {
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        MysqlInnodbDataFileIoMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+}
+
+// init fills mysql.innodb.data_file.io metric with initial data.
+func (m *metricMysqlInnodbDataFileIo) init() {
+	m.data.SetName("mysql.innodb.data_file.io")
+	m.data.SetDescription("The total bytes read from and written to InnoDB data files.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricMysqlInnodbDataFileIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MysqlInnodbDataFileIoMetricAttributeKeyDiskIoDirection) {
+		dp.Attributes().PutStr("disk.io.direction", diskIoDirectionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbDataFileIo) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbDataFileIo) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbDataFileIo(cfg MysqlInnodbDataFileIoMetricConfig) metricMysqlInnodbDataFileIo {
+	m := metricMysqlInnodbDataFileIo{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbOperationPending struct {
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        MysqlInnodbOperationPendingMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
+}
+
+// init fills mysql.innodb.operation.pending metric with initial data.
+func (m *metricMysqlInnodbOperationPending) init() {
+	m.data.SetName("mysql.innodb.operation.pending")
+	m.data.SetDescription("The number of pending InnoDB data file operations.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricMysqlInnodbOperationPending) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationsAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MysqlInnodbOperationPendingMetricAttributeKeyOperations) {
+		dp.Attributes().PutStr("operation", operationsAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbOperationPending) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbOperationPending) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbOperationPending(cfg MysqlInnodbOperationPendingMetricConfig) metricMysqlInnodbOperationPending {
+	m := metricMysqlInnodbOperationPending{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -3594,6 +3925,148 @@ func (m *metricMysqlReplicaSQLDelay) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlReplicaSQLDelay(cfg MysqlReplicaSQLDelayMetricConfig) metricMysqlReplicaSQLDelay {
 	m := metricMysqlReplicaSQLDelay{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlReplicaTempTableOpen struct {
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   MysqlReplicaTempTableOpenMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
+}
+
+// init fills mysql.replica.temp_table.open metric with initial data.
+func (m *metricMysqlReplicaTempTableOpen) init() {
+	m.data.SetName("mysql.replica.temp_table.open")
+	m.data.SetDescription("The number of temporary tables currently open by the replica while applying replicated events.")
+	m.data.SetUnit("{table}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlReplicaTempTableOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlReplicaTempTableOpen) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlReplicaTempTableOpen) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlReplicaTempTableOpen(cfg MysqlReplicaTempTableOpenMetricConfig) metricMysqlReplicaTempTableOpen {
+	m := metricMysqlReplicaTempTableOpen{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlReplicaThreadRunning struct {
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        MysqlReplicaThreadRunningMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
+}
+
+// init fills mysql.replica.thread.running metric with initial data.
+func (m *metricMysqlReplicaThreadRunning) init() {
+	m.data.SetName("mysql.replica.thread.running")
+	m.data.SetDescription("Whether the replica IO and SQL threads report a running status. A value of 1 means the thread reports Yes; 0 means any other status, including No or Connecting.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricMysqlReplicaThreadRunning) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, mysqlReplicaThreadTypeAttributeValue string, mysqlReplicaChannelNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MysqlReplicaThreadRunningMetricAttributeKeyMysqlReplicaThreadType) {
+		dp.Attributes().PutStr("mysql.replica.thread.type", mysqlReplicaThreadTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, MysqlReplicaThreadRunningMetricAttributeKeyMysqlReplicaChannelName) {
+		dp.Attributes().PutStr("mysql.replica.channel.name", mysqlReplicaChannelNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlReplicaThreadRunning) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlReplicaThreadRunning) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlReplicaThreadRunning(cfg MysqlReplicaThreadRunningMetricConfig) metricMysqlReplicaThreadRunning {
+	m := metricMysqlReplicaThreadRunning{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -4800,6 +5273,56 @@ func newMetricMysqlTableLockWaitWriteTime(cfg MysqlTableLockWaitWriteTimeMetricC
 	return m
 }
 
+type metricMysqlTableOpen struct {
+	data     pmetric.Metric             // data buffer for generated metric.
+	config   MysqlTableOpenMetricConfig // metric config provided by user.
+	capacity int                        // max observed number of data points added to the metric.
+}
+
+// init fills mysql.table.open metric with initial data.
+func (m *metricMysqlTableOpen) init() {
+	m.data.SetName("mysql.table.open")
+	m.data.SetDescription("The number of currently open tables.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlTableOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlTableOpen) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlTableOpen) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlTableOpen(cfg MysqlTableOpenMetricConfig) metricMysqlTableOpen {
+	m := metricMysqlTableOpen{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlTableRows struct {
 	data          pmetric.Metric             // data buffer for generated metric.
 	config        MysqlTableRowsMetricConfig // metric config provided by user.
@@ -5082,6 +5605,58 @@ func newMetricMysqlTableOpenCache(cfg MysqlTableOpenCacheMetricConfig) metricMys
 	return m
 }
 
+type metricMysqlThreadSlowLaunch struct {
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   MysqlThreadSlowLaunchMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
+}
+
+// init fills mysql.thread.slow_launch metric with initial data.
+func (m *metricMysqlThreadSlowLaunch) init() {
+	m.data.SetName("mysql.thread.slow_launch")
+	m.data.SetDescription("The number of threads that have taken more than slow_launch_time seconds to create.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlThreadSlowLaunch) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlThreadSlowLaunch) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlThreadSlowLaunch) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlThreadSlowLaunch(cfg MysqlThreadSlowLaunchMetricConfig) metricMysqlThreadSlowLaunch {
+	m := metricMysqlThreadSlowLaunch{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlThreads struct {
 	data          pmetric.Metric           // data buffer for generated metric.
 	config        MysqlThreadsMetricConfig // metric config provided by user.
@@ -5337,9 +5912,12 @@ type MetricsBuilder struct {
 	metricMysqlConnectionCount         metricMysqlConnectionCount
 	metricMysqlConnectionErrors        metricMysqlConnectionErrors
 	metricMysqlDoubleWrites            metricMysqlDoubleWrites
+	metricMysqlFileOpen                metricMysqlFileOpen
 	metricMysqlHandlers                metricMysqlHandlers
 	metricMysqlIndexIoWaitCount        metricMysqlIndexIoWaitCount
 	metricMysqlIndexIoWaitTime         metricMysqlIndexIoWaitTime
+	metricMysqlInnodbDataFileIo        metricMysqlInnodbDataFileIo
+	metricMysqlInnodbOperationPending  metricMysqlInnodbOperationPending
 	metricMysqlJoins                   metricMysqlJoins
 	metricMysqlLocks                   metricMysqlLocks
 	metricMysqlLogOperations           metricMysqlLogOperations
@@ -5355,6 +5933,8 @@ type MetricsBuilder struct {
 	metricMysqlQueryCount              metricMysqlQueryCount
 	metricMysqlQuerySlowCount          metricMysqlQuerySlowCount
 	metricMysqlReplicaSQLDelay         metricMysqlReplicaSQLDelay
+	metricMysqlReplicaTempTableOpen    metricMysqlReplicaTempTableOpen
+	metricMysqlReplicaThreadRunning    metricMysqlReplicaThreadRunning
 	metricMysqlReplicaTimeBehindSource metricMysqlReplicaTimeBehindSource
 	metricMysqlRowLocks                metricMysqlRowLocks
 	metricMysqlRowOperations           metricMysqlRowOperations
@@ -5368,9 +5948,11 @@ type MetricsBuilder struct {
 	metricMysqlTableLockWaitReadTime   metricMysqlTableLockWaitReadTime
 	metricMysqlTableLockWaitWriteCount metricMysqlTableLockWaitWriteCount
 	metricMysqlTableLockWaitWriteTime  metricMysqlTableLockWaitWriteTime
+	metricMysqlTableOpen               metricMysqlTableOpen
 	metricMysqlTableRows               metricMysqlTableRows
 	metricMysqlTableSize               metricMysqlTableSize
 	metricMysqlTableOpenCache          metricMysqlTableOpenCache
+	metricMysqlThreadSlowLaunch        metricMysqlThreadSlowLaunch
 	metricMysqlThreads                 metricMysqlThreads
 	metricMysqlTmpResources            metricMysqlTmpResources
 	metricMysqlUptime                  metricMysqlUptime
@@ -5410,9 +5992,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlConnectionCount:         newMetricMysqlConnectionCount(mbc.Metrics.MysqlConnectionCount),
 		metricMysqlConnectionErrors:        newMetricMysqlConnectionErrors(mbc.Metrics.MysqlConnectionErrors),
 		metricMysqlDoubleWrites:            newMetricMysqlDoubleWrites(mbc.Metrics.MysqlDoubleWrites),
+		metricMysqlFileOpen:                newMetricMysqlFileOpen(mbc.Metrics.MysqlFileOpen),
 		metricMysqlHandlers:                newMetricMysqlHandlers(mbc.Metrics.MysqlHandlers),
 		metricMysqlIndexIoWaitCount:        newMetricMysqlIndexIoWaitCount(mbc.Metrics.MysqlIndexIoWaitCount),
 		metricMysqlIndexIoWaitTime:         newMetricMysqlIndexIoWaitTime(mbc.Metrics.MysqlIndexIoWaitTime),
+		metricMysqlInnodbDataFileIo:        newMetricMysqlInnodbDataFileIo(mbc.Metrics.MysqlInnodbDataFileIo),
+		metricMysqlInnodbOperationPending:  newMetricMysqlInnodbOperationPending(mbc.Metrics.MysqlInnodbOperationPending),
 		metricMysqlJoins:                   newMetricMysqlJoins(mbc.Metrics.MysqlJoins),
 		metricMysqlLocks:                   newMetricMysqlLocks(mbc.Metrics.MysqlLocks),
 		metricMysqlLogOperations:           newMetricMysqlLogOperations(mbc.Metrics.MysqlLogOperations),
@@ -5428,6 +6013,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlQueryCount:              newMetricMysqlQueryCount(mbc.Metrics.MysqlQueryCount),
 		metricMysqlQuerySlowCount:          newMetricMysqlQuerySlowCount(mbc.Metrics.MysqlQuerySlowCount),
 		metricMysqlReplicaSQLDelay:         newMetricMysqlReplicaSQLDelay(mbc.Metrics.MysqlReplicaSQLDelay),
+		metricMysqlReplicaTempTableOpen:    newMetricMysqlReplicaTempTableOpen(mbc.Metrics.MysqlReplicaTempTableOpen),
+		metricMysqlReplicaThreadRunning:    newMetricMysqlReplicaThreadRunning(mbc.Metrics.MysqlReplicaThreadRunning),
 		metricMysqlReplicaTimeBehindSource: newMetricMysqlReplicaTimeBehindSource(mbc.Metrics.MysqlReplicaTimeBehindSource),
 		metricMysqlRowLocks:                newMetricMysqlRowLocks(mbc.Metrics.MysqlRowLocks),
 		metricMysqlRowOperations:           newMetricMysqlRowOperations(mbc.Metrics.MysqlRowOperations),
@@ -5441,9 +6028,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlTableLockWaitReadTime:   newMetricMysqlTableLockWaitReadTime(mbc.Metrics.MysqlTableLockWaitReadTime),
 		metricMysqlTableLockWaitWriteCount: newMetricMysqlTableLockWaitWriteCount(mbc.Metrics.MysqlTableLockWaitWriteCount),
 		metricMysqlTableLockWaitWriteTime:  newMetricMysqlTableLockWaitWriteTime(mbc.Metrics.MysqlTableLockWaitWriteTime),
+		metricMysqlTableOpen:               newMetricMysqlTableOpen(mbc.Metrics.MysqlTableOpen),
 		metricMysqlTableRows:               newMetricMysqlTableRows(mbc.Metrics.MysqlTableRows),
 		metricMysqlTableSize:               newMetricMysqlTableSize(mbc.Metrics.MysqlTableSize),
 		metricMysqlTableOpenCache:          newMetricMysqlTableOpenCache(mbc.Metrics.MysqlTableOpenCache),
+		metricMysqlThreadSlowLaunch:        newMetricMysqlThreadSlowLaunch(mbc.Metrics.MysqlThreadSlowLaunch),
 		metricMysqlThreads:                 newMetricMysqlThreads(mbc.Metrics.MysqlThreads),
 		metricMysqlTmpResources:            newMetricMysqlTmpResources(mbc.Metrics.MysqlTmpResources),
 		metricMysqlUptime:                  newMetricMysqlUptime(mbc.Metrics.MysqlUptime),
@@ -5566,9 +6155,12 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlConnectionCount.emit(ils.Metrics())
 	mb.metricMysqlConnectionErrors.emit(ils.Metrics())
 	mb.metricMysqlDoubleWrites.emit(ils.Metrics())
+	mb.metricMysqlFileOpen.emit(ils.Metrics())
 	mb.metricMysqlHandlers.emit(ils.Metrics())
 	mb.metricMysqlIndexIoWaitCount.emit(ils.Metrics())
 	mb.metricMysqlIndexIoWaitTime.emit(ils.Metrics())
+	mb.metricMysqlInnodbDataFileIo.emit(ils.Metrics())
+	mb.metricMysqlInnodbOperationPending.emit(ils.Metrics())
 	mb.metricMysqlJoins.emit(ils.Metrics())
 	mb.metricMysqlLocks.emit(ils.Metrics())
 	mb.metricMysqlLogOperations.emit(ils.Metrics())
@@ -5584,6 +6176,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlQueryCount.emit(ils.Metrics())
 	mb.metricMysqlQuerySlowCount.emit(ils.Metrics())
 	mb.metricMysqlReplicaSQLDelay.emit(ils.Metrics())
+	mb.metricMysqlReplicaTempTableOpen.emit(ils.Metrics())
+	mb.metricMysqlReplicaThreadRunning.emit(ils.Metrics())
 	mb.metricMysqlReplicaTimeBehindSource.emit(ils.Metrics())
 	mb.metricMysqlRowLocks.emit(ils.Metrics())
 	mb.metricMysqlRowOperations.emit(ils.Metrics())
@@ -5597,9 +6191,11 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlTableLockWaitReadTime.emit(ils.Metrics())
 	mb.metricMysqlTableLockWaitWriteCount.emit(ils.Metrics())
 	mb.metricMysqlTableLockWaitWriteTime.emit(ils.Metrics())
+	mb.metricMysqlTableOpen.emit(ils.Metrics())
 	mb.metricMysqlTableRows.emit(ils.Metrics())
 	mb.metricMysqlTableSize.emit(ils.Metrics())
 	mb.metricMysqlTableOpenCache.emit(ils.Metrics())
+	mb.metricMysqlThreadSlowLaunch.emit(ils.Metrics())
 	mb.metricMysqlThreads.emit(ils.Metrics())
 	mb.metricMysqlTmpResources.emit(ils.Metrics())
 	mb.metricMysqlUptime.emit(ils.Metrics())
@@ -5734,6 +6330,16 @@ func (mb *MetricsBuilder) RecordMysqlDoubleWritesDataPoint(ts pcommon.Timestamp,
 	return nil
 }
 
+// RecordMysqlFileOpenDataPoint adds a data point to mysql.file.open metric.
+func (mb *MetricsBuilder) RecordMysqlFileOpenDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlFileOpen, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlFileOpen.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
 // RecordMysqlHandlersDataPoint adds a data point to mysql.handlers metric.
 func (mb *MetricsBuilder) RecordMysqlHandlersDataPoint(ts pcommon.Timestamp, inputVal string, handlerAttributeValue AttributeHandler) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
@@ -5752,6 +6358,26 @@ func (mb *MetricsBuilder) RecordMysqlIndexIoWaitCountDataPoint(ts pcommon.Timest
 // RecordMysqlIndexIoWaitTimeDataPoint adds a data point to mysql.index.io.wait.time metric.
 func (mb *MetricsBuilder) RecordMysqlIndexIoWaitTimeDataPoint(ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue AttributeIoWaitsOperations, tableNameAttributeValue string, schemaAttributeValue string, indexNameAttributeValue string) {
 	mb.metricMysqlIndexIoWaitTime.recordDataPoint(mb.startTime, ts, val, ioWaitsOperationsAttributeValue.String(), tableNameAttributeValue, schemaAttributeValue, indexNameAttributeValue)
+}
+
+// RecordMysqlInnodbDataFileIoDataPoint adds a data point to mysql.innodb.data_file.io metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbDataFileIoDataPoint(ts pcommon.Timestamp, inputVal string, diskIoDirectionAttributeValue AttributeDiskIoDirection) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbDataFileIo, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbDataFileIo.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlInnodbOperationPendingDataPoint adds a data point to mysql.innodb.operation.pending metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbOperationPendingDataPoint(ts pcommon.Timestamp, inputVal string, operationsAttributeValue AttributeOperations) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbOperationPending, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbOperationPending.recordDataPoint(mb.startTime, ts, val, operationsAttributeValue.String())
+	return nil
 }
 
 // RecordMysqlJoinsDataPoint adds a data point to mysql.joins metric.
@@ -5899,6 +6525,16 @@ func (mb *MetricsBuilder) RecordMysqlReplicaSQLDelayDataPoint(ts pcommon.Timesta
 	mb.metricMysqlReplicaSQLDelay.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordMysqlReplicaTempTableOpenDataPoint adds a data point to mysql.replica.temp_table.open metric.
+func (mb *MetricsBuilder) RecordMysqlReplicaTempTableOpenDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlReplicaTempTableOpen.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlReplicaThreadRunningDataPoint adds a data point to mysql.replica.thread.running metric.
+func (mb *MetricsBuilder) RecordMysqlReplicaThreadRunningDataPoint(ts pcommon.Timestamp, val int64, mysqlReplicaThreadTypeAttributeValue AttributeMysqlReplicaThreadType, mysqlReplicaChannelNameAttributeValue string) {
+	mb.metricMysqlReplicaThreadRunning.recordDataPoint(mb.startTime, ts, val, mysqlReplicaThreadTypeAttributeValue.String(), mysqlReplicaChannelNameAttributeValue)
+}
+
 // RecordMysqlReplicaTimeBehindSourceDataPoint adds a data point to mysql.replica.time_behind_source metric.
 func (mb *MetricsBuilder) RecordMysqlReplicaTimeBehindSourceDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricMysqlReplicaTimeBehindSource.recordDataPoint(mb.startTime, ts, val)
@@ -5979,6 +6615,16 @@ func (mb *MetricsBuilder) RecordMysqlTableLockWaitWriteTimeDataPoint(ts pcommon.
 	mb.metricMysqlTableLockWaitWriteTime.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue, tableNameAttributeValue, writeLockTypeAttributeValue.String())
 }
 
+// RecordMysqlTableOpenDataPoint adds a data point to mysql.table.open metric.
+func (mb *MetricsBuilder) RecordMysqlTableOpenDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlTableOpen, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlTableOpen.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
 // RecordMysqlTableRowsDataPoint adds a data point to mysql.table.rows metric.
 func (mb *MetricsBuilder) RecordMysqlTableRowsDataPoint(ts pcommon.Timestamp, val int64, tableNameAttributeValue string, schemaAttributeValue string) {
 	mb.metricMysqlTableRows.recordDataPoint(mb.startTime, ts, val, tableNameAttributeValue, schemaAttributeValue)
@@ -5996,6 +6642,16 @@ func (mb *MetricsBuilder) RecordMysqlTableOpenCacheDataPoint(ts pcommon.Timestam
 		return fmt.Errorf("failed to parse int64 for MysqlTableOpenCache, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlTableOpenCache.recordDataPoint(mb.startTime, ts, val, cacheStatusAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlThreadSlowLaunchDataPoint adds a data point to mysql.thread.slow_launch metric.
+func (mb *MetricsBuilder) RecordMysqlThreadSlowLaunchDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlThreadSlowLaunch, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlThreadSlowLaunch.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

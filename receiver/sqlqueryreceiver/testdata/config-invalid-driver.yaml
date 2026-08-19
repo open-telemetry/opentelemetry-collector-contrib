@@ -1,4 +1,4 @@
-sqlquery:
+sql_query:
   collection_interval: 10s
   driver: "invalid_driver"
   host: "localhost"

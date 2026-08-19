@@ -132,7 +132,7 @@ jobs:
       - loadtest
       - update-benchmarks
     if: always()
-    uses: open-telemetry/shared-workflows/.github/workflows/workflow-failure-issue.yml@62d5939b47144252763c5ff9fffe8c20d76cd806 # v0.4.0
+    uses: open-telemetry/shared-workflows/.github/workflows/workflow-failure-issue.yml@8079110d7e793bd38b1a5219ef8f8280dab9139e # v0.7.0
     with:
       success: >-
         ${{

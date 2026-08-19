@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"math"
 	"net"
-	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -139,6 +138,16 @@ func isExplainableQuery(query string) bool {
 }
 
 // explainQuery implements client.
+//
+// The real parameter count comes from pg_prepared_statements, not from counting "$N"
+// occurrences in the query text: a placeholder can repeat (e.g. "$1" used twice for one
+// real parameter) or appear inside a string literal ("$1" is not a placeholder there), and
+// either case makes a text-based count wrong. Once PREPARE succeeds, PostgreSQL has already
+// parsed and deduplicated the real list, so pg_prepared_statements.parameter_types is
+// authoritative. Reading it back requires a second round trip after PREPARE, and since
+// PREPARE is session-scoped, every step (PREPARE, the count lookup, EXPLAIN EXECUTE,
+// DEALLOCATE) has to run on the one connection that ran PREPARE, not just whatever the pool
+// hands out for each call.
 func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID string, logger *zap.Logger) (string, error) {
 	// Check if the query is explainable before attempting EXPLAIN
 	if !isExplainableQuery(query) {
@@ -148,40 +157,72 @@ func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID stri
 
 	normalizedQueryID := strings.ReplaceAll(queryID, "-", "_")
 
-	// PostgreSQL's pg_stat_statements returns queries with $1, $2 placeholders
-	paramRegex := regexp.MustCompile(`\$\d+`)
-	matches := paramRegex.FindAllString(query, -1)
-
-	// Build nulls array for placeholders
-	nulls := make([]string, len(matches))
-	for i := range nulls {
-		nulls[i] = "null"
+	conn, err := c.client.Conn(ctx)
+	if err != nil {
+		logger.Error("failed to obtain a dedicated connection for EXPLAIN", zap.Error(err), zap.String("queryID", queryID))
+		return "", err
 	}
+	defer conn.Close()
 
 	// Deallocate the prepared statement on a context detached from ctx so the
-	// cleanup still runs even if ctx was already canceled or timed out.
+	// cleanup still runs even if ctx was already canceled or timed out. Runs on the
+	// same dedicated connection that ran PREPARE, since DEALLOCATE on any other
+	// connection wouldn't find it.
 	defer func() {
 		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), detachedCleanupTimeout)
 		defer cancel()
-		_, _ = c.client.ExecContext(cleanupCtx, fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
+		_, _ = conn.ExecContext(cleanupCtx, fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
 	}()
 
-	// if there is no parameter needed, we can not put an empty bracket
-
-	nullsString := ""
-	if len(nulls) > 0 {
-		nullsString = "(" + strings.Join(nulls, ", ") + ")"
-	}
 	setPlanCacheMode := "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;"
 	prepareStatement := fmt.Sprintf("PREPARE otel_%s AS %s;", normalizedQueryID, query)
+
+	prepareDb := sqlquery.NewDbClient(sqlquery.ConnWrapper{Conn: conn}, setPlanCacheMode+prepareStatement, logger, sqlquery.TelemetryConfig{})
+	if _, err = prepareDb.QueryRows(ctx); err != nil {
+		logger.Error("failed to prepare statement for EXPLAIN", zap.Error(err), zap.String("queryID", queryID))
+		return "", err
+	}
+
+	paramCountSQL := fmt.Sprintf(
+		"/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_%s';",
+		normalizedQueryID,
+	)
+	paramCountDb := sqlquery.NewDbClient(sqlquery.ConnWrapper{Conn: conn}, paramCountSQL, logger, sqlquery.TelemetryConfig{})
+	paramCountResult, err := paramCountDb.QueryRows(ctx)
+	if err != nil {
+		logger.Error("failed to look up prepared statement parameter count", zap.Error(err), zap.String("queryID", queryID))
+		return "", err
+	}
+	if len(paramCountResult) == 0 {
+		logger.Error("prepared statement not found in pg_prepared_statements after PREPARE succeeded", zap.String("queryID", queryID))
+		return "", fmt.Errorf("prepared statement otel_%s not found in pg_prepared_statements", normalizedQueryID)
+	}
+
+	paramCount, err := strconv.Atoi(paramCountResult[0]["param_count"])
+	if err != nil {
+		logger.Error("failed to parse prepared statement parameter count", zap.Error(err), zap.String("queryID", queryID))
+		return "", err
+	}
+
+	nullsString := ""
+	if paramCount > 0 {
+		nulls := make([]string, paramCount)
+		for i := range nulls {
+			nulls[i] = "null"
+		}
+		nullsString = "(" + strings.Join(nulls, ", ") + ")"
+	}
 	explainStatement := fmt.Sprintf("EXPLAIN(FORMAT JSON) EXECUTE otel_%s%s;", normalizedQueryID, nullsString)
 
-	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, setPlanCacheMode+prepareStatement+explainStatement, logger, sqlquery.TelemetryConfig{})
-
-	result, err := wrappedDb.QueryRows(ctx)
+	explainDb := sqlquery.NewDbClient(sqlquery.ConnWrapper{Conn: conn}, explainStatement, logger, sqlquery.TelemetryConfig{})
+	result, err := explainDb.QueryRows(ctx)
 	if err != nil {
 		logger.Error("failed to explain statement", zap.Error(err))
 		return "", err
+	}
+
+	if len(result) == 0 {
+		return "", nil
 	}
 
 	plan, err := obfuscateSQLExecPlan(result[0]["QUERY PLAN"])

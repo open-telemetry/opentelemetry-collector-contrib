@@ -82,7 +82,8 @@ jobs:
           FORCE_ALL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') }}
           # `^` anchors mean these match files at repo root, not in subdirectories,
           # so a receiver-component Makefile change doesn't trigger the full suite.
-          CRITICAL_FILES: '[
+          CRITICAL_FILES: >-
+            [
             "^Makefile",
             "^Makefile.Common",
             "^.golangci.yml",
@@ -91,8 +92,9 @@ jobs:
             "^internal/tools/",
             "^versions.yaml",
             "^cmd/otelcontribcol/"
-          ]'
-          ALL_TEST_GROUPS: '[
+            ]
+          ALL_TEST_GROUPS: >-
+            [
             "receiver-0",
             "receiver-1",
             "receiver-2",
@@ -109,7 +111,7 @@ jobs:
             "pkg",
             "cmd-0",
             "other"
-          ]'
+            ]
         run: ./.github/workflows/scripts/compute-ci-scope.sh
       - name: Filter matrix and derive mode
         id: post
@@ -208,7 +210,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-go-tools
         with:
-          go-version: oldstable
+          go-version: stable
       - name: Run `govulncheck`
         run: make gogovulncheck GROUP=${{ matrix.group }}
       - run: ./.github/workflows/scripts/check-disk-space.sh

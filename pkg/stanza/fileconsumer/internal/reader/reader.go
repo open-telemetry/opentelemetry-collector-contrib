@@ -225,7 +225,7 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 	r.headerReader = nil
 	r.HeaderFinalized = true
 
-	// Reset position in file to r.Offest after the header scanner might have moved it past a content token.
+	// Reset position in file to r.Offset after the header scanner might have moved it past a content token.
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {
 		r.set.Logger.Error("failed to seek post-header", zap.Error(err))
 		return true
