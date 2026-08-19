@@ -433,7 +433,7 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 		var err error
 		var ok bool
 		if isOptional {
-			optionalArg, ok = field.Addr().Interface().(reflectTypedArg)
+			optionalArg, ok = reflect.TypeAssert[reflectTypedArg](field.Addr())
 
 			if !ok {
 				return errors.New("optional type is not manageable by the OTTL parser. This is an error in the OTTL")
@@ -464,7 +464,7 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			if isOptional {
 				fieldAddr, ok = optionalArg.addrReflectValue().(reflectTypedArg)
 			} else {
-				fieldAddr, ok = field.Addr().Interface().(reflectTypedArg)
+				fieldAddr, ok = reflect.TypeAssert[reflectTypedArg](field.Addr())
 			}
 			if !ok {
 				return errors.New("slice getter type is not manageable by the OTTL parser. This is a bug in the OTTL")
@@ -836,7 +836,7 @@ func (*Optional[T]) reflectTypeParam() reflect.Type {
 }
 
 func (o *Optional[T]) setReflectValue(val reflect.Value) error {
-	typedVal, ok := val.Interface().(T)
+	typedVal, ok := reflect.TypeAssert[T](val)
 	if !ok {
 		return fmt.Errorf("cannot set value of type %q to an Optional of type %q", val.Type(), reflect.TypeFor[T]())
 	}

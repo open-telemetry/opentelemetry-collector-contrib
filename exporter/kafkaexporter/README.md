@@ -67,9 +67,6 @@ The following settings can be optionally configured:
   - `extension`: The component ID of a custom partitioner extension. When set, partitioning is delegated to the specified extension.
 - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options. Set to `tls: insecure: false` explicitly when using `AWS_MSK_IAM_OAUTHBEARER` as the authentication method.
 - `auth`
-  - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
-    - `username`: The username to use.
-    - `password`: The password to use
   - `sasl`
     - `username`: The username to use.
     - `password`: The password to use
@@ -78,7 +75,6 @@ The following settings can be optionally configured:
     - `aws_msk`
       - `region`: AWS Region in case of AWS_MSK_IAM_OAUTHBEARER mechanism
     - `oauthbearer_token_source`: The component ID of an authenticator extension that provides OAuth2 tokens (e.g. `oauth2client` or `azure_auth`). Required when `mechanism` is `OAUTHBEARER`; the extension must be listed under `service.extensions`.
-  - `tls` (Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
   - `kerberos`
     - `service_name`: Kerberos service name
     - `realm`: Kerberos realm

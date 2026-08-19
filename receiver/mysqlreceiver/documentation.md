@@ -424,6 +424,34 @@ The number of currently open files.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Int | Development |
 
+### mysql.innodb.data_file.io
+
+The total bytes read from and written to InnoDB data files.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | The disk IO operation direction. | Str: ``read``, ``write`` | Recommended | - |
+
+### mysql.innodb.operation.pending
+
+The number of pending InnoDB data file operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The operation types. | Str: ``fsyncs``, ``reads``, ``writes`` | Recommended | - |
+
 ### mysql.joins
 
 The number of joins that perform table scans.
@@ -501,6 +529,31 @@ The number of seconds that the replica must lag the source.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | false | Development |
+
+### mysql.replica.temp_table.open
+
+The number of temporary tables currently open by the replica while applying replicated events.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {table} | Gauge | Int | Development |
+
+### mysql.replica.thread.running
+
+Whether the replica IO and SQL threads report a running status. A value of 1 means the thread reports Yes; 0 means any other status, including No or Connecting.
+
+If the thread type or channel name attributes are disabled or dropped, configure the aggregation strategy as min or max based on the desired collapsed status.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mysql.replica.thread.type | The replica thread type. | Str: ``io``, ``sql`` | Recommended | - |
+| mysql.replica.channel.name | The replication channel name. | Any Str | Recommended | - |
 
 ### mysql.replica.time_behind_source
 
