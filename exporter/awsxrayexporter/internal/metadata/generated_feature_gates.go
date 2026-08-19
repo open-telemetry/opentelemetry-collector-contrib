@@ -13,3 +13,11 @@ var ExporterAwsxraySkiptimestampvalidationFeatureGate = featuregate.GlobalRegist
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48737"),
 	featuregate.WithRegisterFromVersion("v0.84.0"),
 )
+
+var ExporterXrayAllowDotFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.xray.allowDot",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("X-Ray Exporter will no longer convert . to _ in annotation keys when this feature gate is enabled. "),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116"),
+	featuregate.WithRegisterFromVersion("v0.97.0"),
+)

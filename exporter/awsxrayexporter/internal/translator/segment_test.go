@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
@@ -30,6 +31,15 @@ const (
 )
 
 var testWriters = newWriterPool(2048)
+
+func setAllowDot(tb testing.TB, value bool) {
+	tb.Helper()
+	prev := metadata.ExporterXrayAllowDotFeatureGate.IsEnabled()
+	require.NoError(tb, featuregate.GlobalRegistry().Set(metadata.ExporterXrayAllowDotFeatureGate.ID(), value))
+	tb.Cleanup(func() {
+		require.NoError(tb, featuregate.GlobalRegistry().Set(metadata.ExporterXrayAllowDotFeatureGate.ID(), prev))
+	})
+}
 
 func TestClientSpanWithRpcAwsSdkClientAttributes(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
@@ -405,8 +415,7 @@ func TestFixSegmentName(t *testing.T) {
 }
 
 func TestFixAnnotationKey(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
-	assert.NoError(t, err)
+	setAllowDot(t, false)
 
 	validKey := "Key_1"
 	fixedKey := fixAnnotationKey(validKey)
@@ -420,8 +429,7 @@ func TestFixAnnotationKey(t *testing.T) {
 }
 
 func TestFixAnnotationKeyWithAllowDot(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
-	assert.NoError(t, err)
+	setAllowDot(t, true)
 
 	validKey := "Key_1"
 	fixedKey := fixAnnotationKey(validKey)
@@ -581,8 +589,7 @@ func TestSpanWithAttributesSegmentMetadata(t *testing.T) {
 }
 
 func TestResourceAttributesCanBeIndexed(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
-	assert.NoError(t, err)
+	setAllowDot(t, false)
 
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
@@ -614,8 +621,7 @@ func TestResourceAttributesCanBeIndexed(t *testing.T) {
 }
 
 func TestResourceAttributesCanBeIndexedWithAllowDot(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
-	assert.NoError(t, err)
+	setAllowDot(t, true)
 
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
@@ -668,8 +674,7 @@ func TestResourceAttributesNotIndexedIfSubsegment(t *testing.T) {
 }
 
 func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
-	assert.NoError(t, err)
+	setAllowDot(t, false)
 
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
@@ -688,8 +693,7 @@ func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
 }
 
 func TestSpanWithSpecialAttributesAsListedWithAllowDot(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
-	assert.NoError(t, err)
+	setAllowDot(t, true)
 
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
@@ -708,8 +712,7 @@ func TestSpanWithSpecialAttributesAsListedWithAllowDot(t *testing.T) {
 }
 
 func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
-	assert.NoError(t, err)
+	setAllowDot(t, false)
 
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
@@ -727,8 +730,7 @@ func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
 }
 
 func TestSpanWithSpecialAttributesAsListedAndIndexAllWithAllowDot(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
-	assert.NoError(t, err)
+	setAllowDot(t, true)
 
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
@@ -1415,8 +1417,7 @@ func addSpanLink(span ptrace.Span) {
 }
 
 func TestLocalRootConsumer(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
-	assert.NoError(t, err)
+	setAllowDot(t, false)
 
 	spanName := "destination operation"
 	resource := getBasicResource()
@@ -1455,8 +1456,7 @@ func TestLocalRootConsumer(t *testing.T) {
 // service segment falls back to resource.service.name rather than using the
 // span (operation) name.
 func TestLocalRootConsumerUsesResourceServiceName(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
-	assert.NoError(t, err)
+	setAllowDot(t, false)
 
 	spanName := "destination operation"
 	resource := getBasicResource() // has service.name = "signup_aggregator"
@@ -1550,8 +1550,7 @@ func TestLocalRootConsumerAWSNamespace(t *testing.T) {
 }
 
 func TestLocalRootClient(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
-	assert.NoError(t, err)
+	setAllowDot(t, false)
 
 	spanName := "SQS Get"
 	resource := getBasicResource()
@@ -1616,6 +1615,8 @@ func TestLocalRootClientAwsServiceMetrics(t *testing.T) {
 }
 
 func TestLocalRootProducer(t *testing.T) {
+	setAllowDot(t, false)
+
 	spanName := "destination operation"
 	resource := getBasicResource()
 	parentSpanID := newSegmentID()
@@ -1690,8 +1691,7 @@ func validateLocalRootWithoutDependency(t *testing.T, segment *awsxray.Segment, 
 }
 
 func TestLocalRootServer(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
-	assert.NoError(t, err)
+	setAllowDot(t, false)
 
 	spanName := "MyService"
 	resource := getBasicResource()
@@ -1713,8 +1713,7 @@ func TestLocalRootServer(t *testing.T) {
 }
 
 func TestLocalRootInternal(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
-	assert.NoError(t, err)
+	setAllowDot(t, false)
 
 	spanName := "MyInternalService"
 	resource := getBasicResource()
