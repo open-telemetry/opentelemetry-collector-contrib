@@ -1,0 +1,26 @@
+# OCB build configuration for the sdnotify integration tests.
+#
+# Produces a minimal collector distribution containing only the components the
+# test configs under testdata/ reference (otlp receiver, debug + otlp
+# exporters), plus the sdnotify extension built from local source via the
+# `replaces` directive below. Pinned to the v0.159.0 / v1.65.0 release train to
+# match the extension's own go.mod.
+dist:
+  name: otelcol
+  output_path: /home/ocb/build
+
+extensions:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/sdnotifyextension v0.159.0
+
+receivers:
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.159.0
+
+exporters:
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.159.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.159.0
+
+# The gomod version above is a placeholder; this replace points the module at
+# the local extension source copied into the build stage, so the built binary
+# always contains the code under test.
+replaces:
+  - github.com/open-telemetry/opentelemetry-collector-contrib/extension/sdnotifyextension => /src/extension/sdnotifyextension

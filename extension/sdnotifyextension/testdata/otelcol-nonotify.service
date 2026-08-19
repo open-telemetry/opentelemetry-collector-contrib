@@ -1,0 +1,13 @@
+[Unit]
+Description=OpenTelemetry Collector (sdnotify integration test - no NOTIFY_SOCKET)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=NOTIFY_SOCKET=
+ExecStart=/bin/otelcol --config=/etc/otelcol/config.yaml
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

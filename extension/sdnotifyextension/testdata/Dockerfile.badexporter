@@ -1,0 +1,12 @@
+FROM otelcol-sdnotify-base:latest
+
+# Runtime-bad config: OTLP exporter points at a port with nothing listening.
+# The exporter starts fine (it queues + retries), the collector reaches
+# steady state, and sdnotify sends READY=1. This proves the extension does
+# not gate READY=1 on downstream/exporter health.
+COPY extension/sdnotifyextension/testdata/otelcol-bad-exporter.yaml /etc/otelcol/config.yaml
+
+# Shared systemd unit: same Type=notify shape as the happy path — we expect
+# the unit to reach active despite the unreachable exporter target.
+COPY extension/sdnotifyextension/testdata/otelcol.service /etc/systemd/system/otelcol.service
+RUN ln -s /etc/systemd/system/otelcol.service /etc/systemd/system/multi-user.target.wants/otelcol.service
