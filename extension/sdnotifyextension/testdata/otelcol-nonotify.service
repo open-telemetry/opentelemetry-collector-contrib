@@ -5,7 +5,6 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-Environment=NOTIFY_SOCKET=
 ExecStart=/bin/otelcol --config=/etc/otelcol/config.yaml
 Restart=on-failure
 
