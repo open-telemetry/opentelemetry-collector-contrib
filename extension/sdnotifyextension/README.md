@@ -62,3 +62,17 @@ RestartSec=2s
 [Install]
 WantedBy=multi-user.target
 ```
+
+## Development
+
+Unit and integration tests are tagged with `//go:build linux`, because systemd
+is primarily used in Linux. This means that if you try to run them, they will 
+be skipped if you use a non-Linux machine (MacOS, FreeBSD, Windows, etc.). To
+overcome that you can remove the directives and run the tests locally. Keep in
+mind that you need [Docker](https://www.docker.com) installed on your machine in
+order to run the integration tests, because they use [Testcontainers](https://golang.testcontainers.org).
+Use the command below to run both unit and integration tests.
+
+```bash
+make test mod-integration-test
+```
