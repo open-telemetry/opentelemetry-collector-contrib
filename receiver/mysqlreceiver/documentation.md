@@ -462,7 +462,7 @@ The number of InnoDB row lock waits currently pending.
 
 ### mysql.innodb.row_lock.wait.duration.avg
 
-The average InnoDB row lock wait duration.
+The average InnoDB row lock wait duration since server startup or last status reset.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -470,7 +470,7 @@ The average InnoDB row lock wait duration.
 
 ### mysql.innodb.row_lock.wait.duration.max
 
-The maximum InnoDB row lock wait duration.
+The maximum InnoDB row lock wait duration since server startup or last status reset.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

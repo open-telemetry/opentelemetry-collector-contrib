@@ -1160,7 +1160,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["mysql.innodb.row_lock.wait.duration.avg"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "The average InnoDB row lock wait duration.", mi.Description())
+					assert.Equal(t, "The average InnoDB row lock wait duration since server startup or last status reset.", mi.Description())
 					assert.Equal(t, "s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1172,7 +1172,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["mysql.innodb.row_lock.wait.duration.max"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "The maximum InnoDB row lock wait duration.", mi.Description())
+					assert.Equal(t, "The maximum InnoDB row lock wait duration since server startup or last status reset.", mi.Description())
 					assert.Equal(t, "s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

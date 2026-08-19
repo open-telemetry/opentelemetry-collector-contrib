@@ -547,14 +547,14 @@ metrics:
     attributes: []
   mysql.innodb.row_lock.wait.duration.avg:
     enabled: false
-    description: The average InnoDB row lock wait duration.
+    description: The average InnoDB row lock wait duration since server startup or last status reset.
     stability: development
     unit: s
     gauge:
       value_type: double
   mysql.innodb.row_lock.wait.duration.max:
     enabled: false
-    description: The maximum InnoDB row lock wait duration.
+    description: The maximum InnoDB row lock wait duration since server startup or last status reset.
     stability: development
     unit: s
     gauge:

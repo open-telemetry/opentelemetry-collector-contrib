@@ -2873,7 +2873,7 @@ type metricMysqlInnodbRowLockWaitDurationAvg struct {
 // init fills mysql.innodb.row_lock.wait.duration.avg metric with initial data.
 func (m *metricMysqlInnodbRowLockWaitDurationAvg) init() {
 	m.data.SetName("mysql.innodb.row_lock.wait.duration.avg")
-	m.data.SetDescription("The average InnoDB row lock wait duration.")
+	m.data.SetDescription("The average InnoDB row lock wait duration since server startup or last status reset.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 }
@@ -2923,7 +2923,7 @@ type metricMysqlInnodbRowLockWaitDurationMax struct {
 // init fills mysql.innodb.row_lock.wait.duration.max metric with initial data.
 func (m *metricMysqlInnodbRowLockWaitDurationMax) init() {
 	m.data.SetName("mysql.innodb.row_lock.wait.duration.max")
-	m.data.SetDescription("The maximum InnoDB row lock wait duration.")
+	m.data.SetDescription("The maximum InnoDB row lock wait duration since server startup or last status reset.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 }
