@@ -13,13 +13,15 @@ on:
         required: true
         description: Current version (beta, like 0.69.1)
 
+      # The stable inputs are optional: the stable-base module set has no modules yet, so leave
+      # them empty until the first component is promoted to stable.
       candidate-stable:
-        required: true
-        description: Release candidate version (stable, like 1.1.0)
+        required: false
+        description: Release candidate version (stable, like 1.1.0). Leave empty if there are no stable modules.
 
       current-stable:
-        required: true
-        description: Current version (stable, like 1.0.0)
+        required: false
+        description: Current version (stable, like 1.0.0). Leave empty if there are no stable modules.
 permissions:
   contents: read
 jobs:
@@ -29,11 +31,11 @@ jobs:
       contents: write # required for pushing changes in release-prepare-release.sh
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: "open-telemetry/opentelemetry-collector"
           path: opentelemetry-collector
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: opentelemetry-collector-contrib
       # Disable git's automatic maintenance to avoid go-git issues.

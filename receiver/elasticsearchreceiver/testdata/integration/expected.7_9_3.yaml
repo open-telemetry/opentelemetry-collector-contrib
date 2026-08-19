@@ -65,7 +65,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
+                - asInt: "33"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{tasks}'
@@ -120,7 +120,7 @@ resourceMetrics:
           - description: The current heap memory usage
             gauge:
               dataPoints:
-                - asInt: "100044384"
+                - asInt: "79486976"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: jvm.memory.heap.used
@@ -157,10 +157,30 @@ resourceMetrics:
                   attributes:
                     - key: aggregation
                       value:
+                        stringValue: primary_shards
+                    - key: state
+                      value:
+                        stringValue: deleted
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: aggregation
+                      value:
                         stringValue: total
                     - key: state
                       value:
                         stringValue: active
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: state
+                      value:
+                        stringValue: deleted
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{documents}'
@@ -673,7 +693,7 @@ resourceMetrics:
             stringValue: docker-cluster
         - key: elasticsearch.node.name
           value:
-            stringValue: 94a9f21181ef
+            stringValue: 4481cca58739
         - key: elasticsearch.node.version
           value:
             stringValue: 7.9.3
@@ -710,7 +730,7 @@ resourceMetrics:
                         stringValue: model_inference
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "100044384"
+                - asInt: "81584128"
                   attributes:
                     - key: name
                       value:
@@ -828,7 +848,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "33"
+                - asInt: "14"
                   attributes:
                     - key: state
                       value:
@@ -1053,7 +1073,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "25607843840"
+                - asInt: "18471559168"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -1062,7 +1082,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "28824559616"
+                - asInt: "20206313472"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -1071,7 +1091,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "62671097856"
+                - asInt: "33636024320"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -1118,7 +1138,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "286"
+                - asInt: "248"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{files}'
@@ -1463,7 +1483,7 @@ resourceMetrics:
                         stringValue: force_merge
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "216"
+                - asInt: "110"
                   attributes:
                     - key: state
                       value:
@@ -1523,7 +1543,7 @@ resourceMetrics:
                         stringValue: ml_job_comms
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "7"
+                - asInt: "2"
                   attributes:
                     - key: state
                       value:
@@ -2124,7 +2144,7 @@ resourceMetrics:
                         stringValue: force_merge
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "0"
+                - asInt: "1"
                   attributes:
                     - key: state
                       value:
@@ -2364,7 +2384,7 @@ resourceMetrics:
                         stringValue: force_merge
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "7"
+                - asInt: "6"
                   attributes:
                     - key: state
                       value:
@@ -2576,7 +2596,7 @@ resourceMetrics:
           - description: Fifteen-minute load average on the system (field is not present if fifteen-minute load average is not available).
             gauge:
               dataPoints:
-                - asDouble: 0.22
+                - asDouble: 1.53
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: elasticsearch.os.cpu.load_avg.15m
@@ -2584,7 +2604,7 @@ resourceMetrics:
           - description: One-minute load average on the system (field is not present if one-minute load average is not available).
             gauge:
               dataPoints:
-                - asDouble: 1.71
+                - asDouble: 3.5
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: elasticsearch.os.cpu.load_avg.1m
@@ -2592,7 +2612,7 @@ resourceMetrics:
           - description: Five-minute load average on the system (field is not present if five-minute load average is not available).
             gauge:
               dataPoints:
-                - asDouble: 0.6
+                - asDouble: 1.87
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: elasticsearch.os.cpu.load_avg.5m
@@ -2600,7 +2620,7 @@ resourceMetrics:
           - description: Recent CPU usage for the whole system, or -1 if not supported.
             gauge:
               dataPoints:
-                - asInt: "12"
+                - asInt: "96"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: elasticsearch.os.cpu.usage
@@ -2608,14 +2628,14 @@ resourceMetrics:
           - description: Amount of physical memory.
             gauge:
               dataPoints:
-                - asInt: "5924163584"
+                - asInt: "140394496"
                   attributes:
                     - key: state
                       value:
                         stringValue: free
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "2294996992"
+                - asInt: "8190050304"
                   attributes:
                     - key: state
                       value:
@@ -2627,7 +2647,7 @@ resourceMetrics:
           - description: The number of loaded classes
             gauge:
               dataPoints:
-                - asInt: "19088"
+                - asInt: "18912"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: jvm.classes.loaded
@@ -2665,7 +2685,7 @@ resourceMetrics:
                         stringValue: old
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "135"
+                - asInt: "282"
                   attributes:
                     - key: name
                       value:
@@ -2693,7 +2713,7 @@ resourceMetrics:
           - description: The current heap memory usage
             gauge:
               dataPoints:
-                - asInt: "100044384"
+                - asInt: "79486976"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: jvm.memory.heap.used
@@ -2701,7 +2721,7 @@ resourceMetrics:
           - description: The amount of memory that is guaranteed to be available for non-heap purposes
             gauge:
               dataPoints:
-                - asInt: "130859008"
+                - asInt: "120672256"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: jvm.memory.nonheap.committed
@@ -2709,7 +2729,7 @@ resourceMetrics:
           - description: The current non-heap memory usage
             gauge:
               dataPoints:
-                - asInt: "122883152"
+                - asInt: "115395704"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: jvm.memory.nonheap.used
@@ -2743,21 +2763,21 @@ resourceMetrics:
           - description: The current memory pool memory usage
             gauge:
               dataPoints:
-                - asInt: "66904064"
+                - asInt: "56418304"
                   attributes:
                     - key: name
                       value:
                         stringValue: old
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "15314528"
+                - asInt: "22020096"
                   attributes:
                     - key: name
                       value:
                         stringValue: survivor
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "17825792"
+                - asInt: "3145728"
                   attributes:
                     - key: name
                       value:
@@ -2769,7 +2789,7 @@ resourceMetrics:
           - description: The current number of threads
             gauge:
               dataPoints:
-                - asInt: "34"
+                - asInt: "32"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: jvm.threads.count

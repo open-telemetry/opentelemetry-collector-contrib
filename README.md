@@ -53,7 +53,7 @@ Some features are hidden behind feature gates before they are part of the main c
 
 ## Support
 
-Each component is supported either by the community of OpenTelemetry Collector Contrib maintainers, as defined by the GitHub group [@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer), or by specific vendors. See the individual README files for information about the specific components.
+Each component is supported either by the community of OpenTelemetry Collector Contrib maintainers, as defined by the GitHub group [@open-telemetry/collector-contrib-maintainers](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainers), or by specific vendors. See the individual README files for information about the specific components.
 
 The OpenTelemetry Collector Contrib maintainers may at any time downgrade specific components if they are deemed unmaintained or if they pose a risk to the repository and/or binary distribution.
 
@@ -65,7 +65,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Maintainers
 
-- [Alex Boten](https://github.com/codeboten), Honeycomb
+- [Alex Boten](https://github.com/codeboten), Grafana Labs
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
@@ -104,6 +104,8 @@ For more information about the approver role, see the [community repository](htt
 - [Dylan Strohschein](https://github.com/dyl10s), Dynatrace
 - [James Moessis](https://github.com/jamesmoessis), Atlassian
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
+- [Khushi Jain](https://github.com/khushijain21), Elastic
+- [Mike Goldsmith](https://github.com/MikeGoldsmith), Honeycomb
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
 - [Paulo Dias](https://github.com/paulojmdias), Five9

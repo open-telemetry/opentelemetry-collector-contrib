@@ -12,13 +12,13 @@ import (
 )
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	confignet.AddrConfig           `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
+	AddrConfig       confignet.AddrConfig           `mapstructure:",squash"`
 
 	// TLS controls the TLS settings used to connect to memcached. TLS is
 	// disabled by default (Insecure: true), preserving plaintext connections.
 	TLS configtls.ClientConfig `mapstructure:"tls,omitempty"`
 
 	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
