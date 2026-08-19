@@ -65,26 +65,6 @@ func (s *sdnotify) Start(_ context.Context, host component.Host) error {
 
 	// STOPPING=1 must be sent only on genuine termination (SIGINT/SIGTERM).
 	//
-	// In newer versions of Go, it is considered best practice to use
-	// signal.NotifyContext for handling signals. However, we cannot use it here
-	// because the OpenTelemetry Collector has its own SIGINT/SIGTERM handler.
-	//
-	// See the link below to check the OpenTelemetry Collector control loop
-	// implementation at the time of writing:
-	// https://github.com/open-telemetry/opentelemetry-collector/blob/6725868dfcac2582652d0bd3a7039f154ea8be68/otelcol/collector.go#L451-L492
-	//
-	// The Done channel returned by signal.NotifyContext can be closed for
-	// reasons other than receiving a termination signal:
-	// - Stop function is called.
-	// - Parent context's Done channel is closed.
-	// In such cases it's impossible to tell whether the channel closed because
-	// of the signal or for some other reason, and we'd risk missing STOPPING=1.
-	// Instead, we watch the signal directly and use notification channel to
-	// distinguish a real signal from a graceful Shutdown().
-	//
-	// See the link below for signal.NotifyContext documentation:
-	// https://pkg.go.dev/os/signal#NotifyContext
-	//
 	// Note that this implementation does not guarantee ordering — for example,
 	// it does not guarantee that the Collector's own signal handler won't run
 	// before this extension's. The only way to truly guarantee that would be
