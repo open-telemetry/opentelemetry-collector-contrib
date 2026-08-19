@@ -6,6 +6,7 @@ package batchperresourceattr // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/consumer"
@@ -46,13 +47,9 @@ func WithMetadataInjection() Option {
 func injectAttrMetadata(ctx context.Context, attrs pcommon.Map, attrKeys []string) context.Context {
 	existing := client.FromContext(ctx)
 
-	var existingKeyCount int
-	for range existing.Metadata.Keys() {
-		existingKeyCount++
-	}
-
-	meta := make(map[string][]string, existingKeyCount)
-	for k := range existing.Metadata.Keys() {
+	keys := slices.Collect(existing.Metadata.Keys())
+	meta := make(map[string][]string, len(keys))
+	for _, k := range keys {
 		meta[k] = existing.Metadata.Get(k)
 	}
 
