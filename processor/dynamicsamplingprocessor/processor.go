@@ -831,7 +831,9 @@ func (p *dynamicSamplingProcessor) evaluate(ctx context.Context, pt *pendingTrac
 					return p.evalRootSpanCondition(ctx, rs, ss, span)
 				}
 			}
+			start := time.Now()
 			key = sampler.ExtractKey(pt.spans, r.fingerprint, isRoot)
+			p.telemetry.ProcessorDynamicSamplingFingerprintDuration.Record(ctx, time.Since(start).Microseconds(), r.ruleAttrSet)
 		}
 		rate := max(r.sampler.GetSampleRate(key, pt.spanCount), 1)
 		return r, rate, key

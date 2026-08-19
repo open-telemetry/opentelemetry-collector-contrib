@@ -627,6 +627,7 @@ Future work on shared trace context across collector instances (tracked under "C
 | `otelcol_processor_dynamic_sampling_traces_dropped` | Counter  | `rule`   | Traces dropped, attributed to the rule that selected them.                  |
 | `otelcol_processor_dynamic_sampling_decision_sample_rate` | Histogram | `rule` | Distribution of effective sample rates produced per rule.                  |
 | `otelcol_processor_dynamic_sampling_decision_triggers` | Counter  | `trigger` | Number of trace decisions made, labelled by which event triggered them (`root_span`, `trace_timeout`, `eviction`, `shutdown`). |
+| `otelcol_processor_dynamic_sampling_fingerprint_duration` | Histogram | `rule` | Time spent extracting a rule's fingerprint per decision (microseconds). A relative signal for spotting expensive fingerprints, eg wide `any.` scopes on large traces. |
 | `otelcol_processor_dynamic_sampling_traces_evicted` | Counter  |          | Traces evicted from the buffer under pressure. Each still receives a decision per the eviction policy. |
 | `otelcol_processor_dynamic_sampling_incoming_tracestate_unparseable` | Counter |     | Spans whose incoming W3C tracestate could not be parsed while applying the sampling threshold. |
 | `otelcol_processor_dynamic_sampling_ottl_eval_errors` | Counter | `rule`  | OTTL condition evaluation errors, labelled by the rule the condition belongs to. |

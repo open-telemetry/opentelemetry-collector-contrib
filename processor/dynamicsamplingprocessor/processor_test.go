@@ -1485,3 +1485,40 @@ func TestProcessor_RecordFingerprint(t *testing.T) {
 		assert.False(t, ok, "always_sample has no fingerprint to record")
 	})
 }
+
+func TestProcessor_FingerprintDurationMetric(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Millisecond,
+		NumTraces:     10,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{
+				Type:                  DynamicPercentage,
+				GoalPercentage:        100,
+				FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+			}},
+		},
+	}
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), newRootTrace(pcommon.TraceID([16]byte{0xB1}))))
+	assert.Eventually(t, func() bool { return sink.SpanCount() == 1 }, time.Second, 10*time.Millisecond)
+
+	metadatatest.AssertEqualProcessorDynamicSamplingFingerprintDuration(t, tt,
+		[]metricdata.HistogramDataPoint[int64]{{
+			Attributes: attribute.NewSet(attribute.String("rule", "default")),
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+		metricdatatest.IgnoreValue(),
+	)
+}
