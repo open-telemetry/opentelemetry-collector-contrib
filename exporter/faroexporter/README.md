@@ -50,6 +50,14 @@ exporters:
 
 The full list of settings exposed for this exporter are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml).
 
+## Session tracking
+
+Faro collectors validate the session at the HTTP level, so when a payload carries a session id the
+exporter promotes it into the `X-Faro-Session-Id` header of the outgoing request. Payloads without a
+session id are sent without the header, which some collectors (including Grafana Cloud's) reject.
+Session ids reach the exporter through the logs pipeline; make sure session tracking is enabled in the
+instrumenting Faro SDK.
+
 ## Getting Started
 
 The following settings are required:

@@ -247,6 +247,55 @@ func TestExportContextCanceled(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to make an HTTP request: Post \""+server.URL+"\": context canceled")
 }
 
+func TestExporter_SessionIDHeader(t *testing.T) {
+	tc := []struct {
+		name           string
+		sessionID      string
+		expectedHeader string
+	}{
+		{
+			name:           "session id is promoted to header",
+			sessionID:      "0b0b0b0b0b0b0b0b",
+			expectedHeader: "0b0b0b0b0b0b0b0b",
+		},
+		{
+			name:           "header is omitted when payload has no session id",
+			sessionID:      "",
+			expectedHeader: "",
+		},
+	}
+
+	for _, c := range tc {
+		t.Run(c.name, func(t *testing.T) {
+			gotHeader := make(chan string, 1)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotHeader <- r.Header.Get(headerFaroSessionID)
+				w.WriteHeader(http.StatusAccepted)
+			}))
+			defer server.Close()
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.ClientConfig.Endpoint = server.URL
+
+			set := exportertest.NewNopSettings(metadata.Type)
+			exp, err := newExporter(cfg, set)
+			require.NoError(t, err)
+
+			ctx := t.Context()
+			require.NoError(t, exp.start(ctx, componenttest.NewNopHost()))
+
+			require.NoError(t, exp.ConsumeLogs(ctx, createTestLogsWithSessionID(c.sessionID)))
+
+			select {
+			case header := <-gotHeader:
+				assert.Equal(t, c.expectedHeader, header)
+			case <-time.After(5 * time.Second):
+				t.Fatal("timed out waiting for the exporter to make a request")
+			}
+		})
+	}
+}
+
 func createTestTraces() ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -279,5 +328,16 @@ func createTestLogs() plog.Logs {
 	lr.SetSeverityNumber(plog.SeverityNumberInfo)
 	lr.SetSeverityText("info")
 	lr.Body().SetStr("kind=event message=This is a test log message")
+	return logs
+}
+
+func createTestLogsWithSessionID(sessionID string) plog.Logs {
+	logs := createTestLogs()
+	if sessionID == "" {
+		return logs
+	}
+
+	lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	lr.Body().SetStr(lr.Body().Str() + " session_id=" + sessionID)
 	return logs
 }

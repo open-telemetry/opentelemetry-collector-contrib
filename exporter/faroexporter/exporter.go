@@ -40,8 +40,9 @@ type faroExporter struct {
 }
 
 const (
-	headerRetryAfter = "Retry-After"
-	jsonContentType  = "application/json"
+	headerRetryAfter    = "Retry-After"
+	headerFaroSessionID = "X-Faro-Session-Id"
+	jsonContentType     = "application/json"
 )
 
 func newExporter(cfg component.Config, set exporter.Settings) (*faroExporter, error) {
@@ -102,6 +103,13 @@ func (fe *faroExporter) export(ctx context.Context, fp *faro.Payload) error {
 	}
 	req.Header.Set("Content-Type", jsonContentType)
 	req.Header.Set("User-Agent", fe.userAgent)
+	// Faro collectors validate the session at the HTTP level, so the session id carried in the
+	// payload meta has to be promoted into a header. This mirrors what the reference client
+	// (@grafana/faro-web-sdk's FetchTransport) does, including omitting the header when the
+	// payload has no session id.
+	if sessionID := fp.Meta.Session.ID; sessionID != "" {
+		req.Header.Set(headerFaroSessionID, sessionID)
+	}
 
 	resp, err := fe.client.Do(req)
 	if err != nil {
