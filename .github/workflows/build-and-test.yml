@@ -13,7 +13,8 @@ on:
     # unrelated label churn (e.g. `waiting-for-code-owners`).
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
-permissions: read-all
+permissions:
+  contents: read
 
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml

@@ -23,6 +23,8 @@ func BenchmarkExtractKey(b *testing.B) {
 		`span.attributes["missing.key"]`,
 		`root.attributes["http.route"]`,
 		`any.attributes["service.name"]`,
+		// worst case: the lookup misses at resource, scope, and every span
+		`any.attributes["missing.key"]`,
 	}
 	for _, size := range sizes {
 		spans := benchTrace(size)
