@@ -3,7 +3,7 @@
 FROM ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-builder:0.159.0 AS build-stage
 
 WORKDIR /src
-COPY . /src
+COPY --chmod=755 . /src
 
 RUN ocb --config /src/extension/sdnotifyextension/testdata/builder-config.yaml
 
