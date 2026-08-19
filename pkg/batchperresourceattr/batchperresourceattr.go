@@ -46,7 +46,7 @@ func WithMetadataInjection() Option {
 func injectAttrMetadata(ctx context.Context, attrs pcommon.Map, attrKeys []string) context.Context {
 	existing := client.FromContext(ctx)
 
-	meta := map[string][]string{}
+	meta := make(map[string][]string, len(existing.Metadata.Keys()))
 	for k := range existing.Metadata.Keys() {
 		meta[k] = existing.Metadata.Get(k)
 	}
