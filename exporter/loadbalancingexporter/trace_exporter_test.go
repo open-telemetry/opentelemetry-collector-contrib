@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"net"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -26,8 +27,11 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
@@ -297,10 +301,16 @@ func TestRandomnessIdentifier(t *testing.T) {
 		{"vendor tracestate without rv", "vendor=value", fallback},
 		{"ot without rv", "ot=th:8", fallback},
 		{"unparseable rv", "ot=rv:zz", fallback},
-		// A valid rv must survive a malformed sibling member: partial parses
-		// keep the members that did parse, and losing the rv here would break
-		// exactly the grouping this routing mode provides.
+		// Value-level parse errors keep the members that did parse, so a
+		// valid rv survives a malformed sibling th.
 		{"valid rv beside malformed th", "ot=rv:aabbccddeeff00;th:notathreshold", "aabbccddeeff00"},
+		// Header-level W3C failures discard the whole tracestate up front,
+		// including a valid rv, so these fall back to trace ID randomness.
+		{"valid rv beside uppercase vendor key", "ot=rv:aabbccddeeff00,Vendor=up", fallback},
+		{"valid rv in oversize header", "ot=rv:aabbccddeeff00,vendor=" + strings.Repeat("x", 1100), fallback},
+		// The 32-member limit aborts the scan where it is hit, keeping the
+		// members already parsed, so an rv before the cutoff survives.
+		{"valid rv before member limit", "ot=rv:aabbccddeeff00," + strings.Repeat("v=x,", 34) + "vend=x", "aabbccddeeff00"},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			span := ptrace.NewSpan()
@@ -309,6 +319,33 @@ func TestRandomnessIdentifier(t *testing.T) {
 			assert.Equal(t, tt.expected, string(p.randomnessIdentifier(t.Context(), span)))
 		})
 	}
+}
+
+// The unparseable metric counts traces that fell back to trace ID randomness because of a
+// parse error, not every parse error: a recovered rv routes the trace and is not counted.
+func TestRandomnessIdentifierUnparseableMetric(t *testing.T) {
+	testTel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, testTel.Shutdown(t.Context())) }()
+
+	p, err := newTracesExporter(metadatatest.NewSettings(testTel), randomnessConfig())
+	require.NoError(t, err)
+
+	span := ptrace.NewSpan()
+	span.SetTraceID(pcommon.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+
+	// a recovered rv beside a malformed th routes the trace, no fallback
+	span.TraceState().FromRaw("ot=rv:aabbccddeeff00;th:notathreshold")
+	p.randomnessIdentifier(t.Context(), span)
+	// a valid tracestate without an rv falls back, but had no parse error
+	span.TraceState().FromRaw("vendor=value")
+	p.randomnessIdentifier(t.Context(), span)
+	// a header-level failure discards the rv and falls back, counted
+	span.TraceState().FromRaw("ot=rv:aabbccddeeff00,Vendor=up")
+	p.randomnessIdentifier(t.Context(), span)
+
+	metadatatest.AssertEqualLoadbalancerRandomnessTracestateUnparseable(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 }
 
 func TestConsumeTracesByRandomness_SharedRVCoLocates(t *testing.T) {
@@ -357,10 +394,13 @@ func TestConsumeTracesByRandomness_SharedRVCoLocates(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
+	// Distinct low-7-byte suffixes so each trace has its own trace ID randomness;
+	// with shared randomness the assertions below could pass even if the rv were
+	// ignored and every trace routed by trace ID.
 	const sharedRV = "aabbccddeeff00"
-	grouped1 := pcommon.TraceID{1}
-	grouped2 := pcommon.TraceID{2}
-	ungrouped := pcommon.TraceID{3}
+	grouped1 := pcommon.TraceID{1, 0, 0, 0, 0, 0, 0, 0, 0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77}
+	grouped2 := pcommon.TraceID{2, 0, 0, 0, 0, 0, 0, 0, 0, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee}
+	ungrouped := pcommon.TraceID{3, 0, 0, 0, 0, 0, 0, 0, 0, 0xde, 0xad, 0xbe, 0xef, 0x01, 0x02, 0x01}
 
 	td := ptrace.NewTraces()
 	ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
@@ -379,6 +419,9 @@ func TestConsumeTracesByRandomness_SharedRVCoLocates(t *testing.T) {
 
 	groupedEndpoint := endpointWithPort(lb.ring.endpointFor([]byte(sharedRV)))
 	ungroupedEndpoint := endpointWithPort(lb.ring.endpointFor([]byte(sampling.TraceIDToRandomness(ungrouped).RValue())))
+	// The endpoints must differ for the assertions below to distinguish rv routing
+	// from trace ID fallback; pick a different ungrouped suffix if this ever fails.
+	require.NotEqual(t, groupedEndpoint, ungroupedEndpoint)
 
 	spansPerEndpointTID := map[string]map[pcommon.TraceID]int{}
 	for endpoint, got := range received {

@@ -170,16 +170,19 @@ func spanTraceIDIdentifier(span ptrace.Span) []byte {
 func (e *traceExporterImp) randomnessIdentifier(ctx context.Context, span ptrace.Span) []byte {
 	if raw := span.TraceState().AsRaw(); raw != "" {
 		w3c, err := sampling.NewW3CTraceState(raw)
-		if err != nil {
-			// Member-level parse failures accumulate without discarding the
-			// members that did parse, so a valid rv can survive alongside a
-			// malformed sibling (e.g. a bad th). Count the failure but route
-			// on whatever was recovered; fall back to trace ID randomness
-			// only when no usable rv is present.
-			e.telemetry.LoadbalancerRandomnessTracestateUnparseable.Add(ctx, 1)
-		}
 		if rnd, ok := w3c.OTelValue().RValueRandomness(); ok {
+			// Member- and value-level parse failures (e.g. a malformed th
+			// beside a valid rv) keep the members that did parse, so a
+			// recovered rv still routes the trace.
 			return []byte(rnd.RValue())
+		}
+		if err != nil {
+			// Header-level failures (W3C syntax errors such as an uppercase
+			// vendor key, or a header over the 1024-byte size limit) discard
+			// the whole tracestate including any rv. Count only parse errors
+			// that left no usable rv, i.e. traces that actually fell back to
+			// trace ID randomness.
+			e.telemetry.LoadbalancerRandomnessTracestateUnparseable.Add(ctx, 1)
 		}
 	}
 	rnd := sampling.TraceIDToRandomness(span.TraceID())
@@ -190,7 +193,9 @@ func (e *traceExporterImp) randomnessIdentifier(ctx context.Context, span ptrace
 // directly into one ptrace.Traces per backend. It copies each span once and allocates a
 // single ptrace.Traces per backend, versus one per trace on the SplitTraces path.
 // identifierFor must yield the same value for every span of a trace; the backend is resolved
-// once per trace ID and reused for the trace's remaining spans in the batch.
+// once per trace ID and reused for the trace's remaining spans in the batch. That caching also
+// bounds the identifier cost: randomness routing pays a tracestate validation and parse once
+// per trace per batch, where traceID routing slices the trace ID bytes.
 func (e *traceExporterImp) consumeTracesPerSpan(ctx context.Context, td ptrace.Traces, identifierFor func(ptrace.Span) []byte) error {
 	// dest holds a backend's in-progress traces and the source resource/scope indices of the
 	// ScopeSpans being appended to, so a contiguous run of the same source scope reuses it.
