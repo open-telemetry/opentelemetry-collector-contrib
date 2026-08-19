@@ -143,8 +143,10 @@ func TestWatchdog_SendsWATCHDOG(t *testing.T) {
 	// Waiting exactly 300ms could cause the test to occasionally miss the last
 	// notification due to scheduling or timer jitter.
 	//
-	// Note: We cannot use testing/synctest here because it does not support
-	// signal.Notify. See: https://github.com/golang/go/issues/78494
+	// Note: We can't use testing/synctest here, because it doesn't support signal.Notify.
+	//
+	// See the link below for more information:
+	// https://github.com/golang/go/issues/78494
 	count := 0
 	for {
 		select {
