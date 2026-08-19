@@ -56,6 +56,19 @@ func countRetriesInterceptor() elastictransport.InterceptorFunc {
 	}
 }
 
+// timeoutInterceptor injects a context that enforces a timeout per http request over the wire.
+func timeoutInterceptor(perRequestTimeout time.Duration) elastictransport.InterceptorFunc {
+	return func(next elastictransport.RoundTripFunc) elastictransport.RoundTripFunc {
+		return func(req *http.Request) (*http.Response, error) {
+			// ctx is not reused across retries
+			// Therefore, timeoutInterceptor would not result in nesting of WithTimeout
+			ctx, cancel := context.WithTimeout(req.Context(), perRequestTimeout)
+			defer cancel()
+			return next(req.WithContext(ctx))
+		}
+	}
+}
+
 // clientLogger implements the estransport.Logger interface
 // that is required by the Elasticsearch client for logging.
 type clientLogger struct {
@@ -264,6 +277,7 @@ func newElasticsearchClient(
 			elastictransportversion.Version,
 		),
 		Interceptors: []elastictransport.InterceptorFunc{
+			timeoutInterceptor(httpClient.Timeout),
 			countRetriesInterceptor(),
 		},
 	}

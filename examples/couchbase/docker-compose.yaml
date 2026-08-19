@@ -1,7 +1,7 @@
 version: "3"
 services:
   couchbase:
-    image: couchbase:enterprise-7.1.0
+    image: couchbase:enterprise-7.1.0@sha256:6ea8fc49bde775bb4999f59add71dc7e016c7ec6c00a286729c395a1948c0356
     ports:
       - 8091:8091
     deploy:
