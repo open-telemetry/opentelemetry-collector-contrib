@@ -1,13 +1,6 @@
 FROM otelcol-sdnotify-base:latest
 
-# Invalid config: the traces pipeline references an exporter that isn't
-# declared under `exporters:`, so the collector exits nonzero at load time
-# and systemd never sees READY=1.
 COPY extension/sdnotifyextension/testdata/otelcol-invalid-config.yaml /etc/otelcol/config.yaml
 
-# Shared systemd unit: Type=notify. Because the collector exits before
-# sending READY=1, systemd's Restart=on-failure loop hits the start-limit
-# burst and the unit ends up in a persistent failed state (which is what
-# the test polls for via `systemctl is-failed`).
 COPY extension/sdnotifyextension/testdata/otelcol.service /etc/systemd/system/otelcol.service
 RUN ln -s /etc/systemd/system/otelcol.service /etc/systemd/system/multi-user.target.wants/otelcol.service

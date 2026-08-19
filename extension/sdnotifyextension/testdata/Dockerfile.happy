@@ -1,11 +1,6 @@
 FROM otelcol-sdnotify-base:latest
 
-# Healthy collector config: valid pipeline with a debug exporter. The
-# sdnotify extension is enabled so systemd receives READY=1 once the
-# pipelines are up.
 COPY extension/sdnotifyextension/testdata/otelcol-config.yaml /etc/otelcol/config.yaml
 
-# Shared systemd unit: Type=notify so systemd waits for READY=1 from the
-# sdnotify extension before marking the unit active.
 COPY extension/sdnotifyextension/testdata/otelcol.service /etc/systemd/system/otelcol.service
 RUN ln -s /etc/systemd/system/otelcol.service /etc/systemd/system/multi-user.target.wants/otelcol.service

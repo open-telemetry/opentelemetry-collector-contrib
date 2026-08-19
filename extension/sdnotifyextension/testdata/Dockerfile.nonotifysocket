@@ -1,14 +1,6 @@
 FROM otelcol-sdnotify-base:latest
 
-# Healthy collector config - this scenario is about the unit environment,
-# not the config.
 COPY extension/sdnotifyextension/testdata/otelcol-config.yaml /etc/otelcol/config.yaml
 
-# Scenario-specific systemd unit: Type=simple so the unit does not wait for
-# READY=1, and Environment=NOTIFY_SOCKET= explicitly clears the variable
-# that systemd would normally set for Type=notify units. This exercises the
-# extension's no-op branch: the collector runs, sdnotify logs the
-# "NOTIFY_SOCKET is not set" warning, and no sd_notify traffic is emitted —
-# but the process must still start and stay running.
 COPY extension/sdnotifyextension/testdata/otelcol-nonotify.service /etc/systemd/system/otelcol.service
 RUN ln -s /etc/systemd/system/otelcol.service /etc/systemd/system/multi-user.target.wants/otelcol.service
