@@ -23,10 +23,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
-// stopGracePeriod is how long Stop waits for the Agent process to exit after the
-// graceful shutdown signal before killing it forcibly. It is a variable so tests
-// can shorten it.
-var stopGracePeriod = 10 * time.Second
+// defaultStopGracePeriod is how long Stop waits for the Agent process to exit
+// after the graceful shutdown signal before killing it forcibly.
+const defaultStopGracePeriod = 10 * time.Second
 
 // AgentStartedLogMsg is logged every time an Agent process is started. Tests
 // count occurrences of it to observe how often the Agent was (re)started, so
@@ -50,16 +49,20 @@ type Commander struct {
 	// doneCh, so concurrent Stop calls would race to consume it and the loser
 	// would never return.
 	stopMu sync.Mutex
+	// stopGracePeriod is how long Stop waits for the Agent to exit after the
+	// graceful shutdown signal before killing it forcibly.
+	stopGracePeriod time.Duration
 }
 
 func NewCommander(logger *zap.Logger, logFilePath string, cfg config.Agent, args ...string) (*Commander, error) {
 	return &Commander{
-		logger:       logger,
-		logFilePath:  logFilePath,
-		cfg:          cfg,
-		args:         args,
-		outputDoneCh: make(chan struct{}),
-		running:      &atomic.Int64{},
+		logger:          logger,
+		logFilePath:     logFilePath,
+		cfg:             cfg,
+		args:            args,
+		outputDoneCh:    make(chan struct{}),
+		running:         &atomic.Int64{},
+		stopGracePeriod: defaultStopGracePeriod,
 		// Buffer channels so we can send messages without blocking on listeners.
 		doneCh: make(chan struct{}, 1),
 		exitCh: make(chan struct{}, 1),
@@ -446,9 +449,13 @@ func (c *Commander) IsRunning() bool {
 }
 
 // Stop the Agent process. Signals the process to stop gracefully and kills it
-// forcibly if it has not exited within stopGracePeriod. Stop returns an error
-// only when the process could not be terminated at all; a failed graceful
+// forcibly if it has not exited within the stop grace period. Stop returns an
+// error only when the process could not be terminated at all; a failed graceful
 // shutdown alone is not an error.
+//
+// ctx's cancellation does not bound this call: Stop always runs to completion so
+// that it terminates the process even when the caller's context is already
+// cancelled, for example while the Supervisor itself is shutting down.
 func (c *Commander) Stop(ctx context.Context) error {
 	c.stopMu.Lock()
 	defer c.stopMu.Unlock()
@@ -462,8 +469,8 @@ func (c *Commander) Stop(ctx context.Context) error {
 	c.logger.Debug("sending shutdown signal to agent process", zap.Int("pid", pid))
 
 	// Gracefully signal process to stop. A failed send is not fatal: the process
-	// still has to be terminated, so fall through to the re-send loop and the kill
-	// deadline below instead of returning with the process left running.
+	// still has to be terminated, so fall through to the kill deadline below
+	// instead of returning with the process left running.
 	if err := sendShutdownSignal(c.cmd.Process); err != nil {
 		c.logger.Debug("Could not send shutdown signal to agent process",
 			zap.Int("pid", pid), zap.Error(err))
@@ -472,7 +479,7 @@ func (c *Commander) Stop(ctx context.Context) error {
 	// The deadline is deliberately detached from ctx's cancellation: Stop has to
 	// terminate the process even when the caller's context is already cancelled,
 	// for example while the Supervisor itself is shutting down.
-	waitCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), stopGracePeriod)
+	waitCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), c.stopGracePeriod)
 	defer cancel()
 
 	// Setup a goroutine to wait a while for process to finish and send kill signal

@@ -54,10 +54,6 @@ func TestMain(m *testing.M) {
 // even when the caller's context is already cancelled. An error from Stop means
 // the process could not be killed - not that the graceful path failed.
 func TestStopKillsAgentThatIgnoresShutdownSignals(t *testing.T) {
-	prev := stopGracePeriod
-	stopGracePeriod = 2 * time.Second
-	t.Cleanup(func() { stopGracePeriod = prev })
-
 	cmdr, err := NewCommander(
 		zap.NewNop(),
 		filepath.Join(t.TempDir(), "agent.log"),
@@ -70,6 +66,7 @@ func TestStopKillsAgentThatIgnoresShutdownSignals(t *testing.T) {
 		},
 	)
 	require.NoError(t, err)
+	cmdr.stopGracePeriod = 2 * time.Second
 
 	ready := make(chan struct{})
 	var once sync.Once
@@ -108,10 +105,6 @@ func TestStopKillsAgentThatIgnoresShutdownSignals(t *testing.T) {
 // once, so without serialization one caller would consume it and the other
 // would wait forever.
 func TestStopCalledConcurrentlyBothReturn(t *testing.T) {
-	prev := stopGracePeriod
-	stopGracePeriod = 2 * time.Second
-	t.Cleanup(func() { stopGracePeriod = prev })
-
 	cmdr, err := NewCommander(
 		zap.NewNop(),
 		filepath.Join(t.TempDir(), "agent.log"),
@@ -124,6 +117,7 @@ func TestStopCalledConcurrentlyBothReturn(t *testing.T) {
 		},
 	)
 	require.NoError(t, err)
+	cmdr.stopGracePeriod = 2 * time.Second
 
 	ready := make(chan struct{})
 	var once sync.Once
