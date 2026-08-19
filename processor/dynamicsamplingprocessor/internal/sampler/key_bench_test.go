@@ -57,7 +57,7 @@ func benchTrace(spanCount int) []ptrace.ResourceSpans {
 	rs.Resource().Attributes().PutStr("service.name", "api")
 	ss := rs.ScopeSpans().AppendEmpty()
 	ss.Scope().Attributes().PutStr("lib.name", "otel")
-	for i := 0; i < spanCount; i++ {
+	for i := range spanCount {
 		span := ss.Spans().AppendEmpty()
 		span.SetSpanID([8]byte{byte(i + 1), byte(i >> 8)})
 		if i > 0 {
