@@ -176,7 +176,7 @@ func TestProcessor_FirstMatchRouting(t *testing.T) {
 			{
 				Name: "drop-rest",
 				Sampler: SamplerConfig{
-					Type:               Deterministic,
+					Type:               Probabilistic,
 					SamplingPercentage: 100,
 				},
 			},
@@ -240,7 +240,7 @@ func TestProcessor_StampsRuleAndTraceState(t *testing.T) {
 	assert.Contains(t, ts, "th:")
 }
 
-func TestProcessor_DeterministicDropsAtRate(t *testing.T) {
+func TestProcessor_ProbabilisticDropsAtRate(t *testing.T) {
 	sink := &consumertest.TracesSink{}
 	const n = 500
 	cfg := &Config{
@@ -254,7 +254,7 @@ func TestProcessor_DeterministicDropsAtRate(t *testing.T) {
 			{
 				Name: "fixed",
 				Sampler: SamplerConfig{
-					Type:               Deterministic,
+					Type:               Probabilistic,
 					SamplingPercentage: 10, // 1-in-10
 				},
 			},
@@ -671,7 +671,7 @@ func TestProcessor_HonoursIncomingThreshold(t *testing.T) {
 			{
 				Name: "fixed",
 				Sampler: SamplerConfig{
-					Type:               Deterministic,
+					Type:               Probabilistic,
 					SamplingPercentage: 10, // rate 10 = keep 10% of population
 				},
 			},
@@ -716,7 +716,7 @@ func TestProcessor_UpstreamStricterThanRate_UpstreamWins(t *testing.T) {
 			{
 				Name: "loose",
 				Sampler: SamplerConfig{
-					Type:               Deterministic,
+					Type:               Probabilistic,
 					SamplingPercentage: 50, // rate 2 = 50% of population
 				},
 			},
@@ -1326,8 +1326,8 @@ func TestProcessor_MultiResourceTraceInOneBatch(t *testing.T) {
 }
 
 func TestProcessor_ThroughputSamplersEndToEnd(t *testing.T) {
-	for _, typ := range []SamplerType{EMAThroughput, WindowedThroughput} {
-		t.Run(string(typ), func(t *testing.T) {
+	for _, alg := range []SamplerAlgorithm{AlgorithmEMA, AlgorithmWindowed} {
+		t.Run(string(alg), func(t *testing.T) {
 			sink := &consumertest.TracesSink{}
 			cfg := &Config{
 				TraceTimeout:  time.Hour,
@@ -1336,9 +1336,10 @@ func TestProcessor_ThroughputSamplersEndToEnd(t *testing.T) {
 				DecisionCache: DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
 				Rules: []RuleConfig{
 					{Name: "default", Sampler: SamplerConfig{
-						Type:                 typ,
-						GoalThroughputPerSec: 1000,
-						KeyAttributes:        []string{"service.name"},
+						Type:                  DynamicThroughput,
+						Algorithm:             alg,
+						GoalThroughput:        1000,
+						FingerprintAttributes: []string{`resource.attributes["service.name"]`},
 					}},
 				},
 			}
@@ -1367,4 +1368,35 @@ func TestProcessor_ThroughputSamplersEndToEnd(t *testing.T) {
 			assert.Contains(t, span.TraceState().AsRaw(), "ot=th:", "kept spans must carry a threshold")
 		})
 	}
+}
+
+func TestProcessor_RootScopedFingerprint(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Millisecond,
+		NumTraces:     10,
+		DecisionCache: DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{
+				Type:                  DynamicPercentage,
+				GoalPercentage:        100,
+				FingerprintAttributes: []string{`root.attributes["http.route"]`, `resource.attributes["service.name"]`},
+			}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	// Root selector resolution runs at decide time through the processor's
+	// root-span condition; this pins the wiring end to end.
+	td := newRootTrace(pcommon.TraceID([16]byte{0xF9}))
+	td.ResourceSpans().At(0).Resource().Attributes().PutStr("service.name", "svc")
+	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("http.route", "/users")
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 1
+	}, time.Second, 10*time.Millisecond)
+	span := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	assert.Contains(t, span.TraceState().AsRaw(), "ot=th:", "trace decided through a root-scoped fingerprint must carry a threshold")
 }

@@ -206,11 +206,11 @@ func buildRules(cfg *Config, settings component.TelemetrySettings, evalErrs metr
 	rules := make([]*rule, 0, len(cfg.Rules))
 	for i := range cfg.Rules {
 		rc := &cfg.Rules[i]
-		s, keyFields, err := newSamplerForRule(rc)
+		s, fingerprint, err := newSamplerForRule(rc)
 		if err != nil {
 			return nil, fmt.Errorf("rule %q: %w", rc.Name, err)
 		}
-		r, err := compileRule(rc, s, keyFields, settings, evalErrs)
+		r, err := compileRule(rc, s, fingerprint, settings, evalErrs)
 		if err != nil {
 			return nil, err
 		}
@@ -219,38 +219,49 @@ func buildRules(cfg *Config, settings component.TelemetrySettings, evalErrs metr
 	return rules, nil
 }
 
-func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []string, error) {
+func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []sampler.Selector, error) {
 	sc := rc.Sampler
 	switch sc.Type {
 	case AlwaysSample:
 		return sampler.NewAlwaysSample(), nil, nil
-	case Deterministic:
+	case Probabilistic:
 		s, err := sampler.NewDeterministic(sc.SamplingPercentage)
 		return s, nil, err
-	case EMADynamic:
+	case DynamicPercentage:
 		s, err := sampler.NewEMADynamic(sampler.EMADynamicConfig{
-			GoalSamplingPercentage: sc.GoalSamplingPercentage,
+			GoalSamplingPercentage: sc.GoalPercentage,
 			AdjustmentInterval:     sc.AdjustmentInterval,
 			Weight:                 sc.Weight,
 			MaxKeys:                sc.MaxKeys,
 		})
-		return s, append([]string(nil), sc.KeyAttributes...), err
-	case EMAThroughput:
-		s, err := sampler.NewEMAThroughput(sampler.EMAThroughputConfig{
-			GoalThroughputPerSec: sc.GoalThroughputPerSec,
-			AdjustmentInterval:   sc.AdjustmentInterval,
-			Weight:               sc.Weight,
-			MaxKeys:              sc.MaxKeys,
-		})
-		return s, append([]string(nil), sc.KeyAttributes...), err
-	case WindowedThroughput:
-		s, err := sampler.NewWindowedThroughput(sampler.WindowedThroughputConfig{
-			GoalThroughputPerSec: float64(sc.GoalThroughputPerSec),
-			UpdateFrequency:      sc.UpdateFrequency,
-			LookbackFrequency:    sc.LookbackFrequency,
-			MaxKeys:              sc.MaxKeys,
-		})
-		return s, append([]string(nil), sc.KeyAttributes...), err
+		if err != nil {
+			return nil, nil, err
+		}
+		selectors, err := sampler.ParseSelectors(sc.FingerprintAttributes)
+		return s, selectors, err
+	case DynamicThroughput:
+		var s sampler.Sampler
+		var err error
+		if sc.effectiveAlgorithm() == AlgorithmWindowed {
+			s, err = sampler.NewWindowedThroughput(sampler.WindowedThroughputConfig{
+				GoalThroughputPerSec: float64(sc.GoalThroughput),
+				UpdateFrequency:      sc.UpdateFrequency,
+				LookbackFrequency:    sc.LookbackFrequency,
+				MaxKeys:              sc.MaxKeys,
+			})
+		} else {
+			s, err = sampler.NewEMAThroughput(sampler.EMAThroughputConfig{
+				GoalThroughputPerSec: sc.GoalThroughput,
+				AdjustmentInterval:   sc.AdjustmentInterval,
+				Weight:               sc.Weight,
+				MaxKeys:              sc.MaxKeys,
+			})
+		}
+		if err != nil {
+			return nil, nil, err
+		}
+		selectors, err := sampler.ParseSelectors(sc.FingerprintAttributes)
+		return s, selectors, err
 	default:
 		return nil, nil, fmt.Errorf("unknown sampler type %q", sc.Type)
 	}
@@ -783,8 +794,14 @@ func (p *dynamicSamplingProcessor) evaluate(ctx context.Context, pt *pendingTrac
 			continue
 		}
 		var key string
-		if len(r.keyFields) > 0 {
-			key = sampler.ExtractKey(pt.spans, r.keyFields)
+		if len(r.fingerprint) > 0 {
+			var isRoot sampler.RootMatcher
+			if r.needsRootMatcher {
+				isRoot = func(rs ptrace.ResourceSpans, ss ptrace.ScopeSpans, span ptrace.Span) bool {
+					return p.evalRootSpanCondition(ctx, rs, ss, span)
+				}
+			}
+			key = sampler.ExtractKey(pt.spans, r.fingerprint, isRoot)
 		}
 		rate := max(r.sampler.GetSampleRate(key, pt.spanCount), 1)
 		return r, rate

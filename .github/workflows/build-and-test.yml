@@ -13,7 +13,8 @@ on:
     # unrelated label churn (e.g. `waiting-for-code-owners`).
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
-permissions: read-all
+permissions:
+  contents: read
 
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
@@ -82,7 +83,8 @@ jobs:
           FORCE_ALL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') }}
           # `^` anchors mean these match files at repo root, not in subdirectories,
           # so a receiver-component Makefile change doesn't trigger the full suite.
-          CRITICAL_FILES: '[
+          CRITICAL_FILES: >-
+            [
             "^Makefile",
             "^Makefile.Common",
             "^.golangci.yml",
@@ -91,8 +93,9 @@ jobs:
             "^internal/tools/",
             "^versions.yaml",
             "^cmd/otelcontribcol/"
-          ]'
-          ALL_TEST_GROUPS: '[
+            ]
+          ALL_TEST_GROUPS: >-
+            [
             "receiver-0",
             "receiver-1",
             "receiver-2",
@@ -109,7 +112,7 @@ jobs:
             "pkg",
             "cmd-0",
             "other"
-          ]'
+            ]
         run: ./.github/workflows/scripts/compute-ci-scope.sh
       - name: Filter matrix and derive mode
         id: post
