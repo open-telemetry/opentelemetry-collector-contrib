@@ -23,6 +23,8 @@ windowsperfcounters/customname:
   collection_interval: 30s
   perfcounters:
     - object: object1
+      instances: ["*", "_Global_"]
+      aggregation_name: "_Global_"
       counters:
         - name: counter1
           metric: metric
