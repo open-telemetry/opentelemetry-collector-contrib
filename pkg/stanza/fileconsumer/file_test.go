@@ -1389,9 +1389,10 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 // are always kept open. Tests using it must not call t.Parallel, since the feature gate
 // registry is global.
 func enableKeepFilesOpen(t *testing.T) {
+	prev := metadata.FilelogWindowsKeepFilesOpenFeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogWindowsKeepFilesOpenFeatureGate.ID(), true))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogWindowsKeepFilesOpenFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogWindowsKeepFilesOpenFeatureGate.ID(), prev))
 	})
 }
 
@@ -1443,7 +1444,11 @@ func TestFilesKeptOpenBetweenPolls(t *testing.T) {
 // immediately after each poll. The gate is scoped to Windows, so on other platforms
 // handles are always kept open between polls regardless of its state.
 func TestFilesClosedImmediatelyWithGateDisabled(t *testing.T) {
+	prev := metadata.FilelogWindowsKeepFilesOpenFeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogWindowsKeepFilesOpenFeatureGate.ID(), false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogWindowsKeepFilesOpenFeatureGate.ID(), prev))
+	})
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
