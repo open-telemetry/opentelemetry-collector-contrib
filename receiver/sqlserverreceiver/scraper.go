@@ -338,13 +338,16 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	serverPort := int64(s.config.Port)
 
 	if s.config.DataSource != "" {
-		host, port, err := parseDataSource(s.config.DataSource)
+		config, err := parseDataSource(s.config.DataSource)
 		if err != nil {
 			s.logger.Warn("Failed to parse datasource for host.name attribute, using fallback", zap.Error(err))
 		} else {
-			hostName = host
-			serverAddress = host
-			serverPort = int64(port)
+			hostName = config.Host
+			serverAddress = config.Host
+			serverPort = int64(config.Port)
+			if serverPort == 0 {
+				serverPort = defaultSQLServerPort
+			}
 		}
 	}
 
