@@ -647,7 +647,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "40230884"
+                - asInt: "20115442"
                   attributes:
                     - key: aggregation
                       value:
@@ -1192,7 +1192,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "40230884"
+                - asInt: "20115442"
                   attributes:
                     - key: aggregation
                       value:
