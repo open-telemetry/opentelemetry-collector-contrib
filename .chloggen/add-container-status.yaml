@@ -7,7 +7,7 @@ change_type: 'enhancement'
 component: receiver/docker_stats
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add new metric `container.status` that reports container status. Disabled by default
+note: Add new metric `container.state.status` that reports number of containers in a given status. Disabled by default
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [44428]
