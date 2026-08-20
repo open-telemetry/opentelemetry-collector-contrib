@@ -1751,8 +1751,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			rowsReturnedVal.(int64),
 			totalElapsedTimeVal,
 			totalGrantVal.(int64),
-			s.config.Server,
-			int64(s.config.Port),
 			dbSystemNameVal,
 			procExecCountVal.(int64),
 			row[storedProcedureID],

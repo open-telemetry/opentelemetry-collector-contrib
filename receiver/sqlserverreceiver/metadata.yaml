@@ -155,14 +155,6 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [waiting]
-  server.address:
-    description: The network address of the server hosting the database.
-    type: string
-    requirement_level: recommended
-  server.port:
-    description: The port number on which the server is listening.
-    type: int
-    requirement_level: recommended
   sqlserver.access.scan.type:
     description: The type of access method scan being performed.
     type: string
@@ -534,8 +526,6 @@ events:
       - sqlserver.total_rows
       - sqlserver.total_elapsed_time
       - sqlserver.total_grant_kb
-      - server.address
-      - server.port
       - db.system.name
       - sqlserver.procedure_execution_count
       - sqlserver.procedure_id

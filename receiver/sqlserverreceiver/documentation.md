@@ -1324,8 +1324,6 @@ top query
 | sqlserver.total_rows | Total number of rows returned by the query, reported in delta value. | Any Int | - |
 | sqlserver.total_elapsed_time | Total elapsed time for completed executions of this plan, reported in delta seconds. | Any Double | - |
 | sqlserver.total_grant_kb | The total amount of reserved memory grant in KB this plan received since it was compiled, reported in delta value. | Any Int | - |
-| server.address | The network address of the server hosting the database. | Any Str | - |
-| server.port | The port number on which the server is listening. | Any Int | - |
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str | - |
 | sqlserver.procedure_execution_count | Number of times that the procedure has been executed since it was last compiled, reported in delta value. | Any Int | - |
 | sqlserver.procedure_id | The SQL Server ID of the stored procedure, if any | Any Str | - |
