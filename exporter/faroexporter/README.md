@@ -50,13 +50,68 @@ exporters:
 
 The full list of settings exposed for this exporter are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml).
 
-## Session tracking
+## Propagating the `X-Faro-Session-Id` header
 
-Faro collectors validate the session at the HTTP level, so when a payload carries a session id the
-exporter promotes it into the `X-Faro-Session-Id` header of the outgoing request. Payloads without a
-session id are sent without the header, which some collectors (including Grafana Cloud's) reject.
-Session ids reach the exporter through the logs pipeline; make sure session tracking is enabled in the
-instrumenting Faro SDK.
+Grafana Cloud's Faro collector validates the session at the HTTP level and rejects requests that do
+not carry an `X-Faro-Session-Id` header (HTTP 400, `missing X-Faro-Session-Id header`). The Faro Web
+SDK sends this header on every request to the [Faro receiver][faroreceiver], but the exporter does
+not forward incoming request headers automatically.
+
+To propagate the session id from the incoming request onto the outgoing export, use the
+[headers_setter extension][headerssetter] with `from_context`, and set `include_metadata: true` on
+the receiver so the header is available to the pipeline:
+
+```yaml
+receivers:
+  faro:
+    include_metadata: true
+    cors:
+      allowed_origins:
+        - '*'
+      allowed_headers:
+        - 'X-Faro-Session-Id'
+        - 'Content-Type'
+
+extensions:
+  headers_setter:
+    headers:
+      - action: insert
+        key: X-Faro-Session-Id
+        from_context: X-Faro-Session-Id
+
+exporters:
+  faro:
+    endpoint: 'https://faro-collector-<region>.grafana.net/collect/<app-key>'
+    auth:
+      authenticator: headers_setter
+
+service:
+  extensions: [headers_setter]
+  pipelines:
+    traces:
+      receivers: [faro]
+      exporters: [faro]
+    logs:
+      receivers: [faro]
+      exporters: [faro]
+```
+
+If a [batch processor][batchprocessor] is present in the pipeline, add `X-Faro-Session-Id` to its
+`metadata_keys` so the metadata is preserved through batching.
+
+When using [Grafana Alloy][alloy], the equivalent is the [`otelcol.auth.headers`][alloyauthheaders]
+component with `from_context = "X-Faro-Session-Id"` and `include_metadata = true` on
+`otelcol.receiver.faro`.
+
+For a complete preprocessing example (including PII redaction and event filtering), see the Grafana
+Cloud [Process Faro telemetry][processfaro] documentation.
+
+[faroreceiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/faroreceiver
+[headerssetter]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/headerssetterextension
+[batchprocessor]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor#batching-and-client-metadata
+[alloy]: https://grafana.com/docs/alloy/latest/
+[alloyauthheaders]: https://grafana.com/docs/alloy/latest/reference/components/otelcol/otelcol.auth.headers/
+[processfaro]: https://grafana.com/docs/grafana-cloud/observe-and-act/monitor-applications/frontend-observability/configure/process-faro-telemetry/
 
 ## Getting Started
 
