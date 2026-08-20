@@ -628,8 +628,7 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 						&opts,
 					)
 					if err != nil {
-						var respErr *azcore.ResponseError
-						if errors.As(err, &respErr) {
+						if respErr, ok := errors.AsType[*azcore.ResponseError](err); ok {
 							logFields = append(logFields, zap.Any("error", respErr))
 						} else {
 							logFields = append(logFields, zap.Error(err))
