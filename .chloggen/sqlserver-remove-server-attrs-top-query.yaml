@@ -8,9 +8,9 @@ component: receiver/sqlserver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: |
-  Remove redundant `server.address` and `server.port` log record attributes from the `db.server.top_query` event.
-  These duplicate the resource-level attributes and can cause inconsistency when resource attributes are overridden via processors.
-  Enable `server.address` and `server.port` resource attributes by default to ensure downstream systems continue to receive these attributes.
+  Remove `server.address` and `server.port` from `db.server.top_query` log record attributes as they duplicate the
+  resource-level attributes and cause inconsistency when overridden via a processor. Both attributes are now enabled
+  by default at the resource level. The `receiver.sqlserver.RemoveServerResourceAttribute` feature gate has been removed.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50384]
