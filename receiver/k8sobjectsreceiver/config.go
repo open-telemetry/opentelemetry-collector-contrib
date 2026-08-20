@@ -22,9 +22,9 @@ import (
 )
 
 const (
-	defaultPullInterval    time.Duration     = time.Hour
-	defaultMode            k8sinventory.Mode = k8sinventory.PullMode
-	defaultResourceVersion                   = "1"
+	defaultPullInterval     time.Duration     = time.Hour
+	defaultMode             k8sinventory.Mode = k8sinventory.PullMode
+	defaultCacheSyncTimeout                   = 10 * time.Second
 )
 
 var modeMap = map[k8sinventory.Mode]bool{
@@ -64,6 +64,7 @@ type Config struct {
 	Storage             *component.ID       `mapstructure:"storage"`
 	ErrorMode           ErrorMode           `mapstructure:"error_mode"`
 	IncludeInitialState bool                `mapstructure:"include_initial_state"`
+	CacheSyncTimeout    time.Duration       `mapstructure:"cache_sync_timeout"`
 
 	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 
@@ -116,10 +117,6 @@ func (c *Config) Validate() error {
 
 		if object.Mode == k8sinventory.PullMode && object.InitialDelay > 0 && object.InitialDelay >= object.Interval {
 			return errors.New("initial_delay must be less than interval")
-		}
-
-		if c.Storage != nil && object.ResourceVersion != "" {
-			return errors.New("resource_version cannot be set on an object when storage is configured for persistence")
 		}
 
 		if object.Mode == k8sinventory.PullMode && c.IncludeInitialState {

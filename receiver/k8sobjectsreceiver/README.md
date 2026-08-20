@@ -57,15 +57,16 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 - `interval`: Top level pull interval applied to all pull-mode objects that do not set their own `interval`. Falls back to `1h` when neither this field nor the per-resource `objects[*].interval` is set. Has no effect on watch-mode objects.
 - `name`: Name of the resource object to collect
 - `mode`: define in which way it collects this type of object, either "pull" or "watch".
-  - `pull` mode will read all objects of this type use the list API at an interval.
-  - `watch` mode will do setup a long connection using the watch API to just get updates.
+  - `pull` mode reads all objects of this type at an interval from an in-memory cache. The cache is kept up to date with the latest Kubernetes objects.
+  - `watch` mode maintains a persistent watch connection to the Kubernetes API and streams object change events.
 - `include_initial_state` (default = `false`): When set to `true` (watch-mode only) the receiver sends a one-time snapshot of the current objects before it starts processing watch events.
 - `label_selector`: select objects by label(s)
 - `field_selector`: select objects by field(s)
 - `objects[*].interval`: per-resource pull interval override. When set, takes precedence over the top-level `interval`. Only applies to `pull` mode objects.
 - `initial_delay`: exact delay applied before the first pull for an object. Use this to stagger large pull workloads while preserving the configured `interval` cadence afterward. Non-positive values behave like `0`. Must be less than the resolved pull interval when set. Only useful for `pull` mode.
-- `exclude_watch_type`: allows excluding specific watch types. Valid values are `ADDED`, `MODIFIED`, `DELETED`, `BOOKMARK`, and `ERROR`. Only usable in `watch` mode.
-- `resource_version`: allows watching resources starting from a specific version (default = `1`). Only available for `watch` mode. If not specified, the receiver will do an initial list to get the resourceVersion before starting the watch. See [Efficient Detection of Change](https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes) for details on why this is necessary.
+- `exclude_watch_type`: allows excluding specific watch types. Valid values are `ADDED`, `MODIFIED`, and `DELETED`. Only usable in `watch` mode. `BOOKMARK` is accepted for backward compatibility but is a no-op.
+- `resource_version`: **deprecated and ignored.** Watch resumption is handled internally by the receiver; use the top-level `storage` option to persist resourceVersions across restarts. Setting this value logs a startup warning and has no effect.
+- `cache_sync_timeout` (default = `10s`): maximum time the receiver waits for the initial object cache to populate on startup. If the cache does not sync within this timeout, startup fails.
 - `namespaces`: An array of `namespaces` to collect events from. (default = `all`)
 - `exclude_namespaces`: allows excluding namespaces from being watched/pulled, (NOTE: if a new namespace that matches the regex is added, the collector will need to be restarted)
 - `group`: API group name. It is an optional config. When given resource object is present in multiple groups,
@@ -174,8 +175,8 @@ Use the below commands to create a `ClusterRole` with required permissions and a
 Following config will work for collecting pods and events only. You need to add
 appropriate rule for collecting other objects.
 
-When using watch mode you must also specify `list` verb so that the receiver has permission to do its initial list if no
-`resource_version` was supplied or a list to recover from [410 Gone scenarios](https://kubernetes.io/docs/reference/using-api/api-concepts/#410-gone-responses).
+When using watch mode you must also specify the `list` verb so that the receiver has permission to perform the initial list
+and to relist when recovering from [410 Gone scenarios](https://kubernetes.io/docs/reference/using-api/api-concepts/#410-gone-responses).
 
 ```bash
 <<EOF | kubectl apply -f -
