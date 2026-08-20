@@ -158,6 +158,9 @@ all_set:
       enabled: true
     container.restarts:
       enabled: true
+    container.state.health.status:
+      enabled: true
+      attributes: ["container.state.health.state"]
     container.state.status:
       enabled: true
       attributes: ["container.state.status"]
@@ -337,6 +340,9 @@ reaggregate_set:
       enabled: true
     container.restarts:
       enabled: true
+    container.state.health.status:
+      enabled: true
+      attributes: []
     container.state.status:
       enabled: true
       attributes: []
@@ -516,6 +522,9 @@ none_set:
       enabled: false
     container.restarts:
       enabled: false
+    container.state.health.status:
+      enabled: false
+      attributes: ["container.state.health.state"]
     container.state.status:
       enabled: false
       attributes: ["container.state.status"]

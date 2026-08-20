@@ -14,6 +14,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dynamicsamplingprocessor/internal/sampler"
 )
 
 // SamplerType identifies the kind of sampler attached to a rule.
@@ -22,14 +23,31 @@ type SamplerType string
 const (
 	// AlwaysSample keeps every trace that matches the rule.
 	AlwaysSample SamplerType = "always_sample"
-	// Deterministic samples a fixed percentage of traces deterministically by traceID.
-	Deterministic SamplerType = "deterministic"
-	// EMADynamic adjusts sample rates per traffic key using an exponential moving average.
-	EMADynamic SamplerType = "ema_dynamic"
-	// EMAThroughput targets a fixed events-per-second rate using an EMA over key frequencies.
-	EMAThroughput SamplerType = "ema_throughput"
-	// WindowedThroughput targets a fixed events-per-second rate using a sliding window over key frequencies.
-	WindowedThroughput SamplerType = "windowed_throughput"
+	// Probabilistic keeps a fixed fraction of traces, the same for all
+	// traffic, decided consistently by trace randomness. The inline
+	// equivalent of the probabilistic_sampler processor.
+	Probabilistic SamplerType = "probabilistic"
+	// DynamicPercentage adapts per-key sample rates toward a target
+	// percentage of traffic across all sampling keys.
+	DynamicPercentage SamplerType = "dynamic_percentage"
+	// DynamicThroughput adapts per-key sample rates toward a target volume
+	// budget in spans per second.
+	DynamicThroughput SamplerType = "dynamic_throughput"
+)
+
+// SamplerAlgorithm selects how an adaptive (dynamic_*) sampler computes
+// per-key rates.
+type SamplerAlgorithm string
+
+const (
+	// AlgorithmEMA (default) smooths per-key traffic with an exponential
+	// moving average. Tuned with adjustment_interval and weight.
+	AlgorithmEMA SamplerAlgorithm = "ema"
+	// AlgorithmWindowed computes rates over a sliding window, reacting
+	// faster to traffic shifts at the cost of more spike sensitivity. Tuned
+	// with update_frequency and lookback_frequency. Supported by
+	// dynamic_throughput only.
+	AlgorithmWindowed SamplerAlgorithm = "windowed"
 )
 
 // Config holds the top-level configuration for the dynamic sampling processor.
@@ -166,47 +184,63 @@ type SamplerConfig struct {
 	// Type is the kind of sampler to instantiate.
 	Type SamplerType `mapstructure:"type"`
 
-	// SamplingPercentage is the target percentage of traces to keep (0-100).
-	// Used by: deterministic.
+	// Algorithm selects how a dynamic_* sampler computes per-key rates.
+	// Defaults to ema. windowed is supported by dynamic_throughput only.
+	// Used by: dynamic_percentage, dynamic_throughput.
+	Algorithm SamplerAlgorithm `mapstructure:"algorithm"`
+
+	// SamplingPercentage is the fixed percentage of traces to keep (0-100].
+	// Used by: probabilistic.
 	SamplingPercentage float64 `mapstructure:"sampling_percentage"`
 
-	// GoalSamplingPercentage is the target average percentage of traces to keep
-	// across all sampling keys (0-100).
-	// Used by: ema_dynamic.
-	GoalSamplingPercentage float64 `mapstructure:"goal_sampling_percentage"`
+	// GoalPercentage is the target average percentage of traffic to keep
+	// across all sampling keys (0-100]. Decisions are made per trace; the
+	// percentage is measured over span volume, which equals the percentage of
+	// traces when trace sizes are uniform.
+	// Used by: dynamic_percentage.
+	GoalPercentage float64 `mapstructure:"goal_percentage"`
 
-	// GoalThroughputPerSec is the target sustained throughput in events/sec.
-	// Used by: ema_throughput, windowed_throughput.
-	GoalThroughputPerSec int `mapstructure:"goal_throughput_per_sec"`
+	// GoalThroughput is the target sustained volume budget in spans per
+	// second. Decisions are made per trace; a kept trace counts all of its
+	// spans against the budget.
+	// Used by: dynamic_throughput.
+	GoalThroughput int `mapstructure:"goal_throughput"`
 
-	// KeyAttributes is the list of attribute names used to build the sampling
-	// key. Values are sourced from resource attributes and span attributes
-	// across the accumulated trace.
-	// Used by: ema_dynamic, ema_throughput, windowed_throughput.
-	KeyAttributes []string `mapstructure:"key_attributes"`
+	// FingerprintAttributes is the list of scoped attribute selectors that
+	// identify what kind of trace this is for sampling purposes. Each entry
+	// has the form `<scope>.attributes["<name>"]` where scope is one of
+	// resource, scope, span, root, or any. Values are collected across the
+	// accumulated trace, so the fingerprint reflects the whole trace rather
+	// than any single span.
+	// Used by: dynamic_percentage, dynamic_throughput.
+	FingerprintAttributes []string `mapstructure:"fingerprint_attributes"`
 
 	// MaxKeys caps the number of distinct sampling keys the sampler tracks.
 	// 0 means unlimited.
-	// Used by: ema_dynamic, ema_throughput, windowed_throughput.
+	// Used by: dynamic_percentage, dynamic_throughput.
 	MaxKeys int `mapstructure:"max_keys"`
 
-	// AdjustmentInterval is how often the EMA recalculates rates from recent
-	// observations.
-	// Used by: ema_dynamic, ema_throughput.
+	// AdjustmentInterval is how often the ema algorithm recalculates rates
+	// from recent observations.
+	// Used by: dynamic_percentage, dynamic_throughput (algorithm: ema).
 	AdjustmentInterval time.Duration `mapstructure:"adjustment_interval"`
 
-	// Weight is the EMA weighting factor in [0, 1). Higher values weight recent
-	// observations more heavily.
-	// Used by: ema_dynamic, ema_throughput.
+	// Weight is the ema weighting factor in [0, 1). Higher values weight
+	// recent observations more heavily. 0 (or omitting the field) uses the
+	// sampler default of 0.5.
+	// Used by: dynamic_percentage, dynamic_throughput (algorithm: ema).
 	Weight float64 `mapstructure:"weight"`
 
-	// UpdateFrequency is how often the windowed sampler recalculates rates.
-	// Used by: windowed_throughput.
+	// UpdateFrequency is how often the windowed algorithm recalculates rates.
+	// 0 (or omitting the field) uses the sampler default of 1s.
+	// Used by: dynamic_throughput (algorithm: windowed).
 	UpdateFrequency time.Duration `mapstructure:"update_frequency"`
 
-	// LookbackFrequency is the historical window the windowed sampler uses to
-	// compute rates. Must be a multiple of UpdateFrequency.
-	// Used by: windowed_throughput.
+	// LookbackFrequency is the historical window the windowed algorithm uses
+	// to compute rates. Values that are not a multiple of UpdateFrequency are
+	// floored to the nearest lower multiple by the sampler; 0 (or omitting
+	// the field) uses 30x UpdateFrequency.
+	// Used by: dynamic_throughput (algorithm: windowed).
 	LookbackFrequency time.Duration `mapstructure:"lookback_frequency"`
 
 	// prevent unkeyed literal initialization
@@ -333,37 +367,27 @@ func (s *SamplerConfig) validate(ruleName string) error {
 		return fmt.Errorf("rule %q: sampler.type is required", ruleName)
 	case AlwaysSample:
 		return s.rejectUnusedFields(ruleName, "always_sample", nil)
-	case Deterministic:
+	case Probabilistic:
 		if s.SamplingPercentage <= 0 || s.SamplingPercentage > 100 {
 			return fmt.Errorf("rule %q: sampling_percentage must be in (0, 100]", ruleName)
 		}
-		return s.rejectUnusedFields(ruleName, "deterministic", map[string]bool{"sampling_percentage": true})
-	case EMADynamic:
-		if s.GoalSamplingPercentage <= 0 || s.GoalSamplingPercentage > 100 {
-			return fmt.Errorf("rule %q: goal_sampling_percentage must be in (0, 100]", ruleName)
+		return s.rejectUnusedFields(ruleName, "probabilistic", map[string]bool{"sampling_percentage": true})
+	case DynamicPercentage:
+		switch s.Algorithm {
+		case "", AlgorithmEMA:
+		case AlgorithmWindowed:
+			return fmt.Errorf("rule %q: dynamic_percentage does not support the windowed algorithm", ruleName)
+		default:
+			return fmt.Errorf("rule %q: unknown algorithm %q (must be %q)", ruleName, s.Algorithm, AlgorithmEMA)
 		}
-		if len(s.KeyAttributes) == 0 {
-			return fmt.Errorf("rule %q: key_attributes must contain at least one entry", ruleName)
+		if s.GoalPercentage <= 0 || s.GoalPercentage > 100 {
+			return fmt.Errorf("rule %q: goal_percentage must be in (0, 100]", ruleName)
 		}
-		if s.Weight < 0 || s.Weight >= 1 {
-			return fmt.Errorf("rule %q: weight must be in [0, 1)", ruleName)
+		if len(s.FingerprintAttributes) == 0 {
+			return fmt.Errorf("rule %q: fingerprint_attributes must contain at least one entry", ruleName)
 		}
-		if s.MaxKeys < 0 {
-			return fmt.Errorf("rule %q: max_keys must be non-negative", ruleName)
-		}
-		return s.rejectUnusedFields(ruleName, "ema_dynamic", map[string]bool{
-			"goal_sampling_percentage": true,
-			"key_attributes":           true,
-			"max_keys":                 true,
-			"adjustment_interval":      true,
-			"weight":                   true,
-		})
-	case EMAThroughput:
-		if s.GoalThroughputPerSec <= 0 {
-			return fmt.Errorf("rule %q: goal_throughput_per_sec must be greater than zero", ruleName)
-		}
-		if len(s.KeyAttributes) == 0 {
-			return fmt.Errorf("rule %q: key_attributes must contain at least one entry", ruleName)
+		if _, err := sampler.ParseSelectors(s.FingerprintAttributes); err != nil {
+			return fmt.Errorf("rule %q: %w", ruleName, err)
 		}
 		if s.Weight < 0 || s.Weight >= 1 {
 			return fmt.Errorf("rule %q: weight must be in [0, 1)", ruleName)
@@ -371,39 +395,71 @@ func (s *SamplerConfig) validate(ruleName string) error {
 		if s.MaxKeys < 0 {
 			return fmt.Errorf("rule %q: max_keys must be non-negative", ruleName)
 		}
-		return s.rejectUnusedFields(ruleName, "ema_throughput", map[string]bool{
-			"goal_throughput_per_sec": true,
-			"key_attributes":          true,
-			"max_keys":                true,
-			"adjustment_interval":     true,
-			"weight":                  true,
+		return s.rejectUnusedFields(ruleName, "dynamic_percentage", map[string]bool{
+			"algorithm":              true,
+			"goal_percentage":        true,
+			"fingerprint_attributes": true,
+			"max_keys":               true,
+			"adjustment_interval":    true,
+			"weight":                 true,
 		})
-	case WindowedThroughput:
-		if s.GoalThroughputPerSec <= 0 {
-			return fmt.Errorf("rule %q: goal_throughput_per_sec must be greater than zero", ruleName)
+	case DynamicThroughput:
+		if s.GoalThroughput <= 0 {
+			return fmt.Errorf("rule %q: goal_throughput must be greater than zero", ruleName)
 		}
-		if len(s.KeyAttributes) == 0 {
-			return fmt.Errorf("rule %q: key_attributes must contain at least one entry", ruleName)
+		if len(s.FingerprintAttributes) == 0 {
+			return fmt.Errorf("rule %q: fingerprint_attributes must contain at least one entry", ruleName)
 		}
-		if s.UpdateFrequency < 0 {
-			return fmt.Errorf("rule %q: update_frequency must be non-negative", ruleName)
-		}
-		if s.LookbackFrequency < 0 {
-			return fmt.Errorf("rule %q: lookback_frequency must be non-negative", ruleName)
+		if _, err := sampler.ParseSelectors(s.FingerprintAttributes); err != nil {
+			return fmt.Errorf("rule %q: %w", ruleName, err)
 		}
 		if s.MaxKeys < 0 {
 			return fmt.Errorf("rule %q: max_keys must be non-negative", ruleName)
 		}
-		return s.rejectUnusedFields(ruleName, "windowed_throughput", map[string]bool{
-			"goal_throughput_per_sec": true,
-			"key_attributes":          true,
-			"max_keys":                true,
-			"update_frequency":        true,
-			"lookback_frequency":      true,
-		})
+		switch s.effectiveAlgorithm() {
+		case AlgorithmEMA:
+			if s.Weight < 0 || s.Weight >= 1 {
+				return fmt.Errorf("rule %q: weight must be in [0, 1)", ruleName)
+			}
+			return s.rejectUnusedFields(ruleName, "dynamic_throughput (ema)", map[string]bool{
+				"algorithm":              true,
+				"goal_throughput":        true,
+				"fingerprint_attributes": true,
+				"max_keys":               true,
+				"adjustment_interval":    true,
+				"weight":                 true,
+			})
+		case AlgorithmWindowed:
+			if s.UpdateFrequency < 0 {
+				return fmt.Errorf("rule %q: update_frequency must be non-negative", ruleName)
+			}
+			if s.LookbackFrequency < 0 {
+				return fmt.Errorf("rule %q: lookback_frequency must be non-negative", ruleName)
+			}
+			return s.rejectUnusedFields(ruleName, "dynamic_throughput (windowed)", map[string]bool{
+				"algorithm":              true,
+				"goal_throughput":        true,
+				"fingerprint_attributes": true,
+				"max_keys":               true,
+				"update_frequency":       true,
+				"lookback_frequency":     true,
+			})
+		default:
+			return fmt.Errorf("rule %q: unknown algorithm %q (must be %q or %q)", ruleName, s.Algorithm, AlgorithmEMA, AlgorithmWindowed)
+		}
 	default:
 		return fmt.Errorf("rule %q: unknown sampler.type %q", ruleName, s.Type)
 	}
+}
+
+// effectiveAlgorithm returns the algorithm a dynamic_* sampler should use,
+// defaulting to ema when unset. Only meaningful for dynamic types; validate
+// rejects the field elsewhere.
+func (s *SamplerConfig) effectiveAlgorithm() SamplerAlgorithm {
+	if s.Algorithm == "" {
+		return AlgorithmEMA
+	}
+	return s.Algorithm
 }
 
 // rejectUnusedFields returns an error if any field is set that does not apply
@@ -416,16 +472,19 @@ func (s *SamplerConfig) rejectUnusedFields(ruleName, typeName string, allowed ma
 		}
 		return nil
 	}
+	if err := set("algorithm", s.Algorithm != ""); err != nil {
+		return err
+	}
 	if err := set("sampling_percentage", s.SamplingPercentage != 0); err != nil {
 		return err
 	}
-	if err := set("goal_sampling_percentage", s.GoalSamplingPercentage != 0); err != nil {
+	if err := set("goal_percentage", s.GoalPercentage != 0); err != nil {
 		return err
 	}
-	if err := set("goal_throughput_per_sec", s.GoalThroughputPerSec != 0); err != nil {
+	if err := set("goal_throughput", s.GoalThroughput != 0); err != nil {
 		return err
 	}
-	if err := set("key_attributes", len(s.KeyAttributes) > 0); err != nil {
+	if err := set("fingerprint_attributes", len(s.FingerprintAttributes) > 0); err != nil {
 		return err
 	}
 	if err := set("max_keys", s.MaxKeys != 0); err != nil {

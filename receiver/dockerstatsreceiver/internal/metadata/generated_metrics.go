@@ -20,6 +20,36 @@ const (
 	AggregationStrategyMax = "max"
 )
 
+// AttributeContainerStateHealthState specifies the value container.state.health.state attribute.
+type AttributeContainerStateHealthState int
+
+const (
+	_ AttributeContainerStateHealthState = iota
+	AttributeContainerStateHealthStateStarting
+	AttributeContainerStateHealthStateHealthy
+	AttributeContainerStateHealthStateUnhealthy
+)
+
+// String returns the string representation of the AttributeContainerStateHealthState.
+func (av AttributeContainerStateHealthState) String() string {
+	switch av {
+	case AttributeContainerStateHealthStateStarting:
+		return "starting"
+	case AttributeContainerStateHealthStateHealthy:
+		return "healthy"
+	case AttributeContainerStateHealthStateUnhealthy:
+		return "unhealthy"
+	}
+	return ""
+}
+
+// MapAttributeContainerStateHealthState is a helper map of string to AttributeContainerStateHealthState attribute value.
+var MapAttributeContainerStateHealthState = map[string]AttributeContainerStateHealthState{
+	"starting":  AttributeContainerStateHealthStateStarting,
+	"healthy":   AttributeContainerStateHealthStateHealthy,
+	"unhealthy": AttributeContainerStateHealthStateUnhealthy,
+}
+
 // AttributeContainerStateStatus specifies the value container.state.status attribute.
 type AttributeContainerStateStatus int
 
@@ -294,6 +324,10 @@ var MetricsInfo = metricsInfo{
 	ContainerRestarts: metricInfo{
 		Name: "container.restarts",
 	},
+	ContainerStateHealthStatus: metricInfo{
+		Name:       "container.state.health.status",
+		Attributes: []string{"container.state.health.state"},
+	},
 	ContainerStateStatus: metricInfo{
 		Name:       "container.state.status",
 		Attributes: []string{"container.state.status"},
@@ -374,6 +408,7 @@ type metricsInfo struct {
 	ContainerPidsCount                         metricInfo
 	ContainerPidsLimit                         metricInfo
 	ContainerRestarts                          metricInfo
+	ContainerStateHealthStatus                 metricInfo
 	ContainerStateStatus                       metricInfo
 	ContainerUptime                            metricInfo
 }
@@ -4724,6 +4759,97 @@ func newMetricContainerRestarts(cfg ContainerRestartsMetricConfig) metricContain
 	return m
 }
 
+type metricContainerStateHealthStatus struct {
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        ContainerStateHealthStatusMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
+}
+
+// init fills container.state.health.status metric with initial data.
+func (m *metricContainerStateHealthStatus) init() {
+	m.data.SetName("container.state.health.status")
+	m.data.SetDescription("The number of containers that are currently in a given health state. All possible container health states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current health state will be non-zero.")
+	m.data.SetUnit("{container}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricContainerStateHealthStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, containerStateHealthStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ContainerStateHealthStatusMetricAttributeKeyContainerStateHealthState) {
+		dp.Attributes().PutStr("container.state.health.state", containerStateHealthStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerStateHealthStatus) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerStateHealthStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerStateHealthStatus(cfg ContainerStateHealthStatusMetricConfig) metricContainerStateHealthStatus {
+	m := metricContainerStateHealthStatus{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricContainerStateStatus struct {
 	data          pmetric.Metric                   // data buffer for generated metric.
 	config        ContainerStateStatusMetricConfig // metric config provided by user.
@@ -4945,6 +5071,7 @@ type MetricsBuilder struct {
 	metricContainerPidsCount                         metricContainerPidsCount
 	metricContainerPidsLimit                         metricContainerPidsLimit
 	metricContainerRestarts                          metricContainerRestarts
+	metricContainerStateHealthStatus                 metricContainerStateHealthStatus
 	metricContainerStateStatus                       metricContainerStateStatus
 	metricContainerUptime                            metricContainerUptime
 }
@@ -5042,6 +5169,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricContainerPidsCount:                         newMetricContainerPidsCount(mbc.Metrics.ContainerPidsCount),
 		metricContainerPidsLimit:                         newMetricContainerPidsLimit(mbc.Metrics.ContainerPidsLimit),
 		metricContainerRestarts:                          newMetricContainerRestarts(mbc.Metrics.ContainerRestarts),
+		metricContainerStateHealthStatus:                 newMetricContainerStateHealthStatus(mbc.Metrics.ContainerStateHealthStatus),
 		metricContainerStateStatus:                       newMetricContainerStateStatus(mbc.Metrics.ContainerStateStatus),
 		metricContainerUptime:                            newMetricContainerUptime(mbc.Metrics.ContainerUptime),
 		resourceAttributeIncludeFilter:                   make(map[string]filter.Filter),
@@ -5229,6 +5357,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricContainerPidsCount.emit(ils.Metrics())
 	mb.metricContainerPidsLimit.emit(ils.Metrics())
 	mb.metricContainerRestarts.emit(ils.Metrics())
+	mb.metricContainerStateHealthStatus.emit(ils.Metrics())
 	mb.metricContainerStateStatus.emit(ils.Metrics())
 	mb.metricContainerUptime.emit(ils.Metrics())
 
@@ -5610,6 +5739,11 @@ func (mb *MetricsBuilder) RecordContainerPidsLimitDataPoint(ts pcommon.Timestamp
 // RecordContainerRestartsDataPoint adds a data point to container.restarts metric.
 func (mb *MetricsBuilder) RecordContainerRestartsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricContainerRestarts.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordContainerStateHealthStatusDataPoint adds a data point to container.state.health.status metric.
+func (mb *MetricsBuilder) RecordContainerStateHealthStatusDataPoint(ts pcommon.Timestamp, val int64, containerStateHealthStateAttributeValue AttributeContainerStateHealthState) {
+	mb.metricContainerStateHealthStatus.recordDataPoint(mb.startTime, ts, val, containerStateHealthStateAttributeValue.String())
 }
 
 // RecordContainerStateStatusDataPoint adds a data point to container.state.status metric.
