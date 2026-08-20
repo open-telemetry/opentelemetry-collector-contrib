@@ -285,12 +285,18 @@ func (v *vcenterMetricScraper) recordVMStats(
 	v.mb.RecordVcenterVMMemorySwappedSsdDataPoint(ts, swappedSSDMem)
 	v.mb.RecordVcenterVMMemoryGrantedDataPoint(ts, int64(grantedMem))
 
-	cpuUsage := vm.Summary.QuickStats.OverallCpuUsage
-	if cpuUsage == 0 {
-		// Most likely the VM is unavailable or is unreachable.
+	// Only a powered on VM reports usable CPU stats. An idle VM that is powered
+	// on legitimately reports 0 MHz of CPU usage, so the usage value itself must
+	// not be used to decide whether the VM is available.
+	if vm.Runtime.PowerState != types.VirtualMachinePowerStatePoweredOn {
 		return
 	}
+
+	cpuUsage := vm.Summary.QuickStats.OverallCpuUsage
 	v.mb.RecordVcenterVMCPUUsageDataPoint(ts, int64(cpuUsage))
+
+	cpuReadiness := vm.Summary.QuickStats.OverallCpuReadiness
+	v.mb.RecordVcenterVMCPUReadinessDataPoint(ts, int64(cpuReadiness))
 
 	// https://communities.vmware.com/t5/VMware-code-Documents/Resource-Management/ta-p/2783456
 	// VirtualMachine.runtime.maxCpuUsage is a property of the virtual machine, indicating the limit value.
@@ -305,9 +311,6 @@ func (v *vcenterMetricScraper) recordVMStats(
 		return
 	}
 	v.mb.RecordVcenterVMCPUUtilizationDataPoint(ts, 100*float64(cpuUsage)/float64(cpuLimit))
-
-	cpuReadiness := vm.Summary.QuickStats.OverallCpuReadiness
-	v.mb.RecordVcenterVMCPUReadinessDataPoint(ts, int64(cpuReadiness))
 }
 
 var hostPerfMetricList = []string{
