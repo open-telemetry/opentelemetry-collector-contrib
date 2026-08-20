@@ -627,6 +627,7 @@ Future work on shared trace context across collector instances (tracked under "C
 | `otelcol_processor_dynamic_sampling_traces_dropped` | Counter  | `rule`   | Traces dropped, attributed to the rule that selected them.                  |
 | `otelcol_processor_dynamic_sampling_decision_sample_rate` | Histogram | `rule` | Distribution of effective sample rates produced per rule.                  |
 | `otelcol_processor_dynamic_sampling_decision_triggers` | Counter  | `trigger` | Number of trace decisions made, labelled by which event triggered them (`root_span`, `trace_timeout`, `eviction`, `shutdown`). |
+| `otelcol_processor_dynamic_sampling_fingerprint_duration` | Histogram | `rule` | Time spent extracting a rule's fingerprint per decision (microseconds). A relative signal for spotting expensive fingerprints, eg wide `any.` scopes on large traces. |
 | `otelcol_processor_dynamic_sampling_traces_evicted` | Counter  |          | Traces evicted from the buffer under pressure. Each still receives a decision per the eviction policy. |
 | `otelcol_processor_dynamic_sampling_incoming_tracestate_unparseable` | Counter |     | Spans whose incoming W3C tracestate could not be parsed while applying the sampling threshold. |
 | `otelcol_processor_dynamic_sampling_ottl_eval_errors` | Counter | `rule`  | OTTL condition evaluation errors, labelled by the rule the condition belongs to. |
@@ -647,6 +648,16 @@ Every span in a sampled trace is annotated with:
 | Attribute                                            | Type    | Example      | Description                                            |
 |------------------------------------------------------|---------|--------------|--------------------------------------------------------|
 | `otelcol.processor.dynamic_sampling.rule`            | string  | `keep-errors`| Name of the rule that selected this trace.             |
+| `otelcol.processor.dynamic_sampling.fingerprint`     | string  | `9f86d081884c7d65` | The matched rule's fingerprint, raw or hashed, when `record_fingerprint` is enabled. |
+
+### Recording the fingerprint
+
+`record_fingerprint` (default `none`) stamps the matched rule's fingerprint on every span of a kept trace, the same way the rule name is recorded:
+
+- `value` records the raw fingerprint (eg `checkout,billing•/api`). Long combination keys grow the sampled decision cache, which stores the recorded string for late spans.
+- `hash` records the first 8 bytes of the fingerprint's SHA-256 as 16 hex characters. The size is fixed and the hash is deterministic across instances and restarts, so grouping works fleet-wide. Verify a span's hash by recomputing it from the raw fingerprint, `echo -n '<fingerprint>' | sha256sum | cut -c1-16`.
+
+Hashing obfuscates values and fixes the attribute size. It does not protect guessable values, anyone who knows the attribute space can enumerate candidate fingerprints and hash them. Rules whose sampler has no `fingerprint_attributes` (`always_sample`, `probabilistic`) never produce the attribute, and enabling either mode adds one attribute write per span on kept traces.
 
 The sample rate is encoded in W3C TraceState as `ot=th:<hex>` per the OTel consistent probability sampling spec. The `spanmetrics` connector (`enable_metrics_sampling_method: true`) reads this field to produce correctly weighted R.E.D metrics from sampled data.
 
