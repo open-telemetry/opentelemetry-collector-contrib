@@ -15,7 +15,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func createConfig(matchType filterset.MatchType) *filterset.Config {
@@ -818,7 +817,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.1.0"),
+							Version: new("0.1.0"),
 						},
 					},
 				},
@@ -834,11 +833,11 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("2.0.0"),
+							Version: new("2.0.0"),
 						},
 						{
 							Name:    "scope",
-							Version: ottltest.Strp(`1.1.0`),
+							Version: new(`1.1.0`),
 						},
 					},
 				},
@@ -854,7 +853,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.*"),
+							Version: new("0.*"),
 						},
 					},
 				},
@@ -870,11 +869,11 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("2.*"),
+							Version: new("2.*"),
 						},
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("^1\\\\.1.*"),
+							Version: new("^1\\\\.1.*"),
 						},
 					},
 				},
@@ -890,7 +889,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.1.0"),
+							Version: new("0.1.0"),
 						},
 					},
 				},
@@ -906,11 +905,11 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("2.0.0"),
+							Version: new("2.0.0"),
 						},
 						{
 							Name:    "scope",
-							Version: ottltest.Strp(`1.1.0`),
+							Version: new(`1.1.0`),
 						},
 					},
 				},
@@ -926,7 +925,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.*"),
+							Version: new("0.*"),
 						},
 					},
 				},
@@ -942,11 +941,11 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("2.*"),
+							Version: new("2.*"),
 						},
 						{
 							Name:    "scope",
-							Version: ottltest.Strp(`1\\.1.*`),
+							Version: new(`1\\.1.*`),
 						},
 					},
 				},
@@ -1263,7 +1262,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.1.0"),
+							Version: new("0.1.0"),
 						},
 					},
 					Resources: []filterconfig.Attribute{
