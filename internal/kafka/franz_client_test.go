@@ -752,11 +752,6 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 	return m.extensions
 }
 
-// nopComponent is a component.Component that does not implement GroupBalancer.
-type nopComponent struct {
-	extension.Extension
-}
-
 // mockTokenSource is a contextTokenSource extension used to test OAUTHBEARER.
 type mockTokenSource struct {
 	extension.Extension
