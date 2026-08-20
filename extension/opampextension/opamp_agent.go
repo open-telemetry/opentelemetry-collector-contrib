@@ -665,6 +665,13 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 		unsubscribeFunc()
 		o.statusSubscriptionWg.Done()
 	}()
+
+	var (
+		lastStatus componentstatus.Status
+		lastErr    string
+		currentErr string
+	)
+
 	for {
 		select {
 		case <-o.lifetimeCtx.Done():
@@ -677,6 +684,18 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 			if statusUpdate == nil || statusUpdate.Status() == componentstatus.StatusNone {
 				continue
 			}
+
+			currentStatus := statusUpdate.Status()
+			if statusUpdate.Err() != nil {
+				currentErr = statusUpdate.Err().Error()
+			}
+
+			if currentStatus == lastStatus && currentErr == lastErr {
+				continue
+			}
+
+			lastStatus = currentStatus
+			lastErr = currentErr
 
 			componentHealth := convertComponentHealth(statusUpdate)
 
