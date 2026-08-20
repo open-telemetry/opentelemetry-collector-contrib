@@ -29,7 +29,6 @@ func computeServiceInstanceID(cfg *Config) (string, error) {
 	var host string
 	var instance string
 	var port int
-	var fromDataSource bool
 
 	// Parse connection details based on configuration priority
 	switch {
@@ -41,7 +40,6 @@ func computeServiceInstanceID(cfg *Config) (string, error) {
 		host = config.Host
 		instance = config.Instance
 		port = int(config.Port)
-		fromDataSource = true
 	case cfg.Server != "":
 		host, port = cfg.Server, int(cfg.Port)
 	case cfg.ComputerName != "":
@@ -65,7 +63,7 @@ func computeServiceInstanceID(cfg *Config) (string, error) {
 		host = hostname
 	}
 
-	if fromDataSource {
+	if cfg.DataSource != "" {
 		switch {
 		case instance != "":
 			return fmt.Sprintf(`%s\%s`, host, instance), nil
