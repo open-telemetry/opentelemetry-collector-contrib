@@ -204,7 +204,9 @@ func TestBytesLimiterBatchThreshold(t *testing.T) {
 
 	bl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{a, b, c})
 
-	wantThreshold, err := sampling.UnsignedToThreshold(50)
+	// a and b are kept; the threshold is the first excluded randomness
+	// (c's, 10) plus one.
+	wantThreshold, err := sampling.UnsignedToThreshold(11)
 	require.NoError(t, err)
 
 	for _, tc := range []struct {
@@ -260,6 +262,38 @@ func TestBytesLimiterBatchLargeTraceDropped(t *testing.T) {
 	assert.Equal(t, samplingpolicy.NotSampled, decision)
 }
 
+func TestBytesLimiterBatchOversizedTraceDoesNotStarveOthers(t *testing.T) {
+	enableTracestateFeatureGate(t)
+
+	a := blTrace(1, 100, 0) // small
+	c := blTrace(2, 50, 0)  // small
+	small := calculateTraceSize(a)
+	budget := small * 2
+
+	d := blTrace(3, 200, 4096) // large, highest randomness
+	require.Greater(t, calculateTraceSize(d), budget, "d must not fit even alone")
+
+	// d has the highest randomness but costs more than the entire budget;
+	// without excluding it up front it would zero out the budget
+	// calculation for a and c, which would otherwise both fit.
+	bl := NewBytesLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), budget, budget).(*budgetLimiter)
+	bl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{d, a, c})
+
+	for _, tc := range []struct {
+		name string
+		td   *samplingpolicy.TraceData
+		want samplingpolicy.Decision
+	}{
+		{"d", d, samplingpolicy.NotSampled},
+		{"a", a, samplingpolicy.Sampled},
+		{"c", c, samplingpolicy.Sampled},
+	} {
+		decision, _, err := bl.EvaluateWithThreshold(t.Context(), traceIDOf(tc.td), tc.td)
+		require.NoError(t, err)
+		assert.Equal(t, tc.want, decision, tc.name)
+	}
+}
+
 func TestBytesLimiterBatchNonUniformSizes(t *testing.T) {
 	enableTracestateFeatureGate(t)
 
@@ -279,8 +313,9 @@ func TestBytesLimiterBatchNonUniformSizes(t *testing.T) {
 
 	bl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{a, b, c})
 
-	// Only a is kept, so the threshold is a's own randomness.
-	wantThreshold, err := sampling.UnsignedToThreshold(100)
+	// Only a is kept; the threshold is the first excluded randomness
+	// (b's, 50) plus one.
+	wantThreshold, err := sampling.UnsignedToThreshold(51)
 	require.NoError(t, err)
 
 	for _, tc := range []struct {

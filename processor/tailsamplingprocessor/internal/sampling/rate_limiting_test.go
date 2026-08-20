@@ -98,11 +98,11 @@ func TestRateLimiterBatchThreshold(t *testing.T) {
 	c := rlTrace(3, 10, 2)
 	rl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{a, b, c})
 
-	wantThreshold, err := sampling.UnsignedToThreshold(50)
+	wantThreshold, err := sampling.UnsignedToThreshold(11)
 	require.NoError(t, err)
 
-	// Highest two randomness values are kept; the threshold equals the
-	// smallest kept randomness (50).
+	// Highest two randomness values are kept; the threshold is the first
+	// excluded randomness (10) plus one.
 	for _, tc := range []struct {
 		name       string
 		td         *samplingpolicy.TraceData
@@ -179,6 +179,33 @@ func TestRateLimiterBatchLargeTraceDropped(t *testing.T) {
 	assert.Equal(t, samplingpolicy.NotSampled, decision)
 }
 
+func TestRateLimiterBatchOversizedTraceDoesNotStarveOthers(t *testing.T) {
+	enableTracestateFeatureGate(t)
+
+	// Budget 10. d costs more than the entire burst and has the highest
+	// randomness; without excluding it up front it would zero out the
+	// budget calculation for a and c, which would otherwise both fit.
+	rl := NewRateLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), 10, 10).(*budgetLimiter)
+	d := rlTrace(1, 200, 20)
+	a := rlTrace(2, 100, 3)
+	c := rlTrace(3, 50, 3)
+	rl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{d, a, c})
+
+	for _, tc := range []struct {
+		name string
+		td   *samplingpolicy.TraceData
+		want samplingpolicy.Decision
+	}{
+		{"d", d, samplingpolicy.NotSampled},
+		{"a", a, samplingpolicy.Sampled},
+		{"c", c, samplingpolicy.Sampled},
+	} {
+		decision, _, err := rl.EvaluateWithThreshold(t.Context(), traceIDOf(tc.td), tc.td)
+		require.NoError(t, err)
+		assert.Equal(t, tc.want, decision, tc.name)
+	}
+}
+
 func TestRateLimiterBatchNonUniformSpanCounts(t *testing.T) {
 	enableTracestateFeatureGate(t)
 
@@ -190,7 +217,9 @@ func TestRateLimiterBatchNonUniformSpanCounts(t *testing.T) {
 	c := rlTrace(3, 10, 2)
 	rl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{a, b, c})
 
-	wantThreshold, err := sampling.UnsignedToThreshold(50)
+	// a and b are kept; the threshold is the first excluded randomness
+	// (c's, 10) plus one.
+	wantThreshold, err := sampling.UnsignedToThreshold(11)
 	require.NoError(t, err)
 
 	for _, tc := range []struct {
@@ -224,7 +253,8 @@ func TestRateLimiterBatchBoundaryTie(t *testing.T) {
 	d := rlTrace(4, 10, 1)
 	rl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{a, b, c, d})
 
-	wantThreshold, err := sampling.UnsignedToThreshold(100)
+	// Only a is kept; the threshold is the tied boundary (50) plus one.
+	wantThreshold, err := sampling.UnsignedToThreshold(51)
 	require.NoError(t, err)
 
 	for _, tc := range []struct {

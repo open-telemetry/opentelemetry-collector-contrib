@@ -82,13 +82,20 @@ func (b *budgetLimiter) CalculateThreshold(_ context.Context, batch []*samplingp
 	b.thresholdCalculated = true
 	now := time.Now()
 	budget := int64(b.limiter.TokensAt(now))
+	burst := int64(b.limiter.Burst())
 
-	items := make([]budgetItem, len(batch))
-	for i, td := range batch {
-		items[i] = budgetItem{
-			randomness: resolveRandomness(traceIDOf(td), td.ReceivedBatches),
-			cost:       b.cost(td),
+	items := make([]budgetItem, 0, len(batch))
+	for _, td := range batch {
+		cost := b.cost(td)
+		if cost > burst {
+			// Can never fit even a fully-refilled bucket; excluding it here
+			// keeps it from starving traces that do fit (see EvaluateWithThreshold).
+			continue
 		}
+		items = append(items, budgetItem{
+			randomness: resolveRandomness(traceIDOf(td), td.ReceivedBatches),
+			cost:       cost,
+		})
 	}
 
 	// Sort by randomness descending: consistent sampling keeps the
@@ -114,21 +121,26 @@ func (b *budgetLimiter) CalculateThreshold(_ context.Context, batch []*samplingp
 	case kept == 0:
 		b.threshold = sampling.NeverSampleThreshold
 	default:
-		// A threshold can't separate traces with equal randomness, so if
-		// the first dropped trace ties the last kept one, drop the whole
-		// tied group -- keeps the invariant exact (kept: th <= R, dropped:
-		// th > R) even though 56-bit ties are vanishingly unlikely.
-		boundary := items[kept].randomness.Unsigned()
-		for kept > 0 && items[kept-1].randomness.Unsigned() == boundary {
+		// A threshold can't separate traces with equal randomness, so if the
+		// first rejected trace ties the last kept one, drop the whole tied
+		// group -- keeps the invariant exact (kept: th <= R, dropped: th > R)
+		// even though 56-bit ties are vanishingly unlikely.
+		firstRejected := items[kept].randomness.Unsigned()
+		for kept > 0 && items[kept-1].randomness.Unsigned() == firstRejected {
 			kept--
 			cumulative -= items[kept].cost
 		}
 		if kept == 0 {
 			b.threshold = sampling.NeverSampleThreshold
 		} else {
-			// Error is unreachable: Randomness.Unsigned() is always in
-			// [0, MaxAdjustedCount), the valid threshold range.
-			b.threshold, _ = sampling.UnsignedToThreshold(items[kept-1].randomness.Unsigned())
+			// Set the threshold to the priority (randomness) of the first
+			// trace that causes the budget to be exceeded. See (Ting,
+			// "Adaptive Threshold Sampling," §3.1: arxiv.org/abs/1708.04970).
+			// Note that if the per second budget is not double the maximum
+			// trace cost then future extrapolation can break down. The +1 is
+			// because we sample on threshold <= randomness so we need to move
+			// the position by 1.
+			b.threshold, _ = sampling.UnsignedToThreshold(firstRejected + 1)
 		}
 	}
 
@@ -152,8 +164,15 @@ func (b *budgetLimiter) Evaluate(ctx context.Context, id pcommon.TraceID, trace 
 // A policy that has never does not calculate the threshold falls back to live
 // per-trace token bucket admission.
 func (b *budgetLimiter) EvaluateWithThreshold(_ context.Context, id pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, sampling.Threshold, error) {
+	cost := b.cost(trace)
+	if cost > int64(b.limiter.Burst()) {
+		// Never fits, regardless of randomness or threshold: CalculateThreshold
+		// excludes it from the batch, so the reported threshold says nothing
+		// about it either way.
+		return samplingpolicy.NotSampled, sampling.AlwaysSampleThreshold, nil
+	}
 	if !b.thresholdCalculated {
-		if b.limiter.AllowN(time.Now(), int(b.cost(trace))) {
+		if b.limiter.AllowN(time.Now(), int(cost)) {
 			return samplingpolicy.Sampled, sampling.AlwaysSampleThreshold, nil
 		}
 		return samplingpolicy.NotSampled, sampling.AlwaysSampleThreshold, nil
