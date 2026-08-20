@@ -1468,8 +1468,8 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 		StartTime:      pod.Status.StartTime,
 	}
 
-	if replicaset, ok := c.GetReplicaSet(getPodReplicaSetUID(pod)); ok {
-		newPod.ReplicaSetUID = replicaset.UID
+	newPod.ReplicaSetUID = getPodReplicaSetUID(pod)
+	if replicaset, ok := c.GetReplicaSet(newPod.ReplicaSetUID); ok {
 		if replicaset.Deployment.UID != "" {
 			newPod.DeploymentUID = replicaset.Deployment.UID
 		}
@@ -2105,7 +2105,9 @@ func (c *WatchClient) addOrUpdateReplicaSet(replicaSet *meta_v1.PartialObjectMet
 		}
 	}
 
-	newReplicaSet.Attributes = c.extractReplicaSetAttributes(replicaSet)
+	if c.extractReplicaSetLabelsAnnotations() {
+		newReplicaSet.Attributes = c.extractReplicaSetAttributes(replicaSet)
+	}
 
 	c.m.Lock()
 	if uid != "" {
