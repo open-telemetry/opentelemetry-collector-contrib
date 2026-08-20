@@ -33,7 +33,7 @@ resource_attributes:
     enabled: false
     type: int
   service.instance.id:
-    description: A unique identifier of the SQL Server instance. When using a datasource, the format is host\instance for a named instance, host:port when an explicit port is set without an instance, and host when neither is set. In Windows Performance Counter mode, the format remains host:1433; host is computer_name for remote monitoring, or the local collector host when monitoring locally.
+    description: A unique identifier of the SQL Server instance. When using direct connection settings, the format is host:port. When using a datasource, the format is host\instance for a named instance, host:port when an explicit port is set without an instance, and host when neither is set. In Windows Performance Counter mode, the format remains host:1433; host is computer_name for remote monitoring, or the local collector host when monitoring locally.
     enabled: true
     type: string
   service.name:
