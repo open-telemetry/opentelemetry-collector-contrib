@@ -1336,8 +1336,8 @@ top query
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
 | host.name | The host name of SQL Server | Any Str | true | - | - |
-| server.address | Name of the database host. | Any Str | false | - | - |
-| server.port | Server port number. | Any Int | false | - | - |
+| server.address | Name of the database host. | Any Str | true | - | - |
+| server.port | Server port number. | Any Int | true | - | - |
 | service.instance.id | A unique identifier of the SQL Server instance in the format host:port. In Windows Performance Counter mode the host is derived from computer_name (falling back to the collector host when monitoring locally), with a default port of 1433. | Any Str | true | - | - |
 | service.name | Logical name of the service. When enabled, defaults to unknown_service:microsoft.sql_server. | Any Str | false | - | - |
 | service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |

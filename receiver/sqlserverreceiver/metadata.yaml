@@ -26,11 +26,11 @@ resource_attributes:
     type: string
   server.address:
     description: Name of the database host.
-    enabled: false
+    enabled: true
     type: string
   server.port:
     description: Server port number.
-    enabled: false
+    enabled: true
     type: int
   service.instance.id:
     description: A unique identifier of the SQL Server instance in the format host:port. In Windows Performance Counter mode the host is derived from computer_name (falling back to the collector host when monitoring locally), with a default port of 1433.
