@@ -1339,7 +1339,7 @@ func TestProcessor_ThroughputSamplersEndToEnd(t *testing.T) {
 						Type:                  DynamicThroughput,
 						Algorithm:             alg,
 						GoalThroughput:        1000,
-						FingerprintAttributes: []string{"service.name"},
+						FingerprintAttributes: []string{`resource.attributes["service.name"]`},
 					}},
 				},
 			}
@@ -1368,4 +1368,35 @@ func TestProcessor_ThroughputSamplersEndToEnd(t *testing.T) {
 			assert.Contains(t, span.TraceState().AsRaw(), "ot=th:", "kept spans must carry a threshold")
 		})
 	}
+}
+
+func TestProcessor_RootScopedFingerprint(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Millisecond,
+		NumTraces:     10,
+		DecisionCache: DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{
+				Type:                  DynamicPercentage,
+				GoalPercentage:        100,
+				FingerprintAttributes: []string{`root.attributes["http.route"]`, `resource.attributes["service.name"]`},
+			}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	// Root selector resolution runs at decide time through the processor's
+	// root-span condition; this pins the wiring end to end.
+	td := newRootTrace(pcommon.TraceID([16]byte{0xF9}))
+	td.ResourceSpans().At(0).Resource().Attributes().PutStr("service.name", "svc")
+	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("http.route", "/users")
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 1
+	}, time.Second, 10*time.Millisecond)
+	span := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	assert.Contains(t, span.TraceState().AsRaw(), "ot=th:", "trace decided through a root-scoped fingerprint must carry a threshold")
 }

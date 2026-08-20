@@ -28,6 +28,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github/workflows/scripts
+          persist-credentials: false
       - run: ./.github/workflows/scripts/check-merge-freeze.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
