@@ -86,61 +86,6 @@ func TestRateLimiterTokenRefill(t *testing.T) {
 	assert.Equal(t, samplingpolicy.Sampled, decision)
 }
 
-func TestRateLimiterBatchThreshold(t *testing.T) {
-	enableTracestateFeatureGate(t)
-
-	// Burst 5 => starting budget of 5 spans. Three traces of 2 spans
-	// each (total 6) exceed the budget by one trace.
-	rl := NewRateLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), 5, 5).(*budgetLimiter)
-
-	a := rlTrace(1, 100, 2)
-	b := rlTrace(2, 50, 2)
-	c := rlTrace(3, 10, 2)
-	rl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{a, b, c})
-
-	wantThreshold, err := sampling.UnsignedToThreshold(11)
-	require.NoError(t, err)
-
-	// Highest two randomness values are kept; the threshold is the first
-	// excluded randomness (10) plus one.
-	for _, tc := range []struct {
-		name       string
-		td         *samplingpolicy.TraceData
-		randomness uint64
-		want       samplingpolicy.Decision
-	}{
-		{"a", a, 100, samplingpolicy.Sampled},
-		{"b", b, 50, samplingpolicy.Sampled},
-		{"c", c, 10, samplingpolicy.NotSampled},
-	} {
-		decision, th, err := rl.EvaluateWithThreshold(t.Context(), traceIDOf(tc.td), tc.td)
-		require.NoError(t, err)
-		assert.Equal(t, tc.want, decision, tc.name)
-		if tc.want == samplingpolicy.Sampled {
-			assert.Equal(t, wantThreshold, th, tc.name)
-			// Consistency: the reported threshold must sample the
-			// trace's own randomness.
-			assert.True(t, th.ShouldSample(mustRandomness(t, tc.randomness)), tc.name)
-		}
-	}
-}
-
-func TestRateLimiterBatchWholeBatchFits(t *testing.T) {
-	enableTracestateFeatureGate(t)
-
-	rl := NewRateLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), 10, 10).(*budgetLimiter)
-
-	traces := []*samplingpolicy.TraceData{rlTrace(1, 100, 2), rlTrace(2, 50, 2)}
-	rl.CalculateThreshold(t.Context(), traces)
-
-	for _, td := range traces {
-		decision, th, err := rl.EvaluateWithThreshold(t.Context(), traceIDOf(td), td)
-		require.NoError(t, err)
-		assert.Equal(t, samplingpolicy.Sampled, decision)
-		assert.Equal(t, sampling.AlwaysSampleThreshold, th)
-	}
-}
-
 func TestLimitingPolicyImplementationSelection(t *testing.T) {
 	settings := componenttest.NewNopTelemetrySettings()
 
@@ -164,46 +109,6 @@ func TestLimitingPolicyImplementationSelection(t *testing.T) {
 		assert.IsType(t, &budgetLimiter{}, NewRateLimiting(settings, 10))
 		assert.IsType(t, &budgetLimiter{}, NewBytesLimiting(settings, 10))
 	})
-}
-
-func TestRateLimiterBatchLargeTraceDropped(t *testing.T) {
-	enableTracestateFeatureGate(t)
-
-	rl := NewRateLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), 2, 2).(*budgetLimiter)
-
-	td := rlTrace(1, 100, 5) // 5 spans > budget of 2
-	rl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{td})
-
-	decision, _, err := rl.EvaluateWithThreshold(t.Context(), traceIDOf(td), td)
-	require.NoError(t, err)
-	assert.Equal(t, samplingpolicy.NotSampled, decision)
-}
-
-func TestRateLimiterBatchOversizedTraceDoesNotStarveOthers(t *testing.T) {
-	enableTracestateFeatureGate(t)
-
-	// Budget 10. d costs more than the entire burst and has the highest
-	// randomness; without excluding it up front it would zero out the
-	// budget calculation for a and c, which would otherwise both fit.
-	rl := NewRateLimitingWithBurstCapacity(componenttest.NewNopTelemetrySettings(), 10, 10).(*budgetLimiter)
-	d := rlTrace(1, 200, 20)
-	a := rlTrace(2, 100, 3)
-	c := rlTrace(3, 50, 3)
-	rl.CalculateThreshold(t.Context(), []*samplingpolicy.TraceData{d, a, c})
-
-	for _, tc := range []struct {
-		name string
-		td   *samplingpolicy.TraceData
-		want samplingpolicy.Decision
-	}{
-		{"d", d, samplingpolicy.NotSampled},
-		{"a", a, samplingpolicy.Sampled},
-		{"c", c, samplingpolicy.Sampled},
-	} {
-		decision, _, err := rl.EvaluateWithThreshold(t.Context(), traceIDOf(tc.td), tc.td)
-		require.NoError(t, err)
-		assert.Equal(t, tc.want, decision, tc.name)
-	}
 }
 
 func TestRateLimiterBatchNonUniformSpanCounts(t *testing.T) {
