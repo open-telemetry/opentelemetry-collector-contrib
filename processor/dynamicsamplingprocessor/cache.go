@@ -17,6 +17,10 @@ import (
 type cachedDecision struct {
 	ruleName  string
 	threshold sampling.Threshold
+	// fingerprint is the recorded fingerprint token (raw or hashed, per
+	// record_fingerprint), empty when recording is disabled or the rule has
+	// no fingerprint. Stored so late spans receive the same attribute.
+	fingerprint string
 }
 
 // decisionCache holds two independent LRU caches: one tracks traces that have
