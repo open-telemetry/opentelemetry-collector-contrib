@@ -164,7 +164,7 @@ When the disable-old gate is enabled, emission of this metric is suppressed. Whe
 
 ### process.cpu.utilization@v1
 
-Difference in process.cpu.time since the last measurement,  divided by the elapsed time and number of CPUs available to the process. On the first scrape, no data point is emitted for this metric.
+Difference in process.cpu.time since the last measurement, divided by the elapsed time and number of CPUs available to the process. On the first scrape, no data point is emitted for this metric.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

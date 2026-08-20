@@ -742,7 +742,7 @@ type metricProcessCPUUtilizationV1 struct {
 // init fills process.cpu.utilization@v1 metric with initial data.
 func (m *metricProcessCPUUtilizationV1) init() {
 	m.data.SetName("process.cpu.utilization")
-	m.data.SetDescription("Difference in process.cpu.time since the last measurement,  divided by the elapsed time and number of CPUs available to the process. On the first scrape, no data point is emitted for this metric.")
+	m.data.SetDescription("Difference in process.cpu.time since the last measurement, divided by the elapsed time and number of CPUs available to the process. On the first scrape, no data point is emitted for this metric.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
