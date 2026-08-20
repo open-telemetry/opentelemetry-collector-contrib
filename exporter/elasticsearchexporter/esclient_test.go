@@ -40,7 +40,7 @@ func TestTimeoutInterceptor(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, req *http.Request) {
+			server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				if f, ok := w.(http.Flusher); ok {
 					f.Flush()
@@ -48,8 +48,7 @@ func TestTimeoutInterceptor(t *testing.T) {
 				if tc.bodyLatency > 0 {
 					time.Sleep(tc.bodyLatency)
 				}
-				_, err := w.Write([]byte(`{"took":1,"errors":false,"items":[{"create":{"_index":"logs-generic-default","status":201}}]}`))
-				require.NoError(t, err)
+				_, _ = w.Write([]byte(`{"took":1,"errors":false,"items":[{"create":{"_index":"logs-generic-default","status":201}}]}`))
 			})
 			exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 				cfg.ClientConfig.Timeout = tc.timeout
