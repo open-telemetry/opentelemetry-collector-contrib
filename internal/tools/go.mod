@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
 
-go 1.25.0
+go 1.26.0
 
 tool (
 	github.com/client9/misspell/cmd/misspell
