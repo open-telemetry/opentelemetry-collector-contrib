@@ -438,6 +438,14 @@ The total bytes read from and written to InnoDB data files.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | The disk IO operation direction. | Str: ``read``, ``write`` | Recommended | - |
 
+### mysql.innodb.history_list.length
+
+The length of the InnoDB history list.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
 ### mysql.innodb.operation.pending
 
 The number of pending InnoDB data file operations.
@@ -475,6 +483,22 @@ The maximum InnoDB row lock wait duration since server startup or last status re
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | s | Gauge | Double | Development |
+
+### mysql.innodb.transaction.active.count
+
+The number of active InnoDB transactions.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {transaction} | Gauge | Int | Development |
+
+### mysql.innodb.transaction.active.duration.max
+
+The duration of the longest running active InnoDB transaction.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Int | Development |
 
 ### mysql.joins
 

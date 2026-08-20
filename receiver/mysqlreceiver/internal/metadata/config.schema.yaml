@@ -313,6 +313,13 @@ $defs:
                 - "disk.io.direction"
             default:
               - "disk.io.direction"
+      mysql.innodb.history_list.length:
+        description: "MysqlInnodbHistoryListLengthMetricConfig provides config for the mysql.innodb.history_list.length metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       mysql.innodb.operation.pending:
         description: "MysqlInnodbOperationPendingMetricConfig provides config for the mysql.innodb.operation.pending metric."
         type: object
@@ -352,6 +359,20 @@ $defs:
             default: false
       mysql.innodb.row_lock.wait.duration.max:
         description: "MysqlInnodbRowLockWaitDurationMaxMetricConfig provides config for the mysql.innodb.row_lock.wait.duration.max metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      mysql.innodb.transaction.active.count:
+        description: "MysqlInnodbTransactionActiveCountMetricConfig provides config for the mysql.innodb.transaction.active.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      mysql.innodb.transaction.active.duration.max:
+        description: "MysqlInnodbTransactionActiveDurationMaxMetricConfig provides config for the mysql.innodb.transaction.active.duration.max metric."
         type: object
         properties:
           enabled:

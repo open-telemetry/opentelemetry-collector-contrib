@@ -177,6 +177,7 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 		addPartialIfError(errs, m.mb.RecordMysqlBufferPoolLimitDataPoint(now, v))
 	}
+	m.scrapeInnodbTransactionStats(now, errs)
 
 	// collect io_waits metrics.
 	m.scrapeTableIoWaitsStats(now, errs)
@@ -626,6 +627,32 @@ func (m *mySQLScraper) scrapeTableStats(now pcommon.Timestamp, errs *scrapererro
 		m.mb.RecordMysqlTableAverageRowLengthDataPoint(now, s.averageRowLength, s.name, s.schema)
 		m.mb.RecordMysqlTableSizeDataPoint(now, s.dataLength, s.name, s.schema, metadata.AttributeTableSizeTypeData)
 		m.mb.RecordMysqlTableSizeDataPoint(now, s.indexLength, s.name, s.schema, metadata.AttributeTableSizeTypeIndex)
+	}
+}
+
+func (m *mySQLScraper) scrapeInnodbTransactionStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	metrics := m.config.MetricsBuilderConfig.Metrics
+	if !metrics.MysqlInnodbHistoryListLength.Enabled &&
+		!metrics.MysqlInnodbTransactionActiveCount.Enabled &&
+		!metrics.MysqlInnodbTransactionActiveDurationMax.Enabled {
+		return
+	}
+
+	stats, err := m.sqlclient.getInnodbTransactionStats()
+	if err != nil {
+		m.logger.Error("Failed to fetch InnoDB transaction stats", zap.Error(err))
+		errs.AddPartial(1, err)
+		return
+	}
+
+	if metrics.MysqlInnodbHistoryListLength.Enabled {
+		m.mb.RecordMysqlInnodbHistoryListLengthDataPoint(now, stats.historyListLength)
+	}
+	if metrics.MysqlInnodbTransactionActiveCount.Enabled {
+		m.mb.RecordMysqlInnodbTransactionActiveCountDataPoint(now, stats.activeTransactions)
+	}
+	if metrics.MysqlInnodbTransactionActiveDurationMax.Enabled {
+		m.mb.RecordMysqlInnodbTransactionActiveDurationMaxDataPoint(now, stats.maxActiveTransactionDuration)
 	}
 }
 
