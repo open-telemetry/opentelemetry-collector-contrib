@@ -6,8 +6,8 @@ package response // import "github.com/open-telemetry/opentelemetry-collector-co
 import "net/http"
 
 type ResponseInBatch struct {
-	ErrorStr string `json:"error,omitempty"`
-	Status   int    `json:"status,omitempty"`
+	ErrorStr string `json:"error,omitempty" msgpack:"error,omitempty"`
+	Status   int    `json:"status,omitempty" msgpack:"status,omitempty"`
 }
 
 func MakeResponse(eventErrs []int) []ResponseInBatch {
