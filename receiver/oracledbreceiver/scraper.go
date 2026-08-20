@@ -358,26 +358,26 @@ type oracleScraper struct {
 	// dbCleanup, if set, releases resources tied to the db connection (e.g. the
 	// gokrb5 client and its TGT-renewal goroutine for Kerberos auth). Called on
 	// shutdown after the db is closed.
-	dbCleanup                func()
-	clientProviderFunc       clientProviderFunc
-	mb                       *metadata.MetricsBuilder
-	lb                       *metadata.LogsBuilder
-	dbProviderFunc           dbProviderFunc
-	logger                   *zap.Logger
-	id                       component.ID
-	instanceName             string
-	hostName                 string
-	scrapeCfg                scraperhelper.ControllerConfig
-	startTime                pcommon.Timestamp
-	metricsBuilderConfig     metadata.MetricsBuilderConfig
-	logsBuilderConfig        metadata.LogsBuilderConfig
-	metricCache              *lru.Cache[string, map[string]int64]
-	topQueryCollectCfg       TopQueryCollection
-	obfuscator               *obfuscator
-	querySampleCfg           QuerySample
-	sessionWaitEventCfg      SessionWaitEvent
-	serviceInstanceID        string
-	lastExecutionTimestamp   time.Time
+	dbCleanup              func()
+	clientProviderFunc     clientProviderFunc
+	mb                     *metadata.MetricsBuilder
+	lb                     *metadata.LogsBuilder
+	dbProviderFunc         dbProviderFunc
+	logger                 *zap.Logger
+	id                     component.ID
+	instanceName           string
+	hostName               string
+	scrapeCfg              scraperhelper.ControllerConfig
+	startTime              pcommon.Timestamp
+	metricsBuilderConfig   metadata.MetricsBuilderConfig
+	logsBuilderConfig      metadata.LogsBuilderConfig
+	metricCache            *lru.Cache[string, map[string]int64]
+	topQueryCollectCfg     TopQueryCollection
+	obfuscator             *obfuscator
+	querySampleCfg         QuerySample
+	sessionWaitEventCfg    SessionWaitEvent
+	serviceInstanceID      string
+	lastExecutionTimestamp time.Time
 	// instanceInfo holds Oracle deployment metadata detected once at start().
 	// All fields are best-effort: detection failures are logged and leave the
 	// field at its zero value; they never prevent the receiver from starting.
