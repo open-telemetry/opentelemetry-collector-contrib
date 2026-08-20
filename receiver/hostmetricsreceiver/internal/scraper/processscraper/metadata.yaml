@@ -122,7 +122,6 @@ attributes:
     enum: [system, user, wait]
 
   system.paging.fault.type:
-    name_override: type
     description: Type of memory paging fault.
     type: string
     requirement_level: recommended

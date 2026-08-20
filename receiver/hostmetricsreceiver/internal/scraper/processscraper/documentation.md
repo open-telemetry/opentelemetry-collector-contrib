@@ -292,7 +292,7 @@ Emitted Name: `process.paging.faults`
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| type | Type of memory paging fault. | Str: ``major``, ``minor`` | Recommended | - |
+| system.paging.fault.type | Type of memory paging fault. | Str: ``major``, ``minor`` | Recommended | - |
 
 ### process.signals_pending
 

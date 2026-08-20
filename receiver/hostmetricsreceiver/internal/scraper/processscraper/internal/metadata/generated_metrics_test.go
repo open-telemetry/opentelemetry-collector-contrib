@@ -182,7 +182,7 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name != "all_set" {
 
 				allMetricsCount++
-				mb.RecordProcessPagingFaultsDataPoint(ts, 1, AttributePagingFaultTypeMajor)
+				mb.RecordProcessPagingFaultsDataPoint(ts, 1, AttributePagingFaultTypeMajor, AttributeSystemPagingFaultTypeMajor)
 			}
 
 			allMetricsCount++
@@ -916,7 +916,7 @@ func TestVersionedMetrics(t *testing.T) {
 				settings := scrapertest.NewNopSettings(scrapertest.NopType)
 				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
 
-				mb.RecordProcessPagingFaultsDataPoint(ts, 1, AttributePagingFaultTypeMajor)
+				mb.RecordProcessPagingFaultsDataPoint(ts, 1, AttributePagingFaultTypeMajor, AttributeSystemPagingFaultTypeMajor)
 
 				metrics := mb.Emit(WithResource(pcommon.NewResource()))
 
@@ -929,7 +929,7 @@ func TestVersionedMetrics(t *testing.T) {
 						// Same emitted name, same type - distinguish by attributes
 						if m.Name() == "process.paging.faults" {
 							dp := m.Sum().DataPoints().At(0)
-							_, hasNewAttr := dp.Attributes().Get("type")
+							_, hasNewAttr := dp.Attributes().Get("system.paging.fault.type")
 							if hasNewAttr && m.Unit() == "{fault}" {
 								// Has v1-specific attribute - this is the new metric
 								newFound = true

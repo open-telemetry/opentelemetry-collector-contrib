@@ -304,7 +304,7 @@ func TestProcessPagingFaultsV1MetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []ProcessPagingFaultsV1MetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric process.paging.faults@v1 doesn't have an attribute invalid, valid attributes: [type]")
+	require.ErrorContains(t, cfg.Validate(), "metric process.paging.faults@v1 doesn't have an attribute invalid, valid attributes: [system.paging.fault.type]")
 
 	cfg = DefaultMetricsConfig().ProcessPagingFaultsV1
 	cfg.AggregationStrategy = "invalid"
