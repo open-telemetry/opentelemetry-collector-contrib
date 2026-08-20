@@ -2,6 +2,17 @@
 
 OTTL grammar includes function invocations, Values and Boolean Expressions. These parts all fit into a Statement, which is the basis of execution in OTTL.
 
+### Statements
+
+A Statement is a single [Editor](#editors) invocation optionally followed by the keyword `where` and a [Boolean Expression](#boolean-expressions). When a `where` clause is present, the Editor is only executed if the Boolean Expression evaluates to `true`.
+
+Example Statements
+- `set(attributes["namespace"], resource.attributes["k8s.namespace.name"])`
+- `set(attributes["env"], "prod") where resource.attributes["k8s.namespace.name"] == "prod"`
+- `delete_key(attributes, "http.request.header.authorization") where attributes["http.request.header.authorization"] != nil`
+
+OTTL can also parse a [Boolean Expression](#boolean-expressions) on its own, without an Editor or the `where` keyword, as a Condition. Conditions are used to calculate a decision rather than a produce a mutation.
+
 ### Design principles
 
 OTTL is intended as a domain-specific language (DSL) for telemetry mutation and generation,
@@ -30,7 +41,7 @@ Converters are made up of 3 parts:
 
 - a string identifier. The string identifier must start with an uppercase letter.
 - zero or more Values (comma separated) surrounded by parentheses (`()`).
-- a combination of zero or more a string key (`["key"]`) or int key (`[0]`)
+- a combination of zero or more string (`["key"]`) or int (`[0]`) keys
 
 **OTTL has no built-in Converters.**
 Users must include Converters in the same map that Editors are supplied.
@@ -61,6 +72,9 @@ The following types are supported for single-value parameters in OTTL functions:
 - `GetSetter`
 - `Getter`
 - `PMapGetter`
+- `PMapGetSetter`
+- `PSliceGetter`
+- `PSliceGetSetter`
 - `FloatGetter`
 - `FloatLikeGetter`
 - `StringGetter`
@@ -70,6 +84,9 @@ The following types are supported for single-value parameters in OTTL functions:
 - `BoolGetter`
 - `BoolLikeGetter`
 - `ByteSliceLikeGetter`
+- `DurationGetter`
+- `TimeGetter`
+- `FunctionGetter`
 - `Enum`
 - `string`
 - `float64`
@@ -80,17 +97,19 @@ For slice parameters, the following types are supported:
 
 - `Getter`
 - `PMapGetter`
+- `PSliceGetter`
 - `FloatGetter`
 - `FloatLikeGetter`
 - `StringGetter`
 - `StringLikeGetter`
 - `IntGetter`
 - `IntLikeGetter`
+- `DurationGetter`
+- `TimeGetter`
 - `string`
 - `float64`
 - `int64`
 - `uint8`. Byte slice literals are parsed as byte slices by OTTL.
-- `Getter`
 
 To make a parameter optional, use the `Optional` type, which takes a type argument for the underlying
 parameter type. For example, an optional string parameter would be specified as `Optional[string]`.
@@ -100,6 +119,8 @@ All optional parameters must be specified after all required parameters.
 
 Function arguments must be passed in the order defined in the `Arguments` struct for the function unless they are named, in which case the arguments can come in any order. All named arguments must come after all arguments without
 names. Argument names are snake-cased versions of the argument's field name in the function's `Arguments` struct.
+
+A named argument is passed by preceding its value with the argument name and an equals sign (`=`), such as `example(foo="bar")`.
 
 When passing optional arguments, all optional arguments preceding a given optional argument must be specified if
 the arguments are not named. Passing a named argument allows skipping the preceding optional arguments.
@@ -149,7 +170,7 @@ When using OTTL it is recommended to use these contexts unless you have a specif
 ### Lists
 
 A List Value comprises a sequence of Values.
-Currently, list can only be created by the grammar to be used in functions or conditions;
+Currently, lists can only be created by the grammar to be used in functions or conditions;
 the grammar does not provide an accessor to individual list entries.
 
 Example List Values:
@@ -184,12 +205,12 @@ Example Literals
 - `1`, `-1`
 - `1.5`, `-.5`
 - `true`, `false`
-- `nil`,
+- `nil`
 - `0x0001`
 
 ### Enums
 
-Enums are uppercase identifiers that get interpreted during parsing and converted to an `int64`. **The interpretation of an Enum is NOT implemented by OTTL.** Instead, the user must provide a `EnumParser` that OTTL can use to interpret the Enum.  The `EnumParser` returns an `int64` instead of a function, which means that the Enum's numeric value is retrieved during parsing instead of during execution.
+Enums are uppercase identifiers that get interpreted during parsing and converted to an `int64`. **The interpretation of an Enum is NOT implemented by OTTL.** Instead, the user must provide a `EnumParser` that OTTL can use to interpret the Enum.  The `EnumParser` resolves an Enum to its numeric value during parsing.
 
 Within the grammar Enums are always used as `int64`.  As a result, the Enum's symbol can be used as if it is an Int value.
 
@@ -219,7 +240,7 @@ Division by zero is gracefully handled with an error, but other arithmetic opera
 Division of integers results in an integer and follows Go's rules for division of integers.
 
 Since Math Expressions support `Path`s and `Converter`s as input, they are evaluated during data processing.
-__As a result, in order for a function to be able to accept an Math Expressions as a parameter it must use a `Getter`.__
+__As a result, in order for a function to be able to accept a Math Expression as a parameter it must use a `Getter`.__
 
 Example Math Expressions
 - `1 + 1`
@@ -229,9 +250,9 @@ Example Math Expressions
 
 ### Boolean Expressions
 
-Boolean Expressions allow a decision to be made about whether an Editor should be called. Boolean Expressions are optional.  When used, the parsed statement will include a `Condition`, which can be used to evaluate the result of the statement's Boolean Expression. Boolean Expressions always evaluate to a boolean value (true or false).
+Boolean Expressions allow a decision to be made about whether an Editor should be called. Within a Statement they are optional, appearing after the `where` keyword; they can also be parsed on their own as a Condition. When used in a Statement, the parsed statement will include a `Condition`, which can be used to evaluate the result of the statement's Boolean Expression. Boolean Expressions always evaluate to a boolean value (true or false).
 
-Boolean Expressions consist of the literal string `where` followed by one or more Booleans (see below).
+Boolean Expressions consist of one or more Booleans (see below).
 Booleans can be joined with the literal strings `and` and `or`.
 Booleans can be negated with the literal string `not`.
 Note that `not` has the highest precedence and `and` Boolean Expressions have higher precedence than `or`.
