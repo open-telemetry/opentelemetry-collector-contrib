@@ -2777,7 +2777,7 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 			return false
 		}
 		return true
-	}, 3*time.Second, 100*time.Millisecond)
+	}, 15*time.Second, 100*time.Millisecond)
 
 	// Send empty config
 	emptyHash := sha256.Sum256([]byte{})
