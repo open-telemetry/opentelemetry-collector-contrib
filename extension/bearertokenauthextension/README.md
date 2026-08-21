@@ -34,7 +34,7 @@ The authenticator type has to be set to `bearertokenauth`.
   - `enabled`: When true, startup waits for the file to appear instead of failing immediately. Defaults to `false`.
   - `max_retries`: Maximum number of retry attempts before giving up. Set to `0` to retry indefinitely until the file appears.
   - `interval`: Interval between retry attempts (e.g., `1s`, `500ms`).
-- `wait_for_token_file`: Optional. When true, startup blocks until the token file is read successfully (respecting `retry_on_failure`) instead of retrying in the background. If the file cannot be read within the retry budget, the collector fails to start. Requires `retry_on_failure.enabled` and `filename` to be set. Defaults to `false`.
+- `wait_for_token_file`: (Optional) When true, startup blocks until the token file is read successfully (respecting `retry_on_failure`) instead of retrying in the background. If the file cannot be read within the retry budget, the collector fails to start. Requires `retry_on_failure.enabled` and `filename` to be set. Defaults to `false`.
 
 Either one of `token` or `filename` field is required. If both are specified, then the `token` field value is **ignored**. In any case, the value of the token will be prepended by `${scheme}` before being sent as a value of "authorization" key in the request header in case of HTTP and metadata in case of gRPC.
 
