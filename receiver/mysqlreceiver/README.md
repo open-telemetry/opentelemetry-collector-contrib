@@ -57,7 +57,7 @@ The following settings are optional:
   - `server_name_override`: This sets the ServerName in the TLSConfig.  
 - `username`: (default = `root`)
 - `password`: A static MySQL password.
-- `db_auth`: Component ID of a `dbauth` provider extension (for example `aws_iam_db_auth`). Mutually exclusive with `password`. Requires TLS (`tls.insecure: false`). RDS MySQL/Aurora MySQL only.
+- `db_auth`: Component ID of a `dbauth` provider extension (for example `aws_iam_db_auth`). Mutually exclusive with `password`. Requires TLS (`tls.insecure: false`). RDS MySQL/Aurora MySQL only. Cleartext password auth (`mysql_clear_password`) is enabled automatically for IAM tokens over TLS.
 
 ```yaml
 extensions:

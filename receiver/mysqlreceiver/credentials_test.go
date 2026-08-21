@@ -44,6 +44,18 @@ func TestConnectionString_ProviderSuppliesSecret(t *testing.T) {
 
 	assert.Contains(t, cs, "minted-token")
 	assert.Contains(t, cs, "configured_user")
+	assert.Contains(t, cs, "allowCleartextPasswords=true")
+}
+
+func TestConnectionString_NoProviderOmitsCleartextPasswords(t *testing.T) {
+	cfg := mySQLConfig{
+		username: "u",
+		password: "static-pw",
+		address:  confignet.AddrConfig{Endpoint: "localhost:3306", Transport: confignet.TransportTypeTCP},
+	}
+	cs, err := cfg.ConnectionString(t.Context())
+	require.NoError(t, err)
+	assert.NotContains(t, cs, "allowCleartextPasswords=true")
 }
 
 func TestConnectionString_ProviderOverridesUsername(t *testing.T) {
@@ -112,6 +124,15 @@ func TestConfigValidate_DBAuthWithoutPasswordIsValid(t *testing.T) {
 	cfg.Username = "u"
 	cfg.DBAuth = configdbauth.ID(component.MustNewID("aws_iam_db_auth"))
 	cfg.TLS.Insecure = false
+
+	require.NoError(t, cfg.Validate())
+}
+
+func TestConfigValidate_NoPasswordWithoutDBAuthIsValid(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.AddrConfig.Endpoint = "localhost:3306"
+	cfg.Username = "root"
+	cfg.Password = ""
 
 	require.NoError(t, cfg.Validate())
 }
@@ -278,7 +299,7 @@ func TestNewClientFactory_AcceptsDBAuth(t *testing.T) {
 	cfg.DBAuth = configdbauth.ID(component.MustNewID("aws_iam_db_auth"))
 	cfg.TLS.Insecure = false
 
-	f, err := newClientFactory(cfg)
+	f, err := newClientFactory(cfg, component.MustNewID("mysql"))
 	require.NoError(t, err)
 
 	factory := f.(*defaultClientFactory)

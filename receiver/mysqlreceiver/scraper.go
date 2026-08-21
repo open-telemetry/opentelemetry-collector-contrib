@@ -69,9 +69,13 @@ func newMySQLScraper(
 	clientFactory mySQLClientFactory,
 	cache *lru.Cache[string, int64],
 	queryPlanCache *expirable.LRU[string, string],
-) *mySQLScraper {
+) (*mySQLScraper, error) {
 	if clientFactory == nil {
-		clientFactory, _ = newClientFactory(config)
+		var err error
+		clientFactory, err = newClientFactory(config, settings.ID)
+		if err != nil {
+			return nil, err
+		}
 	}
 	seed := resolveServiceInstanceSeed(config.AddrConfig.Endpoint, settings.Logger)
 	serviceInstanceID := uuid.NewSHA1(otelUUIDv5Namespace, []byte(seed)).String()
@@ -86,7 +90,7 @@ func newMySQLScraper(
 		obfuscator:             newObfuscator(),
 		lastExecutionTimestamp: time.Unix(0, 0),
 		serviceInstanceID:      serviceInstanceID,
-	}
+	}, nil
 }
 
 // resolveServiceInstanceSeed returns the endpoint string to use as the UUID v5

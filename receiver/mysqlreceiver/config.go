@@ -30,7 +30,6 @@ const (
 // Errors for missing required config parameters.
 const (
 	ErrNoUsername          = "invalid config: missing username"
-	ErrNoPassword          = "invalid config: missing password" // #nosec G101 - not hardcoded credentials
 	ErrTransportsSupported = "invalid config: 'transport' must be 'tcp' or 'unix'"
 	ErrHostPort            = "invalid config: 'endpoint' must be in the form <host>:<port> no matter what 'transport' is configured"
 	// #nosec G101 - not hardcoded credentials
@@ -103,8 +102,6 @@ func (cfg *Config) Validate() error {
 	switch {
 	case dbAuthConfigured && cfg.Password != "":
 		err = multierr.Append(err, errors.New(ErrPasswordAndDBAuth))
-	case !dbAuthConfigured && cfg.Password == "":
-		err = multierr.Append(err, errors.New(ErrNoPassword))
 	case dbAuthConfigured && cfg.TLS.Insecure:
 		err = multierr.Append(err, errors.New(ErrDBAuthRequiresTLS))
 	}

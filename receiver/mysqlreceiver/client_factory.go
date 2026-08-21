@@ -5,19 +5,20 @@ package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
 	"database/sql"
 	"database/sql/driver"
+	"encoding/hex"
 	"errors"
 	"strings"
 
 	"github.com/go-sql-driver/mysql"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
 )
-
-const mysqlCustomTLSConfigName = "custom"
 
 type mySQLClientFactory interface {
 	connect(ctx context.Context) (client, error)
@@ -25,8 +26,8 @@ type mySQLClientFactory interface {
 	close() error
 }
 
-func newClientFactory(cfg *Config) (mySQLClientFactory, error) {
-	base, err := buildMySQLConfig(cfg)
+func newClientFactory(cfg *Config, receiverID component.ID) (mySQLClientFactory, error) {
+	base, err := buildMySQLConfig(cfg, receiverID)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +60,7 @@ func (*defaultClientFactory) close() error {
 	return nil
 }
 
-func buildMySQLConfig(cfg *Config) (mySQLConfig, error) {
+func buildMySQLConfig(cfg *Config, receiverID component.ID) (mySQLConfig, error) {
 	mc := mySQLConfig{
 		username:             cfg.Username,
 		password:             string(cfg.Password),
@@ -72,24 +73,30 @@ func buildMySQLConfig(cfg *Config) (mySQLConfig, error) {
 		return mc, err
 	}
 	if tlsCfg != nil {
-		if err := registerMySQLTLSConfig(tlsCfg); err != nil {
+		tlsConfigName := mysqlTLSConfigName(receiverID, cfg.AddrConfig.Endpoint)
+		if err := registerMySQLTLSConfig(tlsConfigName, tlsCfg); err != nil {
 			return mc, err
 		}
-		mc.tlsConfigName = mysqlCustomTLSConfigName
+		mc.tlsConfigName = tlsConfigName
 	}
 	return mc, nil
 }
 
-func registerMySQLTLSConfig(tlsCfg *tls.Config) error {
-	err := mysql.RegisterTLSConfig(mysqlCustomTLSConfigName, tlsCfg)
-	if err != nil && !isMySQLTLSConfigAlreadyRegistered(err) {
-		return err
+func mysqlTLSConfigName(receiverID component.ID, endpoint string) string {
+	seed := receiverID.String()
+	if seed == "" {
+		seed = endpoint
 	}
-	return nil
+	name := "otel_" + strings.NewReplacer(":", "_", "/", "_", " ", "_").Replace(seed)
+	if len(name) <= 64 {
+		return name
+	}
+	sum := sha256.Sum256([]byte(seed))
+	return "otel_" + hex.EncodeToString(sum[:8])
 }
 
-func isMySQLTLSConfigAlreadyRegistered(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "already registered")
+func registerMySQLTLSConfig(name string, tlsCfg *tls.Config) error {
+	return mysql.RegisterTLSConfig(name, tlsCfg)
 }
 
 type mySQLConfig struct {
@@ -122,13 +129,14 @@ func (c mySQLConfig) driverConfig(ctx context.Context) (*mysql.Config, error) {
 	}
 
 	return &mysql.Config{
-		User:                 username,
-		Passwd:               password,
-		Net:                  string(c.address.Transport),
-		Addr:                 c.address.Endpoint,
-		DBName:               c.database,
-		AllowNativePasswords: c.allowNativePasswords,
-		TLSConfig:            c.tlsConfigName,
+		User:                    username,
+		Passwd:                  password,
+		Net:                     string(c.address.Transport),
+		Addr:                    c.address.Endpoint,
+		DBName:                  c.database,
+		AllowNativePasswords:    c.allowNativePasswords,
+		AllowCleartextPasswords: c.credentialProvider != nil,
+		TLSConfig:               c.tlsConfigName,
 	}, nil
 }
 
