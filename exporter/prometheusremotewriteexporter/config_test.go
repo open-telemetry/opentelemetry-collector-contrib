@@ -215,7 +215,7 @@ func TestLoadConfig(t *testing.T) {
 			if tt.enableSendingRW2 {
 				oldValue := metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate.IsEnabled()
 				testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, true)
-				defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, oldValue)
+				defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, oldValue)()
 			}
 
 			factory := NewFactory()
