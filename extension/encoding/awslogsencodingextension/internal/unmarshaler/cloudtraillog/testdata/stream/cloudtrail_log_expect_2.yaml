@@ -22,12 +22,9 @@ resourceLogs:
               - key: rpc.method
                 value:
                   stringValue: CreateUser
-              - key: rpc.system
+              - key: rpc.system.name
                 value:
                   stringValue: AwsApiCall
-              - key: rpc.service
-                value:
-                  stringValue: iam.amazonaws.com
               - key: aws.request_id
                 value:
                   stringValue: 2d528c76-329e-410b-9516-EXAMPLE565dc
