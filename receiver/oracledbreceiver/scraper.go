@@ -43,6 +43,13 @@ const (
 	// Note: unlike V$SYSMETRIC, V$CON_SYSMETRIC only exposes short-interval (60s)
 	// rows, so no group_id filter is required.
 	sysmetricCDBSQL = "SELECT s.metric_name AS METRIC_NAME, s.value AS VALUE, c.name AS PDB_NAME FROM v$con_sysmetric s, v$containers c WHERE s.con_id = c.con_id(+)"
+	// sysmetricComputedSQL derives Shared Pool Free % from v$sgastat for PDB connections
+	// (e.g. RDS Oracle) where v$sysmetric is empty in PDB context.
+	sysmetricComputedSQL = `SELECT 'Shared Pool Free %' AS METRIC_NAME,
+		CASE WHEN NVL(SUM(bytes),0) > 0
+		     THEN NVL(SUM(CASE WHEN name = 'free memory' THEN bytes ELSE 0 END),0) / SUM(bytes) * 100
+		     ELSE 0 END AS VALUE
+	FROM v$sgastat WHERE pool = 'shared pool'`
 
 	// containerGrantsProbeSQL detects whether the user has the grants needed
 	// for per-PDB collection. On failure the receiver falls back to the
@@ -204,7 +211,39 @@ const (
 	// sessionCountCDBSQL extends sessionCountSQL with per-PDB breakdown via v$containers join.
 	sessionCountCDBSQL      = "select s.status, s.type, c.name as PDB_NAME, count(*) as VALUE FROM v$session s, v$containers c WHERE s.con_id = c.con_id(+) GROUP BY s.status, s.type, c.name"
 	systemResourceLimitsSQL = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
-	tablespaceUsageSQL      = `
+	// systemResourceLimitsPDBSQL derives resource limits for PDB connections (e.g. RDS Oracle) where
+	// v$resource_limit returns no rows. Limits from v$parameter; usage from v$process, v$session,
+	// v$transaction, v$lock. enqueue_locks and enqueue_resources are auto-managed in Oracle 19c and
+	// not exposed as init parameters, so they are omitted.
+	systemResourceLimitsPDBSQL = `SELECT
+    RESOURCE_NAME,
+    CURRENT_UTILIZATION,
+    CASE
+        WHEN LIMIT_VALUE IS NULL OR TRIM(LIMIT_VALUE) = 'UNLIMITED' THEN '-1'
+        ELSE TRIM(LIMIT_VALUE)
+    END AS LIMIT_VALUE
+FROM (
+  SELECT 'processes' AS RESOURCE_NAME,
+         (SELECT COUNT(*) FROM v$process) AS CURRENT_UTILIZATION,
+         (SELECT value FROM v$parameter WHERE name = 'processes') AS LIMIT_VALUE
+  FROM dual
+  UNION ALL
+  SELECT 'sessions',
+         (SELECT COUNT(*) FROM v$session),
+         (SELECT value FROM v$parameter WHERE name = 'sessions')
+  FROM dual
+  UNION ALL
+  SELECT 'transactions',
+         (SELECT COUNT(*) FROM v$transaction),
+         (SELECT value FROM v$parameter WHERE name = 'transactions')
+  FROM dual
+  UNION ALL
+  SELECT 'dml_locks',
+         (SELECT COUNT(*) FROM v$lock WHERE type = 'TM'),
+         (SELECT value FROM v$parameter WHERE name = 'dml_locks')
+  FROM dual
+)`
+	tablespaceUsageSQL = `
 		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE, ts.STATUS
 		FROM DBA_TABLESPACE_USAGE_METRICS um INNER JOIN DBA_TABLESPACES ts
 		ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
@@ -337,10 +376,11 @@ type dbProviderFunc func() (*sql.DB, error)
 type clientProviderFunc func(*sql.DB, string, *zap.Logger) dbClient
 
 type oracleScraper struct {
-	statsClient                dbClient
-	tablespaceUsageClient      dbClient
-	systemResourceLimitsClient dbClient
-	sessionCountClient         dbClient
+	statsClient                   dbClient
+	tablespaceUsageClient         dbClient
+	systemResourceLimitsClient    dbClient
+	systemResourceLimitsPDBClient dbClient
+	sessionCountClient            dbClient
 	// isCDBRoot is true when connected to a CDB root (Oracle 12c+); enables per-PDB queries.
 	isCDBRoot                bool
 	oracleQueryMetricsClient dbClient
@@ -354,6 +394,7 @@ type oracleScraper struct {
 	storageUsageClient       dbClient
 	sysmetricClient          dbClient
 	sysmetricCDBClient       dbClient
+	sysmetricComputedClient  dbClient
 	db                       *sql.DB
 	clientProviderFunc       clientProviderFunc
 	mb                       *metadata.MetricsBuilder
@@ -469,6 +510,9 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	}
 	s.tablespaceUsageClient = s.clientProviderFunc(s.db, s.buildTablespaceSQL(), s.logger)
 	s.systemResourceLimitsClient = s.clientProviderFunc(s.db, systemResourceLimitsSQL, s.logger)
+	if s.instanceInfo.connectedToPDB {
+		s.systemResourceLimitsPDBClient = s.clientProviderFunc(s.db, systemResourceLimitsPDBSQL, s.logger)
+	}
 	s.samplesQueryClient = s.clientProviderFunc(s.db, samplesQuery, s.logger)
 	s.sessionEventClient = s.clientProviderFunc(s.db, sessionEventQuery, s.logger)
 	s.dataDictHitRatioClient = s.clientProviderFunc(s.db, dataDictHitRatioSQL, s.logger)
@@ -477,8 +521,14 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	s.sgaInfoClient = s.clientProviderFunc(s.db, sgaInfoSQL, s.logger)
 	s.storageUsageClient = s.clientProviderFunc(s.db, storageUsageSQL, s.logger)
 	s.sysmetricClient = s.clientProviderFunc(s.db, sysmetricSQL, s.logger)
-	if s.isCDBRoot {
+	// sysmetricCDBSQL works from both CDB root and PDB connections (v$containers is accessible in both).
+	// For PDB connections (e.g. RDS Oracle), it returns the sysmetric metrics available in PDB context.
+	if s.isCDBRoot || (s.instanceInfo.isCDB && s.instanceInfo.connectedToPDB) {
 		s.sysmetricCDBClient = s.clientProviderFunc(s.db, sysmetricCDBSQL, s.logger)
+	}
+	// PDB connection: V$SYSMETRIC is empty, so the remaining metrics must be computed from raw stats.
+	if s.instanceInfo.isCDB && s.instanceInfo.connectedToPDB {
+		s.sysmetricComputedClient = s.clientProviderFunc(s.db, sysmetricComputedSQL, s.logger)
 	}
 	return nil
 }
@@ -1057,9 +1107,14 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbEnqueueResourcesLimit.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbEnqueueLocksLimit.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbEnqueueLocksUsage.Enabled {
-		rows, err := s.systemResourceLimitsClient.metricRows(ctx)
+		// For PDB connections (e.g. RDS), v$resource_limit returns no rows; use derived query instead.
+		resourceLimitsClient := s.systemResourceLimitsClient
+		if s.instanceInfo.connectedToPDB && s.systemResourceLimitsPDBClient != nil {
+			resourceLimitsClient = s.systemResourceLimitsPDBClient
+		}
+		rows, err := resourceLimitsClient.metricRows(ctx)
 		if err != nil {
-			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", systemResourceLimitsSQL, err))
+			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing resource limits query: %w", err))
 		}
 		for _, row := range rows {
 			resourceName := row["RESOURCE_NAME"]
@@ -1423,6 +1478,38 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 				seenInContainerMetrics[metricName] = true
 			}
 		}
+	}
+
+	// PDB connection (e.g. RDS Oracle): V$SYSMETRIC is empty in PDB context.
+	// sysmetricCDBClient (v$con_sysmetric) covers some metrics; sysmetricComputedClient
+	// derives Shared Pool Free % from v$sgastat. seenPDBMetrics prevents double-recording.
+	if s.instanceInfo.isCDB && s.instanceInfo.connectedToPDB {
+		seenPDBMetrics := make(map[string]bool)
+		for _, client := range []dbClient{s.sysmetricCDBClient, s.sysmetricComputedClient} {
+			if client == nil {
+				continue
+			}
+			pdbRows, pdbErr := client.metricRows(ctx)
+			if pdbErr != nil {
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing sysmetric PDB query: %w", pdbErr))
+				continue
+			}
+			for _, row := range pdbRows {
+				metricName := row[colMetricName]
+				if seenPDBMetrics[metricName] {
+					continue
+				}
+				seenPDBMetrics[metricName] = true
+				rawVal := row[colValue]
+				val, parseErr := strconv.ParseFloat(rawVal, 64)
+				if parseErr != nil {
+					*scrapeErrors = append(*scrapeErrors, fmt.Errorf("sysmetric %q: failed to parse float64 from %q: %w", metricName, rawVal, parseErr))
+					continue
+				}
+				s.recordSysmetric(now, metricName, val, s.pdbNameForRow(row))
+			}
+		}
+		return
 	}
 
 	// Query V$SYSMETRIC for metrics not already seen in V$CON_SYSMETRIC (or all 12 for non-CDB).
