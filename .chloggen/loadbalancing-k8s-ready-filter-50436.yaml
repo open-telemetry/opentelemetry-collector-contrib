@@ -1,6 +1,6 @@
 change_type: bug_fix
 
-component: loadbalancingexporter
+component: exporter/load_balancing
 
 note: Skip endpoints whose `EndpointSlice` `conditions.ready` is explicitly `false` in the kubernetes resolver, so traffic is not routed to them.
 
