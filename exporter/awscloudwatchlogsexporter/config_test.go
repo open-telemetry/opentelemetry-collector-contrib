@@ -15,8 +15,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
 
@@ -102,11 +102,11 @@ func TestLoadConfig(t *testing.T) {
 			err = sub.Unmarshal(cfg)
 
 			if tt.expected == nil {
-				err = multierr.Append(err, xconfmap.Validate(cfg))
+				err = multierr.Append(err, confmap.Validate(cfg))
 				assert.ErrorContains(t, err, tt.errorMessage)
 				return
 			}
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -126,7 +126,7 @@ func TestRetentionValidateCorrect(t *testing.T) {
 			QueueSize:    1000,
 		}),
 	}
-	assert.NoError(t, xconfmap.Validate(cfg))
+	assert.NoError(t, confmap.Validate(cfg))
 }
 
 func TestRetentionValidateWrong(t *testing.T) {
@@ -142,7 +142,40 @@ func TestRetentionValidateWrong(t *testing.T) {
 			QueueSize: 1000,
 		}),
 	}
-	assert.Error(t, xconfmap.Validate(wrongcfg))
+	assert.Error(t, confmap.Validate(wrongcfg))
+}
+
+func TestMaxEventPayloadBytesValidate(t *testing.T) {
+	defaultBackOffConfig := configretry.NewDefaultBackOffConfig()
+	base := func(maxBytes int) *Config {
+		return &Config{
+			BackOffConfig:        defaultBackOffConfig,
+			LogGroupName:         "test-1",
+			LogStreamName:        "testing",
+			AWSSessionSettings:   awsutil.CreateDefaultSessionConfig(),
+			MaxEventPayloadBytes: maxBytes,
+			QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
+				NumConsumers: 1,
+				QueueSize:    1000,
+			}),
+		}
+	}
+
+	t.Run("zero is allowed (means use default)", func(t *testing.T) {
+		assert.NoError(t, confmap.Validate(base(0)))
+	})
+	t.Run("256 KiB is allowed", func(t *testing.T) {
+		assert.NoError(t, confmap.Validate(base(1024*256)))
+	})
+	t.Run("1 MiB is allowed (post 2025-04-02 service limit)", func(t *testing.T) {
+		assert.NoError(t, confmap.Validate(base(1024*1024)))
+	})
+	t.Run("below minimum is rejected", func(t *testing.T) {
+		assert.Error(t, confmap.Validate(base(10)))
+	})
+	t.Run("above 1 MiB is rejected", func(t *testing.T) {
+		assert.Error(t, confmap.Validate(base(1024*1024+1)))
+	})
 }
 
 func TestValidateTags(t *testing.T) {
@@ -226,10 +259,10 @@ func TestValidateTags(t *testing.T) {
 				}),
 			}
 			if tt.errorMessage != "" {
-				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.errorMessage)
+				assert.ErrorContains(t, confmap.Validate(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 		})
 	}
 }

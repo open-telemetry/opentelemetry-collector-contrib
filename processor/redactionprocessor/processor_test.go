@@ -1043,6 +1043,62 @@ func TestMultipleBlockValues(t *testing.T) {
 	}
 }
 
+// TestBlockedValuesAppliedInConfigOrder validates that blocked_values patterns
+// are applied in the order they are listed in the configuration. When two
+// patterns match overlapping regions of the same value, the outcome depends on
+// the application order, so the order must be deterministic and follow the
+// configuration.
+func TestBlockedValuesAppliedInConfigOrder(t *testing.T) {
+	emailPattern := `[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}`
+	postalCodePattern := `\b\d{3}-\d{4}\b`
+	// The local part of this email address also matches the postal code
+	// pattern, so the two patterns overlap on this value.
+	input := "777-7777@example.com"
+
+	testCases := []struct {
+		name          string
+		blockedValues []string
+		expected      string
+	}{
+		{
+			name:          "email pattern first masks the whole address",
+			blockedValues: []string{emailPattern, postalCodePattern},
+			expected:      "****",
+		},
+		{
+			name:          "postal code pattern first masks only the local part",
+			blockedValues: []string{postalCodePattern, emailPattern},
+			expected:      "****@example.com",
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			// Repeat to make a regression to nondeterministic ordering fail
+			// reliably instead of intermittently.
+			for range 10 {
+				config := &Config{
+					AllowAllKeys:  true,
+					BlockedValues: tt.blockedValues,
+				}
+				processor, err := newRedaction(t.Context(), config, zaptest.NewLogger(t))
+				require.NoError(t, err)
+
+				attrs := pcommon.NewMap()
+				attrs.PutStr("email", input)
+				processor.processAttrs(t.Context(), attrs)
+				val, found := attrs.Get("email")
+				require.True(t, found)
+				assert.Equal(t, tt.expected, val.Str())
+
+				body := pcommon.NewValueStr(input)
+				processor.processLogBody(t.Context(), body, pcommon.NewMap())
+				assert.Equal(t, tt.expected, body.Str())
+			}
+		})
+	}
+}
+
 // TestProcessAttrsAppliedTwice validates a use case when data is coming through redaction processor more than once.
 // Existing attributes must be updated, not overridden or ignored.
 func TestProcessAttrsAppliedTwice(t *testing.T) {
@@ -1348,6 +1404,52 @@ func TestLogBodyRedactionDifferentTypes(t *testing.T) {
 	assert.Equal(t, int64(1), val.Int())
 }
 
+func TestLogBodyMaskBlockedKeyPatterns(t *testing.T) {
+	body := pcommon.NewValueMap()
+	body.Map().PutStr("secret_token", "4111111111111111")
+	body.Map().PutStr("id", "user123")
+
+	innerMap := body.Map().PutEmptyMap("nested")
+	innerMap.PutStr("secret_id", "some-secret")
+	innerMap.PutStr("id", "user123")
+
+	tc := testConfig{
+		config: &Config{
+			AllowAllKeys:       true,
+			BlockedKeyPatterns: []string{"^secret_"},
+			Summary:            "debug",
+		},
+		logBody: &body,
+	}
+
+	outLogs := runLogsTest(t, tc)
+	outLogBody := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
+
+	secretToken, ok := outLogBody.Map().Get("secret_token")
+	require.True(t, ok)
+	assert.Equal(t, "****", secretToken.Str())
+	id, ok := outLogBody.Map().Get("id")
+	require.True(t, ok)
+	assert.Equal(t, "user123", id.Str())
+
+	nested, ok := outLogBody.Map().Get("nested")
+	require.True(t, ok)
+	secretID, ok := nested.Map().Get("secret_id")
+	require.True(t, ok)
+	assert.Equal(t, "****", secretID.Str())
+	id, ok = nested.Map().Get("id")
+	require.True(t, ok)
+	assert.Equal(t, "user123", id.Str())
+
+	outLogAttrs := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+	val, found := outLogAttrs.Get(redactionBodyMaskedKeys)
+	require.True(t, found)
+	assert.Equal(t, "nested.secret_id,secret_token", val.Str())
+	val, found = outLogAttrs.Get(redactionBodyMaskedCount)
+	require.True(t, found)
+	assert.Equal(t, int64(2), val.Int())
+}
+
 // runTest transforms the test input data and passes it through the processor
 func runTest(
 	t *testing.T,
@@ -1618,6 +1720,33 @@ func BenchmarkMaskSummaryDebug(b *testing.B) {
 
 	for b.Loop() {
 		runBenchmark(allowed, nil, masked, ignored, processor)
+	}
+}
+
+// BenchmarkMaskBlockedKeyPatterns measures the performance impact of masking span attributes
+// whose keys match the blocked key patterns list. Unlike the benchmarks above, which only
+// configure blocked values, this one exercises the whole-value masking path.
+func BenchmarkMaskBlockedKeyPatterns(b *testing.B) {
+	config := &Config{
+		AllowAllKeys:       true,
+		BlockedKeyPatterns: []string{"^secret_"},
+		Summary:            "debug",
+	}
+	masked := make(map[string]pcommon.Value, 20)
+	for i := range 20 {
+		masked[fmt.Sprintf("secret_%d", i)] = pcommon.NewValueStr("4111111111111111")
+	}
+	allowed := map[string]pcommon.Value{
+		"id":       pcommon.NewValueStr("some.valid.id"),
+		"group.id": pcommon.NewValueStr("some other valid id"),
+		"name":     pcommon.NewValueStr("placeholder"),
+	}
+	ctx := b.Context()
+	processor, _ := newRedaction(ctx, config, zaptest.NewLogger(b))
+
+	b.ReportAllocs()
+	for b.Loop() {
+		runBenchmark(allowed, nil, masked, nil, processor)
 	}
 }
 

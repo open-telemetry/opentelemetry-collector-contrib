@@ -114,11 +114,11 @@ var MetricsInfo = metricsInfo{
 	},
 	SplunkKvstoreReplicationStatus: metricInfo{
 		Name:       "splunk.kvstore.replication.status",
-		Attributes: []string{"splunk.kvstore.status.value", "splunk.splunkd.build", "splunk.splunkd.version"},
+		Attributes: []string{"splunk.kvstore.status.value", "splunk.kvstore.storage_engine", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkKvstoreStatus: metricInfo{
 		Name:       "splunk.kvstore.status",
-		Attributes: []string{"splunk.kvstore.storage.engine", "splunk.kvstore.external", "splunk.kvstore.status.value", "splunk.splunkd.build", "splunk.splunkd.version"},
+		Attributes: []string{"splunk.kvstore.storage_engine", "splunk.kvstore.external", "splunk.kvstore.status.value", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkLicenseExpirationSecondsRemaining: metricInfo{
 		Name:       "splunk.license.expiration.seconds_remaining",
@@ -2505,7 +2505,7 @@ func (m *metricSplunkKvstoreReplicationStatus) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricSplunkKvstoreReplicationStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+func (m *metricSplunkKvstoreReplicationStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string, splunkKvstoreStorageEngineAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2515,6 +2515,9 @@ func (m *metricSplunkKvstoreReplicationStatus) recordDataPoint(start pcommon.Tim
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue) {
 		dp.Attributes().PutStr("splunk.kvstore.status.value", splunkKvstoreStatusValueAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStorageEngine) {
+		dp.Attributes().PutStr("splunk.kvstore.storage_engine", splunkKvstoreStorageEngineAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild) {
 		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
@@ -2609,7 +2612,7 @@ func (m *metricSplunkKvstoreStatus) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStorageEngine) {
-		dp.Attributes().PutStr("splunk.kvstore.storage.engine", splunkKvstoreStorageEngineAttributeValue)
+		dp.Attributes().PutStr("splunk.kvstore.storage_engine", splunkKvstoreStorageEngineAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreExternal) {
 		dp.Attributes().PutStr("splunk.kvstore.external", splunkKvstoreExternalAttributeValue)
@@ -5542,8 +5545,8 @@ func (mb *MetricsBuilder) RecordSplunkKvstoreBackupStatusDataPoint(ts pcommon.Ti
 }
 
 // RecordSplunkKvstoreReplicationStatusDataPoint adds a data point to splunk.kvstore.replication.status metric.
-func (mb *MetricsBuilder) RecordSplunkKvstoreReplicationStatusDataPoint(ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
-	mb.metricSplunkKvstoreReplicationStatus.recordDataPoint(mb.startTime, ts, val, splunkKvstoreStatusValueAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkKvstoreReplicationStatusDataPoint(ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string, splunkKvstoreStorageEngineAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkKvstoreReplicationStatus.recordDataPoint(mb.startTime, ts, val, splunkKvstoreStatusValueAttributeValue, splunkKvstoreStorageEngineAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkKvstoreStatusDataPoint adds a data point to splunk.kvstore.status metric.

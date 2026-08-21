@@ -11,6 +11,7 @@ import (
 func StandardFuncs[K any]() map[string]ottl.Factory[K] {
 	f := []ottl.Factory[K]{
 		// Editors
+		NewClearFactory[K](),
 		NewDeleteKeyFactory[K](),
 		NewDeleteMatchingKeysFactory[K](),
 		NewKeepMatchingKeysFactory[K](),
@@ -58,6 +59,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewExtractPatternsFactory[K](),
 		NewExtractGrokPatternsFactory[K](),
 		NewFilterFactory[K](),
+		NewFindFactory[K](),
 		NewFnvFactory[K](),
 		NewGetXMLFactory[K](),
 		NewHasPrefixFactory[K](),
@@ -69,6 +71,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewIntFactory[K](),
 		NewIsBoolFactory[K](),
 		NewIsDoubleFactory[K](),
+		NewIsEmptyFactory[K](),
 		NewIsListFactory[K](),
 		NewIsIntFactory[K](),
 		NewIsMapFactory[K](),
@@ -78,6 +81,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewLogFactory[K](),
 		NewIsValidLuhnFactory[K](),
 		NewMapEachFactory[K](),
+		NewMapKeysFactory[K](),
 		NewMD5Factory[K](),
 		NewMicrosecondsFactory[K](),
 		NewMillisecondsFactory[K](),
@@ -94,6 +98,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewParseKeyValueFactory[K](),
 		NewParseSimplifiedXMLFactory[K](),
 		NewParseXMLFactory[K](),
+		NewReduceFactory[K](),
 		NewRemoveXMLFactory[K](),
 		NewSecondFactory[K](),
 		NewSecondsFactory[K](),

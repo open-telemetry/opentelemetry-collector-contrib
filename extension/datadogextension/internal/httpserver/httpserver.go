@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
+	defaultforwarderimpl "github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder/impl"
 	"github.com/DataDog/datadog-agent/pkg/serializer/marshaler"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -112,7 +112,7 @@ func (s *Server) Start(ctx context.Context, host component.Host) error {
 		}
 	}()
 
-	s.logger.Info("HTTP Server started at " + s.config.NetAddr.Endpoint + s.config.Path)
+	s.logger.Info("HTTP Server started at " + s.config.ServerConfig.NetAddr.Endpoint + s.config.Path)
 	return nil
 }
 
@@ -154,7 +154,7 @@ func (s *Server) SendPayload() (marshaler.JSONMarshaler, error) {
 		payloadCopy = s.payload
 	}
 
-	if s.serializer.State() != defaultforwarder.Started {
+	if s.serializer.State() != defaultforwarderimpl.Started {
 		return nil, errors.New("forwarder is not started, extension cannot send payloads to Datadog")
 	}
 
