@@ -38,9 +38,11 @@ type RetryOnFailureConfig struct {
 
 	// MaxRetries is the maximum number of times to retry reading the file.
 	// If it's value is set to 0, it means that the retry will continue infinity.
+	// Defaults to 0.
 	MaxRetries int `mapstructure:"max_retries,omitempty"`
 
 	// Interval is the interval between retries.
+	// Defaults to 0 seconds.
 	Interval time.Duration `mapstructure:"interval,omitempty"`
 }
 
