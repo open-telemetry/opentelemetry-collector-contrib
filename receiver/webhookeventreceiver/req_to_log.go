@@ -62,6 +62,8 @@ func (er *eventReceiver) reqToLog(sc *bufio.Scanner,
 			lines = strings.Split(sc.Text(), "\n")
 		} else if er.cfg.ShouldSplitLogsAtJSONBoundary() {
 			lines = splitJSONObjects(sc.Text())
+		} else if er.cfg.ShouldSplitAsArray() {
+			lines = splitJSONArray(sc.Text())
 		}
 
 		for _, line := range lines {
@@ -130,5 +132,17 @@ func splitJSONObjects(data string) []string {
 		return []string{data}
 	}
 
+	return result
+}
+
+func splitJSONArray(data string) []string {
+	var raw []json.RawMessage
+	if err := json.Unmarshal([]byte(data), &raw); err != nil {
+		return []string{data}
+	}
+	result := make([]string, len(raw))
+	for i, r := range raw {
+		result[i] = string(r)
+	}
 	return result
 }

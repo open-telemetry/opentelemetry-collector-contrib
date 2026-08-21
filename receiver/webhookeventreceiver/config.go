@@ -30,6 +30,7 @@ type Config struct {
 	RequiredHeader             RequiredHeader           `mapstructure:"required_header"`               // optional setting to set a required header for all requests to have
 	SplitLogsAtNewLine         bool                     `mapstructure:"split_logs_at_newline"`         // optional setting to split logs into multiple log records
 	SplitLogsAtJSONBoundary    bool                     `mapstructure:"split_logs_at_json_boundary"`   // optional setting to split logs at JSON object boundaries
+	SplitAsArray               bool                     `mapstructure:"split_as_array"`                // optional setting to split a JSON array into multiple log records
 	ConvertHeadersToAttributes bool                     `mapstructure:"convert_headers_to_attributes"` // optional to convert all headers to attributes
 	HeaderAttributeRegex       string                   `mapstructure:"header_attribute_regex"`        // optional to convert headers matching a regex to log attributes
 }
@@ -82,8 +83,18 @@ func (cfg *Config) Validate() error {
 		errs = multierr.Append(errs, errRequiredHeader)
 	}
 
-	if cfg.SplitLogsAtNewLine && cfg.SplitLogsAtJSONBoundary {
-		errs = multierr.Append(errs, errors.New("split_logs_at_new_line and split_logs_at_json_boundary cannot be enabled at the same time"))
+	splitCount := 0
+	if cfg.SplitLogsAtNewLine {
+		splitCount++
+	}
+	if cfg.SplitLogsAtJSONBoundary {
+		splitCount++
+	}
+	if cfg.SplitAsArray {
+		splitCount++
+	}
+	if splitCount > 1 {
+		errs = multierr.Append(errs, errors.New("only one of split_logs_at_newline, split_logs_at_json_boundary, or split_as_array can be enabled at a time"))
 	}
 
 	if cfg.HeaderAttributeRegex != "" {
@@ -99,4 +110,8 @@ func (cfg *Config) Validate() error {
 
 func (cfg *Config) ShouldSplitLogsAtJSONBoundary() bool {
 	return cfg.SplitLogsAtJSONBoundary
+}
+
+func (cfg *Config) ShouldSplitAsArray() bool {
+	return cfg.SplitAsArray
 }

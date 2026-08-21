@@ -485,6 +485,48 @@ func TestReqToLog(t *testing.T) {
 			},
 		},
 		{
+			desc: "JSON array split into individual log records",
+			sc: func() *bufio.Scanner {
+				reader := io.NopCloser(bytes.NewReader([]byte(`[{"@timestamp": "2026-08-20T10:00:00.000Z", "@version": "1", "message": "first log line", "host": "server1"},{"@timestamp": "2026-08-20T10:00:01.000Z", "@version": "1", "message": "second log line", "host": "server2"},{"@timestamp": "2026-08-20T10:00:02.000Z", "@version": "1", "message": "third log line", "host": "server1"}]`)))
+				return bufio.NewScanner(reader)
+			}(),
+			config: &Config{
+				Path:         defaultPath,
+				HealthPath:   defaultHealthPath,
+				ReadTimeout:  defaultReadTimeout,
+				WriteTimeout: defaultWriteTimeout,
+				SplitAsArray: true,
+			},
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, err error, _ receiver.Settings) {
+				require.NoError(t, err)
+				require.Equal(t, 3, reqLen)
+
+				processLogRecords(reqLog, func(lr plog.LogRecord) {
+					body := lr.Body().Str()
+					require.Contains(t, body, "@timestamp")
+					require.Contains(t, body, "message")
+				})
+			},
+		},
+		{
+			desc: "non-array JSON with split_as_array returns single log",
+			sc: func() *bufio.Scanner {
+				reader := io.NopCloser(bytes.NewReader([]byte(`{"message": "single object"}`)))
+				return bufio.NewScanner(reader)
+			}(),
+			config: &Config{
+				Path:         defaultPath,
+				HealthPath:   defaultHealthPath,
+				ReadTimeout:  defaultReadTimeout,
+				WriteTimeout: defaultWriteTimeout,
+				SplitAsArray: true,
+			},
+			tt: func(t *testing.T, _ plog.Logs, reqLen int, err error, _ receiver.Settings) {
+				require.NoError(t, err)
+				require.Equal(t, 1, reqLen)
+			},
+		},
+		{
 			desc: "request body with tiny MaxRequestBodySize uses default",
 			sc: func() *bufio.Scanner {
 				largePayload := make([]byte, 60*1024)
