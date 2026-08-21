@@ -221,6 +221,8 @@ func TestTransform(t *testing.T) {
 					Address: "192.168.1.100",
 				},
 			},
+			// TODO: SA1019: (k8s.io/api/core/v1.NodeSystemInfo).KubeProxyVersion is deprecated: KubeProxy Version reported by the node.
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50419
 			NodeInfo: corev1.NodeSystemInfo{
 				MachineID:               "24736a453e8f47a1ad2f9d95d31085f5",
 				SystemUUID:              "444005f7-e2e8-42fd-ab87-9f8496790a29",
@@ -229,7 +231,7 @@ func TestTransform(t *testing.T) {
 				OSImage:                 "Ubuntu 22.04.1 LTS",
 				ContainerRuntimeVersion: "containerd://1.6.9",
 				KubeletVersion:          "v1.25.3",
-				KubeProxyVersion:        "v1.25.3",
+				KubeProxyVersion:        "v1.25.3", //nolint:staticcheck
 				OperatingSystem:         "linux",
 				Architecture:            "amd64",
 			},
