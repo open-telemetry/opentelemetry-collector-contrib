@@ -339,6 +339,7 @@ func TestIntegrationLogScraper(t *testing.T) {
 			scraper := newMySQLScraper(
 				settings,
 				cfg,
+				nil,
 				newCache[int64](int(cfg.TopQueryCollection.MaxQuerySampleCount*2*2)),
 				sharedPlanCache,
 			)
@@ -459,6 +460,7 @@ func TestIntegrationLogScraper(t *testing.T) {
 			sampleScraper := newMySQLScraper(
 				settings,
 				cfg,
+				nil,
 				newCache[int64](1),
 				sharedPlanCache,
 			)
@@ -818,6 +820,7 @@ func TestIntegrationQuerySampleAttributes(t *testing.T) {
 			scraper := newMySQLScraper(
 				settings,
 				cfg,
+				nil,
 				newCache[int64](int(cfg.TopQueryCollection.MaxQuerySampleCount*2*2)),
 				sharedPlanCache,
 			)

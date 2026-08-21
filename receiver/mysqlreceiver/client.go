@@ -8,6 +8,7 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
+	"errors"
 	"fmt"
 	"net"
 	"regexp"
@@ -17,7 +18,7 @@ import (
 	"time"
 
 	// registers the mysql driver
-	"github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/hashicorp/go-version"
 	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"go.uber.org/zap"
@@ -132,7 +133,6 @@ type client interface {
 }
 
 type mySQLClient struct {
-	connStr                        string
 	client                         *sql.DB
 	statementEventsDigestTextLimit int
 	statementEventsLimit           int
@@ -324,63 +324,35 @@ type topQuery struct {
 
 var _ client = (*mySQLClient)(nil)
 
+func newMySQLClientFromDB(db *sql.DB, stmtEvents StatementEventsConfig) *mySQLClient {
+	return &mySQLClient{
+		client:                         db,
+		statementEventsDigestTextLimit: stmtEvents.DigestTextLimit,
+		statementEventsLimit:           stmtEvents.Limit,
+		statementEventsTimeLimit:       stmtEvents.TimeLimit,
+	}
+}
+
 func newMySQLClient(conf *Config) (client, error) {
-	tls, err := conf.TLS.LoadTLSConfig(context.Background())
+	f, err := newClientFactory(conf)
 	if err != nil {
 		return nil, err
 	}
-	tlsConfig := ""
-	if tls != nil {
-		err := mysql.RegisterTLSConfig("custom", tls)
-		if err != nil {
-			return nil, err
-		}
-		tlsConfig = "custom"
-	}
-
-	driverConf := mysql.Config{
-		User:                 conf.Username,
-		Passwd:               string(conf.Password),
-		Net:                  string(conf.AddrConfig.Transport),
-		Addr:                 conf.AddrConfig.Endpoint,
-		DBName:               conf.Database,
-		AllowNativePasswords: conf.AllowNativePasswords,
-		TLS:                  tls,
-		TLSConfig:            tlsConfig,
-	}
-	connStr := driverConf.FormatDSN()
-
-	return &mySQLClient{
-		connStr:                        connStr,
-		statementEventsDigestTextLimit: conf.StatementEvents.DigestTextLimit,
-		statementEventsLimit:           conf.StatementEvents.Limit,
-		statementEventsTimeLimit:       conf.StatementEvents.TimeLimit,
-	}, nil
+	return f.connect(context.Background())
 }
 
 func (c *mySQLClient) Connect() error {
-	clientDB, err := sql.Open("mysql", c.connStr)
-	if err != nil {
-		return fmt.Errorf("unable to connect to database: %w", err)
+	if c.client != nil {
+		c.populateDBVersion()
+		return nil
 	}
-	c.client = clientDB
+	return errors.New("mysql client has no database handle")
+}
 
-	// Version detection runs exactly once during Connect and is non-fatal.
-	// If the query fails (e.g. no database reachable at startup) or the
-	// version string cannot be parsed, dbVersion stays at its zero value,
-	// which selects the safe fallback template (MySQL <8 / MariaDB behavior)
-	// for the entire lifetime of this receiver instance. Any connection error
-	// encountered here will cause the receiver to operate with incorrect
-	// version information; it will not be retried.
-	//
-	// This is intentional: sql.Open is lazy and the component lifecycle test
-	// calls start() against 127.0.0.1:3306 with no live database. A hard
-	// failure here would break that test with no way to inject a mock client
-	// before Connect runs. Real connection errors surface on the first scrape.
+func (c *mySQLClient) populateDBVersion() {
 	if dbVer, verErr := c.fetchDBVersion(); verErr == nil {
 		c.dbVersion = dbVer
 	}
-	return nil
 }
 
 // fetchDBVersion queries the database for its version string and parses it
