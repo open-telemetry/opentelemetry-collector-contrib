@@ -126,7 +126,7 @@ func (fpp *filterProfileProcessor) processSkipExpression(ctx context.Context, pd
 		}
 		rp.ScopeProfiles().RemoveIf(func(sp pprofile.ScopeProfiles) bool {
 			sp.Profiles().RemoveIf(func(profile pprofile.Profile) bool {
-				tCtx := ottlprofile.NewTransformContext(rp, sp, profile, dic)
+				tCtx := ottlprofile.NewTransformContextPtr(rp, sp, profile, dic)
 				defer tCtx.Close()
 				skip, err := fpp.skipProfileExpr.Eval(ctx, tCtx)
 				if err != nil {

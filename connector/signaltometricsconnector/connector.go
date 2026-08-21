@@ -354,7 +354,7 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 					if !md.MatchAttributes(profileAttrs) {
 						continue
 					}
-					tCtx := ottlprofile.NewTransformContext(resourceProfile, scopeProfile, profile, profiles.Dictionary())
+					tCtx := ottlprofile.NewTransformContextPtr(resourceProfile, scopeProfile, profile, profiles.Dictionary())
 					resolvedAttrs, err := md.ResolveAttributes(ctx, tCtx)
 					if err != nil {
 						tCtx.Close()
