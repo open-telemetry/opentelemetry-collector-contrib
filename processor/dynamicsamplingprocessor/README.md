@@ -71,7 +71,9 @@ processors:
         sampler:
           type: dynamic_percentage
           goal_percentage: 5
-          fingerprint_attributes: ["http.method", "http.route"]
+          fingerprint_attributes:
+            - span.attributes["http.method"]
+            - span.attributes["http.route"]
           adjustment_interval: 15s
           weight: 0.5
 
@@ -80,7 +82,9 @@ processors:
         sampler:
           type: dynamic_percentage
           goal_percentage: 20
-          fingerprint_attributes: ["service.name", "http.status_code"]
+          fingerprint_attributes:
+            - resource.attributes["service.name"]
+            - span.attributes["http.status_code"]
 
     # Optional. OTTL boolean expression evaluated per span. When it returns true
     # for any span in the trace, the trace transitions from accumulation to the
@@ -127,7 +131,7 @@ Each rule's `name` must be unique. It is recorded on the decision metrics (the `
 > [!WARNING]
 > A rule with no conditions (a catch-all) placed before another rule consumes every trace and renders the later rules unreachable. The processor logs a warning at startup when it detects this configuration so it shows up in collector logs.
 
-Conditions are [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl) boolean expressions evaluated in the [`ottlspan`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan) context, which gives access to the span, its resource, and its instrumentation scope. Path expressions must be qualified with the context they refer to: `span.attributes["k"]`, `resource.attributes["k"]`, `span.status.code`, and so on. See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/LANGUAGE.md#boolean-expressions) for the full grammar (including `and`, `or`, and parentheses), and the [ottlspan paths reference](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspan/README.md) for the list of accessible fields.
+Conditions are [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl) boolean expressions evaluated in the [`ottlspan`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan) context, which gives access to the span, its resource, and its instrumentation scope. Path expressions should be qualified with the context they refer to (`span.attributes["k"]`, `resource.attributes["k"]`, `span.status.code`, and so on); unqualified paths are valid OTTL and resolve against the span context. We recommend qualifying every path, all examples in this README do, and it keeps conditions visually consistent with fingerprint selectors, which require a scope. See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/LANGUAGE.md#boolean-expressions) for the full grammar (including `and`, `or`, and parentheses), and the [ottlspan paths reference](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspan/README.md) for the list of accessible fields.
 
 The intended pattern is specific-conditions rules first, catch-all last:
 
@@ -142,7 +146,8 @@ rules:
     sampler:
       type: dynamic_percentage
       goal_percentage: 10
-      fingerprint_attributes: ["service.name"]
+      fingerprint_attributes:
+        - resource.attributes["service.name"]
 ```
 
 With the order above, error traces are always kept and every other trace is decided by `dynamic_percentage`. Flipping the order so `default` comes first would mean `default` swallows every trace (including errors) and `keep-errors` is never reached, which is what the startup warning flags.
@@ -214,7 +219,9 @@ Keep traces from either the checkout or the billing service, at a modest adaptiv
   sampler:
     type: dynamic_percentage
     goal_percentage: 25
-    fingerprint_attributes: ["service.name", "http.route"]
+    fingerprint_attributes:
+      - resource.attributes["service.name"]
+      - span.attributes["http.route"]
 ```
 
 Match on span name prefix using OTTL's `IsMatch` regex helper:
@@ -282,7 +289,9 @@ aggressively.
 sampler:
   type: dynamic_percentage
   goal_percentage: 10                     # target % across all keys
-  fingerprint_attributes: ["service.name", "http.status_code"]
+  fingerprint_attributes:
+    - resource.attributes["service.name"]
+    - span.attributes["http.status_code"]
   adjustment_interval: 15s                # how often the ema recalculates
   weight: 0.5                             # ema weighting factor in [0, 1); 0 or omitted = 0.5
   max_keys: 500                           # 0 = unlimited
@@ -296,7 +305,9 @@ Adjusts rates per key to hit a sustained volume budget in spans per second.
 sampler:
   type: dynamic_throughput
   goal_throughput: 100                    # target spans/sec across all keys
-  fingerprint_attributes: ["service.name", "http.status_code"]
+  fingerprint_attributes:
+    - resource.attributes["service.name"]
+    - span.attributes["http.status_code"]
   adjustment_interval: 15s
   weight: 0.5
   max_keys: 500
@@ -311,7 +322,9 @@ sampler:
   type: dynamic_throughput
   algorithm: windowed
   goal_throughput: 100
-  fingerprint_attributes: ["service.name", "http.status_code"]
+  fingerprint_attributes:
+    - resource.attributes["service.name"]
+    - span.attributes["http.status_code"]
   update_frequency: 1s                    # how often rates recalculate; 0 or omitted = 1s
   lookback_frequency: 30s                 # historical window; floored to a multiple of update_frequency
   max_keys: 500
@@ -321,7 +334,28 @@ sampler:
 
 The `fingerprint_attributes` field names the attributes that identify what kind of trace this is for sampling purposes. Each distinct fingerprint value gets its own adaptive sample rate, so choose attributes that classify traffic (route, status code, method, service) rather than identify individual requests (user IDs, request IDs, raw URLs), which would give every trace its own key and defeat the adaptation.
 
-The fingerprint for a trace is built by collecting distinct values of each named attribute, sorting and joining them with `,` within each attribute, then joining the attributes with the `•` separator. Values are collected from resource attributes and from every span of the trace, so the fingerprint reflects the whole trace rather than any single span: a trace whose spans carry several values for one attribute keys as the combination (e.g. `checkout,billing•/api`), which is worth knowing when debugging unexpectedly high key cardinality. Missing attributes are replaced with `<missing>`.
+Each entry is a scoped attribute selector of the form `<scope>.attributes["<name>"]`:
+
+| Scope | Reads from |
+|-------|------------|
+| `resource.` | each resource's attributes |
+| `scope.`    | each instrumentation scope's attributes |
+| `span.`     | every span's attributes |
+| `root.`     | the spans matching the configured `root_span_condition` |
+| `any.`      | the union of resource, instrumentation scope, and span attributes |
+
+The `resource.`, `scope.`, and `span.` prefixes match OTTL's span-context path names, so conditions and fingerprint entries share one spelling; `root.` and `any.` are trace-level scopes OTTL cannot express (fingerprints are built from the whole trace, while OTTL evaluates one span at a time). Note that fingerprint entries are selectors, not OTTL expressions. The two concepts have distinct jobs throughout the config: OTTL conditions appear wherever a single span is evaluated (`conditions`, `root_span_condition`), and selectors appear wherever a trace-level value is collected. Qualifying every path in conditions keeps the two styles identical in practice.
+
+```yaml
+fingerprint_attributes:
+  - resource.attributes["service.name"]
+  - span.attributes["http.route"]
+  - root.attributes["http.status_code"]
+```
+
+Every scope collects **all** distinct matching values, there is no first-match or precedence: `any.` is simply the widest search, and a value present at several origins appears once. The fingerprint for a trace is built by sorting the distinct values each selector matched and joining them with `,` within each entry, then joining the entries with the `•` separator. A trace whose spans carry several values for one selector keys as the combination (e.g. `checkout,billing•/api`), which is worth knowing when debugging unexpectedly high key cardinality. Selectors that match nothing are replaced with `<missing>`.
+
+Extraction cost scales with the scope: `resource.` and `scope.` are independent of trace size, while `span.`, `any.`, and `root.` walk every span of the trace at decision time. `root.` additionally evaluates the root-span condition per span, which is cheap for the default condition but costs an OTTL evaluation per span for custom ones.
 
 ## Worked examples
 
@@ -353,7 +387,9 @@ processors:
         sampler:
           type: dynamic_percentage
           goal_percentage: 10
-          fingerprint_attributes: ["service.name", "http.route"]
+          fingerprint_attributes:
+            - resource.attributes["service.name"]
+            - span.attributes["http.route"]
           adjustment_interval: 15s
           weight: 0.5
 ```
@@ -385,7 +421,8 @@ processors:
           type: dynamic_throughput
           algorithm: windowed
           goal_throughput: 1000
-          fingerprint_attributes: ["service.name"]
+          fingerprint_attributes:
+            - resource.attributes["service.name"]
           update_frequency: 1s
           lookback_frequency: 30s
 ```
@@ -535,7 +572,8 @@ processors:
         sampler:
           type: dynamic_percentage
           goal_percentage: 10
-          fingerprint_attributes: ["service.name"]
+          fingerprint_attributes:
+            - resource.attributes["service.name"]
 
 service:
   pipelines:
@@ -589,6 +627,7 @@ Future work on shared trace context across collector instances (tracked under "C
 | `otelcol_processor_dynamic_sampling_traces_dropped` | Counter  | `rule`   | Traces dropped, attributed to the rule that selected them.                  |
 | `otelcol_processor_dynamic_sampling_decision_sample_rate` | Histogram | `rule` | Distribution of effective sample rates produced per rule.                  |
 | `otelcol_processor_dynamic_sampling_decision_triggers` | Counter  | `trigger` | Number of trace decisions made, labelled by which event triggered them (`root_span`, `trace_timeout`, `eviction`, `shutdown`). |
+| `otelcol_processor_dynamic_sampling_fingerprint_duration` | Histogram | `rule` | Time spent extracting a rule's fingerprint per decision (microseconds). A relative signal for spotting expensive fingerprints, eg wide `any.` scopes on large traces. |
 | `otelcol_processor_dynamic_sampling_traces_evicted` | Counter  |          | Traces evicted from the buffer under pressure. Each still receives a decision per the eviction policy. |
 | `otelcol_processor_dynamic_sampling_incoming_tracestate_unparseable` | Counter |     | Spans whose incoming W3C tracestate could not be parsed while applying the sampling threshold. |
 | `otelcol_processor_dynamic_sampling_ottl_eval_errors` | Counter | `rule`  | OTTL condition evaluation errors, labelled by the rule the condition belongs to. |
@@ -609,6 +648,16 @@ Every span in a sampled trace is annotated with:
 | Attribute                                            | Type    | Example      | Description                                            |
 |------------------------------------------------------|---------|--------------|--------------------------------------------------------|
 | `otelcol.processor.dynamic_sampling.rule`            | string  | `keep-errors`| Name of the rule that selected this trace.             |
+| `otelcol.processor.dynamic_sampling.fingerprint`     | string  | `9f86d081884c7d65` | The matched rule's fingerprint, raw or hashed, when `record_fingerprint` is enabled. |
+
+### Recording the fingerprint
+
+`record_fingerprint` (default `none`) stamps the matched rule's fingerprint on every span of a kept trace, the same way the rule name is recorded:
+
+- `value` records the raw fingerprint (eg `checkout,billing•/api`). Long combination keys grow the sampled decision cache, which stores the recorded string for late spans.
+- `hash` records the first 8 bytes of the fingerprint's SHA-256 as 16 hex characters. The size is fixed and the hash is deterministic across instances and restarts, so grouping works fleet-wide. Verify a span's hash by recomputing it from the raw fingerprint, `echo -n '<fingerprint>' | sha256sum | cut -c1-16`.
+
+Hashing obfuscates values and fixes the attribute size. It does not protect guessable values, anyone who knows the attribute space can enumerate candidate fingerprints and hash them. Rules whose sampler has no `fingerprint_attributes` (`always_sample`, `probabilistic`) never produce the attribute, and enabling either mode adds one attribute write per span on kept traces.
 
 The sample rate is encoded in W3C TraceState as `ot=th:<hex>` per the OTel consistent probability sampling spec. The `spanmetrics` connector (`enable_metrics_sampling_method: true`) reads this field to produce correctly weighted R.E.D metrics from sampled data.
 
