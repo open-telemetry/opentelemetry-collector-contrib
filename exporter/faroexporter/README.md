@@ -50,7 +50,31 @@ exporters:
 
 The full list of settings exposed for this exporter are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml).
 
+## Getting Started
+
+The following settings are required:
+
+- `endpoint` (no default): URL to which the exporter is going to send Faro telemetry data. For example: `https://faro.example.com/collect`.
+
+To use TLS, specify `https://` as the protocol scheme in the URL passed to the `endpoint` property.
+See [Advanced Configuration](#advanced-configuration) for more TLS options.
+
+Example:
+
+```yaml
+exporters:
+  faro:
+    endpoint: "https://faro.example.com/collect"
+
+  faro/tlsnoverify:
+    endpoint: "https://faro.example.com/collect"
+    tls:
+      insecure_skip_verify: true
+```
+
 ## Propagating the `X-Faro-Session-Id` header
+
+If using the faro exporter component to send telemetry data to the Grafana Cloud Collector Endpoint for [Frontend Observability](https://grafana.com/products/cloud/frontend-observability/), make sure to propagate the `X-Faro-Session-Id` header.
 
 Grafana Cloud's Faro collector validates the session at the HTTP level and rejects requests that do
 not carry an `X-Faro-Session-Id` header (HTTP 400, `missing X-Faro-Session-Id header`). The Faro Web
@@ -112,28 +136,6 @@ Cloud [Process Faro telemetry][processfaro] documentation.
 [alloy]: https://grafana.com/docs/alloy/latest/
 [alloyauthheaders]: https://grafana.com/docs/alloy/latest/reference/components/otelcol/otelcol.auth.headers/
 [processfaro]: https://grafana.com/docs/grafana-cloud/observe-and-act/monitor-applications/frontend-observability/configure/process-faro-telemetry/
-
-## Getting Started
-
-The following settings are required:
-
-- `endpoint` (no default): URL to which the exporter is going to send Faro telemetry data. For example: `https://faro.example.com/collect`.
-
-To use TLS, specify `https://` as the protocol scheme in the URL passed to the `endpoint` property.
-See [Advanced Configuration](#advanced-configuration) for more TLS options.
-
-Example:
-
-```yaml
-exporters:
-  faro:
-    endpoint: "https://faro.example.com/collect"
-
-  faro/tlsnoverify:
-    endpoint: "https://faro.example.com/collect"
-    tls:
-      insecure_skip_verify: true
-```
 
 ## Advanced Configuration
 
