@@ -8,10 +8,10 @@ package googleclientauthextension // import "github.com/open-telemetry/opentelem
 import (
 	"context"
 
-	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension/internal/googleclientauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension/internal/metadata"
 )
 

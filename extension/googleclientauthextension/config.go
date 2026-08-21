@@ -6,7 +6,7 @@ package googleclientauthextension // import "github.com/open-telemetry/opentelem
 import (
 	"fmt"
 
-	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension/internal/googleclientauthextension"
 )
 
 // Config defines configuration for the Google client auth extension.
