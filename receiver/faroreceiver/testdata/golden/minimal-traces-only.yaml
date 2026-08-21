@@ -7,7 +7,7 @@ resourceSpans:
         - key: service.version
           value:
             stringValue: "1.0.0"
-        - key: deployment.environment
+        - key: deployment.environment.name
           value:
             stringValue: prod
         - key: telemetry.sdk.name
