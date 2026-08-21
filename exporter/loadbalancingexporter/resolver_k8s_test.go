@@ -364,6 +364,7 @@ func TestK8sResolveEndpointReadyTransition(t *testing.T) {
 	require.NoError(t, cErr, "timed out waiting for initial resolver endpoints")
 
 	// (b) true -> false removes the endpoint from the resolved set.
+	prevChangeCount := changeCount.Load()
 	exist := endpointSlice.DeepCopy()
 	updated := endpointSlice.DeepCopy()
 	updated.Endpoints[2].Conditions.Ready = &notReady
@@ -382,8 +383,7 @@ func TestK8sResolveEndpointReadyTransition(t *testing.T) {
 		return slices.Equal(expectAfterRemoval, res.Endpoints()), nil
 	})
 	require.NoError(t, cErr, "timed out waiting for the not-ready endpoint to be removed")
-	assert.Positive(t, changeCount.Load(), "callback should have fired when an endpoint went not-ready")
-
+	require.Greater(t, changeCount.Load(), prevChangeCount, "callback should have fired when an endpoint went not-ready")
 	// (c) false -> true adds the endpoint back.
 	exist = updated
 	updated = updated.DeepCopy()
