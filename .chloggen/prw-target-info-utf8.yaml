@@ -1,6 +1,6 @@
 change_type: bug_fix
 component: pkg/translator/prometheusremotewrite
 note: Fix target_info metric label name translation in PRW exporter to respect UTF-8 / NoTranslation settings.
-issues: [0]
+issues: [50435]
 subtext:
 change_logs: [user]
