@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/otel/trace"
@@ -62,11 +63,18 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlPreparedStatements.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlCommands.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlFileOpen.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbDataFileIo.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbOperationPending.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableOpen.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlThreadSlowLaunch.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRowLockWaitCount.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRowLockWaitDurationAvg.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRowLockWaitDurationMax.Enabled = true
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaSQLDelay.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTimeBehindSource.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaThreadRunning.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTableOpen.Enabled = true
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlConnectionCount.Enabled = true
 
@@ -171,6 +179,157 @@ func TestScrape(t *testing.T) {
 		// and the other failure comes from a row that fails to parse as a number
 		require.Equal(t, 5, partialError.Failed, "Expected partial error count to be 5")
 	})
+}
+
+func TestReplicaThreadRunningValue(t *testing.T) {
+	tests := []struct {
+		status string
+		want   int64
+	}{
+		{status: "Yes", want: 1},
+		{status: "yes", want: 1},
+		{status: "YES", want: 1},
+		{status: "No", want: 0},
+		{status: "Connecting", want: 0},
+		{status: "", want: 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.status, func(t *testing.T) {
+			assert.Equal(t, tt.want, replicaThreadRunningValue(tt.status))
+		})
+	}
+}
+
+func TestScrapeReplicaThreadRunningRecordsRowsByChannel(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaThreadRunning.Enabled = true
+
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	scraper.sqlclient = &mockClient{
+		replicaStatusStats: []replicaStatusStats{
+			{replicaIORunning: "Yes", replicaSQLRunning: "Yes", channelName: "source_a"},
+			{replicaIORunning: "No", replicaSQLRunning: "Yes", channelName: "source_b"},
+		},
+	}
+
+	scraper.scrapeReplicaStatusStats(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
+
+	got := replicaThreadRunningDataPoints(t, scraper.mb.Emit())
+	assert.Equal(t, []replicaThreadRunningDataPoint{
+		{threadType: "io", channel: "source_a", value: 1},
+		{threadType: "sql", channel: "source_a", value: 1},
+		{threadType: "io", channel: "source_b", value: 0},
+		{threadType: "sql", channel: "source_b", value: 1},
+	}, got)
+}
+
+func TestScrapeGlobalStatsRecordsReplicaOpenTempTablesFromGlobalStatus(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTableOpen.Enabled = true
+
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	scraper.sqlclient = &mockClient{
+		globalStats: map[string]string{"Replica_open_temp_tables": "9"},
+	}
+
+	scraper.scrapeGlobalStats(pcommon.NewTimestampFromTime(time.Unix(0, 0)), &scrapererror.ScrapeErrors{})
+
+	assert.Equal(t, []int64{9}, replicaOpenTempTablesDataPoints(scraper.mb.Emit()))
+}
+
+func TestScrapeGlobalStatsRecordsReplicaOpenTempTablesFromLegacyGlobalStatusName(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTableOpen.Enabled = true
+
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	scraper.sqlclient = &mockClient{
+		globalStats: map[string]string{"Slave_open_temp_tables": "7"},
+	}
+
+	scraper.scrapeGlobalStats(pcommon.NewTimestampFromTime(time.Unix(0, 0)), &scrapererror.ScrapeErrors{})
+
+	assert.Equal(t, []int64{7}, replicaOpenTempTablesDataPoints(scraper.mb.Emit()))
+}
+
+func TestScrapeReplicaStatusDoesNotRecordReplicaOpenTempTables(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTableOpen.Enabled = true
+
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	scraper.sqlclient = &mockClient{
+		replicaStatusStats: []replicaStatusStats{{replicaIORunning: "Yes", replicaSQLRunning: "Yes"}},
+	}
+
+	scraper.scrapeReplicaStatusStats(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
+
+	assert.Empty(t, replicaOpenTempTablesDataPoints(scraper.mb.Emit()))
+}
+
+type replicaThreadRunningDataPoint struct {
+	threadType string
+	channel    string
+	value      int64
+}
+
+func replicaThreadRunningDataPoints(t *testing.T, metrics pmetric.Metrics) []replicaThreadRunningDataPoint {
+	t.Helper()
+
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		resourceMetrics := metrics.ResourceMetrics().At(i)
+		for j := 0; j < resourceMetrics.ScopeMetrics().Len(); j++ {
+			scopeMetrics := resourceMetrics.ScopeMetrics().At(j)
+			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
+				metric := scopeMetrics.Metrics().At(k)
+				if metric.Name() != "mysql.replica.thread.running" {
+					continue
+				}
+
+				dataPoints := metric.Gauge().DataPoints()
+				got := make([]replicaThreadRunningDataPoint, 0, dataPoints.Len())
+				for dpIndex := 0; dpIndex < dataPoints.Len(); dpIndex++ {
+					dp := dataPoints.At(dpIndex)
+					threadType, ok := dp.Attributes().Get("mysql.replica.thread.type")
+					require.True(t, ok)
+					channel, ok := dp.Attributes().Get("mysql.replica.channel.name")
+					require.True(t, ok)
+					got = append(got, replicaThreadRunningDataPoint{
+						threadType: threadType.Str(),
+						channel:    channel.Str(),
+						value:      dp.IntValue(),
+					})
+				}
+				return got
+			}
+		}
+	}
+
+	require.Fail(t, "mysql.replica.thread.running metric not found")
+	return nil
+}
+
+func replicaOpenTempTablesDataPoints(metrics pmetric.Metrics) []int64 {
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		resourceMetrics := metrics.ResourceMetrics().At(i)
+		for j := 0; j < resourceMetrics.ScopeMetrics().Len(); j++ {
+			scopeMetrics := resourceMetrics.ScopeMetrics().At(j)
+			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
+				metric := scopeMetrics.Metrics().At(k)
+				if metric.Name() != "mysql.replica.temp_table.open" {
+					continue
+				}
+
+				dataPoints := metric.Gauge().DataPoints()
+				got := make([]int64, 0, dataPoints.Len())
+				for dpIndex := 0; dpIndex < dataPoints.Len(); dpIndex++ {
+					got = append(got, dataPoints.At(dpIndex).IntValue())
+				}
+				return got
+			}
+		}
+	}
+
+	return nil
 }
 
 func TestScrapeBufferPoolPagesMiscOutOfBounds(t *testing.T) {
@@ -468,6 +627,7 @@ type explainQueryCall struct {
 }
 
 type mockClient struct {
+	globalStats                 map[string]string
 	globalStatsFile             string
 	innodbStatsFile             string
 	tableIoWaitsFile            string
@@ -476,6 +636,7 @@ type mockClient struct {
 	statementEventsFile         string
 	tableLockWaitEventStatsFile string
 	replicaStatusFile           string
+	replicaStatusStats          []replicaStatusStats
 	querySamplesFile            string
 	topQueriesFile              string
 	// dbVersionOverride allows tests to simulate MySQL <8 or MariaDB.
@@ -538,6 +699,9 @@ func (c *mockClient) getDBVersion() dbVersion {
 }
 
 func (c *mockClient) getGlobalStats() (map[string]string, error) {
+	if c.globalStats != nil {
+		return c.globalStats, nil
+	}
 	return readFile(c.globalStatsFile)
 }
 
@@ -703,6 +867,10 @@ func (c *mockClient) getTableLockWaitEventStats() ([]tableLockWaitEventStats, er
 }
 
 func (c *mockClient) getReplicaStatusStats(_ bool) ([]replicaStatusStats, error) {
+	if c.replicaStatusStats != nil {
+		return c.replicaStatusStats, nil
+	}
+
 	var stats []replicaStatusStats
 	file, err := os.Open(filepath.Join("testdata", "scraper", c.replicaStatusFile+".txt"))
 	if err != nil {

@@ -153,7 +153,8 @@ type metricAssertion struct {
 
 type datapointAssertion struct {
 	Attributes     map[string]any `yaml:"attributes,omitempty"`
-	Value          any            `yaml:"value,omitempty"`
+	IntValue       *int64         `yaml:"int_value,omitempty"`
+	DoubleValue    *float64       `yaml:"double_value,omitempty"`
 	Count          *uint64        `yaml:"count,omitempty"`
 	Sum            *float64       `yaml:"sum,omitempty"`
 	ExplicitBounds *[]float64     `yaml:"explicit_bounds,omitempty"`
@@ -231,7 +232,8 @@ func compactShorthand(doc *document) {
 
 func isEmptyDatapointAssertion(dp datapointAssertion) bool {
 	return len(dp.Attributes) == 0 &&
-		dp.Value == nil &&
+		dp.IntValue == nil &&
+		dp.DoubleValue == nil &&
 		dp.Count == nil &&
 		dp.Sum == nil &&
 		dp.ExplicitBounds == nil &&
