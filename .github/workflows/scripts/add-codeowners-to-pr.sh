@@ -41,15 +41,21 @@ request_review () {
     fi
 }
 
+# Helper files pull in "testing" without being named *_test.go. Match the import
+# whether it is grouped, single-line, or aliased.
+imports_testing () {
+    grep -qE '^[[:space:]]*(import[[:space:]]+)?([A-Za-z0-9_.]+[[:space:]]+)?"testing"$' "$1"
+}
+
 # A component "targets" a platform if it ships non-test source constrained to
 # that platform. Go expresses this two ways and both must be handled:
-#   * implicitly, via the filename suffix (foo_windows.go, foo_windows_amd64.go)
-#     with no directive present at all;
-#   * explicitly, via //go:build -- where the platform may appear inside a
-#     compound expression ("darwin || freebsd"), and where a negated mention
-#     ("!windows") means the opposite and must not count.
-# Files importing "testing" are helpers (some are not named *_test.go) and don't
-# imply the component needs platform CI.
+#   * implicitly, via the name_GOOS.go filename suffix. A name_GOOS_GOARCH.go
+#     file is deliberately NOT matched here: validating GOARCH would mean
+#     hardcoding Go's architecture list, and every such file in this repo also
+#     carries an explicit //go:build line, so the second loop catches it.
+#   * explicitly, via //go:build, where the platform may sit inside a compound
+#     expression ("darwin || freebsd") and where negation -- either a bare
+#     "!windows" or a negated group "!(windows && arm64)" -- must not count.
 # Derived at runtime so the set cannot drift as components are added or removed.
 component_targets_platform () {
     local dir="$1" plat="$2" file line expr
@@ -57,18 +63,18 @@ component_targets_platform () {
 
     while IFS= read -r file; do
         [[ "${file}" == *_test.go ]] && continue
-        grep -q '^[[:space:]]*"testing"' "${file}" && continue
-        return 0
-    done < <(find "${dir}" -type f \( -name "*_${plat}.go" -o -name "*_${plat}_*.go" \) 2>/dev/null)
+        imports_testing "${file}" && continue
+        [[ "$(basename "${file}" .go)" == *_"${plat}" ]] && return 0
+    done < <(find "${dir}" -type f -name "*_${plat}.go" 2>/dev/null)
 
     while IFS= read -r file; do
         [[ "${file}" == *_test.go ]] && continue
-        grep -q '^[[:space:]]*"testing"' "${file}" && continue
+        imports_testing "${file}" && continue
         line=$(grep -m1 '^//go:build ' "${file}") || continue
-        # Drop negated mentions, reduce operators to spaces, then look for the
-        # platform as a standalone token.
+        # Remove negated groups first, then bare negations, then reduce the
+        # remaining operators to spaces and look for the platform as a token.
         expr=" $(printf '%s' "${line#//go:build }" \
-            | sed -E "s/![[:space:]]*${plat}//g; s/[^a-zA-Z0-9_]/ /g") "
+            | sed -E "s/![[:space:]]*\\([^)]*\\)//g; s/![[:space:]]*${plat}//g; s/[^a-zA-Z0-9_]/ /g") "
         [[ "${expr}" == *" ${plat} "* ]] && return 0
     done < <(grep -rl --include='*.go' "^//go:build .*${plat}" "${dir}" 2>/dev/null)
 
