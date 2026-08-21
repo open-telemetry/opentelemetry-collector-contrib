@@ -138,5 +138,6 @@ func pathExpressionParser(cacheGetter ctxcache.Getter[*TransformContext]) ottl.P
 		cacheGetter,
 		map[string]ottl.PathExpressionParser[*TransformContext]{
 			ctxotelcol.Name: ctxotelcol.PathGetSetter[*TransformContext],
-		})
+		},
+	)
 }

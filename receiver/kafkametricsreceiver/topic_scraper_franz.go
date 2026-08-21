@@ -80,12 +80,15 @@ func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error)
 	scrapeErrs := scrapererror.ScrapeErrors{}
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	// 1) list topics (with metadata details)
-	td, err := s.adm.ListTopics(ctx)
+	// Metadata returns the topic list and cluster ID in one response. FilterInternal
+	// (below) reproduces ListTopics, which drops internal topics when none are named.
+	meta, err := s.adm.Metadata(ctx)
 	if err != nil {
-		s.settings.Logger.Error("franz-go: ListTopics failed", zap.Error(err))
-		return pmetric.Metrics{}, fmt.Errorf("franz-go: ListTopics failed: %w", err)
+		s.settings.Logger.Error("franz-go: Metadata failed", zap.Error(err))
+		return pmetric.Metrics{}, fmt.Errorf("franz-go: Metadata failed: %w", err)
 	}
+	td := meta.Topics
+	td.FilterInternal()
 
 	// filter topic names first
 	var matched []string
@@ -106,12 +109,12 @@ func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error)
 	}
 
 	// 3) per-topic configs & replication factor
-	if s.config.Metrics.KafkaTopicLogRetentionPeriod.Enabled ||
-		s.config.Metrics.KafkaTopicLogRetentionSize.Enabled ||
-		s.config.Metrics.KafkaTopicMinInsyncReplicas.Enabled ||
-		s.config.Metrics.KafkaTopicReplicationFactor.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.KafkaTopicLogRetentionPeriod.Enabled ||
+		s.config.MetricsBuilderConfig.Metrics.KafkaTopicLogRetentionSize.Enabled ||
+		s.config.MetricsBuilderConfig.Metrics.KafkaTopicMinInsyncReplicas.Enabled ||
+		s.config.MetricsBuilderConfig.Metrics.KafkaTopicReplicationFactor.Enabled {
 		// replication factor: derive from first partition's replica count
-		if s.config.Metrics.KafkaTopicReplicationFactor.Enabled {
+		if s.config.MetricsBuilderConfig.Metrics.KafkaTopicReplicationFactor.Enabled {
 			for _, topic := range matched {
 				if det, ok := td[topic]; ok {
 					var rf int
@@ -140,7 +143,7 @@ func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error)
 				for _, kv := range rc.Configs {
 					switch kv.Key {
 					case minInsyncReplicas:
-						if s.config.Metrics.KafkaTopicMinInsyncReplicas.Enabled {
+						if s.config.MetricsBuilderConfig.Metrics.KafkaTopicMinInsyncReplicas.Enabled {
 							if v, err := strconv.Atoi(kv.MaybeValue()); err == nil {
 								s.mb.RecordKafkaTopicMinInsyncReplicasDataPoint(now, int64(v), topic)
 							} else {
@@ -148,7 +151,7 @@ func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error)
 							}
 						}
 					case retentionMs:
-						if s.config.Metrics.KafkaTopicLogRetentionPeriod.Enabled {
+						if s.config.MetricsBuilderConfig.Metrics.KafkaTopicLogRetentionPeriod.Enabled {
 							if v, err := strconv.Atoi(kv.MaybeValue()); err == nil {
 								// seconds = ms / 1000
 								s.mb.RecordKafkaTopicLogRetentionPeriodDataPoint(now, int64(v/1000), topic)
@@ -157,7 +160,7 @@ func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error)
 							}
 						}
 					case retentionBytes:
-						if s.config.Metrics.KafkaTopicLogRetentionSize.Enabled {
+						if s.config.MetricsBuilderConfig.Metrics.KafkaTopicLogRetentionSize.Enabled {
 							if v, err := strconv.Atoi(kv.MaybeValue()); err == nil {
 								s.mb.RecordKafkaTopicLogRetentionSizeDataPoint(now, int64(v), topic)
 							} else {
@@ -184,11 +187,11 @@ func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error)
 			pd := det.Partitions[pid]
 
 			// replicas
-			if s.config.Metrics.KafkaPartitionReplicas.Enabled {
+			if s.config.MetricsBuilderConfig.Metrics.KafkaPartitionReplicas.Enabled {
 				s.mb.RecordKafkaPartitionReplicasDataPoint(now, int64(len(pd.Replicas)), topic, int64(pid))
 			}
 			// in-sync replicas
-			if s.config.Metrics.KafkaPartitionReplicasInSync.Enabled {
+			if s.config.MetricsBuilderConfig.Metrics.KafkaPartitionReplicasInSync.Enabled {
 				s.mb.RecordKafkaPartitionReplicasInSyncDataPoint(now, int64(len(pd.ISR)), topic, int64(pid))
 			}
 
@@ -209,6 +212,9 @@ func (s *topicScraperFranz) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	rb := s.mb.NewResourceBuilder()
 	rb.SetKafkaClusterAlias(s.config.ClusterAlias)
+	if meta.Cluster != "" { // reuse cluster ID from metadata above; skip empty IDs
+		rb.SetKafkaClusterID(meta.Cluster)
+	}
 	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrs.Combine()
 }
 

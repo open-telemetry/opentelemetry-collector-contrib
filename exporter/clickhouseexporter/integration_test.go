@@ -33,7 +33,8 @@ func getContainer(req testcontainers.ContainerRequest) (testcontainers.Container
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
 			Started:          true,
-		})
+		},
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to configure container: %w", err)
 	}
@@ -247,7 +248,7 @@ func testIntegrationWithImage(t *testing.T, clickhouseImage string) {
 			t.Fatal(err)
 		}
 
-		db, err := internal.NewClickhouseClientFromOptions(opt)
+		db, err := internal.NewClickhouseClientFromOptions(opt, true)
 		if err != nil {
 			t.Fatal(err)
 		}

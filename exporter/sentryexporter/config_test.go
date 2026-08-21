@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter/internal/metadata"
 )
@@ -64,8 +64,8 @@ func TestLoadConfig(t *testing.T) {
 				cfg.URL = "https://sentry.example.com"
 				cfg.OrgSlug = "example-org"
 				cfg.AuthToken = configopaque.String("full-test-token")
-				cfg.Timeout = 20 * time.Second
-				cfg.TLS.Insecure = true
+				cfg.ClientConfig.Timeout = 20 * time.Second
+				cfg.ClientConfig.TLS.Insecure = true
 				cfg.TimeoutConfig.Timeout = 45 * time.Second
 				cfg.AutoCreateProjects = true
 				cfg.Routing = RoutingConfig{
@@ -89,7 +89,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

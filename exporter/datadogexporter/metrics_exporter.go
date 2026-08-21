@@ -86,6 +86,10 @@ func newMetricsExporter(
 		options = append(options, otlpmetrics.WithInferDeltaInterval())
 	}
 
+	if featuregates.AddUnitsFeatureGate.IsEnabled() {
+		options = append(options, otlpmetrics.WithUnits())
+	}
+
 	tr, err := otlpmetrics.NewDefaultTranslator(params.TelemetrySettings, attrsTranslator, options...)
 	if err != nil {
 		return nil, err
@@ -110,7 +114,8 @@ func newMetricsExporter(
 	apiClient := clientutil.CreateAPIClient(
 		params.BuildInfo,
 		cfg.Metrics.Endpoint,
-		cfg.ClientConfig)
+		cfg.ClientConfig,
+	)
 	go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 	exporter.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	if cfg.API.FailOnInvalidKey {

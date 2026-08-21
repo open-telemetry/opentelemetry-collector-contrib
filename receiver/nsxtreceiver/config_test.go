@@ -113,11 +113,11 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Endpoint = "https://nsx-manager-endpoint"
+	expected.ClientConfig.Endpoint = "https://nsx-manager-endpoint"
 	expected.Username = "admin"
 	expected.Password = "${env:NSXT_PASSWORD}"
-	expected.TLS.Insecure = true
-	expected.CollectionInterval = time.Minute
+	expected.ClientConfig.TLS.Insecure = true
+	expected.ControllerConfig.CollectionInterval = time.Minute
 
 	require.Equal(t, expected, cfg)
 }
