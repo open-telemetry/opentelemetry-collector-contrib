@@ -517,7 +517,7 @@ func TestBearerStartWithRetryOnFailure(t *testing.T) {
 	cfg.Filename = tokenPath
 	cfg.RetryOnFailure = credentialsfile.RetryOnFailureConfig{
 		Enabled:    true,
-		MaxRetries: 20,
+		MaxRetries: 0, // indefinitely
 		Interval:   100 * time.Millisecond,
 	}
 
