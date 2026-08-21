@@ -78,6 +78,60 @@ func newEventDbServerQuerySample(cfg EventConfig) eventDbServerQuerySample {
 	return e
 }
 
+type eventDbServerTopQuery struct {
+	data   plog.LogRecordSlice // data buffer for generated log records.
+	config EventConfig         // event config provided by user.
+}
+
+func (e *eventDbServerTopQuery) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbCollectionNameAttributeValue string, dbNamespaceAttributeValue string, dbOperationNameAttributeValue string, dbQueryTextAttributeValue string, dbSystemNameAttributeValue string, mongodbCursorIDAttributeValue string, mongodbCursorOriginatingCommandAttributeValue string, mongodbExplainPlanHashAttributeValue string, mongodbExplainPlanTextAttributeValue string, mongodbOperationCommentAttributeValue []any, mongodbOperationCPUTimeAttributeValue float64, mongodbOperationDocsExaminedAttributeValue int64, mongodbOperationDocsReturnedAttributeValue int64, mongodbOperationDurationAttributeValue float64, mongodbOperationKeysExaminedAttributeValue int64, mongodbOperationPlanSummaryAttributeValue string, mongodbOperationResponseLengthAttributeValue int64, mongodbOperationTypeAttributeValue string, mongodbQueryTruncatedAttributeValue bool) {
+	if !e.config.Enabled {
+		return
+	}
+	dp := e.data.AppendEmpty()
+	dp.SetEventName("db.server.top_query")
+	dp.SetTimestamp(timestamp)
+
+	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
+		dp.SetTraceID(pcommon.TraceID(span.TraceID()))
+		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
+	}
+	dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	dp.Attributes().PutStr("db.operation.name", dbOperationNameAttributeValue)
+	dp.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
+	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
+	dp.Attributes().PutStr("mongodb.cursor.id", mongodbCursorIDAttributeValue)
+	dp.Attributes().PutStr("mongodb.cursor.originating_command", mongodbCursorOriginatingCommandAttributeValue)
+	dp.Attributes().PutStr("mongodb.explain_plan.hash", mongodbExplainPlanHashAttributeValue)
+	dp.Attributes().PutStr("mongodb.explain_plan.text", mongodbExplainPlanTextAttributeValue)
+	dp.Attributes().PutEmptySlice("mongodb.operation.comment").FromRaw(mongodbOperationCommentAttributeValue)
+	dp.Attributes().PutDouble("mongodb.operation.cpu.time", mongodbOperationCPUTimeAttributeValue)
+	dp.Attributes().PutInt("mongodb.operation.docs_examined", mongodbOperationDocsExaminedAttributeValue)
+	dp.Attributes().PutInt("mongodb.operation.docs_returned", mongodbOperationDocsReturnedAttributeValue)
+	dp.Attributes().PutDouble("mongodb.operation.duration", mongodbOperationDurationAttributeValue)
+	dp.Attributes().PutInt("mongodb.operation.keys_examined", mongodbOperationKeysExaminedAttributeValue)
+	dp.Attributes().PutStr("mongodb.operation.plan.summary", mongodbOperationPlanSummaryAttributeValue)
+	dp.Attributes().PutInt("mongodb.operation.response_length", mongodbOperationResponseLengthAttributeValue)
+	dp.Attributes().PutStr("mongodb.operation.type", mongodbOperationTypeAttributeValue)
+	dp.Attributes().PutBool("mongodb.query.truncated", mongodbQueryTruncatedAttributeValue)
+
+}
+
+// emit appends recorded event data to a events slice and prepares it for recording another set of log records.
+func (e *eventDbServerTopQuery) emit(lrs plog.LogRecordSlice) {
+	if e.config.Enabled && e.data.Len() > 0 {
+		e.data.MoveAndAppendTo(lrs)
+	}
+}
+
+func newEventDbServerTopQuery(cfg EventConfig) eventDbServerTopQuery {
+	e := eventDbServerTopQuery{config: cfg}
+	if cfg.Enabled {
+		e.data = plog.NewLogRecordSlice()
+	}
+	return e
+}
+
 // LogsBuilder provides an interface for scrapers to report logs while taking care of all the transformations
 // required to produce log representation defined in metadata and user config.
 type LogsBuilder struct {
@@ -88,6 +142,7 @@ type LogsBuilder struct {
 	resourceAttributeIncludeFilter map[string]filter.Filter
 	resourceAttributeExcludeFilter map[string]filter.Filter
 	eventDbServerQuerySample       eventDbServerQuerySample
+	eventDbServerTopQuery          eventDbServerTopQuery
 }
 
 // LogBuilderOption applies changes to default logs builder.
@@ -102,6 +157,7 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 		logRecordsBuffer:               plog.NewLogRecordSlice(),
 		buildInfo:                      settings.BuildInfo,
 		eventDbServerQuerySample:       newEventDbServerQuerySample(lbc.Events.DbServerQuerySample),
+		eventDbServerTopQuery:          newEventDbServerTopQuery(lbc.Events.DbServerTopQuery),
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
@@ -122,6 +178,18 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	}
 	if lbc.ResourceAttributes.ServiceInstanceID.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["service.instance.id"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceInstanceID.EventsExclude)
+	}
+	if lbc.ResourceAttributes.ServiceName.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["service.name"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceName.EventsInclude)
+	}
+	if lbc.ResourceAttributes.ServiceName.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["service.name"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceName.EventsExclude)
+	}
+	if lbc.ResourceAttributes.ServiceNamespace.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["service.namespace"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceNamespace.EventsInclude)
+	}
+	if lbc.ResourceAttributes.ServiceNamespace.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["service.namespace"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceNamespace.EventsExclude)
 	}
 
 	return lb
@@ -167,6 +235,7 @@ func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(lb.buildInfo.Version)
 	lb.eventDbServerQuerySample.emit(ils.LogRecords())
+	lb.eventDbServerTopQuery.emit(ils.LogRecords())
 
 	for _, op := range options {
 		op.apply(rl)
@@ -206,4 +275,9 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 // RecordDbServerQuerySampleEvent adds a log record of db.server.query_sample event.
 func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, timestamp pcommon.Timestamp, clientAddressAttributeValue string, clientPortAttributeValue int64, dbSystemNameAttributeValue AttributeDbSystemName, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string, dbOperationNameAttributeValue string, dbQueryTextAttributeValue string, mongodbQueryTruncatedAttributeValue bool, userNameAttributeValue string, mongodbClientAppNameAttributeValue string, mongodbCursorAwaitDataAttributeValue bool, mongodbCursorIDAttributeValue string, mongodbCursorNoTimeoutAttributeValue bool, mongodbCursorOriginatingCommandAttributeValue string, mongodbCursorReturnedBatchesAttributeValue int64, mongodbCursorReturnedDocumentsAttributeValue int64, mongodbCursorTailableAttributeValue bool, mongodbLsidIDAttributeValue string, mongodbOperationIDAttributeValue string, mongodbOperationPlanSummaryAttributeValue string, mongodbQueryFrameworkAttributeValue string, mongodbOperationStateAttributeValue AttributeMongodbOperationState, mongodbOperationTypeAttributeValue string, mongodbOperationCommentAttributeValue []any, mongodbOperationDurationAttributeValue float64, mongodbOperationPreparedReadConflictCountAttributeValue int64, mongodbOperationWriteConflictCountAttributeValue int64, mongodbOperationYieldCountAttributeValue int64, mongodbOperationWaitTypeAttributeValue []any, mongodbOperationWaitDetailsAttributeValue string) {
 	lb.eventDbServerQuerySample.recordEvent(ctx, timestamp, clientAddressAttributeValue, clientPortAttributeValue, dbSystemNameAttributeValue.String(), dbNamespaceAttributeValue, dbCollectionNameAttributeValue, dbOperationNameAttributeValue, dbQueryTextAttributeValue, mongodbQueryTruncatedAttributeValue, userNameAttributeValue, mongodbClientAppNameAttributeValue, mongodbCursorAwaitDataAttributeValue, mongodbCursorIDAttributeValue, mongodbCursorNoTimeoutAttributeValue, mongodbCursorOriginatingCommandAttributeValue, mongodbCursorReturnedBatchesAttributeValue, mongodbCursorReturnedDocumentsAttributeValue, mongodbCursorTailableAttributeValue, mongodbLsidIDAttributeValue, mongodbOperationIDAttributeValue, mongodbOperationPlanSummaryAttributeValue, mongodbQueryFrameworkAttributeValue, mongodbOperationStateAttributeValue.String(), mongodbOperationTypeAttributeValue, mongodbOperationCommentAttributeValue, mongodbOperationDurationAttributeValue, mongodbOperationPreparedReadConflictCountAttributeValue, mongodbOperationWriteConflictCountAttributeValue, mongodbOperationYieldCountAttributeValue, mongodbOperationWaitTypeAttributeValue, mongodbOperationWaitDetailsAttributeValue)
+}
+
+// RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.
+func (lb *LogsBuilder) RecordDbServerTopQueryEvent(ctx context.Context, timestamp pcommon.Timestamp, dbCollectionNameAttributeValue string, dbNamespaceAttributeValue string, dbOperationNameAttributeValue string, dbQueryTextAttributeValue string, dbSystemNameAttributeValue AttributeDbSystemName, mongodbCursorIDAttributeValue string, mongodbCursorOriginatingCommandAttributeValue string, mongodbExplainPlanHashAttributeValue string, mongodbExplainPlanTextAttributeValue string, mongodbOperationCommentAttributeValue []any, mongodbOperationCPUTimeAttributeValue float64, mongodbOperationDocsExaminedAttributeValue int64, mongodbOperationDocsReturnedAttributeValue int64, mongodbOperationDurationAttributeValue float64, mongodbOperationKeysExaminedAttributeValue int64, mongodbOperationPlanSummaryAttributeValue string, mongodbOperationResponseLengthAttributeValue int64, mongodbOperationTypeAttributeValue string, mongodbQueryTruncatedAttributeValue bool) {
+	lb.eventDbServerTopQuery.recordEvent(ctx, timestamp, dbCollectionNameAttributeValue, dbNamespaceAttributeValue, dbOperationNameAttributeValue, dbQueryTextAttributeValue, dbSystemNameAttributeValue.String(), mongodbCursorIDAttributeValue, mongodbCursorOriginatingCommandAttributeValue, mongodbExplainPlanHashAttributeValue, mongodbExplainPlanTextAttributeValue, mongodbOperationCommentAttributeValue, mongodbOperationCPUTimeAttributeValue, mongodbOperationDocsExaminedAttributeValue, mongodbOperationDocsReturnedAttributeValue, mongodbOperationDurationAttributeValue, mongodbOperationKeysExaminedAttributeValue, mongodbOperationPlanSummaryAttributeValue, mongodbOperationResponseLengthAttributeValue, mongodbOperationTypeAttributeValue, mongodbQueryTruncatedAttributeValue)
 }

@@ -24,6 +24,11 @@ const (
 	TypeCount string = "count"
 )
 
+// Mirrors the unexported deltaSumRateAttributeKey in datadog-agent's
+// opentelemetry-mapping-go, which the Datadog exporter reads to map a delta Sum
+// back to a Datadog rate.
+const datadogMetricAsTypeKey = "datadog.metric.as_type"
+
 type SeriesList struct {
 	Series []datadogV1.Series `json:"series"`
 }
@@ -98,14 +103,15 @@ func (mt *MetricsTranslator) TranslateSeriesV1(series SeriesList) pmetric.Metric
 
 			dp = dps.AppendEmpty()
 			dp.SetTimestamp(pcommon.Timestamp(ts * time.Second.Nanoseconds())) // OTel uses nanoseconds, while Datadog uses seconds
+			dimensions.dpAttrs.CopyTo(dp.Attributes())
 
 			if *serie.Type == TypeRate {
+				dp.Attributes().PutStr(datadogMetricAsTypeKey, TypeRate)
 				if serie.Interval.IsSet() {
 					value *= float64(serie.GetInterval())
 				}
 			}
 			dp.SetDoubleValue(value)
-			dimensions.dpAttrs.CopyTo(dp.Attributes())
 
 			stream := identity.OfStream(metricID, dp)
 			if startTs, ok := mt.trackStreamTimestamp(stream, dp.Timestamp()); ok {
@@ -157,8 +163,11 @@ func (mt *MetricsTranslator) TranslateSeriesV2(series []*gogen.MetricPayload_Met
 			dp.SetTimestamp(pcommon.Timestamp(point.Timestamp * time.Second.Nanoseconds())) // OTel uses nanoseconds, while Datadog uses seconds
 			dimensions.dpAttrs.CopyTo(dp.Attributes())                                      // TODO(jesus.vazquez) Review this copy
 			val := point.Value
-			if serie.Type == gogen.MetricPayload_RATE && serie.Interval != 0 {
-				val *= float64(serie.Interval)
+			if serie.Type == gogen.MetricPayload_RATE {
+				dp.Attributes().PutStr(datadogMetricAsTypeKey, TypeRate)
+				if serie.Interval != 0 {
+					val *= float64(serie.Interval)
+				}
 			}
 			dp.SetDoubleValue(val)
 

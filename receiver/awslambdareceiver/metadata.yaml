@@ -7,7 +7,8 @@ status:
     alpha: [logs, metrics]
   distributions: [contrib]
   codeowners:
-    active: [MichaelKatsoulis, Kavindu-Dodan, axw, pjanotti]
+    active: [MichaelKatsoulis, Kavindu-Dodan, pjanotti]
+    emeritus: [axw]
 
 tests:
   # TODO Fix this

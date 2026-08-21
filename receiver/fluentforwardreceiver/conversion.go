@@ -31,6 +31,11 @@ type event interface {
 	Compressed() string
 }
 
+type eventWithACK struct {
+	event
+	ackCh chan error
+}
+
 type optionsMap map[string]any
 
 // Chunk returns the `chunk` option or blank string if it was not set.

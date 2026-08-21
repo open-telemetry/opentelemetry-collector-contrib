@@ -6,6 +6,7 @@ status:
   stability:
     beta: [traces]
   distributions: [contrib, k8s]
+  warnings: [Statefulness]
   codeowners:
     active: [portertech, jmacd, csmarchbanks, carsonip]
     emeritus: [jpkrohling, Logiraptor]

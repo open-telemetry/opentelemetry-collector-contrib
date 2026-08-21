@@ -137,6 +137,26 @@ func TestNormalizeValue(t *testing.T) {
 			want:  []any{int64(1), int64(2)},
 		},
 		{
+			name:  "string slice via convertAnySlice",
+			input: []string{"a", "b"},
+			want:  []any{"a", "b"},
+		},
+		{
+			name:  "bool slice via convertAnySlice",
+			input: []bool{true, false},
+			want:  []any{true, false},
+		},
+		{
+			name:  "float64 slice via convertAnySlice",
+			input: []float64{1.1, 2.2},
+			want:  []any{1.1, 2.2},
+		},
+		{
+			name:  "int64 slice via convertAnySlice",
+			input: []int64{1, 2},
+			want:  []any{int64(1), int64(2)},
+		},
+		{
 			name:  "unknown type passthrough",
 			input: struct{ X int }{X: 1},
 			want:  struct{ X int }{X: 1},
@@ -155,4 +175,100 @@ func TestNormalizeValue(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCopyValueTo(t *testing.T) {
+	tests := []struct {
+		name  string
+		value any
+		want  any
+	}{
+		{
+			name:  "string via FromRaw",
+			value: "hello",
+			want:  "hello",
+		},
+		{
+			name:  "int64 via FromRaw",
+			value: int64(42),
+			want:  int64(42),
+		},
+		{
+			name:  "bool via FromRaw",
+			value: true,
+			want:  true,
+		},
+		{
+			name:  "any slice via FromRaw",
+			value: []any{"a", int64(1)},
+			want:  []any{"a", int64(1)},
+		},
+		{
+			name:  "string slice via copyValuesTo",
+			value: []string{"a", "b"},
+			want:  []any{"a", "b"},
+		},
+		{
+			name:  "bool slice via copyValuesTo",
+			value: []bool{true, false},
+			want:  []any{true, false},
+		},
+		{
+			name:  "float64 slice via copyValuesTo",
+			value: []float64{1.1, 2.2},
+			want:  []any{1.1, 2.2},
+		},
+		{
+			name:  "int64 slice via copyValuesTo",
+			value: []int64{1, 2},
+			want:  []any{int64(1), int64(2)},
+		},
+		{
+			name: "pcommon.Map via CopyTo",
+			value: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("key", "value")
+				return m
+			}(),
+			want: map[string]any{"key": "value"},
+		},
+		{
+			name: "pcommon.Slice via CopyTo",
+			value: func() pcommon.Slice {
+				s := pcommon.NewSlice()
+				require.NoError(t, s.FromRaw([]any{"a", int64(1)}))
+				return s
+			}(),
+			want: []any{"a", int64(1)},
+		},
+		{
+			name:  "pcommon.Value via CopyTo",
+			value: pcommon.NewValueStr("key"),
+			want:  "key",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dest := pcommon.NewValueEmpty()
+			err := CopyValueTo(tt.value, dest)
+			require.NoError(t, err)
+
+			switch want := tt.want.(type) {
+			case map[string]any:
+				assert.Equal(t, want, dest.Map().AsRaw())
+			case []any:
+				assert.Equal(t, want, dest.Slice().AsRaw())
+			default:
+				assert.Equal(t, want, GetValue(dest))
+			}
+		})
+	}
+}
+
+func TestCopyValueTo_errors(t *testing.T) {
+	dest := pcommon.NewValueEmpty()
+	err := CopyValueTo(make(chan int), dest)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "Invalid value type")
 }

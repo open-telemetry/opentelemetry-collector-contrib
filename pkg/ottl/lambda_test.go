@@ -407,6 +407,25 @@ func TestLambdaActivation_SetArg(t *testing.T) {
 	require.EqualError(t, err, "argument index 1 out of range (len=1)")
 }
 
+func TestLambdaActivation_IsArgBound(t *testing.T) {
+	expr := newLambdaExpression[any](
+		makeLocalIdentifiers("acc", "_", "v"),
+		nil,
+		nil,
+	)
+	require.NoError(t, expr.ValidateArity(3))
+
+	lb, err := expr.Activate(t.Context())
+	require.NoError(t, err)
+
+	assert.True(t, lb.IsArgBound(0), "named formal acc")
+	assert.False(t, lb.IsArgBound(1), "blank formal")
+	assert.True(t, lb.IsArgBound(2), "named formal v")
+
+	assert.Panics(t, func() { lb.IsArgBound(-1) })
+	assert.Panics(t, func() { lb.IsArgBound(3) })
+}
+
 func TestLambdaActivation_StaleArg(t *testing.T) {
 	expr := newLambdaExpression[any](
 		makeLocalIdentifiers("a", "b"),

@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	maxPositions     uint32 = 36000 // 360 degrees with two decimal places
-	defaultWeight    int    = 100   // the number of points in the ring for each entry. For better results, it should be greater than 100.
-	linearProbeLimit int    = 10    // The number of times to probe ahead in the hash ring if there is a collision while constructing the hash ring
+	maxPositions     uint32 = 131071 // the number of positions in the ring
+	defaultWeight    int    = 200    // the number of points in the ring for each entry
+	linearProbeLimit int    = 10     // The number of times to probe ahead in the hash ring if there is a collision while constructing the hash ring
 )
 
 // position represents a specific angle in the ring.
@@ -22,6 +22,12 @@ type position uint32
 // ringItem connects a specific angle in the ring with a specific endpoint.
 type ringItem struct {
 	pos      position
+	endpoint string
+}
+
+type ringCandidate struct {
+	pos      position
+	hash     uint32
 	endpoint string
 }
 
@@ -103,8 +109,12 @@ func bsearch(pos position, left, right []ringItem) ringItem {
 
 // positionFor calculates all the positions in the ring based. The numPoints indicates how many positions to calculate.
 // The slice length of the result matches the numPoints.
-func positionsFor(endpoint string, numPoints int) []position {
-	res := make([]position, 0, numPoints)
+func positionsFor(endpoint string, numPoints int) []ringCandidate {
+	return positionsForWithMaxPositions(endpoint, numPoints, maxPositions)
+}
+
+func positionsForWithMaxPositions(endpoint string, numPoints int, maxPositions uint32) []ringCandidate {
+	res := make([]ringCandidate, 0, numPoints)
 	buf := make([]byte, 4)
 	for i := range numPoints {
 		h := crc32.NewIEEE()
@@ -113,7 +123,11 @@ func positionsFor(endpoint string, numPoints int) []position {
 		h.Write(buf)
 		hash := h.Sum32()
 		pos := hash % maxPositions
-		res = append(res, position(pos))
+		res = append(res, ringCandidate{
+			pos:      position(pos),
+			hash:     hash,
+			endpoint: endpoint,
+		})
 	}
 
 	return res
@@ -121,30 +135,45 @@ func positionsFor(endpoint string, numPoints int) []position {
 
 // positionsForEndpoints calculates all the positions for all the given endpoints
 func positionsForEndpoints(endpoints []string, weight int) []ringItem {
-	var items []ringItem
-	positions := map[position]bool{} // tracking the used positions
+	return positionsForEndpointsWithOptions(endpoints, weight, maxPositions, linearProbeLimit)
+}
+
+func positionsForEndpointsWithOptions(endpoints []string, weight int, maxPositions uint32, probeLimit int) []ringItem {
+	candidates := make([]ringCandidate, 0, len(endpoints)*weight)
 	for _, endpoint := range endpoints {
-		// for this initial implementation, we don't allow endpoints to have custom weights
-		for _, pos := range positionsFor(endpoint, weight) {
-			// if this position is occupied already, look ahead in the array for a free position
-			actualPos := pos
-			positionsProbed := 0
-			for positions[actualPos] && positionsProbed < linearProbeLimit {
-				actualPos = (actualPos + 1) % position(maxPositions)
-				positionsProbed++
-			}
-			if positionsProbed >= linearProbeLimit {
-				continue // Not able to find a free spot; skip this item
-			}
+		candidates = append(candidates, positionsForWithMaxPositions(endpoint, weight, maxPositions)...)
+	}
 
-			positions[actualPos] = true
-
-			item := ringItem{
-				pos:      actualPos,
-				endpoint: endpoint,
-			}
-			items = append(items, item)
+	sort.Slice(candidates, func(i, j int) bool {
+		if candidates[i].pos != candidates[j].pos {
+			return candidates[i].pos < candidates[j].pos
 		}
+		if candidates[i].hash != candidates[j].hash {
+			return candidates[i].hash < candidates[j].hash
+		}
+		return candidates[i].endpoint < candidates[j].endpoint
+	})
+
+	items := make([]ringItem, 0, len(candidates))
+	positions := map[position]bool{} // tracking the used positions
+	for _, candidate := range candidates {
+		// if this position is occupied already, look ahead in the array for a free position
+		actualPos := candidate.pos
+		positionsProbed := 0
+		for positions[actualPos] && positionsProbed < probeLimit {
+			actualPos = (actualPos + 1) % position(maxPositions)
+			positionsProbed++
+		}
+		if positionsProbed >= probeLimit {
+			continue // Not able to find a free spot; skip this item
+		}
+
+		positions[actualPos] = true
+
+		items = append(items, ringItem{
+			pos:      actualPos,
+			endpoint: candidate.endpoint,
+		})
 	}
 
 	sort.Slice(items, func(i, j int) bool {

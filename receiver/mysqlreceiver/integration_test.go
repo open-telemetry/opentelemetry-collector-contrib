@@ -105,12 +105,13 @@ func TestIntegration(t *testing.T) {
 								FileMode:          700,
 							},
 						},
-					}),
+					},
+				),
 				scraperinttest.WithCustomConfig(
 					func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 						rCfg := cfg.(*Config)
-						rCfg.CollectionInterval = time.Second
-						rCfg.Endpoint = net.JoinHostPort(ci.Host(t), ci.MappedPort(t, mysqlPort))
+						rCfg.ControllerConfig.CollectionInterval = time.Second
+						rCfg.AddrConfig.Endpoint = net.JoinHostPort(ci.Host(t), ci.MappedPort(t, mysqlPort))
 						rCfg.Username = "otel"
 						rCfg.Password = "otel"
 						if tc.tlsEnabled {
@@ -118,7 +119,8 @@ func TestIntegration(t *testing.T) {
 						} else {
 							rCfg.TLS.Insecure = true
 						}
-					}),
+					},
+				),
 				scraperinttest.WithExpectedFile(
 					filepath.Join("testdata", "integration", tc.expectedFile),
 				),
@@ -149,6 +151,10 @@ func containerConfig(host, port string) *Config {
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 	cfg.TopQueryCollection.LookbackTime = 300                    // 5-minute window to catch our workload queries
 	cfg.TopQueryCollection.CollectionInterval = time.Millisecond // bypass CollectionInterval guard in tests
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.DbSystemName.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
 	return cfg
 }
 
@@ -245,14 +251,14 @@ func TestIntegrationLogScraper(t *testing.T) {
 		image             string
 		wantSampleTextCol bool
 		wantEOLWarn       bool   // true ↔ logDetectedVersion should emit an EOL warning
-		wantProduct       string // expected db.product scope attribute value
+		wantProduct       string // expected db.system.name resource attribute value
 	}{
 		{
 			name:              "MySQL-8.0.33-LogScraper",
 			image:             "mysql:8.0.33",
 			wantSampleTextCol: true,
 			wantEOLWarn:       false,
-			wantProduct:       "MySQL",
+			wantProduct:       "mysql",
 		},
 		{
 			// mysql:5.7 has no official ARM64 image; this case is skipped on ARM hosts.
@@ -260,21 +266,21 @@ func TestIntegrationLogScraper(t *testing.T) {
 			image:             "mysql:5.7",
 			wantSampleTextCol: false,
 			wantEOLWarn:       true,
-			wantProduct:       "MySQL",
+			wantProduct:       "mysql",
 		},
 		{
 			name:              "MariaDB-10.11-LogScraper",
 			image:             "mariadb:10.11",
 			wantSampleTextCol: false,
 			wantEOLWarn:       false,
-			wantProduct:       "MariaDB",
+			wantProduct:       "mariadb",
 		},
 		{
 			name:              "MariaDB-11.4-LogScraper",
 			image:             "mariadb:11.4",
 			wantSampleTextCol: false,
 			wantEOLWarn:       false,
-			wantProduct:       "MariaDB",
+			wantProduct:       "mariadb",
 		},
 	}
 
@@ -436,19 +442,16 @@ func TestIntegrationLogScraper(t *testing.T) {
 				t.Logf("TC-EXPLAIN-01: skipped (no query_sample_text on %s — EXPLAIN not attempted)", tc.name)
 			}
 
-			// Verify scope attributes on top-query logs.
-			// setScopeAttributes is called after every Emit, so db.version and
-			// db.product must appear on every ScopeLogs scope.
+			// Verify resource attributes on top-query logs.
+			// setResourceAttributes is called on every Emit, so db.system.name and
+			// db.system.version must appear on every ResourceLogs resource.
 			for i := range topLogs.ResourceLogs().Len() {
-				sls := topLogs.ResourceLogs().At(i).ScopeLogs()
-				for j := range sls.Len() {
-					attrs := sls.At(j).Scope().Attributes()
-					_, hasVersion := attrs.Get("db.version")
-					assert.True(t, hasVersion, "db.version scope attribute missing on top-query ResourceLogs[%d].ScopeLogs[%d]", i, j)
-					prod, hasProd := attrs.Get("db.product")
-					assert.True(t, hasProd, "db.product scope attribute missing on top-query ResourceLogs[%d].ScopeLogs[%d]", i, j)
-					assert.Equal(t, tc.wantProduct, prod.Str(), "db.product mismatch on ResourceLogs[%d].ScopeLogs[%d]", i, j)
-				}
+				attrs := topLogs.ResourceLogs().At(i).Resource().Attributes()
+				_, hasVersion := attrs.Get("db.system.version")
+				assert.True(t, hasVersion, "db.system.version resource attribute missing on top-query ResourceLogs[%d]", i)
+				prod, hasProd := attrs.Get("db.system.name")
+				assert.True(t, hasProd, "db.system.name resource attribute missing on top-query ResourceLogs[%d]", i)
+				assert.Equal(t, tc.wantProduct, prod.Str(), "db.system.name mismatch on ResourceLogs[%d]", i)
 			}
 
 			// --- scrapeQuerySampleFunc ---
@@ -475,17 +478,14 @@ func TestIntegrationLogScraper(t *testing.T) {
 			}
 			t.Logf("scrapeQuerySampleFunc returned %d log records", sampleRecordCount)
 
-			// Verify scope attributes on query-sample logs.
+			// Verify resource attributes on query-sample logs.
 			for i := range sampleLogs.ResourceLogs().Len() {
-				sls := sampleLogs.ResourceLogs().At(i).ScopeLogs()
-				for j := range sls.Len() {
-					attrs := sls.At(j).Scope().Attributes()
-					_, hasVersion := attrs.Get("db.version")
-					assert.True(t, hasVersion, "db.version scope attribute missing on sample ResourceLogs[%d].ScopeLogs[%d]", i, j)
-					prod, hasProd := attrs.Get("db.product")
-					assert.True(t, hasProd, "db.product scope attribute missing on sample ResourceLogs[%d].ScopeLogs[%d]", i, j)
-					assert.Equal(t, tc.wantProduct, prod.Str(), "db.product mismatch on ResourceLogs[%d].ScopeLogs[%d]", i, j)
-				}
+				attrs := sampleLogs.ResourceLogs().At(i).Resource().Attributes()
+				_, hasVersion := attrs.Get("db.system.version")
+				assert.True(t, hasVersion, "db.system.version resource attribute missing on sample ResourceLogs[%d]", i)
+				prod, hasProd := attrs.Get("db.system.name")
+				assert.True(t, hasProd, "db.system.name resource attribute missing on sample ResourceLogs[%d]", i)
+				assert.Equal(t, tc.wantProduct, prod.Str(), "db.system.name mismatch on ResourceLogs[%d]", i)
 			}
 
 			// Verify version detection on the scraper's client.

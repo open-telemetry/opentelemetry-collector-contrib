@@ -16,7 +16,7 @@ The design is still undergoing changes, and as such this implementation may chan
 
 Binary and container images for the Supervisor are available under tags starting with `cmd/opampsupervisor` [here](https://github.com/open-telemetry/opentelemetry-collector-releases/tags).
 
-## More information.
+## More information
 
 If you'd like to learn more about OpAMP, see the
 [OpAMP specification](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#open-agent-management-protocol).
@@ -121,6 +121,7 @@ agent:
 ## Persistent data storage
 
 The supervisor persists some data to disk in order to mantain state between restarts. The directory where this data is stored may be specified via the supervisor configuration:
+
 ```yaml
 storage:
   directory: "/path/to/storage/dir"
@@ -179,6 +180,24 @@ agent:
 ### Example
 
 See [examples/supervisor_fallback.yaml](./examples/supervisor_fallback.yaml) for a complete example configuration with fallback enabled.
+
+## Automatic Remote Configuration Rollback
+
+The Supervisor supports automatic rollback when a remote configuration received from
+the OpAMP backend causes the Collector to fail to start correctly. This feature is
+**disabled by default** and can be enabled in the Supervisor configuration file:
+
+```yaml
+agent:
+  automatic_config_rollback: true
+```
+
+When enabled, the Supervisor will watch the health of the Collector after applying remote
+configurations received from the OpAMP backend and it will cache the last working one in
+disk, besides the last received. If a remote configurations causes the Collector
+to fail to start correctly, the Supervisor will automatically swap to the last working one
+and restart the Collector. During this process, a new "APPLIED" status will be reported for
+the last working configuration.
 
 ## Status
 

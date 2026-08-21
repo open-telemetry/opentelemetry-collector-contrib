@@ -1,0 +1,7 @@
+ARG MONGO_VERSION=7.0
+FROM mongo:${MONGO_VERSION}
+
+COPY scripts/setup_top_query.sh /setup_top_query.sh
+RUN chmod +x /setup_top_query.sh
+
+EXPOSE 27017

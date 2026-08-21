@@ -38,12 +38,12 @@ var (
 		{
 			name:             "AutoCommit OnError=false (default)",
 			MessageMarking:   createDefaultConfig().(*Config).MessageMarking,
-			AutoCommitConfig: createDefaultConfig().(*Config).AutoCommit,
+			AutoCommitConfig: createDefaultConfig().(*Config).ConsumerConfig.AutoCommit,
 		},
 		{
 			name:             "AutoCommit OnError=true",
 			MessageMarking:   MessageMarking{After: true, OnError: true},
-			AutoCommitConfig: createDefaultConfig().(*Config).AutoCommit,
+			AutoCommitConfig: createDefaultConfig().(*Config).ConsumerConfig.AutoCommit,
 		},
 		{
 			name:             "After=true OnError=false",
@@ -76,9 +76,9 @@ func newBenchConfigClient(b *testing.B, topic string, partitions int32,
 	cfg.Logs.Topics = []string{topic}
 	cfg.Traces.Topics = []string{topic}
 	cfg.Metrics.Topics = []string{topic}
-	cfg.GroupID = b.Name()
-	cfg.InitialOffset = "earliest"
-	cfg.AutoCommit = autoCommit
+	cfg.ConsumerConfig.GroupID = b.Name()
+	cfg.ConsumerConfig.InitialOffset = "earliest"
+	cfg.ConsumerConfig.AutoCommit = autoCommit
 	cfg.MessageMarking = messageMarking
 	return cfg, client
 }

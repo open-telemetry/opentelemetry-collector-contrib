@@ -44,7 +44,8 @@ func newTracesConnector(
 		cfg.Table,
 		cfg.DefaultPipelines,
 		tr.Consumer,
-		set.TelemetrySettings)
+		set.TelemetrySettings,
+	)
 	if err != nil {
 		return nil, err
 	}

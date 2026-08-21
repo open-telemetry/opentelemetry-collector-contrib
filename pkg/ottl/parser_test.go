@@ -2838,6 +2838,50 @@ func Test_Statements_Execute_Error(t *testing.T) {
 	}
 }
 
+func Test_NewStatementSequence(t *testing.T) {
+	settings := componenttest.NewNopTelemetrySettings()
+	statements := []*Statement[any]{
+		{
+			condition:         newAlwaysTrue[any](),
+			function:          Expr[any]{exprFunc: func(context.Context, any) (any, error) { return nil, nil }},
+			telemetrySettings: settings,
+		},
+	}
+
+	seq := NewStatementSequence(statements, settings)
+	assert.Equal(t, statements, seq.statements)
+	assert.Equal(t, PropagateError, seq.errorMode)
+	assert.Equal(t, settings, seq.telemetrySettings)
+
+	seq = NewStatementSequence(statements, settings, WithStatementSequenceErrorMode[any](IgnoreError))
+	assert.Equal(t, IgnoreError, seq.errorMode)
+	require.NoError(t, seq.Execute(t.Context(), nil))
+}
+
+func Test_NewConditionSequence(t *testing.T) {
+	settings := componenttest.NewNopTelemetrySettings()
+	conditions := []*Condition[any]{
+		{condition: newAlwaysTrue[any]()},
+	}
+
+	seq := NewConditionSequence(conditions, settings)
+	assert.Equal(t, conditions, seq.conditions)
+	assert.Equal(t, PropagateError, seq.errorMode)
+	assert.Equal(t, settings, seq.telemetrySettings)
+	assert.Equal(t, Or, seq.logicOp)
+
+	seq = NewConditionSequence(conditions, settings,
+		WithConditionSequenceErrorMode[any](IgnoreError),
+		WithLogicOperation[any](And),
+	)
+	assert.Equal(t, IgnoreError, seq.errorMode)
+	assert.Equal(t, And, seq.logicOp)
+
+	result, err := seq.Eval(t.Context(), nil)
+	require.NoError(t, err)
+	assert.True(t, result)
+}
+
 func Test_ConditionSequence_Eval(t *testing.T) {
 	tests := []struct {
 		name           string

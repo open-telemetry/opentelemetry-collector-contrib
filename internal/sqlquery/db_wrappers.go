@@ -34,6 +34,16 @@ func (d DbWrapper) QueryContext(ctx context.Context, query string, args ...any) 
 	return rowsWrapper{rows}, err
 }
 
+// ConnWrapper wraps a dedicated *sql.Conn so a sequence of calls share one connection.
+type ConnWrapper struct {
+	Conn *sql.Conn
+}
+
+func (c ConnWrapper) QueryContext(ctx context.Context, query string, args ...any) (rows, error) {
+	r, err := c.Conn.QueryContext(ctx, query, args...)
+	return rowsWrapper{r}, err
+}
+
 type rowsWrapper struct {
 	rows *sql.Rows
 }

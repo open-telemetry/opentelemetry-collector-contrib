@@ -118,12 +118,18 @@ all_set:
   events:
     db.server.query_sample:
       enabled: true
+    db.server.top_query:
+      enabled: true
   resource_attributes:
     server.address:
       enabled: true
     server.port:
       enabled: true
     service.instance.id:
+      enabled: true
+    service.name:
+      enabled: true
+    service.namespace:
       enabled: true
 reaggregate_set:
   metrics:
@@ -244,12 +250,18 @@ reaggregate_set:
   events:
     db.server.query_sample:
       enabled: true
+    db.server.top_query:
+      enabled: true
   resource_attributes:
     server.address:
       enabled: true
     server.port:
       enabled: true
     service.instance.id:
+      enabled: true
+    service.name:
+      enabled: true
+    service.namespace:
       enabled: true
 none_set:
   metrics:
@@ -370,6 +382,8 @@ none_set:
   events:
     db.server.query_sample:
       enabled: false
+    db.server.top_query:
+      enabled: false
   resource_attributes:
     server.address:
       enabled: false
@@ -377,6 +391,27 @@ none_set:
       enabled: false
     service.instance.id:
       enabled: false
+    service.name:
+      enabled: false
+    service.namespace:
+      enabled: false
+override_set:
+  resource_attributes:
+    server.address:
+      enabled: true
+      override_value: "override-server.address"
+    server.port:
+      enabled: true
+      override_value: 123
+    service.instance.id:
+      enabled: true
+      override_value: "override-service.instance.id"
+    service.name:
+      enabled: true
+      override_value: "override-service.name"
+    service.namespace:
+      enabled: true
+      override_value: "override-service.namespace"
 filter_set_include:
   resource_attributes:
     server.address:
@@ -392,6 +427,18 @@ filter_set_include:
       events_include:
         - regexp: ".*"
     service.instance.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    service.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    service.namespace:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -417,3 +464,15 @@ filter_set_exclude:
         - strict: "service.instance.id-val"
       events_exclude:
         - strict: "service.instance.id-val"
+    service.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "service.name-val"
+      events_exclude:
+        - strict: "service.name-val"
+    service.namespace:
+      enabled: true
+      metrics_exclude:
+        - strict: "service.namespace-val"
+      events_exclude:
+        - strict: "service.namespace-val"

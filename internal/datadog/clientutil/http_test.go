@@ -44,7 +44,8 @@ func TestNewHTTPClient(t *testing.T) {
 		defaultTransport,
 		client1.Transport.(*http.Transport),
 		cmpopts.IgnoreUnexported(http.Transport{}, tls.Config{}),
-		cmpopts.IgnoreFields(http.Transport{}, "Proxy", "DialContext")); diff != "" {
+		cmpopts.IgnoreFields(http.Transport{}, "Proxy", "DialContext"),
+	); diff != "" {
 		t.Errorf("Mismatched transports -want +got %s", diff)
 	}
 	assert.Equal(t, time.Duration(0), client1.Timeout)
@@ -90,7 +91,8 @@ func TestNewHTTPClient(t *testing.T) {
 		expectedTransport,
 		client2.Transport.(*http.Transport),
 		cmpopts.IgnoreUnexported(http.Transport{}, tls.Config{}),
-		cmpopts.IgnoreFields(http.Transport{}, "Proxy", "DialContext")); diff != "" {
+		cmpopts.IgnoreFields(http.Transport{}, "Proxy", "DialContext"),
+	); diff != "" {
 		t.Errorf("Mismatched transports -want +got %s", diff)
 	}
 	assert.Equal(t, 10*time.Second, client2.Timeout)

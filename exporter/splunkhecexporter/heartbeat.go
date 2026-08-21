@@ -130,6 +130,7 @@ func generateHeartbeatLog(hecToOtelAttrs translator.HecToOtelAttrs, buildInfo co
 		buildInfo.Version,
 		buildInfo.Description,
 		runtime.GOOS,
-		runtime.GOARCH))
+		runtime.GOARCH,
+	))
 	return ret
 }

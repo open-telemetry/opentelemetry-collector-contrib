@@ -230,5 +230,6 @@ func pathExpressionParser(cacheGetter ctxcache.Getter[*TransformContext]) ottl.P
 			ctxscope.LegacyName: ctxscope.PathGetSetter[*TransformContext],
 			ctxprofile.Name:     ctxprofile.PathGetSetter[*TransformContext],
 			ctxotelcol.Name:     ctxotelcol.PathGetSetter[*TransformContext],
-		})
+		},
+	)
 }

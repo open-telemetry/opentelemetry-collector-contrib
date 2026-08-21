@@ -1494,7 +1494,7 @@ func configureExporter[T any](tb testing.TB,
 	// Create a kgo.Client using the broker addresses from the fake cluster.
 	kgoClientOpts := []kgo.Opt{
 		kgo.SeedBrokers(kcfg.Brokers...),
-		kgo.ClientID(cfg.ClientID),
+		kgo.ClientID(cfg.ClientConfig.ClientID),
 		kgo.WithHooks(kafkaclient.NewStatusReporter(host)),
 	}
 

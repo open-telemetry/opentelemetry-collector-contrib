@@ -1,4 +1,10 @@
+display_name: Windows Active Directory Inventory Receiver
 type: active_directory_inv
+
+description: |
+  The Windows Active Directory Inventory receiver collects inventory data from Active
+  Directory. This includes information such as computer names, user names, email addresses,
+  and location information. This receiver is only supported on Windows servers.
 
 status:
   class: receiver

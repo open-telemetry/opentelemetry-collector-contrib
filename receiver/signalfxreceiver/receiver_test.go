@@ -99,7 +99,7 @@ func Test_signalfxreceiver_New(t *testing.T) {
 func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = addr
+	cfg.ServerConfig.NetAddr.Endpoint = addr
 	sink := new(consumertest.MetricsSink)
 	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *cfg)
 	require.NoError(t, err)
@@ -163,7 +163,8 @@ func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 	exp, err := signalfxexporter.NewFactory().CreateMetrics(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		expCfg)
+		expCfg,
+	)
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 	assert.Eventually(t, func() bool {
@@ -188,7 +189,7 @@ func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 
 func Test_sfxReceiver_handleReq(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 
 	currentTime := time.Now().Unix() * 1e3
 	sFxMsg := buildSFxDatapointMsg(currentTime, 13, 3)
@@ -457,8 +458,8 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 }
 
 func Test_sfxReceiver_handleEventReq(t *testing.T) {
-	config := (NewFactory()).CreateDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 
 	currentTime := time.Now().Unix() * 1e3
 	sFxMsg := buildSFxEventMsg(currentTime, 3)
@@ -630,8 +631,8 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 func Test_sfxReceiver_TLS(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = addr
-	cfg.TLS = configoptional.Some(configtls.ServerConfig{
+	cfg.ServerConfig.NetAddr.Endpoint = addr
+	cfg.ServerConfig.TLS = configoptional.Some(configtls.ServerConfig{
 		Config: configtls.Config{
 			CertFile: "./testdata/server.crt",
 			KeyFile:  "./testdata/server.key",

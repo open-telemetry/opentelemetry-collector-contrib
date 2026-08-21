@@ -53,3 +53,39 @@ func Test_Hour_Error(t *testing.T) {
 	assert.Nil(t, result)
 	assert.Error(t, err)
 }
+
+func Test_HourFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewHourFactory[any]()
+		assert.Equal(t, "Hour", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewHourFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &HourArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Time"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewHourFactory[any]()
+		args := factory.CreateDefaultArguments()
+		hourArgs, ok := args.(*HourArguments[any])
+		require.True(t, ok)
+		hourArgs.Time = &ottl.StandardTimeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return time.Now(), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createHourFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "HourFactory args must be of type *HourArguments[K]")
+	})
+}

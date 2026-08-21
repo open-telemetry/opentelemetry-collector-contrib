@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestResourceBuilder(t *testing.T) {
@@ -90,7 +90,7 @@ func TestResourceBuilder(t *testing.T) {
 
 func TestResourceBuilderOverrideValue(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 	rb.SetHostName("host.name-val")
 	rb.SetServerAddress("server.address-val")
@@ -171,7 +171,7 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 // TestResourceBuilderOverrideWithoutSet does not call any Set* methods, but override should still apply via Emit().
 func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 
 	res := rb.Emit()
@@ -252,7 +252,7 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg.SqlserverComputerName.Enabled = false
 	cfg.SqlserverDatabaseName.Enabled = false
 	cfg.SqlserverInstanceName.Enabled = false
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 
 	res := rb.Emit()
@@ -262,7 +262,7 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 // TestResourceBuilderNoOverride has no override_value set, Validate should still succeed.
 func TestResourceBuilderNoOverride(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "all_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	assert.Nil(t, cfg.HostName.OverrideValue, "OverrideValue should be nil for host.name")
 	assert.Nil(t, cfg.ServerAddress.OverrideValue, "OverrideValue should be nil for server.address")
 	assert.Nil(t, cfg.ServerPort.OverrideValue, "OverrideValue should be nil for server.port")

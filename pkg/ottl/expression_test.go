@@ -3889,3 +3889,70 @@ func (*errLiteral[K]) isLiteral() {}
 func newErrLiteral(err error) *errLiteral[any] {
 	return &errLiteral[any]{err: err}
 }
+
+func Test_StandardGetSetter_Set(t *testing.T) {
+	var got any
+	gs := StandardGetSetter[any]{
+		Setter: func(_ context.Context, _, val any) error {
+			got = val
+			return nil
+		},
+	}
+
+	require.NoError(t, gs.Set(t.Context(), nil, "value"))
+	assert.Equal(t, "value", got)
+
+	setErr := errors.New("set error")
+	gs = StandardGetSetter[any]{
+		Setter: func(context.Context, any, any) error {
+			return setErr
+		},
+	}
+	assert.ErrorIs(t, gs.Set(t.Context(), nil, "value"), setErr)
+}
+
+func Test_StandardPSliceGetSetter(t *testing.T) {
+	want := pcommon.NewSlice()
+	require.NoError(t, want.FromRaw([]any{"a", "b"}))
+
+	var got any
+	gs := StandardPSliceGetSetter[any]{
+		Getter: func(context.Context, any) (pcommon.Slice, error) {
+			return want, nil
+		},
+		Setter: func(_ context.Context, _, val any) error {
+			got = val
+			return nil
+		},
+	}
+
+	result, err := gs.Get(t.Context(), nil)
+	require.NoError(t, err)
+	assert.Equal(t, want, result)
+
+	require.NoError(t, gs.Set(t.Context(), nil, want))
+	assert.Equal(t, want, got)
+}
+
+func Test_StandardPMapGetSetter(t *testing.T) {
+	want := pcommon.NewMap()
+	require.NoError(t, want.FromRaw(map[string]any{"k": "v"}))
+
+	var got any
+	gs := StandardPMapGetSetter[any]{
+		Getter: func(context.Context, any) (pcommon.Map, error) {
+			return want, nil
+		},
+		Setter: func(_ context.Context, _, val any) error {
+			got = val
+			return nil
+		},
+	}
+
+	result, err := gs.Get(t.Context(), nil)
+	require.NoError(t, err)
+	assert.Equal(t, want, result)
+
+	require.NoError(t, gs.Set(t.Context(), nil, want))
+	assert.Equal(t, want, got)
+}

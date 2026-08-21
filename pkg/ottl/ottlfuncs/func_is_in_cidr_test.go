@@ -170,3 +170,46 @@ func Test_isInCIDR_literalNetworks(t *testing.T) {
 		assert.ErrorContains(t, err, "invalid CIDR address")
 	})
 }
+
+func Test_IsInCIDRFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewIsInCIDRFactory[any]()
+		assert.Equal(t, "IsInCIDR", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewIsInCIDRFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &IsInCIDRArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Networks"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewIsInCIDRFactory[any]()
+		args := factory.CreateDefaultArguments()
+		isInCIDRArgs, ok := args.(*IsInCIDRArguments[any])
+		require.True(t, ok)
+		isInCIDRArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "192.168.1.1", nil
+			},
+		}
+		isInCIDRArgs.Networks = []ottl.StringGetter[any]{
+			&ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return "192.168.1.0/24", nil
+				},
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createIsInCIDRFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "IsInCIDRFactory args must be of type *IsInCIDRArguments[K]")
+	})
+}

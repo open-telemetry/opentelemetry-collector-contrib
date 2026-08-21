@@ -8,12 +8,12 @@
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| aws.log.group.names | The aws.log.group.names | Any Slice | true | - | - |
-| aws.log.stream.names | The aws.log.stream.names | Any Slice | true | - | - |
-| cloud.platform | The cloud.platform | Any Str | true | - | - |
-| cloud.provider | The cloud.provider | Any Str | true | - | - |
-| cloud.region | The cloud.region | Any Str | true | - | - |
-| faas.instance | The faas.instance | Any Str | true | - | - |
-| faas.max_memory | The faas.max_memory | Any Str | true | - | - |
-| faas.name | faas.name | Any Str | true | - | - |
-| faas.version | The faas.version | Any Str | true | - | - |
+| aws.log.group.names | The aws.log.group.names | Any Slice | true | [aws.log.group.names](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/aws.md#aws-log-group-names) | - |
+| aws.log.stream.names | The aws.log.stream.names | Any Slice | true | [aws.log.stream.names](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/aws.md#aws-log-stream-names) | - |
+| cloud.platform | The cloud.platform | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
+| cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
+| cloud.region | The cloud.region | Any Str | true | [cloud.region](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-region) | - |
+| faas.instance | The faas.instance | Any Str | true | [faas.instance](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/faas.md#faas-instance) | - |
+| faas.max_memory | The faas.max_memory | Any Str | true | [faas.max_memory](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/faas.md#faas-max-memory) | - |
+| faas.name | faas.name | Any Str | true | [faas.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/faas.md#faas-name) | - |
+| faas.version | The faas.version | Any Str | true | [faas.version](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/faas.md#faas-version) | - |

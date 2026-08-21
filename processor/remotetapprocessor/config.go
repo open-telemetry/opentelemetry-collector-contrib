@@ -13,7 +13,7 @@ import (
 const defaultEndpoint = "localhost:12001"
 
 type Config struct {
-	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Limit is a float that indicates the maximum number of messages repeated
 	// through the websocket by this processor in messages per second. Defaults to 1.

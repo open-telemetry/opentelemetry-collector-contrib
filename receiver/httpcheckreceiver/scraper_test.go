@@ -265,7 +265,7 @@ func TestHTTPSWithTLS(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	// Explicitly enable the TLS metric (to test the opt-in behavior)
-	cfg.Metrics.HttpcheckTLSCertRemaining.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckTLSCertRemaining.Enabled = true
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	clientConfig.MaxIdleConns = 0
@@ -324,7 +324,7 @@ func TestHTTPSWithTLSDisabled(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	// Explicitly disable the TLS metric
-	cfg.Metrics.HttpcheckTLSCertRemaining.Enabled = false
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckTLSCertRemaining.Enabled = false
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	clientConfig.MaxIdleConns = 0
@@ -561,10 +561,10 @@ func TestTimingMetrics(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	// Enable timing breakdown metrics
-	cfg.Metrics.HttpcheckDNSLookupDuration.Enabled = true
-	cfg.Metrics.HttpcheckClientConnectionDuration.Enabled = true
-	cfg.Metrics.HttpcheckClientRequestDuration.Enabled = true
-	cfg.Metrics.HttpcheckResponseDuration.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckDNSLookupDuration.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckClientConnectionDuration.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckClientRequestDuration.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckResponseDuration.Enabled = true
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
@@ -643,10 +643,10 @@ func TestTimingMetricsNonZeroValues(t *testing.T) {
 	defer server.Close()
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.Metrics.HttpcheckDNSLookupDuration.Enabled = true
-	cfg.Metrics.HttpcheckClientConnectionDuration.Enabled = true
-	cfg.Metrics.HttpcheckClientRequestDuration.Enabled = true
-	cfg.Metrics.HttpcheckResponseDuration.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckDNSLookupDuration.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckClientConnectionDuration.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckClientRequestDuration.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckResponseDuration.Enabled = true
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
@@ -962,9 +962,9 @@ func TestResponseValidation(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	// Enable validation metrics
-	cfg.Metrics.HttpcheckValidationPassed.Enabled = true
-	cfg.Metrics.HttpcheckValidationFailed.Enabled = true
-	cfg.Metrics.HttpcheckResponseSize.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckValidationPassed.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckValidationFailed.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckResponseSize.Enabled = true
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
@@ -1032,8 +1032,8 @@ func TestResponseValidationFailures(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	// Enable validation metrics
-	cfg.Metrics.HttpcheckValidationPassed.Enabled = true
-	cfg.Metrics.HttpcheckValidationFailed.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckValidationPassed.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckValidationFailed.Enabled = true
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.

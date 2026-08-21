@@ -71,7 +71,7 @@ func newAccessLogsReceiver(settings rcvr.Settings, cfg *Config, consumer consume
 	}
 
 	for _, p := range cfg.Logs.Projects {
-		p.populateIncludesAndExcludes()
+		p.ProjectConfig.populateIncludesAndExcludes()
 		if p.AccessLogs != nil && p.AccessLogs.IsEnabled() {
 			if p.AccessLogs.PageSize <= 0 {
 				p.AccessLogs.PageSize = defaultAccessLogsPageSize
@@ -132,9 +132,9 @@ func (alr *accessLogsReceiver) pollAccessLogs(ctx context.Context, pc *LogsProje
 	st := pcommon.NewTimestampFromTime(time.Now().Add(-1 * pc.AccessLogs.PollInterval)).AsTime()
 	et := time.Now()
 
-	project, err := alr.client.GetProject(ctx, pc.Name)
+	project, err := alr.client.GetProject(ctx, pc.ProjectConfig.Name)
 	if err != nil {
-		alr.logger.Error("error retrieving project information", zap.Error(err), zap.String("project", pc.Name))
+		alr.logger.Error("error retrieving project information", zap.Error(err), zap.String("project", pc.ProjectConfig.Name))
 		return err
 	}
 
@@ -142,12 +142,12 @@ func (alr *accessLogsReceiver) pollAccessLogs(ctx context.Context, pc *LogsProje
 
 	clusters, err := alr.client.GetClusters(ctx, project.ID)
 	if err != nil {
-		alr.logger.Error("error retrieving cluster information", zap.Error(err), zap.String("project", pc.Name))
+		alr.logger.Error("error retrieving cluster information", zap.Error(err), zap.String("project", pc.ProjectConfig.Name))
 		return err
 	}
 	filteredClusters, err := filterClusters(clusters, pc.ProjectConfig)
 	if err != nil {
-		alr.logger.Error("error filtering clusters", zap.Error(err), zap.String("project", pc.Name))
+		alr.logger.Error("error filtering clusters", zap.Error(err), zap.String("project", pc.ProjectConfig.Name))
 		return err
 	}
 	for i := range filteredClusters {
@@ -163,7 +163,7 @@ func (alr *accessLogsReceiver) pollAccessLogs(ctx context.Context, pc *LogsProje
 		}
 		clusterCheckpoint.NextPollStartTime = alr.pollCluster(ctx, pc, project, cluster, clusterCheckpoint.NextPollStartTime, et)
 		if err = alr.checkpoint(ctx, project.ID); err != nil {
-			alr.logger.Warn("error checkpointing", zap.Error(err), zap.String("project", pc.Name))
+			alr.logger.Warn("error checkpointing", zap.Error(err), zap.String("project", pc.ProjectConfig.Name))
 		}
 	}
 

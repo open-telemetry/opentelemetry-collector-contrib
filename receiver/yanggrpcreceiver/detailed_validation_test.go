@@ -67,8 +67,8 @@ func TestDetailedTelemetryValidation(t *testing.T) {
 	// Create receiver configuration
 	config := createDefaultConfig().(*Config)
 
-	config.NetAddr.Endpoint = "localhost:57403"
-	config.NetAddr.Transport = "tcp"
+	config.ServerConfig.NetAddr.Endpoint = "localhost:57403"
+	config.ServerConfig.NetAddr.Transport = "tcp"
 
 	settings := receiver.Settings{
 		ID:                component.NewID(metadata.Type),

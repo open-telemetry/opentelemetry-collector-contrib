@@ -87,7 +87,7 @@ func (f *pulsarExporterFactory) createTracesExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	oCfg := *(cfg.(*Config))
+	oCfg := *cfg.(*Config)
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultTracesTopic
 	}
@@ -107,7 +107,8 @@ func (f *pulsarExporterFactory) createTracesExporter(
 		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.Close))
+		exporterhelper.WithShutdown(exp.Close),
+	)
 }
 
 func (f *pulsarExporterFactory) createMetricsExporter(
@@ -115,7 +116,7 @@ func (f *pulsarExporterFactory) createMetricsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	oCfg := *(cfg.(*Config))
+	oCfg := *cfg.(*Config)
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultMetricsTopic
 	}
@@ -135,7 +136,8 @@ func (f *pulsarExporterFactory) createMetricsExporter(
 		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.Close))
+		exporterhelper.WithShutdown(exp.Close),
+	)
 }
 
 func (f *pulsarExporterFactory) createLogsExporter(
@@ -143,7 +145,7 @@ func (f *pulsarExporterFactory) createLogsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	oCfg := *(cfg.(*Config))
+	oCfg := *cfg.(*Config)
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultLogsTopic
 	}
@@ -163,5 +165,6 @@ func (f *pulsarExporterFactory) createLogsExporter(
 		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.Close))
+		exporterhelper.WithShutdown(exp.Close),
+	)
 }

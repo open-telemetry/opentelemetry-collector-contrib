@@ -53,6 +53,8 @@ func (*Consumer) toDataType(dt metrics.DataType) (out datadogV2.MetricIntakeType
 		out = datadogV2.METRICINTAKETYPE_COUNT
 	case metrics.Gauge:
 		out = datadogV2.METRICINTAKETYPE_GAUGE
+	case metrics.Rate:
+		out = datadogV2.METRICINTAKETYPE_RATE
 	}
 
 	return out
@@ -125,6 +127,9 @@ func (c *Consumer) ConsumeTimeSeries(
 			Type: datadog.PtrString("host"),
 		},
 	})
+	if unit := dims.Unit(); unit != "" {
+		met.SetUnit(unit)
+	}
 	c.ms = append(c.ms, met)
 }
 

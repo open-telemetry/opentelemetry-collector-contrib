@@ -48,6 +48,7 @@ func TestPathGetSetter(t *testing.T) {
 		orig              any
 		newVal            any
 		expectSetterError bool
+		nilNoError        bool
 		modified          func(exemplar pmetric.Exemplar)
 	}{
 		{
@@ -145,8 +146,9 @@ func TestPathGetSetter(t *testing.T) {
 			path: &pathtest.Path[*testContext]{
 				N: "filtered_attributes",
 			},
-			orig:   refExemplar.FilteredAttributes(),
-			newVal: newFilteredAttrs,
+			orig:       refExemplar.FilteredAttributes(),
+			newVal:     newFilteredAttrs,
+			nilNoError: true,
 			modified: func(exemplar pmetric.Exemplar) {
 				newFilteredAttrs.CopyTo(exemplar.FilteredAttributes())
 			},
@@ -156,8 +158,9 @@ func TestPathGetSetter(t *testing.T) {
 			path: &pathtest.Path[*testContext]{
 				N: "filtered_attributes",
 			},
-			orig:   refExemplar.FilteredAttributes(),
-			newVal: newFilteredAttrs.AsRaw(),
+			orig:       refExemplar.FilteredAttributes(),
+			newVal:     newFilteredAttrs.AsRaw(),
+			nilNoError: true,
 			modified: func(exemplar pmetric.Exemplar) {
 				_ = exemplar.FilteredAttributes().FromRaw(newFilteredAttrs.AsRaw())
 			},
@@ -172,8 +175,9 @@ func TestPathGetSetter(t *testing.T) {
 					},
 				},
 			},
-			orig:   "val",
-			newVal: "newVal",
+			orig:       "val",
+			newVal:     "newVal",
+			nilNoError: true,
 			modified: func(exemplar pmetric.Exemplar) {
 				exemplar.FilteredAttributes().PutStr("str", "newVal")
 			},
@@ -188,8 +192,9 @@ func TestPathGetSetter(t *testing.T) {
 					},
 				},
 			},
-			orig:   int64(10),
-			newVal: int64(20),
+			orig:       int64(10),
+			newVal:     int64(20),
+			nilNoError: true,
 			modified: func(exemplar pmetric.Exemplar) {
 				exemplar.FilteredAttributes().PutInt("int", 20)
 			},
@@ -231,6 +236,13 @@ func TestPathGetSetter(t *testing.T) {
 
 			err = accessor.Set(t.Context(), tCtx, struct{}{})
 			require.Error(t, err)
+
+			err = accessor.Set(t.Context(), tCtx, nil)
+			if tt.nilNoError {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
 		})
 	}
 }

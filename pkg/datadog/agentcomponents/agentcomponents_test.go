@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	coreconfig "github.com/DataDog/datadog-agent/comp/core/config"
-	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
+	defaultforwarderimpl "github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder/impl"
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -141,6 +141,30 @@ func TestNewConfigComponent_WithOptions(t *testing.T) {
 			tt.verify(t, config)
 		})
 	}
+}
+
+// TestWithAPIConfig_OverridesEnvVar guards against a regression where NewConfigComponent's
+// BuildSchema call rebuilds the config's environment-variable layer from the process
+// environment and silently discards an explicitly-configured API key/site if DD_API_KEY or
+// DD_SITE happen to be set (e.g. because the collector runs alongside a Datadog Agent that
+// injects those variables). The value passed to WithAPIConfig must always win.
+func TestWithAPIConfig_OverridesEnvVar(t *testing.T) {
+	t.Setenv("DD_API_KEY", "env-var-api-key")
+	t.Setenv("DD_SITE", "env-var-site.example.com")
+
+	configComponent := NewConfigComponent(
+		WithAPIConfig(&datadogconfig.Config{
+			API: datadogconfig.APIConfig{
+				Key:  configopaque.String("explicit-api-key"),
+				Site: "datadoghq.eu",
+			},
+		}),
+	)
+	require.NotNil(t, configComponent)
+
+	config := configComponent.(pkgconfigmodel.Config)
+	assert.Equal(t, "explicit-api-key", config.GetString("api_key"))
+	assert.Equal(t, "datadoghq.eu", config.GetString("site"))
 }
 
 func TestWithLogsConfig(t *testing.T) {
@@ -493,12 +517,12 @@ func TestSerializerWithForwarder_LifecycleMethods(t *testing.T) {
 	require.NotNil(t, serializer)
 
 	// Test initial state - should be stopped
-	assert.Equal(t, defaultforwarder.Stopped, serializer.State())
+	assert.Equal(t, defaultforwarderimpl.Stopped, serializer.State())
 
 	// Test Start method
 	err = serializer.Start()
 	assert.NoError(t, err, "Start should succeed")
-	assert.Equal(t, defaultforwarder.Started, serializer.State())
+	assert.Equal(t, defaultforwarderimpl.Started, serializer.State())
 
 	// Test that we can call Start again (should return error or be idempotent)
 	err = serializer.Start()
@@ -506,7 +530,7 @@ func TestSerializerWithForwarder_LifecycleMethods(t *testing.T) {
 
 	// Test Stop method
 	serializer.Stop()
-	assert.Equal(t, defaultforwarder.Stopped, serializer.State())
+	assert.Equal(t, defaultforwarderimpl.Stopped, serializer.State())
 
 	// Test that we can stop again (should be safe)
 	serializer.Stop() // Should not panic
@@ -538,11 +562,11 @@ func TestForwarderWithLifecycle_CompileTimeCheck(t *testing.T) {
 	require.NotNil(t, forwarder)
 
 	// Lifecycle methods
-	assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
+	assert.Equal(t, defaultforwarderimpl.Stopped, forwarder.State())
 
 	err = forwarder.Start()
 	assert.NoError(t, err)
-	assert.Equal(t, defaultforwarder.Started, forwarder.State())
+	assert.Equal(t, defaultforwarderimpl.Started, forwarder.State())
 
 	// Test that it implements both Forwarder and lifecycle methods
 	// Forwarder interface methods
@@ -550,7 +574,7 @@ func TestForwarderWithLifecycle_CompileTimeCheck(t *testing.T) {
 	assert.NoError(t, err) // Should not panic, may return error
 
 	forwarder.Stop()
-	assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
+	assert.Equal(t, defaultforwarderimpl.Stopped, forwarder.State())
 }
 
 func TestAgentComponents_NewLogComponent(t *testing.T) {
@@ -597,7 +621,7 @@ func TestNewForwarderComponent(t *testing.T) {
 				assert.NotNil(t, forwarder)
 
 				// Test that the forwarder is in stopped state initially
-				assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
+				assert.Equal(t, defaultforwarderimpl.Stopped, forwarder.State())
 			},
 		},
 		{
@@ -685,15 +709,15 @@ func TestNewForwarderComponent_Internal(t *testing.T) {
 	require.NotNil(t, forwarder)
 
 	// Test internal state
-	assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
+	assert.Equal(t, defaultforwarderimpl.Stopped, forwarder.State())
 
 	// Test that we can start and stop the forwarder (this tests internal configuration)
 	err = forwarder.Start()
 	assert.NoError(t, err)
-	assert.Equal(t, defaultforwarder.Started, forwarder.State())
+	assert.Equal(t, defaultforwarderimpl.Started, forwarder.State())
 
 	forwarder.Stop()
-	assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
+	assert.Equal(t, defaultforwarderimpl.Stopped, forwarder.State())
 }
 
 func TestNewForwarderComponent_KeysPerDomainConfiguration(t *testing.T) {

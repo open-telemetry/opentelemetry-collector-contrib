@@ -236,7 +236,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, labelMap)),
+					}, labelMap),
+				),
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
@@ -245,7 +246,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, labelMap)),
+					}, labelMap),
+				),
 			},
 		},
 		{
@@ -299,7 +301,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, labelMap)),
+					}, labelMap),
+				),
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
@@ -308,7 +311,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, labelMap)),
+					}, labelMap),
+				),
 			},
 		},
 		{
@@ -345,7 +349,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					}, map[string]any{
 						"k0": "v0",
 						"k2": "v2",
-					})),
+					}),
+				),
 			},
 		},
 		{
@@ -377,7 +382,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"cloud_region":     "us-east",
 						"k_r0":             "vr0",
 						"k_r1":             "vr1",
-					})),
+					}),
+				),
 			},
 		},
 		{
@@ -412,7 +418,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"AWSUniqueId":      "abcd_us-east_efgh",
 						"k_r0":             "vr0",
 						"k_r1":             "vr1",
-					})),
+					}),
+				),
 			},
 		},
 		{
@@ -442,7 +449,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"cloud_provider": "gcp",
 						"k_r0":           "vr0",
 						"k_r1":           "vr1",
-					})),
+					}),
+				),
 			},
 		},
 		{
@@ -475,7 +483,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"cloud_provider":   "gcp",
 						"host_id":          "abcd",
 						"cloud_account_id": "efgh",
-					})),
+					}),
+				),
 			},
 		},
 		{

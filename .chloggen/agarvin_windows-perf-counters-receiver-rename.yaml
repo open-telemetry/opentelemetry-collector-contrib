@@ -1,0 +1,5 @@
+change_type: 'deprecation'
+component: receiver/windows_perf_counters
+note: Rename the 'windowsperfcounters' receiver to 'windows_perf_counters'. The old 'windowsperfcounters' type remains available as a deprecated alias.
+issues: [45339]
+change_logs: [user]

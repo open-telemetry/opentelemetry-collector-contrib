@@ -79,7 +79,8 @@ func (wp *wavefrontParser) Parse(line string) (pmetric.Metric, error) {
 		// Timestamp can be omitted so it is only correct if the string was a tag.
 		if strings.IndexByte(timestampStr, '=') == -1 {
 			return pmetric.Metric{}, fmt.Errorf(
-				"invalid timestamp for wavefront metric [%s]", line)
+				"invalid timestamp for wavefront metric [%s]", line,
+			)
 		}
 		// Assume timestamp was omitted, get current time and adjust index.
 		ts = time.Now()

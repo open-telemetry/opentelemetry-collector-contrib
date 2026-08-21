@@ -27,7 +27,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+	)
 }
 
 // Config defines configuration for netflow receiver.
@@ -46,7 +47,7 @@ func createDefaultConfig() component.Config {
 // We also create the UDP receiver, which is the piece of software that actually listens
 // for incoming netflow traffic on an UDP port.
 func createLogsReceiver(_ context.Context, params receiver.Settings, cfg component.Config, consumer consumer.Logs) (receiver.Logs, error) {
-	conf := *(cfg.(*Config))
+	conf := *cfg.(*Config)
 
 	nr, err := newNetflowLogsReceiver(params, conf, consumer)
 	if err != nil {

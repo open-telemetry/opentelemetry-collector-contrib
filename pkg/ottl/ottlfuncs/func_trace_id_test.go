@@ -4,8 +4,10 @@
 package ottlfuncs
 
 import (
+	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -112,4 +114,40 @@ func BenchmarkTraceID(b *testing.B) {
 			}
 		})
 	}
+}
+
+func Test_TraceIDFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewTraceIDFactory[any]()
+		assert.Equal(t, "TraceID", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewTraceIDFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &TraceIDArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewTraceIDFactory[any]()
+		args := factory.CreateDefaultArguments()
+		traceIDArgs, ok := args.(*TraceIDArguments[any])
+		require.True(t, ok)
+		traceIDArgs.Target = &ottl.StandardByteSliceLikeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "0123456789abcdef0123456789abcdef", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createTraceIDFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "TraceIDFactory args must be of type *TraceIDArguments[K]")
+	})
 }

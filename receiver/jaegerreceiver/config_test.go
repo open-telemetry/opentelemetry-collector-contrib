@@ -15,8 +15,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/metadata"
 )
@@ -194,7 +194,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -222,7 +222,7 @@ func TestFailedLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	err = sub.Unmarshal(cfg)
 	require.NoError(t, err)
-	err = xconfmap.Validate(cfg)
+	err = confmap.Validate(cfg)
 	assert.ErrorContains(t, err, "must specify at least one protocol when using the Jaeger receiver")
 }
 
@@ -245,14 +245,14 @@ func TestInvalidConfig(t *testing.T) {
 					Endpoint:  "localhost:",
 					Transport: confignet.TransportTypeTCP,
 				}
-				cfg.ThriftHTTP = configoptional.Some(thriftHTTPServerConfig)
+				cfg.Protocols.ThriftHTTP = configoptional.Some(thriftHTTPServerConfig)
 			},
 			err: "receiver creation with no port number for Thrift HTTP must fail",
 		},
 		{
 			desc: "thrift-udp-compact-no-port",
 			apply: func(cfg *Config) {
-				cfg.ThriftCompactUDP = configoptional.Some(ProtocolUDP{
+				cfg.Protocols.ThriftCompactUDP = configoptional.Some(ProtocolUDP{
 					Endpoint: "localhost:",
 				})
 			},
@@ -261,7 +261,7 @@ func TestInvalidConfig(t *testing.T) {
 		{
 			desc: "thrift-udp-binary-no-port",
 			apply: func(cfg *Config) {
-				cfg.ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
+				cfg.Protocols.ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
 					Endpoint: "localhost:",
 				})
 			},
@@ -270,7 +270,7 @@ func TestInvalidConfig(t *testing.T) {
 		{
 			desc: "grpc-invalid-host",
 			apply: func(cfg *Config) {
-				cfg.GRPC = configoptional.Some(configgrpc.ServerConfig{
+				cfg.Protocols.GRPC = configoptional.Some(configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "1234",
 						Transport: confignet.TransportTypeTCP,
@@ -289,7 +289,7 @@ func TestInvalidConfig(t *testing.T) {
 		{
 			desc: "port-outside-of-range",
 			apply: func(cfg *Config) {
-				cfg.ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
+				cfg.Protocols.ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
 					Endpoint: "localhost:65536",
 				})
 			},
@@ -303,7 +303,7 @@ func TestInvalidConfig(t *testing.T) {
 
 			tC.apply(cfg)
 
-			err := xconfmap.Validate(cfg)
+			err := confmap.Validate(cfg)
 			assert.Error(t, err, tC.err)
 		})
 	}

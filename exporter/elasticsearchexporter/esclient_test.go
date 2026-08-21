@@ -14,8 +14,50 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.uber.org/zap"
 )
+
+func TestTimeoutInterceptor(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		timeout     time.Duration
+		bodyLatency time.Duration
+	}{
+		{
+			name:    "zero",
+			timeout: 30 * time.Second,
+		},
+		{
+			name:        "fast",
+			timeout:     30 * time.Second,
+			bodyLatency: time.Millisecond,
+		},
+		{
+			name:        "slow",
+			timeout:     30 * time.Second,
+			bodyLatency: time.Second,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				if f, ok := w.(http.Flusher); ok {
+					f.Flush()
+				}
+				if tc.bodyLatency > 0 {
+					time.Sleep(tc.bodyLatency)
+				}
+				_, _ = w.Write([]byte(`{"took":1,"errors":false,"items":[{"create":{"_index":"logs-generic-default","status":201}}]}`))
+			})
+			exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+				cfg.ClientConfig.Timeout = tc.timeout
+				cfg.QueueBatchConfig.Get().WaitForResult = true
+			})
+			mustSendLogs(t, exporter, testdata.GenerateLogs(10))
+		})
+	}
+}
 
 func TestComponentStatus(t *testing.T) {
 	statusChan := make(chan *componentstatus.Event, 1)
@@ -41,7 +83,8 @@ func TestComponentStatus(t *testing.T) {
 	_ = esLogger.LogRoundTrip(
 		&http.Request{URL: &url.URL{}},
 		&http.Response{StatusCode: http.StatusUnauthorized, Status: "401 Unauthorized"},
-		nil, time.Now(), 0)
+		nil, time.Now(), 0,
+	)
 	select {
 	case event := <-statusChan:
 		err := event.Err()
@@ -56,7 +99,8 @@ func TestComponentStatus(t *testing.T) {
 	_ = esLogger.LogRoundTrip(
 		&http.Request{URL: &url.URL{}},
 		&http.Response{StatusCode: http.StatusConflict, Status: "409 duplicate"},
-		nil, time.Now(), 0)
+		nil, time.Now(), 0,
+	)
 	select {
 	case <-statusChan:
 		assert.Fail(t, "LogRoundTrip with a 409 should not change the component status")
@@ -66,7 +110,8 @@ func TestComponentStatus(t *testing.T) {
 	// Pass in an http success status and make sure the component status returns to OK
 	_ = esLogger.LogRoundTrip(
 		&http.Request{URL: &url.URL{}},
-		&http.Response{StatusCode: http.StatusOK}, nil, time.Now(), 0)
+		&http.Response{StatusCode: http.StatusOK}, nil, time.Now(), 0,
+	)
 	select {
 	case event := <-statusChan:
 		assert.NoError(t, event.Err(), "LogRoundTrip with a success status shouldn't report a component status error")

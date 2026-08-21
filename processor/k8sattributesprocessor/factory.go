@@ -78,7 +78,8 @@ func createTracesProcessor(
 		kp.processTraces,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(sc.Start),
-		processorhelper.WithShutdown(sc.Shutdown))
+		processorhelper.WithShutdown(sc.Shutdown),
+	)
 }
 
 func createLogsProcessor(
@@ -103,7 +104,8 @@ func createLogsProcessor(
 		kp.processLogs,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(sc.Start),
-		processorhelper.WithShutdown(sc.Shutdown))
+		processorhelper.WithShutdown(sc.Shutdown),
+	)
 }
 
 func createMetricsProcessor(
@@ -128,7 +130,8 @@ func createMetricsProcessor(
 		kp.processMetrics,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(sc.Start),
-		processorhelper.WithShutdown(sc.Shutdown))
+		processorhelper.WithShutdown(sc.Shutdown),
+	)
 }
 
 func createProfilesProcessor(
@@ -174,7 +177,8 @@ func createTracesProcessorWithOptions(
 		kp.processTraces,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(kp.Start),
-		processorhelper.WithShutdown(kp.Shutdown))
+		processorhelper.WithShutdown(kp.Shutdown),
+	)
 }
 
 func createMetricsProcessorWithOptions(
@@ -194,7 +198,8 @@ func createMetricsProcessorWithOptions(
 		kp.processMetrics,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(kp.Start),
-		processorhelper.WithShutdown(kp.Shutdown))
+		processorhelper.WithShutdown(kp.Shutdown),
+	)
 }
 
 func createLogsProcessorWithOptions(
@@ -214,7 +219,8 @@ func createLogsProcessorWithOptions(
 		kp.processLogs,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(kp.Start),
-		processorhelper.WithShutdown(kp.Shutdown))
+		processorhelper.WithShutdown(kp.Shutdown),
+	)
 }
 
 func createProfilesProcessorWithOptions(

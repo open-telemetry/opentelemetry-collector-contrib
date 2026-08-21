@@ -4,9 +4,11 @@ type: googlecloudpubsubpush
 status:
   class: receiver
   stability:
-    development: [logs]
+    alpha: [logs]
+  distributions: [contrib]
   codeowners:
-    active: [axw, constanca-m]
+    active: [constanca-m]
+    emeritus: [axw]
 
 tests:
   # start requires an encoding extension to exist

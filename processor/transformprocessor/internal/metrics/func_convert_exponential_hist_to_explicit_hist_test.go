@@ -71,7 +71,8 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			0,
 			0,
 			0,
-			1)
+			1,
+		)
 
 		dp.Positive().SetOffset(944)
 		return exponentialHistInput

@@ -35,6 +35,10 @@ The following are ignored:
 - batch boundaries — multiple `ResourceMetrics` / `ScopeMetrics` / `Metric`
   entries with the same identity are normalized before comparison.
 
+Use `IncludeValues()` to write supported datapoint values, or
+`IncludeHistogramExplicitBounds()` to write histogram bounds without other
+histogram values.
+
 `WriteAssertionFile` expects semantically valid metrics. It normalizes valid
 metrics into an assertion snapshot; it is not a validator for producer output.
 
@@ -111,6 +115,24 @@ Regex matchers are supported for resource attributes and datapoint attributes.
 The attribute map remains exact: unexpected attributes still fail the
 assertion.
 
+### Scope version matchers
+
+The scope `version` field accepts the same `/exists` and `/regex` operators as
+attributes, the assertion-file equivalent of `pmetrictest.IgnoreScopeVersion`.
+The scope `name` is always matched exactly.
+
+```yaml
+scopes:
+  - name: github.com/example/receiver
+    version/exists: true               # present, any value
+  - name: github.com/example/other
+    version/regex: 'v[0-9]+\.[0-9]+\.[0-9]+'  # full-string match
+```
+
+Use at most one of `version:`, `version/exists:`, or `version/regex:` per
+scope. `version/exists` accepts only `true`; any other value is a schema
+error.
+
 ### Shorthand: single empty-attribute datapoint
 
 A metric with exactly one datapoint that has no attributes can omit
@@ -139,7 +161,8 @@ must contain at least one datapoint; see
 ## Roadmap
 
 This is the identity-only subset of the grammar in #48079. Operator-suffix
-extensions beyond attribute `/exists` and `/regex` (`/include`, `/exclude`,
-`/all`, `/count`, `/approx`, `/gt|gte|lt|lte`) and opt-in fields
+extensions beyond attribute `/exists`/`/regex` and scope `version`
+`/exists`/`/regex` (`/include`, `/exclude`, `/all`, `/count`, `/approx`,
+`/gt|gte|lt|lte`) and opt-in fields
 (`IncludeValues()`, `IncludeTimestamps()`, `IncludeExemplars()`, type-specific
 histogram fields) are tracked as follow-ups under that issue.

@@ -188,6 +188,10 @@ func TestAccessAttributes_Setter_InvalidValue(t *testing.T) {
 	// Pass a value that is not a ctxutil.Map
 	err := getSetter.Setter(t.Context(), ctx, "not_a_map")
 	assert.Error(t, err)
+
+	// Passing nil clears the attributes to empty via ctxutil.GetMap, so it must not error.
+	err = getSetter.Setter(t.Context(), ctx, nil)
+	require.NoError(t, err)
 }
 
 func TestAccessAttributesKey_Getter(t *testing.T) {
@@ -374,6 +378,21 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 			}
 		}
 		assert.True(t, foundUpdatedFoo, "Should find updated 'foo' attribute with new value")
+	})
+
+	t.Run("nil-value", func(t *testing.T) {
+		path := pathtest.Path[*mockAttributeContext]{
+			KeySlice: []ottl.Key[*mockAttributeContext]{
+				&pathtest.Key[*mockAttributeContext]{
+					S: ottltest.Strp("foo"),
+				},
+			},
+		}
+		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
+		// Keyed access routes through ctxutil.SetValue, which accepts nil and
+		// sets an empty value, so nil must not error.
+		err := getSetter.Setter(t.Context(), ctx, nil)
+		require.NoError(t, err)
 	})
 
 	t.Run("insert-new-key", func(t *testing.T) {

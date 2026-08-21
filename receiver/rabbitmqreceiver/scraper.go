@@ -84,6 +84,11 @@ func (r *rabbitmqScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		scrapeErrors.AddPartial(0, fmt.Errorf("failed to collect node metrics: %w", err))
 	}
 
+	// Collect exchange metrics
+	if err := r.collectExchangeMetrics(ctx, now); err != nil {
+		scrapeErrors.AddPartial(0, fmt.Errorf("failed to collect exchange metrics: %w", err))
+	}
+
 	// Emit collected metrics
 	metrics := r.mb.Emit()
 
@@ -118,6 +123,17 @@ func (r *rabbitmqScraper) collectNodeMetrics(ctx context.Context, now pcommon.Ti
 	}
 	for _, node := range nodes {
 		r.collectNode(node, now)
+	}
+	return nil
+}
+
+func (r *rabbitmqScraper) collectExchangeMetrics(ctx context.Context, now pcommon.Timestamp) error {
+	exchanges, err := r.client.GetExchanges(ctx)
+	if err != nil {
+		return err
+	}
+	for _, exchange := range exchanges {
+		r.collectExchange(exchange, now)
 	}
 	return nil
 }
@@ -259,6 +275,18 @@ func (r *rabbitmqScraper) collectNode(node *models.Node, now pcommon.Timestamp) 
 
 	rb := r.mb.NewResourceBuilder()
 	rb.SetRabbitmqNodeName(node.Name)
+	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+}
+
+// collectExchange collects metrics for a specific RabbitMQ exchange
+func (r *rabbitmqScraper) collectExchange(exchange *models.Exchange, now pcommon.Timestamp) {
+	r.mb.RecordRabbitmqExchangeMessagesPublishedInDataPoint(now, exchange.MessageStats.PublishIn)
+	r.mb.RecordRabbitmqExchangeMessagesPublishedOutDataPoint(now, exchange.MessageStats.PublishOut)
+
+	rb := r.mb.NewResourceBuilder()
+	rb.SetRabbitmqExchangeName(exchange.Name)
+	rb.SetRabbitmqExchangeType(exchange.Type)
+	rb.SetRabbitmqVhostName(exchange.VHost)
 	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 

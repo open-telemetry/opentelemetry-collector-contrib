@@ -33,15 +33,26 @@ func getNewCompositePolicy(settings component.TelemetrySettings, config *Composi
 
 // Apply rate allocations to the sub-policies
 func getRateAllocationMap(config *CompositeCfg) map[string]float64 {
-	rateAllocationsMap := make(map[string]float64)
+	rateAllocationsMap := make(map[string]float64, len(config.SubPolicyCfg))
 	maxTotalSPS := float64(config.MaxTotalSpansPerSecond)
 	// Default SPS determined by equally diving number of sub policies
 	defaultSPS := maxTotalSPS / float64(len(config.SubPolicyCfg))
+
+	percentByPolicy := make(map[string]int64, len(config.RateAllocation))
 	for _, rAlloc := range config.RateAllocation {
-		if rAlloc.Percent > 0 {
-			rateAllocationsMap[rAlloc.Policy] = (float64(rAlloc.Percent) / 100) * maxTotalSPS
+		percentByPolicy[rAlloc.Policy] = rAlloc.Percent
+	}
+
+	// Iterate over every configured sub-policy, not just the ones listed in
+	// RateAllocation, so a sub-policy left out of RateAllocation still gets
+	// its equal-share default instead of silently falling back to a zero
+	// value MaxSpansPerSecond (which permanently blocks it from sampling).
+	for i := range config.SubPolicyCfg {
+		subPolicy := &config.SubPolicyCfg[i]
+		if percent, ok := percentByPolicy[subPolicy.Name]; ok && percent > 0 {
+			rateAllocationsMap[subPolicy.Name] = (float64(percent) / 100) * maxTotalSPS
 		} else {
-			rateAllocationsMap[rAlloc.Policy] = defaultSPS
+			rateAllocationsMap[subPolicy.Name] = defaultSPS
 		}
 	}
 	return rateAllocationsMap

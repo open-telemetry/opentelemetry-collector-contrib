@@ -63,7 +63,8 @@ func (cfg *Config) Unmarshal(cp *confmap.Conf) error {
 		return fmt.Errorf(
 			"unknown parser type %q, valid parser types: %v",
 			cfg.Type,
-			validParsers)
+			validParsers,
+		)
 	}
 
 	cfg.Config = defaultCfgFn()

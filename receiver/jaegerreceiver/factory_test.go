@@ -41,7 +41,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	// have to enable at least one protocol for the jaeger receiver to be created
-	cfg.(*Config).GRPC = configoptional.Some(configgrpc.ServerConfig{
+	cfg.(*Config).Protocols.GRPC = configoptional.Some(configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: confignet.TransportTypeTCP,
@@ -82,7 +82,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).GRPC = configoptional.Some(configgrpc.ServerConfig{
+	cfg.(*Config).Protocols.GRPC = configoptional.Some(configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: confignet.TransportTypeTCP,
@@ -99,7 +99,7 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).GRPC = configoptional.Some(configgrpc.ServerConfig{
+	cfg.(*Config).Protocols.GRPC = configoptional.Some(configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: confignet.TransportTypeTCP,
@@ -137,7 +137,7 @@ func TestCreateTLSThriftHTTPEndpoint(t *testing.T) {
 			KeyFile:  "./testdata/server.key",
 		},
 	})
-	cfg.(*Config).ThriftHTTP = configoptional.Some(thriftHTTPServerConfig)
+	cfg.(*Config).Protocols.ThriftHTTP = configoptional.Some(thriftHTTPServerConfig)
 
 	set := receivertest.NewNopSettings(metadata.Type)
 
@@ -166,7 +166,7 @@ func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
+	cfg.(*Config).Protocols.ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
 		Endpoint: "0.0.0.0:6832",
 	})
 	set := receivertest.NewNopSettings(metadata.Type)
@@ -180,7 +180,7 @@ func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).ThriftCompactUDP = configoptional.Some(ProtocolUDP{
+	cfg.(*Config).Protocols.ThriftCompactUDP = configoptional.Some(ProtocolUDP{
 		Endpoint: "0.0.0.0:6831",
 	})
 	set := receivertest.NewNopSettings(metadata.Type)

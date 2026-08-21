@@ -109,6 +109,16 @@ func (l *LambdaActivation[K]) SetArg(i int, v any) error {
 	return nil
 }
 
+// IsArgBound reports whether the i-th argument is bound to a named formal parameter in the
+// lambda, meaning it must be explicitly set via [LambdaActivation.SetArg] before calling
+// [LambdaActivation.Eval]. Arguments whose formal is declared as a blank identifier ("_")
+// are discarded and do not need to be set. Because activations are reused across invocations,
+// skipping SetArg for a bound argument may produce stale values from a prior call.
+// Panics if i is out of range.
+func (l *LambdaActivation[K]) IsArgBound(i int) bool {
+	return !l.expr.formals[i].IsBlank()
+}
+
 // Eval runs the lambda with positional arguments set via [LambdaActivation.SetArg].
 // The result type follows the lambda body (value or boolean sub-expression) evaluation and
 // may be nil if the body evaluates to nil.

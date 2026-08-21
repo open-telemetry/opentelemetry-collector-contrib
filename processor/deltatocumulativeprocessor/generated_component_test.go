@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
-var typ = component.MustNewType("deltatocumulative")
+var typ = component.MustNewType("delta_to_cumulative")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())

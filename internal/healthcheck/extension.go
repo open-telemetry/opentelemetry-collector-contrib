@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/grpc"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/http"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/httpserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
@@ -68,7 +68,7 @@ func NewHealthCheckExtension(
 	}
 
 	if !config.UseV2 || config.UseV2 && config.HTTPConfig != nil {
-		httpServer := http.NewServer(
+		httpServer := httpserver.NewServer(
 			config.HTTPConfig,
 			config.LegacyConfig,
 			config.ComponentHealthConfig,

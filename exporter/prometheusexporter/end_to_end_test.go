@@ -110,7 +110,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	// 4. Scrape from the Prometheus receiver to ensure that we export summary metrics
 	wg.Wait()
 
-	res, err := http.Get("http://" + exporterCfg.NetAddr.Endpoint + "/metrics")
+	res, err := http.Get("http://" + exporterCfg.ServerConfig.NetAddr.Endpoint + "/metrics")
 	require.NoError(t, err, "Failed to scrape from the exporter")
 	prometheusExporterScrape, err := io.ReadAll(res.Body)
 	res.Body.Close()

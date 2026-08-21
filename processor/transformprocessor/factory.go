@@ -198,12 +198,8 @@ func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
 }
 
 func (f *transformProcessorFactory) createDefaultConfig() component.Config {
-	defaultErrorMode := ottl.PropagateError
-	if metadata.ProcessorTransformDefaultErrorModeIgnoreFeatureGate.IsEnabled() {
-		defaultErrorMode = ottl.IgnoreError
-	}
 	return &Config{
-		ErrorMode:          defaultErrorMode,
+		ErrorMode:          ottl.IgnoreError,
 		TraceStatements:    []common.ContextStatements{},
 		MetricStatements:   []common.ContextStatements{},
 		LogStatements:      []common.ContextStatements{},
@@ -238,7 +234,8 @@ func (f *transformProcessorFactory) createLogsProcessor(
 		cfg,
 		nextConsumer,
 		proc.ProcessLogs,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }
 
 func (f *transformProcessorFactory) createTracesProcessor(
@@ -264,7 +261,8 @@ func (f *transformProcessorFactory) createTracesProcessor(
 		cfg,
 		nextConsumer,
 		proc.ProcessTraces,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }
 
 func (f *transformProcessorFactory) createMetricsProcessor(
@@ -292,7 +290,8 @@ func (f *transformProcessorFactory) createMetricsProcessor(
 		cfg,
 		nextConsumer,
 		proc.ProcessMetrics,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }
 
 func (f *transformProcessorFactory) createProfilesProcessor(
@@ -317,5 +316,6 @@ func (f *transformProcessorFactory) createProfilesProcessor(
 		cfg,
 		nextConsumer,
 		proc.ProcessProfiles,
-		xprocessorhelper.WithCapabilities(processorCapabilities))
+		xprocessorhelper.WithCapabilities(processorCapabilities),
+	)
 }

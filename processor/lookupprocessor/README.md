@@ -150,7 +150,8 @@ Lookups are evaluated per record. When writing to resource attributes, later rec
 ## Built-in Sources
 
 - [noop](internal/source/noop/README.md) - No-operation source for testing
-- [yaml](internal/source/yaml/README.md) - Key-value mappings from YAML files
+- [yaml](internal/source/yaml/README.md) - Key-value mappings from YAML files (optional periodic reload)
+- [csv](internal/source/csv/README.md) - Key-value mappings from CSV files, with or without a header (optional periodic reload)
 - [dns](internal/source/dns/README.md) - DNS lookups with caching
 
 ## Caching

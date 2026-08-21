@@ -44,7 +44,7 @@ func TestEvaluate_Latency(t *testing.T) {
 					Duration:  5000 * time.Millisecond,
 				},
 			},
-			samplingpolicy.Sampled,
+			samplingpolicy.NotSampled,
 		},
 		{
 			"total trace duration is longer than threshold but every single span is shorter",

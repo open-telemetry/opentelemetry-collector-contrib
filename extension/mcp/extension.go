@@ -57,14 +57,14 @@ func (mcpe *mcpExtension) Start(ctx context.Context, host component.Host) error 
 		return s
 	}, nil)
 
-	mcpe.server, err = mcpe.cfg.ToServer(ctx, host.GetExtensions(), mcpe.settings, handler)
+	mcpe.server, err = mcpe.cfg.ServerConfig.ToServer(ctx, host.GetExtensions(), mcpe.settings, handler)
 	if err != nil {
 		return err
 	}
 
-	mcpe.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", mcpe.cfg.NetAddr.Endpoint))
+	mcpe.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", mcpe.cfg.ServerConfig.NetAddr.Endpoint))
 	var listener net.Listener
-	if listener, err = mcpe.cfg.ToListener(ctx); err != nil {
+	if listener, err = mcpe.cfg.ServerConfig.ToListener(ctx); err != nil {
 		return err
 	}
 

@@ -3692,7 +3692,8 @@ func TestEndMetricsOpReportsDataPointCount(t *testing.T) {
 					{
 						Attributes: otelattr.NewSet(
 							otelattr.String("receiver", receiverID.String()),
-							otelattr.String("transport", "http")),
+							otelattr.String("transport", "http"),
+						),
 						Value: 3, // 3 data points, not 1 (resource count)
 					},
 				},

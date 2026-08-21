@@ -21,7 +21,8 @@ func TestValidMetricsStream(t *testing.T) {
 		zap.NewNop(),
 		cfg.UAA.LimitedClientConfig,
 		cfg.UAA.Username,
-		string(cfg.UAA.Password))
+		string(cfg.UAA.Password),
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, uaa)
@@ -31,7 +32,8 @@ func TestValidMetricsStream(t *testing.T) {
 		componenttest.NewNopTelemetrySettings(),
 		uaa,
 		cfg.RLPGateway.ClientConfig,
-		componenttest.NewNopHost())
+		componenttest.NewNopHost(),
+	)
 
 	require.NoError(t, streamErr)
 	require.NotNil(t, streamFactory)
@@ -54,7 +56,8 @@ func TestValidLogsStream(t *testing.T) {
 		zap.NewNop(),
 		cfg.UAA.LimitedClientConfig,
 		cfg.UAA.Username,
-		string(cfg.UAA.Password))
+		string(cfg.UAA.Password),
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, uaa)
@@ -64,7 +67,8 @@ func TestValidLogsStream(t *testing.T) {
 		componenttest.NewNopTelemetrySettings(),
 		uaa,
 		cfg.RLPGateway.ClientConfig,
-		componenttest.NewNopHost())
+		componenttest.NewNopHost(),
+	)
 
 	require.NoError(t, streamErr)
 	require.NotNil(t, streamFactory)

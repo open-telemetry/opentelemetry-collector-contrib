@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: processor/dynamic_sampling
+
+note: Add a fingerprint_duration histogram recording per-decision fingerprint extraction time by rule
+
+issues: [49311]
+
+change_logs: [user]

@@ -329,6 +329,49 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 			},
 		},
 		{
+			name:                "integer NHCB without explicit bounds",
+			metricName:          "histogram",
+			intervalStartTimeMs: 11,
+			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
+			integerHistogram: &histogram.Histogram{
+				Schema:          histogram.CustomBucketsSchema,
+				Count:           42,
+				Sum:             123.5,
+				PositiveSpans:   []histogram.Span{{Offset: 0, Length: 1}},
+				PositiveBuckets: []int64{42},
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetCount(42)
+				point.SetSum(123.5)
+				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))
+				point.BucketCounts().FromRaw([]uint64{42})
+				attributes := point.Attributes()
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
+				return point
+			},
+		},
+		{
+			name:                "integer NHCB without explicit bounds with zero count",
+			metricName:          "histogram",
+			intervalStartTimeMs: 11,
+			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
+			integerHistogram: &histogram.Histogram{
+				Schema: histogram.CustomBucketsSchema,
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetSum(0)
+				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))
+				point.BucketCounts().FromRaw([]uint64{0})
+				attributes := point.Attributes()
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
+				return point
+			},
+		},
+		{
 			name:                "integer NHCB that is stale",
 			metricName:          "histogram",
 			intervalStartTimeMs: 11,
@@ -345,6 +388,26 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 				point.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 5.0, 10.0})
 				point.BucketCounts().FromRaw([]uint64{0, 0, 0, 0, 0})
+				attributes := point.Attributes()
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
+				return point
+			},
+		},
+		{
+			name:                "integer NHCB without explicit bounds that is stale",
+			metricName:          "histogram",
+			intervalStartTimeMs: 11,
+			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
+			integerHistogram: &histogram.Histogram{
+				Schema: histogram.CustomBucketsSchema,
+				Sum:    math.Float64frombits(value.StaleNaN),
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))
+				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+				point.BucketCounts().FromRaw([]uint64{0})
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
 				attributes.PutStr("b", "B")
@@ -373,6 +436,63 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 				point.BucketCounts().FromRaw([]uint64{15, 20, 15})
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
+				return point
+			},
+		},
+		{
+			name:                "float NHCB without explicit bounds",
+			metricName:          "histogram",
+			intervalStartTimeMs: 12,
+			labels:              labels.FromMap(map[string]string{"a": "A"}),
+			floatHistogram: &histogram.FloatHistogram{
+				Schema:          histogram.CustomBucketsSchema,
+				Count:           42,
+				Sum:             123.5,
+				PositiveSpans:   []histogram.Span{{Offset: 0, Length: 1}},
+				PositiveBuckets: []float64{42},
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetCount(42)
+				point.SetSum(123.5)
+				point.SetTimestamp(pcommon.Timestamp(12 * time.Millisecond))
+				point.BucketCounts().FromRaw([]uint64{42})
+				point.Attributes().PutStr("a", "A")
+				return point
+			},
+		},
+		{
+			name:                "float NHCB without explicit bounds with zero count",
+			metricName:          "histogram",
+			intervalStartTimeMs: 12,
+			labels:              labels.FromMap(map[string]string{"a": "A"}),
+			floatHistogram: &histogram.FloatHistogram{
+				Schema: histogram.CustomBucketsSchema,
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetSum(0)
+				point.SetTimestamp(pcommon.Timestamp(12 * time.Millisecond))
+				point.BucketCounts().FromRaw([]uint64{0})
+				point.Attributes().PutStr("a", "A")
+				return point
+			},
+		},
+		{
+			name:                "float NHCB without explicit bounds that is stale",
+			metricName:          "histogram",
+			intervalStartTimeMs: 12,
+			labels:              labels.FromMap(map[string]string{"a": "A"}),
+			floatHistogram: &histogram.FloatHistogram{
+				Schema: histogram.CustomBucketsSchema,
+				Sum:    math.Float64frombits(value.StaleNaN),
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetTimestamp(pcommon.Timestamp(12 * time.Millisecond))
+				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+				point.BucketCounts().FromRaw([]uint64{0})
+				point.Attributes().PutStr("a", "A")
 				return point
 			},
 		},
@@ -423,6 +543,44 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 			got := hdpL.At(0)
 			want := tt.want()
 			require.Equal(t, want, got, "Expected the points to be equal")
+		})
+	}
+}
+
+func TestMetricGroupData_toNHCBDistributionRejectsNonzeroSumWithZeroCount(t *testing.T) {
+	tests := []struct {
+		name             string
+		integerHistogram *histogram.Histogram
+		floatHistogram   *histogram.FloatHistogram
+	}{
+		{
+			name: "integer NHCB",
+			integerHistogram: &histogram.Histogram{
+				Schema: histogram.CustomBucketsSchema,
+				Sum:    123.5,
+			},
+		},
+		{
+			name: "float NHCB",
+			floatHistogram: &histogram.FloatHistogram{
+				Schema: histogram.CustomBucketsSchema,
+				Sum:    123.5,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mp := newMetricFamily("histogram", mc, zap.NewNop(), false, false)
+			lbls := labels.FromMap(map[string]string{"a": "A"})
+			sRef, _ := getSeriesRefWithoutScopeLabels(nil, lbls, mp.mtype)
+
+			err := mp.addNHCBSeries(sRef, "histogram", lbls, 11, tt.integerHistogram, tt.floatHistogram)
+			require.NoError(t, err)
+
+			sl := pmetric.NewMetricSlice()
+			mp.appendMetric(sl, false)
+			require.Zero(t, sl.Len())
 		})
 	}
 }

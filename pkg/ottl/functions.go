@@ -433,7 +433,7 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 		var err error
 		var ok bool
 		if isOptional {
-			manager, ok = field.Interface().(optionalManager)
+			manager, ok = reflect.TypeAssert[optionalManager](field)
 
 			if !ok {
 				return errors.New("optional type is not manageable by the OTTL parser. This is an error in the OTTL")

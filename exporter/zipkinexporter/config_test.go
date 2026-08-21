@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter/internal/metadata"
@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 
 	// URL doesn't have a default value so set it directly.
 	defaultCfg := createDefaultConfig().(*Config)
-	defaultCfg.Endpoint = "http://some.location.org:9411/api/v2/spans"
+	defaultCfg.ClientConfig.Endpoint = "http://some.location.org:9411/api/v2/spans"
 	maxIdleConns := 50
 	idleConnTimeout := 5 * time.Second
 
@@ -86,7 +86,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

@@ -38,10 +38,10 @@ const (
 // CertificateTarget represents a target for certificate checking, which can be either
 // a network endpoint or a local file
 type CertificateTarget struct {
-	confignet.TCPAddrConfig `mapstructure:",squash"`
-	FilePath                string              `mapstructure:"file_path"`
-	FileFormat              FileFormat          `mapstructure:"file_format"`
-	Password                configopaque.String `mapstructure:"password"`
+	TCPAddrConfig confignet.TCPAddrConfig `mapstructure:",squash"`
+	FilePath      string                  `mapstructure:"file_path"`
+	FileFormat    FileFormat              `mapstructure:"file_format"`
+	Password      configopaque.String     `mapstructure:"password"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -49,19 +49,19 @@ type CertificateTarget struct {
 
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	Targets                        []*CertificateTarget `mapstructure:"targets"`
+	ControllerConfig     scraperhelper.ControllerConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	Targets              []*CertificateTarget           `mapstructure:"targets"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
 func validateTarget(ct *CertificateTarget) error {
-	if ct.Endpoint != "" && ct.FilePath != "" {
+	if ct.TCPAddrConfig.Endpoint != "" && ct.FilePath != "" {
 		return errors.New("cannot specify both endpoint and file_path")
 	}
-	if ct.Endpoint == "" && ct.FilePath == "" {
+	if ct.TCPAddrConfig.Endpoint == "" && ct.FilePath == "" {
 		return errors.New("must specify either endpoint or file_path")
 	}
 

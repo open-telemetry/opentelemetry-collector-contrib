@@ -75,7 +75,7 @@ func TestCreateNewTracesReceiver(t *testing.T) {
 
 func TestHealthCheck(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")
@@ -143,7 +143,7 @@ func TestHandleReq_RequiredHeaders(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.WebHook.NetAddr.Endpoint = "localhost:0"
+			cfg.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 			if tt.requiredHeaders != nil {
 				cfg.WebHook.RequiredHeaders = tt.requiredHeaders
 			}

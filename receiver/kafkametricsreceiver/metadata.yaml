@@ -29,6 +29,10 @@ resource_attributes:
     description: The alias name (string) of the cluster
     enabled: false
     type: string
+  kafka.cluster.id:
+    description: The unique ID (string) of the Kafka cluster, as reported in cluster metadata.
+    enabled: false
+    type: string
 
 attributes:
   broker:

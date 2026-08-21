@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
@@ -30,8 +30,8 @@ func TestLoadConfig(t *testing.T) {
 
 	allSettingsServerConfig := confighttp.NewDefaultServerConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	allSettingsServerConfig.WriteTimeout = 0
-	allSettingsServerConfig.ReadHeaderTimeout = 0
+	allSettingsServerConfig.WriteTimeout = defaultServerTimeout
+	allSettingsServerConfig.ReadHeaderTimeout = defaultServerTimeout
 	allSettingsServerConfig.IdleTimeout = 0
 	allSettingsServerConfig.KeepAlivesEnabled = false
 	allSettingsServerConfig.NetAddr = confignet.AddrConfig{
@@ -41,8 +41,8 @@ func TestLoadConfig(t *testing.T) {
 
 	tlsServerConfig := confighttp.NewDefaultServerConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	tlsServerConfig.WriteTimeout = 0
-	tlsServerConfig.ReadHeaderTimeout = 0
+	tlsServerConfig.WriteTimeout = defaultServerTimeout
+	tlsServerConfig.ReadHeaderTimeout = defaultServerTimeout
 	tlsServerConfig.IdleTimeout = 0
 	tlsServerConfig.KeepAlivesEnabled = false
 	tlsServerConfig.NetAddr = confignet.AddrConfig{
@@ -113,7 +113,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

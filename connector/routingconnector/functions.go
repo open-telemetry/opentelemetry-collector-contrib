@@ -36,7 +36,7 @@ func standardFunctions[K any]() map[string]ottl.Factory[K] {
 func spanFunctions() map[string]ottl.Factory[*ottlspan.TransformContext] {
 	funcs := standardFunctions[*ottlspan.TransformContext]()
 
-	isRootSpan := ottlfuncs.NewIsRootSpanFactoryNew()
+	isRootSpan := ottlfuncs.NewIsRootSpanFactory()
 	funcs[isRootSpan.Name()] = isRootSpan
 
 	return funcs

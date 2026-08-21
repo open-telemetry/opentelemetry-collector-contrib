@@ -55,6 +55,49 @@ func TestAssertMetrics_IncludeValues(t *testing.T) {
 	require.Contains(t, err.Error(), "value mismatch")
 }
 
+func TestWriteAssertionFile_IncludeHistogramExplicitBounds(t *testing.T) {
+	m := buildHistogramMetrics()
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, WriteAssertionFile(t, path, m, IncludeHistogramExplicitBounds()))
+
+	doc, err := readDocument(path)
+	require.NoError(t, err)
+	datapoints := doc.Resources[0].Scopes[0].Metrics[0].Datapoints
+	require.Equal(t, []datapointAssertion{{
+		ExplicitBounds: &[]float64{0.005, 0.01, 0.025},
+	}}, datapoints)
+
+	dp := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0)
+	dp.SetCount(999)
+	dp.SetSum(123.45)
+	dp.SetMin(0.001)
+	dp.SetMax(100)
+	dp.BucketCounts().FromRaw([]uint64{9, 8, 7, 6})
+	require.NoError(t, AssertMetrics(path, m))
+
+	dp.ExplicitBounds().FromRaw([]float64{0.005, 0.02, 0.025})
+	err = AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "explicit_bounds mismatch")
+}
+
+func TestWriteAssertionFile_IncludeEmptyHistogramExplicitBounds(t *testing.T) {
+	m := buildHistogramMetrics()
+	dp := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0)
+	dp.ExplicitBounds().FromRaw([]float64{})
+	dp.BucketCounts().FromRaw([]uint64{10})
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, WriteAssertionFile(t, path, m, IncludeHistogramExplicitBounds()))
+	require.NoError(t, AssertMetrics(path, m))
+
+	dp.ExplicitBounds().FromRaw([]float64{1})
+	dp.BucketCounts().FromRaw([]uint64{0, 10})
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "explicit_bounds mismatch")
+}
+
 func TestAssertMetrics_DetectsMissingMetric(t *testing.T) {
 	m := buildSampleMetrics()
 	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
@@ -280,6 +323,198 @@ resources:
 	require.NoError(t, AssertMetrics(path, m))
 }
 
+func TestAssertMetrics_ScopeVersionExistsMatcher(t *testing.T) {
+	// The scope version/exists matcher is the assertion-file equivalent of
+	// pmetrictest.IgnoreScopeVersion: the version must be present but its
+	// exact value is volatile.
+	m := buildSampleMetrics()
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version/exists: true
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+
+	// A different scope version still satisfies version/exists.
+	m.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().SetVersion("v9.9.9")
+	require.NoError(t, AssertMetrics(path, m))
+}
+
+func TestAssertMetrics_ScopeVersionExistsMatcherDetectsMissingVersion(t *testing.T) {
+	m := buildSampleMetrics()
+	m.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().SetVersion("")
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version/exists: true
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing expected scope")
+}
+
+func TestAssertMetrics_ScopeVersionRegexMatcher(t *testing.T) {
+	m := buildSampleMetrics()
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version/regex: v[0-9]+\.[0-9]+\.[0-9]+
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+
+	// Another semver-shaped version still matches.
+	m.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().SetVersion("v1.2.3")
+	require.NoError(t, AssertMetrics(path, m))
+
+	// A non-matching version fails.
+	m.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().SetVersion("snapshot")
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing expected scope")
+
+	// The pattern must match the full version: a value the regex matches only
+	// as a prefix must still fail (the matcher anchors with ^(?:...)$).
+	m.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().SetVersion("v1.2.3-rc1")
+	err = AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing expected scope")
+}
+
+func TestAssertMetrics_ScopeMatcherRoundTripStaysExact(t *testing.T) {
+	// WriteAssertionFile must keep emitting plain name:/version: scalars, not
+	// operator-suffixed keys, so generated snapshots are unchanged.
+	m := buildSampleMetrics()
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, WriteAssertionFile(t, path, m))
+
+	raw, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.Contains(t, string(raw), "name: github.com/example/receiver")
+	require.Contains(t, string(raw), "version: v0.0.1")
+	require.NotContains(t, string(raw), "/exists")
+	require.NotContains(t, string(raw), "/regex")
+
+	require.NoError(t, AssertMetrics(path, m))
+}
+
+func TestReadDocument_ScopeMatcherSchemaErrors(t *testing.T) {
+	t.Run("exists must be true", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+		require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - scopes:
+        - name: scope
+          version/exists: false
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+`), 0o600))
+		_, err := readDocument(path)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "scope version/exists must be true")
+	})
+
+	t.Run("at most one version matcher", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+		require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - scopes:
+        - name: scope
+          version: v1
+          version/regex: v[0-9]+
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+`), 0o600))
+		_, err := readDocument(path)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "must use at most one of")
+	})
+
+	t.Run("regex pattern must compile", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+		require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - scopes:
+        - name: scope
+          version/regex: "["
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+`), 0o600))
+		_, err := readDocument(path)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), `scope version/regex has invalid pattern "["`)
+	})
+}
+
 func TestAssertMetrics_SingleEmptyDatapointShorthand(t *testing.T) {
 	// A YAML snippet that omits `datapoints:` entirely must match a metric
 	// with exactly one datapoint that has no attributes.
@@ -334,6 +569,26 @@ func buildSampleMetrics() pmetric.Metrics {
 		dp.SetTimestamp(pcommon.Timestamp(1))
 	}
 
+	return m
+}
+
+func buildHistogramMetrics() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	rm := m.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName("scope")
+
+	metric := sm.Metrics().AppendEmpty()
+	metric.SetName("request.duration")
+	histogram := metric.SetEmptyHistogram()
+	histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	dp := histogram.DataPoints().AppendEmpty()
+	dp.SetCount(10)
+	dp.SetSum(0.5)
+	dp.SetMin(0.001)
+	dp.SetMax(0.2)
+	dp.ExplicitBounds().FromRaw([]float64{0.005, 0.01, 0.025})
+	dp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
 	return m
 }
 

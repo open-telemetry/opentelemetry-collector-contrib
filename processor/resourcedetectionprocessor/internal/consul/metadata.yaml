@@ -1,17 +1,31 @@
 type: resourcedetectionprocessor/consul
+sem_conv_version: 1.40.0
 
 parent: resourcedetection
 
+feature_gates:
+  - id: processor.resourcedetection.consul.prefixMetaAttributes
+    stage: alpha
+    description: When enabled, Consul node metadata is emitted as `consul.meta.<key>` resource attributes instead of `<key>`.
+    from_version: v0.159.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49988
+
 resource_attributes:
   cloud.region:
+    semantic_convention:
+      ref: cloud.md#cloud-region
     description: The cloud.region
     type: string
     enabled: true
   host.id:
+    semantic_convention:
+      ref: host.md#host-id
     description: The host.id
     type: string
     enabled: true
   host.name:
+    semantic_convention:
+      ref: host.md#host-name
     description: The hostname
     type: string
     enabled: true

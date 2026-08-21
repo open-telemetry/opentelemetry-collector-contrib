@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/processor/xprocessor"
 
@@ -45,16 +44,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	}, cfg)
 	assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
-
-	t.Cleanup(func() {
-		_ = featuregate.GlobalRegistry().Set(metadata.ProcessorFilterDefaultErrorModeIgnoreFeatureGate.ID(), true)
-	})
-
-	err := featuregate.GlobalRegistry().Set(metadata.ProcessorFilterDefaultErrorModeIgnoreFeatureGate.ID(), false)
-	require.NoError(t, err)
-
-	cfg = factory.CreateDefaultConfig()
-	assert.Equal(t, ottl.PropagateError, cfg.(*Config).ErrorMode)
 }
 
 func TestCreateProcessors(t *testing.T) {

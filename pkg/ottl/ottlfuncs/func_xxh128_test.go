@@ -79,3 +79,39 @@ func Test_XXH128Error(t *testing.T) {
 		})
 	}
 }
+
+func Test_XXH128Factory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewXXH128Factory[any]()
+		assert.Equal(t, "XXH128", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewXXH128Factory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &XXH128Arguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewXXH128Factory[any]()
+		args := factory.CreateDefaultArguments()
+		XXH128Args, ok := args.(*XXH128Arguments[any])
+		require.True(t, ok)
+		XXH128Args.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "hello", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createXXH128Function[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "XXH128Factory args must be of type *XXH128Arguments[K]")
+	})
+}

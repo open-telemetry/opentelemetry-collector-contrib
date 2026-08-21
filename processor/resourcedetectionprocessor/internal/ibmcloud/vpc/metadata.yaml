@@ -1,4 +1,5 @@
 type: ibmcloudvpcdetector
+sem_conv_version: 1.40.0
 
 status:
   class: processor
@@ -9,46 +10,68 @@ status:
 
 resource_attributes:
   cloud.account.id:
+    semantic_convention:
+      ref: cloud.md#cloud-account-id
     description: The IBM Cloud account ID.
     type: string
     enabled: true
   cloud.availability_zone:
+    semantic_convention:
+      ref: cloud.md#cloud-availability-zone
     description: The IBM Cloud availability zone (e.g., us-south-1).
     type: string
     enabled: true
   cloud.platform:
+    semantic_convention:
+      ref: cloud.md#cloud-platform
     description: The cloud platform (ibm_cloud.vpc).
     type: string
     enabled: true
   cloud.provider:
+    semantic_convention:
+      ref: cloud.md#cloud-provider
     description: The cloud provider (ibm_cloud).
     type: string
     enabled: true
   cloud.region:
+    semantic_convention:
+      ref: cloud.md#cloud-region
     description: The IBM Cloud region (e.g., us-south).
     type: string
     enabled: true
   cloud.resource_id:
+    semantic_convention:
+      ref: cloud.md#cloud-resource-id
     description: The CRN (Cloud Resource Name) of the instance.
     type: string
     enabled: true
   host.id:
+    semantic_convention:
+      ref: host.md#host-id
     description: The unique ID of the virtual server instance.
     type: string
     enabled: true
   host.image.id:
+    semantic_convention:
+      ref: host.md#host-image-id
     description: The VM image ID of the virtual server instance.
     type: string
     enabled: true
   host.image.name:
+    semantic_convention:
+      ref: host.md#host-image-name
     description: The VM image name of the virtual server instance.
     type: string
     enabled: true
   host.name:
+    semantic_convention:
+      ref: host.md#host-name
     description: The name of the virtual server instance.
     type: string
     enabled: true
   host.type:
+    semantic_convention:
+      ref: host.md#host-type
     description: The instance profile name (e.g., bx2-2x8).
     type: string
     enabled: true

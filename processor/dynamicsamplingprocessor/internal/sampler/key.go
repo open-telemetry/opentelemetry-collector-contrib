@@ -17,25 +17,42 @@ const (
 	valueSeparator          = ","
 )
 
-// ExtractKey builds a deterministic sampling key from the values of the
-// configured key fields across all spans in the trace. Resource and span
-// attributes are both scanned. Distinct values per field are sorted to
-// guarantee a stable key independent of span ordering.
-func ExtractKey(spans []ptrace.ResourceSpans, fields []string) string {
-	parts := make([]string, len(fields))
-	for i, field := range fields {
-		parts[i] = extractField(spans, field)
+// RootMatcher reports whether a span satisfies the processor's root-span
+// condition. Only consulted for root-scoped selectors.
+type RootMatcher func(rs ptrace.ResourceSpans, ss ptrace.ScopeSpans, span ptrace.Span) bool
+
+// ExtractKey builds a deterministic sampling key from the values selected by
+// the fingerprint selectors across the trace. Distinct values per selector
+// are sorted to guarantee a stable key independent of span ordering.
+func ExtractKey(spans []ptrace.ResourceSpans, selectors []Selector, isRoot RootMatcher) string {
+	parts := make([]string, len(selectors))
+	for i, sel := range selectors {
+		parts[i] = extractSelector(spans, sel, isRoot)
 	}
 	return strings.Join(parts, fieldSeparator)
 }
 
-func extractField(spans []ptrace.ResourceSpans, field string) string {
+func extractSelector(spans []ptrace.ResourceSpans, sel Selector, isRoot RootMatcher) string {
 	seen := make(map[string]struct{})
 	for _, rs := range spans {
-		collectAttrValue(rs.Resource().Attributes(), field, seen)
+		if sel.Scope == ScopeResource || sel.Scope == ScopeAny {
+			collectAttrValue(rs.Resource().Attributes(), sel.Key, seen)
+			if sel.Scope == ScopeResource {
+				continue
+			}
+		}
 		for _, ss := range rs.ScopeSpans().All() {
+			if sel.Scope == ScopeScope || sel.Scope == ScopeAny {
+				collectAttrValue(ss.Scope().Attributes(), sel.Key, seen)
+				if sel.Scope == ScopeScope {
+					continue
+				}
+			}
 			for _, span := range ss.Spans().All() {
-				collectAttrValue(span.Attributes(), field, seen)
+				if sel.Scope == ScopeRoot && (isRoot == nil || !isRoot(rs, ss, span)) {
+					continue
+				}
+				collectAttrValue(span.Attributes(), sel.Key, seen)
 			}
 		}
 	}

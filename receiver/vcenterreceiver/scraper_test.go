@@ -72,8 +72,8 @@ func TestScrape_TLS(t *testing.T) {
 		Password:             mock.MockPassword,
 	}
 
-	cfg.Insecure = true
-	cfg.InsecureSkipVerify = true
+	cfg.ClientConfig.Insecure = true
+	cfg.ClientConfig.InsecureSkipVerify = true
 
 	testScrape(ctx, t, cfg, "expected.yaml")
 }

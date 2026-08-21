@@ -40,8 +40,8 @@ func TestFileProfilesReceiver(t *testing.T) {
 	tempFolder := t.TempDir()
 	factory := NewFactory()
 	cfg := createDefaultConfig().(*Config)
-	cfg.Include = []string{filepath.Join(tempFolder, "*")}
-	cfg.StartAt = "beginning"
+	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.ProfilesSink)
 	receiver, err := factory.(xreceiver.Factory).CreateProfiles(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	assert.NoError(t, err)
@@ -73,8 +73,8 @@ func TestFileTracesReceiver(t *testing.T) {
 	tempFolder := t.TempDir()
 	factory := NewFactory()
 	cfg := createDefaultConfig().(*Config)
-	cfg.Include = []string{filepath.Join(tempFolder, "*")}
-	cfg.StartAt = "beginning"
+	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.TracesSink)
 	receiver, err := factory.CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	assert.NoError(t, err)
@@ -103,8 +103,8 @@ func TestFileMetricsReceiver(t *testing.T) {
 	tempFolder := t.TempDir()
 	factory := NewFactory()
 	cfg := createDefaultConfig().(*Config)
-	cfg.Include = []string{filepath.Join(tempFolder, "*")}
-	cfg.StartAt = "beginning"
+	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.MetricsSink)
 	receiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	assert.NoError(t, err)
@@ -133,11 +133,11 @@ func TestFileMetricsReceiverWithReplay(t *testing.T) {
 	tempFolder := t.TempDir()
 	factory := NewFactory()
 	cfg := createDefaultConfig().(*Config)
-	cfg.Include = []string{filepath.Join(tempFolder, "*")}
-	cfg.StartAt = "beginning"
+	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.Config.StartAt = "beginning"
 	cfg.ReplayFile = true
-	cfg.PollInterval = 5 * time.Second
-	cfg.IncludeFileName = false
+	cfg.Config.PollInterval = 5 * time.Second
+	cfg.Config.IncludeFileName = false
 
 	sink := new(consumertest.MetricsSink)
 	receiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
@@ -154,13 +154,13 @@ func TestFileMetricsReceiverWithReplay(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Wait for the first poll to complete.
-	time.Sleep(cfg.PollInterval + time.Second)
+	time.Sleep(cfg.Config.PollInterval + time.Second)
 	require.Len(t, sink.AllMetrics(), 1)
 	assert.Equal(t, md, sink.AllMetrics()[0])
 
 	// Reset the sink and assert that the next poll replays all the existing metrics.
 	sink.Reset()
-	time.Sleep(cfg.PollInterval + time.Second)
+	time.Sleep(cfg.Config.PollInterval + time.Second)
 	require.Len(t, sink.AllMetrics(), 1)
 	assert.Equal(t, md, sink.AllMetrics()[0])
 
@@ -172,8 +172,8 @@ func TestFileLogsReceiver(t *testing.T) {
 	tempFolder := t.TempDir()
 	factory := NewFactory()
 	cfg := createDefaultConfig().(*Config)
-	cfg.Include = []string{filepath.Join(tempFolder, "*")}
-	cfg.StartAt = "beginning"
+	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.LogsSink)
 	receiver, err := factory.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	assert.NoError(t, err)
@@ -242,9 +242,9 @@ func TestFileMixedSignals(t *testing.T) {
 	tempFolder := t.TempDir()
 	factory := NewFactory()
 	cfg := createDefaultConfig().(*Config)
-	cfg.Include = []string{filepath.Join(tempFolder, "*")}
-	cfg.StartAt = "beginning"
-	cfg.IncludeFileName = false
+	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.Config.StartAt = "beginning"
+	cfg.Config.IncludeFileName = false
 	cs := receivertest.NewNopSettings(metadata.Type)
 	ms := new(consumertest.MetricsSink)
 	mr, err := factory.CreateMetrics(t.Context(), cs, cfg, ms)
@@ -321,8 +321,8 @@ func TestEmptyLine(t *testing.T) {
 	t.Run("metrics receiver", func(t *testing.T) {
 		tempFolder := t.TempDir()
 		cfg := createDefaultConfig().(*Config)
-		cfg.Include = []string{filepath.Join(tempFolder, "*")}
-		cfg.StartAt = "beginning"
+		cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
+		cfg.Config.StartAt = "beginning"
 		cs := receivertest.NewNopSettings(metadata.Type)
 		ms := new(consumertest.MetricsSink)
 		mr, err := NewFactory().CreateMetrics(t.Context(), cs, cfg, ms)
@@ -342,8 +342,8 @@ func TestEmptyLine(t *testing.T) {
 	t.Run("trace receiver", func(t *testing.T) {
 		tempFolder := t.TempDir()
 		cfg := createDefaultConfig().(*Config)
-		cfg.Include = []string{filepath.Join(tempFolder, "*")}
-		cfg.StartAt = "beginning"
+		cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
+		cfg.Config.StartAt = "beginning"
 		cs := receivertest.NewNopSettings(metadata.Type)
 		ts := new(consumertest.TracesSink)
 		tr, err := NewFactory().CreateTraces(t.Context(), cs, cfg, ts)
@@ -363,8 +363,8 @@ func TestEmptyLine(t *testing.T) {
 	t.Run("log receiver", func(t *testing.T) {
 		tempFolder := t.TempDir()
 		cfg := createDefaultConfig().(*Config)
-		cfg.Include = []string{filepath.Join(tempFolder, "*")}
-		cfg.StartAt = "beginning"
+		cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
+		cfg.Config.StartAt = "beginning"
 		cs := receivertest.NewNopSettings(metadata.Type)
 		ls := new(consumertest.LogsSink)
 		lr, err := NewFactory().CreateLogs(t.Context(), cs, cfg, ls)

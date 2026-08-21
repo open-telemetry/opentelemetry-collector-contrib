@@ -1,4 +1,9 @@
+display_name: Cardinality Guardian Processor
 type: cardinality_guardian
+
+description: |
+  An OpenTelemetry Collector processor that catches metric cardinality explosions before
+  they reach your TSDB.
 
 status:
   class: processor

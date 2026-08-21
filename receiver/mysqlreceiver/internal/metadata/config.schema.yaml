@@ -290,6 +290,73 @@ $defs:
               - "table"
               - "schema"
               - "index"
+      mysql.innodb.data_file.io:
+        description: "MysqlInnodbDataFileIoMetricConfig provides config for the mysql.innodb.data_file.io metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk.io.direction"
+            default:
+              - "disk.io.direction"
+      mysql.innodb.operation.pending:
+        description: "MysqlInnodbOperationPendingMetricConfig provides config for the mysql.innodb.operation.pending metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+            default:
+              - "operation"
+      mysql.innodb.row_lock.wait.count:
+        description: "MysqlInnodbRowLockWaitCountMetricConfig provides config for the mysql.innodb.row_lock.wait.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      mysql.innodb.row_lock.wait.duration.avg:
+        description: "MysqlInnodbRowLockWaitDurationAvgMetricConfig provides config for the mysql.innodb.row_lock.wait.duration.avg metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      mysql.innodb.row_lock.wait.duration.max:
+        description: "MysqlInnodbRowLockWaitDurationMaxMetricConfig provides config for the mysql.innodb.row_lock.wait.duration.max metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       mysql.joins:
         description: "MysqlJoinsMetricConfig provides config for the mysql.joins metric."
         type: object
@@ -539,6 +606,38 @@ $defs:
           enabled:
             type: boolean
             default: false
+      mysql.replica.temp_table.open:
+        description: "MysqlReplicaTempTableOpenMetricConfig provides config for the mysql.replica.temp_table.open metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      mysql.replica.thread.running:
+        description: "MysqlReplicaThreadRunningMetricConfig provides config for the mysql.replica.thread.running metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "mysql.replica.thread.type"
+                - "mysql.replica.channel.name"
+            default:
+              - "mysql.replica.thread.type"
+              - "mysql.replica.channel.name"
       mysql.replica.time_behind_source:
         description: "MysqlReplicaTimeBehindSourceMetricConfig provides config for the mysql.replica.time_behind_source metric."
         type: object
@@ -1008,6 +1107,60 @@ $defs:
     description: ResourceAttributesConfig provides config for mysql resource attributes.
     type: object
     properties:
+      db.system.name:
+        description: ResourceAttributeConfig provides common config for a db.system.name resource attribute.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          metrics_include:
+            description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          metrics_exclude:
+            description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          events_include:
+            description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          events_exclude:
+            description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+      db.system.version:
+        description: ResourceAttributeConfig provides common config for a db.system.version resource attribute.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          metrics_include:
+            description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          metrics_exclude:
+            description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          events_include:
+            description: "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          events_exclude:
+            description: "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
       mysql.instance.endpoint:
         description: ResourceAttributeConfig provides common config for a mysql.instance.endpoint resource attribute.
         type: object

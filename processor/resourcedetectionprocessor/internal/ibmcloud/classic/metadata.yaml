@@ -1,4 +1,5 @@
 type: ibmcloudclassicdetector
+sem_conv_version: 1.40.0
 
 status:
   class: processor
@@ -9,30 +10,44 @@ status:
 
 resource_attributes:
   cloud.account.id:
+    semantic_convention:
+      ref: cloud.md#cloud-account-id
     description: The IBM Cloud account ID.
     type: string
     enabled: true
   cloud.availability_zone:
+    semantic_convention:
+      ref: cloud.md#cloud-availability-zone
     description: The IBM Cloud Classic datacenter (e.g., dal13, par01).
     type: string
     enabled: true
   cloud.platform:
+    semantic_convention:
+      ref: cloud.md#cloud-platform
     description: The cloud platform (ibm_cloud.classic).
     type: string
     enabled: true
   cloud.provider:
+    semantic_convention:
+      ref: cloud.md#cloud-provider
     description: The cloud provider (ibm_cloud).
     type: string
     enabled: true
   cloud.resource_id:
+    semantic_convention:
+      ref: cloud.md#cloud-resource-id
     description: The global unique identifier (UUID) of the instance.
     type: string
     enabled: true
   host.id:
+    semantic_convention:
+      ref: host.md#host-id
     description: The SoftLayer instance ID.
     type: string
     enabled: true
   host.name:
+    semantic_convention:
+      ref: host.md#host-name
     description: The hostname of the instance.
     type: string
     enabled: true

@@ -35,7 +35,8 @@ func TestKongIntegration(t *testing.T) {
 				cm, err := confmaptest.LoadConf(filepath.Join("testdata", "kong", "config.yaml"))
 				require.NoError(t, err)
 				require.NoError(t, cm.Unmarshal(cfg))
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(filepath.Join("testdata", "kong", "expected.yaml")),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreScopeVersion(),

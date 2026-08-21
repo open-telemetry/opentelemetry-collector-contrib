@@ -35,12 +35,13 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 	newMap["k2"] = newMap2
 
 	tests := []struct {
-		name      string
-		path      ottl.Path[*testContext]
-		orig      any
-		newVal    any
-		modified  func(pmetric.NumberDataPoint)
-		valueType pmetric.NumberDataPointValueType
+		name       string
+		path       ottl.Path[*testContext]
+		orig       any
+		newVal     any
+		modified   func(pmetric.NumberDataPoint)
+		valueType  pmetric.NumberDataPointValueType
+		nilNoError bool
 	}{
 		{
 			name: "start_time_unix_nano",
@@ -121,7 +122,8 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "exemplars",
+			name:       "exemplars",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "exemplars",
 			},
@@ -132,7 +134,8 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes",
+			name:       "attributes",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 			},
@@ -143,7 +146,8 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes",
+			name:       "attributes",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 			},
@@ -154,7 +158,8 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes string",
+			name:       "attributes string",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -170,7 +175,8 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes bool",
+			name:       "attributes bool",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -186,7 +192,8 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes int",
+			name:       "attributes int",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -202,7 +209,8 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes float",
+			name:       "attributes float",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -218,7 +226,8 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes bytes",
+			name:       "attributes bytes",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -234,7 +243,8 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array string",
+			name:       "attributes array string",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -253,7 +263,8 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array bool",
+			name:       "attributes array bool",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -272,7 +283,8 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array int",
+			name:       "attributes array int",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -291,7 +303,8 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array float",
+			name:       "attributes array float",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -310,7 +323,8 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array bytes",
+			name:       "attributes array bytes",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -329,7 +343,8 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes pcommon.Map",
+			name:       "attributes pcommon.Map",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -350,7 +365,8 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes map[string]any",
+			name:       "attributes map[string]any",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -371,7 +387,8 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes nested",
+			name:       "attributes nested",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -397,7 +414,8 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes nested new values",
+			name:       "attributes nested new values",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -458,6 +476,15 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			// Verify that setting an invalid type returns an error
 			err = accessor.Set(t.Context(), ctx, struct{}{})
 			require.Error(t, err)
+
+			// Verify nil handling: setters for scalar and struct paths return an error, while
+			// setters for pcommon.Value, map, and slice paths accept nil and clear to empty.
+			err = accessor.Set(t.Context(), ctx, nil)
+			if tt.nilNoError {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
 		})
 	}
 }
@@ -496,11 +523,12 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 	newMap["k2"] = newMap2
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[*testContext]
-		orig     any
-		newVal   any
-		modified func(pmetric.HistogramDataPoint)
+		name       string
+		path       ottl.Path[*testContext]
+		orig       any
+		newVal     any
+		modified   func(pmetric.HistogramDataPoint)
+		nilNoError bool
 	}{
 		{
 			name: "start_time_unix_nano",
@@ -580,7 +608,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "bucket_counts",
+			name:       "bucket_counts",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "bucket_counts",
 			},
@@ -591,7 +620,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "explicit_bounds",
+			name:       "explicit_bounds",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "explicit_bounds",
 			},
@@ -602,7 +632,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "exemplars",
+			name:       "exemplars",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "exemplars",
 			},
@@ -613,7 +644,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes",
+			name:       "attributes",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 			},
@@ -624,7 +656,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes raw map",
+			name:       "attributes raw map",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 			},
@@ -635,7 +668,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes string",
+			name:       "attributes string",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -651,7 +685,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes bool",
+			name:       "attributes bool",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -667,7 +702,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes int",
+			name:       "attributes int",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -683,7 +719,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes float",
+			name:       "attributes float",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -699,7 +736,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes bytes",
+			name:       "attributes bytes",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -715,7 +753,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array string",
+			name:       "attributes array string",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -734,7 +773,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array bool",
+			name:       "attributes array bool",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -753,7 +793,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array int",
+			name:       "attributes array int",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -772,7 +813,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array float",
+			name:       "attributes array float",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -791,7 +833,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array bytes",
+			name:       "attributes array bytes",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -810,7 +853,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes pcommon.Map",
+			name:       "attributes pcommon.Map",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -831,7 +875,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes map[string]any",
+			name:       "attributes map[string]any",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -852,7 +897,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes nested",
+			name:       "attributes nested",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -878,7 +924,8 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes nested new values",
+			name:       "attributes nested new values",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -939,6 +986,15 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			// Verify that setting an invalid type returns an error
 			err = accessor.Set(t.Context(), ctx, struct{}{})
 			require.Error(t, err)
+
+			// Verify nil handling: setters for scalar and struct paths return an error, while
+			// setters for pcommon.Value, map, and slice paths accept nil and clear to empty.
+			err = accessor.Set(t.Context(), ctx, nil)
+			if tt.nilNoError {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
 		})
 	}
 }
@@ -983,11 +1039,12 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 	newMap["k2"] = newMap2
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[*testContext]
-		orig     any
-		newVal   any
-		modified func(pmetric.ExponentialHistogramDataPoint)
+		name       string
+		path       ottl.Path[*testContext]
+		orig       any
+		newVal     any
+		modified   func(pmetric.ExponentialHistogramDataPoint)
+		nilNoError bool
 	}{
 		{
 			name: "start_time_unix_nano",
@@ -1114,7 +1171,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "positive bucket_counts",
+			name:       "positive bucket_counts",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "positive",
 				NextPath: &pathtest.Path[*testContext]{
@@ -1153,7 +1211,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "negative bucket_counts",
+			name:       "negative bucket_counts",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "negative",
 				NextPath: &pathtest.Path[*testContext]{
@@ -1167,7 +1226,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "exemplars",
+			name:       "exemplars",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "exemplars",
 			},
@@ -1178,7 +1238,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes",
+			name:       "attributes",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 			},
@@ -1189,7 +1250,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes raw map",
+			name:       "attributes raw map",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 			},
@@ -1200,7 +1262,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes string",
+			name:       "attributes string",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1216,7 +1279,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes bool",
+			name:       "attributes bool",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1232,7 +1296,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes int",
+			name:       "attributes int",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1248,7 +1313,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes float",
+			name:       "attributes float",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1264,7 +1330,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes bytes",
+			name:       "attributes bytes",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1280,7 +1347,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array string",
+			name:       "attributes array string",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1299,7 +1367,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array bool",
+			name:       "attributes array bool",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1318,7 +1387,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array int",
+			name:       "attributes array int",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1337,7 +1407,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array float",
+			name:       "attributes array float",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1356,7 +1427,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array bytes",
+			name:       "attributes array bytes",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1375,7 +1447,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes pcommon.Map",
+			name:       "attributes pcommon.Map",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1396,7 +1469,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes map[string]any",
+			name:       "attributes map[string]any",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1417,7 +1491,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes nested",
+			name:       "attributes nested",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1443,7 +1518,8 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes nested new values",
+			name:       "attributes nested new values",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1504,6 +1580,15 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			// Verify that setting an invalid type returns an error
 			err = accessor.Set(t.Context(), ctx, struct{}{})
 			require.Error(t, err)
+
+			// Verify nil handling: setters for scalar and struct paths return an error, while
+			// setters for pcommon.Value, map, and slice paths accept nil and clear to empty.
+			err = accessor.Set(t.Context(), ctx, nil)
+			if tt.nilNoError {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
 		})
 	}
 }
@@ -1548,11 +1633,12 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 	newMap["k2"] = newMap2
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[*testContext]
-		orig     any
-		newVal   any
-		modified func(pmetric.SummaryDataPoint)
+		name       string
+		path       ottl.Path[*testContext]
+		orig       any
+		newVal     any
+		modified   func(pmetric.SummaryDataPoint)
+		nilNoError bool
 	}{
 		{
 			name: "start_time_unix_nano",
@@ -1632,7 +1718,8 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "quantile_values",
+			name:       "quantile_values",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "quantile_values",
 			},
@@ -1643,7 +1730,8 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes",
+			name:       "attributes",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 			},
@@ -1654,7 +1742,8 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes raw map",
+			name:       "attributes raw map",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 			},
@@ -1665,7 +1754,8 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes string",
+			name:       "attributes string",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1681,7 +1771,8 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes bool",
+			name:       "attributes bool",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1697,7 +1788,8 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes int",
+			name:       "attributes int",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1713,7 +1805,8 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes float",
+			name:       "attributes float",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1729,7 +1822,8 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes bytes",
+			name:       "attributes bytes",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1745,7 +1839,8 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array string",
+			name:       "attributes array string",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1764,7 +1859,8 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array bool",
+			name:       "attributes array bool",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1783,7 +1879,8 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array int",
+			name:       "attributes array int",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1802,7 +1899,8 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array float",
+			name:       "attributes array float",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1821,7 +1919,8 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes array bytes",
+			name:       "attributes array bytes",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1840,7 +1939,8 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes pcommon.Map",
+			name:       "attributes pcommon.Map",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1861,7 +1961,8 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes map[string]any",
+			name:       "attributes map[string]any",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1882,7 +1983,8 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes nested",
+			name:       "attributes nested",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1908,7 +2010,8 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes nested new values",
+			name:       "attributes nested new values",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -1969,6 +2072,15 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			// Verify that setting an invalid type returns an error
 			err = accessor.Set(t.Context(), ctx, struct{}{})
 			require.Error(t, err)
+
+			// Verify nil handling: setters for scalar and struct paths return an error, while
+			// setters for pcommon.Value, map, and slice paths accept nil and clear to empty.
+			err = accessor.Set(t.Context(), ctx, nil)
+			if tt.nilNoError {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
 		})
 	}
 }

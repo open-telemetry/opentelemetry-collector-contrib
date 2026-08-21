@@ -129,7 +129,7 @@ func TestScrape(t *testing.T) {
 			name: "Connections metrics is disabled",
 			config: func() *Config {
 				cfg := Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
-				cfg.Metrics.SystemNetworkConnections.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.SystemNetworkConnections.Enabled = false
 				return &cfg
 			}(),
 			connectionsFunc: func(context.Context, string) ([]net.ConnectionStat, error) {

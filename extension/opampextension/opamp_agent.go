@@ -502,18 +502,20 @@ func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {
 }
 
 func getOSDescription(logger *zap.Logger) string {
-	info, err := host.Info()
+	// Use PlatformInformation instead of host.Info so Windows containers without
+	// MachineGuid can still report os.description.
+	platform, _, version, err := host.PlatformInformation()
 	if err != nil {
-		logger.Error("failed getting host info", zap.Error(err))
+		logger.Error("failed getting platform information", zap.Error(err))
 		return runtime.GOOS
 	}
 	switch runtime.GOOS {
 	case "darwin":
-		return "macOS " + info.PlatformVersion
+		return "macOS " + version
 	case "linux":
-		return cases.Title(language.English).String(info.Platform) + " " + info.PlatformVersion
+		return cases.Title(language.English).String(platform) + " " + version
 	case "windows":
-		return info.Platform + " " + info.PlatformVersion
+		return platform + " " + version
 	default:
 		return runtime.GOOS
 	}
@@ -665,6 +667,13 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 		unsubscribeFunc()
 		o.statusSubscriptionWg.Done()
 	}()
+
+	var (
+		lastStatus componentstatus.Status
+		lastErr    string
+		currentErr string
+	)
+
 	for {
 		select {
 		case <-o.lifetimeCtx.Done():
@@ -677,6 +686,18 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 			if statusUpdate == nil || statusUpdate.Status() == componentstatus.StatusNone {
 				continue
 			}
+
+			currentStatus := statusUpdate.Status()
+			if statusUpdate.Err() != nil {
+				currentErr = statusUpdate.Err().Error()
+			}
+
+			if currentStatus == lastStatus && currentErr == lastErr {
+				continue
+			}
+
+			lastStatus = currentStatus
+			lastErr = currentErr
 
 			componentHealth := convertComponentHealth(statusUpdate)
 

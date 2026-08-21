@@ -13,6 +13,8 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetRabbitmqExchangeName("rabbitmq.exchange.name-val")
+			rb.SetRabbitmqExchangeType("rabbitmq.exchange.type-val")
 			rb.SetRabbitmqNodeName("rabbitmq.node.name-val")
 			rb.SetRabbitmqQueueName("rabbitmq.queue.name-val")
 			rb.SetRabbitmqVhostName("rabbitmq.vhost.name-val")
@@ -22,14 +24,24 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 3, res.Attributes().Len())
+				assert.Equal(t, 5, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 3, res.Attributes().Len())
+				assert.Equal(t, 5, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
+			}
+			rabbitmqExchangeNameAttrVal, ok := res.Attributes().Get("rabbitmq.exchange.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "rabbitmq.exchange.name-val", rabbitmqExchangeNameAttrVal.Str())
+			}
+			rabbitmqExchangeTypeAttrVal, ok := res.Attributes().Get("rabbitmq.exchange.type")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "rabbitmq.exchange.type-val", rabbitmqExchangeTypeAttrVal.Str())
 			}
 			rabbitmqNodeNameAttrVal, ok := res.Attributes().Get("rabbitmq.node.name")
 			assert.True(t, ok)

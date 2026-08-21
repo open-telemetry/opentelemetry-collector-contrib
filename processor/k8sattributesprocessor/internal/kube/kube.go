@@ -169,9 +169,12 @@ type Node struct {
 type deleteRequest struct {
 	// id is identifier (IP address or Pod UID) of pod to remove from pods map
 	id PodIdentifier
-	// contains uid of pod to remove from pods map
-	podUID string
-	ts     time.Time
+	// pod is the exact *Pod pointer registered for this identifier at queue time.
+	// The delete loop skips the request if c.Pods[id] no longer points to this
+	// object, which covers both cross-pod replacement and active->stale->active
+	// re-activation without any additional locking.
+	pod *Pod
+	ts  time.Time
 }
 
 // Filters is used to instruct the client on how to filter out k8s pods.

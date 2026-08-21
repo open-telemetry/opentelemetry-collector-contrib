@@ -14,8 +14,8 @@ import (
 )
 
 type RLPGatewayConfig struct {
-	confighttp.ClientConfig `mapstructure:",squash"`
-	ShardID                 string `mapstructure:"shard_id"`
+	ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
+	ShardID      string                  `mapstructure:"shard_id"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -40,7 +40,7 @@ type LimitedClientConfig struct {
 }
 
 type UAAConfig struct {
-	LimitedClientConfig `mapstructure:",squash"`
+	LimitedClientConfig LimitedClientConfig `mapstructure:",squash"`
 	Username            string              `mapstructure:"username"`
 	Password            configopaque.String `mapstructure:"password"`
 
@@ -58,7 +58,7 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
-	err := validateURLOption("rlp_gateway.endpoint", c.RLPGateway.Endpoint)
+	err := validateURLOption("rlp_gateway.endpoint", c.RLPGateway.ClientConfig.Endpoint)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (c *Config) Validate() error {
 		return errors.New("shardID cannot be empty")
 	}
 
-	err = validateURLOption("uaa.endpoint", c.UAA.Endpoint)
+	err = validateURLOption("uaa.endpoint", c.UAA.LimitedClientConfig.Endpoint)
 	if err != nil {
 		return err
 	}

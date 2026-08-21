@@ -78,9 +78,9 @@ func createMetricsExporter(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Sematext HTTP writer: %w", err)
 	}
-	schema, found := common.MetricsSchemata[cfg.MetricsSchema]
+	schema, found := common.MetricsSchemata[cfg.MetricsConfig.MetricsSchema]
 	if !found {
-		return nil, fmt.Errorf("schema '%s' not recognized", cfg.MetricsSchema)
+		return nil, fmt.Errorf("schema '%s' not recognized", cfg.MetricsConfig.MetricsSchema)
 	}
 
 	expConfig := otel2influx.DefaultOtelMetricsToLineProtocolConfig()

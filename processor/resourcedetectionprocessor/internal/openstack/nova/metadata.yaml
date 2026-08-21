@@ -1,4 +1,5 @@
 type: novadetector
+sem_conv_version: 1.40.0
 
 status:
   class: processor
@@ -9,30 +10,44 @@ status:
 
 resource_attributes:
   cloud.account.id:
+    semantic_convention:
+      ref: cloud.md#cloud-account-id
     description: The cloud account id (e.g., OpenStack project or tenant ID)
     type: string
     enabled: true
   cloud.availability_zone:
+    semantic_convention:
+      ref: cloud.md#cloud-availability-zone
     description: The cloud availability zone
     type: string
     enabled: true
   cloud.platform:
+    semantic_convention:
+      ref: cloud.md#cloud-platform
     description: The cloud platform
     type: string
     enabled: true
   cloud.provider:
+    semantic_convention:
+      ref: cloud.md#cloud-provider
     description: The cloud provider
     type: string
     enabled: true
   host.id:
+    semantic_convention:
+      ref: host.md#host-id
     description: The host.id
     type: string
     enabled: true
   host.name:
+    semantic_convention:
+      ref: host.md#host-name
     description: The hostname
     type: string
     enabled: true
   host.type:
+    semantic_convention:
+      ref: host.md#host-type
     description: The host instance type (Nova flavor name or ID)
     type: string
     enabled: true

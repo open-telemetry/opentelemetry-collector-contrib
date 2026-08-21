@@ -145,6 +145,16 @@ resourceMetrics:
                         stringValue: active
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
+                - asInt: "13"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: state
+                      value:
+                        stringValue: deleted
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "40"
                   attributes:
                     - key: aggregation
@@ -153,6 +163,16 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: active
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "17"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: state
+                      value:
+                        stringValue: deleted
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{documents}'
@@ -683,6 +703,16 @@ resourceMetrics:
                         stringValue: active
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
+                - asInt: "7"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: state
+                      value:
+                        stringValue: deleted
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "40"
                   attributes:
                     - key: aggregation
@@ -691,6 +721,16 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: active
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "11"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: state
+                      value:
+                        stringValue: deleted
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{documents}'

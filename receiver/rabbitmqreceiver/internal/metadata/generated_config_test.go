@@ -29,6 +29,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RabbitmqConsumerCount: RabbitmqConsumerCountMetricConfig{
 						Enabled: true,
 					},
+					RabbitmqExchangeMessagesPublishedIn: RabbitmqExchangeMessagesPublishedInMetricConfig{
+						Enabled: true,
+					},
+					RabbitmqExchangeMessagesPublishedOut: RabbitmqExchangeMessagesPublishedOutMetricConfig{
+						Enabled: true,
+					},
 					RabbitmqMessageAcknowledged: RabbitmqMessageAcknowledgedMetricConfig{
 						Enabled: true,
 					},
@@ -270,9 +276,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					RabbitmqNodeName:  ResourceAttributeConfig{Enabled: true},
-					RabbitmqQueueName: ResourceAttributeConfig{Enabled: true},
-					RabbitmqVhostName: ResourceAttributeConfig{Enabled: true},
+					RabbitmqExchangeName: ResourceAttributeConfig{Enabled: true},
+					RabbitmqExchangeType: ResourceAttributeConfig{Enabled: true},
+					RabbitmqNodeName:     ResourceAttributeConfig{Enabled: true},
+					RabbitmqQueueName:    ResourceAttributeConfig{Enabled: true},
+					RabbitmqVhostName:    ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -281,6 +289,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					RabbitmqConsumerCount: RabbitmqConsumerCountMetricConfig{
+						Enabled: false,
+					},
+					RabbitmqExchangeMessagesPublishedIn: RabbitmqExchangeMessagesPublishedInMetricConfig{
+						Enabled: false,
+					},
+					RabbitmqExchangeMessagesPublishedOut: RabbitmqExchangeMessagesPublishedOutMetricConfig{
 						Enabled: false,
 					},
 					RabbitmqMessageAcknowledged: RabbitmqMessageAcknowledgedMetricConfig{
@@ -524,9 +538,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					RabbitmqNodeName:  ResourceAttributeConfig{Enabled: false},
-					RabbitmqQueueName: ResourceAttributeConfig{Enabled: false},
-					RabbitmqVhostName: ResourceAttributeConfig{Enabled: false},
+					RabbitmqExchangeName: ResourceAttributeConfig{Enabled: false},
+					RabbitmqExchangeType: ResourceAttributeConfig{Enabled: false},
+					RabbitmqNodeName:     ResourceAttributeConfig{Enabled: false},
+					RabbitmqQueueName:    ResourceAttributeConfig{Enabled: false},
+					RabbitmqVhostName:    ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -534,7 +550,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(RabbitmqConsumerCountMetricConfig{}, RabbitmqMessageAcknowledgedMetricConfig{}, RabbitmqMessageCurrentMetricConfig{}, RabbitmqMessageDeliveredMetricConfig{}, RabbitmqMessageDroppedMetricConfig{}, RabbitmqMessagePublishedMetricConfig{}, RabbitmqNodeChannelClosedMetricConfig{}, RabbitmqNodeChannelClosedDetailsRateMetricConfig{}, RabbitmqNodeChannelCreatedMetricConfig{}, RabbitmqNodeChannelCreatedDetailsRateMetricConfig{}, RabbitmqNodeConnectionClosedMetricConfig{}, RabbitmqNodeConnectionClosedDetailsRateMetricConfig{}, RabbitmqNodeConnectionCreatedMetricConfig{}, RabbitmqNodeConnectionCreatedDetailsRateMetricConfig{}, RabbitmqNodeContextSwitchesMetricConfig{}, RabbitmqNodeContextSwitchesDetailsRateMetricConfig{}, RabbitmqNodeDiskFreeMetricConfig{}, RabbitmqNodeDiskFreeAlarmMetricConfig{}, RabbitmqNodeDiskFreeDetailsRateMetricConfig{}, RabbitmqNodeDiskFreeLimitMetricConfig{}, RabbitmqNodeFdTotalMetricConfig{}, RabbitmqNodeFdUsedMetricConfig{}, RabbitmqNodeFdUsedDetailsRateMetricConfig{}, RabbitmqNodeGcBytesReclaimedMetricConfig{}, RabbitmqNodeGcBytesReclaimedDetailsRateMetricConfig{}, RabbitmqNodeGcNumMetricConfig{}, RabbitmqNodeGcNumDetailsRateMetricConfig{}, RabbitmqNodeIoReadAvgTimeMetricConfig{}, RabbitmqNodeIoReadAvgTimeDetailsRateMetricConfig{}, RabbitmqNodeIoReadBytesMetricConfig{}, RabbitmqNodeIoReadBytesDetailsRateMetricConfig{}, RabbitmqNodeIoReadCountMetricConfig{}, RabbitmqNodeIoReadCountDetailsRateMetricConfig{}, RabbitmqNodeIoReopenCountMetricConfig{}, RabbitmqNodeIoReopenCountDetailsRateMetricConfig{}, RabbitmqNodeIoSeekAvgTimeMetricConfig{}, RabbitmqNodeIoSeekAvgTimeDetailsRateMetricConfig{}, RabbitmqNodeIoSeekCountMetricConfig{}, RabbitmqNodeIoSeekCountDetailsRateMetricConfig{}, RabbitmqNodeIoSyncAvgTimeMetricConfig{}, RabbitmqNodeIoSyncAvgTimeDetailsRateMetricConfig{}, RabbitmqNodeIoSyncCountMetricConfig{}, RabbitmqNodeIoSyncCountDetailsRateMetricConfig{}, RabbitmqNodeIoWriteAvgTimeMetricConfig{}, RabbitmqNodeIoWriteAvgTimeDetailsRateMetricConfig{}, RabbitmqNodeIoWriteBytesMetricConfig{}, RabbitmqNodeIoWriteBytesDetailsRateMetricConfig{}, RabbitmqNodeIoWriteCountMetricConfig{}, RabbitmqNodeIoWriteCountDetailsRateMetricConfig{}, RabbitmqNodeMemAlarmMetricConfig{}, RabbitmqNodeMemLimitMetricConfig{}, RabbitmqNodeMemUsedMetricConfig{}, RabbitmqNodeMemUsedDetailsRateMetricConfig{}, RabbitmqNodeMnesiaDiskTxCountMetricConfig{}, RabbitmqNodeMnesiaDiskTxCountDetailsRateMetricConfig{}, RabbitmqNodeMnesiaRAMTxCountMetricConfig{}, RabbitmqNodeMnesiaRAMTxCountDetailsRateMetricConfig{}, RabbitmqNodeMsgStoreReadCountMetricConfig{}, RabbitmqNodeMsgStoreReadCountDetailsRateMetricConfig{}, RabbitmqNodeMsgStoreWriteCountMetricConfig{}, RabbitmqNodeMsgStoreWriteCountDetailsRateMetricConfig{}, RabbitmqNodeProcTotalMetricConfig{}, RabbitmqNodeProcUsedMetricConfig{}, RabbitmqNodeProcUsedDetailsRateMetricConfig{}, RabbitmqNodeProcessorsMetricConfig{}, RabbitmqNodeQueueCreatedMetricConfig{}, RabbitmqNodeQueueCreatedDetailsRateMetricConfig{}, RabbitmqNodeQueueDeclaredMetricConfig{}, RabbitmqNodeQueueDeclaredDetailsRateMetricConfig{}, RabbitmqNodeQueueDeletedMetricConfig{}, RabbitmqNodeQueueDeletedDetailsRateMetricConfig{}, RabbitmqNodeQueueIndexReadCountMetricConfig{}, RabbitmqNodeQueueIndexReadCountDetailsRateMetricConfig{}, RabbitmqNodeQueueIndexWriteCountMetricConfig{}, RabbitmqNodeQueueIndexWriteCountDetailsRateMetricConfig{}, RabbitmqNodeRunQueueMetricConfig{}, RabbitmqNodeSocketsTotalMetricConfig{}, RabbitmqNodeSocketsUsedMetricConfig{}, RabbitmqNodeSocketsUsedDetailsRateMetricConfig{}, RabbitmqNodeUptimeMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(RabbitmqConsumerCountMetricConfig{}, RabbitmqExchangeMessagesPublishedInMetricConfig{}, RabbitmqExchangeMessagesPublishedOutMetricConfig{}, RabbitmqMessageAcknowledgedMetricConfig{}, RabbitmqMessageCurrentMetricConfig{}, RabbitmqMessageDeliveredMetricConfig{}, RabbitmqMessageDroppedMetricConfig{}, RabbitmqMessagePublishedMetricConfig{}, RabbitmqNodeChannelClosedMetricConfig{}, RabbitmqNodeChannelClosedDetailsRateMetricConfig{}, RabbitmqNodeChannelCreatedMetricConfig{}, RabbitmqNodeChannelCreatedDetailsRateMetricConfig{}, RabbitmqNodeConnectionClosedMetricConfig{}, RabbitmqNodeConnectionClosedDetailsRateMetricConfig{}, RabbitmqNodeConnectionCreatedMetricConfig{}, RabbitmqNodeConnectionCreatedDetailsRateMetricConfig{}, RabbitmqNodeContextSwitchesMetricConfig{}, RabbitmqNodeContextSwitchesDetailsRateMetricConfig{}, RabbitmqNodeDiskFreeMetricConfig{}, RabbitmqNodeDiskFreeAlarmMetricConfig{}, RabbitmqNodeDiskFreeDetailsRateMetricConfig{}, RabbitmqNodeDiskFreeLimitMetricConfig{}, RabbitmqNodeFdTotalMetricConfig{}, RabbitmqNodeFdUsedMetricConfig{}, RabbitmqNodeFdUsedDetailsRateMetricConfig{}, RabbitmqNodeGcBytesReclaimedMetricConfig{}, RabbitmqNodeGcBytesReclaimedDetailsRateMetricConfig{}, RabbitmqNodeGcNumMetricConfig{}, RabbitmqNodeGcNumDetailsRateMetricConfig{}, RabbitmqNodeIoReadAvgTimeMetricConfig{}, RabbitmqNodeIoReadAvgTimeDetailsRateMetricConfig{}, RabbitmqNodeIoReadBytesMetricConfig{}, RabbitmqNodeIoReadBytesDetailsRateMetricConfig{}, RabbitmqNodeIoReadCountMetricConfig{}, RabbitmqNodeIoReadCountDetailsRateMetricConfig{}, RabbitmqNodeIoReopenCountMetricConfig{}, RabbitmqNodeIoReopenCountDetailsRateMetricConfig{}, RabbitmqNodeIoSeekAvgTimeMetricConfig{}, RabbitmqNodeIoSeekAvgTimeDetailsRateMetricConfig{}, RabbitmqNodeIoSeekCountMetricConfig{}, RabbitmqNodeIoSeekCountDetailsRateMetricConfig{}, RabbitmqNodeIoSyncAvgTimeMetricConfig{}, RabbitmqNodeIoSyncAvgTimeDetailsRateMetricConfig{}, RabbitmqNodeIoSyncCountMetricConfig{}, RabbitmqNodeIoSyncCountDetailsRateMetricConfig{}, RabbitmqNodeIoWriteAvgTimeMetricConfig{}, RabbitmqNodeIoWriteAvgTimeDetailsRateMetricConfig{}, RabbitmqNodeIoWriteBytesMetricConfig{}, RabbitmqNodeIoWriteBytesDetailsRateMetricConfig{}, RabbitmqNodeIoWriteCountMetricConfig{}, RabbitmqNodeIoWriteCountDetailsRateMetricConfig{}, RabbitmqNodeMemAlarmMetricConfig{}, RabbitmqNodeMemLimitMetricConfig{}, RabbitmqNodeMemUsedMetricConfig{}, RabbitmqNodeMemUsedDetailsRateMetricConfig{}, RabbitmqNodeMnesiaDiskTxCountMetricConfig{}, RabbitmqNodeMnesiaDiskTxCountDetailsRateMetricConfig{}, RabbitmqNodeMnesiaRAMTxCountMetricConfig{}, RabbitmqNodeMnesiaRAMTxCountDetailsRateMetricConfig{}, RabbitmqNodeMsgStoreReadCountMetricConfig{}, RabbitmqNodeMsgStoreReadCountDetailsRateMetricConfig{}, RabbitmqNodeMsgStoreWriteCountMetricConfig{}, RabbitmqNodeMsgStoreWriteCountDetailsRateMetricConfig{}, RabbitmqNodeProcTotalMetricConfig{}, RabbitmqNodeProcUsedMetricConfig{}, RabbitmqNodeProcUsedDetailsRateMetricConfig{}, RabbitmqNodeProcessorsMetricConfig{}, RabbitmqNodeQueueCreatedMetricConfig{}, RabbitmqNodeQueueCreatedDetailsRateMetricConfig{}, RabbitmqNodeQueueDeclaredMetricConfig{}, RabbitmqNodeQueueDeclaredDetailsRateMetricConfig{}, RabbitmqNodeQueueDeletedMetricConfig{}, RabbitmqNodeQueueDeletedDetailsRateMetricConfig{}, RabbitmqNodeQueueIndexReadCountMetricConfig{}, RabbitmqNodeQueueIndexReadCountDetailsRateMetricConfig{}, RabbitmqNodeQueueIndexWriteCountMetricConfig{}, RabbitmqNodeQueueIndexWriteCountDetailsRateMetricConfig{}, RabbitmqNodeRunQueueMetricConfig{}, RabbitmqNodeSocketsTotalMetricConfig{}, RabbitmqNodeSocketsUsedMetricConfig{}, RabbitmqNodeSocketsUsedDetailsRateMetricConfig{}, RabbitmqNodeUptimeMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -574,17 +590,21 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				RabbitmqNodeName:  ResourceAttributeConfig{Enabled: true},
-				RabbitmqQueueName: ResourceAttributeConfig{Enabled: true},
-				RabbitmqVhostName: ResourceAttributeConfig{Enabled: true},
+				RabbitmqExchangeName: ResourceAttributeConfig{Enabled: true},
+				RabbitmqExchangeType: ResourceAttributeConfig{Enabled: true},
+				RabbitmqNodeName:     ResourceAttributeConfig{Enabled: true},
+				RabbitmqQueueName:    ResourceAttributeConfig{Enabled: true},
+				RabbitmqVhostName:    ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				RabbitmqNodeName:  ResourceAttributeConfig{Enabled: false},
-				RabbitmqQueueName: ResourceAttributeConfig{Enabled: false},
-				RabbitmqVhostName: ResourceAttributeConfig{Enabled: false},
+				RabbitmqExchangeName: ResourceAttributeConfig{Enabled: false},
+				RabbitmqExchangeType: ResourceAttributeConfig{Enabled: false},
+				RabbitmqNodeName:     ResourceAttributeConfig{Enabled: false},
+				RabbitmqQueueName:    ResourceAttributeConfig{Enabled: false},
+				RabbitmqVhostName:    ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

@@ -38,6 +38,14 @@ var StanzaSynchronousLogEmitterFeatureGate = featuregate.GlobalRegistry().MustRe
 	featuregate.WithRegisterFromVersion("v0.122.0"),
 )
 
+var StanzaUDPUseStableNetworkAttributesFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"stanza.udp.useStableNetworkAttributes",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the udp_input operator's `add_attributes` option emits stable network semantic convention attributes (network.transport, network.local.address, server.port, server.address, network.peer.address, client.port, client.address) instead of the deprecated ones (net.transport, net.host.ip, net.host.port, net.host.name, net.peer.ip, net.peer.port, net.peer.name)."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49050"),
+	featuregate.WithRegisterFromVersion("v0.158.0"),
+)
+
 var StanzaWindowsEventDrivenScrapingFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"stanza.windows.eventDrivenScraping",
 	featuregate.StageAlpha,

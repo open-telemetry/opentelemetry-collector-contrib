@@ -456,6 +456,22 @@ Container memory utilization as a ratio of the container's requests
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
 
+### k8s.node.filesystem.inode.count
+
+Total number of inodes in the node's root filesystem.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {inode} | Sum | Int | Cumulative | false | Development |
+
+### k8s.node.filesystem.inode.free
+
+Number of free inodes in the node's root filesystem.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {inode} | Sum | Int | Cumulative | false | Development |
+
 ### k8s.node.system_container.cpu.time
 
 Total cumulative CPU time (sum of all cores) spent by the system container since its creation
@@ -580,3 +596,13 @@ The number of used bytes in the pod volume.
 | k8s.volume.name | The name of the Volume | Any Str | true | - | - |
 | k8s.volume.type | The type of the Volume | Any Str | true | - | - |
 | partition | [DEPRECATED] The partition in the Volume | Any Str | false | - | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.kubeletstats.cpuUsageScrapeBased` | alpha | When enabled, container.cpu.usage, k8s.pod.cpu.usage and k8s.node.cpu.usage (and the cpu utilization metrics derived from them) are calculated by the receiver as the rate of the corresponding *.cpu.time counter between consecutive scrapes, instead of being read directly from the kubelet's UsageNanoCores value. | v0.156.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49477) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

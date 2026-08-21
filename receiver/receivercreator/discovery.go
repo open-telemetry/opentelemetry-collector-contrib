@@ -172,7 +172,8 @@ func (builder *k8sHintsBuilder) createLogsReceiver(
 		pod.Name,
 		pod.Namespace,
 		builder.defaultFileLogConfig,
-		builder.logger)
+		builder.logger,
+	)
 
 	recTemplate, err := newReceiverTemplate(fmt.Sprintf("%v/%v_%v", subreceiverKey, pod.UID, containerName), userConfMap)
 	recTemplate.signals = receiverSignals{metrics: false, logs: true, traces: false, profiles: false}

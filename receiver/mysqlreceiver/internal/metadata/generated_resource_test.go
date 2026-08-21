@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestResourceBuilder(t *testing.T) {
@@ -15,6 +15,8 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetDbSystemName("db.system.name-val")
+			rb.SetDbSystemVersion("db.system.version-val")
 			rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
 			rb.SetServiceInstanceID("service.instance.id-val")
 			rb.SetServiceName("service.name-val")
@@ -27,12 +29,22 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 2, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 4, res.Attributes().Len())
+				assert.Equal(t, 6, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
+			}
+			dbSystemNameAttrVal, ok := res.Attributes().Get("db.system.name")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "db.system.name-val", dbSystemNameAttrVal.Str())
+			}
+			dbSystemVersionAttrVal, ok := res.Attributes().Get("db.system.version")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "db.system.version-val", dbSystemVersionAttrVal.Str())
 			}
 			mysqlInstanceEndpointAttrVal, ok := res.Attributes().Get("mysql.instance.endpoint")
 			assert.True(t, ok)
@@ -60,14 +72,30 @@ func TestResourceBuilder(t *testing.T) {
 
 func TestResourceBuilderOverrideValue(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
+	rb.SetDbSystemName("db.system.name-val")
+	rb.SetDbSystemVersion("db.system.version-val")
 	rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
 	rb.SetServiceInstanceID("service.instance.id-val")
 	rb.SetServiceName("service.name-val")
 	rb.SetServiceNamespace("service.namespace-val")
 
 	res := rb.Emit()
+	{
+		val, ok := res.Attributes().Get("db.system.name")
+		assert.True(t, ok, "db.system.name should be present")
+		if ok {
+			assert.Equal(t, "override-db.system.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("db.system.version")
+		assert.True(t, ok, "db.system.version should be present")
+		if ok {
+			assert.Equal(t, "override-db.system.version", val.Str())
+		}
+	}
 	{
 		val, ok := res.Attributes().Get("mysql.instance.endpoint")
 		assert.True(t, ok, "mysql.instance.endpoint should be present")
@@ -101,10 +129,24 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 // TestResourceBuilderOverrideWithoutSet does not call any Set* methods, but override should still apply via Emit().
 func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 
 	res := rb.Emit()
+	{
+		val, ok := res.Attributes().Get("db.system.name")
+		assert.True(t, ok, "db.system.name should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-db.system.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("db.system.version")
+		assert.True(t, ok, "db.system.version should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-db.system.version", val.Str())
+		}
+	}
 	{
 		val, ok := res.Attributes().Get("mysql.instance.endpoint")
 		assert.True(t, ok, "mysql.instance.endpoint should be present even without calling Set")
@@ -138,11 +180,13 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 // TestResourceBuilderOverrideDisabled disables all attributes, so override should not apply.
 func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
+	cfg.DbSystemName.Enabled = false
+	cfg.DbSystemVersion.Enabled = false
 	cfg.MysqlInstanceEndpoint.Enabled = false
 	cfg.ServiceInstanceID.Enabled = false
 	cfg.ServiceName.Enabled = false
 	cfg.ServiceNamespace.Enabled = false
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 
 	res := rb.Emit()
@@ -152,19 +196,33 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 // TestResourceBuilderNoOverride has no override_value set, Validate should still succeed.
 func TestResourceBuilderNoOverride(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "all_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
+	assert.Nil(t, cfg.DbSystemName.OverrideValue, "OverrideValue should be nil for db.system.name")
+	assert.Nil(t, cfg.DbSystemVersion.OverrideValue, "OverrideValue should be nil for db.system.version")
 	assert.Nil(t, cfg.MysqlInstanceEndpoint.OverrideValue, "OverrideValue should be nil for mysql.instance.endpoint")
 	assert.Nil(t, cfg.ServiceInstanceID.OverrideValue, "OverrideValue should be nil for service.instance.id")
 	assert.Nil(t, cfg.ServiceName.OverrideValue, "OverrideValue should be nil for service.name")
 	assert.Nil(t, cfg.ServiceNamespace.OverrideValue, "OverrideValue should be nil for service.namespace")
 	rb := NewResourceBuilder(cfg)
+	rb.SetDbSystemName("db.system.name-val")
+	rb.SetDbSystemVersion("db.system.version-val")
 	rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
 	rb.SetServiceInstanceID("service.instance.id-val")
 	rb.SetServiceName("service.name-val")
 	rb.SetServiceNamespace("service.namespace-val")
 
 	res := rb.Emit()
-	assert.Equal(t, 4, res.Attributes().Len())
+	assert.Equal(t, 6, res.Attributes().Len())
+	dbSystemNameAttrVal, ok := res.Attributes().Get("db.system.name")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "db.system.name-val", dbSystemNameAttrVal.Str())
+	}
+	dbSystemVersionAttrVal, ok := res.Attributes().Get("db.system.version")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "db.system.version-val", dbSystemVersionAttrVal.Str())
+	}
 	mysqlInstanceEndpointAttrVal, ok := res.Attributes().Get("mysql.instance.endpoint")
 	assert.True(t, ok)
 	if ok {

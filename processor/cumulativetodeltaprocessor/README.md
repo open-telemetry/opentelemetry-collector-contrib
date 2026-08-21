@@ -44,8 +44,8 @@ If neither include nor exclude are supplied, no filtering is applied.
 
 ```yaml
 processors:
-    # processor name: cumulativetodelta
-    cumulativetodelta:
+    # processor name: cumulative_to_delta
+    cumulative_to_delta:
 
         # list the exact cumulative sum or histogram metrics to convert to delta
         include:
@@ -60,8 +60,8 @@ processors:
 
 ```yaml
 processors:
-    # processor name: cumulativetodelta
-    cumulativetodelta:
+    # processor name: cumulative_to_delta
+    cumulative_to_delta:
 
         # Convert all sum metrics
         include:
@@ -71,8 +71,8 @@ processors:
 
 ```yaml
 processors:
-    # processor name: cumulativetodelta
-    cumulativetodelta:
+    # processor name: cumulative_to_delta
+    cumulative_to_delta:
 
         # Convert cumulative sum or histogram metrics to delta
         # if and only if 'metric' is in the name
@@ -84,8 +84,8 @@ processors:
 
 ```yaml
 processors:
-    # processor name: cumulativetodelta
-    cumulativetodelta:
+    # processor name: cumulative_to_delta
+    cumulative_to_delta:
 
         # Convert cumulative sum metrics to delta
         # if and only if 'metric' is in the name
@@ -99,8 +99,8 @@ processors:
 
 ```yaml
 processors:
-    # processor name: cumulativetodelta
-    cumulativetodelta:
+    # processor name: cumulative_to_delta
+    cumulative_to_delta:
 
         # Convert cumulative sum or histogram metrics to delta
         # if and only if 'metric' is not in the name
@@ -112,8 +112,8 @@ processors:
 
 ```yaml
 processors:
-    # processor name: cumulativetodelta
-    cumulativetodelta:
+    # processor name: cumulative_to_delta
+    cumulative_to_delta:
 
         # Convert cumulative sum metrics with 'metric' in their name,
         # but exclude histogram metrics
@@ -128,8 +128,8 @@ processors:
 
 ```yaml
 processors:
-    # processor name: cumulativetodelta
-    cumulativetodelta:
+    # processor name: cumulative_to_delta
+    cumulative_to_delta:
         # If include/exclude are not specified
         # convert all cumulative sum or histogram metrics to delta
 ```
@@ -145,7 +145,7 @@ disabled by default and must be opted-in via the collector's
 
 ## Warnings
 
-- [Statefulness](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#statefulness): The cumulativetodelta processor's calculates delta by remembering the previous value of a metric.  For this reason, the calculation is only accurate if the metric is continuously sent to the same instance of the collector.  As a result, the cumulativetodelta processor may not work as expected if used in a deployment of multiple collectors.  When using this processor it is best for the data source to being sending data to a single collector.
+- [Statefulness](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#statefulness): The cumulative_to_delta processor's calculates delta by remembering the previous value of a metric.  For this reason, the calculation is only accurate if the metric is continuously sent to the same instance of the collector.  As a result, the cumulative_to_delta processor may not work as expected if used in a deployment of multiple collectors.  When using this processor it is best for the data source to being sending data to a single collector.
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

@@ -1,0 +1,68 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: testhost
+    scopeMetrics:
+      - metrics:
+          - description: Number of worker requests by state.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: request.state
+                      value:
+                        stringValue: waiting
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.worker.request.count
+            unit: '{request}'
+          - description: Number of worker threads by state.
+            gauge:
+              dataPoints:
+                - asInt: "42"
+                  attributes:
+                    - key: worker.state
+                      value:
+                        stringValue: active
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "566"
+                  attributes:
+                    - key: worker.state
+                      value:
+                        stringValue: available
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "608"
+                  attributes:
+                    - key: worker.state
+                      value:
+                        stringValue: maximum
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "5"
+                  attributes:
+                    - key: worker.state
+                      value:
+                        stringValue: waiting_for_cpu
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.worker.thread.count
+            unit: '{thread}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest

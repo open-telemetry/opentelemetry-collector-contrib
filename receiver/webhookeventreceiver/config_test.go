@@ -12,8 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
@@ -142,6 +142,71 @@ func TestValidateConfig(t *testing.T) {
 				RequiredHeader: RequiredHeader{
 					Key:   "",
 					Value: "value-present",
+				},
+			},
+		},
+		{
+			desc:   "HMAC missing secret",
+			expect: errHMACMissingSecret,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				HMACSignature: HMACSignature{
+					Header: "X-Hub-Signature-256",
+					Prefix: "sha256=",
+				},
+			},
+		},
+		{
+			desc:   "HMAC missing header",
+			expect: errHMACMissingHeader,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				HMACSignature: HMACSignature{
+					Secret: "mysecret",
+					Prefix: "sha256=",
+				},
+			},
+		},
+		{
+			desc:   "HMAC missing prefix",
+			expect: errHMACMissingPrefix,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				HMACSignature: HMACSignature{
+					Secret: "mysecret",
+					Header: "X-Hub-Signature-256",
+				},
+			},
+		},
+		{
+			desc:   "HMAC valid config",
+			expect: nil,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				HMACSignature: HMACSignature{
+					Secret: "mysecret",
+					Header: "X-Hub-Signature-256",
+					Prefix: "sha256=",
 				},
 			},
 		},
@@ -281,7 +346,7 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			err := test.conf.Validate()
 			require.NoError(t, err)
-			require.Equal(t, test.expected, test.conf.MaxRequestBodySize)
+			require.Equal(t, test.expected, test.conf.ServerConfig.MaxRequestBodySize)
 		})
 	}
 }
@@ -323,7 +388,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	conf := factory.CreateDefaultConfig()
 	require.NoError(t, cmNoStr.Unmarshal(conf))
-	require.NoError(t, xconfmap.Validate(conf))
+	require.NoError(t, confmap.Validate(conf))
 
 	require.Equal(t, expect, conf)
 }

@@ -21,6 +21,7 @@ import (
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -139,6 +140,9 @@ type prwExporter struct {
 	exporterSettings    prometheusremotewrite.Settings
 	telemetry           prwTelemetry
 	RemoteWriteProtoMsg remoteapi.WriteMessageType
+	// includeMetadataKeys lists client metadata keys that are forwarded as
+	// HTTP headers on every outbound remote write request.
+	includeMetadataKeys []string
 
 	// When concurrency is enabled, concurrent goroutines would potentially
 	// fight over the same batchState object. To avoid this, we use a pool
@@ -168,7 +172,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		return nil, err
 	}
 
-	endpointURL, err := url.ParseRequestURI(cfg.ClientConfig.Endpoint)
+	endpointURL, err := url.ParseRequestURI(cfg.HTTP.Endpoint)
 	if err != nil {
 		return nil, errors.New("invalid endpoint")
 	}
@@ -206,19 +210,22 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		userAgentHeader:     userAgentHeader,
 		maxBatchSizeBytes:   cfg.MaxBatchSizeBytes,
 		concurrency:         concurrency,
-		clientSettings:      &cfg.ClientConfig,
+		clientSettings:      &cfg.HTTP,
 		settings:            set.TelemetrySettings,
 		retrySettings:       cfg.BackOffConfig,
 		retryOnHTTP429:      metadata.ExporterPrometheusremotewritexporterRetryOn429FeatureGate.IsEnabled(),
 		RemoteWriteProtoMsg: cfg.RemoteWriteProtoMsg,
+		includeMetadataKeys: cfg.IncludeMetadataKeys,
 		exporterSettings: prometheusremotewrite.Settings{
-			Namespace:           cfg.Namespace,
-			ExternalLabels:      sanitizedLabels,
-			DisableTargetInfo:   !cfg.TargetInfo.Enabled,
-			DisableScopeInfo:    cfg.DisableScopeInfo,
-			AddMetricSuffixes:   cfg.AddMetricSuffixes,
-			TranslationStrategy: string(cfg.TranslationStrategy),
-			SendMetadata:        cfg.SendMetadata,
+			Namespace:                       cfg.Namespace,
+			ExternalLabels:                  sanitizedLabels,
+			DisableTargetInfo:               !cfg.TargetInfo.Enabled,
+			DisableScopeInfo:                cfg.DisableScopeInfo,
+			AddMetricSuffixes:               cfg.AddMetricSuffixes,
+			TranslationStrategy:             string(cfg.TranslationStrategy),
+			SendMetadata:                    cfg.SendMetadata,
+			ConvertExplicitHistogramsToNHCB: cfg.ConvertExplicitHistogramsToNHCB,
+			KeepClassicHistograms:           cfg.KeepClassicHistograms,
 		},
 		telemetry:      telemetry,
 		batchStatePool: sync.Pool{New: func() any { return newBatchTimeServicesState() }},
@@ -456,6 +463,16 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 			return http.StatusBadRequest, fmt.Errorf("unsupported remote-write protobuf message: %v (should be validated earlier)", prwe.RemoteWriteProtoMsg)
 		}
 
+		// Forward configured client metadata keys as HTTP headers
+		if len(prwe.includeMetadataKeys) > 0 {
+			md := client.FromContext(ctx).Metadata
+			for _, key := range prwe.includeMetadataKeys {
+				for _, val := range md.Get(key) {
+					req.Header.Add(key, val)
+				}
+			}
+		}
+
 		resp, err := prwe.client.Do(req)
 		prwe.telemetry.recordRemoteWriteSentBatch(ctx)
 		if err != nil {
@@ -523,7 +540,7 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 	}
 
 	if err != nil {
-		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		if errors.Is(err, context.Canceled) {
 			return consumererror.NewPermanent(err)
 		}
 		return err

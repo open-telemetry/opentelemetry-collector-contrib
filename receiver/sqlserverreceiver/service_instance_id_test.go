@@ -130,6 +130,30 @@ func TestComputeServiceInstanceID(t *testing.T) {
 			expected: fmt.Sprintf("%s:1433", hostname),
 		},
 		{
+			name: "computer name only (Windows PC mode remote)",
+			config: &Config{
+				ComputerName: "db-server",
+			},
+			expected: "db-server:1433",
+		},
+		{
+			name: "computer name takes lower priority than server",
+			config: &Config{
+				Server:       "direct-host",
+				Port:         5000,
+				ComputerName: "db-server",
+			},
+			expected: "direct-host:5000",
+		},
+		{
+			name: "computer name takes lower priority than datasource",
+			config: &Config{
+				DataSource:   "server=datasource-host,5000;user id=sa",
+				ComputerName: "db-server",
+			},
+			expected: "datasource-host:5000",
+		},
+		{
 			name: "datasource with named instance",
 			config: &Config{
 				DataSource: "server=myserver\\SQLEXPRESS,5000;user id=sa",

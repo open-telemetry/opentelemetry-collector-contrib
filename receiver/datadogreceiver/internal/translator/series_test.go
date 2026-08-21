@@ -131,9 +131,11 @@ func TestTranslateSeriesV1(t *testing.T) {
 
 				dp := metric.Sum().DataPoints().At(0)
 				requireDp(t, dp, expectedAttrs.dp, 1636629071, 0.5)
+				requireNoAsType(t, dp)
 
 				dp = metric.Sum().DataPoints().At(1)
 				requireDp(t, dp, expectedAttrs.dp, 1636629081, 1.0)
+				requireNoAsType(t, dp)
 			},
 		},
 		{
@@ -172,9 +174,11 @@ func TestTranslateSeriesV1(t *testing.T) {
 
 				dp := metric.Gauge().DataPoints().At(0)
 				requireDp(t, dp, expectedAttrs.dp, 1636629071, 2)
+				requireNoAsType(t, dp)
 
 				dp = metric.Gauge().DataPoints().At(1)
 				requireDp(t, dp, expectedAttrs.dp, 1636629081, 3)
+				requireNoAsType(t, dp)
 			},
 		},
 		{
@@ -203,6 +207,7 @@ func TestTranslateSeriesV1(t *testing.T) {
 				requireMetricAndDataPointCounts(t, result, 1, 2)
 
 				expectedAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "Host1", newStringPool())
+				expectedAttrs.dp.PutStr(datadogMetricAsTypeKey, TypeRate)
 				require.Equal(t, 1, result.ResourceMetrics().Len())
 				requireResourceAttributes(t, result.ResourceMetrics().At(0).Resource().Attributes(), expectedAttrs.resource)
 				requireScopeMetrics(t, result, 1, 1)
@@ -213,9 +218,11 @@ func TestTranslateSeriesV1(t *testing.T) {
 
 				dp := metric.Sum().DataPoints().At(0)
 				requireDp(t, dp, expectedAttrs.dp, 1636629071, 2)
+				requireAsTypeRate(t, dp)
 
 				dp = metric.Sum().DataPoints().At(1)
 				requireDp(t, dp, expectedAttrs.dp, 1636629081, 3)
+				requireAsTypeRate(t, dp)
 			},
 		},
 	}
@@ -276,9 +283,11 @@ func TestTranslateSeriesV2(t *testing.T) {
 
 				dp := metric.Sum().DataPoints().At(0)
 				requireDp(t, dp, expectedAttrs.dp, 1636629071, 0.5)
+				requireNoAsType(t, dp)
 
 				dp = metric.Sum().DataPoints().At(1)
 				requireDp(t, dp, expectedAttrs.dp, 1636629081, 1.0)
+				requireNoAsType(t, dp)
 			},
 		},
 		{
@@ -321,9 +330,11 @@ func TestTranslateSeriesV2(t *testing.T) {
 
 				dp := metric.Gauge().DataPoints().At(0)
 				requireDp(t, dp, expectedAttrs.dp, 1636629071, 2)
+				requireNoAsType(t, dp)
 
 				dp = metric.Gauge().DataPoints().At(1)
 				requireDp(t, dp, expectedAttrs.dp, 1636629081, 3)
+				requireNoAsType(t, dp)
 			},
 		},
 		{
@@ -356,6 +367,7 @@ func TestTranslateSeriesV2(t *testing.T) {
 
 				expectedAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "Host1", newStringPool())
 				expectedAttrs.resource.PutStr("source", "")
+				expectedAttrs.dp.PutStr(datadogMetricAsTypeKey, TypeRate)
 				require.Equal(t, 1, result.ResourceMetrics().Len())
 				requireResourceAttributes(t, result.ResourceMetrics().At(0).Resource().Attributes(), expectedAttrs.resource)
 				requireScopeMetrics(t, result, 1, 1)
@@ -366,9 +378,11 @@ func TestTranslateSeriesV2(t *testing.T) {
 
 				dp := metric.Sum().DataPoints().At(0)
 				requireDp(t, dp, expectedAttrs.dp, 1636629071, 2)
+				requireAsTypeRate(t, dp)
 
 				dp = metric.Sum().DataPoints().At(1)
 				requireDp(t, dp, expectedAttrs.dp, 1636629081, 3)
+				requireAsTypeRate(t, dp)
 			},
 		},
 		{
