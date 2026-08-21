@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -284,7 +284,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = configopaque.MapList{
+			cfg.ClientConfig.Headers = configopaque.MapList{
 				{Name: "foo", Value: "bah"},
 			}
 		})
@@ -307,7 +307,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = configopaque.MapList{
+			cfg.ClientConfig.Headers = configopaque.MapList{
 				{Name: "User-Agent", Value: "overridden"},
 			}
 		})
@@ -937,6 +937,48 @@ func TestExporterLogs(t *testing.T) {
 		}
 	})
 
+	t.Run("dynamic id disabled ignores document_id attribute", func(t *testing.T) {
+		t.Parallel()
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			assert.NotContains(t, string(docs[0].Action), "_id", "_id must not be set when LogsDynamicID is disabled")
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogsDynamicID.Enabled = false
+		})
+		logs := newLogsWithAttributes(
+			map[string]any{elasticsearch.DocumentIDAttributeName: "should-be-ignored"},
+			nil, nil,
+		)
+		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("body")
+		mustSendLogs(t, exporter, logs)
+		rec.WaitItems(1)
+	})
+
+	t.Run("dynamic pipeline disabled ignores ingest_pipeline attribute", func(t *testing.T) {
+		t.Parallel()
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			assert.NotContains(t, string(docs[0].Action), "pipeline", "pipeline must not be set when LogsDynamicPipeline is disabled")
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogsDynamicPipeline.Enabled = false
+		})
+		logs := newLogsWithAttributes(
+			map[string]any{elasticsearch.DocumentPipelineAttributeName: "should-be-ignored"},
+			nil, nil,
+		)
+		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("body")
+		mustSendLogs(t, exporter, logs)
+		rec.WaitItems(1)
+	})
+
 	t.Run("publish with dynamic pipeline", func(t *testing.T) {
 		t.Parallel()
 		examplePipeline := "abc123"
@@ -1012,6 +1054,33 @@ func TestExporterLogs(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("drops log records with _noindex mapping hint", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL)
+
+		logs := plog.NewLogs()
+		scope := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+		noindex := scope.LogRecords().AppendEmpty()
+		noindex.Body().SetStr("dropped")
+		noindex.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey).AppendEmpty().SetStr(string(elasticsearch.HintNoIndex))
+		kept := scope.LogRecords().AppendEmpty()
+		kept.Body().SetStr("kept")
+
+		mustSendLogs(t, exporter, logs)
+		rec.WaitItems(1)
+		// Drain the pipeline so the recorder reflects the final state.
+		require.NoError(t, exporter.Shutdown(t.Context()))
+
+		items := rec.Items()
+		require.Len(t, items, 1, "only the non-noindex log record should reach the bulk indexer")
+		assert.Equal(t, "kept", gjson.GetBytes(items[0].Document, "body.text").Str)
+	})
 }
 
 func TestDeprecatedConfigMappingModeIgnored(t *testing.T) {
@@ -1032,7 +1101,7 @@ func TestDeprecatedConfigMappingModeIgnored(t *testing.T) {
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 		cfg.Mapping.Mode = "ecs"
 	})
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	f := NewFactory()
 	exp, err := f.CreateLogs(t.Context(), params, cfg)
@@ -1813,6 +1882,39 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("drops data points with _noindex mapping hint", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+
+		metrics := pmetric.NewMetrics()
+		scope := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		metric := scope.Metrics().AppendEmpty()
+		metric.SetName("sum")
+		sum := metric.SetEmptySum().DataPoints()
+
+		noindex := sum.AppendEmpty()
+		noindex.SetIntValue(1)
+		noindex.Attributes().PutStr("series", "dropped")
+		noindex.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey).AppendEmpty().SetStr(string(elasticsearch.HintNoIndex))
+
+		kept := sum.AppendEmpty()
+		kept.SetIntValue(2)
+		kept.Attributes().PutStr("series", "kept")
+
+		mustSendMetrics(t, exporter, metrics)
+		rec.WaitItems(1)
+		require.NoError(t, exporter.Shutdown(t.Context()))
+
+		items := rec.Items()
+		require.Len(t, items, 1, "noindex datapoint should be skipped; only the kept series should index")
+		assert.Equal(t, "kept", gjson.GetBytes(items[0].Document, "attributes.series").Str)
 	})
 }
 
@@ -2703,10 +2805,56 @@ func TestExporterTraces(t *testing.T) {
 		}
 	})
 
+	t.Run("traces dynamic id disabled ignores document_id attribute on span", func(t *testing.T) {
+		t.Parallel()
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			assert.NotContains(t, string(docs[0].Action), "_id", "_id must not be set when TracesDynamicID is disabled")
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesDynamicID.Enabled = false
+		})
+		traces := newTracesWithAttributes(
+			map[string]any{elasticsearch.DocumentIDAttributeName: "should-be-ignored"},
+			nil, nil,
+		)
+		mustSendTraces(t, exporter, traces)
+		rec.WaitItems(1)
+	})
+
+	t.Run("traces dynamic id disabled ignores document_id attribute on span event", func(t *testing.T) {
+		t.Parallel()
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			// Two items expected: 1 span + 1 span event. Neither should carry _id.
+			for _, doc := range docs {
+				assert.NotContains(t, string(doc.Action), "_id", "_id must not be set when TracesDynamicID is disabled")
+			}
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesDynamicID.Enabled = false
+		})
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("parent")
+		event := span.Events().AppendEmpty()
+		event.SetName("evt")
+		event.Attributes().PutStr(elasticsearch.DocumentIDAttributeName, "should-be-ignored")
+		mustSendTraces(t, exporter, traces)
+		rec.WaitItems(2)
+	})
+
 	t.Run("publish with dynamic id in ecs mode", func(t *testing.T) {
 		t.Parallel()
-		// Test that spans respect dynamic document IDs in ECS mode,
-		// while span events are embedded (not separate documents)
+		// Test that spans respect dynamic document IDs in ECS mode.
+		// Span events are extracted as separate documents; the DocumentIDAttributeName
+		// on the event is ignored (ECS span event IDs are not user-controlled).
 		exampleDocID := "ecs-span-doc-id-789"
 
 		rec := newBulkRecorder()
@@ -2736,16 +2884,69 @@ func TestExporterTraces(t *testing.T) {
 
 		mustSendTraces(t, exporter, traces)
 
-		// In ECS mode, only the span document is created (span events are embedded)
-		rec.WaitItems(1)
+		// In ECS mode, span events are extracted as separate log documents,
+		// so we expect 2 documents: the span and the span event.
+		rec.WaitItems(2)
 		docs := rec.Items()
-		require.Len(t, docs, 1, "should only have 1 document (span) in ECS mode")
+		require.Len(t, docs, 2, "should have 2 documents: span and span event in ECS mode")
 
 		// Verify the span document has the correct _id
 		assert.Equal(t, exampleDocID, actionJSONToID(t, docs[0].Action), "span should have dynamic _id")
 
 		// Verify the document ID attribute is removed from the span
 		assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "document id attribute should be removed")
+	})
+
+	t.Run("drops spans with _noindex mapping hint", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL)
+
+		traces := ptrace.NewTraces()
+		scope := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+		noindex := scope.Spans().AppendEmpty()
+		noindex.SetName("dropped")
+		noindex.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey).AppendEmpty().SetStr(string(elasticsearch.HintNoIndex))
+		kept := scope.Spans().AppendEmpty()
+		kept.SetName("kept")
+
+		mustSendTraces(t, exporter, traces)
+		rec.WaitItems(1)
+		require.NoError(t, exporter.Shutdown(t.Context()))
+
+		items := rec.Items()
+		require.Len(t, items, 1, "only the non-noindex span should reach the bulk indexer")
+		assert.Equal(t, "kept", gjson.GetBytes(items[0].Document, "name").Str)
+	})
+
+	t.Run("drops span events with _noindex mapping hint", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL)
+
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("parent")
+		noindex := span.Events().AppendEmpty()
+		noindex.SetName("dropped-event")
+		noindex.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey).AppendEmpty().SetStr(string(elasticsearch.HintNoIndex))
+		span.Events().AppendEmpty().SetName("kept-event")
+
+		mustSendTraces(t, exporter, traces)
+		// One span doc + one (non-noindex) span event doc = 2 items expected.
+		rec.WaitItems(2)
+		require.NoError(t, exporter.Shutdown(t.Context()))
+
+		items := rec.Items()
+		require.Len(t, items, 2, "noindex span event should be skipped; one span + one event expected")
 	})
 }
 
@@ -2978,6 +3179,41 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 			})
 		}
 	})
+	t.Run("default mode from allowed modes", func(t *testing.T) {
+		for _, tc := range []struct {
+			name         string
+			allowedModes []string
+			check        checkFunc
+		}{
+			{
+				name:         "first allowed mode if otel not included",
+				allowedModes: []string{"ecs", "raw"},
+				check:        checkECSResource,
+			},
+			{
+				name:         "otel if otel is included",
+				allowedModes: []string{"raw", "ecs", "otel"},
+				check:        checkOTelResource,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				traces := createTraces(defaultScope)
+				exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.AllowedModes = tc.allowedModes
+				})
+				mustSendTraces(t, exporter, traces)
+
+				docs := rec.WaitItems(1)
+				tc.check(t, docs[0].Document, "traces")
+			})
+		}
+	})
 }
 
 // TestExporterAuth verifies that the Elasticsearch exporter supports
@@ -2986,7 +3222,7 @@ func TestExporterAuth(t *testing.T) {
 	done := make(chan struct{}, 1)
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
-		cfg.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
+		cfg.ClientConfig.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
 	})
 	err := exporter.Start(t.Context(), &mockHost{
 		extensions: map[component.ID]component.Component{
@@ -3020,7 +3256,7 @@ func TestExporterBatcher(t *testing.T) {
 			MinSize:      8192,
 			MaxSize:      10000,
 		})
-		cfg.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
+		cfg.ClientConfig.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
 		cfg.Retry.Enabled = false
 	})
 	err := exporter.Start(t.Context(), &mockHost{
@@ -3058,7 +3294,7 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 	})
 	configSetupFn := func(cfg *Config) {
 		cfg.MetadataKeys = slices.Collect(metadata.Keys())
-		cfg.Auth = configoptional.Some(configauth.Config{
+		cfg.ClientConfig.Auth = configoptional.Some(configauth.Config{
 			AuthenticatorID: testCtxKey,
 		})
 		// Configure sending queue with batching enabled. Batching configuration are
@@ -3253,7 +3489,7 @@ func newUnstartedTestTracesExporter(t *testing.T, url string, fns ...func(*Confi
 		// Batch is configured by default so we can directly edit flush timeout
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	exp, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp
@@ -3277,7 +3513,7 @@ func newUnstartedTestProfilesExporter(t *testing.T, url string, fns ...func(*Con
 		// Batch is configured by default so we can directly edit flush timeout
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	exp, err := f.CreateProfiles(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp
@@ -3300,7 +3536,7 @@ func newUnstartedTestMetricsExporter(t *testing.T, url string, fns ...func(*Conf
 		// Batch is configured by default so we can directly edit flush timeout
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	exp, err := f.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp
@@ -3324,7 +3560,7 @@ func newUnstartedTestLogsExporter(t *testing.T, url string, fns ...func(*Config)
 		// Batch is defined as default configuration
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	exp, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp
@@ -3506,4 +3742,75 @@ func actionGetValue(t *testing.T, actionJSON json.RawMessage, target string) str
 	vString, ok := v.(string)
 	require.True(t, ok, "the type of action.create.%s was not string", target)
 	return vString
+}
+
+func TestExporterTimeout_NoRetryOnTimeout(t *testing.T) {
+	var count atomic.Int32
+	done := make(chan struct{}, 1)
+	defer close(done)
+	server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, _ *http.Request) {
+		if count.Add(1) == 1 {
+			<-done
+		}
+		w.WriteHeader(http.StatusTeapot)
+	})
+
+	exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+		cfg.ClientConfig.Timeout = 50 * time.Millisecond
+		cfg.Retry.Enabled = true
+		cfg.Retry.MaxRetries = 1
+		cfg.Retry.InitialInterval = 1 * time.Millisecond
+		cfg.QueueBatchConfig.Get().Batch.Get().MinSize = 0
+		cfg.QueueBatchConfig.Get().WaitForResult = true
+	})
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.LogRecords().AppendEmpty()
+	logs.MarkReadOnly()
+	err := exporter.ConsumeLogs(t.Context(), logs)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Equal(t, int32(1), count.Load())
+}
+
+func TestExporterTimeout_Independent(t *testing.T) {
+	// Server responds with HTTP 429 for first few attempts.
+	// Ensure timeout is not shared across retries by
+	// checking the total time elapsed across attempts exceeds configured timeout
+	successfulOnAttempt := 3
+	var count atomic.Int32
+	server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, _ *http.Request) {
+		if int(count.Add(1)) < successfulOnAttempt {
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		w.WriteHeader(http.StatusTeapot)
+	})
+
+	timeout := 50 * time.Millisecond
+	exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+		cfg.ClientConfig.Timeout = timeout
+		cfg.Retry.Enabled = true
+		cfg.Retry.MaxRetries = 1000
+		// Since backoff uses equal jitter, the actual wait may be the configured interval / 2.
+		// Configure to 2 * timeout to offset that effect.
+		cfg.Retry.InitialInterval = 2 * timeout
+		cfg.Retry.MaxInterval = 2 * timeout
+
+		cfg.QueueBatchConfig.Get().Batch.Get().MinSize = 0
+		cfg.QueueBatchConfig.Get().WaitForResult = true
+	})
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.LogRecords().AppendEmpty()
+	logs.MarkReadOnly()
+
+	start := time.Now()
+	err := exporter.ConsumeLogs(t.Context(), logs)
+	var errFlushFailed docappender.ErrorFlushFailed
+	assert.ErrorAs(t, err, &errFlushFailed)
+	assert.ErrorContains(t, err, "418")
+	assert.Equal(t, int32(successfulOnAttempt), count.Load())
+	assert.GreaterOrEqual(t, time.Since(start), timeout)
 }

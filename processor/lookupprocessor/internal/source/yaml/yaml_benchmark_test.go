@@ -66,7 +66,7 @@ func createBenchmarkSource(b *testing.B, numEntries int) lookupsource.Source {
 	require.NoError(b, err)
 
 	factory := NewFactory()
-	cfg := &Config{Path: yamlPath}
+	cfg := &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: yamlPath}}
 
 	source, err := factory.CreateSource(b.Context(), lookupsource.CreateSettings{}, cfg)
 	require.NoError(b, err)

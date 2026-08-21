@@ -81,9 +81,6 @@ func PodIdentifierAttributeFromResourceAttribute(key, value string) PodIdentifie
 	)
 }
 
-// TODO: move this to config with default values
-var defaultPodDeleteGracePeriod = time.Second * 120
-
 // Client defines the main interface that allows querying pods by metadata.
 type Client interface {
 	GetPod(PodIdentifier) (*Pod, bool)
@@ -98,7 +95,7 @@ type Client interface {
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformersFactoryList, bool, time.Duration, time.Duration) (Client, error)
+type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformersFactoryList, bool, time.Duration, time.Duration, time.Duration) (Client, error)
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
@@ -172,9 +169,12 @@ type Node struct {
 type deleteRequest struct {
 	// id is identifier (IP address or Pod UID) of pod to remove from pods map
 	id PodIdentifier
-	// contains uid of pod to remove from pods map
-	podUID string
-	ts     time.Time
+	// pod is the exact *Pod pointer registered for this identifier at queue time.
+	// The delete loop skips the request if c.Pods[id] no longer points to this
+	// object, which covers both cross-pod replacement and active->stale->active
+	// re-activation without any additional locking.
+	pod *Pod
+	ts  time.Time
 }
 
 // Filters is used to instruct the client on how to filter out k8s pods.

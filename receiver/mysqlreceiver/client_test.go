@@ -5,9 +5,12 @@ package mysqlreceiver
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"regexp"
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	// registers the mysql driver for TestFetchDBVersionTimeout
 	_ "github.com/go-sql-driver/mysql"
 	version "github.com/hashicorp/go-version"
@@ -173,6 +176,22 @@ func TestExplainQueryEarlyExits(t *testing.T) {
 	})
 }
 
+// TestExplainQueryConnFailure verifies that explainQuery returns "" and does not
+// panic when the underlying *sql.DB cannot provide a connection (e.g. the DB is
+// already closed). This exercises the new Conn() error path introduced to ensure
+// USE and EXPLAIN execute on the same connection.
+func TestExplainQueryConnFailure(t *testing.T) {
+	db, err := sql.Open("mysql", "root:@tcp(127.0.0.1:3306)/")
+	require.NoError(t, err)
+	require.NoError(t, db.Close()) // close immediately so Conn() will fail
+
+	c := &mySQLClient{client: db}
+	logger := zap.NewNop()
+
+	result := c.explainQuery("SELECT * FROM t", "SELECT * FROM t", "myschema", "digest1", logger)
+	assert.Empty(t, result)
+}
+
 // mustParseVersion is a test helper that parses a semver string and fails the test if parsing fails.
 func mustParseVersion(t *testing.T, v string) *version.Version {
 	t.Helper()
@@ -328,6 +347,61 @@ func TestReplicaStatusQuery(t *testing.T) {
 	}
 }
 
+func TestGetReplicaStatusStatsNormalizesColumnSpellings(t *testing.T) {
+	tests := []struct {
+		name                  string
+		supportsReplicaStatus bool
+		query                 string
+		columns               []string
+		values                []driver.Value
+		wantReplicaIORunning  string
+		wantReplicaSQLRunning string
+		wantChannelName       string
+	}{
+		{
+			name:                  "replica column spellings",
+			supportsReplicaStatus: true,
+			query:                 "SHOW REPLICA STATUS",
+			columns:               []string{"Replica_IO_Running", "Replica_SQL_Running", "Channel_Name"},
+			values:                []driver.Value{"Yes", "No", "source_a"},
+			wantReplicaIORunning:  "Yes",
+			wantReplicaSQLRunning: "No",
+			wantChannelName:       "source_a",
+		},
+		{
+			name:                  "slave column spellings",
+			supportsReplicaStatus: false,
+			query:                 "SHOW SLAVE STATUS",
+			columns:               []string{"Slave_IO_Running", "Slave_SQL_Running", "Channel_Name"},
+			values:                []driver.Value{"Connecting", "Yes", "source_b"},
+			wantReplicaIORunning:  "Connecting",
+			wantReplicaSQLRunning: "Yes",
+			wantChannelName:       "source_b",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+
+			mock.ExpectQuery(regexp.QuoteMeta(tt.query)).
+				WillReturnRows(sqlmock.NewRows(tt.columns).AddRow(tt.values...))
+
+			c := &mySQLClient{client: db}
+			got, err := c.getReplicaStatusStats(tt.supportsReplicaStatus)
+			require.NoError(t, err)
+			require.NoError(t, mock.ExpectationsWereMet())
+			require.Len(t, got, 1)
+
+			assert.Equal(t, tt.wantReplicaIORunning, got[0].replicaIORunning)
+			assert.Equal(t, tt.wantReplicaSQLRunning, got[0].replicaSQLRunning)
+			assert.Equal(t, tt.wantChannelName, got[0].channelName)
+		})
+	}
+}
+
 // TestGetDBVersionCaching verifies that a cached version is returned on subsequent
 // calls and that no additional query is made.
 func TestParseDBVersion(t *testing.T) {
@@ -414,5 +488,17 @@ func TestDBVersionHelperMethods(t *testing.T) {
 	t.Run("productString zero value defaults to MySQL", func(t *testing.T) {
 		// Zero value has product=dbProductMySQL (iota 0); productString must return "MySQL".
 		assert.Equal(t, "MySQL", dbVersion{}.productString())
+	})
+	t.Run("systemName MySQL", func(t *testing.T) {
+		// Expected values are hardcoded (not sourced from the semconv package) because
+		// depguard disallows importing semconv in test files; this keeps the test an
+		// independent check on the values systemName maps to.
+		assert.Equal(t, "mysql", dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.27")}.systemName())
+	})
+	t.Run("systemName MariaDB", func(t *testing.T) {
+		assert.Equal(t, "mariadb", dbVersion{product: dbProductMariaDB, version: mustParseVersion(t, "10.11.6")}.systemName())
+	})
+	t.Run("systemName zero value defaults to mysql", func(t *testing.T) {
+		assert.Equal(t, "mysql", dbVersion{}.systemName())
 	})
 }

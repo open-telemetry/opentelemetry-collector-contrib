@@ -84,6 +84,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["container.network.io.usage.tx_dropped"] = mb.metricContainerNetworkIoUsageTxDropped.config.AggregationStrategy
 			aggMap["container.network.io.usage.tx_errors"] = mb.metricContainerNetworkIoUsageTxErrors.config.AggregationStrategy
 			aggMap["container.network.io.usage.tx_packets"] = mb.metricContainerNetworkIoUsageTxPackets.config.AggregationStrategy
+			aggMap["container.state.health.status"] = mb.metricContainerStateHealthStatus.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -104,7 +105,6 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerBlockioIoQueuedRecursiveDataPoint(ts, 3, "device_major-val-2", "device_minor-val-2", "operation-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerBlockioIoServiceBytesRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
@@ -159,7 +159,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUsageKernelmodeDataPoint(ts, 1)
@@ -172,15 +171,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerCPUUsageSystemDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUsageTotalDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUsageUsermodeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
@@ -202,7 +198,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerMemoryFailsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryFileDataPoint(ts, 1)
@@ -221,7 +216,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerMemoryMappedFileDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryPercentDataPoint(ts, 1)
@@ -249,7 +243,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerMemoryTotalActiveFileDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryTotalCacheDataPoint(ts, 1)
@@ -292,28 +285,24 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerMemoryUnevictableDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryUsageLimitDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordContainerMemoryUsageMaxDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryUsageTotalDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordContainerMemoryWritebackDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageRxBytesDataPoint(ts, 1, "interface-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerNetworkIoUsageRxBytesDataPoint(ts, 3, "interface-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageRxDroppedDataPoint(ts, 1, "interface-val")
@@ -332,14 +321,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerNetworkIoUsageRxPacketsDataPoint(ts, 3, "interface-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageTxBytesDataPoint(ts, 1, "interface-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerNetworkIoUsageTxBytesDataPoint(ts, 3, "interface-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageTxDroppedDataPoint(ts, 1, "interface-val")
@@ -367,6 +354,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerRestartsDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerStateHealthStatusDataPoint(ts, 1, AttributeContainerStateHealthStateStarting)
+			if tt.name == "reaggregate_set" {
+				mb.RecordContainerStateHealthStatusDataPoint(ts, 3, AttributeContainerStateHealthStateHealthy)
+			}
 
 			allMetricsCount++
 			mb.RecordContainerUptimeDataPoint(ts, 1)
@@ -399,6 +392,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricContainerNetworkIoUsageTxDropped.aggDataPoints)
 				assert.Empty(t, mb.metricContainerNetworkIoUsageTxErrors.aggDataPoints)
 				assert.Empty(t, mb.metricContainerNetworkIoUsageTxPackets.aggDataPoints)
+				assert.Empty(t, mb.metricContainerStateHealthStatus.aggDataPoints)
 			}
 
 			if tt.expectEmpty {
@@ -1986,6 +1980,50 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.state.health.status":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["container.state.health.status"], "Found a duplicate in the metrics slice: container.state.health.status")
+						validatedMetrics["container.state.health.status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of containers that are currently in a given health state. All possible container health states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current health state will be non-zero.", mi.Description())
+						assert.Equal(t, "{container}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						containerStateHealthStateAttrVal, ok := dp.Attributes().Get("container.state.health.state")
+						assert.True(t, ok)
+						assert.Equal(t, "starting", containerStateHealthStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["container.state.health.status"], "Found a duplicate in the metrics slice: container.state.health.status")
+						validatedMetrics["container.state.health.status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of containers that are currently in a given health state. All possible container health states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current health state will be non-zero.", mi.Description())
+						assert.Equal(t, "{container}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["container.state.health.status"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("container.state.health.state")
+						assert.False(t, ok)
+					}
 				case "container.uptime":
 					assert.False(t, validatedMetrics["container.uptime"], "Found a duplicate in the metrics slice: container.uptime")
 					validatedMetrics["container.uptime"] = true

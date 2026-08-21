@@ -35,6 +35,7 @@ func createDefaultConfig() component.Config {
 		ControllerConfig:     cfg,
 		ClientConfig:         configtls.ClientConfig{},
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		MaxQueryMetrics:      256,
 	}
 }
 

@@ -65,6 +65,33 @@ func TestSTSTokenExporter(t *testing.T) {
 	require.NotNil(t, got)
 }
 
+func TestNewLogServiceClient_STSCredentials(t *testing.T) {
+	producerConfig := newProducerConfig(&Config{
+		Endpoint:        "us-west-1.log.aliyuncs.com",
+		Project:         "demo-project",
+		Logstore:        "demo-logstore",
+		AccessKeyID:     "test-id",
+		AccessKeySecret: "test-secret",
+		SecurityToken:   "test-token",
+	})
+	require.NotNil(t, producerConfig)
+	require.NotNil(t, producerConfig.CredentialsProvider)
+	credentials, err := producerConfig.CredentialsProvider.GetCredentials()
+	assert.NoError(t, err)
+	assert.Equal(t, "test-token", credentials.SecurityToken)
+
+	client, err := newLogServiceClient(&Config{
+		Endpoint:        "us-west-1.log.aliyuncs.com",
+		Project:         "demo-project",
+		Logstore:        "demo-logstore",
+		AccessKeyID:     "test-id",
+		AccessKeySecret: "test-secret",
+		SecurityToken:   "test-token",
+	}, exportertest.NewNopSettings(metadata.Type).Logger)
+	assert.NoError(t, err)
+	require.NotNil(t, client)
+}
+
 func TestNewFailsWithEmptyLogsExporterName(t *testing.T) {
 	got, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), &Config{})
 	assert.Error(t, err)

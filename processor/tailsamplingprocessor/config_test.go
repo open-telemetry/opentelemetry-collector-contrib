@@ -36,6 +36,7 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
+			NumShards:               1,
 			ExpectedNewTracesPerSec: 10,
 			SamplingStrategy:        samplingStrategyTraceComplete,
 			DecisionCache:           DecisionCacheConfig{SampledCacheSize: 1_000, NonSampledCacheSize: 10_000},
@@ -85,7 +86,7 @@ func TestLoadConfig(t *testing.T) {
 					sharedPolicyCfg: sharedPolicyCfg{
 						Name:            "test-policy-7",
 						Type:            RateLimiting,
-						RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35},
+						RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35, BurstCapacity: 70},
 					},
 				},
 				{
@@ -146,6 +147,21 @@ func TestLoadConfig(t *testing.T) {
 									Name:               "test-and-policy-2",
 									Type:               StringAttribute,
 									StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
+								},
+							},
+							{
+								sharedPolicyCfg: sharedPolicyCfg{
+									Name: "test-and-policy-3",
+									Type: Not,
+								},
+								NotCfg: NotCfg{
+									SubPolicy: NotSubPolicyCfg{
+										sharedPolicyCfg: sharedPolicyCfg{
+											Name:       "test-and-policy-3-not-sub-policy",
+											Type:       Latency,
+											LatencyCfg: LatencyCfg{ThresholdMs: 1000},
+										},
+									},
 								},
 							},
 						},
@@ -210,6 +226,68 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		}, cfg)
+}
+
+func TestConfigValidateNumShards(t *testing.T) {
+	tailStorageID := component.MustNewID("tail_storage_pebble")
+
+	testCases := []struct {
+		name         string
+		numShards    uint32
+		tailStorage  *component.ID
+		errSubstring string
+	}{
+		{
+			name:      "default is valid",
+			numShards: 0,
+		},
+		{
+			name:      "maximum is valid",
+			numShards: maxNumShards,
+		},
+		{
+			name:         "above maximum returns error",
+			numShards:    maxNumShards + 1,
+			errSubstring: "num_shards",
+		},
+		{
+			name:        "single shard with tail storage is valid",
+			numShards:   1,
+			tailStorage: &tailStorageID,
+		},
+		{
+			name:         "multiple shards with tail storage returns error",
+			numShards:    2,
+			tailStorage:  &tailStorageID,
+			errSubstring: "not supported with tail_storage",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.tailStorage != nil {
+				prev := tailstorageextension.IsFeatureGateEnabled()
+				require.NoError(t, featuregate.GlobalRegistry().Set(tailstorageextension.FeatureGateID, true))
+				t.Cleanup(func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(tailstorageextension.FeatureGateID, prev))
+				})
+			}
+
+			cfg := &Config{
+				SamplingStrategy: samplingStrategyTraceComplete,
+				NumShards:        tc.numShards,
+				TailStorageID:    tc.tailStorage,
+			}
+
+			err := cfg.Validate()
+			if tc.errSubstring != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errSubstring)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestConfigValidateTailStorageFeatureGate(t *testing.T) {

@@ -95,10 +95,16 @@ resource_attributes:
 attributes:
   direction:
     description: Direction of flow of bytes/operations (receive or transmit).
+    requirement_level: recommended
     type: string
     enum: [receive, transmit]
+  fs.type:
+    description: The type of filesystem component.
+    type: string
+    enum: [rootfs, logs]
   interface:
     description: Name of the network interface.
+    requirement_level: recommended
     type: string
 
 metrics:
@@ -226,6 +232,16 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  k8s.container.ephemeral_storage.usage:
+    enabled: false
+    description: "Ephemeral storage used by the container."
+    unit: By
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [fs.type]
   k8s.container.memory.node.utilization:
     enabled: false
     description: "Container memory utilization as a ratio of the node's capacity"
@@ -283,6 +299,26 @@ metrics:
     stability: development
     gauge:
       value_type: int
+    attributes: []
+  k8s.node.filesystem.inode.count:
+    enabled: false
+    description: "Total number of inodes in the node's root filesystem."
+    unit: "{inode}"
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
+  k8s.node.filesystem.inode.free:
+    enabled: false
+    description: "Number of free inodes in the node's root filesystem."
+    unit: "{inode}"
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
     attributes: []
   k8s.node.filesystem.usage:
     enabled: true
@@ -622,6 +658,19 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+
+feature_gates:
+  - id: receiver.kubeletstats.cpuUsageScrapeBased
+    stage: alpha
+    description: >-
+      When enabled, container.cpu.usage, k8s.pod.cpu.usage and k8s.node.cpu.usage
+      (and the cpu utilization metrics derived from them) are calculated by the
+      receiver as the rate of the corresponding *.cpu.time counter between
+      consecutive scrapes, instead of being read directly from the kubelet's
+      UsageNanoCores value.
+    from_version: v0.156.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49477
+    skip_strict_validation: true
 
 tests:
   config:

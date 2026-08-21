@@ -99,7 +99,9 @@ type Config struct {
 	Compression             string          `mapstructure:"compression,omitempty"`
 	PollsToArchive          int             `mapstructure:"polls_to_archive,omitempty"`
 	AcquireFSLock           bool            `mapstructure:"acquire_fs_lock,omitempty"`
+	FileCacheAdvise         bool            `mapstructure:"file_cache_advise,omitempty"`
 	OnTruncate              string          `mapstructure:"on_truncate,omitempty"`
+	SkipUnmodifiedFiles     bool            `mapstructure:"skip_unmodified_files,omitempty"`
 }
 
 type HeaderConfig struct {
@@ -180,6 +182,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		IncludeFileRecordNumber: c.IncludeFileRecordNumber,
 		Compression:             c.Compression,
 		AcquireFSLock:           c.AcquireFSLock,
+		FileCacheAdvise:         c.FileCacheAdvise,
 	}
 
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
@@ -193,16 +196,17 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 	}
 
 	return &Manager{
-		set:              set,
-		readerFactory:    readerFactory,
-		fileMatcher:      fileMatcher,
-		pollInterval:     c.PollInterval,
-		maxBatchFiles:    maxBatchFiles,
-		maxBatches:       c.MaxBatches,
-		telemetryBuilder: telemetryBuilder,
-		noTracking:       o.noTracking,
-		pollsToArchive:   c.PollsToArchive,
-		onTruncate:       c.OnTruncate,
+		set:                 set,
+		readerFactory:       readerFactory,
+		fileMatcher:         fileMatcher,
+		pollInterval:        c.PollInterval,
+		maxBatchFiles:       maxBatchFiles,
+		maxBatches:          c.MaxBatches,
+		telemetryBuilder:    telemetryBuilder,
+		noTracking:          o.noTracking,
+		pollsToArchive:      c.PollsToArchive,
+		onTruncate:          c.OnTruncate,
+		skipUnmodifiedFiles: c.SkipUnmodifiedFiles,
 	}, nil
 }
 

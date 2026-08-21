@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 )
 
 // Marshaler configuration used for marshaling Protobuf
@@ -48,6 +50,15 @@ type marshaller struct {
 }
 
 func newMarshaller(conf *Config, host component.Host) (*marshaller, error) {
+	// When native compression is enabled, skip message-level compression
+	// since the compressingWriter handles it at the file stream level.
+	compression := conf.Compression
+	compressor := buildCompressor(conf.Compression)
+	if conf.Compression != "" && metadata.ExporterFileNativeCompressionFeatureGate.IsEnabled() {
+		compression = ""
+		compressor = noneCompress
+	}
+
 	if conf.Encoding != nil {
 		encoding := host.GetExtensions()[*conf.Encoding]
 		if encoding == nil {
@@ -63,8 +74,8 @@ func newMarshaller(conf *Config, host component.Host) (*marshaller, error) {
 			metricsMarshaler:  mm,
 			logsMarshaler:     lm,
 			profilesMarshaler: pm,
-			compression:       conf.Compression,
-			compressor:        buildCompressor(conf.Compression),
+			compression:       compression,
+			compressor:        compressor,
 		}, nil
 	}
 	return &marshaller{
@@ -73,8 +84,8 @@ func newMarshaller(conf *Config, host component.Host) (*marshaller, error) {
 		metricsMarshaler:  metricsMarshalers[conf.FormatType],
 		logsMarshaler:     logsMarshalers[conf.FormatType],
 		profilesMarshaler: profilesMarshalers[conf.FormatType],
-		compression:       conf.Compression,
-		compressor:        buildCompressor(conf.Compression),
+		compression:       compression,
+		compressor:        compressor,
 	}, nil
 }
 

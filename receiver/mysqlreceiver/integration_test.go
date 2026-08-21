@@ -105,12 +105,13 @@ func TestIntegration(t *testing.T) {
 								FileMode:          700,
 							},
 						},
-					}),
+					},
+				),
 				scraperinttest.WithCustomConfig(
 					func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 						rCfg := cfg.(*Config)
-						rCfg.CollectionInterval = time.Second
-						rCfg.Endpoint = net.JoinHostPort(ci.Host(t), ci.MappedPort(t, mysqlPort))
+						rCfg.ControllerConfig.CollectionInterval = time.Second
+						rCfg.AddrConfig.Endpoint = net.JoinHostPort(ci.Host(t), ci.MappedPort(t, mysqlPort))
 						rCfg.Username = "otel"
 						rCfg.Password = "otel"
 						if tc.tlsEnabled {
@@ -118,12 +119,14 @@ func TestIntegration(t *testing.T) {
 						} else {
 							rCfg.TLS.Insecure = true
 						}
-					}),
+					},
+				),
 				scraperinttest.WithExpectedFile(
 					filepath.Join("testdata", "integration", tc.expectedFile),
 				),
 				scraperinttest.WithCompareOptions(
 					pmetrictest.IgnoreResourceAttributeValue("mysql.instance.endpoint"),
+					pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
 					pmetrictest.IgnoreMetricValues(),
 					pmetrictest.IgnoreMetricDataPointsOrder(),
 					pmetrictest.IgnoreStartTimestamp(),
@@ -146,25 +149,53 @@ func containerConfig(host, port string) *Config {
 	cfg.TLS.Insecure = true
 	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
-	cfg.TopQueryCollection.LookbackTime = 300 // 5-minute window to catch our workload queries
+	cfg.TopQueryCollection.LookbackTime = 300                    // 5-minute window to catch our workload queries
+	cfg.TopQueryCollection.CollectionInterval = time.Millisecond // bypass CollectionInterval guard in tests
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.DbSystemName.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
 	return cfg
 }
 
-// runWorkload executes a handful of SELECT statements so that
-// performance_schema.events_statements_summary_by_digest has rows to return.
-func runWorkload(t *testing.T, cfg *Config) {
+// runWorkloadSetup creates a minimal table in the otel schema so that
+// runWorkload can issue a schema-qualified SELECT, causing
+// events_statements_summary_by_digest to record a digest with a non-empty
+// SCHEMA_NAME. explainQuery only issues USE <schema> when schema != "", so
+// this is required to exercise the USE+EXPLAIN same-connection path.
+func runWorkloadSetup(t *testing.T, cfg *Config) {
 	t.Helper()
 	c, err := newMySQLClient(cfg)
 	require.NoError(t, err)
 	require.NoError(t, c.Connect())
 	defer c.Close()
+	_, _ = c.(*mySQLClient).client.Exec(
+		"CREATE TABLE IF NOT EXISTS otel.explain_target (id INT PRIMARY KEY)",
+	)
+}
+
+// runWorkload executes queries that accumulate measurable sum_timer_wait in
+// performance_schema so the diff-based top-query scraper emits records.
+//
+// SELECT SLEEP(0.01) produces a ~10ms wait per execution, large enough to
+// survive the diff filter between the cache-prime scrape and the second scrape.
+//
+// The connection uses database="otel" so that performance_schema records
+// SCHEMA_NAME='otel' for every statement. This causes explainQuery to issue
+// USE `otel` before EXPLAIN FORMAT=json — exercising the same-connection fix.
+func runWorkload(t *testing.T, cfg *Config) {
+	t.Helper()
+	// Clone the config and set the default database so SCHEMA_NAME is populated.
+	workloadCfg := *cfg
+	workloadCfg.Database = "otel"
+	c, err := newMySQLClient(&workloadCfg)
+	require.NoError(t, err)
+	require.NoError(t, c.Connect())
+	defer c.Close()
 
 	queries := []string{
-		"SELECT 1",
-		"SELECT 2",
-		"SELECT 3",
-		"SELECT NOW()",
-		"SELECT VERSION()",
+		"SELECT SLEEP(0.01)",
+		"SELECT * FROM explain_target LIMIT 1", // SCHEMA_NAME='otel' via connection default database
 	}
 	for range 5 {
 		for _, q := range queries {
@@ -220,14 +251,14 @@ func TestIntegrationLogScraper(t *testing.T) {
 		image             string
 		wantSampleTextCol bool
 		wantEOLWarn       bool   // true ↔ logDetectedVersion should emit an EOL warning
-		wantProduct       string // expected db.product scope attribute value
+		wantProduct       string // expected db.system.name resource attribute value
 	}{
 		{
 			name:              "MySQL-8.0.33-LogScraper",
 			image:             "mysql:8.0.33",
 			wantSampleTextCol: true,
 			wantEOLWarn:       false,
-			wantProduct:       "MySQL",
+			wantProduct:       "mysql",
 		},
 		{
 			// mysql:5.7 has no official ARM64 image; this case is skipped on ARM hosts.
@@ -235,21 +266,21 @@ func TestIntegrationLogScraper(t *testing.T) {
 			image:             "mysql:5.7",
 			wantSampleTextCol: false,
 			wantEOLWarn:       true,
-			wantProduct:       "MySQL",
+			wantProduct:       "mysql",
 		},
 		{
 			name:              "MariaDB-10.11-LogScraper",
 			image:             "mariadb:10.11",
 			wantSampleTextCol: false,
 			wantEOLWarn:       false,
-			wantProduct:       "MariaDB",
+			wantProduct:       "mariadb",
 		},
 		{
 			name:              "MariaDB-11.4-LogScraper",
 			image:             "mariadb:11.4",
 			wantSampleTextCol: false,
 			wantEOLWarn:       false,
-			wantProduct:       "MariaDB",
+			wantProduct:       "mariadb",
 		},
 	}
 
@@ -341,6 +372,11 @@ func TestIntegrationLogScraper(t *testing.T) {
 			// Enable performance_schema consumers/instruments via SQL.
 			runPerfSchemaSetup(t, cfg)
 
+			// Create the schema-qualified table used by runWorkload so that at
+			// least one digest has SCHEMA_NAME='otel', exercising the USE+EXPLAIN
+			// same-connection path in explainQuery.
+			runWorkloadSetup(t, cfg)
+
 			// Prime the scraper's diff cache with a first scrape so subsequent
 			// scrapes have a non-zero sumTimerWait delta to emit records on.
 			// (scrapeTopQueries skips records with zero elapsed-time diff.)
@@ -358,6 +394,7 @@ func TestIntegrationLogScraper(t *testing.T) {
 			// The workload above guarantees at least a few digests exist.
 			// Verify structural properties on whatever records were returned.
 			topRecordCount := 0
+			foundNonEmptyPlan := false
 			for i := range topLogs.ResourceLogs().Len() {
 				rl := topLogs.ResourceLogs().At(i)
 				for j := range rl.ScopeLogs().Len() {
@@ -371,10 +408,11 @@ func TestIntegrationLogScraper(t *testing.T) {
 						assert.True(t, ok, "db.query.text attribute missing")
 						assert.NotEmpty(t, qt.Str(), "db.query.text must not be empty")
 
-						// mysql.query_plan is only populated when a sample text was
-						// available for EXPLAIN — absence is valid, presence must be non-empty.
-						if plan, hasPlan := lr.Attributes().Get("mysql.query_plan"); hasPlan {
-							assert.NotEmpty(t, plan.Str(), "mysql.query_plan present but empty")
+						// mysql.query_plan is always emitted (may be ""). On MySQL 8+ with
+						// sample text available it should be non-empty for at least one record;
+						// we track that via foundNonEmptyPlan and assert below.
+						if plan, hasPlan := lr.Attributes().Get("mysql.query_plan"); hasPlan && plan.Str() != "" {
+							foundNonEmptyPlan = true
 						}
 
 						// On MySQL <8 / MariaDB the fallback template omits query_sample_text,
@@ -391,19 +429,29 @@ func TestIntegrationLogScraper(t *testing.T) {
 			}
 			t.Logf("scrapeTopQueryFunc returned %d log records", topRecordCount)
 
-			// Verify scope attributes on top-query logs.
-			// setScopeAttributes is called after every Emit, so db.version and
-			// db.product must appear on every ScopeLogs scope.
+			// On MySQL 8+ the schema-qualified workload query (SELECT * FROM otel.explain_target)
+			// guarantees at least one digest with SCHEMA_NAME='otel', causing explainQuery to
+			// issue USE `otel` before EXPLAIN FORMAT=json on the same connection.
+			// If USE and EXPLAIN landed on different connections the schema context would be
+			// lost and EXPLAIN would fail — leaving mysql.query_plan absent on all records.
+			if tc.wantSampleTextCol {
+				assert.True(t, foundNonEmptyPlan,
+					"expected at least one top_query record with non-empty mysql.query_plan on MySQL 8+ (USE+EXPLAIN same-connection fix)")
+				t.Logf("TC-EXPLAIN-01: mysql.query_plan non-empty on MySQL 8+ schema-qualified query: %v", foundNonEmptyPlan)
+			} else {
+				t.Logf("TC-EXPLAIN-01: skipped (no query_sample_text on %s — EXPLAIN not attempted)", tc.name)
+			}
+
+			// Verify resource attributes on top-query logs.
+			// setResourceAttributes is called on every Emit, so db.system.name and
+			// db.system.version must appear on every ResourceLogs resource.
 			for i := range topLogs.ResourceLogs().Len() {
-				sls := topLogs.ResourceLogs().At(i).ScopeLogs()
-				for j := range sls.Len() {
-					attrs := sls.At(j).Scope().Attributes()
-					_, hasVersion := attrs.Get("db.version")
-					assert.True(t, hasVersion, "db.version scope attribute missing on top-query ResourceLogs[%d].ScopeLogs[%d]", i, j)
-					prod, hasProd := attrs.Get("db.product")
-					assert.True(t, hasProd, "db.product scope attribute missing on top-query ResourceLogs[%d].ScopeLogs[%d]", i, j)
-					assert.Equal(t, tc.wantProduct, prod.Str(), "db.product mismatch on ResourceLogs[%d].ScopeLogs[%d]", i, j)
-				}
+				attrs := topLogs.ResourceLogs().At(i).Resource().Attributes()
+				_, hasVersion := attrs.Get("db.system.version")
+				assert.True(t, hasVersion, "db.system.version resource attribute missing on top-query ResourceLogs[%d]", i)
+				prod, hasProd := attrs.Get("db.system.name")
+				assert.True(t, hasProd, "db.system.name resource attribute missing on top-query ResourceLogs[%d]", i)
+				assert.Equal(t, tc.wantProduct, prod.Str(), "db.system.name mismatch on ResourceLogs[%d]", i)
 			}
 
 			// --- scrapeQuerySampleFunc ---
@@ -430,17 +478,14 @@ func TestIntegrationLogScraper(t *testing.T) {
 			}
 			t.Logf("scrapeQuerySampleFunc returned %d log records", sampleRecordCount)
 
-			// Verify scope attributes on query-sample logs.
+			// Verify resource attributes on query-sample logs.
 			for i := range sampleLogs.ResourceLogs().Len() {
-				sls := sampleLogs.ResourceLogs().At(i).ScopeLogs()
-				for j := range sls.Len() {
-					attrs := sls.At(j).Scope().Attributes()
-					_, hasVersion := attrs.Get("db.version")
-					assert.True(t, hasVersion, "db.version scope attribute missing on sample ResourceLogs[%d].ScopeLogs[%d]", i, j)
-					prod, hasProd := attrs.Get("db.product")
-					assert.True(t, hasProd, "db.product scope attribute missing on sample ResourceLogs[%d].ScopeLogs[%d]", i, j)
-					assert.Equal(t, tc.wantProduct, prod.Str(), "db.product mismatch on ResourceLogs[%d].ScopeLogs[%d]", i, j)
-				}
+				attrs := sampleLogs.ResourceLogs().At(i).Resource().Attributes()
+				_, hasVersion := attrs.Get("db.system.version")
+				assert.True(t, hasVersion, "db.system.version resource attribute missing on sample ResourceLogs[%d]", i)
+				prod, hasProd := attrs.Get("db.system.name")
+				assert.True(t, hasProd, "db.system.name resource attribute missing on sample ResourceLogs[%d]", i)
+				assert.Equal(t, tc.wantProduct, prod.Str(), "db.system.name mismatch on ResourceLogs[%d]", i)
 			}
 
 			// Verify version detection on the scraper's client.

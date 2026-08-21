@@ -7,6 +7,233 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.159.0
+
+### 🛑 Breaking changes 🛑
+
+- `extension/observer`: Removes the `kafka.topics` endpoint type along with the kafkatopicsobserver extension (#48186)
+  The `observer.KafkaTopicType` endpoint type and its `observer.KafkaTopic` details struct are
+  removed, as the kafkatopicsobserver was the only observer emitting them. The receivercreator
+  no longer accepts `type == "kafka.topics"` rules or resource attributes for that endpoint type.
+  
+- `pkg/fileconsumer`: `matcher.OrderingCriteria.TopN` is now a `*int` instead of `int`, so the matcher can distinguish an unset value from an explicit zero. (#47444)
+- `pkg/ottl`: Remove the deprecated `NewIsRootSpanFactory` and rename `NewIsRootSpanFactoryNew` to `NewIsRootSpanFactory`. (#50093)
+
+### 🚩 Deprecations 🚩
+
+- `receiver/signalfx`: Deprecate the signalfxreceiver package and module (#50201)
+  The receiver is deprecated and will be removed in the next release.
+  
+- `testbed`: Deprecate testbed.signalfxdatareceiver (#50200)
+
+### 💡 Enhancements 💡
+
+- `exporter/awscloudwatchlogs`: Add max_event_payload_bytes config option to opt in to the CloudWatch Logs 1 MiB per-event limit (previously hardcoded to 256 KiB). (#48559)
+  The CloudWatch Logs PutLogEvents API began accepting events up to 1 MiB on
+  2025-04-02. The exporter previously truncated every event at 256 KiB (the
+  pre-2025 service limit) via a hardcoded package constant. The default stays
+  at 256 KiB for backwards compatibility; set `max_event_payload_bytes: 1048576`
+  to take advantage of the new ceiling. A new `cwlogs.WithMaxEventPayloadBytes`
+  pusher option exposes the same knob to direct callers of the internal package.
+  
+- `extension/storage`: Implement the `storage.Walker` interface for storagetest (#49969)
+- `pkg/datadog`: Add the `datadog.EnableScopeConvention` feature gate to control the `otel.scope` name and version conventions in the Datadog exporter. (#49001)
+  When the `datadog.EnableScopeConvention` feature gate is enabled, spans additionally
+  carry the `otel.scope.name` and `otel.scope.version` attributes. The deprecated
+  `otel.library.name` and `otel.library.version` attributes are still emitted with the
+  same values for backward compatibility, so existing dashboards and monitors keyed on
+  them keep working.
+  
+- `pkg/ottl`: `pcommon.Value` is now comparable using all comparison operators (==, !=, <, <=, >=, >) in OTTL expressions (#49170)
+- `pkg/pdatatest`: Support `/exists` and `/regex` operators on the scope `version` field in pmetricassert assertion files. (#48393)
+  The assertion-file equivalent of `pmetrictest.IgnoreScopeVersion`: `version/exists`
+  requires a version without pinning its value, `version/regex` matches a full-string pattern.
+  
+- `pkg/pdatatest`: Add empty container validation logic to pmetrictest.ValidateMetrics (#49072)
+- `pkg/pdatatest`: Update pmetricassert assertion schema to use strongly typed `int_value` and `double_value` fields instead of a generic `value` field. (#48473)
+
+<!-- previous-version -->
+
+## v0.158.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Stops embedding all configuration fields (#49797, #49913, #49914, #49915, #49965, #49966, #49972, #49973, #49974)
+  - Embedded fields do not work well with tooling and libraries such as mapstructure and should be avoided.
+  
+- `pkg/ottl`: OTTL context path setters now handle nil values based on the path type (#49728)
+
+<!-- previous-version -->
+
+## v0.157.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/ottl`: Break lambda arity validation into a separate function. (#49421)
+  This allows statically verifying arity.
+
+### 💡 Enhancements 💡
+
+- `internal/k8sinventory`: Extract checkpoint package and update Observer interface to return startup errors. (#43602)
+  - Extracted `internal/k8sinventory/checkpoint` as a shared package so checkpoint logic can be reused across observer implementations.
+  - The `Observer` interface's `Start` method now returns an error, allowing callers to detect and propagate startup failures.
+  
+- `pkg/ottl`: Add `LambdaActivation.IsArgBound` and variadic lambda argument evaluation helpers. (#49191)
+  - `IsArgBound` reports whether a positional argument maps to a named formal parameter or a blank ("_") placeholder.
+  - Lambda evaluation helpers now normalize only bound arguments.
+  
+- `pkg/pdatatest`: Add `IncludeHistogramExplicitBounds` option to pmetricassert snapshot generation. (#49732)
+  The option includes histogram explicit bounds without including other histogram datapoint values.
+  Snapshot compaction preserves selected histogram datapoint assertion fields, including empty explicit bounds.
+  
+
+<!-- previous-version -->
+
+## v0.156.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: handle breaking change in pdata/pprofile (#49373)
+- `pkg/ottl`: Switch `LambdaExpression` arguments to be pointers. (#49420)
+  These values are intended to be mutable and are passed by reference in normal use,
+  so this keeps symmetry between the argument declaration and their use by the function.
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `ottl.NewTestingLambdaExpression` and internal helpers for implementing lambda-based OTTL functions. (#49180)
+  Adds `ottl.NewTestingLambdaExpression`, a test helper that builds a `LambdaExpression`
+  with a custom value body. The callback receives `resolveBinding func(string) any` to
+  read formal parameters from the active local scope during evaluation.
+  
+  Also introduces internal helpers to support lambda-based OTTL functions:
+  - `funcutil.GetSliceOrMapValue` coerces a getter result to `pcommon.Slice` or `pcommon.Map`.
+  - `funcutil.EvaluateBiFunction` and `funcutil.EvaluateBiPredicate` bind two positional
+    arguments, normalize them, and evaluate a `LambdaActivation`.
+  - `ottlcommon.NormalizeValue` converts values, including `pcommon.Value`, into types
+    used by OTTL comparisons.
+  
+- `pkg/ottl`: Add `String()` method to `ottl.Statement`, `ottl.Condition`, and `ottl.ValueExpression` that return the original OTTL text used during parsing. (#49415)
+- `processor/transform`: Add `exemplar` context support to the transform processor, allowing `metric_statements` to read and modify exemplar fields on metric datapoints. (#49022)
+
+<!-- previous-version -->
+
+## v0.155.0
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `ottl.LambdaExpression` API so OTTL functions can support Lambda expressions as arguments (#48227)
+- `pkg/pdatatest`: Add pmetricassert histogram datapoint assertions (#48473)
+- `pkg/pdatatest`: Add duplicate ScopeMetrics check to ValidateMetrics (#48106)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/pdatatest`: Keep pmetricassert normalization from returning validation errors for duplicate datapoints (#48775)
+
+<!-- previous-version -->
+
+## v0.154.0
+
+### 🛑 Breaking changes 🛑
+
+- `testbed`: Split testbed/data{senders,receivers,connectors} into per-component sub-packages and move testbed.Components() to its own sub-package. (#48475)
+  Each component now lives in its own Go package so test binaries only
+  compile the senders, receivers, and connectors they actually exercise.
+  External consumers of the testbed module must update both their import
+  paths and the package qualifier on each call site.
+  
+  Top-level factory (was `testbed/testbed`, now `testbed/testbed/components`):
+  
+  - `testbed.Components` → `components.All`
+  
+  Senders (was `testbed/datasenders`, now `testbed/datasenders/<component>datasender`):
+  
+  - `datasenders.NewDatadogDataSender` → `datadogdatasender.NewDatadogDataSender`
+  - `datasenders.NewFluentLogsForwarder` → `fluentdatasender.NewFluentLogsForwarder`
+  - `datasenders.FluentLogsForwarder` → `fluentdatasender.FluentLogsForwarder`
+  - `datasenders.NewJaegerGRPCDataSender` → `jaegerdatasender.NewJaegerGRPCDataSender`
+  - `datasenders.NewFileLogK8sWriter` → `k8sdatasender.NewFileLogK8sWriter`
+  - `datasenders.NewKubernetesContainerWriter` → `k8sdatasender.NewKubernetesContainerWriter`
+  - `datasenders.NewKubernetesContainerParserWriter` → `k8sdatasender.NewKubernetesContainerParserWriter`
+  - `datasenders.NewKubernetesCRIContainerdWriter` → `k8sdatasender.NewKubernetesCRIContainerdWriter`
+  - `datasenders.NewKubernetesCRIContainerdNoAttributesOpsWriter` → `k8sdatasender.NewKubernetesCRIContainerdNoAttributesOpsWriter`
+  - `datasenders.NewCRIContainerdWriter` → `k8sdatasender.NewCRIContainerdWriter`
+  - `datasenders.FileLogK8sWriter` → `k8sdatasender.FileLogK8sWriter`
+  - `datasenders.NewOtelarrowDataSender` → `otelarrowdatasender.NewOtelarrowDataSender`
+  - `datasenders.NewPrometheusDataSender` → `prometheusdatasender.NewPrometheusDataSender`
+  - `datasenders.NewPrometheusStaticSender` → `prometheusstaticdatasender.NewPrometheusStaticSender`
+  - `datasenders.PrometheusStaticPayloadConfig` → `prometheusstaticdatasender.PrometheusStaticPayloadConfig`
+  - `datasenders.NewSFxMetricDataSender` → `signalfxdatasender.NewSFxMetricDataSender`
+  - `datasenders.SFxMetricsDataSender` → `signalfxdatasender.SFxMetricsDataSender`
+  - `datasenders.NewFileLogWriter` → `stanzadatasender.NewFileLogWriter`
+  - `datasenders.NewLocalFileStorageExtension` → `stanzadatasender.NewLocalFileStorageExtension`
+  - `datasenders.FileLogWriter` → `stanzadatasender.FileLogWriter`
+  - `datasenders.NewStefDataSender` → `stefdatasender.NewStefDataSender`
+  - `datasenders.StefDataSender` → `stefdatasender.StefDataSender`
+  - `datasenders.NewSyslogWriter` → `syslogdatasender.NewSyslogWriter`
+  - `datasenders.SyslogWriter` → `syslogdatasender.SyslogWriter`
+  - `datasenders.NewTCPUDPWriter` → `tcpudpdatasender.NewTCPUDPWriter`
+  - `datasenders.TCPUDPWriter` → `tcpudpdatasender.TCPUDPWriter`
+  - `datasenders.NewZipkinDataSender` → `zipkindatasender.NewZipkinDataSender`
+  
+  Receivers (was `testbed/datareceivers`, now `testbed/datareceivers/<component>datareceiver`):
+  
+  - `datareceivers.NewCarbonDataReceiver` → `carbondatareceiver.NewCarbonDataReceiver`
+  - `datareceivers.CarbonDataReceiver` → `carbondatareceiver.CarbonDataReceiver`
+  - `datareceivers.NewDataDogDataReceiver` → `datadogdatareceiver.NewDataDogDataReceiver`
+  - `datareceivers.NewJaegerDataReceiver` → `jaegerdatareceiver.NewJaegerDataReceiver`
+  - `datareceivers.NewOtelarrowDataReceiver` → `otelarrowdatareceiver.NewOtelarrowDataReceiver`
+  - `datareceivers.OtelarrowDataReceiver` → `otelarrowdatareceiver.OtelarrowDataReceiver`
+  - `datareceivers.NewPrometheusDataReceiver` → `prometheusdatareceiver.NewPrometheusDataReceiver`
+  - `datareceivers.NewSFxMetricsDataReceiver` → `signalfxdatareceiver.NewSFxMetricsDataReceiver`
+  - `datareceivers.SFxMetricsDataReceiver` → `signalfxdatareceiver.SFxMetricsDataReceiver`
+  - `datareceivers.NewSplunkHECDataReceiver` → `splunkdatareceiver.NewSplunkHECDataReceiver`
+  - `datareceivers.SplunkHECDataReceiver` → `splunkdatareceiver.SplunkHECDataReceiver`
+  - `datareceivers.NewStefDataReceiver` → `stefdatareceiver.NewStefDataReceiver`
+  - `datareceivers.StefDataReceiver` → `stefdatareceiver.StefDataReceiver`
+  - `datareceivers.NewSyslogDataReceiver` → `syslogdatareceiver.NewSyslogDataReceiver`
+  - `datareceivers.SyslogDataReceiver` → `syslogdatareceiver.SyslogDataReceiver`
+  - `datareceivers.NewZipkinDataReceiver` → `zipkindatareceiver.NewZipkinDataReceiver`
+  
+  Connectors (was `testbed/dataconnectors`, now `testbed/dataconnectors/<component>dataconnector`):
+  
+  - `dataconnectors.NewRoutingDataConnector` → `routingdataconnector.NewRoutingDataConnector`
+  - `dataconnectors.RoutingDataConnector` → `routingdataconnector.RoutingDataConnector`
+  - `dataconnectors.NewSpanMetricDataConnector` → `spanmetricsdataconnector.NewSpanMetricDataConnector`
+  - `dataconnectors.SpanMetricDataConnector` → `spanmetricsdataconnector.SpanMetricDataConnector`
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `ottlexemplar` context exposing per-exemplar fields (`time`, `filtered_attributes`, `double_value`, `int_value`, `trace_id`, `span_id`) for use in OTTL statements. (#47490)
+- `pkg/pdatatest`: Add `/regex` attribute matcher support to `pmetricassert` (#48467)
+- `pkg/pdatatest`: Add pmetricassert number datapoint value assertions (#48468)
+- `pkg/pdatatest`: Update pmetrictest.ValidateMetrics to reject metrics sharing the same name (#48106)
+- `pkg/pdatatest`: Add check for duplicate ResourceMetrics to pmetrictest.ValidateMetrics (#48106)
+- `processor/tail_sampling`: Add error handling to tail storage extension interface (#48777)
+- `receiver/windows_event_log`: Add EVTX file support (#48047)
+
+<!-- previous-version -->
+
+## v0.153.0
+
+### 💡 Enhancements 💡
+
+- `extension/file_storage`: Implement `storage.Walker` interface to allow iterating over all stored keys with deferred operations (#47755)
+- `internal/kafka`: Remove the dependency on github.com/IBM/sarama from all Kafka components. (#48260)
+  The Kafka exporter, receiver, metrics receiver, and topics observer have all
+  been migrated to github.com/twmb/franz-go. The remaining sarama-based helpers
+  in internal/kafka are removed, and protocol_version validation in
+  pkg/kafka/configkafka now uses franz-go's kversion package.
+  
+- `pkg/pdatatest`: Add `/exists` operator support to `pmetricassert` (#48079)
+- `pkg/pdatatest`: Introduce `pmetricassert` package for MTS-focused YAML metric assertions (#48079)
+- `receiver/file_log`: Improves file-reading efficiency by evicting previously read data from the OS page cache. (#48273)
+  Clears the cache on Linux; acts as a no-op on unsupported platforms.
+- `receiver/http_check`: Enables dynamic metric reaggregation in the HTTP Check receiver. This does not break existing configuration files. (#46358)
+
+<!-- previous-version -->
+
 ## v0.152.0
 
 ### 💡 Enhancements 💡

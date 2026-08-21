@@ -70,21 +70,18 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemPagingFaultsDataPoint(ts, 1, AttributeTypeMajor)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemPagingFaultsDataPoint(ts, 3, AttributeTypeMinor)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemPagingOperationsDataPoint(ts, 1, AttributeDirectionPageIn, AttributeTypeMajor)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemPagingOperationsDataPoint(ts, 3, AttributeDirectionPageOut, AttributeTypeMinor)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemPagingUsageDataPoint(ts, 1, "device-val", AttributeStateCached)

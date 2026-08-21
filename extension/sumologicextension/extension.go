@@ -208,9 +208,10 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 	)
 
 	if se.updateMetadata {
-		err = se.updateMetadataWithBackoff(ctx)
+		err = se.updateMetadataWithHTTPClient(ctx, se.httpClient)
 		if err != nil {
-			return err
+			se.logger.Warn("Initial metadata update failed, will retry asynchronously", zap.Error(err))
+			go se.updateMetadataAsync()
 		}
 	}
 
@@ -450,6 +451,7 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 		Ephemeral:     se.conf.Ephemeral,
 		Clobber:       se.conf.Clobber,
 		TimeZone:      se.conf.TimeZone,
+		FleetID:       se.conf.FleetID,
 	})
 	if err != nil {
 		return credentials.CollectorCredentials{}, err
@@ -480,6 +482,18 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 	defer res.Body.Close()
 
 	if res.StatusCode < 200 || res.StatusCode >= 400 {
+		if se.conf.FleetID != "" && (res.StatusCode == http.StatusBadRequest || res.StatusCode == http.StatusNotFound) {
+			bodyBytes, readErr := io.ReadAll(res.Body)
+			if readErr == nil && isFleetIDError(bodyBytes) {
+				se.logger.Warn("Fleet ID error, retrying registration without fleet ID",
+					zap.String("fleet_id", se.conf.FleetID),
+					zap.Int("status_code", res.StatusCode),
+				)
+				se.conf.FleetID = ""
+				return se.registerCollector(ctx, collectorName)
+			}
+			res.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+		}
 		return credentials.CollectorCredentials{}, se.handleRegistrationError(res)
 	} else if res.StatusCode == http.StatusMovedPermanently {
 		// Use the URL from Location header for subsequent requests.
@@ -542,6 +556,19 @@ func (se *SumologicExtension) handleRegistrationError(res *http.Response) error 
 	return fmt.Errorf(
 		"failed to register the collector, got HTTP status code: %d", res.StatusCode,
 	)
+}
+
+func isFleetIDError(body []byte) bool {
+	var errResponse api.ErrorResponsePayload
+	if err := json.Unmarshal(body, &errResponse); err != nil {
+		return false
+	}
+	for _, e := range errResponse.Errors {
+		if e.Code == "collector-registration:invalid_fleet_id" || e.Code == "collector-registration:fleet_not_found" {
+			return true
+		}
+	}
+	return false
 }
 
 // callRegisterWithBackoff calls registration using exponential backoff algorithm
@@ -833,30 +860,62 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 	return nil
 }
 
-func (se *SumologicExtension) updateMetadataWithBackoff(ctx context.Context) error {
-	se.backOff.Reset()
+// updateMetadataAsync retries metadata update in the background with exponential
+// backoff until the update succeeds or the collector shuts down. It is started
+// when the initial synchronous attempt in Start() fails so that startup is not
+// blocked by transient network unavailability (e.g. Windows boot race).
+func (se *SumologicExtension) updateMetadataAsync() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		select {
+		case <-se.closeChan:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+
+	bo := backoff.NewExponentialBackOff()
+	bo.InitialInterval = se.conf.BackOff.InitialInterval
+	bo.MaxElapsedTime = se.conf.BackOff.MaxElapsedTime
+	bo.MaxInterval = se.conf.BackOff.MaxInterval
+	bo.Reset()
+
 	for {
-		err := se.updateMetadataWithHTTPClient(ctx, se.httpClient)
-		if err == nil {
-			return nil
+		select {
+		case <-se.closeChan:
+			se.logger.Info("Async metadata update loop stopped: collector shutting down")
+			return
+		default:
 		}
 
-		se.logger.Warn(fmt.Sprintf("collector metadata update failed: %s", err))
+		err := se.updateMetadataWithHTTPClient(ctx, se.httpClient)
+		if err == nil {
+			se.logger.Info("Async metadata update succeeded")
+			return
+		}
 
-		nbo := se.backOff.NextBackOff()
+		se.logger.Warn("Async metadata update failed, will retry", zap.Error(err))
+
 		var backOffErr *backoff.PermanentError
-		// Return error if backoff reaches the limit or uncoverable error is spotted
-		if ok := errors.As(err, &backOffErr); nbo == se.backOff.Stop || ok {
-			return fmt.Errorf("collector metadata update failed: %w", err)
+		if errors.As(err, &backOffErr) {
+			se.logger.Error("Async metadata update encountered a permanent error, stopping retries", zap.Error(err))
+			return
+		}
+
+		nbo := bo.NextBackOff()
+		if nbo == bo.Stop {
+			se.logger.Warn("Async metadata update stopped: backoff elapsed time exceeded")
+			return
 		}
 
 		t := time.NewTimer(nbo)
-		defer t.Stop()
-
 		select {
 		case <-t.C:
-		case <-ctx.Done():
-			return fmt.Errorf("collector metadata update cancelled: %w", ctx.Err())
+		case <-se.closeChan:
+			t.Stop()
+			se.logger.Info("Async metadata update loop stopped: collector shutting down")
+			return
 		}
 	}
 }

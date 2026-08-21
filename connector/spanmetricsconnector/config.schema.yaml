@@ -1,10 +1,12 @@
 $defs:
   dimension:
-    description: Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
+    description: Dimension defines a single dimension entry. Exactly one of Name (with optional Default) or Glob must be set. If Name is set, Default value will be used if dimension is missing form a span attribute.
     type: object
     properties:
       default:
         x-pointer: true
+        type: string
+      glob:
         type: string
       name:
         type: string
@@ -122,3 +124,7 @@ properties:
     type: array
     items:
       type: string
+  series_expiration:
+    description: SeriesExpiration is the time period after which individual metric series are considered stale and will no longer be exported. Default value (0) means that individual metric series will never expire.
+    type: string
+    format: duration

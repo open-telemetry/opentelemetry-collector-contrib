@@ -6,6 +6,7 @@ This directory contains test configurations for the Windows Event Log receiver.
 
 - **config.yaml** - Minimal test configuration used by unit tests
 - **collector-config-example.yaml** - Complete collector configuration demonstrating various use cases
+- **test-evtx.evtx** - EVTX archive for testing reading from EVTX archives
 
 ## Testing on Windows
 

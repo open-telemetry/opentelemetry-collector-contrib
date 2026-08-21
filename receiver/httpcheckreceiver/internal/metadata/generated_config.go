@@ -3,16 +3,29 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// HttpcheckClientConnectionDurationMetricAttributeKey specifies the key of an attribute for the httpcheck.client.connection.duration metric.
+type HttpcheckClientConnectionDurationMetricAttributeKey string
+
+const (
+	HttpcheckClientConnectionDurationMetricAttributeKeyHTTPURL          HttpcheckClientConnectionDurationMetricAttributeKey = "http.url"
+	HttpcheckClientConnectionDurationMetricAttributeKeyNetworkTransport HttpcheckClientConnectionDurationMetricAttributeKey = "network.transport"
+)
+
+// HttpcheckClientConnectionDurationMetricConfig provides config for the httpcheck.client.connection.duration metric.
+type HttpcheckClientConnectionDurationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []HttpcheckClientConnectionDurationMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *HttpcheckClientConnectionDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -26,59 +39,638 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+func (ms *HttpcheckClientConnectionDurationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case HttpcheckClientConnectionDurationMetricAttributeKeyHTTPURL, HttpcheckClientConnectionDurationMetricAttributeKeyNetworkTransport:
+		default:
+			return fmt.Errorf("metric httpcheck.client.connection.duration doesn't have an attribute %v, valid attributes: [http.url, network.transport]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// HttpcheckClientRequestDurationMetricAttributeKey specifies the key of an attribute for the httpcheck.client.request.duration metric.
+type HttpcheckClientRequestDurationMetricAttributeKey string
+
+const (
+	HttpcheckClientRequestDurationMetricAttributeKeyHTTPURL HttpcheckClientRequestDurationMetricAttributeKey = "http.url"
+)
+
+// HttpcheckClientRequestDurationMetricConfig provides config for the httpcheck.client.request.duration metric.
+type HttpcheckClientRequestDurationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []HttpcheckClientRequestDurationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *HttpcheckClientRequestDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *HttpcheckClientRequestDurationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case HttpcheckClientRequestDurationMetricAttributeKeyHTTPURL:
+		default:
+			return fmt.Errorf("metric httpcheck.client.request.duration doesn't have an attribute %v, valid attributes: [http.url]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// HttpcheckDNSLookupDurationMetricAttributeKey specifies the key of an attribute for the httpcheck.dns.lookup.duration metric.
+type HttpcheckDNSLookupDurationMetricAttributeKey string
+
+const (
+	HttpcheckDNSLookupDurationMetricAttributeKeyHTTPURL HttpcheckDNSLookupDurationMetricAttributeKey = "http.url"
+)
+
+// HttpcheckDNSLookupDurationMetricConfig provides config for the httpcheck.dns.lookup.duration metric.
+type HttpcheckDNSLookupDurationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []HttpcheckDNSLookupDurationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *HttpcheckDNSLookupDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *HttpcheckDNSLookupDurationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case HttpcheckDNSLookupDurationMetricAttributeKeyHTTPURL:
+		default:
+			return fmt.Errorf("metric httpcheck.dns.lookup.duration doesn't have an attribute %v, valid attributes: [http.url]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// HttpcheckDurationMetricAttributeKey specifies the key of an attribute for the httpcheck.duration metric.
+type HttpcheckDurationMetricAttributeKey string
+
+const (
+	HttpcheckDurationMetricAttributeKeyHTTPURL HttpcheckDurationMetricAttributeKey = "http.url"
+)
+
+// HttpcheckDurationMetricConfig provides config for the httpcheck.duration metric.
+type HttpcheckDurationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []HttpcheckDurationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *HttpcheckDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *HttpcheckDurationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case HttpcheckDurationMetricAttributeKeyHTTPURL:
+		default:
+			return fmt.Errorf("metric httpcheck.duration doesn't have an attribute %v, valid attributes: [http.url]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// HttpcheckErrorMetricAttributeKey specifies the key of an attribute for the httpcheck.error metric.
+type HttpcheckErrorMetricAttributeKey string
+
+const (
+	HttpcheckErrorMetricAttributeKeyHTTPURL      HttpcheckErrorMetricAttributeKey = "http.url"
+	HttpcheckErrorMetricAttributeKeyErrorMessage HttpcheckErrorMetricAttributeKey = "error.message"
+)
+
+// HttpcheckErrorMetricConfig provides config for the httpcheck.error metric.
+type HttpcheckErrorMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []HttpcheckErrorMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *HttpcheckErrorMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *HttpcheckErrorMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case HttpcheckErrorMetricAttributeKeyHTTPURL, HttpcheckErrorMetricAttributeKeyErrorMessage:
+		default:
+			return fmt.Errorf("metric httpcheck.error doesn't have an attribute %v, valid attributes: [http.url, error.message]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// HttpcheckResponseDurationMetricAttributeKey specifies the key of an attribute for the httpcheck.response.duration metric.
+type HttpcheckResponseDurationMetricAttributeKey string
+
+const (
+	HttpcheckResponseDurationMetricAttributeKeyHTTPURL HttpcheckResponseDurationMetricAttributeKey = "http.url"
+)
+
+// HttpcheckResponseDurationMetricConfig provides config for the httpcheck.response.duration metric.
+type HttpcheckResponseDurationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []HttpcheckResponseDurationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *HttpcheckResponseDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *HttpcheckResponseDurationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case HttpcheckResponseDurationMetricAttributeKeyHTTPURL:
+		default:
+			return fmt.Errorf("metric httpcheck.response.duration doesn't have an attribute %v, valid attributes: [http.url]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// HttpcheckResponseSizeMetricAttributeKey specifies the key of an attribute for the httpcheck.response.size metric.
+type HttpcheckResponseSizeMetricAttributeKey string
+
+const (
+	HttpcheckResponseSizeMetricAttributeKeyHTTPURL HttpcheckResponseSizeMetricAttributeKey = "http.url"
+)
+
+// HttpcheckResponseSizeMetricConfig provides config for the httpcheck.response.size metric.
+type HttpcheckResponseSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []HttpcheckResponseSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *HttpcheckResponseSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *HttpcheckResponseSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case HttpcheckResponseSizeMetricAttributeKeyHTTPURL:
+		default:
+			return fmt.Errorf("metric httpcheck.response.size doesn't have an attribute %v, valid attributes: [http.url]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// HttpcheckStatusMetricAttributeKey specifies the key of an attribute for the httpcheck.status metric.
+type HttpcheckStatusMetricAttributeKey string
+
+const (
+	HttpcheckStatusMetricAttributeKeyHTTPURL         HttpcheckStatusMetricAttributeKey = "http.url"
+	HttpcheckStatusMetricAttributeKeyHTTPStatusCode  HttpcheckStatusMetricAttributeKey = "http.status_code"
+	HttpcheckStatusMetricAttributeKeyHTTPMethod      HttpcheckStatusMetricAttributeKey = "http.method"
+	HttpcheckStatusMetricAttributeKeyHTTPStatusClass HttpcheckStatusMetricAttributeKey = "http.status_class"
+)
+
+// HttpcheckStatusMetricConfig provides config for the httpcheck.status metric.
+type HttpcheckStatusMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []HttpcheckStatusMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *HttpcheckStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *HttpcheckStatusMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case HttpcheckStatusMetricAttributeKeyHTTPURL, HttpcheckStatusMetricAttributeKeyHTTPStatusCode, HttpcheckStatusMetricAttributeKeyHTTPMethod, HttpcheckStatusMetricAttributeKeyHTTPStatusClass:
+		default:
+			return fmt.Errorf("metric httpcheck.status doesn't have an attribute %v, valid attributes: [http.url, http.status_code, http.method, http.status_class]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// HttpcheckTLSCertRemainingMetricAttributeKey specifies the key of an attribute for the httpcheck.tls.cert_remaining metric.
+type HttpcheckTLSCertRemainingMetricAttributeKey string
+
+const (
+	HttpcheckTLSCertRemainingMetricAttributeKeyHTTPURL       HttpcheckTLSCertRemainingMetricAttributeKey = "http.url"
+	HttpcheckTLSCertRemainingMetricAttributeKeyHTTPTLSIssuer HttpcheckTLSCertRemainingMetricAttributeKey = "http.tls.issuer"
+	HttpcheckTLSCertRemainingMetricAttributeKeyHTTPTLSCn     HttpcheckTLSCertRemainingMetricAttributeKey = "http.tls.cn"
+	HttpcheckTLSCertRemainingMetricAttributeKeyHTTPTLSSan    HttpcheckTLSCertRemainingMetricAttributeKey = "http.tls.san"
+)
+
+// HttpcheckTLSCertRemainingMetricConfig provides config for the httpcheck.tls.cert_remaining metric.
+type HttpcheckTLSCertRemainingMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []HttpcheckTLSCertRemainingMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *HttpcheckTLSCertRemainingMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *HttpcheckTLSCertRemainingMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case HttpcheckTLSCertRemainingMetricAttributeKeyHTTPURL, HttpcheckTLSCertRemainingMetricAttributeKeyHTTPTLSIssuer, HttpcheckTLSCertRemainingMetricAttributeKeyHTTPTLSCn, HttpcheckTLSCertRemainingMetricAttributeKeyHTTPTLSSan:
+		default:
+			return fmt.Errorf("metric httpcheck.tls.cert_remaining doesn't have an attribute %v, valid attributes: [http.url, http.tls.issuer, http.tls.cn, http.tls.san]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// HttpcheckTLSHandshakeDurationMetricAttributeKey specifies the key of an attribute for the httpcheck.tls.handshake.duration metric.
+type HttpcheckTLSHandshakeDurationMetricAttributeKey string
+
+const (
+	HttpcheckTLSHandshakeDurationMetricAttributeKeyHTTPURL HttpcheckTLSHandshakeDurationMetricAttributeKey = "http.url"
+)
+
+// HttpcheckTLSHandshakeDurationMetricConfig provides config for the httpcheck.tls.handshake.duration metric.
+type HttpcheckTLSHandshakeDurationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []HttpcheckTLSHandshakeDurationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *HttpcheckTLSHandshakeDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *HttpcheckTLSHandshakeDurationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case HttpcheckTLSHandshakeDurationMetricAttributeKeyHTTPURL:
+		default:
+			return fmt.Errorf("metric httpcheck.tls.handshake.duration doesn't have an attribute %v, valid attributes: [http.url]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// HttpcheckValidationFailedMetricAttributeKey specifies the key of an attribute for the httpcheck.validation.failed metric.
+type HttpcheckValidationFailedMetricAttributeKey string
+
+const (
+	HttpcheckValidationFailedMetricAttributeKeyHTTPURL        HttpcheckValidationFailedMetricAttributeKey = "http.url"
+	HttpcheckValidationFailedMetricAttributeKeyValidationType HttpcheckValidationFailedMetricAttributeKey = "validation.type"
+)
+
+// HttpcheckValidationFailedMetricConfig provides config for the httpcheck.validation.failed metric.
+type HttpcheckValidationFailedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []HttpcheckValidationFailedMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *HttpcheckValidationFailedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *HttpcheckValidationFailedMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType:
+		default:
+			return fmt.Errorf("metric httpcheck.validation.failed doesn't have an attribute %v, valid attributes: [http.url, validation.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// HttpcheckValidationPassedMetricAttributeKey specifies the key of an attribute for the httpcheck.validation.passed metric.
+type HttpcheckValidationPassedMetricAttributeKey string
+
+const (
+	HttpcheckValidationPassedMetricAttributeKeyHTTPURL        HttpcheckValidationPassedMetricAttributeKey = "http.url"
+	HttpcheckValidationPassedMetricAttributeKeyValidationType HttpcheckValidationPassedMetricAttributeKey = "validation.type"
+)
+
+// HttpcheckValidationPassedMetricConfig provides config for the httpcheck.validation.passed metric.
+type HttpcheckValidationPassedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []HttpcheckValidationPassedMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *HttpcheckValidationPassedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *HttpcheckValidationPassedMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType:
+		default:
+			return fmt.Errorf("metric httpcheck.validation.passed doesn't have an attribute %v, valid attributes: [http.url, validation.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for http_check metrics.
 type MetricsConfig struct {
-	HttpcheckClientConnectionDuration MetricConfig `mapstructure:"httpcheck.client.connection.duration"`
-	HttpcheckClientRequestDuration    MetricConfig `mapstructure:"httpcheck.client.request.duration"`
-	HttpcheckDNSLookupDuration        MetricConfig `mapstructure:"httpcheck.dns.lookup.duration"`
-	HttpcheckDuration                 MetricConfig `mapstructure:"httpcheck.duration"`
-	HttpcheckError                    MetricConfig `mapstructure:"httpcheck.error"`
-	HttpcheckResponseDuration         MetricConfig `mapstructure:"httpcheck.response.duration"`
-	HttpcheckResponseSize             MetricConfig `mapstructure:"httpcheck.response.size"`
-	HttpcheckStatus                   MetricConfig `mapstructure:"httpcheck.status"`
-	HttpcheckTLSCertRemaining         MetricConfig `mapstructure:"httpcheck.tls.cert_remaining"`
-	HttpcheckTLSHandshakeDuration     MetricConfig `mapstructure:"httpcheck.tls.handshake.duration"`
-	HttpcheckValidationFailed         MetricConfig `mapstructure:"httpcheck.validation.failed"`
-	HttpcheckValidationPassed         MetricConfig `mapstructure:"httpcheck.validation.passed"`
+	HttpcheckClientConnectionDuration HttpcheckClientConnectionDurationMetricConfig `mapstructure:"httpcheck.client.connection.duration"`
+	HttpcheckClientRequestDuration    HttpcheckClientRequestDurationMetricConfig    `mapstructure:"httpcheck.client.request.duration"`
+	HttpcheckDNSLookupDuration        HttpcheckDNSLookupDurationMetricConfig        `mapstructure:"httpcheck.dns.lookup.duration"`
+	HttpcheckDuration                 HttpcheckDurationMetricConfig                 `mapstructure:"httpcheck.duration"`
+	HttpcheckError                    HttpcheckErrorMetricConfig                    `mapstructure:"httpcheck.error"`
+	HttpcheckResponseDuration         HttpcheckResponseDurationMetricConfig         `mapstructure:"httpcheck.response.duration"`
+	HttpcheckResponseSize             HttpcheckResponseSizeMetricConfig             `mapstructure:"httpcheck.response.size"`
+	HttpcheckStatus                   HttpcheckStatusMetricConfig                   `mapstructure:"httpcheck.status"`
+	HttpcheckTLSCertRemaining         HttpcheckTLSCertRemainingMetricConfig         `mapstructure:"httpcheck.tls.cert_remaining"`
+	HttpcheckTLSHandshakeDuration     HttpcheckTLSHandshakeDurationMetricConfig     `mapstructure:"httpcheck.tls.handshake.duration"`
+	HttpcheckValidationFailed         HttpcheckValidationFailedMetricConfig         `mapstructure:"httpcheck.validation.failed"`
+	HttpcheckValidationPassed         HttpcheckValidationPassedMetricConfig         `mapstructure:"httpcheck.validation.passed"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		HttpcheckClientConnectionDuration: MetricConfig{
-			Enabled: false,
+		HttpcheckClientConnectionDuration: HttpcheckClientConnectionDurationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []HttpcheckClientConnectionDurationMetricAttributeKey{HttpcheckClientConnectionDurationMetricAttributeKeyHTTPURL, HttpcheckClientConnectionDurationMetricAttributeKeyNetworkTransport},
 		},
-		HttpcheckClientRequestDuration: MetricConfig{
-			Enabled: false,
+		HttpcheckClientRequestDuration: HttpcheckClientRequestDurationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []HttpcheckClientRequestDurationMetricAttributeKey{HttpcheckClientRequestDurationMetricAttributeKeyHTTPURL},
 		},
-		HttpcheckDNSLookupDuration: MetricConfig{
-			Enabled: false,
+		HttpcheckDNSLookupDuration: HttpcheckDNSLookupDurationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []HttpcheckDNSLookupDurationMetricAttributeKey{HttpcheckDNSLookupDurationMetricAttributeKeyHTTPURL},
 		},
-		HttpcheckDuration: MetricConfig{
-			Enabled: true,
+		HttpcheckDuration: HttpcheckDurationMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []HttpcheckDurationMetricAttributeKey{HttpcheckDurationMetricAttributeKeyHTTPURL},
 		},
-		HttpcheckError: MetricConfig{
-			Enabled: true,
+		HttpcheckError: HttpcheckErrorMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []HttpcheckErrorMetricAttributeKey{HttpcheckErrorMetricAttributeKeyHTTPURL, HttpcheckErrorMetricAttributeKeyErrorMessage},
 		},
-		HttpcheckResponseDuration: MetricConfig{
-			Enabled: false,
+		HttpcheckResponseDuration: HttpcheckResponseDurationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []HttpcheckResponseDurationMetricAttributeKey{HttpcheckResponseDurationMetricAttributeKeyHTTPURL},
 		},
-		HttpcheckResponseSize: MetricConfig{
-			Enabled: false,
+		HttpcheckResponseSize: HttpcheckResponseSizeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []HttpcheckResponseSizeMetricAttributeKey{HttpcheckResponseSizeMetricAttributeKeyHTTPURL},
 		},
-		HttpcheckStatus: MetricConfig{
-			Enabled: true,
+		HttpcheckStatus: HttpcheckStatusMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []HttpcheckStatusMetricAttributeKey{HttpcheckStatusMetricAttributeKeyHTTPURL, HttpcheckStatusMetricAttributeKeyHTTPStatusCode, HttpcheckStatusMetricAttributeKeyHTTPMethod, HttpcheckStatusMetricAttributeKeyHTTPStatusClass},
 		},
-		HttpcheckTLSCertRemaining: MetricConfig{
-			Enabled: false,
+		HttpcheckTLSCertRemaining: HttpcheckTLSCertRemainingMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []HttpcheckTLSCertRemainingMetricAttributeKey{HttpcheckTLSCertRemainingMetricAttributeKeyHTTPURL, HttpcheckTLSCertRemainingMetricAttributeKeyHTTPTLSIssuer, HttpcheckTLSCertRemainingMetricAttributeKeyHTTPTLSCn, HttpcheckTLSCertRemainingMetricAttributeKeyHTTPTLSSan},
 		},
-		HttpcheckTLSHandshakeDuration: MetricConfig{
-			Enabled: false,
+		HttpcheckTLSHandshakeDuration: HttpcheckTLSHandshakeDurationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []HttpcheckTLSHandshakeDurationMetricAttributeKey{HttpcheckTLSHandshakeDurationMetricAttributeKeyHTTPURL},
 		},
-		HttpcheckValidationFailed: MetricConfig{
-			Enabled: false,
+		HttpcheckValidationFailed: HttpcheckValidationFailedMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []HttpcheckValidationFailedMetricAttributeKey{HttpcheckValidationFailedMetricAttributeKeyHTTPURL, HttpcheckValidationFailedMetricAttributeKeyValidationType},
 		},
-		HttpcheckValidationPassed: MetricConfig{
-			Enabled: false,
+		HttpcheckValidationPassed: HttpcheckValidationPassedMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []HttpcheckValidationPassedMetricAttributeKey{HttpcheckValidationPassedMetricAttributeKeyHTTPURL, HttpcheckValidationPassedMetricAttributeKeyValidationType},
 		},
 	}
 }

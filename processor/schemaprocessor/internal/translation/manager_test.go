@@ -50,6 +50,7 @@ func TestRequestTranslation(t *testing.T) {
 		zaptest.NewLogger(t),
 		5*time.Minute, 5,
 		telemetryBuilder,
+		nil,
 		NewHTTPProvider(s.Client()),
 	)
 	require.NoError(t, err, "Must not error when created manager")
@@ -119,6 +120,7 @@ versions:
 		zaptest.NewLogger(t),
 		5*time.Minute, 5,
 		telemetryBuilder,
+		nil,
 		NewHTTPProvider(s.Client()),
 	)
 	require.NoError(t, err)
@@ -146,6 +148,66 @@ versions:
 	assert.False(t, oldExists, "old attribute must be removed after upgrade")
 }
 
+// TestRequestTranslationV2Manifest verifies that when the schema URL serves a
+// manifest/2.0 document, the manager follows resolved_registry_uri through the
+// same provider chain and constructs a single-hop translator from the resolved
+// registry.
+func TestRequestTranslationV2Manifest(t *testing.T) {
+	t.Parallel()
+
+	resolved := LoadTranslationVersion(t, "v2_resolved_simple.yaml")
+
+	mux := http.NewServeMux()
+	var s *httptest.Server
+	mux.HandleFunc("/resolved/2.0.0.yaml", func(w http.ResponseWriter, _ *http.Request) {
+		_, err := w.Write([]byte(resolved))
+		assert.NoError(t, err)
+	})
+	mux.HandleFunc("/2.0.0", func(w http.ResponseWriter, _ *http.Request) {
+		manifest := fmt.Sprintf(`file_format: manifest/2.0
+schema_url: %s/2.0.0
+resolved_registry_uri: %s/resolved/2.0.0.yaml
+`, s.URL, s.URL)
+		_, err := w.Write([]byte(manifest))
+		assert.NoError(t, err)
+	})
+	s = httptest.NewServer(mux)
+	t.Cleanup(s.Close)
+
+	targetURL := fmt.Sprintf("%s/2.0.0", s.URL)
+	signalURL := fmt.Sprintf("%s/1.30.0", s.URL)
+
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	m, err := NewManager(
+		[]string{targetURL},
+		zaptest.NewLogger(t),
+		5*time.Minute, 5,
+		telemetryBuilder,
+		nil,
+		NewHTTPProvider(s.Client()),
+	)
+	require.NoError(t, err)
+
+	tr, err := m.RequestTranslation(t.Context(), signalURL)
+	require.NoError(t, err)
+	require.NotNil(t, tr)
+
+	// Single-hop translator: any incoming version is "supported" and renames
+	// from v2_resolved_simple.yaml should apply.
+	scopeSpans := ptrace.NewScopeSpans()
+	scopeSpans.SetSchemaUrl(signalURL)
+	span := scopeSpans.Spans().AppendEmpty()
+	span.Attributes().PutStr("old.attr.name", "value")
+
+	require.NoError(t, tr.ApplyScopeSpanChanges(scopeSpans, signalURL))
+
+	val, ok := span.Attributes().Get("new.attr.name")
+	require.True(t, ok, "v2 manifest+resolved indirection must rename old -> new")
+	assert.Equal(t, "value", val.Str())
+}
+
 type errorProvider struct{}
 
 func (*errorProvider) Retrieve(_ context.Context, _ string) (string, error) {
@@ -163,6 +225,7 @@ func TestManagerError(t *testing.T) {
 		zaptest.NewLogger(t),
 		5*time.Minute, 5,
 		telemetryBuilder,
+		nil,
 		&errorProvider{},
 	)
 	require.NoError(t, err, "Must not error when created manager")

@@ -10,10 +10,10 @@
   "schedule": [
     "on tuesday"
   ],
+  "minimumReleaseAge": "2 days",
   "extends": [
-    "config:recommended",
-    "customManagers:githubActionsVersions",
-    "helpers:pinGitHubActionDigests"
+    "config:best-practices",
+    "helpers:pinGitHubActionDigestsToSemver"
   ],
   "ignorePaths": [
     "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",
@@ -100,18 +100,22 @@
       ]
     },
     {
-      "matchPackagePatterns": ["^github.com/DataDog/opentelemetry-mapping-go/"],
-      "enabled": false
+      "enabled": false,
+      "matchPackageNames": [
+        "/^github.com/DataDog/opentelemetry-mapping-go//"
+      ]
     },
     {
-      "matchPaths": [
+      "matchFileNames": [
         "exporter/datadogexporter/**",
         "connector/datadogconnector/**",
         "internal/datadog/**",
         "pkg/datadog/**"
       ],
-      "matchPackagePatterns": ["^github.com/DataDog/datadog-agent"],
-      "enabled": false
+      "enabled": false,
+      "matchPackageNames": [
+        "/^github.com/DataDog/datadog-agent/"
+      ]
     },
     {
       "matchManagers": [
@@ -248,6 +252,13 @@
       "matchPackageNames": [
         "github.com/twmb/franz-go{/,}**"
       ]
+    },
+    {
+      "groupName": "github.com/twmb/franz-go/pkg/kmsg package",
+      "matchPackageNames": [
+        "github.com/twmb/franz-go/pkg/kmsg"
+      ],
+      "allowedVersions": "<2.0.0"
     },
     {
       "matchPackageNames": [

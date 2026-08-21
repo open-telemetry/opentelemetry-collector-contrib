@@ -14,19 +14,19 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/prometheusstaticdatasender"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 func TestPrometheusReceiver(t *testing.T) {
 	tests := []struct {
 		name         string
-		payload      datasenders.PrometheusStaticPayloadConfig
+		payload      prometheusstaticdatasender.PrometheusStaticPayloadConfig
 		resourceSpec testbed.ResourceSpec
 	}{
 		{
 			name: "Baseline/1k",
-			payload: datasenders.PrometheusStaticPayloadConfig{
+			payload: prometheusstaticdatasender.PrometheusStaticPayloadConfig{
 				SeriesCount:     1000,
 				LabelsPerSeries: 5,
 			},
@@ -37,7 +37,7 @@ func TestPrometheusReceiver(t *testing.T) {
 		},
 		{
 			name: "Baseline/10k",
-			payload: datasenders.PrometheusStaticPayloadConfig{
+			payload: prometheusstaticdatasender.PrometheusStaticPayloadConfig{
 				SeriesCount:     10000,
 				LabelsPerSeries: 5,
 			},
@@ -48,7 +48,7 @@ func TestPrometheusReceiver(t *testing.T) {
 		},
 		{
 			name: "WithTargetInfo/10k",
-			payload: datasenders.PrometheusStaticPayloadConfig{
+			payload: prometheusstaticdatasender.PrometheusStaticPayloadConfig{
 				SeriesCount:     10000,
 				LabelsPerSeries: 5,
 				WithTargetInfo:  true,
@@ -60,7 +60,7 @@ func TestPrometheusReceiver(t *testing.T) {
 		},
 		{
 			name: "NativeHistogram/10k",
-			payload: datasenders.PrometheusStaticPayloadConfig{
+			payload: prometheusstaticdatasender.PrometheusStaticPayloadConfig{
 				SeriesCount:          10000,
 				WithNativeHistograms: true,
 			},
@@ -83,10 +83,10 @@ func TestPrometheusReceiver(t *testing.T) {
 // a child-process collector to scrape it, and sinks data into an OTLP backend.
 func scenarioPrometheusScrape(
 	t *testing.T,
-	payloadCfg datasenders.PrometheusStaticPayloadConfig,
+	payloadCfg prometheusstaticdatasender.PrometheusStaticPayloadConfig,
 	resourceSpec testbed.ResourceSpec,
 ) {
-	sender := datasenders.NewPrometheusStaticSender(
+	sender := prometheusstaticdatasender.NewPrometheusStaticSender(
 		testbed.DefaultHost,
 		testutil.GetAvailablePort(t),
 		payloadCfg,

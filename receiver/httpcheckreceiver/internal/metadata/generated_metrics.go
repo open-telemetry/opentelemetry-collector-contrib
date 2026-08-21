@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -11,42 +12,61 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
+)
+
 var MetricsInfo = metricsInfo{
 	HttpcheckClientConnectionDuration: metricInfo{
-		Name: "httpcheck.client.connection.duration",
+		Name:       "httpcheck.client.connection.duration",
+		Attributes: []string{"http.url", "network.transport"},
 	},
 	HttpcheckClientRequestDuration: metricInfo{
-		Name: "httpcheck.client.request.duration",
+		Name:       "httpcheck.client.request.duration",
+		Attributes: []string{"http.url"},
 	},
 	HttpcheckDNSLookupDuration: metricInfo{
-		Name: "httpcheck.dns.lookup.duration",
+		Name:       "httpcheck.dns.lookup.duration",
+		Attributes: []string{"http.url"},
 	},
 	HttpcheckDuration: metricInfo{
-		Name: "httpcheck.duration",
+		Name:       "httpcheck.duration",
+		Attributes: []string{"http.url"},
 	},
 	HttpcheckError: metricInfo{
-		Name: "httpcheck.error",
+		Name:       "httpcheck.error",
+		Attributes: []string{"http.url", "error.message"},
 	},
 	HttpcheckResponseDuration: metricInfo{
-		Name: "httpcheck.response.duration",
+		Name:       "httpcheck.response.duration",
+		Attributes: []string{"http.url"},
 	},
 	HttpcheckResponseSize: metricInfo{
-		Name: "httpcheck.response.size",
+		Name:       "httpcheck.response.size",
+		Attributes: []string{"http.url"},
 	},
 	HttpcheckStatus: metricInfo{
-		Name: "httpcheck.status",
+		Name:       "httpcheck.status",
+		Attributes: []string{"http.url", "http.status_code", "http.method", "http.status_class"},
 	},
 	HttpcheckTLSCertRemaining: metricInfo{
-		Name: "httpcheck.tls.cert_remaining",
+		Name:       "httpcheck.tls.cert_remaining",
+		Attributes: []string{"http.url", "http.tls.issuer", "http.tls.cn", "http.tls.san"},
 	},
 	HttpcheckTLSHandshakeDuration: metricInfo{
-		Name: "httpcheck.tls.handshake.duration",
+		Name:       "httpcheck.tls.handshake.duration",
+		Attributes: []string{"http.url"},
 	},
 	HttpcheckValidationFailed: metricInfo{
-		Name: "httpcheck.validation.failed",
+		Name:       "httpcheck.validation.failed",
+		Attributes: []string{"http.url", "validation.type"},
 	},
 	HttpcheckValidationPassed: metricInfo{
-		Name: "httpcheck.validation.passed",
+		Name:       "httpcheck.validation.passed",
+		Attributes: []string{"http.url", "validation.type"},
 	},
 }
 
@@ -66,34 +86,69 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricHttpcheckClientConnectionDuration struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        HttpcheckClientConnectionDurationMetricConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills httpcheck.client.connection.duration metric with initial data.
 func (m *metricHttpcheckClientConnectionDuration) init() {
 	m.data.SetName("httpcheck.client.connection.duration")
 	m.data.SetDescription("Time spent establishing TCP connection to the endpoint.")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("ns")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricHttpcheckClientConnectionDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string, networkTransportAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckClientConnectionDurationMetricAttributeKeyHTTPURL) {
+		dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckClientConnectionDurationMetricAttributeKeyNetworkTransport) {
+		dp.Attributes().PutStr("network.transport", networkTransportAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
-	dp.Attributes().PutStr("network.transport", networkTransportAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -106,13 +161,18 @@ func (m *metricHttpcheckClientConnectionDuration) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHttpcheckClientConnectionDuration) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHttpcheckClientConnectionDuration(cfg MetricConfig) metricHttpcheckClientConnectionDuration {
+func newMetricHttpcheckClientConnectionDuration(cfg HttpcheckClientConnectionDurationMetricConfig) metricHttpcheckClientConnectionDuration {
 	m := metricHttpcheckClientConnectionDuration{config: cfg}
 
 	if cfg.Enabled {
@@ -123,29 +183,61 @@ func newMetricHttpcheckClientConnectionDuration(cfg MetricConfig) metricHttpchec
 }
 
 type metricHttpcheckClientRequestDuration struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        HttpcheckClientRequestDurationMetricConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills httpcheck.client.request.duration metric with initial data.
 func (m *metricHttpcheckClientRequestDuration) init() {
 	m.data.SetName("httpcheck.client.request.duration")
 	m.data.SetDescription("Time spent sending the HTTP request to the endpoint.")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("ns")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricHttpcheckClientRequestDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckClientRequestDurationMetricAttributeKeyHTTPURL) {
+		dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -158,13 +250,18 @@ func (m *metricHttpcheckClientRequestDuration) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHttpcheckClientRequestDuration) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHttpcheckClientRequestDuration(cfg MetricConfig) metricHttpcheckClientRequestDuration {
+func newMetricHttpcheckClientRequestDuration(cfg HttpcheckClientRequestDurationMetricConfig) metricHttpcheckClientRequestDuration {
 	m := metricHttpcheckClientRequestDuration{config: cfg}
 
 	if cfg.Enabled {
@@ -175,29 +272,61 @@ func newMetricHttpcheckClientRequestDuration(cfg MetricConfig) metricHttpcheckCl
 }
 
 type metricHttpcheckDNSLookupDuration struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        HttpcheckDNSLookupDurationMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills httpcheck.dns.lookup.duration metric with initial data.
 func (m *metricHttpcheckDNSLookupDuration) init() {
 	m.data.SetName("httpcheck.dns.lookup.duration")
 	m.data.SetDescription("Time spent performing DNS lookup for the endpoint.")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("ns")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricHttpcheckDNSLookupDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckDNSLookupDurationMetricAttributeKeyHTTPURL) {
+		dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -210,13 +339,18 @@ func (m *metricHttpcheckDNSLookupDuration) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHttpcheckDNSLookupDuration) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHttpcheckDNSLookupDuration(cfg MetricConfig) metricHttpcheckDNSLookupDuration {
+func newMetricHttpcheckDNSLookupDuration(cfg HttpcheckDNSLookupDurationMetricConfig) metricHttpcheckDNSLookupDuration {
 	m := metricHttpcheckDNSLookupDuration{config: cfg}
 
 	if cfg.Enabled {
@@ -227,9 +361,10 @@ func newMetricHttpcheckDNSLookupDuration(cfg MetricConfig) metricHttpcheckDNSLoo
 }
 
 type metricHttpcheckDuration struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        HttpcheckDurationMetricConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills httpcheck.duration metric with initial data.
@@ -239,17 +374,48 @@ func (m *metricHttpcheckDuration) init() {
 	m.data.SetUnit("ms")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricHttpcheckDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckDurationMetricAttributeKeyHTTPURL) {
+		dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -262,13 +428,18 @@ func (m *metricHttpcheckDuration) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHttpcheckDuration) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHttpcheckDuration(cfg MetricConfig) metricHttpcheckDuration {
+func newMetricHttpcheckDuration(cfg HttpcheckDurationMetricConfig) metricHttpcheckDuration {
 	m := metricHttpcheckDuration{config: cfg}
 
 	if cfg.Enabled {
@@ -279,9 +450,10 @@ func newMetricHttpcheckDuration(cfg MetricConfig) metricHttpcheckDuration {
 }
 
 type metricHttpcheckError struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric             // data buffer for generated metric.
+	config        HttpcheckErrorMetricConfig // metric config provided by user.
+	capacity      int                        // max observed number of data points added to the metric.
+	aggDataPoints []int64                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills httpcheck.error metric with initial data.
@@ -293,18 +465,51 @@ func (m *metricHttpcheckError) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricHttpcheckError) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string, errorMessageAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckErrorMetricAttributeKeyHTTPURL) {
+		dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckErrorMetricAttributeKeyErrorMessage) {
+		dp.Attributes().PutStr("error.message", errorMessageAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
-	dp.Attributes().PutStr("error.message", errorMessageAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -317,13 +522,18 @@ func (m *metricHttpcheckError) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHttpcheckError) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHttpcheckError(cfg MetricConfig) metricHttpcheckError {
+func newMetricHttpcheckError(cfg HttpcheckErrorMetricConfig) metricHttpcheckError {
 	m := metricHttpcheckError{config: cfg}
 
 	if cfg.Enabled {
@@ -334,29 +544,61 @@ func newMetricHttpcheckError(cfg MetricConfig) metricHttpcheckError {
 }
 
 type metricHttpcheckResponseDuration struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        HttpcheckResponseDurationMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills httpcheck.response.duration metric with initial data.
 func (m *metricHttpcheckResponseDuration) init() {
 	m.data.SetName("httpcheck.response.duration")
 	m.data.SetDescription("Time spent receiving the HTTP response from the endpoint.")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("ns")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricHttpcheckResponseDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckResponseDurationMetricAttributeKeyHTTPURL) {
+		dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -369,13 +611,18 @@ func (m *metricHttpcheckResponseDuration) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHttpcheckResponseDuration) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHttpcheckResponseDuration(cfg MetricConfig) metricHttpcheckResponseDuration {
+func newMetricHttpcheckResponseDuration(cfg HttpcheckResponseDurationMetricConfig) metricHttpcheckResponseDuration {
 	m := metricHttpcheckResponseDuration{config: cfg}
 
 	if cfg.Enabled {
@@ -386,9 +633,10 @@ func newMetricHttpcheckResponseDuration(cfg MetricConfig) metricHttpcheckRespons
 }
 
 type metricHttpcheckResponseSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        HttpcheckResponseSizeMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills httpcheck.response.size metric with initial data.
@@ -398,17 +646,48 @@ func (m *metricHttpcheckResponseSize) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricHttpcheckResponseSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckResponseSizeMetricAttributeKeyHTTPURL) {
+		dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -421,13 +700,18 @@ func (m *metricHttpcheckResponseSize) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHttpcheckResponseSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHttpcheckResponseSize(cfg MetricConfig) metricHttpcheckResponseSize {
+func newMetricHttpcheckResponseSize(cfg HttpcheckResponseSizeMetricConfig) metricHttpcheckResponseSize {
 	m := metricHttpcheckResponseSize{config: cfg}
 
 	if cfg.Enabled {
@@ -438,9 +722,10 @@ func newMetricHttpcheckResponseSize(cfg MetricConfig) metricHttpcheckResponseSiz
 }
 
 type metricHttpcheckStatus struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric              // data buffer for generated metric.
+	config        HttpcheckStatusMetricConfig // metric config provided by user.
+	capacity      int                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills httpcheck.status metric with initial data.
@@ -452,20 +737,57 @@ func (m *metricHttpcheckStatus) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricHttpcheckStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string, httpStatusCodeAttributeValue int64, httpMethodAttributeValue string, httpStatusClassAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckStatusMetricAttributeKeyHTTPURL) {
+		dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckStatusMetricAttributeKeyHTTPStatusCode) {
+		dp.Attributes().PutInt("http.status_code", httpStatusCodeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckStatusMetricAttributeKeyHTTPMethod) {
+		dp.Attributes().PutStr("http.method", httpMethodAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckStatusMetricAttributeKeyHTTPStatusClass) {
+		dp.Attributes().PutStr("http.status_class", httpStatusClassAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
-	dp.Attributes().PutInt("http.status_code", httpStatusCodeAttributeValue)
-	dp.Attributes().PutStr("http.method", httpMethodAttributeValue)
-	dp.Attributes().PutStr("http.status_class", httpStatusClassAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -478,13 +800,18 @@ func (m *metricHttpcheckStatus) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHttpcheckStatus) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHttpcheckStatus(cfg MetricConfig) metricHttpcheckStatus {
+func newMetricHttpcheckStatus(cfg HttpcheckStatusMetricConfig) metricHttpcheckStatus {
 	m := metricHttpcheckStatus{config: cfg}
 
 	if cfg.Enabled {
@@ -495,9 +822,10 @@ func newMetricHttpcheckStatus(cfg MetricConfig) metricHttpcheckStatus {
 }
 
 type metricHttpcheckTLSCertRemaining struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        HttpcheckTLSCertRemainingMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills httpcheck.tls.cert_remaining metric with initial data.
@@ -507,20 +835,57 @@ func (m *metricHttpcheckTLSCertRemaining) init() {
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricHttpcheckTLSCertRemaining) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string, httpTLSIssuerAttributeValue string, httpTLSCnAttributeValue string, httpTLSSanAttributeValue []any) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckTLSCertRemainingMetricAttributeKeyHTTPURL) {
+		dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckTLSCertRemainingMetricAttributeKeyHTTPTLSIssuer) {
+		dp.Attributes().PutStr("http.tls.issuer", httpTLSIssuerAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckTLSCertRemainingMetricAttributeKeyHTTPTLSCn) {
+		dp.Attributes().PutStr("http.tls.cn", httpTLSCnAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckTLSCertRemainingMetricAttributeKeyHTTPTLSSan) {
+		dp.Attributes().PutEmptySlice("http.tls.san").FromRaw(httpTLSSanAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
-	dp.Attributes().PutStr("http.tls.issuer", httpTLSIssuerAttributeValue)
-	dp.Attributes().PutStr("http.tls.cn", httpTLSCnAttributeValue)
-	dp.Attributes().PutEmptySlice("http.tls.san").FromRaw(httpTLSSanAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -533,13 +898,18 @@ func (m *metricHttpcheckTLSCertRemaining) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHttpcheckTLSCertRemaining) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHttpcheckTLSCertRemaining(cfg MetricConfig) metricHttpcheckTLSCertRemaining {
+func newMetricHttpcheckTLSCertRemaining(cfg HttpcheckTLSCertRemainingMetricConfig) metricHttpcheckTLSCertRemaining {
 	m := metricHttpcheckTLSCertRemaining{config: cfg}
 
 	if cfg.Enabled {
@@ -550,29 +920,61 @@ func newMetricHttpcheckTLSCertRemaining(cfg MetricConfig) metricHttpcheckTLSCert
 }
 
 type metricHttpcheckTLSHandshakeDuration struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        HttpcheckTLSHandshakeDurationMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []int64                                   // slice containing number of aggregated datapoints at each index
 }
 
 // init fills httpcheck.tls.handshake.duration metric with initial data.
 func (m *metricHttpcheckTLSHandshakeDuration) init() {
 	m.data.SetName("httpcheck.tls.handshake.duration")
 	m.data.SetDescription("Time spent performing TLS handshake with the endpoint.")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("ns")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricHttpcheckTLSHandshakeDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckTLSHandshakeDurationMetricAttributeKeyHTTPURL) {
+		dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -585,13 +987,18 @@ func (m *metricHttpcheckTLSHandshakeDuration) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHttpcheckTLSHandshakeDuration) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHttpcheckTLSHandshakeDuration(cfg MetricConfig) metricHttpcheckTLSHandshakeDuration {
+func newMetricHttpcheckTLSHandshakeDuration(cfg HttpcheckTLSHandshakeDurationMetricConfig) metricHttpcheckTLSHandshakeDuration {
 	m := metricHttpcheckTLSHandshakeDuration{config: cfg}
 
 	if cfg.Enabled {
@@ -602,9 +1009,10 @@ func newMetricHttpcheckTLSHandshakeDuration(cfg MetricConfig) metricHttpcheckTLS
 }
 
 type metricHttpcheckValidationFailed struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        HttpcheckValidationFailedMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills httpcheck.validation.failed metric with initial data.
@@ -616,18 +1024,51 @@ func (m *metricHttpcheckValidationFailed) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricHttpcheckValidationFailed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string, validationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckValidationFailedMetricAttributeKeyHTTPURL) {
+		dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckValidationFailedMetricAttributeKeyValidationType) {
+		dp.Attributes().PutStr("validation.type", validationTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
-	dp.Attributes().PutStr("validation.type", validationTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -640,13 +1081,18 @@ func (m *metricHttpcheckValidationFailed) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHttpcheckValidationFailed) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHttpcheckValidationFailed(cfg MetricConfig) metricHttpcheckValidationFailed {
+func newMetricHttpcheckValidationFailed(cfg HttpcheckValidationFailedMetricConfig) metricHttpcheckValidationFailed {
 	m := metricHttpcheckValidationFailed{config: cfg}
 
 	if cfg.Enabled {
@@ -657,9 +1103,10 @@ func newMetricHttpcheckValidationFailed(cfg MetricConfig) metricHttpcheckValidat
 }
 
 type metricHttpcheckValidationPassed struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        HttpcheckValidationPassedMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills httpcheck.validation.passed metric with initial data.
@@ -671,18 +1118,51 @@ func (m *metricHttpcheckValidationPassed) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricHttpcheckValidationPassed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string, validationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckValidationPassedMetricAttributeKeyHTTPURL) {
+		dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, HttpcheckValidationPassedMetricAttributeKeyValidationType) {
+		dp.Attributes().PutStr("validation.type", validationTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
-	dp.Attributes().PutStr("validation.type", validationTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -695,13 +1175,18 @@ func (m *metricHttpcheckValidationPassed) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHttpcheckValidationPassed) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHttpcheckValidationPassed(cfg MetricConfig) metricHttpcheckValidationPassed {
+func newMetricHttpcheckValidationPassed(cfg HttpcheckValidationPassedMetricConfig) metricHttpcheckValidationPassed {
 	m := metricHttpcheckValidationPassed{config: cfg}
 
 	if cfg.Enabled {

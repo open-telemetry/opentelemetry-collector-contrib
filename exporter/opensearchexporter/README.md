@@ -6,7 +6,7 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fopensearch%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fopensearch) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fopensearch%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fopensearch) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_opensearch)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_opensearch&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@ps48](https://www.github.com/ps48) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@ps48](https://www.github.com/ps48), [@kylehounslow](https://www.github.com/kylehounslow) \| Seeking more code owners! |
 | Emeritus      | [@Aneurysm9](https://www.github.com/Aneurysm9), [@MitchellGale](https://www.github.com/MitchellGale), [@MaxKsyunz](https://www.github.com/MaxKsyunz), [@YANG-DB](https://www.github.com/YANG-DB) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -51,6 +51,7 @@ The OpenSearch exporter supports dynamic index names for both logs and traces us
   - The value is looked up from item attributes (log/span), scope attributes, and resource attributes (in that precedence order)
   - If the key is missing, the fallback value is used
   - Generated index names must adhere to [OpenSearch index naming restrictions](https://docs.opensearch.org/latest/api-reference/index-apis/create-index/#index-naming-restrictions)
+  - A substituted attribute value that is empty, starts with `.`, or contains `..` is skipped as if the key were missing, so the next attribute in the precedence order (then the fallback) is used. This keeps a value from resolving to a system index (e.g. `.kibana`) or a different index via a `..` segment. Other values are substituted as-is; a value OpenSearch rejects (uppercase, spaces, forbidden characters) surfaces as an indexing error rather than being silently rerouted. The configured fallback value is trusted and is not validated.
 
 **Time Suffix Format:**
 
@@ -109,6 +110,8 @@ The OpenSearch exporter supports several document schemas and preprocessing beha
     - `ecs`: Maps fields defined in the OpenTelemetry Semantic Conventions to the [Elastic Common Schema](https://www.elastic.co/guide/en/ecs/current/index.html)
     - `flatten_attributes`: Uses the ECS mapping but flattens all resource and log attributes in the record to the top-level.
     - `bodymap`: uses the "body" of a log record as the exact content of the OpenSearch document, without any transformation. This mapping mode is intended for use cases where the client wishes to have complete control over the OpenSearch document structure.
+    - `otel-v1`: exports logs and traces using the Data Prepper OTel v1 schema, compatible with OpenSearch Observability dashboards.
+  - `manage_index_template`: (optional, default=`false`) When `true`, creates composable index templates on startup. Only valid with `otel-v1` mode.
   - `timestamp_field`: (optional) Field to store the timestamp in. If not set, uses the default `@timestamp`.
   - `unix_timestamp`: (optional) Whether to store the timestamp in epoch milliseconds.
   - `dedup`: (optional) removes fields from the document, that have duplicate keys. The filtering only keeps the last value for a key.
@@ -159,6 +162,46 @@ The bodymap mapping mode only supports log records where the body is of type Map
 | --------- | ------------------- |
 | Logs      | :white_check_mark:  |
 | Traces    | :no_entry_sign:     |
+
+#### OTel v1 mapping mode
+
+In `otel-v1` mapping mode, the OpenSearch exporter produces documents compatible with [Data Prepper's](https://github.com/opensearch-project/data-prepper) OTel v1 index schemas. This enables interoperability with OpenSearch Observability dashboards that consume Data Prepper indices.
+
+Default index names:
+- Traces: `otel-v1-apm-span`
+- Logs: `otel-v1-logs`
+
+These defaults can be overridden using `traces_index` and `logs_index` configuration options.
+
+The `manage_index_template` option controls whether the exporter automatically creates composable index templates on startup. This ensures correct field mappings (e.g., `date_nanos` timestamps, dynamic attribute typing) are in place before documents are indexed.
+
+Template creation is best-effort: if the cluster is temporarily unreachable or rejects the request, the exporter logs a warning and continues — the failure is not propagated through `Start()`. The affected index will then fall back to OpenSearch's dynamic mapping (timestamp fields inferred as `date` rather than `date_nanos`) until the template is installed. If templates with the same names already exist (for example, user-customized variants), they are left in place rather than overwritten.
+
+| Signal    | `otel-v1`           |
+| --------- | ------------------- |
+| Logs      | :white_check_mark:  |
+| Traces    | :white_check_mark:  |
+
+Schema references:
+- [otel-v1-apm-span index template](https://github.com/opensearch-project/data-prepper/blob/main/data-prepper-plugins/opensearch/src/main/resources/index-template/otel-v1-apm-span-index-standard-template.json)
+- [logs-otel-v1 index template](https://github.com/opensearch-project/data-prepper/blob/main/data-prepper-plugins/opensearch/src/main/resources/index-template/logs-otel-v1-index-standard-template.json)
+
+> [!NOTE]
+> The exporter emits nanosecond-precision timestamps in the document body, but OpenSearch's dynamic mapping will infer `date` (millisecond precision) unless a matching index template is installed before indexing begins. Set `manage_index_template: true` to have the exporter create the templates on startup, or install them out-of-band — see the schema references above.
+
+##### Example Configuration
+
+```yaml
+exporters:
+  opensearch:
+    http:
+      endpoint: http://opensearch.example.com:9200
+    mapping:
+      mode: "otel-v1"
+      manage_index_template: true
+    sending_queue:
+      batch:
+```
 
 ### HTTP Connection Options
 

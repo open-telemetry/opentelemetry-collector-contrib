@@ -57,6 +57,7 @@ metrics_transform/multiple:
       match_type: regexp
       action: combine
       new_name: combined_metric_name
+      aggregation_type: sum
       submatch_case: lower
 
     - include: name2

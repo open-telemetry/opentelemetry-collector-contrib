@@ -16,7 +16,12 @@ func makeService(resource pcommon.Resource) *awsxray.ServiceData {
 
 	verStr, ok := resource.Attributes().Get(string(conventions.ServiceVersionKey))
 	if !ok {
-		verStr, ok = resource.Attributes().Get(string(conventionsv121.ContainerImageTagKey))
+		if tags, okTags := resource.Attributes().Get(string(conventions.ContainerImageTagsKey)); okTags && tags.Type() == pcommon.ValueTypeSlice && tags.Slice().Len() > 0 {
+			verStr = tags.Slice().At(0)
+			ok = true
+		} else {
+			verStr, ok = resource.Attributes().Get(string(conventionsv121.ContainerImageTagKey))
+		}
 	}
 	if ok {
 		service = &awsxray.ServiceData{

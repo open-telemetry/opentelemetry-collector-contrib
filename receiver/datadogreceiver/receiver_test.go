@@ -16,7 +16,9 @@ import (
 	"testing"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
+	intakev3 "github.com/DataDog/agent-payload/v5/metrics/intake_v3"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -27,17 +29,17 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/multierr"
+	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
 
 func TestDatadogTracesReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).NetAddr.Endpoint = "localhost:0"
+	cfg.(*Config).ServerConfig.NetAddr.Endpoint = "localhost:0"
 	ddr, err := factory.CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Traces receiver should be created")
 
@@ -51,7 +53,7 @@ func TestDatadogTracesReceiver_Lifecycle(t *testing.T) {
 func TestDatadogMetricsReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).NetAddr.Endpoint = "localhost:0"
+	cfg.(*Config).ServerConfig.NetAddr.Endpoint = "localhost:0"
 	ddr, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Metrics receiver should be created")
 
@@ -65,7 +67,7 @@ func TestDatadogMetricsReceiver_Lifecycle(t *testing.T) {
 func TestDatadogLogsReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).NetAddr.Endpoint = "localhost:0"
+	cfg.(*Config).ServerConfig.NetAddr.Endpoint = "localhost:0"
 	ddr, err := factory.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Logs receiver should be created")
 
@@ -78,7 +80,7 @@ func TestDatadogLogsReceiver_Lifecycle(t *testing.T) {
 
 func TestDatadogServer(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 
 	ctx := t.Context()
 
@@ -182,7 +184,7 @@ func TestDatadogResponse(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+			cfg.ServerConfig.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 
 			ctx := t.Context()
 
@@ -264,6 +266,8 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 		"/",
 		"/api/v1/series",
 		"/api/v2/series",
+		"/api/intake/metrics/v3/series",
+		"/api/intake/metrics/v3beta/series",
 		"/api/v1/check_run",
 		"/api/v1/sketches",
 		"/api/beta/sketches",
@@ -294,6 +298,8 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 		"/api/v0.2/traces",
 		"/api/v1/series",
 		"/api/v2/series",
+		"/api/intake/metrics/v3/series",
+		"/api/intake/metrics/v3beta/series",
 		"/api/v1/check_run",
 		"/api/v1/sketches",
 		"/api/beta/sketches",
@@ -312,7 +318,7 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+			cfg.ServerConfig.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 
 			ctx := t.Context()
 
@@ -351,7 +357,7 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 
 func TestDatadogMetricsV1_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
 	ctx := t.Context()
@@ -416,7 +422,7 @@ func TestDatadogMetricsV1_EndToEnd(t *testing.T) {
 
 func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
 	ctx := t.Context()
@@ -499,7 +505,7 @@ func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 
 func TestDatadogMetricsV2_EndToEndJSON(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
 	ctx := t.Context()
@@ -579,9 +585,181 @@ func TestDatadogMetricsV2_EndToEndJSON(t *testing.T) {
 	assert.Equal(t, pcommon.Timestamp(1636629071*1_000_000_000), metric.Sum().DataPoints().At(1).StartTimestamp())
 }
 
+// minimalV3SeriesPayload returns an intake_v3.Payload with a single gauge
+// "test.gauge" (tag env:test, host node-a, timestamp 1000, value 42.0). The
+// v3 series intake is the default metrics endpoint for Datadog Agent 7.81.0+.
+func minimalV3SeriesPayload() *intakev3.Payload {
+	nameStr := append([]byte{10}, []byte("test.gauge")...) // uvarint(len) + value
+	tagStr := append([]byte{8}, []byte("env:test")...)
+	resourceStr := append([]byte{4}, []byte("host")...)
+	resourceStr = append(resourceStr, 6)
+	resourceStr = append(resourceStr, []byte("node-a")...)
+
+	return &intakev3.Payload{
+		MetricData: &intakev3.MetricData{
+			DictNameStr:        nameStr,
+			DictTagStr:         tagStr,
+			DictTagsets:        []int64{1, 1},
+			DictResourceStr:    resourceStr,
+			DictResourceLen:    []int64{1},
+			DictResourceType:   []int64{1},
+			DictResourceName:   []int64{2},
+			Types:              []uint64{uint64(intakev3.MetricType_Gauge) | uint64(intakev3.ValueType_Float64)},
+			NameRefs:           []int64{1},
+			TagsetRefs:         []int64{1},
+			ResourcesRefs:      []int64{1},
+			SourceTypeNameRefs: []int64{0},
+			OriginInfoRefs:     []int64{0},
+			Intervals:          []uint64{10},
+			NumPoints:          []uint64{1},
+			Timestamps:         []int64{1000},
+			ValsFloat64:        []float64{42.0},
+		},
+	}
+}
+
+func assertV3TestGauge(t *testing.T, sink *consumertest.MetricsSink) {
+	t.Helper()
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	got := mds[0]
+	require.Equal(t, 1, got.ResourceMetrics().Len())
+	metrics := got.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	require.Equal(t, 1, metrics.Len())
+	metric := metrics.At(0)
+	assert.Equal(t, pmetric.MetricTypeGauge, metric.Type())
+	assert.Equal(t, "test.gauge", metric.Name())
+	require.Equal(t, 1, metric.Gauge().DataPoints().Len())
+	dp := metric.Gauge().DataPoints().At(0)
+	assert.Equal(t, pcommon.Timestamp(1000*1_000_000_000), dp.Timestamp())
+	assert.Equal(t, 42.0, dp.DoubleValue())
+	host, ok := got.ResourceMetrics().At(0).Resource().Attributes().Get("host.name")
+	require.True(t, ok)
+	assert.Equal(t, "node-a", host.AsString())
+}
+
+func TestDatadogMetricsV3_EndToEnd(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+	sink := new(consumertest.MetricsSink)
+
+	ctx := t.Context()
+
+	dd, err := newDataDogReceiver(
+		ctx,
+		cfg,
+		receivertest.NewNopSettings(metadata.Type),
+	)
+	require.NoError(t, err, "Must not error when creating receiver")
+	dd.(*datadogReceiver).nextMetricsConsumer = sink
+
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, dd.Shutdown(t.Context()))
+	}()
+
+	raw, err := proto.Marshal(minimalV3SeriesPayload())
+	require.NoError(t, err)
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("http://%s/api/intake/metrics/v3/series", dd.(*datadogReceiver).address),
+		bytes.NewReader(raw),
+	)
+	require.NoError(t, err, "Must not error when creating request")
+	req.Header.Set("Content-Type", "application/x-protobuf")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err, "Must not error performing request")
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
+	require.JSONEq(t, `{"errors": []}`, string(body), "Expected JSON response to be `{\"errors\": []}`, got %s", string(body))
+	require.Equal(t, http.StatusAccepted, resp.StatusCode)
+
+	assertV3TestGauge(t, sink)
+}
+
+// TestDatadogMetricsV3_EndToEndZstdMultiFrame replicates the on-the-wire shape
+// produced by the agent serializer: the payload is a concatenation of
+// independently compressed zstd frames (field headers and column data are
+// compressed separately). The confighttp decompressor must inflate all frames
+// transparently.
+func TestDatadogMetricsV3_EndToEndZstdMultiFrame(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+	sink := new(consumertest.MetricsSink)
+
+	ctx := t.Context()
+
+	dd, err := newDataDogReceiver(
+		ctx,
+		cfg,
+		receivertest.NewNopSettings(metadata.Type),
+	)
+	require.NoError(t, err, "Must not error when creating receiver")
+	dd.(*datadogReceiver).nextMetricsConsumer = sink
+
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, dd.Shutdown(t.Context()))
+	}()
+
+	raw, err := proto.Marshal(minimalV3SeriesPayload())
+	require.NoError(t, err)
+
+	enc, err := zstd.NewWriter(nil)
+	require.NoError(t, err)
+	defer enc.Close()
+	compressFrame := func(chunk []byte) []byte {
+		return enc.EncodeAll(chunk, nil)
+	}
+
+	// Split the serialized payload the way the agent does: the MetricData
+	// field header and each column field are compressed as separate frames.
+	fieldNum, typ, n := protowire.ConsumeTag(raw)
+	require.Positive(t, n)
+	require.Equal(t, protowire.Number(3), fieldNum)
+	require.Equal(t, protowire.BytesType, typ)
+	metricData, m := protowire.ConsumeBytes(raw[n:])
+	require.Positive(t, m)
+	require.Len(t, raw, n+m)
+
+	body := compressFrame(raw[:len(raw)-len(metricData)])
+	for len(metricData) > 0 {
+		_, fieldType, fieldHeaderLen := protowire.ConsumeTag(metricData)
+		require.Positive(t, fieldHeaderLen)
+		require.Equal(t, protowire.BytesType, fieldType)
+		fieldValue, fieldValueLen := protowire.ConsumeBytes(metricData[fieldHeaderLen:])
+		require.Positive(t, fieldValueLen)
+		headerLen := fieldHeaderLen + fieldValueLen - len(fieldValue)
+		body = append(body, compressFrame(metricData[:headerLen])...)
+		body = append(body, compressFrame(fieldValue)...)
+		metricData = metricData[headerLen+len(fieldValue):]
+	}
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("http://%s/api/intake/metrics/v3/series", dd.(*datadogReceiver).address),
+		bytes.NewReader(body),
+	)
+	require.NoError(t, err, "Must not error when creating request")
+	req.Header.Set("Content-Type", "application/x-protobuf")
+	req.Header.Set("Content-Encoding", "zstd")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err, "Must not error performing request")
+
+	respBody, err := io.ReadAll(resp.Body)
+	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
+	require.Equal(t, http.StatusAccepted, resp.StatusCode, "unexpected response: %s", string(respBody))
+
+	assertV3TestGauge(t, sink)
+}
+
 func TestDatadogSketches_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
 	ctx := t.Context()
@@ -671,7 +849,7 @@ func TestDatadogSketches_EndToEnd(t *testing.T) {
 
 func TestStats_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
 	ctx := t.Context()
@@ -766,7 +944,7 @@ func TestStats_EndToEnd(t *testing.T) {
 
 func TestStatsV2_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
 	ctx := t.Context()
@@ -934,7 +1112,7 @@ func TestStatsV2_EndToEnd(t *testing.T) {
 
 func TestDatadogServices_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
 	ctx := t.Context()
@@ -998,7 +1176,7 @@ func TestDatadogServices_EndToEnd(t *testing.T) {
 
 func TestDatadogServices_SingleObject_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
 	ctx := t.Context()
@@ -1061,7 +1239,7 @@ func TestDatadogServices_SingleObject_EndToEnd(t *testing.T) {
 
 func TestDatadogLogsV2_SingleLog_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.LogsSink)
 
 	ctx := t.Context()
@@ -1079,22 +1257,20 @@ func TestDatadogLogsV2_SingleLog_EndToEnd(t *testing.T) {
 		require.NoError(t, dd.Shutdown(t.Context()))
 	}()
 
-	logsPayloadV2 := &translator.DatadogLogPayload{
-		Source:   "agent",
-		Tags:     "image_name:gcr.io/datadoghq/agent,short_image:agent,image_tag:6.32.1,kube_app_instance:datadog-agent,pod_phase:running",
-		Hostname: "i-abc123",
-		Message:  "2025-09-21 09:12:36 UTC | TRACE | INFO | (comp/trace/agent/agent.go:211 in handleSignal) | Received signal 15 (terminated)",
-		Service:  "agent",
-		Status:   "info",
-	}
-
-	pb, err := json.Marshal(logsPayloadV2)
-	assert.NoError(t, err)
+	const message = "2025-09-21 09:12:36 UTC | TRACE | INFO | (comp/trace/agent/agent.go:211 in handleSignal) | Received signal 15 (terminated)"
+	payload := `[{
+		"ddsource": "agent",
+		"ddtags": "image_name:gcr.io/datadoghq/agent,short_image:agent,image_tag:6.32.1,kube_app_instance:datadog-agent,pod_phase:running",
+		"hostname": "i-abc123",
+		"message": "` + message + `",
+		"service": "agent",
+		"status": "info"
+	}]`
 
 	req, err := http.NewRequest(
 		http.MethodPost,
 		fmt.Sprintf("http://%s/api/v2/logs", dd.(*datadogReceiver).address),
-		io.NopCloser(bytes.NewReader(pb)),
+		io.NopCloser(strings.NewReader(payload)),
 	)
 	require.NoError(t, err, "Must not error when creating request")
 	req.Header.Add("Content-Type", "application/json")
@@ -1111,30 +1287,34 @@ func TestDatadogLogsV2_SingleLog_EndToEnd(t *testing.T) {
 	require.Len(t, theLogs, 1)
 
 	got := theLogs[0]
-	// 1 log record
 	require.Equal(t, 1, got.LogRecordCount())
-	// 1 resource log
 	require.Equal(t, 1, got.ResourceLogs().Len())
-	// 1 scope log
 	require.Equal(t, 1, got.ResourceLogs().At(0).ScopeLogs().Len())
-	// 1 scope log record
 	require.Equal(t, 1, got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
 
-	theRecord := got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	assert.Equal(t, logsPayloadV2.Message, theRecord.Body().Str())
+	// hostname/service and known tags are promoted to resource attributes.
+	resourceAttrs := got.ResourceLogs().At(0).Resource().Attributes().AsRaw()
+	assert.Equal(t, "i-abc123", resourceAttrs["host.name"])
+	assert.Equal(t, "agent", resourceAttrs["service.name"])
+	assert.Equal(t, "gcr.io/datadoghq/agent", resourceAttrs["container.image.name"])
+	assert.Equal(t, "datadog-agent", resourceAttrs["app.kubernetes.io/instance"])
 
+	theRecord := got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, message, theRecord.Body().Str())
+	// status is mapped to OTel severity, and ObservedTimestamp is set from the receive time.
+	assert.Equal(t, "info", theRecord.SeverityText())
+	assert.Equal(t, "Info", theRecord.SeverityNumber().String())
+	assert.NotZero(t, theRecord.ObservedTimestamp())
+
+	// ddsource and non-reserved unknown tags become log record attributes.
 	attributes := theRecord.Attributes().AsRaw()
-	assert.Equal(t, logsPayloadV2.Status, attributes["status"])
-	assert.Equal(t, logsPayloadV2.Hostname, attributes["hostname"])
-	assert.Equal(t, logsPayloadV2.Service, attributes["service"])
-	assert.Equal(t, logsPayloadV2.Timestamp, attributes["timestamp"])
-	assert.Equal(t, logsPayloadV2.Source, attributes["ddsource"])
-	assert.Equal(t, logsPayloadV2.Tags, attributes["ddtags"])
+	assert.Equal(t, "agent", attributes["datadog.ddsource"])
+	assert.Equal(t, "running", attributes["pod_phase"])
 }
 
 func TestDatadogLogsV2_MultipleLogs_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.LogsSink)
 
 	ctx := t.Context()
@@ -1152,32 +1332,20 @@ func TestDatadogLogsV2_MultipleLogs_EndToEnd(t *testing.T) {
 		require.NoError(t, dd.Shutdown(t.Context()))
 	}()
 
-	logsPayloadV2 := []*translator.DatadogLogPayload{
-		{
-			Source:   "agent",
-			Tags:     "image_name:gcr.io/datadoghq/agent,short_image:agent,image_tag:6.32.1,kube_app_instance:datadog-agent,pod_phase:running",
-			Hostname: "i-abc123",
-			Message:  "2025-09-21 09:12:36 UTC | TRACE | INFO | (comp/trace/agent/agent.go:123 in handleSignal) | Received signal 15 (terminated)",
-			Service:  "agent",
-			Status:   "info",
-		},
-		{
-			Source:   "agent",
-			Tags:     "image_name:gcr.io/datadoghq/agent,short_image:agent,image_tag:6.32.1,kube_app_instance:datadog-agent,pod_phase:running",
-			Hostname: "i-abc123",
-			Message:  "2025-09-21 09:13:12 UTC | TRACE | WARN | (comp/core/tagger/taggerimpl/remote/tagger.go:321 in run) | error received from remote tagger: rpc error: code = Canceled desc = context canceled",
-			Service:  "agent",
-			Status:   "warn",
-		},
-	}
-
-	pb, err := json.Marshal(logsPayloadV2)
-	assert.NoError(t, err)
+	const (
+		message1 = "2025-09-21 09:12:36 UTC | TRACE | INFO | (comp/trace/agent/agent.go:123 in handleSignal) | Received signal 15 (terminated)"
+		message2 = "2025-09-21 09:13:12 UTC | TRACE | WARN | (comp/core/tagger/taggerimpl/remote/tagger.go:321 in run) | error received from remote tagger: rpc error: code = Canceled desc = context canceled"
+	)
+	const commonTags = "image_name:gcr.io/datadoghq/agent,short_image:agent,image_tag:6.32.1,kube_app_instance:datadog-agent,pod_phase:running"
+	payload := `[
+		{"ddsource":"agent","ddtags":"` + commonTags + `","hostname":"i-abc123","message":"` + message1 + `","service":"agent","status":"info"},
+		{"ddsource":"agent","ddtags":"` + commonTags + `","hostname":"i-abc123","message":"` + message2 + `","service":"agent","status":"warn"}
+	]`
 
 	req, err := http.NewRequest(
 		http.MethodPost,
 		fmt.Sprintf("http://%s/api/v2/logs", dd.(*datadogReceiver).address),
-		io.NopCloser(bytes.NewReader(pb)),
+		io.NopCloser(strings.NewReader(payload)),
 	)
 	require.NoError(t, err, "Must not error when creating request")
 	req.Header.Add("Content-Type", "application/json")
@@ -1194,34 +1362,174 @@ func TestDatadogLogsV2_MultipleLogs_EndToEnd(t *testing.T) {
 	require.Len(t, theLogs, 1)
 
 	got := theLogs[0]
-	// 2 log records
 	require.Equal(t, 2, got.LogRecordCount())
-	// 1 resource log
+	// Both records share the same host/service, so they group into one ResourceLogs/ScopeLogs.
 	require.Equal(t, 1, got.ResourceLogs().Len())
-	// 1 scope log
 	require.Equal(t, 1, got.ResourceLogs().At(0).ScopeLogs().Len())
-	// 2 log records on the scope
 	require.Equal(t, 2, got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
 
-	record1 := got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	assert.Equal(t, logsPayloadV2[0].Message, record1.Body().Str())
+	records := got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	record1 := records.At(0)
+	assert.Equal(t, message1, record1.Body().Str())
+	assert.Equal(t, "info", record1.SeverityText())
+	assert.Equal(t, "Info", record1.SeverityNumber().String())
 
-	attributes := record1.Attributes().AsRaw()
-	assert.Equal(t, logsPayloadV2[0].Status, attributes["status"])
-	assert.Equal(t, logsPayloadV2[0].Hostname, attributes["hostname"])
-	assert.Equal(t, logsPayloadV2[0].Service, attributes["service"])
-	assert.Equal(t, logsPayloadV2[0].Timestamp, attributes["timestamp"])
-	assert.Equal(t, logsPayloadV2[0].Source, attributes["ddsource"])
-	assert.Equal(t, logsPayloadV2[0].Tags, attributes["ddtags"])
+	record2 := records.At(1)
+	assert.Equal(t, message2, record2.Body().Str())
+	assert.Equal(t, "warn", record2.SeverityText())
+	assert.Equal(t, "Warn", record2.SeverityNumber().String())
+}
 
-	record2 := got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1)
-	assert.Equal(t, logsPayloadV2[1].Message, record2.Body().Str())
+func TestDatadogLogsV2_ThickPayload_EndToEnd(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	sink := new(consumertest.LogsSink)
 
-	attributes = record2.Attributes().AsRaw()
-	assert.Equal(t, logsPayloadV2[1].Status, attributes["status"])
-	assert.Equal(t, logsPayloadV2[1].Hostname, attributes["hostname"])
-	assert.Equal(t, logsPayloadV2[1].Service, attributes["service"])
-	assert.Equal(t, logsPayloadV2[1].Timestamp, attributes["timestamp"])
-	assert.Equal(t, logsPayloadV2[1].Source, attributes["ddsource"])
-	assert.Equal(t, logsPayloadV2[1].Tags, attributes["ddtags"])
+	dd, err := newDataDogReceiver(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+	dd.(*datadogReceiver).nextLogsConsumer = sink
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, dd.Shutdown(t.Context())) }()
+
+	// Fully loaded Datadog log: reserved fields, ddtags (known + unknown +
+	// bare), trace/log-correlation injection, Datadog standard attributes, and arbitrary nested data.
+	payload := `[{
+		"message": "GET /checkout 500 in 1243ms",
+		"status": "error",
+		"timestamp": 1700000000000,
+		"hostname": "ip-10-0-1-23",
+		"service": "checkout",
+		"ddsource": "nodejs",
+		"ddtags": "env:prod,version:1.4.2,image_name:checkout-svc,region:us-east-1,team:payments,canary",
+		"dd.trace_id": "8763242345678901234",
+		"dd.span_id": "1234567890",
+		"dd.service": "checkout",
+		"dd.env": "prod",
+		"dd.version": "1.4.2",
+		"error.msg": "upstream timeout",
+		"network.client.ip": "203.0.113.7",
+		"http": {"method": "GET", "status_code": 500, "duration_ms": 1243.5},
+		"retriable": true
+	}]`
+
+	// Gzip the body to prove the receiver decompresses
+	var gzbuf bytes.Buffer
+	gz := gzip.NewWriter(&gzbuf)
+	_, err = gz.Write([]byte(payload))
+	require.NoError(t, err)
+	require.NoError(t, gz.Close())
+
+	req, err := http.NewRequest(http.MethodPost,
+		fmt.Sprintf("http://%s/api/v2/logs", dd.(*datadogReceiver).address),
+		bytes.NewReader(gzbuf.Bytes()))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", "gzip")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	require.NoError(t, resp.Body.Close())
+	require.Equal(t, http.StatusAccepted, resp.StatusCode)
+
+	logs := sink.AllLogs()
+	require.Len(t, logs, 1)
+	rl := logs[0].ResourceLogs().At(0)
+
+	// Known tags and reserved fields are promoted to resource attributes.
+	res := rl.Resource().Attributes().AsRaw()
+	assert.Equal(t, "ip-10-0-1-23", res["host.name"])
+	assert.Equal(t, "checkout", res["service.name"])
+	assert.Equal(t, "prod", res["deployment.environment.name"])
+	assert.Equal(t, "1.4.2", res["service.version"])
+	assert.Equal(t, "us-east-1", res["cloud.region"])
+	assert.Equal(t, "checkout-svc", res["container.image.name"])
+
+	rec := rl.ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, "GET /checkout 500 in 1243ms", rec.Body().Str())
+	assert.Equal(t, "error", rec.SeverityText())
+	assert.Equal(t, uint64(1700000000000000000), uint64(rec.Timestamp()))
+	assert.False(t, rec.TraceID().IsEmpty())
+	assert.False(t, rec.SpanID().IsEmpty())
+
+	attrs := rec.Attributes().AsRaw()
+	assert.Equal(t, "upstream timeout", attrs["exception.message"]) // error.msg -> semconv
+	assert.Equal(t, "203.0.113.7", attrs["network.client.ip"])      // unmapped key preserved as-is
+	assert.Equal(t, true, attrs["retriable"])
+	assert.IsType(t, map[string]any{}, attrs["http"]) // nested object preserved
+}
+
+func TestDatadogLogsV2_DecodeJSONMessage_EndToEnd(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	cfg.Logs.DecodeJSONMessage = true // exercise the opt-in config flag end-to-end
+	sink := new(consumertest.LogsSink)
+
+	dd, err := newDataDogReceiver(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+	dd.(*datadogReceiver).nextLogsConsumer = sink
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, dd.Shutdown(t.Context())) }()
+
+	// An agent-style envelope: the application JSON arrives as an opaque message string.
+	inner := `{"message":"GET /login 429","status":"warn","dd.trace_id":"3496233055802637027","dd.span_id":"7255197583904306129"}`
+	envelope, err := json.Marshal([]map[string]string{{
+		"message":  inner,
+		"status":   "info",
+		"hostname": "dd-demo-host",
+		"service":  "checkout",
+		"ddsource": "go-demo",
+	}})
+	require.NoError(t, err)
+
+	req, err := http.NewRequest(http.MethodPost,
+		fmt.Sprintf("http://%s/api/v2/logs", dd.(*datadogReceiver).address),
+		bytes.NewReader(envelope))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	require.NoError(t, resp.Body.Close())
+	require.Equal(t, http.StatusAccepted, resp.StatusCode)
+
+	logs := sink.AllLogs()
+	require.Len(t, logs, 1)
+	rec := logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, "GET /login 429", rec.Body().Str())
+	assert.Equal(t, "warn", rec.SeverityText())
+	assert.False(t, rec.TraceID().IsEmpty())
+	assert.False(t, rec.SpanID().IsEmpty())
+}
+
+func TestCreateDecompressingReader(t *testing.T) {
+	payload := []byte("hello, datadog")
+
+	var gz bytes.Buffer
+	gw := gzip.NewWriter(&gz)
+	_, err := gw.Write(payload)
+	require.NoError(t, err)
+	require.NoError(t, gw.Close())
+
+	zw, err := zstd.NewWriter(nil)
+	require.NoError(t, err)
+	zstdBytes := zw.EncodeAll(payload, nil)
+	require.NoError(t, zw.Close())
+
+	for _, tc := range []struct {
+		encoding string
+		body     []byte
+	}{
+		{"", payload},
+		{"gzip", gz.Bytes()},
+		{"zstd", zstdBytes},
+	} {
+		t.Run(tc.encoding, func(t *testing.T) {
+			r, err := createDecompressingReader(io.NopCloser(bytes.NewReader(tc.body)), tc.encoding)
+			require.NoError(t, err)
+			defer r.Close()
+			got, err := io.ReadAll(r)
+			require.NoError(t, err)
+			assert.Equal(t, payload, got)
+		})
+	}
 }

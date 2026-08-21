@@ -3,7 +3,6 @@
 
 This receiver can instantiate other receivers at runtime based on whether observed endpoints match a configured rule.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs, traces, profiles   |
@@ -162,10 +161,6 @@ None
 |--------------------|-------------------|
 | k8s.namespace.name | \`namespace\`     |
 
-`type == "kafka.topics"`
-
-None
-
 See `redis/2` in [examples](#examples).
 
 
@@ -235,6 +230,7 @@ targeting it will have different variables available.
 | type          | `"hostport"`                                     | String                        |
 | id            | ID of source endpoint                            | String                        |
 | process_name  | Name of the process                              | String                        |
+| os            | The OS (as defined by [runtime.GOOS])            | String                        |
 | command       | Command line with the used to invoke the process | String                        |
 | is_ipv6       | true if endpoint is IPv6, otherwise false        | Boolean                       |
 | port          | Port number                                      | Integer                       |
@@ -302,12 +298,6 @@ targeting it will have different variables available.
 | labels                | A key-value map of user-specified node metadata                      | Map with String key and value |
 | kubelet_endpoint_port | The node Status object's DaemonEndpoints.KubeletEndpoint.Port value  | Integer                       |
 
-### Kafka Topics
-| Variable              | Description                                                          | Data Type                     |
-|-----------------------|----------------------------------------------------------------------|-------------------------------|
-| type                  | `"kafka.topics"`                                                     | String                        |
-| id                    | ID of source endpoint                                                | String                        |
-
 ## Examples
 
 ```yaml
@@ -318,11 +308,6 @@ extensions:
     observe_services: true
     observe_ingresses: true
   host_observer:
-  kafkatopics_observer:
-    brokers: ["1.2.3.4:9093"]
-    protocol_version: 3.9.0
-    topic_regex: "^foo_topic[0-9]$"
-    topics_sync_interval: 5s
 
 receivers:
   receiver_creator/1:
@@ -330,8 +315,9 @@ receivers:
     watch_observers: [k8s_observer]
     receivers:
       prometheus_simple:
-        # Configure prometheus scraping if standard prometheus annotations are set on the pod.
-        rule: type == "pod" && annotations["prometheus.io/scrape"] == "true"
+        # Configure prometheus scraping if standard prometheus annotations are set on the pod
+        # while preventing self-scraping by excluding pods labeled "app.kubernetes.io/component: opentelemetry-collector".
+        rule: type == "pod" && annotations["prometheus.io/scrape"] == "true"  && labels["app.kubernetes.io/component"] != "opentelemetry-collector
         config:
           metrics_path: '`"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/metrics"`'
           endpoint: '`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090`'
@@ -412,6 +398,16 @@ receivers:
           - endpoint: '`scheme`://`endpoint`:`port``"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/health"`'
             method: GET
           collection_interval: 10s
+ receiver_creator/5:
+   watch_observers: [host_observer]
+   receivers:
+     windows_service:
+       # Enable this receiver if the OS is Windows.
+       rule: type == "hostport" && os == "windows"
+       config:
+         include_services:
+           - MSSQLSERVER
+         collection_interval: 10s
   receiver_creator/logs:
     watch_observers: [ k8s_observer ]
     receivers:
@@ -441,20 +437,6 @@ receivers:
             - type: add
               field: attributes.log.template
               value: lazybox
-  receiver_creator/kafka:
-    watch_observers: [kafkatopics_observer]
-    receivers:
-      kafka:
-        rule: type == "kafka.topics"
-        config:
-          protocol_version: 3.9.0
-          topic: '`endpoint`'
-          encoding: text
-          brokers: ["1.2.3.4:9093"]
-          initial_offset: earliest
-          header_extraction:
-            extract_headers: true
-            headers: ["index", "source", "sourcetype", "host"]
 
 processors:
   exampleprocessor:
@@ -465,14 +447,14 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [receiver_creator/1, receiver_creator/2, receiver_creator/3, receiver_creator/4]
+      receivers: [receiver_creator/1, receiver_creator/2, receiver_creator/3, receiver_creator/4, receiver_creator/5]
       processors: [exampleprocessor]
       exporters: [exampleexporter]
     logs:
-      receivers: [receiver_creator/logs, receiver_creator/kafka]
+      receivers: [receiver_creator/logs]
       processors: [exampleprocessor]
       exporters: [exampleexporter]
-  extensions: [k8s_observer, host_observer, kafkatopics_observer]
+  extensions: [k8s_observer, host_observer]
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
@@ -777,3 +759,5 @@ spec:
               containerPort: 6379
               protocol: TCP
 ```
+
+[runtime.GOOS]: https://pkg.go.dev/runtime#pkg-constants

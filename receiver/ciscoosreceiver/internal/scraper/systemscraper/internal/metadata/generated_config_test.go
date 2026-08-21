@@ -26,13 +26,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					CiscoDeviceUp: MetricConfig{
+					CiscoDeviceUp: CiscoDeviceUpMetricConfig{
 						Enabled: true,
 					},
-					SystemCPUUtilization: MetricConfig{
+					SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
 						Enabled: true,
 					},
-					SystemMemoryUtilization: MetricConfig{
+					SystemMemoryUtilization: SystemMemoryUtilizationMetricConfig{
 						Enabled: true,
 					},
 				},
@@ -47,13 +47,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					CiscoDeviceUp: MetricConfig{
+					CiscoDeviceUp: CiscoDeviceUpMetricConfig{
 						Enabled: false,
 					},
-					SystemCPUUtilization: MetricConfig{
+					SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
 						Enabled: false,
 					},
-					SystemMemoryUtilization: MetricConfig{
+					SystemMemoryUtilization: SystemMemoryUtilizationMetricConfig{
 						Enabled: false,
 					},
 				},
@@ -68,7 +68,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(CiscoDeviceUpMetricConfig{}, SystemCPUUtilizationMetricConfig{}, SystemMemoryUtilizationMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

@@ -6,11 +6,14 @@ package pebbletailstorageextension
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func newStartedTailStorage(t *testing.T) TailStorage {
@@ -49,7 +52,7 @@ func appendTraceSpan(storage TailStorage, traceID pcommon.TraceID, spanID pcommo
 	if name != "" {
 		span.SetName(name)
 	}
-	storage.Append(traceID, rss)
+	_ = storage.Append(traceID, td)
 }
 
 func TestAppendThenTake(t *testing.T) {
@@ -58,8 +61,8 @@ func TestAppendThenTake(t *testing.T) {
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 	appendTraceSpan(storage, traceID, pcommon.SpanID{}, "")
 
-	out, found := storage.Take(traceID)
-	require.True(t, found)
+	out, err := storage.Take(traceID)
+	require.NoError(t, err)
 	require.Equal(t, 1, out.SpanCount())
 }
 
@@ -76,13 +79,15 @@ func TestDeleteRemovesOnlyTargetTrace(t *testing.T) {
 
 	appendTraceSpan(storage, traceID2, pcommon.SpanID{}, "")
 
-	storage.Delete(traceID1)
+	err := storage.Delete(traceID1)
+	require.NoError(t, err)
 
-	_, found := storage.Take(traceID1)
-	require.False(t, found)
+	out, err := storage.Take(traceID1)
+	require.NoError(t, err)
+	require.Equal(t, 0, out.SpanCount())
 
-	out2, found := storage.Take(traceID2)
-	require.True(t, found)
+	out2, err := storage.Take(traceID2)
+	require.NoError(t, err)
 	require.Equal(t, 1, out2.SpanCount())
 }
 
@@ -98,32 +103,46 @@ func TestTakeRemovesOnlyTargetTrace(t *testing.T) {
 
 	appendTraceSpan(storage, traceID2, pcommon.SpanID{}, "")
 
-	out1, found := storage.Take(traceID1)
-	require.True(t, found)
+	out1, err := storage.Take(traceID1)
+	require.NoError(t, err)
 	require.Equal(t, 3, out1.SpanCount())
 
-	_, found = storage.Take(traceID1)
-	require.False(t, found)
+	out2, err := storage.Take(traceID1)
+	require.NoError(t, err)
+	require.Equal(t, 0, out2.SpanCount())
 
-	out2, found := storage.Take(traceID2)
-	require.True(t, found)
-	require.Equal(t, 1, out2.SpanCount())
+	out3, err := storage.Take(traceID2)
+	require.NoError(t, err)
+	require.Equal(t, 1, out3.SpanCount())
 }
 
-// TestStartErrorsIfDBExists guards the ErrorIfExists Pebble option set in pebble.go,
-// which prevents users from relying on persistence across restarts while the
-// on-disk schema is still in development.
-func TestStartErrorsIfDBExists(t *testing.T) {
+func TestDropOnStart(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = t.TempDir()
 
-	first, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
+	zc, logs := observer.New(zap.InfoLevel)
+	set := extensiontest.NewNopSettings(f.Type())
+	set.Logger = zap.New(zc)
+
+	first, err := f.Create(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NoError(t, first.Start(t.Context(), componenttest.NewNopHost()))
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
+	appendTraceSpan(first.(TailStorage), traceID, pcommon.SpanID{}, "")
+
 	require.NoError(t, first.Shutdown(t.Context()))
 
-	second, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
+	second, err := f.Create(t.Context(), set, cfg)
 	require.NoError(t, err)
-	require.Error(t, second.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, second.Start(t.Context(), componenttest.NewNopHost()))
+
+	out, err := second.(TailStorage).Take(traceID)
+	require.NoError(t, err)
+	require.Equal(t, 0, out.SpanCount())
+
+	require.NoError(t, second.Shutdown(t.Context()))
+
+	assert.Equal(t, 1, logs.FilterMessage("existing database found; dropping all data as persistence across restarts is not supported").Len())
 }

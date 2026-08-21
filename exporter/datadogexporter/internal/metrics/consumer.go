@@ -5,8 +5,10 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
 	"github.com/DataDog/datadog-agent/pkg/util/quantile"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
@@ -51,6 +53,8 @@ func (*Consumer) toDataType(dt metrics.DataType) (out datadogV2.MetricIntakeType
 		out = datadogV2.METRICINTAKETYPE_COUNT
 	case metrics.Gauge:
 		out = datadogV2.METRICINTAKETYPE_GAUGE
+	case metrics.Rate:
+		out = datadogV2.METRICINTAKETYPE_RATE
 	}
 
 	return out
@@ -69,11 +73,16 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 	}
 
 	for tag := range c.seenTags {
-		runningMetrics := DefaultMetrics("metrics", "", timestamp, buildTags)
-		for i := range runningMetrics {
-			runningMetrics[i].Tags = append(runningMetrics[i].Tags, tag)
+		var tagSeries []datadogV2.MetricSeries
+		if strings.HasPrefix(tag, string(source.AWSECSFargateKind)+":") {
+			tagSeries = FargateMetrics(timestamp, buildTags)
+		} else {
+			tagSeries = DefaultMetrics("metrics", "", timestamp, buildTags)
 		}
-		series = append(series, runningMetrics...)
+		for i := range tagSeries {
+			tagSeries[i].Tags = append(tagSeries[i].Tags, tag)
+		}
+		series = append(series, tagSeries...)
 	}
 
 	for _, lang := range metadata.Languages {
@@ -118,6 +127,9 @@ func (c *Consumer) ConsumeTimeSeries(
 			Type: datadog.PtrString("host"),
 		},
 	})
+	if unit := dims.Unit(); unit != "" {
+		met.SetUnit(unit)
+	}
 	c.ms = append(c.ms, met)
 }
 

@@ -52,15 +52,6 @@ func TestCreateTraces(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCreateTracesNoAccessToken(t *testing.T) {
-	cfg := createDefaultConfig()
-	c := cfg.(*Config)
-	c.Realm = "us0"
-
-	_, err := createTracesExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
-	assert.EqualError(t, err, "access_token is required")
-}
-
 func TestCreateInstanceViaFactory(t *testing.T) {
 	factory := NewFactory()
 
@@ -72,7 +63,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	exp, err := factory.CreateMetrics(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
@@ -83,14 +75,16 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	exp, err = factory.CreateMetrics(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 
 	logExp, err := factory.CreateLogs(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, logExp)
 
@@ -99,16 +93,20 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 }
 
 func TestCreateMetrics_CustomConfig(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Timeout = 2 * time.Second
+	clientConfig.Headers = configopaque.MapList{
+		{Name: "added-entry", Value: "added value"},
+		{Name: "dot.test", Value: "test"},
+	}
 	config := &Config{
-		AccessToken: "testToken",
-		Realm:       "us1",
-		ClientConfig: confighttp.ClientConfig{
-			Timeout: 2 * time.Second,
-			Headers: configopaque.MapList{
-				{Name: "added-entry", Value: "added value"},
-				{Name: "dot.test", Value: "test"},
-			},
-		},
+		AccessToken:  "testToken",
+		Realm:        "us1",
+		ClientConfig: clientConfig,
 	}
 
 	te, err := createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
@@ -255,6 +253,12 @@ func requireDimension(t *testing.T, dims []*sfxpb.Dimension, key, val string) {
 		require.Equal(t, val, dim.Value)
 	}
 	require.True(t, found, `missing dimension: %s`, key)
+}
+
+func requireNoDimension(t *testing.T, dims []*sfxpb.Dimension, key string) {
+	for _, dim := range dims {
+		require.NotEqual(t, key, dim.Key)
+	}
 }
 
 func testMetricsData(addHistogram bool) pmetric.Metrics {
@@ -558,17 +562,29 @@ func TestDefaultCPUTranslations(t *testing.T) {
 		require.Equal(t, 66, int(*pt.Value.DoubleValue))
 	}
 
-	cpuUtilPerCore := m["cpu.utilization_per_core"]
-	require.Len(t, cpuUtilPerCore, 8)
-
 	cpuNumProcessors := m["cpu.num_processors"]
 	require.Len(t, cpuNumProcessors, 1)
+	require.Equal(t, 8, int(*cpuNumProcessors[0].Value.IntValue))
+
+	cpuIdle := m["cpu.idle"]
+	require.Len(t, cpuIdle, 1)
 
 	cpuStateMetrics := []string{"cpu.idle", "cpu.interrupt", "cpu.system", "cpu.user"}
 	for _, metric := range cpuStateMetrics {
 		dps, ok := m[metric]
 		require.Truef(t, ok, "%s metrics not found", metric)
-		require.Len(t, dps, 9)
+		require.Len(t, dps, 1)
+	}
+
+	for metric, dps := range m {
+		switch metric {
+		case "cpu.num_processors", "cpu.utilization", "cpu.idle", "cpu.interrupt", "cpu.nice",
+			"cpu.softirq", "cpu.steal", "cpu.system", "cpu.user", "cpu.wait":
+			require.Len(t, dps, 1)
+			for _, dp := range dps {
+				requireNoDimension(t, dp.Dimensions, "cpu")
+			}
+		}
 	}
 }
 
@@ -625,13 +641,10 @@ func TestDefaultExcludesTranslated(t *testing.T) {
 	require.NoError(t, err)
 
 	md := getMetrics(metrics)
-	require.Equal(t, 9, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, 8, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
 
-	// the default cpu.utilization metric is added after applying the default translations
-	// (because cpu.utilization_per_core is supplied) and should not be excluded
-	require.Len(t, dps, 1)
-	require.Equal(t, "cpu.utilization", dps[0].Metric)
+	require.Empty(t, dps)
 }
 
 func TestDefaultExcludes_not_translated(t *testing.T) {
@@ -647,9 +660,36 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	require.NoError(t, err)
 
 	md := getMetrics(metrics)
-	require.Equal(t, 54, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, 45, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
 	require.Empty(t, dps)
+}
+
+func TestDefaultExcludesKubeletMemoryMetrics(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	require.NoError(t, setDefaultExcludes(cfg))
+
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), nil, cfg.ExcludeMetrics, cfg.IncludeMetrics, "", false, true)
+	require.NoError(t, err)
+
+	var metrics []map[string]string
+	for _, prefix := range []string{"container", "k8s.node", "k8s.pod"} {
+		for _, suffix := range []string{"available", "major_page_faults", "page_faults", "rss", "usage", "working_set"} {
+			metrics = append(metrics, map[string]string{prefix + ".memory." + suffix: ""})
+		}
+	}
+
+	dps := converter.MetricsToSignalFxV2(getMetrics(metrics))
+	metricNames := make([]string, 0, len(dps))
+	for _, dp := range dps {
+		metricNames = append(metricNames, dp.Metric)
+	}
+	require.ElementsMatch(t, []string{
+		"container.memory.rss",
+		"container.memory.usage",
+		"container.memory.working_set",
+	}, metricNames)
 }
 
 // Benchmark test for default translation rules on an example hostmetrics dataset.

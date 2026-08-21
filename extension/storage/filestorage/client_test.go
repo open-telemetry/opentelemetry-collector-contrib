@@ -4,6 +4,8 @@
 package filestorage
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,15 +16,24 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/bbolt"
+	berrors "go.etcd.io/bbolt/errors"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
 
+func newTestClient(logger *zap.Logger, filePath string, timeout time.Duration, maxSize int64, compactionCfg *CompactionConfig) (*fileStorageClient, error) {
+	return newClient(logger, filePath, &Config{
+		Timeout:    timeout,
+		MaxSize:    maxSize,
+		Compaction: compactionCfg,
+	})
+}
+
 func TestClientOperations(t *testing.T) {
 	dbFile := filepath.Join(t.TempDir(), "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, client.Close(t.Context()))
@@ -60,7 +71,7 @@ func TestClientBatchOperations(t *testing.T) {
 	tempDir := t.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, client.Close(t.Context()))
@@ -178,7 +189,7 @@ func TestNewClientTransactionErrors(t *testing.T) {
 			tempDir := t.TempDir()
 			dbFile := filepath.Join(tempDir, "my_db")
 
-			client, err := newClient(zap.NewNop(), dbFile, timeout, &CompactionConfig{}, false)
+			client, err := newTestClient(zap.NewNop(), dbFile, timeout, 0, &CompactionConfig{})
 			require.NoError(t, err)
 			t.Cleanup(func() {
 				require.NoError(t, client.Close(t.Context()))
@@ -202,11 +213,189 @@ func TestNewClientErrorsOnInvalidBucket(t *testing.T) {
 	tempDir := t.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
 	require.Error(t, err)
 	require.Nil(t, client)
 
 	defaultBucket = temp
+}
+
+func TestNewClientWithMaxSizeConfiguresBbolt(t *testing.T) {
+	dbFile := filepath.Join(t.TempDir(), "my_db")
+
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 1<<20, &CompactionConfig{})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(t.Context()))
+	})
+
+	require.Equal(t, 1<<20, client.db.MaxSize)
+}
+
+func TestCompactWithMaxSizeRetainsBboltLimit(t *testing.T) {
+	tempDir := t.TempDir()
+	dbFile := filepath.Join(tempDir, "my_db")
+	compactionDir := filepath.Join(tempDir, "compaction")
+	require.NoError(t, os.MkdirAll(compactionDir, 0o755))
+
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 1<<20, &CompactionConfig{})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(t.Context()))
+	})
+
+	require.NoError(t, client.Set(t.Context(), "key", []byte("value")))
+	require.NoError(t, client.Compact(compactionDir, time.Second, 65536))
+
+	require.Equal(t, 1<<20, client.db.MaxSize)
+}
+
+func TestCompactClosesTemporaryDatabaseAfterPanic(t *testing.T) {
+	tempDir := t.TempDir()
+	dbFile := filepath.Join(tempDir, "my_db")
+	compactionDir := filepath.Join(tempDir, "compaction")
+	require.NoError(t, os.MkdirAll(compactionDir, 0o755))
+
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(t.Context()))
+	})
+
+	var compactedDBPath string
+	client.compactFunc = func(dst, _ *bbolt.DB, _ int64) error {
+		compactedDBPath = dst.Path()
+		panic("simulated compaction panic")
+	}
+
+	require.Panics(t, func() {
+		_ = client.Compact(compactionDir, time.Second, 65536)
+	})
+	require.NotEmpty(t, compactedDBPath)
+	_, statErr := os.Stat(compactedDBPath)
+	require.True(t, os.IsNotExist(statErr), "temporary database file should be cleaned up after panic")
+}
+
+func TestMaxSizeLimit(t *testing.T) {
+	dbFile := filepath.Join(t.TempDir(), "my_db")
+
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(t.Context()))
+	})
+
+	ctx := t.Context()
+	for i := range 32 {
+		err = client.Set(ctx, fmt.Sprintf("seed-%d", i), make([]byte, 1024))
+		require.NoError(t, err)
+	}
+
+	totalSize, _, err := client.getDbSize()
+	require.NoError(t, err)
+	pageSize := int64(client.db.Info().PageSize)
+	freeAlloc := int64(client.db.Stats().FreeAlloc)
+	client.dbOptions.MaxSize = int(totalSize + pageSize)
+	client.db.MaxSize = client.dbOptions.MaxSize
+
+	err = client.Set(ctx, "blocked", make([]byte, int(freeAlloc+(2*pageSize))))
+	require.ErrorIs(t, err, storage.ErrStorageFull)
+
+	totalAfterReject, _, err := client.getDbSize()
+	require.NoError(t, err)
+	require.Equal(t, totalSize, totalAfterReject)
+
+	require.LessOrEqual(t, totalSize, int64(client.dbOptions.MaxSize))
+
+	err = client.Delete(ctx, "seed-0")
+	require.NoError(t, err)
+
+	_, err = client.Get(ctx, "seed-1")
+	require.NoError(t, err)
+
+	err = client.Batch(ctx,
+		storage.SetOperation("replacement", make([]byte, 512)),
+		storage.GetOperation("seed-1"),
+	)
+	require.NoError(t, err)
+
+	totalAfterAllow, _, err := client.getDbSize()
+	require.NoError(t, err)
+	require.LessOrEqual(t, totalAfterAllow, int64(client.dbOptions.MaxSize))
+}
+
+func TestMaxSizeLimitAllowsDeleteAndSetInSameBatch(t *testing.T) {
+	dbFile := filepath.Join(t.TempDir(), "my_db")
+
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(t.Context()))
+	})
+
+	ctx := t.Context()
+	require.NoError(t, client.Set(ctx, "seed", make([]byte, 4096)))
+
+	totalSize, _, err := client.getDbSize()
+	require.NoError(t, err)
+	client.dbOptions.MaxSize = int(totalSize)
+	client.db.MaxSize = int(totalSize)
+
+	err = client.Batch(ctx,
+		storage.DeleteOperation("seed"),
+		storage.SetOperation("replacement", make([]byte, 512)),
+	)
+	require.NoError(t, err)
+}
+
+func TestBatchInvalidOperationType(t *testing.T) {
+	dbFile := filepath.Join(t.TempDir(), "my_db")
+
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(t.Context()))
+	})
+
+	err = client.Batch(t.Context(), &storage.Operation{Key: "bad", Type: storage.OpType(99)})
+	require.EqualError(t, err, "wrong operation type")
+}
+
+func TestBatchPropagatesBucketPutError(t *testing.T) {
+	dbFile := filepath.Join(t.TempDir(), "my_db")
+
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(t.Context()))
+	})
+
+	err = client.Batch(t.Context(), storage.SetOperation("key", make([]byte, bbolt.MaxValueSize+1)))
+	require.ErrorIs(t, err, berrors.ErrValueTooLarge)
+}
+
+func TestWalkMapsMaxSizeReachedToStorageFull(t *testing.T) {
+	dbFile := filepath.Join(t.TempDir(), "my_db")
+
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(t.Context()))
+	})
+
+	ctx := t.Context()
+	require.NoError(t, client.Set(ctx, "seed", []byte("value")))
+	totalSize, _, err := client.getDbSize()
+	require.NoError(t, err)
+	client.dbOptions.MaxSize = int(totalSize)
+	client.db.MaxSize = int(totalSize)
+
+	err = client.Walk(ctx, func(_ string, _ []byte) ([]*storage.Operation, error) {
+		return []*storage.Operation{
+			storage.SetOperation("overflow", make([]byte, client.db.Info().PageSize*2)),
+		}, storage.SkipAll
+	})
+	require.ErrorIs(t, err, storage.ErrStorageFull)
 }
 
 func TestClientReboundCompaction(t *testing.T) {
@@ -252,12 +441,12 @@ func TestClientReboundCompaction(t *testing.T) {
 			checkInterval := time.Second
 
 			logger, _ := zap.NewDevelopment()
-			client, err := newClient(logger, dbFile, time.Second, &CompactionConfig{
+			client, err := newTestClient(logger, dbFile, time.Second, 0, &CompactionConfig{
 				OnRebound:                  true,
 				CheckInterval:              checkInterval,
 				ReboundNeededThresholdMiB:  testCase.reboundNeededThresholdMiB,
 				ReboundTriggerThresholdMiB: testCase.reboundTriggerThresholdMiB,
-			}, false)
+			})
 			require.NoError(t, err)
 			t.Cleanup(func() {
 				require.NoError(t, client.Close(t.Context()))
@@ -341,12 +530,12 @@ func TestClientConcurrentCompaction(t *testing.T) {
 
 	stepInterval := time.Millisecond * 5
 
-	client, err := newClient(logger, dbFile, time.Second, &CompactionConfig{
+	client, err := newTestClient(logger, dbFile, time.Second, 0, &CompactionConfig{
 		OnRebound:                  true,
 		CheckInterval:              stepInterval * 2,
 		ReboundNeededThresholdMiB:  1,
 		ReboundTriggerThresholdMiB: 5,
-	}, false)
+	})
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -409,7 +598,7 @@ func TestCompactReopenFailureReturnsErrors(t *testing.T) {
 	compactionDir := filepath.Join(tempDir, "compaction")
 	require.NoError(t, os.MkdirAll(compactionDir, 0o755))
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
 	require.NoError(t, err)
 
 	ctx := t.Context()
@@ -443,7 +632,7 @@ func BenchmarkClientGet(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
 	require.NoError(b, err)
 	b.Cleanup(func() {
 		require.NoError(b, client.Close(b.Context()))
@@ -467,7 +656,7 @@ func BenchmarkClientGet100(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
 	require.NoError(b, err)
 	b.Cleanup(func() {
 		require.NoError(b, client.Close(b.Context()))
@@ -495,7 +684,7 @@ func BenchmarkClientSet(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
 	require.NoError(b, err)
 	b.Cleanup(func() {
 		require.NoError(b, client.Close(b.Context()))
@@ -514,7 +703,7 @@ func BenchmarkClientSet100(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
 	require.NoError(b, err)
 	b.Cleanup(func() {
 		require.NoError(b, client.Close(b.Context()))
@@ -535,7 +724,7 @@ func BenchmarkClientDelete(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
 	require.NoError(b, err)
 	b.Cleanup(func() {
 		require.NoError(b, client.Close(b.Context()))
@@ -571,7 +760,7 @@ func BenchmarkClientSetLargeDB(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
 	require.NoError(b, err)
 	b.Cleanup(func() {
 		require.NoError(b, client.Close(b.Context()))
@@ -611,7 +800,7 @@ func BenchmarkClientInitLargeDB(b *testing.B) {
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	// Setup: create large DB
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
 	require.NoError(b, err)
 	ctx := b.Context()
 
@@ -625,7 +814,7 @@ func BenchmarkClientInitLargeDB(b *testing.B) {
 	var tempClient *fileStorageClient
 
 	for b.Loop() {
-		tempClient, err = newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
+		tempClient, err = newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
 		require.NoError(b, err)
 		b.StopTimer()
 		err = tempClient.Close(ctx)
@@ -644,7 +833,7 @@ func BenchmarkClientCompactLargeDBFile(b *testing.B) {
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	// Initial setup: create a large DB file with mostly deleted data
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
 	require.NoError(b, err)
 
 	ctx := b.Context()
@@ -667,7 +856,7 @@ func BenchmarkClientCompactLargeDBFile(b *testing.B) {
 		err = os.Link(dbFile, testDbFile)
 		require.NoError(b, err)
 
-		client, err = newClient(zap.NewNop(), testDbFile, time.Second, &CompactionConfig{}, false)
+		client, err = newTestClient(zap.NewNop(), testDbFile, time.Second, 0, &CompactionConfig{})
 		require.NoError(b, err)
 
 		b.StartTimer()
@@ -688,7 +877,7 @@ func BenchmarkClientCompactDb(b *testing.B) {
 	dbFile := filepath.Join(tempDir, "my_db")
 
 	// Setup: fill DB, then delete half of the keys
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
+	client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
 	require.NoError(b, err)
 
 	ctx := b.Context()
@@ -711,7 +900,7 @@ func BenchmarkClientCompactDb(b *testing.B) {
 		err = os.Link(dbFile, testDbFile)
 		require.NoError(b, err)
 
-		client, err = newClient(zap.NewNop(), testDbFile, time.Second, &CompactionConfig{}, false)
+		client, err = newTestClient(zap.NewNop(), testDbFile, time.Second, 0, &CompactionConfig{})
 		require.NoError(b, err)
 
 		b.StartTimer()
@@ -720,4 +909,231 @@ func BenchmarkClientCompactDb(b *testing.B) {
 
 		require.NoError(b, client.Close(ctx))
 	}
+}
+
+func TestWalk(t *testing.T) {
+	t.Run("empty", func(t *testing.T) {
+		dbFile := filepath.Join(t.TempDir(), "db")
+		client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, client.Close(t.Context())) })
+
+		ctx := t.Context()
+		var count int
+		err = client.Walk(ctx, func(_ string, _ []byte) ([]*storage.Operation, error) {
+			count++
+			return nil, nil
+		})
+		require.NoError(t, err)
+		require.Zero(t, count)
+	})
+
+	t.Run("order_and_stop", func(t *testing.T) {
+		dbFile := filepath.Join(t.TempDir(), "db")
+		client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, client.Close(t.Context())) })
+
+		ctx := t.Context()
+		require.NoError(t, client.Set(ctx, "b", []byte("2")))
+		require.NoError(t, client.Set(ctx, "a", []byte("1")))
+		require.NoError(t, client.Set(ctx, "c", []byte("3")))
+
+		var keys []string
+		err = client.Walk(ctx, func(key string, _ []byte) ([]*storage.Operation, error) {
+			keys = append(keys, key)
+			if key == "b" {
+				return nil, storage.SkipAll
+			}
+			return nil, nil
+		})
+		require.NoError(t, err)
+		require.Equal(t, []string{"a", "b"}, keys)
+	})
+
+	t.Run("error_from_callback", func(t *testing.T) {
+		dbFile := filepath.Join(t.TempDir(), "db")
+		client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, client.Close(t.Context())) })
+
+		ctx := t.Context()
+		require.NoError(t, client.Set(ctx, "x", []byte("1")))
+
+		testErr := errors.New("cb")
+		err = client.Walk(ctx, func(_ string, _ []byte) ([]*storage.Operation, error) {
+			return nil, testErr
+		})
+		require.ErrorIs(t, err, testErr)
+	})
+
+	t.Run("context_cancelled_before_walk", func(t *testing.T) {
+		dbFile := filepath.Join(t.TempDir(), "db")
+		client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, client.Close(t.Context())) })
+
+		ctx, cancel := context.WithCancel(t.Context())
+		require.NoError(t, client.Set(ctx, "k", []byte("v")))
+
+		cancel()
+		err = client.Walk(ctx, func(_ string, _ []byte) ([]*storage.Operation, error) {
+			t.Fatal("callback must not be invoked with a cancelled context")
+			return nil, nil
+		})
+		require.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("uninitialized_bucket", func(t *testing.T) {
+		dbFile := filepath.Join(t.TempDir(), "db")
+		client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, client.Close(t.Context())) })
+
+		require.NoError(t, client.db.Update(func(tx *bbolt.Tx) error {
+			return tx.DeleteBucket(defaultBucket)
+		}))
+
+		err = client.Walk(t.Context(), func(_ string, _ []byte) ([]*storage.Operation, error) {
+			return nil, nil
+		})
+		require.Error(t, err)
+		require.Equal(t, "storage not initialized", err.Error())
+	})
+
+	t.Run("after_close", func(t *testing.T) {
+		dbFile := filepath.Join(t.TempDir(), "db")
+		client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+		require.NoError(t, err)
+
+		ctx := t.Context()
+		require.NoError(t, client.Set(ctx, "k", []byte("v")))
+		require.NoError(t, client.Close(ctx))
+
+		err = client.Walk(ctx, func(_ string, _ []byte) ([]*storage.Operation, error) {
+			return nil, nil
+		})
+		require.Error(t, err)
+		require.Equal(t, "storage is closed", err.Error())
+	})
+
+	t.Run("deferred_ops_applied", func(t *testing.T) {
+		dbFile := filepath.Join(t.TempDir(), "db")
+		client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, client.Close(t.Context())) })
+
+		ctx := t.Context()
+		require.NoError(t, client.Set(ctx, "a", []byte("1")))
+		require.NoError(t, client.Set(ctx, "b", []byte("2")))
+
+		err = client.Walk(ctx, func(key string, _ []byte) ([]*storage.Operation, error) {
+			switch key {
+			case "a":
+				return []*storage.Operation{storage.SetOperation("c", []byte("3"))}, nil
+			case "b":
+				return []*storage.Operation{storage.DeleteOperation("a")}, nil
+			}
+			return nil, nil
+		})
+		require.NoError(t, err)
+
+		v, err := client.Get(ctx, "c")
+		require.NoError(t, err)
+		require.Equal(t, []byte("3"), v)
+
+		v, err = client.Get(ctx, "a")
+		require.NoError(t, err)
+		require.Nil(t, v, "deferred delete should have removed key 'a'")
+	})
+
+	t.Run("deferred_ops_on_stop", func(t *testing.T) {
+		dbFile := filepath.Join(t.TempDir(), "db")
+		client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, client.Close(t.Context())) })
+
+		ctx := t.Context()
+		require.NoError(t, client.Set(ctx, "a", []byte("1")))
+		require.NoError(t, client.Set(ctx, "b", []byte("2")))
+
+		err = client.Walk(ctx, func(key string, _ []byte) ([]*storage.Operation, error) {
+			if key == "a" {
+				return []*storage.Operation{storage.SetOperation("x", []byte("stop"))}, storage.SkipAll
+			}
+			t.Fatal("iteration should have stopped at key 'a'")
+			return nil, nil
+		})
+		require.NoError(t, err)
+
+		v, err := client.Get(ctx, "x")
+		require.NoError(t, err)
+		require.Equal(t, []byte("stop"), v)
+	})
+
+	t.Run("no_ops_on_error", func(t *testing.T) {
+		dbFile := filepath.Join(t.TempDir(), "db")
+		client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, client.Close(t.Context())) })
+
+		ctx := t.Context()
+		require.NoError(t, client.Set(ctx, "a", []byte("1")))
+		require.NoError(t, client.Set(ctx, "b", []byte("2")))
+
+		cbErr := errors.New("fail")
+		err = client.Walk(ctx, func(key string, _ []byte) ([]*storage.Operation, error) {
+			if key == "a" {
+				return []*storage.Operation{storage.SetOperation("x", []byte("nope"))}, nil
+			}
+			return []*storage.Operation{storage.SetOperation("y", []byte("nope2"))}, cbErr
+		})
+		require.ErrorIs(t, err, cbErr)
+
+		v, err := client.Get(ctx, "x")
+		require.NoError(t, err)
+		require.Nil(t, v, "deferred ops from earlier keys must not be applied when a later callback errors")
+
+		v, err = client.Get(ctx, "y")
+		require.NoError(t, err)
+		require.Nil(t, v, "ops returned alongside an error must not be applied")
+	})
+
+	t.Run("context_cancelled_mid_iteration", func(t *testing.T) {
+		dbFile := filepath.Join(t.TempDir(), "db")
+		client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, client.Close(t.Context())) })
+
+		ctx, cancel := context.WithCancel(t.Context())
+		require.NoError(t, client.Set(ctx, "a", []byte("1")))
+		require.NoError(t, client.Set(ctx, "b", []byte("2")))
+
+		err = client.Walk(ctx, func(key string, _ []byte) ([]*storage.Operation, error) {
+			if key == "a" {
+				cancel()
+			}
+			return nil, nil
+		})
+		require.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("values_match_stored", func(t *testing.T) {
+		dbFile := filepath.Join(t.TempDir(), "db")
+		client, err := newTestClient(zap.NewNop(), dbFile, time.Second, 0, &CompactionConfig{})
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, client.Close(t.Context())) })
+
+		ctx := t.Context()
+		require.NoError(t, client.Set(ctx, "a", []byte("val-a")))
+		require.NoError(t, client.Set(ctx, "b", []byte("val-b")))
+
+		got := map[string]string{}
+		err = client.Walk(ctx, func(key string, value []byte) ([]*storage.Operation, error) {
+			got[key] = string(value)
+			return nil, nil
+		})
+		require.NoError(t, err)
+		require.Equal(t, map[string]string{"a": "val-a", "b": "val-b"}, got)
+	})
 }

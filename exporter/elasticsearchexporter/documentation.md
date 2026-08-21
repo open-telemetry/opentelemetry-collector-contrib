@@ -84,7 +84,6 @@ In contrast, `elasticsearch.docs.retried` counts documents retried
 individually within otherwise successful bulk requests due to
 document-specific failures such as mapping conflicts.
 
-
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | true | Alpha |

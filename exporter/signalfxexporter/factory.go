@@ -5,8 +5,6 @@ package signalfxexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -15,10 +13,8 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
@@ -36,12 +32,6 @@ const (
 	defaultDimMaxIdleConns        = 20
 	defaultDimMaxIdleConnsPerHost = 20
 )
-
-var entityEventsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.signalfx.consumeEntityEvents",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Process entity events from logs pipeline and convert to dimension property updates"),
-	featuregate.WithRegisterFromVersion("v0.145.0"))
 
 // NewFactory creates a factory for SignalFx exporter.
 func NewFactory() exporter.Factory {
@@ -74,7 +64,6 @@ func createDefaultConfig() component.Config {
 			AccessTokenPassthrough: true,
 		},
 		DeltaTranslationTTL:           3600,
-		Correlation:                   correlation.DefaultConfig(),
 		NonAlphanumericDimensionChars: "_-.",
 		DimensionClient: DimensionClientConfig{
 			SendDelay:           defaultDimSendDelay,
@@ -94,29 +83,16 @@ func createTracesExporter(
 	set exporter.Settings,
 	eCfg component.Config,
 ) (exporter.Traces, error) {
-	cfg := eCfg.(*Config)
-	corrCfg := cfg.Correlation
-
-	if corrCfg.Endpoint == "" {
-		apiURL, err := cfg.getAPIURL()
-		if err != nil {
-			return nil, fmt.Errorf("unable to create API URL: %w", err)
-		}
-		corrCfg.Endpoint = apiURL.String()
-	}
-	if cfg.AccessToken == "" {
-		return nil, errors.New("access_token is required")
-	}
-	set.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.Endpoint))
-	tracker := correlation.NewTracker(corrCfg, cfg.AccessToken, set)
-
 	return exporterhelper.NewTraces(
 		ctx,
 		set,
-		cfg,
-		tracker.ProcessTraces,
-		exporterhelper.WithStart(tracker.Start),
-		exporterhelper.WithShutdown(tracker.Shutdown))
+		eCfg,
+		noOpProcessTraces,
+	)
+}
+
+func noOpProcessTraces(_ context.Context, _ ptrace.Traces) error {
+	return nil
 }
 
 func createMetricsExporter(
@@ -141,14 +117,15 @@ func createMetricsExporter(
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.shutdown))
+		exporterhelper.WithShutdown(exp.shutdown),
+	)
 	if err != nil {
 		return nil, err
 	}
 
 	// If AccessTokenPassthrough enabled, split the incoming Metrics data by splunk.SFxAccessTokenLabel,
 	// this ensures that we get batches of data for the same token when pushing to the backend.
-	if cfg.AccessTokenPassthrough {
+	if cfg.AccessTokenPassthroughConfig.AccessTokenPassthrough {
 		me = &baseMetricsExporter{
 			Component: me,
 			Metrics:   batchperresourceattr.NewBatchPerResourceMetrics(splunk.SFxAccessTokenLabel, me),
@@ -183,14 +160,15 @@ func createLogsExporter(
 		exporterhelper.WithRetry(expCfg.BackOffConfig),
 		exporterhelper.WithQueue(expCfg.QueueSettings),
 		exporterhelper.WithStart(exp.startLogs),
-		exporterhelper.WithShutdown(exp.shutdown))
+		exporterhelper.WithShutdown(exp.shutdown),
+	)
 	if err != nil {
 		return nil, err
 	}
 
 	// If AccessTokenPassthrough enabled, split the incoming Metrics data by splunk.SFxAccessTokenLabel,
 	// this ensures that we get batches of data for the same token when pushing to the backend.
-	if expCfg.AccessTokenPassthrough {
+	if expCfg.AccessTokenPassthroughConfig.AccessTokenPassthrough {
 		le = &baseLogsExporter{
 			Component: le,
 			Logs:      batchperresourceattr.NewBatchPerResourceLogs(splunk.SFxAccessTokenLabel, le),

@@ -1,0 +1,56 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.region
+          value:
+            stringValue: us-east-1
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asDouble: 85.5
+                  attributes:
+                    - key: Dimensions
+                      value:
+                        kvlistValue:
+                          values:
+                            - key: InstanceId
+                              value:
+                                stringValue: i-1234567890abcdef0
+                    - key: MetricName
+                      value:
+                        stringValue: CPUUtilization
+                    - key: Namespace
+                      value:
+                        stringValue: AWS/EC2
+                    - key: stat
+                      value:
+                        stringValue: Average
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 95.2
+                  attributes:
+                    - key: Dimensions
+                      value:
+                        kvlistValue:
+                          values:
+                            - key: InstanceId
+                              value:
+                                stringValue: i-1234567890abcdef0
+                    - key: MetricName
+                      value:
+                        stringValue: CPUUtilization
+                    - key: Namespace
+                      value:
+                        stringValue: AWS/EC2
+                    - key: stat
+                      value:
+                        stringValue: p99
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: amazonaws.com/AWS/EC2/CPUUtilization
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver

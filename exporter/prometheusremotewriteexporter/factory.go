@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -22,10 +23,12 @@ import (
 
 // NewFactory creates a new Prometheus Remote Write exporter.
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability))
+		xexporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		xexporter.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 func createMetricsExporter(ctx context.Context, set exporter.Settings,
@@ -82,12 +85,6 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 func createDefaultConfig() component.Config {
 	retrySettings := configretry.NewDefaultBackOffConfig()
 	retrySettings.InitialInterval = 50 * time.Millisecond
-	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.Endpoint = "http://some.url:9411/api/prom/push"
-	// We almost read 0 bytes, so no need to tune ReadBufferSize.
-	clientConfig.ReadBufferSize = 0
-	clientConfig.WriteBufferSize = 512 * 1024
-	clientConfig.Timeout = exporterhelper.NewDefaultTimeoutConfig().Timeout
 
 	numConsumers := 5
 	if metadata.ExporterPrometheusremotewritexporterEnableMultipleWorkersFeatureGate.IsEnabled() {
@@ -105,7 +102,8 @@ func createDefaultConfig() component.Config {
 		// TODO: Set TranslationStrategy to UnderscoreEscapingWithSuffixes once AddMetricSuffixes is removed.
 		SendMetadata:        false,
 		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
-		ClientConfig:        clientConfig,
+		// TODO: Remove ClientConfig in favor of HTTP settings eventually.
+		ClientConfig: getDefaultHTTPClientConfig(),
 		// TODO(jbd): Adjust the default queue size.
 		RemoteWriteQueue: RemoteWriteQueue{
 			Enabled:      true,
@@ -115,5 +113,16 @@ func createDefaultConfig() component.Config {
 		TargetInfo: TargetInfo{
 			Enabled: true,
 		},
+		HTTP: getDefaultHTTPClientConfig(),
 	}
+}
+
+func getDefaultHTTPClientConfig() confighttp.ClientConfig {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "http://some.url:9411/api/prom/push"
+	// We almost read 0 bytes, so no need to tune ReadBufferSize.
+	clientConfig.ReadBufferSize = 0
+	clientConfig.WriteBufferSize = 512 * 1024
+	clientConfig.Timeout = exporterhelper.NewDefaultTimeoutConfig().Timeout
+	return clientConfig
 }

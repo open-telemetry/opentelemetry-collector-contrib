@@ -116,6 +116,54 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestCouchdbDatabaseOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().CouchdbDatabaseOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []CouchdbDatabaseOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric couchdb.database.operations doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().CouchdbDatabaseOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestCouchdbHttpdRequestsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().CouchdbHttpdRequests
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []CouchdbHttpdRequestsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric couchdb.httpd.requests doesn't have an attribute invalid, valid attributes: [http.method]")
+
+	cfg = DefaultMetricsConfig().CouchdbHttpdRequests
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestCouchdbHttpdResponsesMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().CouchdbHttpdResponses
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []CouchdbHttpdResponsesMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric couchdb.httpd.responses doesn't have an attribute invalid, valid attributes: [http.status_code]")
+
+	cfg = DefaultMetricsConfig().CouchdbHttpdResponses
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestCouchdbHttpdViewsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().CouchdbHttpdViews
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []CouchdbHttpdViewsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric couchdb.httpd.views doesn't have an attribute invalid, valid attributes: [view]")
+
+	cfg = DefaultMetricsConfig().CouchdbHttpdViews
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

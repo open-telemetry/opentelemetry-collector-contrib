@@ -4,7 +4,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
-permissions: read-all
+permissions:
+  contents: read
 
 jobs:
   changedfiles:
@@ -16,9 +17,10 @@ jobs:
       go_sources: ${{ steps.changes.outputs.go_sources }}
       go_tests: ${{ steps.changes.outputs.go_tests }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Get changes
         shell: bash
@@ -77,10 +79,15 @@ jobs:
     steps:
       - name: Echo changed files
         shell: bash
+        env:
+          CHANGED_GOLANG_SOURCES: ${{ needs.changedfiles.outputs.go_sources }}
+          CHANGED_GOLANG_TESTS: ${{ needs.changedfiles.outputs.go_tests }}
         run: |
-          echo "go_sources: ${{ needs.changedfiles.outputs.go_sources }}"
-          echo "go_tests: ${{ needs.changedfiles.outputs.go_tests }}"
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+          echo "go_sources: ${CHANGED_GOLANG_SOURCES}"
+          echo "go_tests: ${CHANGED_GOLANG_TESTS}"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable

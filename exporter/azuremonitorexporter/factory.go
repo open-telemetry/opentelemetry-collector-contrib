@@ -13,9 +13,12 @@ import (
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/xexporter"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
@@ -32,12 +35,14 @@ func NewFactory() exporter.Factory {
 	f := &factory{
 		loggerInitOnce: sync.Once{},
 	}
-	return exporter.NewFactory(
+	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(f.createTracesExporter, metadata.TracesStability),
-		exporter.WithLogs(f.createLogsExporter, metadata.LogsStability),
-		exporter.WithMetrics(f.createMetricsExporter, metadata.MetricsStability))
+		xexporter.WithTraces(f.createTracesExporter, metadata.TracesStability),
+		xexporter.WithLogs(f.createLogsExporter, metadata.LogsStability),
+		xexporter.WithMetrics(f.createMetricsExporter, metadata.MetricsStability),
+		xexporter.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 // Implements the interface from go.opentelemetry.io/collector/exporter/factory.go
@@ -46,13 +51,23 @@ type factory struct {
 }
 
 func createDefaultConfig() component.Config {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
 	return &Config{
+		ClientConfig:        clientConfig,
 		MaxBatchSize:        1024,
 		MaxBatchInterval:    10 * time.Second,
 		SpanEventsEnabled:   false,
 		QueueSettings:       configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		ShutdownTimeout:     1 * time.Second,
 		CustomEventsEnabled: false,
+		TagMappings: TagMappingsConfig{
+			CloudRoleInstance:  []string{string(conventions.ServiceInstanceIDKey)},
+			ApplicationVersion: []string{string(conventions.ServiceVersionKey)},
+		},
 	}
 }
 
@@ -76,7 +91,8 @@ func (f *factory) createTracesExporter(
 		origComp.consumeTraces,
 		exporterhelper.WithQueue(config.QueueSettings),
 		exporterhelper.WithStart(ame.Start),
-		exporterhelper.WithShutdown(ame.Shutdown))
+		exporterhelper.WithShutdown(ame.Shutdown),
+	)
 }
 
 func (f *factory) createLogsExporter(
@@ -99,7 +115,8 @@ func (f *factory) createLogsExporter(
 		origComp.consumeLogs,
 		exporterhelper.WithQueue(config.QueueSettings),
 		exporterhelper.WithStart(ame.Start),
-		exporterhelper.WithShutdown(ame.Shutdown))
+		exporterhelper.WithShutdown(ame.Shutdown),
+	)
 }
 
 func (f *factory) createMetricsExporter(
@@ -122,7 +139,8 @@ func (f *factory) createMetricsExporter(
 		origComp.consumeMetrics,
 		exporterhelper.WithQueue(config.QueueSettings),
 		exporterhelper.WithStart(ame.Start),
-		exporterhelper.WithShutdown(ame.Shutdown))
+		exporterhelper.WithShutdown(ame.Shutdown),
+	)
 }
 
 func getOrCreateAzureMonitorExporter(cfg component.Config, set exporter.Settings) *sharedcomponent.SharedComponent {
@@ -131,7 +149,7 @@ func getOrCreateAzureMonitorExporter(cfg component.Config, set exporter.Settings
 		return &azureMonitorExporter{
 			config:   conf,
 			logger:   set.Logger,
-			packer:   newMetricPacker(set.Logger),
+			packer:   newMetricPacker(set.Logger, conf),
 			settings: set.TelemetrySettings,
 		}
 	})

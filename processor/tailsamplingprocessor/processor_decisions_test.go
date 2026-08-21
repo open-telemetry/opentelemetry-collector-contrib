@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
+	pkgsampling "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
@@ -42,6 +43,11 @@ func (e *batchSizeTrackingEvaluator) Evaluate(_ context.Context, _ pcommon.Trace
 	decision := e.decisions[0]
 	e.decisions = e.decisions[1:]
 	return decision, nil
+}
+
+func (e *batchSizeTrackingEvaluator) EvaluateWithThreshold(ctx context.Context, traceID pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, pkgsampling.Threshold, error) {
+	d, err := e.Evaluate(ctx, traceID, trace)
+	return d, pkgsampling.AlwaysSampleThreshold, err
 }
 
 func (*batchSizeTrackingEvaluator) IsStateful() bool {
@@ -1059,7 +1065,7 @@ func TestSpanIngestTickCleansUpPendingWithoutPolicyEvaluation(t *testing.T) {
 	require.Equal(t, 1, mpe.EvaluationCount())
 	require.Equal(t, 0, nextConsumer.SpanCount())
 	require.Eventually(t, func() bool {
-		return len(p.(*tailSamplingSpanProcessor).idToTrace) == 0
+		return len(shard0(p).idToTrace) == 0
 	}, time.Second, 10*time.Millisecond)
 }
 
@@ -1193,7 +1199,7 @@ func TestSpanIngestChildFirstThenRootPendingCleanup(t *testing.T) {
 	require.Equal(t, 2, mpe.EvaluationCount())
 	require.Equal(t, 0, nextConsumer.SpanCount())
 	require.Eventually(t, func() bool {
-		return len(p.(*tailSamplingSpanProcessor).idToTrace) == 0
+		return len(shard0(p).idToTrace) == 0
 	}, time.Second, 10*time.Millisecond)
 }
 
@@ -1213,6 +1219,7 @@ func TestRateLimiter(t *testing.T) {
 					Type: "rate_limiting",
 					RateLimitingCfg: RateLimitingCfg{
 						SpansPerSecond: 2,
+						BurstCapacity:  2,
 					},
 				},
 			},
