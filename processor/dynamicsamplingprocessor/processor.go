@@ -5,6 +5,8 @@ package dynamicsamplingprocessor // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -38,6 +40,10 @@ const rootSpanConditionRuleLabel = "_root_span_condition"
 // trace to record which rule selected it. This is an interim convention; a
 // permanent semantic convention may replace it in the future.
 const ruleAttributeKey = "otelcol.processor.dynamic_sampling.rule"
+
+// fingerprintAttributeKey carries the matched rule's fingerprint (raw or
+// hashed, per record_fingerprint) on every span of a kept trace.
+const fingerprintAttributeKey = "otelcol.processor.dynamic_sampling.fingerprint"
 
 // triggerSource identifies which event caused a pending trace to transition
 // from the buffering phase to the decision-delay phase. Reported on the
@@ -657,6 +663,9 @@ func (p *dynamicSamplingProcessor) stampLateBatch(ctx context.Context, td ptrace
 		for _, ss := range rs.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
 				span.Attributes().PutStr(ruleAttributeKey, md.ruleName)
+				if md.fingerprint != "" {
+					span.Attributes().PutStr(fingerprintAttributeKey, md.fingerprint)
+				}
 				p.updateTraceState(ctx, span, md.threshold, emptyTS)
 			}
 		}
@@ -700,7 +709,7 @@ func (p *dynamicSamplingProcessor) decide(id pcommon.TraceID) {
 // forwards or drops its spans. Shared by the timer-driven decide path and the
 // evaluate eviction policy.
 func (p *dynamicSamplingProcessor) decideTrace(ctx context.Context, pt *pendingTrace) {
-	matchedRule, rate := p.evaluate(ctx, pt)
+	matchedRule, rate, key := p.evaluate(ctx, pt)
 	if matchedRule == nil {
 		// No matching rule and no catch-all: drop the trace.
 		p.telemetry.ProcessorDynamicSamplingTracesDropped.Add(ctx, 1, unmatchedRuleAttr)
@@ -721,13 +730,31 @@ func (p *dynamicSamplingProcessor) decideTrace(ctx context.Context, pt *pendingT
 			zap.Error(err), zap.Stringer("traceID", pt.traceID))
 		effectiveTh = upstreamTh
 	}
-	p.finishDecision(ctx, pt, matchedRule.name, ruleAttr, effectiveTh, randomness)
+	p.finishDecision(ctx, pt, matchedRule.name, ruleAttr, effectiveTh, randomness, p.fingerprintToken(key))
+}
+
+// fingerprintToken converts a computed fingerprint key into the value stamped
+// on kept spans, per record_fingerprint. Empty when recording is disabled or
+// the rule produced no key.
+func (p *dynamicSamplingProcessor) fingerprintToken(key string) string {
+	if key == "" {
+		return ""
+	}
+	switch p.cfg.RecordFingerprint {
+	case RecordFingerprintValue:
+		return key
+	case RecordFingerprintHash:
+		sum := sha256.Sum256([]byte(key))
+		return hex.EncodeToString(sum[:8])
+	default:
+		return ""
+	}
 }
 
 // finishDecision applies an already-composed effective threshold: records the
 // sample-rate histogram, performs the keep/drop check, updates the decision
 // cache, and forwards sampled traces. Shared by every decision path.
-func (p *dynamicSamplingProcessor) finishDecision(ctx context.Context, pt *pendingTrace, ruleName string, ruleAttr metric.MeasurementOption, effectiveTh sampling.Threshold, randomness sampling.Randomness) {
+func (p *dynamicSamplingProcessor) finishDecision(ctx context.Context, pt *pendingTrace, ruleName string, ruleAttr metric.MeasurementOption, effectiveTh sampling.Threshold, randomness sampling.Randomness, fingerprint string) {
 	// Record the effective (post-composition) rate rather than the raw sampler
 	// rate: under equalizing, an upstream stricter than the sampler's rate caps
 	// what we emit, and the histogram should reflect that.
@@ -738,9 +765,9 @@ func (p *dynamicSamplingProcessor) finishDecision(ctx context.Context, pt *pendi
 		return
 	}
 
-	p.cache.recordSampled(pt.traceID, cachedDecision{ruleName: ruleName, threshold: effectiveTh})
+	p.cache.recordSampled(pt.traceID, cachedDecision{ruleName: ruleName, threshold: effectiveTh, fingerprint: fingerprint})
 	// assembleTrace consumes pt.spans; nothing may read them after this call.
-	annotated := p.assembleTrace(ctx, pt.spans, ruleName, effectiveTh)
+	annotated := p.assembleTrace(ctx, pt.spans, ruleName, effectiveTh, fingerprint)
 	pt.spans = nil
 	p.telemetry.ProcessorDynamicSamplingTracesSampled.Add(ctx, 1, ruleAttr)
 	if err := p.next.ConsumeTraces(ctx, annotated); err != nil {
@@ -784,11 +811,14 @@ func (p *dynamicSamplingProcessor) decideEvictedProbabilistic(ctx context.Contex
 		p.logger.Debug("eviction threshold calculation failed, falling back to upstream",
 			zap.Error(err), zap.Stringer("traceID", pt.traceID))
 	}
-	p.finishDecision(ctx, pt, evictionRuleLabel, evAttr, effectiveTh, randomness)
+	// Probabilistic eviction bypasses rule evaluation, so there is no
+	// fingerprint to record.
+	p.finishDecision(ctx, pt, evictionRuleLabel, evAttr, effectiveTh, randomness, "")
 }
 
-// evaluate returns the first matching rule and the sample rate it produced.
-func (p *dynamicSamplingProcessor) evaluate(ctx context.Context, pt *pendingTrace) (*rule, int) {
+// evaluate returns the first matching rule, the sample rate it produced, and
+// the fingerprint key used (empty for samplers without fingerprint_attributes).
+func (p *dynamicSamplingProcessor) evaluate(ctx context.Context, pt *pendingTrace) (*rule, int, string) {
 	for _, r := range p.rules {
 		if !r.matches(ctx, pt.spans) {
 			continue
@@ -801,12 +831,14 @@ func (p *dynamicSamplingProcessor) evaluate(ctx context.Context, pt *pendingTrac
 					return p.evalRootSpanCondition(ctx, rs, ss, span)
 				}
 			}
+			start := time.Now()
 			key = sampler.ExtractKey(pt.spans, r.fingerprint, isRoot)
+			p.telemetry.ProcessorDynamicSamplingFingerprintDuration.Record(ctx, time.Since(start).Microseconds(), r.ruleAttrSet)
 		}
 		rate := max(r.sampler.GetSampleRate(key, pt.spanCount), 1)
-		return r, rate
+		return r, rate, key
 	}
-	return nil, 0
+	return nil, 0, ""
 }
 
 // readIncomingSampling scans the accumulated spans for upstream sampling state:
@@ -894,7 +926,7 @@ func effectiveThreshold(upstream sampling.Threshold, rate int) (sampling.Thresho
 // processor-owned (created fresh in ConsumeTraces) and the pendingTrace is
 // discarded after the decision, so the sources are left empty deliberately.
 // readIncomingSampling must run before this (it reads the same spans).
-func (p *dynamicSamplingProcessor) assembleTrace(ctx context.Context, spans []ptrace.ResourceSpans, ruleName string, threshold sampling.Threshold) ptrace.Traces {
+func (p *dynamicSamplingProcessor) assembleTrace(ctx context.Context, spans []ptrace.ResourceSpans, ruleName string, threshold sampling.Threshold, fingerprint string) ptrace.Traces {
 	emptyTS := serializedEmptyTraceState(threshold)
 	out := ptrace.NewTraces()
 	for _, rs := range spans {
@@ -903,6 +935,9 @@ func (p *dynamicSamplingProcessor) assembleTrace(ctx context.Context, spans []pt
 		for _, ss := range dst.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
 				span.Attributes().PutStr(ruleAttributeKey, ruleName)
+				if fingerprint != "" {
+					span.Attributes().PutStr(fingerprintAttributeKey, fingerprint)
+				}
 				p.updateTraceState(ctx, span, threshold, emptyTS)
 			}
 		}

@@ -364,3 +364,49 @@ func BenchmarkMemory_PendingTraces(b *testing.B) {
 		b.ReportMetric(float64(after.HeapAlloc-before.HeapAlloc)/float64(b.N), "retained_B/trace")
 	}
 }
+
+// BenchmarkDecide_RecordFingerprint measures the added decide-path cost of
+// recording the fingerprint attribute: one PutStr per span when enabled, plus
+// one SHA-256 per decision in hash mode.
+func BenchmarkDecide_RecordFingerprint(b *testing.B) {
+	rules := []RuleConfig{{Name: "default", Sampler: SamplerConfig{
+		Type:                  DynamicPercentage,
+		GoalPercentage:        100,
+		FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+	}}}
+	for _, mode := range []RecordFingerprint{RecordFingerprintNone, RecordFingerprintValue, RecordFingerprintHash} {
+		for _, spansPerTrace := range []int{10, 1000} {
+			b.Run(fmt.Sprintf("%s/%dspans", mode, spansPerTrace), func(b *testing.B) {
+				cfg := benchConfig(rules)
+				cfg.RecordFingerprint = mode
+				p := newBenchProcessor(b, cfg)
+
+				id := benchTraceID(1)
+				template := benchTrace(id, spansPerTrace, "")
+				template.ResourceSpans().At(0).Resource().Attributes().PutStr("service.name", "svc")
+
+				newPT := func() *pendingTrace {
+					td := ptrace.NewTraces()
+					template.CopyTo(td)
+					spans := make([]ptrace.ResourceSpans, 0, td.ResourceSpans().Len())
+					for _, rs := range td.ResourceSpans().All() {
+						spans = append(spans, rs)
+					}
+					return &pendingTrace{traceID: id, spans: spans, spanCount: spansPerTrace}
+				}
+
+				b.ReportAllocs()
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					b.StopTimer()
+					pt := newPT()
+					b.StartTimer()
+					p.mu.Lock()
+					p.traces[id] = pt
+					p.mu.Unlock()
+					p.decide(id)
+				}
+			})
+		}
+	}
+}
