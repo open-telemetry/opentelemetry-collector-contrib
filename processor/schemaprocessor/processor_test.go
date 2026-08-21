@@ -38,19 +38,19 @@ type testStorageClient struct {
 	closed   bool
 }
 
-func (_ *testStorageClient) Get(context.Context, string) ([]byte, error) {
+func (*testStorageClient) Get(context.Context, string) ([]byte, error) {
 	return nil, nil
 }
 
-func (_ *testStorageClient) Set(context.Context, string, []byte) error {
+func (*testStorageClient) Set(context.Context, string, []byte) error {
 	return nil
 }
 
-func (_ *testStorageClient) Delete(context.Context, string) error {
+func (*testStorageClient) Delete(context.Context, string) error {
 	return nil
 }
 
-func (_ *testStorageClient) Batch(context.Context, ...*storage.Operation) error {
+func (*testStorageClient) Batch(context.Context, ...*storage.Operation) error {
 	return nil
 }
 
@@ -65,11 +65,11 @@ type testStorageExtension struct {
 	called bool
 }
 
-func (_ *testStorageExtension) Start(context.Context, component.Host) error {
+func (*testStorageExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (_ *testStorageExtension) Shutdown(context.Context) error {
+func (*testStorageExtension) Shutdown(context.Context) error {
 	return nil
 }
 
