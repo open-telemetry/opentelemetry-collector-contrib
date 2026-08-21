@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.159.0

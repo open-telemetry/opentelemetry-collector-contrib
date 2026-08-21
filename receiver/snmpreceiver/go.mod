@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/gosnmp/gosnmp v1.44.0

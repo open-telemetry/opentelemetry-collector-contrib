@@ -192,8 +192,7 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 			zap.Int("records", len(buf.pointers)),
 			zap.Error(err),
 		)
-		var msgTooLarge *kafkaclient.MessageTooLargeError
-		if errors.As(err, &msgTooLarge) {
+		if msgTooLarge, ok := errors.AsType[*kafkaclient.MessageTooLargeError](err); ok {
 			e.logger.Error("kafka record exceeds max message size",
 				zap.Int("actual_message_bytes", msgTooLarge.RecordBytes),
 				zap.Int("max_message_bytes", msgTooLarge.MaxMessageBytes),

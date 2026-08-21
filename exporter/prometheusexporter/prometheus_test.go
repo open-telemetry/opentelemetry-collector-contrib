@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -713,7 +712,7 @@ this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os=
 			// Set feature gate state for this test
 			originalState := metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate.IsEnabled()
 			testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate, tt.featureGateEnabled)
-			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate, originalState)
+			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate, originalState)()
 
 			// Configure the exporter
 			addr := testutil.GetAvailableLocalAddress(t)
@@ -792,16 +791,16 @@ func TestPrometheusExporter_BackgroundCleanup(t *testing.T) {
 		c.metricFamilies.Store("stale_metric", metricFamily{
 			lastSeen: time.Now().Add(-10 * time.Minute),
 			mf: &io_prometheus_client.MetricFamily{
-				Name: proto.String("stale_metric"),
-				Help: proto.String("should be cleaned up"),
+				Name: new("stale_metric"),
+				Help: new("should be cleaned up"),
 				Type: &gaugeType,
 			},
 		})
 		c.metricFamilies.Store("fresh_metric", metricFamily{
 			lastSeen: time.Now().Add(time.Hour),
 			mf: &io_prometheus_client.MetricFamily{
-				Name: proto.String("fresh_metric"),
-				Help: proto.String("should remain"),
+				Name: new("fresh_metric"),
+				Help: new("should remain"),
 				Type: &gaugeType,
 			},
 		})

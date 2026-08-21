@@ -67,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
 				MaxBatchSizeBytes:          3000000,
-				MaxBatchRequestParallelism: toPtr(10),
+				MaxBatchRequestParallelism: new(10),
 				TimeoutSettings:            exporterhelper.NewDefaultTimeoutConfig(),
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
@@ -215,7 +215,7 @@ func TestLoadConfig(t *testing.T) {
 			if tt.enableSendingRW2 {
 				oldValue := metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate.IsEnabled()
 				testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, true)
-				defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, oldValue)
+				defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, oldValue)()
 			}
 
 			factory := NewFactory()
@@ -353,8 +353,4 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 			}
 		})
 	}
-}
-
-func toPtr[T any](val T) *T {
-	return &val
 }
