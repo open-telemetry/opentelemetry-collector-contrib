@@ -91,6 +91,14 @@ linters:
         path: receiver/fluentforwardreceiver/server.go
         text: SA4023
 
+      # On windows, addPermissionInfo always returns a non-nil error (owner/permission info
+      # isn't implemented there), so `err != nil` is always true on that platform only.
+      # Keep the check rather than rely on an invariant that is easy to break.
+      - linters:
+          - staticcheck
+        path: pkg/stanza/fileconsumer/attrs/attrs.go
+        text: SA4023
+
       - linters:
           - unused
         path: receiver/macosunifiedloggingreceiver/config_common.go

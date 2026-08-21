@@ -44,10 +44,11 @@ func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error)
 	}
 	if r.IncludeFileOwnerName || r.IncludeFileOwnerGroupName || r.IncludeFilePermissions {
 		// On windows, addPermissionInfo always returns a non-nil error (owner/permission info
-		// isn't implemented there), which causes a warning on that platform.
-		// It's still required for the non-windows implementation, which can return nil.
-		err = r.addPermissionInfo(file, attributes) //nolint:staticcheck
-		if err != nil {                             //nolint:staticcheck
+		// isn't implemented there), which makes this comparison tautological on that platform
+		// (see the SA4023 exclusion for this file in .golangci.yml). It's still required for
+		// the non-windows implementation, which can return nil.
+		err = r.addPermissionInfo(file, attributes)
+		if err != nil {
 			return nil, err
 		}
 	}
