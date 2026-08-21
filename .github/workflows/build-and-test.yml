@@ -458,10 +458,13 @@ jobs:
     needs: [setup-environment, integration-tests-matrix, integration-sudo-tests-matrix]
     steps:
       - name: Print result
-        run: echo ${{ needs.integration-tests-matrix.result }}
+        run: |
+          echo "integration-tests-matrix: ${{ needs.integration-tests-matrix.result }}"
+          echo "integration-sudo-tests-matrix: ${{ needs.integration-sudo-tests-matrix.result }}"
       - name: Interpret result
         run: |
-          if [[ success == ${{ needs.integration-tests-matrix.result }} || skipped == ${{ needs.integration-tests-matrix.result }} ]]
+          if [[ ( success == ${{ needs.integration-tests-matrix.result }} || skipped == ${{ needs.integration-tests-matrix.result }} ) && \
+                ( success == ${{ needs.integration-sudo-tests-matrix.result }} || skipped == ${{ needs.integration-sudo-tests-matrix.result }} ) ]]
           then
             echo "All matrix jobs passed!"
           else
