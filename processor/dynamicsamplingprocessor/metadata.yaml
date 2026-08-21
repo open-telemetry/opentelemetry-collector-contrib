@@ -33,6 +33,13 @@ telemetry:
         value_type: int
         monotonic: true
       stability: development
+    processor_dynamic_sampling_fingerprint_duration:
+      enabled: true
+      description: Time spent extracting a rule's fingerprint per decision, in microseconds, labelled by rule. A relative signal for spotting expensive fingerprints (wide scopes such as any. on large traces); absolute values depend on host and load.
+      unit: us
+      histogram:
+        value_type: int
+      stability: development
     processor_dynamic_sampling_incoming_tracestate_unparseable:
       enabled: true
       description: Number of spans whose incoming W3C tracestate could not be parsed when applying the sampling threshold.

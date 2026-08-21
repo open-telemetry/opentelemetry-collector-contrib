@@ -14,6 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 )
 
@@ -1365,8 +1366,8 @@ func BenchmarkFilterlog_NewSkipExpr(b *testing.B) {
 	}
 
 	for _, tt := range testCases {
-		origVal := useOTTLBridge.IsEnabled()
-		err := featuregate.GlobalRegistry().Set("filter.filterlog.useOTTLBridge", true)
+		origVal := metadata.FilterFilterlogUseOTTLBridgeFeatureGate.IsEnabled()
+		err := featuregate.GlobalRegistry().Set(metadata.FilterFilterlogUseOTTLBridgeFeatureGate.ID(), true)
 		assert.NoError(b, err)
 
 		skipExpr, err := NewSkipExpr(tt.mc)
@@ -1389,7 +1390,7 @@ func BenchmarkFilterlog_NewSkipExpr(b *testing.B) {
 			}
 		})
 
-		err = featuregate.GlobalRegistry().Set("filter.filterlog.useOTTLBridge", origVal)
+		err = featuregate.GlobalRegistry().Set(metadata.FilterFilterlogUseOTTLBridgeFeatureGate.ID(), origVal)
 		assert.NoError(b, err)
 	}
 }

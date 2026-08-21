@@ -130,9 +130,6 @@ linters:
       - linters:
           - forbidigo
         path: exporter/awsxrayexporter/internal/translator/
-      - linters:
-          - forbidigo
-        path: internal/filter/
 
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47586
       - linters:
