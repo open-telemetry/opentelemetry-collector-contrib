@@ -71,10 +71,12 @@ component_targets_platform () {
         [[ "${file}" == *_test.go ]] && continue
         imports_testing "${file}" && continue
         line=$(grep -m1 '^//go:build ' "${file}") || continue
-        # Remove negated groups first, then bare negations, then reduce the
-        # remaining operators to spaces and look for the platform as a token.
-        expr=" $(printf '%s' "${line#//go:build }" \
-            | sed -E "s/![[:space:]]*\\([^)]*\\)//g; s/![[:space:]]*${plat}//g; s/[^a-zA-Z0-9_]/ /g") "
+        expr="${line#//go:build }"
+        # Nested negations like "!((linux) || windows)" defeat any regex, so
+        # treat a negated directive as no evidence: this can miss a label,
+        # never invent one.
+        case "${expr}" in *'!'*) continue;; esac
+        expr=" $(printf '%s' "${expr}" | sed -E 's/[^a-zA-Z0-9_]/ /g') "
         [[ "${expr}" == *" ${plat} "* ]] && return 0
     done < <(grep -rl --include='*.go' "^//go:build .*${plat}" "${dir}" 2>/dev/null)
 
