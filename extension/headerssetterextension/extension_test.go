@@ -417,7 +417,7 @@ func TestFileSource_MultipleHeaders(t *testing.T) {
 	require.NoError(t, os.WriteFile(apiKeyFile, []byte("key123"), 0o600))
 	require.NoError(t, os.WriteFile(tokenFile, []byte("token456"), 0o600))
 
-	apiKeyHeader := "X-API-Key" //nolint:gosec // G101 - header name, not a credential
+	apiKeyHeader := "X-API-Key"
 	tokenHeader := "X-Token"
 	cfg := &Config{
 		HeadersConfig: []HeaderConfig{
