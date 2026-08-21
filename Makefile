@@ -716,7 +716,7 @@ crosslink:
 
 .PHONY: actionlint
 actionlint:
-	$(ACTIONLINT) -config-file .github/actionlint.yaml -color $(filter-out $(wildcard .github/workflows/*windows.y*), $(wildcard .github/workflows/*.y*))
+	$(ACTIONLINT) -config-file .github/actionlint.yaml -color $(wildcard .github/workflows/*.y*)
 
 .PHONY: clean
 clean:
