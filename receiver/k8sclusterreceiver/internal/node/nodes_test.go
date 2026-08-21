@@ -231,7 +231,6 @@ func TestTransform(t *testing.T) {
 				OSImage:                 "Ubuntu 22.04.1 LTS",
 				ContainerRuntimeVersion: "containerd://1.6.9",
 				KubeletVersion:          "v1.25.3",
-				KubeProxyVersion:        "v1.25.3", //nolint:staticcheck
 				OperatingSystem:         "linux",
 				Architecture:            "amd64",
 			},

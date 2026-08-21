@@ -263,7 +263,6 @@ func newNode(name, hostname string) *v1.Node {
 				BootID:                  "boot-id",
 				ContainerRuntimeVersion: "runtime-version",
 				KernelVersion:           "kernel-version",
-				KubeProxyVersion:        "kube-proxy-version",
 				KubeletVersion:          "kubelet-version",
 				MachineID:               "machine-id",
 				OperatingSystem:         "operating-system",
