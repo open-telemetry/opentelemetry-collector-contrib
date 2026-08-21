@@ -160,12 +160,16 @@ func (r *k8sResolver) start(_ context.Context) error {
 		// Create the epsListWatcher now that we have a client
 		epsSelector := fmt.Sprintf("kubernetes.io/service-name=%s", r.svcName)
 		r.epsListWatcher = &cache.ListWatch{
-			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+			// TODO: SA1019: (k8s.io/client-go/tools/cache.ListWatch).ListFunc is deprecated: use ListWithContext instead.
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50424
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) { //nolint:staticcheck
 				options.LabelSelector = epsSelector
 				options.TimeoutSeconds = new(int64(r.lwTimeout.Seconds()))
 				return r.client.DiscoveryV1().EndpointSlices(r.svcNs).List(context.Background(), options)
 			},
-			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			// TODO: SA1019: (k8s.io/client-go/tools/cache.ListWatch).WatchFunc is deprecated: use WatchWithContext instead.
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50424
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) { //nolint:staticcheck
 				options.LabelSelector = epsSelector
 				options.TimeoutSeconds = new(int64(r.lwTimeout.Seconds()))
 				return r.client.DiscoveryV1().EndpointSlices(r.svcNs).Watch(context.Background(), options)
