@@ -171,7 +171,7 @@ When using OTTL it is recommended to use these contexts unless you have a specif
 
 A List Value comprises a sequence of Values.
 Currently, lists can only be created by the grammar to be used in functions or conditions;
-the grammar does not provide an accessor to individual list entries.
+the grammar does not provide an accessor to individual literal list entries.
 
 Example List Values:
 - `[]`
