@@ -50,7 +50,6 @@ The `secret_provider` option delegates credential management to a separate exten
 
 The referenced extension must be listed in `service.extensions` and will be started before `basicauth` automatically.
 
-See [`awssecretsmanagerprovider`](../awssecretsmanagerprovider/README.md) for an implementation that fetches secrets from AWS Secrets Manager.
 ## Configuration
 
 ```yaml

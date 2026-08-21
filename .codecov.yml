@@ -361,6 +361,10 @@ component_management:
     name: extension_internal_credentialsfile
     paths:
     - extension/internal/credentialsfile/**
+  - component_id: extension_internal_secretprovider
+    name: extension_internal_secretprovider
+    paths:
+    - extension/internal/secretprovider/**
   - component_id: extension_jaegerremotesampling
     name: extension_jaegerremotesampling
     paths:
