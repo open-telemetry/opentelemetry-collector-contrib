@@ -94,9 +94,13 @@ func handleTCPConn(c net.Conn, reporter Reporter, transferChan chan<- Metric) {
 					reporter.OnDebugf("TCP transport (%s): line exceeded %d bytes without a newline, closing connection", c.LocalAddr(), maxLineSize)
 					return
 				}
-				if len(bytes) != 0 {
-					remainder = bytes
-				}
+				// Always replace remainder with what ReadBytes returned on this
+				// EOF, including when it's empty. If the buffer's last line ended
+				// exactly at a '\n', bytes is empty here and remainder must be
+				// cleared to nil - otherwise a stale partial line from an earlier
+				// read would survive and get re-prepended (and duplicated) on the
+				// next outer iteration.
+				remainder = bytes
 				break
 			}
 			line := strings.TrimSpace(string(bytes))
