@@ -176,15 +176,15 @@ ifndef VERSION
 	$(error VERSION is required. Usage: make bump-go-version VERSION=1.24.11)
 endif
 	@echo "Bumping Go version to $(VERSION)..."
-	
+
 	# Update main go.mod
 	@echo "Updating main go.mod..."
 	@sed -i '' -E 's/^go [0-9]+\.[0-9]+.*/go $(VERSION)/' go.mod
-	
+
 	# Update all module go.mod files
 	@echo "Updating all module go.mod files..."
 	@find . -name "go.mod" -type f -not -path "./go.mod" -exec sed -i '' -E 's/^go [0-9]+\.[0-9]+\.[0-9]+/go $(VERSION)/g' {} \;
-	
+
 	@echo ""
 	@echo "✓ Successfully bumped golang version to $(VERSION)"
 	@echo ""
@@ -716,6 +716,10 @@ crosslink:
 
 .PHONY: actionlint
 actionlint:
+	@if [ -z "$(ACTIONLINT)" ]; then \
+		echo "actionlint failed to build (see errors above); refusing to report success"; \
+		exit 1; \
+	fi
 	$(ACTIONLINT) -config-file .github/actionlint.yaml -color $(wildcard .github/workflows/*.y*)
 
 .PHONY: clean
