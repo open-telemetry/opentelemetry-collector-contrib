@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -310,6 +311,98 @@ func TestK8sResolveWithServiceFQDN(t *testing.T) {
 	if cErr != nil {
 		t.Fatalf("timed out waiting for resolver endpoints to match expected: %v", cErr)
 	}
+}
+
+// TestK8sResolveEndpointReadyTransition covers the readiness filter added in
+// convertToEndpoints end to end through the informer: an endpoint with
+// Conditions.Ready == false must not appear in the initial list, a nil
+// Ready must (per the EndpointSlice API's "nil means true" contract), and an
+// OnUpdate flipping Ready must add/remove the endpoint and fire the resolver
+// callback -- this is the load-bearing case for a pod that terminates while
+// its address is still present in the slice.
+func TestK8sResolveEndpointReadyTransition(t *testing.T) {
+	serviceName := "lb"
+	namespace := "default"
+	port := int32(4317)
+	notReady, ready := false, true
+
+	endpointSlice := &discoveryv1.EndpointSlice{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceName,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"kubernetes.io/service-name": serviceName,
+			},
+		},
+		Endpoints: []discoveryv1.Endpoint{
+			{Addresses: []string{"10.0.0.1"}, Conditions: discoveryv1.EndpointConditions{Ready: &notReady}},
+			{Addresses: []string{"10.0.0.2"}}, // nil Ready: must be treated as ready
+			{Addresses: []string{"10.0.0.3"}, Conditions: discoveryv1.EndpointConditions{Ready: &ready}},
+		},
+	}
+
+	cl := fake.NewClientset(endpointSlice)
+	_, tb := getTelemetryAssets(t)
+	res, err := newK8sResolver(cl, zap.NewNop(), serviceName, []int32{port}, defaultListWatchTimeout, false, tb)
+	require.NoError(t, err)
+	require.NoError(t, res.start(t.Context()))
+	t.Cleanup(func() {
+		require.NoError(t, res.shutdown(t.Context()))
+	})
+
+	var changeCount atomic.Int64
+	res.onChange(func([]string) { changeCount.Add(1) })
+
+	// (a) not-ready excluded on initial list, (d) nil Ready included.
+	expectInitial := []string{"10.0.0.2:4317", "10.0.0.3:4317"}
+	cErr := waitForCondition(t, 3*time.Second, 20*time.Millisecond, func(ctx context.Context) (bool, error) {
+		if _, resErr := res.resolve(ctx); resErr != nil {
+			return false, resErr
+		}
+		return slices.Equal(expectInitial, res.Endpoints()), nil
+	})
+	require.NoError(t, cErr, "timed out waiting for initial resolver endpoints")
+
+	// (b) true -> false removes the endpoint from the resolved set.
+	exist := endpointSlice.DeepCopy()
+	updated := endpointSlice.DeepCopy()
+	updated.Endpoints[2].Conditions.Ready = &notReady
+	patch := client.MergeFrom(exist)
+	data, err := patch.Data(updated)
+	require.NoError(t, err)
+	_, err = cl.DiscoveryV1().EndpointSlices(namespace).
+		Patch(t.Context(), serviceName, types.MergePatchType, data, metav1.PatchOptions{})
+	require.NoError(t, err)
+
+	expectAfterRemoval := []string{"10.0.0.2:4317"}
+	cErr = waitForCondition(t, 3*time.Second, 20*time.Millisecond, func(ctx context.Context) (bool, error) {
+		if _, resErr := res.resolve(ctx); resErr != nil {
+			return false, resErr
+		}
+		return slices.Equal(expectAfterRemoval, res.Endpoints()), nil
+	})
+	require.NoError(t, cErr, "timed out waiting for the not-ready endpoint to be removed")
+	assert.Positive(t, changeCount.Load(), "callback should have fired when an endpoint went not-ready")
+
+	// (c) false -> true adds the endpoint back.
+	exist = updated
+	updated = updated.DeepCopy()
+	updated.Endpoints[0].Conditions.Ready = &ready
+	patch = client.MergeFrom(exist)
+	data, err = patch.Data(updated)
+	require.NoError(t, err)
+	_, err = cl.DiscoveryV1().EndpointSlices(namespace).
+		Patch(t.Context(), serviceName, types.MergePatchType, data, metav1.PatchOptions{})
+	require.NoError(t, err)
+
+	expectAfterAddition := []string{"10.0.0.1:4317", "10.0.0.2:4317"}
+	cErr = waitForCondition(t, 3*time.Second, 20*time.Millisecond, func(ctx context.Context) (bool, error) {
+		if _, resErr := res.resolve(ctx); resErr != nil {
+			return false, resErr
+		}
+		return slices.Equal(expectAfterAddition, res.Endpoints()), nil
+	})
+	require.NoError(t, cErr, "timed out waiting for the now-ready endpoint to be added back")
 }
 
 // waitForCondition will poll the condition function until it returns true or times out.

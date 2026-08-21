@@ -51,6 +51,36 @@ func TestConvertToEndpoints(tst *testing.T) {
 			},
 		},
 	}
+	notReady := false
+	ready := true
+	hostname4 := "pod-4"
+	endpointsNotReady := &discoveryv1.EndpointSlice{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-endpoints-4",
+			Namespace: "test-namespace",
+		},
+		Endpoints: []discoveryv1.Endpoint{
+			{
+				Addresses:  []string{"192.168.10.104"},
+				Hostname:   &hostname4,
+				Conditions: discoveryv1.EndpointConditions{Ready: &notReady},
+			},
+		},
+	}
+	hostname5 := "pod-5"
+	endpointsExplicitlyReady := &discoveryv1.EndpointSlice{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-endpoints-5",
+			Namespace: "test-namespace",
+		},
+		Endpoints: []discoveryv1.Endpoint{
+			{
+				Addresses:  []string{"192.168.10.105"},
+				Hostname:   &hostname5,
+				Conditions: discoveryv1.EndpointConditions{Ready: &ready},
+			},
+		},
+	}
 
 	tests := []struct {
 		name              string
@@ -82,6 +112,24 @@ func TestConvertToEndpoints(tst *testing.T) {
 			includedEndpoints: []*discoveryv1.EndpointSlice{endpoints1, endpoints3},
 			expectedEndpoints: map[string]bool{"pod-1": true},
 			wantOk:            false,
+		},
+		{
+			// Ready == false is an explicit exclusion, not a missing-data case,
+			// so ok stays true even though the endpoint is skipped.
+			name:              "not ready endpoint is excluded",
+			returnNames:       true,
+			includedEndpoints: []*discoveryv1.EndpointSlice{endpoints1, endpointsNotReady},
+			expectedEndpoints: map[string]bool{"pod-1": true},
+			wantOk:            true,
+		},
+		{
+			// A nil Ready condition (endpoints1/2/3 never set Conditions) and an
+			// explicit Ready == true both include the endpoint.
+			name:              "nil and explicit-true ready conditions are both included",
+			returnNames:       true,
+			includedEndpoints: []*discoveryv1.EndpointSlice{endpoints1, endpointsExplicitlyReady},
+			expectedEndpoints: map[string]bool{"pod-1": true, "pod-5": true},
+			wantOk:            true,
 		},
 	}
 
