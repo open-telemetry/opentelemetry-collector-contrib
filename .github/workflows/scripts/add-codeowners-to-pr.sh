@@ -41,6 +41,24 @@ request_review () {
     fi
 }
 
+# A component "targets" a platform if it ships non-test source gated exactly on
+# that platform. Two refinements matter:
+#   * the constraint must be exactly "windows"/"darwin" -- matching any line
+#     containing the word would also match "//go:build !windows", i.e. components
+#     explicitly excluded FROM that platform.
+#   * files importing "testing" are helpers (some are not named *_test.go) and
+#     don't imply the component needs platform CI.
+# Derived at runtime so the set cannot drift as components are added or removed.
+component_targets_platform () {
+    local dir="$1" plat="$2" file
+    while IFS= read -r file; do
+        [[ "${file}" == *_test.go ]] && continue
+        grep -q '^[[:space:]]*"testing"' "${file}" && continue
+        return 0
+    done < <(grep -rl --include='*.go' "^//go:build ${plat}\$" "${dir}" 2>/dev/null)
+    return 1
+}
+
 main () {
     CUR_DIRECTORY=$(dirname "$0")
     # Reviews may have comments that need to be cleaned up for jq,
@@ -58,6 +76,8 @@ main () {
     REVIEW_LOGINS=$(echo -n "${JSON}"| jq -r '.latestReviews[].author.login')
     COMPONENTS=$(bash "${CUR_DIRECTORY}/get-components.sh" | tac) # Reversed so we visit subdirectories first
     LABELS=""
+    NEEDS_WINDOWS=""
+    NEEDS_DARWIN=""
     declare -A PROCESSED_COMPONENTS
     declare -A REVIEWED
     declare -A REVIEWER_SET
@@ -98,6 +118,14 @@ main () {
 
             PROCESSED_COMPONENTS["${COMPONENT}"]=true
 
+            if [[ -z "${NEEDS_WINDOWS}" ]] && component_targets_platform "${COMPONENT}" windows; then
+                NEEDS_WINDOWS=1
+            fi
+
+            if [[ -z "${NEEDS_DARWIN}" ]] && component_targets_platform "${COMPONENT}" darwin; then
+                NEEDS_DARWIN=1
+            fi
+
             OWNERS=$(COMPONENT="${COMPONENT}" bash "${CUR_DIRECTORY}/get-codeowners.sh")
 
             for OWNER in ${OWNERS}; do
@@ -125,8 +153,12 @@ main () {
         done
     done
 
-    if [[ $LABELS =~ "receiver/sqlserver" ]]; then
-      LABELS+=",Run Windows"
+    if [[ -n "${NEEDS_WINDOWS}" ]]; then
+        LABELS+=",Run Windows"
+    fi
+
+    if [[ -n "${NEEDS_DARWIN}" ]]; then
+        LABELS+=",Run Darwin"
     fi
 
     if [[ -n "${LABELS}" ]]; then
