@@ -13,12 +13,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/metric"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -141,11 +141,29 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 		}
 	}
 
-	var errs error
+	var retryableErrs, permanentErrs []error
+	var failed ptrace.Traces
+	hasFailure := false
 	for exp, td := range exporterSegregatedTraces {
-		errs = multierr.Append(errs, e.exportToBackend(ctx, exp, td))
+		err := e.exportToBackend(ctx, exp, td)
+		if err == nil {
+			continue
+		}
+		if consumererror.IsPermanent(err) {
+			permanentErrs = append(permanentErrs, err)
+		} else {
+			retryableErrs = append(retryableErrs, err)
+		}
+		if !hasFailure {
+			failed = ptrace.NewTraces()
+			hasFailure = true
+		}
+		copyTracesInto(failed, td)
 	}
-	return errs
+	if hasFailure {
+		return consumererror.NewTraces(joinPartialFailure(retryableErrs, permanentErrs), failed)
+	}
+	return nil
 }
 
 // consumeTracesByID routes each span to the backend for its trace ID, accumulating spans
@@ -216,11 +234,29 @@ func (e *traceExporterImp) consumeTracesByID(ctx context.Context, td ptrace.Trac
 		}
 	}
 
-	var errs error
+	var retryableErrs, permanentErrs []error
+	var failed ptrace.Traces
+	hasFailure := false
 	for exp, d := range dests {
-		errs = multierr.Append(errs, e.exportToBackend(ctx, exp, d.traces))
+		err := e.exportToBackend(ctx, exp, d.traces)
+		if err == nil {
+			continue
+		}
+		if consumererror.IsPermanent(err) {
+			permanentErrs = append(permanentErrs, err)
+		} else {
+			retryableErrs = append(retryableErrs, err)
+		}
+		if !hasFailure {
+			failed = ptrace.NewTraces()
+			hasFailure = true
+		}
+		copyTracesInto(failed, d.traces)
 	}
-	return errs
+	if hasFailure {
+		return consumererror.NewTraces(joinPartialFailure(retryableErrs, permanentErrs), failed)
+	}
+	return nil
 }
 
 // exportToBackend sends td to one backend, records per-backend telemetry, and signals the
