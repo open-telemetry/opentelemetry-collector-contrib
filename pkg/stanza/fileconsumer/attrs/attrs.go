@@ -43,8 +43,11 @@ func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error)
 		attributes[LogFilePath] = path
 	}
 	if r.IncludeFileOwnerName || r.IncludeFileOwnerGroupName || r.IncludeFilePermissions {
-		err = r.addPermissionInfo(file, attributes)
-		if err != nil {
+		// On windows, addPermissionInfo always returns a non-nil error (owner/permission info
+		// isn't implemented there), which causes a warning on that platform.
+		// It's still required for the non-windows implementation, which can return nil.
+		err = r.addPermissionInfo(file, attributes) //nolint:staticcheck
+		if err != nil {                             //nolint:staticcheck
 			return nil, err
 		}
 	}
