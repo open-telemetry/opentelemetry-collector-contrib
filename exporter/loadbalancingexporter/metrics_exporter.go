@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/metric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -146,24 +145,38 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 		metrics.Merge(expMetrics, mds)
 	}
 
-	var errs error
+	var retryableErrs, permanentErrs []error
+	var failed pmetric.Metrics
+	hasFailure := false
 	for exp, mds := range metricsByExporter {
 		start := time.Now()
 		err := exp.ConsumeMetrics(ctx, mds)
 		duration := time.Since(start)
 
 		exp.consumeWG.Done()
-		errs = multierr.Append(errs, err)
 		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
 		if err == nil {
 			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
-		} else {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
-			e.logger.Debug("failed to export metrics", zap.Error(err))
+			continue
 		}
+		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
+		e.logger.Debug("failed to export metrics", zap.Error(err))
+		if consumererror.IsPermanent(err) {
+			permanentErrs = append(permanentErrs, err)
+		} else {
+			retryableErrs = append(retryableErrs, err)
+		}
+		if !hasFailure {
+			failed = pmetric.NewMetrics()
+			hasFailure = true
+		}
+		copyMetricsInto(failed, mds)
 	}
 
-	return errs
+	if hasFailure {
+		return consumererror.NewMetrics(joinPartialFailure(retryableErrs, permanentErrs), failed)
+	}
+	return nil
 }
 
 func splitMetricsByResourceServiceName(md pmetric.Metrics) (map[string]pmetric.Metrics, []error) {
