@@ -712,7 +712,7 @@ this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os=
 			// Set feature gate state for this test
 			originalState := metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate.IsEnabled()
 			testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate, tt.featureGateEnabled)
-			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate, originalState)
+			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate, originalState)()
 
 			// Configure the exporter
 			addr := testutil.GetAvailableLocalAddress(t)
