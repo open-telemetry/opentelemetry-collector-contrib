@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/host_metrics
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Adopt Process Semantic Conventions RC in the Process scraper in hostmetricsreceiver
+note: Add feature gates to opt into Process Semantic Conventions RC in the Process scraper
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [49708]

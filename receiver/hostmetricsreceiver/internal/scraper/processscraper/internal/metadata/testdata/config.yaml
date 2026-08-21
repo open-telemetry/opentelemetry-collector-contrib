@@ -39,7 +39,7 @@ all_set:
       attributes: ["type"]
     process.paging.faults@v1:
       enabled: true
-      attributes: ["type"]
+      attributes: ["system.paging.fault.type"]
     process.signals_pending:
       enabled: true
     process.thread.count@v1:
@@ -183,7 +183,7 @@ none_set:
       attributes: ["type"]
     process.paging.faults@v1:
       enabled: false
-      attributes: ["type"]
+      attributes: ["system.paging.fault.type"]
     process.signals_pending:
       enabled: false
     process.thread.count@v1:

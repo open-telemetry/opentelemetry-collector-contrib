@@ -53,6 +53,8 @@ func (*Consumer) toDataType(dt metrics.DataType) (out datadogV2.MetricIntakeType
 		out = datadogV2.METRICINTAKETYPE_COUNT
 	case metrics.Gauge:
 		out = datadogV2.METRICINTAKETYPE_GAUGE
+	case metrics.Rate:
+		out = datadogV2.METRICINTAKETYPE_RATE
 	}
 
 	return out

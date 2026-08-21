@@ -48,6 +48,7 @@ const (
 	triggerRootSpan     triggerSource = "root_span"
 	triggerTraceTimeout triggerSource = "trace_timeout"
 	triggerEviction     triggerSource = "eviction"
+	triggerShutdown     triggerSource = "shutdown"
 )
 
 // evictionRuleLabel is the sentinel `rule` label used on decision metrics for
@@ -55,14 +56,20 @@ const (
 // evaluation entirely. Same convention as rootSpanConditionRuleLabel.
 const evictionRuleLabel = "_eviction"
 
+// unmatchedRuleLabel is the sentinel `rule` label for traces dropped because
+// no rule matched. All processor-owned labels share the reserved "_" prefix,
+// which config validation forbids in user rule names.
+const unmatchedRuleLabel = "_unmatched"
+
 // Precomputed measurement options for fixed label values, so hot paths avoid
 // rebuilding attribute sets per call.
 var (
-	unmatchedRuleAttr       = metric.WithAttributes(attribute.String("rule", "unmatched"))
+	unmatchedRuleAttr       = metric.WithAttributes(attribute.String("rule", unmatchedRuleLabel))
 	evictionRuleAttr        = metric.WithAttributes(attribute.String("rule", evictionRuleLabel))
 	triggerRootSpanAttr     = metric.WithAttributes(attribute.String("trigger", string(triggerRootSpan)))
 	triggerTraceTimeoutAttr = metric.WithAttributes(attribute.String("trigger", string(triggerTraceTimeout)))
 	triggerEvictionAttr     = metric.WithAttributes(attribute.String("trigger", string(triggerEviction)))
+	triggerShutdownAttr     = metric.WithAttributes(attribute.String("trigger", string(triggerShutdown)))
 )
 
 func triggerAttr(source triggerSource) metric.MeasurementOption {
@@ -71,6 +78,8 @@ func triggerAttr(source triggerSource) metric.MeasurementOption {
 		return triggerRootSpanAttr
 	case triggerTraceTimeout:
 		return triggerTraceTimeoutAttr
+	case triggerShutdown:
+		return triggerShutdownAttr
 	default:
 		return triggerEvictionAttr
 	}
@@ -215,33 +224,34 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []string, error) {
 	switch sc.Type {
 	case AlwaysSample:
 		return sampler.NewAlwaysSample(), nil, nil
-	case Deterministic:
+	case Probabilistic:
 		s, err := sampler.NewDeterministic(sc.SamplingPercentage)
 		return s, nil, err
-	case EMADynamic:
+	case DynamicPercentage:
 		s, err := sampler.NewEMADynamic(sampler.EMADynamicConfig{
-			GoalSamplingPercentage: sc.GoalSamplingPercentage,
+			GoalSamplingPercentage: sc.GoalPercentage,
 			AdjustmentInterval:     sc.AdjustmentInterval,
 			Weight:                 sc.Weight,
 			MaxKeys:                sc.MaxKeys,
 		})
-		return s, append([]string(nil), sc.KeyAttributes...), err
-	case EMAThroughput:
+		return s, append([]string(nil), sc.FingerprintAttributes...), err
+	case DynamicThroughput:
+		if sc.effectiveAlgorithm() == AlgorithmWindowed {
+			s, err := sampler.NewWindowedThroughput(sampler.WindowedThroughputConfig{
+				GoalThroughputPerSec: float64(sc.GoalThroughput),
+				UpdateFrequency:      sc.UpdateFrequency,
+				LookbackFrequency:    sc.LookbackFrequency,
+				MaxKeys:              sc.MaxKeys,
+			})
+			return s, append([]string(nil), sc.FingerprintAttributes...), err
+		}
 		s, err := sampler.NewEMAThroughput(sampler.EMAThroughputConfig{
-			GoalThroughputPerSec: sc.GoalThroughputPerSec,
+			GoalThroughputPerSec: sc.GoalThroughput,
 			AdjustmentInterval:   sc.AdjustmentInterval,
 			Weight:               sc.Weight,
 			MaxKeys:              sc.MaxKeys,
 		})
-		return s, append([]string(nil), sc.KeyAttributes...), err
-	case WindowedThroughput:
-		s, err := sampler.NewWindowedThroughput(sampler.WindowedThroughputConfig{
-			GoalThroughputPerSec: float64(sc.GoalThroughputPerSec),
-			UpdateFrequency:      sc.UpdateFrequency,
-			LookbackFrequency:    sc.LookbackFrequency,
-			MaxKeys:              sc.MaxKeys,
-		})
-		return s, append([]string(nil), sc.KeyAttributes...), err
+		return s, append([]string(nil), sc.FingerprintAttributes...), err
 	default:
 		return nil, nil, fmt.Errorf("unknown sampler type %q", sc.Type)
 	}
@@ -265,8 +275,14 @@ func (p *dynamicSamplingProcessor) Start(context.Context, component.Host) error 
 
 // Shutdown cancels any pending decision timers, stops samplers, and waits for
 // in-flight decisions to drain.
-func (p *dynamicSamplingProcessor) Shutdown(context.Context) error {
+func (p *dynamicSamplingProcessor) Shutdown(ctx context.Context) error {
 	p.mu.Lock()
+	if p.stopped {
+		// Shutdown already ran (drained and stopped the samplers); a second
+		// call must not drain or stop anything again.
+		p.mu.Unlock()
+		return nil
+	}
 	p.stopped = true
 	for id, t := range p.timers {
 		if t.Stop() {
@@ -276,9 +292,34 @@ func (p *dynamicSamplingProcessor) Shutdown(context.Context) error {
 		}
 		delete(p.timers, id)
 	}
+	// Snapshot pending traces in arrival order for the drain below. Every
+	// buffered trace has exactly one arrival entry, but entries may be stale
+	// (already decided or evicted), so only ids still in the map are taken.
+	pending := make([]*pendingTrace, 0, len(p.traces))
+	for _, id := range p.arrival {
+		if pt, ok := p.traces[id]; ok {
+			pending = append(pending, pt)
+			delete(p.traces, id)
+		}
+	}
+	p.arrival = nil
 	p.mu.Unlock()
 
 	p.wg.Wait()
+
+	// Drain: decide every pending trace with the spans seen so far rather
+	// than silently dropping the buffer. Runs the normal rule path (samplers
+	// are still running), skipping decision_delay because nothing more will
+	// arrive. Bounded by num_traces. The pipeline shuts down front to back,
+	// so the next consumer still accepts the forwarded traces.
+	for _, pt := range pending {
+		// A trace already in its decision_delay window was counted when its
+		// trigger fired; shutdown merely completes that decision early.
+		if !pt.triggered {
+			p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(ctx, 1, triggerShutdownAttr)
+		}
+		p.decideTrace(ctx, pt)
+	}
 
 	var errs error
 	for _, r := range p.rules {
@@ -423,7 +464,6 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 	}
 
 	active := len(p.traces)
-	stopped := p.stopped
 	p.mu.Unlock()
 	p.telemetry.ProcessorDynamicSamplingTracesActive.Record(ctx, int64(active))
 
@@ -459,10 +499,19 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 		p.mu.Unlock()
 	}
 
-	if stopped {
-		// Drop late forwards and evicted traces if we're shutting down rather
-		// than push into the downstream consumer.
-		return nil
+	// Re-read stopped under the lock rather than using a snapshot from the
+	// top of the batch: the timer-arming loop above may have observed a newer
+	// value, and the forward decision should be at least as fresh. Skipped
+	// entirely when there is nothing to forward.
+	if len(evicted) > 0 || len(lateForwards) > 0 {
+		p.mu.Lock()
+		stopped := p.stopped
+		p.mu.Unlock()
+		if stopped {
+			// Drop late forwards and evicted traces if we're shutting down
+			// rather than push into the downstream consumer.
+			return nil
+		}
 	}
 
 	// Decide evicted traces outside the lock. Bounded work: at most one
@@ -693,7 +742,12 @@ func (p *dynamicSamplingProcessor) finishDecision(ctx context.Context, pt *pendi
 // configured eviction policy. The trace may be incomplete; decision_delay is
 // deliberately skipped because there is no room to wait.
 func (p *dynamicSamplingProcessor) decideEvicted(ctx context.Context, pt *pendingTrace) {
-	p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(ctx, 1, triggerEvictionAttr)
+	// Same rule as the shutdown drain: a trace already in its decision_delay
+	// window was counted when its trigger fired, so eviction of a mid-delay
+	// trace must not count the decision twice.
+	if !pt.triggered {
+		p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(ctx, 1, triggerEvictionAttr)
+	}
 	if p.cfg.Eviction.Policy == EvictionProbabilistic {
 		p.decideEvictedProbabilistic(ctx, pt)
 		return
@@ -714,7 +768,8 @@ func (p *dynamicSamplingProcessor) decideEvictedProbabilistic(ctx context.Contex
 			effectiveTh = ours
 		}
 	} else {
-		// Unreachable with a validated config; fall back to the upstream
+		// Unreachable with a validated config unless sampling_percentage is
+		// below the sampling package's probability floor (~1e-15%); fall back to the upstream
 		// threshold rather than dropping outright.
 		p.logger.Debug("eviction threshold calculation failed, falling back to upstream",
 			zap.Error(err), zap.Stringer("traceID", pt.traceID))

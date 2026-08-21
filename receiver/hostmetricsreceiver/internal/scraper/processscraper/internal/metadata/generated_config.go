@@ -481,7 +481,7 @@ func (ms *ProcessPagingFaultsMetricConfig) Validate() error {
 type ProcessPagingFaultsV1MetricAttributeKey string
 
 const (
-	ProcessPagingFaultsV1MetricAttributeKeySystemPagingFaultType ProcessPagingFaultsV1MetricAttributeKey = "type"
+	ProcessPagingFaultsV1MetricAttributeKeySystemPagingFaultType ProcessPagingFaultsV1MetricAttributeKey = "system.paging.fault.type"
 )
 
 // ProcessPagingFaultsV1MetricConfig provides config for the process.paging.faults@v1 metric.
@@ -512,7 +512,7 @@ func (ms *ProcessPagingFaultsV1MetricConfig) Validate() error {
 		switch val {
 		case ProcessPagingFaultsV1MetricAttributeKeySystemPagingFaultType:
 		default:
-			return fmt.Errorf("metric process.paging.faults@v1 doesn't have an attribute %v, valid attributes: [type]", val)
+			return fmt.Errorf("metric process.paging.faults@v1 doesn't have an attribute %v, valid attributes: [system.paging.fault.type]", val)
 		}
 	}
 

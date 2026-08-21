@@ -122,7 +122,6 @@ attributes:
     enum: [system, user, wait]
 
   system.paging.fault.type:
-    name_override: type
     description: Type of memory paging fault.
     type: string
     requirement_level: recommended
@@ -205,7 +204,7 @@ metrics:
   process.cpu.utilization@v1:
     enabled: false
     description: >-
-      Difference in process.cpu.time since the last measurement, 
+      Difference in process.cpu.time since the last measurement,
       divided by the elapsed time and number of CPUs available to the process.
       On the first scrape, no data point is emitted for this metric.
     unit: "1"

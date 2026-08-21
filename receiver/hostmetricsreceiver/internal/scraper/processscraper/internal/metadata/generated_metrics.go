@@ -742,7 +742,7 @@ type metricProcessCPUUtilizationV1 struct {
 // init fills process.cpu.utilization@v1 metric with initial data.
 func (m *metricProcessCPUUtilizationV1) init() {
 	m.data.SetName("process.cpu.utilization")
-	m.data.SetDescription("Difference in process.cpu.time since the last measurement,  divided by the elapsed time and number of CPUs available to the process. On the first scrape, no data point is emitted for this metric.")
+	m.data.SetDescription("Difference in process.cpu.time since the last measurement, divided by the elapsed time and number of CPUs available to the process. On the first scrape, no data point is emitted for this metric.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1395,7 +1395,7 @@ func (m *metricProcessPagingFaultsV1) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricProcessPagingFaultsV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemPagingFaultTypeAttributeValue string, emitLegacyAttrs bool) {
+func (m *metricProcessPagingFaultsV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemPagingFaultTypeAttributeValue string, pagingFaultTypeAttributeValue string, emitLegacyAttrs bool) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1404,10 +1404,10 @@ func (m *metricProcessPagingFaultsV1) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, ProcessPagingFaultsV1MetricAttributeKeySystemPagingFaultType) {
-		dp.Attributes().PutStr("type", systemPagingFaultTypeAttributeValue)
+		dp.Attributes().PutStr("system.paging.fault.type", systemPagingFaultTypeAttributeValue)
 	}
 	if emitLegacyAttrs {
-		dp.Attributes().PutStr("type", systemPagingFaultTypeAttributeValue)
+		dp.Attributes().PutStr("type", pagingFaultTypeAttributeValue)
 	}
 
 	var s string
@@ -2324,13 +2324,13 @@ func (mb *MetricsBuilder) RecordProcessOpenFileDescriptorsDataPoint(ts pcommon.T
 }
 
 // RecordProcessPagingFaultsDataPoint adds a data point to process.paging.faults metric.
-func (mb *MetricsBuilder) RecordProcessPagingFaultsDataPoint(ts pcommon.Timestamp, val int64, pagingFaultTypeAttributeValue AttributePagingFaultType) {
+func (mb *MetricsBuilder) RecordProcessPagingFaultsDataPoint(ts pcommon.Timestamp, val int64, pagingFaultTypeAttributeValue AttributePagingFaultType, systemPagingFaultTypeAttributeValue AttributeSystemPagingFaultType) {
 	// Dual-schema emission controlled by feature gates
 	if !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
 		mb.metricProcessPagingFaults.recordDataPoint(mb.startTime, ts, val, pagingFaultTypeAttributeValue.String())
 	}
 	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
-		mb.metricProcessPagingFaultsV1.recordDataPoint(mb.startTime, ts, val, pagingFaultTypeAttributeValue.String(), true)
+		mb.metricProcessPagingFaultsV1.recordDataPoint(mb.startTime, ts, val, systemPagingFaultTypeAttributeValue.String(), pagingFaultTypeAttributeValue.String(), true)
 	}
 }
 
