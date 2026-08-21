@@ -222,7 +222,9 @@ func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attr
 	default:
 		strVal := body.AsString()
 		if s.shouldAllowValue(strVal) {
-			allowedKeys = append(allowedKeys, "body")
+			// TODO: this is assigned here, but return makes the assignment useless. Open an issue
+			// to investigate the correct behavior
+			allowedKeys = append(allowedKeys, "body") //nolint:staticcheck
 			return
 		}
 		processedValue := s.processStringValueForLogBody(strVal)
