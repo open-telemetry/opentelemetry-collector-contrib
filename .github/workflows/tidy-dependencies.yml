@@ -20,7 +20,7 @@ jobs:
       pull-requests: write # for gh pr edit --remove-label
     timeout-minutes: 30
     runs-on: ubuntu-24.04
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependency-major-update') && (github.actor == 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, 'renovatebot')) && github.event.pull_request.head.repo.fork == false }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependency-major-update') && (github.event.pull_request.user.login == 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, 'renovatebot')) && github.event.pull_request.head.repo.fork == false }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
