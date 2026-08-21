@@ -22,6 +22,14 @@ Number of trace decisions made, labelled by which event triggered the decision (
 | ---- | ----------- | ---------- | --------- | --------- |
 | {decisions} | Sum | Int | true | Development |
 
+### otelcol_processor_dynamic_sampling_fingerprint_duration
+
+Time spent extracting a rule's fingerprint per decision, in microseconds, labelled by rule. A relative signal for spotting expensive fingerprints (wide scopes such as any. on large traces); absolute values depend on host and load.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| us | Histogram | Int | Development |
+
 ### otelcol_processor_dynamic_sampling_incoming_tracestate_unparseable
 
 Number of spans whose incoming W3C tracestate could not be parsed when applying the sampling threshold.
