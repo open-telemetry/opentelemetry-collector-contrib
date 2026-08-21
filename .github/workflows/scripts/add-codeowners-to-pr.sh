@@ -41,21 +41,37 @@ request_review () {
     fi
 }
 
-# A component "targets" a platform if it ships non-test source gated exactly on
-# that platform. Two refinements matter:
-#   * the constraint must be exactly "windows"/"darwin" -- matching any line
-#     containing the word would also match "//go:build !windows", i.e. components
-#     explicitly excluded FROM that platform.
-#   * files importing "testing" are helpers (some are not named *_test.go) and
-#     don't imply the component needs platform CI.
+# A component "targets" a platform if it ships non-test source constrained to
+# that platform. Go expresses this two ways and both must be handled:
+#   * implicitly, via the filename suffix (foo_windows.go, foo_windows_amd64.go)
+#     with no directive present at all;
+#   * explicitly, via //go:build -- where the platform may appear inside a
+#     compound expression ("darwin || freebsd"), and where a negated mention
+#     ("!windows") means the opposite and must not count.
+# Files importing "testing" are helpers (some are not named *_test.go) and don't
+# imply the component needs platform CI.
 # Derived at runtime so the set cannot drift as components are added or removed.
 component_targets_platform () {
-    local dir="$1" plat="$2" file
+    local dir="$1" plat="$2" file line expr
+    [[ -d "${dir}" ]] || return 1
+
     while IFS= read -r file; do
         [[ "${file}" == *_test.go ]] && continue
         grep -q '^[[:space:]]*"testing"' "${file}" && continue
         return 0
-    done < <(grep -rl --include='*.go' "^//go:build ${plat}\$" "${dir}" 2>/dev/null)
+    done < <(find "${dir}" -type f \( -name "*_${plat}.go" -o -name "*_${plat}_*.go" \) 2>/dev/null)
+
+    while IFS= read -r file; do
+        [[ "${file}" == *_test.go ]] && continue
+        grep -q '^[[:space:]]*"testing"' "${file}" && continue
+        line=$(grep -m1 '^//go:build ' "${file}") || continue
+        # Drop negated mentions, reduce operators to spaces, then look for the
+        # platform as a standalone token.
+        expr=" $(printf '%s' "${line#//go:build }" \
+            | sed -E "s/![[:space:]]*${plat}//g; s/[^a-zA-Z0-9_]/ /g") "
+        [[ "${expr}" == *" ${plat} "* ]] && return 0
+    done < <(grep -rl --include='*.go' "^//go:build .*${plat}" "${dir}" 2>/dev/null)
+
     return 1
 }
 
