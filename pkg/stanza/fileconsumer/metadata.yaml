@@ -38,6 +38,15 @@ feature_gates:
     from_version: v0.148.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266
     skip_strict_validation: true
+  - id: filelog.requireExplicitTopN
+    stage: alpha
+    description: >-
+      When enabled, requires `ordering_criteria.top_n` to be set explicitly when
+      `ordering_criteria.sort_by` is configured. When disabled, an unset `top_n` falls
+      back to the legacy default of 1.
+    from_version: v0.159.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47444
+    skip_strict_validation: true
   - id: filelog.windows.caseInsensitive
     stage: beta
     description: >-

@@ -48,6 +48,12 @@ all_set:
     mysql.innodb.operation.pending:
       enabled: true
       attributes: ["operation"]
+    mysql.innodb.row_lock.wait.count:
+      enabled: true
+    mysql.innodb.row_lock.wait.duration.avg:
+      enabled: true
+    mysql.innodb.row_lock.wait.duration.max:
+      enabled: true
     mysql.joins:
       enabled: true
       attributes: ["kind"]
@@ -218,6 +224,12 @@ reaggregate_set:
     mysql.innodb.operation.pending:
       enabled: true
       attributes: []
+    mysql.innodb.row_lock.wait.count:
+      enabled: true
+    mysql.innodb.row_lock.wait.duration.avg:
+      enabled: true
+    mysql.innodb.row_lock.wait.duration.max:
+      enabled: true
     mysql.joins:
       enabled: true
       attributes: []
@@ -388,6 +400,12 @@ none_set:
     mysql.innodb.operation.pending:
       enabled: false
       attributes: ["operation"]
+    mysql.innodb.row_lock.wait.count:
+      enabled: false
+    mysql.innodb.row_lock.wait.duration.avg:
+      enabled: false
+    mysql.innodb.row_lock.wait.duration.max:
+      enabled: false
     mysql.joins:
       enabled: false
       attributes: ["kind"]
