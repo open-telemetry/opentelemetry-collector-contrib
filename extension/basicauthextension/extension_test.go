@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"net/http"
@@ -311,13 +312,13 @@ type mockSecretProvider struct {
 	onChange func(string)
 }
 
-func (m *mockSecretProvider) Start(context.Context, component.Host) error { return nil }
-func (m *mockSecretProvider) Shutdown(context.Context) error              { return nil }
+func (*mockSecretProvider) Start(context.Context, component.Host) error { return nil }
+func (*mockSecretProvider) Shutdown(context.Context) error              { return nil }
 
 func (m *mockSecretProvider) GetSecret(_ context.Context) (string, error) {
 	s := m.secret.Load()
 	if s == nil {
-		return "", fmt.Errorf("no secret configured")
+		return "", errors.New("no secret configured")
 	}
 	return *s, nil
 }
@@ -328,13 +329,6 @@ func (m *mockSecretProvider) OnChange(fn func(string)) {
 
 func (m *mockSecretProvider) setSecret(s string) {
 	m.secret.Store(&s)
-}
-
-func (m *mockSecretProvider) simulateRotation(s string) {
-	m.secret.Store(&s)
-	if m.onChange != nil {
-		m.onChange(s)
-	}
 }
 
 // mockHost wraps componenttest.NewNopHost() and adds custom extensions.

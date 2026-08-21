@@ -124,14 +124,14 @@ func (ba *basicAuthServer) Start(ctx context.Context, host component.Host) error
 	return nil
 }
 
-func (ba *basicAuthServer) Shutdown(_ context.Context) error {
+func (*basicAuthServer) Shutdown(_ context.Context) error {
 	return nil
 }
 
 func (ba *basicAuthServer) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	m := ba.matcher.Load()
 	if m == nil {
-		return ctx, fmt.Errorf("htpasswd not yet initialized")
+		return ctx, errors.New("htpasswd not yet initialized")
 	}
 	return basicauth.Authenticate(ctx, headers, m.verify)
 }
