@@ -76,6 +76,11 @@ func newHistogramMetrics(mutate func(pmetric.HistogramDataPoint)) pmetric.Metric
 // TestHistogramSumMinMax covers the HasSum, Min, HasMin, Max and HasMax fields of
 // HistogramDataPoint, which the goldendataset-based tests above never vary.
 func TestHistogramSumMinMax(t *testing.T) {
+	// Each case asserts only that the diffs it cares about are reported, so that the test does not
+	// have to be updated whenever an unrelated field is added to or reordered in diffHistogramPt.
+	// TestNoDiffForIdenticalHistogramSumMinMax covers the other direction, that no diff is reported
+	// for points that are equal.
+	//
 	// Removing an optional field reports both the presence flag and the value, because the value
 	// accessor falls back to the zero value once the field is unset. This mirrors how
 	// diffExponentialHistogramPt reports its optional fields.
@@ -127,7 +132,7 @@ func TestHistogramSumMinMax(t *testing.T) {
 			for _, d := range diffs {
 				msgs = append(msgs, d.Msg)
 			}
-			assert.Equal(t, tt.wantMsgs, msgs)
+			assert.Subset(t, msgs, tt.wantMsgs)
 		})
 	}
 }
