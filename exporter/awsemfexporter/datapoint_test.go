@@ -2165,3 +2165,90 @@ func BenchmarkGetAndCalculateDeltaDataPointsInclude300Buckets(b *testing.B) {
 func BenchmarkGetAndCalculateDeltaDataPointsInclude500Buckets(b *testing.B) {
 	benchmarkGetAndCalculateDeltaDataPoints(b, 500)
 }
+
+func TestCalculateDeltaDatapoints_NumberDataPointSliceCounterReset(t *testing.T) {
+	// A cumulative counter signals a reset by reporting a new start timestamp.
+	// Short-lived producers (a cron job, a Lambda) restart the counter on every
+	// run, so the raw value repeats while the start timestamp moves forward.
+	// Each run must be treated as a new series rather than diffed against the
+	// previous run.
+	testCases := []struct {
+		name          string
+		startTimes    []time.Time
+		metricValues  []int64
+		expectedDelta []float64
+	}{
+		{
+			name:          "counter restarted on every run",
+			startTimes:    []time.Time{time.UnixMilli(1000), time.UnixMilli(2000), time.UnixMilli(3000)},
+			metricValues:  []int64{1, 1, 1},
+			expectedDelta: []float64{1, 1, 1},
+		},
+		{
+			name:          "counter running continuously",
+			startTimes:    []time.Time{time.UnixMilli(1000), time.UnixMilli(1000), time.UnixMilli(1000)},
+			metricValues:  []int64{1, 3, 7},
+			expectedDelta: []float64{1, 2, 4},
+		},
+		{
+			name:          "counter reset partway through a series",
+			startTimes:    []time.Time{time.UnixMilli(1000), time.UnixMilli(1000), time.UnixMilli(2000)},
+			metricValues:  []int64{5, 9, 2},
+			expectedDelta: []float64{5, 4, 2},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			emfCalcs := setupEmfCalculators()
+			defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
+
+			for i, value := range tc.metricValues {
+				numberDPS := pmetric.NewNumberDataPointSlice()
+				numberDP := numberDPS.AppendEmpty()
+				numberDP.SetStartTimestamp(pcommon.NewTimestampFromTime(tc.startTimes[i]))
+				numberDP.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(int64(4000 + i))))
+				numberDP.SetIntValue(value)
+				numberDP.Attributes().PutStr("label1", "value1")
+
+				// retainInitialValueForDelta keeps the first point of each series,
+				// which is what makes a restarted counter observable at all.
+				dmd := generateDeltaMetricMetadata(true, "counter", true)
+				dps, retained := numberDataPointSlice{dmd, numberDPS}.CalculateDeltaDatapoints(0, instrLibName, false, emfCalcs)
+
+				require.True(t, retained, "datapoint %d should be retained", i)
+				require.Len(t, dps, 1)
+				assert.InDelta(t, tc.expectedDelta[i], dps[0].value, 0.002, "datapoint %d", i)
+			}
+		})
+	}
+}
+
+func TestCalculateDeltaDatapoints_SummaryDataPointSliceCounterReset(t *testing.T) {
+	// Summary sum/count are cumulative too, so a restarted producer must start a
+	// new series here as well rather than be diffed against the previous run.
+	emfCalcs := setupEmfCalculators()
+	defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
+
+	startTimes := []time.Time{time.UnixMilli(1000), time.UnixMilli(2000)}
+	expectedSums := []float64{4.5, 4.5}
+	expectedCounts := []uint64{3, 3}
+
+	for i, startTime := range startTimes {
+		summaryDPS := pmetric.NewSummaryDataPointSlice()
+		summaryDP := summaryDPS.AppendEmpty()
+		summaryDP.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+		summaryDP.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(int64(3000 + i))))
+		summaryDP.SetSum(4.5)
+		summaryDP.SetCount(3)
+		summaryDP.Attributes().PutStr("label1", "value1")
+
+		dmd := generateDeltaMetricMetadata(true, "foo", true)
+		dps, retained := summaryDataPointSlice{dmd, summaryDPS}.CalculateDeltaDatapoints(0, "", false, emfCalcs)
+
+		require.True(t, retained, "datapoint %d should be retained", i)
+		require.Len(t, dps, 1)
+		assert.InDelta(t, expectedSums[i], dps[0].value.(*cWMetricStats).Sum, 0.002, "datapoint %d sum", i)
+		assert.Equal(t, expectedCounts[i], dps[0].value.(*cWMetricStats).Count, "datapoint %d count", i)
+	}
+}
