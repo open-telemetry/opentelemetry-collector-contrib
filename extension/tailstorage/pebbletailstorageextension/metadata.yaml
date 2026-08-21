@@ -6,6 +6,9 @@ description: Stores pending trace data for tail sampling in a local Pebble datab
 tests:
   config:
     directory: test-storage
+    max_storage_size_mib: 1
+  goleak:
+    setup: "setupTestMain(m)"
 
 status:
   class: extension

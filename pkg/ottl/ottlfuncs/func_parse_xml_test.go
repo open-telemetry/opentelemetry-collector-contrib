@@ -6,6 +6,7 @@ package ottlfuncs
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -23,6 +24,10 @@ func Test_ParseXML(t *testing.T) {
 		want        map[string]any
 		createError string
 		parseError  string
+		// parseErrorAnyOf is used instead of parseError when the wording of the
+		// error depends on the Go version in use. The error must contain at
+		// least one of the listed strings.
+		parseErrorAnyOf []string
 	}{
 		{
 			name: "Text values in nested elements",
@@ -291,7 +296,17 @@ func Test_ParseXML(t *testing.T) {
 					},
 				},
 			},
-			parseError: "exceeded maximum XML nesting depth",
+			// Whichever depth guard trips first depends on the Go version.
+			// Through a custom xml.Unmarshaler, encoding/xml resets its own
+			// depth counter on every DecodeElement call up to Go 1.25.12 and
+			// 1.26.5, so maxXMLElementDepth is what rejects the input. As of
+			// Go 1.25.13 and 1.26.6 that counter is tracked on the decoder and
+			// accumulates across calls, so encoding/xml rejects the input one
+			// level earlier and reports its own error instead.
+			parseErrorAnyOf: []string{
+				"exceeded maximum XML nesting depth",
+				"exceeded max depth",
+			},
 		},
 	}
 
@@ -308,6 +323,13 @@ func Test_ParseXML(t *testing.T) {
 			result, err := exprFunc(t.Context(), nil)
 			if tt.parseError != "" {
 				require.ErrorContains(t, err, tt.parseError)
+				return
+			}
+			if len(tt.parseErrorAnyOf) > 0 {
+				require.Error(t, err)
+				require.True(t, slices.ContainsFunc(tt.parseErrorAnyOf, func(want string) bool {
+					return strings.Contains(err.Error(), want)
+				}), "error %q contains none of %q", err, tt.parseErrorAnyOf)
 				return
 			}
 

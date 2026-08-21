@@ -27,11 +27,13 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for resourcedetectionprocessor/elastic_beanstalk resource attributes.
 type ResourceAttributesConfig struct {
-	CloudPlatform         ResourceAttributeConfig `mapstructure:"cloud.platform"`
-	CloudProvider         ResourceAttributeConfig `mapstructure:"cloud.provider"`
-	DeploymentEnvironment ResourceAttributeConfig `mapstructure:"deployment.environment"`
-	ServiceInstanceID     ResourceAttributeConfig `mapstructure:"service.instance.id"`
-	ServiceVersion        ResourceAttributeConfig `mapstructure:"service.version"`
+	CloudPlatform             ResourceAttributeConfig `mapstructure:"cloud.platform"`
+	CloudProvider             ResourceAttributeConfig `mapstructure:"cloud.provider"`
+	DeploymentEnvironment     ResourceAttributeConfig `mapstructure:"deployment.environment"`
+	DeploymentEnvironmentName ResourceAttributeConfig `mapstructure:"deployment.environment.name"`
+	DeploymentID              ResourceAttributeConfig `mapstructure:"deployment.id"`
+	ServiceInstanceID         ResourceAttributeConfig `mapstructure:"service.instance.id"`
+	ServiceVersion            ResourceAttributeConfig `mapstructure:"service.version"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -43,6 +45,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		DeploymentEnvironment: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		DeploymentEnvironmentName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		DeploymentID: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		ServiceInstanceID: ResourceAttributeConfig{
