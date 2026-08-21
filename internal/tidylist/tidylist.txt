@@ -322,7 +322,6 @@ receiver/redfishreceiver
 receiver/redisreceiver
 receiver/riakreceiver
 receiver/saphanareceiver
-receiver/simpleprometheusreceiver/examples/federation/prom-counter
 receiver/simpleprometheusreceiver
 receiver/skywalkingreceiver
 receiver/snmpreceiver
