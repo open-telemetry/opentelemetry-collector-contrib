@@ -1,0 +1,16 @@
+change_type: bug_fix
+
+component: receiver/postgresql
+
+note: "Guard top-query collection against pg_stat_statements entries whose database has been dropped"
+
+issues: [45713]
+
+subtext: |
+  When a database is dropped while its statistics linger in pg_stat_statements,
+  the top-query row surfaces with a nil db.namespace, which panicked on a string
+  type assertion in collectTopQuery. The pg_database join is now an INNER JOIN so
+  such rows are excluded at query time, and the scraper skips any row with a nil
+  db.namespace as a defense-in-depth guard against re-triggering the panic.
+
+change_logs: [user]
