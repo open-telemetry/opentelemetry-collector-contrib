@@ -163,6 +163,30 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "partition_traces_by_resource_attributes"),
+			expected: &Config{
+				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+				QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				ClientConfig: func() configkafka.ClientConfig {
+					config := configkafka.NewDefaultClientConfig()
+					config.Brokers = []string{"localhost:9092"}
+					return config
+				}(),
+				Producer:                            configkafka.NewDefaultProducerConfig(),
+				Logs:                                SignalConfig{Topic: defaultLogsTopic, Encoding: defaultLogsEncoding},
+				Metrics:                             SignalConfig{Topic: defaultMetricsTopic, Encoding: defaultMetricsEncoding},
+				Traces:                              SignalConfig{Topic: defaultTracesTopic, Encoding: defaultTracesEncoding},
+				Profiles:                            SignalConfig{Topic: defaultProfilesTopic, Encoding: defaultProfilesEncoding},
+				PartitionTracesByResourceAttributes: []string{"service.name", "deployment.environment"},
+				RecordPartitioner: (RecordPartitionerConfig{
+					StickyKey: &StickyKeyPartitionerConfig{
+						Hasher: "sarama_compat",
+					},
+				}),
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "per_signal_topic"),
 			expected: &Config{
 				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
@@ -364,7 +388,17 @@ func TestLoadConfigFailed(t *testing.T) {
 			configFile:    "config-partitioning-failed.yaml",
 		},
 		{
+			id:            component.NewIDWithName(metadata.Type, "traces_partition_exclusive"),
+			errorContains: errTracesPartitionExclusive.Error(),
+			configFile:    "config-partitioning-failed.yaml",
+		},
+		{
 			id:            component.NewIDWithName(metadata.Type, "traces_message_key_exclusive"),
+			errorContains: errTracesMessageKeyExclusive.Error(),
+			configFile:    "config-partitioning-failed.yaml",
+		},
+		{
+			id:            component.NewIDWithName(metadata.Type, "traces_message_key_exclusive_resource"),
 			errorContains: errTracesMessageKeyExclusive.Error(),
 			configFile:    "config-partitioning-failed.yaml",
 		},
