@@ -19,6 +19,7 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension v0.159.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth/awsiamdbauthextension v0.159.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy v0.159.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/awssecretsmanagerprovider v0.159.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/azureauthextension v0.159.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.159.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.159.0

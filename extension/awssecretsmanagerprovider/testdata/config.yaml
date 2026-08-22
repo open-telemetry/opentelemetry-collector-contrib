@@ -1,0 +1,4 @@
+awssecretsmanagerprovider:
+  secret_arn: "arn:aws:secretsmanager:us-east-1:123456789012:secret:my-secret"
+  region: "us-east-1"
+  refresh_interval: 60m
