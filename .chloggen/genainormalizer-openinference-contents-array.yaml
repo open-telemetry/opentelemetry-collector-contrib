@@ -1,0 +1,33 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: processor/gen_ai_normalizer
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Reconstruct text parts from OpenInference's indexed content array so messages that omit the flat `message.content` field are no longer emitted with empty `parts`
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [50133]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Instrumentors for provider APIs that model message content as a list (AWS Bedrock's `converse` takes
+  `content` as an array even for plain text) emit
+  `llm.{input,output}_messages.N.message.contents.M.message_content.*` and never set the flat
+  `message.content` string. Previously such messages were normalized to `gen_ai.input.messages`
+  entries carrying a role and `"parts": []`, silently dropping the message text; with
+  `remove_originals: true` the source attributes were removed as well, so the content was lost entirely.
+
+  Text entries are now reconstructed in source order, one part per content block. The flat
+  `message.content` string still takes precedence when both forms are present. Non-text entries
+  (image, audio, reasoning) remain unsupported and are skipped.
+
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
