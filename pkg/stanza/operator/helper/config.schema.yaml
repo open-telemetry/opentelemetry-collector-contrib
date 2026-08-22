@@ -76,6 +76,8 @@ $defs:
     description: SeverityConfig allows users to specify how to parse a severity from a field.
     type: object
     properties:
+      drop_field:
+        type: boolean
       mapping:
         type: object
         additionalProperties:
@@ -97,6 +99,8 @@ $defs:
     description: TimeParser is a helper that parses time onto an entry.
     type: object
     properties:
+      drop_field:
+        type: boolean
       layout:
         type: string
       layout_type:

@@ -14,6 +14,7 @@ import (
 
 // SeverityParser is a helper that parses severity onto an entry.
 type SeverityParser struct {
+	DropFieldConfig
 	ParseFrom     entry.Field
 	Mapping       severityMap
 	overwriteText bool
@@ -40,6 +41,7 @@ func (p *SeverityParser) Parse(ent *entry.Entry) error {
 
 	ent.Severity = severity
 	ent.SeverityText = sevText
+	p.Drop(ent, p.ParseFrom)
 	return nil
 }
 

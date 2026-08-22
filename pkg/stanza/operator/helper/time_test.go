@@ -754,6 +754,35 @@ func TestUnmarshalTimeConfig(t *testing.T) {
 					return c
 				}(),
 			},
+			{
+				Name: "drop_field",
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Time = NewTimeParser()
+					c.Time.DropField = true
+					return c
+				}(),
+			},
 		},
 	}.Run(t)
+}
+
+func TestTimeParserDropField(t *testing.T) {
+	t.Parallel()
+
+	parseFrom := entry.NewBodyField("timestamp_field")
+	tp := &TimeParser{
+		LayoutType: EpochKey,
+		Layout:     "s",
+		ParseFrom:       &parseFrom,
+		DropFieldConfig: DropFieldConfig{DropField: true},
+	}
+
+	ent := makeTestEntry(parseFrom, "1136214245")
+	require.NoError(t, tp.Validate())
+	require.NoError(t, tp.Parse(ent))
+
+	require.Equal(t, time.Unix(1136214245, 0), ent.Timestamp)
+	_, ok := ent.Get(parseFrom)
+	require.False(t, ok, "expected parseFrom field to be dropped")
 }
