@@ -136,6 +136,11 @@ all_set:
       enabled: true
     k8s.volume.inodes.used:
       enabled: true
+    system.process.count:
+      enabled: true
+      attributes: ["process.state"]
+    system.process.limit:
+      enabled: true
   resource_attributes:
     aws.volume.id:
       enabled: true
@@ -306,6 +311,11 @@ reaggregate_set:
       enabled: true
     k8s.volume.inodes.used:
       enabled: true
+    system.process.count:
+      enabled: true
+      attributes: []
+    system.process.limit:
+      enabled: true
   resource_attributes:
     aws.volume.id:
       enabled: true
@@ -475,6 +485,11 @@ none_set:
     k8s.volume.inodes.free:
       enabled: false
     k8s.volume.inodes.used:
+      enabled: false
+    system.process.count:
+      enabled: false
+      attributes: ["process.state"]
+    system.process.limit:
       enabled: false
   resource_attributes:
     aws.volume.id:

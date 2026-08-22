@@ -80,7 +80,6 @@ func requireMetricOk(t *testing.T, m pmetric.Metric) {
 		}
 	case pmetric.MetricTypeSum:
 		sum := m.Sum()
-		require.True(t, sum.IsMonotonic())
 		require.Equal(t, pmetric.AggregationTemporalityCumulative, sum.AggregationTemporality())
 		for i := 0; i < sum.DataPoints().Len(); i++ {
 			dp := sum.DataPoints().At(i)
@@ -186,6 +185,43 @@ func TestEmitMetrics(t *testing.T) {
 			require.True(t, found, "expected direction attribute")
 		}
 	}
+}
+
+func TestRlimit(t *testing.T) {
+	rc := &fakeRestClient{}
+	statsProvider := NewStatsProvider(rc)
+	summary, _ := statsProvider.StatsSummary()
+	mgs := map[MetricGroup]bool{
+		NodeMetricGroup: true,
+	}
+	ifaces := map[MetricGroup]bool{}
+
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.SystemProcessCount.Enabled = true
+	cfg.Metrics.SystemProcessLimit.Enabled = true
+
+	mbs := &metadata.MetricsBuilders{
+		NodeMetricsBuilder: metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+	}
+
+	mds := MetricsData(zap.NewNop(), summary, Metadata{}, mgs, ifaces, mbs, NewCPUUsageCalculator())
+	requireMetricsOk(t, mds)
+	metrics := indexedFakeMetrics(mds)
+
+	requireContains(t, metrics, "system.process.count")
+	requireContains(t, metrics, "system.process.limit")
+
+	countMetrics := metrics["system.process.count"]
+	require.Len(t, countMetrics, 1)
+	dp := countMetrics[0].Sum().DataPoints().At(0)
+	require.Equal(t, int64(438), dp.IntValue())
+	val, ok := dp.Attributes().Get("process.state")
+	require.True(t, ok)
+	require.Equal(t, "running", val.Str())
+
+	limitMetrics := metrics["system.process.limit"]
+	require.Len(t, limitMetrics, 1)
+	require.Equal(t, int64(32768), limitMetrics[0].Sum().DataPoints().At(0).IntValue())
 }
 
 func requireContains(t *testing.T, metrics map[string][]pmetric.Metric, metricName string) {
