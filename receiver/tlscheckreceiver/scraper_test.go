@@ -688,6 +688,14 @@ func TestValidateFilepath(t *testing.T) {
 	// Create a temporary directory for testing
 	tmpDir := t.TempDir()
 
+	// Create a relative file in the current working directory for testing relative paths
+	relFile, err := os.CreateTemp(".", "test-rel-cert-*.pem")
+	require.NoError(t, err)
+	relFile.Close()
+	t.Cleanup(func() {
+		_ = os.Remove(relFile.Name())
+	})
+
 	testCases := []struct {
 		desc        string
 		filePath    string
@@ -700,7 +708,12 @@ func TestValidateFilepath(t *testing.T) {
 		},
 		{
 			desc:        "relative file path",
-			filePath:    "cert.pem",
+			filePath:    relFile.Name(),
+			expectedErr: "",
+		},
+		{
+			desc:        "relative file path not found",
+			filePath:    "nonexistent-relative-file-name.pem",
 			expectedErr: "error accessing certificate file",
 		},
 		{
