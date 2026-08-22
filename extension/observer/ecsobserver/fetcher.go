@@ -405,7 +405,6 @@ func (*taskFetcher) attachService(tasks []*taskAnnotated, services []ecstypes.Se
 			status := *deployment.Status
 			if status == deploymentStatusActive || status == deploymentStatusPrimary {
 				idToService[*deployment.Id] = svc
-				break
 			}
 		}
 	}
