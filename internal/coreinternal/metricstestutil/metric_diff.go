@@ -198,8 +198,12 @@ func diffHistogramPt(
 ) []*MetricDiff {
 	diffs = diffMetricAttrs(diffs, expected.Attributes(), actual.Attributes())
 	diffs = diff(diffs, expected.Count(), actual.Count(), "HistogramDataPoint Count")
+	diffs = diff(diffs, expected.HasSum(), actual.HasSum(), "HistogramDataPoint HasSum")
+	diffs = diff(diffs, expected.HasMin(), actual.HasMin(), "HistogramDataPoint HasMin")
+	diffs = diff(diffs, expected.HasMax(), actual.HasMax(), "HistogramDataPoint HasMax")
 	diffs = diff(diffs, expected.Sum(), actual.Sum(), "HistogramDataPoint Sum")
-	// TODO: HasSum, Min, HasMin, Max, HasMax are not covered in tests.
+	diffs = diff(diffs, expected.Min(), actual.Min(), "HistogramDataPoint Min")
+	diffs = diff(diffs, expected.Max(), actual.Max(), "HistogramDataPoint Max")
 	var mismatch bool
 	diffs, mismatch = diffValues(diffs, expected.BucketCounts().Len(), actual.BucketCounts().Len(), "HistogramDataPoint BucketCounts len")
 	if mismatch {
