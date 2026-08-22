@@ -155,6 +155,64 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 			},
 		},
 
+		// Resource attributes
+		{
+			name: "static resource attribute include, match",
+			include: &filterconfig.MetricMatchProperties{
+				MatchType: filterconfig.MetricStrict,
+				ResourceAttributes: []filterconfig.Attribute{
+					{Key: "service.name", Value: "svcA"},
+				},
+			},
+		},
+		{
+			name: "static resource attribute include, mismatch",
+			include: &filterconfig.MetricMatchProperties{
+				MatchType: filterconfig.MetricStrict,
+				ResourceAttributes: []filterconfig.Attribute{
+					{Key: "service.name", Value: "svcB"},
+				},
+			},
+		},
+		{
+			name: "regex resource attribute include",
+			include: &filterconfig.MetricMatchProperties{
+				MatchType: filterconfig.MetricRegexp,
+				ResourceAttributes: []filterconfig.Attribute{
+					{Key: "service.name", Value: "svc.*"},
+				},
+			},
+		},
+		{
+			name: "static resource attribute exclude",
+			exclude: &filterconfig.MetricMatchProperties{
+				MatchType: filterconfig.MetricStrict,
+				ResourceAttributes: []filterconfig.Attribute{
+					{Key: "service.name", Value: "svcA"},
+				},
+			},
+		},
+		{
+			name: "metric name and resource attribute include",
+			include: &filterconfig.MetricMatchProperties{
+				MatchType:   filterconfig.MetricStrict,
+				MetricNames: []string{"metricA"},
+				ResourceAttributes: []filterconfig.Attribute{
+					{Key: "service.name", Value: "svcA"},
+				},
+			},
+		},
+		{
+			name: "metric name matches but resource attribute does not",
+			include: &filterconfig.MetricMatchProperties{
+				MatchType:   filterconfig.MetricStrict,
+				MetricNames: []string{"metricA"},
+				ResourceAttributes: []filterconfig.Attribute{
+					{Key: "service.name", Value: "svcB"},
+				},
+			},
+		},
+
 		// Expression
 		{
 			name: "expression errors",
@@ -184,7 +242,12 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 			metric := pmetric.NewMetric()
 			metric.SetName("metricA")
 
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			rm := pmetric.NewResourceMetrics()
+			require.NoError(t, rm.Resource().Attributes().FromRaw(map[string]any{
+				"service.name": "svcA",
+			}))
+
+			tCtx := ottlmetric.NewTransformContextPtr(rm, pmetric.NewScopeMetrics(), metric)
 			defer tCtx.Close()
 
 			boolExpr, err := NewSkipExpr(tt.include, tt.exclude)
@@ -203,6 +266,85 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 
 				assert.Equal(t, expectedResult, ottlResult)
 			}
+		})
+	}
+}
+
+func TestMatcherMatchesResourceAttributes(t *testing.T) {
+	tests := []struct {
+		name          string
+		cfg           *filterconfig.MetricMatchProperties
+		resourceAttrs map[string]any
+		metricName    string
+		shouldMatch   bool
+	}{
+		{
+			name: "resource attributes only, match",
+			cfg: &filterconfig.MetricMatchProperties{
+				MatchType: filterconfig.MetricStrict,
+				ResourceAttributes: []filterconfig.Attribute{
+					{Key: "service.name", Value: "my-service"},
+				},
+			},
+			resourceAttrs: map[string]any{"service.name": "my-service"},
+			metricName:    "test.gauge",
+			shouldMatch:   true,
+		},
+		{
+			name: "resource attributes only, mismatch",
+			cfg: &filterconfig.MetricMatchProperties{
+				MatchType: filterconfig.MetricStrict,
+				ResourceAttributes: []filterconfig.Attribute{
+					{Key: "service.name", Value: "my-service"},
+				},
+			},
+			resourceAttrs: map[string]any{"service.name": "other-service"},
+			metricName:    "test.gauge",
+			shouldMatch:   false,
+		},
+		{
+			name: "metric name matches but resource does not",
+			cfg: &filterconfig.MetricMatchProperties{
+				MatchType:   filterconfig.MetricStrict,
+				MetricNames: []string{"test.gauge"},
+				ResourceAttributes: []filterconfig.Attribute{
+					{Key: "service.name", Value: "my-service"},
+				},
+			},
+			resourceAttrs: map[string]any{"service.name": "other-service"},
+			metricName:    "test.gauge",
+			shouldMatch:   false,
+		},
+		{
+			name: "resource matches but metric name does not",
+			cfg: &filterconfig.MetricMatchProperties{
+				MatchType:   filterconfig.MetricStrict,
+				MetricNames: []string{"test.gauge"},
+				ResourceAttributes: []filterconfig.Attribute{
+					{Key: "service.name", Value: "my-service"},
+				},
+			},
+			resourceAttrs: map[string]any{"service.name": "my-service"},
+			metricName:    "other.gauge",
+			shouldMatch:   false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			matcher, err := newExpr(test.cfg)
+			require.NoError(t, err)
+			require.NotNil(t, matcher)
+
+			rm := pmetric.NewResourceMetrics()
+			require.NoError(t, rm.Resource().Attributes().FromRaw(test.resourceAttrs))
+
+			tCtx := ottlmetric.NewTransformContextPtr(rm, pmetric.NewScopeMetrics(), createMetric(test.metricName))
+			matches, err := matcher.Eval(t.Context(), tCtx)
+			tCtx.Close()
+
+			require.NoError(t, err)
+			assert.Equal(t, test.shouldMatch, matches)
 		})
 	}
 }
