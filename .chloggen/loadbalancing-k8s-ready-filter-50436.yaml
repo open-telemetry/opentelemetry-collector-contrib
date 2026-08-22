@@ -1,0 +1,12 @@
+change_type: bug_fix
+
+component: exporter/load_balancing
+
+note: Skip endpoints whose `EndpointSlice` `conditions.ready` is explicitly `false` in the kubernetes resolver, so traffic is not routed to them.
+
+issues: [50436]
+
+subtext: |-
+  An endpoint is now excluded when `EndpointSlice` `conditions.ready` is explicitly `false`. An endpoint with no `ready` condition set is still treated as ready, per the `discovery.k8s.io/v1` API contract. On a Service configured with `publishNotReadyAddresses: true`, `conditions.ready` is always forced `true`, so this filtering does not apply.
+
+change_logs: [user]
