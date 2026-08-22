@@ -223,6 +223,7 @@ processor/resourcedetectionprocessor/internal/upcloud processor/resourcedetectio
 processor/resourcedetectionprocessor/internal/vultr processor/resourcedetection/internal/vultr
 processor/resourceprocessor processor/resource
 processor/schemaprocessor processor/schema
+processor/signingprocessor processor/signing
 processor/spanprocessor processor/span
 processor/spanpruningprocessor processor/spanpruning
 processor/sumologicprocessor processor/sumologic
