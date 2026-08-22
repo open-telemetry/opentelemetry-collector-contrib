@@ -105,6 +105,10 @@ are then also available for the use within association rules. Available attribut
 Not all the attributes are guaranteed to be added. Only attribute names from `metadata` should be used for
 pod_association's `resource_attribute`, because empty or non-existing values will be ignored.
 
+**Note:** Extracting `k8s.cluster.uid` assumes the collector observes a single cluster and stamps all
+Kubernetes-related telemetry with the cluster's uid. Do not enable it in multi-cluster gateway pipelines
+that process telemetry from more than one cluster.
+
 Additional container level attributes can be extracted. If a pod contains more than one container,
 either the `container.id`, or the `k8s.container.name` attribute must be provided in the incoming resource attributes to
 correctly associate the matching container to the resource:

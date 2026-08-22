@@ -5046,6 +5046,46 @@ func TestExtractPodAttributesClusterUIDRace(t *testing.T) {
 	wg.Wait()
 }
 
+func TestWarnIfClusterUIDUnavailable(t *testing.T) {
+	synced := func() bool { return true }
+
+	t.Run("logs a warning when kube-system namespace is not available", func(t *testing.T) {
+		c, logs := newTestClient(t)
+		c.Rules = ExtractionRules{ClusterUID: true}
+
+		c.warnIfClusterUIDUnavailable(synced)
+
+		warnings := logs.FilterMessageSnippet("k8s.cluster.uid will not be available").All()
+		require.Len(t, warnings, 1)
+		assert.Equal(t, zapcore.WarnLevel, warnings[0].Level)
+	})
+
+	t.Run("does not log a warning when the cluster UID is available", func(t *testing.T) {
+		c, logs := newTestClient(t)
+		c.Rules = ExtractionRules{ClusterUID: true}
+		c.handleNamespaceAdd(&meta_v1.PartialObjectMetadata{
+			ObjectMeta: meta_v1.ObjectMeta{
+				Name: "kube-system",
+				UID:  "kube-system-uid",
+			},
+		})
+
+		c.warnIfClusterUIDUnavailable(synced)
+
+		assert.Empty(t, logs.FilterMessageSnippet("k8s.cluster.uid will not be available").All())
+	})
+
+	t.Run("does not log a warning when the client is stopped before the cache syncs", func(t *testing.T) {
+		c, logs := newTestClient(t)
+		c.Rules = ExtractionRules{ClusterUID: true}
+		close(c.stopCh)
+
+		c.warnIfClusterUIDUnavailable(func() bool { return false })
+
+		assert.Empty(t, logs.FilterMessageSnippet("k8s.cluster.uid will not be available").All())
+	})
+}
+
 func TestPodDeleteIPMissingFromDeleteEvent(t *testing.T) {
 	c, _ := newTestClient(t)
 
