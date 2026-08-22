@@ -195,6 +195,9 @@ type Supervisor struct {
 	healthCheckServer   *http.Server
 	healthCheckServerWG sync.WaitGroup
 
+	// gateway accepts downstream OpAMP agents and multiplexes over the upstream connection
+	gateway *Gateway
+
 	telemetrySettings telemetrySettings
 
 	featureGates map[string]struct{}
@@ -665,7 +668,37 @@ func (s *Supervisor) startOpAMP() error {
 		return err
 	}
 
+	if err := s.startGateway(); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (s *Supervisor) startGateway() error {
+	if !s.config.Gateway.Enabled {
+		return nil
+	}
+
+	s.gateway = NewGateway(
+		s.telemetrySettings.Logger,
+		GatewayConfig{
+			Enabled:        s.config.Gateway.Enabled,
+			ListenEndpoint: s.config.Gateway.ListenEndpoint,
+			MaxAgents:      s.config.Gateway.MaxAgents,
+		},
+		s.opampClient,
+	)
+
+	// Register the gateway relay capability so the upstream server knows to
+	// route responses for relayed agents back as CustomMessages.
+	if err := s.opampClient.SetCustomCapabilities(&protobufs.CustomCapabilities{
+		Capabilities: []string{"io.opentelemetry.opamp.gateway"},
+	}); err != nil {
+		s.telemetrySettings.Logger.Warn("Failed to register gateway capability", zap.Error(err))
+	}
+
+	return s.gateway.Start(s.runCtx)
 }
 
 func (s *Supervisor) startOpAMPClient() error {
@@ -2313,6 +2346,16 @@ func (s *Supervisor) Shutdown() {
 		}
 	}
 
+	if s.gateway != nil {
+		s.telemetrySettings.Logger.Debug("Stopping OpAMP gateway...")
+		ctx, cancel := context.WithTimeout(s.runCtx, 5*time.Second)
+		defer cancel()
+
+		if err := s.gateway.Stop(ctx); err != nil {
+			s.telemetrySettings.Logger.Error("Could not stop the OpAMP gateway", zap.Error(err))
+		}
+	}
+
 	if s.healthCheckServer != nil {
 		s.telemetrySettings.Logger.Debug("Stopping health check server...")
 		ctx, cancel := context.WithTimeout(s.runCtx, 5*time.Second)
@@ -2543,10 +2586,14 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 		haveMessageForAgent = true
 	}
 
-	// Proxy server messages to opamp extension
+	// Proxy server messages to opamp extension (or gateway if applicable)
 	if msg.CustomMessage != nil {
-		messageToAgent.CustomMessage = msg.CustomMessage
-		haveMessageForAgent = true
+		if s.gateway != nil && msg.CustomMessage.GetCapability() == "io.opentelemetry.opamp.gateway" {
+			s.gateway.OnCustomMessageFromServer(msg.CustomMessage)
+		} else {
+			messageToAgent.CustomMessage = msg.CustomMessage
+			haveMessageForAgent = true
+		}
 	}
 
 	// Send any messages that need proxying to the agent.
