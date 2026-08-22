@@ -650,7 +650,7 @@ func addExceptionSpanEvent(span *pb.Span, newSpan *ptrace.Span) {
 	if msg == "" && typ == "" && stack == "" {
 		return
 	}
-	// Avoid duplicating an exception event already produced from the native span_events field.
+
 	for _, event := range newSpan.Events().All() {
 		if event.Name() == "exception" {
 			return
