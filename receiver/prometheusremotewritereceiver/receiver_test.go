@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -2644,10 +2645,10 @@ func TestTranslateV2(t *testing.T) {
 					"instance", "host1", // 3, 4
 					"__name__", "http_requests_total", // 5, 6
 					"status", "200", "500", // 7, 8, 9
-					"trace_id", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", // 10, 11
+					"trace_id", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", // 10, 11
 					"span_id", "aaaaaaaaaaaaaaaa", // 12, 13
-					"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", // 14
-					"bbbbbbbbbbbbbbbb", // 15
+					"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", // 14
+					"bbbbbbbbbbbbbbbb",                 // 15
 				},
 				Timeseries: []writev2.TimeSeries{
 					{
@@ -2710,7 +2711,7 @@ func TestTranslateV2(t *testing.T) {
 				ex200 := dp200.Exemplars().AppendEmpty()
 				ex200.SetDoubleValue(100)
 				ex200.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				traceA, _ := hex.DecodeString("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"[:32])
+				traceA, _ := hex.DecodeString("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 				var tidA [16]byte
 				copy(tidA[:], traceA)
 				ex200.SetTraceID(pcommon.TraceID(tidA))
@@ -2727,7 +2728,7 @@ func TestTranslateV2(t *testing.T) {
 				ex500 := dp500.Exemplars().AppendEmpty()
 				ex500.SetDoubleValue(5)
 				ex500.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				traceB, _ := hex.DecodeString("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"[:32])
+				traceB, _ := hex.DecodeString("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
 				var tidB [16]byte
 				copy(tidB[:], traceB)
 				ex500.SetTraceID(pcommon.TraceID(tidB))
@@ -3048,6 +3049,555 @@ func TestTranslateV2(t *testing.T) {
 			assert.Equal(t, buildMetaDataMapByID(tc.expectedMetrics), buildMetaDataMapByID(metrics))
 		})
 	}
+}
+
+func TestHistogramExemplarsAttachToLabelledSeries(t *testing.T) {
+	// The collection key hashes the data labels, so the lookup has to hash them too, or a
+	// histogram carrying any ordinary label never finds its own exemplars.
+	prwReceiver := setupMetricsReceiver(t)
+
+	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_hist", // 1, 2
+			"job", "service-x/test", // 3, 4
+			"instance", "107cn001", // 5, 6
+			"region", "us-east", // 7, 8
+			"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 9, 10
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Histograms: []writev2.Histogram{{
+					Schema:         0,
+					Count:          &writev2.Histogram_CountInt{CountInt: 3},
+					Sum:            6,
+					Timestamp:      1,
+					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+					PositiveDeltas: []int64{1, 1},
+				}},
+				Exemplars: []writev2.Exemplar{{LabelsRefs: []uint32{9, 10}, Value: 1.5, Timestamp: 1}},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	dp := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+		ExponentialHistogram().DataPoints().At(0)
+	assert.Equal(t, 1, dp.Exemplars().Len(), "the exemplar belongs to this data point")
+	assert.Equal(t, 1, stats.Exemplars)
+}
+
+func TestHistogramExemplarsAttachToTheirOwnDataPoint(t *testing.T) {
+	// One metric holds a data point per series, so a histogram has to take the data point it just
+	// produced rather than the first one in the slice. With a single data point the two are the
+	// same, which is why this uses two series and puts the exemplar on the second.
+	prwReceiver := setupMetricsReceiver(t)
+
+	series := func(regionRef uint32, exemplars []writev2.Exemplar) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+			LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, regionRef},
+			Histograms: []writev2.Histogram{{
+				Schema:         0,
+				Count:          &writev2.Histogram_CountInt{CountInt: 3},
+				Sum:            6,
+				Timestamp:      1,
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+				PositiveDeltas: []int64{1, 1},
+			}},
+			Exemplars: exemplars,
+		}
+	}
+
+	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_hist", // 1, 2
+			"job", "service-x/test", // 3, 4
+			"instance", "107cn001", // 5, 6
+			"region", "us-east", // 7, 8
+			"us-west",                                      // 9
+			"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 10, 11
+		},
+		Timeseries: []writev2.TimeSeries{
+			series(8, nil),
+			series(9, []writev2.Exemplar{{LabelsRefs: []uint32{10, 11}, Value: 1.5, Timestamp: 1}}),
+		},
+	})
+	require.NoError(t, err)
+
+	dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+		ExponentialHistogram().DataPoints()
+	require.Equal(t, 2, dps.Len(), "one data point per series")
+
+	byRegion := map[string]int{}
+	for i := 0; i < dps.Len(); i++ {
+		region, _ := dps.At(i).Attributes().Get("region")
+		byRegion[region.Str()] = dps.At(i).Exemplars().Len()
+	}
+	assert.Equal(t, 1, byRegion["us-west"], "the exemplar belongs to the series that sent it")
+	assert.Equal(t, 0, byRegion["us-east"])
+	assert.Equal(t, 1, stats.Exemplars)
+}
+
+func TestNHCBExemplarsAttachToTheirOwnDataPoint(t *testing.T) {
+	// The custom bucket branch appends to a different data point slice than the exponential one,
+	// so it needs its own case.
+	prwReceiver := setupMetricsReceiver(t)
+
+	series := func(regionRef uint32, exemplars []writev2.Exemplar) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+			LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, regionRef},
+			Histograms: []writev2.Histogram{{
+				Schema:         -53,
+				Count:          &writev2.Histogram_CountInt{CountInt: 3},
+				Sum:            6,
+				Timestamp:      1,
+				CustomValues:   []float64{1.0},
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+				PositiveDeltas: []int64{1, 1},
+			}},
+			Exemplars: exemplars,
+		}
+	}
+
+	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_hist", // 1, 2
+			"job", "service-x/test", // 3, 4
+			"instance", "107cn001", // 5, 6
+			"region", "us-east", // 7, 8
+			"us-west",                                      // 9
+			"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 10, 11
+		},
+		Timeseries: []writev2.TimeSeries{
+			series(8, nil),
+			series(9, []writev2.Exemplar{{LabelsRefs: []uint32{10, 11}, Value: 1.5, Timestamp: 1}}),
+		},
+	})
+	require.NoError(t, err)
+
+	dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+		Histogram().DataPoints()
+	require.Equal(t, 2, dps.Len(), "one data point per series")
+
+	byRegion := map[string]int{}
+	for i := 0; i < dps.Len(); i++ {
+		region, _ := dps.At(i).Attributes().Get("region")
+		byRegion[region.Str()] = dps.At(i).Exemplars().Len()
+	}
+	assert.Equal(t, 1, byRegion["us-west"], "the exemplar belongs to the series that sent it")
+	assert.Equal(t, 0, byRegion["us-east"])
+	assert.Equal(t, 1, stats.Exemplars)
+}
+
+func TestHistogramExemplarsAreAttachedOnce(t *testing.T) {
+	// Two identical series produce two data points that hash to the same key. The exemplars have
+	// to be consumed when they are attached, or the second data point takes a copy of them and
+	// the response reports twice what arrived.
+	prwReceiver := setupMetricsReceiver(t)
+
+	series := func(exemplars []writev2.Exemplar) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+			LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+			Histograms: []writev2.Histogram{{
+				Schema:         0,
+				Count:          &writev2.Histogram_CountInt{CountInt: 3},
+				Sum:            6,
+				Timestamp:      1,
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+				PositiveDeltas: []int64{1, 1},
+			}},
+			Exemplars: exemplars,
+		}
+	}
+
+	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_hist", // 1, 2
+			"job", "service-x/test", // 3, 4
+			"instance", "107cn001", // 5, 6
+			"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7, 8
+		},
+		Timeseries: []writev2.TimeSeries{
+			series([]writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 1.5, Timestamp: 1}}),
+			series(nil),
+		},
+	})
+	require.NoError(t, err)
+
+	dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+		ExponentialHistogram().DataPoints()
+	require.Equal(t, 2, dps.Len())
+
+	attached := 0
+	for i := 0; i < dps.Len(); i++ {
+		attached += dps.At(i).Exemplars().Len()
+	}
+	assert.Equal(t, 1, attached, "the exemplar must not be copied onto both data points")
+	assert.Equal(t, 1, stats.Exemplars)
+}
+
+func TestExemplarsOfHistogramDroppedWhileConvertingAreNotWritten(t *testing.T) {
+	// An unsupported schema is turned away before any data point work starts, so it does not
+	// exercise the guard that matters here: a histogram the converter refuses after the metric
+	// already exists. Negative bucket counts are such a case.
+	prwReceiver := setupMetricsReceiver(t)
+
+	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_hist", // 1, 2
+			"job", "service-x/test", // 3, 4
+			"instance", "107cn001", // 5, 6
+			"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7, 8
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+				Histograms: []writev2.Histogram{{
+					Schema:         0,
+					Count:          &writev2.Histogram_CountInt{CountInt: 3},
+					Sum:            6,
+					Timestamp:      1,
+					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+					PositiveDeltas: []int64{1, -5},
+				}},
+				Exemplars: []writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 1.5, Timestamp: 1}},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	assert.Equal(t, 0, metrics.DataPointCount(), "the histogram was dropped")
+	assert.Equal(t, 0, stats.Exemplars, "its exemplars were never written")
+}
+
+// exemplarsByTarget counts the exemplars attached under each target, named by every resource
+// attribute a target is built from. Naming it by one of them only would let two targets that
+// share that attribute be counted together.
+func exemplarsByTarget(metrics pmetric.Metrics) (map[string]int, int) {
+	byTarget, total := map[string]int{}, 0
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		attrs := rm.Resource().Attributes()
+		namespace, _ := attrs.Get("service.namespace")
+		name, _ := attrs.Get("service.name")
+		instance, _ := attrs.Get("service.instance.id")
+		target := namespace.Str() + "/" + name.Str() + "@" + instance.Str()
+		sms := rm.ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			ms := sms.At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				dps := ms.At(k).Sum().DataPoints()
+				for d := 0; d < dps.Len(); d++ {
+					n := dps.At(d).Exemplars().Len()
+					byTarget[target] += n
+					total += n
+				}
+			}
+		}
+	}
+	return byTarget, total
+}
+
+func TestExemplarsAreNotSharedBetweenTargets(t *testing.T) {
+	// job and instance decide the resource, so leaving either out of the key lets one target's
+	// exemplar land on another target's data point as well. They are varied one at a time,
+	// because varying both together lets whichever field is still in the key cover for the other.
+	counter := func(jobRef, instanceRef uint32, value float64, exemplars []writev2.Exemplar) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+			LabelsRefs: []uint32{1, 2, 3, jobRef, 5, instanceRef},
+			Samples:    []writev2.Sample{{Value: value, Timestamp: 1}},
+			Exemplars:  exemplars,
+		}
+	}
+	exemplar := []writev2.Exemplar{{LabelsRefs: []uint32{9, 10}, Value: 1.5, Timestamp: 1}}
+
+	for _, tc := range []struct {
+		name   string
+		other  writev2.TimeSeries
+		sender writev2.TimeSeries
+		// The target that sent the exemplar and the one that must not receive it, named the way
+		// exemplarsByTarget names them.
+		senderTarget string
+		otherTarget  string
+	}{
+		{
+			// Same instance, so only job tells the two targets apart.
+			name:         "targets differing only by job",
+			other:        counter(7, 6, 2, nil),
+			sender:       counter(4, 6, 1, exemplar),
+			senderTarget: "svc-a/one@host-a",
+			otherTarget:  "svc-b/two@host-a",
+		},
+		{
+			// Same job, so only instance tells the two targets apart.
+			name:         "targets differing only by instance",
+			other:        counter(4, 8, 2, nil),
+			sender:       counter(4, 6, 1, exemplar),
+			senderTarget: "svc-a/one@host-a",
+			otherTarget:  "svc-a/one@host-b",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "reqs", // 1, 2
+					"job", "svc-a/one", // 3, 4
+					"instance", "host-a", // 5, 6
+					"svc-b/two", "host-b", // 7, 8
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 9, 10
+				},
+				// The target without an exemplar is translated first on purpose. If the key does
+				// not separate the two targets, this one consumes the other one's exemplar.
+				Timeseries: []writev2.TimeSeries{tc.other, tc.sender},
+			})
+			require.NoError(t, err)
+
+			byTarget, total := exemplarsByTarget(metrics)
+			assert.Equal(t, 1, total, "the exemplar must be attached exactly once")
+			assert.Equal(t, 1, byTarget[tc.senderTarget], "it belongs to the target that sent it")
+			assert.Equal(t, 0, byTarget[tc.otherTarget])
+			assert.Equal(t, 1, stats.Exemplars)
+		})
+	}
+}
+
+func TestExemplarIDsOfTheWrongLengthAreNotSet(t *testing.T) {
+	// hex decoding accepts any even length, so a short ID would be padded and a long one cut down.
+	// Either way the pipeline would be handed a different trace than the sender named.
+	for _, tc := range []struct {
+		name    string
+		traceID string
+		spanID  string
+		wantSet bool
+	}{
+		{name: "correct lengths", traceID: strings.Repeat("a", 32), spanID: strings.Repeat("b", 16), wantSet: true},
+		{name: "trace id too long", traceID: strings.Repeat("a", 48), spanID: strings.Repeat("b", 16)},
+		{name: "trace id too short", traceID: strings.Repeat("a", 8), spanID: strings.Repeat("b", 16)},
+		{name: "span id too long", traceID: strings.Repeat("a", 32), spanID: strings.Repeat("b", 32)},
+		{name: "span id too short", traceID: strings.Repeat("a", 32), spanID: strings.Repeat("b", 4)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			metrics, _, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "reqs", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"trace_id", tc.traceID, // 7, 8
+					"span_id", tc.spanID, // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+						Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{7, 8, 9, 10}, Value: 1.5, Timestamp: 1}},
+					},
+				},
+			})
+			require.NoError(t, err)
+
+			dp := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+				Sum().DataPoints().At(0)
+			require.Equal(t, 1, dp.Exemplars().Len())
+			ex := dp.Exemplars().At(0)
+
+			if tc.wantSet {
+				assert.False(t, ex.TraceID().IsEmpty())
+				assert.False(t, ex.SpanID().IsEmpty())
+				return
+			}
+			if len(tc.traceID) != 32 {
+				assert.True(t, ex.TraceID().IsEmpty(), "an ID of the wrong length is not the one that was sent")
+			}
+			if len(tc.spanID) != 16 {
+				assert.True(t, ex.SpanID().IsEmpty(), "an ID of the wrong length is not the one that was sent")
+			}
+		})
+	}
+}
+
+func TestExemplarsAreNotSharedBetweenScopesOrUnits(t *testing.T) {
+	// The scope is more than its name and version, and the unit is part of what tells one output
+	// metric from another. Two metrics that differ only by one of those are still two metrics, so
+	// their exemplars must not be interchangeable. Each case varies exactly one field, because
+	// varying two lets whichever is still in the key cover for the other.
+	exemplar := []writev2.Exemplar{{LabelsRefs: []uint32{16, 17}, Value: 1.5, Timestamp: 1}}
+	symbols := []string{
+		"",
+		"__name__", "reqs", // 1, 2
+		"job", "service-x/test", // 3, 4
+		"instance", "107cn001", // 5, 6
+		"otel_scope_name", "scope1", // 7, 8
+		"otel_scope_version", "v1", // 9, 10
+		"otel_scope_schema_url", "https://example.com/a", // 11, 12
+		"https://example.com/b",     // 13
+		"otel_scope_team", "search", // 14, 15
+		"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 16, 17
+		"payments", // 18
+		"seconds",  // 19
+		"bytes",    // 20
+	}
+	base := []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	with := func(extra ...uint32) []uint32 {
+		return append(append([]uint32{}, base...), extra...)
+	}
+
+	for _, tc := range []struct {
+		name          string
+		otherRefs     []uint32
+		senderRefs    []uint32
+		otherUnitRef  uint32
+		senderUnitRef uint32
+	}{
+		{
+			name:       "scopes differing only by schema URL",
+			otherRefs:  with(11, 13),
+			senderRefs: with(11, 12),
+		},
+		{
+			name:       "scopes differing only by an attribute",
+			otherRefs:  with(14, 18),
+			senderRefs: with(14, 15),
+		},
+		{
+			name:          "metrics differing only by unit",
+			otherRefs:     with(),
+			senderRefs:    with(),
+			otherUnitRef:  20,
+			senderUnitRef: 19,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols: symbols,
+				Timeseries: []writev2.TimeSeries{
+					// The one without an exemplar is translated first on purpose.
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER, UnitRef: tc.otherUnitRef},
+						LabelsRefs: tc.otherRefs,
+						Samples:    []writev2.Sample{{Value: 2, Timestamp: 1}},
+					},
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER, UnitRef: tc.senderUnitRef},
+						LabelsRefs: tc.senderRefs,
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+						Exemplars:  exemplar,
+					},
+				},
+			})
+			require.NoError(t, err)
+
+			total, attachedToSender := 0, 0
+			sms := metrics.ResourceMetrics().At(0).ScopeMetrics()
+			for j := 0; j < sms.Len(); j++ {
+				ms := sms.At(j).Metrics()
+				for k := 0; k < ms.Len(); k++ {
+					dps := ms.At(k).Sum().DataPoints()
+					for d := 0; d < dps.Len(); d++ {
+						n := dps.At(d).Exemplars().Len()
+						total += n
+						// The series that sent the exemplar is the one holding the value 1.
+						if n > 0 && dps.At(d).DoubleValue() == 1 {
+							attachedToSender = n
+						}
+					}
+				}
+			}
+			assert.Equal(t, 1, total, "the exemplar must be attached exactly once")
+			assert.Equal(t, 1, attachedToSender, "it belongs to the series that sent it")
+			assert.Equal(t, 1, stats.Exemplars)
+		})
+	}
+}
+
+func TestExemplarKeyFieldsAreSeparated(t *testing.T) {
+	// The key is hashed field by field. Without a separator between them, a job ending where an
+	// instance begins hashes the same as the other way round, and the two targets share exemplars.
+	prwReceiver := setupMetricsReceiver(t)
+
+	counter := func(jobRef, instanceRef uint32, exemplars []writev2.Exemplar) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+			LabelsRefs: []uint32{1, 2, 3, jobRef, 5, instanceRef},
+			Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+			Exemplars:  exemplars,
+		}
+	}
+
+	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "reqs", // 1, 2
+			"job", "ab", // 3, 4
+			"instance", "c", // 5, 6
+			"a", "bc", // 7, 8
+			"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 9, 10
+		},
+		Timeseries: []writev2.TimeSeries{
+			// job "a" + instance "bc" against job "ab" + instance "c".
+			counter(7, 8, nil),
+			counter(4, 6, []writev2.Exemplar{{LabelsRefs: []uint32{9, 10}, Value: 1.5, Timestamp: 1}}),
+		},
+	})
+	require.NoError(t, err)
+
+	byTarget, total := exemplarsByTarget(metrics)
+	assert.Equal(t, 1, total, "the exemplar must be attached exactly once")
+	assert.Equal(t, 1, byTarget["/ab@c"], "it belongs to the target that sent it")
+	assert.Equal(t, 0, byTarget["/a@bc"])
+	assert.Equal(t, 1, stats.Exemplars)
+}
+
+func TestExemplarsOfDroppedHistogramAreNotReportedAsWritten(t *testing.T) {
+	// An unsupported schema drops the histogram before a data point exists, so its exemplars
+	// were never written and must not be counted in the response headers.
+	prwReceiver := setupMetricsReceiver(t)
+
+	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_hist", // 1, 2
+			"job", "service-x/test", // 3, 4
+			"instance", "107cn001", // 5, 6
+			"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7, 8
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+				Histograms: []writev2.Histogram{{
+					Schema:    99, // not a schema this receiver supports
+					Count:     &writev2.Histogram_CountInt{CountInt: 3},
+					Sum:       6,
+					Timestamp: 1,
+				}},
+				Exemplars: []writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 1.5, Timestamp: 1}},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	assert.Equal(t, 0, metrics.ResourceMetrics().Len(), "nothing should be emitted")
+	assert.Equal(t, 0, stats.Exemplars, "exemplars of a dropped histogram were not written")
 }
 
 type nonMutatingConsumer struct{}

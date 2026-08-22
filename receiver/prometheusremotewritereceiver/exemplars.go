@@ -5,15 +5,14 @@ package prometheusremotewritereceiver // import "github.com/open-telemetry/opent
 
 import (
 	"encoding/hex"
+	"strings"
 	"time"
 
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/schema"
-	promremote "github.com/prometheus/prometheus/storage/remote"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
@@ -25,24 +24,27 @@ import (
 // groups them into ExemplarSlices keyed by metric identity.
 //
 // Exemplars are grouped by a hash composed of:
+//   - job and instance, which is what the resource is built from
 //   - instrumentation scope name
 //   - instrumentation scope version
 //   - metric name
 //   - metric type
+//   - a hash of the remaining data labels
+//
+// The same key has to be rebuilt when the exemplars are attached, otherwise they are collected
+// and then never found again.
 //
 // TODO:
 //
 //	Right now, remote-write 2.0 sends disconnected exemplars without histogram, which requires
 //	caching exemplars and associating them later with histogram data points.
 //	Once https://github.com/prometheus/prometheus/issues/17857 is resolved, we can optimize this
-func collectExemplars(
+func (prw *prometheusRemoteWriteReceiver) collectExemplars(
 	req *writev2.Request,
-	settings receiver.Settings,
-	stats *promremote.WriteResponseStats,
 ) map[uint64]pmetric.ExemplarSlice {
+	settings := prw.settings
 	result := make(map[uint64]pmetric.ExemplarSlice)
 	builder := labels.NewScratchBuilder(0)
-	stats.Exemplars = 0
 	for i := range req.Timeseries {
 		ts := &req.Timeseries[i]
 		if len(ts.Exemplars) == 0 {
@@ -61,14 +63,23 @@ func collectExemplars(
 			continue
 		}
 
-		scopeName, scopeVersion := extractScopeFromLabels(settings, ls)
+		si := prw.extractScopeInfo(ls)
+		unit := ""
+		if ts.Metadata.UnitRef < uint32(len(req.Symbols)) {
+			unit = req.Symbols[ts.Metadata.UnitRef]
+		}
 
 		key := exemplarKey{
-			ScopeName:    scopeName,
-			ScopeVersion: scopeVersion,
-			MetricName:   metadata.Name,
-			MetricType:   ts.Metadata.Type,
-			AttrsHash:    pdatautil.MapHash(extractAttributes(ls)),
+			Job:            ls.Get("job"),
+			Instance:       ls.Get("instance"),
+			ScopeName:      si.Name,
+			ScopeVersion:   si.Version,
+			ScopeSchemaURL: si.SchemaURL,
+			ScopeAttrs:     scopeAttrsKey(si.scopeAttrs),
+			MetricName:     metadata.Name,
+			Unit:           unit,
+			MetricType:     ts.Metadata.Type,
+			AttrsHash:      pdatautil.MapHash(extractAttributes(ls)),
 		}
 
 		slice, ok := result[key.hash()]
@@ -89,7 +100,6 @@ func collectExemplars(
 
 			setTraceAndSpan(exemplar, promExemplar.Labels)
 			copyExemplarAttributes(exemplar.FilteredAttributes(), promExemplar.Labels)
-			stats.Exemplars++
 		}
 
 		result[key.hash()] = slice
@@ -98,37 +108,24 @@ func collectExemplars(
 	return result
 }
 
-func extractScopeFromLabels(settings receiver.Settings, ls labels.Labels) (string, string) {
-	name := settings.BuildInfo.Description
-	version := settings.BuildInfo.Version
-
-	if sName := ls.Get("otel_scope_name"); sName != "" {
-		name = sName
-	}
-	if sVersion := ls.Get("otel_scope_version"); sVersion != "" {
-		version = sVersion
-	}
-	return name, version
-}
-
 // setTraceAndSpan extracts trace ID and span ID from exemplar labels
 // and sets them on the provided Exemplar.
 //
 // The function expects hexadecimal-encoded IDs using Prometheus
 // exemplar label keys and silently ignores invalid values.
 func setTraceAndSpan(exemplar pmetric.Exemplar, labels labels.Labels) {
+	// An ID of the wrong length is not the ID that was sent. Padding a short one or cutting a long
+	// one down would hand the pipeline a different trace than the sender named.
 	if tid := labels.Get(prometheus.ExemplarTraceIDKey); tid != "" {
 		var t [16]byte
-		if b, err := hex.DecodeString(tid); err == nil {
-			copy(t[:], b)
-			exemplar.SetTraceID(pcommon.TraceID(t))
+		if b, err := hex.DecodeString(tid); err == nil && len(b) == len(t) {
+			exemplar.SetTraceID(pcommon.TraceID(t[:copy(t[:], b)]))
 		}
 	}
 	if sid := labels.Get(prometheus.ExemplarSpanIDKey); sid != "" {
 		var s [8]byte
-		if b, err := hex.DecodeString(sid); err == nil {
-			copy(s[:], b)
-			exemplar.SetSpanID(pcommon.SpanID(s))
+		if b, err := hex.DecodeString(sid); err == nil && len(b) == len(s) {
+			exemplar.SetSpanID(pcommon.SpanID(s[:copy(s[:], b)]))
 		}
 	}
 }
@@ -146,12 +143,38 @@ func copyExemplarAttributes(dest pcommon.Map, labels labels.Labels) {
 	}
 }
 
+// exemplarKey names the data point an exemplar belongs to. Every field the receiver uses to tell
+// one output metric from another has to be here, or two of them share a single set of exemplars.
 type exemplarKey struct {
-	ScopeName    string
-	ScopeVersion string
-	MetricName   string
-	MetricType   writev2.Metadata_MetricType
-	AttrsHash    [16]byte // hash of data labels (excludes job, instance, __name__, otel_scope_*)
+	// Job and Instance identify the target. They are what the resource is built from, so leaving
+	// them out lets two targets publishing the same series share one another's exemplars.
+	Job      string
+	Instance string
+	// The scope is its name, version, schema URL and attributes together.
+	ScopeName      string
+	ScopeVersion   string
+	ScopeSchemaURL string
+	ScopeAttrs     string
+	MetricName     string
+	Unit           string
+	MetricType     writev2.Metadata_MetricType
+	AttrsHash      [16]byte // hash of data labels (excludes job, instance, __name__, otel_scope_*)
+}
+
+// scopeAttrsKey encodes scope attributes so that two scopes carrying different ones do not share
+// exemplars. The attributes come from ranging over sorted labels, so the order is stable.
+func scopeAttrsKey(attrs []attribute) string {
+	if len(attrs) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	for _, a := range attrs {
+		b.WriteString(a.Key)
+		b.Write(sep)
+		b.WriteString(a.Value)
+		b.Write(sep)
+	}
+	return b.String()
 }
 
 // sep is a byte that is not valid UTF-8, used as a field separator to prevent
@@ -160,11 +183,21 @@ var sep = []byte{0xff}
 
 func (k exemplarKey) hash() uint64 {
 	h := identity.Resource{}.Hash()
+	h.Write([]byte(k.Job))
+	h.Write(sep)
+	h.Write([]byte(k.Instance))
+	h.Write(sep)
 	h.Write([]byte(k.ScopeName))
 	h.Write(sep)
 	h.Write([]byte(k.ScopeVersion))
 	h.Write(sep)
+	h.Write([]byte(k.ScopeSchemaURL))
+	h.Write(sep)
+	h.Write([]byte(k.ScopeAttrs))
+	h.Write(sep)
 	h.Write([]byte(k.MetricName))
+	h.Write(sep)
+	h.Write([]byte(k.Unit))
 	h.Write(sep)
 	h.Write([]byte(k.MetricType.String()))
 	h.Write(sep)

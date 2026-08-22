@@ -1,0 +1,22 @@
+change_type: bug_fix
+
+component: receiver/prometheus_remote_write
+
+note: Attach histogram exemplars to the right data point, and only count exemplars that were actually attached.
+
+issues: [50334]
+
+subtext: |
+  Exemplars are grouped by a key that includes the data labels, but the
+  histogram lookup left that part out, so a histogram carrying any ordinary
+  label never found its own exemplars. The key also had nothing identifying the
+  target, which let one target receive another target's exemplars. Both are
+  fixed, exemplars now attach to the data point the histogram produced rather
+  than to the first one, and the Exemplars-Written response header counts what
+  was attached instead of what was parsed. The key now covers the whole of the
+  scope and the metric unit as well, so two metrics that differ only by scope
+  schema URL, scope attributes or unit no longer share one set of exemplars.
+  Trace and span IDs whose length does not match are left unset rather than
+  padded or truncated into a different ID.
+
+change_logs: [user]
