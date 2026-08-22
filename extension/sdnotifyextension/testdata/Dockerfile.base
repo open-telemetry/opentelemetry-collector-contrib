@@ -1,0 +1,32 @@
+# Shared base image for the integration tests.
+
+FROM ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-builder:0.159.0 AS build-stage
+
+WORKDIR /src
+COPY --chmod=755 . /src
+
+RUN ocb --config /src/extension/sdnotifyextension/testdata/builder-config.yaml
+
+FROM ghcr.io/fauust/docker-systemd:debian-13
+
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build-stage /home/ocb/build/otelcol /bin/otelcol
+
+# To allow systemd (and other programs) to identify that it is executed within
+# a container, please set the $container environment variable for PID 1 in the
+# container to a short lowercase string identifying your implementation.
+#
+# See the link below for more information:
+# https://github.com/systemd/systemd/blob/main/docs/CONTAINER_INTERFACE.md#environment-variables
+ENV container=docker
+
+# If the container manager wants to cleanly shut down the container, it might be
+# a good idea to send SIGRTMIN+3 to its init process. systemd will then do a clean shutdown.
+#
+# See the link below for more information:
+# https://github.com/systemd/systemd/blob/main/docs/CONTAINER_INTERFACE.md#advanced-integration
+STOPSIGNAL SIGRTMIN+3
