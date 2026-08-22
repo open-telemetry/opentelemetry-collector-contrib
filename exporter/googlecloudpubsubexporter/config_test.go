@@ -56,10 +56,21 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	sovereignConfig := factory.CreateDefaultConfig().(*Config)
-	sovereignConfig.ProjectID = "my-sovereign-project"
-	sovereignConfig.Topic = "projects/my-sovereign-project/topics/otlp-topic"
+	sovereignConfig.ProjectID = "prefix:my-sovereign-project"
+	sovereignConfig.Topic = "projects/prefix:my-sovereign-project/topics/otlp-topic"
 	sovereignConfig.UniverseDomain = "apis.example.com"
 	assert.Equal(t, sovereignConfig, cfg)
+
+	cfg = factory.CreateDefaultConfig()
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "vanilla").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	vanillaConfig := factory.CreateDefaultConfig().(*Config)
+	vanillaConfig.ProjectID = "my-vanilla-project"
+	vanillaConfig.Topic = "projects/my-vanilla-project/topics/otlp-topic"
+	vanillaConfig.UniverseDomain = "googleapis.com"
+	assert.Equal(t, vanillaConfig, cfg)
 }
 
 func TestTopicConfigValidation(t *testing.T) {
