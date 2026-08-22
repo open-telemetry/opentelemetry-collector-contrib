@@ -9,6 +9,9 @@ properties:
     type: string
   db_name:
     type: string
+  include_exemplars:
+    description: IncludeExemplars controls whether OTLP metric exemplars (which carry trace_id/span_id) are written to the Exemplars column of the metrics table. Disabled by default to avoid added volume/cardinality unless explicitly opted in.
+    type: boolean
   ingestion_type:
     type: string
   logs_table_json_mapping:
