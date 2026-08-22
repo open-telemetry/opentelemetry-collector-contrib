@@ -85,6 +85,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["container.network.io.usage.tx_errors"] = mb.metricContainerNetworkIoUsageTxErrors.config.AggregationStrategy
 			aggMap["container.network.io.usage.tx_packets"] = mb.metricContainerNetworkIoUsageTxPackets.config.AggregationStrategy
 			aggMap["container.state.health.status"] = mb.metricContainerStateHealthStatus.config.AggregationStrategy
+			aggMap["container.state.status"] = mb.metricContainerStateStatus.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -362,6 +363,12 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
+			mb.RecordContainerStateStatusDataPoint(ts, 1, AttributeContainerStateStatusCreated)
+			if tt.name == "reaggregate_set" {
+				mb.RecordContainerStateStatusDataPoint(ts, 3, AttributeContainerStateStatusRunning)
+			}
+
+			allMetricsCount++
 			mb.RecordContainerUptimeDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
@@ -393,6 +400,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricContainerNetworkIoUsageTxErrors.aggDataPoints)
 				assert.Empty(t, mb.metricContainerNetworkIoUsageTxPackets.aggDataPoints)
 				assert.Empty(t, mb.metricContainerStateHealthStatus.aggDataPoints)
+				assert.Empty(t, mb.metricContainerStateStatus.aggDataPoints)
 			}
 
 			if tt.expectEmpty {
@@ -2022,6 +2030,50 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("container.state.health.state")
+						assert.False(t, ok)
+					}
+				case "container.state.status":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["container.state.status"], "Found a duplicate in the metrics slice: container.state.status")
+						validatedMetrics["container.state.status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of containers in a given state. State is one of - created, running, paused, restarting, removing, exited and dead", mi.Description())
+						assert.Equal(t, "{status}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						containerStateStatusAttrVal, ok := dp.Attributes().Get("container.state.status")
+						assert.True(t, ok)
+						assert.Equal(t, "created", containerStateStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["container.state.status"], "Found a duplicate in the metrics slice: container.state.status")
+						validatedMetrics["container.state.status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of containers in a given state. State is one of - created, running, paused, restarting, removing, exited and dead", mi.Description())
+						assert.Equal(t, "{status}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["container.state.status"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("container.state.status")
 						assert.False(t, ok)
 					}
 				case "container.uptime":

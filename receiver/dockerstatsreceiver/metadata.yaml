@@ -67,6 +67,10 @@ attributes:
       - starting
       - healthy
       - unhealthy
+  container.state.status:
+    description: "Container State"
+    type: string
+    enum: ["created", "running", "paused", "restarting", "removing", "exited", "dead"]      
   core:
     description: "The CPU core number when utilising per-CPU metrics."
     type: string
@@ -809,6 +813,18 @@ metrics:
       monotonic: false
     attributes:
       - container.state.health.state
+
+  # Container status
+  container.state.status:
+    enabled: false
+    stability: development
+    description: "Number of containers in a given state. State is one of - created, running, paused, restarting, removing, exited and dead"
+    unit: "{status}"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [container.state.status]
 
   # Base
   container.uptime:
