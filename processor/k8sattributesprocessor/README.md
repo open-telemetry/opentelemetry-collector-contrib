@@ -36,6 +36,7 @@ to the Pod IP. But for cases where this approach doesn't work (sending through a
 Each association is specified as a list of sources of associations. The maximum number of sources within an association is 4.
 A source is a rule that matches metadata from the datapoint to pod metadata.
 In order to get an association applied, all the sources specified need to match.
+Each association must be unique: two associations with the same set of sources (regardless of the order they are listed in) are rejected during configuration validation.
 
 Each sources rule is specified as a pair of `from` (representing the rule type) and `name` (representing the attribute name if `from` is set to `resource_attribute`).
 The following rule types are available:
