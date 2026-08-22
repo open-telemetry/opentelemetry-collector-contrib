@@ -133,6 +133,18 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 		if bucketCount > 1 && mg.complexValue[bucketCount-2].boundary == math.Inf(1) {
 			bucketCount--
 		}
+		if !pointIsStale {
+			var previousCount float64
+			for i := 0; i < bucketCount-1; i++ {
+				if mg.complexValue[i].value < previousCount {
+					return
+				}
+				previousCount = mg.complexValue[i].value
+			}
+			if mg.count < previousCount {
+				return
+			}
+		}
 
 		// for OTLP the bounds won't include +inf
 		bounds = make([]float64, bucketCount-1)
