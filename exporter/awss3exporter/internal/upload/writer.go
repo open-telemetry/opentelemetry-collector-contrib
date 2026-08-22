@@ -41,12 +41,14 @@ type s3manager struct {
 
 var _ Manager = (*s3manager)(nil)
 
-func NewS3Manager(logger *zap.Logger, bucket string, builder *PartitionKeyBuilder, service *s3.Client, storageClass s3types.StorageClass, opts ...ManagerOpt) Manager {
+func NewS3Manager(logger *zap.Logger, bucket string, builder *PartitionKeyBuilder, service *s3.Client, storageClass s3types.StorageClass, cfg aws.Config, opts ...ManagerOpt) Manager {
 	manager := &s3manager{
-		logger:       logger,
-		bucket:       bucket,
-		builder:      builder,
-		uploader:     transfermanager.New(service),
+		logger:  logger,
+		bucket:  bucket,
+		builder: builder,
+		uploader: transfermanager.New(service, func(o *transfermanager.Options) {
+			o.RequestChecksumCalculation = cfg.RequestChecksumCalculation
+		}),
 		storageClass: storageClass,
 	}
 	for _, opt := range opts {
