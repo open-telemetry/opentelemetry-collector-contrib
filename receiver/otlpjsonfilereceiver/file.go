@@ -143,6 +143,7 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 			if err != nil {
 				obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, err)
 			} else {
+				metricCount := m.MetricCount()
 				if m.ResourceMetrics().Len() != 0 {
 					// Appends token.Attributes
 					for i := 0; i < m.ResourceMetrics().Len(); i++ {
@@ -157,7 +158,7 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 					}
 					err = metrics.ConsumeMetrics(ctx, m)
 				}
-				obsrecv.EndMetricsOp(ctx, metadata.Type.String(), m.MetricCount(), err)
+				obsrecv.EndMetricsOp(ctx, metadata.Type.String(), metricCount, err)
 			}
 		}
 		return nil
@@ -192,6 +193,7 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 			if err != nil {
 				obsrecv.EndTracesOp(ctx, metadata.Type.String(), 0, err)
 			} else {
+				spanCount := t.SpanCount()
 				if t.ResourceSpans().Len() != 0 {
 					// Appends token.Attributes
 					for i := 0; i < t.ResourceSpans().Len(); i++ {
@@ -206,7 +208,7 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 					}
 					err = traces.ConsumeTraces(ctx, t)
 				}
-				obsrecv.EndTracesOp(ctx, metadata.Type.String(), t.SpanCount(), err)
+				obsrecv.EndTracesOp(ctx, metadata.Type.String(), spanCount, err)
 			}
 		}
 		return nil
