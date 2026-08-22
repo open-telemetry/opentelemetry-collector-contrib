@@ -10,6 +10,3 @@ status:
     active: [Aneurysm9, MovieStoreGuy]
 
 # TODO: Update the exporter to pass the tests
-tests:
-  skip_lifecycle: true
-

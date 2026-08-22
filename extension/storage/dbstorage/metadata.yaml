@@ -12,5 +12,3 @@ status:
     active: [dmitryax, atoulme]
 
 # TODO: Update the extension to make the tests pass
-tests:
-  skip_lifecycle: true
