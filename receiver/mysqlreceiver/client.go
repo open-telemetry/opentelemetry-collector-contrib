@@ -514,15 +514,19 @@ func (c *mySQLClient) getTableIoWaitsStats() ([]tableIoWaitsStats, error) {
 	return stats, nil
 }
 
+// indexIoWaitsQuery lists the COUNT_ and SUM_TIMER_ columns in DELETE, FETCH, INSERT, UPDATE order so
+// they line up with the fields scanned in getIndexIoWaitsStats (countDelete, countFetch, countInsert,
+// countUpdate). The two must stay in sync, otherwise the mysql.index.io.wait.* metrics are reported
+// under the wrong operation. This matches the ordering already used by getTableIoWaitsStats.
+const indexIoWaitsQuery = "SELECT OBJECT_SCHEMA, OBJECT_NAME, ifnull(INDEX_NAME, 'NONE') as INDEX_NAME," +
+	"COUNT_DELETE, COUNT_FETCH, COUNT_INSERT, COUNT_UPDATE," +
+	"FLOOR(SUM_TIMER_DELETE/1000), FLOOR(SUM_TIMER_FETCH/1000), FLOOR(SUM_TIMER_INSERT/1000), FLOOR(SUM_TIMER_UPDATE/1000) " +
+	"FROM performance_schema.table_io_waits_summary_by_index_usage " +
+	"WHERE OBJECT_SCHEMA NOT IN ('mysql', 'performance_schema');"
+
 // getIndexIoWaitsStats queries the db for index_io_waits metrics.
 func (c *mySQLClient) getIndexIoWaitsStats() ([]indexIoWaitsStats, error) {
-	query := "SELECT OBJECT_SCHEMA, OBJECT_NAME, ifnull(INDEX_NAME, 'NONE') as INDEX_NAME," +
-		"COUNT_FETCH, COUNT_INSERT, COUNT_UPDATE, COUNT_DELETE," +
-		"FLOOR(SUM_TIMER_FETCH/1000), FLOOR(SUM_TIMER_INSERT/1000), FLOOR(SUM_TIMER_UPDATE/1000), FLOOR(SUM_TIMER_DELETE/1000) " +
-		"FROM performance_schema.table_io_waits_summary_by_index_usage " +
-		"WHERE OBJECT_SCHEMA NOT IN ('mysql', 'performance_schema');"
-
-	rows, err := c.client.Query(query)
+	rows, err := c.client.Query(indexIoWaitsQuery)
 	if err != nil {
 		return nil, err
 	}
