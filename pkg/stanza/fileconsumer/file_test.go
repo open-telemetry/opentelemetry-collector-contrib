@@ -1364,8 +1364,10 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	sink.ExpectToken(t, []byte(content))
 	sink.ExpectNoCalls(t)
 	operator.wg.Wait()
-	if runtime.GOOS != "windows" {
-		// On windows, we never keep files in previousPollFiles, so we don't expect to see them here
+	if runtime.GOOS != windowsOS {
+		// On Windows, files are closed immediately after each poll by default
+		// (the filelog.windows.keepFilesOpen feature gate is opt-in), so we don't
+		// expect to see them retained here.
 		require.Len(t, operator.tracker.PreviousPollFiles(), 1)
 	}
 
@@ -1381,8 +1383,28 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	operator.wg.Wait()
 }
 
-func TestWindowsFilesClosedImmediately(t *testing.T) {
-	t.Parallel()
+// enableKeepFilesOpen turns on the filelog.windows.keepFilesOpen feature gate for the
+// duration of the test, so that the keep-files-open behavior is exercised on Windows
+// (where it is opt-in). It has no behavioral effect on other platforms, where handles
+// are always kept open. Tests using it must not call t.Parallel, since the feature gate
+// registry is global.
+func enableKeepFilesOpen(t *testing.T) {
+	prev := metadata.FilelogWindowsKeepFilesOpenFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogWindowsKeepFilesOpenFeatureGate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogWindowsKeepFilesOpenFeatureGate.ID(), prev))
+	})
+}
+
+// TestFilesKeptOpenBetweenPolls verifies that file handles are kept open between
+// poll cycles on all platforms. On Windows this requires the opt-in
+// filelog.windows.keepFilesOpen feature gate, which the test enables explicitly.
+// It also verifies that the file can still be moved while we hold the handle (made
+// possible by opening with FILE_SHARE_DELETE on Windows) and that the handle is
+// released within a couple of polls once the file is no longer matched, so it is
+// never held perpetually.
+func TestFilesKeptOpenBetweenPolls(t *testing.T) {
+	enableKeepFilesOpen(t)
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
@@ -1395,9 +1417,63 @@ func TestWindowsFilesClosedImmediately(t *testing.T) {
 
 	operator.poll(t.Context())
 	sink.ExpectToken(t, []byte("testlog"))
+	operator.wg.Wait()
 
-	// On Windows, poll should close the file after reading it. We can test this by trying to move it.
-	require.NoError(t, os.Rename(temp.Name(), temp.Name()+"_renamed"))
+	// The handle should be kept open between polls so we can still read data
+	// written to files that get rotated out of the matching pattern.
+	require.Len(t, operator.tracker.PreviousPollFiles(), 1)
+
+	// Even though we hold the handle, the file can be moved out of the include
+	// pattern. On Windows this only works because we open with FILE_SHARE_DELETE.
+	newDir := tempDir + "_new"
+	require.NoError(t, os.MkdirAll(newDir, 0o777))
+	require.NoError(t, os.Rename(temp.Name(), filepath.Join(newDir, "moved.log")))
+
+	// After the file is no longer matched, the handle should be released within
+	// a couple of polls rather than being held perpetually (which on Windows
+	// would leave a cross-volume move stuck in a delete-pending state).
+	operator.poll(t.Context())
+	operator.wg.Wait()
+	operator.poll(t.Context())
+	operator.wg.Wait()
+	require.Empty(t, operator.tracker.PreviousPollFiles())
+}
+
+// TestFilesClosedImmediatelyWithGateDisabled verifies the default Windows behavior
+// (the filelog.windows.keepFilesOpen feature gate disabled): file handles are closed
+// immediately after each poll. The gate is scoped to Windows, so on other platforms
+// handles are always kept open between polls regardless of its state.
+func TestFilesClosedImmediatelyWithGateDisabled(t *testing.T) {
+	prev := metadata.FilelogWindowsKeepFilesOpenFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogWindowsKeepFilesOpenFeatureGate.ID(), false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogWindowsKeepFilesOpenFeatureGate.ID(), prev))
+	})
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, sink := testManager(t, cfg)
+
+	temp := filetest.OpenTemp(t, tempDir)
+	filetest.WriteString(t, temp, "testlog\n")
+	require.NoError(t, temp.Close())
+
+	operator.poll(t.Context())
+	sink.ExpectToken(t, []byte("testlog"))
+	operator.wg.Wait()
+
+	if runtime.GOOS == windowsOS {
+		// With the gate disabled, Windows falls back to closing files immediately
+		// after each poll, so nothing is retained between polls.
+		require.Empty(t, operator.tracker.PreviousPollFiles())
+
+		// Because the handle was released, the file can be moved out of the pattern.
+		require.NoError(t, os.Rename(temp.Name(), temp.Name()+"_renamed"))
+	} else {
+		// On other platforms the gate has no effect; handles are always retained.
+		require.Len(t, operator.tracker.PreviousPollFiles(), 1)
+	}
 }
 
 func TestDelayedDisambiguation(t *testing.T) {

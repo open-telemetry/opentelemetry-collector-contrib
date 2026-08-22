@@ -53,3 +53,11 @@ var FilelogWindowsCaseInsensitiveFeatureGate = featuregate.GlobalRegistry().Must
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43777"),
 	featuregate.WithRegisterFromVersion("v0.142.0"),
 )
+
+var FilelogWindowsKeepFilesOpenFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"filelog.windows.keepFilesOpen",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("On Windows, keep file handles open between poll cycles so that data written to a file that was rotated out of the matching pattern can still be read, matching the behavior on other platforms. When disabled (the default), files are closed immediately after each poll on Windows."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49213"),
+	featuregate.WithRegisterFromVersion("v0.160.0"),
+)
