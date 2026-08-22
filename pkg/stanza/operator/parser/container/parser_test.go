@@ -74,27 +74,6 @@ func TestDockerParserInvalidType(t *testing.T) {
 	require.ErrorContains(t, err, "type '[]int' cannot be parsed as docker container logs")
 }
 
-func TestCrioParserInvalidType(t *testing.T) {
-	parser := newTestParser(t)
-	_, err := parser.parseCRIO([]int{})
-	require.ErrorContains(t, err, "type '[]int' cannot be parsed as cri-o container logs")
-}
-
-func TestContainerdParserInvalidType(t *testing.T) {
-	parser := newTestParser(t)
-	_, err := parser.parseContainerd([]int{})
-	require.ErrorContains(t, err, "type '[]int' cannot be parsed as containerd logs")
-}
-
-func TestFormatDetectionFailure(t *testing.T) {
-	parser := newTestParser(t)
-	e := &entry.Entry{
-		Body: `invalid container format`,
-	}
-	_, err := parser.detectFormat(e)
-	require.ErrorContains(t, err, "entry cannot be parsed as container logs")
-}
-
 func TestInternalRecombineCfg(t *testing.T) {
 	cfg := createRecombineConfig(Config{MaxLogSize: 102400})
 	expected := recombine.NewConfigWithID(recombineInternalID)
@@ -1540,4 +1519,429 @@ func TestProcessBatchDockerQuietModeWithMixedEntries(t *testing.T) {
 	output.AssertCalled(t, "ProcessBatch", ctx, mock.MatchedBy(func(entries []*entry.Entry) bool {
 		return len(entries) == 2
 	}))
+}
+
+func TestFilepathCachePopulatedOnFirstEntry(t *testing.T) {
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = true
+	testLogPath := "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/0.log"
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	p := op.(*Parser)
+
+	e := entry.New()
+	e.Attributes = map[string]any{attrs.LogFilePath: testLogPath}
+
+	_, ok := p.cache.Get(testLogPath)
+	require.False(t, ok, "cache should be empty before first call")
+
+	err = p.extractk8sMetaFromFilePath(e)
+	require.NoError(t, err)
+
+	cached, ok := p.cache.Get(testLogPath)
+	require.True(t, ok, "cache should be populated after first call")
+	require.Equal(t, "default", cached["k8s.namespace.name"])
+	require.Equal(t, "mypod", cached["k8s.pod.name"])
+	require.Equal(t, "mycontainer", cached["k8s.container.name"])
+	require.Equal(t, "0", cached["k8s.container.restart_count"])
+}
+
+func TestFilepathCacheHitSkipsRegex(t *testing.T) {
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = true
+	testLogPath := "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/0.log"
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	p := op.(*Parser)
+
+	sentinel := map[string]any{
+		"k8s.namespace.name":          "cached-namespace",
+		"k8s.pod.name":                "cached-pod",
+		"k8s.container.name":          "cached-container",
+		"k8s.container.restart_count": "cached-restart",
+		"k8s.pod.uid":                 "cached-uid",
+	}
+	p.cache.Add(testLogPath, sentinel)
+
+	e := entry.New()
+	e.Attributes = map[string]any{attrs.LogFilePath: testLogPath}
+
+	err = p.extractk8sMetaFromFilePath(e)
+	require.NoError(t, err)
+
+	require.Equal(t, "cached-namespace", e.Resource["k8s.namespace.name"])
+	require.Equal(t, "cached-pod", e.Resource["k8s.pod.name"])
+	require.Equal(t, "cached-container", e.Resource["k8s.container.name"])
+}
+
+func TestFilepathCacheDisabledWhenMetadataOff(t *testing.T) {
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = false
+	testLogPath := "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/0.log"
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	p := op.(*Parser)
+
+	e := entry.New()
+	e.Attributes = map[string]any{attrs.LogFilePath: testLogPath}
+
+	err = p.extractk8sMetaFromFilePath(e)
+	require.NoError(t, err)
+
+	require.Nil(t, p.cache, "cache should be nil when add_metadata_from_filepath is false")
+}
+
+func TestStripLogSuffix(t *testing.T) {
+	cases := []struct {
+		input    string
+		wantOK   bool
+		wantBase string
+	}{
+		{
+			input:    "/var/log/pods/ns_pod_uid/container/0.log",
+			wantOK:   true,
+			wantBase: "/var/log/pods/ns_pod_uid/container/0",
+		},
+		{
+			input:    "/var/log/pods/ns_pod_uid/container/0.log.20240115-103000",
+			wantOK:   true,
+			wantBase: "/var/log/pods/ns_pod_uid/container/0",
+		},
+		{
+			input:  "/var/log/pods/ns_pod_uid/container/0.log.backup",
+			wantOK: false,
+		},
+		{
+			input:  "/var/log/pods/ns_pod_uid/container/0.log.20240115",
+			wantOK: false,
+		},
+		{
+			input:  "/var/log/pods/ns_pod_uid/container/0.log.20240115-10300",
+			wantOK: false,
+		},
+		{
+			input:  "/var/log/pods/ns_pod_uid/container/0.log2",
+			wantOK: false,
+		},
+		{
+			input:  "/var/log/pods/ns_pod_uid/container/0.txt",
+			wantOK: false,
+		},
+		{
+			input:  "",
+			wantOK: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.input, func(t *testing.T) {
+			base, ok := stripLogSuffix(tc.input)
+			require.Equal(t, tc.wantOK, ok)
+			if tc.wantOK {
+				require.Equal(t, tc.wantBase, base)
+			}
+		})
+	}
+}
+
+func TestSplitLogPath(t *testing.T) {
+	cases := []struct {
+		name        string
+		input       string
+		wantOK      bool
+		wantNS      string
+		wantPod     string
+		wantUID     string
+		wantCtr     string
+		wantRestart string
+	}{
+		{
+			name:        "standard path",
+			input:       "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/0.log",
+			wantOK:      true,
+			wantNS:      "default",
+			wantPod:     "mypod",
+			wantUID:     "49cc7c1fd3702c40b2686ea7486091d3",
+			wantCtr:     "mycontainer",
+			wantRestart: "0",
+		},
+		{
+			name:        "rotated log",
+			input:       "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/0.log.20240115-103000",
+			wantOK:      true,
+			wantNS:      "default",
+			wantPod:     "mypod",
+			wantRestart: "0",
+		},
+		{
+			name:        "pod name with hyphens",
+			input:       "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+			wantOK:      true,
+			wantNS:      "some",
+			wantPod:     "kube-scheduler-kind-control-plane",
+			wantUID:     "49cc7c1fd3702c40b2686ea7486091d3",
+			wantCtr:     "kube-scheduler44",
+			wantRestart: "1",
+		},
+		{
+			name:        "windows path separators",
+			input:       `C:\var\log\pods\default_mypod_49cc7c1fd3702c40b2686ea7486091d3\mycontainer\0.log`,
+			wantOK:      true,
+			wantNS:      "default",
+			wantPod:     "mypod",
+			wantRestart: "0",
+		},
+		{
+			name:   "unrecognized suffix rejected",
+			input:  "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/0.log.backup",
+			wantOK: false,
+		},
+		{
+			name:   "uid contains invalid char",
+			input:  "/var/log/pods/default_mypod_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/mycontainer/0.log",
+			wantOK: false,
+		},
+		{
+			name:   "container name contains dot",
+			input:  "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/my.container/0.log",
+			wantOK: false,
+		},
+		{
+			name:   "restart count not digits",
+			input:  "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/abc.log",
+			wantOK: false,
+		},
+		{
+			name:   "no path separator",
+			input:  "default_mypod_49cc7c1fd3702c40b2686ea7486091d3.log",
+			wantOK: false,
+		},
+		{
+			name:   "relative path without leading separator rejected",
+			input:  "default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/0.log",
+			wantOK: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, ok := parseLogPath(tc.input)
+			require.Equal(t, tc.wantOK, ok)
+			if !ok {
+				return
+			}
+			if tc.wantNS != "" {
+				require.Equal(t, tc.wantNS, result["k8s.namespace.name"])
+			}
+			if tc.wantPod != "" {
+				require.Equal(t, tc.wantPod, result["k8s.pod.name"])
+			}
+			if tc.wantUID != "" {
+				require.Equal(t, tc.wantUID, result["k8s.pod.uid"])
+			}
+			if tc.wantCtr != "" {
+				require.Equal(t, tc.wantCtr, result["k8s.container.name"])
+			}
+			if tc.wantRestart != "" {
+				require.Equal(t, tc.wantRestart, result["k8s.container.restart_count"])
+			}
+		})
+	}
+}
+
+func TestPinnedFormatMismatch(t *testing.T) {
+	// When format is pinned, detectFormat is skipped and the pinned parser is called directly.
+	// A mismatched line (e.g. docker JSON sent to a containerd-pinned parser) causes a parse error.
+	cases := []struct {
+		name         string
+		pinnedFormat string
+		body         string
+	}{
+		{
+			name:         "docker line rejected when containerd pinned",
+			pinnedFormat: containerdFormat,
+			body:         `{"log":"msg","stream":"stdout","time":"2024-01-15T10:30:00.000Z"}`,
+		},
+		{
+			name:         "docker line rejected when crio pinned",
+			pinnedFormat: crioFormat,
+			body:         `{"log":"msg","stream":"stdout","time":"2024-01-15T10:30:00.000Z"}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := NewConfigWithID("test_id")
+			cfg.AddMetadataFromFilePath = false
+			cfg.Format = tc.pinnedFormat
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set)
+			require.NoError(t, err)
+			defer func() { require.NoError(t, op.Stop()) }()
+
+			e := entry.New()
+			e.Body = tc.body
+			err = op.Process(t.Context(), e)
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestParseContainerdFields(t *testing.T) {
+	cases := []struct {
+		name       string
+		input      any
+		wantOK     bool
+		wantTime   string
+		wantStream string
+		wantLogtag string
+		wantLog    string
+	}{
+		{
+			name:       "full line",
+			input:      "2024-01-15T10:30:00.000Z stdout F log message here",
+			wantOK:     true,
+			wantTime:   "2024-01-15T10:30:00.000Z",
+			wantStream: "stdout",
+			wantLogtag: "F",
+			wantLog:    "log message here",
+		},
+		{
+			name:       "stderr partial",
+			input:      "2024-01-15T10:30:00.000Z stderr P partial line",
+			wantOK:     true,
+			wantStream: "stderr",
+			wantLogtag: "P",
+			wantLog:    "partial line",
+		},
+		{
+			name:       "empty log message",
+			input:      "2024-01-15T10:30:00.000Z stdout F ",
+			wantOK:     true,
+			wantLogtag: "F",
+			wantLog:    "",
+		},
+		{
+			name:       "no log body logtag only",
+			input:      "2024-01-15T10:30:00.000Z stdout F",
+			wantOK:     true,
+			wantLogtag: "F",
+			wantLog:    "",
+		},
+		{
+			name:   "invalid stream",
+			input:  "2024-01-15T10:30:00.000Z stdxxx F message",
+			wantOK: false,
+		},
+		{
+			name:   "no trailing Z on timestamp",
+			input:  "2024-01-15T10:30:00.000+00:00 stdout F message",
+			wantOK: false,
+		},
+		{
+			name:   "wrong type",
+			input:  42,
+			wantOK: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := parseContainerd(tc.input)
+			if !tc.wantOK {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			m, ok := result.(map[string]any)
+			require.True(t, ok)
+			if tc.wantTime != "" {
+				require.Equal(t, tc.wantTime, m["time"])
+			}
+			if tc.wantStream != "" {
+				require.Equal(t, tc.wantStream, m["stream"])
+			}
+			require.Equal(t, tc.wantLogtag, m["logtag"])
+			require.Equal(t, tc.wantLog, m["log"])
+		})
+	}
+}
+
+func TestParseCRIOFields(t *testing.T) {
+	cases := []struct {
+		name       string
+		input      any
+		wantOK     bool
+		wantTime   string
+		wantStream string
+		wantLogtag string
+		wantLog    string
+	}{
+		{
+			name:       "full line with UTC offset",
+			input:      "2024-01-15T10:30:00.000000000+00:00 stdout F log message",
+			wantOK:     true,
+			wantTime:   "2024-01-15T10:30:00.000000000+00:00",
+			wantStream: "stdout",
+			wantLogtag: "F",
+			wantLog:    "log message",
+		},
+		{
+			name:       "negative timezone offset",
+			input:      "2024-01-15T10:30:00.000000000-05:00 stderr F error line",
+			wantOK:     true,
+			wantStream: "stderr",
+			wantLogtag: "F",
+			wantLog:    "error line",
+		},
+		{
+			name:       "empty log body",
+			input:      "2024-01-15T10:30:00.000000000+00:00 stdout F ",
+			wantOK:     true,
+			wantLogtag: "F",
+			wantLog:    "",
+		},
+		{
+			name:   "invalid stream",
+			input:  "2024-01-15T10:30:00.000000000+00:00 stdxxx F message",
+			wantOK: false,
+		},
+		{
+			name:   "missing timestamp",
+			input:  "stdout F message",
+			wantOK: false,
+		},
+		{
+			name:   "wrong type",
+			input:  42,
+			wantOK: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := parseCRIO(tc.input)
+			if !tc.wantOK {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			m, ok := result.(map[string]any)
+			require.True(t, ok)
+			if tc.wantTime != "" {
+				require.Equal(t, tc.wantTime, m["time"])
+			}
+			if tc.wantStream != "" {
+				require.Equal(t, tc.wantStream, m["stream"])
+			}
+			require.Equal(t, tc.wantLogtag, m["logtag"])
+			require.Equal(t, tc.wantLog, m["log"])
+		})
+	}
 }
