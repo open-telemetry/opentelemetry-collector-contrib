@@ -1337,11 +1337,12 @@ func TestAddExceptionSpanEvent(t *testing.T) {
 		assertExceptionAttr(t, event, "exception.message", "connection refused")
 		assertExceptionAttr(t, event, "exception.type", "ConnectionError")
 		assertExceptionAttr(t, event, "exception.stacktrace", "at main.go:42")
-		// The error.* tags are consumed, not also emitted as raw span attributes.
+
 		for _, k := range []string{"error.message", "error.type", "error.stack"} {
 			_, ok := span.Attributes().Get(k)
 			assert.False(t, ok, "%s leaked as a span attribute", k)
 		}
+
 		assert.Equal(t, ptrace.StatusCodeError, span.Status().Code())
 	})
 
@@ -1362,7 +1363,7 @@ func TestAddExceptionSpanEvent(t *testing.T) {
 		})
 		require.Equal(t, 1, span.Events().Len())
 		assertExceptionAttr(t, span.Events().At(0), "exception.stacktrace", "at main.go:7")
-		// The tag is consumed by the event, so it must not also land on the span as exception.stacktrace.
+
 		_, ok := span.Attributes().Get("exception.stacktrace")
 		assert.False(t, ok, "error.stacktrace leaked as a span attribute")
 	})
@@ -1388,7 +1389,6 @@ func TestAddExceptionSpanEvent(t *testing.T) {
 }
 
 func TestSpanStatus(t *testing.T) {
-	// A Datadog error of 0 maps to the OTel default status (Unset); a non-zero error maps to Error.
 	nonError := translateSingleSpan(t, &pb.Span{TraceID: 1, SpanID: 1})
 	assert.Equal(t, ptrace.StatusCodeUnset, nonError.Status().Code())
 

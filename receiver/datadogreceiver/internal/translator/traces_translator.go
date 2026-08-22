@@ -337,11 +337,12 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 			if hasSamplingPriority {
 				newSpan.Attributes().PutStr("sampling.priority", fmt.Sprintf("%f", samplingPriority))
 			}
-			// A Datadog error of 0 means "not an error", which maps to the OTel default status (Unset).
+
 			if span.Error > 0 {
 				newSpan.Status().SetCode(ptrace.StatusCodeError)
 			}
 			addExceptionSpanEvent(span, &newSpan)
+
 			newSpan.Attributes().PutStr(attributeDatadogSpanID, strconv.FormatUint(span.SpanID, 10))
 			newSpan.Attributes().PutStr(attributeDatadogTraceID, strconv.FormatUint(span.TraceID, 10))
 			for k, v := range span.GetMeta() {
@@ -633,7 +634,7 @@ func putAttributeAnyValue(attrs pcommon.Map, key string, v *pb.AttributeAnyValue
 }
 
 // addExceptionSpanEvent converts Datadog error tags into an OpenTelemetry `exception` span event.
-// Datadog tracers report an error either as an exception span event (translated by setSpanEvents) or
+// Datadog tracers report an error either as an exception span event or
 // as error.* tags; when only the tags are present this reconstructs the event so downstream consumers
 // see OTel-native exception semantics. The consumed tags are removed so they do not also surface as
 // raw span attributes. dd-trace tracers use error.message/error.type; some use error.msg/error.kind/error.stacktrace.
