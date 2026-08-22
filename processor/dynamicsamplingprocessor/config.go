@@ -50,6 +50,22 @@ const (
 	AlgorithmWindowed SamplerAlgorithm = "windowed"
 )
 
+// RecordFingerprint controls whether the matched rule's fingerprint value is
+// recorded as an attribute on the spans of kept traces.
+type RecordFingerprint string
+
+const (
+	// RecordFingerprintNone (default) records nothing.
+	RecordFingerprintNone RecordFingerprint = "none"
+	// RecordFingerprintValue records the raw fingerprint value.
+	RecordFingerprintValue RecordFingerprint = "value"
+	// RecordFingerprintHash records the first 8 bytes of the fingerprint's
+	// SHA-256, hex encoded. Deterministic across instances and restarts;
+	// obfuscates values and fixes the attribute size, but does not protect
+	// guessable values from enumeration.
+	RecordFingerprintHash RecordFingerprint = "hash"
+)
+
 // Config holds the top-level configuration for the dynamic sampling processor.
 type Config struct {
 	// TraceTimeout is the maximum time a trace can sit in the accumulation buffer
@@ -86,6 +102,12 @@ type Config struct {
 	//   - Only trigger on explicit hints (no default):
 	//       span.attributes["otelcol.dynamic_sampling.root_span"] == true
 	RootSpanCondition string `mapstructure:"root_span_condition"`
+	// RecordFingerprint records the matched rule's fingerprint on every span
+	// of a kept trace (attribute otelcol.processor.dynamic_sampling.fingerprint),
+	// as the raw value or a hash. Defaults to none. Only rules whose sampler
+	// has fingerprint_attributes produce the attribute. The value mode grows
+	// sampled decision-cache entries by the key string; hash is fixed size.
+	RecordFingerprint RecordFingerprint `mapstructure:"record_fingerprint"`
 	// Eviction controls what happens to the oldest pending trace when the
 	// buffer is full (NumTraces reached) and a new trace arrives. Both
 	// policies emit a real decision (recorded in the decision cache and, for
@@ -295,6 +317,11 @@ func (c *Config) Validate() error {
 	}
 	if err := c.Eviction.validate(); err != nil {
 		return err
+	}
+	switch c.RecordFingerprint {
+	case "", RecordFingerprintNone, RecordFingerprintValue, RecordFingerprintHash:
+	default:
+		return fmt.Errorf("record_fingerprint must be %q, %q, or %q", RecordFingerprintNone, RecordFingerprintValue, RecordFingerprintHash)
 	}
 	return nil
 }
