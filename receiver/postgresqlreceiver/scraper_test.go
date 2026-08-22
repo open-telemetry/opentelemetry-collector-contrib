@@ -721,11 +721,11 @@ var querySampleColumns = []string{
 	querySampleColumnBlockingTxnStartTime,
 }
 
-func newQuerySampleRows(t *testing.T, values map[string]any) *sqlmock.Rows {
-	t.Helper()
-
-	rowValues := make([]driver.Value, len(querySampleColumns))
-	for i, col := range querySampleColumns {
+// newSQLMockRows builds a one-row sqlmock result in the given column order,
+// filling any column missing from values with an empty string.
+func newSQLMockRows(columns []string, values map[string]any) *sqlmock.Rows {
+	rowValues := make([]driver.Value, len(columns))
+	for i, col := range columns {
 		if v, ok := values[col]; ok {
 			rowValues[i] = v
 			continue
@@ -733,7 +733,24 @@ func newQuerySampleRows(t *testing.T, values map[string]any) *sqlmock.Rows {
 		rowValues[i] = ""
 	}
 
-	return sqlmock.NewRows(querySampleColumns).AddRow(rowValues...)
+	return sqlmock.NewRows(columns).AddRow(rowValues...)
+}
+
+var topQueryColumns = []string{
+	callsColumnName,
+	"datname",
+	sharedBlksDirtiedColumnName,
+	sharedBlksHitColumnName,
+	sharedBlksReadColumnName,
+	sharedBlksWrittenColumnName,
+	tempBlksReadColumnName,
+	tempBlksWrittenColumnName,
+	"query",
+	queryidColumnName,
+	"rolname",
+	rowsColumnName,
+	totalExecTimeColumnName,
+	totalPlanTimeColumnName,
 }
 
 func TestScrapeQuerySample(t *testing.T) {
@@ -758,7 +775,7 @@ func TestScrapeQuerySample(t *testing.T) {
 	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 	require.NoError(t, scraperErr)
 	scraper.newestQueryTimestamp = 123440.111
-	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newSQLMockRows(querySampleColumns, map[string]any{
 		querySampleColumnDatname:              "postgres",
 		querySampleColumnUsename:              "otelu",
 		querySampleColumnClientAddr:           "11.4.5.14",
@@ -804,7 +821,7 @@ func TestScrapeQuerySampleSemconv(t *testing.T) {
 	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
 	require.NoError(t, scraperErr)
 	scraper.newestQueryTimestamp = 123440.111
-	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newSQLMockRows(querySampleColumns, map[string]any{
 		querySampleColumnDatname:              "postgres",
 		querySampleColumnUsename:              "otelu",
 		querySampleColumnClientAddr:           "11.4.5.14",
@@ -859,7 +876,7 @@ func TestScrapeQuerySampleWithTraceparent(t *testing.T) {
 	scraper.newestQueryTimestamp = 123440.111
 
 	traceparent := "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
-	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newSQLMockRows(querySampleColumns, map[string]any{
 		querySampleColumnDatname:              "postgres",
 		querySampleColumnUsename:              "otelu",
 		querySampleColumnClientAddr:           "11.4.5.14",
@@ -897,14 +914,16 @@ func TestQuerySampleTemplateRendering(t *testing.T) {
 	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
 
 	tests := []struct {
-		name   string
-		params map[string]any
+		name           string
+		params         map[string]any
+		expectedClause string
 	}{
 		{
 			name: "renders with standard parameters",
 			params: map[string]any{
 				"limit":                int64(50),
 				"newestQueryTimestamp": 999999.555,
+				"excludedDatabases":    "",
 			},
 		},
 		{
@@ -912,7 +931,18 @@ func TestQuerySampleTemplateRendering(t *testing.T) {
 			params: map[string]any{
 				"limit":                int64(10),
 				"newestQueryTimestamp": float64(0),
+				"excludedDatabases":    "",
 			},
+		},
+		{
+			name: "renders excluded databases filter",
+			params: map[string]any{
+				"limit":                int64(10),
+				"newestQueryTimestamp": float64(0),
+				"excludedDatabases":    quoteDatabaseList([]string{"rdsadmin", "template0"}),
+			},
+			// COALESCE keeps NULL datname rows (background workers) that a bare NOT IN would drop.
+			expectedClause: "AND COALESCE(sa.datname, '') NOT IN ('rdsadmin','template0')",
 		},
 	}
 
@@ -934,6 +964,53 @@ func TestQuerySampleTemplateRendering(t *testing.T) {
 
 			assert.Contains(t, rendered, fmt.Sprintf("LIMIT %v;", tc.params["limit"]))
 			assert.Contains(t, rendered, fmt.Sprintf("TO_TIMESTAMP(%v)", tc.params["newestQueryTimestamp"]))
+
+			// Narrow match: the template has an unrelated sa.pid NOT IN (...) subquery.
+			if tc.expectedClause == "" {
+				assert.NotContains(t, rendered, "sa.datname, '') NOT IN (", "no database filter should be emitted without excludes")
+			} else {
+				assert.Contains(t, rendered, tc.expectedClause)
+			}
+		})
+	}
+}
+
+func TestTopQueryTemplateRendering(t *testing.T) {
+	tmpl := template.Must(template.New("topQuery").Option("missingkey=error").Parse(topQueryTemplate))
+
+	tests := []struct {
+		name           string
+		excludes       []string
+		expectedClause string
+	}{
+		{
+			name:     "no excludes emits no filter",
+			excludes: nil,
+		},
+		{
+			name:           "excludes are filtered server side",
+			excludes:       []string{"rdsadmin", "azure_maintenance"},
+			expectedClause: "AND datname NOT IN ('rdsadmin','azure_maintenance')",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			buf := bytes.Buffer{}
+			err := tmpl.Execute(&buf, map[string]any{
+				"limit":             int64(10),
+				"excludedDatabases": quoteDatabaseList(tc.excludes),
+			})
+			require.NoError(t, err)
+
+			rendered := buf.String()
+			assert.Contains(t, rendered, "LIMIT 10;")
+
+			if tc.expectedClause == "" {
+				assert.NotContains(t, rendered, "datname NOT IN (", "no database filter should be emitted without excludes")
+			} else {
+				assert.Contains(t, rendered, tc.expectedClause)
+			}
 		})
 	}
 }
@@ -1068,7 +1145,7 @@ func TestScrapeQuerySampleBlockedSession(t *testing.T) {
 	require.NoError(t, scraperErr)
 	scraper.newestQueryTimestamp = 123440.111
 
-	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newSQLMockRows(querySampleColumns, map[string]any{
 		querySampleColumnDatname:              "postgres",
 		querySampleColumnUsename:              "otelu",
 		querySampleColumnClientAddr:           "11.4.5.14",
@@ -1124,7 +1201,7 @@ func TestScrapeQuerySampleMultiBlocker(t *testing.T) {
 	require.NoError(t, scraperErr)
 	scraper.newestQueryTimestamp = 123440.111
 
-	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newSQLMockRows(querySampleColumns, map[string]any{
 		querySampleColumnDatname:              "postgres",
 		querySampleColumnUsename:              "otelu",
 		querySampleColumnClientAddr:           "11.4.5.14",
@@ -1161,6 +1238,91 @@ func TestScrapeQuerySampleMultiBlocker(t *testing.T) {
 	assert.Equal(t, "2025-02-12T16:37:49Z", attrs["postgresql.blocking.transaction.start_time"])
 }
 
+func TestScrapeTopQueriesHonorsExcludeDatabases(t *testing.T) {
+	// The exclusion logic must behave identically with the legacy resource model
+	// and with the receiver.postgresql.useOTelSemconv feature gate enabled.
+	for _, useSemconv := range []bool{false, true} {
+		t.Run(fmt.Sprintf("semconv=%t", useSemconv), func(t *testing.T) {
+			defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlUseOTelSemconvFeatureGate, useSemconv)()
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.Databases = []string{}
+			cfg.ExcludeDatabases = []string{"rdsadmin"}
+			cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+
+			// Regexp matcher so the assertion is on the clause itself, not a re-render of the template.
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+
+			settings := receivertest.NewNopSettings(metadata.Type)
+			logger, err := zap.NewProduction()
+			require.NoError(t, err)
+			settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
+
+			scraper, err := newPostgreSQLScraper(settings, cfg, mockSimpleClientFactory{db: db}, newCache(30), newTTLCache[string](1, time.Second))
+			require.NoError(t, err)
+
+			// The template filters this row out server side; returning it anyway exercises the
+			// EXPLAIN guard. No EXPLAIN is expected: the row must be skipped, not explained.
+			mock.ExpectQuery(`AND datname NOT IN \('rdsadmin'\)`).
+				WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
+					callsColumnName:             "123",
+					"datname":                   "rdsadmin",
+					sharedBlksDirtiedColumnName: "1111",
+					sharedBlksHitColumnName:     "1112",
+					sharedBlksReadColumnName:    "1113",
+					sharedBlksWrittenColumnName: "1114",
+					tempBlksReadColumnName:      "1115",
+					tempBlksWrittenColumnName:   "1116",
+					"query":                     "select s.* from rds_get_stat_dxl_counters() as s",
+					queryidColumnName:           "114514",
+					"rolname":                   "rdsadmin",
+					rowsColumnName:              "30",
+					totalExecTimeColumnName:     "11000",
+					totalPlanTimeColumnName:     "12000",
+				}))
+
+			actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
+			require.NoError(t, err)
+
+			require.NoError(t, mock.ExpectationsWereMet())
+			assert.Equal(t, 0, actualLogs.LogRecordCount())
+		})
+	}
+}
+
+func TestScrapeQuerySamplesHonorsExcludeDatabases(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{}
+	cfg.ExcludeDatabases = []string{"rdsadmin"}
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+
+	// Regexp matcher so the assertion is on the clause itself, not a re-render of the template.
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
+
+	scraper, err := newPostgreSQLScraper(settings, cfg, mockSimpleClientFactory{db: db}, newCache(30), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	// The template is the only exclusion mechanism on this path: the rendered SQL must
+	// carry the NOT IN clause, and the server returns no rows for excluded databases.
+	mock.ExpectQuery(`AND COALESCE\(sa\.datname, ''\) NOT IN \('rdsadmin'\)`).
+		WillReturnRows(sqlmock.NewRows(querySampleColumns))
+
+	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
+	require.NoError(t, err)
+
+	require.NoError(t, mock.ExpectationsWereMet())
+	assert.Equal(t, 0, actualLogs.LogRecordCount())
+}
+
 //go:embed testdata/scraper/top-query/expectedSql.sql
 var expectedScrapeTopQuery string
 
@@ -1188,31 +1350,6 @@ func TestScrapeTopQueries(t *testing.T) {
 	}
 
 	queryid := "114514"
-	expectedReturnedValue := map[string]string{
-		"calls":               "123",
-		"datname":             "postgres",
-		"shared_blks_dirtied": "1111",
-		"shared_blks_hit":     "1112",
-		"shared_blks_read":    "1113",
-		"shared_blks_written": "1114",
-		"temp_blks_read":      "1115",
-		"temp_blks_written":   "1116",
-		"query":               "select * from pg_stat_activity where id = 32",
-		"queryid":             queryid,
-		"rolname":             "master",
-		"rows":                "30",
-		"total_exec_time":     "11000",
-		"total_plan_time":     "12000",
-	}
-
-	expectedRows := make([]string, 0, len(expectedReturnedValue))
-	var expectedValuesBuilder strings.Builder
-	for k, v := range expectedReturnedValue {
-		expectedRows = append(expectedRows, k)
-		fmt.Fprintf(&expectedValuesBuilder, "%s,", v)
-	}
-	expectedValues := expectedValuesBuilder.String()
-
 	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
 	require.NoError(t, scraperErr)
 	scraper.cache.Add(queryid+totalExecTimeColumnName, 10)
@@ -1227,7 +1364,22 @@ func TestScrapeTopQueries(t *testing.T) {
 	scraper.cache.Add(queryid+tempBlksReadColumnName, 1110)
 	scraper.cache.Add(queryid+tempBlksWrittenColumnName, 1110)
 
-	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(sqlmock.NewRows(expectedRows).FromCSVString(expectedValues[:len(expectedValues)-1]))
+	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
+		callsColumnName:             "123",
+		"datname":                   "postgres",
+		sharedBlksDirtiedColumnName: "1111",
+		sharedBlksHitColumnName:     "1112",
+		sharedBlksReadColumnName:    "1113",
+		sharedBlksWrittenColumnName: "1114",
+		tempBlksReadColumnName:      "1115",
+		tempBlksWrittenColumnName:   "1116",
+		"query":                     "select * from pg_stat_activity where id = 32",
+		queryidColumnName:           queryid,
+		"rolname":                   "master",
+		rowsColumnName:              "30",
+		totalExecTimeColumnName:     "11000",
+		totalPlanTimeColumnName:     "12000",
+	}))
 	mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"result"}))
 	mock.ExpectQuery("/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_114514';").
 		WillReturnRows(sqlmock.NewRows([]string{"param_count"}).AddRow("0"))
@@ -1575,7 +1727,7 @@ func (*mockClient) explainQuery(context.Context, string, string, *zap.Logger) (s
 }
 
 // getTopQuery implements client.
-func (*mockClient) getTopQuery(context.Context, int64, *zap.Logger) ([]map[string]any, error) {
+func (*mockClient) getTopQuery(context.Context, int64, []string, *zap.Logger) ([]map[string]any, error) {
 	panic("unimplemented")
 }
 
@@ -1596,7 +1748,7 @@ func (m mockSimpleClientFactory) getClient(context.Context, string) (client, err
 }
 
 // getQuerySamples implements client.
-func (*mockClient) getQuerySamples(context.Context, int64, float64, *zap.Logger) ([]map[string]any, float64, error) {
+func (*mockClient) getQuerySamples(context.Context, int64, float64, []string, *zap.Logger) ([]map[string]any, float64, error) {
 	panic("this should not be invoked")
 }
 

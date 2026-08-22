@@ -21,5 +21,8 @@ WHERE
   datname IS NOT NULL
   AND query != '<insufficient privilege>'
   AND query NOT LIKE '/* otel-collector-ignore */%'
+  {{- if .excludedDatabases }}
+  AND datname NOT IN ({{ .excludedDatabases }})
+  {{- end }}
 ORDER BY calls DESC
 LIMIT {{ .limit }};

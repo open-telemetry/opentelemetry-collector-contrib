@@ -12,6 +12,26 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestQuoteDatabaseList(t *testing.T) {
+	tests := []struct {
+		name      string
+		databases []string
+		expected  string
+	}{
+		{name: "nil", databases: nil, expected: ""},
+		{name: "empty", databases: []string{}, expected: ""},
+		{name: "single", databases: []string{"rdsadmin"}, expected: "'rdsadmin'"},
+		{name: "multiple preserves order", databases: []string{"b", "a"}, expected: "'b','a'"},
+		{name: "doubles embedded single quotes", databases: []string{"o'brien"}, expected: "'o''brien'"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, quoteDatabaseList(tc.databases))
+		})
+	}
+}
+
 func TestGetDatabaseConflicts(t *testing.T) {
 	conflictColumns := []string{"datname", "confl_tablespace", "confl_lock", "confl_snapshot", "confl_bufferpin", "confl_deadlock"}
 
