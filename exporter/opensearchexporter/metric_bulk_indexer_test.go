@@ -4,11 +4,17 @@
 package opensearchexporter
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"net"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -36,26 +42,62 @@ func TestMetricJoinedError(t *testing.T) {
 }
 
 func TestMetricProcessItemFailure(t *testing.T) {
+	transportErr := &net.OpError{Op: "dial", Err: errors.New("connection refused")}
 	tests := []struct {
-		name         string
-		status       int
-		initialErrs  int
-		expectedErrs int
+		name          string
+		status        int
+		itemErr       error
+		wantPermanent bool
 	}{
-		{"retry status", 500, 0, 1},
-		{"permanent status", 400, 0, 1},
-		{"no status", 0, 0, 1},
+		{"retry status", 500, nil, false},
+		{"permanent status", 400, nil, true},
+		{"no status, encoding error", 0, errors.New("json: unsupported value"), true},
+		{"no status, transport error", 0, transportErr, false},
+		{"no status, flush-wrapped deadline", 0, fmt.Errorf("flush: %w", context.DeadlineExceeded), false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mbi := &metricBulkIndexer{errs: make([]error, tt.initialErrs)}
+			mbi := &metricBulkIndexer{}
 			resp := opensearchapi.BulkRespItem{Status: tt.status}
-			metrics := pmetric.NewMetrics()
-			mbi.processItemFailure(resp, nil, metrics)
-			if len(mbi.errs) != tt.expectedErrs {
-				t.Errorf("expected %d errors, got %d", tt.expectedErrs, len(mbi.errs))
-			}
+			mbi.processItemFailure(resp, tt.itemErr, pmetric.NewMetrics())
+			require.Len(t, mbi.errs, 1)
+			require.Equal(t, tt.wantPermanent, consumererror.IsPermanent(mbi.joinedError()))
+		})
+	}
+}
+
+func TestMetricOnIndexerErrorIsRetryable(t *testing.T) {
+	mbi := &metricBulkIndexer{}
+	// A transport failure surfaces through the bulk indexer's OnError callback.
+	mbi.onIndexerError(t.Context(), &net.OpError{Op: "dial", Err: errors.New("connection refused")})
+	err := mbi.joinedError()
+	require.Error(t, err)
+	require.False(t, consumererror.IsPermanent(err),
+		"indexer-level transport error must be retryable, not permanent (otherwise retry_on_failure silently drops the batch)")
+}
+
+func TestMetricIsRetryableError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{"nil", nil, false},
+		{"deadline exceeded", context.DeadlineExceeded, true},
+		{"canceled", context.Canceled, true},
+		{"net.OpError", &net.OpError{Op: "dial", Err: errors.New("connection refused")}, true},
+		{
+			"url.Error wrapping net.OpError",
+			&url.Error{Op: "Post", URL: "http://localhost", Err: &net.OpError{Op: "dial", Err: errors.New("connection refused")}},
+			true,
+		},
+		{"flush-wrapped deadline", fmt.Errorf("flush: %w", context.DeadlineExceeded), true},
+		{"encoding error", errors.New("json: unsupported value"), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, isRetryableError(tt.err))
 		})
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"net"
 	"time"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
@@ -47,7 +48,11 @@ func (mbi *metricBulkIndexer) close(ctx context.Context) {
 
 func (mbi *metricBulkIndexer) onIndexerError(_ context.Context, indexerErr error) {
 	if indexerErr != nil {
-		mbi.appendPermanentError(consumererror.NewPermanent(indexerErr))
+		// Indexer-level errors are transport/flush failures (connection refused,
+		// timeout, DNS). They are transient, so surface them as a retryable error
+		// and let exporterhelper's retry_on_failure resend the batch instead of
+		// dropping it as permanent.
+		mbi.errs = append(mbi.errs, indexerErr)
 	}
 }
 
@@ -204,9 +209,52 @@ func (mbi *metricBulkIndexer) processItemFailure(resp opensearchapi.BulkRespItem
 		// Non-recoverable OpenSearch error while indexing document
 		mbi.appendPermanentError(responseAsError(resp))
 	default:
-		// Encoding error. We didn't even attempt to send the event
-		mbi.appendPermanentError(itemErr)
+		// No server status classified the item, so this is either a flush/
+		// transport failure (retry) or an encoding failure we never sent
+		// (permanent). On a flush failure opensearchutil reports the same error
+		// through both this per-item path and onIndexerError, so both must land
+		// on retryable or the joined error is still permanent via errors.As.
+		//
+		// The retryable error is deliberately bare rather than carrying this one
+		// data point. A flush failure fires this callback for every buffered item,
+		// and exporterhelper's OnError resolves the first consumererror it finds
+		// and retries only that payload, so wrapping here would narrow the retry
+		// to a single data point and silently drop the rest of the batch. With no
+		// payload attached, OnError falls through and the whole request is resent.
+		if isRetryableError(itemErr) {
+			mbi.errs = append(mbi.errs, itemErr)
+		} else {
+			mbi.appendPermanentError(itemErr)
+		}
 	}
+}
+
+// isRetryableError reports whether err is a transient transport/flush failure
+// (connection refused, timeout, DNS) that should be retried rather than dropped
+// as permanent. Encoding failures, which never leave the process, are not
+// transport errors and remain permanent.
+//
+// The net.Error check is deliberately broad. It also matches durable
+// misconfigurations that arrive wrapped in *net.OpError or *url.Error, such as
+// an untrusted certificate or a hostname that does not resolve, so those are
+// retried until the retry sender gives up rather than dropped immediately. That
+// is bounded by max_elapsed_time and is the safer default: misclassifying a
+// transient failure as permanent loses data, whereas misclassifying a permanent
+// one only costs retries.
+//
+// context.Canceled is included because a cancelled context reaches this path as
+// a flush failure for data that was never accepted. Treating it as permanent
+// would drop that batch on shutdown; treating it as retryable lets the retry
+// sender return immediately on ctx.Done() and leave the data to the queue.
+func isRetryableError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		return true
+	}
+	var netErr net.Error
+	return errors.As(err, &netErr)
 }
 
 func (mbi *metricBulkIndexer) newBulkIndexerItem(document []byte, indexName string) opensearchutil.BulkIndexerItem {
