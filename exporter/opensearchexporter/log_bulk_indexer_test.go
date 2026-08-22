@@ -4,14 +4,31 @@
 package opensearchexporter
 
 import (
+	"context"
 	"errors"
+	"net"
 	"testing"
 	"time"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+func newTestLogBulkIndexer() *logBulkIndexer {
+	return &logBulkIndexer{errs: nil}
+}
+
+func isRetryableError(err error) bool {
+	return !consumererror.IsPermanent(err)
+}
 
 func TestJoinedError(t *testing.T) {
 	tests := []struct {
@@ -126,4 +143,83 @@ func TestMakeLog(t *testing.T) {
 	if sl.LogRecords().Len() != 1 {
 		t.Error("expected 1 log record")
 	}
+}
+
+func TestOnIndexerError_ConnectionRefused_MustBeRetryable(t *testing.T) {
+	lbi := newTestLogBulkIndexer()
+
+	netErr := &net.OpError{
+		Op:  "dial",
+		Net: "tcp",
+		Err: errors.New("connection refused"),
+	}
+
+	lbi.onIndexerError(t.Context(), netErr)
+
+	require.Len(t, lbi.errs, 1)
+	assert.True(t, isRetryableError(lbi.errs[0]),
+		"connection refused is transient — must NOT be Permanent; exporterhelper should retry")
+}
+
+func TestOnIndexerError_ContextDeadlineExceeded_MustBeRetryable(t *testing.T) {
+	lbi := newTestLogBulkIndexer()
+
+	lbi.onIndexerError(t.Context(), context.DeadlineExceeded)
+
+	require.Len(t, lbi.errs, 1)
+	assert.True(t, isRetryableError(lbi.errs[0]),
+		"deadline exceeded is transient — must NOT be Permanent; exporterhelper should retry")
+}
+
+func TestOnIndexerError_DNSFailure_MustBeRetryable(t *testing.T) {
+	lbi := newTestLogBulkIndexer()
+
+	dnsErr := &net.OpError{
+		Op:  "dial",
+		Net: "tcp",
+		Err: &net.DNSError{Err: "no such host", Name: "opensearch.example.com"},
+	}
+
+	lbi.onIndexerError(t.Context(), dnsErr)
+
+	require.Len(t, lbi.errs, 1)
+	assert.True(t, isRetryableError(lbi.errs[0]),
+		"DNS failure is transient — must NOT be Permanent; exporterhelper should retry")
+}
+
+func TestOnIndexerError_GenericNetworkError_MustBeRetryable(t *testing.T) {
+	lbi := newTestLogBulkIndexer()
+
+	lbi.onIndexerError(t.Context(), errors.New("EOF"))
+
+	require.Len(t, lbi.errs, 1)
+	assert.True(t, isRetryableError(lbi.errs[0]),
+		"generic network-level error from bulk flush must NOT be Permanent")
+}
+
+func TestOnIndexerError_RetryableError_DoesNotWrapAsNewPermanent(t *testing.T) {
+	lbi := newTestLogBulkIndexer()
+
+	lbi.onIndexerError(t.Context(), context.DeadlineExceeded)
+
+	require.Len(t, lbi.errs, 1)
+	assert.False(t, consumererror.IsPermanent(lbi.errs[0]),
+		"onIndexerError must never produce a Permanent error — doing so "+
+			"causes exporterhelper to bypass the retry queue and silently drop logs")
+}
+
+func TestProcessItemFailure_Status0_NetOpError_MustBeRetryable(t *testing.T) {
+	lbi := newTestLogBulkIndexer()
+
+	netErr := &net.OpError{
+		Op:  "read",
+		Net: "tcp",
+		Err: errors.New("connection reset by peer"),
+	}
+
+	lbi.processItemFailure(opensearchapi.BulkRespItem{Status: 0}, netErr, plog.NewLogs())
+
+	require.Len(t, lbi.errs, 1)
+	assert.True(t, isRetryableError(lbi.errs[0]),
+		"status=0 + net.OpError is a transport failure — must NOT be Permanent")
 }
