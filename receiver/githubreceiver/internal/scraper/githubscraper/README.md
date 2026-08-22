@@ -67,15 +67,27 @@ using exponential backoff with jitter.
 
 The following responses are retried:
 
-- **403 Forbidden** with `Retry-After` header -- secondary rate limit
-- **429 Too Many Requests** -- primary rate limit exceeded
+- **403 Forbidden** with `Retry-After` header -- secondary rate limit.
+- **403 Forbidden** or **429 Too Many Requests** with `X-RateLimit-Remaining: 0`
+  -- primary rate limit exhausted.
+- **429 Too Many Requests** without any wait hints -- still a rate-limit error.
 - **502 Bad Gateway** -- GitHub's proxy failed to reach the backend
 - **503 Service Unavailable** -- GitHub is temporarily down for maintenance
 - **504 Gateway Timeout** -- GitHub's backend took too long to respond
 
-Plain 403 responses (permission errors) are **not** retried. Retries are
-bounded by `max_retries` (default 10) and the scrape context, stopping when
-the next collection interval begins.
+The wait for a rate-limited response follows the precedence GitHub
+[documents][ghratelimit]: `Retry-After` first, then `X-RateLimit-Reset` when
+`X-RateLimit-Remaining` is `0`, and otherwise a minimum of one minute -- which
+also covers a primary rate-limit response whose `X-RateLimit-Reset` header is
+missing or unparseable. Header waits are honored as-is (not capped), so a single
+scrape can stall up to the configured GitHub rate-limit window.
+
+A 403 with neither `Retry-After` nor `X-RateLimit-Remaining: 0` is treated as a
+permission error and **not** retried. Retries are bounded by `max_retries`
+(default 10) and the scrape context, stopping when the next collection interval
+begins.
+
+[ghratelimit]: https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#handle-rate-limit-errors-appropriately
 
 Retry behaviour is configurable under `retry_on_failure`:
 
