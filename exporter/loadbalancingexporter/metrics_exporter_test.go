@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -1302,4 +1303,90 @@ func (e *mockMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetric.Met
 		return e.consumeErr
 	}
 	return e.ConsumeMetricsFn(ctx, md)
+}
+
+// TestExportBatches_PropagatesSubExporterPartialFailureMetrics checks that a sub-exporter's own
+// consumererror.Metrics subset is propagated, not the whole batch it was sent.
+func TestExportBatches_PropagatesSubExporterPartialFailureMetrics(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	// Distinct resources so metrics.Merge does not collapse them; the sub-exporter will
+	// claim only resource "one" failed.
+	md := pmetric.NewMetrics()
+	rm1 := md.ResourceMetrics().AppendEmpty()
+	rm1.Resource().Attributes().PutStr("resource", "one")
+	appendSimpleMetricWithID(rm1, "metric-failed")
+	rm2 := md.ResourceMetrics().AppendEmpty()
+	rm2.Resource().Attributes().PutStr("resource", "two")
+	appendSimpleMetricWithID(rm2, "metric-succeeded")
+
+	subFailed := pmetric.NewMetrics()
+	rmSub := subFailed.ResourceMetrics().AppendEmpty()
+	rmSub.Resource().Attributes().PutStr("resource", "one")
+	appendSimpleMetricWithID(rmSub, "metric-failed")
+
+	backendErr := errors.New("partial backend failure")
+	badEndpoint := endpointWithPort("bad")
+	bad := newWrappedExporter(newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
+		return consumererror.NewMetrics(backendErr, subFailed)
+	}), badEndpoint)
+
+	// exportBatches works off pre-routed batches, so no load balancer is needed here.
+	e := &metricExporterImp{logger: ts.Logger, telemetry: tb}
+
+	bad.consumeWG.Add(1)
+	err := e.exportBatches(t.Context(), exporterMetrics{bad: md})
+
+	var metricsErr consumererror.Metrics
+	require.ErrorAs(t, err, &metricsErr)
+	require.Equal(t, 1, metricsErr.Data().ResourceMetrics().Len(),
+		"should propagate sub-exporter's reported failed subset, not the full batch")
+	assert.Equal(t, "metric-failed",
+		metricsErr.Data().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name(),
+		"failed subset should be resource 'one', not 'two'")
+}
+
+func TestConsumeMetrics_PartialFailureOnlyRetriesFailedBackend(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	backendErr := errors.New("backend unavailable")
+	goodCalls := 0
+
+	endpoints := []string{"endpoint-1", "endpoint-2"}
+	ring := newHashRing(endpoints)
+	svcGood := serviceNameForEndpoint(t, ring, "endpoint-1")
+	svcBad := serviceNameForEndpoint(t, ring, "endpoint-2")
+
+	goodEndpoint := endpointWithPort("endpoint-1")
+	badEndpoint := endpointWithPort("endpoint-2")
+
+	good := newWrappedExporter(newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
+		goodCalls++
+		return nil
+	}), goodEndpoint)
+	bad := newWrappedExporter(newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
+		return backendErr
+	}), badEndpoint)
+
+	lb := &loadBalancer{
+		ring:      ring,
+		exporters: map[string]*wrappedExporter{goodEndpoint: good, badEndpoint: bad},
+	}
+	e := &metricExporterImp{loadBalancer: lb, routingKey: svcRouting, logger: ts.Logger, telemetry: tb}
+
+	md := pmetric.NewMetrics()
+	rm1 := md.ResourceMetrics().AppendEmpty()
+	rm1.Resource().Attributes().PutStr("service.name", svcGood)
+	appendSimpleMetricWithID(rm1, "good-metric")
+	rm2 := md.ResourceMetrics().AppendEmpty()
+	rm2.Resource().Attributes().PutStr("service.name", svcBad)
+	appendSimpleMetricWithID(rm2, "bad-metric")
+
+	err := e.ConsumeMetrics(t.Context(), md)
+
+	// Must be a typed error, otherwise the retry machinery re-sends the whole batch.
+	var metricsErr consumererror.Metrics
+	require.ErrorAs(t, err, &metricsErr, "expected consumererror.Metrics, got %T: %v", err, err)
+	assert.Equal(t, 1, metricsErr.Data().ResourceMetrics().Len(), "failed payload should contain only the bad backend's resource metric")
+	assert.Equal(t, 1, goodCalls, "good backend must not be re-sent")
 }

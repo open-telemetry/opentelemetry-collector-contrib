@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -1132,4 +1133,80 @@ func TestConsumeTracesByID_NoConsumeWGLeakOnResolveError(t *testing.T) {
 	require.Error(t, e.consumeTracesByID(t.Context(), td))
 	require.True(t, waitGroupReturns(&good.consumeWG, time.Second),
 		"consumeWG leaked on resolve error: Shutdown's Wait() would hang")
+}
+
+// TestExportBatches_PropagatesSubExporterPartialFailureTraces checks that a sub-exporter's own
+// consumererror.Traces subset is propagated, not the whole batch it was sent.
+func TestExportBatches_PropagatesSubExporterPartialFailureTraces(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	// 2 spans in; the sub-exporter will claim only "span-failed" failed.
+	td := ptrace.NewTraces()
+	ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+	ss.Spans().AppendEmpty().SetName("span-failed")
+	ss.Spans().AppendEmpty().SetName("span-succeeded")
+
+	subFailed := ptrace.NewTraces()
+	subFailed.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("span-failed")
+
+	backendErr := errors.New("partial backend failure")
+	badEndpoint := endpointWithPort("bad")
+	bad := newWrappedExporter(newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
+		return consumererror.NewTraces(backendErr, subFailed)
+	}), badEndpoint)
+
+	// exportBatches works off pre-routed batches, so no load balancer is needed here.
+	e := &traceExporterImp{logger: ts.Logger, telemetry: tb}
+
+	bad.consumeWG.Add(1)
+	err := e.exportBatches(t.Context(), exporterTraces{bad: td})
+
+	var tracesErr consumererror.Traces
+	require.ErrorAs(t, err, &tracesErr)
+	assert.Equal(t, 1, tracesErr.Data().SpanCount(),
+		"should propagate sub-exporter's reported failed subset, not the full batch")
+	assert.Equal(t, "span-failed", tracesErr.Data().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
+}
+
+func TestConsumeTracesByID_PartialFailureOnlyRetriesFailedBackend(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	backendErr := errors.New("backend unavailable")
+	goodCalls := 0
+
+	endpoints := []string{"endpoint-1", "endpoint-2"}
+	ring := newHashRing(endpoints)
+	tidGood := traceIDForEndpoint(t, ring, "endpoint-1")
+	tidBad := traceIDForEndpoint(t, ring, "endpoint-2")
+
+	goodEndpoint := endpointWithPort("endpoint-1")
+	badEndpoint := endpointWithPort("endpoint-2")
+
+	good := newWrappedExporter(newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
+		goodCalls++
+		return nil
+	}), goodEndpoint)
+	bad := newWrappedExporter(newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
+		return backendErr
+	}), badEndpoint)
+
+	lb := &loadBalancer{
+		ring:      ring,
+		exporters: map[string]*wrappedExporter{goodEndpoint: good, badEndpoint: bad},
+	}
+	e := &traceExporterImp{loadBalancer: lb, routingKey: traceIDRouting, logger: ts.Logger, telemetry: tb}
+
+	td := ptrace.NewTraces()
+	spans := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
+	spans.AppendEmpty().SetTraceID(tidGood)
+	spans.AppendEmpty().SetTraceID(tidBad)
+
+	err := e.consumeTracesByID(t.Context(), td)
+
+	// Must be a typed error, otherwise the retry machinery re-sends the whole batch.
+	var tracesErr consumererror.Traces
+	require.ErrorAs(t, err, &tracesErr, "expected consumererror.Traces, got %T: %v", err, err)
+	assert.Equal(t, 1, tracesErr.Data().SpanCount(), "failed payload should contain only the bad backend's span")
+	assert.Equal(t, tidBad, tracesErr.Data().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())
+	assert.Equal(t, 1, goodCalls, "good backend must not be re-sent")
 }
