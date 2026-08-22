@@ -525,6 +525,13 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [disk.io.direction]
+  mysql.innodb.history_list.length:
+    enabled: false
+    description: The length of the InnoDB history list.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: int
   mysql.innodb.operation.pending:
     enabled: false
     description: The number of pending InnoDB data file operations.
@@ -559,6 +566,20 @@ metrics:
     unit: s
     gauge:
       value_type: double
+  mysql.innodb.transaction.active.count:
+    enabled: false
+    description: The number of active InnoDB transactions.
+    stability: development
+    unit: "{transaction}"
+    gauge:
+      value_type: int
+  mysql.innodb.transaction.active.duration.max:
+    enabled: false
+    description: The duration of the longest running active InnoDB transaction.
+    stability: development
+    unit: s
+    gauge:
+      value_type: int
   mysql.joins:
     enabled: false
     description: The number of joins that perform table scans.

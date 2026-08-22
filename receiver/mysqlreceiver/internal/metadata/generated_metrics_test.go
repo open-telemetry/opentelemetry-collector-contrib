@@ -201,6 +201,9 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
+			mb.RecordMysqlInnodbHistoryListLengthDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordMysqlInnodbOperationPendingDataPoint(ts, "1", AttributeOperationsFsyncs)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlInnodbOperationPendingDataPoint(ts, "3", AttributeOperationsReads)
@@ -214,6 +217,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMysqlInnodbRowLockWaitDurationMaxDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordMysqlInnodbTransactionActiveCountDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordMysqlInnodbTransactionActiveDurationMaxDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordMysqlJoinsDataPoint(ts, "1", AttributeJoinKindFull)
@@ -1099,6 +1108,18 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("disk.io.direction")
 						assert.False(t, ok)
 					}
+				case "mysql.innodb.history_list.length":
+					assert.False(t, validatedMetrics["mysql.innodb.history_list.length"], "Found a duplicate in the metrics slice: mysql.innodb.history_list.length")
+					validatedMetrics["mysql.innodb.history_list.length"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The length of the InnoDB history list.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.innodb.operation.pending":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.innodb.operation.pending"], "Found a duplicate in the metrics slice: mysql.innodb.operation.pending")
@@ -1179,6 +1200,30 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "mysql.innodb.transaction.active.count":
+					assert.False(t, validatedMetrics["mysql.innodb.transaction.active.count"], "Found a duplicate in the metrics slice: mysql.innodb.transaction.active.count")
+					validatedMetrics["mysql.innodb.transaction.active.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of active InnoDB transactions.", mi.Description())
+					assert.Equal(t, "{transaction}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.innodb.transaction.active.duration.max":
+					assert.False(t, validatedMetrics["mysql.innodb.transaction.active.duration.max"], "Found a duplicate in the metrics slice: mysql.innodb.transaction.active.duration.max")
+					validatedMetrics["mysql.innodb.transaction.active.duration.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The duration of the longest running active InnoDB transaction.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.joins":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.joins"], "Found a duplicate in the metrics slice: mysql.joins")
