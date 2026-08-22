@@ -22,12 +22,6 @@ resourceMetrics:
         - key: gcp.gce.instance.name
           value:
             stringValue: test-instance
-        - key: gcp.gce.instance_group_manager.name
-          value:
-            stringValue: test-mig
-        - key: gcp.gce.instance_group_manager.zone
-          value:
-            stringValue: us-central1-b
         - key: host.id
           value:
             stringValue: "9876543210"
