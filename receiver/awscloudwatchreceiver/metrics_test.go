@@ -12,6 +12,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	"github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi"
+	rgttypes "github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi/types"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -35,6 +37,16 @@ func (m *mockMetricsClient) ListMetrics(ctx context.Context, params *cloudwatch.
 func (m *mockMetricsClient) GetMetricData(ctx context.Context, params *cloudwatch.GetMetricDataInput, optFns ...func(*cloudwatch.Options)) (*cloudwatch.GetMetricDataOutput, error) {
 	args := m.Called(ctx, params, optFns)
 	return args.Get(0).(*cloudwatch.GetMetricDataOutput), args.Error(1)
+}
+
+// mockTaggingClient implements resourceTaggingClient for testing.
+type mockTaggingClient struct {
+	mock.Mock
+}
+
+func (m *mockTaggingClient) GetResources(ctx context.Context, params *resourcegroupstaggingapi.GetResourcesInput, optFns ...func(*resourcegroupstaggingapi.Options)) (*resourcegroupstaggingapi.GetResourcesOutput, error) {
+	args := m.Called(ctx, params, optFns)
+	return args.Get(0).(*resourcegroupstaggingapi.GetResourcesOutput), args.Error(1)
 }
 
 func testScraper(cfg *Config) *cloudWatchMetricsScraper {
@@ -647,4 +659,200 @@ func TestScrape_DiscoveryError(t *testing.T) {
 
 	_, err := scr.scrape(t.Context())
 	require.ErrorContains(t, err, "list metrics")
+}
+
+// --- resource tag filtering tests ---
+
+func TestResourceIDsFromARN(t *testing.T) {
+	cases := []struct {
+		name string
+		arn  string
+		want []string // identifiers that must be present in the result set
+	}{
+		{
+			name: "ec2 instance",
+			arn:  "arn:aws:ec2:us-east-1:123456789012:instance/i-1234567890abcdef0",
+			want: []string{"i-1234567890abcdef0"},
+		},
+		{
+			name: "application load balancer keeps app path",
+			arn:  "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/my-lb/abc123",
+			want: []string{"app/my-lb/abc123"},
+		},
+		{
+			name: "dynamodb table",
+			arn:  "arn:aws:dynamodb:us-east-1:123456789012:table/my-table",
+			want: []string{"my-table"},
+		},
+		{
+			name: "lambda function colon separator",
+			arn:  "arn:aws:lambda:us-east-1:123456789012:function:my-func",
+			want: []string{"my-func"},
+		},
+		{
+			name: "empty arn",
+			arn:  "",
+			want: nil,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := resourceIDsFromARN(tc.arn)
+			set := map[string]struct{}{}
+			for _, id := range got {
+				set[id] = struct{}{}
+			}
+			for _, w := range tc.want {
+				_, ok := set[w]
+				require.Truef(t, ok, "expected %q among %v", w, got)
+			}
+		})
+	}
+}
+
+func TestDimensionsMatchResource(t *testing.T) {
+	allowed := map[string]struct{}{"i-abc": {}, "app/my-lb/abc123": {}}
+	require.True(t, dimensionsMatchResource(map[string]string{"InstanceId": "i-abc"}, allowed))
+	require.True(t, dimensionsMatchResource(map[string]string{"LoadBalancer": "app/my-lb/abc123"}, allowed))
+	require.False(t, dimensionsMatchResource(map[string]string{"InstanceId": "i-zzz"}, allowed))
+	require.False(t, dimensionsMatchResource(nil, allowed))
+}
+
+// TestListMetrics_ResourceTagFilter proves tag-filtered discovery: only metrics whose dimensions
+// reference a tag-matched resource are kept, and the tag filters are forwarded to GetResources.
+func TestListMetrics_ResourceTagFilter(t *testing.T) {
+	mc := &mockMetricsClient{}
+	mc.On("ListMetrics", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatch.ListMetricsOutput{
+			Metrics: []types.Metric{
+				{
+					Namespace:  aws.String("AWS/EC2"),
+					MetricName: aws.String("CPUUtilization"),
+					Dimensions: []types.Dimension{{Name: aws.String("InstanceId"), Value: aws.String("i-match")}},
+				},
+				{
+					Namespace:  aws.String("AWS/EC2"),
+					MetricName: aws.String("CPUUtilization"),
+					Dimensions: []types.Dimension{{Name: aws.String("InstanceId"), Value: aws.String("i-nomatch")}},
+				},
+				{
+					// No dimensions: cannot be tied to a resource, so it must be excluded.
+					Namespace:  aws.String("AWS/EC2"),
+					MetricName: aws.String("CPUUtilization"),
+				},
+			},
+			NextToken: nil,
+		}, nil,
+	)
+
+	tc := &mockTaggingClient{}
+	tc.On("GetResources", mock.Anything, mock.MatchedBy(func(p *resourcegroupstaggingapi.GetResourcesInput) bool {
+		return len(p.TagFilters) == 1 &&
+			aws.ToString(p.TagFilters[0].Key) == "Environment" &&
+			len(p.TagFilters[0].Values) == 1 && p.TagFilters[0].Values[0] == "production"
+	}), mock.Anything).Return(
+		&resourcegroupstaggingapi.GetResourcesOutput{
+			ResourceTagMappingList: []rgttypes.ResourceTagMapping{
+				{ResourceARN: aws.String("arn:aws:ec2:us-east-1:123456789012:instance/i-match")},
+			},
+		}, nil,
+	)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
+		Discovery: &MetricsDiscoveryConfig{
+			Limit: 100,
+			Filters: configoptional.Some(MetricsDiscoveryFilters{
+				Namespace: "AWS/EC2",
+				ResourceTags: []ResourceTagFilter{
+					{Key: "Environment", Values: []string{"production"}},
+				},
+			}),
+		},
+	}}
+	scr := testScraper(cfg)
+	scr.client = mc
+	scr.taggingClient = tc
+
+	out, err := scr.listMetrics(t.Context())
+	require.NoError(t, err)
+	require.Len(t, out, 1)
+	require.Equal(t, "i-match", out[0].Dimensions["InstanceId"])
+	mc.AssertExpectations(t)
+	tc.AssertExpectations(t)
+}
+
+func TestListMetrics_ResourceTagFilter_Paginated(t *testing.T) {
+	mc := &mockMetricsClient{}
+	mc.On("ListMetrics", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatch.ListMetricsOutput{
+			Metrics: []types.Metric{
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("CPUUtilization"),
+					Dimensions: []types.Dimension{{Name: aws.String("InstanceId"), Value: aws.String("i-a")}}},
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("CPUUtilization"),
+					Dimensions: []types.Dimension{{Name: aws.String("InstanceId"), Value: aws.String("i-b")}}},
+			},
+		}, nil,
+	)
+
+	token := "page2"
+	tc := &mockTaggingClient{}
+	tc.On("GetResources", mock.Anything, mock.MatchedBy(func(p *resourcegroupstaggingapi.GetResourcesInput) bool {
+		return p.PaginationToken == nil
+	}), mock.Anything).Return(
+		&resourcegroupstaggingapi.GetResourcesOutput{
+			ResourceTagMappingList: []rgttypes.ResourceTagMapping{
+				{ResourceARN: aws.String("arn:aws:ec2:us-east-1:123456789012:instance/i-a")},
+			},
+			PaginationToken: &token,
+		}, nil,
+	).Once()
+	tc.On("GetResources", mock.Anything, mock.MatchedBy(func(p *resourcegroupstaggingapi.GetResourcesInput) bool {
+		return p.PaginationToken != nil && *p.PaginationToken == token
+	}), mock.Anything).Return(
+		&resourcegroupstaggingapi.GetResourcesOutput{
+			ResourceTagMappingList: []rgttypes.ResourceTagMapping{
+				{ResourceARN: aws.String("arn:aws:ec2:us-east-1:123456789012:instance/i-b")},
+			},
+			PaginationToken: aws.String(""),
+		}, nil,
+	).Once()
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
+		Discovery: &MetricsDiscoveryConfig{
+			Limit: 100,
+			Filters: configoptional.Some(MetricsDiscoveryFilters{
+				ResourceTags: []ResourceTagFilter{{Key: "Team"}},
+			}),
+		},
+	}}
+	scr := testScraper(cfg)
+	scr.client = mc
+	scr.taggingClient = tc
+
+	out, err := scr.listMetrics(t.Context())
+	require.NoError(t, err)
+	require.Len(t, out, 2) // both instances tagged across two pages
+	tc.AssertExpectations(t)
+}
+
+func TestListMetrics_ResourceTagFilter_Error(t *testing.T) {
+	tc := &mockTaggingClient{}
+	tc.On("GetResources", mock.Anything, mock.Anything, mock.Anything).Return(
+		&resourcegroupstaggingapi.GetResourcesOutput{}, errors.New("tagging API error"),
+	)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
+		Discovery: &MetricsDiscoveryConfig{
+			Limit: 100,
+			Filters: configoptional.Some(MetricsDiscoveryFilters{
+				ResourceTags: []ResourceTagFilter{{Key: "Environment", Values: []string{"production"}}},
+			}),
+		},
+	}}
+	scr := testScraper(cfg)
+	scr.client = &mockMetricsClient{}
+	scr.taggingClient = tc
+
+	_, err := scr.listMetrics(t.Context())
+	require.ErrorContains(t, err, "resolve resource tags")
 }

@@ -65,6 +65,22 @@ type MetricsDiscoveryConfig struct {
 type MetricsDiscoveryFilters struct {
 	Namespace  string `mapstructure:"namespace"`
 	MetricName string `mapstructure:"metric_name"`
+	// ResourceTags restricts discovery to metrics whose dimensions reference AWS
+	// resources carrying the given tags. Because CloudWatch ListMetrics cannot
+	// filter by tag, matching resource ARNs are first resolved via the AWS
+	// resourcegroupstaggingapi (GetResources) and discovered metrics are then
+	// constrained to those resources. When empty, no tag-based filtering is applied.
+	ResourceTags []ResourceTagFilter `mapstructure:"resource_tags"`
+}
+
+// ResourceTagFilter selects AWS resources by tag. Its semantics mirror the
+// resourcegroupstaggingapi GetResources TagFilter: a resource matches when it
+// carries a tag with the given Key and, if Values is non-empty, one of the
+// listed Values. Multiple ResourceTagFilter entries are ANDed together, while
+// the Values within a single entry are ORed.
+type ResourceTagFilter struct {
+	Key    string   `mapstructure:"key"`
+	Values []string `mapstructure:"values"`
 }
 
 // MetricQuery defines a single CloudWatch metric to scrape via GetMetricData.
@@ -127,6 +143,7 @@ var (
 	errMetricsAndDiscoveryConfigured    = errors.New("metrics and discovery are mutually exclusive; set one or the other")
 	errInvalidDiscoveryLimit            = errors.New("metrics discovery limit must be greater than 0")
 	errEmptyStatName                    = errors.New("stat name must not be empty")
+	errEmptyTagFilterKey                = errors.New("resource_tags key must not be empty")
 	errCollectionIntervalLessThanPeriod = errors.New("metrics collection_interval must be greater than or equal to period")
 	errInitialLookbackAndStartFrom      = errors.New("both initial_lookback and start_from are configured, Only one or the other is permitted")
 	errInvalidInitialLookback           = errors.New("initial_lookback must be a positive duration (e.g. 1h)")
@@ -189,6 +206,13 @@ func (c *Config) validateMetricsConfig() error {
 		for j, st := range discovery.Stats {
 			if st == "" {
 				return fmt.Errorf("metrics.discovery.stats[%d]: %w", j, errEmptyStatName)
+			}
+		}
+		if f := discovery.Filters.Get(); f != nil {
+			for j, tf := range f.ResourceTags {
+				if tf.Key == "" {
+					return fmt.Errorf("metrics.discovery.filters.resource_tags[%d]: %w", j, errEmptyTagFilterKey)
+				}
 			}
 		}
 		return c.validateMetricsDurations()
