@@ -5,8 +5,7 @@ module-sets:
   stable-base:
     version: v1.0.0
     modules:
-      # Uncomment once https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49152 is merged
-      # - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
 
   contrib-base:
     version: v0.159.0
@@ -219,7 +218,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor
-      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor
