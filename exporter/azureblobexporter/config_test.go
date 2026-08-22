@@ -64,7 +64,8 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:   false,
 					Separator: "\n",
 				},
-				Compression: "",
+				Compression:          "",
+				MaxConcurrentUploads: 10,
 			},
 		},
 		{
@@ -90,9 +91,10 @@ func TestLoadConfig(t *testing.T) {
 					TimeParserEnabled: true,
 					Params:            map[string]string{},
 				},
-				FormatType:    "proto",
-				Encodings:     Encodings{},
-				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				FormatType:           "proto",
+				Encodings:            Encodings{},
+				MaxConcurrentUploads: 10,
+				BackOffConfig:        configretry.NewDefaultBackOffConfig(),
 				AppendBlob: AppendBlob{
 					Enabled:   false,
 					Separator: "\n",
@@ -130,7 +132,8 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:   false,
 					Separator: "\n",
 				},
-				Compression: "",
+				Compression:          "",
+				MaxConcurrentUploads: 10,
 			},
 		},
 		{
@@ -166,7 +169,8 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:   false,
 					Separator: "\n",
 				},
-				Compression: "",
+				Compression:          "",
+				MaxConcurrentUploads: 10,
 			},
 		},
 		{
@@ -197,9 +201,10 @@ func TestLoadConfig(t *testing.T) {
 					TimeParserEnabled: true,
 					Params:            map[string]string{},
 				},
-				FormatType:    "json",
-				Encodings:     Encodings{},
-				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				FormatType:           "json",
+				Encodings:            Encodings{},
+				MaxConcurrentUploads: 10,
+				BackOffConfig:        configretry.NewDefaultBackOffConfig(),
 				AppendBlob: AppendBlob{
 					Enabled:   false,
 					Separator: "\n",
@@ -236,7 +241,8 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:   false,
 					Separator: "\n",
 				},
-				Compression: "",
+				Compression:          "",
+				MaxConcurrentUploads: 10,
 			},
 		},
 		{
@@ -262,6 +268,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:           component.NewIDWithName(metadata.Type, "err6"),
 			errorMessage: "tenant_id, client_id and federated_token_file cannot be empty when auth type is workload_identity",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "err-max-concurrent-uploads"),
+			errorMessage: "max_concurrent_uploads must be positive",
 		},
 	}
 

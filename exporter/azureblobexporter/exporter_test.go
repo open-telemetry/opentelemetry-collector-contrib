@@ -8,9 +8,11 @@ import (
 	"compress/gzip"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -23,7 +25,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.uber.org/zap/zaptest"
 
@@ -715,4 +724,483 @@ func TestParseRange(t *testing.T) {
 			}
 		})
 	}
+}
+
+func newPartitionTestConfig(logsFormat string, templateEnabled bool) *Config {
+	return &Config{
+		Auth: Authentication{
+			Type:             ConnectionString,
+			ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net",
+		},
+		Container: TelemetryConfig{
+			Metrics: "metrics",
+			Logs:    "logs",
+			Traces:  "traces",
+		},
+		BlobNameFormat: BlobNameFormat{
+			MetricsFormat:     `{{ getResourceMetricAttr . 0 "service.name" }}.json`,
+			LogsFormat:        logsFormat,
+			TracesFormat:      `{{ getResourceSpanAttr . 0 "service.name" }}.json`,
+			TemplateEnabled:   templateEnabled,
+			SerialNumEnabled:  false,
+			SerialNumRange:    10000,
+			TimeParserEnabled: false,
+		},
+		FormatType: formatTypeJSON,
+		AppendBlob: AppendBlob{
+			Enabled:   true,
+			Separator: "\n",
+		},
+		Encodings:            Encodings{},
+		MaxConcurrentUploads: 10,
+	}
+}
+
+func generateLogsWithActivities(activities ...string) plog.Logs {
+	logs := plog.NewLogs()
+	for _, activity := range activities {
+		rl := logs.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("activity-id", activity)
+		lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		lr.Body().SetStr("log for " + activity)
+	}
+	return logs
+}
+
+func TestConsumeLogsPartitionsByRenderedBlobName(t *testing.T) {
+	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
+
+	uploads := make(map[string]plog.Logs)
+	mockClient := &mockAzBlobClient{url: "http://mock"}
+	mockClient.On("AppendBlock", mock.Anything, "logs", mock.Anything, mock.Anything, mock.Anything).
+		Run(func(args mock.Arguments) {
+			blobName := args.String(2)
+			data := bytes.TrimSuffix(args.Get(3).([]byte), []byte("\n"))
+			unmarshaler := plog.JSONUnmarshaler{}
+			logs, err := unmarshaler.UnmarshalLogs(data)
+			require.NoError(t, err)
+			uploads[blobName] = logs
+		}).
+		Return(nil)
+	ae.client = mockClient
+
+	// Resource entries for two activities, interleaved, plus a second entry for
+	// the first activity to verify grouping rather than one upload per entry.
+	logs := generateLogsWithActivities("activity-a", "activity-b", "activity-a")
+	require.NoError(t, ae.ConsumeLogs(t.Context(), logs))
+
+	mockClient.AssertNumberOfCalls(t, "AppendBlock", 2)
+	require.Len(t, uploads, 2)
+
+	logsA, ok := uploads["activity-a.json"]
+	require.True(t, ok, "expected an upload for activity-a.json, got %v", uploads)
+	assert.Equal(t, 2, logsA.ResourceLogs().Len())
+	for i := 0; i < logsA.ResourceLogs().Len(); i++ {
+		val, attrOK := logsA.ResourceLogs().At(i).Resource().Attributes().Get("activity-id")
+		require.True(t, attrOK)
+		assert.Equal(t, "activity-a", val.Str())
+	}
+
+	logsB, ok := uploads["activity-b.json"]
+	require.True(t, ok, "expected an upload for activity-b.json, got %v", uploads)
+	assert.Equal(t, 1, logsB.ResourceLogs().Len())
+	val, ok := logsB.ResourceLogs().At(0).Resource().Attributes().Get("activity-id")
+	require.True(t, ok)
+	assert.Equal(t, "activity-b", val.Str())
+}
+
+func TestConsumeLogsSingleUploadWhenBlobNamesMatch(t *testing.T) {
+	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
+
+	mockClient := &mockAzBlobClient{url: "http://mock"}
+	mockClient.On("AppendBlock", mock.Anything, "logs", "activity-a.json", mock.Anything, mock.Anything).Return(nil)
+	ae.client = mockClient
+
+	logs := generateLogsWithActivities("activity-a", "activity-a")
+	require.NoError(t, ae.ConsumeLogs(t.Context(), logs))
+
+	mockClient.AssertNumberOfCalls(t, "AppendBlock", 1)
+}
+
+func TestConsumeLogsSingleUploadWhenTemplateDisabled(t *testing.T) {
+	c := newPartitionTestConfig("static/logs.json", false)
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
+
+	mockClient := &mockAzBlobClient{url: "http://mock"}
+	mockClient.On("AppendBlock", mock.Anything, "logs", "static/logs.json", mock.Anything, mock.Anything).Return(nil)
+	ae.client = mockClient
+
+	logs := generateLogsWithActivities("activity-a", "activity-b")
+	require.NoError(t, ae.ConsumeLogs(t.Context(), logs))
+
+	mockClient.AssertNumberOfCalls(t, "AppendBlock", 1)
+}
+
+func TestConsumeMetricsPartitionsByRenderedBlobName(t *testing.T) {
+	c := newPartitionTestConfig("logs.json", true)
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
+
+	var blobNames []string
+	mockClient := &mockAzBlobClient{url: "http://mock"}
+	mockClient.On("AppendBlock", mock.Anything, "metrics", mock.Anything, mock.Anything, mock.Anything).
+		Run(func(args mock.Arguments) {
+			blobNames = append(blobNames, args.String(2))
+		}).
+		Return(nil)
+	ae.client = mockClient
+
+	metrics := pmetric.NewMetrics()
+	for _, svc := range []string{"svc-a", "svc-b"} {
+		rm := metrics.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("service.name", svc)
+		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m.SetName("metric for " + svc)
+	}
+	require.NoError(t, ae.ConsumeMetrics(t.Context(), metrics))
+
+	mockClient.AssertNumberOfCalls(t, "AppendBlock", 2)
+	assert.ElementsMatch(t, []string{"svc-a.json", "svc-b.json"}, blobNames)
+}
+
+func TestConsumeTracesPartitionsByRenderedBlobName(t *testing.T) {
+	c := newPartitionTestConfig("logs.json", true)
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalTraces)
+	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
+
+	var blobNames []string
+	mockClient := &mockAzBlobClient{url: "http://mock"}
+	mockClient.On("AppendBlock", mock.Anything, "traces", mock.Anything, mock.Anything, mock.Anything).
+		Run(func(args mock.Arguments) {
+			blobNames = append(blobNames, args.String(2))
+		}).
+		Return(nil)
+	ae.client = mockClient
+
+	traces := ptrace.NewTraces()
+	for _, svc := range []string{"svc-a", "svc-b"} {
+		rs := traces.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("service.name", svc)
+		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span for " + svc)
+	}
+	require.NoError(t, ae.ConsumeTraces(t.Context(), traces))
+
+	mockClient.AssertNumberOfCalls(t, "AppendBlock", 2)
+	assert.ElementsMatch(t, []string{"svc-a.json", "svc-b.json"}, blobNames)
+}
+
+func TestConsumeLogsPartitionFallsBackOnTemplateError(t *testing.T) {
+	// A template that fails at execution time (invalid field access on the root
+	// object) must fall back to a single upload with the default name format.
+	c := newPartitionTestConfig("{{ .NoSuchField }}", true)
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
+
+	mockClient := &mockAzBlobClient{url: "http://mock"}
+	mockClient.On("AppendBlock", mock.Anything, "logs", "{{ .NoSuchField }}", mock.Anything, mock.Anything).Return(nil)
+	ae.client = mockClient
+
+	logs := generateLogsWithActivities("activity-a", "activity-b")
+	require.NoError(t, ae.ConsumeLogs(t.Context(), logs))
+
+	mockClient.AssertNumberOfCalls(t, "AppendBlock", 1)
+}
+
+// recordingAzBlobClient is a stateful azblobClient that records every uploaded
+// payload per blob name and can be programmed to fail a number of times per
+// blob. It is safe for concurrent use, matching the concurrent group uploads.
+type recordingAzBlobClient struct {
+	mu                sync.Mutex
+	remainingFailures map[string]int
+	uploads           map[string][][]byte
+	inflight          int
+	maxInflight       int
+}
+
+func newRecordingAzBlobClient(failures map[string]int) *recordingAzBlobClient {
+	return &recordingAzBlobClient{
+		remainingFailures: failures,
+		uploads:           make(map[string][][]byte),
+	}
+}
+
+func (*recordingAzBlobClient) URL() string { return "http://mock" }
+
+func (c *recordingAzBlobClient) record(blobName string, data []byte) error {
+	c.mu.Lock()
+	c.inflight++
+	if c.inflight > c.maxInflight {
+		c.maxInflight = c.inflight
+	}
+	c.mu.Unlock()
+	// Hold the upload open briefly so concurrent uploads overlap observably.
+	time.Sleep(time.Millisecond)
+	c.mu.Lock()
+	defer func() {
+		c.inflight--
+		c.mu.Unlock()
+	}()
+	if c.remainingFailures[blobName] > 0 {
+		c.remainingFailures[blobName]--
+		return errors.New("injected failure for " + blobName)
+	}
+	c.uploads[blobName] = append(c.uploads[blobName], bytes.Clone(data))
+	return nil
+}
+
+func (c *recordingAzBlobClient) UploadStream(_ context.Context, _, blobName string, body io.Reader, _ *azblob.UploadStreamOptions) (azblob.UploadStreamResponse, error) {
+	data, err := io.ReadAll(body)
+	if err != nil {
+		return azblob.UploadStreamResponse{}, err
+	}
+	return azblob.UploadStreamResponse{}, c.record(blobName, data)
+}
+
+func (c *recordingAzBlobClient) AppendBlock(_ context.Context, _, blobName string, data []byte, _ *appendblob.AppendBlockOptions) error {
+	return c.record(blobName, data)
+}
+
+// uploadedLogBodies decodes every recorded payload for a blob and returns the
+// log record bodies it contains, in upload order.
+func uploadedLogBodies(t *testing.T, payloads [][]byte) []string {
+	t.Helper()
+	var bodies []string
+	unmarshaler := plog.JSONUnmarshaler{}
+	for _, payload := range payloads {
+		logs, err := unmarshaler.UnmarshalLogs(bytes.TrimSuffix(payload, []byte("\n")))
+		require.NoError(t, err)
+		for i := 0; i < logs.ResourceLogs().Len(); i++ {
+			sls := logs.ResourceLogs().At(i).ScopeLogs()
+			for j := 0; j < sls.Len(); j++ {
+				lrs := sls.At(j).LogRecords()
+				for k := 0; k < lrs.Len(); k++ {
+					bodies = append(bodies, lrs.At(k).Body().Str())
+				}
+			}
+		}
+	}
+	return bodies
+}
+
+func TestConsumeLogsPartialFailureRetriesExactlyOnce(t *testing.T) {
+	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
+
+	// activity-b fails once, then succeeds; activity-a always succeeds.
+	client := newRecordingAzBlobClient(map[string]int{"activity-b.json": 1})
+	ae.client = client
+
+	logs := generateLogsWithActivities("activity-a", "activity-b")
+
+	// First attempt: partial failure.
+	err := ae.ConsumeLogs(t.Context(), logs)
+	require.Error(t, err)
+
+	// The error must carry only the failed group's data, exactly as the
+	// exporterhelper retry sender extracts it via OnError.
+	var logsErr consumererror.Logs
+	require.ErrorAs(t, err, &logsErr)
+	retryData := logsErr.Data()
+	require.Equal(t, 1, retryData.ResourceLogs().Len())
+	val, ok := retryData.ResourceLogs().At(0).Resource().Attributes().Get("activity-id")
+	require.True(t, ok)
+	assert.Equal(t, "activity-b", val.Str())
+
+	// Second attempt with only the retry data, as the retry sender would send.
+	require.NoError(t, ae.ConsumeLogs(t.Context(), retryData))
+
+	// Exactly-once: each log message appears exactly once, in its own blob.
+	assert.Equal(t, []string{"log for activity-a"}, uploadedLogBodies(t, client.uploads["activity-a.json"]))
+	assert.Equal(t, []string{"log for activity-b"}, uploadedLogBodies(t, client.uploads["activity-b.json"]))
+	require.Len(t, client.uploads, 2)
+}
+
+func TestConsumeLogsAllGroupsUploadedDespiteFailure(t *testing.T) {
+	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
+
+	// Middle group fails: the other groups must still be uploaded.
+	client := newRecordingAzBlobClient(map[string]int{"activity-b.json": 1})
+	ae.client = client
+
+	logs := generateLogsWithActivities("activity-a", "activity-b", "activity-c")
+	err := ae.ConsumeLogs(t.Context(), logs)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "injected failure for activity-b.json")
+
+	assert.Equal(t, []string{"log for activity-a"}, uploadedLogBodies(t, client.uploads["activity-a.json"]))
+	assert.Equal(t, []string{"log for activity-c"}, uploadedLogBodies(t, client.uploads["activity-c.json"]))
+	assert.Empty(t, client.uploads["activity-b.json"])
+}
+
+func TestConsumeMetricsPartialFailureCarriesOnlyFailedData(t *testing.T) {
+	c := newPartitionTestConfig("logs.json", true)
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
+
+	client := newRecordingAzBlobClient(map[string]int{"svc-b.json": 1})
+	ae.client = client
+
+	metrics := pmetric.NewMetrics()
+	for _, svc := range []string{"svc-a", "svc-b"} {
+		rm := metrics.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("service.name", svc)
+		rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("metric for " + svc)
+	}
+
+	err := ae.ConsumeMetrics(t.Context(), metrics)
+	require.Error(t, err)
+
+	var metricsErr consumererror.Metrics
+	require.ErrorAs(t, err, &metricsErr)
+	retryData := metricsErr.Data()
+	require.Equal(t, 1, retryData.ResourceMetrics().Len())
+	val, ok := retryData.ResourceMetrics().At(0).Resource().Attributes().Get("service.name")
+	require.True(t, ok)
+	assert.Equal(t, "svc-b", val.Str())
+}
+
+func TestConsumeTracesPartialFailureCarriesOnlyFailedData(t *testing.T) {
+	c := newPartitionTestConfig("logs.json", true)
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalTraces)
+	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
+
+	client := newRecordingAzBlobClient(map[string]int{"svc-b.json": 1})
+	ae.client = client
+
+	traces := ptrace.NewTraces()
+	for _, svc := range []string{"svc-a", "svc-b"} {
+		rs := traces.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("service.name", svc)
+		rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("span for " + svc)
+	}
+
+	err := ae.ConsumeTraces(t.Context(), traces)
+	require.Error(t, err)
+
+	var tracesErr consumererror.Traces
+	require.ErrorAs(t, err, &tracesErr)
+	retryData := tracesErr.Data()
+	require.Equal(t, 1, retryData.ResourceSpans().Len())
+	val, ok := retryData.ResourceSpans().At(0).Resource().Attributes().Get("service.name")
+	require.True(t, ok)
+	assert.Equal(t, "svc-b", val.Str())
+}
+
+func TestConsumeLogsManyGroupsConcurrentUploads(t *testing.T) {
+	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
+
+	client := newRecordingAzBlobClient(nil)
+	ae.client = client
+
+	// More groups than maxConcurrentUploads to exercise the semaphore.
+	activities := make([]string, 0, 25)
+	for i := range 25 {
+		activities = append(activities, fmt.Sprintf("activity-%02d", i))
+	}
+	logs := generateLogsWithActivities(activities...)
+	require.NoError(t, ae.ConsumeLogs(t.Context(), logs))
+
+	require.Len(t, client.uploads, 25)
+	for _, activity := range activities {
+		assert.Equal(t, []string{"log for " + activity}, uploadedLogBodies(t, client.uploads[activity+".json"]))
+	}
+}
+
+// TestPartitionWithQueueBatching wires the exporter behind the real
+// exporterhelper queue batcher, exactly as createLogsExporter does, and
+// verifies that requests merged by the batcher are partitioned back out to
+// their own blobs with no mixed or duplicated log records.
+func TestPartitionWithQueueBatching(t *testing.T) {
+	cfg := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
+	qCfg := exporterhelper.NewDefaultQueueConfig()
+	// Merge exactly the six records sent below into one request. The flush
+	// timeout is long so the batch is released by min_size, deterministically.
+	qCfg.Batch = configoptional.Some(exporterhelper.BatchConfig{
+		Sizer:        exporterhelper.RequestSizerTypeItems,
+		MinSize:      6,
+		FlushTimeout: 10 * time.Second,
+	})
+	cfg.QueueSettings = configoptional.Some(qCfg)
+
+	ae := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+	le, err := exporterhelper.NewLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg,
+		ae.ConsumeLogs,
+		exporterhelper.WithStart(ae.start),
+		exporterhelper.WithQueue(cfg.QueueSettings))
+	require.NoError(t, err)
+
+	require.NoError(t, le.Start(t.Context(), componenttest.NewNopHost()))
+	client := newRecordingAzBlobClient(nil)
+	ae.client = client
+
+	// Six single-record payloads, two per activity, interleaved. Each becomes
+	// its own queue request; the batcher merges them before ConsumeLogs runs.
+	for i := range 2 {
+		for _, activity := range []string{"activity-a", "activity-b", "activity-c"} {
+			logs := plog.NewLogs()
+			rl := logs.ResourceLogs().AppendEmpty()
+			rl.Resource().Attributes().PutStr("activity-id", activity)
+			rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(fmt.Sprintf("log %d for %s", i, activity))
+			require.NoError(t, le.ConsumeLogs(t.Context(), logs))
+		}
+	}
+	require.NoError(t, le.Shutdown(t.Context()))
+
+	client.mu.Lock()
+	defer client.mu.Unlock()
+	require.Len(t, client.uploads, 3)
+	for _, activity := range []string{"activity-a", "activity-b", "activity-c"} {
+		payloads := client.uploads[activity+".json"]
+		// One upload per blob proves the batcher merged the six requests before
+		// partitioning; without merging there would be two appends per blob.
+		require.Len(t, payloads, 1, "expected one merged upload for %s", activity)
+		bodies := uploadedLogBodies(t, payloads)
+		require.ElementsMatch(t,
+			[]string{"log 0 for " + activity, "log 1 for " + activity},
+			bodies, "blob for %s must hold exactly its two records", activity)
+	}
+}
+
+func TestConsumeLogsHonorsMaxConcurrentUploads(t *testing.T) {
+	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
+	c.MaxConcurrentUploads = 1
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
+
+	client := newRecordingAzBlobClient(nil)
+	ae.client = client
+
+	activities := make([]string, 0, 8)
+	for i := range 8 {
+		activities = append(activities, fmt.Sprintf("activity-%d", i))
+	}
+	require.NoError(t, ae.ConsumeLogs(t.Context(), generateLogsWithActivities(activities...)))
+
+	client.mu.Lock()
+	defer client.mu.Unlock()
+	require.Len(t, client.uploads, 8)
+	assert.Equal(t, 1, client.maxInflight, "uploads must be serialized when max_concurrent_uploads is 1")
 }

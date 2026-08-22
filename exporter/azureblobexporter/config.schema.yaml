@@ -105,6 +105,9 @@ properties:
   format:
     description: FormatType is the format of encoded telemetry data. Supported values are json and proto.
     type: string
+  max_concurrent_uploads:
+    description: MaxConcurrentUploads is the maximum number of parallel uploads when an export is partitioned into multiple blobs by the blob name template.
+    type: integer
   retry_on_failure:
     $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   sending_queue:
