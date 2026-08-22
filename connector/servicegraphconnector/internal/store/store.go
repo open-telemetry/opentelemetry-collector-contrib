@@ -6,6 +6,7 @@ package store // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"container/list"
 	"errors"
+	"maps"
 	"sync"
 	"time"
 
@@ -16,23 +17,57 @@ var ErrTooManyItems = errors.New("too many items")
 
 type Callback func(e *Edge)
 
+type keyKind uint8
+
+const (
+	standardKey keyKind = iota
+	linkedConsumerKey
+)
+
 type Key struct {
-	tid pcommon.TraceID
-	sid pcommon.SpanID
+	kind keyKind
+
+	traceID pcommon.TraceID
+	spanID  pcommon.SpanID
+
+	linkedTraceID pcommon.TraceID
+	linkedSpanID  pcommon.SpanID
 }
 
-func (k *Key) SpanIDIsEmpty() bool {
-	return k.sid.IsEmpty()
+func (k Key) SpanIDIsEmpty() bool {
+	return k.spanID.IsEmpty()
 }
 
-func NewKey(tid pcommon.TraceID, sid pcommon.SpanID) Key {
-	return Key{tid: tid, sid: sid}
+func NewKey(traceID pcommon.TraceID, spanID pcommon.SpanID) Key {
+	return Key{
+		kind:    standardKey,
+		traceID: traceID,
+		spanID:  spanID,
+	}
+}
+
+func NewLinkedConsumerKey(
+	consumerTraceID pcommon.TraceID,
+	consumerSpanID pcommon.SpanID,
+	producerTraceID pcommon.TraceID,
+	producerSpanID pcommon.SpanID,
+) Key {
+	return Key{
+		kind:          linkedConsumerKey,
+		traceID:       consumerTraceID,
+		spanID:        consumerSpanID,
+		linkedTraceID: producerTraceID,
+		linkedSpanID:  producerSpanID,
+	}
 }
 
 type Store struct {
 	l   *list.List
 	mtx sync.Mutex
 	m   map[Key]*list.Element
+	// pending maps a producer key to consumer keys that referenced the producer
+	// via Links() but arrived before the producer. Reconciled when producer is seen.
+	pending map[Key][]Key
 
 	onComplete Callback
 	onExpire   Callback
@@ -46,8 +81,9 @@ type Store struct {
 // have not found their pair are deleted after ttl time.
 func NewStore(ttl time.Duration, maxItems int, onComplete, onExpire Callback) *Store {
 	s := &Store{
-		l: list.New(),
-		m: make(map[Key]*list.Element),
+		l:       list.New(),
+		m:       make(map[Key]*list.Element),
+		pending: make(map[Key][]Key),
 
 		onComplete: onComplete,
 		onExpire:   onExpire,
@@ -71,9 +107,49 @@ func (s *Store) UpsertEdge(key Key, update Callback) (isNew bool, err error) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
+	// Helper to reconcile pending consumers for a producer key. Assumes lock held.
+	reconcile := func(producerKey Key, prodEdge *Edge) {
+		consumers := s.pending[producerKey]
+		for _, cKey := range consumers {
+			cElem, ok := s.m[cKey]
+			if !ok {
+				continue
+			}
+
+			cEdge := cElem.Value.(*Edge)
+			// copy client/producer info into consumer edge
+			cEdge.ClientService = prodEdge.ClientService
+			cEdge.ClientLatencySec = prodEdge.ClientLatencySec
+			cEdge.ConnectionType = prodEdge.ConnectionType
+			cEdge.Failed = cEdge.Failed || prodEdge.Failed
+			prodEdge.IsMatched = true
+
+			maps.Copy(cEdge.Dimensions, prodEdge.Dimensions)
+			maps.Copy(cEdge.Peer, prodEdge.Peer)
+
+			if cEdge.isComplete() {
+				s.onComplete(cEdge)
+				delete(s.m, cKey)
+				s.l.Remove(cElem)
+			}
+		}
+		// After reconciling pending consumers, clear the pending index for this producer.
+		delete(s.pending, producerKey)
+	}
+
 	if storedEdge, ok := s.m[key]; ok {
 		edge := storedEdge.Value.(*Edge)
 		update(edge)
+
+		// If this updated edge is a producer and there are pending consumers,
+		// reconcile them. We consider this key as a producer key when there
+		// are pending entries mapped to it.
+		if consumers, ok := s.pending[key]; ok && len(consumers) > 0 {
+			reconcile(key, edge)
+			// Do not delete the producer edge here; keep it to serve future
+			// consumers until it expires.
+			return false, nil
+		}
 
 		if edge.isComplete() {
 			s.onComplete(edge)
@@ -84,22 +160,59 @@ func (s *Store) UpsertEdge(key Key, update Callback) (isNew bool, err error) {
 		return false, nil
 	}
 
+	// Creating a new edge
 	edge := newEdge(key, s.ttl)
 	update(edge)
 
+	// If this is a consumer edge that references a producer via ProducerKey,
+	// we want to reconcile immediately if the producer exists.
+	// If the producer is missing, we flag it to be registered as pending
+	// ONLY AFTER it passes the capacity check.
+	var isPendingConsumer bool
+	if !edge.ProducerKey.SpanIDIsEmpty() {
+		producerKey := edge.ProducerKey
+		if prodElem, ok := s.m[producerKey]; ok {
+			// Producer already present: copy client info and complete if possible.
+			prodEdge := prodElem.Value.(*Edge)
+			edge.ClientService = prodEdge.ClientService
+			edge.ClientLatencySec = prodEdge.ClientLatencySec
+			edge.ConnectionType = prodEdge.ConnectionType
+			edge.Failed = edge.Failed || prodEdge.Failed
+			prodEdge.IsMatched = true
+
+			maps.Copy(edge.Dimensions, prodEdge.Dimensions)
+			maps.Copy(edge.Peer, prodEdge.Peer)
+		} else {
+			// Producer not present: mark for deferred registration.
+			isPendingConsumer = true
+		}
+	}
+
+	// Restore the fast-path for edges that become complete immediately
+	// (e.g., single-span Database requests) or after matching a producer above.
 	if edge.isComplete() {
 		s.onComplete(edge)
 		return true, nil
 	}
 
-	// Check we can add new edges
-	if s.l.Len() >= s.maxItems {
-		// TODO: try to evict expired items
+	// If this is a producer and there are pending consumers, reconcile now.
+	// We reconcile before checking capacity so that completed consumers are freed.
+	if consumers, ok := s.pending[key]; ok && len(consumers) > 0 {
+		reconcile(key, edge)
+	}
+
+	// Check we can add new edges (Evict if necessary)
+	if s.l.Len() >= s.maxItems && !s.tryEvictHead() {
 		return false, ErrTooManyItems
 	}
 
 	ele := s.l.PushBack(edge)
 	s.m[key] = ele
+
+	// Now that the edge is safely in the store, register its pending status
+	if isPendingConsumer {
+		s.pending[edge.ProducerKey] = append(s.pending[edge.ProducerKey], key)
+	}
 
 	return true, nil
 }
@@ -127,6 +240,25 @@ func (s *Store) tryEvictHead() bool {
 	headEdge := head.Value.(*Edge)
 	if !headEdge.isExpired() {
 		return false
+	}
+
+	// If this edge is a pending consumer, remove it from the pending map.
+	if !headEdge.ProducerKey.SpanIDIsEmpty() {
+		pKey := headEdge.ProducerKey
+		// remove headEdge.Key from s.pending[pKey]
+		if listKeys, ok := s.pending[pKey]; ok {
+			newList := listKeys[:0]
+			for _, k := range listKeys {
+				if k != headEdge.Key {
+					newList = append(newList, k)
+				}
+			}
+			if len(newList) == 0 {
+				delete(s.pending, pKey)
+			} else {
+				s.pending[pKey] = newList
+			}
+		}
 	}
 
 	s.onExpire(headEdge)
