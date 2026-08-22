@@ -33,24 +33,24 @@ func TestConfig_Validate(t *testing.T) {
 			}),
 		},
 		{
-			name: "valid_deterministic",
+			name: "valid_probabilistic",
 			cfg: baseCfg(RuleConfig{
 				Name: "rule1",
 				Sampler: SamplerConfig{
-					Type:               Deterministic,
+					Type:               Probabilistic,
 					SamplingPercentage: 10,
 				},
 			}),
 		},
 		{
-			name: "valid_ema_dynamic",
+			name: "valid_dynamic_percentage",
 			cfg: baseCfg(RuleConfig{
 				Name: "rule1",
 				Sampler: SamplerConfig{
-					Type:                   EMADynamic,
-					GoalSamplingPercentage: 10,
-					KeyAttributes:          []string{"service.name"},
-					Weight:                 0.5,
+					Type:                  DynamicPercentage,
+					GoalPercentage:        10,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+					Weight:                0.5,
 				},
 			}),
 		},
@@ -111,6 +111,14 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: "name is required",
 		},
 		{
+			name: "reserved_rule_name_prefix",
+			cfg: baseCfg(RuleConfig{
+				Name:    "_eviction",
+				Sampler: SamplerConfig{Type: AlwaysSample},
+			}),
+			wantErr: `the "_" prefix is reserved`,
+		},
+		{
 			name: "duplicate_rule_name",
 			cfg: baseCfg(
 				RuleConfig{Name: "a", Sampler: SamplerConfig{Type: AlwaysSample}},
@@ -134,138 +142,308 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: "unknown sampler.type",
 		},
 		{
-			name: "deterministic_zero_rate",
+			name: "probabilistic_zero_rate",
 			cfg: baseCfg(RuleConfig{
 				Name:    "r",
-				Sampler: SamplerConfig{Type: Deterministic},
+				Sampler: SamplerConfig{Type: Probabilistic},
 			}),
 			wantErr: "sampling_percentage",
 		},
 		{
-			name: "deterministic_too_high",
+			name: "probabilistic_too_high",
 			cfg: baseCfg(RuleConfig{
 				Name:    "r",
-				Sampler: SamplerConfig{Type: Deterministic, SamplingPercentage: 150},
+				Sampler: SamplerConfig{Type: Probabilistic, SamplingPercentage: 150},
 			}),
 			wantErr: "sampling_percentage",
 		},
 		{
-			name: "ema_missing_key_attributes",
+			name: "dynamic_percentage_missing_fingerprint_attributes",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:                   EMADynamic,
-					GoalSamplingPercentage: 10,
+					Type:           DynamicPercentage,
+					GoalPercentage: 10,
 				},
 			}),
-			wantErr: "key_attributes",
+			wantErr: "fingerprint_attributes",
 		},
 		{
-			name: "ema_invalid_weight",
+			name: "dynamic_percentage_invalid_weight",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:                   EMADynamic,
-					GoalSamplingPercentage: 10,
-					KeyAttributes:          []string{"a"},
-					Weight:                 1.5,
+					Type:                  DynamicPercentage,
+					GoalPercentage:        10,
+					FingerprintAttributes: []string{`any.attributes["a"]`},
+					Weight:                1.5,
 				},
 			}),
 			wantErr: "weight",
 		},
 		{
-			name: "valid_ema_throughput",
+			name: "valid_dynamic_throughput",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:                 EMAThroughput,
-					GoalThroughputPerSec: 100,
-					KeyAttributes:        []string{"service.name"},
-					Weight:               0.5,
+					Type:                  DynamicThroughput,
+					GoalThroughput:        100,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+					Weight:                0.5,
 				},
 			}),
 		},
 		{
-			name: "ema_throughput_missing_goal",
+			name: "dynamic_throughput_invalid_weight",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:          EMAThroughput,
-					KeyAttributes: []string{"a"},
+					Type:                  DynamicThroughput,
+					GoalThroughput:        100,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+					Weight:                1.0,
 				},
 			}),
-			wantErr: "goal_throughput_per_sec",
+			wantErr: "weight",
 		},
 		{
-			name: "ema_throughput_missing_key_attributes",
+			name: "dynamic_throughput_windowed_negative_update_frequency",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:                 EMAThroughput,
-					GoalThroughputPerSec: 100,
+					Type:                  DynamicThroughput,
+					Algorithm:             AlgorithmWindowed,
+					GoalThroughput:        100,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+					UpdateFrequency:       -time.Second,
 				},
 			}),
-			wantErr: "key_attributes",
+			wantErr: "update_frequency",
 		},
 		{
-			name: "valid_windowed_throughput",
+			name: "dynamic_throughput_windowed_negative_lookback_frequency",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:                 WindowedThroughput,
-					GoalThroughputPerSec: 100,
-					KeyAttributes:        []string{"service.name"},
-					UpdateFrequency:      time.Second,
-					LookbackFrequency:    30 * time.Second,
+					Type:                  DynamicThroughput,
+					Algorithm:             AlgorithmWindowed,
+					GoalThroughput:        100,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+					LookbackFrequency:     -time.Second,
+				},
+			}),
+			wantErr: "lookback_frequency",
+		},
+		{
+			name: "invalid_match_mode",
+			cfg: baseCfg(RuleConfig{
+				Name:    "r",
+				Match:   "some_span",
+				Sampler: SamplerConfig{Type: AlwaysSample},
+			}),
+			wantErr: "match",
+		},
+		{
+			name: "dynamic_throughput_missing_goal",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                  DynamicThroughput,
+					FingerprintAttributes: []string{`any.attributes["a"]`},
+				},
+			}),
+			wantErr: "goal_throughput",
+		},
+		{
+			name: "dynamic_throughput_missing_fingerprint_attributes",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:           DynamicThroughput,
+					GoalThroughput: 100,
+				},
+			}),
+			wantErr: "fingerprint_attributes",
+		},
+		{
+			name: "valid_dynamic_throughput_windowed",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                  DynamicThroughput,
+					Algorithm:             AlgorithmWindowed,
+					GoalThroughput:        100,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+					UpdateFrequency:       time.Second,
+					LookbackFrequency:     30 * time.Second,
 				},
 			}),
 		},
 		{
-			name: "windowed_throughput_missing_goal",
+			name: "algorithm_rejected_on_probabilistic",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:          WindowedThroughput,
-					KeyAttributes: []string{"a"},
-				},
-			}),
-			wantErr: "goal_throughput_per_sec",
-		},
-		{
-			name: "windowed_throughput_missing_key_attributes",
-			cfg: baseCfg(RuleConfig{
-				Name: "r",
-				Sampler: SamplerConfig{
-					Type:                 WindowedThroughput,
-					GoalThroughputPerSec: 100,
-				},
-			}),
-			wantErr: "key_attributes",
-		},
-		{
-			name: "deterministic_rejects_ema_field",
-			cfg: baseCfg(RuleConfig{
-				Name: "r",
-				Sampler: SamplerConfig{
-					Type:               Deterministic,
+					Type:               Probabilistic,
+					Algorithm:          AlgorithmEMA,
 					SamplingPercentage: 10,
-					KeyAttributes:      []string{"service.name"},
 				},
 			}),
-			wantErr: "deterministic does not use key_attributes",
+			wantErr: "probabilistic does not use algorithm",
 		},
 		{
-			name: "ema_dynamic_rejects_windowed_field",
+			name: "windowed_rejected_on_dynamic_percentage",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
 				Sampler: SamplerConfig{
-					Type:                   EMADynamic,
-					GoalSamplingPercentage: 10,
-					KeyAttributes:          []string{"service.name"},
-					UpdateFrequency:        time.Second,
+					Type:                  DynamicPercentage,
+					Algorithm:             AlgorithmWindowed,
+					GoalPercentage:        10,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
 				},
 			}),
-			wantErr: "ema_dynamic does not use update_frequency",
+			wantErr: "does not support the windowed algorithm",
+		},
+		{
+			name: "unknown_algorithm",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                  DynamicThroughput,
+					Algorithm:             "sliding",
+					GoalThroughput:        100,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+				},
+			}),
+			wantErr: "unknown algorithm",
+		},
+		{
+			name: "windowed_rejects_ema_tuning",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                  DynamicThroughput,
+					Algorithm:             AlgorithmWindowed,
+					GoalThroughput:        100,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+					Weight:                0.5,
+				},
+			}),
+			wantErr: "dynamic_throughput (windowed) does not use weight",
+		},
+		{
+			name: "ema_rejects_windowed_tuning",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                  DynamicThroughput,
+					GoalThroughput:        100,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+					UpdateFrequency:       time.Second,
+				},
+			}),
+			wantErr: "dynamic_throughput (ema) does not use update_frequency",
+		},
+		{
+			name: "dynamic_throughput_windowed_missing_goal",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                  DynamicThroughput,
+					Algorithm:             AlgorithmWindowed,
+					FingerprintAttributes: []string{`any.attributes["a"]`},
+				},
+			}),
+			wantErr: "goal_throughput",
+		},
+		{
+			name: "dynamic_throughput_windowed_missing_fingerprint_attributes",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:           DynamicThroughput,
+					Algorithm:      AlgorithmWindowed,
+					GoalThroughput: 100,
+				},
+			}),
+			wantErr: "fingerprint_attributes",
+		},
+		{
+			name: "probabilistic_rejects_fingerprint_attributes_field",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                  Probabilistic,
+					SamplingPercentage:    10,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+				},
+			}),
+			wantErr: "probabilistic does not use fingerprint_attributes",
+		},
+		{
+			name: "dynamic_percentage_rejects_windowed_field",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                  DynamicPercentage,
+					GoalPercentage:        10,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+					UpdateFrequency:       time.Second,
+				},
+			}),
+			wantErr: "dynamic_percentage does not use update_frequency",
+		},
+		{
+			name: "eviction_evaluate_default_valid",
+			cfg: func() Config {
+				c := baseCfg(RuleConfig{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}})
+				c.Eviction = EvictionConfig{Policy: EvictionEvaluate}
+				return c
+			}(),
+		},
+		{
+			name: "eviction_probabilistic_valid",
+			cfg: func() Config {
+				c := baseCfg(RuleConfig{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}})
+				c.Eviction = EvictionConfig{Policy: EvictionProbabilistic, SamplingPercentage: 10}
+				return c
+			}(),
+		},
+		{
+			name: "eviction_probabilistic_missing_percentage",
+			cfg: func() Config {
+				c := baseCfg(RuleConfig{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}})
+				c.Eviction = EvictionConfig{Policy: EvictionProbabilistic}
+				return c
+			}(),
+			wantErr: "sampling_percentage must be in (0, 100]",
+		},
+		{
+			name: "eviction_percentage_out_of_range",
+			cfg: func() Config {
+				c := baseCfg(RuleConfig{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}})
+				c.Eviction = EvictionConfig{Policy: EvictionProbabilistic, SamplingPercentage: 150}
+				return c
+			}(),
+			wantErr: "sampling_percentage must be in (0, 100]",
+		},
+		{
+			name: "eviction_evaluate_rejects_percentage",
+			cfg: func() Config {
+				c := baseCfg(RuleConfig{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}})
+				c.Eviction = EvictionConfig{SamplingPercentage: 10}
+				return c
+			}(),
+			wantErr: "sampling_percentage is only used by the probabilistic policy",
+		},
+		{
+			name: "eviction_unknown_policy",
+			cfg: func() Config {
+				c := baseCfg(RuleConfig{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}})
+				c.Eviction = EvictionConfig{Policy: "magic"}
+				return c
+			}(),
+			wantErr: "eviction: policy must be",
 		},
 		{
 			name: "root_span_condition_valid",

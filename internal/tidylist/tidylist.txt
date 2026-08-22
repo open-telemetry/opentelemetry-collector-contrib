@@ -182,12 +182,12 @@ extension/observer/ecsobserver
 extension/observer/hostobserver
 pkg/xk8stest
 extension/observer/k8sobserver
-extension/observer/kafkatopicsobserver
 extension/oidcauthextension
 extension/opampcustommessages
 extension/opampextension
 extension/pprofextension
 extension/remotetapextension
+extension/sdnotifyextension
 extension/sigv4authextension
 extension/solarwindsapmsettingsextension
 extension/storage/dbstorage
@@ -322,7 +322,6 @@ receiver/redfishreceiver
 receiver/redisreceiver
 receiver/riakreceiver
 receiver/saphanareceiver
-receiver/simpleprometheusreceiver/examples/federation/prom-counter
 receiver/simpleprometheusreceiver
 receiver/skywalkingreceiver
 receiver/snmpreceiver

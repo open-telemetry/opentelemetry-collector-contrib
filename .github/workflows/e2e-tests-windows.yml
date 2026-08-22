@@ -22,6 +22,11 @@ env:
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 
+# Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   collector-build:
     strategy:
@@ -32,7 +37,9 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -41,7 +48,7 @@ jobs:
       - name: Build Collector
         run: make otelcontribcol
       - name: Upload Collector Binary
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: collector-binary-${{ matrix.os == 'windows-11-arm' && 'arm64' || 'amd64' }}
           path: ./bin/*
@@ -59,12 +66,14 @@ jobs:
       CGO_ENABLED: ${{ matrix.os == 'windows-11-arm' && '0' || '' }}
     needs: [collector-build]
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - name: Download Collector Binary
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: collector-binary-${{ matrix.os == 'windows-11-arm' && 'arm64' || 'amd64' }}
           path: bin/
@@ -84,7 +93,9 @@ jobs:
     needs: [collector-build]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -92,7 +103,7 @@ jobs:
         run: |
           & ${{ github.workspace }}\.github\workflows\scripts\win-required-ports.ps1
       - name: Download Collector Binary
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: collector-binary-${{ matrix.os == 'windows-11-arm' && 'arm64' || 'amd64' }}
           path: bin/

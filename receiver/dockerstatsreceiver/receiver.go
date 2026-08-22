@@ -99,8 +99,14 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 			if !ok {
 				// Stream is still starting up; skip until first frame arrives.
 				errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(
-					fmt.Errorf("no stats available yet for container %s", container.ID), 0))
+					fmt.Errorf("no stats available yet for container %s", container.ID), 0,
+				))
 				continue
+			}
+			if container.State.Health != nil {
+				if updated, ok := r.client.InspectAndPersistContainer(ctx, container.ID); ok {
+					container.InspectResponse = updated
+				}
 			}
 			if err := r.recordContainerStats(now, stats, &container); err != nil {
 				errs = multierr.Append(errs, err)
@@ -121,6 +127,11 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 			if err != nil {
 				results <- resultV2{nil, &c, err}
 				return
+			}
+			if c.State.Health != nil {
+				if updated, ok := r.client.InspectAndPersistContainer(ctx, c.ID); ok {
+					c.InspectResponse = updated
+				}
 			}
 
 			results <- resultV2{
@@ -162,6 +173,9 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 		errs = multierr.Append(errs, err)
 	}
 	r.mb.RecordContainerRestartsDataPoint(now, int64(container.RestartCount))
+
+	// Record container health status metrics
+	r.recordContainerHealthMetrics(now, container)
 
 	// Always-present resource attrs + the user-configured resource attrs
 	rb := r.mb.NewResourceBuilder()
@@ -265,7 +279,8 @@ func recordSingleBlkioStat(now pcommon.Timestamp, statEntries []ctypes.BlkioStat
 			int64(stat.Value),
 			strconv.FormatUint(stat.Major, 10),
 			strconv.FormatUint(stat.Minor, 10),
-			strings.ToLower(stat.Op))
+			strings.ToLower(stat.Op),
+		)
 	}
 }
 
@@ -336,4 +351,23 @@ func (r *metricsReceiver) recordHostConfigMetrics(now pcommon.Timestamp, contain
 		r.mb.RecordContainerCPULimitDataPoint(now, cpuLimit)
 	}
 	return nil
+}
+
+func (r *metricsReceiver) recordContainerHealthMetrics(now pcommon.Timestamp, container *docker.Container) {
+	if container.State != nil && container.State.Health != nil {
+		switch container.State.Health.Status {
+		case "starting":
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 1, metadata.AttributeContainerStateHealthStateStarting)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateHealthy)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateUnhealthy)
+		case "healthy":
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateStarting)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 1, metadata.AttributeContainerStateHealthStateHealthy)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateUnhealthy)
+		case "unhealthy":
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateStarting)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateHealthy)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 1, metadata.AttributeContainerStateHealthStateUnhealthy)
+		}
+	}
 }

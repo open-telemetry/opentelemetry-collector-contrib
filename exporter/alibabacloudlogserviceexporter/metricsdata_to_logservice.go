@@ -217,7 +217,8 @@ func doubleHistogramMetricsToLogs(name string, data pmetric.HistogramDataPointSl
 					bucketLabels,
 					int64(dataPoint.Timestamp()),
 					float64(bucket),
-				))
+				),
+			)
 		}
 	}
 	return logs

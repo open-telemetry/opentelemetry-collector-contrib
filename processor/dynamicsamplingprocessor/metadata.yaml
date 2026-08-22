@@ -27,11 +27,18 @@ telemetry:
       stability: development
     processor_dynamic_sampling_decision_triggers:
       enabled: true
-      description: Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout).
+      description: Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction, shutdown).
       unit: "{decisions}"
       sum:
         value_type: int
         monotonic: true
+      stability: development
+    processor_dynamic_sampling_fingerprint_duration:
+      enabled: true
+      description: Time spent extracting a rule's fingerprint per decision, in microseconds, labelled by rule. A relative signal for spotting expensive fingerprints (wide scopes such as any. on large traces); absolute values depend on host and load.
+      unit: us
+      histogram:
+        value_type: int
       stability: development
     processor_dynamic_sampling_incoming_tracestate_unparseable:
       enabled: true
@@ -43,7 +50,7 @@ telemetry:
       stability: development
     processor_dynamic_sampling_ottl_eval_errors:
       enabled: true
-      description: Number of OTTL condition evaluation errors, labelled by the rule the condition belongs to.
+      description: Number of OTTL condition evaluation errors, labelled by the rule the condition belongs to (_root_span_condition for the root-span condition).
       unit: "{errors}"
       sum:
         value_type: int
@@ -58,7 +65,7 @@ telemetry:
       stability: development
     processor_dynamic_sampling_traces_dropped:
       enabled: true
-      description: Number of traces that were dropped, labelled by the rule that selected them.
+      description: Number of traces that were dropped, labelled by the rule that selected them. Sentinel rule values are prefixed with an underscore (e.g. _unmatched, _eviction).
       unit: "{traces}"
       sum:
         value_type: int
@@ -66,7 +73,7 @@ telemetry:
       stability: development
     processor_dynamic_sampling_traces_evicted:
       enabled: true
-      description: Number of traces evicted from the buffer before a decision could be made.
+      description: Number of traces evicted from the buffer due to num_traces pressure. Evicted traces are decided immediately per the configured eviction policy.
       unit: "{traces}"
       sum:
         value_type: int
@@ -74,7 +81,7 @@ telemetry:
       stability: development
     processor_dynamic_sampling_traces_sampled:
       enabled: true
-      description: Number of traces that were sampled, labelled by the rule that selected them.
+      description: Number of traces that were sampled, labelled by the rule that selected them. Sentinel rule values are prefixed with an underscore (e.g. _eviction).
       unit: "{traces}"
       sum:
         value_type: int

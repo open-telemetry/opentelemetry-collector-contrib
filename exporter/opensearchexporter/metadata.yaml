@@ -8,7 +8,7 @@ status:
     alpha: [traces, logs]
   distributions: [contrib]
   codeowners:
-    active: [ps48]
+    active: [ps48, kylehounslow]
     emeritus: [Aneurysm9, MitchellGale, MaxKsyunz, YANG-DB]
     seeking_new: true
 

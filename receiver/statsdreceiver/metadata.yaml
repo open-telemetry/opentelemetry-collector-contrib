@@ -14,6 +14,19 @@ status:
   codeowners:
     active: [jmacd, dmitryax]
 
+# Feature gate controlling the default value of the is_monotonic_counter option.
+# When enabled, statsd counters default to monotonic (matching real-world statsd semantics)
+# instead of the legacy non-monotonic default.
+feature_gates:
+  - id: receiver.statsd.monotonicCounterDefault
+    stage: alpha
+    description: >-
+      When enabled, changes the default value of is_monotonic_counter to true, so that statsd
+      counters are treated as monotonic sums by default. Explicitly setting is_monotonic_counter
+      in the receiver config always takes precedence over this feature gate.
+    from_version: v0.159.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14956
+
 telemetry:
   metrics:
     receiver_received_statsd_metrics:
