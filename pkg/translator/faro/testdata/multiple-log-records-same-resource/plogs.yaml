@@ -10,7 +10,7 @@ resourceLogs:
     - key: service.namespace
       value:
         stringValue: testnamespace
-    - key: deployment.environment
+    - key: deployment.environment.name
       value:
         stringValue: production
     - key: app_bundle_id
