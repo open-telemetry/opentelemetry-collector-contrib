@@ -41,6 +41,8 @@ properties:
     type: boolean
   database:
     type: string
+  db_auth:
+    type: string
   password:
     $ref: go.opentelemetry.io/collector/config/configopaque.string
   query_sample_collection:
