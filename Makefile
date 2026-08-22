@@ -97,6 +97,18 @@ all-groups:
 	@echo -e "\ncgo: $(CGO_MODS)"
 	@echo -e "\ngenerated: $(GENERATED_MODS)"
 
+# The test-group names CI shards on, derived from all-groups so the list lives
+# in exactly one place. Two semantic exclusions: category aggregates (a name X
+# is an aggregate when a sharded X-0 exists) and the property-based selections
+# that are not test groups.
+.PHONY: ci-groups
+ci-groups:
+	@$(MAKE) -s all-groups | sed -n 's/^\([a-z0-9-][a-z0-9-]*\):.*/\1/p' | \
+		awk 'BEGIN { split("integration cgo generated", x, " "); for (i in x) ex[x[i]] = 1 } \
+		     { n[NR] = $$0; seen[$$0] = 1 } \
+		     END { for (i = 1; i <= NR; i++) { g = n[i]; \
+		             if (g in ex) continue; if ((g "-0") in seen) continue; print g } }'
+
 .PHONY: all
 all: all-common goporto multimod-verify gotest otelcontribcol
 

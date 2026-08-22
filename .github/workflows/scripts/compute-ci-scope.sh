@@ -23,7 +23,8 @@ set -euo pipefail
 #
 #
 # Environment variables:
-#   ALL_TEST_GROUPS (Required in CI): JSON array of the fallback/full group list.
+#   ALL_TEST_GROUPS (Optional): JSON array of the full group list. Derived from
+#                   `make ci-groups` when unset.
 #   PR_HEAD     (Optional): SHA of the PR tip. Defaults to 'HEAD' locally.
 #   BASE_REF    (Optional): Branch target. Defaults to 'main' locally.
 #   TARGET_CONCURRENCY    (Optional): Max concurrent buckets. Defaults to 10.
@@ -49,18 +50,19 @@ if [[ -z "${GITHUB_ACTIONS:-}" ]]; then
   export PR_HEAD="${PR_HEAD:-HEAD}"
   export GITHUB_OUTPUT="/dev/stdout" # Print results to console
 
-  # Mock ALL_TEST_GROUPS if not provided locally
-  if [[ -z "${ALL_TEST_GROUPS:-}" ]]; then
-    ALL_TEST_GROUPS='["receiver-0","receiver-1","receiver-2","receiver-3","processor-0","processor-1","exporter-0","exporter-1","exporter-2","exporter-3","extension","connector","internal","pkg","cmd-0","other"]'
-  fi
   # Mock CRITICAL_FILES if not provided locally
   if [[ -z "${CRITICAL_FILES:-}" ]]; then
     CRITICAL_FILES='["Makefile", "Makefile.Common", ".golangci.yml", ".github/workflows/", "internal/tools/", "versions.yaml"]'
   fi
 else
-  # In CI, these are mandatory.
-  : "${ALL_TEST_GROUPS:?The ALL_TEST_GROUPS environment variable is required}"
+  # In CI, this is mandatory.
   : "${CRITICAL_FILES:?The CRITICAL_FILES environment variable is required}"
+fi
+
+# The group list is derived from the Makefile so it is defined in exactly one
+# place. Callers may still override it via the environment.
+if [[ -z "${ALL_TEST_GROUPS:-}" ]]; then
+  ALL_TEST_GROUPS="$(make -s ci-groups | jq -Rsc 'split("\n") | map(select(length > 0))')"
 fi
 
 # Sanitize inputs
