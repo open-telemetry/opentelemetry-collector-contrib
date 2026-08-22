@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"regexp"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
@@ -20,6 +21,7 @@ import (
 var (
 	errInvalidEndpoint = errors.New(`"endpoint" must be in the form of <scheme>://<hostname>[:<port>]`)
 	errMissingEndpoint = errors.New("at least one of 'endpoint' or 'endpoints' must be specified")
+	errInvalidRegex    = errors.New(`invalid "regex" validation`)
 )
 
 // Config defines the configuration for the various elements of the receiver agent.
@@ -48,6 +50,9 @@ type validationConfig struct {
 
 	// Regex validation
 	Regex string `mapstructure:"regex"`
+
+	// regex is Regex compiled by compileValidations.
+	regex *regexp.Regexp
 }
 
 // targetConfig defines configuration for individual HTTP checks.
@@ -75,6 +80,28 @@ func (cfg *targetConfig) Unmarshal(conf *confmap.Conf) error {
 	return conf.Unmarshal(cfg)
 }
 
+// compileValidations compiles every configured regex validation so that it is compiled once at
+// startup rather than on every check, and reports patterns that cannot be compiled.
+func (cfg *targetConfig) compileValidations() error {
+	var err error
+
+	for i := range cfg.Validations {
+		// Reset first so the compiled pattern can never outlive the string it came from.
+		cfg.Validations[i].regex = nil
+		if cfg.Validations[i].Regex == "" {
+			continue
+		}
+		re, compileErr := regexp.Compile(cfg.Validations[i].Regex)
+		if compileErr != nil {
+			err = multierr.Append(err, fmt.Errorf("%w %q: %w", errInvalidRegex, cfg.Validations[i].Regex, compileErr))
+			continue
+		}
+		cfg.Validations[i].regex = re
+	}
+
+	return err
+}
+
 // Validate validates an individual targetConfig.
 func (cfg *targetConfig) Validate() error {
 	var err error
@@ -97,6 +124,8 @@ func (cfg *targetConfig) Validate() error {
 			err = multierr.Append(err, fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr))
 		}
 	}
+
+	err = multierr.Append(err, cfg.compileValidations())
 
 	return err
 }
