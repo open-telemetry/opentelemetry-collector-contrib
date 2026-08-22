@@ -16,7 +16,7 @@ import (
 
 func NewSettings(tt *componenttest.Telemetry) connector.Settings {
 	set := connectortest.NewNopSettings(connectortest.NopType)
-	set.ID = component.NewID(component.MustNewType("grafanacloud"))
+	set.ID = component.NewID(component.MustNewType("grafana_cloud"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }
