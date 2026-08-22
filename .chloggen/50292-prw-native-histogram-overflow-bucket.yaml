@@ -1,0 +1,17 @@
+change_type: bug_fix
+
+component: receiver/prometheus_remote_write
+
+note: Drop the Prometheus overflow bucket when converting native histograms, instead of translating it.
+
+issues: [50292]
+
+subtext: |
+  The last bucket that maps to a finite OpenTelemetry bucket is 1024*2^schema.
+  The bucket above it is the Prometheus overflow bucket, which covers values past
+  the IEEE float range, and the Prometheus compatibility specification requires
+  overflow buckets to be dropped and left out of the count. It was previously
+  translated as an ordinary bucket. Buckets above the overflow bucket are not
+  allowed at all, and a histogram containing one is now dropped.
+
+change_logs: [user]
