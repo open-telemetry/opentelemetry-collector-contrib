@@ -14,11 +14,13 @@ import (
 	"path/filepath"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
@@ -693,6 +695,112 @@ func TestNewFranzClient_And_Admin(t *testing.T) {
 	assert.NotEmpty(t, md.Brokers)
 	_, ok := md.Topics["meta-topic"]
 	assert.True(t, ok)
+}
+
+func TestFranzClient_MetadataRetryMax(t *testing.T) {
+	for _, maxRetries := range []int{0, 2} {
+		t.Run(fmt.Sprintf("max_%d", maxRetries), func(t *testing.T) {
+			cluster, clientConfig := kafkatest.NewCluster(t)
+			clientConfig.Metadata.Retry.Max = maxRetries
+			clientConfig.Metadata.Retry.Backoff = time.Millisecond
+
+			// CreateTopics answered with NOT_CONTROLLER is a request franz-go
+			// retries. Metadata is unusable here because franz-go serves it
+			// from its own cache rather than retrying against the broker.
+			var attempts atomic.Int64
+			cluster.ControlKey(int16(kmsg.CreateTopics), func(req kmsg.Request) (kmsg.Response, error, bool) {
+				cluster.KeepControl()
+				attempts.Add(1)
+				resp := req.ResponseKind().(*kmsg.CreateTopicsResponse)
+				resp.Topics = append(resp.Topics, kmsg.CreateTopicsResponseTopic{
+					Topic:     "retry-topic",
+					ErrorCode: kerr.NotController.Code,
+				})
+				return resp, nil, true
+			})
+
+			tl := zaptest.NewLogger(t, zaptest.Level(zap.ErrorLevel))
+			client, err := NewFranzClient(t.Context(), componenttest.NewNopHost(), clientConfig, tl)
+			require.NoError(t, err)
+			t.Cleanup(client.Close)
+
+			ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+			defer cancel()
+			createReq := kmsg.NewPtrCreateTopicsRequest()
+			topic := kmsg.NewCreateTopicsRequestTopic()
+			topic.Topic = "retry-topic"
+			topic.NumPartitions = 1
+			topic.ReplicationFactor = 1
+			createReq.Topics = append(createReq.Topics, topic)
+			_, err = createReq.RequestWith(ctx, client)
+			require.NoError(t, err)
+			assert.Equal(t, int64(maxRetries+1), attempts.Load())
+		})
+	}
+}
+
+func TestNewRetryBackoffFn(t *testing.T) {
+	t.Run("default_matches_franz_go", func(t *testing.T) {
+		fn := newRetryBackoffFn(250 * time.Millisecond)
+		assert.Equal(t, 250*time.Millisecond, fn(0))
+		// Bounds are the unjittered backoff scaled by the +/-20% jitter range.
+		for fails, unjittered := range map[int]time.Duration{
+			1: 250 * time.Millisecond,
+			2: 500 * time.Millisecond,
+			3: time.Second,
+			4: 2 * time.Second,
+		} {
+			got := fn(fails)
+			assert.GreaterOrEqual(t, got, time.Duration(float64(unjittered)*0.8))
+			assert.LessOrEqual(t, got, time.Duration(float64(unjittered)*1.2))
+		}
+		assert.Equal(t, 5*time.Second, fn(11))
+	})
+
+	t.Run("caps_at_five_seconds", func(t *testing.T) {
+		fn := newRetryBackoffFn(250 * time.Millisecond)
+		for fails := range 100 {
+			assert.LessOrEqual(t, fn(fails), 5*time.Second)
+		}
+	})
+
+	t.Run("small_backoff_keeps_doubling_past_ten_failures", func(t *testing.T) {
+		// 1ms is still under the cap at failure 11, so it must keep doubling.
+		fn := newRetryBackoffFn(time.Millisecond)
+		for fails, unjittered := range map[int]time.Duration{
+			10: 512 * time.Millisecond,
+			11: 1024 * time.Millisecond,
+			12: 2048 * time.Millisecond,
+		} {
+			got := fn(fails)
+			assert.GreaterOrEqual(t, got, time.Duration(float64(unjittered)*0.8))
+			assert.LessOrEqual(t, got, time.Duration(float64(unjittered)*1.2))
+		}
+		// Clamps only once the doubling passes the cap.
+		assert.Equal(t, 5*time.Second, fn(20))
+	})
+
+	t.Run("extreme_backoff_does_not_overflow", func(t *testing.T) {
+		// 100000h passes validation but overflows when doubled.
+		minBackoff := 100000 * time.Hour
+		fn := newRetryBackoffFn(minBackoff)
+		for fails := range 100 {
+			got := fn(fails)
+			assert.Positive(t, got)
+			assert.LessOrEqual(t, got, minBackoff)
+		}
+	})
+
+	t.Run("cap_raised_to_backoff", func(t *testing.T) {
+		// A minimum above the 5s default cap raises the cap rather than
+		// being truncated down to it.
+		fn := newRetryBackoffFn(30 * time.Second)
+		for fails := range 100 {
+			got := fn(fails)
+			assert.GreaterOrEqual(t, got, 24*time.Second)
+			assert.LessOrEqual(t, got, 30*time.Second)
+		}
+	})
 }
 
 func TestConfigureKgoKerberos(t *testing.T) {

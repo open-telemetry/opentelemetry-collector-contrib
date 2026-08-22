@@ -81,10 +81,16 @@ Optional Settings (with defaults):
         - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
         - `disable_fast_negotiation`: Disable PA-FX-FAST negotiation (Pre-Authentication Framework - Fast). Some common Kerberos implementations do not support PA-FX-FAST negotiation. This is set to `false` by default.
 - `metadata`
-  - `full` (default = true): Whether to maintain a full set of metadata. When disabled, the client does not make the initial request to broker at the startup.
+  - `full` (deprecated): No longer has any effect. Metadata is only fetched for
+    the topics the client scrapes.
   - `retry`
-    - `max` (default = 3): The number of retries to get metadata
-    - `backoff` (default = 250ms): How long to wait between metadata retries
+    - `max` (default = 20): The number of times to retry a retriable request.
+      Applies to the admin and offset fetch requests issued by the scrapers. It
+      does not apply to the client's internal metadata refresh, which caps
+      itself at 3 retries.
+    - `backoff` (default = 250ms): The minimum time to wait before retrying a
+      request. Each successive retry doubles the wait, with jitter applied,
+      capped at `max(5s, backoff)`.
 
 ## Examples:
 

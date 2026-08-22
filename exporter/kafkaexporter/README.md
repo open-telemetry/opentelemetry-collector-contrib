@@ -86,6 +86,11 @@ The following settings can be optionally configured:
     - `disable_fast_negotiation`: Disable PA-FX-FAST negotiation (Pre-Authentication Framework - Fast). Some common Kerberos implementations do not support PA-FX-FAST negotiation. This is set to `false` by default.
 - `metadata`
   - `refresh_interval` (default = 10m): The refreshInterval controls the frequency at which cluster metadata is refreshed in the background.
+  - `retry`
+    - `backoff` (default = 250ms): The minimum time to wait before retrying a
+      produce request. Each successive retry doubles the wait, with jitter
+      applied, capped at `max(5s, backoff)`. The number of produce retries is
+      governed by `retry_on_failure` and `timeout`, not by `metadata::retry::max`.
 - `timeout` (default = 5s): Time to wait per individual attempt to produce data to Kafka.
 - `retry_on_failure`
   - `enabled` (default = true)
