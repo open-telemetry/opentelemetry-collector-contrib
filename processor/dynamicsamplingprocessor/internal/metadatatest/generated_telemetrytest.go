@@ -39,7 +39,7 @@ func AssertEqualProcessorDynamicSamplingDecisionSampleRate(t *testing.T, tt *com
 func AssertEqualProcessorDynamicSamplingDecisionTriggers(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_dynamic_sampling_decision_triggers",
-		Description: "Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction). [Development]",
+		Description: "Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction, shutdown). [Development]",
 		Unit:        "{decisions}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -48,6 +48,21 @@ func AssertEqualProcessorDynamicSamplingDecisionTriggers(t *testing.T, tt *compo
 		},
 	}
 	got, err := tt.GetMetric("otelcol_processor_dynamic_sampling_decision_triggers")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorDynamicSamplingFingerprintDuration(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_dynamic_sampling_fingerprint_duration",
+		Description: "Time spent extracting a rule's fingerprint per decision, in microseconds, labelled by rule. A relative signal for spotting expensive fingerprints (wide scopes such as any. on large traces); absolute values depend on host and load. [Development]",
+		Unit:        "us",
+		Data: metricdata.Histogram[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_dynamic_sampling_fingerprint_duration")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
@@ -71,7 +86,7 @@ func AssertEqualProcessorDynamicSamplingIncomingTracestateUnparseable(t *testing
 func AssertEqualProcessorDynamicSamplingOttlEvalErrors(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_dynamic_sampling_ottl_eval_errors",
-		Description: "Number of OTTL condition evaluation errors, labelled by the rule the condition belongs to. [Development]",
+		Description: "Number of OTTL condition evaluation errors, labelled by the rule the condition belongs to (_root_span_condition for the root-span condition). [Development]",
 		Unit:        "{errors}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -101,7 +116,7 @@ func AssertEqualProcessorDynamicSamplingTracesActive(t *testing.T, tt *component
 func AssertEqualProcessorDynamicSamplingTracesDropped(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_dynamic_sampling_traces_dropped",
-		Description: "Number of traces that were dropped, labelled by the rule that selected them. [Development]",
+		Description: "Number of traces that were dropped, labelled by the rule that selected them. Sentinel rule values are prefixed with an underscore (e.g. _unmatched, _eviction). [Development]",
 		Unit:        "{traces}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -133,7 +148,7 @@ func AssertEqualProcessorDynamicSamplingTracesEvicted(t *testing.T, tt *componen
 func AssertEqualProcessorDynamicSamplingTracesSampled(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_dynamic_sampling_traces_sampled",
-		Description: "Number of traces that were sampled, labelled by the rule that selected them. [Development]",
+		Description: "Number of traces that were sampled, labelled by the rule that selected them. Sentinel rule values are prefixed with an underscore (e.g. _eviction). [Development]",
 		Unit:        "{traces}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

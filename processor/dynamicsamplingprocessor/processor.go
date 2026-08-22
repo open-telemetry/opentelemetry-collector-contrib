@@ -5,6 +5,8 @@ package dynamicsamplingprocessor // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -39,6 +41,10 @@ const rootSpanConditionRuleLabel = "_root_span_condition"
 // permanent semantic convention may replace it in the future.
 const ruleAttributeKey = "otelcol.processor.dynamic_sampling.rule"
 
+// fingerprintAttributeKey carries the matched rule's fingerprint (raw or
+// hashed, per record_fingerprint) on every span of a kept trace.
+const fingerprintAttributeKey = "otelcol.processor.dynamic_sampling.fingerprint"
+
 // triggerSource identifies which event caused a pending trace to transition
 // from the buffering phase to the decision-delay phase. Reported on the
 // decision-trigger counter.
@@ -48,6 +54,7 @@ const (
 	triggerRootSpan     triggerSource = "root_span"
 	triggerTraceTimeout triggerSource = "trace_timeout"
 	triggerEviction     triggerSource = "eviction"
+	triggerShutdown     triggerSource = "shutdown"
 )
 
 // evictionRuleLabel is the sentinel `rule` label used on decision metrics for
@@ -55,14 +62,20 @@ const (
 // evaluation entirely. Same convention as rootSpanConditionRuleLabel.
 const evictionRuleLabel = "_eviction"
 
+// unmatchedRuleLabel is the sentinel `rule` label for traces dropped because
+// no rule matched. All processor-owned labels share the reserved "_" prefix,
+// which config validation forbids in user rule names.
+const unmatchedRuleLabel = "_unmatched"
+
 // Precomputed measurement options for fixed label values, so hot paths avoid
 // rebuilding attribute sets per call.
 var (
-	unmatchedRuleAttr       = metric.WithAttributes(attribute.String("rule", "unmatched"))
+	unmatchedRuleAttr       = metric.WithAttributes(attribute.String("rule", unmatchedRuleLabel))
 	evictionRuleAttr        = metric.WithAttributes(attribute.String("rule", evictionRuleLabel))
 	triggerRootSpanAttr     = metric.WithAttributes(attribute.String("trigger", string(triggerRootSpan)))
 	triggerTraceTimeoutAttr = metric.WithAttributes(attribute.String("trigger", string(triggerTraceTimeout)))
 	triggerEvictionAttr     = metric.WithAttributes(attribute.String("trigger", string(triggerEviction)))
+	triggerShutdownAttr     = metric.WithAttributes(attribute.String("trigger", string(triggerShutdown)))
 )
 
 func triggerAttr(source triggerSource) metric.MeasurementOption {
@@ -71,6 +84,8 @@ func triggerAttr(source triggerSource) metric.MeasurementOption {
 		return triggerRootSpanAttr
 	case triggerTraceTimeout:
 		return triggerTraceTimeoutAttr
+	case triggerShutdown:
+		return triggerShutdownAttr
 	default:
 		return triggerEvictionAttr
 	}
@@ -197,11 +212,11 @@ func buildRules(cfg *Config, settings component.TelemetrySettings, evalErrs metr
 	rules := make([]*rule, 0, len(cfg.Rules))
 	for i := range cfg.Rules {
 		rc := &cfg.Rules[i]
-		s, keyFields, err := newSamplerForRule(rc)
+		s, fingerprint, err := newSamplerForRule(rc)
 		if err != nil {
 			return nil, fmt.Errorf("rule %q: %w", rc.Name, err)
 		}
-		r, err := compileRule(rc, s, keyFields, settings, evalErrs)
+		r, err := compileRule(rc, s, fingerprint, settings, evalErrs)
 		if err != nil {
 			return nil, err
 		}
@@ -210,38 +225,49 @@ func buildRules(cfg *Config, settings component.TelemetrySettings, evalErrs metr
 	return rules, nil
 }
 
-func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []string, error) {
+func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []sampler.Selector, error) {
 	sc := rc.Sampler
 	switch sc.Type {
 	case AlwaysSample:
 		return sampler.NewAlwaysSample(), nil, nil
-	case Deterministic:
+	case Probabilistic:
 		s, err := sampler.NewDeterministic(sc.SamplingPercentage)
 		return s, nil, err
-	case EMADynamic:
+	case DynamicPercentage:
 		s, err := sampler.NewEMADynamic(sampler.EMADynamicConfig{
-			GoalSamplingPercentage: sc.GoalSamplingPercentage,
+			GoalSamplingPercentage: sc.GoalPercentage,
 			AdjustmentInterval:     sc.AdjustmentInterval,
 			Weight:                 sc.Weight,
 			MaxKeys:                sc.MaxKeys,
 		})
-		return s, append([]string(nil), sc.KeyAttributes...), err
-	case EMAThroughput:
-		s, err := sampler.NewEMAThroughput(sampler.EMAThroughputConfig{
-			GoalThroughputPerSec: sc.GoalThroughputPerSec,
-			AdjustmentInterval:   sc.AdjustmentInterval,
-			Weight:               sc.Weight,
-			MaxKeys:              sc.MaxKeys,
-		})
-		return s, append([]string(nil), sc.KeyAttributes...), err
-	case WindowedThroughput:
-		s, err := sampler.NewWindowedThroughput(sampler.WindowedThroughputConfig{
-			GoalThroughputPerSec: float64(sc.GoalThroughputPerSec),
-			UpdateFrequency:      sc.UpdateFrequency,
-			LookbackFrequency:    sc.LookbackFrequency,
-			MaxKeys:              sc.MaxKeys,
-		})
-		return s, append([]string(nil), sc.KeyAttributes...), err
+		if err != nil {
+			return nil, nil, err
+		}
+		selectors, err := sampler.ParseSelectors(sc.FingerprintAttributes)
+		return s, selectors, err
+	case DynamicThroughput:
+		var s sampler.Sampler
+		var err error
+		if sc.effectiveAlgorithm() == AlgorithmWindowed {
+			s, err = sampler.NewWindowedThroughput(sampler.WindowedThroughputConfig{
+				GoalThroughputPerSec: float64(sc.GoalThroughput),
+				UpdateFrequency:      sc.UpdateFrequency,
+				LookbackFrequency:    sc.LookbackFrequency,
+				MaxKeys:              sc.MaxKeys,
+			})
+		} else {
+			s, err = sampler.NewEMAThroughput(sampler.EMAThroughputConfig{
+				GoalThroughputPerSec: sc.GoalThroughput,
+				AdjustmentInterval:   sc.AdjustmentInterval,
+				Weight:               sc.Weight,
+				MaxKeys:              sc.MaxKeys,
+			})
+		}
+		if err != nil {
+			return nil, nil, err
+		}
+		selectors, err := sampler.ParseSelectors(sc.FingerprintAttributes)
+		return s, selectors, err
 	default:
 		return nil, nil, fmt.Errorf("unknown sampler type %q", sc.Type)
 	}
@@ -265,8 +291,14 @@ func (p *dynamicSamplingProcessor) Start(context.Context, component.Host) error 
 
 // Shutdown cancels any pending decision timers, stops samplers, and waits for
 // in-flight decisions to drain.
-func (p *dynamicSamplingProcessor) Shutdown(context.Context) error {
+func (p *dynamicSamplingProcessor) Shutdown(ctx context.Context) error {
 	p.mu.Lock()
+	if p.stopped {
+		// Shutdown already ran (drained and stopped the samplers); a second
+		// call must not drain or stop anything again.
+		p.mu.Unlock()
+		return nil
+	}
 	p.stopped = true
 	for id, t := range p.timers {
 		if t.Stop() {
@@ -276,9 +308,34 @@ func (p *dynamicSamplingProcessor) Shutdown(context.Context) error {
 		}
 		delete(p.timers, id)
 	}
+	// Snapshot pending traces in arrival order for the drain below. Every
+	// buffered trace has exactly one arrival entry, but entries may be stale
+	// (already decided or evicted), so only ids still in the map are taken.
+	pending := make([]*pendingTrace, 0, len(p.traces))
+	for _, id := range p.arrival {
+		if pt, ok := p.traces[id]; ok {
+			pending = append(pending, pt)
+			delete(p.traces, id)
+		}
+	}
+	p.arrival = nil
 	p.mu.Unlock()
 
 	p.wg.Wait()
+
+	// Drain: decide every pending trace with the spans seen so far rather
+	// than silently dropping the buffer. Runs the normal rule path (samplers
+	// are still running), skipping decision_delay because nothing more will
+	// arrive. Bounded by num_traces. The pipeline shuts down front to back,
+	// so the next consumer still accepts the forwarded traces.
+	for _, pt := range pending {
+		// A trace already in its decision_delay window was counted when its
+		// trigger fired; shutdown merely completes that decision early.
+		if !pt.triggered {
+			p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(ctx, 1, triggerShutdownAttr)
+		}
+		p.decideTrace(ctx, pt)
+	}
 
 	var errs error
 	for _, r := range p.rules {
@@ -423,7 +480,6 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 	}
 
 	active := len(p.traces)
-	stopped := p.stopped
 	p.mu.Unlock()
 	p.telemetry.ProcessorDynamicSamplingTracesActive.Record(ctx, int64(active))
 
@@ -459,10 +515,19 @@ func (p *dynamicSamplingProcessor) ConsumeTraces(ctx context.Context, td ptrace.
 		p.mu.Unlock()
 	}
 
-	if stopped {
-		// Drop late forwards and evicted traces if we're shutting down rather
-		// than push into the downstream consumer.
-		return nil
+	// Re-read stopped under the lock rather than using a snapshot from the
+	// top of the batch: the timer-arming loop above may have observed a newer
+	// value, and the forward decision should be at least as fresh. Skipped
+	// entirely when there is nothing to forward.
+	if len(evicted) > 0 || len(lateForwards) > 0 {
+		p.mu.Lock()
+		stopped := p.stopped
+		p.mu.Unlock()
+		if stopped {
+			// Drop late forwards and evicted traces if we're shutting down
+			// rather than push into the downstream consumer.
+			return nil
+		}
 	}
 
 	// Decide evicted traces outside the lock. Bounded work: at most one
@@ -598,6 +663,9 @@ func (p *dynamicSamplingProcessor) stampLateBatch(ctx context.Context, td ptrace
 		for _, ss := range rs.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
 				span.Attributes().PutStr(ruleAttributeKey, md.ruleName)
+				if md.fingerprint != "" {
+					span.Attributes().PutStr(fingerprintAttributeKey, md.fingerprint)
+				}
 				p.updateTraceState(ctx, span, md.threshold, emptyTS)
 			}
 		}
@@ -641,7 +709,7 @@ func (p *dynamicSamplingProcessor) decide(id pcommon.TraceID) {
 // forwards or drops its spans. Shared by the timer-driven decide path and the
 // evaluate eviction policy.
 func (p *dynamicSamplingProcessor) decideTrace(ctx context.Context, pt *pendingTrace) {
-	matchedRule, rate := p.evaluate(ctx, pt)
+	matchedRule, rate, key := p.evaluate(ctx, pt)
 	if matchedRule == nil {
 		// No matching rule and no catch-all: drop the trace.
 		p.telemetry.ProcessorDynamicSamplingTracesDropped.Add(ctx, 1, unmatchedRuleAttr)
@@ -662,13 +730,31 @@ func (p *dynamicSamplingProcessor) decideTrace(ctx context.Context, pt *pendingT
 			zap.Error(err), zap.Stringer("traceID", pt.traceID))
 		effectiveTh = upstreamTh
 	}
-	p.finishDecision(ctx, pt, matchedRule.name, ruleAttr, effectiveTh, randomness)
+	p.finishDecision(ctx, pt, matchedRule.name, ruleAttr, effectiveTh, randomness, p.fingerprintToken(key))
+}
+
+// fingerprintToken converts a computed fingerprint key into the value stamped
+// on kept spans, per record_fingerprint. Empty when recording is disabled or
+// the rule produced no key.
+func (p *dynamicSamplingProcessor) fingerprintToken(key string) string {
+	if key == "" {
+		return ""
+	}
+	switch p.cfg.RecordFingerprint {
+	case RecordFingerprintValue:
+		return key
+	case RecordFingerprintHash:
+		sum := sha256.Sum256([]byte(key))
+		return hex.EncodeToString(sum[:8])
+	default:
+		return ""
+	}
 }
 
 // finishDecision applies an already-composed effective threshold: records the
 // sample-rate histogram, performs the keep/drop check, updates the decision
 // cache, and forwards sampled traces. Shared by every decision path.
-func (p *dynamicSamplingProcessor) finishDecision(ctx context.Context, pt *pendingTrace, ruleName string, ruleAttr metric.MeasurementOption, effectiveTh sampling.Threshold, randomness sampling.Randomness) {
+func (p *dynamicSamplingProcessor) finishDecision(ctx context.Context, pt *pendingTrace, ruleName string, ruleAttr metric.MeasurementOption, effectiveTh sampling.Threshold, randomness sampling.Randomness, fingerprint string) {
 	// Record the effective (post-composition) rate rather than the raw sampler
 	// rate: under equalizing, an upstream stricter than the sampler's rate caps
 	// what we emit, and the histogram should reflect that.
@@ -679,9 +765,9 @@ func (p *dynamicSamplingProcessor) finishDecision(ctx context.Context, pt *pendi
 		return
 	}
 
-	p.cache.recordSampled(pt.traceID, cachedDecision{ruleName: ruleName, threshold: effectiveTh})
+	p.cache.recordSampled(pt.traceID, cachedDecision{ruleName: ruleName, threshold: effectiveTh, fingerprint: fingerprint})
 	// assembleTrace consumes pt.spans; nothing may read them after this call.
-	annotated := p.assembleTrace(ctx, pt.spans, ruleName, effectiveTh)
+	annotated := p.assembleTrace(ctx, pt.spans, ruleName, effectiveTh, fingerprint)
 	pt.spans = nil
 	p.telemetry.ProcessorDynamicSamplingTracesSampled.Add(ctx, 1, ruleAttr)
 	if err := p.next.ConsumeTraces(ctx, annotated); err != nil {
@@ -693,7 +779,12 @@ func (p *dynamicSamplingProcessor) finishDecision(ctx context.Context, pt *pendi
 // configured eviction policy. The trace may be incomplete; decision_delay is
 // deliberately skipped because there is no room to wait.
 func (p *dynamicSamplingProcessor) decideEvicted(ctx context.Context, pt *pendingTrace) {
-	p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(ctx, 1, triggerEvictionAttr)
+	// Same rule as the shutdown drain: a trace already in its decision_delay
+	// window was counted when its trigger fired, so eviction of a mid-delay
+	// trace must not count the decision twice.
+	if !pt.triggered {
+		p.telemetry.ProcessorDynamicSamplingDecisionTriggers.Add(ctx, 1, triggerEvictionAttr)
+	}
 	if p.cfg.Eviction.Policy == EvictionProbabilistic {
 		p.decideEvictedProbabilistic(ctx, pt)
 		return
@@ -714,28 +805,40 @@ func (p *dynamicSamplingProcessor) decideEvictedProbabilistic(ctx context.Contex
 			effectiveTh = ours
 		}
 	} else {
-		// Unreachable with a validated config; fall back to the upstream
+		// Unreachable with a validated config unless sampling_percentage is
+		// below the sampling package's probability floor (~1e-15%); fall back to the upstream
 		// threshold rather than dropping outright.
 		p.logger.Debug("eviction threshold calculation failed, falling back to upstream",
 			zap.Error(err), zap.Stringer("traceID", pt.traceID))
 	}
-	p.finishDecision(ctx, pt, evictionRuleLabel, evAttr, effectiveTh, randomness)
+	// Probabilistic eviction bypasses rule evaluation, so there is no
+	// fingerprint to record.
+	p.finishDecision(ctx, pt, evictionRuleLabel, evAttr, effectiveTh, randomness, "")
 }
 
-// evaluate returns the first matching rule and the sample rate it produced.
-func (p *dynamicSamplingProcessor) evaluate(ctx context.Context, pt *pendingTrace) (*rule, int) {
+// evaluate returns the first matching rule, the sample rate it produced, and
+// the fingerprint key used (empty for samplers without fingerprint_attributes).
+func (p *dynamicSamplingProcessor) evaluate(ctx context.Context, pt *pendingTrace) (*rule, int, string) {
 	for _, r := range p.rules {
 		if !r.matches(ctx, pt.spans) {
 			continue
 		}
 		var key string
-		if len(r.keyFields) > 0 {
-			key = sampler.ExtractKey(pt.spans, r.keyFields)
+		if len(r.fingerprint) > 0 {
+			var isRoot sampler.RootMatcher
+			if r.needsRootMatcher {
+				isRoot = func(rs ptrace.ResourceSpans, ss ptrace.ScopeSpans, span ptrace.Span) bool {
+					return p.evalRootSpanCondition(ctx, rs, ss, span)
+				}
+			}
+			start := time.Now()
+			key = sampler.ExtractKey(pt.spans, r.fingerprint, isRoot)
+			p.telemetry.ProcessorDynamicSamplingFingerprintDuration.Record(ctx, time.Since(start).Microseconds(), r.ruleAttrSet)
 		}
 		rate := max(r.sampler.GetSampleRate(key, pt.spanCount), 1)
-		return r, rate
+		return r, rate, key
 	}
-	return nil, 0
+	return nil, 0, ""
 }
 
 // readIncomingSampling scans the accumulated spans for upstream sampling state:
@@ -823,7 +926,7 @@ func effectiveThreshold(upstream sampling.Threshold, rate int) (sampling.Thresho
 // processor-owned (created fresh in ConsumeTraces) and the pendingTrace is
 // discarded after the decision, so the sources are left empty deliberately.
 // readIncomingSampling must run before this (it reads the same spans).
-func (p *dynamicSamplingProcessor) assembleTrace(ctx context.Context, spans []ptrace.ResourceSpans, ruleName string, threshold sampling.Threshold) ptrace.Traces {
+func (p *dynamicSamplingProcessor) assembleTrace(ctx context.Context, spans []ptrace.ResourceSpans, ruleName string, threshold sampling.Threshold, fingerprint string) ptrace.Traces {
 	emptyTS := serializedEmptyTraceState(threshold)
 	out := ptrace.NewTraces()
 	for _, rs := range spans {
@@ -832,6 +935,9 @@ func (p *dynamicSamplingProcessor) assembleTrace(ctx context.Context, spans []pt
 		for _, ss := range dst.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
 				span.Attributes().PutStr(ruleAttributeKey, ruleName)
+				if fingerprint != "" {
+					span.Attributes().PutStr(fingerprintAttributeKey, fingerprint)
+				}
 				p.updateTraceState(ctx, span, threshold, emptyTS)
 			}
 		}

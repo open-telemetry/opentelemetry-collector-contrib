@@ -42,6 +42,18 @@ all_set:
     mysql.index.io.wait.time:
       enabled: true
       attributes: ["operation","table","schema","index"]
+    mysql.innodb.data_file.io:
+      enabled: true
+      attributes: ["disk.io.direction"]
+    mysql.innodb.operation.pending:
+      enabled: true
+      attributes: ["operation"]
+    mysql.innodb.row_lock.wait.count:
+      enabled: true
+    mysql.innodb.row_lock.wait.duration.avg:
+      enabled: true
+    mysql.innodb.row_lock.wait.duration.max:
+      enabled: true
     mysql.joins:
       enabled: true
       attributes: ["kind"]
@@ -81,6 +93,11 @@ all_set:
       enabled: true
     mysql.replica.sql_delay:
       enabled: true
+    mysql.replica.temp_table.open:
+      enabled: true
+    mysql.replica.thread.running:
+      enabled: true
+      attributes: ["mysql.replica.thread.type","mysql.replica.channel.name"]
     mysql.replica.time_behind_source:
       enabled: true
     mysql.row_locks:
@@ -201,6 +218,18 @@ reaggregate_set:
     mysql.index.io.wait.time:
       enabled: true
       attributes: []
+    mysql.innodb.data_file.io:
+      enabled: true
+      attributes: []
+    mysql.innodb.operation.pending:
+      enabled: true
+      attributes: []
+    mysql.innodb.row_lock.wait.count:
+      enabled: true
+    mysql.innodb.row_lock.wait.duration.avg:
+      enabled: true
+    mysql.innodb.row_lock.wait.duration.max:
+      enabled: true
     mysql.joins:
       enabled: true
       attributes: []
@@ -240,6 +269,11 @@ reaggregate_set:
       enabled: true
     mysql.replica.sql_delay:
       enabled: true
+    mysql.replica.temp_table.open:
+      enabled: true
+    mysql.replica.thread.running:
+      enabled: true
+      attributes: []
     mysql.replica.time_behind_source:
       enabled: true
     mysql.row_locks:
@@ -360,6 +394,18 @@ none_set:
     mysql.index.io.wait.time:
       enabled: false
       attributes: ["operation","table","schema","index"]
+    mysql.innodb.data_file.io:
+      enabled: false
+      attributes: ["disk.io.direction"]
+    mysql.innodb.operation.pending:
+      enabled: false
+      attributes: ["operation"]
+    mysql.innodb.row_lock.wait.count:
+      enabled: false
+    mysql.innodb.row_lock.wait.duration.avg:
+      enabled: false
+    mysql.innodb.row_lock.wait.duration.max:
+      enabled: false
     mysql.joins:
       enabled: false
       attributes: ["kind"]
@@ -399,6 +445,11 @@ none_set:
       enabled: false
     mysql.replica.sql_delay:
       enabled: false
+    mysql.replica.temp_table.open:
+      enabled: false
+    mysql.replica.thread.running:
+      enabled: false
+      attributes: ["mysql.replica.thread.type","mysql.replica.channel.name"]
     mysql.replica.time_behind_source:
       enabled: false
     mysql.row_locks:
