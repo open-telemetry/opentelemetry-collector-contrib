@@ -31,6 +31,10 @@ type Config struct {
 	// all levels below the current
 	RetryInterval time.Duration `mapstructure:"retry_interval"`
 
+	// Condition is an optional user-defined rule that controls which downstream
+	// errors trigger failover. When omitted, all errors trigger failover.
+	Condition configoptional.Optional[ConditionsConfig] `mapstructure:"condition"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -43,5 +47,6 @@ func (c *Config) Validate() error {
 	if c.RetryInterval <= 0 {
 		return errInvalidRetryIntervals
 	}
+
 	return nil
 }

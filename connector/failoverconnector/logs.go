@@ -29,10 +29,14 @@ func newLogsRouter(provider consumerProvider[consumer.Logs], cfg *Config) (*logs
 func (f *logsRouter) Consume(ctx context.Context, ld plog.Logs) error {
 	select {
 	case <-f.notifyRetry:
-		if !f.sampleRetryConsumers(ctx, ld) {
+		ok, err := f.sampleRetryConsumers(ctx, ld)
+		// if unable to revive any connection, use the current pipeline again
+		if !ok {
 			return f.consumeByHealthyPipeline(ctx, ld)
 		}
-		return nil
+		// if connection was successful, propagate the error upstream
+		// it is possible for the error to be non-nil here
+		return err
 	default:
 		return f.consumeByHealthyPipeline(ctx, ld)
 	}
@@ -47,8 +51,11 @@ func (f *logsRouter) consumeByHealthyPipeline(ctx context.Context, ld plog.Logs)
 		}
 
 		if err := tc.ConsumeLogs(ctx, ld); err != nil {
-			f.reportConsumerError(idx)
-			continue
+			if f.shouldFailoverOnError(err) {
+				f.reportConsumerError(idx)
+				continue
+			}
+			return err
 		}
 
 		return nil
@@ -56,17 +63,20 @@ func (f *logsRouter) consumeByHealthyPipeline(ctx context.Context, ld plog.Logs)
 }
 
 // sampleRetryConsumers iterates through all unhealthy consumers to re-establish a healthy connection
-func (f *logsRouter) sampleRetryConsumers(ctx context.Context, ld plog.Logs) bool {
+// Return true if connection was successful
+func (f *logsRouter) sampleRetryConsumers(ctx context.Context, ld plog.Logs) (bool, error) {
 	stableIndex := f.pS.CurrentPipeline()
 	for i := range stableIndex {
 		consumer := f.getConsumerAtIndex(i)
 		err := consumer.ConsumeLogs(ctx, ld)
-		if err == nil {
+		// if the returned error is nil
+		// or not considered as failure - reset the pipeline to healthy
+		if err == nil || !f.shouldFailoverOnError(err) {
 			f.pS.ResetHealthyPipeline(i)
-			return true
+			return true, err
 		}
 	}
-	return false
+	return false, nil
 }
 
 type logsFailover struct {
