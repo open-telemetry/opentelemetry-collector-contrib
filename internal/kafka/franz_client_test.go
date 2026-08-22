@@ -750,7 +750,7 @@ func TestConfigureKgoKerberos(t *testing.T) {
 }
 
 func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER(t *testing.T) {
-	opt, err := configureKgoSASL(&configkafka.SASLConfig{
+	opt, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 		Mechanism: AWSMSKIAMOAUTHBEARER,
 		AWSMSK:    configkafka.AWSMSKConfig{Region: "us-west-2"},
 	}, componenttest.NewNopHost())
@@ -762,7 +762,7 @@ func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 	extID := component.MustNewID("oauth2client")
 
 	t.Run("missing_extension", func(t *testing.T) {
-		_, err := configureKgoSASL(&configkafka.SASLConfig{
+		_, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 			Mechanism:              OAUTHBEARER,
 			OAuthBearerTokenSource: extID,
 		}, componenttest.NewNopHost())
@@ -774,7 +774,7 @@ func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 		host := &mockHost{extensions: map[component.ID]component.Component{
 			extID: &mockTokenSource{token: "tok"},
 		}}
-		opt, err := configureKgoSASL(&configkafka.SASLConfig{
+		opt, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 			Mechanism:              OAUTHBEARER,
 			OAuthBearerTokenSource: extID,
 		}, host)
@@ -784,7 +784,7 @@ func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 }
 
 func TestConfigureKgoSASL_UnsupportedMechanism(t *testing.T) {
-	_, err := configureKgoSASL(&configkafka.SASLConfig{
+	_, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 		Mechanism: "BOGUS",
 	}, componenttest.NewNopHost())
 	require.ErrorContains(t, err, "unsupported SASL mechanism")
