@@ -104,7 +104,6 @@ func NewDimensionClient(options DimensionClientOptions) *DimensionClient {
 			DialContext: (&net.Dialer{
 				Timeout:   5 * time.Second,
 				KeepAlive: 30 * time.Second,
-				DualStack: true,
 			}).DialContext,
 			MaxConnsPerHost:     options.MaxConnsPerHost,
 			MaxIdleConns:        options.MaxIdleConns,
