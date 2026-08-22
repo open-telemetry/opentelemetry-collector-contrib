@@ -18,12 +18,10 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetricassert"
 	k8stest "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest"
 )
 
@@ -43,10 +41,7 @@ func getOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T
 }
 
 func TestE2E(t *testing.T) {
-	var expected pmetric.Metrics
 	expectedFile := filepath.Join("testdata", "e2e", "expected.yaml")
-	expected, err := golden.ReadMetrics(expectedFile)
-	require.NoError(t, err)
 
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
@@ -67,17 +62,20 @@ func TestE2E(t *testing.T) {
 	wantEntries := 10 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
 
-	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-		pmetrictest.IgnoreTimestamp(),
-		pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreScopeVersion(),
-		pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreMetricsOrder(),
-		pmetrictest.IgnoreScopeMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder(),
-		pmetrictest.IgnoreMetricValues(),
-	),
-	)
+	// Grab the latest metrics payload
+	actualMetrics := metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1]
+
+	// Normalize the dynamic scope version to empty string so it matches our expected.yaml
+	rms := actualMetrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		sms := rms.At(i).ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			sms.At(j).Scope().SetVersion("")
+		}
+	}
+
+	err = pmetricassert.AssertMetrics(expectedFile, actualMetrics)
+	require.NoError(t, err)
 }
 
 func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {
