@@ -104,6 +104,21 @@ $defs:
         type: string
       namespace:
         type: string
+      resource_tags:
+        description: ResourceTags restricts discovery to metrics whose dimensions reference AWS resources carrying the given tags. Because CloudWatch ListMetrics cannot filter by tag, matching resource ARNs are first resolved via the AWS resourcegroupstaggingapi (GetResources) and discovered metrics are then constrained to those resources. When empty, no tag-based filtering is applied.
+        type: array
+        items:
+          $ref: resource_tag_filter
+  resource_tag_filter:
+    description: 'ResourceTagFilter selects AWS resources by tag. Its semantics mirror the resourcegroupstaggingapi GetResources TagFilter: a resource matches when it carries a tag with the given Key and, if Values is non-empty, one of the listed Values. Multiple ResourceTagFilter entries are ANDed together, while the Values within a single entry are ORed.'
+    type: object
+    properties:
+      key:
+        type: string
+      values:
+        type: array
+        items:
+          type: string
   stream_config:
     description: StreamConfig represents the configuration for the log stream filtering
     type: object
