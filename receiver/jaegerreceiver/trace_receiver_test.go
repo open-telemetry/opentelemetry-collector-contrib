@@ -425,3 +425,14 @@ func sendToCollector(endpoint string, batch *jaegerthrift.Batch) error {
 	}
 	return nil
 }
+
+func TestAgentHandler_EmitZipkinBatch(t *testing.T) {
+	handler := &agentHandler{}
+	err := handler.EmitZipkinBatch(context.Background(), nil)
+	if err == nil {
+		t.Errorf("Expected an error, got nil")
+	}
+	if err.Error() != "unsupported receiver" {
+		t.Errorf("Expected 'unsupported receiver', got '%v'", err)
+	}
+}
