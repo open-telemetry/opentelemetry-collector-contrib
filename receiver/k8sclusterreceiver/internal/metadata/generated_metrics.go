@@ -3453,6 +3453,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.ContainerRuntimeVersion.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["container.runtime.version"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerRuntimeVersion.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.K8sClusterUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.cluster.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sClusterUID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sClusterUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.cluster.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sClusterUID.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.K8sContainerName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["k8s.container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerName.MetricsInclude)
 	}

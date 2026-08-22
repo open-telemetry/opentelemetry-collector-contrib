@@ -121,6 +121,8 @@ all_set:
       enabled: true
     container.runtime.version:
       enabled: true
+    k8s.cluster.uid:
+      enabled: true
     k8s.container.name:
       enabled: true
     k8s.container.status.last_terminated_reason:
@@ -334,6 +336,8 @@ reaggregate_set:
     container.runtime:
       enabled: true
     container.runtime.version:
+      enabled: true
+    k8s.cluster.uid:
       enabled: true
     k8s.container.name:
       enabled: true
@@ -549,6 +553,8 @@ none_set:
       enabled: false
     container.runtime.version:
       enabled: false
+    k8s.cluster.uid:
+      enabled: false
     k8s.container.name:
       enabled: false
     k8s.container.status.last_terminated_reason:
@@ -660,6 +666,10 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     container.runtime.version:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.cluster.uid:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -869,6 +879,10 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "container.runtime.version-val"
+    k8s.cluster.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.cluster.uid-val"
     k8s.container.name:
       enabled: true
       metrics_exclude:

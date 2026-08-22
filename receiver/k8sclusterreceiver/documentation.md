@@ -531,6 +531,7 @@ The number of load balancer ingress points (external IPs/hostnames) assigned to 
 | container.image.tag | The container image tag | Any Str | true | - | - |
 | container.runtime | The container runtime used by Kubernetes Node. | Any Str | false | - | - |
 | container.runtime.version | The version of container runtime used by Kubernetes Node. | Any Str | false | - | - |
+| k8s.cluster.uid | The Kubernetes cluster UID, derived from the kube-system namespace UID. When enabled, it is attached to all telemetry emitted by this receiver, and the collector needs the permission to get the kube-system namespace. | Any Str | false | - | - |
 | k8s.container.name | The k8s container name | Any Str | true | - | - |
 | k8s.container.status.last_terminated_reason | Last terminated reason of a container. | Any Str | false | - | - |
 | k8s.cronjob.name | The k8s CronJob name | Any Str | true | - | - |
