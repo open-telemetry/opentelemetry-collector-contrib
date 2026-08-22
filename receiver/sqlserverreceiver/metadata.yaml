@@ -227,6 +227,11 @@ attributes:
     description: The path prefix identifying the storage location of SQL Server database files.
     type: string
     requirement_level: recommended
+  sqlserver.health.check.type:
+    description: The connection health check being reported. `reachable` is a transport-level (pre-auth) check that the SQL Server endpoint accepts a TCP connection; `queryable` is an end-to-end check that the receiver can authenticate and execute a trivial query.
+    type: string
+    requirement_level: required
+    enum: [reachable, queryable]
   sqlserver.index.id:
     description: The identifier of the index.
     type: int
@@ -833,6 +838,20 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.health:
+    enabled: true
+    description: The connection health of the SQL Server target, reported per check as 1 (healthy) or 0 (unhealthy).
+    extended_documentation: >-
+      Emitted every collection interval so an unreachable or unauthenticated SQL Server surfaces as
+      data rather than as an absence of data. The `sqlserver.health.check.type` attribute distinguishes
+      `reachable` (transport-level, pre-auth) from `queryable` (authenticated end-to-end). `queryable=1` implies
+      `reachable=1`. This metric is only available when the receiver is configured to directly connect
+      to SQL Server.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [sqlserver.health.check.type]
   sqlserver.host.memory.limit:
     enabled: false
     description: Total physical memory available to SQL Server on the host.
