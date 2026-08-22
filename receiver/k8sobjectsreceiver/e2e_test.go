@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -61,6 +62,22 @@ func TestE2E(t *testing.T) {
 	require.NoError(t, err)
 
 	testID := uuid.NewString()[:8]
+
+	crdManifest, err := os.ReadFile(filepath.Join(testObjectsDir, "widget_crd.yaml"))
+	require.NoError(t, err)
+	crd, err := k8stest.CreateObject(k8sClient, crdManifest)
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, k8stest.DeleteObject(k8sClient, crd))
+	}()
+	require.Eventually(t, func() bool {
+		k8sClient.Mapper.Reset()
+		_, err := k8sClient.Mapper.RESTMapping(
+			schema.GroupKind{Group: "e2e.opentelemetry.io", Kind: "Widget"},
+			"v1",
+		)
+		return err == nil
+	}, time.Minute, time.Second)
 
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
@@ -116,6 +133,13 @@ func TestE2E(t *testing.T) {
 			objectAction:     create,
 			expectedFileName: "watch_namespaces.yaml",
 			timeoutMinutes:   2,
+		},
+		{
+			name:             "pull discovered custom resource",
+			objectFileNames:  []string{"widget.yaml", "widget_unlabeled.yaml"},
+			objectAction:     create,
+			expectedFileName: "pull_custom_resource.yaml",
+			timeoutMinutes:   1,
 		},
 	}
 

@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/k8s_objects
+note: Add opt-in discovery and periodic collection of selected CRD-backed custom resources.
+issues: [49943]
+subtext:
+change_logs: [user]
