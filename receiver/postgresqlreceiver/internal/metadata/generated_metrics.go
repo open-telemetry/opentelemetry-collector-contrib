@@ -351,7 +351,7 @@ var MapAttributeWalOperationLag = map[string]AttributeWalOperationLag{
 var MetricsInfo = metricsInfo{
 	PostgresqlBackends: metricInfo{
 		Name:       "postgresql.backends",
-		Attributes: []string{"db.namespace"},
+		Attributes: []string{"db.namespace", "postgresql.backend_type", "postgresql.state", "postgresql.wait_event_type"},
 	},
 	PostgresqlBgwriterBuffersAllocated: metricInfo{
 		Name: "postgresql.bgwriter.buffers.allocated",
@@ -579,7 +579,7 @@ type metricPostgresqlBackends struct {
 // init fills postgresql.backends metric with initial data.
 func (m *metricPostgresqlBackends) init() {
 	m.data.SetName("postgresql.backends")
-	m.data.SetDescription("The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.")
+	m.data.SetDescription("The number of backend processes associated with each database, broken down by backend type, connection state and wait event type. Counts all backend types, including non-client backends such as autovacuum and parallel workers.")
 	m.data.SetUnit("1")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -588,7 +588,7 @@ func (m *metricPostgresqlBackends) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricPostgresqlBackends) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
+func (m *metricPostgresqlBackends) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, postgresqlBackendTypeAttributeValue string, postgresqlStateAttributeValue string, postgresqlWaitEventTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -598,6 +598,15 @@ func (m *metricPostgresqlBackends) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, PostgresqlBackendsMetricAttributeKeyDbNamespace) {
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType) {
+		dp.Attributes().PutStr("postgresql.backend_type", postgresqlBackendTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlBackendsMetricAttributeKeyPostgresqlState) {
+		dp.Attributes().PutStr("postgresql.state", postgresqlStateAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType) {
+		dp.Attributes().PutStr("postgresql.wait_event_type", postgresqlWaitEventTypeAttributeValue)
 	}
 
 	var s string
@@ -4664,8 +4673,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordPostgresqlBackendsDataPoint adds a data point to postgresql.backends metric.
-func (mb *MetricsBuilder) RecordPostgresqlBackendsDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
-	mb.metricPostgresqlBackends.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlBackendsDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, postgresqlBackendTypeAttributeValue string, postgresqlStateAttributeValue string, postgresqlWaitEventTypeAttributeValue string) {
+	mb.metricPostgresqlBackends.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, postgresqlBackendTypeAttributeValue, postgresqlStateAttributeValue, postgresqlWaitEventTypeAttributeValue)
 }
 
 // RecordPostgresqlBgwriterBuffersAllocatedDataPoint adds a data point to postgresql.bgwriter.buffers.allocated metric.
