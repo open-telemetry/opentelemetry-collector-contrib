@@ -667,6 +667,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "20115442"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "40230884"
                   attributes:
                     - key: aggregation
@@ -1225,6 +1232,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "20115442"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "40230884"
                   attributes:
                     - key: aggregation
