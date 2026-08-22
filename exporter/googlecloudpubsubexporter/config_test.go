@@ -70,8 +70,26 @@ func TestTopicConfigValidation(t *testing.T) {
 	assert.Error(t, c.Validate())
 	c.Topic = "projects/my-project/subscriptions/my-subscription"
 	assert.Error(t, c.Validate())
+	c.Topic = "projects/my-project-/topics/my-topic"
+	assert.Error(t, c.Validate())
 	c.Topic = "projects/my-project/topics/my-topic"
 	assert.NoError(t, c.Validate())
+
+	// Domain-scoped project IDs (legacy Google Cloud feature).
+	c.Topic = "projects/example.com:my-project/topics/my-topic"
+	assert.NoError(t, c.Validate())
+	c.Topic = "projects/my-project:sub-project/topics/my-topic"
+	assert.NoError(t, c.Validate())
+
+	// Invalid domain-scoped project IDs.
+	c.Topic = "projects/:my-project/topics/my-topic"
+	assert.Error(t, c.Validate())
+	c.Topic = "projects/my-project:/topics/my-topic"
+	assert.Error(t, c.Validate())
+	c.Topic = "projects/.my-project/topics/my-topic"
+	assert.Error(t, c.Validate())
+	c.Topic = "projects/my-project./topics/my-topic"
+	assert.Error(t, c.Validate())
 }
 
 func TestCompressionConfigValidation(t *testing.T) {
