@@ -76,6 +76,16 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    loadbalancer_randomness_tracestate_unparseable:
+      enabled: true
+      stability: development
+      description: Number of traces that fell back to trace ID randomness because their tracestate had a parse error and no valid rv could be recovered. Counted once per trace per batch (the first span resolved for the trace), not per span. Parse errors where a valid rv survives are not counted, as routing still uses the rv.
+      extended_documentation: Only produced when routing_key is "randomness".
+      optional: true
+      unit: "{traces}"
+      sum:
+        value_type: int
+        monotonic: true
 
 tests:
   config:

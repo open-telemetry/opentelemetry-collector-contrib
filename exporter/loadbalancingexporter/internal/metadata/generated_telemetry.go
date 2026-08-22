@@ -22,14 +22,15 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                         metric.Meter
-	mu                            sync.Mutex
-	registrations                 []metric.Registration
-	LoadbalancerBackendLatency    metric.Int64Histogram
-	LoadbalancerBackendOutcome    metric.Int64Counter
-	LoadbalancerNumBackendUpdates metric.Int64Counter
-	LoadbalancerNumBackends       metric.Int64Gauge
-	LoadbalancerNumResolutions    metric.Int64Counter
+	meter                                       metric.Meter
+	mu                                          sync.Mutex
+	registrations                               []metric.Registration
+	LoadbalancerBackendLatency                  metric.Int64Histogram
+	LoadbalancerBackendOutcome                  metric.Int64Counter
+	LoadbalancerNumBackendUpdates               metric.Int64Counter
+	LoadbalancerNumBackends                     metric.Int64Gauge
+	LoadbalancerNumResolutions                  metric.Int64Counter
+	LoadbalancerRandomnessTracestateUnparseable metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -90,6 +91,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_loadbalancer_num_resolutions",
 		metric.WithDescription("Number of times the resolver has triggered new resolutions. [Development]"),
 		metric.WithUnit("{resolutions}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.LoadbalancerRandomnessTracestateUnparseable, err = builder.meter.Int64Counter(
+		"otelcol_loadbalancer_randomness_tracestate_unparseable",
+		metric.WithDescription("Number of traces that fell back to trace ID randomness because their tracestate had a parse error and no valid rv could be recovered. Counted once per trace per batch (the first span resolved for the trace), not per span. Parse errors where a valid rv survives are not counted, as routing still uses the rv. [Development]"),
+		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

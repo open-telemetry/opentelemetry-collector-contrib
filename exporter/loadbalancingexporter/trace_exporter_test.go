@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"net"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -26,8 +27,12 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadatatest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 func TestNewTracesExporter(t *testing.T) {
@@ -275,6 +280,167 @@ func TestConsumeTracesByID_MultipleTraceIDs(t *testing.T) {
 		{3}: 1,
 		{4}: 1,
 	}, spansPerTID)
+}
+
+func TestRandomnessIdentifier(t *testing.T) {
+	p, err := newTracesExporter(exportertest.NewNopSettings(metadata.Type), randomnessConfig())
+	require.NoError(t, err)
+	require.Equal(t, randomnessRouting, p.routingKey)
+
+	tid := pcommon.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+	fallback := sampling.TraceIDToRandomness(tid).RValue()
+
+	for _, tt := range []struct {
+		desc       string
+		traceState string
+		expected   string
+	}{
+		{"explicit rv", "ot=rv:aabbccddeeff00", "aabbccddeeff00"},
+		{"rv with threshold", "ot=th:8;rv:aabbccddeeff00", "aabbccddeeff00"},
+		{"no tracestate", "", fallback},
+		{"vendor tracestate without rv", "vendor=value", fallback},
+		{"ot without rv", "ot=th:8", fallback},
+		{"unparseable rv", "ot=rv:zz", fallback},
+		// Value-level parse errors keep the members that did parse, so a
+		// valid rv survives a malformed sibling th.
+		{"valid rv beside malformed th", "ot=rv:aabbccddeeff00;th:notathreshold", "aabbccddeeff00"},
+		// Header-level W3C failures discard the whole tracestate up front,
+		// including a valid rv, so these fall back to trace ID randomness.
+		{"valid rv beside uppercase vendor key", "ot=rv:aabbccddeeff00,Vendor=up", fallback},
+		{"valid rv in oversize header", "ot=rv:aabbccddeeff00,vendor=" + strings.Repeat("x", 1100), fallback},
+		// The 32-member limit aborts the scan where it is hit, keeping the
+		// members already parsed, so an rv before the cutoff survives.
+		{"valid rv before member limit", "ot=rv:aabbccddeeff00," + strings.Repeat("v=x,", 34) + "vend=x", "aabbccddeeff00"},
+	} {
+		t.Run(tt.desc, func(t *testing.T) {
+			span := ptrace.NewSpan()
+			span.SetTraceID(tid)
+			span.TraceState().FromRaw(tt.traceState)
+			assert.Equal(t, tt.expected, string(p.randomnessIdentifier(t.Context(), span)))
+		})
+	}
+}
+
+// The unparseable metric counts traces that fell back to trace ID randomness because of a
+// parse error, not every parse error: a recovered rv routes the trace and is not counted.
+func TestRandomnessIdentifierUnparseableMetric(t *testing.T) {
+	testTel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, testTel.Shutdown(t.Context())) }()
+
+	p, err := newTracesExporter(metadatatest.NewSettings(testTel), randomnessConfig())
+	require.NoError(t, err)
+
+	span := ptrace.NewSpan()
+	span.SetTraceID(pcommon.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+
+	// a recovered rv beside a malformed th routes the trace, no fallback
+	span.TraceState().FromRaw("ot=rv:aabbccddeeff00;th:notathreshold")
+	p.randomnessIdentifier(t.Context(), span)
+	// a valid tracestate without an rv falls back, but had no parse error
+	span.TraceState().FromRaw("vendor=value")
+	p.randomnessIdentifier(t.Context(), span)
+	// a header-level failure discards the rv and falls back, counted
+	span.TraceState().FromRaw("ot=rv:aabbccddeeff00,Vendor=up")
+	p.randomnessIdentifier(t.Context(), span)
+
+	metadatatest.AssertEqualLoadbalancerRandomnessTracestateUnparseable(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+}
+
+func TestConsumeTracesByRandomness_SharedRVCoLocates(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	// ConsumeTraces runs the export loop synchronously, so no locking is needed here.
+	received := map[string]ptrace.Traces{}
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		te := &mockTracesExporter{Component: mockComponent{}}
+		te.ConsumeTracesFn = func(_ context.Context, td ptrace.Traces) error {
+			got, ok := received[endpoint]
+			if !ok {
+				got = ptrace.NewTraces()
+				received[endpoint] = got
+			}
+			td.ResourceSpans().MoveAndAppendTo(got.ResourceSpans())
+			return nil
+		}
+		return te, nil
+	}
+
+	endpoints := []string{"endpoint-1", "endpoint-2", "endpoint-3"}
+	cfg := randomnessConfig()
+	cfg.Resolver = ResolverSettings{
+		Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
+	}
+
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newTracesExporter(ts, cfg)
+	require.NoError(t, err)
+	require.Equal(t, randomnessRouting, p.routingKey)
+
+	lb.addMissingExporters(t.Context(), endpoints)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Distinct low-7-byte suffixes so each trace has its own trace ID randomness;
+	// with shared randomness the assertions below could pass even if the rv were
+	// ignored and every trace routed by trace ID.
+	const sharedRV = "aabbccddeeff00"
+	grouped1 := pcommon.TraceID{1, 0, 0, 0, 0, 0, 0, 0, 0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77}
+	grouped2 := pcommon.TraceID{2, 0, 0, 0, 0, 0, 0, 0, 0, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee}
+	ungrouped := pcommon.TraceID{3, 0, 0, 0, 0, 0, 0, 0, 0, 0xde, 0xad, 0xbe, 0xef, 0x01, 0x02, 0x01}
+
+	td := ptrace.NewTraces()
+	ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+	addSpan := func(tid pcommon.TraceID, traceState string) {
+		s := ss.Spans().AppendEmpty()
+		s.SetTraceID(tid)
+		s.TraceState().FromRaw(traceState)
+	}
+	// two distinct traces sharing an rv, interleaved with a trace without one
+	addSpan(grouped1, "ot=rv:"+sharedRV)
+	addSpan(ungrouped, "")
+	addSpan(grouped2, "ot=rv:"+sharedRV)
+	addSpan(grouped1, "ot=rv:"+sharedRV)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	groupedEndpoint := endpointWithPort(lb.ring.endpointFor([]byte(sharedRV)))
+	ungroupedEndpoint := endpointWithPort(lb.ring.endpointFor([]byte(sampling.TraceIDToRandomness(ungrouped).RValue())))
+	// The endpoints must differ for the assertions below to distinguish rv routing
+	// from trace ID fallback; pick a different ungrouped suffix if this ever fails.
+	require.NotEqual(t, groupedEndpoint, ungroupedEndpoint)
+
+	spansPerEndpointTID := map[string]map[pcommon.TraceID]int{}
+	for endpoint, got := range received {
+		perTID := map[pcommon.TraceID]int{}
+		spansPerEndpointTID[endpoint] = perTID
+		for _, rs := range got.ResourceSpans().All() {
+			for _, ss := range rs.ScopeSpans().All() {
+				for _, span := range ss.Spans().All() {
+					perTID[span.TraceID()]++
+				}
+			}
+		}
+	}
+
+	// both traces sharing the rv landed on the backend for that rv
+	assert.Equal(t, 2, spansPerEndpointTID[groupedEndpoint][grouped1])
+	assert.Equal(t, 1, spansPerEndpointTID[groupedEndpoint][grouped2])
+	// the trace without an rv landed on the backend for its trace ID randomness
+	assert.Equal(t, 1, spansPerEndpointTID[ungroupedEndpoint][ungrouped])
 }
 
 // This test validates that exporter is can concurrently change the endpoints while consuming traces.
@@ -1039,6 +1205,15 @@ func serviceBasedRoutingConfig() *Config {
 	}
 }
 
+func randomnessConfig() *Config {
+	return &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}}),
+		},
+		RoutingKey: "randomness",
+	}
+}
+
 type mockTracesExporter struct {
 	component.Component
 	ConsumeTracesFn func(ctx context.Context, td ptrace.Traces) error
@@ -1129,7 +1304,7 @@ func TestConsumeTracesByID_NoConsumeWGLeakOnResolveError(t *testing.T) {
 	spans.AppendEmpty().SetTraceID(tGood)    // routes to "good": consumeWG.Add(1)
 	spans.AppendEmpty().SetTraceID(tMissing) // resolve error returns mid-batch
 
-	require.Error(t, e.consumeTracesByID(t.Context(), td))
+	require.Error(t, e.consumeTracesPerSpan(t.Context(), td, spanTraceIDIdentifier))
 	require.True(t, waitGroupReturns(&good.consumeWG, time.Second),
 		"consumeWG leaked on resolve error: Shutdown's Wait() would hang")
 }
