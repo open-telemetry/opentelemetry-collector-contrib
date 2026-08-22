@@ -1,14 +1,11 @@
+{{/* Legacy query sample template for MySQL <8.0 and MariaDB. Keep blocking columns in sync with querySample.tmpl. */}}
 /* otel-collector-ignore */ SELECT
     thread.processlist_id AS session_id,
     thread.thread_id AS internal_thread_id,
     COALESCE(thread.processlist_user, '') AS session_user,
-    COALESCE(
-        {{- if .supportsProcesslist}} pl.HOST,{{- end}}
-        thread.processlist_host, ''
-    ) AS client_address,
+    COALESCE(thread.processlist_host, '') AS client_address,
     -- client_port is parsed from client_address in Go using net.SplitHostPort,
     -- which handles both IPv4 (host:port) and IPv6 ([::1]:port) formats correctly.
-    -- pl.HOST contains "host:port" for TCP/IP connections on MySQL 8.0.22+.
     0 AS client_port,
     COALESCE(thread.processlist_db, '') AS current_database,
     COALESCE(thread.processlist_command, '') AS session_command,
@@ -74,25 +71,14 @@
     -- on MySQL 5.7 and MariaDB the value is VARCHAR, so CONVERT is a no-op.
     -- utf8mb4 is used instead of the deprecated utf8 alias.
     COALESCE(CONVERT(uvt.VARIABLE_VALUE USING utf8mb4), '') AS traceparent,
-    -- Blocking session attributes (InnoDB row-level locks + MDL)
-    CASE
-        WHEN blk.blocking_pids IS NOT NULL THEN 'row'
-        WHEN mdl_blocking_thread.processlist_id IS NOT NULL THEN 'metadata'
-        ELSE ''
-    END AS blocking_lock_level,
-    COALESCE(blk.blocking_pids, CAST(mdl_blocking_thread.processlist_id AS CHAR), '') AS blocking_pids,
-    CASE
-        WHEN blk.trx_wait_started IS NOT NULL THEN
-            DATE_FORMAT(CONVERT_TZ(blk.trx_wait_started, @@session.time_zone, '+00:00'), '%Y-%m-%dT%TZ')
-        WHEN mdl_wait_event.TIMER_WAIT IS NOT NULL THEN
-            DATE_FORMAT(DATE_SUB(UTC_TIMESTAMP(), INTERVAL (mdl_wait_event.TIMER_WAIT / 1000000000000) SECOND), '%Y-%m-%dT%TZ')
+    -- Blocking session attributes (InnoDB row-level locks only; no MDL on legacy path)
+    CASE WHEN blk.blocking_pids IS NOT NULL THEN 'row' ELSE '' END AS blocking_lock_level,
+    COALESCE(blk.blocking_pids, '') AS blocking_pids,
+    CASE WHEN blk.trx_wait_started IS NOT NULL
+        THEN DATE_FORMAT(CONVERT_TZ(blk.trx_wait_started, @@session.time_zone, '+00:00'), '%Y-%m-%dT%TZ')
         ELSE ''
     END AS blocking_start_time,
-    CASE
-        WHEN blk.wait_duration_seconds IS NOT NULL THEN blk.wait_duration_seconds
-        WHEN mdl_wait_event.TIMER_WAIT IS NOT NULL THEN mdl_wait_event.TIMER_WAIT / 1000000000000
-        ELSE 0
-    END AS blocking_wait_duration,
+    COALESCE(blk.wait_duration_seconds, 0) AS blocking_wait_duration,
     COALESCE(blk.requested_lock_mode, '') AS blocking_lock_mode,
     COALESCE(blk.requested_lock_type, '') AS blocking_lock_type,
     COALESCE(blk.wait_resource, '') AS blocking_wait_resource,
@@ -100,62 +86,34 @@
         THEN DATE_FORMAT(CONVERT_TZ(blk.transaction_started, @@session.time_zone, '+00:00'), '%Y-%m-%dT%TZ')
         ELSE ''
     END AS blocking_transaction_start,
-    COALESCE(mdl_waiting.OBJECT_TYPE, '') AS mdl_object_type,
-    COALESCE(mdl_waiting.OBJECT_SCHEMA, '') AS mdl_object_schema,
-    COALESCE(mdl_waiting.OBJECT_NAME, '') AS mdl_object_name,
-    COALESCE(mdl_waiting.LOCK_TYPE, '') AS mdl_lock_type
+    '' AS mdl_object_type,
+    '' AS mdl_object_schema,
+    '' AS mdl_object_name,
+    '' AS mdl_lock_type
 FROM
     performance_schema.threads AS thread
     LEFT JOIN performance_schema.events_statements_current AS statement ON statement.thread_id = thread.thread_id
     LEFT JOIN performance_schema.events_waits_current AS wait ON wait.thread_id = thread.thread_id
     -- Extension: Join user_variables_by_thread to get @traceparent.
-    -- Available on MySQL 5.7.3+ and MariaDB 10.5.2+; this template is used for both.
-    -- Both MySQL and MariaDB store user variable names in lowercase in VARIABLE_NAME
-    -- regardless of how the client spelled them, so '= traceparent' matches any case.
     LEFT JOIN performance_schema.user_variables_by_thread AS uvt ON uvt.thread_id = thread.thread_id AND uvt.VARIABLE_NAME = 'traceparent'
-    {{- if .supportsProcesslist}}
-    -- performance_schema.processlist.HOST returns "host:port" for TCP/IP connections,
-    -- enabling population of client.port. Available MySQL 8.0.22+; lock-free unlike
-    -- information_schema.PROCESSLIST (which was removed in MySQL 9.0).
-    LEFT JOIN performance_schema.processlist AS pl ON pl.ID = thread.PROCESSLIST_ID
-    {{- end}}
-    -- InnoDB row-level lock blocking: pre-aggregated derived table (one row per waiting thread)
+    -- InnoDB row-level lock blocking via legacy information_schema tables
     LEFT JOIN (
         SELECT
             r_trx.trx_mysql_thread_id AS waiting_thread_id,
             GROUP_CONCAT(DISTINCT b.trx_mysql_thread_id ORDER BY b.trx_mysql_thread_id SEPARATOR ',') AS blocking_pids,
             r_trx.trx_wait_started,
             TIMESTAMPDIFF(SECOND, r_trx.trx_wait_started, NOW()) AS wait_duration_seconds,
-            MIN(dl_req.LOCK_MODE) AS requested_lock_mode,
-            MIN(dl_req.LOCK_TYPE) AS requested_lock_type,
-            MIN(CONCAT(dl_req.OBJECT_SCHEMA, '.', dl_req.OBJECT_NAME, IFNULL(CONCAT('/', dl_req.INDEX_NAME), ''), IFNULL(CONCAT('/', dl_req.LOCK_DATA), ''))) AS wait_resource,
+            MIN(rl.lock_mode) AS requested_lock_mode,
+            MIN(rl.lock_type) AS requested_lock_type,
+            MIN(CONCAT(REPLACE(bl.lock_table, '`', ''), IFNULL(CONCAT('/', bl.lock_index), ''), IFNULL(CONCAT('/', bl.lock_data), ''))) AS wait_resource,
             r_trx.trx_started AS transaction_started
-        FROM performance_schema.data_lock_waits w
-        JOIN information_schema.innodb_trx r_trx
-            ON w.REQUESTING_ENGINE_TRANSACTION_ID = r_trx.trx_id
-        JOIN information_schema.innodb_trx b
-            ON w.BLOCKING_ENGINE_TRANSACTION_ID = b.trx_id
-        JOIN performance_schema.data_locks dl_req
-            ON w.REQUESTING_ENGINE_LOCK_ID = dl_req.ENGINE_LOCK_ID
+        FROM information_schema.innodb_lock_waits lw
+        JOIN information_schema.innodb_trx r_trx ON lw.requesting_trx_id = r_trx.trx_id
+        JOIN information_schema.innodb_trx b ON lw.blocking_trx_id = b.trx_id
+        JOIN information_schema.innodb_locks bl ON lw.blocking_lock_id = bl.lock_id
+        JOIN information_schema.innodb_locks rl ON lw.requested_lock_id = rl.lock_id
         GROUP BY r_trx.trx_mysql_thread_id, r_trx.trx_wait_started, r_trx.trx_started
     ) blk ON blk.waiting_thread_id = thread.processlist_id
-    -- Metadata lock (MDL) blocking (MySQL 8.0+ only)
-    LEFT JOIN performance_schema.metadata_locks mdl_waiting
-        ON thread.thread_id = mdl_waiting.OWNER_THREAD_ID
-        AND mdl_waiting.LOCK_STATUS = 'PENDING'
-    LEFT JOIN performance_schema.metadata_locks mdl_blocking
-        ON mdl_waiting.OBJECT_TYPE = mdl_blocking.OBJECT_TYPE
-        AND mdl_waiting.OBJECT_SCHEMA <=> mdl_blocking.OBJECT_SCHEMA
-        AND mdl_waiting.OBJECT_NAME <=> mdl_blocking.OBJECT_NAME
-        AND mdl_blocking.LOCK_STATUS = 'GRANTED'
-        AND mdl_waiting.OWNER_THREAD_ID != mdl_blocking.OWNER_THREAD_ID
-    LEFT JOIN performance_schema.threads mdl_blocking_thread
-        ON mdl_blocking.OWNER_THREAD_ID = mdl_blocking_thread.thread_id
-    -- MDL wait timing: derive start_time from the active MDL wait event duration
-    LEFT JOIN performance_schema.events_waits_current mdl_wait_event
-        ON mdl_wait_event.THREAD_ID = thread.thread_id
-        AND mdl_wait_event.EVENT_NAME = 'wait/lock/metadata/sql/mdl'
-        AND mdl_wait_event.END_EVENT_ID IS NULL
 WHERE
     thread.processlist_state IS NOT NULL
     AND thread.processlist_id != CONNECTION_ID()
@@ -177,20 +135,9 @@ WHERE
         thread.processlist_command NOT IN ('Sleep', 'Daemon')
         OR thread.processlist_id IN (
             SELECT DISTINCT b.trx_mysql_thread_id
-            FROM performance_schema.data_lock_waits w
+            FROM information_schema.innodb_lock_waits lw
             JOIN information_schema.innodb_trx b
-                ON w.BLOCKING_ENGINE_TRANSACTION_ID = b.trx_id
-        )
-        OR thread.thread_id IN (
-            SELECT mdl_granted.OWNER_THREAD_ID
-            FROM performance_schema.metadata_locks AS mdl_pending
-            JOIN performance_schema.metadata_locks AS mdl_granted
-                ON mdl_pending.OBJECT_TYPE = mdl_granted.OBJECT_TYPE
-                AND mdl_pending.OBJECT_SCHEMA <=> mdl_granted.OBJECT_SCHEMA
-                AND mdl_pending.OBJECT_NAME <=> mdl_granted.OBJECT_NAME
-                AND mdl_granted.LOCK_STATUS = 'GRANTED'
-                AND mdl_pending.LOCK_STATUS = 'PENDING'
-                AND mdl_pending.OWNER_THREAD_ID != mdl_granted.OWNER_THREAD_ID
+                ON lw.blocking_trx_id = b.trx_id
         )
     )
 LIMIT {{ .limit }}
