@@ -1295,6 +1295,11 @@ func (eb *K8sStatefulsetMetricsBuilder) RecordK8sStatefulsetDesiredPodsDataPoint
 	eb.mb.metricK8sStatefulsetDesiredPods.recordDataPoint(eb.mb.startTime, ts, val)
 }
 
+// RecordK8sStatefulsetPodAvailableDataPoint records a data point for the k8s.statefulset.pod.available metric.
+func (eb *K8sStatefulsetMetricsBuilder) RecordK8sStatefulsetPodAvailableDataPoint(ts pcommon.Timestamp, val int64) {
+	eb.mb.metricK8sStatefulsetPodAvailable.recordDataPoint(eb.mb.startTime, ts, val)
+}
+
 // RecordK8sStatefulsetReadyPodsDataPoint records a data point for the k8s.statefulset.ready_pods metric.
 func (eb *K8sStatefulsetMetricsBuilder) RecordK8sStatefulsetReadyPodsDataPoint(ts pcommon.Timestamp, val int64) {
 	eb.mb.metricK8sStatefulsetReadyPods.recordDataPoint(eb.mb.startTime, ts, val)
