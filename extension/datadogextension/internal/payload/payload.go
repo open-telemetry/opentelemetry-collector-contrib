@@ -33,7 +33,7 @@ type OtelCollector struct {
 	FullComponents              []CollectorModule  `json:"full_components"`
 	ActiveComponents            []ServiceComponent `json:"active_components"`
 	BuildInfo                   CustomBuildInfo    `json:"build_info"`
-	FullConfiguration           string             `json:"full_configuration"` // JSON passed as string
+	FullConfiguration           string             `json:"full_configuration"` // YAML passed as string
 	HealthStatus                string             `json:"health_status"`      // JSON passed as string
 	CollectorResourceAttributes map[string]string  `json:"collector_resource_attributes"`
 	CollectorDeploymentType     string             `json:"collector_deployment_type"`     // deployment type: gateway, daemonset, or unknown

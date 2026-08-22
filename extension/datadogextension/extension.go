@@ -121,8 +121,7 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 		Version:     e.info.build.Version,
 	}
 
-	// Get the full collector configuration as a flattened JSON string
-	fullConfig := componentchecker.DataToFlattenedJSONString(e.configs.collector.ToStringMap())
+	fullConfig := componentchecker.DataToYAMLString(e.configs.collector.ToStringMap())
 
 	// Prepare the base payload
 	otelCollectorPayload := payload.PrepareOtelCollectorMetadata(
