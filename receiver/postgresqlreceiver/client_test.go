@@ -166,3 +166,117 @@ func TestGetExecutionTimeStats(t *testing.T) {
 		})
 	}
 }
+
+func TestLockQueries(t *testing.T) {
+	// Both queries outer-join pg_class to keep non-relation targets, and split on
+	// pg_locks.database so a lock is reported exactly once.
+	const databaseLocksSQL = "SELECT COALESCE(relname, '') AS relation, mode, locktype,COUNT(*) " +
+		"AS locks FROM pg_locks " +
+		"LEFT JOIN pg_class ON pg_locks.relation = pg_class.oid " +
+		"WHERE pg_locks.database = (SELECT oid FROM pg_database WHERE datname = current_database()) " +
+		"GROUP BY relname, mode, locktype;"
+	const serverScopedLocksSQL = "SELECT COALESCE(relname, '') AS relation, mode, locktype,COUNT(*) " +
+		"AS locks FROM pg_locks " +
+		"LEFT JOIN pg_class ON pg_locks.relation = pg_class.oid " +
+		"WHERE pg_locks.database IS NULL " +
+		"OR (pg_locks.database = 0 AND (pg_locks.relation IS NULL OR pg_class.relisshared)) " +
+		"GROUP BY relname, mode, locktype;"
+
+	columns := []string{"relation", "mode", "locktype", "locks"}
+
+	tests := []struct {
+		name        string
+		serverScope bool
+		rows        *sqlmock.Rows
+		queryErr    error
+		expected    []databaseLocks
+		wantErr     bool
+	}{
+		{
+			name: "database locks keep relation names and non-relation targets",
+			rows: sqlmock.NewRows(columns).
+				AddRow("pg_class", "AccessShareLock", "relation", 2).
+				// COALESCE turns a non-relation target into an empty relation.
+				AddRow("", "ExclusiveLock", "advisory", 1).
+				AddRow("", "ShareUpdateExclusiveLock", "object", 1),
+			expected: []databaseLocks{
+				{relation: "pg_class", mode: "AccessShareLock", lockType: "relation", locks: 2},
+				{relation: "", mode: "ExclusiveLock", lockType: "advisory", locks: 1},
+				{relation: "", mode: "ShareUpdateExclusiveLock", lockType: "object", locks: 1},
+			},
+		},
+		{
+			name:        "server scoped locks report transaction id targets",
+			serverScope: true,
+			rows: sqlmock.NewRows(columns).
+				AddRow("pg_database", "AccessShareLock", "relation", 1).
+				AddRow("", "ExclusiveLock", "transactionid", 3).
+				AddRow("", "ExclusiveLock", "virtualxid", 4),
+			expected: []databaseLocks{
+				{relation: "pg_database", mode: "AccessShareLock", lockType: "relation", locks: 1},
+				{relation: "", mode: "ExclusiveLock", lockType: "transactionid", locks: 3},
+				{relation: "", mode: "ExclusiveLock", lockType: "virtualxid", locks: 4},
+			},
+		},
+		{
+			name:        "distinct modes on the same lock type stay separate",
+			serverScope: true,
+			rows: sqlmock.NewRows(columns).
+				AddRow("", "ExclusiveLock", "transactionid", 1).
+				AddRow("", "ShareLock", "transactionid", 2),
+			expected: []databaseLocks{
+				{relation: "", mode: "ExclusiveLock", lockType: "transactionid", locks: 1},
+				{relation: "", mode: "ShareLock", lockType: "transactionid", locks: 2},
+			},
+		},
+		{
+			name:     "query error is wrapped",
+			queryErr: errors.New("permission denied for table pg_locks"),
+			expected: nil,
+			wantErr:  true,
+		},
+		{
+			name:        "a NULL relation does not drop the remaining rows",
+			serverScope: true,
+			// COALESCE means the driver should never hand us a NULL relation, but a
+			// scan failure must not discard the rows that did scan cleanly.
+			rows: sqlmock.NewRows(columns).
+				AddRow(nil, "ExclusiveLock", "transactionid", 1).
+				AddRow("", "ExclusiveLock", "virtualxid", 2),
+			expected: []databaseLocks{
+				{relation: "", mode: "ExclusiveLock", lockType: "virtualxid", locks: 2},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+			require.NoError(t, err)
+			defer db.Close()
+
+			client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+
+			expectedSQL, queryLocks := databaseLocksSQL, client.getDatabaseLocks
+			if tc.serverScope {
+				expectedSQL, queryLocks = serverScopedLocksSQL, client.getServerScopedLocks
+			}
+
+			if tc.queryErr != nil {
+				mock.ExpectQuery(expectedSQL).WillReturnError(tc.queryErr)
+			} else {
+				mock.ExpectQuery(expectedSQL).WillReturnRows(tc.rows)
+			}
+
+			locks, err := queryLocks(t.Context())
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, tc.expected, locks)
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}

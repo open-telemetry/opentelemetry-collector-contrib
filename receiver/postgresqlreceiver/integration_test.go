@@ -410,6 +410,172 @@ func TestExplainQueryParamCount(t *testing.T) {
 	}
 }
 
+// TestLockCollectionIncludesNonRelationTargets asserts that targets which are not
+// relations are reported, each in the bucket matching its pg_locks.database.
+func TestLockCollectionIncludesNonRelationTargets(t *testing.T) {
+	ci, err := testcontainers.GenericContainer(
+		t.Context(),
+		testcontainers.GenericContainerRequest{
+			ProviderType: testcontainers.ProviderPodman,
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
+				// Needed for the prepared transaction below.
+				Cmd: []string{"-c", "max_prepared_transactions=10"},
+				Env: map[string]string{
+					"POSTGRES_USER":     "root",
+					"POSTGRES_PASSWORD": "otel",
+					"POSTGRES_DB":       "otel",
+				},
+				Files: []testcontainers.ContainerFile{{
+					HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
+					ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+					FileMode:          700,
+				}},
+				ExposedPorts: []string{postgresqlPort},
+				WaitingFor: wait.ForListeningPort(postgresqlPort).
+					WithStartupTimeout(2 * time.Minute),
+			},
+		},
+	)
+	require.NoError(t, err)
+
+	err = ci.Start(t.Context())
+	require.NoError(t, err)
+	defer testcontainers.CleanupContainer(t, ci)
+
+	p, err := ci.MappedPort(t.Context(), postgresqlPort)
+	require.NoError(t, err)
+
+	lockDB, err := sql.Open("postgres", fmt.Sprintf("postgres://root:otel@localhost:%s/otel?sslmode=disable", p.Port()))
+	require.NoError(t, err)
+	defer lockDB.Close()
+
+	// A prepared transaction holds a transactionid lock with a NULL database.
+	prepConn, err := lockDB.Conn(t.Context())
+	require.NoError(t, err)
+	_, err = prepConn.ExecContext(t.Context(), "BEGIN")
+	require.NoError(t, err)
+	_, err = prepConn.ExecContext(t.Context(), "INSERT INTO table1 (id) VALUES (42)")
+	require.NoError(t, err)
+	_, err = prepConn.ExecContext(t.Context(), "PREPARE TRANSACTION 'otel_non_relation_locks'")
+	require.NoError(t, err)
+	require.NoError(t, prepConn.Close())
+	defer func() {
+		_, rollbackErr := lockDB.ExecContext(t.Context(), "ROLLBACK PREPARED 'otel_non_relation_locks'")
+		assert.NoError(t, rollbackErr)
+	}()
+
+	// A session-level advisory lock carries the connected database's OID.
+	advisoryConn, err := lockDB.Conn(t.Context())
+	require.NoError(t, err)
+	defer advisoryConn.Close()
+	_, err = advisoryConn.ExecContext(t.Context(), "SELECT pg_advisory_lock(4973300)")
+	require.NoError(t, err)
+	defer func() {
+		_, unlockErr := advisoryConn.ExecContext(t.Context(), "SELECT pg_advisory_unlock(4973300)")
+		assert.NoError(t, unlockErr)
+	}()
+
+	// Commenting on a database locks a shared object: database = 0, relation NULL.
+	objectConn, err := lockDB.Conn(t.Context())
+	require.NoError(t, err)
+	defer objectConn.Close()
+	_, err = objectConn.ExecContext(t.Context(), "BEGIN")
+	require.NoError(t, err)
+	_, err = objectConn.ExecContext(t.Context(), "COMMENT ON DATABASE otel IS 'otel shared object lock'")
+	require.NoError(t, err)
+	defer func() {
+		_, rollbackErr := objectConn.ExecContext(t.Context(), "ROLLBACK")
+		assert.NoError(t, rollbackErr)
+	}()
+
+	clientDB, err := getDB(t.Context(), postgreSQLConfig{
+		username: "otelu",
+		password: "otelp",
+		address: confignet.AddrConfig{
+			Endpoint: net.JoinHostPort("localhost", p.Port()),
+		},
+		tls: configtls.ClientConfig{
+			Insecure: true,
+		},
+	}, "otel")
+	require.NoError(t, err)
+
+	client := postgreSQLClient{client: clientDB, closeFn: clientDB.Close}
+	defer func() {
+		require.NoError(t, client.Close())
+	}()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	dbLocks, err := client.getDatabaseLocks(ctx)
+	require.NoError(t, err)
+	require.Contains(t, dbLocks, databaseLocks{
+		relation: "",
+		mode:     "ExclusiveLock",
+		lockType: "advisory",
+		locks:    1,
+	})
+	// Relation locks keep their name, so the LEFT JOIN did not regress them.
+	relationLocks := filterLocksByType(dbLocks, "relation")
+	require.NotEmpty(t, relationLocks)
+	for _, lock := range relationLocks {
+		assert.NotEmpty(t, lock.relation)
+	}
+	assert.Empty(t, filterLocksByType(dbLocks, "transactionid"))
+	assert.Empty(t, filterLocksByType(dbLocks, "virtualxid"))
+
+	serverLocks, err := client.getServerScopedLocks(ctx)
+	require.NoError(t, err)
+
+	// The prepared transaction and the open COMMENT transaction each hold one
+	// transaction ID lock. The prepared one has a NULL pid, so a count that skips
+	// rows without a pid misses it. Autovacuum can hold more of these locks, so do
+	// not assert an exact count.
+	transactionIDLock, found := findLock(serverLocks, "transactionid", "ExclusiveLock")
+	require.True(t, found)
+	assert.Empty(t, transactionIDLock.relation)
+	assert.GreaterOrEqual(t, transactionIDLock.locks, int64(2))
+
+	// Every backend holds an ExclusiveLock on its own virtual transaction ID.
+	virtualXIDLock, found := findLock(serverLocks, "virtualxid", "ExclusiveLock")
+	require.True(t, found)
+	assert.Empty(t, virtualXIDLock.relation)
+	require.Positive(t, virtualXIDLock.locks)
+
+	// database = 0 with a NULL relation: only kept if the shared bucket allows it.
+	objectLocks := filterLocksByType(serverLocks, "object")
+	require.NotEmpty(t, objectLocks)
+	for _, lock := range objectLocks {
+		assert.Empty(t, lock.relation)
+	}
+
+	// The advisory lock is scoped to a database, so it is not reported twice.
+	assert.Empty(t, filterLocksByType(serverLocks, "advisory"))
+}
+
+func filterLocksByType(locks []databaseLocks, lockType string) []databaseLocks {
+	var filtered []databaseLocks
+	for _, lock := range locks {
+		if lock.lockType == lockType {
+			filtered = append(filtered, lock)
+		}
+	}
+	return filtered
+}
+
+// findLock returns the single row for a lock type and mode. The query groups on
+// both, so at most one row matches.
+func findLock(locks []databaseLocks, lockType, mode string) (databaseLocks, bool) {
+	for _, lock := range locks {
+		if lock.lockType == lockType && lock.mode == mode {
+			return lock, true
+		}
+	}
+	return databaseLocks{}, false
+}
+
 func TestScrapeLogsFromContainer(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
