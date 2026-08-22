@@ -748,6 +748,26 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 		s.recordWTCacheBytes(now, document, errs)
 	}
 
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtLogBytes.Enabled {
+		s.recordWTLogBytes(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtLogOperationCount.Enabled {
+		s.recordWTLogOperations(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtLogSyncTime.Enabled {
+		s.recordWTLogSyncTime(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtFsyncCount.Enabled {
+		s.recordWTFsyncCount(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionsOut.Enabled {
+		s.recordWTConcurrentTransactionsOut(now, document, errs)
+	}
+
 	if s.config.MetricsBuilderConfig.Metrics.MongodbPageFaults.Enabled {
 		s.recordPageFaults(now, document, errs)
 	}
