@@ -28,8 +28,13 @@ func (gap *groupByAttrsProcessor) processTraces(ctx context.Context, td ptrace.T
 
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-
 		ilss := rs.ScopeSpans()
+		spanCount := 0
+		for j := 0; j < ilss.Len(); j++ {
+			spanCount += ilss.At(j).Spans().Len()
+		}
+		tg.index.startResource(rs.Resource(), spanCount)
+
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
 			for k := 0; k < ils.Spans().Len(); k++ {
@@ -47,7 +52,7 @@ func (gap *groupByAttrsProcessor) processTraces(ctx context.Context, td ptrace.T
 
 				// Lets combine the base resource attributes + the extracted (grouped) attributes
 				// and keep them in the grouping entry
-				groupedResourceSpans := tg.findOrCreateResourceSpans(rs.Resource(), requiredAttributes)
+				groupedResourceSpans := tg.findOrCreateResourceSpans(requiredAttributes)
 				sp := matchingScopeSpans(groupedResourceSpans, ils.Scope()).Spans().AppendEmpty()
 				span.CopyTo(sp)
 			}
@@ -66,8 +71,13 @@ func (gap *groupByAttrsProcessor) processLogs(ctx context.Context, ld plog.Logs)
 
 	for i := 0; i < rl.Len(); i++ {
 		ls := rl.At(i)
-
 		ills := ls.ScopeLogs()
+		recordCount := 0
+		for j := 0; j < ills.Len(); j++ {
+			recordCount += ills.At(j).LogRecords().Len()
+		}
+		lg.index.startResource(ls.Resource(), recordCount)
+
 		for j := 0; j < ills.Len(); j++ {
 			sl := ills.At(j)
 			for k := 0; k < sl.LogRecords().Len(); k++ {
@@ -85,7 +95,7 @@ func (gap *groupByAttrsProcessor) processLogs(ctx context.Context, ld plog.Logs)
 
 				// Lets combine the base resource attributes + the extracted (grouped) attributes
 				// and keep them in the grouping entry
-				groupedResourceLogs := lg.findOrCreateResourceLogs(ls.Resource(), requiredAttributes)
+				groupedResourceLogs := lg.findOrCreateResourceLogs(requiredAttributes)
 				lr := matchingScopeLogs(groupedResourceLogs, sl.Scope()).LogRecords().AppendEmpty()
 				log.CopyTo(lr)
 			}
@@ -104,8 +114,9 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pmetric
 
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
-
 		ilms := rm.ScopeMetrics()
+		mg.index.startResource(rm.Resource(), dataPointCount(ilms))
+
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
@@ -116,35 +127,35 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pmetric
 				case pmetric.MetricTypeGauge:
 					for pointIndex := 0; pointIndex < metric.Gauge().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Gauge().DataPoints().At(pointIndex)
-						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
+						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Gauge().DataPoints().AppendEmpty())
 					}
 
 				case pmetric.MetricTypeSum:
 					for pointIndex := 0; pointIndex < metric.Sum().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Sum().DataPoints().At(pointIndex)
-						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
+						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Sum().DataPoints().AppendEmpty())
 					}
 
 				case pmetric.MetricTypeSummary:
 					for pointIndex := 0; pointIndex < metric.Summary().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Summary().DataPoints().At(pointIndex)
-						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
+						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Summary().DataPoints().AppendEmpty())
 					}
 
 				case pmetric.MetricTypeHistogram:
 					for pointIndex := 0; pointIndex < metric.Histogram().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Histogram().DataPoints().At(pointIndex)
-						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
+						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Histogram().DataPoints().AppendEmpty())
 					}
 
 				case pmetric.MetricTypeExponentialHistogram:
 					for pointIndex := 0; pointIndex < metric.ExponentialHistogram().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.ExponentialHistogram().DataPoints().At(pointIndex)
-						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
+						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.ExponentialHistogram().DataPoints().AppendEmpty())
 					}
 
@@ -157,6 +168,33 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pmetric
 	gap.telemetryBuilder.ProcessorGroupbyattrsMetricGroups.Record(ctx, int64(mg.metrics.ResourceMetrics().Len()))
 
 	return mg.metrics, nil
+}
+
+// dataPointCount totals the datapoints a ResourceMetrics contributes. It walks metrics, not
+// datapoints, so it is cheap relative to the grouping work it decides about.
+func dataPointCount(ilms pmetric.ScopeMetricsSlice) int {
+	count := 0
+	for j := 0; j < ilms.Len(); j++ {
+		metrics := ilms.At(j).Metrics()
+		for k := 0; k < metrics.Len(); k++ {
+			metric := metrics.At(k)
+			//exhaustive:enforce
+			switch metric.Type() {
+			case pmetric.MetricTypeGauge:
+				count += metric.Gauge().DataPoints().Len()
+			case pmetric.MetricTypeSum:
+				count += metric.Sum().DataPoints().Len()
+			case pmetric.MetricTypeSummary:
+				count += metric.Summary().DataPoints().Len()
+			case pmetric.MetricTypeHistogram:
+				count += metric.Histogram().DataPoints().Len()
+			case pmetric.MetricTypeExponentialHistogram:
+				count += metric.ExponentialHistogram().DataPoints().Len()
+			case pmetric.MetricTypeEmpty:
+			}
+		}
+	}
+	return count
 }
 
 func deleteAttributes(attrsForRemoval, targetAttrs pcommon.Map) {
@@ -232,7 +270,6 @@ func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric 
 func (gap *groupByAttrsProcessor) getGroupedMetricsFromAttributes(
 	ctx context.Context,
 	mg *metricsGroup,
-	originResourceMetrics pmetric.ResourceMetrics,
 	ilm pmetric.ScopeMetrics,
 	metric pmetric.Metric,
 	attributes pcommon.Map,
@@ -248,7 +285,7 @@ func (gap *groupByAttrsProcessor) getGroupedMetricsFromAttributes(
 	}
 
 	// Get the ResourceMetrics matching with these attributes
-	groupedResourceMetrics := mg.findOrCreateResourceMetrics(originResourceMetrics.Resource(), requiredAttributes)
+	groupedResourceMetrics := mg.findOrCreateResourceMetrics(requiredAttributes)
 
 	// Get the corresponding instrumentation library
 	groupedInstrumentationLibrary := matchingScopeMetrics(groupedResourceMetrics, ilm.Scope())
