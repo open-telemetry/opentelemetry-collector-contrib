@@ -63,6 +63,18 @@ resource_detection/heroku:
   timeout: 2s
   override: false
 
+resource_detection/env:
+  detectors: [env]
+  timeout: 2s
+  override: false
+  env:
+    attributes:
+      included:
+        - deployment.environment.name
+        - k8s.*
+      excluded:
+        - k8s.pod.name
+
 resource_detection/refresh:
   detectors: [system]
   timeout: 2s

@@ -1,0 +1,19 @@
+$defs:
+  attributes_config:
+    description: AttributesConfig configures which resource attribute keys the env detector emits. Both included and excluded entries support `*` as a wildcard matching zero or more characters. When included is empty, every key is considered included by default. excluded is applied after included, so a key matched by both is dropped. See https://github.com/open-telemetry/opentelemetry-configuration/blob/v1.1.0/schema/common.yaml#L2-L27
+    type: object
+    properties:
+      excluded:
+        type: array
+        items:
+          type: string
+      included:
+        type: array
+        items:
+          type: string
+description: Config holds user-specified configuration for the env detector.
+type: object
+properties:
+  attributes:
+    description: Attributes filters the resource attributes emitted by the env detector.
+    $ref: attributes_config

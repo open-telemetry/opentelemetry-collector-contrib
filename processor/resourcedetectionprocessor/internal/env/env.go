@@ -35,13 +35,58 @@ const deprecatedEnvVar = "OTEL_RESOURCE"
 
 var _ internal.Detector = (*Detector)(nil)
 
-type Detector struct{}
-
-func NewDetector(processor.Settings, internal.DetectorConfig, bool) (internal.Detector, error) {
-	return &Detector{}, nil
+type Detector struct {
+	included []*regexp.Regexp
+	excluded []*regexp.Regexp
 }
 
-func (*Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig, _ bool) (internal.Detector, error) {
+	d := &Detector{}
+	cfg, ok := dcfg.(Config)
+	if !ok {
+		return d, nil
+	}
+	var err error
+	if d.included, err = compilePatterns(cfg.Attributes.Included); err != nil {
+		return nil, fmt.Errorf("invalid env detector attributes.included pattern: %w", err)
+	}
+	if d.excluded, err = compilePatterns(cfg.Attributes.Excluded); err != nil {
+		return nil, fmt.Errorf("invalid env detector attributes.excluded pattern: %w", err)
+	}
+	return d, nil
+}
+
+// compilePatterns turns each entry into an anchored regexp where `*` matches any
+// run of characters. Other regexp metacharacters in the input are escaped.
+func compilePatterns(patterns []string) ([]*regexp.Regexp, error) {
+	if len(patterns) == 0 {
+		return nil, nil
+	}
+	out := make([]*regexp.Regexp, 0, len(patterns))
+	for _, p := range patterns {
+		parts := strings.Split(p, "*")
+		for i, part := range parts {
+			parts[i] = regexp.QuoteMeta(part)
+		}
+		re, err := regexp.Compile("^" + strings.Join(parts, ".*") + "$")
+		if err != nil {
+			return nil, fmt.Errorf("%q: %w", p, err)
+		}
+		out = append(out, re)
+	}
+	return out, nil
+}
+
+func matchAny(patterns []*regexp.Regexp, key string) bool {
+	for _, re := range patterns {
+		if re.MatchString(key) {
+			return true
+		}
+	}
+	return false
+}
+
+func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	res := pcommon.NewResource()
 
 	labels := strings.TrimSpace(os.Getenv(envVar))
@@ -52,10 +97,18 @@ func (*Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL
 		}
 	}
 
-	err = initializeAttributeMap(res.Attributes(), labels)
-	if err != nil {
+	if err = initializeAttributeMap(res.Attributes(), labels); err != nil {
 		res.Attributes().Clear()
 		return res, "", err
+	}
+
+	if len(d.included) > 0 || len(d.excluded) > 0 {
+		res.Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
+			if len(d.included) > 0 && !matchAny(d.included, k) {
+				return true
+			}
+			return matchAny(d.excluded, k)
+		})
 	}
 
 	return res, "", nil

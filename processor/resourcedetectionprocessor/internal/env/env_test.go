@@ -51,6 +51,69 @@ func TestDetectDeprecatedEnv(t *testing.T) {
 	assert.Equal(t, map[string]any{"key": "value"}, res.Attributes().AsRaw())
 }
 
+func TestDetectIncluded(t *testing.T) {
+	t.Setenv(envVar, "keep=1,drop=2,also_keep=3")
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), Config{
+		Attributes: AttributesConfig{Included: []string{"keep", "also_keep"}},
+	}, false)
+	require.NoError(t, err)
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"keep": "1", "also_keep": "3"}, res.Attributes().AsRaw())
+}
+
+func TestDetectIncludedWildcard(t *testing.T) {
+	t.Setenv(envVar, "k8s.cluster.name=c,k8s.cluster.uid=u,k8s.pod.name=p,other=1")
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), Config{
+		Attributes: AttributesConfig{
+			Included: []string{"k8s.cluster.*"},
+		},
+	}, false)
+	require.NoError(t, err)
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"k8s.cluster.name": "c", "k8s.cluster.uid": "u"}, res.Attributes().AsRaw())
+}
+
+func TestDetectExcludedAppliesAfterIncluded(t *testing.T) {
+	t.Setenv(envVar, "k8s.cluster.name=c,k8s.pod.name=p,k8s.namespace.name=n,other=1")
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), Config{
+		Attributes: AttributesConfig{
+			Included: []string{"k8s.*"},
+			Excluded: []string{"k8s.pod.name"},
+		},
+	}, false)
+	require.NoError(t, err)
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"k8s.cluster.name": "c", "k8s.namespace.name": "n"}, res.Attributes().AsRaw())
+}
+
+func TestDetectExcludedOnly(t *testing.T) {
+	t.Setenv(envVar, "a=1,b=2,c=3")
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), Config{
+		Attributes: AttributesConfig{Excluded: []string{"b"}},
+	}, false)
+	require.NoError(t, err)
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"a": "1", "c": "3"}, res.Attributes().AsRaw())
+}
+
+func TestDetectDefaultConfigAllowsAll(t *testing.T) {
+	t.Setenv(envVar, "a=1,b=2")
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	require.NoError(t, err)
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"a": "1", "b": "2"}, res.Attributes().AsRaw())
+}
+
 func TestDetectError(t *testing.T) {
 	t.Setenv(envVar, "key=value,key")
 
@@ -59,6 +122,96 @@ func TestDetectError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Empty(t, schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
+}
+
+func TestCompilePatterns(t *testing.T) {
+	cases := []struct {
+		name     string
+		patterns []string
+		matches  map[string]bool
+	}{
+		{
+			name:     "nil returns nil",
+			patterns: nil,
+			matches:  nil,
+		},
+		{
+			name:     "empty slice returns nil",
+			patterns: []string{},
+			matches:  nil,
+		},
+		{
+			name:     "exact match",
+			patterns: []string{"k8s.cluster.name"},
+			matches: map[string]bool{
+				"k8s.cluster.name":  true,
+				"k8s.cluster.names": false,
+				"k8s.cluster":       false,
+				"":                  false,
+			},
+		},
+		{
+			name:     "trailing star wildcard",
+			patterns: []string{"k8s.cluster.*"},
+			matches: map[string]bool{
+				"k8s.cluster.":     true,
+				"k8s.cluster.name": true,
+				"k8s.cluster.uid":  true,
+				"k8s.cluster":      false,
+				"k8s.pod.name":     false,
+			},
+		},
+		{
+			name:     "leading and middle star wildcard",
+			patterns: []string{"*.name", "k8s.*.uid"},
+			matches: map[string]bool{
+				"host.name":       true,
+				"k8s.cluster.uid": true,
+				"k8s.pod.uid":     true,
+				"other":           false,
+			},
+		},
+		{
+			name:     "regex metacharacters are escaped",
+			patterns: []string{"a.b"},
+			matches: map[string]bool{
+				"a.b": true,
+				"aXb": false,
+			},
+		},
+		{
+			name:     "multiple patterns any-match",
+			patterns: []string{"foo", "bar.*"},
+			matches: map[string]bool{
+				"foo":     true,
+				"bar.baz": true,
+				"baz":     false,
+			},
+		},
+		{
+			name:     "case-sensitive",
+			patterns: []string{"Foo"},
+			matches: map[string]bool{
+				"Foo": true,
+				"foo": false,
+			},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			compiled, err := compilePatterns(c.patterns)
+			require.NoError(t, err)
+			if c.matches == nil {
+				assert.Nil(t, compiled)
+				return
+			}
+			assert.Len(t, compiled, len(c.patterns))
+			for key, want := range c.matches {
+				assert.Equalf(t, want, matchAny(compiled, key), "match(%q)", key)
+			}
+		})
+	}
 }
 
 func TestInitializeAttributeMap(t *testing.T) {

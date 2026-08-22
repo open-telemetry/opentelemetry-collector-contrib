@@ -79,6 +79,28 @@ processors:
     override: false
 ```
 
+Use `attributes.included` and `attributes.excluded` to filter which keys from
+`OTEL_RESOURCE_ATTRIBUTES` are emitted. Both lists support `*` as a wildcard
+matching any run of characters. When `included` is empty every key is included
+by default. `excluded` is applied after `included`, so a key matched by both is
+dropped.
+
+For example, inject `deployment.environment.name` and every `k8s.*` key via
+`OTEL_RESOURCE_ATTRIBUTES` while dropping `k8s.pod.name`, so other env vars on
+the collector itself (e.g. its own pod name) don't leak into the telemetry:
+
+```yaml
+processors:
+  resource_detection/env:
+    detectors: [env]
+    env:
+      attributes:
+        included:
+          - deployment.environment.name
+          - k8s.*
+        excluded:
+          - k8s.pod.name
+```
 
 > [!NOTE]
 > The deprecated coponent type `resourcedetection` (without the underscore) can still be used as an alias and will log a deprecation warning.
