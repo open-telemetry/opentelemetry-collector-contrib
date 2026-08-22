@@ -265,6 +265,12 @@ exporters:
       #
       # instrumentation_scope_metadata_as_tags: true
 
+      ## @param disable_fallback_hostname - boolean - optional - default: false
+      ## Prevents the exporter from assigning a fallback hostname to metrics that
+      ## do not already have hostname-identifying resource attributes.
+      #
+      # disable_fallback_hostname: false
+
       ## @param histograms - custom object - optional
       ## Histograms specific configuration.
       # histograms:

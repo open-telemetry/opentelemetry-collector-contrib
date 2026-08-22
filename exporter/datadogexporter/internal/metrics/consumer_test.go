@@ -73,7 +73,7 @@ func TestRunningMetrics(t *testing.T) {
 	tr := newTranslator(t, logger)
 
 	ctx := t.Context()
-	consumer := NewConsumer(nil)
+	consumer := NewConsumer(nil, false)
 	metadata, err := tr.MapMetrics(ctx, ms, consumer, nil)
 	assert.NoError(t, err)
 
@@ -120,7 +120,7 @@ func TestTagsMetrics(t *testing.T) {
 	tr := newTranslator(t, logger)
 
 	ctx := t.Context()
-	consumer := NewConsumer(nil)
+	consumer := NewConsumer(nil, false)
 	metadata, err := tr.MapMetrics(ctx, ms, consumer, nil)
 	assert.NoError(t, err)
 
@@ -171,7 +171,7 @@ func TestConsumeTimeSeriesUnits(t *testing.T) {
 
 	// With units enabled
 	tr := newTranslator(t, zap.NewNop(), metrics.WithUnits())
-	consumer := NewConsumer(nil)
+	consumer := NewConsumer(nil, false)
 	_, err := tr.MapMetrics(t.Context(), ms, consumer, nil)
 	require.NoError(t, err)
 
@@ -183,7 +183,7 @@ func TestConsumeTimeSeriesUnits(t *testing.T) {
 
 	// With units disabled
 	tr = newTranslator(t, zap.NewNop())
-	consumer = NewConsumer(nil)
+	consumer = NewConsumer(nil, false)
 	_, err = tr.MapMetrics(t.Context(), ms, consumer, nil)
 	require.NoError(t, err)
 	require.Len(t, consumer.ms, 4)
