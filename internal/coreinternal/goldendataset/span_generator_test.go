@@ -193,3 +193,164 @@ func TestGenerateMessagingProducerSpanFeatureGates(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateNetworkV125ConventionsFeatureGates(t *testing.T) {
+	// These cases exercise the v1.25 network migration (net.host.port, net.peer.name,
+	// net.peer.port, net.transport) in isolation: only the NetworkV125Conventions gates
+	// are toggled while NetworkConventions (the v1.12 IP-address gate) is left at its
+	// default, so the assertions below cover only the v1.25-governed attributes.
+	//
+	// On a client span (SpanAttrDatabaseSQL) net.peer.name/net.peer.port map to server.*;
+	// net.host.port (the local port) has no server.* role and is intentionally not
+	// migrated, so server.port carries the peer port (3306) rather than the host port
+	// (51306). On a server span (SpanAttrMaxCount) net.peer.port maps to client.port
+	// while net.host.port maps to server.port.
+	prevDontEmit := metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkV125ConventionsFeatureGate.IsEnabled()
+	prevEmitV1 := metadata.InternalCoreinternalGoldendatasetEmitV1NetworkV125ConventionsFeatureGate.IsEnabled()
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkV125ConventionsFeatureGate.ID(), prevDontEmit))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1NetworkV125ConventionsFeatureGate.ID(), prevEmitV1))
+	})
+
+	testCases := []struct {
+		name           string
+		kind           PICTInputKind
+		attributes     PICTInputAttributes
+		dontEmitV0     bool
+		emitV1         bool
+		expectedKeys   []string
+		absentKeys     []string
+		expectedValues map[string]any
+	}{
+		// Client span: net.peer.name/net.peer.port migrate to server.address/server.port.
+		{
+			name:         "client_default_v0_only",
+			kind:         SpanKindClient,
+			attributes:   SpanAttrDatabaseSQL,
+			dontEmitV0:   false,
+			emitV1:       false,
+			expectedKeys: []string{"net.host.port", "net.peer.name", "net.peer.port", "net.transport"},
+			absentKeys:   []string{"server.address", "server.port", "network.transport"},
+			expectedValues: map[string]any{
+				"net.host.port": int64(51306),
+				"net.peer.name": "shopdb.example.com",
+				"net.peer.port": int64(3306),
+				"net.transport": "IP.TCP",
+			},
+		},
+		{
+			name:         "client_double_publish",
+			kind:         SpanKindClient,
+			attributes:   SpanAttrDatabaseSQL,
+			dontEmitV0:   false,
+			emitV1:       true,
+			expectedKeys: []string{"net.host.port", "net.peer.name", "net.peer.port", "net.transport", "server.address", "server.port", "network.transport"},
+			absentKeys:   []string{},
+			expectedValues: map[string]any{
+				"net.host.port":     int64(51306),
+				"net.peer.port":     int64(3306),
+				"server.address":    "shopdb.example.com",
+				"server.port":       int64(3306),
+				"network.transport": "tcp",
+			},
+		},
+		{
+			name:         "client_v1_only",
+			kind:         SpanKindClient,
+			attributes:   SpanAttrDatabaseSQL,
+			dontEmitV0:   true,
+			emitV1:       true,
+			expectedKeys: []string{"server.address", "server.port", "network.transport"},
+			absentKeys:   []string{"net.host.port", "net.peer.name", "net.peer.port", "net.transport"},
+			expectedValues: map[string]any{
+				"server.address":    "shopdb.example.com",
+				"server.port":       int64(3306),
+				"network.transport": "tcp",
+			},
+		},
+		// Server span: net.peer.port migrates to client.port and net.host.port to server.port.
+		{
+			name:         "server_default_v0_only",
+			kind:         SpanKindServer,
+			attributes:   SpanAttrMaxCount,
+			dontEmitV0:   false,
+			emitV1:       false,
+			expectedKeys: []string{"net.host.port", "net.peer.port"},
+			absentKeys:   []string{"server.port", "client.port"},
+			expectedValues: map[string]any{
+				"net.host.port": int64(443),
+				"net.peer.port": int64(39111),
+			},
+		},
+		{
+			name:         "server_double_publish",
+			kind:         SpanKindServer,
+			attributes:   SpanAttrMaxCount,
+			dontEmitV0:   false,
+			emitV1:       true,
+			expectedKeys: []string{"net.host.port", "net.peer.port", "server.port", "client.port"},
+			absentKeys:   []string{},
+			expectedValues: map[string]any{
+				"net.host.port": int64(443),
+				"net.peer.port": int64(39111),
+				"server.port":   int64(443),
+				"client.port":   int64(39111),
+			},
+		},
+		{
+			name:         "server_v1_only",
+			kind:         SpanKindServer,
+			attributes:   SpanAttrMaxCount,
+			dontEmitV0:   true,
+			emitV1:       true,
+			expectedKeys: []string{"server.port", "client.port"},
+			absentKeys:   []string{"net.host.port", "net.peer.port"},
+			expectedValues: map[string]any{
+				"server.port": int64(443),
+				"client.port": int64(39111),
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkV125ConventionsFeatureGate.ID(), tc.dontEmitV0))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1NetworkV125ConventionsFeatureGate.ID(), tc.emitV1))
+
+			random := rand.Reader
+			traceID := generateTraceID(random)
+			spanInputs := &PICTSpanInputs{
+				Parent:     SpanParentRoot,
+				Tracestate: TraceStateEmpty,
+				Kind:       tc.kind,
+				Attributes: tc.attributes,
+				Events:     SpanChildCountEmpty,
+				Links:      SpanChildCountEmpty,
+				Status:     SpanStatusOk,
+			}
+			span := ptrace.NewSpan()
+			fillSpan(traceID, pcommon.SpanID([8]byte{}), "/gotest-parent", spanInputs, random, span)
+
+			attrs := span.Attributes()
+			for _, k := range tc.expectedKeys {
+				_, ok := attrs.Get(k)
+				assert.True(t, ok, "Expected attribute %s to be present", k)
+			}
+			for _, k := range tc.absentKeys {
+				_, ok := attrs.Get(k)
+				assert.False(t, ok, "Expected attribute %s to be absent", k)
+			}
+			for k, want := range tc.expectedValues {
+				v, ok := attrs.Get(k)
+				if assert.True(t, ok, "Expected attribute %s to be present", k) {
+					switch expected := want.(type) {
+					case int64:
+						assert.Equal(t, expected, v.Int(), "Unexpected value for attribute %s", k)
+					case string:
+						assert.Equal(t, expected, v.Str(), "Unexpected value for attribute %s", k)
+					}
+				}
+			}
+		})
+	}
+}
