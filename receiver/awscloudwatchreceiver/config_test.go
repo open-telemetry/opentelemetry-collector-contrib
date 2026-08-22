@@ -515,6 +515,31 @@ func TestValidateMetricsConfig(t *testing.T) {
 			expectedErr: errInvalidDiscoveryLimit,
 		},
 		{
+			name: "discovery with resource_tags valid",
+			config: withMetrics(MetricsConfig{
+				Period: 300 * time.Second,
+				Discovery: &MetricsDiscoveryConfig{
+					Limit: 100,
+					Filters: configoptional.Some(MetricsDiscoveryFilters{
+						Namespace:    "AWS/EC2",
+						ResourceTags: []ResourceTagFilter{{Key: "Environment", Values: []string{"production"}}},
+					}),
+				},
+			}),
+		},
+		{
+			name: "discovery resource_tags empty key",
+			config: withMetrics(MetricsConfig{
+				Discovery: &MetricsDiscoveryConfig{
+					Limit: 100,
+					Filters: configoptional.Some(MetricsDiscoveryFilters{
+						ResourceTags: []ResourceTagFilter{{Values: []string{"production"}}},
+					}),
+				},
+			}),
+			expectedErr: errEmptyTagFilterKey,
+		},
+		{
 			name: "collection interval too short",
 			config: withMetrics(MetricsConfig{
 				ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 500 * time.Millisecond},

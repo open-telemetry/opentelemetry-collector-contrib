@@ -15,6 +15,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	"github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi"
+	rgttypes "github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi/types"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -48,11 +50,18 @@ type cloudWatchMetricsScraper struct {
 	metrics            []MetricQuery
 	discovery          *MetricsDiscoveryConfig
 	client             metricsClient
+	taggingClient      resourceTaggingClient
 }
 
 type metricsClient interface {
 	ListMetrics(ctx context.Context, params *cloudwatch.ListMetricsInput, optFns ...func(*cloudwatch.Options)) (*cloudwatch.ListMetricsOutput, error)
 	GetMetricData(ctx context.Context, params *cloudwatch.GetMetricDataInput, optFns ...func(*cloudwatch.Options)) (*cloudwatch.GetMetricDataOutput, error)
+}
+
+// resourceTaggingClient is the subset of the AWS resourcegroupstaggingapi used to
+// resolve which resource ARNs match the configured resource_tags filters.
+type resourceTaggingClient interface {
+	GetResources(ctx context.Context, params *resourcegroupstaggingapi.GetResourcesInput, optFns ...func(*resourcegroupstaggingapi.Options)) (*resourcegroupstaggingapi.GetResourcesOutput, error)
 }
 
 func newCloudWatchMetricsScraper(cfg *Config, settings receiver.Settings) *cloudWatchMetricsScraper {
@@ -89,6 +98,7 @@ func (s *cloudWatchMetricsScraper) start(ctx context.Context, _ component.Host) 
 		return err
 	}
 	s.client = cloudwatch.NewFromConfig(cfg)
+	s.taggingClient = resourcegroupstaggingapi.NewFromConfig(cfg)
 	return nil
 }
 
@@ -154,8 +164,11 @@ func alignTimeToPeriod(t time.Time, periodSec int64) time.Time {
 }
 
 // listMetrics discovers metrics via ListMetrics API, respecting discovery config (namespace, metric name, limit).
+// When resource_tags filters are configured, matching resource ARNs are first resolved via the
+// resourcegroupstaggingapi and discovered metrics are constrained to those resources.
 func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQuery, error) {
 	input := &cloudwatch.ListMetricsInput{}
+	var tagFilters []ResourceTagFilter
 	if f := s.discovery.Filters.Get(); f != nil {
 		if f.Namespace != "" {
 			input.Namespace = aws.String(f.Namespace)
@@ -163,6 +176,18 @@ func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQue
 		if f.MetricName != "" {
 			input.MetricName = aws.String(f.MetricName)
 		}
+		tagFilters = f.ResourceTags
+	}
+
+	// Resolve the set of resource identifiers whose tags match, if tag filtering is requested.
+	var allowedResourceIDs map[string]struct{}
+	if len(tagFilters) > 0 {
+		ids, err := s.resolveResourceIDsByTags(ctx, tagFilters)
+		if err != nil {
+			return nil, fmt.Errorf("resolve resource tags: %w", err)
+		}
+		s.settings.Logger.Debug("resolved tagged resources", zap.Int("count", len(ids)))
+		allowedResourceIDs = ids
 	}
 
 	var out []MetricQuery
@@ -174,13 +199,18 @@ func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQue
 			return nil, err
 		}
 		for _, met := range resp.Metrics {
+			dims := dimensionsToMap(met.Dimensions)
+			// When tag filtering is active, keep only metrics whose dimensions reference a matching resource.
+			if allowedResourceIDs != nil && !dimensionsMatchResource(dims, allowedResourceIDs) {
+				continue
+			}
 			if len(out) >= s.discovery.Limit {
 				return out, nil
 			}
 			q := MetricQuery{
 				Namespace:  aws.ToString(met.Namespace),
 				MetricName: aws.ToString(met.MetricName),
-				Dimensions: dimensionsToMap(met.Dimensions),
+				Dimensions: dims,
 				Stats:      s.discovery.Stats,
 			}
 			out = append(out, q)
@@ -191,6 +221,83 @@ func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQue
 		}
 	}
 	return out, nil
+}
+
+// resolveResourceIDsByTags calls the resourcegroupstaggingapi GetResources API with the configured
+// tag filters and returns the set of candidate resource identifiers extracted from the matching ARNs.
+// GetResources applies AND semantics across TagFilters and OR semantics within a filter's Values.
+func (s *cloudWatchMetricsScraper) resolveResourceIDsByTags(ctx context.Context, filters []ResourceTagFilter) (map[string]struct{}, error) {
+	tagFilters := make([]rgttypes.TagFilter, 0, len(filters))
+	for _, f := range filters {
+		tf := rgttypes.TagFilter{Key: aws.String(f.Key)}
+		if len(f.Values) > 0 {
+			tf.Values = f.Values
+		}
+		tagFilters = append(tagFilters, tf)
+	}
+
+	ids := make(map[string]struct{})
+	input := &resourcegroupstaggingapi.GetResourcesInput{TagFilters: tagFilters}
+	for {
+		resp, err := s.taggingClient.GetResources(ctx, input)
+		if err != nil {
+			return nil, err
+		}
+		for _, m := range resp.ResourceTagMappingList {
+			for _, id := range resourceIDsFromARN(aws.ToString(m.ResourceARN)) {
+				ids[id] = struct{}{}
+			}
+		}
+		// GetResources signals the end of pagination with a nil or empty PaginationToken.
+		if aws.ToString(resp.PaginationToken) == "" {
+			break
+		}
+		input.PaginationToken = resp.PaginationToken
+	}
+	return ids, nil
+}
+
+// resourceIDsFromARN extracts candidate resource identifiers from an ARN so they can be matched
+// against CloudWatch metric dimension values. Because the ARN resource segment does not always map
+// one-to-one to a dimension value (e.g. ELB dimensions carry "app/my-lb/abc123" while an EC2
+// InstanceId dimension carries just "i-abc"), several forms are produced: the full ARN, the resource
+// segment, the segment with its resource-type prefix stripped, and the last path/colon segment.
+// This is a best-effort heuristic; per-namespace ARN-to-dimension mapping (as in YACE) may refine it.
+func resourceIDsFromARN(arn string) []string {
+	if arn == "" {
+		return nil
+	}
+	set := map[string]struct{}{arn: {}}
+	// An ARN is arn:partition:service:region:account-id:resource; the resource segment is everything
+	// after the fifth colon and may itself contain "/" or ":" separators.
+	parts := strings.SplitN(arn, ":", 6)
+	if len(parts) == 6 {
+		resource := parts[5]
+		if resource != "" {
+			set[resource] = struct{}{}
+		}
+		if i := strings.IndexAny(resource, "/:"); i >= 0 && i+1 < len(resource) {
+			set[resource[i+1:]] = struct{}{}
+		}
+		if i := strings.LastIndexAny(resource, "/:"); i >= 0 && i+1 < len(resource) {
+			set[resource[i+1:]] = struct{}{}
+		}
+	}
+	out := make([]string, 0, len(set))
+	for id := range set {
+		out = append(out, id)
+	}
+	return out
+}
+
+// dimensionsMatchResource reports whether any dimension value references one of the allowed resources.
+func dimensionsMatchResource(dims map[string]string, allowed map[string]struct{}) bool {
+	for _, v := range dims {
+		if _, ok := allowed[v]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 func dimensionsToMap(dims []types.Dimension) map[string]string {
