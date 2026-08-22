@@ -194,6 +194,11 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 		return
 	}
 
+	// Content negotiation has succeeded, so every response from here on has to carry the written
+	// counts. Nothing has been written yet, and a sender that sees no header at all cannot tell
+	// that apart from a receiver that does not report them.
+	promremote.WriteResponseStats{}.SetHeaders(w)
+
 	// After parsing the content-type header, the next step would be to handle content-encoding.
 	// Luckly confighttp's Server has middleware that already decompress the request body for us.
 	buf := prw.bodyBufferPool.Get().(*bytes.Buffer)
@@ -212,15 +217,20 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 		return
 	}
 
-	m, stats, err := prw.translateV2(req.Context(), &prw2Req)
-	stats.SetHeaders(w)
+	m, stats, cacheUpdates, err := prw.translateV2(req.Context(), &prw2Req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest) // Following instructions at https://prometheus.io/docs/specs/remote_write_spec_2_0/#invalid-samples
+		// Nothing was handed to the consumer, so nothing was written. The specification wants the
+		// counts to be what was actually written, which is zero.
+		// https://prometheus.io/docs/specs/remote_write_spec_2_0/#invalid-samples
+		promremote.WriteResponseStats{}.SetHeaders(w)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Return early if metric count is 0.
-	if m.MetricCount() == 0 {
+	// Return early if there is nothing to hand over.
+	if m.DataPointCount() == 0 {
+		stats.SetHeaders(w)
+		prw.commitResourceCache(cacheUpdates)
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
@@ -230,6 +240,9 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.DataPointCount(), err)
 	if err != nil {
 		prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+		// The consumer reports one error for the whole batch and no partial count, so the batch
+		// counts as unwritten and the resource cache is not updated either.
+		promremote.WriteResponseStats{}.SetHeaders(w)
 		if consumererror.IsPermanent(err) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		} else {
@@ -238,7 +251,31 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 		return
 	}
 
+	stats.SetHeaders(w)
+	prw.commitResourceCache(cacheUpdates)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// commitResourceCache publishes the resource snapshots a request staged, once that request has
+// been accepted. Staging them keeps a rejected request from changing what later ones see.
+// stagedResource is a resource snapshot waiting for the request to be accepted.
+type stagedResource struct {
+	snapshot pmetric.ResourceMetrics
+	// learned marks a snapshot carrying attributes this request read from target_info. Those
+	// replace whatever the cache holds. A snapshot derived only from job and instance does not,
+	// because another request may have committed a richer one while this one was still in the
+	// consumer, and overwriting it would lose those attributes for every later request.
+	learned bool
+}
+
+func (prw *prometheusRemoteWriteReceiver) commitResourceCache(updates map[uint64]stagedResource) {
+	for hashedLabels, staged := range updates {
+		if staged.learned {
+			prw.rmCache.Add(hashedLabels, staged.snapshot)
+			continue
+		}
+		prw.rmCache.ContainsOrAdd(hashedLabels, staged.snapshot)
+	}
 }
 
 // parseProto parses the content-type header and returns the version of the remote-write protocol.
@@ -284,7 +321,7 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (remoteapi.
 // This function always creates new ResourceMetrics per request, only copying attributes
 // from the LRU cache when available. Never returns cached objects to avoid shared
 // mutation across concurrent requests.
-func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMetrics pmetric.Metrics, reqRM map[uint64]pmetric.ResourceMetrics) (pmetric.ResourceMetrics, uint64) {
+func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMetrics pmetric.Metrics, reqRM map[uint64]pmetric.ResourceMetrics, cacheUpdates map[uint64]stagedResource) (pmetric.ResourceMetrics, uint64) {
 	// Hash job+instance directly to avoid allocating a temporary pcommon.Resource
 	// on every call (which happens once per time series).
 	job := ls.Get("job")
@@ -300,7 +337,14 @@ func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMe
 	}
 
 	rm := otelMetrics.ResourceMetrics().AppendEmpty()
-	if existingRM, ok := prw.rmCache.Get(hashedLabels); ok {
+	var existingRM pmetric.ResourceMetrics
+	staged, ok := cacheUpdates[hashedLabels]
+	if ok {
+		existingRM = staged.snapshot
+	} else {
+		existingRM, ok = prw.rmCache.Get(hashedLabels)
+	}
+	if ok {
 		// When the ResourceMetrics already exists in the global cache, we can reuse the previous snapshots and perpass the already seen attributes to the current request.
 		existingRM.Resource().Attributes().CopyTo(rm.Resource().Attributes())
 	} else {
@@ -309,7 +353,7 @@ func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMe
 		parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
 		snapshot := pmetric.NewResourceMetrics()
 		rm.Resource().Attributes().CopyTo(snapshot.Resource().Attributes())
-		prw.rmCache.Add(hashedLabels, snapshot)
+		cacheUpdates[hashedLabels] = stagedResource{snapshot: snapshot}
 	}
 
 	reqRM[hashedLabels] = rm
@@ -318,7 +362,7 @@ func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMe
 
 // translateV2 translates a v2 remote-write request into OTLP metrics.
 // translate is not feature complete.
-func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
+func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, map[uint64]stagedResource, error) {
 	var (
 		badRequestErrors error
 		// otelMetrics represents the final metrics, after all the processing, that will be returned by the receiver.
@@ -337,8 +381,16 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// This ensures that future requests start with the enriched resource attributes already applied.
 		modifiedResourceMetric = make(map[uint64]pmetric.ResourceMetrics)
 
+		// cacheUpdates holds the resource snapshots this request wants to publish. They are only
+		// written to the shared cache once the request has been accepted.
+		cacheUpdates = make(map[uint64]stagedResource)
+
 		// exemplarMap keeps track of exemplars and key is composed by scope_name:scope_version:metric_name:type
 		exemplarMap = collectExemplars(req, prw.settings, &stats)
+
+		// bucketBudget bounds what every Native Histogram in this request may expand into
+		// together, since all of it stays in memory until the request has been translated.
+		bucketBudget = histogramBucketBudget{remaining: maxExponentialHistogramBucketsPerRequest}
 	)
 
 	for i := range req.Timeseries {
@@ -356,11 +408,15 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("duplicate label %q in labels", duplicateLabel))
 			continue
 		}
+		if err := validateTimeSeriesPayload(ts, metadata.Name); err != nil {
+			badRequestErrors = errors.Join(badRequestErrors, err)
+			continue
+		}
 
 		// If the metric name is equal to target_info, we use its labels as attributes of the resource
 		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
 		if metadata.Name == "target_info" {
-			rm, hashed := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric)
+			rm, hashed := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric, cacheUpdates)
 			attrs := rm.Resource().Attributes()
 
 			// Add the remaining labels as resource attributes
@@ -372,7 +428,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 			snapshot := pmetric.NewResourceMetrics()
 			attrs.CopyTo(snapshot.Resource().Attributes())
-			prw.rmCache.Add(hashed, snapshot)
+			cacheUpdates[hashed] = stagedResource{snapshot: snapshot, learned: true}
 			// target_info is not stored as a metric but PRW requires the response
 			// to report all received samples, including target_info, to avoid a stats mismatch
 			stats.Samples += len(ts.Samples)
@@ -397,12 +453,17 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Handle histograms separately due to their complex mixed-schema processing
 		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_HISTOGRAM ||
 			ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_UNSPECIFIED && len(ts.Histograms) > 0 {
-			prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, scopeCache, &stats, modifiedResourceMetric, exemplarMap)
+			if err := prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, scopeCache, &stats, modifiedResourceMetric, exemplarMap, &bucketBudget, cacheUpdates); err != nil {
+				// The whole request is rejected either way, so there is nothing to gain from
+				// translating the rest of it, and collecting an error per histogram would let a
+				// request full of invalid ones inflate the response several times over.
+				return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil, err
+			}
 			continue
 		}
 
 		// Handle regular metrics (gauge, counter, summary)
-		rm, _ := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric)
+		rm, _ := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric, cacheUpdates)
 
 		resourceID := identity.OfResource(rm.Resource())
 		metricID := createMetricIdentity(
@@ -455,8 +516,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 					metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "stateset")
 				}
 			case writev2.Metadata_METRIC_TYPE_SUMMARY:
-				// Drop summary series as we will not handle them.
-				continue
+				return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil,
+					fmt.Errorf("summary metric %q is not supported by this receiver, its quantile series can arrive in separate requests and cannot be reassembled", metricName)
 			default:
 				badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
 				continue
@@ -492,14 +553,38 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			}
 
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
-			// Drop summary series as we will not handle them.
-			continue
+			return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil,
+				fmt.Errorf("summary metric %q is not supported by this receiver, its quantile series can arrive in separate requests and cannot be reassembled", metricName)
 		default:
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
 		}
 	}
 
-	return otelMetrics, stats, badRequestErrors
+	if badRequestErrors != nil {
+		// Nothing is published when any known data could not be written.
+		return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil, badRequestErrors
+	}
+
+	return otelMetrics, stats, cacheUpdates, badRequestErrors
+}
+
+// validateTimeSeriesPayload checks what a series carries against what the protocol allows it to.
+// A series holds samples or histograms and never both, and the metric type decides which of the
+// two the receiver goes looking for, so histograms attached to a sample type are data the
+// receiver would silently walk past.
+func validateTimeSeriesPayload(ts *writev2.TimeSeries, name string) error {
+	hasSamples, hasHistograms := len(ts.Samples) > 0, len(ts.Histograms) > 0
+	if hasSamples && hasHistograms {
+		return fmt.Errorf("timeseries %q carries both samples and histograms", name)
+	}
+	if hasHistograms {
+		switch ts.Metadata.Type {
+		case writev2.Metadata_METRIC_TYPE_HISTOGRAM, writev2.Metadata_METRIC_TYPE_GAUGEHISTOGRAM, writev2.Metadata_METRIC_TYPE_UNSPECIFIED:
+		default:
+			return fmt.Errorf("timeseries %q is typed %s but carries histograms", name, ts.Metadata.Type)
+		}
+	}
+	return nil
 }
 
 // processHistogramTimeSeries handles all histogram processing, including validation and mixed schemas.
@@ -514,12 +599,12 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	stats *promremote.WriteResponseStats,
 	modifiedRM map[uint64]pmetric.ResourceMetrics,
 	exemplarMap map[uint64]pmetric.ExemplarSlice,
-) {
+	bucketBudget *histogramBucketBudget,
+	cacheUpdates map[uint64]stagedResource,
+) error {
 	// Drop classic histogram series (those with samples)
 	if len(ts.Samples) != 0 {
-		prw.settings.Logger.Info("Dropping classic histogram series. Please configure Prometheus to convert classic histograms into Native Histograms Custom Buckets",
-			zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
-		return
+		return fmt.Errorf("classic histogram series %q is not supported, configure Prometheus to send Native Histograms with Custom Buckets", ls.Get("__name__"))
 	}
 	attrs := extractAttributes(ls)
 
@@ -533,7 +618,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	for i := range ts.Histograms {
 		histogram := &ts.Histograms[i]
 		if histogram.ResetHint == writev2.Histogram_RESET_HINT_GAUGE {
-			continue
+			return fmt.Errorf("gauge flavored Native Histogram %q at timestamp %d is not supported", metricName, histogram.Timestamp)
 		}
 
 		var histogramType string
@@ -546,7 +631,8 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		case -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8:
 			histogramType = "exponential"
 		default:
-			// Skip invalid schema - log at debug level for details
+			// Kept from #48027: operators asked for the detail at debug level, and the error
+			// carries the same information back to the sender.
 			prw.settings.Logger.Debug(
 				"Dropping histogram with invalid schema",
 				zapcore.Field{Key: "metric_name", Type: zapcore.StringType, String: metricName},
@@ -555,10 +641,49 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 				zapcore.Field{Key: "instance", Type: zapcore.StringType, String: ls.Get("instance")},
 				zapcore.Field{Key: "timestamp", Type: zapcore.Int64Type, Integer: histogram.Timestamp},
 			)
-			continue
+			return fmt.Errorf("Native Histogram %q at timestamp %d has unsupported schema %d", metricName, histogram.Timestamp, histogram.Schema)
 		}
+
+		// The compatibility specification requires native histograms of the float flavor to be
+		// dropped; the gauge flavor is already rejected above. This has to come before the stale
+		// check, otherwise a stale float histogram would be accepted by accident.
+		if histogram.IsFloatHistogram() {
+			return fmt.Errorf("float flavored Native Histogram %q at timestamp %d is not supported", metricName, histogram.Timestamp)
+		}
+		// The zero bucket has to agree with the rest of the histogram. Anything the sender put in
+		// the float side of it is invisible to an integer histogram, which is the only flavor left
+		// by the time we get here, so those observations would go missing without a word.
+		if _, floatZero := histogram.GetZeroCount().(*writev2.Histogram_ZeroCountFloat); floatZero {
+			return fmt.Errorf("Native Histogram %q at timestamp %d carries a float zero count on an integer histogram", metricName, histogram.Timestamp)
+		}
+		// The zero threshold is written to the data point whether or not the histogram carries a
+		// stale marker, and the Native Histograms specification defines it as a float64 >= 0.
+		if histogram.ZeroThreshold < 0 {
+			return fmt.Errorf("Native Histogram %q at timestamp %d has a negative zero threshold %v", metricName, histogram.Timestamp, histogram.ZeroThreshold)
+		}
+
+		// Validate before any resource, scope or metric is built, so that a histogram which is
+		// going to be dropped never reserves budget or leaves an empty metric behind. A stale
+		// marker is exempt because its remaining fields are ignored rather than translated.
+		var expLayout exponentialHistogramLayout
+		if !value.IsStaleNaN(histogram.Sum) {
+			var err error
+			if histogramType == "nhcb" {
+				err = validateNHCB(histogram)
+			} else {
+				expLayout, err = validateExponentialHistogram(histogram)
+			}
+			if err != nil {
+				return fmt.Errorf("Native Histogram %q at timestamp %d cannot be converted: %w", metricName, histogram.Timestamp, err)
+			}
+			if histogramType == "exponential" && !bucketBudget.reserve(expLayout) {
+				return fmt.Errorf("Native Histogram %q at timestamp %d does not fit the remaining request budget of %d buckets",
+					metricName, histogram.Timestamp, bucketBudget.remaining)
+			}
+		}
+
 		if hashedLabels == 0 {
-			rm, hashedLabels = prw.getOrCreateRM(ls, otelMetrics, modifiedRM)
+			rm, hashedLabels = prw.getOrCreateRM(ls, otelMetrics, modifiedRM, cacheUpdates)
 			resourceID := identity.OfResource(rm.Resource())
 			is := pcommon.NewInstrumentationScope()
 			is.SetName(si.Name)
@@ -621,12 +746,16 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		exemplarSlice := pmetric.NewExemplarSlice()
 		// Process the individual histogram
 		if histogramType == "nhcb" {
-			prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, attrs, stats)
+			if err := prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, attrs, stats); err != nil {
+				return fmt.Errorf("Native Histogram %q at timestamp %d cannot be converted: %w", metricName, histogram.Timestamp, err)
+			}
 			if histMetric.Histogram().DataPoints().Len() > 0 {
 				exemplarSlice = histMetric.Histogram().DataPoints().At(0).Exemplars()
 			}
 		} else {
-			prw.addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, attrs, ls, stats)
+			if err := prw.addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, expLayout, attrs, stats); err != nil {
+				return fmt.Errorf("Native Histogram %q at timestamp %d cannot be converted: %w", metricName, histogram.Timestamp, err)
+			}
 			if histMetric.ExponentialHistogram().DataPoints().Len() > 0 {
 				exemplarSlice = histMetric.ExponentialHistogram().DataPoints().At(0).Exemplars()
 			}
@@ -643,6 +772,8 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			ex.CopyTo(exemplarSlice)
 		}
 	}
+
+	return nil
 }
 
 // setMetric append a new empty metric and assign the name, unit and description to it.
@@ -689,204 +820,333 @@ func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labe
 	stats.Samples += len(ts.Samples)
 }
 
-func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram *writev2.Histogram, attrs pcommon.Map, ls labels.Labels, stats *promremote.WriteResponseStats) {
-	// Drop Native Histogram with negative counts
-	if hasNegativeCounts(histogram) {
-		prw.settings.Logger.Info("Dropping Native Histogram series with negative counts",
-			zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
-		return
+// addExponentialHistogramDatapoint converts one exponential Native Histogram to an OTLP data
+// point. layout must come from validateExponentialHistogram for the same histogram.
+func (*prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram *writev2.Histogram, layout exponentialHistogramLayout, attrs pcommon.Map, stats *promremote.WriteResponseStats) error {
+	// A stale marker carries no distribution. The specification says the remaining histogram
+	// fields are ignored when the sum is the stale NaN, so none of them are read here and no
+	// bucket work is done for it.
+	if value.IsStaleNaN(histogram.Sum) {
+		dp := datapoints.AppendEmpty()
+		dp.SetStartTimestamp(pcommon.Timestamp(histogram.StartTimestamp * int64(time.Millisecond)))
+		dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
+		dp.SetScale(histogram.Schema)
+		dp.SetZeroThreshold(histogram.ZeroThreshold)
+		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+		attrs.CopyTo(dp.Attributes())
+		stats.Histograms++
+		return nil
 	}
 
-	dp := datapoints.AppendEmpty()
+	// Built aside from the slice so that a histogram whose population cannot be represented is
+	// never published as a half filled data point.
+	dp := pmetric.NewExponentialHistogramDataPoint()
 	dp.SetStartTimestamp(pcommon.Timestamp(histogram.StartTimestamp * int64(time.Millisecond)))
 	dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
 	dp.SetScale(histogram.Schema)
 	dp.SetZeroThreshold(histogram.ZeroThreshold)
 
-	// Set count and sum using common helper
-	if value.IsStaleNaN(histogram.Sum) {
-		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
-	} else {
-		setCountAndSum(histogram, dp)
+	zeroCount := histogram.GetZeroCountInt()
+	dp.SetZeroCount(zeroCount)
+
+	positive, positiveOK := convertDeltaBuckets(histogram.PositiveSpans, histogram.PositiveDeltas, dp.Positive(), layout.positive)
+	negative, negativeOK := convertDeltaBuckets(histogram.NegativeSpans, histogram.NegativeDeltas, dp.Negative(), layout.negative)
+
+	// The compatibility specification derives Count from what the data point actually holds,
+	// rather than from the count Prometheus sent. The two differ whenever observations are not
+	// represented by a bucket, which happens for NaN observations and for the overflow bucket.
+	count, ok := addPopulations(zeroCount, positive, negative)
+	if !positiveOK || !negativeOK || !ok {
+		return errors.New("bucket population is too large to represent")
 	}
-
-	// The maximum bucket index is derived from the formula (2^(2^-n))^i <= MaxFloat64.
-	// MaxFloat64 is approx 2^1024. So (2^-n) * i <= 1024 => i <= 1024 * 2^n.
-	// The bucket containing MaxFloat64 has index i_max = 1024 * 2^n.
-	// The next bucket (i_max + 1) is the +Inf overflow bucket, which is also allowed.
-	// Buckets with an index strictly greater than i_max + 1 must be dropped.
-	// See https://prometheus.io/docs/specs/native_histograms/#schema for more information.
-	overflowLimit := int32(math.Ldexp(1024, int(histogram.Schema))) + 1
-	var droppedCount uint64
-
-	// The difference between float and integer histograms is that float histograms are stored as absolute counts
-	// while integer histograms are stored as deltas.
-	if histogram.IsFloatHistogram() {
-		// Float histograms
-		zeroCountFloat := histogram.GetZeroCountFloat()
-		dp.SetZeroCount(uint64(zeroCountFloat))
-
-		if len(histogram.PositiveSpans) > 0 {
-			dp.Positive().SetOffset(histogram.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
-			droppedCount += convertAbsoluteBuckets(histogram.PositiveSpans, histogram.PositiveCounts, dp.Positive().BucketCounts(), overflowLimit)
-		}
-		if len(histogram.NegativeSpans) > 0 {
-			dp.Negative().SetOffset(histogram.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
-			droppedCount += convertAbsoluteBuckets(histogram.NegativeSpans, histogram.NegativeCounts, dp.Negative().BucketCounts(), overflowLimit)
-		}
-	} else {
-		// Integer histograms
-		zeroCountInt := histogram.GetZeroCountInt()
-		dp.SetZeroCount(zeroCountInt)
-
-		if len(histogram.PositiveSpans) > 0 {
-			dp.Positive().SetOffset(histogram.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
-			droppedCount += convertDeltaBuckets(histogram.PositiveSpans, histogram.PositiveDeltas, dp.Positive().BucketCounts(), overflowLimit)
-		}
-		if len(histogram.NegativeSpans) > 0 {
-			dp.Negative().SetOffset(histogram.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
-			droppedCount += convertDeltaBuckets(histogram.NegativeSpans, histogram.NegativeDeltas, dp.Negative().BucketCounts(), overflowLimit)
-		}
-	}
-
-	if droppedCount > 0 && !value.IsStaleNaN(histogram.Sum) {
-		count := dp.Count()
-		if droppedCount > count {
-			prw.settings.Logger.Info("Clamping Native Histogram count to zero due to inconsistent dropped overflow bucket count",
-				zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
-			dp.SetCount(0)
-		} else {
-			dp.SetCount(count - droppedCount)
-		}
+	dp.SetCount(count)
+	if count > 0 {
+		// OTLP requires the sum to be zero when the count is, so a histogram whose observations
+		// all landed outside the representable range is left without one rather than carrying a
+		// sum it cannot account for.
+		dp.SetSum(histogram.Sum)
 	}
 
 	attrs.CopyTo(dp.Attributes())
+	dp.MoveTo(datapoints.AppendEmpty())
 	stats.Histograms++
+	return nil
 }
 
-// hasNegativeCounts checks if a histogram has any negative counts
+// addPopulations sums bucket populations, reporting false if the total cannot be represented.
+func addPopulations(values ...uint64) (uint64, bool) {
+	var total uint64
+	for _, v := range values {
+		sum := total + v
+		if sum < total {
+			return 0, false
+		}
+		total = sum
+	}
+	return total, true
+}
+
+// hasNegativeCounts reports whether any bucket of an integer histogram resolves to a negative
+// population. Float histograms are dropped before they reach this.
 func hasNegativeCounts(histogram *writev2.Histogram) bool {
-	if histogram.IsFloatHistogram() {
-		// Check overall count
-		if histogram.GetCountFloat() < 0 {
+	var absolute int64
+	for _, delta := range histogram.NegativeDeltas {
+		absolute += delta
+		if absolute < 0 {
 			return true
 		}
+	}
 
-		// Check zero count
-		if histogram.GetZeroCountFloat() < 0 {
+	absolute = 0
+	for _, delta := range histogram.PositiveDeltas {
+		absolute += delta
+		if absolute < 0 {
 			return true
-		}
-
-		// Check positive bucket counts
-		for _, count := range histogram.PositiveCounts {
-			if count < 0 {
-				return true
-			}
-		}
-
-		// Check negative bucket counts
-		for _, count := range histogram.NegativeCounts {
-			if count < 0 {
-				return true
-			}
-		}
-	} else {
-		// Integer histograms
-		var absolute int64
-		for _, delta := range histogram.NegativeDeltas {
-			absolute += delta
-			if absolute < 0 {
-				return true
-			}
-		}
-
-		absolute = 0
-		for _, delta := range histogram.PositiveDeltas {
-			absolute += delta
-			if absolute < 0 {
-				return true
-			}
 		}
 	}
 
 	return false
 }
 
-// convertDeltaBuckets converts Prometheus native histogram spans and deltas to OpenTelemetry bucket counts
-// For integer buckets, the values are deltas between the buckets. i.e a bucket list of 1,2,-2 would correspond to a bucket count of 1,3,1
-func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pcommon.UInt64Slice, overflowLimit int32) uint64 {
-	// The total capacity is the sum of the deltas and the offsets of the spans.
-	totalCapacity := len(deltas)
-	for _, span := range spans {
-		totalCapacity += int(span.Offset)
-	}
-	buckets.EnsureCapacity(totalCapacity)
+// maxExponentialHistogramBuckets bounds the dense OTLP buckets one data point may expand into,
+// across both ranges. Prometheus spans encode gaps sparsely, so a few bytes of offset can describe
+// billions of buckets. This is a resource bound, not a spec value: it holds a data point to 128KiB
+// of bucket counts, and still covers a value range of 2^64 at schema 8.
+const maxExponentialHistogramBuckets = 16 * 1024
 
-	bucketIdx := 0
-	bucketCount := int64(0)
-	var droppedCount uint64
-	initialOffset := spans[0].Offset
-	k := initialOffset
+// unrepresentableBucketIndex is the first Prometheus bucket index with no OTLP equivalent. It is
+// used to saturate the running index across empty spans, which carry an offset but no bucket.
+const unrepresentableBucketIndex = math.MaxInt32 + 1
+
+// maxExponentialHistogramBucketsPerRequest bounds what every Native Histogram in one request may
+// expand into together. The per-data-point limit alone does not bound a request: TimeSeries has a
+// repeated histograms field and every translated data point stays in memory until the request is
+// handed to the consumer, so a body full of small sparse histograms would still add up. 32MiB of
+// bucket counts is far above the batches a scrape produces, and 256 times the per-point limit.
+const maxExponentialHistogramBucketsPerRequest = 4 * 1024 * 1024
+
+// histogramBucketBudget is the share of maxExponentialHistogramBucketsPerRequest left in a request.
+type histogramBucketBudget struct {
+	remaining int
+}
+
+// reserve claims the buckets one data point needs, reporting whether they were still available.
+func (b *histogramBucketBudget) reserve(layout exponentialHistogramLayout) bool {
+	needed := layout.positive.numBuckets + layout.negative.numBuckets
+	if needed > b.remaining {
+		return false
+	}
+	b.remaining -= needed
+	return true
+}
+
+// exponentialHistogramLayout is the validated dense layout of both ranges of a histogram.
+type exponentialHistogramLayout struct {
+	positive bucketSpanLayout
+	negative bucketSpanLayout
+}
+
+// bucketSpanLayout is the dense OTLP bucket range a validated span list expands into.
+type bucketSpanLayout struct {
+	hasBuckets bool  // false for an empty span list, and when every bucket overflows
+	firstIndex int64 // Prometheus index of the first bucket within the overflow limit
+	lastIndex  int64 // Prometheus index of the last bucket within the overflow limit
+	numBuckets int   // bucket_counts length, never above maxExponentialHistogramBuckets
+}
+
+// otelOffset returns the OTLP offset of the layout, one below firstIndex: an OTLP offset
+// addresses the lower bound of a bucket, a Prometheus index the upper bound.
+func (l bucketSpanLayout) otelOffset() int32 {
+	return int32(l.firstIndex - 1)
+}
+
+// exponentialHistogramFiniteLimit returns the highest Prometheus bucket index that maps to a finite
+// OTLP bucket for a schema. Bucket i_max = 1024*2^schema is the one holding MaxFloat64. Bucket
+// i_max+1 is the Prometheus overflow bucket, which covers values past the IEEE float range, and the
+// compatibility specification requires overflow buckets to be dropped and left out of the count.
+// See https://prometheus.io/docs/specs/native_histograms/#schema and
+// https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/
+func exponentialHistogramFiniteLimit(histogramSchema int32) int32 {
+	return int32(math.Ldexp(1024, int(histogramSchema)))
+}
+
+// validateExponentialHistogram validates the bucket spans of an exponential Native Histogram and
+// returns the dense layout they expand into. An error means the histogram has to be dropped.
+// The caller must have checked the schema.
+func validateExponentialHistogram(histogram *writev2.Histogram) (exponentialHistogramLayout, error) {
+	// Checked here rather than at conversion time so that a histogram which is going to be
+	// dropped anyway never reserves part of the request bucket budget.
+	if hasNegativeCounts(histogram) {
+		return exponentialHistogramLayout{}, errors.New("histogram has negative counts")
+	}
+
+	finiteLimit := exponentialHistogramFiniteLimit(histogram.Schema)
+
+	positiveValues, negativeValues := len(histogram.PositiveDeltas), len(histogram.NegativeDeltas)
+
+	positive, err := validateBucketSpanLayout(histogram.PositiveSpans, positiveValues, finiteLimit)
+	if err != nil {
+		return exponentialHistogramLayout{}, fmt.Errorf("positive spans: %w", err)
+	}
+	negative, err := validateBucketSpanLayout(histogram.NegativeSpans, negativeValues, finiteLimit)
+	if err != nil {
+		return exponentialHistogramLayout{}, fmt.Errorf("negative spans: %w", err)
+	}
+
+	// Both ranges live in one data point, so they share one budget.
+	if positive.numBuckets+negative.numBuckets > maxExponentialHistogramBuckets {
+		return exponentialHistogramLayout{}, fmt.Errorf(
+			"spans expand to %d buckets, more than the maximum of %d",
+			positive.numBuckets+negative.numBuckets, maxExponentialHistogramBuckets,
+		)
+	}
+
+	return exponentialHistogramLayout{positive: positive, negative: negative}, nil
+}
+
+// validateBucketSpanLayout validates one bucket span list and computes the dense OTLP range it
+// expands into. Per https://prometheus.io/docs/specs/native_histograms/#buckets only the first span
+// may have a negative offset, and the span lengths must sum to the number of bucket values sent.
+// A span of length zero produces no bucket but still shifts the spans that follow it.
+//
+// Offsets are untrusted int32 wire fields, so indexes are computed in int64 and the expansion is
+// bounded here, before it can reach an allocation, a loop bound or a slice index.
+func validateBucketSpanLayout(spans []writev2.BucketSpan, valueCount int, finiteLimit int32) (bucketSpanLayout, error) {
+	var (
+		layout      bucketSpanLayout
+		nextIndex   int64 // index the next span's offset is relative to
+		spanBuckets uint64
+	)
 
 	for spanIdx, span := range spans {
-		if spanIdx > 0 {
-			for i := int32(0); i < span.Offset; i++ {
-				if k <= overflowLimit {
-					buckets.Append(uint64(0))
-				}
-				k++
-			}
+		if spanIdx > 0 && span.Offset < 0 {
+			return bucketSpanLayout{}, fmt.Errorf("span number %d has negative offset %d", spanIdx+1, span.Offset)
 		}
+
+		start := int64(span.Offset)
+		if spanIdx > 0 {
+			start = nextIndex + int64(span.Offset)
+		}
+
+		spanBuckets += uint64(span.Length)
+		if spanBuckets > uint64(valueCount) {
+			return bucketSpanLayout{}, fmt.Errorf("spans need more than the %d bucket values provided", valueCount)
+		}
+
+		nextIndex = start + int64(span.Length)
+		if span.Length == 0 {
+			// An empty span produces no bucket, so its index never has to be representable.
+			// Saturating keeps a run of them from walking out of int64. It is purely defensive:
+			// any later bucket built on a saturated index is already past the overflow bucket
+			// and rejected below, so this has no observable effect on the output.
+			nextIndex = min(nextIndex, unrepresentableBucketIndex)
+			continue
+		}
+		// Only the bucket directly above the finite range is the +Inf overflow bucket, and the
+		// specification forbids using anything past it. Rejecting here also keeps every index
+		// well inside int64, since offsets after the first span only ever move forwards.
+		if nextIndex-1 > int64(finiteLimit)+1 {
+			return bucketSpanLayout{}, fmt.Errorf("bucket index %d is past the overflow bucket at %d", nextIndex-1, finiteLimit+1)
+		}
+
+		// The overflow bucket itself is consumed but dropped, so it must not widen the range.
+		last := min(nextIndex-1, int64(finiteLimit))
+		if start > last {
+			continue
+		}
+		if !layout.hasBuckets {
+			if start-1 < math.MinInt32 {
+				return bucketSpanLayout{}, fmt.Errorf("bucket index %d cannot be expressed as an OTLP offset", start)
+			}
+			layout.hasBuckets = true
+			layout.firstIndex = start
+		}
+		layout.lastIndex = last
+	}
+
+	if spanBuckets != uint64(valueCount) {
+		return bucketSpanLayout{}, fmt.Errorf("spans need %d bucket values, %d provided", spanBuckets, valueCount)
+	}
+	if !layout.hasBuckets {
+		return bucketSpanLayout{}, nil
+	}
+
+	numBuckets := layout.lastIndex - layout.firstIndex + 1
+	if numBuckets > maxExponentialHistogramBuckets {
+		return bucketSpanLayout{}, fmt.Errorf(
+			"spans expand to %d buckets, more than the maximum of %d", numBuckets, maxExponentialHistogramBuckets,
+		)
+	}
+	layout.numBuckets = int(numBuckets)
+
+	return layout, nil
+}
+
+// convertDeltaBuckets converts Prometheus native histogram spans and deltas to OTLP bucket counts,
+// returning the population it actually emitted. Buckets outside the layout, which is to say the
+// overflow bucket, are consumed but left out of that total, so the caller can rebuild Count from
+// what the data point holds. Integer bucket values are deltas, i.e. 1,2,-2 means counts of 1,3,1.
+// layout must come from validateBucketSpanLayout for the same spans and deltas. It reports false
+// if the emitted population is too large for a uint64, in which case no valid data point exists.
+func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, dest pmetric.ExponentialHistogramDataPointBuckets, layout bucketSpanLayout) (uint64, bool) {
+	buckets := prepareBuckets(dest, layout)
+
+	var (
+		bucketIdx     int
+		bucketCount   int64
+		retainedCount uint64
+		nextIndex     int64
+		nextAppend    = layout.firstIndex
+	)
+
+	for spanIdx, span := range spans {
+		start := int64(span.Offset)
+		if spanIdx > 0 {
+			start = nextIndex + int64(span.Offset)
+		}
+		// A zero length span appends nothing but still shifts the spans after it.
+		nextIndex = start + int64(span.Length)
+
 		for i := uint32(0); i < span.Length; i++ {
+			// Deltas are cumulative, so dropped buckets still have to be accumulated.
 			bucketCount += deltas[bucketIdx]
 			bucketIdx++
 
-			if k <= overflowLimit {
-				buckets.Append(uint64(bucketCount))
-			} else {
-				droppedCount += uint64(bucketCount)
+			index := start + int64(i)
+			if !layout.hasBuckets || index > layout.lastIndex {
+				continue
 			}
-			k++
+			nextAppend = appendGap(buckets, nextAppend, index)
+			buckets.Append(uint64(bucketCount))
+
+			total, ok := addPopulations(retainedCount, uint64(bucketCount))
+			if !ok {
+				return 0, false
+			}
+			retainedCount = total
 		}
 	}
-	return droppedCount
+	return retainedCount, true
 }
 
-// convertAbsoluteBuckets converts Prometheus native histogram spans and absolute counts to OpenTelemetry bucket counts
-// For float buckets, the values are absolute counts, and must be 0 or positive.
-func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, buckets pcommon.UInt64Slice, overflowLimit int32) uint64 {
-	// The total capacity is the sum of the counts and the offsets of the spans.
-	totalCapacity := len(counts)
-	for _, span := range spans {
-		totalCapacity += int(span.Offset)
+// prepareBuckets sets the OTLP offset and reserves exactly what the validated layout needs.
+func prepareBuckets(dest pmetric.ExponentialHistogramDataPointBuckets, layout bucketSpanLayout) pcommon.UInt64Slice {
+	buckets := dest.BucketCounts()
+	if layout.hasBuckets {
+		dest.SetOffset(layout.otelOffset())
+		buckets.EnsureCapacity(layout.numBuckets)
 	}
-	buckets.EnsureCapacity(totalCapacity)
+	return buckets
+}
 
-	bucketIdx := 0
-	var droppedCount uint64
-	initialOffset := spans[0].Offset
-	k := initialOffset
-
-	for spanIdx, span := range spans {
-		if spanIdx > 0 {
-			for i := int32(0); i < span.Offset; i++ {
-				if k <= overflowLimit {
-					buckets.Append(uint64(0))
-				}
-				k++
-			}
-		}
-		for i := uint32(0); i < span.Length; i++ {
-			if k <= overflowLimit {
-				buckets.Append(uint64(counts[bucketIdx]))
-			} else {
-				droppedCount += uint64(counts[bucketIdx])
-			}
-			bucketIdx++
-			k++
-		}
+// appendGap fills the empty buckets before index and returns where the next bucket goes. Gaps are
+// only filled ahead of a bucket that is actually appended, so a trailing gap costs nothing and the
+// iteration count is bounded by the layout, not by the offsets on the wire.
+func appendGap(buckets pcommon.UInt64Slice, nextAppend, index int64) int64 {
+	for ; nextAppend < index; nextAppend++ {
+		buckets.Append(0)
 	}
-	return droppedCount
+	return index + 1
 }
 
 // extractAttributes returns metric data point attributes, excluding job, instance, metric name, and all otel_scope_* labels.
@@ -943,28 +1203,56 @@ func applyScopeInfo(sm pmetric.ScopeMetrics, si scopeInfo) {
 	}
 }
 
+// validateNHCB checks a custom bucket histogram the way Prometheus checks the ones it accepts over
+// remote write: the spans against the bounds, the bounds against each other, and the count against
+// the buckets. The dense form is as long as the bounds, so unlike the exponential schemas it needs
+// no separate limit.
+func validateNHCB(histogram *writev2.Histogram) error {
+	// The float flavor is turned away before this, so the integer conversion always succeeds.
+	return histogram.ToIntHistogram().Validate()
+}
+
 // addNHCBDatapoint converts a single Native Histogram Custom Buckets (NHCB) to OpenTelemetry histogram datapoints
-func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *writev2.Histogram, attrs pcommon.Map, stats *promremote.WriteResponseStats) {
-	if len(histogram.CustomValues) == 0 {
-		return
+func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *writev2.Histogram, attrs pcommon.Map, stats *promremote.WriteResponseStats) error {
+	// The bounds sit between buckets, so a histogram carrying none of them still has the bucket
+	// above the last one. Prometheus produces that for a classic histogram that only ever had
+	// its +Inf bucket.
+	bucketCounts := convertNHCBBuckets(histogram)
+
+	// Counted before the data point exists so that a population which cannot be represented is
+	// never published as a half filled one. A stale marker has no population to count.
+	var count uint64
+	stale := value.IsStaleNaN(histogram.Sum)
+	if !stale {
+		var ok bool
+		if count, ok = addPopulations(bucketCounts...); !ok {
+			return errors.New("bucket population is too large to represent")
+		}
 	}
 
 	dp := datapoints.AppendEmpty()
 	dp.SetStartTimestamp(pcommon.Timestamp(histogram.StartTimestamp * int64(time.Millisecond)))
 	dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
 
-	if value.IsStaleNaN(histogram.Sum) {
+	if stale {
 		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	} else {
-		setCountAndSum(histogram, dp)
+		// OTLP wants the count to be the sum of the bucket counts. Prometheus counts an
+		// observation of NaN without putting it in any bucket, so the count it sends can be
+		// larger than the buckets account for.
+		dp.SetCount(count)
+		if count > 0 {
+			// OTLP requires the sum to be zero when the count is.
+			dp.SetSum(histogram.Sum)
+		}
 	}
 
 	dp.ExplicitBounds().FromRaw(histogram.CustomValues)
-	bucketCounts := convertNHCBBuckets(histogram)
 	dp.BucketCounts().FromRaw(bucketCounts)
 
 	attrs.CopyTo(dp.Attributes())
 	stats.Histograms++
+	return nil
 }
 
 // convertNHCBBuckets converts NHCB bucket data to OpenTelemetry bucket counts
@@ -977,61 +1265,26 @@ func convertNHCBBuckets(histogram *writev2.Histogram) []uint64 {
 		return bucketCounts
 	}
 
-	if histogram.IsFloatHistogram() {
-		// Float histograms: values are absolute counts
-		bucketIdx := 0
-		for _, span := range histogram.PositiveSpans {
-			// Skip empty buckets based on offset
-			bucketIdx += int(span.Offset)
+	// Values are deltas between buckets. Float flavored histograms are dropped earlier.
+	bucketIdx := 0
+	bucketCount := int64(0)
+	deltaIdx := 0
 
-			// Fill buckets for this span
-			for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && i < uint32(len(histogram.PositiveCounts)); i++ {
-				if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
-					bucketCounts[bucketIdx] = uint64(histogram.PositiveCounts[i])
-				}
-				bucketIdx++
+	for _, span := range histogram.PositiveSpans {
+		// Skip empty buckets based on offset
+		bucketIdx += int(span.Offset)
+
+		// Fill buckets for this span
+		for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && deltaIdx < len(histogram.PositiveDeltas); i++ {
+			bucketCount += histogram.PositiveDeltas[deltaIdx]
+			deltaIdx++
+
+			if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
+				bucketCounts[bucketIdx] = uint64(bucketCount)
 			}
-		}
-	} else {
-		// Integer histograms: values are deltas between buckets
-		bucketIdx := 0
-		bucketCount := int64(0)
-		deltaIdx := 0
-
-		for _, span := range histogram.PositiveSpans {
-			// Skip empty buckets based on offset
-			bucketIdx += int(span.Offset)
-
-			// Fill buckets for this span
-			for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && deltaIdx < len(histogram.PositiveDeltas); i++ {
-				bucketCount += histogram.PositiveDeltas[deltaIdx]
-				deltaIdx++
-
-				if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
-					bucketCounts[bucketIdx] = uint64(bucketCount)
-				}
-				bucketIdx++
-			}
+			bucketIdx++
 		}
 	}
 
 	return bucketCounts
-}
-
-// setCountAndSum sets count and sum for histogram datapoints (common interface)
-type countSumSetter interface {
-	SetSum(float64)
-	SetCount(uint64)
-}
-
-func setCountAndSum(histogram *writev2.Histogram, dp countSumSetter) {
-	dp.SetSum(histogram.Sum)
-
-	if histogram.IsFloatHistogram() {
-		countFloat := histogram.GetCountFloat()
-		dp.SetCount(uint64(countFloat))
-	} else {
-		countInt := histogram.GetCountInt()
-		dp.SetCount(countInt)
-	}
 }

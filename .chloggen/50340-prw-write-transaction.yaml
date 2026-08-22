@@ -1,0 +1,29 @@
+change_type: bug_fix
+
+component: receiver/prometheus_remote_write
+
+note: Answer with a non-2xx status when part of a remote write request could not be written, instead of acknowledging it as successful.
+
+issues: [50340]
+
+subtext: |
+  Series the receiver cannot translate, such as classic histograms, gauge and
+  float flavored native histograms, unsupported schemas and malformed bucket
+  spans, summary metrics, and custom bucket histograms that Prometheus itself
+  would reject, were dropped or silently truncated and the request was still
+  answered with 204. The Remote-Write 2.0 specification requires a non-2xx
+  response whenever data the receiver understood was not written. Such a request
+  is now rejected as a whole with 400, nothing is passed on, and the written
+  counts report zero. Those counts are also only reported after the next
+  consumer has accepted the batch, and resource attributes learned from
+  target_info are only remembered then, so a failed request no longer affects
+  later ones. A series carrying both samples and histograms, or histograms
+  attached to a metric type that does not have them, is rejected instead of
+  being half translated. Responses that could not be decoded now carry the
+  written counts too, and a request only replaces the cached resource attributes
+  of a target when it actually learned something from target_info. A native
+  histogram whose zero bucket carries a float count while the histogram itself
+  is integer flavored, or whose zero threshold is negative, is rejected rather
+  than losing those fields on the way through.
+
+change_logs: [user]
