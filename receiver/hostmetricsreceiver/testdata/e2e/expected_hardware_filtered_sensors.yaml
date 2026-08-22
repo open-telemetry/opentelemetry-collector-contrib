@@ -1,0 +1,28 @@
+resourceMetrics:
+  - resource:
+      attributes: []
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hardwarescraper
+          version: latest
+        metrics:
+          - name: hw.temperature
+            description: Temperature in degrees Celsius.
+            unit: Cel
+            gauge:
+              dataPoints:
+                - asDouble: 55
+                  attributes:
+                    - key: hw.id
+                      value:
+                        stringValue: nvme_hwmon0_temp1
+                    - key: hw.name
+                      value:
+                        stringValue: nvme
+                    - key: hw.parent
+                      value:
+                        stringValue: nvme_hwmon0
+                    - key: hw.sensor_location
+                      value:
+                        stringValue: Composite
