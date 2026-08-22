@@ -103,7 +103,46 @@ func ParseGotime(layout string, value any, location *time.Location) (time.Time, 
 	if err != nil {
 		return time.Time{}, err
 	}
+
+	// If the layout has no date elements (e.g. a time-only layout like
+	// "15:04:05,999" or "%H:%M:%S,%L"), the parsed time has no real date:
+	// time.Parse fills missing elements with their zero value (Jan 1, year 0).
+	// Use today's date so the result isn't stuck on January 1.
+	if !hasDateElements(layout) {
+		n := Now()
+		return time.Date(n.Year(), n.Month(), n.Day(), timeValue.Hour(), timeValue.Minute(), timeValue.Second(), timeValue.Nanosecond(), timeValue.Location()), nil
+	}
+
 	return SetTimestampYear(timeValue), nil
+}
+
+// dateElements is the set of Go layout tokens that unambiguously represent a
+// date: year, month, day, or weekday. A layout containing any of these has a
+// date part; a layout containing none of them (e.g. "15:04:05,999") is
+// time-only. Bare non-padded "1"/"2" tokens (month/day) are intentionally
+// omitted because "1" appears inside the hour token "15" and would misclassify
+// time-only layouts.
+var dateElements = []string{
+	"2006",           // year (4-digit)
+	"06",             // year (2-digit)
+	"January", "Jan", // month name
+	"01", "_1", // month number
+	"02", "_2", // day of month
+	"Monday", "Mon", // weekday
+	"002", // day of year
+}
+
+// hasDateElements reports whether a Go time layout contains date elements
+// (year, month, day, or weekday). It is used to distinguish time-only layouts
+// (e.g. "15:04:05,999") from layouts that include a date (e.g. rfc3164-style
+// "Jan 02 15:04:05"), so that the latter are never rewritten to today's date.
+func hasDateElements(layout string) bool {
+	for _, elem := range dateElements {
+		if strings.Contains(layout, elem) {
+			return true
+		}
+	}
+	return false
 }
 
 func parseGotime(layout string, value any, location *time.Location) (time.Time, error) {
