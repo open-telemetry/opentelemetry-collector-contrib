@@ -755,7 +755,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: []
-  mongodb.wt.concurrent_transactions.out:
+  mongodb.wt.concurrent_transactions.in_use:
     description: The number of in-flight WiredTiger read/write concurrent-transaction tickets.
     stability: development
     unit: "{transaction}"

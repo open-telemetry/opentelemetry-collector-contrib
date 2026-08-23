@@ -492,7 +492,7 @@ func (s *mongodbScraper) recordWTFsyncCount(now pcommon.Timestamp, doc bson.M, e
 // pre-8.0 the new queues.execution path is absent. The receiver tries the new path
 // first (cheap probe) and falls back to the legacy WiredTiger path if needed.
 func (s *mongodbScraper) recordWTConcurrentTransactionsOut(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	metricName := "mongodb.wt.concurrent_transactions.out"
+	metricName := "mongodb.wt.concurrent_transactions.in_use"
 	directions := map[string]metadata.AttributeDiskIoDirection{
 		"read":  metadata.AttributeDiskIoDirectionRead,
 		"write": metadata.AttributeDiskIoDirectionWrite,
@@ -505,7 +505,7 @@ func (s *mongodbScraper) recordWTConcurrentTransactionsOut(now pcommon.Timestamp
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dir, e))
 				continue
 			}
-			s.mb.RecordMongodbWtConcurrentTransactionsOutDataPoint(now, val, attr)
+			s.mb.RecordMongodbWtConcurrentTransactionsInUseDataPoint(now, val, attr)
 		}
 		return
 	}
@@ -519,7 +519,7 @@ func (s *mongodbScraper) recordWTConcurrentTransactionsOut(now pcommon.Timestamp
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dir, e))
 			continue
 		}
-		s.mb.RecordMongodbWtConcurrentTransactionsOutDataPoint(now, val, attr)
+		s.mb.RecordMongodbWtConcurrentTransactionsInUseDataPoint(now, val, attr)
 	}
 }
 

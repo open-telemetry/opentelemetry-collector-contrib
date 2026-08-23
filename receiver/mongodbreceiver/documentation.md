@@ -526,7 +526,7 @@ The amount of time that the server has been running.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | ms | Sum | Int | Cumulative | true | Development |
 
-### mongodb.wt.concurrent_transactions.out
+### mongodb.wt.concurrent_transactions.in_use
 
 The number of in-flight WiredTiger read/write concurrent-transaction tickets.
 

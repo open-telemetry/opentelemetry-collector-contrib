@@ -69,7 +69,7 @@ func newWTScraper(t *testing.T) *mongodbScraper {
 	cfg.MetricsBuilderConfig.Metrics.MongodbWtLogOperationCount.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.MongodbWtLogSyncTime.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.MongodbWtFsyncCount.Enabled = true
-	cfg.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionsOut.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionsInUse.Enabled = true
 	return newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 }
 
@@ -154,7 +154,7 @@ func TestRecordWTConcurrentTransactionsOutLegacy(t *testing.T) {
 	s.recordWTConcurrentTransactionsOut(now, doc, errs)
 	require.NoError(t, errs.Combine())
 
-	m := findMetric(t, s.mb.Emit(), "mongodb.wt.concurrent_transactions.out")
+	m := findMetric(t, s.mb.Emit(), "mongodb.wt.concurrent_transactions.in_use")
 	require.Equal(t, pmetric.MetricTypeGauge, m.Type())
 	byDir := gaugeIntByAttr(t, m, "disk.io.direction")
 	require.Equal(t, map[string]int64{"read": 3, "write": 1}, byDir)
@@ -188,7 +188,7 @@ func TestRecordWTConcurrentTransactionsOut80(t *testing.T) {
 	s.recordWTConcurrentTransactionsOut(now, doc, errs)
 	require.NoError(t, errs.Combine())
 
-	m := findMetric(t, s.mb.Emit(), "mongodb.wt.concurrent_transactions.out")
+	m := findMetric(t, s.mb.Emit(), "mongodb.wt.concurrent_transactions.in_use")
 	require.Equal(t, pmetric.MetricTypeGauge, m.Type())
 	byDir := gaugeIntByAttr(t, m, "disk.io.direction")
 	require.Equal(t, map[string]int64{"read": 7, "write": 4}, byDir)

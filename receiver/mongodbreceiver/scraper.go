@@ -764,7 +764,7 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 		s.recordWTFsyncCount(now, document, errs)
 	}
 
-	if s.config.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionsOut.Enabled {
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionsInUse.Enabled {
 		s.recordWTConcurrentTransactionsOut(now, document, errs)
 	}
 
