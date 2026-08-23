@@ -773,16 +773,6 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
     attributes: []
-  mongodb.wt.log.bytes:
-    description: The total number of bytes written to the WiredTiger journal.
-    stability: development
-    unit: By
-    enabled: false
-    sum:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: true
-    attributes: []
   mongodb.wt.log.operation.count:
     description: The total number of WiredTiger journal operations.
     stability: development
@@ -800,6 +790,16 @@ metrics:
     enabled: false
     sum:
       value_type: double
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: []
+  mongodb.wt.log.write:
+    description: The total number of bytes written to the WiredTiger journal.
+    stability: development
+    unit: By
+    enabled: false
+    sum:
+      value_type: int
       aggregation_temporality: cumulative
       monotonic: true
     attributes: []

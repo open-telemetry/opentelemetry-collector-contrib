@@ -65,7 +65,7 @@ func gaugeIntByAttr(t *testing.T, m pmetric.Metric, attrKey string) map[string]i
 func newWTScraper(t *testing.T) *mongodbScraper {
 	t.Helper()
 	cfg := createDefaultConfig().(*Config)
-	cfg.MetricsBuilderConfig.Metrics.MongodbWtLogBytes.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MongodbWtLogWrite.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.MongodbWtLogOperationCount.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.MongodbWtLogSyncTime.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.MongodbWtFsyncCount.Enabled = true
@@ -73,17 +73,17 @@ func newWTScraper(t *testing.T) *mongodbScraper {
 	return newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 }
 
-func TestRecordWTLogBytes(t *testing.T) {
+func TestRecordWTLogWrite(t *testing.T) {
 	s := newWTScraper(t)
 	doc, err := loadAdminStatusAsMap()
 	require.NoError(t, err)
 	errs := &scrapererror.ScrapeErrors{}
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	s.recordWTLogBytes(now, doc, errs)
+	s.recordWTLogWrite(now, doc, errs)
 	require.NoError(t, errs.Combine())
 
-	m := findMetric(t, s.mb.Emit(), "mongodb.wt.log.bytes")
+	m := findMetric(t, s.mb.Emit(), "mongodb.wt.log.write")
 	require.Equal(t, pmetric.MetricTypeSum, m.Type())
 	require.Equal(t, 1, m.Sum().DataPoints().Len())
 	require.Equal(t, int64(1048576000), m.Sum().DataPoints().At(0).IntValue())
@@ -202,7 +202,7 @@ func TestRecordWTMetricsNonWiredTiger(t *testing.T) {
 	errs := &scrapererror.ScrapeErrors{}
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	s.recordWTLogBytes(now, doc, errs)
+	s.recordWTLogWrite(now, doc, errs)
 	s.recordWTLogOperations(now, doc, errs)
 	s.recordWTLogSyncTime(now, doc, errs)
 	s.recordWTFsyncCount(now, doc, errs)

@@ -426,18 +426,18 @@ var wtLogOperationsMap = map[string]metadata.AttributeMongodbWtLogOperationType{
 	"log flush operations": metadata.AttributeMongodbWtLogOperationTypeFlush,
 }
 
-func (s *mongodbScraper) recordWTLogBytes(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordWTLogWrite(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	if !isWiredTiger(doc) {
 		return
 	}
 	metricPath := []string{"wiredTiger", "log", "log bytes written"}
-	metricName := "mongodb.wt.log.bytes"
+	metricName := "mongodb.wt.log.write"
 	val, err := collectMetric(doc, metricPath)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
 		return
 	}
-	s.mb.RecordMongodbWtLogBytesDataPoint(now, val)
+	s.mb.RecordMongodbWtLogWriteDataPoint(now, val)
 }
 
 func (s *mongodbScraper) recordWTLogOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
