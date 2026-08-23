@@ -99,12 +99,14 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 		}
 
 		for _, template := range obs.config.receiverTemplates {
+			obs.params.Logger.Debug("evaluating rule", zap.Any("rule", template.Rule), zap.Any("env", env))
 			if matches, err := template.rule.eval(env); err != nil {
 				obs.params.Logger.Error("failed matching rule", zap.String("rule", template.Rule), zap.Error(err))
 				continue
 			} else if !matches {
 				continue
 			}
+			obs.params.Logger.Debug("starting receiver for match")
 			obs.startReceiver(template, env, e)
 		}
 	}
