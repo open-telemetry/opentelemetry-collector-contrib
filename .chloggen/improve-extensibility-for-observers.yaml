@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/receivercreator
+component: receiver/receiver_creator
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Improve extensibility of `receivercreator` rules by allowing use of custom `observer.EndpointDetails` "types"
