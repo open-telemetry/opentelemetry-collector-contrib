@@ -11,11 +11,12 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [antonblock, ishleenk17, Caleb-Hurshman]
+    active: [antonblock, ishleenk17, Caleb-Hurshman, ebrdarSplunk, XSAM, akshays-19, sv-splunk, splunk-shanu]
     seeking_new: true
     emeritus: [djaglowski]
 
 reaggregation_enabled: true
+override_value_enabled: true
 
 feature_gates:
   - id: postgresqlreceiver.preciselagmetrics
@@ -37,6 +38,17 @@ feature_gates:
     from_version: "v0.122.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559
 
+  - id: receiver.postgresql.useOTelSemconv
+    stage: alpha
+    description: >-
+      When enabled, uses a single resource per server with server.address, server.port,
+      and service.instance.id (UUID v5) resource attributes, aligning with OpenTelemetry
+      semantic conventions. When disabled, uses the legacy per-entity resource model with
+      postgresql.database.name, postgresql.table.name, postgresql.index.name, and
+      postgresql.schema.name resource attributes.
+    from_version: "v0.156.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45347
+
 resource_attributes:
   postgresql.database.name:
     description: The name of the database.
@@ -54,9 +66,25 @@ resource_attributes:
     description: The table name.
     enabled: true
     type: string
-  service.instance.id:
-    description: A unique identifier of the PostgreSQL instance in the format host:port (defaults to 'unknown:5432' in case of error in generating this value).
+  server.address:
+    description: The address of the PostgreSQL server.
     enabled: true
+    type: string
+  server.port:
+    description: The port number of the PostgreSQL server.
+    enabled: true
+    type: int
+  service.instance.id:
+    description: A unique identifier of the PostgreSQL instance.
+    enabled: true
+    type: string
+  service.name:
+    description: "Logical name of the service. When enabled, defaults to unknown_service:postgresql."
+    enabled: false
+    type: string
+  service.namespace:
+    description: Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration.
+    enabled: false
     type: string
 
 attributes:
@@ -86,8 +114,11 @@ attributes:
       - write
     name_override: type
     requirement_level: recommended
+  db.collection.name:
+    description: The name of the table within the database.
+    type: string
   db.namespace:
-    description: The namespace or schema of the database where the query is executed.
+    description: The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL.
     type: string
   db.query.text:
     description: The text of the database query being executed.
@@ -122,11 +153,50 @@ attributes:
   postgresql.application_name:
     description: Name of the application that is connected to this backend.
     type: string
+  postgresql.blocking.lock.mode:
+    description: The lock mode being requested by the blocked session (e.g. RowExclusiveLock, AccessExclusiveLock). Empty string when not blocked.
+    type: string
+  postgresql.blocking.lock.relation:
+    description: The name of the relation (table) being waited on. Empty string when not blocked or when lock is not on a relation.
+    type: string
+  postgresql.blocking.lock.type:
+    description: The type of lock resource being waited on (e.g. relation, transactionid, tuple). Empty string when not blocked.
+    type: string
+  postgresql.blocking.pids:
+    description: Array of PIDs of sessions blocking this session (from pg_blocking_pids). Empty array when not blocked.
+    type: string
+  postgresql.blocking.start_time:
+    description: UTC timestamp (RFC3339) when the current lock wait began, derived from pg_locks.waitstart. Empty string when not blocked.
+    type: string
+  postgresql.blocking.transaction.start_time:
+    description: UTC timestamp (RFC3339) when the current transaction started. Empty string when no active transaction.
+    type: string
+  postgresql.blocking.wait_duration:
+    description: Whole seconds this session has been waiting for a lock, measured from pg_locks.waitstart. 0 when not blocked.
+    type: int
   postgresql.calls:
     description: Number of times the statement was executed, reported in delta value.
     type: int
   postgresql.client_hostname:
     description: Host name of the connected client, as reported by a reverse DNS lookup of client_addr.
+    type: string
+  postgresql.conflict.type:
+    description: The type of recovery conflict that caused a query to be canceled on a standby server.
+    type: string
+    enum:
+      - tablespace
+      - lock
+      - snapshot
+      - bufferpin
+      - deadlock
+    requirement_level: recommended
+  postgresql.distance.function.name:
+    description: The vector distance (similarity) function used by the query, one of the pgvector distance functions.
+    type: string
+    enum: [cosine, l2, inner_product, l1, hamming, jaccard]
+    requirement_level: recommended
+  postgresql.index.name:
+    description: The name of the index on a table.
     type: string
   postgresql.pid:
     description: Process ID of this backend.
@@ -172,10 +242,10 @@ attributes:
     description: Total number of temp blocks written by the statement, reported in delta value.
     type: int
   postgresql.total_exec_time:
-    description: Total time spent executing the statement, in delta milliseconds.
+    description: Total time spent executing the statement, in delta seconds.
     type: double
   postgresql.total_plan_time:
-    description: Total time spent planning the statement, in delta milliseconds.
+    description: Total time spent planning the statement, in delta seconds.
     type: double
   postgresql.wait_event:
     description: Wait event name if backend is currently waiting, otherwise NULL.
@@ -238,6 +308,13 @@ events:
       - postgresql.wait_event_type
       - postgresql.query_id
       - postgresql.total_exec_time
+      - postgresql.blocking.pids
+      - postgresql.blocking.start_time
+      - postgresql.blocking.wait_duration
+      - postgresql.blocking.lock.mode
+      - postgresql.blocking.lock.type
+      - postgresql.blocking.lock.relation
+      - postgresql.blocking.transaction.start_time
   db.server.top_query:
     enabled: false
     description: top query
@@ -262,13 +339,14 @@ events:
 metrics:
   postgresql.backends:
     enabled: true
-    description: The number of backends.
+    description: The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.
     stability: development
     unit: "1"
     sum:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.bgwriter.buffers.allocated:
     description: Number of buffers allocated.
     stability: development
@@ -329,6 +407,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.blks_read:
     enabled: false
     description: Number of disk blocks read in this database.
@@ -338,6 +417,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.blocks_read:
     enabled: true
     description: The number of blocks read.
@@ -347,7 +427,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [source]
+    attributes: [source, db.namespace, db.collection.name]
   postgresql.commits:
     enabled: true
     description: The number of commits.
@@ -357,6 +437,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.connection.max:
     enabled: true
     description: Configured maximum number of client connections allowed
@@ -380,7 +461,7 @@ metrics:
     unit: "{lock}"
     gauge:
       value_type: int
-    attributes: [relation, mode, lock_type]
+    attributes: [relation, mode, lock_type, db.namespace]
   postgresql.db_size:
     enabled: true
     description: The database disk usage.
@@ -390,6 +471,7 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.deadlocks:
     enabled: false
     description: The number of deadlocks.
@@ -399,6 +481,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.function.calls:
     enabled: false
     description: The number of calls made to a function. Requires `track_functions=pl|all` in Postgres config.
@@ -408,7 +491,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [function]
+    attributes: [function, db.namespace]
   postgresql.index.scans:
     description: The number of index scans on a table.
     stability: development
@@ -418,6 +501,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: "{scans}"
+    attributes: [db.namespace, db.collection.name, postgresql.index.name]
   postgresql.index.size:
     description: The size of the index on disk.
     stability: development
@@ -425,6 +509,7 @@ metrics:
     gauge:
       value_type: int
     unit: "By"
+    attributes: [db.namespace, db.collection.name, postgresql.index.name]
   postgresql.operations:
     enabled: true
     description: The number of db row operations.
@@ -434,7 +519,27 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [operation]
+    attributes: [operation, db.namespace, db.collection.name]
+  postgresql.query.conflicts:
+    enabled: false
+    description: Number of queries canceled due to conflicts with recovery on this database. Conflicts only occur on standby servers; this metric will be zero on primary servers.
+    stability: development
+    unit: "{query}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [postgresql.conflict.type, db.namespace]
+  postgresql.query.execution.time:
+    enabled: false
+    description: The total execution time of SQL statements currently tracked by pg_stat_statements for the database.
+    stability: development
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.replication.data_delay:
     attributes: [replication_client]
     description: The amount of data delayed in replication.
@@ -452,6 +557,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.rows:
     enabled: true
     description: The number of rows in the database.
@@ -461,7 +567,7 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-    attributes: [state]
+    attributes: [state, db.namespace, db.collection.name]
   postgresql.sequential_scans:
     enabled: false
     description: The number of sequential scans.
@@ -471,6 +577,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace, db.collection.name]
   postgresql.table.count:
     description: Number of user tables in a database.
     stability: development
@@ -480,6 +587,7 @@ metrics:
       monotonic: false
       value_type: int
     unit: "{table}"
+    attributes: [db.namespace]
   postgresql.table.size:
     description: Disk space used by a table.
     stability: development
@@ -489,6 +597,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: int
+    attributes: [db.namespace, db.collection.name]
   postgresql.table.vacuum.count:
     description: Number of times a table has manually been vacuumed.
     stability: development
@@ -498,6 +607,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
       value_type: int
+    attributes: [db.namespace, db.collection.name]
   postgresql.temp.io:
     enabled: false
     description: Total amount of data written to temporary files by queries.
@@ -507,6 +617,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.temp_files:
     enabled: false
     description: The number of temp files.
@@ -516,6 +627,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.tup_deleted:
     enabled: false
     description: Number of rows deleted by queries in the database.
@@ -525,6 +637,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.tup_fetched:
     enabled: false
     description: Number of rows fetched by queries in the database.
@@ -534,6 +647,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.tup_inserted:
     enabled: false
     description: Number of rows inserted by queries in the database.
@@ -543,6 +657,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.tup_returned:
     enabled: false
     description: Number of rows returned by queries in the database.
@@ -552,6 +667,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
   postgresql.tup_updated:
     enabled: false
     description: Number of rows updated by queries in the database.
@@ -561,6 +677,75 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: [db.namespace]
+  postgresql.vector.insert.duration:
+    attributes: [db.namespace]
+    description: The cumulative execution time of statements that insert vectors into pgvector tables.
+    stability: development
+    enabled: false
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    extended_documentation: |
+      Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+      extension in the scanned database.
+  postgresql.vector.insert.rows:
+    attributes: [db.namespace]
+    description: The number of vectors inserted into pgvector tables.
+    stability: development
+    enabled: false
+    unit: "{vectors}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    extended_documentation: |
+      Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+      extension in the scanned database.
+  postgresql.vector.search.calls:
+    attributes: [postgresql.distance.function.name, db.namespace]
+    description: The number of vector similarity search operations executed, grouped by the distance function used.
+    stability: development
+    enabled: false
+    unit: "{search}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    extended_documentation: |
+      Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+      extension in the scanned database. The `l1`, `hamming`, and `jaccard` distance functions
+      additionally require pgvector 0.7.0 or later.
+  postgresql.vector.search.duration:
+    attributes: [postgresql.distance.function.name, db.namespace]
+    description: The cumulative execution time of vector similarity searches, grouped by the distance function used.
+    stability: development
+    enabled: false
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    extended_documentation: |
+      Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+      extension in the scanned database. The `l1`, `hamming`, and `jaccard` distance functions
+      additionally require pgvector 0.7.0 or later.
+  postgresql.vector.search.rows_returned:
+    attributes: [postgresql.distance.function.name, db.namespace]
+    description: The cumulative number of rows returned by vector similarity searches, grouped by the distance function used.
+    stability: development
+    enabled: false
+    unit: "{rows}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    extended_documentation: |
+      Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+      extension in the scanned database. The `l1`, `hamming`, and `jaccard` distance functions
+      additionally require pgvector 0.7.0 or later.
   postgresql.wal.age:
     description: Age of the oldest WAL file.
     extended_documentation: |

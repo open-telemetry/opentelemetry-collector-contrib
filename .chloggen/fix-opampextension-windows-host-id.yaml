@@ -1,0 +1,14 @@
+change_type: bug_fix
+
+component: extension/opamp
+
+note: Avoid requiring host ID when building os.description so OpAMP can start on Windows containers.
+
+issues:
+  - 46965
+
+subtext: |
+  getOSDescription now uses gopsutil PlatformInformation instead of host.Info,
+  which fails on Windows containers when MachineGuid is unavailable.
+
+change_logs: [user]

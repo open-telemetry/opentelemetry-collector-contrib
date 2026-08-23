@@ -1,7 +1,7 @@
-deltatocumulative/all:
+delta_to_cumulative/all:
   max_stale: 1m
   max_streams: 10
-deltatocumulative/set-valid-max_stale:
+delta_to_cumulative/set-valid-max_stale:
   max_stale: 2m
-deltatocumulative/set-valid-max_streams:
+delta_to_cumulative/set-valid-max_streams:
   max_streams: 20

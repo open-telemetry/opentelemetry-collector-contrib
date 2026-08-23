@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/metadata"
 )
@@ -172,6 +172,7 @@ func TestValidate(t *testing.T) {
 func TestDefaultConfigIsInvalid(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	assert.Empty(t, cfg.Sources)
+	assert.False(t, cfg.OverwriteSchemaURL)
 	require.ErrorContains(t, cfg.Validate(), "at least one source must be specified")
 }
 
@@ -187,6 +188,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
+				OverwriteSchemaURL: true,
 				Sources: []Source{
 					{
 						Name:            SourceOpenInference,
@@ -315,10 +317,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.errorMessage != "" {
-				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.errorMessage)
+				assert.ErrorContains(t, confmap.Validate(cfg), tt.errorMessage)
 				return
 			}
-			require.NoError(t, xconfmap.Validate(cfg))
+			require.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

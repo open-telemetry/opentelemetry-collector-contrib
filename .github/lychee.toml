@@ -1,4 +1,4 @@
-include_fragments = false
+include_fragments = "none"
 
 accept = ["200..=299", "429"]
 
@@ -9,7 +9,11 @@ exclude  = [
     "^https://bugs.mysql.com",
     "^https://techdocs.akamai.com",
     "^https://www.vultr.com",
-    "^https://docs.honeycomb.io"
+    "^https://docs.splunk.com",
+    "^https://docs.honeycomb.io",
+    "^https://www.ibm.com",
+    "^https://access.redhat.com",
+    "^https://superuser.com"
 ]
 
 # better to be safe and avoid failures

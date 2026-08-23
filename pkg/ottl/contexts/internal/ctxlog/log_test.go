@@ -56,12 +56,13 @@ func TestPathGetSetter(t *testing.T) {
 	newMap["k2"] = newMap2
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[*testContext]
-		orig     any
-		newVal   any
-		modified func(log plog.LogRecord)
-		bodyType string
+		name       string
+		path       ottl.Path[*testContext]
+		orig       any
+		newVal     any
+		modified   func(log plog.LogRecord)
+		bodyType   string
+		nilNoError bool // true if the setter accepts nil without returning an error
 	}{
 		{
 			name: "time_unix_nano",
@@ -130,7 +131,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "body is string",
+			name:       "body is string",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "body",
 			},
@@ -142,7 +144,8 @@ func TestPathGetSetter(t *testing.T) {
 			bodyType: "string",
 		},
 		{
-			name: "body is int",
+			name:       "body is int",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "body",
 			},
@@ -154,7 +157,8 @@ func TestPathGetSetter(t *testing.T) {
 			bodyType: "int",
 		},
 		{
-			name: "body is slice",
+			name:       "body is slice",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "body",
 			},
@@ -169,7 +173,8 @@ func TestPathGetSetter(t *testing.T) {
 			bodyType: "slice",
 		},
 		{
-			name: "body is map",
+			name:       "body is map",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "body",
 			},
@@ -199,7 +204,8 @@ func TestPathGetSetter(t *testing.T) {
 			bodyType: "string",
 		},
 		{
-			name: "body slice index",
+			name:       "body slice index",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "body",
 				KeySlice: []ottl.Key[*testContext]{
@@ -216,7 +222,8 @@ func TestPathGetSetter(t *testing.T) {
 			bodyType: "slice",
 		},
 		{
-			name: "body.map[key]",
+			name:       "body.map[key]",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "body",
 				KeySlice: []ottl.Key[*testContext]{
@@ -233,7 +240,8 @@ func TestPathGetSetter(t *testing.T) {
 			bodyType: "map",
 		},
 		{
-			name: "attributes",
+			name:       "attributes",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 			},
@@ -244,7 +252,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes raw map",
+			name:       "attributes raw map",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 			},
@@ -255,7 +264,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes.key",
+			name:       "attributes.key",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
@@ -372,6 +382,15 @@ func TestPathGetSetter(t *testing.T) {
 			// Verify that setting an invalid type returns an error
 			err = accessor.Set(t.Context(), ctx, struct{}{})
 			require.Error(t, err)
+
+			// Verify nil handling: setters for scalar and struct paths return an error, while
+			// setters for pcommon.Value, map, and slice paths accept nil and clear to empty.
+			err = accessor.Set(t.Context(), newTestContext(createTelemetry(tt.bodyType)), nil)
+			if tt.nilNoError {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
 
 			expectedLog := createTelemetry(tt.bodyType)
 			tt.modified(expectedLog)

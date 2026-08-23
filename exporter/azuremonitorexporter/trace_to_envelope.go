@@ -16,7 +16,6 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
@@ -48,6 +47,11 @@ type msLink struct {
 	ID          string `json:"id"`
 }
 
+type httpStatusCodeSuccessConfig struct {
+	NonErrorHTTPStatusCodes                   []int
+	AlignHTTPServerRequestSuccessWithOTelSpec bool
+}
+
 // Transforms a tuple of pcommon.Resource, pcommon.InstrumentationScope, ptrace.Span into one or more of AppInsights contracts.Envelope
 // This is the only method that should be targeted in the unit tests
 func spanToEnvelopes(
@@ -55,6 +59,7 @@ func spanToEnvelopes(
 	instrumentationScope pcommon.InstrumentationScope,
 	span ptrace.Span,
 	spanEventsEnabled bool,
+	httpSuccessConfig httpStatusCodeSuccessConfig,
 	tagMappings *TagMappingsConfig,
 	logger *zap.Logger,
 ) ([]*contracts.Envelope, error) {
@@ -89,7 +94,11 @@ func spanToEnvelopes(
 
 	switch spanKind {
 	case ptrace.SpanKindServer, ptrace.SpanKindConsumer:
-		requestData := spanToRequestData(span, incomingSpanType)
+		requestHTTPSuccessConfig := httpSuccessConfig
+		if spanKind != ptrace.SpanKindServer {
+			requestHTTPSuccessConfig.AlignHTTPServerRequestSuccessWithOTelSpec = false
+		}
+		requestData := spanToRequestData(span, incomingSpanType, requestHTTPSuccessConfig)
 		dataProperties = requestData.Properties
 		dataSanitizeFunc = requestData.Sanitize
 		envelope.Name = requestData.EnvelopeName("")
@@ -97,7 +106,7 @@ func spanToEnvelopes(
 		data.BaseData = requestData
 		data.BaseType = requestData.BaseType()
 	case ptrace.SpanKindClient, ptrace.SpanKindProducer, ptrace.SpanKindInternal:
-		remoteDependencyData := spanToRemoteDependencyData(span, incomingSpanType)
+		remoteDependencyData := spanToRemoteDependencyData(span, incomingSpanType, httpSuccessConfig)
 
 		// Regardless of the detected Span type, if the SpanKind is Internal we need to set data.Type to InProc
 		if spanKind == ptrace.SpanKindInternal {
@@ -223,7 +232,7 @@ func newEnvelope(span ptrace.Span, time string) *contracts.Envelope {
 }
 
 // Maps Server/Consumer Span to AppInsights RequestData
-func spanToRequestData(span ptrace.Span, incomingSpanType spanType) *contracts.RequestData {
+func spanToRequestData(span ptrace.Span, incomingSpanType spanType, httpSuccessConfig httpStatusCodeSuccessConfig) *contracts.RequestData {
 	// See https://github.com/microsoft/ApplicationInsights-Go/blob/master/appinsights/contracts/requestdata.go
 	// Start with some reasonable default for server spans.
 	data := contracts.NewRequestData()
@@ -235,7 +244,7 @@ func spanToRequestData(span ptrace.Span, incomingSpanType spanType) *contracts.R
 
 	switch incomingSpanType {
 	case httpSpanType:
-		fillRequestDataHTTP(span, data)
+		fillRequestDataHTTP(span, data, httpSuccessConfig)
 	case rpcSpanType:
 		fillRequestDataRPC(span, data)
 	case messagingSpanType:
@@ -248,7 +257,7 @@ func spanToRequestData(span ptrace.Span, incomingSpanType spanType) *contracts.R
 }
 
 // Maps Span to AppInsights RemoteDependencyData
-func spanToRemoteDependencyData(span ptrace.Span, incomingSpanType spanType) *contracts.RemoteDependencyData {
+func spanToRemoteDependencyData(span ptrace.Span, incomingSpanType spanType, httpSuccessConfig httpStatusCodeSuccessConfig) *contracts.RemoteDependencyData {
 	// https://github.com/microsoft/ApplicationInsights-Go/blob/master/appinsights/contracts/remotedependencydata.go
 	// Start with some reasonable default for dependent spans.
 	data := contracts.NewRemoteDependencyData()
@@ -260,7 +269,7 @@ func spanToRemoteDependencyData(span ptrace.Span, incomingSpanType spanType) *co
 
 	switch incomingSpanType {
 	case httpSpanType:
-		fillRemoteDependencyDataHTTP(span, data)
+		fillRemoteDependencyDataHTTP(span, data, httpSuccessConfig)
 	case rpcSpanType:
 		fillRemoteDependencyDataRPC(span, data)
 	case databaseSpanType:
@@ -308,13 +317,32 @@ func getFormattedHTTPStatusValues(statusCode int64) (statusAsString string, succ
 	return strconv.FormatInt(statusCode, 10), statusCode >= 100 && statusCode <= 399
 }
 
+func (c httpStatusCodeSuccessConfig) getFormattedHTTPServerStatusValues(statusCode int64) (statusAsString string, success bool) {
+	statusAsString, success = getFormattedHTTPStatusValues(statusCode)
+	return statusAsString, success || c.isNonErrorHTTPStatusCode(statusCode) || (c.AlignHTTPServerRequestSuccessWithOTelSpec && statusCode >= 400 && statusCode <= 499)
+}
+
+func (c httpStatusCodeSuccessConfig) getFormattedHTTPClientStatusValues(statusCode int64) (statusAsString string, success bool) {
+	statusAsString, success = getFormattedHTTPStatusValues(statusCode)
+	return statusAsString, success || c.isNonErrorHTTPStatusCode(statusCode)
+}
+
+func (c httpStatusCodeSuccessConfig) isNonErrorHTTPStatusCode(statusCode int64) bool {
+	for _, nonErrorStatusCode := range c.NonErrorHTTPStatusCodes {
+		if statusCode == int64(nonErrorStatusCode) {
+			return true
+		}
+	}
+	return false
+}
+
 // Maps HTTP Server Span to AppInsights RequestData
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#semantic-conventions-for-http-spans
-func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
+func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData, httpSuccessConfig httpStatusCodeSuccessConfig) {
 	attrs := copyAndExtractHTTPAttributes(span.Attributes(), data.Properties)
 
 	if attrs.HTTPResponseStatusCode != 0 {
-		data.ResponseCode, data.Success = getFormattedHTTPStatusValues(attrs.HTTPResponseStatusCode)
+		data.ResponseCode, data.Success = httpSuccessConfig.getFormattedHTTPServerStatusValues(attrs.HTTPResponseStatusCode)
 	}
 
 	var sb strings.Builder
@@ -392,12 +420,12 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 
 // Maps HTTP Client Span to AppInsights RemoteDependencyData
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md
-func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDependencyData) {
+func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDependencyData, httpSuccessConfig httpStatusCodeSuccessConfig) {
 	attrs := copyAndExtractHTTPAttributes(span.Attributes(), data.Properties)
 
 	data.Type = "HTTP"
 	if attrs.HTTPResponseStatusCode != 0 {
-		data.ResultCode, data.Success = getFormattedHTTPStatusValues(attrs.HTTPResponseStatusCode)
+		data.ResultCode, data.Success = httpSuccessConfig.getFormattedHTTPClientStatusValues(attrs.HTTPResponseStatusCode)
 	}
 
 	var sb strings.Builder
@@ -522,7 +550,11 @@ func fillRemoteDependencyDataRPC(span ptrace.Span, data *contracts.RemoteDepende
 
 // Returns the RPC status code as a string
 func getRPCStatusCodeAsString(rpcAttributes *rpcAttributes) (statusCodeAsString string) {
-	// Honor the attribute rpc.grpc.status_code if there
+	// Prefer the new rpc.response.status_code (string) attribute
+	if rpcAttributes.RPCResponseStatusCode != "" {
+		return rpcAttributes.RPCResponseStatusCode
+	}
+	// Fall back to the deprecated rpc.grpc.status_code (int) attribute
 	if rpcAttributes.RPCGRPCStatusCode != 0 {
 		return strconv.FormatInt(rpcAttributes.RPCGRPCStatusCode, 10)
 	}
@@ -602,7 +634,8 @@ func copyAndExtractHTTPAttributes(
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) },
+	)
 
 	return attrs
 }
@@ -616,7 +649,8 @@ func copyAndExtractRPCAttributes(
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) },
+	)
 
 	return attrs
 }
@@ -630,7 +664,8 @@ func copyAndExtractDatabaseAttributes(
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) },
+	)
 
 	return attrs
 }
@@ -644,7 +679,8 @@ func copyAndExtractMessagingAttributes(
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) },
+	)
 
 	return attrs
 }
@@ -658,7 +694,8 @@ func copyAndExtractExceptionAttributes(
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) },
+	)
 
 	return attrs
 }
@@ -676,8 +713,11 @@ func mapIncomingSpanToType(attributeMap pcommon.Map) spanType {
 		return unknownSpanType
 	}
 
-	// RPC
-	if _, exists := attributeMap.Get(string(conventionsv138.RPCSystemKey)); exists {
+	// RPC — check both the new (rpc.system.name) and deprecated (rpc.system) attribute keys
+	if _, exists := attributeMap.Get(string(conventions.RPCSystemNameKey)); exists {
+		return rpcSpanType
+	}
+	if _, exists := attributeMap.Get("rpc.system"); exists {
 		return rpcSpanType
 	}
 

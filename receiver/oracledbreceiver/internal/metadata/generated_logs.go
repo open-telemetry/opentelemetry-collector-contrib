@@ -95,7 +95,7 @@ type eventDbServerSessionWaitSample struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerSessionWaitSample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbEventAttributeValue string, oracledbWaitClassAttributeValue string, oracledbWaitCountAttributeValue int64, oracledbWaitDurationAttributeValue float64) {
+func (e *eventDbServerSessionWaitSample) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbEventAttributeValue string, oracledbWaitClassAttributeValue string, oracledbWaitCountAttributeValue int64, oracledbWaitTimeoutsAttributeValue int64, oracledbWaitDurationAttributeValue float64, dbNamespaceAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
@@ -112,7 +112,9 @@ func (e *eventDbServerSessionWaitSample) recordEvent(ctx context.Context, timest
 	dp.Attributes().PutStr("oracledb.event", oracledbEventAttributeValue)
 	dp.Attributes().PutStr("oracledb.wait_class", oracledbWaitClassAttributeValue)
 	dp.Attributes().PutInt("oracledb.wait.count", oracledbWaitCountAttributeValue)
+	dp.Attributes().PutInt("oracledb.wait.timeouts", oracledbWaitTimeoutsAttributeValue)
 	dp.Attributes().PutDouble("oracledb.wait.duration", oracledbWaitDurationAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 
 }
 
@@ -249,12 +251,6 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	if lbc.ResourceAttributes.OracleDbOpenMode.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["oracle.db.open_mode"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbOpenMode.EventsExclude)
 	}
-	if lbc.ResourceAttributes.OracleDbPdb.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["oracle.db.pdb"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbPdb.EventsInclude)
-	}
-	if lbc.ResourceAttributes.OracleDbPdb.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["oracle.db.pdb"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbPdb.EventsExclude)
-	}
 	if lbc.ResourceAttributes.OracleDbRole.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["oracle.db.role"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbRole.EventsInclude)
 	}
@@ -278,6 +274,18 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	}
 	if lbc.ResourceAttributes.ServiceInstanceID.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["service.instance.id"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceInstanceID.EventsExclude)
+	}
+	if lbc.ResourceAttributes.ServiceName.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["service.name"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceName.EventsInclude)
+	}
+	if lbc.ResourceAttributes.ServiceName.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["service.name"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceName.EventsExclude)
+	}
+	if lbc.ResourceAttributes.ServiceNamespace.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["service.namespace"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceNamespace.EventsInclude)
+	}
+	if lbc.ResourceAttributes.ServiceNamespace.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["service.namespace"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceNamespace.EventsExclude)
 	}
 
 	return lb
@@ -367,8 +375,8 @@ func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, times
 }
 
 // RecordDbServerSessionWaitSampleEvent adds a log record of db.server.session.wait_sample event.
-func (lb *LogsBuilder) RecordDbServerSessionWaitSampleEvent(ctx context.Context, timestamp pcommon.Timestamp, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbEventAttributeValue string, oracledbWaitClassAttributeValue string, oracledbWaitCountAttributeValue int64, oracledbWaitDurationAttributeValue float64) {
-	lb.eventDbServerSessionWaitSample.recordEvent(ctx, timestamp, oracledbSidAttributeValue, oracledbSerialAttributeValue, oracledbEventAttributeValue, oracledbWaitClassAttributeValue, oracledbWaitCountAttributeValue, oracledbWaitDurationAttributeValue)
+func (lb *LogsBuilder) RecordDbServerSessionWaitSampleEvent(ctx context.Context, timestamp pcommon.Timestamp, oracledbSidAttributeValue string, oracledbSerialAttributeValue string, oracledbEventAttributeValue string, oracledbWaitClassAttributeValue string, oracledbWaitCountAttributeValue int64, oracledbWaitTimeoutsAttributeValue int64, oracledbWaitDurationAttributeValue float64, dbNamespaceAttributeValue string) {
+	lb.eventDbServerSessionWaitSample.recordEvent(ctx, timestamp, oracledbSidAttributeValue, oracledbSerialAttributeValue, oracledbEventAttributeValue, oracledbWaitClassAttributeValue, oracledbWaitCountAttributeValue, oracledbWaitTimeoutsAttributeValue, oracledbWaitDurationAttributeValue, dbNamespaceAttributeValue)
 }
 
 // RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.

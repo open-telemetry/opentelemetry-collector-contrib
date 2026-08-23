@@ -41,13 +41,17 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Timeout = 5 * time.Second
+	clientConfig.Headers = configopaque.MapList{
+		{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
+	}
 	cfg := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Timeout: 5 * time.Second,
-			Headers: configopaque.MapList{
-				{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
-			},
-		},
+		ClientConfig:  clientConfig,
 		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		MetricsConfig: MetricsConfig{
 			MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),
@@ -74,9 +78,9 @@ func createMetricsExporter(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Sematext HTTP writer: %w", err)
 	}
-	schema, found := common.MetricsSchemata[cfg.MetricsSchema]
+	schema, found := common.MetricsSchemata[cfg.MetricsConfig.MetricsSchema]
 	if !found {
-		return nil, fmt.Errorf("schema '%s' not recognized", cfg.MetricsSchema)
+		return nil, fmt.Errorf("schema '%s' not recognized", cfg.MetricsConfig.MetricsSchema)
 	}
 
 	expConfig := otel2influx.DefaultOtelMetricsToLineProtocolConfig()

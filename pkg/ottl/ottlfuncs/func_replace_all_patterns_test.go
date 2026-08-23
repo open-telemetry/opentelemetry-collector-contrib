@@ -75,6 +75,26 @@ func Test_replaceAllPatterns(t *testing.T) {
 			},
 		},
 		{
+			name:    "function replaces at match position not by text",
+			mode:    modeValue,
+			pattern: `world\d`,
+			replacement: ottl.StandardStringGetter[pcommon.Map]{
+				Getter: func(context.Context, pcommon.Map) (any, error) {
+					return "$0", nil
+				},
+			},
+			function: optionalArg,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutStr("test", "hello world")
+				expectedMap.PutStr("test2", "hello")
+				expectedMap.PutStr("test3", "goodbye hash(world1) and hash(world2)")
+				expectedMap.PutInt("test4", 1234)
+				expectedMap.PutDouble("test5", 1234)
+				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
+			},
+		},
+		{
 			name:    "replace only matches (with capture group and hash function)",
 			mode:    modeValue,
 			pattern: "(hello)",
@@ -751,4 +771,54 @@ func Test_replaceAllPatterns_invalid_model(t *testing.T) {
 	exprFunc, err := replaceAllPatterns[any](target, invalidMode, pattern, replacement, function, replacementFormat)
 	assert.Nil(t, exprFunc)
 	assert.ErrorContains(t, err, "invalid mode")
+}
+
+func Test_ReplaceAllPatternsFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewReplaceAllPatternsFactory[any]()
+		assert.Equal(t, "replace_all_patterns", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewReplaceAllPatternsFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ReplaceAllPatternsArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Mode", "RegexPattern", "Replacement", "Function", "ReplacementFormat"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewReplaceAllPatternsFactory[any]()
+		args := factory.CreateDefaultArguments()
+		replaceArgs, ok := args.(*ReplaceAllPatternsArguments[any])
+		require.True(t, ok)
+		replaceArgs.Target = &ottl.StandardPMapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return pcommon.NewMap(), nil
+			},
+			Setter: func(context.Context, any, any) error {
+				return nil
+			},
+		}
+		replaceArgs.Mode = "value"
+		replaceArgs.RegexPattern = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "pattern", nil
+			},
+		}
+		replaceArgs.Replacement = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "replacement", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createReplaceAllPatternsFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ReplaceAllPatternsFactory args must be of type *ReplaceAllPatternsArguments[K]")
+	})
 }

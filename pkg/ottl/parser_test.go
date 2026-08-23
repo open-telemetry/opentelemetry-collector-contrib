@@ -2438,6 +2438,54 @@ func Test_ParseConditions_Error(t *testing.T) {
 	}
 }
 
+func Test_String(t *testing.T) {
+	type mockSetArguments[K any] struct {
+		Target Setter[K]
+		Value  Getter[K]
+	}
+
+	mockSetFactory := NewFactory("set", &mockSetArguments[any]{}, func(_ FunctionContext, _ Arguments) (ExprFunc[any], error) {
+		return func(context.Context, any) (any, error) {
+			return nil, nil
+		}, nil
+	})
+
+	mockFooFactory := NewFactory("Foo", &struct{}{}, func(_ FunctionContext, _ Arguments) (ExprFunc[any], error) {
+		return func(context.Context, any) (any, error) {
+			return nil, nil
+		}, nil
+	})
+
+	p, err := NewParser(
+		CreateFactoryMap[any](mockSetFactory, mockFooFactory),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+	require.NoError(t, err)
+
+	t.Run("Statement", func(t *testing.T) {
+		statement := `set(name, "bar") where name == "foo"`
+		s, err := p.ParseStatement(statement)
+		require.NoError(t, err)
+		assert.Equal(t, statement, s.String())
+	})
+
+	t.Run("Condition", func(t *testing.T) {
+		condition := `name == "foo"`
+		c, err := p.ParseCondition(condition)
+		require.NoError(t, err)
+		assert.Equal(t, condition, c.String())
+	})
+
+	t.Run("ValueExpression", func(t *testing.T) {
+		expression := `Foo()`
+		e, err := p.ParseValueExpression(expression)
+		require.NoError(t, err)
+		assert.Equal(t, expression, e.String())
+	})
+}
+
 // This test doesn't validate parser results, simply checks whether the parse succeeds or not.
 // It's a fast way to check a large range of possible syntaxes.
 func Test_parseStatement(t *testing.T) {
@@ -2788,6 +2836,50 @@ func Test_Statements_Execute_Error(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_NewStatementSequence(t *testing.T) {
+	settings := componenttest.NewNopTelemetrySettings()
+	statements := []*Statement[any]{
+		{
+			condition:         newAlwaysTrue[any](),
+			function:          Expr[any]{exprFunc: func(context.Context, any) (any, error) { return nil, nil }},
+			telemetrySettings: settings,
+		},
+	}
+
+	seq := NewStatementSequence(statements, settings)
+	assert.Equal(t, statements, seq.statements)
+	assert.Equal(t, PropagateError, seq.errorMode)
+	assert.Equal(t, settings, seq.telemetrySettings)
+
+	seq = NewStatementSequence(statements, settings, WithStatementSequenceErrorMode[any](IgnoreError))
+	assert.Equal(t, IgnoreError, seq.errorMode)
+	require.NoError(t, seq.Execute(t.Context(), nil))
+}
+
+func Test_NewConditionSequence(t *testing.T) {
+	settings := componenttest.NewNopTelemetrySettings()
+	conditions := []*Condition[any]{
+		{condition: newAlwaysTrue[any]()},
+	}
+
+	seq := NewConditionSequence(conditions, settings)
+	assert.Equal(t, conditions, seq.conditions)
+	assert.Equal(t, PropagateError, seq.errorMode)
+	assert.Equal(t, settings, seq.telemetrySettings)
+	assert.Equal(t, Or, seq.logicOp)
+
+	seq = NewConditionSequence(conditions, settings,
+		WithConditionSequenceErrorMode[any](IgnoreError),
+		WithLogicOperation[any](And),
+	)
+	assert.Equal(t, IgnoreError, seq.errorMode)
+	assert.Equal(t, And, seq.logicOp)
+
+	result, err := seq.Eval(t.Context(), nil)
+	require.NoError(t, err)
+	assert.True(t, result)
 }
 
 func Test_ConditionSequence_Eval(t *testing.T) {

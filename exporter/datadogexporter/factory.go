@@ -278,7 +278,8 @@ func (f *factory) createMetricsExporter(
 		apiClient := clientutil.CreateAPIClient(
 			set.BuildInfo,
 			cfg.Metrics.Endpoint,
-			cfg.ClientConfig)
+			cfg.ClientConfig,
+		)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), set.Logger, apiClient) }()
 		if cfg.API.FailOnInvalidKey {
 			err = <-errchan
@@ -306,10 +307,11 @@ func (f *factory) createMetricsExporter(
 				Metrics: cfg.Metrics,
 			},
 			TimeoutConfig: exporterhelper.TimeoutConfig{
-				Timeout: cfg.Timeout,
+				Timeout: cfg.ClientConfig.Timeout,
 			},
-			ClientConfig:     cfg.TLS,
+			ClientConfig:     cfg.ClientConfig.TLS,
 			QueueBatchConfig: cfg.QueueSettings,
+			RetryConfig:      cfg.BackOffConfig,
 			API:              cfg.API,
 			HostProvider: func(ctx context.Context) (string, error) {
 				h, err2 := hostProvider.Source(ctx)
@@ -368,7 +370,8 @@ func (f *factory) createMetricsExporter(
 		return nil, err
 	}
 	return resourcetotelemetry.WrapMetricsExporter(
-		resourcetotelemetry.Settings{Enabled: cfg.Metrics.ExporterConfig.ResourceAttributesAsTags}, exporter), nil
+		resourcetotelemetry.Settings{Enabled: cfg.Metrics.ExporterConfig.ResourceAttributesAsTags}, exporter,
+	), nil
 }
 
 // createTracesExporter creates a trace exporter based on this config.
@@ -541,12 +544,20 @@ func (f *factory) createLogsExporter(
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0 * time.Second}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithShutdown(func(context.Context) error {
+		exporterhelper.WithShutdown(func(shutdownCtx context.Context) error {
+			// Stop the logs agent before canceling ctx. cancel() pre-cancels
+			// the context that pipeline goroutines were started with, causing
+			// the serial stopper inside logsAgent.Stop() to find them already
+			// gone and skip the proper DestinationSender.Stop() sequence — which
+			// leaves startRetryReader goroutines alive and blocks server.Close()
+			// in tests (and keeps connections open in production).
+			if logsAgent != nil {
+				if err := logsAgent.Stop(shutdownCtx); err != nil {
+					return err
+				}
+			}
 			cancel()
 			f.StopReporter()
-			if logsAgent != nil {
-				return logsAgent.Stop(ctx)
-			}
 			return nil
 		}),
 	)

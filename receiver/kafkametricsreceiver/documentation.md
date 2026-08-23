@@ -252,9 +252,10 @@ replication factor of a topic.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| kafka.cluster.alias | The alias name (string) of the cluster | Any Str | false | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| kafka.cluster.alias | The alias name (string) of the cluster | Any Str | false | - | - |
+| kafka.cluster.id | The unique ID (string) of the Kafka cluster, as reported in cluster metadata. | Any Str | false | - | - |
 
 ## Feature Gates
 

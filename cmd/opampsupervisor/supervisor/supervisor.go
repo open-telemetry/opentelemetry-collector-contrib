@@ -26,11 +26,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/knadh/koanf/maps"
-	"github.com/knadh/koanf/parsers/yaml"
-	koanfconfmap "github.com/knadh/koanf/providers/confmap"
-	"github.com/knadh/koanf/providers/rawbytes"
-	"github.com/knadh/koanf/v2"
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
@@ -40,7 +35,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
-	collectorconfmap "go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
@@ -75,6 +70,7 @@ var (
 	ownTelemetryTpl string
 
 	lastRecvRemoteConfigFile       = "last_recv_remote_config.dat"
+	lastWorkingRemoteConfigFile    = "last_working_remote_config.dat"
 	lastRecvOwnTelemetryConfigFile = "last_recv_own_telemetry_config.dat"
 
 	errNonMatchingInstanceUID = errors.New("received collector instance UID does not match expected UID set by the supervisor")
@@ -83,16 +79,11 @@ var (
 const (
 	persistentStateFileName     = "persistent_state.yaml"
 	agentConfigFileName         = "effective.yaml"
+	agentLogFileName            = "agent.log"
 	AllowNoPipelinesFeatureGate = "service.AllowNoPipelines"
 )
 
 const maxBufferedCustomMessages = 10
-
-// clearResourceAttributesKey is an internal merge sentinel used to give
-// remote `service.telemetry.resource.attributes` explicit clear semantics.
-// It is injected into a synthetic config before the actual remote config,
-// consumed by configMergeFunc, and never written to the final collector config.
-const clearResourceAttributesKey = "__opampsupervisor_clear_resource_attributes__"
 
 type configState struct {
 	// Supervisor-assembled config to be given to the Collector.
@@ -157,11 +148,18 @@ type Supervisor struct {
 	// Internal config state for agent use. See the [configState] struct for more details.
 	cfgState *atomic.Value
 
-	// Final effective config of the Collector.
+	// Final effective config of the Collector, as reported by the agent.
+	// Stores the full *protobufs.EffectiveConfig so all named config files
+	// are preserved when forwarding to the OpAMP server.
 	effectiveConfig *atomic.Value
 
 	// Last received remote config.
 	remoteConfig atomic.Pointer[protobufs.AgentRemoteConfig]
+	// Last known-good remote config.
+	lastWorkingRemoteConfig atomic.Pointer[protobufs.AgentRemoteConfig]
+	// If true, we are starting from a last known-good remote configuration.
+	// This is used to help control behavior that must be different in this scenario.
+	usingLastWorkingRemoteConfig atomic.Bool
 
 	// A channel to indicate there is a new config to apply.
 	hasNewConfig chan struct{}
@@ -213,6 +211,10 @@ type Supervisor struct {
 
 	// extensions hosts configured supervisor extensions. nil when none are configured.
 	extensions *extensions.Extensions
+
+	// passthroughLogBuffer keeps the latest Collector log lines when passthrough logging is enabled.
+	passthroughLogBuffer *logRingBuffer
+	passthroughLogMu     sync.Mutex
 }
 
 func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
@@ -249,7 +251,7 @@ func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Superviso
 		return nil, err
 	}
 
-	if err := collectorconfmap.Validate(cfg); err != nil {
+	if err := confmap.Validate(cfg); err != nil {
 		return nil, fmt.Errorf("error validating config: %w", err)
 	}
 	s.config = cfg
@@ -371,12 +373,12 @@ func (s *Supervisor) Start(ctx context.Context) error {
 		return err
 	}
 
-	if s.config.Capabilities.AcceptsPackages || s.config.Capabilities.ReportsPackageStatuses {
+	if s.config.Capabilities.AcceptsPackages {
 		s.telemetrySettings.Logger.Error(
-			"accepts_packages and reports_package_statuses capabilities are not yet fully implemented. " +
+			"accepts_packages capability is not yet fully implemented. " +
 				"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272 for progress.",
 		)
-		return errors.New("accepts_packages and reports_package_statuses capabilities are not yet fully implemented")
+		return errors.New("accepts_packages capability is not yet fully implemented")
 	}
 
 	if err = s.getFeatureGates(); err != nil {
@@ -410,13 +412,14 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	}
 	s.commander, err = commander.NewCommander(
 		s.telemetrySettings.Logger,
-		s.config.Storage.Directory,
+		filepath.Join(s.config.Storage.Directory, agentLogFileName),
 		s.config.Agent,
 		flags...,
 	)
 	if err != nil {
 		return err
 	}
+	s.commander.SetPassthroughLogHook(s.appendPassthroughLogLine)
 
 	s.agentWG.Go(func() {
 		s.runAgentProcess()
@@ -432,7 +435,7 @@ func (s *Supervisor) Start(ctx context.Context) error {
 func (s *Supervisor) getFeatureGates() error {
 	cmd, err := commander.NewCommander(
 		s.telemetrySettings.Logger,
-		s.config.Storage.Directory,
+		filepath.Join(s.config.Storage.Directory, agentLogFileName),
 		s.config.Agent,
 		"featuregate",
 	)
@@ -596,7 +599,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	}
 	cmd, err := commander.NewCommander(
 		s.telemetrySettings.Logger,
-		s.config.Storage.Directory,
+		filepath.Join(s.config.Storage.Directory, agentLogFileName),
 		s.config.Agent,
 		flags...,
 	)
@@ -802,7 +805,7 @@ func (s *Supervisor) startHealthCheckServer() error {
 	})
 
 	healthCheckServerPort := s.config.HealthCheck.Port()
-	server, err := s.config.HealthCheck.ToServer(
+	server, err := s.config.HealthCheck.ServerConfig.ToServer(
 		s.runCtx,
 		nil,
 		s.telemetrySettings.TelemetrySettings,
@@ -813,7 +816,7 @@ func (s *Supervisor) startHealthCheckServer() error {
 	}
 	s.healthCheckServer = server
 
-	listener, err := s.config.HealthCheck.ToListener(s.runCtx)
+	listener, err := s.config.HealthCheck.ServerConfig.ToListener(s.runCtx)
 	if err != nil {
 		return fmt.Errorf("failed to listen on port %d: %w", healthCheckServerPort, err)
 	}
@@ -893,19 +896,18 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 	}
 
 	if message.EffectiveConfig != nil {
-		span.AddEvent("Received effectiveConfig")
-		if cfg, ok := message.EffectiveConfig.GetConfigMap().GetConfigMap()[""]; ok {
+		configMap := message.EffectiveConfig.GetConfigMap()
+		if configMap == nil || len(configMap.GetConfigMap()) == 0 {
+			s.telemetrySettings.Logger.Debug("Received effective config with empty config map, skipping")
+		} else {
+			span.AddEvent("Received effectiveConfig")
 			s.telemetrySettings.Logger.Debug("Received effective config from agent")
-			s.effectiveConfig.Store(string(cfg.Body))
+			s.effectiveConfig.Store(message.EffectiveConfig)
 			err := s.opampClient.UpdateEffectiveConfig(ctx)
 			if err != nil {
 				span.SetStatus(codes.Error, fmt.Sprintf("Could not update effective config: %s", err.Error()))
 				s.telemetrySettings.Logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
 			}
-		} else {
-			msg := "Got effective config message, but the instance config was not present. Ignoring effective config."
-			span.SetStatus(codes.Error, msg)
-			s.telemetrySettings.Logger.Error(msg)
 		}
 	}
 
@@ -944,6 +946,7 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 			s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
 		}
 		if !s.agentReady.Load() && message.Health.Healthy {
+			s.usingLastWorkingRemoteConfig.Store(false)
 			s.markAgentReady()
 		}
 	}
@@ -1111,8 +1114,13 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 		return err
 	}
 
-	// Update the heartbeat interval if the agent supports it
-	if s.config.Capabilities.ReportsHeartbeat {
+	// Update the heartbeat interval if the agent supports it.
+	// Ignore non-positive intervals from the server and keep the current value.
+	// This avoids passing a zero duration to the opamp-go sender, which rejects
+	// it for HTTP transport and silently disables heartbeats for WebSocket
+	// transport.
+	oldHeartbeatIntervalSeconds := s.heartbeatIntervalSeconds
+	if s.config.Capabilities.ReportsHeartbeat && settings.HeartbeatIntervalSeconds > 0 {
 		s.heartbeatIntervalSeconds = settings.HeartbeatIntervalSeconds
 	}
 
@@ -1128,8 +1136,9 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 
 	if err := s.startOpAMPClient(); err != nil {
 		s.telemetrySettings.Logger.Error("Cannot connect to the OpAMP server using the new settings", zap.Error(err))
-		// revert the OpAMP server config
+		// revert the OpAMP server config and heartbeat interval
 		s.config.Server = oldServerConfig
+		s.heartbeatIntervalSeconds = oldHeartbeatIntervalSeconds
 		// start the OpAMP client with the old settings
 		if err := s.startOpAMPClient(); err != nil {
 			s.telemetrySettings.Logger.Error("Cannot reconnect to the OpAMP server after restoring old settings", zap.Error(err))
@@ -1226,20 +1235,19 @@ func (s *Supervisor) createRemoteConfigComposers(incomingConfig *protobufs.Agent
 }
 
 func (s *Supervisor) composeNoopConfig() ([]byte, error) {
-	k := koanf.New("::")
-
 	cfg, err := s.composeNoopPipeline()
 	if err != nil {
 		return nil, err
 	}
-	if err := k.Load(rawbytes.Provider(cfg), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+	conf, err := config.NewConfFromYAML(cfg)
+	if err != nil {
 		return nil, err
 	}
-	if err := k.Load(rawbytes.Provider(s.composeOpAMPExtensionConfig()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+	if err := config.MergeConfFromYAML(conf, s.composeOpAMPExtensionConfig()); err != nil {
 		return nil, err
 	}
 
-	return k.Marshal(yaml.Parser())
+	return config.MarshalConfToYAML(conf)
 }
 
 func (s *Supervisor) composeOwnTelemetryConfig() []byte {
@@ -1313,15 +1321,15 @@ func (s *Supervisor) composeRequiredResourceAttributesConfig() []byte {
 }
 
 func composeClearResourceAttributesConfig() []byte {
-	return []byte("service:\n  telemetry:\n    resource:\n      " + clearResourceAttributesKey + ": true\n")
+	return []byte("service:\n  telemetry:\n    resource:\n      " + config.ClearResourceAttributesKey + ": true\n")
 }
 
 func remoteConfigDeclaresResourceAttributes(body []byte) bool {
-	k := koanf.New("::")
-	if err := k.Load(rawbytes.Provider(body), yaml.Parser()); err != nil {
+	conf, err := config.NewConfFromYAML(body)
+	if err != nil {
 		return false
 	}
-	return k.Exists("service::telemetry::resource::attributes")
+	return conf.IsSet("service::telemetry::resource::attributes")
 }
 
 func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
@@ -1337,6 +1345,7 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 		"PID":                        s.pidProvider.PID(),
 		"PPIDPollInterval":           orphanPollInterval,
 		"ReportsAvailableComponents": s.config.Capabilities.ReportsAvailableComponents,
+		"IncludeResourceAttributes":  s.config.Agent.Description.IncludeResourceAttributes,
 	}
 	err := s.opampextensionTemplate.Execute(
 		&cfg,
@@ -1358,7 +1367,7 @@ type resourceAttributeTemplateValue struct {
 }
 
 func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemoteConfig, configFiles []string) ([]byte, error) {
-	conf := koanf.New("::")
+	conf := confmap.New()
 
 	specialConfigComposers := map[config.SpecialConfigFile][]configComposer{
 		config.SpecialConfigFileOwnTelemetry:   {s.composeOwnTelemetryConfig, s.composeExtraTelemetryConfig},
@@ -1371,14 +1380,14 @@ func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemo
 		// will be due to the typing in the Supervisor's config struct and its
 		// validation function.
 		// The special config file for the remote configuration is the exception
-		// here: it could be invalid yaml. In case it is, the `koanf` loader
+		// here: it could be invalid yaml. In case it is, the confmap loader
 		// will return an error.
 		// Normal config files with invalid yaml should be just ignored.
 		if strings.HasPrefix(file, "$") {
 			cfgProviders := specialConfigComposers[config.SpecialConfigFile(file)]
 			for _, cfgProvider := range cfgProviders {
 				cfgBytes := cfgProvider()
-				err := conf.Load(rawbytes.Provider(cfgBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
+				err := config.MergeConfFromYAML(conf, cfgBytes)
 				if err != nil {
 					s.telemetrySettings.Logger.Error("Could not merge special config file", zap.String("specialConfig", file), zap.Error(err))
 					return nil, err
@@ -1387,32 +1396,25 @@ func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemo
 			continue
 		}
 
-		cfgBytes, err := os.ReadFile(file)
+		incomingConf, err := config.RetrieveURIAsConf(file, s.telemetrySettings.Logger)
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not read local config file", zap.Error(err))
 			continue
 		}
 
-		err = conf.Load(rawbytes.Provider(cfgBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
+		err = config.MergeConf(conf, incomingConf)
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not merge local config file: "+file, zap.Error(err))
 			continue
 		}
 	}
 
-	raw := conf.Raw()
-	if err := normalizeTelemetryResourceConfig(raw); err != nil {
+	if err := normalizeTelemetryResourceConfig(conf); err != nil {
 		s.telemetrySettings.Logger.Error("Could not normalize telemetry resource config", zap.Error(err))
 		return []byte(""), err
 	}
 
-	normalizedConf := koanf.New("::")
-	if err := normalizedConf.Load(koanfconfmap.Provider(raw, ""), nil); err != nil {
-		s.telemetrySettings.Logger.Error("Could not reload normalized config", zap.Error(err))
-		return []byte(""), err
-	}
-
-	b, err := normalizedConf.Marshal(yaml.Parser())
+	b, err := config.MarshalConfToYAML(conf)
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Could not marshal merged local config files", zap.Error(err))
 		return []byte(""), err
@@ -1420,8 +1422,8 @@ func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemo
 	return b, nil
 }
 
-func normalizeTelemetryResourceConfig(raw map[string]any) error {
-	rawResourceCfg := maps.Search(raw, []string{"service", "telemetry", "resource"})
+func normalizeTelemetryResourceConfig(conf *confmap.Conf) error {
+	rawResourceCfg := conf.Get("service::telemetry::resource")
 	if rawResourceCfg == nil {
 		return nil
 	}
@@ -1432,7 +1434,7 @@ func normalizeTelemetryResourceConfig(raw map[string]any) error {
 	}
 
 	var resourceCfg otelconftelemetry.ResourceConfig
-	if err := collectorconfmap.NewFromStringMap(resourceMap).Unmarshal(&resourceCfg); err != nil {
+	if err := confmap.NewFromStringMap(resourceMap).Unmarshal(&resourceCfg); err != nil {
 		return err
 	}
 
@@ -1466,17 +1468,19 @@ func normalizeTelemetryResourceConfig(raw map[string]any) error {
 	}
 	resourceCfg.LegacyAttributes = nil
 
-	normalized := collectorconfmap.New()
+	normalized := confmap.New()
 	if err := normalized.Marshal(resourceCfg); err != nil {
 		return err
 	}
 
-	serviceMap, ok := maps.Search(raw, []string{"service", "telemetry"}).(map[string]any)
-	if !ok {
-		return nil
-	}
-	serviceMap["resource"] = normalized.ToStringMap()
-	return nil
+	conf.Delete("service::telemetry::resource")
+	return conf.Merge(confmap.NewFromStringMap(map[string]any{
+		"service": map[string]any{
+			"telemetry": map[string]any{
+				"resource": normalized.ToStringMap(),
+			},
+		},
+	}))
 }
 
 // loadAndWriteInitialMergedConfig loads and writes the initial config by
@@ -1519,24 +1523,139 @@ func (s *Supervisor) loadRemoteConfig() {
 		return
 	}
 
-	// Try to load the last received remote config if it exists.
-	var lastRecvRemoteConfig []byte
-	var err error
-	lastRecvRemoteConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
+	if s.config.Agent.AutomaticConfigRollback {
+		lastWorkingRemoteConfig, err := s.loadPersistedRemoteConfig(lastWorkingRemoteConfigFile)
+		switch {
+		case err == nil && lastWorkingRemoteConfig != nil:
+			s.lastWorkingRemoteConfig.Store(lastWorkingRemoteConfig)
+		case errors.Is(err, os.ErrNotExist):
+		case err != nil:
+			s.telemetrySettings.Logger.Error("Cannot parse last working remote config", zap.Error(err))
+		}
+	}
+
+	lastReceivedRemoteConfig, err := s.loadPersistedRemoteConfig(lastRecvRemoteConfigFile)
 	switch {
-	case err == nil:
-		config := &protobufs.AgentRemoteConfig{}
-		err = proto.Unmarshal(lastRecvRemoteConfig, config)
-		if err != nil {
-			s.telemetrySettings.Logger.Error("Cannot parse last received remote config", zap.Error(err))
+	case err == nil && lastReceivedRemoteConfig != nil:
+		if s.config.Agent.AutomaticConfigRollback {
+			s.remoteConfig.Store(s.remoteConfigForStartup(lastReceivedRemoteConfig))
 		} else {
-			s.remoteConfig.Store(config)
+			s.remoteConfig.Store(lastReceivedRemoteConfig)
 		}
 	case errors.Is(err, os.ErrNotExist):
 		s.telemetrySettings.Logger.Info("No last received remote config found")
 	default:
 		s.telemetrySettings.Logger.Error("error while reading last received config", zap.Error(err))
 	}
+}
+
+func (s *Supervisor) loadPersistedRemoteConfig(fileName string) (*protobufs.AgentRemoteConfig, error) {
+	cfg, err := os.ReadFile(filepath.Join(s.config.Storage.Directory, fileName))
+	if err != nil {
+		return nil, err
+	}
+
+	config := &protobufs.AgentRemoteConfig{}
+	if err := proto.Unmarshal(cfg, config); err != nil {
+		return nil, fmt.Errorf("parse %s: %w", fileName, err)
+	}
+
+	return config, nil
+}
+
+func (s *Supervisor) remoteConfigForStartup(lastReceivedRemoteConfig *protobufs.AgentRemoteConfig) *protobufs.AgentRemoteConfig {
+	if lastReceivedRemoteConfig == nil {
+		return nil
+	}
+
+	lastReceivedStatus := s.persistentState.GetLastRemoteConfigStatus()
+	if lastReceivedStatus == nil || lastReceivedStatus.Status != protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED {
+		return lastReceivedRemoteConfig
+	}
+	if !bytes.Equal(lastReceivedStatus.LastRemoteConfigHash, lastReceivedRemoteConfig.GetConfigHash()) {
+		return lastReceivedRemoteConfig
+	}
+
+	lastWorkingRemoteConfig := s.lastWorkingRemoteConfig.Load()
+	if lastWorkingRemoteConfig == nil {
+		return lastReceivedRemoteConfig
+	}
+
+	s.usingLastWorkingRemoteConfig.Store(true)
+	return lastWorkingRemoteConfig
+}
+
+// restoreLastWorkingRemoteConfig attempts to restore the last working remote
+// config if is available. In case the restoration works, it signals to the
+// Supervisor that there's new configuration.
+func (s *Supervisor) restoreLastWorkingRemoteConfig() bool {
+	restored, err := s.composeWithLastWorkingRemoteConfig()
+	if err != nil {
+		s.telemetrySettings.Logger.Error("Could not restore last working remote config", zap.Error(err))
+		return false
+	}
+	if restored {
+		select {
+		case s.hasNewConfig <- struct{}{}:
+		default:
+		}
+	}
+	return restored
+}
+
+// composeWithLastWorkingRemoteConfig composes the Collector configuration
+// with the last working remote config if it is available and automatic
+// rollback is enabled.
+func (s *Supervisor) composeWithLastWorkingRemoteConfig() (bool, error) {
+	if !s.config.Agent.AutomaticConfigRollback {
+		return false, nil
+	}
+
+	// If the last working remote config is already applied and failing, restoring
+	// it again would restart the agent in a tight loop, bypassing the restart
+	// backoff.
+	if s.usingLastWorkingRemoteConfig.Load() {
+		return false, nil
+	}
+
+	lastWorkingRemoteConfig := s.lastWorkingRemoteConfig.Load()
+	if lastWorkingRemoteConfig == nil {
+		return false, nil
+	}
+
+	clonedConfig := proto.Clone(lastWorkingRemoteConfig).(*protobufs.AgentRemoteConfig)
+	if _, err := s.composeMergedConfig(clonedConfig); err != nil {
+		return false, fmt.Errorf("compose last working remote config: %w", err)
+	}
+
+	if err := s.writeAgentConfig(); err != nil {
+		return false, fmt.Errorf("write last working remote config: %w", err)
+	}
+
+	s.remoteConfig.Store(clonedConfig)
+	s.usingLastWorkingRemoteConfig.Store(true)
+
+	return true, nil
+}
+
+// shouldReportLastWorkingRemoteConfigStatus returns true when the active config
+// is the restored last-working config, while persistent state still tracks the
+// failed last-received config.
+func (s *Supervisor) shouldReportLastWorkingRemoteConfigStatus() bool {
+	lastReceivedStatus := s.persistentState.GetLastRemoteConfigStatus()
+	if lastReceivedStatus == nil || lastReceivedStatus.Status != protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED {
+		return false
+	}
+
+	remoteConfig := s.remoteConfig.Load()
+	lastWorkingRemoteConfig := s.lastWorkingRemoteConfig.Load()
+	if remoteConfig == nil || lastWorkingRemoteConfig == nil {
+		return false
+	}
+
+	appliedLastWorkingRemoteConfig := bytes.Equal(remoteConfig.GetConfigHash(), lastWorkingRemoteConfig.GetConfigHash())
+	gotStatusForLastWorkingRemoteConfig := bytes.Equal(lastReceivedStatus.LastRemoteConfigHash, lastWorkingRemoteConfig.GetConfigHash())
+	return appliedLastWorkingRemoteConfig && !gotStatusForLastWorkingRemoteConfig
 }
 
 func (s *Supervisor) hasPersistedRemoteConfig() bool {
@@ -1573,25 +1692,24 @@ func (s *Supervisor) loadLastReceivedOwnTelemetryConfig() {
 // createEffectiveConfigMsg create an EffectiveConfig with the content of the
 // current effective config.
 func (s *Supervisor) createEffectiveConfigMsg() *protobufs.EffectiveConfig {
-	cfgStr, ok := s.effectiveConfig.Load().(string)
-	if !ok {
-		cfgState, ok := s.cfgState.Load().(*configState)
-		if !ok {
-			cfgStr = ""
-		} else {
-			cfgStr = cfgState.mergedConfig
-		}
+	if cfg, ok := s.effectiveConfig.Load().(*protobufs.EffectiveConfig); ok && cfg != nil {
+		return cfg
 	}
 
-	cfg := &protobufs.EffectiveConfig{
+	// Fallback: construct a single-file EffectiveConfig from the merged config
+	// (used when the agent has not yet reported its effective config).
+	cfgState, ok := s.cfgState.Load().(*configState)
+	if !ok {
+		return nil
+	}
+
+	return &protobufs.EffectiveConfig{
 		ConfigMap: &protobufs.AgentConfigMap{
 			ConfigMap: map[string]*protobufs.AgentConfigFile{
-				"": {Body: []byte(cfgStr)},
+				"": {Body: []byte(cfgState.mergedConfig)},
 			},
 		},
 	}
-
-	return cfg
 }
 
 func (*Supervisor) updateOwnTelemetryData(data map[string]any, signal string, settings *protobufs.TelemetryConnectionSettings) map[string]any {
@@ -1640,7 +1758,7 @@ func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.Co
 // 2) the own metrics config section
 // 3) the local override config that is hard-coded in the Supervisor.
 func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
-	k := koanf.New("::")
+	conf := confmap.New()
 
 	configFiles := s.addSpecialConfigFiles()
 
@@ -1653,7 +1771,7 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 			return false, fmt.Errorf("could not compose noop pipeline: %w", err)
 		}
 
-		if err = k.Load(rawbytes.Provider(noopConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+		if err = config.MergeConfFromYAML(conf, noopConfig); err != nil {
 			return false, fmt.Errorf("could not merge noop pipeline: %w", err)
 		}
 	}
@@ -1663,13 +1781,13 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 		return false, err
 	}
 
-	err = k.Load(rawbytes.Provider(agentConfigBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
+	err = config.MergeConfFromYAML(conf, agentConfigBytes)
 	if err != nil {
 		return false, err
 	}
 
 	// The merged final result is our new merged config.
-	newMergedConfigBytes, err := k.Marshal(yaml.Parser())
+	newMergedConfigBytes, err := config.MarshalConfToYAML(conf)
 	if err != nil {
 		return false, err
 	}
@@ -1718,25 +1836,28 @@ func (s *Supervisor) composeFallbackConfig() (configChanged bool, err error) {
 		return false, errors.New("no fallback configs configured")
 	}
 
-	k := koanf.New("::")
+	conf := confmap.New()
 	// Load and merge fallback config files in order. Unlike regular config files,
 	// fallback config load failures are fatal because there is no alternate source.
 	for _, fallbackPath := range s.config.Agent.StartupFallbackConfigs {
-		fallbackConfigBytes, readErr := os.ReadFile(fallbackPath)
+		fallbackConf, readErr := config.RetrieveURIAsConf(fallbackPath, s.telemetrySettings.Logger)
 		if readErr != nil {
-			return false, fmt.Errorf("could not read fallback config file: %w", readErr)
+			if errors.Is(readErr, config.ErrConfigFileNotFound) {
+				return false, fmt.Errorf("could not read fallback config file: %w", readErr)
+			}
+			return false, fmt.Errorf("could not load fallback config: %w", readErr)
 		}
 
-		if err = k.Load(rawbytes.Provider(fallbackConfigBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+		if err = config.MergeConf(conf, fallbackConf); err != nil {
 			return false, fmt.Errorf("could not load fallback config: %w", err)
 		}
 	}
 
-	if extraCfgErr := s.loadFallbackExtraConfigs(k); extraCfgErr != nil {
+	if extraCfgErr := s.loadFallbackExtraConfigs(conf); extraCfgErr != nil {
 		return false, extraCfgErr
 	}
 
-	newMergedConfigBytes, err := k.Marshal(yaml.Parser())
+	newMergedConfigBytes, err := config.MarshalConfToYAML(conf)
 	if err != nil {
 		return false, err
 	}
@@ -1757,19 +1878,19 @@ func (s *Supervisor) composeFallbackConfig() (configChanged bool, err error) {
 	return configChanged, nil
 }
 
-func (s *Supervisor) loadFallbackExtraConfigs(k *koanf.Koanf) error {
-	if err := k.Load(rawbytes.Provider(s.composeOpAMPExtensionConfig()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+func (s *Supervisor) loadFallbackExtraConfigs(conf *confmap.Conf) error {
+	if err := config.MergeConfFromYAML(conf, s.composeOpAMPExtensionConfig()); err != nil {
 		return fmt.Errorf("could not merge opamp extension config: %w", err)
 	}
 
 	if ownTelemetryConfig := s.composeOwnTelemetryConfig(); ownTelemetryConfig != nil {
-		if err := k.Load(rawbytes.Provider(ownTelemetryConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+		if err := config.MergeConfFromYAML(conf, ownTelemetryConfig); err != nil {
 			return fmt.Errorf("could not merge own telemetry config: %w", err)
 		}
 	}
 
 	if extraTelemetryConfig := s.composeExtraTelemetryConfig(); extraTelemetryConfig != nil {
-		if err := k.Load(rawbytes.Provider(extraTelemetryConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+		if err := config.MergeConfFromYAML(conf, extraTelemetryConfig); err != nil {
 			return fmt.Errorf("could not merge extra telemetry config: %w", err)
 		}
 	}
@@ -1804,7 +1925,12 @@ func (s *Supervisor) handleRestartCommand() error {
 	s.agentRestarting.Store(true)
 	defer s.agentRestarting.Store(false)
 	s.telemetrySettings.Logger.Debug("Received restart command")
-	err := s.commander.Restart(s.runCtx)
+
+	err := s.commander.Stop(s.runCtx)
+	if err == nil {
+		s.resetPassthroughLogBuffer()
+		err = s.commander.Start(s.runCtx)
+	}
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Could not restart agent process", zap.Error(err))
 	}
@@ -1824,6 +1950,7 @@ func (s *Supervisor) startAgent() (agentStartStatus, error) {
 		return agentNotStarting, nil
 	}
 
+	s.resetPassthroughLogBuffer()
 	err := s.commander.Start(s.runCtx)
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Cannot start the agent", zap.Error(err))
@@ -1871,9 +1998,12 @@ func (s *Supervisor) runAgentProcess() {
 			if s.config.Agent.UseHUPConfigReload {
 				if hupErr := s.hupReloadAgent(); hupErr != nil {
 					s.telemetrySettings.Logger.Error("Failed to HUP restart agent", zap.Error(hupErr))
-					s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, hupErr.Error())
+					reportedLastWorking := s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, hupErr.Error())
 					if healthErr := s.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: hupErr.Error()}); healthErr != nil {
 						s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(healthErr))
+					}
+					if !reportedLastWorking {
+						s.restoreLastWorkingRemoteConfig()
 					}
 					continue
 				}
@@ -1889,7 +2019,12 @@ func (s *Supervisor) runAgentProcess() {
 			status, err := s.startAgent()
 			if err != nil {
 				s.telemetrySettings.Logger.Error("starting agent with new config failed", zap.Error(err))
-				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+				if !s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error()) && s.restoreLastWorkingRemoteConfig() {
+					continue
+				}
+				// The agent process never started, so no exit event will trigger a
+				// restart; arm the restart backoff explicitly.
+				restartTimer.Reset(5 * time.Second)
 			}
 			if status == agentNotStarting {
 				// not starting agent because of nop config: clear timer, report applied status, report healthy status
@@ -1916,11 +2051,19 @@ func (s *Supervisor) runAgentProcess() {
 				continue
 			}
 
-			s.telemetrySettings.Logger.Debug("Agent process exited unexpectedly. Will restart in a bit...", zap.Int("pid", s.commander.Pid()), zap.Int("exit_code", s.commander.ExitCode()))
 			errMsg := fmt.Sprintf(
 				"Agent process PID=%d exited unexpectedly, exit code=%d. Will restart in a bit...",
 				s.commander.Pid(), s.commander.ExitCode(),
 			)
+			logFields := []zap.Field{
+				zap.Int("pid", s.commander.Pid()),
+				zap.Int("exit_code", s.commander.ExitCode()),
+			}
+			if snippet := s.collectorCrashLogSnippet(); snippet != "" {
+				errMsg = fmt.Sprintf("%s\nCollector log tail:\n%s", errMsg, snippet)
+				logFields = append(logFields, zap.String("collector_log_tail", snippet))
+			}
+			s.telemetrySettings.Logger.Debug("Agent process exited unexpectedly. Will restart in a bit...", logFields...)
 			if err := s.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: errMsg}); err != nil {
 				s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
 			}
@@ -1940,8 +2083,12 @@ func (s *Supervisor) runAgentProcess() {
 				// Timer was running, which means we were waiting for config to be applied.
 				// Report FAILED status immediately.
 				s.telemetrySettings.Logger.Info("Agent crashed during config application, reporting FAILED status")
-				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED,
-					fmt.Sprintf("Agent exited unexpectedly with exit code %d while applying configuration", s.commander.ExitCode()))
+				failureMsg := fmt.Sprintf("Agent exited unexpectedly with exit code %d while applying configuration", s.commander.ExitCode())
+				// When the restored last working remote config crashes as well, skip
+				// restoring it again and retry it on the regular restart backoff.
+				if !s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, s.appendCollectorCrashDetails(failureMsg)) && s.restoreLastWorkingRemoteConfig() {
+					continue
+				}
 			}
 
 			// Wait 5 seconds before starting again.
@@ -1958,16 +2105,18 @@ func (s *Supervisor) runAgentProcess() {
 			_, err := s.startAgent()
 			if err != nil {
 				s.telemetrySettings.Logger.Error("restarting agent failed", zap.Error(err))
-				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+				s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 			}
 
 		case <-configApplyTimeoutTimer.C:
 			lastHealth := s.lastHealthFromClient.Load()
 			if lastHealth == nil || !lastHealth.Healthy {
-				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded")
-			} else {
-				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+				if !s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded") {
+					s.restoreLastWorkingRemoteConfig()
+				}
+				continue
 			}
+			s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
 
 		case <-s.doneChan:
 			err := s.commander.Stop(s.runCtx)
@@ -2120,7 +2269,7 @@ func (s *Supervisor) validateConfig(configContent string) error {
 	ctx, cancel := context.WithTimeout(parentCtx, 10*time.Second)
 	defer cancel()
 
-	if err := s.commander.ValidateConfig(ctx, tempFile.Name()); err != nil {
+	if err := s.commander.ValidateConfig(ctx, tempFile.Name(), s.getFeatureGateFlag()...); err != nil {
 		return fmt.Errorf("configuration validation failed: %w", err)
 	}
 
@@ -2251,6 +2400,21 @@ func (s *Supervisor) saveLastReceivedConfig(config *protobufs.AgentRemoteConfig)
 	return os.WriteFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile), cfg, 0o600)
 }
 
+func (s *Supervisor) saveLastWorkingRemoteConfig(config *protobufs.AgentRemoteConfig) error {
+	if config == nil {
+		return nil
+	}
+
+	clonedConfig := proto.Clone(config).(*protobufs.AgentRemoteConfig)
+	cfg, err := proto.Marshal(clonedConfig)
+	if err != nil {
+		return err
+	}
+
+	s.lastWorkingRemoteConfig.Store(clonedConfig)
+	return os.WriteFile(filepath.Join(s.config.Storage.Directory, lastWorkingRemoteConfigFile), cfg, 0o600)
+}
+
 func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.ConnectionSettingsOffers, filePath string) error {
 	cfg, err := proto.Marshal(set)
 	if err != nil {
@@ -2264,14 +2428,11 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Connect
 func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) {
 	if !s.config.Capabilities.ReportsRemoteConfig {
 		s.telemetrySettings.Logger.Debug("supervisor is not configured to report remote config status")
+		return
 	}
 	remoteConfig := s.remoteConfig.Load()
-	var configHash []byte
-	if remoteConfig != nil {
-		configHash = remoteConfig.GetConfigHash()
-	}
 	rcs := &protobufs.RemoteConfigStatus{
-		LastRemoteConfigHash: configHash,
+		LastRemoteConfigHash: remoteConfig.GetConfigHash(),
 		Status:               status,
 		ErrorMessage:         errorMessage,
 	}
@@ -2280,7 +2441,41 @@ func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStat
 	if err := s.persistentState.SetLastRemoteConfigStatus(rcs); err != nil {
 		s.telemetrySettings.Logger.Error("Could not save last remote config status", zap.Error(err))
 	}
-	// report status to server
+	if s.config.Agent.AutomaticConfigRollback && status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED {
+		if err := s.saveLastWorkingRemoteConfig(remoteConfig); err != nil {
+			s.telemetrySettings.Logger.Error("Could not save last working remote config", zap.Error(err))
+		}
+	}
+	if err := s.opampClient.SetRemoteConfigStatus(rcs); err != nil {
+		s.telemetrySettings.Logger.Error("Could not report OpAMP remote config status", zap.Error(err))
+	}
+}
+
+// reportActiveConfigStatus reports the given status for the currently active
+// config. When the active config is the restored last working remote config,
+// the status is reported without overwriting the persisted status of the
+// config that triggered the rollback, and true is returned.
+func (s *Supervisor) reportActiveConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) bool {
+	if !s.config.Capabilities.ReportsRemoteConfig {
+		s.telemetrySettings.Logger.Debug("supervisor is not configured to report remote config status")
+		return false
+	}
+	if s.shouldReportLastWorkingRemoteConfigStatus() {
+		s.reportLastWorkingRemoteConfigStatus(status, errorMessage)
+		return true
+	}
+	s.saveAndReportConfigStatus(status, errorMessage)
+	return false
+}
+
+// reportLastWorkingRemoteConfigStatus reports the last working remote config status to the server.
+func (s *Supervisor) reportLastWorkingRemoteConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) {
+	remoteConfig := s.lastWorkingRemoteConfig.Load()
+	rcs := &protobufs.RemoteConfigStatus{
+		LastRemoteConfigHash: remoteConfig.GetConfigHash(),
+		Status:               status,
+		ErrorMessage:         errorMessage,
+	}
 	if err := s.opampClient.SetRemoteConfigStatus(rcs); err != nil {
 		s.telemetrySettings.Logger.Error("Could not report OpAMP remote config status", zap.Error(err))
 	}
@@ -2376,6 +2571,8 @@ func (s *Supervisor) processRemoteConfigMessage(ctx context.Context, msg *protob
 		s.telemetrySettings.Logger.Warn("Got remote config message, but the agent does not accept remote config. Ignoring remote config.")
 		return false
 	}
+
+	s.usingLastWorkingRemoteConfig.Store(false)
 
 	if err := s.saveLastReceivedConfig(msg); err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not save last received remote config: %s", err.Error()))
@@ -2500,100 +2697,4 @@ func (*Supervisor) findRandomPort() (int, error) {
 func (s *Supervisor) getTracer() trace.Tracer {
 	tracer := s.telemetrySettings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor")
 	return tracer
-}
-
-// configMergeFunc preserves Supervisor-specific merge semantics that koanf does
-// not provide by default: service extension lists are concatenated and resource
-// attributes are merged by name.
-// Will be resolved by https://github.com/open-telemetry/opentelemetry-collector/issues/8754
-func configMergeFunc(src, dest map[string]any) error {
-	srcExtensions := maps.Search(src, []string{"service", "extensions"})
-	destExtensions := maps.Search(dest, []string{"service", "extensions"})
-	srcResourceAttributes := maps.Search(src, []string{"service", "telemetry", "resource", "attributes"})
-	destResourceAttributes := maps.Search(dest, []string{"service", "telemetry", "resource", "attributes"})
-	if resource, ok := maps.Search(src, []string{"service", "telemetry", "resource"}).(map[string]any); ok {
-		if shouldClear, ok := resource[clearResourceAttributesKey].(bool); ok && shouldClear {
-			if destResource, ok := maps.Search(dest, []string{"service", "telemetry", "resource"}).(map[string]any); ok {
-				clearResourceAttributes(destResource)
-			}
-			delete(resource, clearResourceAttributesKey)
-		}
-	}
-
-	maps.Merge(src, dest)
-
-	if destExt, ok := destExtensions.([]any); ok {
-		if srcExt, ok := srcExtensions.([]any); ok {
-			if service, ok := dest["service"].(map[string]any); ok {
-				allExt := slices.Concat(destExt, srcExt)
-				// This is a small hack to ensure that the order is consitent and
-				// follows this simple rule: extensions from [src], then from [dest],
-				// in the order that they appear.
-				// We cannot use other simpler methods, like [sort.Strings], because
-				// we work with a `[]any` that cannot be cast to `[]string`.
-				seenExt := make(map[any]struct{}, len(allExt))
-				var uniqueExts []any
-				for _, ext := range allExt {
-					if _, ok := seenExt[ext]; !ok {
-						seenExt[ext] = struct{}{}
-						uniqueExts = append(uniqueExts, ext)
-					}
-				}
-				service["extensions"] = uniqueExts
-			}
-		}
-	}
-
-	if destAttrs, ok := destResourceAttributes.([]any); ok {
-		if srcAttrs, ok := srcResourceAttributes.([]any); ok {
-			if resource, ok := maps.Search(dest, []string{"service", "telemetry", "resource"}).(map[string]any); ok {
-				resource["attributes"] = mergeResourceAttributes(destAttrs, srcAttrs)
-			}
-		}
-	}
-
-	return nil
-}
-
-func clearResourceAttributes(resource map[string]any) {
-	delete(resource, "attributes")
-	delete(resource, "attributes_list")
-	for key := range resource {
-		switch key {
-		case "schema_url", "detectors":
-			continue
-		default:
-			delete(resource, key)
-		}
-	}
-}
-
-func mergeResourceAttributes(destAttrs, srcAttrs []any) []any {
-	merged := append(slices.Clone(destAttrs), srcAttrs...)
-	seenByName := make(map[string]int, len(merged))
-	result := make([]any, 0, len(merged))
-
-	for _, attr := range merged {
-		attrMap, ok := attr.(map[string]any)
-		if !ok {
-			result = append(result, attr)
-			continue
-		}
-
-		name, ok := attrMap["name"].(string)
-		if !ok || name == "" {
-			result = append(result, attr)
-			continue
-		}
-
-		if idx, exists := seenByName[name]; exists {
-			result[idx] = attr
-			continue
-		}
-
-		seenByName[name] = len(result)
-		result = append(result, attr)
-	}
-
-	return result
 }

@@ -8,7 +8,7 @@ import (
 
 var FilelogAllowFileDeletionFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"filelog.allowFileDeletion",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, allows usage of the `delete_after_read` setting."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
 	featuregate.WithRegisterFromVersion("v0.70.0"),
@@ -32,15 +32,23 @@ var FilelogMtimeSortTypeFeatureGate = featuregate.GlobalRegistry().MustRegister(
 
 var FilelogProtobufCheckpointEncodingFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"filelog.protobufCheckpointEncoding",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Use protobuf encoding for checkpoint storage instead of JSON."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266"),
 	featuregate.WithRegisterFromVersion("v0.148.0"),
 )
 
+var FilelogRequireExplicitTopNFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"filelog.requireExplicitTopN",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, requires `ordering_criteria.top_n` to be set explicitly when `ordering_criteria.sort_by` is configured. When disabled, an unset `top_n` falls back to the legacy default of 1."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47444"),
+	featuregate.WithRegisterFromVersion("v0.159.0"),
+)
+
 var FilelogWindowsCaseInsensitiveFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"filelog.windows.caseInsensitive",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("On Windows, make matching patterns in include/exclude case insensitive."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43777"),
 	featuregate.WithRegisterFromVersion("v0.142.0"),

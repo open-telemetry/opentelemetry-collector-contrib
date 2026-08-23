@@ -433,7 +433,7 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 		var err error
 		var ok bool
 		if isOptional {
-			manager, ok = field.Interface().(optionalManager)
+			manager, ok = reflect.TypeAssert[optionalManager](field)
 
 			if !ok {
 				return errors.New("optional type is not manageable by the OTTL parser. This is an error in the OTTL")
@@ -460,6 +460,8 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			val = StandardFunctionGetter[K]{FCtx: FunctionContext{Set: p.telemetrySettings}, Fact: f}
 		case fieldType.Kind() == reflect.Slice:
 			val, err = p.buildSliceArg(arg.Value, fieldType)
+		case fieldType.Kind() == reflect.Pointer:
+			val, err = p.buildArg(arg.Value, fieldType.Elem())
 		default:
 			val, err = p.buildArg(arg.Value, fieldType)
 		}
@@ -736,7 +738,7 @@ func (p *parseContext[K]) buildArg(argVal value, argType reflect.Type) (any, err
 		if err != nil {
 			return nil, err
 		}
-		return *lambExpr, nil
+		return lambExpr, nil
 	default:
 		return nil, fmt.Errorf("unsupported argument type: %s", name)
 	}

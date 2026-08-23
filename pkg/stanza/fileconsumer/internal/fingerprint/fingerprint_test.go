@@ -5,7 +5,6 @@ package fingerprint
 
 import (
 	"compress/gzip"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"math/rand/v2"
@@ -228,22 +227,13 @@ func TestStartsWith(t *testing.T) {
 // the file, while each iteration of the growing file represents
 // a possible state of the same file at a previous time.
 func TestStartsWith_FromFile(t *testing.T) {
-	r := rand.New(rand.NewPCG(112, 358))
+	// Use a fixed seed so that the generated content is the same on every run.
+	r := rand.NewChaCha8([32]byte{112})
 	fingerprintSize := 10
 	fileLength := 12 * fingerprintSize
 	fillRandomBytes := func(buf []byte) {
-		// TODO: when we upgrade to go1.23,
-		// use rand.ChaCha8.Read.
-		//
-		// NOTE: we can cheat here since know the
-		// buffer length is a multiple of 4, due to
-		// fileLength being a multiple of 12.
-		for i := range len(buf) / 4 {
-			binary.BigEndian.PutUint32(
-				buf[i*4:(i+1)*4],
-				r.Uint32(),
-			)
-		}
+		_, err := r.Read(buf)
+		require.NoError(t, err)
 	}
 
 	tempDir := t.TempDir()
@@ -391,4 +381,38 @@ func TestFingerprintKeyWithNilOrEmpty(t *testing.T) {
 
 	emptyFP := New([]byte{})
 	require.Empty(t, emptyFP.Key())
+}
+
+func TestNewFromFileGzipOffset(t *testing.T) {
+	tmp := t.TempDir()
+	compressedFile := filetest.OpenTempWithPattern(t, tmp, "*.gz")
+	gzipWriter := gzip.NewWriter(compressedFile)
+
+	data := []byte("this is a test line for offset testing in gzip")
+	_, err := gzipWriter.Write(data)
+	require.NoError(t, err)
+	require.NoError(t, gzipWriter.Close())
+
+	// 1. Get the expected fingerprint by reading it from offset 0 first
+	_, err = compressedFile.Seek(0, io.SeekStart)
+	require.NoError(t, err)
+
+	expectedFP, err := NewFromFile(compressedFile, len(data), true, zap.NewNop())
+	require.NoError(t, err)
+
+	// 2. Now seek to a non-zero offset
+	nonZeroOffset := int64(10)
+	_, err = compressedFile.Seek(nonZeroOffset, io.SeekStart)
+	require.NoError(t, err)
+
+	// 3. Call NewFromFile which will try to decompress and read fingerprint.
+	// This will fail or return a mismatched/empty fingerprint because it is not seeked to 0.
+	actualFP, err := NewFromFile(compressedFile, len(data), true, zap.NewNop())
+	require.NoError(t, err)
+	require.True(t, expectedFP.Equal(actualFP))
+
+	// 4. Assert that the offset of the file is not modified
+	currentOffset, err := compressedFile.Seek(0, io.SeekCurrent)
+	require.NoError(t, err)
+	require.Equal(t, nonZeroOffset, currentOffset)
 }

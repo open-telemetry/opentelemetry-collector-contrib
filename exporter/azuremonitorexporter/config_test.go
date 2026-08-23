@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
@@ -27,6 +27,13 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	disk := component.MustNewIDWithName("disk", "")
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = "https://dc.services.visualstudio.com/v2/track"
 
 	tests := []struct {
 		id       component.ID
@@ -44,9 +51,11 @@ func TestLoadConfig(t *testing.T) {
 				MaxBatchSize:       100,
 				MaxBatchInterval:   10 * time.Second,
 				SpanEventsEnabled:  false,
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "https://dc.services.visualstudio.com/v2/track",
-				},
+				TelemetryMappings: TelemetryMappingsConfig{Traces: TraceMappingsConfig{HTTP: HTTPMappingsConfig{Success: HTTPSuccessConfig{
+					ServerPolicy:                 "otel",
+					AdditionalSuccessStatusCodes: []int{404, 409},
+				}}}},
+				ClientConfig: clientConfig,
 				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
 					queue.QueueSize = 1000
@@ -84,7 +93,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -112,6 +121,28 @@ func TestConfigValidate(t *testing.T) {
 				CloudRoleInstance:  []string{"host.name", "service.instance.id"},
 				ApplicationVersion: []string{"service.version", "v0.0.0"},
 			}},
+		},
+		{
+			name: "configured HTTP success mapping is valid",
+			cfg: &Config{TelemetryMappings: TelemetryMappingsConfig{Traces: TraceMappingsConfig{HTTP: HTTPMappingsConfig{Success: HTTPSuccessConfig{
+				ServerPolicy:                 "otel",
+				AdditionalSuccessStatusCodes: []int{404, 409},
+			}}}}},
+		},
+		{
+			name:    "HTTP success mapping rejects unknown server policy",
+			cfg:     &Config{TelemetryMappings: TelemetryMappingsConfig{Traces: TraceMappingsConfig{HTTP: HTTPMappingsConfig{Success: HTTPSuccessConfig{ServerPolicy: "legacy"}}}}},
+			wantErr: `telemetry_mappings.traces.http.success.server_policy must be "otel"`,
+		},
+		{
+			name:    "additional_success_status_codes rejects status code below valid range",
+			cfg:     &Config{TelemetryMappings: TelemetryMappingsConfig{Traces: TraceMappingsConfig{HTTP: HTTPMappingsConfig{Success: HTTPSuccessConfig{AdditionalSuccessStatusCodes: []int{99}}}}}},
+			wantErr: "telemetry_mappings.traces.http.success.additional_success_status_codes contains invalid HTTP status code 99",
+		},
+		{
+			name:    "additional_success_status_codes rejects status code above valid range",
+			cfg:     &Config{TelemetryMappings: TelemetryMappingsConfig{Traces: TraceMappingsConfig{HTTP: HTTPMappingsConfig{Success: HTTPSuccessConfig{AdditionalSuccessStatusCodes: []int{600}}}}}},
+			wantErr: "telemetry_mappings.traces.http.success.additional_success_status_codes contains invalid HTTP status code 600",
 		},
 		{
 			name: "explicit empty cloud_role_instance is rejected",

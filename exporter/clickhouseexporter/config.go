@@ -28,9 +28,9 @@ type Config struct {
 	// collectorVersion is the build version of the collector. This is overridden when an exporter is initialized.
 	collectorVersion string
 
-	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
+	BackOffConfig   configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// Endpoint is the clickhouse endpoint.
 	Endpoint string `mapstructure:"endpoint"`
@@ -48,6 +48,8 @@ type Config struct {
 	LogsTableName string `mapstructure:"logs_table_name"`
 	// TracesTableName is the table name for traces. default is `otel_traces`.
 	TracesTableName string `mapstructure:"traces_table_name"`
+	// ProfilesTableName is the table name for profiles. default is `otel_profiles`.
+	ProfilesTableName string `mapstructure:"profiles_table_name"`
 	// MetricsTableName is the table name for metrics. default is `otel_metrics`.
 	//
 	// Deprecated: MetricsTableName exists for historical compatibility
@@ -116,16 +118,17 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		collectorVersion: "unknown",
 
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
-		QueueSettings:    configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
-		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
-		ConnectionParams: map[string]string{},
-		Database:         defaultDatabase,
-		LogsTableName:    "otel_logs",
-		TracesTableName:  "otel_traces",
-		TTL:              0,
-		CreateSchema:     true,
-		AsyncInsert:      true,
+		TimeoutSettings:   exporterhelper.NewDefaultTimeoutConfig(),
+		QueueSettings:     configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		BackOffConfig:     configretry.NewDefaultBackOffConfig(),
+		ConnectionParams:  map[string]string{},
+		Database:          defaultDatabase,
+		LogsTableName:     "otel_logs",
+		TracesTableName:   "otel_traces",
+		ProfilesTableName: "otel_profiles",
+		TTL:               0,
+		CreateSchema:      true,
+		AsyncInsert:       true,
 		MetricsTables: MetricTablesConfig{
 			Gauge:                metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultGaugeSuffix},
 			Sum:                  metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultSumSuffix},
