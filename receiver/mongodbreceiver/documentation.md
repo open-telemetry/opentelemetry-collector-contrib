@@ -548,14 +548,6 @@ The total number of fsync I/Os issued by the WiredTiger storage engine.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {fsync} | Sum | Int | Cumulative | true | Development |
 
-### mongodb.wt.log.bytes
-
-The total number of bytes written to the WiredTiger journal.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | Development |
-
 ### mongodb.wt.log.operation.count
 
 The total number of WiredTiger journal operations.
@@ -577,6 +569,14 @@ The cumulative time spent syncing the WiredTiger journal.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Double | Cumulative | true | Development |
+
+### mongodb.wt.log.write
+
+The total number of bytes written to the WiredTiger journal.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### mongodb.wtcache.bytes.read
 
