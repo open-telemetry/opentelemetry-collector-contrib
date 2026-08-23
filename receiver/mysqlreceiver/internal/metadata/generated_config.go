@@ -720,6 +720,66 @@ func (ms *MysqlInnodbOperationPendingMetricConfig) Validate() error {
 	return nil
 }
 
+// MysqlInnodbRowLockWaitCountMetricConfig provides config for the mysql.innodb.row_lock.wait.count metric.
+type MysqlInnodbRowLockWaitCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlInnodbRowLockWaitCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlInnodbRowLockWaitDurationAvgMetricConfig provides config for the mysql.innodb.row_lock.wait.duration.avg metric.
+type MysqlInnodbRowLockWaitDurationAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlInnodbRowLockWaitDurationAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlInnodbRowLockWaitDurationMaxMetricConfig provides config for the mysql.innodb.row_lock.wait.duration.max metric.
+type MysqlInnodbRowLockWaitDurationMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlInnodbRowLockWaitDurationMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MysqlJoinsMetricAttributeKey specifies the key of an attribute for the mysql.joins metric.
 type MysqlJoinsMetricAttributeKey string
 
@@ -2413,6 +2473,9 @@ type MetricsConfig struct {
 	MysqlIndexIoWaitTime                  MysqlIndexIoWaitTimeMetricConfig                  `mapstructure:"mysql.index.io.wait.time"`
 	MysqlInnodbDataFileIo                 MysqlInnodbDataFileIoMetricConfig                 `mapstructure:"mysql.innodb.data_file.io"`
 	MysqlInnodbOperationPending           MysqlInnodbOperationPendingMetricConfig           `mapstructure:"mysql.innodb.operation.pending"`
+	MysqlInnodbRowLockWaitCount           MysqlInnodbRowLockWaitCountMetricConfig           `mapstructure:"mysql.innodb.row_lock.wait.count"`
+	MysqlInnodbRowLockWaitDurationAvg     MysqlInnodbRowLockWaitDurationAvgMetricConfig     `mapstructure:"mysql.innodb.row_lock.wait.duration.avg"`
+	MysqlInnodbRowLockWaitDurationMax     MysqlInnodbRowLockWaitDurationMaxMetricConfig     `mapstructure:"mysql.innodb.row_lock.wait.duration.max"`
 	MysqlJoins                            MysqlJoinsMetricConfig                            `mapstructure:"mysql.joins"`
 	MysqlLocks                            MysqlLocksMetricConfig                            `mapstructure:"mysql.locks"`
 	MysqlLogOperations                    MysqlLogOperationsMetricConfig                    `mapstructure:"mysql.log_operations"`
@@ -2535,6 +2598,15 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlInnodbOperationPendingMetricAttributeKey{MysqlInnodbOperationPendingMetricAttributeKeyOperations},
+		},
+		MysqlInnodbRowLockWaitCount: MysqlInnodbRowLockWaitCountMetricConfig{
+			Enabled: false,
+		},
+		MysqlInnodbRowLockWaitDurationAvg: MysqlInnodbRowLockWaitDurationAvgMetricConfig{
+			Enabled: false,
+		},
+		MysqlInnodbRowLockWaitDurationMax: MysqlInnodbRowLockWaitDurationMaxMetricConfig{
+			Enabled: false,
 		},
 		MysqlJoins: MysqlJoinsMetricConfig{
 			Enabled:             false,

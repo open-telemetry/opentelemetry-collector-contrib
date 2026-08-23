@@ -9,6 +9,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"math"
 	"net"
 	"os"
@@ -504,6 +505,12 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 				metadata.AttributePageOperationsWritten))
 
 		// row_locks
+		case "Innodb_row_lock_current_waits":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbRowLockWaitCountDataPoint(now, v))
+		case "Innodb_row_lock_time_avg":
+			addPartialIfError(errs, m.recordInnodbRowLockWaitDurationAvg(now, v))
+		case "Innodb_row_lock_time_max":
+			addPartialIfError(errs, m.recordInnodbRowLockWaitDurationMax(now, v))
 		case "Innodb_row_lock_waits":
 			addPartialIfError(errs, m.mb.RecordMysqlRowLocksDataPoint(now, v, metadata.AttributeRowLocksWaits))
 		case "Innodb_row_lock_time":
@@ -1029,6 +1036,24 @@ func addPartialIfError(errors *scrapererror.ScrapeErrors, err error) {
 	if err != nil {
 		errors.AddPartial(1, err)
 	}
+}
+
+func (m *mySQLScraper) recordInnodbRowLockWaitDurationAvg(now pcommon.Timestamp, value string) error {
+	waitTimeMillis, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse float64 for MysqlInnodbRowLockWaitDurationAvg, value was %s: %w", value, err)
+	}
+	m.mb.RecordMysqlInnodbRowLockWaitDurationAvgDataPoint(now, waitTimeMillis/1000)
+	return nil
+}
+
+func (m *mySQLScraper) recordInnodbRowLockWaitDurationMax(now pcommon.Timestamp, value string) error {
+	waitTimeMillis, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse float64 for MysqlInnodbRowLockWaitDurationMax, value was %s: %w", value, err)
+	}
+	m.mb.RecordMysqlInnodbRowLockWaitDurationMaxDataPoint(now, waitTimeMillis/1000)
+	return nil
 }
 
 func (m *mySQLScraper) recordDataPages(now pcommon.Timestamp, globalStats map[string]string, errors *scrapererror.ScrapeErrors) {
