@@ -7,7 +7,7 @@ change_type: bug_fix
 component: cmd/opampsupervisor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Open agent.log with O_APPEND so external copytruncate-style log rotation (e.g. logrotate) works correctly instead of the file's size reverting on the next write.
+note: Open agent.log in append mode so external copytruncate-style log rotation (e.g. logrotate) works correctly instead of the file's size reverting on the next write, on both non-Windows (O_APPEND) and Windows (a FILE_APPEND_DATA handle, since Go's O_APPEND does not survive handle inheritance to the managed agent process on Windows).
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50376]
