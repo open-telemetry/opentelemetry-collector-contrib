@@ -1539,7 +1539,7 @@ func TestCreateDecompressingReader(t *testing.T) {
 func TestCreateIntakeReverseProxyRewrite(t *testing.T) {
 	rewrite := createIntakeReverseProxyRewrite("datadoghq.eu", "test-api-key")
 
-	in := httptest.NewRequest(http.MethodPost, "http://localhost:8126/intake?foo=bar", nil)
+	in := httptest.NewRequest(http.MethodPost, "http://localhost:8126/intake?foo=bar", http.NoBody)
 	in.RemoteAddr = "10.0.0.1:12345"
 	out := in.Clone(in.Context())
 	// Rewrite strips the X-Forwarded-* headers before it is called; emulate that here.
