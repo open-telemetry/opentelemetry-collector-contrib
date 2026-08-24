@@ -136,7 +136,7 @@ The following settings can be optionally configured:
   - `on_permanent_error`: (default = value of `on_error`) If false, messages that generate permanent errors are not marked. If true, messages that generate permanent errors are marked.
     **Note: this can block the entire partition in case a message processing returns a permanent error. Permanent errors are not retried via `error_backoff`, but the uncommitted message will be reprocessed after a rebalance.**
 - `partition_processing`:
-  - `independent` (default = false): Process each assigned topic partition sequentially in its own worker so a blocked partition does not block polling healthy partitions.
+  - `independent` (default = false): Process each assigned topic partition sequentially in its own worker so a blocked partition does not block polling healthy partitions. Requires `autocommit.enable` to be true.
   - `max_buffered_batches` (default = 1): Maximum number of fetched batches waiting for each partition worker. Must be greater than zero when independent processing is enabled.
 - `header_extraction`:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel pipeline
@@ -314,9 +314,11 @@ In the example above:
 
 #### Independent partition processing
 
+> **NOTE**: Independent partition processing requires `autocommit.enable: true`. The receiver rejects configurations that combine independent processing with manual commits.
+
 Independent partition processing keeps records ordered within each partition while allowing other assigned partitions to continue when one downstream consumer is blocked. Each partition has a bounded mailbox. A full mailbox pauses only that partition and resumes it when capacity becomes available.
 
-The receiver creates one worker and mailbox per assigned partition. `max_buffered_batches` limits the number of fetched batches waiting in each mailbox, not the number of records or workers. With autocommit disabled, each partition is committed independently according to the configured `message_marking` behavior.
+The receiver creates one worker and mailbox per assigned partition. `max_buffered_batches` limits the number of fetched batches waiting in each mailbox, not the number of records or workers.
 
 Resource usage grows with the number of assigned partitions and `max_buffered_batches`. Increasing mailbox capacity allows more fetched data to remain in memory while waiting for processing.
 

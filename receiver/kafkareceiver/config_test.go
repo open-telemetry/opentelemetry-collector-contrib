@@ -225,6 +225,10 @@ func TestLoadConfig(t *testing.T) {
 			name:        "kafka/invalid_partition_processing_zero_buffered_batches",
 			expectedErr: "partition_processing.max_buffered_batches must be greater than zero",
 		},
+		{
+			name:        "kafka/invalid_partition_processing_manual_commit",
+			expectedErr: "partition_processing.independent requires autocommit.enable",
+		},
 	}
 
 	for _, tc := range cases {

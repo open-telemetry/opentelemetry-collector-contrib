@@ -37,11 +37,9 @@ func newPartitionMailbox(ctx context.Context, capacity int) *partitionMailbox {
 
 // enqueue adds a batch when the mailbox can accept it.
 func (m *partitionMailbox) enqueue(batch kgo.FetchTopicPartition, pause func(partitionPauseReason)) bool {
-	select {
-	case <-m.ctx.Done():
+	if m.ctx.Err() != nil {
 		// The next partition owner will fetch again from the committed offset.
 		return false
-	default:
 	}
 
 	m.mu.Lock()
@@ -110,13 +108,6 @@ func (m *partitionMailbox) requestRewindLocked(record *kgo.Record, clearQueue bo
 		}
 	}
 	m.notifyLocked()
-}
-
-// queued returns the number of batches waiting for the worker.
-func (m *partitionMailbox) queued() int {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	return len(m.batches)
 }
 
 // hasPendingOffsetChange reports whether the fetch position must change.

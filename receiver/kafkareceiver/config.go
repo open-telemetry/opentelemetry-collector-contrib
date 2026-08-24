@@ -100,6 +100,9 @@ func (c *Config) Validate() error {
 	if c.PartitionProcessing.Independent && c.PartitionProcessing.MaxBufferedBatches <= 0 {
 		return errors.New("partition_processing.max_buffered_batches must be greater than zero")
 	}
+	if c.PartitionProcessing.Independent && !c.ConsumerConfig.AutoCommit.Enable {
+		return errors.New("partition_processing.independent requires autocommit.enable")
+	}
 	return nil
 }
 

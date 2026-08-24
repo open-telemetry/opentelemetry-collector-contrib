@@ -267,17 +267,16 @@ func TestPartitionMailboxRequestRewind(t *testing.T) {
 			require.Equal(t, 1, pauseCalls)
 			require.True(t, mailbox.hasPendingOffsetChange())
 			require.Equal(t, tc.wantOffset, mailbox.takeOffsetChange().Offset)
-			queueSize := 0
-			for {
-				_, ok := mailbox.dequeue(func() {})
-				if !ok {
-					break
-				}
-				queueSize++
-			}
-			require.Equal(t, tc.wantQueueSize, queueSize)
+			require.Equal(t, tc.wantQueueSize, queued(t, mailbox))
 		})
 	}
+}
+
+func queued(t *testing.T, m *partitionMailbox) int {
+	t.Helper()
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return len(m.batches)
 }
 
 func mailboxBatch(offset int64) kgo.FetchTopicPartition {

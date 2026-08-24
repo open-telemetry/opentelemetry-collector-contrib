@@ -187,3 +187,9 @@ kafka/invalid_partition_processing_zero_buffered_batches:
   partition_processing:
     independent: true
     max_buffered_batches: 0
+
+kafka/invalid_partition_processing_manual_commit:
+  autocommit:
+    enable: false
+  partition_processing:
+    independent: true

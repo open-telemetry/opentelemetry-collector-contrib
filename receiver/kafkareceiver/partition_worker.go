@@ -62,10 +62,8 @@ type pc struct {
 func (p *pc) add() bool {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	select {
-	case <-p.ctx.Done():
+	if p.ctx.Err() != nil {
 		return false
-	default:
 	}
 	p.wg.Add(1)
 	return true
@@ -107,10 +105,8 @@ func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 		}
 
 		for {
-			select {
-			case <-pc.ctx.Done():
+			if pc.ctx.Err() != nil {
 				return
-			default:
 			}
 			batch, ok := pc.mailbox.dequeue(func() {
 				if pc.clearPauseReasons(partitionPauseBackpressure) {
@@ -218,9 +214,10 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 					zap.Int64("offset", msg.Offset),
 				)
 			}
+			// handleMessage only returns an error when After=true and
+			// the message should not be marked, so checking !shouldMark
+			// here is consistent with that contract.
 			isPermanent := consumererror.IsPermanent(err)
-			// Error marking determines whether this failed record counts as
-			// progress or stops the batch for a retry or rebalance.
 			shouldMark := (!isPermanent && c.config.MessageMarking.OnError) || (isPermanent && c.config.MessageMarking.OnPermanentError)
 			if !shouldMark {
 				fatalRecord = msg
@@ -266,7 +263,22 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 			// No pause reason is needed because this worker exits permanently.
 			// On reassignment, a new partition consumer resumes fetching with
 			// no pause reasons.
-			c.client.PauseFetchPartitions(map[string][]int32{p.Topic: {p.Partition}})
+			c.mu.RLock()
+			current := c.assignments[topicPartition{topic: p.Topic, partition: p.Partition}]
+			// A worker can pause only while it owns the assignment and remains active.
+			canPause := current == pc && pc.ctx.Err() == nil
+			if canPause {
+				// Pause to prevent later records from passing the failed,
+				// unmarked record.
+				c.client.PauseFetchPartitions(map[string][]int32{p.Topic: {p.Partition}})
+			}
+			c.mu.RUnlock()
+			if !canPause {
+				// Exit without pausing because a replacement worker can now own
+				// the partition.
+				result.terminal = true
+				break
+			}
 			if fatalIsPermanent {
 				pc.logger.Error("pausing partition due to permanent processing error, partition will remain paused until rebalance",
 					zap.Int64("offset", fatalRecord.Offset),

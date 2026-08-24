@@ -172,10 +172,12 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 		kgo.WithHooks(hooks),
 	}
 	if c.config.PartitionProcessing.Independent {
-		// Independent workers and mailboxes are per assignment. Without this,
-		// assigned/lost can run between PollRecords and dispatch, so a fetch
-		// can be given to the wrong worker or dropped. AllowRebalance is called
-		// after dispatch.
+		// Independent workers and mailboxes are per assignment. Block rebalance
+		// callbacks between PollRecords and dispatch so records cannot reach
+		// the wrong worker or be dropped. Dispatch does not wait for worker
+		// processing. A full mailbox rejects the batch and schedules a rewind.
+		// AllowRebalance runs after dispatch, so worker backpressure does not
+		// delay a rebalance.
 		opts = append(opts, kgo.BlockRebalanceOnPoll())
 	}
 

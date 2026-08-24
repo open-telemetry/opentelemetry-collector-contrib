@@ -418,14 +418,14 @@ func TestPartitionProcessing(t *testing.T) {
 		h.produce(0, "second")
 		h.produce(0, "third")
 		require.Eventually(t, func() bool {
-			return pc.mailbox.queued() > 0
+			return queued(t, pc.mailbox) > 0
 		}, 5*time.Second, 10*time.Millisecond)
 		// The worker returns a permanent error, discards the queued batches,
 		// cancels the partition, and leaves fetch paused.
 		close(release)
 		h.waitPaused(1)
 		require.Eventually(t, func() bool {
-			return pc.mailbox.queued() == 0
+			return queued(t, pc.mailbox) == 0
 		}, 5*time.Second, 10*time.Millisecond)
 		require.Eventually(t, func() bool {
 			return pc.ctx.Err() != nil
@@ -1029,6 +1029,74 @@ func TestLostFatalWait(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStaleWorkerDoesNotPausePartition(t *testing.T) {
+	// The test reproduces this sequence:
+	// 1. A worker ignores cancellation during a fatal partition loss.
+	// 2. The session timeout expires, and a new worker receives the partition.
+	// 3. The stale worker returns a permanent error after the new assignment starts.
+	// 4. The stale worker must not pause the new assignment.
+	const topic = "test"
+	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
+	// Use independent processing and a short timeout to force the fatal-loss
+	// callback to return before the worker stops.
+	cfg.PartitionProcessing = PartitionProcessing{
+		Independent:        true,
+		MaxBufferedBatches: 2,
+	}
+	cfg.ConsumerConfig.SessionTimeout = 20 * time.Millisecond
+	cfg.MessageMarking = MessageMarking{
+		After:            true,
+		OnPermanentError: false,
+	}
+
+	settings, _, _ := mustNewSettings(t)
+	consumer, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, nil)
+	require.NoError(t, err)
+	consumer.client = kafkaClient
+
+	// Ignore cancellation until the replacement assignment starts.
+	processingStarted := make(chan struct{})
+	releaseProcessing := make(chan struct{})
+	consumer.consumeMessage = func(context.Context, *kgo.Record, attribute.Set) error {
+		close(processingStarted)
+		<-releaseProcessing
+		return consumererror.NewPermanent(errors.New("permanent failure"))
+	}
+
+	assignmentCtx, cancelAssignment := context.WithCancel(t.Context())
+	defer cancelAssignment()
+	partitions := map[string][]int32{topic: {0}}
+	// Start the original worker and keep it inside consumeMessage.
+	consumer.assigned(assignmentCtx, kafkaClient, partitions)
+	stale := consumer.assignments[topicPartition{topic: topic, partition: 0}]
+	batch := mailboxBatch(0)
+	batch.Topic = topic
+	require.True(t, stale.mailbox.enqueue(batch, func(reason partitionPauseReason) {
+		stale.addPauseReason(reason)
+		kafkaClient.PauseFetchPartitions(partitions)
+	}))
+	waitSignal(t, processingStarted, "stale worker did not start processing")
+
+	// The timeout removes the old assignment. The replacement assignment then
+	// resumes the partition.
+	consumer.lost(t.Context(), nil, partitions, true)
+	consumer.assigned(assignmentCtx, kafkaClient, partitions)
+	require.NotSame(t, stale, consumer.assignments[topicPartition{topic: topic, partition: 0}])
+	require.Empty(t, kafkaClient.PauseFetchPartitions(nil)[topic])
+
+	// Release the stale worker after the replacement starts. Its terminal error
+	// must not pause the replacement assignment.
+	staleDone := make(chan struct{})
+	go func() {
+		stale.wg.Wait()
+		close(staleDone)
+	}()
+	close(releaseProcessing)
+	waitSignal(t, staleDone, "stale worker did not stop")
+
+	require.Empty(t, kafkaClient.PauseFetchPartitions(nil)[topic])
 }
 
 // TestResumePartitionsAfterRebalance verifies that partitions paused due to
