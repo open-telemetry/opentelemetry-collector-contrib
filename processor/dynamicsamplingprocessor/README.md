@@ -304,7 +304,7 @@ Adjusts rates per key to hit a sustained volume budget in spans per second.
 ```yaml
 sampler:
   type: dynamic_throughput
-  goal_throughput: 100                    # target spans/sec across all keys
+  goal_throughput: 100                    # target spans/sec per instance, across all keys
   fingerprint_attributes:
     - resource.attributes["service.name"]
     - span.attributes["http.status_code"]
@@ -312,6 +312,9 @@ sampler:
   weight: 0.5
   max_keys: 500
 ```
+
+> [!IMPORTANT]
+> `goal_throughput` is enforced **per collector instance**. Each instance targets the goal against the traffic it sees, so a fleet of N instances emits up to N times the configured throughput. Divide the backend budget by the instance count when sizing this value. See [Deployment considerations](#deployment-considerations).
 
 With `algorithm: windowed`, rate recalculation (`update_frequency`) is
 decoupled from the historical window used for the calculation
@@ -496,6 +499,8 @@ SDKs → Collectors (loadbalancing exporter, hash by traceID)
          → Collectors (dynamic_sampling processor)
            → Backend
 ```
+
+Each processor instance runs its samplers independently against the traffic it sees; there is no coordination between instances. For `dynamic_throughput` (with either algorithm) this means `goal_throughput` is a **per-instance** target: a fleet of N instances emits up to N times the configured goal, so divide the backend's ingest budget by the instance count when sizing it. The percentage-based samplers (`dynamic_percentage`, `probabilistic`) are unaffected, since a target percentage composes across instances. Automatic cluster-size awareness for the throughput goal is not currently implemented.
 
 ## Known limitations
 
