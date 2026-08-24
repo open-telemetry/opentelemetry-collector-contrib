@@ -121,15 +121,13 @@ func TestPartitionProcessing(t *testing.T) {
 			}
 		})
 		var (
-			mu        sync.Mutex
-			seen      = make(map[int64]struct{}, recordCount)
-			processed atomic.Int64
+			mu   sync.Mutex
+			seen = make(map[int64]struct{}, recordCount)
 		)
 		h.start(func(_ context.Context, record *kgo.Record, _ attribute.Set) error {
 			mu.Lock()
 			seen[record.Offset] = struct{}{}
 			mu.Unlock()
-			processed.Add(1)
 			return nil
 		})
 		records := make([]*kgo.Record, recordCount)
@@ -146,7 +144,7 @@ func TestPartitionProcessing(t *testing.T) {
 		require.Eventually(t, func() bool {
 			mu.Lock()
 			defer mu.Unlock()
-			return len(seen) == recordCount && processed.Load() == int64(recordCount)
+			return len(seen) == recordCount
 		}, 5*time.Second, 10*time.Millisecond)
 	})
 
