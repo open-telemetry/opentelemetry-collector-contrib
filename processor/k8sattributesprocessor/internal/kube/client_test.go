@@ -2426,6 +2426,117 @@ func TestDaemonSetExtractionRules(t *testing.T) {
 	}
 }
 
+func TestReplicaSetLabelsAnnotationsExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	replicaset := &meta_v1.PartialObjectMetadata{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "k8s-replicaset-example",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			CreationTimestamp: meta_v1.Now(),
+			Labels: map[string]string{
+				"label1": "lv1",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+		},
+	}
+
+	testCases := []struct {
+		name       string
+		rules      ExtractionRules
+		attributes map[string]string
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels and annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromReplicaSet,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromReplicaSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
+			},
+		},
+		{
+			name: "all-labels",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromReplicaSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.replicaset.label.label1": "lv1",
+			},
+		},
+		{
+			name: "all-annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromReplicaSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.replicaset.annotation.annotation1": "av1",
+			},
+		},
+		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromReplicaSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.replicaset.label.label1": "lv1",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			c.handleReplicaSetAdd(replicaset)
+			r, ok := c.GetReplicaSet(string(replicaset.UID))
+			require.True(t, ok)
+
+			assert.Len(t, tc.attributes, len(r.Attributes))
+			for k, v := range tc.attributes {
+				got, ok := r.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
 func TestJobExtractionRules(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 
@@ -3770,6 +3881,70 @@ func TestExtractDaemonSetLabelsAnnotations(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c.Rules = tc.rules
 			assert.Equal(t, tc.shouldExtractDaemonSet, c.extractDaemonSetLabelsAnnotations())
+		})
+	}
+}
+
+func TestExtractReplicaSetLabelsAnnotations(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	testCases := []struct {
+		name                    string
+		shouldExtractReplicaSet bool
+		rules                   ExtractionRules
+	}{
+		{
+			name:                    "empty-rules",
+			shouldExtractReplicaSet: false,
+			rules:                   ExtractionRules{},
+		}, {
+			name:                    "pod-rules",
+			shouldExtractReplicaSet: false,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					},
+				},
+			},
+		}, {
+			name:                    "replicaset-rules-only-annotations",
+			shouldExtractReplicaSet: true,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromReplicaSet,
+					},
+				},
+			},
+		}, {
+			name:                    "replicaset-rules-only-labels",
+			shouldExtractReplicaSet: true,
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromReplicaSet,
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			assert.Equal(t, tc.shouldExtractReplicaSet, c.extractReplicaSetLabelsAnnotations())
 		})
 	}
 }
