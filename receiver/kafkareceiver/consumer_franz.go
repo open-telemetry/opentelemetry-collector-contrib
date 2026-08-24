@@ -594,6 +594,13 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 			pc.cancelContext(errors.New(
 				"stopping processing: partition reassigned or lost",
 			))
+			// Discard the queue at cancel time. Fatal loss can return while
+			// the worker is still inside consumeMessage, and the wait helper
+			// keeps pc reachable until that call ends. The in-flight batch
+			// stays with the worker.
+			if pc.mailbox != nil {
+				pc.mailbox.discard()
+			}
 			stopping[tp] = pc
 			if fatal && !independent {
 				delete(c.assignments, tp)

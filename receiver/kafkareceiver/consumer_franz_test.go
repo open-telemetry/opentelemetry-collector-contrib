@@ -882,6 +882,59 @@ func TestStaleWorkerDoesNotPausePartition(t *testing.T) {
 	require.Empty(t, kafkaClient.PauseFetchPartitions(nil)[topic])
 }
 
+func TestLostDiscardsQueuedBatches(t *testing.T) {
+	// Fatal loss may return while a worker is still inside consumeMessage.
+	// Queued batches must be dropped at cancel time, not when that worker exits.
+	const topic = "test"
+	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
+	cfg.PartitionProcessing = PartitionProcessing{
+		Independent:        true,
+		MaxBufferedBatches: 2,
+	}
+	cfg.ConsumerConfig.SessionTimeout = 20 * time.Millisecond
+
+	settings, _, _ := mustNewSettings(t)
+	consumer, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, nil)
+	require.NoError(t, err)
+	consumer.client = kafkaClient
+
+	processingStarted := make(chan struct{})
+	releaseProcessing := make(chan struct{})
+	consumer.consumeMessage = func(context.Context, *kgo.Record, attribute.Set) error {
+		close(processingStarted)
+		<-releaseProcessing
+		return nil
+	}
+
+	assignmentCtx, cancelAssignment := context.WithCancel(t.Context())
+	defer cancelAssignment()
+	partitions := map[string][]int32{topic: {0}}
+	consumer.assigned(assignmentCtx, kafkaClient, partitions)
+	pc := consumer.assignments[topicPartition{topic: topic, partition: 0}]
+
+	inFlight := mailboxBatch(0)
+	inFlight.Topic = topic
+	require.True(t, pc.mailbox.enqueue(inFlight, func(partitionPauseReason) {}))
+	waitSignal(t, processingStarted, "worker did not start processing")
+
+	queued := mailboxBatch(1)
+	queued.Topic = topic
+	require.True(t, pc.mailbox.enqueue(queued, func(partitionPauseReason) {}))
+
+	consumer.lost(t.Context(), nil, partitions, true)
+
+	_, ok := pc.mailbox.dequeue(func() {})
+	require.False(t, ok)
+
+	close(releaseProcessing)
+	staleDone := make(chan struct{})
+	go func() {
+		pc.wg.Wait()
+		close(staleDone)
+	}()
+	waitSignal(t, staleDone, "worker did not stop")
+}
+
 // TestResumePartitionsAfterRebalance verifies that partitions paused due to
 // processing errors are resumed when they are reassigned after a rebalance.
 func TestResumePartitionsAfterRebalance(t *testing.T) {
