@@ -6,12 +6,12 @@ package googleclientauthextension // import "github.com/open-telemetry/opentelem
 import (
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension/internal/googleclientauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension/internal/clientauth"
 )
 
 // Config defines configuration for the Google client auth extension.
 type Config struct {
-	Config googleclientauthextension.Config `mapstructure:",squash"`
+	Config clientauth.Config `mapstructure:",squash"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

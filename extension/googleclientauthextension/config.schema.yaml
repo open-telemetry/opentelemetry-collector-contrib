@@ -1,4 +1,4 @@
 description: Config defines configuration for the Google client auth extension.
 type: object
 allOf:
-  - $ref: ./internal/googleclientauthextension.config
+  - $ref: ./internal/clientauth.config
