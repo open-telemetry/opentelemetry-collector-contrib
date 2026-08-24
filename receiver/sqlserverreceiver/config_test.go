@@ -18,7 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
-func ptr[T any](v T) *T { return &v }
+func ptr[T any](v T) *T { return new(v) }
 
 func TestValidate(t *testing.T) {
 	testCases := []struct {
@@ -128,7 +128,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
-				ConnectionPool:       ConnectionPool{MaxOpen: ptr(-1)},
+				ConnectionPool:       ConnectionPool{MaxOpen: new(-1)},
 			},
 			expectedSuccess: false,
 		},
@@ -147,8 +147,8 @@ func TestValidate(t *testing.T) {
 				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 				ConnectionPool: ConnectionPool{
-					MaxOpen:     ptr(8),
-					MaxIdle:     ptr(4),
+					MaxOpen:     new(8),
+					MaxIdle:     new(4),
 					MaxLifetime: ptr(5 * time.Minute),
 					MaxIdleTime: ptr(time.Minute),
 				},

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension
 
-go 1.25.7
+go 1.26.0
 
 require (
 	github.com/DataDog/datadog-agent/comp/core/config v0.82.1
@@ -11,6 +11,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/serializer v0.82.1
 	github.com/DataDog/datadog-agent/pkg/tagset v0.82.1
 	github.com/google/uuid v1.6.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.159.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.159.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.65.0
@@ -182,7 +183,6 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.159.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.159.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.159.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.159.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.159.0 // indirect
