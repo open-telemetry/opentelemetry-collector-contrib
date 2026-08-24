@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/cockroachdb/pebble/v2 v2.1.6
