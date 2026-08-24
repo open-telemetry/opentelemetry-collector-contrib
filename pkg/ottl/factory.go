@@ -46,7 +46,6 @@ type factory[K any] struct {
 	createFunctionFunc CreateFunctionFunc[K]
 }
 
-//nolint:unused
 func (*factory[K]) unexportedFactoryFunc() {}
 
 func (f *factory[K]) Name() string {

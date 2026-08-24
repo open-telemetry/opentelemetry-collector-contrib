@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/Arize-ai/openinference/go/openinference-semantic-conventions v0.1.3

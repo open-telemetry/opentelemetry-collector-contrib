@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectoryinvreceiver
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/go-adsi/adsi v0.0.0-20230315214257-4ff46d735e52
