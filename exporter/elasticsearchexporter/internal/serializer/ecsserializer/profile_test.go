@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package otelserializer
+package ecsserializer
 
 import (
 	"bytes"
@@ -150,6 +150,20 @@ func TestSerializeProfile(t *testing.T) {
 					"scripted_upsert": true,
 					"upsert":          map[string]any{},
 				},
+				{
+					"Stacktrace.frame.id":     []any{"YA3K_koRAADyvzjEk_X7kgAAAAAAAABv"},
+					"Symbolization.retries":   json.Number("0"),
+					"Symbolization.time.next": "",
+					"Time.created":            "",
+					"ecs.version":             serializeprofiles.EcsVersionString,
+				},
+				{
+					"Executable.file.id":      []any{"YA3K_koRAADyvzjEk_X7kg"},
+					"Symbolization.retries":   json.Number("0"),
+					"Symbolization.time.next": "",
+					"Time.created":            "",
+					"ecs.version":             serializeprofiles.EcsVersionString,
+				},
 			},
 		},
 	}
@@ -180,12 +194,27 @@ func TestSerializeProfile(t *testing.T) {
 				decoder := json.NewDecoder(v)
 				decoder.UseNumber()
 				require.NoError(t, decoder.Decode(&d))
+
+				// Remove timestamps to allow comparing test results with expected values.
+				for k, v := range d {
+					switch k {
+					case "Symbolization.time.next", "Time.created":
+						tm, err := time.Parse(time.RFC3339Nano, v.(string))
+						require.NoError(t, err)
+						assert.True(t, isWithinLastSecond(tm))
+						d[k] = ""
+					}
+				}
 				results = append(results, d)
 			}
 
 			assert.Equal(t, tt.expected, results)
 		})
 	}
+}
+
+func isWithinLastSecond(t time.Time) bool {
+	return time.Since(t) < time.Second
 }
 
 func BenchmarkSerializeProfile(b *testing.B) {
