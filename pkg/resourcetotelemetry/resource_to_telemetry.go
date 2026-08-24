@@ -18,17 +18,19 @@ import (
 )
 
 // Settings defines configuration for converting resource attributes to telemetry attributes or constant labels.
-// When used, it must be embedded in the exporter configuration:
+// When used, it is typically embedded in the exporter configuration under a key name chosen by the exporter
+// (e.g. `resource_constant_labels` for Prometheus exporters, or `resource_to_telemetry_conversion` for AWS EMF exporter):
 //
 //	type Config struct {
 //	  // ...
 //	  resourcetotelemetry.Settings `mapstructure:"resource_constant_labels"`
 //	}
 type Settings struct {
-	// Included represents a list of patterns (supporting wildcards like "*") of resource attribute keys to include.
+	// Included represents a list of patterns (supporting wildcards '*' and '?') of resource attribute keys to include.
+	// Wildcards '*' and '?' match any sequence of characters and any single character respectively (and cannot be escaped).
 	// Note: if Included is empty and Excluded is non-empty, all resource attributes except those matched by Excluded will be included.
 	Included []string `mapstructure:"included"`
-	// Excluded represents a list of patterns (supporting wildcards like "*") of resource attribute keys to exclude,
+	// Excluded represents a list of patterns (supporting wildcards '*' and '?') of resource attribute keys to exclude,
 	// overriding anything that matched Included. If Included is empty, setting Excluded implies including all non-excluded attributes.
 	Excluded []string `mapstructure:"excluded"`
 	// Enabled indicates whether to convert resource attributes to telemetry attributes. Default is `false`.
@@ -69,7 +71,7 @@ func (s *Settings) Validate() error {
 
 func globToRegexp(pattern string) (*regexp.Regexp, error) {
 	quoted := regexp.QuoteMeta(pattern)
-	regexStr := "^" + strings.ReplaceAll(strings.ReplaceAll(quoted, `\*`, `.*`), `\?`, `.`) + "$"
+	regexStr := "(?s)^" + strings.ReplaceAll(strings.ReplaceAll(quoted, `\*`, `.*`), `\?`, `.`) + "$"
 	return regexp.Compile(regexStr)
 }
 
@@ -80,38 +82,64 @@ type wrapperMetricsExporter struct {
 }
 
 type resourceAttributeMatcher struct {
-	included []*regexp.Regexp
-	excluded []*regexp.Regexp
+	matchAll      bool
+	hasIncluded   bool
+	hasExcluded   bool
+	includedExact map[string]struct{}
+	excludedExact map[string]struct{}
+	includedRegex []*regexp.Regexp
+	excludedRegex []*regexp.Regexp
 }
 
 func newResourceAttributeMatcher(set Settings) *resourceAttributeMatcher {
 	m := &resourceAttributeMatcher{
-		included: make([]*regexp.Regexp, 0, len(set.Included)),
-		excluded: make([]*regexp.Regexp, 0, len(set.Excluded)),
+		hasIncluded:   len(set.Included) > 0,
+		hasExcluded:   len(set.Excluded) > 0,
+		includedExact: make(map[string]struct{}),
+		excludedExact: make(map[string]struct{}),
+	}
+	if len(set.Included) == 1 && set.Included[0] == "*" && len(set.Excluded) == 0 {
+		m.matchAll = true
+		return m
 	}
 	for _, p := range set.Included {
-		if re, err := globToRegexp(p); err == nil {
-			m.included = append(m.included, re)
+		if strings.ContainsAny(p, "*?") {
+			if re, err := globToRegexp(p); err == nil {
+				m.includedRegex = append(m.includedRegex, re)
+			}
+		} else {
+			m.includedExact[p] = struct{}{}
 		}
 	}
 	for _, p := range set.Excluded {
-		if re, err := globToRegexp(p); err == nil {
-			m.excluded = append(m.excluded, re)
+		if strings.ContainsAny(p, "*?") {
+			if re, err := globToRegexp(p); err == nil {
+				m.excludedRegex = append(m.excludedRegex, re)
+			}
+		} else {
+			m.excludedExact[p] = struct{}{}
 		}
 	}
 	return m
 }
 
 func (m *resourceAttributeMatcher) matches(key string) bool {
-	for _, re := range m.excluded {
+	if _, ok := m.excludedExact[key]; ok {
+		return false
+	}
+	for _, re := range m.excludedRegex {
 		if re.MatchString(key) {
 			return false
 		}
 	}
-	if len(m.included) == 0 {
-		return len(m.excluded) > 0
+	if !m.hasIncluded {
+		// When no included patterns are specified, include all non-excluded attributes.
+		return m.hasExcluded
 	}
-	for _, re := range m.included {
+	if _, ok := m.includedExact[key]; ok {
+		return true
+	}
+	for _, re := range m.includedRegex {
 		if re.MatchString(key) {
 			return true
 		}
@@ -130,6 +158,7 @@ func (*wrapperMetricsExporter) Capabilities() consumer.Capabilities {
 
 // WrapMetricsExporter wraps a given exporter.Metrics and based on the given settings
 // converts incoming resource attributes to metrics attributes or constant labels.
+// If Included or Excluded patterns are set, they take precedence over the deprecated Enabled field.
 func WrapMetricsExporter(set Settings, exporter exporter.Metrics) exporter.Metrics {
 	if len(set.Included) > 0 || len(set.Excluded) > 0 {
 		return &wrapperMetricsExporter{
@@ -155,7 +184,11 @@ func (wme *wrapperMetricsExporter) convertToMetricsAttributes(md pmetric.Metrics
 		var attrsToAdd pcommon.Map
 		switch {
 		case wme.constantLabelsMatcher != nil:
-			attrsToAdd = filterMatchingAttributes(resourceAttrs, wme.constantLabelsMatcher)
+			if wme.constantLabelsMatcher.matchAll {
+				attrsToAdd = resourceAttrs
+			} else {
+				attrsToAdd = filterMatchingAttributes(resourceAttrs, wme.constantLabelsMatcher)
+			}
 		case wme.excludeServiceAttributes:
 			attrsToAdd = filterServiceAttributes(resourceAttrs)
 		default:

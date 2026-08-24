@@ -1,6 +1,6 @@
 $defs:
   settings:
-    description: 'Settings defines configuration for converting resource attributes to telemetry attributes or constant labels. When used, it must be embedded in the exporter configuration: type Config struct { // ... resourcetotelemetry.Settings `mapstructure:"resource_constant_labels"` }'
+    description: 'Settings defines configuration for converting resource attributes to telemetry attributes or constant labels. When used, it is embedded in the exporter configuration under a key name chosen by the exporter (such as `resource_constant_labels` or `resource_to_telemetry_conversion`).'
     type: object
     properties:
       enabled:

@@ -166,6 +166,59 @@ func TestWrapMetricsExporterWithSettingsResourceConstantLabels(t *testing.T) {
 	assert.False(t, wme.constantLabelsMatcher.matches("attr2"))
 }
 
+func TestWrapMetricsExporterDefault(t *testing.T) {
+	exp := &wrapperMetricsExporter{}
+	wrapped := WrapMetricsExporter(Settings{}, exp)
+	assert.Same(t, exp, wrapped)
+}
+
+func TestConvertResourceToAttributesWithWildcardAllAndNewline(t *testing.T) {
+	md := testdata.GenerateMetricsOneMetric()
+	resource := md.ResourceMetrics().At(0).Resource()
+	resource.Attributes().PutStr("key.with\nnewline", "val1")
+	resource.Attributes().PutStr("regular.key", "val2")
+
+	wme := &wrapperMetricsExporter{
+		constantLabelsMatcher: newResourceAttributeMatcher(Settings{
+			Included: []string{"*"},
+		}),
+	}
+	md = wme.convertToMetricsAttributes(md)
+
+	dpAttrs := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes()
+	val1, hasVal1 := dpAttrs.Get("key.with\nnewline")
+	assert.True(t, hasVal1)
+	assert.Equal(t, "val1", val1.Str())
+
+	val2, hasVal2 := dpAttrs.Get("regular.key")
+	assert.True(t, hasVal2)
+	assert.Equal(t, "val2", val2.Str())
+}
+
+func TestConvertResourceToAttributesWithExactMatches(t *testing.T) {
+	md := testdata.GenerateMetricsOneMetric()
+	resource := md.ResourceMetrics().At(0).Resource()
+	resource.Attributes().PutStr("exact.match", "val1")
+	resource.Attributes().PutStr("excluded.exact", "val2")
+	resource.Attributes().PutStr("other.key", "val3")
+
+	wme := &wrapperMetricsExporter{
+		constantLabelsMatcher: newResourceAttributeMatcher(Settings{
+			Included: []string{"exact.match", "other.pattern*"},
+			Excluded: []string{"excluded.exact"},
+		}),
+	}
+	md = wme.convertToMetricsAttributes(md)
+
+	dpAttrs := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes()
+	_, hasExact := dpAttrs.Get("exact.match")
+	_, hasExcluded := dpAttrs.Get("excluded.exact")
+	_, hasOther := dpAttrs.Get("other.key")
+	assert.True(t, hasExact)
+	assert.False(t, hasExcluded)
+	assert.False(t, hasOther)
+}
+
 func BenchmarkJoinAttributes(b *testing.B) {
 	type args struct {
 		from int
