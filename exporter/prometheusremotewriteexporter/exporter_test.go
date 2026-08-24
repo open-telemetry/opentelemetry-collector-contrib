@@ -763,9 +763,7 @@ func Test_PushMetrics(t *testing.T) {
 
 					if tt.enableSendingRW2 {
 						cfg.RemoteWriteProtoMsg = remoteapi.WriteV2MessageType
-						oldValue := metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate.IsEnabled()
-						testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, tt.enableSendingRW2)
-						defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, oldValue)()
+						defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, tt.enableSendingRW2)()
 					} else {
 						cfg.RemoteWriteProtoMsg = remoteapi.WriteV1MessageType
 					}
