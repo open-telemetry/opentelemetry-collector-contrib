@@ -162,12 +162,12 @@ func (r *k8sResolver) start(_ context.Context) error {
 		r.epsListWatcher = &cache.ListWatch{
 			ListWithContextFunc: func(ctx context.Context, options metav1.ListOptions) (runtime.Object, error) {
 				options.LabelSelector = epsSelector
-				options.TimeoutSeconds = ptr.To[int64](int64(r.lwTimeout.Seconds()))
+				options.TimeoutSeconds = new(int64(r.lwTimeout.Seconds()))
 				return r.client.DiscoveryV1().EndpointSlices(r.svcNs).List(ctx, options)
 			},
 			WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
 				options.LabelSelector = epsSelector
-				options.TimeoutSeconds = ptr.To[int64](int64(r.lwTimeout.Seconds()))
+				options.TimeoutSeconds = new(int64(r.lwTimeout.Seconds()))
 				return r.client.DiscoveryV1().EndpointSlices(r.svcNs).Watch(ctx, options)
 			},
 		}
