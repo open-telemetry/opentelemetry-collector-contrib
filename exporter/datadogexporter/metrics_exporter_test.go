@@ -545,6 +545,78 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	}
 }
 
+func TestMetricsExporterDisableFallbackHostname(t *testing.T) {
+	tests := []struct {
+		name             string
+		resourceHostname string
+	}{
+		{
+			name: "without resource hostname",
+		},
+		{
+			name:             "with OpenTelemetry resource hostname",
+			resourceHostname: "sdk-hostname",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			seriesRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.MetricV2Endpoint}
+			server := testutil.DatadogServerMock(seriesRecorder.HandlerFunc)
+			defer server.Close()
+
+			cfg := newTestConfig(t, server.URL, nil, datadogconfig.HistogramModeCounters)
+			cfg.Metrics.ExporterConfig.DisableFallbackHostname = true
+
+			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			var once sync.Once
+			exp, err := newMetricsExporter(
+				t.Context(),
+				exportertest.NewNopSettings(metadata.Type),
+				cfg,
+				traceconfig.New(),
+				&once,
+				attributesTranslator,
+				&testutil.MockSourceProvider{
+					Src: source.Source{
+						Kind:       source.HostnameKind,
+						Identifier: "fallback-hostname",
+					},
+				},
+				nil,
+				nil,
+				attributes.NewGatewayUsage(),
+			)
+			require.NoError(t, err)
+			exp.getPushTime = func() uint64 { return 0 }
+
+			md := createTestMetrics(nil)
+			resourceAttributes := md.ResourceMetrics().At(0).Resource().Attributes()
+			resourceAttributes.Remove(attributes.AttributeDatadogHostname)
+			if tt.resourceHostname != "" {
+				resourceAttributes.PutStr("host.name", tt.resourceHostname)
+			}
+			require.NoError(t, exp.PushMetricsData(t.Context(), md))
+
+			reader, err := gzip.NewReader(bytes.NewReader(seriesRecorder.ByteBody))
+			require.NoError(t, err)
+			var payload datadogV2.MetricPayload
+			require.NoError(t, json.NewDecoder(reader).Decode(&payload))
+
+			require.NotEmpty(t, payload.Series)
+			metricSeries := payload.Series[0]
+			require.Equal(t, "int.gauge", metricSeries.Metric)
+			if tt.resourceHostname == "" {
+				assert.Empty(t, metricSeries.Resources)
+			} else {
+				require.Len(t, metricSeries.Resources, 1)
+				assert.Equal(t, tt.resourceHostname, metricSeries.Resources[0].GetName())
+			}
+		})
+	}
+}
+
 // Test_metricsExporter_HistogramZeroLowerBoundDoesNotLeakToZeroBin is a
 // regression test for the percentile-collapse bug fixed in datadog-agent#50777
 // (OTAGENT-1067). An explicit-bucket histogram whose first non-empty bucket is
