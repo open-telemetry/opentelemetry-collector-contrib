@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/basgys/goxml2json v1.1.1-0.20231018121955-e66ee54ceaad

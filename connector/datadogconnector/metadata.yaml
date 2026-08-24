@@ -10,7 +10,3 @@ status:
   codeowners:
     active: [mx-psi, dineshg13, jade-guiton-dd, IbraheemA]
     emeritus: [gbbr, ankitpatel96]
-
-tests:
-  goleak:
-    skip: true
