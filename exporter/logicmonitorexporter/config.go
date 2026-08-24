@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -67,13 +66,6 @@ type LogsConfig struct {
 }
 
 func (c *Config) Validate() error {
-	if metadata.ExporterLogicmonitorDisableLegacyResourceToTelemetryConversionFeatureGate.IsEnabled() {
-		c.ResourceToTelemetrySettings.Enabled = false                  //nolint:staticcheck // ignore deprecated field
-		c.ResourceToTelemetrySettings.ExcludeServiceAttributes = false //nolint:staticcheck // ignore deprecated field
-	}
-	if err := c.ResourceToTelemetrySettings.Validate(); err != nil {
-		return err
-	}
 	if c.ClientConfig.Endpoint == "" {
 		return errors.New("endpoint should not be empty")
 	}
