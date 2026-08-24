@@ -237,19 +237,19 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMysqlMaxUsedConnectionsDataPoint(ts, "1")
-			defaultMetricsCount++
+
 			allMetricsCount++
 			mb.RecordMysqlMyisamKeyCacheBlockMaxUsedDataPoint(ts, "1")
-			defaultMetricsCount++
+
 			allMetricsCount++
 			mb.RecordMysqlMyisamKeyCacheBlockUnusedDataPoint(ts, "1")
-			defaultMetricsCount++
+
 			allMetricsCount++
 			mb.RecordMysqlMyisamKeyCacheDiskOperationCountDataPoint(ts, "1", AttributeMysqlMyisamKeyCacheOperationTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlMyisamKeyCacheDiskOperationCountDataPoint(ts, "3", AttributeMysqlMyisamKeyCacheOperationTypeWrite)
 			}
-			defaultMetricsCount++
+
 			allMetricsCount++
 			mb.RecordMysqlMyisamKeyCacheRequestDataPoint(ts, "1", AttributeMysqlMyisamKeyCacheOperationTypeRead)
 			if tt.name == "reaggregate_set" {

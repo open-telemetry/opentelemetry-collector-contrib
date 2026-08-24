@@ -2627,18 +2627,18 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		MysqlMyisamKeyCacheBlockMaxUsed: MysqlMyisamKeyCacheBlockMaxUsedMetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MysqlMyisamKeyCacheBlockUnused: MysqlMyisamKeyCacheBlockUnusedMetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MysqlMyisamKeyCacheDiskOperationCount: MysqlMyisamKeyCacheDiskOperationCountMetricConfig{
-			Enabled:             true,
+			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlMyisamKeyCacheDiskOperationCountMetricAttributeKey{MysqlMyisamKeyCacheDiskOperationCountMetricAttributeKeyMysqlMyisamKeyCacheOperationType},
 		},
 		MysqlMyisamKeyCacheRequest: MysqlMyisamKeyCacheRequestMetricConfig{
-			Enabled:             true,
+			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlMyisamKeyCacheRequestMetricAttributeKey{MysqlMyisamKeyCacheRequestMetricAttributeKeyMysqlMyisamKeyCacheOperationType},
 		},

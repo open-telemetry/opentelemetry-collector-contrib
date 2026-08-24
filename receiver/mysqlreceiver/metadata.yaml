@@ -609,7 +609,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
   mysql.myisam.key_cache.block.max_used:
-    enabled: true
+    enabled: false
     description: The maximum number of MyISAM key cache blocks simultaneously in use since the server started or status counters were reset.
     stability: development
     unit: "1"
@@ -617,7 +617,7 @@ metrics:
       value_type: int
       input_type: string
   mysql.myisam.key_cache.block.unused:
-    enabled: true
+    enabled: false
     description: The number of unused MyISAM key cache blocks.
     stability: development
     unit: "1"
@@ -625,7 +625,7 @@ metrics:
       value_type: int
       input_type: string
   mysql.myisam.key_cache.disk.operation.count:
-    enabled: true
+    enabled: false
     description: The number of physical MyISAM key cache disk operations.
     stability: development
     unit: "1"
@@ -636,7 +636,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [mysql.myisam.key_cache.operation.type]
   mysql.myisam.key_cache.request:
-    enabled: true
+    enabled: false
     description: The number of logical MyISAM key cache requests.
     stability: development
     unit: "1"

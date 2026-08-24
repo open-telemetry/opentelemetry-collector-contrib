@@ -174,50 +174,6 @@ The number of InnoDB log operations.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | operation | The log operation types. 'fsyncs' aren't available in MariaDB 10.8 or later. | Str: ``waits``, ``write_requests``, ``writes``, ``fsyncs`` | Recommended | - |
 
-### mysql.myisam.key_cache.block.max_used
-
-The maximum number of MyISAM key cache blocks simultaneously in use since the server started or status counters were reset.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | Development |
-
-### mysql.myisam.key_cache.block.unused
-
-The number of unused MyISAM key cache blocks.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | Development |
-
-### mysql.myisam.key_cache.disk.operation.count
-
-The number of physical MyISAM key cache disk operations.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| operation | The MyISAM key cache operation type. | Str: ``read``, ``write`` | Recommended | - |
-
-### mysql.myisam.key_cache.request
-
-The number of logical MyISAM key cache requests.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| operation | The MyISAM key cache operation type. | Str: ``read``, ``write`` | Recommended | - |
-
 ### mysql.mysqlx_connections
 
 The number of mysqlx connections.
@@ -541,6 +497,50 @@ Maximum number of connections used simultaneously since the server started.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | 1 | Sum | Int | Cumulative | false | Development |
+
+### mysql.myisam.key_cache.block.max_used
+
+The maximum number of MyISAM key cache blocks simultaneously in use since the server started or status counters were reset.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+### mysql.myisam.key_cache.block.unused
+
+The number of unused MyISAM key cache blocks.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+### mysql.myisam.key_cache.disk.operation.count
+
+The number of physical MyISAM key cache disk operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The MyISAM key cache operation type. | Str: ``read``, ``write`` | Recommended | - |
+
+### mysql.myisam.key_cache.request
+
+The number of logical MyISAM key cache requests.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The MyISAM key cache operation type. | Str: ``read``, ``write`` | Recommended | - |
 
 ### mysql.mysqlx_worker_threads
 
