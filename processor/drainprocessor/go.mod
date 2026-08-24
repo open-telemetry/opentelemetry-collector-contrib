@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/drainprocessor
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/jaeyo/go-drain3 v0.1.2

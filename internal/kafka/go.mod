@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
