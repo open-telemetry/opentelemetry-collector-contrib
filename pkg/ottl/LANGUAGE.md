@@ -189,6 +189,21 @@ Example Map Values:
 - `{"foo": {"a": 2}}`
 - `{"foo": {"a": attributes["key"]}}`
 
+> [!IMPORTANT]
+> The examples above include a space after each `:` for readability, but a statement
+> written this way cannot be used as an unquoted YAML scalar in a Collector configuration.
+> YAML interprets a colon followed by a space (`: `) inside an unquoted scalar as a mapping
+> key separator, so loading the config fails Collector config parsing. When a statement
+> contains a map literal, wrap the whole statement in a YAML string (single quotes are
+> simplest, since OTTL uses double quotes internally):
+>
+> ```yaml
+> statements:
+>   - 'set(attributes["a"], {"foo": "bar"})'
+> ```
+>
+> Alternatively, omit the space after `:` (`{"foo":"bar"}`).
+
 ### Literals
 
 Literals are literal interpretations of the Value into a Go value.  Accepted literals are:
