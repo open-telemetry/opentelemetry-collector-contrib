@@ -18,6 +18,10 @@ func TestCreateDefaultConfigRoundTrip(t *testing.T) {
 	cfg := createDefaultConfig()
 	cm := confmap.New()
 	require.NoError(t, cm.Marshal(cfg))
+	// Unmarshal back into cfg itself so that unexported bookkeeping fields
+	// (e.g. confighttp.ServerConfig's deprecation warnings, which are only
+	// populated by Unmarshal) settle into the same state as roundTrip below.
+	require.NoError(t, cm.Unmarshal(cfg))
 
 	roundTrip := createDefaultConfig()
 	require.NoError(t, cm.Unmarshal(roundTrip))

@@ -51,8 +51,8 @@ func Test_signalfxreceiver_New(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	happyPathServerConfig.WriteTimeout = 0
 	happyPathServerConfig.ReadHeaderTimeout = 0
-	happyPathServerConfig.IdleTimeout = 0
-	happyPathServerConfig.KeepAlivesEnabled = false
+	happyPathServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	happyPathServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	happyPathServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:1234",
