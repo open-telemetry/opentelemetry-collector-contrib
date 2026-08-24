@@ -46,11 +46,18 @@ type logsReceiver struct {
 	doneChan                      chan bool
 	storageID                     *component.ID
 	cloudwatchCheckpointPersister *cloudwatchCheckpointPersister
+
+	// tag enrichment
+	namedTags    map[string]LogGroupTagsConfig // named log group name -> tag config (IncludeTags only)
+	namedTagArns map[string]string             // named log group name -> resolved ARN (cached)
+	tagsCache    map[string]map[string]string  // log group name -> resource attributes derived from tags
+	tagsCacheMu  sync.RWMutex
 }
 
 type client interface {
 	DescribeLogGroups(ctx context.Context, input *cloudwatchlogs.DescribeLogGroupsInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.DescribeLogGroupsOutput, error)
 	FilterLogEvents(ctx context.Context, input *cloudwatchlogs.FilterLogEventsInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.FilterLogEventsOutput, error)
+	ListTagsForResource(ctx context.Context, input *cloudwatchlogs.ListTagsForResourceInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.ListTagsForResourceOutput, error)
 }
 
 type streamNames struct {
@@ -110,6 +117,7 @@ type groupRequest interface {
 
 func newLogsReceiver(cfg *Config, settings receiver.Settings, consumer consumer.Logs) *logsReceiver {
 	groups := []groupRequest{}
+	namedTags := map[string]LogGroupTagsConfig{}
 	for logGroupName, sc := range cfg.Logs.Groups.NamedConfigs {
 		for _, prefix := range sc.Prefixes {
 			groups = append(groups, &streamPrefix{group: logGroupName, prefix: prefix})
@@ -119,6 +127,9 @@ func newLogsReceiver(cfg *Config, settings receiver.Settings, consumer consumer.
 		}
 		if len(sc.Prefixes) == 0 && len(sc.Names) == 0 {
 			groups = append(groups, &streamNames{group: logGroupName})
+		}
+		if sc.Tags.IncludeTags {
+			namedTags[logGroupName] = sc.Tags
 		}
 	}
 
@@ -157,6 +168,9 @@ func newLogsReceiver(cfg *Config, settings receiver.Settings, consumer consumer.
 		wg:                  &sync.WaitGroup{},
 		doneChan:            make(chan bool),
 		storageID:           cfg.StorageID,
+		namedTags:           namedTags,
+		namedTagArns:        map[string]string{},
+		tagsCache:           map[string]map[string]string{},
 	}
 }
 
@@ -221,6 +235,9 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 
 func (l *logsReceiver) poll(ctx context.Context) error {
 	var errs error
+	// Refresh tags for named log groups (autodiscover refreshes tags during
+	// discovery instead). No-op when tag enrichment is disabled.
+	l.refreshNamedTags(ctx)
 	currentGroups := make(map[string]bool)
 	endTime := nowFunc()
 	for _, r := range l.groupRequests {
@@ -388,6 +405,12 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 			if logStreamName != "" {
 				resourceAttributes.PutStr("cloudwatch.log.stream", logStreamName)
 			}
+			l.tagsCacheMu.RLock()
+			tags := l.tagsCache[logGroupName]
+			l.tagsCacheMu.RUnlock()
+			for attrKey, attrVal := range tags {
+				resourceAttributes.PutStr(attrKey, attrVal)
+			}
 			group[logStreamName] = resourceLogs
 
 			_ = resourceLogs.ScopeLogs().AppendEmpty()
@@ -415,6 +438,9 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 	}
 
 	numGroups := 0
+	// When tag enrichment is enabled we rebuild the tag cache from scratch each
+	// discovery cycle so removed groups and tag changes are reflected.
+	newTagsCache := map[string]map[string]string{}
 	nextToken := aws.String("")
 	for nextToken != nil {
 		if numGroups >= auto.Limit {
@@ -461,6 +487,21 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 
 			numGroups++
 
+			// Enrich with log group tags when enabled. The ARN is already
+			// present on the DescribeLogGroups response, so no extra lookup is
+			// needed to call ListTagsForResource.
+			if auto.Tags.IncludeTags && lg.LogGroupName != nil {
+				if lg.LogGroupArn == nil {
+					l.settings.Logger.Warn("log group has no ARN, cannot fetch tags",
+						zap.String("logGroup", *lg.LogGroupName))
+				} else if tags, tagErr := l.fetchLogGroupTags(ctx, *lg.LogGroupArn, auto.Tags); tagErr != nil {
+					l.settings.Logger.Warn("unable to list tags for log group",
+						zap.String("logGroup", *lg.LogGroupName), zap.Error(tagErr))
+				} else if tags != nil {
+					newTagsCache[*lg.LogGroupName] = tags
+				}
+			}
+
 			// default behavior is to collect all if not stream filtered
 			if len(auto.Streams.Names) == 0 && len(auto.Streams.Prefixes) == 0 {
 				groups = append(groups, &streamNames{group: *lg.LogGroupName})
@@ -477,7 +518,82 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 		}
 		nextToken = dlgResults.NextToken
 	}
+
+	if auto.Tags.IncludeTags {
+		l.tagsCacheMu.Lock()
+		l.tagsCache = newTagsCache
+		l.tagsCacheMu.Unlock()
+	}
+
 	return groups, nil
+}
+
+// fetchLogGroupTags calls ListTagsForResource for the given log group ARN and
+// returns the tags selected and prefixed according to tcfg. A nil map is
+// returned when no tags match.
+func (l *logsReceiver) fetchLogGroupTags(ctx context.Context, arn string, tcfg LogGroupTagsConfig) (map[string]string, error) {
+	out, err := l.client.ListTagsForResource(ctx, &cloudwatchlogs.ListTagsForResourceInput{
+		ResourceArn: aws.String(arn),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return tcfg.selectTags(out.Tags), nil
+}
+
+// resolveLogGroupARN resolves the ARN of a named log group via DescribeLogGroups.
+// Named groups (unlike autodiscover) are configured by name only, so the ARN
+// required by ListTagsForResource must be looked up.
+func (l *logsReceiver) resolveLogGroupARN(ctx context.Context, name string) (string, error) {
+	out, err := l.client.DescribeLogGroups(ctx, &cloudwatchlogs.DescribeLogGroupsInput{
+		LogGroupNamePrefix: aws.String(name),
+		Limit:              aws.Int32(maxLogGroupsPerDiscovery),
+	})
+	if err != nil {
+		return "", err
+	}
+	for i := range out.LogGroups {
+		lg := &out.LogGroups[i]
+		if lg.LogGroupName != nil && *lg.LogGroupName == name && lg.LogGroupArn != nil {
+			return *lg.LogGroupArn, nil
+		}
+	}
+	return "", fmt.Errorf("could not resolve ARN for log group %q", name)
+}
+
+// refreshNamedTags refreshes the tag cache for named log groups that have tag
+// enrichment enabled. ARNs are resolved once and cached; tags are refreshed on
+// each call so downstream attributes stay current.
+func (l *logsReceiver) refreshNamedTags(ctx context.Context) {
+	if len(l.namedTags) == 0 {
+		return
+	}
+	if err := l.ensureSession(); err != nil {
+		l.settings.Logger.Error("unable to establish a session to fetch log group tags", zap.Error(err))
+		return
+	}
+	for name, tcfg := range l.namedTags {
+		arn, ok := l.namedTagArns[name]
+		if !ok {
+			resolved, err := l.resolveLogGroupARN(ctx, name)
+			if err != nil {
+				l.settings.Logger.Warn("unable to resolve ARN for log group tags",
+					zap.String("logGroup", name), zap.Error(err))
+				continue
+			}
+			arn = resolved
+			l.namedTagArns[name] = arn
+		}
+		tags, err := l.fetchLogGroupTags(ctx, arn, tcfg)
+		if err != nil {
+			l.settings.Logger.Warn("unable to list tags for log group",
+				zap.String("logGroup", name), zap.Error(err))
+			continue
+		}
+		l.tagsCacheMu.Lock()
+		l.tagsCache[name] = tags
+		l.tagsCacheMu.Unlock()
+	}
 }
 
 func (l *logsReceiver) ensureSession() error {

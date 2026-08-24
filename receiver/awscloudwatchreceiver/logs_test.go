@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
@@ -1124,4 +1125,173 @@ func (mc *mockClient) DescribeLogGroups(ctx context.Context, input *cloudwatchlo
 func (mc *mockClient) FilterLogEvents(ctx context.Context, input *cloudwatchlogs.FilterLogEventsInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.FilterLogEventsOutput, error) {
 	args := mc.Called(ctx, input, opts)
 	return args.Get(0).(*cloudwatchlogs.FilterLogEventsOutput), args.Error(1)
+}
+
+func (mc *mockClient) ListTagsForResource(ctx context.Context, input *cloudwatchlogs.ListTagsForResourceInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.ListTagsForResourceOutput, error) {
+	args := mc.Called(ctx, input, opts)
+	return args.Get(0).(*cloudwatchlogs.ListTagsForResourceOutput), args.Error(1)
+}
+
+func TestAutodiscoverWithTagEnrichment(t *testing.T) {
+	mc := &mockClient{}
+	arn := "arn:aws:logs:us-west-1:123456789012:log-group:" + testLogGroupName
+
+	mc.On("DescribeLogGroups", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatchlogs.DescribeLogGroupsOutput{
+			LogGroups: []types.LogGroup{
+				{LogGroupName: aws.String(testLogGroupName), LogGroupArn: aws.String(arn)},
+			},
+			NextToken: nil,
+		}, nil,
+	)
+
+	var capturedArn string
+	mc.On("ListTagsForResource", mock.Anything, mock.MatchedBy(func(in *cloudwatchlogs.ListTagsForResourceInput) bool {
+		if in.ResourceArn != nil {
+			capturedArn = *in.ResourceArn
+		}
+		return true
+	}), mock.Anything).Return(&cloudwatchlogs.ListTagsForResourceOutput{
+		Tags: map[string]string{
+			"team":                          "messaging",
+			"environment":                   "production",
+			"aws:cloudformation:stack-name": "my-stack",
+		},
+	}, nil)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.Groups = GroupConfig{
+		AutodiscoverConfig: &AutodiscoverConfig{
+			Limit: 1,
+			Tags:  LogGroupTagsConfig{IncludeTags: true, TagNames: []string{"team", "environment"}},
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	rcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()},
+	}, sink)
+	rcvr.client = mc
+
+	grs, err := rcvr.discoverGroups(t.Context(), cfg.Logs.Groups.AutodiscoverConfig)
+	require.NoError(t, err)
+	require.Len(t, grs, 1)
+	require.Equal(t, arn, capturedArn, "ListTagsForResource should be called with the log group ARN")
+
+	rcvr.tagsCacheMu.RLock()
+	cached := rcvr.tagsCache[testLogGroupName]
+	rcvr.tagsCacheMu.RUnlock()
+	require.Equal(t, map[string]string{
+		"cloudwatch.log.group.tag.team":        "messaging",
+		"cloudwatch.log.group.tag.environment": "production",
+	}, cached, "only allowlisted tags should be cached, prefixed with the default attribute prefix")
+
+	logs := rcvr.processEvents(pcommon.NewTimestampFromTime(time.Now()), testLogGroupName, &cloudwatchlogs.FilterLogEventsOutput{
+		Events: []types.FilteredLogEvent{
+			{
+				Timestamp:     aws.Int64(testTimeStamp),
+				EventId:       aws.String(testEventIDs[0]),
+				Message:       aws.String("hello world"),
+				LogStreamName: aws.String(testLogStreamName),
+			},
+		},
+	})
+
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+	attrs := logs.ResourceLogs().At(0).Resource().Attributes()
+
+	v, ok := attrs.Get("cloudwatch.log.group.tag.team")
+	require.True(t, ok)
+	require.Equal(t, "messaging", v.Str())
+
+	v, ok = attrs.Get("cloudwatch.log.group.tag.environment")
+	require.True(t, ok)
+	require.Equal(t, "production", v.Str())
+
+	// AWS-managed tag not in the allowlist must not be emitted.
+	_, ok = attrs.Get("cloudwatch.log.group.tag.aws:cloudformation:stack-name")
+	require.False(t, ok)
+
+	// Base resource attributes remain present.
+	v, ok = attrs.Get("cloudwatch.log.group.name")
+	require.True(t, ok)
+	require.Equal(t, testLogGroupName, v.Str())
+}
+
+func TestAutodiscoverTagsDisabledMakesNoTagCall(t *testing.T) {
+	mc := &mockClient{}
+	mc.On("DescribeLogGroups", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatchlogs.DescribeLogGroupsOutput{
+			LogGroups: []types.LogGroup{
+				{LogGroupName: aws.String(testLogGroupName), LogGroupArn: aws.String("arn:aws:logs:us-west-1:123456789012:log-group:" + testLogGroupName)},
+			},
+		}, nil,
+	)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.Groups = GroupConfig{
+		AutodiscoverConfig: &AutodiscoverConfig{Limit: 1},
+	}
+
+	sink := &consumertest.LogsSink{}
+	rcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()},
+	}, sink)
+	rcvr.client = mc
+
+	_, err := rcvr.discoverGroups(t.Context(), cfg.Logs.Groups.AutodiscoverConfig)
+	require.NoError(t, err)
+	mc.AssertNotCalled(t, "ListTagsForResource", mock.Anything, mock.Anything, mock.Anything)
+
+	rcvr.tagsCacheMu.RLock()
+	require.Empty(t, rcvr.tagsCache)
+	rcvr.tagsCacheMu.RUnlock()
+}
+
+func TestNamedGroupTagEnrichment(t *testing.T) {
+	mc := &mockClient{}
+	arn := "arn:aws:logs:us-west-1:123456789012:log-group:" + testLogGroupName
+
+	mc.On("DescribeLogGroups", mock.Anything, mock.MatchedBy(func(in *cloudwatchlogs.DescribeLogGroupsInput) bool {
+		return in.LogGroupNamePrefix != nil && *in.LogGroupNamePrefix == testLogGroupName
+	}), mock.Anything).Return(&cloudwatchlogs.DescribeLogGroupsOutput{
+		LogGroups: []types.LogGroup{
+			{LogGroupName: aws.String(testLogGroupName), LogGroupArn: aws.String(arn)},
+		},
+	}, nil)
+
+	mc.On("ListTagsForResource", mock.Anything, mock.Anything, mock.Anything).Return(&cloudwatchlogs.ListTagsForResourceOutput{
+		Tags: map[string]string{
+			"log.tenant": "acme",
+			"team":       "messaging",
+		},
+	}, nil)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.Groups = GroupConfig{
+		NamedConfigs: map[string]StreamConfig{
+			testLogGroupName: {
+				Names: []*string{aws.String(testLogStreamName)},
+				// tag_prefix "log." with passthrough attribute prefix ("").
+				Tags: LogGroupTagsConfig{IncludeTags: true, TagPrefix: "log.", TagAttributePrefix: stringPtr("")},
+			},
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	rcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()},
+	}, sink)
+	rcvr.client = mc
+
+	rcvr.refreshNamedTags(t.Context())
+
+	rcvr.tagsCacheMu.RLock()
+	cached := rcvr.tagsCache[testLogGroupName]
+	rcvr.tagsCacheMu.RUnlock()
+	require.Equal(t, map[string]string{"log.tenant": "acme"}, cached, "only log.-prefixed tags, passed through without an attribute prefix")
+	require.Equal(t, arn, rcvr.namedTagArns[testLogGroupName], "resolved ARN should be cached")
 }
