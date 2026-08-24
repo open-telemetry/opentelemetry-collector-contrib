@@ -305,9 +305,6 @@ func commonOpts(
 		kgo.DisableClientMetrics(),
 	)
 	tlsConfig := clientCfg.TLS
-	if tlsConfig == nil {
-		tlsConfig = clientCfg.Authentication.TLS
-	}
 	// Configure TLS if needed
 	if tlsConfig != nil {
 		tlsCfg, err := tlsConfig.LoadTLSConfig(ctx)
@@ -317,14 +314,6 @@ func commonOpts(
 		if tlsCfg != nil {
 			opts = append(opts, kgo.DialTLSConfig(tlsCfg))
 		}
-	}
-	// Configure authentication
-	if clientCfg.Authentication.PlainText != nil {
-		auth := plain.Auth{
-			User: clientCfg.Authentication.PlainText.Username,
-			Pass: clientCfg.Authentication.PlainText.Password,
-		}
-		opts = append(opts, kgo.SASL(auth.AsMechanism()))
 	}
 	if clientCfg.Authentication.SASL != nil {
 		saslOpt, err := configureKgoSASL(clientCfg.Authentication.SASL, host)

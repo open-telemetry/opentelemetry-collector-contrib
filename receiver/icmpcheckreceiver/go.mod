@@ -18,6 +18,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.65.0
 	go.opentelemetry.io/collector/receiver v1.65.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.159.0
+	go.opentelemetry.io/collector/receiver/xreceiver v0.159.0
 	go.opentelemetry.io/collector/scraper v0.159.0
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.159.0
 	go.uber.org/goleak v1.3.0
@@ -50,7 +51,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.18.6 // indirect
+	github.com/klauspost/compress v1.18.7 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.1 // indirect
 	github.com/knadh/koanf/v2 v2.3.6 // indirect
@@ -59,12 +60,12 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
-	github.com/moby/go-archive v0.2.0 // indirect
+	github.com/moby/go-archive v0.3.0 // indirect
 	github.com/moby/moby/api v1.55.0 // indirect
 	github.com/moby/moby/client v0.5.0 // indirect
 	github.com/moby/patternmatcher v0.6.1 // indirect
 	github.com/moby/sys/sequential v0.7.0 // indirect
-	github.com/moby/sys/user v0.4.0 // indirect
+	github.com/moby/sys/user v0.4.1 // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/moby/term v0.5.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -90,7 +91,6 @@ require (
 	go.opentelemetry.io/collector/pipeline v1.65.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.159.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.159.0 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.159.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
 	go.opentelemetry.io/otel v1.45.0 // indirect
 	go.opentelemetry.io/otel/metric v1.45.0 // indirect

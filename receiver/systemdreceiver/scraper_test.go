@@ -178,6 +178,8 @@ func TestScraperScrape(t *testing.T) {
 			config: func() *Config {
 				cfg := createDefaultDisabledConfig()
 				cfg.MetricsBuilderConfig.Metrics.SystemdServiceCPUTime.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SystemdServiceMemoryUsage.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SystemdServiceMemoryUsageMax.Enabled = true
 				return cfg
 			},
 			units: []unitTuple{
@@ -243,5 +245,7 @@ func createDefaultDisabledConfig() *Config {
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.Metrics.SystemdUnitState.Enabled = false
 	cfg.MetricsBuilderConfig.Metrics.SystemdServiceCPUTime.Enabled = false
+	cfg.MetricsBuilderConfig.Metrics.SystemdServiceMemoryUsage.Enabled = false
+	cfg.MetricsBuilderConfig.Metrics.SystemdServiceMemoryUsageMax.Enabled = false
 	return cfg
 }
