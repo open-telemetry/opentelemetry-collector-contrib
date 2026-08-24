@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: exporter/prometheus_remote_write
+note: Fix validateAndSanitizeExternalLabels to respect UTF-8 / NoTranslation translation strategy and the PermissiveLabelSanitization feature gate.
+issues: [50435]
+subtext:
+change_logs: [user]

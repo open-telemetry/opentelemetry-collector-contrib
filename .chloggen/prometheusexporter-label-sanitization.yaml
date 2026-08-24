@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: exporter/prometheus
+note: Fix configureLabelNamer to correctly respect the PermissiveLabelSanitization feature gate for label sanitization and preserving multiple underscores.
+issues: [50435]
+subtext:
+change_logs: [user]
