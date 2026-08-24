@@ -618,7 +618,7 @@ func (*elasticsearchExporter) pushProfileRecord(
 			return stackTracesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		case otelserializer.StackFrameIndex:
 			return stackFramesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
-		case otelserializer.AllEventsIndex:
+		case otelserializer.AllEventsIndex, ecsserializer.AllEventsIndex:
 			return eventsSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		case otelserializer.ExecutablesIndex:
 			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionUpdate)

@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	AllEventsIndex   = "profiling-events-all"
+	AllEventsIndex   = "profiling-events-all.otel-default"
 	StackTraceIndex  = "profiling-stacktraces"
 	StackFrameIndex  = "profiling-stackframes"
 	ExecutablesIndex = "profiling-executables"
@@ -54,7 +54,7 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 				if err != nil {
 					return err
 				}
-				err = serializeprofiles.IndexDownsampledEvent(event, pushDataAsJSON)
+				err = serializeprofiles.IndexDownsampledEvent(event, ".otel-default", pushDataAsJSON)
 				if err != nil {
 					return err
 				}

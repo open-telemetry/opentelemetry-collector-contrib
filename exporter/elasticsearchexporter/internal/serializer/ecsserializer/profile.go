@@ -57,7 +57,7 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 				if err != nil {
 					return err
 				}
-				err = serializeprofiles.IndexDownsampledEvent(event, pushDataAsJSON)
+				err = serializeprofiles.IndexDownsampledEvent(event, "", pushDataAsJSON)
 				if err != nil {
 					return err
 				}
