@@ -101,8 +101,9 @@ func TestConfigValidate(t *testing.T) {
 	cfg.ResourceToTelemetrySettings.Enabled = true //nolint:staticcheck // ignore deprecated field
 	assert.Error(t, cfg.Validate())
 
-	originalState := metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate.IsEnabled()
-	testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate, true)
-	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate, originalState)
+	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate, true)()
+	assert.Error(t, cfg.Validate())
+
+	cfg.ResourceToTelemetrySettings = resourcetotelemetry.Settings{}
 	assert.NoError(t, cfg.Validate())
 }

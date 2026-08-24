@@ -322,3 +322,21 @@ func TestIsApplicationSignalsEnabled(t *testing.T) {
 		})
 	}
 }
+
+func TestDisableLegacyResourceToTelemetryConversionValidation(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ResourceToTelemetrySettings = resourcetotelemetry.Settings{
+		Included: []string{"service*"},
+	}
+	assert.NoError(t, cfg.Validate())
+
+	cfg.ResourceToTelemetrySettings.Enabled = true //nolint:staticcheck // ignore deprecated field
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExporterAwsemfDisableLegacyResourceToTelemetryConversionFeatureGate.ID(), true))
+	defer func() {
+		_ = featuregate.GlobalRegistry().Set(metadata.ExporterAwsemfDisableLegacyResourceToTelemetryConversionFeatureGate.ID(), false)
+	}()
+	assert.Error(t, cfg.Validate())
+
+	cfg.ResourceToTelemetrySettings.Enabled = false //nolint:staticcheck // ignore deprecated field
+	assert.NoError(t, cfg.Validate())
+}

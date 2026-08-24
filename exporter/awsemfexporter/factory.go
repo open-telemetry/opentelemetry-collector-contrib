@@ -67,6 +67,10 @@ func createMetricsExporter(ctx context.Context, params exporter.Settings, config
 	}
 
 	rttSettings := expCfg.ResourceToTelemetrySettings
+	//nolint:staticcheck // check deprecated fields
+	if (rttSettings.Enabled || rttSettings.ExcludeServiceAttributes) && !metadata.ExporterAwsemfDisableLegacyResourceToTelemetryConversionFeatureGate.IsEnabled() {
+		params.Logger.Warn("enabled and exclude_service_attributes in resource_to_telemetry_conversion are deprecated; use included and excluded patterns instead")
+	}
 	if metadata.ExporterAwsemfDisableLegacyResourceToTelemetryConversionFeatureGate.IsEnabled() {
 		rttSettings.Enabled = false                  //nolint:staticcheck // ignore deprecated field
 		rttSettings.ExcludeServiceAttributes = false //nolint:staticcheck // ignore deprecated field

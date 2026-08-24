@@ -64,12 +64,9 @@ func createMetricsExporter(
 	}
 
 	settings := pcfg.ResourceConstantLabels
-	if settings.IsEmpty() && !metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate.IsEnabled() {
+	if settings.IsEmpty() && !metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate.IsEnabled() && !pcfg.ResourceToTelemetrySettings.IsEmpty() {
+		set.Logger.Warn("resource_to_telemetry_conversion is deprecated; use resource_constant_labels instead")
 		settings = pcfg.ResourceToTelemetrySettings
-	}
-	if metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate.IsEnabled() {
-		settings.Enabled = false                  //nolint:staticcheck // ignore deprecated field
-		settings.ExcludeServiceAttributes = false //nolint:staticcheck // ignore deprecated field
 	}
 
 	return &wrapMetricsExporter{

@@ -4,6 +4,7 @@
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
+	"errors"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -106,9 +107,10 @@ var _ component.Config = (*Config)(nil)
 
 // Validate filters out invalid metricDeclarations and metricDescriptors
 func (config *Config) Validate() error {
-	if metadata.ExporterAwsemfDisableLegacyResourceToTelemetryConversionFeatureGate.IsEnabled() {
-		config.ResourceToTelemetrySettings.Enabled = false                  //nolint:staticcheck // ignore deprecated field
-		config.ResourceToTelemetrySettings.ExcludeServiceAttributes = false //nolint:staticcheck // ignore deprecated field
+	//nolint:staticcheck // check deprecated fields
+	if metadata.ExporterAwsemfDisableLegacyResourceToTelemetryConversionFeatureGate.IsEnabled() &&
+		(config.ResourceToTelemetrySettings.Enabled || config.ResourceToTelemetrySettings.ExcludeServiceAttributes) {
+		return errors.New("legacy enabled and exclude_service_attributes fields in resource_to_telemetry_conversion are disabled by the exporter.awsemf.DisableLegacyResourceToTelemetryConversion feature gate; use included and excluded patterns instead")
 	}
 	if err := config.ResourceToTelemetrySettings.Validate(); err != nil {
 		return err

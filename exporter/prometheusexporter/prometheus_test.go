@@ -883,9 +883,7 @@ func TestPrometheusExporterResourceConstantLabels(t *testing.T) {
 }
 
 func TestPrometheusExporterDisableResourceToTelemetryConversion(t *testing.T) {
-	originalState := metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate.IsEnabled()
-	testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate, true)
-	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate, originalState)
+	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate, true)()
 
 	addr := testutil.GetAvailableLocalAddress(t)
 	serverConfig := confighttp.NewDefaultServerConfig()
