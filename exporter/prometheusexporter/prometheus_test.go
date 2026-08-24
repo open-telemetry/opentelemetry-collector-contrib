@@ -142,8 +142,8 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		ServerConfig:     serverConfig,
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
-		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
-			Enabled: true,
+		ResourceConstantLabels: resourcetotelemetry.Settings{
+			Included: []string{"*"},
 		},
 	}
 	factory := NewFactory()
@@ -457,8 +457,8 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 		ServerConfig:     serverConfig,
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
-		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
-			Enabled: true,
+		ResourceConstantLabels: resourcetotelemetry.Settings{
+			Included: []string{"*"},
 		},
 	}
 
@@ -896,6 +896,7 @@ func TestPrometheusExporterDisableResourceToTelemetryConversion(t *testing.T) {
 		ServerConfig:     serverConfig,
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
+		//nolint:staticcheck // test deprecated field
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
 			Enabled: true,
 		},

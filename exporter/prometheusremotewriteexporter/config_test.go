@@ -82,11 +82,12 @@ func TestLoadConfig(t *testing.T) {
 					QueueSize:    2000,
 					NumConsumers: 10,
 				},
-				AddMetricSuffixes:           false,
-				Namespace:                   "test-space",
-				ExternalLabels:              map[string]string{"key1": "value1", "key2": "value2"},
-				ClientConfig:                confighttp.ClientConfig{},
-				HTTP:                        clientConfigWithHeaders,
+				AddMetricSuffixes: false,
+				Namespace:         "test-space",
+				ExternalLabels:    map[string]string{"key1": "value1", "key2": "value2"},
+				ClientConfig:      confighttp.ClientConfig{},
+				HTTP:              clientConfigWithHeaders,
+				//nolint:staticcheck // test deprecated field
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 				TargetInfo: TargetInfo{
 					Enabled: true,
@@ -365,6 +366,7 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 		})
 	}
 }
+
 func TestResourceConstantLabelsValidation(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.ResourceConstantLabels = resourcetotelemetry.Settings{

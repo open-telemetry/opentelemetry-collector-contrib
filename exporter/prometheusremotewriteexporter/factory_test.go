@@ -114,6 +114,7 @@ func Test_createMetricsExporter_disableResourceToTelemetryConversion(t *testing.
 	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate, true)()
 
 	cfg := createDefaultConfig().(*Config)
+	//nolint:staticcheck // test deprecated field
 	cfg.ResourceToTelemetrySettings = resourcetotelemetry.Settings{Enabled: true}
 
 	exp, err := createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)

@@ -70,11 +70,12 @@ func TestLoadConfig(t *testing.T) {
 					Region:                "",
 					RoleARN:               "",
 				},
-				LogGroupName:                "",
-				LogStreamName:               "",
-				DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
-				OutputDestination:           "cloudwatch",
-				Version:                     "1",
+				LogGroupName:          "",
+				LogStreamName:         "",
+				DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+				OutputDestination:     "cloudwatch",
+				Version:               "1",
+				//nolint:staticcheck // test deprecated field
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 				logger:                      zap.NewNop(),
 			},
@@ -134,10 +135,9 @@ func TestConfigValidate(t *testing.T) {
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,
 		},
-		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
-		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
-		MetricDescriptors:           incorrectDescriptor,
-		logger:                      zap.NewNop(),
+		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+		MetricDescriptors:     incorrectDescriptor,
+		logger:                zap.NewNop(),
 	}
 	assert.NoError(t, confmap.Validate(cfg))
 
@@ -154,10 +154,9 @@ func TestRetentionValidateCorrect(t *testing.T) {
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,
 		},
-		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
-		LogRetention:                365,
-		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
-		logger:                      zap.NewNop(),
+		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+		LogRetention:          365,
+		logger:                zap.NewNop(),
 	}
 	assert.NoError(t, confmap.Validate(cfg))
 }
@@ -168,10 +167,9 @@ func TestRetentionValidateWrong(t *testing.T) {
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,
 		},
-		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
-		LogRetention:                366,
-		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
-		logger:                      zap.NewNop(),
+		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+		LogRetention:          366,
+		logger:                zap.NewNop(),
 	}
 	assert.Error(t, confmap.Validate(wrongcfg))
 }
@@ -246,10 +244,9 @@ func TestValidateTags(t *testing.T) {
 					RequestTimeoutSeconds: 30,
 					MaxRetries:            1,
 				},
-				DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
-				Tags:                        tt.tags,
-				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
-				logger:                      zap.NewNop(),
+				DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+				Tags:                  tt.tags,
+				logger:                zap.NewNop(),
 			}
 			if tt.errorMessage != "" {
 				assert.ErrorContains(t, confmap.Validate(cfg), tt.errorMessage)
