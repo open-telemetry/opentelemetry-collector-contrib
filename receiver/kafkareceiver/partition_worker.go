@@ -171,7 +171,7 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 	var lastProcessed *kgo.Record
 	for _, msg := range p.Records {
 		if !c.config.MessageMarking.After {
-			c.client.MarkCommitRecords(msg)
+			c.markCommitIfOwner(pc, p.Topic, p.Partition, msg)
 		}
 		c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, msg.Offset, metric.WithAttributeSet(pc.attrs))
 		if err := c.handleMessage(pc, msg); err != nil {
@@ -274,7 +274,19 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 	if c.config.MessageMarking.After {
 		// Mark the latest accepted record after processing. This also covers
 		// every earlier record in the batch.
-		c.client.MarkCommitRecords(lastProcessed)
+		c.markCommitIfOwner(pc, p.Topic, p.Partition, lastProcessed)
 	}
 	return result
+}
+
+// markCommitIfOwner marks records only while this partition consumer still owns
+// the assignment. A timed-out worker can finish an in-flight batch after a
+// replacement starts, and those marks are keyed by topic-partition.
+func (c *franzConsumer) markCommitIfOwner(pc *pc, topic string, partition int32, records ...*kgo.Record) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	if c.assignments[topicPartition{topic: topic, partition: partition}] != pc {
+		return
+	}
+	c.client.MarkCommitRecords(records...)
 }
