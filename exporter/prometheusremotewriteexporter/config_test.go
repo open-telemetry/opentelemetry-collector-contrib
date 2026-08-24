@@ -379,8 +379,9 @@ func TestResourceConstantLabelsValidation(t *testing.T) {
 	cfg.ResourceToTelemetrySettings.Enabled = true //nolint:staticcheck // ignore deprecated field
 	assert.Error(t, cfg.Validate())
 
-	oldState := metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate.IsEnabled()
-	testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate, true)
-	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate, oldState)
+	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate, true)()
+	assert.Error(t, cfg.Validate())
+
+	cfg.ResourceToTelemetrySettings = resourcetotelemetry.Settings{}
 	assert.NoError(t, cfg.Validate())
 }

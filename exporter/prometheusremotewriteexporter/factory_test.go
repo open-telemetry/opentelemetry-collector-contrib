@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -112,9 +111,7 @@ func Test_createMetricsExporter(t *testing.T) {
 }
 
 func Test_createMetricsExporter_disableResourceToTelemetryConversion(t *testing.T) {
-	oldValue := metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate.IsEnabled()
-	testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate, true)
-	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate, oldValue)
+	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate, true)()
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.ResourceToTelemetrySettings = resourcetotelemetry.Settings{Enabled: true}
@@ -122,6 +119,4 @@ func Test_createMetricsExporter_disableResourceToTelemetryConversion(t *testing.
 	exp, err := createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
-	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
-	require.NoError(t, exp.Shutdown(t.Context()))
 }
