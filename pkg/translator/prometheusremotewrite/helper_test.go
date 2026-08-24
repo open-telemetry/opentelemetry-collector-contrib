@@ -845,7 +845,7 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			converter := newPrometheusConverter(tc.settings)
 
-			err := addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp, converter)
+			err := converter.addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp)
 			require.NoError(t, err)
 
 			if len(tc.wantLabels) == 0 || tc.settings.DisableTargetInfo {

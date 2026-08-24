@@ -83,7 +83,7 @@ func TestAddResourceTargetInfoMultipleUnderscores(t *testing.T) {
 		defer testutil.SetFeatureGateForTest(t, prometheustranslator.DropSanitizationGate, true)()
 
 		converter := newPrometheusConverter(Settings{})
-		err := addResourceTargetInfo(resource, Settings{}, testdata.TestMetricStartTimestamp, converter)
+		err := converter.addResourceTargetInfo(resource, Settings{}, testdata.TestMetricStartTimestamp)
 		require.NoError(t, err)
 
 		wantLabels := []prompb.Label{
@@ -101,7 +101,7 @@ func TestAddResourceTargetInfoMultipleUnderscores(t *testing.T) {
 		defer testutil.SetFeatureGateForTest(t, prometheustranslator.DropSanitizationGate, false)()
 
 		converter := newPrometheusConverter(Settings{})
-		err := addResourceTargetInfo(resource, Settings{}, testdata.TestMetricStartTimestamp, converter)
+		err := converter.addResourceTargetInfo(resource, Settings{}, testdata.TestMetricStartTimestamp)
 		require.NoError(t, err)
 
 		wantLabels := []prompb.Label{
