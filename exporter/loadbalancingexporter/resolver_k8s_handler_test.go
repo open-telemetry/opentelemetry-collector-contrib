@@ -81,6 +81,38 @@ func TestConvertToEndpoints(tst *testing.T) {
 			},
 		},
 	}
+	endpointsNotReadyMissingHostname := &discoveryv1.EndpointSlice{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-endpoints-6",
+			Namespace: "test-namespace",
+		},
+		Endpoints: []discoveryv1.Endpoint{
+			{
+				Addresses:  []string{"192.168.10.106"},
+				Conditions: discoveryv1.EndpointConditions{Ready: &notReady},
+			},
+		},
+	}
+	serving := true
+	terminating := true
+	hostname7 := "pod-7"
+	endpointsTerminatingServing := &discoveryv1.EndpointSlice{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-endpoints-7",
+			Namespace: "test-namespace",
+		},
+		Endpoints: []discoveryv1.Endpoint{
+			{
+				Addresses: []string{"192.168.10.107"},
+				Hostname:  &hostname7,
+				Conditions: discoveryv1.EndpointConditions{
+					Ready:       &notReady,
+					Serving:     &serving,
+					Terminating: &terminating,
+				},
+			},
+		},
+	}
 
 	tests := []struct {
 		name              string
@@ -119,6 +151,25 @@ func TestConvertToEndpoints(tst *testing.T) {
 			name:              "not ready endpoint is excluded",
 			returnNames:       true,
 			includedEndpoints: []*discoveryv1.EndpointSlice{endpoints1, endpointsNotReady},
+			expectedEndpoints: map[string]bool{"pod-1": true},
+			wantOk:            true,
+		},
+		{
+			// Readiness filtering happens before hostname validation. A not-ready
+			// endpoint is not routable, so its missing hostname is not a conversion
+			// failure.
+			name:              "not ready endpoint without hostname is excluded without conversion failure",
+			returnNames:       true,
+			includedEndpoints: []*discoveryv1.EndpointSlice{endpoints1, endpointsNotReadyMissingHostname},
+			expectedEndpoints: map[string]bool{"pod-1": true},
+			wantOk:            true,
+		},
+		{
+			// A terminating endpoint can keep serving in-flight work after Ready
+			// becomes false. It must leave the ring so it receives no new batches.
+			name:              "terminating endpoint that is still serving is excluded",
+			returnNames:       true,
+			includedEndpoints: []*discoveryv1.EndpointSlice{endpoints1, endpointsTerminatingServing},
 			expectedEndpoints: map[string]bool{"pod-1": true},
 			wantOk:            true,
 		},

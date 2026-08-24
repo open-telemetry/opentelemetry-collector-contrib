@@ -7,6 +7,6 @@ note: Skip endpoints whose `EndpointSlice` `conditions.ready` is explicitly `fal
 issues: [50436]
 
 subtext: |-
-  An endpoint is now excluded when `EndpointSlice` `conditions.ready` is explicitly `false`. An endpoint with no `ready` condition set is still treated as ready, per the `discovery.k8s.io/v1` API contract. On a Service configured with `publishNotReadyAddresses: true`, `conditions.ready` is always forced `true`, so this filtering does not apply.
+  An endpoint is now excluded when `EndpointSlice` `conditions.ready` is explicitly `false`. An endpoint with no `ready` condition set is still treated as ready, per the `discovery.k8s.io/v1` API contract. On a Service configured with `publishNotReadyAddresses: true`, `conditions.ready` is always forced `true`, so this filtering does not apply. Because the readiness filter runs before hostname validation, a non-ready endpoint with no hostname is ignored and no longer emits the missing-hostname warning or records a failed resolution. A terminating endpoint is excluded as soon as `ready` is `false`, even while `serving` remains `true`, which stops new batches while in-flight work drains.
 
 change_logs: [user]
