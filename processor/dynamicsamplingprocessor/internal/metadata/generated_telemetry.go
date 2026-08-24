@@ -27,6 +27,7 @@ type TelemetryBuilder struct {
 	registrations                                         []metric.Registration
 	ProcessorDynamicSamplingDecisionSampleRate            metric.Int64Histogram
 	ProcessorDynamicSamplingDecisionTriggers              metric.Int64Counter
+	ProcessorDynamicSamplingFingerprintDuration           metric.Int64Histogram
 	ProcessorDynamicSamplingIncomingTracestateUnparseable metric.Int64Counter
 	ProcessorDynamicSamplingOttlEvalErrors                metric.Int64Counter
 	ProcessorDynamicSamplingTracesActive                  metric.Int64Gauge
@@ -74,6 +75,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_processor_dynamic_sampling_decision_triggers",
 		metric.WithDescription("Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction, shutdown). [Development]"),
 		metric.WithUnit("{decisions}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorDynamicSamplingFingerprintDuration, err = builder.meter.Int64Histogram(
+		"otelcol_processor_dynamic_sampling_fingerprint_duration",
+		metric.WithDescription("Time spent extracting a rule's fingerprint per decision, in microseconds, labelled by rule. A relative signal for spotting expensive fingerprints (wide scopes such as any. on large traces); absolute values depend on host and load. [Development]"),
+		metric.WithUnit("us"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorDynamicSamplingIncomingTracestateUnparseable, err = builder.meter.Int64Counter(
