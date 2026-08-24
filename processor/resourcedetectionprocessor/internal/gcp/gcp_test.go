@@ -85,7 +85,6 @@ func TestDetect(t *testing.T) {
 		sdkResource      *sdkresource.Resource
 		sdkErr           error
 		cfgModifier      func(*localMetadata.ResourceAttributesConfig)
-		expectErr        bool
 		expectedResource map[string]any
 	}{
 		{
@@ -410,11 +409,7 @@ func TestDetect(t *testing.T) {
 			require.NoError(t, err)
 
 			res, schema, err := d.Detect(t.Context())
-			if tc.expectErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
+			assert.NoError(t, err)
 			assert.Contains(t, schema, "https://opentelemetry.io/schemas/")
 			assert.Equal(t, tc.expectedResource, res.Attributes().AsRaw(), "Resource object returned is incorrect")
 		})

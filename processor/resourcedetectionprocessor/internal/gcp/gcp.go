@@ -120,20 +120,20 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 			d.rb.SetFaasName(val)
 		case conventions.FaaSVersionKey:
 			d.rb.SetFaasVersion(val)
-		case "gcp.cloud_run.job.execution":
+		case conventions.GCPCloudRunJobExecutionKey:
 			d.rb.SetGcpCloudRunJobExecution(val)
-		case "gcp.cloud_run.job.task_index":
+		case conventions.GCPCloudRunJobTaskIndexKey:
 			d.rb.SetGcpCloudRunJobTaskIndex(val)
-		case "gcp.gce.instance.hostname":
+		case conventions.GCPGCEInstanceHostnameKey:
 			d.rb.SetGcpGceInstanceHostname(val)
-		case "gcp.gce.instance.name":
+		case conventions.GCPGCEInstanceNameKey:
 			instanceName = val
 			d.rb.SetGcpGceInstanceName(val)
-		case "gcp.gce.instance_group_manager.name":
+		case conventions.GCPGCEInstanceGroupManagerNameKey:
 			d.rb.SetGcpGceInstanceGroupManagerName(val)
-		case "gcp.gce.instance_group_manager.region":
+		case conventions.GCPGCEInstanceGroupManagerRegionKey:
 			d.rb.SetGcpGceInstanceGroupManagerRegion(val)
-		case "gcp.gce.instance_group_manager.zone":
+		case conventions.GCPGCEInstanceGroupManagerZoneKey:
 			d.rb.SetGcpGceInstanceGroupManagerZone(val)
 		case conventions.HostIDKey:
 			d.rb.SetHostID(val)
