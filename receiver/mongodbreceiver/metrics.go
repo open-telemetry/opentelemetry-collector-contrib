@@ -492,6 +492,13 @@ func (s *mongodbScraper) recordWTFsyncCount(now pcommon.Timestamp, doc bson.M, e
 // pre-8.0 the new queues.execution path is absent. The receiver tries the new path
 // first (cheap probe) and falls back to the legacy WiredTiger path if needed.
 func (s *mongodbScraper) recordWTConcurrentTransactionsOut(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	// These are WiredTiger concurrency tickets, so only emit on the WiredTiger storage
+	// engine. The gate covers both version paths below: on 8.0+ the queues.execution
+	// section can also be present under non-WiredTiger engines (e.g. inMemory), and this
+	// metric should not be emitted there.
+	if !isWiredTiger(doc) {
+		return
+	}
 	metricName := "mongodb.wt.concurrent_transactions.in_use"
 	directions := map[string]metadata.AttributeDiskIoDirection{
 		"read":  metadata.AttributeDiskIoDirectionRead,
@@ -509,10 +516,7 @@ func (s *mongodbScraper) recordWTConcurrentTransactionsOut(now pcommon.Timestamp
 		}
 		return
 	}
-	// Pre-8.0 path: only meaningful with WiredTiger storage engine
-	if !isWiredTiger(doc) {
-		return
-	}
+	// Pre-8.0 path
 	for dir, attr := range directions {
 		val, e := collectMetric(doc, []string{"wiredTiger", "concurrentTransactions", dir, "out"})
 		if e != nil {

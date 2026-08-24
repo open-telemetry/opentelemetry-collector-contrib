@@ -194,6 +194,30 @@ func TestRecordWTConcurrentTransactionsOut80(t *testing.T) {
 	require.Equal(t, map[string]int64{"read": 7, "write": 4}, byDir)
 }
 
+// TestRecordWTConcurrentTransactionsNonWiredTiger80 asserts that on MongoDB 8.0+ the
+// queues.execution path is still gated by the storage engine: a non-WiredTiger engine
+// (e.g. inMemory) that exposes queues.execution must not emit the metric.
+func TestRecordWTConcurrentTransactionsNonWiredTiger80(t *testing.T) {
+	doc := bson.M{
+		"queues": bson.M{
+			"execution": bson.M{
+				"read":  bson.M{"out": int64(7)},
+				"write": bson.M{"out": int64(4)},
+			},
+		},
+		"storageEngine": bson.M{"name": "inMemory"},
+	}
+	s := newWTScraper(t)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordWTConcurrentTransactionsOut(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	md := s.mb.Emit()
+	require.Equal(t, 0, md.ResourceMetrics().Len())
+}
+
 // TestRecordWTMetricsNonWiredTiger asserts the log/fsync metrics emit nothing when the
 // storage engine is not WiredTiger.
 func TestRecordWTMetricsNonWiredTiger(t *testing.T) {
@@ -206,6 +230,7 @@ func TestRecordWTMetricsNonWiredTiger(t *testing.T) {
 	s.recordWTLogOperations(now, doc, errs)
 	s.recordWTLogSyncTime(now, doc, errs)
 	s.recordWTFsyncCount(now, doc, errs)
+	s.recordWTConcurrentTransactionsOut(now, doc, errs)
 	require.NoError(t, errs.Combine())
 
 	md := s.mb.Emit()
