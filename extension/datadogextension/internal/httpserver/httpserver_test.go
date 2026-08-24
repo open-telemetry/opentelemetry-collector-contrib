@@ -26,10 +26,12 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 )
 
 func TestServerStart(t *testing.T) {
+	endpoint := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
 		name         string
 		setupServer  func() (*Server, *observer.ObservedLogs)
@@ -52,7 +54,7 @@ func TestServerStart(t *testing.T) {
 				serverConfig.KeepAlivesEnabled = false
 				serverConfig.NetAddr = confignet.AddrConfig{
 					Transport: "tcp",
-					Endpoint:  DefaultServerEndpoint,
+					Endpoint:  endpoint,
 				}
 				s := NewServer(
 					logger,
@@ -68,7 +70,7 @@ func TestServerStart(t *testing.T) {
 				)
 				return s, logs
 			},
-			expectedLogs: []string{fmt.Sprintf("HTTP Server started at %s%s", DefaultServerEndpoint, "/metadata")},
+			expectedLogs: []string{fmt.Sprintf("HTTP Server started at %s%s", endpoint, "/metadata")},
 		},
 	}
 
@@ -183,7 +185,7 @@ func TestPrepareAndSendFleetAutomationPayloads(t *testing.T) {
 			serverConfig.KeepAlivesEnabled = false
 			serverConfig.NetAddr = confignet.AddrConfig{
 				Transport: "tcp",
-				Endpoint:  DefaultServerEndpoint,
+				Endpoint:  testutil.GetAvailableLocalAddress(t),
 			}
 			s := NewServer(
 				logger,

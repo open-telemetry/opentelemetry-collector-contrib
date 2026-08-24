@@ -57,12 +57,8 @@ func (bs Bounds) Observe(observations ...float64) Histogram {
 		Bounds:  dp.ExplicitBounds().AsRaw(),
 		Buckets: dp.BucketCounts().AsRaw(),
 		Count:   dp.Count(),
-		Sum:     ptr(dp.Sum()),
-		Min:     ptr(dp.Min()),
-		Max:     ptr(dp.Max()),
+		Sum:     new(dp.Sum()),
+		Min:     new(dp.Min()),
+		Max:     new(dp.Max()),
 	}
-}
-
-func ptr[T any](v T) *T {
-	return &v
 }
