@@ -19,5 +19,5 @@ var ExporterAwsemfDisableLegacyResourceToTelemetryConversionFeatureGate = featur
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the deprecated enabled and exclude_service_attributes fields in resource_to_telemetry_conversion are disabled, and included/excluded patterns must be used instead"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48861"),
-	featuregate.WithRegisterFromVersion("v0.158.0"),
+	featuregate.WithRegisterFromVersion("v0.160.0"),
 )
