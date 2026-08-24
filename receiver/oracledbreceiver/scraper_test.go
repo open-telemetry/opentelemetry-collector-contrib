@@ -2854,3 +2854,28 @@ func readFile(fname string) []byte {
 	}
 	return file
 }
+
+// TestShutdownRunsDBCleanup verifies shutdown invokes the dbCleanup hook (used
+// to destroy the gokrb5 client and stop its TGT-renewal goroutine for Kerberos
+// auth), even when no db was opened.
+func TestShutdownRunsDBCleanup(t *testing.T) {
+	cleaned := false
+	scrpr := oracleScraper{
+		logger:         zap.NewNop(),
+		dbProviderFunc: func() (*sql.DB, error) { return nil, nil },
+		dbCleanup:      func() { cleaned = true },
+	}
+
+	require.NoError(t, scrpr.shutdown(t.Context()))
+	assert.True(t, cleaned, "shutdown should invoke dbCleanup")
+}
+
+// TestShutdownNilDBCleanup verifies shutdown is safe when no cleanup was set
+// (the non-Kerberos path leaves dbCleanup nil).
+func TestShutdownNilDBCleanup(t *testing.T) {
+	scrpr := oracleScraper{
+		logger:         zap.NewNop(),
+		dbProviderFunc: func() (*sql.DB, error) { return nil, nil },
+	}
+	require.NoError(t, scrpr.shutdown(t.Context()))
+}
