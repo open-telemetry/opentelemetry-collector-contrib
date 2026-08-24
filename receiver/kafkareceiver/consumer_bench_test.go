@@ -276,9 +276,8 @@ func BenchmarkLogsReceiverPartitionProcessing(b *testing.B) {
 	)
 	defaultConfig := createDefaultConfig().(*Config)
 	// Compare steady-state logs throughput between legacy and independent
-	// processing with autocommit enabled and disabled. Keeping the workload and
-	// partition count fixed isolates the cost of per-partition workers and
-	// mailboxes.
+	// processing. Keeping the workload and partition count fixed isolates the
+	// cost of per-partition workers and mailboxes.
 	cases := []struct {
 		mode                string
 		autocommit          string
@@ -305,18 +304,6 @@ func BenchmarkLogsReceiverPartitionProcessing(b *testing.B) {
 			autoCommitConfig: configkafka.AutoCommitConfig{
 				Enable:   false,
 				Interval: time.Second,
-			},
-		},
-		{
-			mode:       "independent",
-			autocommit: "disabled",
-			autoCommitConfig: configkafka.AutoCommitConfig{
-				Enable:   false,
-				Interval: time.Second,
-			},
-			partitionProcessing: PartitionProcessing{
-				Independent:        true,
-				MaxBufferedBatches: 1,
 			},
 		},
 	}

@@ -24,11 +24,10 @@ const (
 	partitionPauseRewind
 )
 
-// partitionBatchResult describes the commit and rewind work produced while
-// processing one fetched partition batch.
+// partitionBatchResult describes the rewind work produced while processing one
+// fetched partition batch.
 type partitionBatchResult struct {
 	rewindRecord *kgo.Record
-	commitRecord *kgo.Record
 	terminal     bool
 }
 
@@ -45,9 +44,6 @@ type pc struct {
 	mailbox *partitionMailbox
 	// pauseReasons stores a bitmask of partitionPauseReason values.
 	pauseReasons atomic.Uint32
-	// pendingCommit preserves processed progress if the synchronous commit
-	// fails. The revocation callback reads it after waiting for this worker.
-	pendingCommit *kgo.Record
 
 	// mu prevents cancellation from racing a new wg.Add.
 	mu sync.RWMutex
@@ -130,19 +126,6 @@ func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 					c.client.PauseFetchPartitions(partition)
 				})
 			}
-			if result.commitRecord != nil {
-				pc.pendingCommit = result.commitRecord
-				c.opsMu.Lock()
-				err := c.client.CommitRecords(pc.ctx, result.commitRecord)
-				c.unlockOpsAndWakePoll()
-				if err == nil {
-					pc.pendingCommit = nil
-				}
-				if err != nil && pc.ctx.Err() == nil {
-					pc.logger.Error("failed to commit partition offset", zap.Error(err))
-					c.reportRecoverable(err)
-				}
-			}
 			if result.rewindRecord != nil {
 				if !c.applyMailboxRewind(pc, tp, partition) {
 					return
@@ -182,24 +165,13 @@ func (c *franzConsumer) applyMailboxRewind(pc *pc, tp topicPartition, partition 
 //     dequeues the batch. Records still waiting in the mailbox are not marked.
 //   - Legacy with autocommit disabled marks records here. consume commits all
 //     marked partitions after the fetched batch finishes.
-//   - Independent with autocommit disabled does not mark records here. It
-//     returns the last accepted record, then the worker commits that partition
-//     synchronously and retains failed commit progress for revocation.
 func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo.FetchTopicPartition) partitionBatchResult {
-	// Only independent mode with autocommit disabled commits per partition.
-	partitionScopedCommit := c.config.PartitionProcessing.Independent && !c.config.ConsumerConfig.AutoCommit.Enable
 	var fatalRecord *kgo.Record
 	fatalIsPermanent := false
 	var lastProcessed *kgo.Record
 	for _, msg := range p.Records {
 		if !c.config.MessageMarking.After {
-			if partitionScopedCommit {
-				// Preserve mark-before behavior without using franz-go's
-				// client-wide marked offset state.
-				lastProcessed = msg
-			} else {
-				c.client.MarkCommitRecords(msg)
-			}
+			c.client.MarkCommitRecords(msg)
 		}
 		c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, msg.Offset, metric.WithAttributeSet(pc.attrs))
 		if err := c.handleMessage(pc, msg); err != nil {
@@ -299,13 +271,9 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 		(p.HighWatermark-1)-lastProcessed.Offset,
 		metric.WithAttributeSet(pc.attrs),
 	)
-	if partitionScopedCommit {
-		// The independent worker commits this record after this function
-		// returns.
-		result.commitRecord = lastProcessed
-	} else if c.config.MessageMarking.After {
-		// In all other modes, After=true marks the latest accepted record after
-		// processing. This also covers every earlier record in the batch.
+	if c.config.MessageMarking.After {
+		// Mark the latest accepted record after processing. This also covers
+		// every earlier record in the batch.
 		c.client.MarkCommitRecords(lastProcessed)
 	}
 	return result

@@ -627,19 +627,7 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 	// Commit synchronously here (rather than relying on autocommit) so progress
 	// is persisted before the partition is reassigned to another consumer,
 	// avoiding duplicate processing by the next owner.
-	var err error
-	if independent && !c.config.ConsumerConfig.AutoCommit.Enable {
-		records := make([]*kgo.Record, 0, len(stopping))
-		for _, pc := range stopping {
-			if pc.pendingCommit != nil {
-				records = append(records, pc.pendingCommit)
-			}
-		}
-		err = c.client.CommitRecords(ctx, records...)
-	} else {
-		err = c.client.CommitMarkedOffsets(ctx)
-	}
-	if err != nil {
+	if err := c.client.CommitMarkedOffsets(ctx); err != nil {
 		c.settings.Logger.Error("failed to commit offsets", zap.Error(err))
 		c.reportRecoverable(err)
 	}
