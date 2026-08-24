@@ -670,12 +670,9 @@ feature_gates:
       UsageNanoCores value.
     from_version: v0.156.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49477
-    skip_strict_validation: true
 
 tests:
   config:
     ca_file: "testdata/testcert.crt"
     key_file: "testdata/testkey.key"
     cert_file: "testdata/testcert.crt"
-  goleak:
-    skip: true

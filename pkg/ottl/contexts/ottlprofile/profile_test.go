@@ -147,7 +147,12 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	instrumentationScope := pcommon.NewInstrumentationScope()
 	instrumentationScope.SetName("instrumentation_scope")
 
-	ctx := NewTransformContext(pprofile.NewProfile(), pprofile.NewProfilesDictionary(), instrumentationScope, resource, pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
+	resourceProfiles := pprofile.NewResourceProfiles()
+	resource.CopyTo(resourceProfiles.Resource())
+	scopeProfiles := pprofile.NewScopeProfiles()
+	instrumentationScope.CopyTo(scopeProfiles.Scope())
+
+	ctx := NewTransformContextPtr(resourceProfiles, scopeProfiles, pprofile.NewProfile(), pprofile.NewProfilesDictionary())
 
 	tests := []struct {
 		name     string
@@ -206,7 +211,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			require.NoError(t, err)
 
-			got, err := accessor.Get(t.Context(), &ctx)
+			got, err := accessor.Get(t.Context(), ctx)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
