@@ -29,14 +29,16 @@ how this exporter works.
 
 The following settings are required:
 
-- `endpoint` (no default): The remote write URL to send remote write samples.
+- `http.endpoint` (no default): The remote write URL to send remote write samples.
+  For backward compatibility, a top-level `endpoint` is still accepted, but prefer
+  configuring it under the `http` block.
 
-By default, TLS is enabled and must be configured under `tls:`:
+By default, TLS is enabled and must be configured under `http.tls:` (or top-level `tls:` for backward compatibility):
 
 - `insecure` (default = `false`): whether to enable client transport security for
   the exporter's connection.
 
-As a result, the following parameters are also required under `tls:`:
+As a result, the following parameters are also required under `http.tls:` (or top-level `tls:`):
 
 - `cert_file` (no default): path to the TLS cert to use for TLS required connections. Should
   only be used if `insecure` is set to false.
@@ -46,12 +48,15 @@ As a result, the following parameters are also required under `tls:`:
 The following settings can be optionally configured:
 
 - `external_labels`: map of labels names and values to be attached to each metric data point
-- `headers`: additional headers attached to each HTTP request.
+- `http.headers` (or top-level `headers` for backward compatibility): additional headers attached to each HTTP request.
   - *Note the following headers cannot be changed: `Content-Encoding`, `Content-Type`, `X-Prometheus-Remote-Write-Version`, and `User-Agent`.*
 - `namespace`: prefix attached to each exported metric name.
 - `add_metric_suffixes`: If set to false, type and unit suffixes will not be added to metrics. Default: true. **Deprecated**: Use `translation_strategy` instead.
 - `translation_strategy`: Controls how OTLP metric and attribute names are translated into Prometheus metric and label names. Options are: `UnderscoreEscapingWithSuffixes` (default), `UnderscoreEscapingWithoutSuffixes`, `NoUTF8EscapingWithSuffixes`, and `NoTranslation`. When set, this takes precedence over `add_metric_suffixes`.
 - `send_metadata`: If set to true, prometheus metadata will be generated and sent. Default: false. This option is ignored when using PRW 2.0, which always includes metadata.
+- `include_metadata_keys`: list of client metadata keys whose values are forwarded as HTTP headers on every outbound remote write request.
+  - **Note**: Keys that collide with headers required by the remote write protocol (`Content-Encoding`, `Content-Type`, `User-Agent`, `X-Prometheus-Remote-Write-Version`) are rejected: configuration validation fails (case-insensitive) if any such key is listed.
+  - **Note**: When WAL is enabled, then this setting has no effect. The WAL persists only the raw protobuf bytes of each write request; the originating `client.Info` context is not serialized to disk so initial metadata are lost.
 - `remote_write_queue`: fine tuning for queueing and sending of the outgoing remote writes.
   - `enabled`: enable the sending queue (default: `true`)
   - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false` (default: `10000`)
@@ -76,6 +81,8 @@ The following settings can be optionally configured:
   - Protobuf message to use when writing to the remote write endpoint. This option is ignored unless the `exporter.prometheusremotewritexporter.enableSendingRW2` feature gate is enabled.
   - `prometheus.WriteRequest` is the message used in [Remote Write 1.0](https://prometheus.io/docs/specs/remote_write_spec/).
   - `io.prometheus.write.v2.Request` is the message used in [Remote Write 2.0](https://prometheus.io/docs/specs/remote_write_spec_2_0/). It is more efficient, always includes metadata, and adds support for the created timestamp and native histograms. Your remote storage provider must support PRW 2.0 to be able to use this message. PRW 2.0 support is currently **In Development** and is only partially implemented, thus, not ready for usage.
+- `convert_explicit_histograms_to_nhcb` (default = `false`): If `true`, OTLP explicit-bucket (classic) histograms are converted to [Native Histograms with Custom Buckets](https://prometheus.io/docs/specs/native_histograms/) (NHCB) on export, instead of being written as classic `_bucket`/`_sum`/`_count` series. The explicit bounds are carried as the histogram's custom values. Works on both the RW1 and RW2 paths.
+- `keep_classic_histograms` (default = `false`): If `true` (and `convert_explicit_histograms_to_nhcb` is enabled), the original classic `_bucket`/`_sum`/`_count` series are emitted alongside the NHCB series. This is intended for a migration window, allowing both representations to be queried in parallel before cutting over. It has no effect unless `convert_explicit_histograms_to_nhcb` is also `true`.
 
 
 Example:
@@ -83,7 +90,8 @@ Example:
 ```yaml
 exporters:
   prometheus_remote_write:
-    endpoint: "https://my-cortex:7900/api/v1/push"
+    http:
+      endpoint: "https://my-cortex:7900/api/v1/push"
     wal: # Enabling the Write-Ahead-Log for the exporter.
       directory: ./prom_rw # The directory to store the WAL in
       buffer_size: 100 # Optional count of elements to be read from the WAL before truncating; default of 300
@@ -97,7 +105,8 @@ Example:
 ```yaml
 exporters:
   prometheus_remote_write:
-    endpoint: "https://my-cortex:7900/api/v1/push"
+    http:
+      endpoint: "https://my-cortex:7900/api/v1/push"
     external_labels:
       label_name1: label_value1
       label_name2: label_value2
@@ -110,7 +119,7 @@ exporters:
 
 Several helper files are leveraged to provide additional capabilities automatically:
 
-- [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md), note that the exporter only supports `snappy` compression type as it's [required](https://prometheus.io/docs/specs/remote_write_spec/#protocol) by the Prometheus remote write protocol.
+- [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md), note that the exporter only supports `snappy` compression type as it's [required](https://prometheus.io/docs/specs/remote_write_spec/#protocol) by the Prometheus remote write protocol. Prefer configuring these under an `http` block (for example `http.endpoint`, `http.tls`, `http.headers`, `http.timeout`). Top-level HTTP client settings remain supported for backward compatibility, but the top-level `timeout` is shared with the exporter retry helper and cannot be set independently unless HTTP client settings are nested under `http`. When both are present, the `http` block takes precedence. See [#46209](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46209).
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
 - [Retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), note that the exporter doesn't support `sending_queue` but provides `remote_write_queue`.
 
@@ -130,6 +139,12 @@ This exporter has feature gate: `+exporter.prometheusremotewritexporter.EnableMu
 
 When this feature gate is enabled, `num_consumers` will be used as the worker counter for handling batches from the queue, and `max_batch_request_parallelism` will be used for parallelism on single batch bigger than `max_batch_size_bytes`.
 Enabling this feature gate, with `num_consumers` higher than 1 requires the target destination to supports ingestion of OutOfOrder samples. See [Multiple Consumers and OutOfOrder](#multiple-consumers-and-outoforder) for more info
+
+#### removeTopLevelHTTPSettings
+
+This exporter has feature gate: `exporter.prometheusremotewritexporter.removeTopLevelHTTPSettings`.
+
+When enabled, top-level (flat) HTTP client settings such as `endpoint`, `tls`, `headers`, and `proxy_url` are rejected. Configure those settings under the `http` block instead (for example `http.endpoint`). The nested `http` block is available without enabling this gate; the gate is only for forcing migration off the legacy flat settings. See [#46209](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46209).
 
 ## Metric names and labels normalization
 

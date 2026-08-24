@@ -18,7 +18,8 @@ env:
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 
-permissions: read-all
+permissions:
+  contents: read
 
 jobs:
   setup-environment:
@@ -28,14 +29,16 @@ jobs:
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - run: make genoteltestbedcol
       - run: make oteltestbedcol
       - name: Upload Testbed Binaries
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: testbed-binaries
           path: ./bin/*
@@ -51,13 +54,15 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-environment.outputs.loadtest_matrix) }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - run: mkdir -p results && touch results/TESTRESULTS.md
       - name: Download Testbed Binaries
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: testbed-binaries
           path: bin/
@@ -77,21 +82,28 @@ jobs:
       - name: Set results filename
         if: ${{ failure() || success() }}
         id: filename
-        run: echo "name=$(echo '${{ matrix.test }}' | sed -e 's/|/_/g')" >> "$GITHUB_OUTPUT"
+        env:
+          MATRIX_TEST: ${{ matrix.test }}
+        run: echo "name=$(echo "${MATRIX_TEST}" | sed -e 's/|/_/g')" >> "$GITHUB_OUTPUT"
       - name: Create Test Result Archive
         if: ${{ failure() || success() }}
         continue-on-error: true
-        run: tar -cvf test_results_${{steps.filename.outputs.name}}.tar testbed/tests/results
+        env:
+          FILENAME: ${{ steps.filename.outputs.name }}
+        run: tar -cvf "test_results_${FILENAME}.tar" testbed/tests/results
       - name: Upload Test Results
         if: ${{ failure() || success() }}
         continue-on-error: true
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: test-result-archive-${{steps.filename.outputs.name}}
           path: ./*.tar
-      - run: cp testbed/tests/results/benchmarks.json testbed/tests/results/${{steps.filename.outputs.name}}.json
+      - name: Copy benchmark results
+        env:
+          FILENAME: ${{ steps.filename.outputs.name }}
+        run: cp testbed/tests/results/benchmarks.json "testbed/tests/results/${FILENAME}.json"
       - name: Upload benchmarks.json
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: benchmark-results-${{steps.filename.outputs.name}}
           path: testbed/tests/results/${{steps.filename.outputs.name}}.json
@@ -107,14 +119,16 @@ jobs:
       contents: write
     if: github.event_name != 'pull_request'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: benchmark-results-*
           merge-multiple: true
           path: results
       - run: jq -s 'map(.[])' results/*.json > output.json
-      - uses: benchmark-action/github-action-benchmark@d48d326b4ca9ba73ca0cd0d59f108f9e02a381c7 # v1
+      - uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
         with:
           tool: "customSmallerIsBetter"
           output-file-path: output.json
@@ -132,7 +146,7 @@ jobs:
       - loadtest
       - update-benchmarks
     if: always()
-    uses: open-telemetry/shared-workflows/.github/workflows/workflow-failure-issue.yml@62d5939b47144252763c5ff9fffe8c20d76cd806 # v0.4.0
+    uses: open-telemetry/shared-workflows/.github/workflows/workflow-failure-issue.yml@8079110d7e793bd38b1a5219ef8f8280dab9139e # v0.7.0
     with:
       success: >-
         ${{

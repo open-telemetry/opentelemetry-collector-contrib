@@ -231,7 +231,7 @@ func (e *ecsCore) syncMetadata(ctx context.Context, endpoints map[string][]strin
 // enrichResource reads the container ID from the resource attributes, looks up the
 // cached metadata, and writes the configured attributes onto the resource.
 func (e *ecsCore) enrichResource(ctx context.Context, res pcommon.Resource) {
-	containerID := containerIDFromAttrs(res.Attributes(), e.cfg.Sources...)
+	containerID := containerIDFromAttrs(res.Attributes(), e.cfg.ContainerID.Sources...)
 	if containerID == "" {
 		// No container ID on this resource: enrichment cannot succeed, so skip it
 		// rather than triggering a (cache-missing) metadata sync per resource.
