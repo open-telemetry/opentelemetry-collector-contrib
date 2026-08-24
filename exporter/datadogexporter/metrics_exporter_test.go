@@ -674,8 +674,8 @@ func TestNewExporterWithProxy(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.ProxyURL = proxyServer.URL
 
