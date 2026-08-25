@@ -42,7 +42,7 @@ properties:
   database:
     type: string
   db_auth:
-    type: string
+    $ref: /config/configdbauth.id
   password:
     $ref: go.opentelemetry.io/collector/config/configopaque.string
   query_sample_collection:
