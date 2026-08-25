@@ -23,7 +23,7 @@ func (*Serializer) SerializeMetrics(resource pcommon.Resource, resourceSchemaURL
 	dp0 := dataPoints[0]
 
 	w := newJSONWriter(buf)
-	w.startObject()
+	w.StartObject()
 	first := true
 	first = w.writeTimestampEpochMillisField("@timestamp", dp0.Timestamp(), first)
 	if dp0.StartTimestamp() != 0 {
@@ -35,13 +35,13 @@ func (*Serializer) SerializeMetrics(resource pcommon.Resource, resourceSchemaURL
 	first = w.writeResource(resource, resourceSchemaURL, true, first)
 	first = w.writeScope(scope, scopeSchemaURL, true, first)
 	dynamicTemplates := serializeDataPoints(&w, dataPoints, validationErrors, first)
-	w.endObject()
+	w.EndObject()
 	return dynamicTemplates, nil
 }
 
 func serializeDataPoints(w *jsonWriter, dataPoints []datapoints.DataPoint, validationErrors *[]error, first bool) map[string]string {
-	first = w.key("metrics", first)
-	w.startObject()
+	first = w.Key("metrics", first)
+	w.StartObject()
 
 	dynamicTemplates := make(map[string]string, len(dataPoints))
 	var docCount uint64
@@ -73,7 +73,7 @@ func serializeDataPoints(w *jsonWriter, dataPoints []datapoints.DataPoint, valid
 			*validationErrors = append(*validationErrors, err)
 			continue
 		}
-		firstMetric = w.key(metric.Name(), firstMetric)
+		firstMetric = w.Key(metric.Name(), firstMetric)
 		// TODO: support quantiles
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34561
 		w.writeValue(value, false)
@@ -83,7 +83,7 @@ func serializeDataPoints(w *jsonWriter, dataPoints []datapoints.DataPoint, valid
 		// https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json
 		dynamicTemplates["metrics."+metric.Name()] = dp.DynamicTemplate(metric, datapoints.DynamicTemplateModeOTel)
 	}
-	w.endObject()
+	w.EndObject()
 	if docCount != 0 {
 		first = w.writeUIntField("_doc_count", docCount, first)
 	}
