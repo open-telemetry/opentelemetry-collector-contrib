@@ -1438,7 +1438,6 @@ func (s *oracleScraper) collectASMDiskgroupMetrics(ctx context.Context, scrapeEr
 				s.mb.RecordOracledbAsmDiskgroupOfflineDisksDataPoint(now, offlineDisks, diskgroupName)
 			}
 		}
-
 	}
 }
 
