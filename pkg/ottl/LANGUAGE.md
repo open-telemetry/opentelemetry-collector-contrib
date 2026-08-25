@@ -267,7 +267,7 @@ Example Math Expressions
 ### Lambda Expressions
 
 > [!IMPORTANT]
-> Lambda expressions are an alpha feature and may change or be removed in future releases.
+> Lambda expressions are currently in alpha and may change or be removed in future releases.
 > To use them, enable the [`ottl.functions.enableLambda`](documentation.md#feature-gates) feature gate.
 
 Lambda Expressions are anonymous/inline functions that can be passed to OTTL functions whose arguments
