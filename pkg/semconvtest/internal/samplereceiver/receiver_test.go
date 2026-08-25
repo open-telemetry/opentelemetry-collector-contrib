@@ -32,7 +32,7 @@ func TestSemconvCompliance(t *testing.T) {
 	require.NoError(t, recv.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() { require.NoError(t, recv.Shutdown(t.Context())) }()
 
-	require.NotEmpty(t, sink.AllMetrics(), "expected receiver to produce metrics")
+	require.Len(t, sink.AllMetrics(), 1, "expected the receiver to produce one batch of metrics")
 
 	semconvtest.TestMetrics(t, sink.AllMetrics()[0])
 }
