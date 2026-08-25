@@ -1389,7 +1389,7 @@ func (s *oracleScraper) collectStorageUsage(ctx context.Context, scrapeErrors *[
 // metrics. Returns zero rows, not an error, on instances that don't use ASM.
 func (s *oracleScraper) collectASMDiskgroupMetrics(ctx context.Context, scrapeErrors *[]error) {
 	if !s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupFree.Enabled &&
-		!s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupTotal.Enabled &&
+		!s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupCapacity.Enabled &&
 		!s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupUsableFree.Enabled &&
 		!s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupOfflineDisks.Enabled {
 		return
@@ -1412,12 +1412,12 @@ func (s *oracleScraper) collectASMDiskgroupMetrics(ctx context.Context, scrapeEr
 			}
 		}
 
-		if s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupTotal.Enabled {
+		if s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupCapacity.Enabled {
 			totalMB, err := strconv.ParseInt(row[colASMTotalMB], 10, 64)
 			if err != nil {
-				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbAsmDiskGroupTotal, value was %s: %w", row[colASMTotalMB], err))
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbAsmDiskGroupCapacity, value was %s: %w", row[colASMTotalMB], err))
 			} else {
-				s.mb.RecordOracledbAsmDiskGroupTotalDataPoint(now, totalMB*1024*1024, diskgroupName)
+				s.mb.RecordOracledbAsmDiskGroupCapacityDataPoint(now, totalMB*1024*1024, diskgroupName)
 			}
 		}
 

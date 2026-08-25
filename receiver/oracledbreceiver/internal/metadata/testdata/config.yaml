@@ -4,13 +4,13 @@ all_set:
     oracledb.asm.disk.errors:
       enabled: true
       attributes: ["oracledb.asm.disk_group.name","oracledb.asm.disk.name","disk.io.direction"]
+    oracledb.asm.disk_group.capacity:
+      enabled: true
+      attributes: ["oracledb.asm.disk_group.name"]
     oracledb.asm.disk_group.free:
       enabled: true
       attributes: ["oracledb.asm.disk_group.name"]
     oracledb.asm.disk_group.offline_disks:
-      enabled: true
-      attributes: ["oracledb.asm.disk_group.name"]
-    oracledb.asm.disk_group.total:
       enabled: true
       attributes: ["oracledb.asm.disk_group.name"]
     oracledb.asm.disk_group.usable_free:
@@ -394,13 +394,13 @@ reaggregate_set:
     oracledb.asm.disk.errors:
       enabled: true
       attributes: []
+    oracledb.asm.disk_group.capacity:
+      enabled: true
+      attributes: []
     oracledb.asm.disk_group.free:
       enabled: true
       attributes: []
     oracledb.asm.disk_group.offline_disks:
-      enabled: true
-      attributes: []
-    oracledb.asm.disk_group.total:
       enabled: true
       attributes: []
     oracledb.asm.disk_group.usable_free:
@@ -784,13 +784,13 @@ none_set:
     oracledb.asm.disk.errors:
       enabled: false
       attributes: ["oracledb.asm.disk_group.name","oracledb.asm.disk.name","disk.io.direction"]
+    oracledb.asm.disk_group.capacity:
+      enabled: false
+      attributes: ["oracledb.asm.disk_group.name"]
     oracledb.asm.disk_group.free:
       enabled: false
       attributes: ["oracledb.asm.disk_group.name"]
     oracledb.asm.disk_group.offline_disks:
-      enabled: false
-      attributes: ["oracledb.asm.disk_group.name"]
-    oracledb.asm.disk_group.total:
       enabled: false
       attributes: ["oracledb.asm.disk_group.name"]
     oracledb.asm.disk_group.usable_free:

@@ -326,6 +326,20 @@ Count of I/O errors on an ASM disk.
 | oracledb.asm.disk.name | The name of the ASM disk. | Any Str | Recommended | - |
 | disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
 
+### oracledb.asm.disk_group.capacity
+
+Total space in an ASM diskgroup.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.asm.disk_group.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+
 ### oracledb.asm.disk_group.free
 
 Free space in an ASM diskgroup.
@@ -347,20 +361,6 @@ Count of disks currently offline within an ASM diskgroup.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {disk} | Gauge | Int | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.asm.disk_group.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
-
-### oracledb.asm.disk_group.total
-
-Total space in an ASM diskgroup.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | Development |
 
 #### Attributes
 

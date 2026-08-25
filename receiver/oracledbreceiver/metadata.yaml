@@ -490,6 +490,14 @@ metrics:
       value_type: int
       input_type: string
     unit: "{error}"
+  oracledb.asm.disk_group.capacity:
+    attributes: [oracledb.asm.disk_group.name]
+    description: Total space in an ASM diskgroup.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: By
   oracledb.asm.disk_group.free:
     attributes: [oracledb.asm.disk_group.name]
     description: Free space in an ASM diskgroup.
@@ -506,14 +514,6 @@ metrics:
     gauge:
       value_type: int
     unit: "{disk}"
-  oracledb.asm.disk_group.total:
-    attributes: [oracledb.asm.disk_group.name]
-    description: Total space in an ASM diskgroup.
-    enabled: false
-    stability: development
-    gauge:
-      value_type: int
-    unit: By
   oracledb.asm.disk_group.usable_free:
     attributes: [oracledb.asm.disk_group.name]
     description: Free space that can safely be used for files after accounting for ASM redundancy and required mirror recovery capacity.

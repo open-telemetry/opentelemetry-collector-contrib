@@ -501,7 +501,7 @@ func TestScraper_ScrapeTablespaceHealthMetrics_BadMaxBytes(t *testing.T) {
 func TestScraper_ScrapeASMMetrics(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
 	cfg.Metrics.OracledbAsmDiskGroupFree.Enabled = true
-	cfg.Metrics.OracledbAsmDiskGroupTotal.Enabled = true
+	cfg.Metrics.OracledbAsmDiskGroupCapacity.Enabled = true
 	cfg.Metrics.OracledbAsmDiskGroupUsableFree.Enabled = true
 	cfg.Metrics.OracledbAsmDiskGroupOfflineDisks.Enabled = true
 	cfg.Metrics.OracledbAsmDiskErrors.Enabled = true
@@ -539,8 +539,8 @@ func TestScraper_ScrapeASMMetrics(t *testing.T) {
 			name, ok := dp.Attributes().Get("oracledb.asm.disk_group.name")
 			require.True(t, ok)
 			assert.Equal(t, "DATA", name.Str())
-		case "oracledb.asm.disk_group.total":
-			found["total"] = true
+		case "oracledb.asm.disk_group.capacity":
+			found["capacity"] = true
 			assert.Equal(t, int64(102400*1024*1024), metric.Gauge().DataPoints().At(0).IntValue())
 		case "oracledb.asm.disk_group.usable_free":
 			found["usable_free"] = true
@@ -555,7 +555,7 @@ func TestScraper_ScrapeASMMetrics(t *testing.T) {
 		}
 	}
 	assert.True(t,
-		found["free"] && found["total"] && found["usable_free"] && found["offline_disks"] && found["disk_errors"],
+		found["free"] && found["capacity"] && found["usable_free"] && found["offline_disks"] && found["disk_errors"],
 		"expected all 5 ASM metrics to be present, got: %v", found)
 }
 
