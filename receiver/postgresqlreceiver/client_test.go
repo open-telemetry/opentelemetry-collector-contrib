@@ -23,6 +23,7 @@ func TestQuoteDatabaseList(t *testing.T) {
 		{name: "single", databases: []string{"rdsadmin"}, expected: "'rdsadmin'"},
 		{name: "multiple preserves order", databases: []string{"b", "a"}, expected: "'b','a'"},
 		{name: "doubles embedded single quotes", databases: []string{"o'brien"}, expected: "'o''brien'"},
+		{name: "backslashes use E-escaped form", databases: []string{`db\name`}, expected: ` E'db\\name'`},
 	}
 
 	for _, tc := range tests {
