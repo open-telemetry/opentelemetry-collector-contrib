@@ -176,17 +176,30 @@ func (e *traceExporterImp) randomnessIdentifier(ctx context.Context, span ptrace
 			// recovered rv still routes the trace.
 			return []byte(rnd.RValue())
 		}
-		if err != nil {
+		if err != nil && rawTraceStateHasRValue(raw) {
 			// Header-level failures (W3C syntax errors such as an uppercase
 			// vendor key, or a header over the 1024-byte size limit) discard
-			// the whole tracestate including any rv. Count only parse errors
-			// that left no usable rv, i.e. traces that actually fell back to
-			// trace ID randomness.
+			// the whole tracestate including any rv. Count only failures that
+			// discarded an rv the header appeared to carry, i.e. traces that
+			// actually fell back to trace ID randomness; a failed header that
+			// never had an rv would have routed by trace ID regardless.
 			e.telemetry.LoadbalancerRandomnessTracestateUnparseable.Add(ctx, 1)
 		}
 	}
 	rnd := sampling.TraceIDToRandomness(span.TraceID())
 	return []byte(rnd.RValue())
+}
+
+// rawTraceStateHasRValue reports whether a tracestate header appears to carry an explicit
+// randomness value in its ot member. It is a best-effort scan for headers that failed W3C
+// validation and so can't be parsed properly.
+func rawTraceStateHasRValue(raw string) bool {
+	for member := range strings.SplitSeq(raw, ",") {
+		if value, ok := strings.CutPrefix(strings.TrimSpace(member), "ot="); ok && strings.Contains(value, "rv:") {
+			return true
+		}
+	}
+	return false
 }
 
 // consumeTracesPerSpan routes each span to the backend for its identifier, accumulating spans

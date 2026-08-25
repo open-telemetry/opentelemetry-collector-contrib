@@ -321,8 +321,9 @@ func TestRandomnessIdentifier(t *testing.T) {
 	}
 }
 
-// The unparseable metric counts traces that fell back to trace ID randomness because of a
-// parse error, not every parse error: a recovered rv routes the trace and is not counted.
+// The unparseable metric counts traces that lost an rv to a parse error, not every parse
+// error: a recovered rv routes the trace and is not counted, and neither is a failed header
+// that never carried an rv, as the trace would have routed by trace ID regardless.
 func TestRandomnessIdentifierUnparseableMetric(t *testing.T) {
 	testTel := componenttest.NewTelemetry()
 	defer func() { require.NoError(t, testTel.Shutdown(t.Context())) }()
@@ -338,6 +339,12 @@ func TestRandomnessIdentifierUnparseableMetric(t *testing.T) {
 	p.randomnessIdentifier(t.Context(), span)
 	// a valid tracestate without an rv falls back, but had no parse error
 	span.TraceState().FromRaw("vendor=value")
+	p.randomnessIdentifier(t.Context(), span)
+	// a header-level failure on a tracestate that never carried an rv is not counted
+	span.TraceState().FromRaw("vendor=value,Bad=up")
+	p.randomnessIdentifier(t.Context(), span)
+	// an rv-shaped value in a vendor member is not an ot rv, not counted
+	span.TraceState().FromRaw("vendor=rv:aabbccddeeff00,Bad=up")
 	p.randomnessIdentifier(t.Context(), span)
 	// a header-level failure discards the rv and falls back, counted
 	span.TraceState().FromRaw("ot=rv:aabbccddeeff00,Vendor=up")
@@ -441,6 +448,83 @@ func TestConsumeTracesByRandomness_SharedRVCoLocates(t *testing.T) {
 	assert.Equal(t, 1, spansPerEndpointTID[groupedEndpoint][grouped2])
 	// the trace without an rv landed on the backend for its trace ID randomness
 	assert.Equal(t, 1, spansPerEndpointTID[ungroupedEndpoint][ungrouped])
+}
+
+// The sampling spec requires the rv to be constant across a trace's spans and the exporter
+// relies on that contract rather than enforcing it: the backend is resolved from the first
+// span seen for each trace ID in a batch. This pins that first-span-wins behavior for a
+// trace that violates the contract.
+func TestConsumeTracesByRandomness_FirstSpanWins(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	// ConsumeTraces runs the export loop synchronously, so no locking is needed here.
+	received := map[string]ptrace.Traces{}
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		te := &mockTracesExporter{Component: mockComponent{}}
+		te.ConsumeTracesFn = func(_ context.Context, td ptrace.Traces) error {
+			got, ok := received[endpoint]
+			if !ok {
+				got = ptrace.NewTraces()
+				received[endpoint] = got
+			}
+			td.ResourceSpans().MoveAndAppendTo(got.ResourceSpans())
+			return nil
+		}
+		return te, nil
+	}
+
+	endpoints := []string{"endpoint-1", "endpoint-2", "endpoint-3"}
+	cfg := randomnessConfig()
+	cfg.Resolver = ResolverSettings{
+		Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
+	}
+
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newTracesExporter(ts, cfg)
+	require.NoError(t, err)
+
+	lb.addMissingExporters(t.Context(), endpoints)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	const firstRV = "aabbccddeeff00"
+	const conflictingRV = "00112233445566"
+	tid := pcommon.TraceID{1, 0, 0, 0, 0, 0, 0, 0, 0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77}
+
+	// one trace whose spans disagree on the rv, violating the spec contract
+	td := ptrace.NewTraces()
+	ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+	for _, traceState := range []string{"ot=rv:" + firstRV, "ot=rv:" + conflictingRV, ""} {
+		s := ss.Spans().AppendEmpty()
+		s.SetTraceID(tid)
+		s.TraceState().FromRaw(traceState)
+	}
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	firstEndpoint := endpointWithPort(lb.ring.endpointFor([]byte(firstRV)))
+	conflictingEndpoint := endpointWithPort(lb.ring.endpointFor([]byte(conflictingRV)))
+	// The endpoints must differ for the assertion below to detect a span routed by the
+	// conflicting rv; pick a different conflicting value if this ever fails.
+	require.NotEqual(t, firstEndpoint, conflictingEndpoint)
+
+	// all spans landed on the backend chosen for the first span's rv
+	require.Len(t, received, 1)
+	got, ok := received[firstEndpoint]
+	require.True(t, ok)
+	assert.Equal(t, 3, got.SpanCount())
 }
 
 // This test validates that exporter is can concurrently change the endpoints while consuming traces.

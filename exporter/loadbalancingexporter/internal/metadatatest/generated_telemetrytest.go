@@ -101,7 +101,7 @@ func AssertEqualLoadbalancerNumResolutions(t *testing.T, tt *componenttest.Telem
 func AssertEqualLoadbalancerRandomnessTracestateUnparseable(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_loadbalancer_randomness_tracestate_unparseable",
-		Description: "Number of traces that fell back to trace ID randomness because their tracestate had a parse error and no valid rv could be recovered. Counted once per trace per batch (the first span resolved for the trace), not per span. Parse errors where a valid rv survives are not counted, as routing still uses the rv. [Development]",
+		Description: "Number of traces that fell back to trace ID randomness because their tracestate carried an explicit randomness value (rv) that was lost to a parse error. Counted once per trace per batch (the first span resolved for the trace), not per span. Parse errors where a valid rv survives are not counted (routing still uses the rv), and neither are unparseable tracestates that never carried an rv (the trace would have routed by trace ID regardless). [Development]",
 		Unit:        "{traces}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
