@@ -1,10 +1,10 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/client v1.64.1-0.20260805181402-19664a7b14af
+	go.opentelemetry.io/collector/client v1.65.0
 	google.golang.org/grpc v1.83.0
 )
 
