@@ -1,0 +1,15 @@
+change_type: enhancement
+
+component: processor/adaptive_tail_sampling
+
+note: Add `record_fingerprint` to stamp the matched rule's fingerprint on kept spans, raw or hashed
+
+issues: [49311]
+
+subtext: |
+  Off by default. `value` records the raw fingerprint, `hash` records the first 8 bytes
+  of its SHA-256 as 16 hex characters (deterministic across instances, so grouping works
+  fleet-wide). Recorded on every span of a kept trace, including late-arriving spans via
+  the decision cache, under otelcol.processor.adaptive_tail_sampling.fingerprint.
+
+change_logs: [user]
