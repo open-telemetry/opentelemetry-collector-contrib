@@ -389,44 +389,6 @@ func TestConfig(t *testing.T) {
 			}),
 		},
 		{
-			id:         component.NewIDWithName(metadata.Type, "backward_compat_for_deprecated_cfgs/new_config_takes_priority"),
-			configFile: "config.yaml",
-			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
-
-				cfg.NumWorkers = 11
-				cfg.Flush = FlushSettings{
-					Bytes:    1001,
-					Interval: 11 * time.Second,
-				}
-				cfg.QueueBatchConfig.Get().NumConsumers = 111
-				// QueueBatchConfig is set by default
-				qbCfg := cfg.QueueBatchConfig.Get().Batch.Get()
-				qbCfg.FlushTimeout = 111 * time.Second
-				qbCfg.MaxSize = 1_000_001
-				qbCfg.Sizer = exporterhelper.RequestSizerTypeBytes
-			}),
-		},
-		{
-			id:         component.NewIDWithName(metadata.Type, "backward_compat_for_deprecated_cfgs/fallback_to_old_cfg"),
-			configFile: "config.yaml",
-			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
-
-				cfg.NumWorkers = 11
-				cfg.Flush = FlushSettings{
-					Bytes:    1_000_001,
-					Interval: 11 * time.Second,
-				}
-				cfg.QueueBatchConfig.Get().NumConsumers = 11
-				// QueueBatchConfig is set by default
-				qbCfg := cfg.QueueBatchConfig.Get().Batch.Get()
-				qbCfg.FlushTimeout = 11 * time.Second
-				qbCfg.MaxSize = 1_000_001
-				qbCfg.Sizer = exporterhelper.RequestSizerTypeBytes
-			}),
-		},
-		{
 			id:         component.NewIDWithName(metadata.Type, "suppress_conflict_errors"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
@@ -470,6 +432,32 @@ func TestConfig(t *testing.T) {
 			assert.NoError(t, confmap.Validate(cfg))
 
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestConfigRejectsRemovedBatchSettings(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]map[string]any{
+		"flush": {
+			"flush": map[string]any{
+				"bytes":    1001,
+				"interval": "11s",
+			},
+		},
+		"num_workers": {
+			"num_workers": 11,
+		},
+	}
+
+	for name, input := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cfg := createDefaultConfig()
+			err := confmap.NewFromStringMap(input).Unmarshal(cfg)
+			require.ErrorContains(t, err, "has invalid keys: "+name)
 		})
 	}
 }

@@ -39,17 +39,6 @@ $defs:
     properties:
       enabled:
         type: boolean
-  flush_settings:
-    description: 'FlushSettings defines settings for configuring the write buffer flushing policy in the Elasticsearch exporter. The exporter sends a bulk request with all events already serialized into the send-buffer. Deprecated: [v0.136.0] This config is now deprecated. Use `sending_queue::batch` instead. If this config is defined then it will be used to configure sending queue''s batch provided sending queue''s config are not explicitly defined.'
-    type: object
-    properties:
-      bytes:
-        description: Bytes sets the send buffer flushing limit. Bytes is now deprecated. Use `sending_queue::batch::{min, max}_size` with `bytes` sizer to configure batching based on bytes. If this config option is defined then it will be used to configure `sending_queue::batch::max_size` provided it is not explcitly defined.
-        type: integer
-      interval:
-        description: Interval configures the max age of a document in the send buffer. Interval is now deprecated. Use `sending-queue::batch::flush_timeout` instead. If this config option is defined then it will be used to configure `sending_queue::batch::flush_timeout` provided it is not explcitly defined.
-        type: string
-        format: duration
   logstash_format_settings:
     type: object
     properties:
@@ -129,9 +118,6 @@ properties:
     type: array
     items:
       type: string
-  flush:
-    description: 'Deprecated: [v0.136.0] This config is now deprecated. Use `sending_queue::batch` instead. If this config is defined then it will be used to configure sending queue''s batch provided sending queue''s config are not explicitly defined.'
-    $ref: flush_settings
   include_source_on_error:
     description: 'IncludeSourceOnError configures whether the bulk index responses include a part of the source document on error. Defaults to nil. This setting requires Elasticsearch 8.18+. Using it in prior versions have no effect. NOTE: The default behavior if this configuration is not set, is to discard the error reason entirely, i.e. only the error type is returned. WARNING: If set to true, the exporter may log error responses containing request payload, causing potential sensitive data to be exposed in logs. Users are expected to sanitize the responses themselves.'
     x-pointer: true
@@ -152,7 +138,7 @@ properties:
   mapping:
     $ref: mappings_settings
   metadata_keys:
-    description: 'Experimental: MetadataKeys defines a list of client.Metadata keys that will be used as partition keys for when batcher is enabled and will be added to the exporter''s telemetry if defined. The config only applies when `sending_queue::batch` is defined or when the, now deprecated, batcher is used (set to `true` or `false`). The metadata keys are converted to lower case as key lookups for client metadata is case insensitive. This means that the metric produced by internal telemetry will also have the attribute in lower case. Keys are case-insensitive and duplicates will trigger a validation error.'
+    description: 'Experimental: MetadataKeys defines a list of client.Metadata keys that will be used as partition keys when `sending_queue::batch` is enabled and will be added to the exporter''s telemetry if defined. The metadata keys are converted to lower case because client metadata key lookups are case insensitive. This means that the metric produced by internal telemetry will also have the attribute in lower case. Keys are case-insensitive and duplicates will trigger a validation error.'
     type: array
     items:
       type: string
@@ -161,9 +147,6 @@ properties:
   metrics_index:
     description: MetricsIndex configures the static index used for document routing for metrics. It should be empty if dynamic document routing is preferred.
     type: string
-  num_workers:
-    description: 'NumWorkers configures the number of workers publishing bulk requests. Deprecated: [v0.136.0] This config is now deprecated. Use `sending_queue::num_consumers` instead. If this config is defined and `sending_queue::num_consumers` is not defined then it will be used to set `sending_queue::num_consumers`.'
-    type: integer
   pipeline:
     description: Pipeline configures the ingest node pipeline name that should be used to process the events. https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html
     type: string
