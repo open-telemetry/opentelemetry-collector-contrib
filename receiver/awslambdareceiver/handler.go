@@ -428,8 +428,7 @@ func checkConsumerErrorAndWrap(err error) error {
 	}
 
 	// If already wrapped as a consumererror, return as-is
-	var consumerErr *consumererror.Error
-	if errors.As(err, &consumerErr) {
+	if _, ok := errors.AsType[*consumererror.Error](err); ok {
 		return err
 	}
 

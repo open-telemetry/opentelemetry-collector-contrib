@@ -332,6 +332,23 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "extract_from_replicaset"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata: enabledAttributes(),
+					Labels: []FieldExtractConfig{
+						{TagName: "replicaset_label", Key: "app", From: "replicaset"},
+					},
+					DeploymentNameFromReplicaSet: true,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "extract_from_statefulset"),
 			expected: &Config{
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
