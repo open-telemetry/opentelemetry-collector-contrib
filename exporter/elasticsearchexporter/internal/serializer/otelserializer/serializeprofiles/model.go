@@ -88,7 +88,7 @@ func (h ResourceData) MarshalJSON() ([]byte, error) {
 			// Do not populate keys without value
 			continue
 		}
-		combinedData[strings.ToLower(key)] = strings.ToLower(value)
+		combinedData["resource.attributes."+strings.ToLower(key)] = strings.ToLower(value)
 	}
 
 	// Marshal the combined map into JSON

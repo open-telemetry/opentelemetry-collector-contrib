@@ -21,7 +21,7 @@ const (
 	StackFrameIndex  = "profiling-stackframes.otel-default"
 	ExecutablesIndex = "profiling-executables"
 
-	HostsMetadataIndex = "profiling-hosts"
+	HostsMetadataIndex = "profiling-hosts.otel-default"
 )
 
 // SerializeProfile serializes a profile and calls the `pushData` callback for each generated document.
