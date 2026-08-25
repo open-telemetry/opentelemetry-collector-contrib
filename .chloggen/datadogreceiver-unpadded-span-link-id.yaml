@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: receiver/datadog
+
+note: Left-pad short hexadecimal span IDs from dd-trace-java so linked spans retain their intended IDs instead of an all-zero span ID.
+
+issues: [50531]
+
+subtext:
+
+change_logs: [user]

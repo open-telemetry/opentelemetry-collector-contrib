@@ -1172,6 +1172,71 @@ func translateSingleSpan(t *testing.T, span *pb.Span) ptrace.Span {
 	return traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 }
 
+func TestMetaSpanLinksHexSpanID(t *testing.T) {
+	const traceID = "11223344556677889900aabbccddeeff"
+
+	tests := []struct {
+		name        string
+		spanID      string
+		want        pcommon.SpanID
+		wantErrText string
+	}{
+		{
+			// The wire form dd-trace-java actually produces: Long.toHexString drops
+			// leading zeroes, and its 63-bit IDs lose at most the top nibble.
+			name:   "unpadded",
+			spanID: "123456789abcdef",
+			want:   pcommon.SpanID{0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef},
+		},
+		{
+			name:   "canonical",
+			spanID: "0123456789abcdef",
+			want:   pcommon.SpanID{0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef},
+		},
+		{
+			// The next two are lengths dd-trace-java never emits. They exercise the
+			// padding arithmetic away from the 15-of-16 boundary above, where an
+			// off-by-one would still look right.
+			name:   "half length",
+			spanID: "89abcdef",
+			want:   pcommon.SpanID{0x00, 0x00, 0x00, 0x00, 0x89, 0xab, 0xcd, 0xef},
+		},
+		{
+			name:   "single char",
+			spanID: "f",
+			want:   pcommon.SpanID{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0f},
+		},
+		{
+			name:        "too long",
+			spanID:      "10123456789abcdef",
+			wantErrText: "must have length equals to 16",
+		},
+		{
+			name:        "invalid hex",
+			spanID:      "not-hex",
+			wantErrText: "can only contain [0-9a-f]",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dest := ptrace.NewSpanLinkSlice()
+			err := metaSpanLinks(
+				`[{"trace_id":"`+traceID+`","span_id":"`+tt.spanID+`"}]`,
+				dest,
+			)
+			if tt.wantErrText != "" {
+				require.ErrorContains(t, err, tt.wantErrText)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, 1, dest.Len())
+			require.Equal(t, tt.want, dest.At(0).SpanID())
+		})
+	}
+}
+
 func TestSetSpanLinks(t *testing.T) {
 	// A 128-bit linked trace id split as Datadog stores it, so it can be reassembled either from the
 	// native trace_id_high field or from the decimal _dd.span_links meta form.
