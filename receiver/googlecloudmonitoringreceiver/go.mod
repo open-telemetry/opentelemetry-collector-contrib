@@ -52,7 +52,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/monitoring v1.27.0
+	cloud.google.com/go/monitoring v1.30.0
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
