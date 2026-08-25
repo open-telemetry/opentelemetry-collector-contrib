@@ -13,7 +13,7 @@ require (
 	github.com/itchyny/timefmt-go v0.1.8
 	github.com/klauspost/compress v1.19.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.159.0
-	github.com/stretchr/testify v1.12.0
+	github.com/stretchr/testify v1.12.1
 	github.com/tilinna/clock v1.1.0
 	go.opentelemetry.io/collector/component v1.65.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/component/componenttest v0.159.1-0.20260824174011-67fef8cb7049

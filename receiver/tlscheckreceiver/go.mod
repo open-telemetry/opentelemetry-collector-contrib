@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/google/go-cmp v0.7.0
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
-	github.com/stretchr/testify v1.12.0
+	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.65.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/component/componenttest v0.159.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/config/confignet v1.65.1-0.20260824174011-67fef8cb7049

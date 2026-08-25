@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/apache/cassandra-gocql-driver/v2 v2.1.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.159.0
-	github.com/stretchr/testify v1.12.0
+	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.65.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/component/componenttest v0.159.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/config/configopaque v1.65.1-0.20260824174011-67fef8cb7049
