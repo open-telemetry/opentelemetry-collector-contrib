@@ -198,6 +198,7 @@ body:
       - pkg/winperfcounters
       - pkg/xk8stest
       - pkg/xstreamencoding
+      - processor/adaptivetailsampling
       - processor/attributes
       - processor/awsecsattributes
       - processor/cardinalityguardian
@@ -206,7 +207,6 @@ body:
       - processor/deltatocumulative
       - processor/deltatorate
       - processor/drain
-      - processor/dynamicsampling
       - processor/filter
       - processor/genainormalizer
       - processor/geoip

@@ -1,6 +1,6 @@
 change_type: breaking
 
-component: processor/dynamic_sampling
+component: processor/adaptive_tail_sampling
 
 note: Require fingerprint_attributes entries to be scoped attribute selectors
 

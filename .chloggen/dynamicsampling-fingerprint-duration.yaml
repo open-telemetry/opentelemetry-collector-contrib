@@ -1,6 +1,6 @@
 change_type: enhancement
 
-component: processor/dynamic_sampling
+component: processor/adaptive_tail_sampling
 
 note: Add a fingerprint_duration histogram recording per-decision fingerprint extraction time by rule
 

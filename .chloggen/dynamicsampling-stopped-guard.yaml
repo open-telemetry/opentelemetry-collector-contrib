@@ -1,6 +1,6 @@
 change_type: bug_fix
 
-component: processor/dynamic_sampling
+component: processor/adaptive_tail_sampling
 
 note: Re-read the stopped flag before forwarding evicted and late traces so a concurrent shutdown is honoured
 
