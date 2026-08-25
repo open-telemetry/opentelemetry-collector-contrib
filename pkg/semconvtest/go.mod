@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest
 go 1.26.0
 
 require (
-	github.com/docker/go-connections v0.7.0
 	github.com/stretchr/testify v1.12.0
 	github.com/testcontainers/testcontainers-go v0.44.0
 	go.opentelemetry.io/collector/component v1.65.1-0.20260824174011-67fef8cb7049
@@ -29,6 +28,7 @@ require (
 	github.com/containerd/platforms v0.2.1 // indirect
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
+	github.com/docker/go-connections v0.8.1 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.10.1 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
