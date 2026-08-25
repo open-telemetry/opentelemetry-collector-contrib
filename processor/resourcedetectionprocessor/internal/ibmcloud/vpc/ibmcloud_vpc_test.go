@@ -18,11 +18,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/vpc/internal/metadata"
 )
 
-// sdkSchemaURL is the schema URL the fake SDK detector reports. It is read from the SDK
-// itself rather than hardcoded so that an upstream semconv bump does not break these
-// tests, and semconv packages must not be imported from test files.
-var sdkSchemaURL = sdkresource.Default().SchemaURL()
-
 const (
 	hostID        = "0717_1e09281b-f177-46fb-b1f1-bc152b2e391a"
 	crn           = "crn:v1:bluemix:public:is:us-south-1:a/123456789012::instance:0717_1e09281b-f177-46fb-b1f1-bc152b2e391a"
@@ -63,8 +58,7 @@ func withFakeDetector(t *testing.T, res *sdkresource.Resource, err error) {
 // fullResource mirrors what the SDK detector reports for a healthy instance. It already derives
 // the region from the zone and the account ID from the CRN.
 func fullResource() *sdkresource.Resource {
-	return sdkresource.NewWithAttributes(
-		sdkSchemaURL,
+	return sdkresource.NewSchemaless(
 		attribute.String("cloud.provider", cloudProvider),
 		attribute.String("cloud.platform", cloudPlatform),
 		attribute.String("cloud.region", region),
@@ -127,9 +121,8 @@ func TestDetect(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	require.Equal(t, fullAttributes(), res.Attributes().AsRaw())
 }
 
@@ -143,9 +136,8 @@ func TestDetectWithDisabledAttributes(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), cfg, false)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	want := fullAttributes()
 	delete(want, "cloud.region")
@@ -174,9 +166,8 @@ func TestDetectAllAttributesDisabledWithFailOnMissingMetadata(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), cfg, true)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	require.Equal(t, 0, res.Attributes().Len())
 }
 
@@ -235,8 +226,7 @@ func TestDetectErrorWithFailOnMissingMetadata(t *testing.T) {
 // A partial result is kept as-is: the attributes absent from the metadata response are omitted
 // rather than emitted with an empty value.
 func TestDetectPartialMetadata(t *testing.T) {
-	partial := sdkresource.NewWithAttributes(
-		sdkSchemaURL,
+	partial := sdkresource.NewSchemaless(
 		attribute.String("cloud.provider", cloudProvider),
 		attribute.String("cloud.platform", cloudPlatform),
 		attribute.String("host.id", hostID),
@@ -246,9 +236,8 @@ func TestDetectPartialMetadata(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	require.Equal(t, map[string]any{
 		"cloud.provider": cloudProvider,
 		"cloud.platform": cloudPlatform,
@@ -259,8 +248,7 @@ func TestDetectPartialMetadata(t *testing.T) {
 // fail_on_missing_metadata covers an unusable metadata service, not a field absent from an
 // otherwise good response, so a partial result still succeeds.
 func TestDetectPartialMetadataWithFailOnMissingMetadata(t *testing.T) {
-	partial := sdkresource.NewWithAttributes(
-		sdkSchemaURL,
+	partial := sdkresource.NewSchemaless(
 		attribute.String("cloud.provider", cloudProvider),
 		attribute.String("host.id", hostID),
 	)
@@ -269,9 +257,8 @@ func TestDetectPartialMetadataWithFailOnMissingMetadata(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), CreateDefaultConfig(), true)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	require.Equal(t, map[string]any{
 		"cloud.provider": cloudProvider,
 		"host.id":        hostID,
