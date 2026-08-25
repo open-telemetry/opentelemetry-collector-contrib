@@ -49,8 +49,8 @@ type StackTraceEvent struct {
 // DocID should be the base64-encoded Stacktrace ID.
 type StackTrace struct {
 	DocID    string `json:"-"`
-	FrameIDs string `json:"Stacktrace.frame.ids"`
-	Types    string `json:"Stacktrace.frame.types"`
+	FrameIDs string `json:"frame.ids"`
+	Types    string `json:"frame.types"`
 }
 
 // StackFrame represents a stacktrace serializable into the stackframes index.

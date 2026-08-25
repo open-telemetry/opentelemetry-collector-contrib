@@ -18,7 +18,7 @@ import (
 const (
 	AllEventsIndex   = "profiling-events-all.otel-default"
 	StackTraceIndex  = "profiling-stacktraces"
-	StackFrameIndex  = "profiling-stackframes"
+	StackFrameIndex  = "profiling-stackframes.otel-default"
 	ExecutablesIndex = "profiling-executables"
 
 	HostsMetadataIndex = "profiling-hosts"

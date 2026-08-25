@@ -122,8 +122,8 @@ func TestSerializeProfile(t *testing.T) {
 			wantErr: false,
 			expected: []map[string]any{
 				{
-					"Stacktrace.frame.ids":   "YA3K_koRAADyvzjEk_X7kgAAAAAAAABv",
-					"Stacktrace.frame.types": "AQM",
+					"frame.ids":   "YA3K_koRAADyvzjEk_X7kgAAAAAAAABv",
+					"frame.types": "AQM",
 				},
 				{
 					"@timestamp":                 "1970-01-01T00:00:00Z",
