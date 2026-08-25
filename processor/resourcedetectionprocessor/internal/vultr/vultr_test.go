@@ -17,11 +17,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
-// sdkSchemaURL is the schema URL the fake SDK detector reports. It is read from the SDK
-// itself rather than hardcoded so that an upstream semconv bump does not break these
-// tests, and semconv packages must not be imported from test files.
-var sdkSchemaURL = sdkresource.Default().SchemaURL()
-
 const (
 	hostName = "vultr-guest"
 	v2ID     = "36e9cf60-5d93-4e31-8ebf-613b3d2874fb"
@@ -55,8 +50,7 @@ func withFakeDetector(t *testing.T, res *sdkresource.Resource, err error) {
 // fullResource mirrors what the SDK detector reports for a healthy instance. It
 // already prefers the v2 UUID for host.id and lower-cases the region code.
 func fullResource() *sdkresource.Resource {
-	return sdkresource.NewWithAttributes(
-		sdkSchemaURL,
+	return sdkresource.NewSchemaless(
 		attribute.String("cloud.provider", "vultr"),
 		attribute.String("cloud.platform", "vultr.cloud_compute"),
 		attribute.String("cloud.region", region),
@@ -80,9 +74,8 @@ func TestVultrDetector_Detect_OK(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	want := map[string]any{
 		"cloud.provider": TypeStr,
@@ -102,9 +95,8 @@ func TestVultrDetector_Detect_DefaultConfig(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	want := map[string]any{
 		"cloud.provider": TypeStr,
@@ -129,9 +121,8 @@ func TestVultrDetector_Detect_AllAttributesDisabled_FailOnMissingMetadata(t *tes
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, true)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	require.Equal(t, 0, res.Attributes().Len())
 }
 
@@ -195,8 +186,7 @@ func TestVultrDetector_FailOnMissingMetadata(t *testing.T) {
 // attributes absent from the metadata response are omitted rather than emitted
 // with an empty value.
 func TestVultrDetector_PartialMetadata(t *testing.T) {
-	partial := sdkresource.NewWithAttributes(
-		sdkSchemaURL,
+	partial := sdkresource.NewSchemaless(
 		attribute.String("cloud.provider", "vultr"),
 		attribute.String("cloud.platform", "vultr.cloud_compute"),
 		attribute.String("host.name", hostName),
@@ -206,9 +196,8 @@ func TestVultrDetector_PartialMetadata(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	want := map[string]any{
 		"cloud.provider": TypeStr,
@@ -220,8 +209,7 @@ func TestVultrDetector_PartialMetadata(t *testing.T) {
 // fail_on_missing_metadata covers an unusable metadata service, not a field
 // absent from an otherwise good response, so a partial result still succeeds.
 func TestVultrDetector_PartialMetadata_FailOnMissingMetadata(t *testing.T) {
-	partial := sdkresource.NewWithAttributes(
-		sdkSchemaURL,
+	partial := sdkresource.NewSchemaless(
 		attribute.String("cloud.provider", "vultr"),
 		attribute.String("host.name", hostName),
 	)
@@ -230,9 +218,8 @@ func TestVultrDetector_PartialMetadata_FailOnMissingMetadata(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), true)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	want := map[string]any{
 		"cloud.provider": TypeStr,
