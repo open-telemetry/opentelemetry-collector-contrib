@@ -292,7 +292,7 @@ Lambda Expressions may be nested. An inner Lambda Expression can read named para
 outer Lambda Expression, while a parameter declared by the inner Lambda Expression shadows an outer
 parameter with the same name.
 
-Example Lambda Expressions:
+Examples:
 
 - `(_, value) => value`
 - `(key, _) => IsMatch(key, "^http")`
