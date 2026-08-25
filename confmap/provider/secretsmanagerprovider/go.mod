@@ -36,5 +36,4 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.65.1-0.20260824174011-67fef8cb7049 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

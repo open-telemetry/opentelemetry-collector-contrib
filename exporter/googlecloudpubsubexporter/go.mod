@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/google
 go 1.26.0
 
 require (
-	cloud.google.com/go/pubsub/v2 v2.6.0
+	cloud.google.com/go/pubsub/v2 v2.6.2
 	github.com/google/uuid v1.6.0
 	github.com/googleapis/gax-go/v2 v2.24.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.159.0
@@ -85,7 +85,6 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20260715232425-e75dac1f907d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260807164820-c8921c73eeea // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 retract (

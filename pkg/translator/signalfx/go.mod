@@ -25,7 +25,6 @@ require (
 	go.opentelemetry.io/collector/pdata/xpdata v0.159.1-0.20260824174011-67fef8cb7049 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../../internal/common

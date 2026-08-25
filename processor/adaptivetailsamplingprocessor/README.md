@@ -21,18 +21,20 @@ The Adaptive Tail Sampling Processor performs adaptive tail-based trace sampling
 ## How it works
 
 1. Spans are accumulated in memory, grouped by trace ID.
-2. A trace becomes ready for evaluation when **either** of two triggers fires (whichever comes first):
-   - a root span arrives (any span with an empty `ParentSpanID`), or
-   - `trace_timeout` elapses since the first span of the trace arrived. This timer is set on first-seen and is never extended by subsequent spans, ensuring a predictable upper bound on buffer occupancy.
-3. After the trigger fires, the processor pauses for `decision_delay` to let in-flight straggler spans land. The same delay applies regardless of which trigger fired.
+2. A trace becomes ready for evaluation when **any** of three triggers fires (whichever comes first):
+   - a root span arrives (any span with an empty `ParentSpanID`),
+   - `trace_timeout` elapses since the first span of the trace arrived. This timer is set on first-seen and is never extended by subsequent spans, ensuring a predictable upper bound on buffer occupancy, or
+   - the trace accumulates `span_limit` spans (10000 by default; 0 disables). This bounds the memory a single giant trace can hold; the decision is made over the spans buffered so far, and spans arriving afterwards are stamped from the decision cache instead of being buffered.
+3. After the trigger fires, the processor pauses for `decision_delay` to let in-flight straggler spans land. The root-span and trace-timeout triggers share the same delay; the span-limit trigger decides immediately, since the trace is at its memory peak and waiting would let it keep growing.
 4. Rules are then evaluated in order against the accumulated trace. The first rule whose conditions all match selects the sampler; once a rule is selected, its sampler's keep/drop decision is final and no later rules are considered. A rule with no conditions is a catch-all.
 5. The matched sampler produces a sample rate (1-in-N). Samplers only ever produce rates; no sampler makes a keep/drop decision itself.
 6. The processor converts the rate to a threshold (a rate of N becomes the threshold encoding probability 1/N) and makes the keep/drop decision by comparing that threshold against the trace's randomness (`ot=rv` when present, otherwise derived from the trace ID), using the [OTel consistent probability sampling](https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/) algorithm.
 
 > [!NOTE]
 > The adaptive samplers come from [dynsampler-go](https://github.com/honeycombio/dynsampler-go), which the processor uses **only** to compute rates. dynsampler-go's own samplers can make keep/drop decisions internally (its `DeterministicSampler` applies its own hash-based check, for example), but this processor never uses that path: the rate-to-threshold conversion and the randomness comparison in step 6 are the single decision mechanism for every sampler type, including this processor's `probabilistic` type. This is what makes decisions reproducible for a given trace and correctly weighted downstream via `ot=th`.
-7. Sampled traces are forwarded with two annotations on every span:
+7. Sampled traces are forwarded with annotations on every span:
    - `otelcol.processor.adaptive_tail_sampling.rule`: the name of the matched rule
+   - `otelcol.processor.adaptive_tail_sampling.trigger`: which event triggered the decision (see [Output attributes](#output-attributes))
    - W3C TraceState `ot=th:<hex>`: the threshold encoding the effective sample rate
 8. The decision (sampled or dropped) is recorded in a per-trace LRU cache so that any late-arriving spans for the same trace ID are handled consistently with the original decision (see [Decision cache](#decision-cache) below).
 
@@ -52,6 +54,12 @@ processors:
 
     # Maximum number of traces held in the in-memory buffer.
     num_traces: 50000
+
+    # Maximum spans a single trace may accumulate before it is decided
+    # immediately over the spans buffered so far. Bounds the memory one giant
+    # trace can hold; num_traces and eviction only bound the trace count.
+    # Defaults to 10000; 0 disables the cap.
+    span_limit: 10000
 
     decision_cache:
       sampled_cache_size: 10000      # 0 disables the sampled cache
@@ -397,7 +405,7 @@ processors:
           weight: 0.5
 ```
 
-Sizing guidance: `num_traces` bounds memory and should cover the number of traces that start within one `trace_timeout` window at peak. The decision caches should be a small multiple of that, since they only store trace IDs and outcomes; undersizing them turns late spans of decided traces back into new partial traces.
+Sizing guidance: `num_traces` bounds memory and should cover the number of traces that start within one `trace_timeout` window at peak. The decision caches should be a small multiple of that, since they only store trace IDs and outcomes; undersizing them turns late spans of decided traces back into new partial traces. `num_traces` bounds how many traces are buffered, not how large any one of them grows; `span_limit` (10000 by default) covers that dimension. Keep it well above your largest legitimate trace so a single runaway trace cannot exhaust memory while normal traces are never truncated.
 
 ### Throughput-bounded fleet
 
@@ -631,7 +639,8 @@ Future work on shared trace context across collector instances (tracked under "C
 | `otelcol_processor_adaptive_tail_sampling_traces_sampled` | Counter  | `rule`   | Traces kept, attributed to the rule that selected them.                     |
 | `otelcol_processor_adaptive_tail_sampling_traces_dropped` | Counter  | `rule`   | Traces dropped, attributed to the rule that selected them.                  |
 | `otelcol_processor_adaptive_tail_sampling_decision_sample_rate` | Histogram | `rule` | Distribution of effective sample rates produced per rule.                  |
-| `otelcol_processor_adaptive_tail_sampling_decision_triggers` | Counter  | `trigger` | Number of trace decisions made, labelled by which event triggered them (`root_span`, `trace_timeout`, `eviction`, `shutdown`). |
+| `otelcol_processor_adaptive_tail_sampling_decision_triggers` | Counter  | `trigger` | Number of trace decisions made, labelled by which event triggered them (`root_span`, `trace_timeout`, `eviction`, `shutdown`, `span_limit`). |
+| `otelcol_processor_adaptive_tail_sampling_trace_span_count` | Histogram | `rule` | Distribution of buffered span counts per trace at decision time. Useful for sizing `span_limit` against the real trace-size distribution. |
 | `otelcol_processor_adaptive_tail_sampling_fingerprint_duration` | Histogram | `rule` | Time spent extracting a rule's fingerprint per decision (microseconds). A relative signal for spotting expensive fingerprints, eg wide `any.` scopes on large traces. |
 | `otelcol_processor_adaptive_tail_sampling_traces_evicted` | Counter  |          | Traces evicted from the buffer under pressure. Each still receives a decision per the eviction policy. |
 | `otelcol_processor_adaptive_tail_sampling_incoming_tracestate_unparseable` | Counter |     | Spans whose incoming W3C tracestate could not be parsed while applying the sampling threshold. |
@@ -654,6 +663,7 @@ Every span in a sampled trace is annotated with:
 |------------------------------------------------------|---------|--------------|--------------------------------------------------------|
 | `otelcol.processor.adaptive_tail_sampling.rule`            | string  | `keep-errors`| Name of the rule that selected this trace.             |
 | `otelcol.processor.adaptive_tail_sampling.fingerprint`     | string  | `9f86d081884c7d65` | The matched rule's fingerprint, raw or hashed, when `record_fingerprint` is enabled. |
+| `otelcol.processor.adaptive_tail_sampling.trigger`         | string  | `root_span`  | What caused the decision (`root_span`, `trace_timeout`, `eviction`, `shutdown`, `span_limit`). Eviction and shutdown override the original trigger on traces they decide mid-delay, so the attribute always names the event that produced the decision, while the decision-triggers metric counts the event that first made the trace decision-eligible. Values other than `root_span` mean the decision may have seen an incomplete trace. |
 
 ### Recording the fingerprint
 
