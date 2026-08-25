@@ -526,9 +526,9 @@ The number of load balancer ingress points (external IPs/hostnames) assigned to 
 
 The number of available pods per stateful set (the `status.availableReplicas` field). A pod is available once it has been `Ready` for at least `spec.minReadySeconds`.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {pod} | Gauge | Int | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {pod} | Sum | Int | Cumulative | false | Development |
 
 ## Resource Attributes
 

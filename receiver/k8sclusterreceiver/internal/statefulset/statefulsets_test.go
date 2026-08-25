@@ -49,7 +49,7 @@ func TestStatefulsetMetrics(t *testing.T) {
 
 	m3 := rm.ScopeMetrics().At(0).Metrics().At(2)
 	assert.Equal(t, "k8s.statefulset.pod.available", m3.Name())
-	assert.Equal(t, int64(6), m3.Gauge().DataPoints().At(0).IntValue())
+	assert.Equal(t, int64(6), m3.Sum().DataPoints().At(0).IntValue())
 
 	m4 := rm.ScopeMetrics().At(0).Metrics().At(3)
 	assert.Equal(t, "k8s.statefulset.ready_pods", m4.Name())

@@ -1009,11 +1009,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "k8s.statefulset.pod.available":
 					assert.False(t, validatedMetrics["k8s.statefulset.pod.available"], "Found a duplicate in the metrics slice: k8s.statefulset.pod.available")
 					validatedMetrics["k8s.statefulset.pod.available"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "The number of available pods per stateful set (the `status.availableReplicas` field). A pod is available once it has been `Ready` for at least `spec.minReadySeconds`.", mi.Description())
 					assert.Equal(t, "{pod}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

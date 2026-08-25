@@ -992,7 +992,9 @@ metrics:
     description: The number of available pods per stateful set (the `status.availableReplicas` field). A pod is available once it has been `Ready` for at least `spec.minReadySeconds`.
     unit: "{pod}"
     stability: development
-    gauge:
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
       value_type: int
     entity: k8s.statefulset
 
