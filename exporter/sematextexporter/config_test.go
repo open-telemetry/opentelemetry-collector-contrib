@@ -19,8 +19,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter/internal/metadata"
@@ -44,8 +44,8 @@ func TestLoadConfig(t *testing.T) {
 
 	defaultClientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	defaultClientConfig.MaxIdleConns = 0
-	defaultClientConfig.IdleConnTimeout = 0
+	defaultClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	defaultClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	defaultClientConfig.ForceAttemptHTTP2 = false
 	defaultClientConfig.Timeout = 5 * time.Second
 	defaultClientConfig.Headers = configopaque.MapList{
@@ -54,8 +54,8 @@ func TestLoadConfig(t *testing.T) {
 
 	overrideClientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	overrideClientConfig.MaxIdleConns = 0
-	overrideClientConfig.IdleConnTimeout = 0
+	overrideClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	overrideClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	overrideClientConfig.ForceAttemptHTTP2 = false
 	overrideClientConfig.Timeout = 500 * time.Millisecond
 	overrideClientConfig.Headers = configopaque.MapList{
@@ -129,7 +129,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v88/github"
+	"github.com/google/go-github/v89/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -161,7 +161,7 @@ func TestScrape(t *testing.T) {
 					contribs: [][]*github.Contributor{
 						{
 							{
-								ID: github.Ptr(int64(1)),
+								ID: new(int64(1)),
 							},
 						},
 					},
@@ -180,7 +180,7 @@ func TestScrape(t *testing.T) {
 
 			ghs := newGitHubScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 			ghs.cfg.GitHubOrg = "open-telemetry"
-			ghs.cfg.Endpoint = server.URL
+			ghs.cfg.ClientConfig.Endpoint = server.URL
 
 			err := ghs.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
@@ -269,7 +269,7 @@ func TestScrapeCapturesTimestampPerRepository(t *testing.T) {
 		},
 		contribResponse: contribResponse{
 			contribs: [][]*github.Contributor{
-				{{ID: github.Ptr(int64(1))}},
+				{{ID: new(int64(1))}},
 			},
 			responseCode: http.StatusOK,
 		},
@@ -279,7 +279,7 @@ func TestScrapeCapturesTimestampPerRepository(t *testing.T) {
 	cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
 	ghs := newGitHubScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 	ghs.cfg.GitHubOrg = "open-telemetry"
-	ghs.cfg.Endpoint = server.URL
+	ghs.cfg.ClientConfig.Endpoint = server.URL
 
 	// Inject a monotonically increasing clock. Each call returns a timestamp
 	// one second later than the previous, so different RecordVcs* call sites

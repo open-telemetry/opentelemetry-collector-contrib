@@ -4,6 +4,7 @@
 | ------------- |-----------|
 | Stability     | [beta]: traces   |
 | Distributions | [contrib], [k8s] |
+| Warnings      | [Statefulness](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ftailsampling%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Ftailsampling) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ftailsampling%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Ftailsampling) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_tailsampling)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_tailsampling&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech), [@jmacd](https://www.github.com/jmacd), [@csmarchbanks](https://www.github.com/csmarchbanks), [@carsonip](https://www.github.com/carsonip) \| Seeking more code owners! |
@@ -18,6 +19,10 @@ The tail sampling processor samples traces based on a set of defined policies. A
 Before performing sampling, spans will be grouped by `trace_id`. Therefore, the tail sampling processor can be used directly without the need for the [`groupbytraceprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/groupbytraceprocessor).
 
 This processor must be placed in pipelines after any processors that rely on context, e.g. `k8sattributes`. It reassembles spans into new batches, causing them to lose their original context.
+
+## Warnings
+
+- [Statefulness](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#statefulness): The processor keeps spans in memory while it waits to make a sampling decision. All spans for a given trace must be sent to the same Collector instance. See [Scaling collectors with the tail sampling processor](#scaling-collectors-with-the-tail-sampling-processor) for deployment guidance.
 
 Please refer to [config.go](./config.go) for the config spec.
 
@@ -68,6 +73,18 @@ The following configuration options can also be modified:
 - `drop_pending_traces_on_shutdown`: Drop pending traces on shutdown instead of making a decision with the partial data
   already ingested.
 - `maximum_trace_size_bytes`: The maximum size a trace can reach in bytes, traces larger than this size will be immediately dropped from the tail sampling processor in order to protect the system.
+- `num_shards` (default = 1, maximum = 256): Number of parallel event loops processing traces. Traces are
+  routed to shards by a hash of the trace ID, so all spans of a trace are always processed by the same shard.
+  Values greater than 1 reduce contention between trace ingestion and sampling decision evaluation under high
+  load. To keep aggregate behavior consistent with the configured values, `num_traces`,
+  `expected_new_traces_per_sec`, `decision_cache` sizes, and per-second rate limits in policies
+  (`rate_limiting`, `bytes_limiting`, and composite `max_total_spans_per_second`) are divided evenly across
+  shards. `burst_capacity` is not divided, because it also caps the size of a single trace that can pass a
+  limiter and each trace is evaluated whole on one shard; this means the aggregate burst allowance scales with
+  `num_shards`. Because each shard enforces its share of a limit independently (with a minimum of 1 per shard),
+  enforcement is approximate: limits smaller than `num_shards` can be exceeded in aggregate, and a shard can
+  reach its share of `num_traces` before the aggregate does. Values greater than 1 are not supported together
+  with `tail_storage`.
 
 ## Sampling Strategies
 

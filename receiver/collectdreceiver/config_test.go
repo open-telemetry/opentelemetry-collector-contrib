@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver/internal/metadata"
 )
@@ -27,8 +27,8 @@ func TestLoadConfig(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	oneServerConfig.WriteTimeout = 0
 	oneServerConfig.ReadHeaderTimeout = 0
-	oneServerConfig.IdleTimeout = 0
-	oneServerConfig.KeepAlivesEnabled = false
+	oneServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	oneServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	oneServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:12345",
@@ -68,9 +68,9 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.wantErr == nil {
-				assert.NoError(t, xconfmap.Validate(cfg))
+				assert.NoError(t, confmap.Validate(cfg))
 			} else {
-				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.wantErr.Error())
+				assert.ErrorContains(t, confmap.Validate(cfg), tt.wantErr.Error())
 			}
 			assert.Equal(t, tt.expected, cfg)
 		})

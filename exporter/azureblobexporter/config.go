@@ -106,7 +106,7 @@ type Config struct {
 	// Encoding extension to apply for logs/metrics/traces. If present, overrides the marshaler configuration option and format.
 	Encodings Encodings `mapstructure:"encodings"`
 
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	BackOffConfig configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 }
 
 func (c *Config) Validate() error {
@@ -142,7 +142,8 @@ func (c *Config) Validate() error {
 			return fmt.Errorf(
 				"%w %q, valid values are %q and %q",
 				errUnknownCompression, c.Compression,
-				configcompression.TypeGzip, configcompression.TypeZstd)
+				configcompression.TypeGzip, configcompression.TypeZstd,
+			)
 		}
 	}
 

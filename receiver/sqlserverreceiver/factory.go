@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
@@ -42,7 +43,8 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -66,28 +68,40 @@ func createDefaultConfig() component.Config {
 func setupQueries(cfg *Config) []string {
 	var queries []string
 
-	if isDatabaseIOQueryEnabled(&cfg.Metrics) {
+	if isAvailabilityGroupQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
+		queries = append(queries, getSQLServerAvailabilityGroupQuery(cfg.InstanceName))
+	}
+
+	if isDatabaseIOQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerDatabaseIOQuery(cfg.InstanceName))
 	}
 
-	if isPerfCounterQueryEnabled(&cfg.Metrics) {
+	if isPerfCounterQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerPerformanceCounterQuery(cfg.InstanceName))
 	}
 
-	if cfg.Metrics.SqlserverDatabaseCount.Enabled || cfg.Metrics.SqlserverCPUCount.Enabled || cfg.Metrics.SqlserverComputerUptime.Enabled {
+	if cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseCount.Enabled || cfg.MetricsBuilderConfig.Metrics.SqlserverCPUCount.Enabled || cfg.MetricsBuilderConfig.Metrics.SqlserverComputerUptime.Enabled {
 		queries = append(queries, getSQLServerPropertiesQuery(cfg.InstanceName))
 	}
 
-	if isWaitStatsQueryEnabled(&cfg.Metrics) {
+	if isWaitStatsQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerWaitStatsQuery(cfg.InstanceName))
 	}
 
-	if isWorkerThreadsQueryEnabled(&cfg.Metrics) {
+	if isWorkerThreadsQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerWorkerThreadsQuery(cfg.InstanceName))
 	}
 
-	if isIndexPhysicalStatsQueryEnabled(&cfg.Metrics) {
+	if isIndexPhysicalStatsQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerIndexPhysicalStatsQuery(cfg.InstanceName))
+	}
+
+	if isCPUMemoryQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
+		queries = append(queries, getSQLServerCPUMemoryQuery(cfg.InstanceName))
+	}
+
+	if isDiskIOQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
+		queries = append(queries, getSQLServerDiskIOQuery(cfg.InstanceName))
 	}
 
 	return queries
@@ -96,11 +110,11 @@ func setupQueries(cfg *Config) []string {
 func setupLogQueries(cfg *Config) []string {
 	var queries []string
 
-	if cfg.Events.DbServerQuerySample.Enabled {
+	if cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled {
 		queries = append(queries, getSQLServerQuerySamplesQuery())
 	}
 
-	if cfg.Events.DbServerTopQuery.Enabled {
+	if cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		queries = append(queries, getSQLServerQueryTextAndPlanQuery())
 	}
 
@@ -115,24 +129,158 @@ func getDBConnectionString(config *Config) string {
 	return fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d", config.Server, config.Username, string(config.Password), config.Port)
 }
 
+// sqlServerMetricsReceiver wraps the scraper controller so that the shared
+// connection pool is closed when the receiver shuts down.
+type sqlServerMetricsReceiver struct {
+	receiver.Metrics
+	provider *dbProvider
+}
+
+func (r *sqlServerMetricsReceiver) Shutdown(ctx context.Context) error {
+	err := r.Metrics.Shutdown(ctx)
+	if r.provider != nil {
+		err = errors.Join(err, r.provider.close())
+	}
+	return err
+}
+
+// sqlServerLogsReceiver wraps the scraper controller so that the shared
+// connection pool is closed when the receiver shuts down.
+type sqlServerLogsReceiver struct {
+	receiver.Logs
+	provider *dbProvider
+}
+
+func (r *sqlServerLogsReceiver) Shutdown(ctx context.Context) error {
+	err := r.Logs.Shutdown(ctx)
+	if r.provider != nil {
+		err = errors.Join(err, r.provider.close())
+	}
+	return err
+}
+
+// dbProvider owns the single connection pool shared by all scrapers of a
+// receiver. It is created in the factory so that the pool's ownership and
+// lifecycle are tied to the receiver rather than to any individual scraper:
+// the pool is opened lazily the first time a scraper starts and is closed once
+// by the receiver on shutdown. A *sql.DB is safe for concurrent use and already
+// maintains its own connection pool, so sharing one pool across all scrapers
+// avoids creating a redundant, independently-managed pool per query.
+type dbProvider struct {
+	dsn         string
+	pool        ConnectionPool
+	numScrapers int
+
+	mu       sync.Mutex
+	db       *sql.DB
+	openErr  error
+	opened   bool
+	closed   bool
+	closeErr error
+}
+
+var errDBProviderClosed = errors.New("connection pool is closed")
+
+func newDBProvider(cfg *Config, numScrapers int) *dbProvider {
+	return &dbProvider{
+		dsn:         getDBConnectionString(cfg),
+		pool:        cfg.ConnectionPool,
+		numScrapers: numScrapers,
+	}
+}
+
+// getDB lazily opens and configures the shared pool, returning the same
+// *sql.DB on every call. It satisfies sqlquery.DbProviderFunc. Once the
+// provider has been closed it refuses to open a new pool, so a pool can never
+// be created after close and leaked.
+func (p *dbProvider) getDB() (*sql.DB, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.closed {
+		return nil, errDBProviderClosed
+	}
+	if !p.opened {
+		p.opened = true
+		p.db, p.openErr = sql.Open("sqlserver", p.dsn)
+		if p.openErr == nil {
+			setConnectionPoolSettings(p.db, p.pool, p.numScrapers)
+		}
+	}
+	return p.db, p.openErr
+}
+
+// close closes the shared pool. It is idempotent and safe to call on a nil
+// provider or when the pool was never opened. After close, getDB will not open
+// a new pool.
+func (p *dbProvider) close() error {
+	if p == nil {
+		return nil
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.closed {
+		return p.closeErr
+	}
+	p.closed = true
+	if p.db != nil {
+		p.closeErr = p.db.Close()
+	}
+	return p.closeErr
+}
+
+// setConnectionPoolSettings applies the configured pool settings, falling back
+// to defaults derived from the number of scrapers that share the pool. The Go
+// driver defaults (unlimited open connections, two idle connections) are
+// sub-optimal when several scrapers query the same instance on every collection
+// interval, so by default we size both limits to the number of scrapers: this
+// lets every scraper run concurrently while bounding the total connections and
+// avoiding idle-connection churn between intervals.
+func setConnectionPoolSettings(db *sql.DB, pool ConnectionPool, numScrapers int) {
+	if numScrapers < 1 {
+		numScrapers = 1
+	}
+
+	maxOpen := numScrapers
+	if pool.MaxOpen != nil {
+		maxOpen = *pool.MaxOpen
+	}
+	db.SetMaxOpenConns(maxOpen)
+
+	maxIdle := numScrapers
+	if pool.MaxIdle != nil {
+		maxIdle = *pool.MaxIdle
+	}
+	db.SetMaxIdleConns(maxIdle)
+
+	if pool.MaxLifetime != nil {
+		db.SetConnMaxLifetime(*pool.MaxLifetime)
+	}
+	if pool.MaxIdleTime != nil {
+		db.SetConnMaxIdleTime(*pool.MaxIdleTime)
+	}
+}
+
 // SQL Server scraper creation is split out into a separate method for the sake of testing.
-func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerScraperHelper {
+// It returns the scrapers along with the shared connection pool provider, whose
+// lifecycle is owned by the receiver. The provider is nil when no direct
+// connection is made.
+func setupSQLServerScrapers(params receiver.Settings, cfg *Config) ([]*sqlServerScraperHelper, *dbProvider) {
 	if !cfg.isDirectDBConnectionEnabled {
 		params.Logger.Info("No direct connection will be made to the SQL Server: Configuration doesn't include some options.")
-		return nil
+		return nil, nil
 	}
 
 	queries := setupQueries(cfg)
 	if len(queries) == 0 {
 		params.Logger.Info("No direct connection will be made to the SQL Server: No metrics are enabled requiring it.")
-		return nil
+		return nil, nil
 	}
 
-	// TODO: Test if this needs to be re-defined for each scraper
-	// This should be tested when there is more than one query being made.
-	dbProviderFunc := func() (*sql.DB, error) {
-		return sql.Open("sqlserver", getDBConnectionString(cfg))
-	}
+	// All scrapers of this receiver share a single connection pool so that the
+	// number of pools does not grow with the number of enabled queries.
+	provider := newDBProvider(cfg, len(queries))
 
 	var scrapers []*sqlServerScraperHelper
 	for i, query := range queries {
@@ -143,7 +291,7 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerS
 
 		sqlServerScraper := newSQLServerScraper(id, query,
 			sqlquery.TelemetryConfig{},
-			dbProviderFunc,
+			provider.getDB,
 			sqlquery.NewDbClient,
 			params,
 			cfg,
@@ -152,28 +300,29 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerS
 		scrapers = append(scrapers, sqlServerScraper)
 	}
 
-	return scrapers
+	return scrapers, provider
 }
 
 // SQL Server scraper creation is split out into a separate method for the sake of testing.
-func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlServerScraperHelper {
+// It returns the scrapers along with the shared connection pool provider, whose
+// lifecycle is owned by the receiver. The provider is nil when no direct
+// connection is made.
+func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlServerScraperHelper, *dbProvider) {
 	if !cfg.isDirectDBConnectionEnabled {
 		params.Logger.Info("No direct connection will be made to the SQL Server: Configuration doesn't include some options.")
-		return nil
+		return nil, nil
 	}
 
 	queries := setupLogQueries(cfg)
 
 	if len(queries) == 0 {
 		params.Logger.Info("No direct connection will be made to the SQL Server: No logs are enabled requiring it.")
-		return nil
+		return nil, nil
 	}
 
-	// TODO: Test if this needs to be re-defined for each scraper
-	// This should be tested when there is more than one query being made.
-	dbProviderFunc := func() (*sql.DB, error) {
-		return sql.Open("sqlserver", getDBConnectionString(cfg))
-	}
+	// All scrapers of this receiver share a single connection pool so that the
+	// number of pools does not grow with the number of enabled queries.
+	provider := newDBProvider(cfg, len(queries))
 
 	var scrapers []*sqlServerScraperHelper
 	for i, query := range queries {
@@ -183,7 +332,7 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 
 		if query == getSQLServerQueryTextAndPlanQuery() {
 			// we have 8 metrics in this query and multiple 2 to allow to cache more queries.
-			cache = newCache(int(cfg.MaxQuerySampleCount * 8 * 2))
+			cache = newCache(int(cfg.TopQueryCollection.MaxQuerySampleCount * 8 * 2))
 		}
 
 		if query == getSQLServerQuerySamplesQuery() {
@@ -192,7 +341,7 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 
 		sqlServerScraper := newSQLServerScraper(id, query,
 			sqlquery.TelemetryConfig{},
-			dbProviderFunc,
+			provider.getDB,
 			sqlquery.NewDbClient,
 			params,
 			cfg,
@@ -201,14 +350,14 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 		scrapers = append(scrapers, sqlServerScraper)
 	}
 
-	return scrapers
+	return scrapers, provider
 }
 
 // Note: This method will fail silently if there is no work to do. This is an acceptable use case
 // as this receiver can still get information on Windows from performance counters without a direct
 // connection. Messages will be logged at the INFO level in such cases.
-func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.ControllerOption, error) {
-	sqlServerScrapers := setupSQLServerScrapers(params, cfg)
+func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.ControllerOption, *dbProvider, error) {
+	sqlServerScrapers, provider := setupSQLServerScrapers(params, cfg)
 
 	var opts []scraperhelper.ControllerOption
 	for _, sqlScraper := range sqlServerScrapers {
@@ -216,21 +365,23 @@ func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.Contr
 			scraper.WithStart(sqlScraper.Start),
 			scraper.WithShutdown(sqlScraper.Shutdown))
 		if err != nil {
-			return nil, err
+			// The provider owns the shared pool; close it so it is not leaked
+			// when receiver construction fails before Shutdown can run.
+			return nil, nil, errors.Join(err, provider.close())
 		}
 
 		opt := scraperhelper.AddMetricsScraper(metadata.Type, s)
 		opts = append(opts, opt)
 	}
 
-	return opts, nil
+	return opts, provider, nil
 }
 
 // Note: This method will fail silently if there is no work to do. This is an acceptable use case
 // as this receiver can still get information on Windows from performance counters without a direct
 // connection. Messages will be logged at the INFO level in such cases.
-func setupLogsScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.ControllerOption, error) {
-	sqlServerScrapers := setupSQLServerLogsScrapers(params, cfg)
+func setupLogsScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.ControllerOption, *dbProvider, error) {
+	sqlServerScrapers, provider := setupSQLServerLogsScrapers(params, cfg)
 
 	var opts []scraperhelper.ControllerOption
 	for _, sqlScraper := range sqlServerScrapers {
@@ -238,18 +389,31 @@ func setupLogsScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.C
 			scraper.WithStart(sqlScraper.Start),
 			scraper.WithShutdown(sqlScraper.Shutdown))
 		if err != nil {
-			return nil, err
+			// The provider owns the shared pool; close it so it is not leaked
+			// when receiver construction fails before Shutdown can run.
+			return nil, nil, errors.Join(err, provider.close())
 		}
 
 		opt := scraperhelper.AddFactoryWithConfig(
 			scraper.NewFactory(metadata.Type, nil,
 				scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
 					return s, nil
-				}, component.StabilityLevelAlpha)), nil)
+				}, component.StabilityLevelAlpha)), nil,
+		)
 		opts = append(opts, opt)
 	}
 
-	return opts, nil
+	return opts, provider, nil
+}
+
+func isAvailabilityGroupQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverAvailabilityGroupDatabaseReplicaSecondaryLag.Enabled ||
+		metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueSize.Enabled ||
+		metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueRate.Enabled
 }
 
 func isDatabaseIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
@@ -360,4 +524,23 @@ func isIndexPhysicalStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverIndexPageUtilization.Enabled ||
 		metrics.SqlserverIndexRecordCount.Enabled ||
 		metrics.SqlserverIndexSize.Enabled
+}
+
+func isCPUMemoryQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverCPUUtilization.Enabled ||
+		metrics.SqlserverHostMemoryLimit.Enabled ||
+		metrics.SqlserverHostMemoryUsage.Enabled
+}
+
+func isDiskIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverDiskOperations.Enabled ||
+		metrics.SqlserverDiskIo.Enabled
 }

@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
@@ -33,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 	// Endpoint and Token do not have a default value so set them directly.
 	defaultCfg := createDefaultConfig().(*Config)
 	defaultCfg.Token = "00000000-0000-0000-0000-0000000000000"
-	defaultCfg.Endpoint = "https://splunk:8088/services/collector"
+	defaultCfg.ClientConfig.Endpoint = "https://splunk:8088/services/collector"
 
 	hundred := 100
 	idleConnTimeout := 10 * time.Second
@@ -51,9 +51,9 @@ func TestLoadConfig(t *testing.T) {
 	}
 	clientConfig.HTTP2PingTimeout = 10 * time.Second
 	clientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
-	clientConfig.MaxIdleConns = hundred
-	clientConfig.MaxIdleConnsPerHost = hundred
-	clientConfig.IdleConnTimeout = idleConnTimeout
+	clientConfig.MaxIdleConns = hundred            //nolint:staticcheck // SA1019: MaxIdleConns is deprecated in favor of Keepalive.MaxIdleConns.
+	clientConfig.MaxIdleConnsPerHost = hundred     //nolint:staticcheck // SA1019: MaxIdleConnsPerHost is deprecated in favor of Keepalive.MaxIdleConnsPerHost.
+	clientConfig.IdleConnTimeout = idleConnTimeout //nolint:staticcheck // SA1019: IdleConnTimeout is deprecated in favor of Keepalive.IdleConnTimeout.
 
 	tests := []struct {
 		id       component.ID
@@ -138,7 +138,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 
 			require.NoError(t, sub.Unmarshal(cfg))
-			require.NoError(t, xconfmap.Validate(cfg))
+			require.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -159,7 +159,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "bad url",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Endpoint = "cache_object:foo/bar"
+				cfg.ClientConfig.Endpoint = "cache_object:foo/bar"
 				cfg.Token = "foo"
 				return cfg
 			}(),
@@ -169,7 +169,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "missing token",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Endpoint = "http://example.com"
+				cfg.ClientConfig.Endpoint = "http://example.com"
 				return cfg
 			}(),
 			wantErr: "requires a non-empty \"token\"",
@@ -178,7 +178,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "max default content-length for logs",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Endpoint = "http://foo_bar.com"
+				cfg.ClientConfig.Endpoint = "http://foo_bar.com"
 				cfg.MaxContentLengthLogs = maxContentLengthLogsLimit + 1
 				cfg.Token = "foo"
 				return cfg
@@ -189,7 +189,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "max default content-length for metrics",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Endpoint = "http://foo_bar.com"
+				cfg.ClientConfig.Endpoint = "http://foo_bar.com"
 				cfg.MaxContentLengthMetrics = maxContentLengthMetricsLimit + 1
 				cfg.Token = "foo"
 				return cfg
@@ -200,7 +200,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "max default content-length for traces",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Endpoint = "http://foo_bar.com"
+				cfg.ClientConfig.Endpoint = "http://foo_bar.com"
 				cfg.MaxContentLengthTraces = maxContentLengthTracesLimit + 1
 				cfg.Token = "foo"
 				return cfg
@@ -211,7 +211,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "max default event-size",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Endpoint = "http://foo_bar.com"
+				cfg.ClientConfig.Endpoint = "http://foo_bar.com"
 				cfg.MaxEventSize = maxMaxEventSize + 1
 				cfg.Token = "foo"
 				return cfg
@@ -222,7 +222,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "negative queue size",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Endpoint = "http://foo_bar.com"
+				cfg.ClientConfig.Endpoint = "http://foo_bar.com"
 				cfg.QueueSettings.Get().QueueSize = -5
 				cfg.Token = "foo"
 				return cfg
@@ -233,7 +233,7 @@ func TestConfig_Validate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := xconfmap.Validate(tt.cfg)
+			err := confmap.Validate(tt.cfg)
 			if tt.wantErr == "" {
 				require.NoError(t, err)
 			} else {

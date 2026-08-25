@@ -85,6 +85,38 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 			},
 		},
 		{
+			// Gauges have no counter semantics, so the start timestamp is not
+			// carried over to the sample.
+			name: "gauge with start timestamp",
+			metric: func() pmetric.Metric {
+				metric := getIntGaugeMetric(
+					"test",
+					pcommon.NewMap(),
+					1, ts,
+				)
+				metric.Gauge().DataPoints().At(0).SetStartTimestamp(pcommon.Timestamp(ts) - pcommon.Timestamp(time.Hour))
+				return metric
+			},
+			want: func() map[uint64]*writev2.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test"},
+				}
+				return map[uint64]*writev2.TimeSeries{
+					timeSeriesSignature(labels): {
+						LabelsRefs: []uint32{1, 2},
+						Samples: []writev2.Sample{
+							{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_GAUGE,
+							HelpRef: 3,
+							UnitRef: 4,
+						},
+					},
+				}
+			},
+		},
+		{
 			name: "gauge with staleNaN",
 			metric: func() pmetric.Metric {
 				return getIntGaugeMetric(
@@ -204,6 +236,7 @@ func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 
 func TestPrometheusConverterV2_addSumNumberDataPoints(t *testing.T) {
 	ts := pcommon.Timestamp(time.Now().UnixNano())
+	startTs := ts - pcommon.Timestamp(time.Hour)
 	tests := []struct {
 		name   string
 		metric func() pmetric.Metric
@@ -285,7 +318,7 @@ func TestPrometheusConverterV2_addSumNumberDataPoints(t *testing.T) {
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleValue(1)
 				dp.SetTimestamp(ts)
-				dp.SetStartTimestamp(ts)
+				dp.SetStartTimestamp(startTs)
 
 				return metric
 			},
@@ -297,7 +330,7 @@ func TestPrometheusConverterV2_addSumNumberDataPoints(t *testing.T) {
 					timeSeriesSignature(labels): {
 						LabelsRefs: []uint32{1, 2},
 						Samples: []writev2.Sample{
-							{Value: 1, Timestamp: convertTimeStamp(ts)},
+							{Value: 1, Timestamp: convertTimeStamp(ts), StartTimestamp: convertTimeStamp(startTs)},
 						},
 						Metadata: writev2.Metadata{
 							Type:    writev2.Metadata_METRIC_TYPE_COUNTER,

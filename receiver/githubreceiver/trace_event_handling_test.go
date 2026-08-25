@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v88/github"
+	"github.com/google/go-github/v89/github"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/featuregate"
@@ -28,7 +28,7 @@ import (
 
 func TestHandleWorkflowRunWithGoldenFile(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
@@ -58,7 +58,7 @@ func TestHandleWorkflowRunWithGoldenFile(t *testing.T) {
 
 func TestHandleWorkflowJobWithGoldenFile(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
@@ -88,7 +88,7 @@ func TestHandleWorkflowJobWithGoldenFile(t *testing.T) {
 
 func TestHandleWorkflowJobWithGoldenFileSkipped(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
@@ -232,9 +232,9 @@ func TestNewUniqueSteps(t *testing.T) {
 		{
 			name: "no duplicate steps",
 			steps: []*github.TaskStep{
-				{Name: github.Ptr("Build")},
-				{Name: github.Ptr("Test")},
-				{Name: github.Ptr("Deploy")},
+				{Name: new("Build")},
+				{Name: new("Test")},
+				{Name: new("Deploy")},
 			},
 			expected:       []string{"Build", "Test", "Deploy"},
 			expectedHasDup: false,
@@ -242,12 +242,12 @@ func TestNewUniqueSteps(t *testing.T) {
 		{
 			name: "with duplicate steps",
 			steps: []*github.TaskStep{
-				{Name: github.Ptr("Setup")},
-				{Name: github.Ptr("Build")},
-				{Name: github.Ptr("Test")},
-				{Name: github.Ptr("Build")},
-				{Name: github.Ptr("Test")},
-				{Name: github.Ptr("Deploy")},
+				{Name: new("Setup")},
+				{Name: new("Build")},
+				{Name: new("Test")},
+				{Name: new("Build")},
+				{Name: new("Test")},
+				{Name: new("Deploy")},
 			},
 			expected:       []string{"Setup", "Build", "Test", "Build-1", "Test-1", "Deploy"},
 			expectedHasDup: true,
@@ -255,10 +255,10 @@ func TestNewUniqueSteps(t *testing.T) {
 		{
 			name: "multiple duplicates of same step",
 			steps: []*github.TaskStep{
-				{Name: github.Ptr("Build")},
-				{Name: github.Ptr("Build")},
-				{Name: github.Ptr("Build")},
-				{Name: github.Ptr("Build")},
+				{Name: new("Build")},
+				{Name: new("Build")},
+				{Name: new("Build")},
+				{Name: new("Build")},
 			},
 			expected:       []string{"Build", "Build-1", "Build-2", "Build-3"},
 			expectedHasDup: true,
@@ -266,9 +266,9 @@ func TestNewUniqueSteps(t *testing.T) {
 		{
 			name: "with empty step names",
 			steps: []*github.TaskStep{
-				{Name: github.Ptr("")},
-				{Name: github.Ptr("")},
-				{Name: github.Ptr("Build")},
+				{Name: new("")},
+				{Name: new("")},
+				{Name: new("Build")},
 			},
 			expected:       []string{"", "-1", "Build"},
 			expectedHasDup: true,
@@ -302,10 +302,10 @@ func TestCreateStepSpans(t *testing.T) {
 	createTestWorkflowJobEvent := func(steps []*github.TaskStep) *github.WorkflowJobEvent {
 		return &github.WorkflowJobEvent{
 			WorkflowJob: &github.WorkflowJob{
-				ID:         github.Ptr(int64(123)),
-				RunID:      github.Ptr(int64(456)),
-				RunAttempt: github.Ptr(int64(1)),
-				Name:       github.Ptr("Test Job"),
+				ID:         new(int64(123)),
+				RunID:      new(int64(456)),
+				RunAttempt: new(int64(1)),
+				Name:       new("Test Job"),
 				Steps:      steps,
 			},
 		}
@@ -327,10 +327,10 @@ func TestCreateStepSpans(t *testing.T) {
 			name: "single step",
 			event: createTestWorkflowJobEvent([]*github.TaskStep{
 				{
-					Name:        github.Ptr("Build"),
-					Status:      github.Ptr("completed"),
-					Conclusion:  github.Ptr("success"),
-					Number:      github.Ptr(int64(1)),
+					Name:        new("Build"),
+					Status:      new("completed"),
+					Conclusion:  new("success"),
+					Number:      new(int64(1)),
 					StartedAt:   createTimestamp(0),
 					CompletedAt: createTimestamp(5),
 				},
@@ -347,26 +347,26 @@ func TestCreateStepSpans(t *testing.T) {
 			name: "multiple steps with different states",
 			event: createTestWorkflowJobEvent([]*github.TaskStep{
 				{
-					Name:        github.Ptr("Setup"),
-					Status:      github.Ptr("completed"),
-					Conclusion:  github.Ptr("success"),
-					Number:      github.Ptr(int64(1)),
+					Name:        new("Setup"),
+					Status:      new("completed"),
+					Conclusion:  new("success"),
+					Number:      new(int64(1)),
 					StartedAt:   createTimestamp(0),
 					CompletedAt: createTimestamp(2),
 				},
 				{
-					Name:        github.Ptr("Build"),
-					Status:      github.Ptr("completed"),
-					Conclusion:  github.Ptr("failure"),
-					Number:      github.Ptr(int64(2)),
+					Name:        new("Build"),
+					Status:      new("completed"),
+					Conclusion:  new("failure"),
+					Number:      new(int64(2)),
 					StartedAt:   createTimestamp(2),
 					CompletedAt: createTimestamp(5),
 				},
 				{
-					Name:        github.Ptr("Test"),
-					Status:      github.Ptr("completed"),
-					Conclusion:  github.Ptr("skipped"),
-					Number:      github.Ptr(int64(3)),
+					Name:        new("Test"),
+					Status:      new("completed"),
+					Conclusion:  new("skipped"),
+					Number:      new(int64(3)),
 					StartedAt:   createTimestamp(5),
 					CompletedAt: createTimestamp(6),
 				},
@@ -395,18 +395,18 @@ func TestCreateStepSpans(t *testing.T) {
 			name: "duplicate step names",
 			event: createTestWorkflowJobEvent([]*github.TaskStep{
 				{
-					Name:        github.Ptr("Build"),
-					Status:      github.Ptr("completed"),
-					Conclusion:  github.Ptr("success"),
-					Number:      github.Ptr(int64(1)),
+					Name:        new("Build"),
+					Status:      new("completed"),
+					Conclusion:  new("success"),
+					Number:      new(int64(1)),
 					StartedAt:   createTimestamp(0),
 					CompletedAt: createTimestamp(2),
 				},
 				{
-					Name:        github.Ptr("Build"),
-					Status:      github.Ptr("completed"),
-					Conclusion:  github.Ptr("success"),
-					Number:      github.Ptr(int64(2)),
+					Name:        new("Build"),
+					Status:      new("completed"),
+					Conclusion:  new("success"),
+					Number:      new(int64(2)),
 					StartedAt:   createTimestamp(2),
 					CompletedAt: createTimestamp(4),
 				},
@@ -734,7 +734,7 @@ func TestNewJobSpanID_Consistency(t *testing.T) {
 
 func TestHandleWorkflowRunWithSpanEvents(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.WebHook.NetAddr.Endpoint = "localhost:0"
+	config.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	config.WebHook.IncludeSpanEvents = true // Enable span events
 	consumer := consumertest.NewNop()
 
@@ -781,7 +781,7 @@ func TestHandleWorkflowRunWithSpanEvents(t *testing.T) {
 
 func TestHandleWorkflowJobWithSpanEvents(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.WebHook.NetAddr.Endpoint = "localhost:0"
+	config.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	config.WebHook.IncludeSpanEvents = true // Enable span events
 	consumer := consumertest.NewNop()
 
@@ -826,7 +826,7 @@ func TestHandleWorkflowJobWithSpanEvents(t *testing.T) {
 
 func TestHandleWorkflowRunWithoutSpanEvents(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.WebHook.NetAddr.Endpoint = "localhost:0"
+	config.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	// IncludeSpanEvents defaults to false
 	consumer := consumertest.NewNop()
 
@@ -861,7 +861,7 @@ func TestHandleWorkflowRunWithoutSpanEvents(t *testing.T) {
 
 func TestStepSpansHaveNoEvents(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.WebHook.NetAddr.Endpoint = "localhost:0"
+	config.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	config.WebHook.IncludeSpanEvents = true // Enable span events
 	consumer := consumertest.NewNop()
 
@@ -1059,13 +1059,13 @@ func TestCreateStepSpans_DuplicateNameWarning(t *testing.T) {
 	makeEvent := func() *github.WorkflowJobEvent {
 		return &github.WorkflowJobEvent{
 			WorkflowJob: &github.WorkflowJob{
-				ID:         github.Ptr(int64(123)),
-				RunID:      github.Ptr(int64(456)),
-				RunAttempt: github.Ptr(int64(1)),
-				Name:       github.Ptr("Test Job"),
+				ID:         new(int64(123)),
+				RunID:      new(int64(456)),
+				RunAttempt: new(int64(1)),
+				Name:       new("Test Job"),
 				Steps: []*github.TaskStep{
-					{Name: github.Ptr("Build"), Number: github.Ptr(int64(1))},
-					{Name: github.Ptr("Build"), Number: github.Ptr(int64(2))},
+					{Name: new("Build"), Number: new(int64(1))},
+					{Name: new("Build"), Number: new(int64(2))},
 				},
 			},
 		}
@@ -1164,7 +1164,7 @@ func TestHandleWorkflowJobWithGoldenFile_LegacyGate(t *testing.T) {
 	})
 
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
@@ -1206,7 +1206,7 @@ func TestHandleWorkflowJobWithGoldenFileSkipped_LegacyGate(t *testing.T) {
 	})
 
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
@@ -1258,7 +1258,7 @@ func TestHandleWorkflowJobWithGoldenFileSkipped_LegacyGate(t *testing.T) {
 // and does NOT error when the gate is disabled (legacy path ignores the ID).
 func TestHandleWorkflowJob_MissingCheckRunID(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
 	require.NoError(t, err)
@@ -1267,16 +1267,16 @@ func TestHandleWorkflowJob_MissingCheckRunID(t *testing.T) {
 		return &github.WorkflowJobEvent{
 			WorkflowJob: &github.WorkflowJob{
 				ID:         id,
-				RunID:      github.Ptr(int64(9999999)),
-				RunAttempt: github.Ptr(int64(1)),
-				Name:       github.Ptr("test-job"),
+				RunID:      new(int64(9999999)),
+				RunAttempt: new(int64(1)),
+				Name:       new("test-job"),
 				Steps:      nil,
 			},
 			Repo: &github.Repository{
-				Name: github.Ptr("test-repo"),
+				Name: new("test-repo"),
 			},
 			Sender: &github.User{
-				Login: github.Ptr("test-user"),
+				Login: new("test-user"),
 			},
 		}
 	}
@@ -1298,7 +1298,7 @@ func TestHandleWorkflowJob_MissingCheckRunID(t *testing.T) {
 		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
 		t.Cleanup(func() { require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), previous)) })
 
-		event := makeEvent(github.Ptr(int64(0)))
+		event := makeEvent(new(int64(0)))
 		_, err := receiver.handleWorkflowJob(event, nil)
 		require.Error(t, err)
 	})

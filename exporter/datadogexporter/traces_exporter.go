@@ -81,7 +81,8 @@ func newTracesExporter(
 	apiClient := clientutil.CreateAPIClient(
 		params.BuildInfo,
 		cfg.Metrics.Endpoint,
-		cfg.ClientConfig)
+		cfg.ClientConfig,
+	)
 	go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 	exp.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	if cfg.API.FailOnInvalidKey {
@@ -200,7 +201,7 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *dat
 	acfg.Ignore["resource"] = cfg.Traces.IgnoreResources
 	acfg.ReceiverEnabled = false // disable HTTP receiver
 	acfg.AgentVersion = fmt.Sprintf("datadogexporter-%s-%s", params.BuildInfo.Command, params.BuildInfo.Version)
-	acfg.SkipSSLValidation = cfg.TLS.InsecureSkipVerify
+	acfg.SkipSSLValidation = cfg.ClientConfig.TLS.InsecureSkipVerify
 	acfg.ComputeStatsBySpanKind = cfg.Traces.ComputeStatsBySpanKind
 	acfg.PeerTagsAggregation = cfg.Traces.PeerTagsAggregation
 	acfg.PeerTags = cfg.Traces.PeerTags
@@ -228,6 +229,9 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *dat
 	}
 	if !featuregates.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_receive_resource_spans_v2"] = struct{}{}
+	}
+	if !featuregates.ScopeConventionFeatureGate.IsEnabled() {
+		acfg.Features["disable_otel_scope_convention"] = struct{}{}
 	}
 	tracelog.SetLogger(&agentcomponents.ZapLogger{Logger: params.Logger}) // TODO: This shouldn't be a singleton
 	return acfg, nil

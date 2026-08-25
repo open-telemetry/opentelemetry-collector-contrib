@@ -25,6 +25,8 @@ const (
 	MetadataFromNode = "node"
 	// MetadataFromDeployment is used to specify to extract metadata/labels/annotations from deployment
 	MetadataFromDeployment = "deployment"
+	// MetadataFromReplicaSet is used to specify to extract metadata/labels/annotations from replicaset
+	MetadataFromReplicaSet = "replicaset"
 	// MetadataFromStatefulSet is used to specify to extract metadata/labels/annotations from statefulset
 	MetadataFromStatefulSet = "statefulset"
 	// MetadataFromDaemonSet  is used to specify to extract metadata/labels/annotations from daemonset
@@ -87,6 +89,7 @@ type Client interface {
 	GetNamespace(string) (*Namespace, bool)
 	GetNode(string) (*Node, bool)
 	GetDeployment(string) (*Deployment, bool)
+	GetReplicaSet(string) (*ReplicaSet, bool)
 	GetStatefulSet(string) (*StatefulSet, bool)
 	GetDaemonSet(string) (*DaemonSet, bool)
 	GetJob(string) (*Job, bool)
@@ -112,6 +115,7 @@ type Pod struct {
 	Namespace      string
 	NodeName       string
 	DeploymentUID  string
+	ReplicaSetUID  string
 	StatefulSetUID string
 	DaemonSetUID   string
 	JobUID         string
@@ -169,9 +173,12 @@ type Node struct {
 type deleteRequest struct {
 	// id is identifier (IP address or Pod UID) of pod to remove from pods map
 	id PodIdentifier
-	// contains uid of pod to remove from pods map
-	podUID string
-	ts     time.Time
+	// pod is the exact *Pod pointer registered for this identifier at queue time.
+	// The delete loop skips the request if c.Pods[id] no longer points to this
+	// object, which covers both cross-pod replacement and active->stale->active
+	// re-activation without any additional locking.
+	pod *Pod
+	ts  time.Time
 }
 
 // Filters is used to instruct the client on how to filter out k8s pods.
@@ -299,6 +306,7 @@ type FieldExtractionRule struct {
 	//  - namespace
 	//  - node
 	//  - deployment
+	//  - replicaset
 	//  - statefulset
 	//  - daemonset
 	//  - job
@@ -326,6 +334,12 @@ func (r *FieldExtractionRule) extractFromNodeMetadata(metadata, tags map[string]
 
 func (r *FieldExtractionRule) extractFromDeploymentMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromDeployment {
+		r.extractFromMetadata(metadata, tags, attrFunc)
+	}
+}
+
+func (r *FieldExtractionRule) extractFromReplicaSetMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
+	if r.From == MetadataFromReplicaSet {
 		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
@@ -426,6 +440,7 @@ type ReplicaSet struct {
 	Namespace  string
 	UID        string
 	Deployment Deployment
+	Attributes map[string]string
 }
 
 // StatefulSet represents a kubernetes statefulset.

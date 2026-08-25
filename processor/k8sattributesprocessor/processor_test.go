@@ -430,7 +430,8 @@ func TestPassthroughIPDetectionFromContext(t *testing.T) {
 			generateProfiles(),
 			func(err error) {
 				assert.NoError(t, err)
-			})
+			},
+		)
 
 		m.assertBatchesLen(1)
 		m.assertResourceObjectLen(0)
@@ -451,7 +452,8 @@ func TestNilBatch(t *testing.T) {
 		generateProfiles(),
 		func(err error) {
 			assert.NoError(t, err)
-		})
+		},
+	)
 
 	m.assertBatchesLen(1)
 }
@@ -486,7 +488,8 @@ func TestProcessorNoAttrs(t *testing.T) {
 		generateProfiles(),
 		func(err error) {
 			assert.NoError(t, err)
-		})
+		},
+	)
 
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0)
@@ -516,7 +519,8 @@ func TestProcessorNoAttrs(t *testing.T) {
 		generateProfiles(),
 		func(err error) {
 			assert.NoError(t, err)
-		})
+		},
+	)
 
 	m.assertBatchesLen(2)
 	m.assertResourceObjectLen(1)
@@ -534,7 +538,8 @@ func TestProcessorNoAttrs(t *testing.T) {
 		generateProfiles(),
 		func(err error) {
 			assert.NoError(t, err)
-		})
+		},
+	)
 
 	m.assertBatchesLen(3)
 	m.assertResourceObjectLen(2)
@@ -811,7 +816,8 @@ func TestAddPodLabels(t *testing.T) {
 			generateProfiles(),
 			func(err error) {
 				assert.NoError(t, err)
-			})
+			},
+		)
 
 		m.assertBatchesLen(i + 1)
 		m.assertResourceObjectLen(i)
@@ -888,7 +894,8 @@ func TestAddNamespaceLabels(t *testing.T) {
 		generateProfiles(),
 		func(err error) {
 			assert.NoError(t, err)
-		})
+		},
+	)
 
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0)
@@ -953,7 +960,8 @@ func TestServiceNamespaceAnnotationTakesPrecedence(t *testing.T) {
 		generateProfiles(),
 		func(err error) {
 			assert.NoError(t, err)
-		})
+		},
+	)
 
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0)
@@ -1026,7 +1034,8 @@ func TestAddNodeLabels(t *testing.T) {
 		generateProfiles(),
 		func(err error) {
 			assert.NoError(t, err)
-		})
+		},
+	)
 
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0)
@@ -1091,7 +1100,8 @@ func TestAddNodeUID(t *testing.T) {
 		generateProfiles(),
 		func(err error) {
 			assert.NoError(t, err)
-		})
+		},
+	)
 
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0)
@@ -1622,7 +1632,8 @@ func TestProcessorPicksUpPassthroughPodIp(t *testing.T) {
 		generateProfiles(withPassthroughIP("2.2.2.2")),
 		func(err error) {
 			assert.NoError(t, err)
-		})
+		},
+	)
 
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0)
@@ -2327,6 +2338,35 @@ func TestGetAttributesForPodsDaemonSet(t *testing.T) {
 
 	// Test getting attributes for non-existent daemonset
 	attrs = p.getAttributesForPodsDaemonSet("non-existent")
+	assert.Nil(t, attrs)
+}
+
+func TestGetAttributesForPodsReplicaSet(t *testing.T) {
+	kc := &fakeClient{
+		ReplicaSets: map[string]*kube.ReplicaSet{
+			"replicaset-789": {
+				Name: "test-replicaset",
+				UID:  "replicaset-789",
+				Attributes: map[string]string{
+					"k8s.replicaset.name": "test-replicaset",
+					"k8s.replicaset.uid":  "replicaset-789",
+				},
+			},
+		},
+	}
+
+	p := &kubernetesprocessor{
+		kc: kc,
+	}
+
+	// Test getting attributes for existing replicaset
+	attrs := p.getAttributesForPodsReplicaSet("replicaset-789")
+	assert.NotNil(t, attrs)
+	assert.Equal(t, "test-replicaset", attrs["k8s.replicaset.name"])
+	assert.Equal(t, "replicaset-789", attrs["k8s.replicaset.uid"])
+
+	// Test getting attributes for non-existent replicaset
+	attrs = p.getAttributesForPodsReplicaSet("non-existent")
 	assert.Nil(t, attrs)
 }
 

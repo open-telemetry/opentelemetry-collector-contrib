@@ -1,4 +1,4 @@
-name: 'First time contributor'
+name: "First time contributor"
 on:
   pull_request_target:
     types:
@@ -11,33 +11,29 @@ jobs:
   welcome_first_contributor:
     permissions:
       pull-requests: write # required by the workflow to post the welcome comment
-    uses: open-telemetry/shared-workflows/.github/workflows/first-time-pr.yml@7c49790392da7de86fdb4bb968446f9cb8461eb8 # v0.3.1
+    uses: open-telemetry/shared-workflows/.github/workflows/first-time-pr.yml@d9b812f9924a121c6a8276ea2f9e6f5b622cdd4d # v0.10.0
     with:
-      label: 'first-time contributor'
+      label: "first-time contributor"
       custom_message: |
-        - First-time contributors should have **at most one PR not marked as draft until their first PR is merged**.
+        - First-time contributors should keep **at most one PR marked as ready for review until their first PR is merged**; once two are open for review, any further PR is automatically converted to draft.
         - If your change isn't one of our [priority components](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44130), reviews may take more time.
         - Raise technical or Collector-specific questions in [#otel-collector-dev](https://cloud-native.slack.com/archives/C07CCCMRXBK) or a [Collector SIG meeting](https://github.com/open-telemetry/community?tab=readme-ov-file#sig-collector).
 
   draft_if_multiple_prs:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
     if: >
       github.repository_owner == 'open-telemetry' &&
       github.event.pull_request.author_association == 'NONE' &&
       github.event.pull_request.draft == false &&
       !contains(github.event.pull_request.labels.*.name, 'keep-as-non-draft')
     steps:
-      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
-        id: otelbot-token
-        with:
-          client-id: ${{ vars.OTELBOT_CLIENT_ID }}
-          private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
-          permission-pull-requests: write
-
       # Allow up to two non-draft PRs so that the author can change which PR they mark as ready for review.
-      - name: Convert to draft if author has two previous non-draft PRs open
+      - name: Convert to draft if author has two other non-draft PRs open
         env:
-          GH_TOKEN: ${{ steps.otelbot-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
@@ -45,7 +41,7 @@ jobs:
           set -euo pipefail
           raw=$(gh pr list --author "$PR_AUTHOR" --state open --json number,isDraft)
           count=$(echo "$raw" | jq --argjson current "$PR_NUMBER" \
-            '[.[] | select(.isDraft == false and .number < $current)] | length')
+            '[.[] | select(.isDraft == false and .number != $current)] | length')
           if [ "$count" -lt 2 ]; then
             echo "$PR_AUTHOR has $count other non-draft PR(s) open; allowing up to 2."
             exit 0
