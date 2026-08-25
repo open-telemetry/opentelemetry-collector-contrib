@@ -18,6 +18,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/vpc/internal/metadata"
 )
 
+// sdkSchemaURL is the schema URL the fake SDK detector reports. It is read from the SDK
+// itself rather than hardcoded so that an upstream semconv bump does not break these
+// tests, and semconv packages must not be imported from test files.
+var sdkSchemaURL = sdkresource.Default().SchemaURL()
+
 const (
 	hostID        = "0717_1e09281b-f177-46fb-b1f1-bc152b2e391a"
 	crn           = "crn:v1:bluemix:public:is:us-south-1:a/123456789012::instance:0717_1e09281b-f177-46fb-b1f1-bc152b2e391a"
@@ -58,7 +63,8 @@ func withFakeDetector(t *testing.T, res *sdkresource.Resource, err error) {
 // fullResource mirrors what the SDK detector reports for a healthy instance. It already derives
 // the region from the zone and the account ID from the CRN.
 func fullResource() *sdkresource.Resource {
-	return sdkresource.NewSchemaless(
+	return sdkresource.NewWithAttributes(
+		sdkSchemaURL,
 		attribute.String("cloud.provider", cloudProvider),
 		attribute.String("cloud.platform", cloudPlatform),
 		attribute.String("cloud.region", region),
@@ -123,7 +129,7 @@ func TestDetect(t *testing.T) {
 
 	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.NotEmpty(t, schemaURL)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	require.Equal(t, fullAttributes(), res.Attributes().AsRaw())
 }
 
@@ -139,12 +145,39 @@ func TestDetectWithDisabledAttributes(t *testing.T) {
 
 	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.NotEmpty(t, schemaURL)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	want := fullAttributes()
 	delete(want, "cloud.region")
 	delete(want, "host.type")
 	require.Equal(t, want, res.Attributes().AsRaw())
+}
+
+// All attributes disabled is not the same as not being on the platform: the
+// instance was still detected, so the schema URL survives an empty attribute set.
+func TestDetectAllAttributesDisabledWithFailOnMissingMetadata(t *testing.T) {
+	withFakeDetector(t, fullResource(), nil)
+
+	cfg := CreateDefaultConfig()
+	cfg.ResourceAttributes.CloudAccountID.Enabled = false
+	cfg.ResourceAttributes.CloudAvailabilityZone.Enabled = false
+	cfg.ResourceAttributes.CloudPlatform.Enabled = false
+	cfg.ResourceAttributes.CloudProvider.Enabled = false
+	cfg.ResourceAttributes.CloudRegion.Enabled = false
+	cfg.ResourceAttributes.CloudResourceID.Enabled = false
+	cfg.ResourceAttributes.HostID.Enabled = false
+	cfg.ResourceAttributes.HostImageID.Enabled = false
+	cfg.ResourceAttributes.HostImageName.Enabled = false
+	cfg.ResourceAttributes.HostName.Enabled = false
+	cfg.ResourceAttributes.HostType.Enabled = false
+
+	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), cfg, true)
+	require.NoError(t, err)
+
+	res, schemaURL, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
+	require.Equal(t, 0, res.Attributes().Len())
 }
 
 func TestDetectNotOnIBMCloudVPC(t *testing.T) {
@@ -202,7 +235,8 @@ func TestDetectErrorWithFailOnMissingMetadata(t *testing.T) {
 // A partial result is kept as-is: the attributes absent from the metadata response are omitted
 // rather than emitted with an empty value.
 func TestDetectPartialMetadata(t *testing.T) {
-	partial := sdkresource.NewSchemaless(
+	partial := sdkresource.NewWithAttributes(
+		sdkSchemaURL,
 		attribute.String("cloud.provider", cloudProvider),
 		attribute.String("cloud.platform", cloudPlatform),
 		attribute.String("host.id", hostID),
@@ -212,8 +246,9 @@ func TestDetectPartialMetadata(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
-	res, _, err := d.Detect(t.Context())
+	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	require.Equal(t, map[string]any{
 		"cloud.provider": cloudProvider,
 		"cloud.platform": cloudPlatform,
@@ -224,7 +259,8 @@ func TestDetectPartialMetadata(t *testing.T) {
 // fail_on_missing_metadata covers an unusable metadata service, not a field absent from an
 // otherwise good response, so a partial result still succeeds.
 func TestDetectPartialMetadataWithFailOnMissingMetadata(t *testing.T) {
-	partial := sdkresource.NewSchemaless(
+	partial := sdkresource.NewWithAttributes(
+		sdkSchemaURL,
 		attribute.String("cloud.provider", cloudProvider),
 		attribute.String("host.id", hostID),
 	)
@@ -233,8 +269,9 @@ func TestDetectPartialMetadataWithFailOnMissingMetadata(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), CreateDefaultConfig(), true)
 	require.NoError(t, err)
 
-	res, _, err := d.Detect(t.Context())
+	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	require.Equal(t, map[string]any{
 		"cloud.provider": cloudProvider,
 		"host.id":        hostID,
