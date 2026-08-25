@@ -310,6 +310,78 @@ metrics:
     enabled: true
 ```
 
+### oracledb.asm_disk.errors
+
+Count of I/O errors on an ASM disk.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {error} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.asm_diskgroup.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+| oracledb.asm_disk.name | The name of the ASM disk. | Any Str | Recommended | - |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+
+### oracledb.asm_diskgroup.free
+
+Free space in an ASM diskgroup.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.asm_diskgroup.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+
+### oracledb.asm_diskgroup.offline_disks
+
+Count of disks currently offline within an ASM diskgroup.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {disk} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.asm_diskgroup.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+
+### oracledb.asm_diskgroup.total
+
+Total space in an ASM diskgroup.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.asm_diskgroup.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+
+### oracledb.asm_diskgroup.usable_free
+
+Free space in an ASM diskgroup.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.asm_diskgroup.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+
 ### oracledb.buffer.inspected
 
 Number of buffers inspected from the end of the LRU queue while a process searched for a reusable buffer, grouped by buffer state.

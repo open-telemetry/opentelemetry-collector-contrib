@@ -1,6 +1,21 @@
 default:
 all_set:
   metrics:
+    oracledb.asm_disk.errors:
+      enabled: true
+      attributes: ["oracledb.asm_diskgroup.name","oracledb.asm_disk.name","disk.io.direction"]
+    oracledb.asm_diskgroup.free:
+      enabled: true
+      attributes: ["oracledb.asm_diskgroup.name"]
+    oracledb.asm_diskgroup.offline_disks:
+      enabled: true
+      attributes: ["oracledb.asm_diskgroup.name"]
+    oracledb.asm_diskgroup.total:
+      enabled: true
+      attributes: ["oracledb.asm_diskgroup.name"]
+    oracledb.asm_diskgroup.usable_free:
+      enabled: true
+      attributes: ["oracledb.asm_diskgroup.name"]
     oracledb.buffer.inspected:
       enabled: true
       attributes: ["oracledb.buffer.state"]
@@ -376,6 +391,21 @@ all_set:
       enabled: true
 reaggregate_set:
   metrics:
+    oracledb.asm_disk.errors:
+      enabled: true
+      attributes: []
+    oracledb.asm_diskgroup.free:
+      enabled: true
+      attributes: []
+    oracledb.asm_diskgroup.offline_disks:
+      enabled: true
+      attributes: []
+    oracledb.asm_diskgroup.total:
+      enabled: true
+      attributes: []
+    oracledb.asm_diskgroup.usable_free:
+      enabled: true
+      attributes: []
     oracledb.buffer.inspected:
       enabled: true
       attributes: []
@@ -751,6 +781,21 @@ reaggregate_set:
       enabled: true
 none_set:
   metrics:
+    oracledb.asm_disk.errors:
+      enabled: false
+      attributes: ["oracledb.asm_diskgroup.name","oracledb.asm_disk.name","disk.io.direction"]
+    oracledb.asm_diskgroup.free:
+      enabled: false
+      attributes: ["oracledb.asm_diskgroup.name"]
+    oracledb.asm_diskgroup.offline_disks:
+      enabled: false
+      attributes: ["oracledb.asm_diskgroup.name"]
+    oracledb.asm_diskgroup.total:
+      enabled: false
+      attributes: ["oracledb.asm_diskgroup.name"]
+    oracledb.asm_diskgroup.usable_free:
+      enabled: false
+      attributes: ["oracledb.asm_diskgroup.name"]
     oracledb.buffer.inspected:
       enabled: false
       attributes: ["oracledb.buffer.state"]
