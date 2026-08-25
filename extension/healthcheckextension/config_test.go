@@ -31,8 +31,8 @@ func TestLoadConfigLegacy(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:13",
@@ -146,8 +146,8 @@ func TestLoadConfigV2WithGate(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	legacyServerConfig.WriteTimeout = 0
 	legacyServerConfig.ReadHeaderTimeout = 0
-	legacyServerConfig.IdleTimeout = 0
-	legacyServerConfig.KeepAlivesEnabled = false
+	legacyServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	legacyServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	legacyServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:13133",
@@ -156,12 +156,12 @@ func TestLoadConfigV2WithGate(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	httpServerConfig.WriteTimeout = 0
 	httpServerConfig.ReadHeaderTimeout = 0
-	httpServerConfig.IdleTimeout = 0
+	httpServerConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	httpServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:13133",
 	}
-	httpServerConfig.KeepAlivesEnabled = true
+	httpServerConfig.KeepAlivesEnabled = true //nolint:staticcheck // SA1019: see TODO above
 	assert.Equal(t, &Config{
 		Config: healthcheck.Config{
 			LegacyConfig: healthcheck.HTTPLegacyConfig{

@@ -205,7 +205,9 @@ func newDataDogReceiver(ctx context.Context, config *Config, params receiver.Set
 			datadogSite = defaultConfigIntakeProxyAPISite
 		}
 		intakeReverseProxy = &httputil.ReverseProxy{
-			Director: createIntakeReverseProxyDirector(datadogSite, string(config.Intake.Proxy.API.Key)),
+			// TODO: (net/http/httputil.ReverseProxy).Director has been deprecated since Go 1.26 and an alternative has been available since Go 1.20: Use Rewrite instead
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50418
+			Director: createIntakeReverseProxyDirector(datadogSite, string(config.Intake.Proxy.API.Key)), //nolint:staticcheck
 		}
 		if config.Intake.Proxy.API.FailOnInvalidKey {
 			apiClient := clientutil.CreateAPIClient(
