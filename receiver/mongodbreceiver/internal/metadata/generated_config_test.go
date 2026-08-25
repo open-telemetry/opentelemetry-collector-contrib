@@ -208,7 +208,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbWtConcurrentTransactionsInUse: MongodbWtConcurrentTransactionsInUseMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []MongodbWtConcurrentTransactionsInUseMetricAttributeKey{MongodbWtConcurrentTransactionsInUseMetricAttributeKeyDiskIoDirection},
+						EnabledAttributes:   []MongodbWtConcurrentTransactionsInUseMetricAttributeKey{MongodbWtConcurrentTransactionsInUseMetricAttributeKeyMongodbWtConcurrentTransactionType},
 					},
 					MongodbWtFsyncCount: MongodbWtFsyncCountMetricConfig{
 						Enabled: true,
@@ -422,7 +422,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbWtConcurrentTransactionsInUse: MongodbWtConcurrentTransactionsInUseMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []MongodbWtConcurrentTransactionsInUseMetricAttributeKey{MongodbWtConcurrentTransactionsInUseMetricAttributeKeyDiskIoDirection},
+						EnabledAttributes:   []MongodbWtConcurrentTransactionsInUseMetricAttributeKey{MongodbWtConcurrentTransactionsInUseMetricAttributeKeyMongodbWtConcurrentTransactionType},
 					},
 					MongodbWtFsyncCount: MongodbWtFsyncCountMetricConfig{
 						Enabled: false,
@@ -706,7 +706,7 @@ func TestMongodbWtConcurrentTransactionsInUseMetricsConfig_Validate(t *testing.T
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []MongodbWtConcurrentTransactionsInUseMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric mongodb.wt.concurrent_transactions.in_use doesn't have an attribute invalid, valid attributes: [disk.io.direction]")
+	require.ErrorContains(t, cfg.Validate(), "metric mongodb.wt.concurrent_transactions.in_use doesn't have an attribute invalid, valid attributes: [mongodb.wt.concurrent_transaction.type]")
 
 	cfg = DefaultMetricsConfig().MongodbWtConcurrentTransactionsInUse
 	cfg.AggregationStrategy = "invalid"

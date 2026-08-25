@@ -72,32 +72,6 @@ var MapAttributeDbSystemName = map[string]AttributeDbSystemName{
 	"mongodb": AttributeDbSystemNameMongodb,
 }
 
-// AttributeDiskIoDirection specifies the value disk.io.direction attribute.
-type AttributeDiskIoDirection int
-
-const (
-	_ AttributeDiskIoDirection = iota
-	AttributeDiskIoDirectionRead
-	AttributeDiskIoDirectionWrite
-)
-
-// String returns the string representation of the AttributeDiskIoDirection.
-func (av AttributeDiskIoDirection) String() string {
-	switch av {
-	case AttributeDiskIoDirectionRead:
-		return "read"
-	case AttributeDiskIoDirectionWrite:
-		return "write"
-	}
-	return ""
-}
-
-// MapAttributeDiskIoDirection is a helper map of string to AttributeDiskIoDirection attribute value.
-var MapAttributeDiskIoDirection = map[string]AttributeDiskIoDirection{
-	"read":  AttributeDiskIoDirectionRead,
-	"write": AttributeDiskIoDirectionWrite,
-}
-
 // AttributeLockMode specifies the value lock_mode attribute.
 type AttributeLockMode int
 
@@ -232,6 +206,32 @@ func (av AttributeMongodbOperationState) String() string {
 var MapAttributeMongodbOperationState = map[string]AttributeMongodbOperationState{
 	"active":  AttributeMongodbOperationStateActive,
 	"waiting": AttributeMongodbOperationStateWaiting,
+}
+
+// AttributeMongodbWtConcurrentTransactionType specifies the value mongodb.wt.concurrent_transaction.type attribute.
+type AttributeMongodbWtConcurrentTransactionType int
+
+const (
+	_ AttributeMongodbWtConcurrentTransactionType = iota
+	AttributeMongodbWtConcurrentTransactionTypeRead
+	AttributeMongodbWtConcurrentTransactionTypeWrite
+)
+
+// String returns the string representation of the AttributeMongodbWtConcurrentTransactionType.
+func (av AttributeMongodbWtConcurrentTransactionType) String() string {
+	switch av {
+	case AttributeMongodbWtConcurrentTransactionTypeRead:
+		return "read"
+	case AttributeMongodbWtConcurrentTransactionTypeWrite:
+		return "write"
+	}
+	return ""
+}
+
+// MapAttributeMongodbWtConcurrentTransactionType is a helper map of string to AttributeMongodbWtConcurrentTransactionType attribute value.
+var MapAttributeMongodbWtConcurrentTransactionType = map[string]AttributeMongodbWtConcurrentTransactionType{
+	"read":  AttributeMongodbWtConcurrentTransactionTypeRead,
+	"write": AttributeMongodbWtConcurrentTransactionTypeWrite,
 }
 
 // AttributeMongodbWtLogOperationType specifies the value mongodb.wt.log.operation.type attribute.
@@ -523,7 +523,7 @@ var MetricsInfo = metricsInfo{
 	},
 	MongodbWtConcurrentTransactionsInUse: metricInfo{
 		Name:       "mongodb.wt.concurrent_transactions.in_use",
-		Attributes: []string{"disk.io.direction"},
+		Attributes: []string{"mongodb.wt.concurrent_transaction.type"},
 	},
 	MongodbWtFsyncCount: metricInfo{
 		Name: "mongodb.wt.fsync.count",
@@ -3798,7 +3798,7 @@ func (m *metricMongodbWtConcurrentTransactionsInUse) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricMongodbWtConcurrentTransactionsInUse) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string) {
+func (m *metricMongodbWtConcurrentTransactionsInUse) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, mongodbWtConcurrentTransactionTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3806,8 +3806,8 @@ func (m *metricMongodbWtConcurrentTransactionsInUse) recordDataPoint(start pcomm
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, MongodbWtConcurrentTransactionsInUseMetricAttributeKeyDiskIoDirection) {
-		dp.Attributes().PutStr("disk.io.direction", diskIoDirectionAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, MongodbWtConcurrentTransactionsInUseMetricAttributeKeyMongodbWtConcurrentTransactionType) {
+		dp.Attributes().PutStr("mongodb.wt.concurrent_transaction.type", mongodbWtConcurrentTransactionTypeAttributeValue)
 	}
 
 	var s string
@@ -4724,8 +4724,8 @@ func (mb *MetricsBuilder) RecordMongodbUptimeDataPoint(ts pcommon.Timestamp, val
 }
 
 // RecordMongodbWtConcurrentTransactionsInUseDataPoint adds a data point to mongodb.wt.concurrent_transactions.in_use metric.
-func (mb *MetricsBuilder) RecordMongodbWtConcurrentTransactionsInUseDataPoint(ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue AttributeDiskIoDirection) {
-	mb.metricMongodbWtConcurrentTransactionsInUse.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbWtConcurrentTransactionsInUseDataPoint(ts pcommon.Timestamp, val int64, mongodbWtConcurrentTransactionTypeAttributeValue AttributeMongodbWtConcurrentTransactionType) {
+	mb.metricMongodbWtConcurrentTransactionsInUse.recordDataPoint(mb.startTime, ts, val, mongodbWtConcurrentTransactionTypeAttributeValue.String())
 }
 
 // RecordMongodbWtFsyncCountDataPoint adds a data point to mongodb.wt.fsync.count metric.

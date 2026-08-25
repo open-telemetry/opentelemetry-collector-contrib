@@ -156,7 +156,7 @@ func TestRecordWTConcurrentTransactionsOutLegacy(t *testing.T) {
 
 	m := findMetric(t, s.mb.Emit(), "mongodb.wt.concurrent_transactions.in_use")
 	require.Equal(t, pmetric.MetricTypeGauge, m.Type())
-	byDir := gaugeIntByAttr(t, m, "disk.io.direction")
+	byDir := gaugeIntByAttr(t, m, "mongodb.wt.concurrent_transaction.type")
 	require.Equal(t, map[string]int64{"read": 3, "write": 1}, byDir)
 }
 
@@ -190,7 +190,7 @@ func TestRecordWTConcurrentTransactionsOut80(t *testing.T) {
 
 	m := findMetric(t, s.mb.Emit(), "mongodb.wt.concurrent_transactions.in_use")
 	require.Equal(t, pmetric.MetricTypeGauge, m.Type())
-	byDir := gaugeIntByAttr(t, m, "disk.io.direction")
+	byDir := gaugeIntByAttr(t, m, "mongodb.wt.concurrent_transaction.type")
 	require.Equal(t, map[string]int64{"read": 7, "write": 4}, byDir)
 }
 

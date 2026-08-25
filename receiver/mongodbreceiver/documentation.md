@@ -538,7 +538,7 @@ The number of in-flight WiredTiger read/write concurrent-transaction tickets.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| disk.io.direction | The disk I/O operation direction. | Str: ``read``, ``write`` | Recommended | - |
+| mongodb.wt.concurrent_transaction.type | The WiredTiger concurrent-transaction ticket type. | Str: ``read``, ``write`` | Recommended | - |
 
 ### mongodb.wt.fsync.count
 

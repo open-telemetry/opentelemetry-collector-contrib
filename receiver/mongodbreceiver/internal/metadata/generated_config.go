@@ -1506,7 +1506,7 @@ func (ms *MongodbUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 type MongodbWtConcurrentTransactionsInUseMetricAttributeKey string
 
 const (
-	MongodbWtConcurrentTransactionsInUseMetricAttributeKeyDiskIoDirection MongodbWtConcurrentTransactionsInUseMetricAttributeKey = "disk.io.direction"
+	MongodbWtConcurrentTransactionsInUseMetricAttributeKeyMongodbWtConcurrentTransactionType MongodbWtConcurrentTransactionsInUseMetricAttributeKey = "mongodb.wt.concurrent_transaction.type"
 )
 
 // MongodbWtConcurrentTransactionsInUseMetricConfig provides config for the mongodb.wt.concurrent_transactions.in_use metric.
@@ -1535,9 +1535,9 @@ func (ms *MongodbWtConcurrentTransactionsInUseMetricConfig) Unmarshal(parser *co
 func (ms *MongodbWtConcurrentTransactionsInUseMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case MongodbWtConcurrentTransactionsInUseMetricAttributeKeyDiskIoDirection:
+		case MongodbWtConcurrentTransactionsInUseMetricAttributeKeyMongodbWtConcurrentTransactionType:
 		default:
-			return fmt.Errorf("metric mongodb.wt.concurrent_transactions.in_use doesn't have an attribute %v, valid attributes: [disk.io.direction]", val)
+			return fmt.Errorf("metric mongodb.wt.concurrent_transactions.in_use doesn't have an attribute %v, valid attributes: [mongodb.wt.concurrent_transaction.type]", val)
 		}
 	}
 
@@ -1917,7 +1917,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		MongodbWtConcurrentTransactionsInUse: MongodbWtConcurrentTransactionsInUseMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []MongodbWtConcurrentTransactionsInUseMetricAttributeKey{MongodbWtConcurrentTransactionsInUseMetricAttributeKeyDiskIoDirection},
+			EnabledAttributes:   []MongodbWtConcurrentTransactionsInUseMetricAttributeKey{MongodbWtConcurrentTransactionsInUseMetricAttributeKeyMongodbWtConcurrentTransactionType},
 		},
 		MongodbWtFsyncCount: MongodbWtFsyncCountMetricConfig{
 			Enabled: false,

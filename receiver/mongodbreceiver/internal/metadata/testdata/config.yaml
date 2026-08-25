@@ -115,7 +115,7 @@ all_set:
       enabled: true
     mongodb.wt.concurrent_transactions.in_use:
       enabled: true
-      attributes: ["disk.io.direction"]
+      attributes: ["mongodb.wt.concurrent_transaction.type"]
     mongodb.wt.fsync.count:
       enabled: true
     mongodb.wt.log.operation.count:
@@ -403,7 +403,7 @@ none_set:
       enabled: false
     mongodb.wt.concurrent_transactions.in_use:
       enabled: false
-      attributes: ["disk.io.direction"]
+      attributes: ["mongodb.wt.concurrent_transaction.type"]
     mongodb.wt.fsync.count:
       enabled: false
     mongodb.wt.log.operation.count:

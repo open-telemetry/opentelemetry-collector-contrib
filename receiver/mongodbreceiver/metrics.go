@@ -500,9 +500,9 @@ func (s *mongodbScraper) recordWTConcurrentTransactionsOut(now pcommon.Timestamp
 		return
 	}
 	metricName := "mongodb.wt.concurrent_transactions.in_use"
-	directions := map[string]metadata.AttributeDiskIoDirection{
-		"read":  metadata.AttributeDiskIoDirectionRead,
-		"write": metadata.AttributeDiskIoDirectionWrite,
+	directions := map[string]metadata.AttributeMongodbWtConcurrentTransactionType{
+		"read":  metadata.AttributeMongodbWtConcurrentTransactionTypeRead,
+		"write": metadata.AttributeMongodbWtConcurrentTransactionTypeWrite,
 	}
 	// MongoDB 8.0+ path
 	if _, err := dig(doc, []string{"queues", "execution"}); err == nil {

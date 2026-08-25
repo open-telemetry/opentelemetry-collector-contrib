@@ -297,9 +297,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbUptimeDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordMongodbWtConcurrentTransactionsInUseDataPoint(ts, 1, AttributeDiskIoDirectionRead)
+			mb.RecordMongodbWtConcurrentTransactionsInUseDataPoint(ts, 1, AttributeMongodbWtConcurrentTransactionTypeRead)
 			if tt.name == "reaggregate_set" {
-				mb.RecordMongodbWtConcurrentTransactionsInUseDataPoint(ts, 3, AttributeDiskIoDirectionWrite)
+				mb.RecordMongodbWtConcurrentTransactionsInUseDataPoint(ts, 3, AttributeMongodbWtConcurrentTransactionTypeWrite)
 			}
 
 			allMetricsCount++
@@ -1663,9 +1663,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						diskIoDirectionAttrVal, ok := dp.Attributes().Get("disk.io.direction")
+						mongodbWtConcurrentTransactionTypeAttrVal, ok := dp.Attributes().Get("mongodb.wt.concurrent_transaction.type")
 						assert.True(t, ok)
-						assert.Equal(t, "read", diskIoDirectionAttrVal.Str())
+						assert.Equal(t, "read", mongodbWtConcurrentTransactionTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["mongodb.wt.concurrent_transactions.in_use"], "Found a duplicate in the metrics slice: mongodb.wt.concurrent_transactions.in_use")
 						validatedMetrics["mongodb.wt.concurrent_transactions.in_use"] = true
@@ -1687,7 +1687,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("disk.io.direction")
+						_, ok := dp.Attributes().Get("mongodb.wt.concurrent_transaction.type")
 						assert.False(t, ok)
 					}
 				case "mongodb.wt.fsync.count":

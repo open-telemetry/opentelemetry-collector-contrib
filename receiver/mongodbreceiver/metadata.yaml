@@ -78,13 +78,6 @@ attributes:
     description: The database management system (DBMS) product as identified by the client instrumentation.
     type: string
     enum: [ mongodb ]
-  disk.io.direction:
-    description: The disk I/O operation direction.
-    type: string
-    requirement_level: recommended
-    enum:
-      - read
-      - write
   lock_mode:
     description: The mode of Lock which denotes the degree of access
     type: string
@@ -208,6 +201,13 @@ attributes:
   mongodb.query.truncated:
     description: Whether the value carried by db.query.text is a truncated rendering of the MongoDB command, as indicated by `$truncated` in the currentOp output.
     type: bool
+  mongodb.wt.concurrent_transaction.type:
+    description: The WiredTiger concurrent-transaction ticket type.
+    type: string
+    requirement_level: recommended
+    enum:
+      - read
+      - write
   mongodb.wt.log.operation.type:
     description: The WiredTiger journal operation type.
     type: string
@@ -762,7 +762,7 @@ metrics:
     enabled: false
     gauge:
       value_type: int
-    attributes: [disk.io.direction]
+    attributes: [mongodb.wt.concurrent_transaction.type]
   mongodb.wt.fsync.count:
     description: The total number of fsync I/Os issued by the WiredTiger storage engine.
     stability: development
