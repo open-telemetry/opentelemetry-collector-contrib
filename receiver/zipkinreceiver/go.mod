@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkin
 go 1.26.0
 
 require (
-	github.com/jaegertracing/jaeger-idl v0.10.0
+	github.com/jaegertracing/jaeger-idl v0.11.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.159.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.159.0
 	github.com/openzipkin/zipkin-go v0.4.3
@@ -83,7 +83,7 @@ require (
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260610212136-7ab31c22f7ad // indirect
-	google.golang.org/grpc v1.83.0 // indirect
+	google.golang.org/grpc v1.83.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

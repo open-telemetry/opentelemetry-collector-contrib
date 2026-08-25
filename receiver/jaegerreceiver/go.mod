@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/apache/thrift v0.24.0
 	github.com/gorilla/mux v1.8.1
-	github.com/jaegertracing/jaeger-idl v0.10.0
+	github.com/jaegertracing/jaeger-idl v0.11.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.159.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.159.0
 	github.com/stretchr/testify v1.12.0
@@ -28,7 +28,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.28.0
-	google.golang.org/grpc v1.83.0
+	google.golang.org/grpc v1.83.1
 )
 
 require (
