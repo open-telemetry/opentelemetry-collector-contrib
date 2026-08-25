@@ -9,7 +9,7 @@ on:
   pull_request:
     paths-ignore:
       - "**/README.md"
-  merge_group:
+  merge_group: # zizmor: ignore[cache-poisoning] - test-only workflow does not publish artifacts
 
 permissions:
   contents: read
