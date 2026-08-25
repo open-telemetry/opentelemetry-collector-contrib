@@ -60,10 +60,10 @@ type StackTrace struct {
 // the reader to handle both formats if we don't use arrays here.
 type StackFrame struct {
 	DocID          string   `json:"-"`
-	FileName       []string `json:"Stackframe.file.name,omitempty"`
-	FunctionName   []string `json:"Stackframe.function.name,omitempty"`
-	LineNumber     []int32  `json:"Stackframe.line.number,omitempty"`
-	FunctionOffset []int32  `json:"Stackframe.function.offset,omitempty"`
+	FileName       []string `json:"function.filename,omitempty"`
+	FunctionName   []string `json:"function.name,omitempty"`
+	LineNumber     []int32  `json:"line.number,omitempty"`
+	FunctionOffset []int32  `json:"function.offset,omitempty"`
 }
 
 // ResourceData represents the resources metadata related to a sample for the

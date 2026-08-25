@@ -614,9 +614,9 @@ func (*elasticsearchExporter) pushProfileRecord(
 ) error {
 	return encoder.encodeProfile(ec, dic, profile, func(buf *bytes.Buffer, docID, index string) error {
 		switch index {
-		case otelserializer.StackTraceIndex:
+		case otelserializer.StackTraceIndex, ecsserializer.StackTraceIndex:
 			return stackTracesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
-		case otelserializer.StackFrameIndex:
+		case otelserializer.StackFrameIndex, ecsserializer.StackFrameIndex:
 			return stackFramesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		case otelserializer.AllEventsIndex, ecsserializer.AllEventsIndex:
 			return eventsSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
