@@ -347,7 +347,7 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 			}
 			if tc.checkDefaults {
 				require.Equal(t, getDefaultHTTPClientConfig().WriteBufferSize, cfg.HTTP.WriteBufferSize)
-				require.Equal(t, getDefaultHTTPClientConfig().MaxIdleConns, cfg.HTTP.MaxIdleConns)
+				require.Equal(t, getDefaultHTTPClientConfig().MaxIdleConns, cfg.HTTP.MaxIdleConns) //nolint:staticcheck // SA1019: MaxIdleConns is deprecated but still in use, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316
 			}
 		})
 	}
