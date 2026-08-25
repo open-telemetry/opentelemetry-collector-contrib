@@ -19,7 +19,7 @@ const (
 	AllEventsIndex   = "profiling-events-all.otel-default"
 	StackTraceIndex  = "profiling-stacktraces.otel-default"
 	StackFrameIndex  = "profiling-stackframes.otel-default"
-	ExecutablesIndex = "profiling-executables"
+	ExecutablesIndex = "profiling-executables.otel-default"
 
 	HostsMetadataIndex = "profiling-hosts.otel-default"
 )
