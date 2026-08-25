@@ -203,6 +203,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cardinalityguardianprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/awsecsattributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor
@@ -210,7 +211,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/drainprocessor
-      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/dynamicsamplingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor
