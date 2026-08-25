@@ -100,7 +100,6 @@ type Capabilities struct {
 	ReportsAvailableComponents     bool `mapstructure:"reports_available_components"`
 	ReportsHeartbeat               bool `mapstructure:"reports_heartbeat"`
 	AcceptsPackages                bool `mapstructure:"accepts_packages"`
-	ReportsPackageStatuses         bool `mapstructure:"reports_package_statuses"`
 }
 
 func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
@@ -149,14 +148,13 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat
 	}
 
-	// AcceptsPackages and ReportsPackageStatuses are not yet fully implemented.
-	// They are included here for completeness.
+	// AcceptsPackages is not yet fully implemented. It is included here for completeness.
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272
+	// AcceptsPackages enables both the AcceptsPackages and ReportsPackageStatuses
+	// OpAMP capabilities; accepting packages without reporting their statuses is not useful.
 	if c.AcceptsPackages {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages
-	}
-	if c.ReportsPackageStatuses {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages |
+			protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses
 	}
 
 	return supportedCapabilities
@@ -434,12 +432,17 @@ func DefaultSupervisor() Supervisor {
 		defaultStorageDir = filepath.Join(programDataDir, "Otelcol", "Supervisor")
 	}
 
+	defaultAgentBinary := "otelcol-contrib"
+	if runtime.GOOS == "windows" {
+		defaultAgentBinary += ".exe"
+	}
+
 	serverConfig := confighttp.NewDefaultServerConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 	}
@@ -457,7 +460,6 @@ func DefaultSupervisor() Supervisor {
 			ReportsAvailableComponents:     false,
 			ReportsHeartbeat:               true,
 			AcceptsPackages:                false,
-			ReportsPackageStatuses:         false,
 		},
 		Storage: Storage{
 			Directory: defaultStorageDir,
@@ -470,7 +472,8 @@ func DefaultSupervisor() Supervisor {
 			CollectorCrashLogSnippetKiB: 0,
 			ValidateConfig:              false,
 			Package: AgentPackage{
-				Verifier: Verifier{Type: VerifierTypeNone},
+				AgentBinary: defaultAgentBinary,
+				Verifier:    Verifier{Type: VerifierTypeNone},
 			},
 		},
 		Telemetry: Telemetry{

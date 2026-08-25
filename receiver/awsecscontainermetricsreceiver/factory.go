@@ -30,7 +30,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+	)
 }
 
 // createDefaultConfig returns a default config for the receiver.
@@ -58,8 +59,8 @@ func createMetricsReceiver(
 	}
 	clientSettings := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientSettings.MaxIdleConns = 0
-	clientSettings.IdleConnTimeout = 0
+	clientSettings.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientSettings.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientSettings.ForceAttemptHTTP2 = false
 	rest, err := ecsutil.NewRestClient(*endpoint, clientSettings, params.TelemetrySettings)
 	if err != nil {

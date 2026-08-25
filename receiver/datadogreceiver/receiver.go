@@ -115,6 +115,18 @@ func (ddr *datadogReceiver) getEndpoints() []endpoint {
 				Handler: ddr.handleV2Series,
 			},
 			{
+				// the default series endpoint for datadog agent >= 7.81.0:
+				// https://github.com/DataDog/datadog-agent/blob/7.81.0/comp/forwarder/defaultforwarder/endpoints/endpoints.go#L33
+				Pattern: "/api/intake/metrics/v3/series",
+				Handler: ddr.handleV3Series,
+			},
+			{
+				// the v3beta route carries the same payload format and is used
+				// by agents configured for v3 validation/shadow traffic
+				Pattern: "/api/intake/metrics/v3beta/series",
+				Handler: ddr.handleV3Series,
+			},
+			{
 				Pattern: "/api/v1/check_run",
 				Handler: ddr.handleCheckRun,
 			},
@@ -193,7 +205,9 @@ func newDataDogReceiver(ctx context.Context, config *Config, params receiver.Set
 			datadogSite = defaultConfigIntakeProxyAPISite
 		}
 		intakeReverseProxy = &httputil.ReverseProxy{
-			Director: createIntakeReverseProxyDirector(datadogSite, string(config.Intake.Proxy.API.Key)),
+			// TODO: (net/http/httputil.ReverseProxy).Director has been deprecated since Go 1.26 and an alternative has been available since Go 1.20: Use Rewrite instead
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50418
+			Director: createIntakeReverseProxyDirector(datadogSite, string(config.Intake.Proxy.API.Key)), //nolint:staticcheck
 		}
 		if config.Intake.Proxy.API.FailOnInvalidKey {
 			apiClient := clientutil.CreateAPIClient(
@@ -554,6 +568,43 @@ func (ddr *datadogReceiver) handleV2Series(w http.ResponseWriter, req *http.Requ
 	}(&metricsCount)
 
 	series, err := ddr.metricsTranslator.HandleSeriesV2Payload(req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		ddr.params.Logger.Error(err.Error())
+		return
+	}
+
+	metrics := ddr.metricsTranslator.TranslateSeriesV2(series)
+	metricsCount = metrics.DataPointCount()
+
+	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
+	if err != nil {
+		errorutil.HTTPError(w, err)
+		ddr.params.Logger.Error("metrics consumer errored out", zap.Error(err))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	response := map[string]any{
+		"errors": []string{},
+	}
+	_ = json.NewEncoder(w).Encode(response)
+}
+
+// handleV3Series handles the v3 series intake endpoint, the default series
+// endpoint for Datadog Agent 7.81.0 and later. The payload is a columnar,
+// dictionary-encoded protobuf format; it is decoded into the v2 series
+// representation and then shares the v2 translation to OTLP.
+func (ddr *datadogReceiver) handleV3Series(w http.ResponseWriter, req *http.Request) {
+	obsCtx := ddr.tReceiver.StartMetricsOp(req.Context())
+	var err error
+	var metricsCount int
+	defer func(metricsCount *int) {
+		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
+	}(&metricsCount)
+
+	series, err := ddr.metricsTranslator.HandleSeriesV3Payload(req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		ddr.params.Logger.Error(err.Error())

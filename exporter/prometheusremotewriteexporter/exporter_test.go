@@ -25,6 +25,7 @@ import (
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -56,7 +57,7 @@ func Test_NewPRWExporter(t *testing.T) {
 		BackOffConfig:   configretry.BackOffConfig{},
 		Namespace:       "",
 		ExternalLabels:  map[string]string{},
-		ClientConfig:    confighttp.NewDefaultClientConfig(),
+		HTTP:            confighttp.NewDefaultClientConfig(),
 		TargetInfo: TargetInfo{
 			Enabled: true,
 		},
@@ -120,7 +121,7 @@ func Test_NewPRWExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg.ClientConfig.Endpoint = tt.endpoint
+			cfg.HTTP.Endpoint = tt.endpoint
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
@@ -213,7 +214,7 @@ func Test_Start(t *testing.T) {
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
-			cfg.ClientConfig = tt.clientSettings
+			cfg.HTTP = tt.clientSettings
 			cfg.RemoteWriteProtoMsg = remoteapi.WriteV1MessageType
 
 			prwe, err := newPRWExporter(cfg, tt.set)
@@ -361,7 +362,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	}
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = endpoint.String()
+	cfg.HTTP.Endpoint = endpoint.String()
 	cfg.RemoteWriteQueue.NumConsumers = 1
 	cfg.BackOffConfig = configretry.BackOffConfig{
 		Enabled:         true,
@@ -751,7 +752,7 @@ func Test_PushMetrics(t *testing.T) {
 					clientConfig.WriteBufferSize = 512 * 1024
 					cfg := &Config{
 						Namespace:         "",
-						ClientConfig:      clientConfig,
+						HTTP:              clientConfig,
 						MaxBatchSizeBytes: 3000000,
 						RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: 1},
 						TargetInfo: TargetInfo{
@@ -762,9 +763,7 @@ func Test_PushMetrics(t *testing.T) {
 
 					if tt.enableSendingRW2 {
 						cfg.RemoteWriteProtoMsg = remoteapi.WriteV2MessageType
-						oldValue := metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate.IsEnabled()
-						testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, tt.enableSendingRW2)
-						defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, oldValue)
+						defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, tt.enableSendingRW2)()
 					} else {
 						cfg.RemoteWriteProtoMsg = remoteapi.WriteV1MessageType
 					}
@@ -786,7 +785,8 @@ func Test_PushMetrics(t *testing.T) {
 								sdkmetric.Stream{
 									Aggregation: sdkmetric.AggregationDrop{},
 								},
-							))),
+							),
+						)),
 					)
 					t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 					set := metadatatest.NewSettings(tel)
@@ -981,7 +981,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	clientConfig.Endpoint = prweServer.URL
 	cfg := &Config{
 		Namespace:        "test_ns",
-		ClientConfig:     clientConfig,
+		HTTP:             clientConfig,
 		RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
 		WAL: configoptional.Some(WALConfig{
 			Directory:  tempDir,
@@ -1116,6 +1116,9 @@ func assertNonPermanentError(t assert.TestingT, err error, _ ...any) bool {
 }
 
 func TestRetries(t *testing.T) {
+	deadlineExceededContext, cancel := context.WithDeadline(t.Context(), time.Now().Add(-time.Second))
+	defer cancel()
+
 	tts := []struct {
 		name             string
 		serverErrorCount int // number of times server should return error
@@ -1181,6 +1184,17 @@ func TestRetries(t *testing.T) {
 			assert.Error,
 			assertPermanentConsumerError,
 			canceledContext(),
+		},
+		{
+			"test deadline exceeded context should return non-permanent error",
+			4,
+			0,
+			http.StatusInternalServerError,
+			false,
+			true,
+			assert.Error,
+			assertNonPermanentError,
+			deadlineExceededContext,
 		},
 		{
 			"test 5xx with retry disabled returns non-permanent error",
@@ -1371,6 +1385,114 @@ func BenchmarkPushMetrics(b *testing.B) {
 	}
 }
 
+// TestIncludeMetadataKeys verifies that keys listed in
+// include_metadata_keys are read from the client metadata
+// context and forwarded as HTTP headers on every outbound remote write request.
+func TestIncludeMetadataKeys(t *testing.T) {
+	// Capture headers received by the mock remote write server.
+	var (
+		mu              sync.Mutex
+		receivedHeaders http.Header
+	)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		receivedHeaders = r.Header.Clone()
+		mu.Unlock()
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg := &Config{
+		HTTP:             clientConfig,
+		RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
+		IncludeMetadataKeys: []string{
+			"target-id",
+			"target-type",
+		},
+		TargetInfo:          TargetInfo{Enabled: true},
+		BackOffConfig:       configretry.NewDefaultBackOffConfig(),
+		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+	}
+
+	set := exportertest.NewNopSettings(metadata.Type)
+	prwe, err := newPRWExporter(cfg, set)
+	require.NoError(t, err)
+	require.NoError(t, prwe.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, prwe.Shutdown(context.Background())) }) //nolint:usetesting
+
+	// Build a context carrying the metadata keys that should be forwarded.
+	ctx := client.NewContext(t.Context(), client.Info{
+		Metadata: client.NewMetadata(map[string][]string{
+			"target-id":   {"my-project-123"},
+			"target-type": {"server-type"},
+		}),
+	})
+
+	// execute() requires a snappy-encoded protobuf body. An empty WriteRequest
+	// is valid enough for the mock server to accept.
+	emptyBuf, err := (&buffer{}).MarshalAndEncode(&prompb.WriteRequest{})
+	require.NoError(t, err)
+
+	require.NoError(t, prwe.execute(ctx, emptyBuf))
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Equal(t, "my-project-123", receivedHeaders.Get("target-id"),
+		"target-id header should be forwarded from client metadata")
+	assert.Equal(t, "server-type", receivedHeaders.Get("target-type"),
+		"target-type header should be forwarded from client metadata")
+}
+
+// TestIncludeMetadataKeysAbsentWhenNotConfigured verifies that no extra headers
+// are added when include_metadata_keys is empty (the default).
+func TestIncludeMetadataKeysAbsentWhenNotConfigured(t *testing.T) {
+	var (
+		mu              sync.Mutex
+		receivedHeaders http.Header
+	)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		receivedHeaders = r.Header.Clone()
+		mu.Unlock()
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg := &Config{
+		HTTP:                clientConfig,
+		RemoteWriteQueue:    RemoteWriteQueue{NumConsumers: 1},
+		TargetInfo:          TargetInfo{Enabled: true},
+		BackOffConfig:       configretry.NewDefaultBackOffConfig(),
+		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+	}
+
+	set := exportertest.NewNopSettings(metadata.Type)
+	prwe, err := newPRWExporter(cfg, set)
+	require.NoError(t, err)
+	require.NoError(t, prwe.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, prwe.Shutdown(context.Background())) }) //nolint:usetesting
+
+	ctx := client.NewContext(t.Context(), client.Info{
+		Metadata: client.NewMetadata(map[string][]string{
+			"target-id": {"my-project-123"},
+		}),
+	})
+
+	emptyBuf, err := (&buffer{}).MarshalAndEncode(&prompb.WriteRequest{})
+	require.NoError(t, err)
+
+	require.NoError(t, prwe.execute(ctx, emptyBuf))
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Empty(t, receivedHeaders.Get("target-id"),
+		"target-id should not be forwarded when not listed in include_metadata_keys")
+}
+
 func BenchmarkPushMetricsVaryingMetrics(b *testing.B) {
 	benchmarkPushMetrics(b, -1, 1)
 }
@@ -1399,7 +1521,7 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 	clientConfig.WriteBufferSize = 512 * 1024
 	cfg := &Config{
 		Namespace:         "",
-		ClientConfig:      clientConfig,
+		HTTP:              clientConfig,
 		MaxBatchSizeBytes: 3000,
 		RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: numConsumers},
 		BackOffConfig:     retrySettings,

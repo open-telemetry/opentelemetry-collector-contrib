@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/metadata"
@@ -65,8 +65,8 @@ func TestLoadConfig(t *testing.T) {
 					config.Headers = configopaque.MapList{
 						{Name: "myheader", Value: "test"},
 					}
-					config.MaxIdleConns = maxIdleConns
-					config.IdleConnTimeout = idleConnTimeout
+					config.MaxIdleConns = maxIdleConns       //nolint:staticcheck // SA1019: MaxIdleConns is deprecated in favor of Keepalive.MaxIdleConns
+					config.IdleConnTimeout = idleConnTimeout //nolint:staticcheck // SA1019: IdleConnTimeout is deprecated in favor of Keepalive.IdleConnTimeout
 					config.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewID("sample_basic_auth")})
 				}),
 				BackOffConfig: configretry.BackOffConfig{
@@ -239,7 +239,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "otel_v1"),
 			expected: withDefaultConfig(func(config *Config) {
 				config.ClientConfig.Endpoint = sampleEndpoint
-				config.Mode = "otel-v1"
+				config.MappingsSettings.Mode = "otel-v1"
 			}),
 			configValidateAssert: assert.NoError,
 		},
@@ -248,7 +248,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: withDefaultConfig(func(config *Config) {
 				config.ClientConfig.Endpoint = sampleEndpoint
 				config.Dataset = "ngnix"
-				config.Mode = "otel-v1"
+				config.MappingsSettings.Mode = "otel-v1"
 			}),
 			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
 				return assert.ErrorContains(t, err, errOTelV1DatasetNamespaceUnused.Error())
@@ -265,7 +265,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			vv := xconfmap.Validate(cfg)
+			vv := confmap.Validate(cfg)
 			tt.configValidateAssert(t, vv)
 			assert.Equal(t, tt.expected, cfg)
 		})
@@ -347,8 +347,8 @@ func TestOTelV1MappingModeValidation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := withDefaultConfig(func(config *Config) {
 				config.ClientConfig.Endpoint = "http://localhost:9200"
-				config.Mode = tt.mode
-				config.ManageIndexTemplate = tt.manageTpl
+				config.MappingsSettings.Mode = tt.mode
+				config.MappingsSettings.ManageIndexTemplate = tt.manageTpl
 			})
 			err := cfg.Validate()
 			if tt.expectError != "" {

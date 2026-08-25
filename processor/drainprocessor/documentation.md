@@ -21,3 +21,17 @@ Number of log records successfully annotated with a template.
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {records} | Sum | Int | true | Development |
+
+### otelcol_processor_drain_masks_duplicates
+
+Number of records where a mask name matched more than one position in the matched template. Incremented once per record per duplicated mask name; the losing values are discarded and first-match wins.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {records} | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| mask | The mask name that matched more than one position in a single template. | Any Str | - |

@@ -69,6 +69,8 @@ type esDataReceiver struct {
 	endpoint          string
 	decodeBulkRequest bool
 	enableBatching    bool
+	queueStorage      string
+	maxRetries        int
 	t                 testing.TB
 }
 
@@ -79,6 +81,7 @@ func newElasticsearchDataReceiver(tb testing.TB, opts ...dataReceiverOption) *es
 		DataReceiverBase:  testbed.DataReceiverBase{},
 		endpoint:          fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(tb)),
 		decodeBulkRequest: true,
+		maxRetries:        10000,
 		t:                 tb,
 	}
 	for _, opt := range opts {
@@ -96,6 +99,21 @@ func withDecodeBulkRequest(decode bool) dataReceiverOption {
 func withBatching(enabled bool) dataReceiverOption {
 	return func(r *esDataReceiver) {
 		r.enableBatching = enabled
+	}
+}
+
+// withQueueStorage sets sending_queue::storage to the named extension, making
+// the exporter use a persistent (storage-backed) sending queue.
+func withQueueStorage(name string) dataReceiverOption {
+	return func(r *esDataReceiver) {
+		r.queueStorage = name
+	}
+}
+
+// withMaxRetries overrides the exporter's retry::max_retries.
+func withMaxRetries(n int) dataReceiverOption {
+	return func(r *esDataReceiver) {
+		r.maxRetries = n
 	}
 }
 
@@ -160,11 +178,11 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
       enabled: true
       initial_interval: 100ms
       max_interval: 500ms
-      max_retries: 10000
+      max_retries: %d
       retry_on_status: [429, 503]
     timeout: 10m
 `,
-		es.endpoint, TestLogsIndex, TestMetricsIndex, TestTracesIndex,
+		es.endpoint, TestLogsIndex, TestMetricsIndex, TestTracesIndex, es.maxRetries,
 	)
 
 	if es.enableBatching {
@@ -185,6 +203,9 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
       batch:
         min_size: 0
         sizer: bytes`
+	}
+	if es.queueStorage != "" {
+		cfgFormat += "\n      storage: " + es.queueStorage
 	}
 	return cfgFormat + "\n"
 }
@@ -212,8 +233,8 @@ func createDefaultConfig() component.Config {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = netAddr
 	return &config{
 		ServerConfig:       serverConfig,

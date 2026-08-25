@@ -43,8 +43,8 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Timeout = 5 * time.Second
 	clientConfig.Headers = configopaque.MapList{
@@ -78,9 +78,9 @@ func createMetricsExporter(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Sematext HTTP writer: %w", err)
 	}
-	schema, found := common.MetricsSchemata[cfg.MetricsSchema]
+	schema, found := common.MetricsSchemata[cfg.MetricsConfig.MetricsSchema]
 	if !found {
-		return nil, fmt.Errorf("schema '%s' not recognized", cfg.MetricsSchema)
+		return nil, fmt.Errorf("schema '%s' not recognized", cfg.MetricsConfig.MetricsSchema)
 	}
 
 	expConfig := otel2influx.DefaultOtelMetricsToLineProtocolConfig()

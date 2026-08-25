@@ -21,7 +21,9 @@ func TestSetupTelemetry(t *testing.T) {
 	defer tb.Shutdown()
 	tb.ProcessorDynamicSamplingDecisionSampleRate.Record(context.Background(), 1)
 	tb.ProcessorDynamicSamplingDecisionTriggers.Add(context.Background(), 1)
+	tb.ProcessorDynamicSamplingFingerprintDuration.Record(context.Background(), 1)
 	tb.ProcessorDynamicSamplingIncomingTracestateUnparseable.Add(context.Background(), 1)
+	tb.ProcessorDynamicSamplingOttlEvalErrors.Add(context.Background(), 1)
 	tb.ProcessorDynamicSamplingTracesActive.Record(context.Background(), 1)
 	tb.ProcessorDynamicSamplingTracesDropped.Add(context.Background(), 1)
 	tb.ProcessorDynamicSamplingTracesEvicted.Add(context.Background(), 1)
@@ -32,7 +34,13 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualProcessorDynamicSamplingDecisionTriggers(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorDynamicSamplingFingerprintDuration(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorDynamicSamplingIncomingTracestateUnparseable(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorDynamicSamplingOttlEvalErrors(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorDynamicSamplingTracesActive(t, testTel,

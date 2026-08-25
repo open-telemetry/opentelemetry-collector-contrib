@@ -42,7 +42,7 @@ func TestReceiver(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := (f.CreateDefaultConfig()).(*Config)
+			cfg := f.CreateDefaultConfig().(*Config)
 			cfg.UseServiceAccount = tt.useServiceAccount
 
 			r, err := f.CreateMetrics(
@@ -86,10 +86,6 @@ func TestGetPrometheusConfig(t *testing.T) {
 	clientConfig.Endpoint = "localhost:1234"
 
 	clientConfigJobName := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigJobName.MaxIdleConns = 0
-	clientConfigJobName.IdleConnTimeout = 0
-	clientConfigJobName.ForceAttemptHTTP2 = false
 	clientConfigJobName.Endpoint = "localhost:1234"
 
 	tests := []struct {
