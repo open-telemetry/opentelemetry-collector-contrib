@@ -19,7 +19,6 @@ tests:
       sasl_plain:
         username: username
         password: passwd
-  skip_lifecycle: true
 
 telemetry:
   metrics:

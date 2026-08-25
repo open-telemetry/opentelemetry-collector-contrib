@@ -26,10 +26,12 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 )
 
 func TestServerStart(t *testing.T) {
+	endpoint := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
 		name         string
 		setupServer  func() (*Server, *observer.ObservedLogs)
@@ -48,11 +50,11 @@ func TestServerStart(t *testing.T) {
 				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 				serverConfig.WriteTimeout = 0
 				serverConfig.ReadHeaderTimeout = 0
-				serverConfig.IdleTimeout = 0
-				serverConfig.KeepAlivesEnabled = false
+				serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+				serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 				serverConfig.NetAddr = confignet.AddrConfig{
 					Transport: "tcp",
-					Endpoint:  DefaultServerEndpoint,
+					Endpoint:  endpoint,
 				}
 				s := NewServer(
 					logger,
@@ -68,7 +70,7 @@ func TestServerStart(t *testing.T) {
 				)
 				return s, logs
 			},
-			expectedLogs: []string{fmt.Sprintf("HTTP Server started at %s%s", DefaultServerEndpoint, "/metadata")},
+			expectedLogs: []string{fmt.Sprintf("HTTP Server started at %s%s", endpoint, "/metadata")},
 		},
 	}
 
@@ -179,11 +181,11 @@ func TestPrepareAndSendFleetAutomationPayloads(t *testing.T) {
 			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 			serverConfig.WriteTimeout = 0
 			serverConfig.ReadHeaderTimeout = 0
-			serverConfig.IdleTimeout = 0
-			serverConfig.KeepAlivesEnabled = false
+			serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+			serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 			serverConfig.NetAddr = confignet.AddrConfig{
 				Transport: "tcp",
-				Endpoint:  DefaultServerEndpoint,
+				Endpoint:  testutil.GetAvailableLocalAddress(t),
 			}
 			s := NewServer(
 				logger,
@@ -654,8 +656,8 @@ func TestServer_SendPayload(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:0",
@@ -690,8 +692,8 @@ func TestServer_SendPayload_ForwarderNotStarted(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:0",
@@ -759,8 +761,8 @@ func TestNewServerErrorPaths(t *testing.T) {
 		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 		serverConfig.WriteTimeout = 0
 		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
+		serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+		serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: "tcp",
 			Endpoint:  "localhost:0", // Valid endpoint
