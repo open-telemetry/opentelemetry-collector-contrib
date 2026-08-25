@@ -30,27 +30,27 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbAsmDiskErrors: OracledbAsmDiskErrorsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbAsmDiskErrorsMetricAttributeKey{OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskgroupName, OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskName, OracledbAsmDiskErrorsMetricAttributeKeyDiskIoDirection},
+						EnabledAttributes:   []OracledbAsmDiskErrorsMetricAttributeKey{OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskGroupName, OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskName, OracledbAsmDiskErrorsMetricAttributeKeyDiskIoDirection},
 					},
-					OracledbAsmDiskgroupFree: OracledbAsmDiskgroupFreeMetricConfig{
+					OracledbAsmDiskGroupFree: OracledbAsmDiskGroupFreeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbAsmDiskgroupFreeMetricAttributeKey{OracledbAsmDiskgroupFreeMetricAttributeKeyOracledbAsmDiskgroupName},
+						EnabledAttributes:   []OracledbAsmDiskGroupFreeMetricAttributeKey{OracledbAsmDiskGroupFreeMetricAttributeKeyOracledbAsmDiskGroupName},
 					},
-					OracledbAsmDiskgroupOfflineDisks: OracledbAsmDiskgroupOfflineDisksMetricConfig{
+					OracledbAsmDiskGroupOfflineDisks: OracledbAsmDiskGroupOfflineDisksMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbAsmDiskgroupOfflineDisksMetricAttributeKey{OracledbAsmDiskgroupOfflineDisksMetricAttributeKeyOracledbAsmDiskgroupName},
+						EnabledAttributes:   []OracledbAsmDiskGroupOfflineDisksMetricAttributeKey{OracledbAsmDiskGroupOfflineDisksMetricAttributeKeyOracledbAsmDiskGroupName},
 					},
-					OracledbAsmDiskgroupTotal: OracledbAsmDiskgroupTotalMetricConfig{
+					OracledbAsmDiskGroupTotal: OracledbAsmDiskGroupTotalMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbAsmDiskgroupTotalMetricAttributeKey{OracledbAsmDiskgroupTotalMetricAttributeKeyOracledbAsmDiskgroupName},
+						EnabledAttributes:   []OracledbAsmDiskGroupTotalMetricAttributeKey{OracledbAsmDiskGroupTotalMetricAttributeKeyOracledbAsmDiskGroupName},
 					},
-					OracledbAsmDiskgroupUsableFree: OracledbAsmDiskgroupUsableFreeMetricConfig{
+					OracledbAsmDiskGroupUsableFree: OracledbAsmDiskGroupUsableFreeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbAsmDiskgroupUsableFreeMetricAttributeKey{OracledbAsmDiskgroupUsableFreeMetricAttributeKeyOracledbAsmDiskgroupName},
+						EnabledAttributes:   []OracledbAsmDiskGroupUsableFreeMetricAttributeKey{OracledbAsmDiskGroupUsableFreeMetricAttributeKeyOracledbAsmDiskGroupName},
 					},
 					OracledbBufferInspected: OracledbBufferInspectedMetricConfig{
 						Enabled:             true,
@@ -637,27 +637,27 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbAsmDiskErrors: OracledbAsmDiskErrorsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []OracledbAsmDiskErrorsMetricAttributeKey{OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskgroupName, OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskName, OracledbAsmDiskErrorsMetricAttributeKeyDiskIoDirection},
+						EnabledAttributes:   []OracledbAsmDiskErrorsMetricAttributeKey{OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskGroupName, OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskName, OracledbAsmDiskErrorsMetricAttributeKeyDiskIoDirection},
 					},
-					OracledbAsmDiskgroupFree: OracledbAsmDiskgroupFreeMetricConfig{
+					OracledbAsmDiskGroupFree: OracledbAsmDiskGroupFreeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbAsmDiskgroupFreeMetricAttributeKey{OracledbAsmDiskgroupFreeMetricAttributeKeyOracledbAsmDiskgroupName},
+						EnabledAttributes:   []OracledbAsmDiskGroupFreeMetricAttributeKey{OracledbAsmDiskGroupFreeMetricAttributeKeyOracledbAsmDiskGroupName},
 					},
-					OracledbAsmDiskgroupOfflineDisks: OracledbAsmDiskgroupOfflineDisksMetricConfig{
+					OracledbAsmDiskGroupOfflineDisks: OracledbAsmDiskGroupOfflineDisksMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbAsmDiskgroupOfflineDisksMetricAttributeKey{OracledbAsmDiskgroupOfflineDisksMetricAttributeKeyOracledbAsmDiskgroupName},
+						EnabledAttributes:   []OracledbAsmDiskGroupOfflineDisksMetricAttributeKey{OracledbAsmDiskGroupOfflineDisksMetricAttributeKeyOracledbAsmDiskGroupName},
 					},
-					OracledbAsmDiskgroupTotal: OracledbAsmDiskgroupTotalMetricConfig{
+					OracledbAsmDiskGroupTotal: OracledbAsmDiskGroupTotalMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbAsmDiskgroupTotalMetricAttributeKey{OracledbAsmDiskgroupTotalMetricAttributeKeyOracledbAsmDiskgroupName},
+						EnabledAttributes:   []OracledbAsmDiskGroupTotalMetricAttributeKey{OracledbAsmDiskGroupTotalMetricAttributeKeyOracledbAsmDiskGroupName},
 					},
-					OracledbAsmDiskgroupUsableFree: OracledbAsmDiskgroupUsableFreeMetricConfig{
+					OracledbAsmDiskGroupUsableFree: OracledbAsmDiskGroupUsableFreeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []OracledbAsmDiskgroupUsableFreeMetricAttributeKey{OracledbAsmDiskgroupUsableFreeMetricAttributeKeyOracledbAsmDiskgroupName},
+						EnabledAttributes:   []OracledbAsmDiskGroupUsableFreeMetricAttributeKey{OracledbAsmDiskGroupUsableFreeMetricAttributeKeyOracledbAsmDiskGroupName},
 					},
 					OracledbBufferInspected: OracledbBufferInspectedMetricConfig{
 						Enabled:             false,
@@ -1241,7 +1241,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(OracledbAsmDiskErrorsMetricConfig{}, OracledbAsmDiskgroupFreeMetricConfig{}, OracledbAsmDiskgroupOfflineDisksMetricConfig{}, OracledbAsmDiskgroupTotalMetricConfig{}, OracledbAsmDiskgroupUsableFreeMetricConfig{}, OracledbBufferInspectedMetricConfig{}, OracledbBufferRequestsMetricConfig{}, OracledbBufferCacheBlockChangesMetricConfig{}, OracledbBufferCacheBlockChangesRateMetricConfig{}, OracledbBufferCacheBlockGetsMetricConfig{}, OracledbBufferCacheUtilizationMetricConfig{}, OracledbCallCountMetricConfig{}, OracledbCallRecursiveCPUTimeMetricConfig{}, OracledbCheckpointBuffersMetricConfig{}, OracledbCheckpointCompletedMetricConfig{}, OracledbConsistentGetsMetricConfig{}, OracledbCPUUsageRateMetricConfig{}, OracledbCPUTimeMetricConfig{}, OracledbCursorCacheHitsMetricConfig{}, OracledbCursorCacheSizeMetricConfig{}, OracledbCursorCacheUtilizationMetricConfig{}, OracledbCursorOpenMetricConfig{}, OracledbCursorOpenRateMetricConfig{}, OracledbDataDictionaryHitRatioMetricConfig{}, OracledbDatabaseCPUUtilizationMetricConfig{}, OracledbDatabaseWaitUtilizationMetricConfig{}, OracledbDbTimeMetricConfig{}, OracledbDbBlockGetsMetricConfig{}, OracledbDdlStatementsParallelizedMetricConfig{}, OracledbDmlLocksLimitMetricConfig{}, OracledbDmlLocksUsageMetricConfig{}, OracledbDmlStatementsParallelizedMetricConfig{}, OracledbEnqueueDeadlocksRateMetricConfig{}, OracledbEnqueueOperationsMetricConfig{}, OracledbEnqueueTimeoutsRateMetricConfig{}, OracledbEnqueueDeadlocksMetricConfig{}, OracledbEnqueueLocksLimitMetricConfig{}, OracledbEnqueueLocksUsageMetricConfig{}, OracledbEnqueueResourcesLimitMetricConfig{}, OracledbEnqueueResourcesUsageMetricConfig{}, OracledbExchangeDeadlocksMetricConfig{}, OracledbExecutionUtilizationMetricConfig{}, OracledbExecutionsMetricConfig{}, OracledbExecutionsRateMetricConfig{}, OracledbGcCurrentBlockTimeMetricConfig{}, OracledbHardParsesMetricConfig{}, OracledbHardParsesRateMetricConfig{}, OracledbHostCPUUsageRateMetricConfig{}, OracledbHostCPUUtilizationMetricConfig{}, OracledbIoRequestsRateMetricConfig{}, OracledbIoSingleBlockReadLatencyMetricConfig{}, OracledbIoThroughputRateMetricConfig{}, OracledbJvmMemoryCommittedMetricConfig{}, OracledbJvmMemoryLiveMetricConfig{}, OracledbJvmMemoryUsedMetricConfig{}, OracledbLibraryCacheUtilizationMetricConfig{}, OracledbLobOperationsMetricConfig{}, OracledbLockTimeMetricConfig{}, OracledbLogicalReadsMetricConfig{}, OracledbLogicalReadsRateMetricConfig{}, OracledbLogonsMetricConfig{}, OracledbLogonsRateMetricConfig{}, OracledbOsSwapsMetricConfig{}, OracledbParallelOperationsDowngraded1To25PctMetricConfig{}, OracledbParallelOperationsDowngraded25To50PctMetricConfig{}, OracledbParallelOperationsDowngraded50To75PctMetricConfig{}, OracledbParallelOperationsDowngraded75To99PctMetricConfig{}, OracledbParallelOperationsDowngradedToSerialMetricConfig{}, OracledbParallelOperationsNotDowngradedMetricConfig{}, OracledbParseCPUTimeMetricConfig{}, OracledbParseElapsedTimeMetricConfig{}, OracledbParseRateMetricConfig{}, OracledbParseUtilizationMetricConfig{}, OracledbParseCallsMetricConfig{}, OracledbPgaCacheUtilizationMetricConfig{}, OracledbPgaMemoryMetricConfig{}, OracledbPhysicalIoCacheWritesMetricConfig{}, OracledbPhysicalIoRequestsMetricConfig{}, OracledbPhysicalIoRequestsRateMetricConfig{}, OracledbPhysicalIoTransferredMetricConfig{}, OracledbPhysicalIoTransferredRateMetricConfig{}, OracledbPhysicalOperationsRateMetricConfig{}, OracledbPhysicalReadIoRequestsMetricConfig{}, OracledbPhysicalReadsMetricConfig{}, OracledbPhysicalReadsDirectMetricConfig{}, OracledbPhysicalWriteIoRequestsMetricConfig{}, OracledbPhysicalWritesMetricConfig{}, OracledbPhysicalWritesDirectMetricConfig{}, OracledbProcessesLimitMetricConfig{}, OracledbProcessesUsageMetricConfig{}, OracledbQueriesParallelizedMetricConfig{}, OracledbRecoveryBlocksMetricConfig{}, OracledbRecycleBinLimitMetricConfig{}, OracledbRedoBlocksMetricConfig{}, OracledbRedoOperationsMetricConfig{}, OracledbRedoRequestsMetricConfig{}, OracledbRedoRetriesMetricConfig{}, OracledbRedoSizeMetricConfig{}, OracledbRedoSizeRateMetricConfig{}, OracledbRedoTimeMetricConfig{}, OracledbRedoAllocationUtilizationMetricConfig{}, OracledbScanCountMetricConfig{}, OracledbScanTableRowsMetricConfig{}, OracledbSessionAverageMetricConfig{}, OracledbSessionStoredProcedureMemoryMetricConfig{}, OracledbSessionWaitTimeMetricConfig{}, OracledbSessionWaitsMetricConfig{}, OracledbSessionsLimitMetricConfig{}, OracledbSessionsUsageMetricConfig{}, OracledbSgaLimitMetricConfig{}, OracledbSgaUsageMetricConfig{}, OracledbSharedPoolUtilizationMetricConfig{}, OracledbSmonPostsMetricConfig{}, OracledbSortOperationsMetricConfig{}, OracledbSortRatioMetricConfig{}, OracledbSortRowsMetricConfig{}, OracledbSQLServiceResponseDurationMetricConfig{}, OracledbSqlnetIoTransferredMetricConfig{}, OracledbStorageUsageMetricConfig{}, OracledbStorageUtilizationMetricConfig{}, OracledbSystemCPUCountMetricConfig{}, OracledbSystemMemoryLimitMetricConfig{}, OracledbSystemProcessCountMetricConfig{}, OracledbTablespaceLimitMetricConfig{}, OracledbTablespaceStatusMetricConfig{}, OracledbTablespaceUtilizationMetricConfig{}, OracledbTablespaceSizeLimitMetricConfig{}, OracledbTablespaceSizeUsageMetricConfig{}, OracledbTransactionResponseTimeMetricConfig{}, OracledbTransactionRollbacksMetricConfig{}, OracledbTransactionsLimitMetricConfig{}, OracledbTransactionsRateMetricConfig{}, OracledbTransactionsUsageMetricConfig{}, OracledbUserCommitsMetricConfig{}, OracledbUserRollbacksMetricConfig{}, HostNameResourceAttributeConfig{}, OracleDbHostingTypeResourceAttributeConfig{}, OracleDbOpenModeResourceAttributeConfig{}, OracleDbRoleResourceAttributeConfig{}, OracleDbVersionResourceAttributeConfig{}, OracledbInstanceNameResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(OracledbAsmDiskErrorsMetricConfig{}, OracledbAsmDiskGroupFreeMetricConfig{}, OracledbAsmDiskGroupOfflineDisksMetricConfig{}, OracledbAsmDiskGroupTotalMetricConfig{}, OracledbAsmDiskGroupUsableFreeMetricConfig{}, OracledbBufferInspectedMetricConfig{}, OracledbBufferRequestsMetricConfig{}, OracledbBufferCacheBlockChangesMetricConfig{}, OracledbBufferCacheBlockChangesRateMetricConfig{}, OracledbBufferCacheBlockGetsMetricConfig{}, OracledbBufferCacheUtilizationMetricConfig{}, OracledbCallCountMetricConfig{}, OracledbCallRecursiveCPUTimeMetricConfig{}, OracledbCheckpointBuffersMetricConfig{}, OracledbCheckpointCompletedMetricConfig{}, OracledbConsistentGetsMetricConfig{}, OracledbCPUUsageRateMetricConfig{}, OracledbCPUTimeMetricConfig{}, OracledbCursorCacheHitsMetricConfig{}, OracledbCursorCacheSizeMetricConfig{}, OracledbCursorCacheUtilizationMetricConfig{}, OracledbCursorOpenMetricConfig{}, OracledbCursorOpenRateMetricConfig{}, OracledbDataDictionaryHitRatioMetricConfig{}, OracledbDatabaseCPUUtilizationMetricConfig{}, OracledbDatabaseWaitUtilizationMetricConfig{}, OracledbDbTimeMetricConfig{}, OracledbDbBlockGetsMetricConfig{}, OracledbDdlStatementsParallelizedMetricConfig{}, OracledbDmlLocksLimitMetricConfig{}, OracledbDmlLocksUsageMetricConfig{}, OracledbDmlStatementsParallelizedMetricConfig{}, OracledbEnqueueDeadlocksRateMetricConfig{}, OracledbEnqueueOperationsMetricConfig{}, OracledbEnqueueTimeoutsRateMetricConfig{}, OracledbEnqueueDeadlocksMetricConfig{}, OracledbEnqueueLocksLimitMetricConfig{}, OracledbEnqueueLocksUsageMetricConfig{}, OracledbEnqueueResourcesLimitMetricConfig{}, OracledbEnqueueResourcesUsageMetricConfig{}, OracledbExchangeDeadlocksMetricConfig{}, OracledbExecutionUtilizationMetricConfig{}, OracledbExecutionsMetricConfig{}, OracledbExecutionsRateMetricConfig{}, OracledbGcCurrentBlockTimeMetricConfig{}, OracledbHardParsesMetricConfig{}, OracledbHardParsesRateMetricConfig{}, OracledbHostCPUUsageRateMetricConfig{}, OracledbHostCPUUtilizationMetricConfig{}, OracledbIoRequestsRateMetricConfig{}, OracledbIoSingleBlockReadLatencyMetricConfig{}, OracledbIoThroughputRateMetricConfig{}, OracledbJvmMemoryCommittedMetricConfig{}, OracledbJvmMemoryLiveMetricConfig{}, OracledbJvmMemoryUsedMetricConfig{}, OracledbLibraryCacheUtilizationMetricConfig{}, OracledbLobOperationsMetricConfig{}, OracledbLockTimeMetricConfig{}, OracledbLogicalReadsMetricConfig{}, OracledbLogicalReadsRateMetricConfig{}, OracledbLogonsMetricConfig{}, OracledbLogonsRateMetricConfig{}, OracledbOsSwapsMetricConfig{}, OracledbParallelOperationsDowngraded1To25PctMetricConfig{}, OracledbParallelOperationsDowngraded25To50PctMetricConfig{}, OracledbParallelOperationsDowngraded50To75PctMetricConfig{}, OracledbParallelOperationsDowngraded75To99PctMetricConfig{}, OracledbParallelOperationsDowngradedToSerialMetricConfig{}, OracledbParallelOperationsNotDowngradedMetricConfig{}, OracledbParseCPUTimeMetricConfig{}, OracledbParseElapsedTimeMetricConfig{}, OracledbParseRateMetricConfig{}, OracledbParseUtilizationMetricConfig{}, OracledbParseCallsMetricConfig{}, OracledbPgaCacheUtilizationMetricConfig{}, OracledbPgaMemoryMetricConfig{}, OracledbPhysicalIoCacheWritesMetricConfig{}, OracledbPhysicalIoRequestsMetricConfig{}, OracledbPhysicalIoRequestsRateMetricConfig{}, OracledbPhysicalIoTransferredMetricConfig{}, OracledbPhysicalIoTransferredRateMetricConfig{}, OracledbPhysicalOperationsRateMetricConfig{}, OracledbPhysicalReadIoRequestsMetricConfig{}, OracledbPhysicalReadsMetricConfig{}, OracledbPhysicalReadsDirectMetricConfig{}, OracledbPhysicalWriteIoRequestsMetricConfig{}, OracledbPhysicalWritesMetricConfig{}, OracledbPhysicalWritesDirectMetricConfig{}, OracledbProcessesLimitMetricConfig{}, OracledbProcessesUsageMetricConfig{}, OracledbQueriesParallelizedMetricConfig{}, OracledbRecoveryBlocksMetricConfig{}, OracledbRecycleBinLimitMetricConfig{}, OracledbRedoBlocksMetricConfig{}, OracledbRedoOperationsMetricConfig{}, OracledbRedoRequestsMetricConfig{}, OracledbRedoRetriesMetricConfig{}, OracledbRedoSizeMetricConfig{}, OracledbRedoSizeRateMetricConfig{}, OracledbRedoTimeMetricConfig{}, OracledbRedoAllocationUtilizationMetricConfig{}, OracledbScanCountMetricConfig{}, OracledbScanTableRowsMetricConfig{}, OracledbSessionAverageMetricConfig{}, OracledbSessionStoredProcedureMemoryMetricConfig{}, OracledbSessionWaitTimeMetricConfig{}, OracledbSessionWaitsMetricConfig{}, OracledbSessionsLimitMetricConfig{}, OracledbSessionsUsageMetricConfig{}, OracledbSgaLimitMetricConfig{}, OracledbSgaUsageMetricConfig{}, OracledbSharedPoolUtilizationMetricConfig{}, OracledbSmonPostsMetricConfig{}, OracledbSortOperationsMetricConfig{}, OracledbSortRatioMetricConfig{}, OracledbSortRowsMetricConfig{}, OracledbSQLServiceResponseDurationMetricConfig{}, OracledbSqlnetIoTransferredMetricConfig{}, OracledbStorageUsageMetricConfig{}, OracledbStorageUtilizationMetricConfig{}, OracledbSystemCPUCountMetricConfig{}, OracledbSystemMemoryLimitMetricConfig{}, OracledbSystemProcessCountMetricConfig{}, OracledbTablespaceLimitMetricConfig{}, OracledbTablespaceStatusMetricConfig{}, OracledbTablespaceUtilizationMetricConfig{}, OracledbTablespaceSizeLimitMetricConfig{}, OracledbTablespaceSizeUsageMetricConfig{}, OracledbTransactionResponseTimeMetricConfig{}, OracledbTransactionRollbacksMetricConfig{}, OracledbTransactionsLimitMetricConfig{}, OracledbTransactionsRateMetricConfig{}, OracledbTransactionsUsageMetricConfig{}, OracledbUserCommitsMetricConfig{}, OracledbUserRollbacksMetricConfig{}, HostNameResourceAttributeConfig{}, OracleDbHostingTypeResourceAttributeConfig{}, OracleDbOpenModeResourceAttributeConfig{}, OracleDbRoleResourceAttributeConfig{}, OracleDbVersionResourceAttributeConfig{}, OracledbInstanceNameResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -1251,57 +1251,57 @@ func TestOracledbAsmDiskErrorsMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []OracledbAsmDiskErrorsMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric oracledb.asm_disk.errors doesn't have an attribute invalid, valid attributes: [oracledb.asm_diskgroup.name, oracledb.asm_disk.name, disk.io.direction]")
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.asm.disk.errors doesn't have an attribute invalid, valid attributes: [oracledb.asm.disk_group.name, oracledb.asm.disk.name, disk.io.direction]")
 
 	cfg = DefaultMetricsConfig().OracledbAsmDiskErrors
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestOracledbAsmDiskgroupFreeMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().OracledbAsmDiskgroupFree
+func TestOracledbAsmDiskGroupFreeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbAsmDiskGroupFree
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []OracledbAsmDiskgroupFreeMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric oracledb.asm_diskgroup.free doesn't have an attribute invalid, valid attributes: [oracledb.asm_diskgroup.name]")
+	cfg.EnabledAttributes = []OracledbAsmDiskGroupFreeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.asm.disk_group.free doesn't have an attribute invalid, valid attributes: [oracledb.asm.disk_group.name]")
 
-	cfg = DefaultMetricsConfig().OracledbAsmDiskgroupFree
+	cfg = DefaultMetricsConfig().OracledbAsmDiskGroupFree
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestOracledbAsmDiskgroupOfflineDisksMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().OracledbAsmDiskgroupOfflineDisks
+func TestOracledbAsmDiskGroupOfflineDisksMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbAsmDiskGroupOfflineDisks
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []OracledbAsmDiskgroupOfflineDisksMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric oracledb.asm_diskgroup.offline_disks doesn't have an attribute invalid, valid attributes: [oracledb.asm_diskgroup.name]")
+	cfg.EnabledAttributes = []OracledbAsmDiskGroupOfflineDisksMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.asm.disk_group.offline_disks doesn't have an attribute invalid, valid attributes: [oracledb.asm.disk_group.name]")
 
-	cfg = DefaultMetricsConfig().OracledbAsmDiskgroupOfflineDisks
+	cfg = DefaultMetricsConfig().OracledbAsmDiskGroupOfflineDisks
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestOracledbAsmDiskgroupTotalMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().OracledbAsmDiskgroupTotal
+func TestOracledbAsmDiskGroupTotalMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbAsmDiskGroupTotal
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []OracledbAsmDiskgroupTotalMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric oracledb.asm_diskgroup.total doesn't have an attribute invalid, valid attributes: [oracledb.asm_diskgroup.name]")
+	cfg.EnabledAttributes = []OracledbAsmDiskGroupTotalMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.asm.disk_group.total doesn't have an attribute invalid, valid attributes: [oracledb.asm.disk_group.name]")
 
-	cfg = DefaultMetricsConfig().OracledbAsmDiskgroupTotal
+	cfg = DefaultMetricsConfig().OracledbAsmDiskGroupTotal
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
-func TestOracledbAsmDiskgroupUsableFreeMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().OracledbAsmDiskgroupUsableFree
+func TestOracledbAsmDiskGroupUsableFreeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().OracledbAsmDiskGroupUsableFree
 	require.NoError(t, cfg.Validate())
 
-	cfg.EnabledAttributes = []OracledbAsmDiskgroupUsableFreeMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric oracledb.asm_diskgroup.usable_free doesn't have an attribute invalid, valid attributes: [oracledb.asm_diskgroup.name]")
+	cfg.EnabledAttributes = []OracledbAsmDiskGroupUsableFreeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric oracledb.asm.disk_group.usable_free doesn't have an attribute invalid, valid attributes: [oracledb.asm.disk_group.name]")
 
-	cfg = DefaultMetricsConfig().OracledbAsmDiskgroupUsableFree
+	cfg = DefaultMetricsConfig().OracledbAsmDiskGroupUsableFree
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }

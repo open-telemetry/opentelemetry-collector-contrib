@@ -1388,10 +1388,10 @@ func (s *oracleScraper) collectStorageUsage(ctx context.Context, scrapeErrors *[
 // collectASMDiskgroupMetrics collects Automatic Storage Management diskgroup capacity and health
 // metrics. Returns zero rows, not an error, on instances that don't use ASM.
 func (s *oracleScraper) collectASMDiskgroupMetrics(ctx context.Context, scrapeErrors *[]error) {
-	if !s.metricsBuilderConfig.Metrics.OracledbAsmDiskgroupFree.Enabled &&
-		!s.metricsBuilderConfig.Metrics.OracledbAsmDiskgroupTotal.Enabled &&
-		!s.metricsBuilderConfig.Metrics.OracledbAsmDiskgroupUsableFree.Enabled &&
-		!s.metricsBuilderConfig.Metrics.OracledbAsmDiskgroupOfflineDisks.Enabled {
+	if !s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupFree.Enabled &&
+		!s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupTotal.Enabled &&
+		!s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupUsableFree.Enabled &&
+		!s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupOfflineDisks.Enabled {
 		return
 	}
 	now := pcommon.NewTimestampFromTime(time.Now())
@@ -1403,39 +1403,39 @@ func (s *oracleScraper) collectASMDiskgroupMetrics(ctx context.Context, scrapeEr
 	for _, row := range rows {
 		diskgroupName := row[colASMDiskgroupName]
 
-		if s.metricsBuilderConfig.Metrics.OracledbAsmDiskgroupFree.Enabled {
+		if s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupFree.Enabled {
 			freeMB, err := strconv.ParseInt(row[colASMFreeMB], 10, 64)
 			if err != nil {
-				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbAsmDiskgroupFree, value was %s: %w", row[colASMFreeMB], err))
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbAsmDiskGroupFree, value was %s: %w", row[colASMFreeMB], err))
 			} else {
-				s.mb.RecordOracledbAsmDiskgroupFreeDataPoint(now, freeMB*1024*1024, diskgroupName)
+				s.mb.RecordOracledbAsmDiskGroupFreeDataPoint(now, freeMB*1024*1024, diskgroupName)
 			}
 		}
 
-		if s.metricsBuilderConfig.Metrics.OracledbAsmDiskgroupTotal.Enabled {
+		if s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupTotal.Enabled {
 			totalMB, err := strconv.ParseInt(row[colASMTotalMB], 10, 64)
 			if err != nil {
-				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbAsmDiskgroupTotal, value was %s: %w", row[colASMTotalMB], err))
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbAsmDiskGroupTotal, value was %s: %w", row[colASMTotalMB], err))
 			} else {
-				s.mb.RecordOracledbAsmDiskgroupTotalDataPoint(now, totalMB*1024*1024, diskgroupName)
+				s.mb.RecordOracledbAsmDiskGroupTotalDataPoint(now, totalMB*1024*1024, diskgroupName)
 			}
 		}
 
-		if s.metricsBuilderConfig.Metrics.OracledbAsmDiskgroupUsableFree.Enabled {
+		if s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupUsableFree.Enabled {
 			usableFreeMB, err := strconv.ParseInt(row[colASMUsableFreeMB], 10, 64)
 			if err != nil {
-				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbAsmDiskgroupUsableFree, value was %s: %w", row[colASMUsableFreeMB], err))
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbAsmDiskGroupUsableFree, value was %s: %w", row[colASMUsableFreeMB], err))
 			} else {
-				s.mb.RecordOracledbAsmDiskgroupUsableFreeDataPoint(now, usableFreeMB*1024*1024, diskgroupName)
+				s.mb.RecordOracledbAsmDiskGroupUsableFreeDataPoint(now, usableFreeMB*1024*1024, diskgroupName)
 			}
 		}
 
-		if s.metricsBuilderConfig.Metrics.OracledbAsmDiskgroupOfflineDisks.Enabled {
+		if s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupOfflineDisks.Enabled {
 			offlineDisks, err := strconv.ParseInt(row[colASMOfflineDisks], 10, 64)
 			if err != nil {
-				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbAsmDiskgroupOfflineDisks, value was %s: %w", row[colASMOfflineDisks], err))
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbAsmDiskGroupOfflineDisks, value was %s: %w", row[colASMOfflineDisks], err))
 			} else {
-				s.mb.RecordOracledbAsmDiskgroupOfflineDisksDataPoint(now, offlineDisks, diskgroupName)
+				s.mb.RecordOracledbAsmDiskGroupOfflineDisksDataPoint(now, offlineDisks, diskgroupName)
 			}
 		}
 	}

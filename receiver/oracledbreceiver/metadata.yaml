@@ -111,10 +111,10 @@ attributes:
   oracledb.application_wait_time:
     description: The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta).
     type: double
-  oracledb.asm_disk.name:
+  oracledb.asm.disk.name:
     description: The name of the ASM disk.
     type: string
-  oracledb.asm_diskgroup.name:
+  oracledb.asm.disk_group.name:
     description: The name of the ASM diskgroup.
     type: string
   oracledb.blocking.blocker.root_sid:
@@ -479,8 +479,8 @@ events:
       - oracledb.plan.first_load
       - oracledb.plan.last_load
 metrics:
-  oracledb.asm_disk.errors:
-    attributes: [oracledb.asm_diskgroup.name, oracledb.asm_disk.name, disk.io.direction]
+  oracledb.asm.disk.errors:
+    attributes: [oracledb.asm.disk_group.name, oracledb.asm.disk.name, disk.io.direction]
     description: Count of I/O errors on an ASM disk.
     enabled: false
     stability: development
@@ -490,32 +490,32 @@ metrics:
       value_type: int
       input_type: string
     unit: "{error}"
-  oracledb.asm_diskgroup.free:
-    attributes: [oracledb.asm_diskgroup.name]
+  oracledb.asm.disk_group.free:
+    attributes: [oracledb.asm.disk_group.name]
     description: Free space in an ASM diskgroup.
     enabled: false
     stability: development
     gauge:
       value_type: int
     unit: By
-  oracledb.asm_diskgroup.offline_disks:
-    attributes: [oracledb.asm_diskgroup.name]
+  oracledb.asm.disk_group.offline_disks:
+    attributes: [oracledb.asm.disk_group.name]
     description: Count of disks currently offline within an ASM diskgroup.
     enabled: false
     stability: development
     gauge:
       value_type: int
     unit: "{disk}"
-  oracledb.asm_diskgroup.total:
-    attributes: [oracledb.asm_diskgroup.name]
+  oracledb.asm.disk_group.total:
+    attributes: [oracledb.asm.disk_group.name]
     description: Total space in an ASM diskgroup.
     enabled: false
     stability: development
     gauge:
       value_type: int
     unit: By
-  oracledb.asm_diskgroup.usable_free:
-    attributes: [oracledb.asm_diskgroup.name]
+  oracledb.asm.disk_group.usable_free:
+    attributes: [oracledb.asm.disk_group.name]
     description: Free space that can safely be used for files after accounting for ASM redundancy and required mirror recovery capacity.
     enabled: false
     stability: development

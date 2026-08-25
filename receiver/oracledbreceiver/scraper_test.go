@@ -500,10 +500,10 @@ func TestScraper_ScrapeTablespaceHealthMetrics_BadMaxBytes(t *testing.T) {
 // TestScraper_ScrapeASMMetrics covers the 5 new opt-in ASM diskgroup/disk metrics.
 func TestScraper_ScrapeASMMetrics(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
-	cfg.Metrics.OracledbAsmDiskgroupFree.Enabled = true
-	cfg.Metrics.OracledbAsmDiskgroupTotal.Enabled = true
-	cfg.Metrics.OracledbAsmDiskgroupUsableFree.Enabled = true
-	cfg.Metrics.OracledbAsmDiskgroupOfflineDisks.Enabled = true
+	cfg.Metrics.OracledbAsmDiskGroupFree.Enabled = true
+	cfg.Metrics.OracledbAsmDiskGroupTotal.Enabled = true
+	cfg.Metrics.OracledbAsmDiskGroupUsableFree.Enabled = true
+	cfg.Metrics.OracledbAsmDiskGroupOfflineDisks.Enabled = true
 	cfg.Metrics.OracledbAsmDiskErrors.Enabled = true
 
 	scrpr := oracleScraper{
@@ -532,25 +532,25 @@ func TestScraper_ScrapeASMMetrics(t *testing.T) {
 	for i := 0; i < metrics.Len(); i++ {
 		metric := metrics.At(i)
 		switch metric.Name() {
-		case "oracledb.asm_diskgroup.free":
+		case "oracledb.asm.disk_group.free":
 			found["free"] = true
 			dp := metric.Gauge().DataPoints().At(0)
 			assert.Equal(t, int64(40960*1024*1024), dp.IntValue())
-			name, ok := dp.Attributes().Get("oracledb.asm_diskgroup.name")
+			name, ok := dp.Attributes().Get("oracledb.asm.disk_group.name")
 			require.True(t, ok)
 			assert.Equal(t, "DATA", name.Str())
-		case "oracledb.asm_diskgroup.total":
+		case "oracledb.asm.disk_group.total":
 			found["total"] = true
 			assert.Equal(t, int64(102400*1024*1024), metric.Gauge().DataPoints().At(0).IntValue())
-		case "oracledb.asm_diskgroup.usable_free":
+		case "oracledb.asm.disk_group.usable_free":
 			found["usable_free"] = true
 			assert.Equal(t, int64(20480*1024*1024), metric.Gauge().DataPoints().At(0).IntValue())
-		case "oracledb.asm_diskgroup.offline_disks":
+		case "oracledb.asm.disk_group.offline_disks":
 			found["offline_disks"] = true
 			assert.Equal(t, int64(0), metric.Gauge().DataPoints().At(0).IntValue())
-		case "oracledb.asm_disk.errors":
+		case "oracledb.asm.disk.errors":
 			found["disk_errors"] = true
-			assert.True(t, metric.Sum().IsMonotonic(), "oracledb.asm_disk.errors must be a monotonic sum")
+			assert.True(t, metric.Sum().IsMonotonic(), "oracledb.asm.disk.errors must be a monotonic sum")
 			assert.Equal(t, 2, metric.Sum().DataPoints().Len(), "expected one data point per direction (read, write)")
 		}
 	}
@@ -563,7 +563,7 @@ func TestScraper_ScrapeASMMetrics(t *testing.T) {
 // (a non-ASM instance), the scraper no-ops cleanly instead of erroring.
 func TestScraper_ScrapeASMMetrics_NonASMInstance(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
-	cfg.Metrics.OracledbAsmDiskgroupFree.Enabled = true
+	cfg.Metrics.OracledbAsmDiskGroupFree.Enabled = true
 	cfg.Metrics.OracledbAsmDiskErrors.Enabled = true
 
 	scrpr := oracleScraper{
@@ -592,8 +592,8 @@ func TestScraper_ScrapeASMMetrics_NonASMInstance(t *testing.T) {
 	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < metrics.Len(); i++ {
 		name := metrics.At(i).Name()
-		assert.NotEqual(t, "oracledb.asm_diskgroup.free", name)
-		assert.NotEqual(t, "oracledb.asm_disk.errors", name)
+		assert.NotEqual(t, "oracledb.asm.disk_group.free", name)
+		assert.NotEqual(t, "oracledb.asm.disk.errors", name)
 	}
 }
 
@@ -602,7 +602,7 @@ func TestScraper_ScrapeASMMetrics_NonASMInstance(t *testing.T) {
 // or later in the same scrape from being emitted.
 func TestScraper_ScrapeASMMetrics_ErrorDoesNotBlockOtherMetrics(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
-	cfg.Metrics.OracledbAsmDiskgroupFree.Enabled = true
+	cfg.Metrics.OracledbAsmDiskGroupFree.Enabled = true
 	cfg.Metrics.OracledbConsistentGets.Enabled = true
 
 	scrpr := oracleScraper{
@@ -635,7 +635,7 @@ func TestScraper_ScrapeASMMetrics_ErrorDoesNotBlockOtherMetrics(t *testing.T) {
 		if metrics.At(i).Name() == "oracledb.consistent_gets" {
 			found = true
 		}
-		assert.NotEqual(t, "oracledb.asm_diskgroup.free", metrics.At(i).Name(),
+		assert.NotEqual(t, "oracledb.asm.disk_group.free", metrics.At(i).Name(),
 			"the failed ASM metric itself must not appear")
 	}
 	assert.True(t, found, "oracledb.consistent_gets must still be emitted despite the ASM error")

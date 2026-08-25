@@ -310,7 +310,7 @@ metrics:
     enabled: true
 ```
 
-### oracledb.asm_disk.errors
+### oracledb.asm.disk.errors
 
 Count of I/O errors on an ASM disk.
 
@@ -322,11 +322,11 @@ Count of I/O errors on an ASM disk.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.asm_diskgroup.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
-| oracledb.asm_disk.name | The name of the ASM disk. | Any Str | Recommended | - |
+| oracledb.asm.disk_group.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+| oracledb.asm.disk.name | The name of the ASM disk. | Any Str | Recommended | - |
 | disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
 
-### oracledb.asm_diskgroup.free
+### oracledb.asm.disk_group.free
 
 Free space in an ASM diskgroup.
 
@@ -338,9 +338,9 @@ Free space in an ASM diskgroup.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.asm_diskgroup.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+| oracledb.asm.disk_group.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
 
-### oracledb.asm_diskgroup.offline_disks
+### oracledb.asm.disk_group.offline_disks
 
 Count of disks currently offline within an ASM diskgroup.
 
@@ -352,9 +352,9 @@ Count of disks currently offline within an ASM diskgroup.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.asm_diskgroup.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+| oracledb.asm.disk_group.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
 
-### oracledb.asm_diskgroup.total
+### oracledb.asm.disk_group.total
 
 Total space in an ASM diskgroup.
 
@@ -366,9 +366,9 @@ Total space in an ASM diskgroup.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.asm_diskgroup.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+| oracledb.asm.disk_group.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
 
-### oracledb.asm_diskgroup.usable_free
+### oracledb.asm.disk_group.usable_free
 
 Free space that can safely be used for files after accounting for ASM redundancy and required mirror recovery capacity.
 
@@ -380,7 +380,7 @@ Free space that can safely be used for files after accounting for ASM redundancy
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| oracledb.asm_diskgroup.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+| oracledb.asm.disk_group.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
 
 ### oracledb.buffer.inspected
 

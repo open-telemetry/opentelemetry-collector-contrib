@@ -636,24 +636,24 @@ var MapAttributeOracledbTransactionType = map[string]AttributeOracledbTransactio
 
 var MetricsInfo = metricsInfo{
 	OracledbAsmDiskErrors: metricInfo{
-		Name:       "oracledb.asm_disk.errors",
-		Attributes: []string{"oracledb.asm_diskgroup.name", "oracledb.asm_disk.name", "disk.io.direction"},
+		Name:       "oracledb.asm.disk.errors",
+		Attributes: []string{"oracledb.asm.disk_group.name", "oracledb.asm.disk.name", "disk.io.direction"},
 	},
-	OracledbAsmDiskgroupFree: metricInfo{
-		Name:       "oracledb.asm_diskgroup.free",
-		Attributes: []string{"oracledb.asm_diskgroup.name"},
+	OracledbAsmDiskGroupFree: metricInfo{
+		Name:       "oracledb.asm.disk_group.free",
+		Attributes: []string{"oracledb.asm.disk_group.name"},
 	},
-	OracledbAsmDiskgroupOfflineDisks: metricInfo{
-		Name:       "oracledb.asm_diskgroup.offline_disks",
-		Attributes: []string{"oracledb.asm_diskgroup.name"},
+	OracledbAsmDiskGroupOfflineDisks: metricInfo{
+		Name:       "oracledb.asm.disk_group.offline_disks",
+		Attributes: []string{"oracledb.asm.disk_group.name"},
 	},
-	OracledbAsmDiskgroupTotal: metricInfo{
-		Name:       "oracledb.asm_diskgroup.total",
-		Attributes: []string{"oracledb.asm_diskgroup.name"},
+	OracledbAsmDiskGroupTotal: metricInfo{
+		Name:       "oracledb.asm.disk_group.total",
+		Attributes: []string{"oracledb.asm.disk_group.name"},
 	},
-	OracledbAsmDiskgroupUsableFree: metricInfo{
-		Name:       "oracledb.asm_diskgroup.usable_free",
-		Attributes: []string{"oracledb.asm_diskgroup.name"},
+	OracledbAsmDiskGroupUsableFree: metricInfo{
+		Name:       "oracledb.asm.disk_group.usable_free",
+		Attributes: []string{"oracledb.asm.disk_group.name"},
 	},
 	OracledbBufferInspected: metricInfo{
 		Name:       "oracledb.buffer.inspected",
@@ -1136,10 +1136,10 @@ var MetricsInfo = metricsInfo{
 
 type metricsInfo struct {
 	OracledbAsmDiskErrors                         metricInfo
-	OracledbAsmDiskgroupFree                      metricInfo
-	OracledbAsmDiskgroupOfflineDisks              metricInfo
-	OracledbAsmDiskgroupTotal                     metricInfo
-	OracledbAsmDiskgroupUsableFree                metricInfo
+	OracledbAsmDiskGroupFree                      metricInfo
+	OracledbAsmDiskGroupOfflineDisks              metricInfo
+	OracledbAsmDiskGroupTotal                     metricInfo
+	OracledbAsmDiskGroupUsableFree                metricInfo
 	OracledbBufferInspected                       metricInfo
 	OracledbBufferRequests                        metricInfo
 	OracledbBufferCacheBlockChanges               metricInfo
@@ -1284,9 +1284,9 @@ type metricOracledbAsmDiskErrors struct {
 	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
 }
 
-// init fills oracledb.asm_disk.errors metric with initial data.
+// init fills oracledb.asm.disk.errors metric with initial data.
 func (m *metricOracledbAsmDiskErrors) init() {
-	m.data.SetName("oracledb.asm_disk.errors")
+	m.data.SetName("oracledb.asm.disk.errors")
 	m.data.SetDescription("Count of I/O errors on an ASM disk.")
 	m.data.SetUnit("{error}")
 	m.data.SetEmptySum()
@@ -1296,7 +1296,7 @@ func (m *metricOracledbAsmDiskErrors) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbAsmDiskErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbAsmDiskgroupNameAttributeValue string, oracledbAsmDiskNameAttributeValue string, diskIoDirectionAttributeValue string) {
+func (m *metricOracledbAsmDiskErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue string, oracledbAsmDiskNameAttributeValue string, diskIoDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1304,11 +1304,11 @@ func (m *metricOracledbAsmDiskErrors) recordDataPoint(start pcommon.Timestamp, t
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskgroupName) {
-		dp.Attributes().PutStr("oracledb.asm_diskgroup.name", oracledbAsmDiskgroupNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskGroupName) {
+		dp.Attributes().PutStr("oracledb.asm.disk_group.name", oracledbAsmDiskGroupNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskName) {
-		dp.Attributes().PutStr("oracledb.asm_disk.name", oracledbAsmDiskNameAttributeValue)
+		dp.Attributes().PutStr("oracledb.asm.disk.name", oracledbAsmDiskNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, OracledbAsmDiskErrorsMetricAttributeKeyDiskIoDirection) {
 		dp.Attributes().PutStr("disk.io.direction", diskIoDirectionAttributeValue)
@@ -1374,16 +1374,16 @@ func newMetricOracledbAsmDiskErrors(cfg OracledbAsmDiskErrorsMetricConfig) metri
 	return m
 }
 
-type metricOracledbAsmDiskgroupFree struct {
+type metricOracledbAsmDiskGroupFree struct {
 	data          pmetric.Metric                       // data buffer for generated metric.
-	config        OracledbAsmDiskgroupFreeMetricConfig // metric config provided by user.
+	config        OracledbAsmDiskGroupFreeMetricConfig // metric config provided by user.
 	capacity      int                                  // max observed number of data points added to the metric.
 	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
 }
 
-// init fills oracledb.asm_diskgroup.free metric with initial data.
-func (m *metricOracledbAsmDiskgroupFree) init() {
-	m.data.SetName("oracledb.asm_diskgroup.free")
+// init fills oracledb.asm.disk_group.free metric with initial data.
+func (m *metricOracledbAsmDiskGroupFree) init() {
+	m.data.SetName("oracledb.asm.disk_group.free")
 	m.data.SetDescription("Free space in an ASM diskgroup.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
@@ -1391,7 +1391,7 @@ func (m *metricOracledbAsmDiskgroupFree) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbAsmDiskgroupFree) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbAsmDiskgroupNameAttributeValue string) {
+func (m *metricOracledbAsmDiskGroupFree) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1399,8 +1399,8 @@ func (m *metricOracledbAsmDiskgroupFree) recordDataPoint(start pcommon.Timestamp
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, OracledbAsmDiskgroupFreeMetricAttributeKeyOracledbAsmDiskgroupName) {
-		dp.Attributes().PutStr("oracledb.asm_diskgroup.name", oracledbAsmDiskgroupNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, OracledbAsmDiskGroupFreeMetricAttributeKeyOracledbAsmDiskGroupName) {
+		dp.Attributes().PutStr("oracledb.asm.disk_group.name", oracledbAsmDiskGroupNameAttributeValue)
 	}
 
 	var s string
@@ -1433,14 +1433,14 @@ func (m *metricOracledbAsmDiskgroupFree) recordDataPoint(start pcommon.Timestamp
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbAsmDiskgroupFree) updateCapacity() {
+func (m *metricOracledbAsmDiskGroupFree) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbAsmDiskgroupFree) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbAsmDiskGroupFree) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
@@ -1453,8 +1453,8 @@ func (m *metricOracledbAsmDiskgroupFree) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbAsmDiskgroupFree(cfg OracledbAsmDiskgroupFreeMetricConfig) metricOracledbAsmDiskgroupFree {
-	m := metricOracledbAsmDiskgroupFree{config: cfg}
+func newMetricOracledbAsmDiskGroupFree(cfg OracledbAsmDiskGroupFreeMetricConfig) metricOracledbAsmDiskGroupFree {
+	m := metricOracledbAsmDiskGroupFree{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -1463,16 +1463,16 @@ func newMetricOracledbAsmDiskgroupFree(cfg OracledbAsmDiskgroupFreeMetricConfig)
 	return m
 }
 
-type metricOracledbAsmDiskgroupOfflineDisks struct {
+type metricOracledbAsmDiskGroupOfflineDisks struct {
 	data          pmetric.Metric                               // data buffer for generated metric.
-	config        OracledbAsmDiskgroupOfflineDisksMetricConfig // metric config provided by user.
+	config        OracledbAsmDiskGroupOfflineDisksMetricConfig // metric config provided by user.
 	capacity      int                                          // max observed number of data points added to the metric.
 	aggDataPoints []int64                                      // slice containing number of aggregated datapoints at each index
 }
 
-// init fills oracledb.asm_diskgroup.offline_disks metric with initial data.
-func (m *metricOracledbAsmDiskgroupOfflineDisks) init() {
-	m.data.SetName("oracledb.asm_diskgroup.offline_disks")
+// init fills oracledb.asm.disk_group.offline_disks metric with initial data.
+func (m *metricOracledbAsmDiskGroupOfflineDisks) init() {
+	m.data.SetName("oracledb.asm.disk_group.offline_disks")
 	m.data.SetDescription("Count of disks currently offline within an ASM diskgroup.")
 	m.data.SetUnit("{disk}")
 	m.data.SetEmptyGauge()
@@ -1480,7 +1480,7 @@ func (m *metricOracledbAsmDiskgroupOfflineDisks) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbAsmDiskgroupOfflineDisks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbAsmDiskgroupNameAttributeValue string) {
+func (m *metricOracledbAsmDiskGroupOfflineDisks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1488,8 +1488,8 @@ func (m *metricOracledbAsmDiskgroupOfflineDisks) recordDataPoint(start pcommon.T
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, OracledbAsmDiskgroupOfflineDisksMetricAttributeKeyOracledbAsmDiskgroupName) {
-		dp.Attributes().PutStr("oracledb.asm_diskgroup.name", oracledbAsmDiskgroupNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, OracledbAsmDiskGroupOfflineDisksMetricAttributeKeyOracledbAsmDiskGroupName) {
+		dp.Attributes().PutStr("oracledb.asm.disk_group.name", oracledbAsmDiskGroupNameAttributeValue)
 	}
 
 	var s string
@@ -1522,14 +1522,14 @@ func (m *metricOracledbAsmDiskgroupOfflineDisks) recordDataPoint(start pcommon.T
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbAsmDiskgroupOfflineDisks) updateCapacity() {
+func (m *metricOracledbAsmDiskGroupOfflineDisks) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbAsmDiskgroupOfflineDisks) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbAsmDiskGroupOfflineDisks) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
@@ -1542,8 +1542,8 @@ func (m *metricOracledbAsmDiskgroupOfflineDisks) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricOracledbAsmDiskgroupOfflineDisks(cfg OracledbAsmDiskgroupOfflineDisksMetricConfig) metricOracledbAsmDiskgroupOfflineDisks {
-	m := metricOracledbAsmDiskgroupOfflineDisks{config: cfg}
+func newMetricOracledbAsmDiskGroupOfflineDisks(cfg OracledbAsmDiskGroupOfflineDisksMetricConfig) metricOracledbAsmDiskGroupOfflineDisks {
+	m := metricOracledbAsmDiskGroupOfflineDisks{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -1552,16 +1552,16 @@ func newMetricOracledbAsmDiskgroupOfflineDisks(cfg OracledbAsmDiskgroupOfflineDi
 	return m
 }
 
-type metricOracledbAsmDiskgroupTotal struct {
+type metricOracledbAsmDiskGroupTotal struct {
 	data          pmetric.Metric                        // data buffer for generated metric.
-	config        OracledbAsmDiskgroupTotalMetricConfig // metric config provided by user.
+	config        OracledbAsmDiskGroupTotalMetricConfig // metric config provided by user.
 	capacity      int                                   // max observed number of data points added to the metric.
 	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
 }
 
-// init fills oracledb.asm_diskgroup.total metric with initial data.
-func (m *metricOracledbAsmDiskgroupTotal) init() {
-	m.data.SetName("oracledb.asm_diskgroup.total")
+// init fills oracledb.asm.disk_group.total metric with initial data.
+func (m *metricOracledbAsmDiskGroupTotal) init() {
+	m.data.SetName("oracledb.asm.disk_group.total")
 	m.data.SetDescription("Total space in an ASM diskgroup.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
@@ -1569,7 +1569,7 @@ func (m *metricOracledbAsmDiskgroupTotal) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbAsmDiskgroupTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbAsmDiskgroupNameAttributeValue string) {
+func (m *metricOracledbAsmDiskGroupTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1577,8 +1577,8 @@ func (m *metricOracledbAsmDiskgroupTotal) recordDataPoint(start pcommon.Timestam
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, OracledbAsmDiskgroupTotalMetricAttributeKeyOracledbAsmDiskgroupName) {
-		dp.Attributes().PutStr("oracledb.asm_diskgroup.name", oracledbAsmDiskgroupNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, OracledbAsmDiskGroupTotalMetricAttributeKeyOracledbAsmDiskGroupName) {
+		dp.Attributes().PutStr("oracledb.asm.disk_group.name", oracledbAsmDiskGroupNameAttributeValue)
 	}
 
 	var s string
@@ -1611,14 +1611,14 @@ func (m *metricOracledbAsmDiskgroupTotal) recordDataPoint(start pcommon.Timestam
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbAsmDiskgroupTotal) updateCapacity() {
+func (m *metricOracledbAsmDiskGroupTotal) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbAsmDiskgroupTotal) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbAsmDiskGroupTotal) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
@@ -1631,8 +1631,8 @@ func (m *metricOracledbAsmDiskgroupTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbAsmDiskgroupTotal(cfg OracledbAsmDiskgroupTotalMetricConfig) metricOracledbAsmDiskgroupTotal {
-	m := metricOracledbAsmDiskgroupTotal{config: cfg}
+func newMetricOracledbAsmDiskGroupTotal(cfg OracledbAsmDiskGroupTotalMetricConfig) metricOracledbAsmDiskGroupTotal {
+	m := metricOracledbAsmDiskGroupTotal{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -1641,16 +1641,16 @@ func newMetricOracledbAsmDiskgroupTotal(cfg OracledbAsmDiskgroupTotalMetricConfi
 	return m
 }
 
-type metricOracledbAsmDiskgroupUsableFree struct {
+type metricOracledbAsmDiskGroupUsableFree struct {
 	data          pmetric.Metric                             // data buffer for generated metric.
-	config        OracledbAsmDiskgroupUsableFreeMetricConfig // metric config provided by user.
+	config        OracledbAsmDiskGroupUsableFreeMetricConfig // metric config provided by user.
 	capacity      int                                        // max observed number of data points added to the metric.
 	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
 }
 
-// init fills oracledb.asm_diskgroup.usable_free metric with initial data.
-func (m *metricOracledbAsmDiskgroupUsableFree) init() {
-	m.data.SetName("oracledb.asm_diskgroup.usable_free")
+// init fills oracledb.asm.disk_group.usable_free metric with initial data.
+func (m *metricOracledbAsmDiskGroupUsableFree) init() {
+	m.data.SetName("oracledb.asm.disk_group.usable_free")
 	m.data.SetDescription("Free space that can safely be used for files after accounting for ASM redundancy and required mirror recovery capacity.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
@@ -1658,7 +1658,7 @@ func (m *metricOracledbAsmDiskgroupUsableFree) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricOracledbAsmDiskgroupUsableFree) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbAsmDiskgroupNameAttributeValue string) {
+func (m *metricOracledbAsmDiskGroupUsableFree) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1666,8 +1666,8 @@ func (m *metricOracledbAsmDiskgroupUsableFree) recordDataPoint(start pcommon.Tim
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, OracledbAsmDiskgroupUsableFreeMetricAttributeKeyOracledbAsmDiskgroupName) {
-		dp.Attributes().PutStr("oracledb.asm_diskgroup.name", oracledbAsmDiskgroupNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, OracledbAsmDiskGroupUsableFreeMetricAttributeKeyOracledbAsmDiskGroupName) {
+		dp.Attributes().PutStr("oracledb.asm.disk_group.name", oracledbAsmDiskGroupNameAttributeValue)
 	}
 
 	var s string
@@ -1700,14 +1700,14 @@ func (m *metricOracledbAsmDiskgroupUsableFree) recordDataPoint(start pcommon.Tim
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricOracledbAsmDiskgroupUsableFree) updateCapacity() {
+func (m *metricOracledbAsmDiskGroupUsableFree) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricOracledbAsmDiskgroupUsableFree) emit(metrics pmetric.MetricSlice) {
+func (m *metricOracledbAsmDiskGroupUsableFree) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
@@ -1720,8 +1720,8 @@ func (m *metricOracledbAsmDiskgroupUsableFree) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricOracledbAsmDiskgroupUsableFree(cfg OracledbAsmDiskgroupUsableFreeMetricConfig) metricOracledbAsmDiskgroupUsableFree {
-	m := metricOracledbAsmDiskgroupUsableFree{config: cfg}
+func newMetricOracledbAsmDiskGroupUsableFree(cfg OracledbAsmDiskGroupUsableFreeMetricConfig) metricOracledbAsmDiskGroupUsableFree {
+	m := metricOracledbAsmDiskGroupUsableFree{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -11842,10 +11842,10 @@ type MetricsBuilder struct {
 	resourceAttributeIncludeFilter                      map[string]filter.Filter
 	resourceAttributeExcludeFilter                      map[string]filter.Filter
 	metricOracledbAsmDiskErrors                         metricOracledbAsmDiskErrors
-	metricOracledbAsmDiskgroupFree                      metricOracledbAsmDiskgroupFree
-	metricOracledbAsmDiskgroupOfflineDisks              metricOracledbAsmDiskgroupOfflineDisks
-	metricOracledbAsmDiskgroupTotal                     metricOracledbAsmDiskgroupTotal
-	metricOracledbAsmDiskgroupUsableFree                metricOracledbAsmDiskgroupUsableFree
+	metricOracledbAsmDiskGroupFree                      metricOracledbAsmDiskGroupFree
+	metricOracledbAsmDiskGroupOfflineDisks              metricOracledbAsmDiskGroupOfflineDisks
+	metricOracledbAsmDiskGroupTotal                     metricOracledbAsmDiskGroupTotal
+	metricOracledbAsmDiskGroupUsableFree                metricOracledbAsmDiskGroupUsableFree
 	metricOracledbBufferInspected                       metricOracledbBufferInspected
 	metricOracledbBufferRequests                        metricOracledbBufferRequests
 	metricOracledbBufferCacheBlockChanges               metricOracledbBufferCacheBlockChanges
@@ -12002,10 +12002,10 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricsBuffer:                                       pmetric.NewMetrics(),
 		buildInfo:                                           settings.BuildInfo,
 		metricOracledbAsmDiskErrors:                         newMetricOracledbAsmDiskErrors(mbc.Metrics.OracledbAsmDiskErrors),
-		metricOracledbAsmDiskgroupFree:                      newMetricOracledbAsmDiskgroupFree(mbc.Metrics.OracledbAsmDiskgroupFree),
-		metricOracledbAsmDiskgroupOfflineDisks:              newMetricOracledbAsmDiskgroupOfflineDisks(mbc.Metrics.OracledbAsmDiskgroupOfflineDisks),
-		metricOracledbAsmDiskgroupTotal:                     newMetricOracledbAsmDiskgroupTotal(mbc.Metrics.OracledbAsmDiskgroupTotal),
-		metricOracledbAsmDiskgroupUsableFree:                newMetricOracledbAsmDiskgroupUsableFree(mbc.Metrics.OracledbAsmDiskgroupUsableFree),
+		metricOracledbAsmDiskGroupFree:                      newMetricOracledbAsmDiskGroupFree(mbc.Metrics.OracledbAsmDiskGroupFree),
+		metricOracledbAsmDiskGroupOfflineDisks:              newMetricOracledbAsmDiskGroupOfflineDisks(mbc.Metrics.OracledbAsmDiskGroupOfflineDisks),
+		metricOracledbAsmDiskGroupTotal:                     newMetricOracledbAsmDiskGroupTotal(mbc.Metrics.OracledbAsmDiskGroupTotal),
+		metricOracledbAsmDiskGroupUsableFree:                newMetricOracledbAsmDiskGroupUsableFree(mbc.Metrics.OracledbAsmDiskGroupUsableFree),
 		metricOracledbBufferInspected:                       newMetricOracledbBufferInspected(mbc.Metrics.OracledbBufferInspected),
 		metricOracledbBufferRequests:                        newMetricOracledbBufferRequests(mbc.Metrics.OracledbBufferRequests),
 		metricOracledbBufferCacheBlockChanges:               newMetricOracledbBufferCacheBlockChanges(mbc.Metrics.OracledbBufferCacheBlockChanges),
@@ -12263,10 +12263,10 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricOracledbAsmDiskErrors.emit(ils.Metrics())
-	mb.metricOracledbAsmDiskgroupFree.emit(ils.Metrics())
-	mb.metricOracledbAsmDiskgroupOfflineDisks.emit(ils.Metrics())
-	mb.metricOracledbAsmDiskgroupTotal.emit(ils.Metrics())
-	mb.metricOracledbAsmDiskgroupUsableFree.emit(ils.Metrics())
+	mb.metricOracledbAsmDiskGroupFree.emit(ils.Metrics())
+	mb.metricOracledbAsmDiskGroupOfflineDisks.emit(ils.Metrics())
+	mb.metricOracledbAsmDiskGroupTotal.emit(ils.Metrics())
+	mb.metricOracledbAsmDiskGroupUsableFree.emit(ils.Metrics())
 	mb.metricOracledbBufferInspected.emit(ils.Metrics())
 	mb.metricOracledbBufferRequests.emit(ils.Metrics())
 	mb.metricOracledbBufferCacheBlockChanges.emit(ils.Metrics())
@@ -12428,34 +12428,34 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	return metrics
 }
 
-// RecordOracledbAsmDiskErrorsDataPoint adds a data point to oracledb.asm_disk.errors metric.
-func (mb *MetricsBuilder) RecordOracledbAsmDiskErrorsDataPoint(ts pcommon.Timestamp, inputVal string, oracledbAsmDiskgroupNameAttributeValue string, oracledbAsmDiskNameAttributeValue string, diskIoDirectionAttributeValue AttributeDiskIoDirection) error {
+// RecordOracledbAsmDiskErrorsDataPoint adds a data point to oracledb.asm.disk.errors metric.
+func (mb *MetricsBuilder) RecordOracledbAsmDiskErrorsDataPoint(ts pcommon.Timestamp, inputVal string, oracledbAsmDiskGroupNameAttributeValue string, oracledbAsmDiskNameAttributeValue string, diskIoDirectionAttributeValue AttributeDiskIoDirection) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbAsmDiskErrors, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbAsmDiskErrors.recordDataPoint(mb.startTime, ts, val, oracledbAsmDiskgroupNameAttributeValue, oracledbAsmDiskNameAttributeValue, diskIoDirectionAttributeValue.String())
+	mb.metricOracledbAsmDiskErrors.recordDataPoint(mb.startTime, ts, val, oracledbAsmDiskGroupNameAttributeValue, oracledbAsmDiskNameAttributeValue, diskIoDirectionAttributeValue.String())
 	return nil
 }
 
-// RecordOracledbAsmDiskgroupFreeDataPoint adds a data point to oracledb.asm_diskgroup.free metric.
-func (mb *MetricsBuilder) RecordOracledbAsmDiskgroupFreeDataPoint(ts pcommon.Timestamp, val int64, oracledbAsmDiskgroupNameAttributeValue string) {
-	mb.metricOracledbAsmDiskgroupFree.recordDataPoint(mb.startTime, ts, val, oracledbAsmDiskgroupNameAttributeValue)
+// RecordOracledbAsmDiskGroupFreeDataPoint adds a data point to oracledb.asm.disk_group.free metric.
+func (mb *MetricsBuilder) RecordOracledbAsmDiskGroupFreeDataPoint(ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue string) {
+	mb.metricOracledbAsmDiskGroupFree.recordDataPoint(mb.startTime, ts, val, oracledbAsmDiskGroupNameAttributeValue)
 }
 
-// RecordOracledbAsmDiskgroupOfflineDisksDataPoint adds a data point to oracledb.asm_diskgroup.offline_disks metric.
-func (mb *MetricsBuilder) RecordOracledbAsmDiskgroupOfflineDisksDataPoint(ts pcommon.Timestamp, val int64, oracledbAsmDiskgroupNameAttributeValue string) {
-	mb.metricOracledbAsmDiskgroupOfflineDisks.recordDataPoint(mb.startTime, ts, val, oracledbAsmDiskgroupNameAttributeValue)
+// RecordOracledbAsmDiskGroupOfflineDisksDataPoint adds a data point to oracledb.asm.disk_group.offline_disks metric.
+func (mb *MetricsBuilder) RecordOracledbAsmDiskGroupOfflineDisksDataPoint(ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue string) {
+	mb.metricOracledbAsmDiskGroupOfflineDisks.recordDataPoint(mb.startTime, ts, val, oracledbAsmDiskGroupNameAttributeValue)
 }
 
-// RecordOracledbAsmDiskgroupTotalDataPoint adds a data point to oracledb.asm_diskgroup.total metric.
-func (mb *MetricsBuilder) RecordOracledbAsmDiskgroupTotalDataPoint(ts pcommon.Timestamp, val int64, oracledbAsmDiskgroupNameAttributeValue string) {
-	mb.metricOracledbAsmDiskgroupTotal.recordDataPoint(mb.startTime, ts, val, oracledbAsmDiskgroupNameAttributeValue)
+// RecordOracledbAsmDiskGroupTotalDataPoint adds a data point to oracledb.asm.disk_group.total metric.
+func (mb *MetricsBuilder) RecordOracledbAsmDiskGroupTotalDataPoint(ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue string) {
+	mb.metricOracledbAsmDiskGroupTotal.recordDataPoint(mb.startTime, ts, val, oracledbAsmDiskGroupNameAttributeValue)
 }
 
-// RecordOracledbAsmDiskgroupUsableFreeDataPoint adds a data point to oracledb.asm_diskgroup.usable_free metric.
-func (mb *MetricsBuilder) RecordOracledbAsmDiskgroupUsableFreeDataPoint(ts pcommon.Timestamp, val int64, oracledbAsmDiskgroupNameAttributeValue string) {
-	mb.metricOracledbAsmDiskgroupUsableFree.recordDataPoint(mb.startTime, ts, val, oracledbAsmDiskgroupNameAttributeValue)
+// RecordOracledbAsmDiskGroupUsableFreeDataPoint adds a data point to oracledb.asm.disk_group.usable_free metric.
+func (mb *MetricsBuilder) RecordOracledbAsmDiskGroupUsableFreeDataPoint(ts pcommon.Timestamp, val int64, oracledbAsmDiskGroupNameAttributeValue string) {
+	mb.metricOracledbAsmDiskGroupUsableFree.recordDataPoint(mb.startTime, ts, val, oracledbAsmDiskGroupNameAttributeValue)
 }
 
 // RecordOracledbBufferInspectedDataPoint adds a data point to oracledb.buffer.inspected metric.

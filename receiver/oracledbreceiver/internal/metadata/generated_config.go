@@ -10,16 +10,16 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// OracledbAsmDiskErrorsMetricAttributeKey specifies the key of an attribute for the oracledb.asm_disk.errors metric.
+// OracledbAsmDiskErrorsMetricAttributeKey specifies the key of an attribute for the oracledb.asm.disk.errors metric.
 type OracledbAsmDiskErrorsMetricAttributeKey string
 
 const (
-	OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskgroupName OracledbAsmDiskErrorsMetricAttributeKey = "oracledb.asm_diskgroup.name"
-	OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskName      OracledbAsmDiskErrorsMetricAttributeKey = "oracledb.asm_disk.name"
+	OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskGroupName OracledbAsmDiskErrorsMetricAttributeKey = "oracledb.asm.disk_group.name"
+	OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskName      OracledbAsmDiskErrorsMetricAttributeKey = "oracledb.asm.disk.name"
 	OracledbAsmDiskErrorsMetricAttributeKeyDiskIoDirection          OracledbAsmDiskErrorsMetricAttributeKey = "disk.io.direction"
 )
 
-// OracledbAsmDiskErrorsMetricConfig provides config for the oracledb.asm_disk.errors metric.
+// OracledbAsmDiskErrorsMetricConfig provides config for the oracledb.asm.disk.errors metric.
 type OracledbAsmDiskErrorsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
@@ -45,9 +45,9 @@ func (ms *OracledbAsmDiskErrorsMetricConfig) Unmarshal(parser *confmap.Conf) err
 func (ms *OracledbAsmDiskErrorsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskgroupName, OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskName, OracledbAsmDiskErrorsMetricAttributeKeyDiskIoDirection:
+		case OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskGroupName, OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskName, OracledbAsmDiskErrorsMetricAttributeKeyDiskIoDirection:
 		default:
-			return fmt.Errorf("metric oracledb.asm_disk.errors doesn't have an attribute %v, valid attributes: [oracledb.asm_diskgroup.name, oracledb.asm_disk.name, disk.io.direction]", val)
+			return fmt.Errorf("metric oracledb.asm.disk.errors doesn't have an attribute %v, valid attributes: [oracledb.asm.disk_group.name, oracledb.asm.disk.name, disk.io.direction]", val)
 		}
 	}
 
@@ -60,23 +60,23 @@ func (ms *OracledbAsmDiskErrorsMetricConfig) Validate() error {
 	return nil
 }
 
-// OracledbAsmDiskgroupFreeMetricAttributeKey specifies the key of an attribute for the oracledb.asm_diskgroup.free metric.
-type OracledbAsmDiskgroupFreeMetricAttributeKey string
+// OracledbAsmDiskGroupFreeMetricAttributeKey specifies the key of an attribute for the oracledb.asm.disk_group.free metric.
+type OracledbAsmDiskGroupFreeMetricAttributeKey string
 
 const (
-	OracledbAsmDiskgroupFreeMetricAttributeKeyOracledbAsmDiskgroupName OracledbAsmDiskgroupFreeMetricAttributeKey = "oracledb.asm_diskgroup.name"
+	OracledbAsmDiskGroupFreeMetricAttributeKeyOracledbAsmDiskGroupName OracledbAsmDiskGroupFreeMetricAttributeKey = "oracledb.asm.disk_group.name"
 )
 
-// OracledbAsmDiskgroupFreeMetricConfig provides config for the oracledb.asm_diskgroup.free metric.
-type OracledbAsmDiskgroupFreeMetricConfig struct {
+// OracledbAsmDiskGroupFreeMetricConfig provides config for the oracledb.asm.disk_group.free metric.
+type OracledbAsmDiskGroupFreeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
 	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbAsmDiskgroupFreeMetricAttributeKey `mapstructure:"attributes"`
+	EnabledAttributes   []OracledbAsmDiskGroupFreeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *OracledbAsmDiskgroupFreeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbAsmDiskGroupFreeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -90,12 +90,12 @@ func (ms *OracledbAsmDiskgroupFreeMetricConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-func (ms *OracledbAsmDiskgroupFreeMetricConfig) Validate() error {
+func (ms *OracledbAsmDiskGroupFreeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbAsmDiskgroupFreeMetricAttributeKeyOracledbAsmDiskgroupName:
+		case OracledbAsmDiskGroupFreeMetricAttributeKeyOracledbAsmDiskGroupName:
 		default:
-			return fmt.Errorf("metric oracledb.asm_diskgroup.free doesn't have an attribute %v, valid attributes: [oracledb.asm_diskgroup.name]", val)
+			return fmt.Errorf("metric oracledb.asm.disk_group.free doesn't have an attribute %v, valid attributes: [oracledb.asm.disk_group.name]", val)
 		}
 	}
 
@@ -108,23 +108,23 @@ func (ms *OracledbAsmDiskgroupFreeMetricConfig) Validate() error {
 	return nil
 }
 
-// OracledbAsmDiskgroupOfflineDisksMetricAttributeKey specifies the key of an attribute for the oracledb.asm_diskgroup.offline_disks metric.
-type OracledbAsmDiskgroupOfflineDisksMetricAttributeKey string
+// OracledbAsmDiskGroupOfflineDisksMetricAttributeKey specifies the key of an attribute for the oracledb.asm.disk_group.offline_disks metric.
+type OracledbAsmDiskGroupOfflineDisksMetricAttributeKey string
 
 const (
-	OracledbAsmDiskgroupOfflineDisksMetricAttributeKeyOracledbAsmDiskgroupName OracledbAsmDiskgroupOfflineDisksMetricAttributeKey = "oracledb.asm_diskgroup.name"
+	OracledbAsmDiskGroupOfflineDisksMetricAttributeKeyOracledbAsmDiskGroupName OracledbAsmDiskGroupOfflineDisksMetricAttributeKey = "oracledb.asm.disk_group.name"
 )
 
-// OracledbAsmDiskgroupOfflineDisksMetricConfig provides config for the oracledb.asm_diskgroup.offline_disks metric.
-type OracledbAsmDiskgroupOfflineDisksMetricConfig struct {
+// OracledbAsmDiskGroupOfflineDisksMetricConfig provides config for the oracledb.asm.disk_group.offline_disks metric.
+type OracledbAsmDiskGroupOfflineDisksMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
 	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbAsmDiskgroupOfflineDisksMetricAttributeKey `mapstructure:"attributes"`
+	EnabledAttributes   []OracledbAsmDiskGroupOfflineDisksMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *OracledbAsmDiskgroupOfflineDisksMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbAsmDiskGroupOfflineDisksMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -138,12 +138,12 @@ func (ms *OracledbAsmDiskgroupOfflineDisksMetricConfig) Unmarshal(parser *confma
 	return nil
 }
 
-func (ms *OracledbAsmDiskgroupOfflineDisksMetricConfig) Validate() error {
+func (ms *OracledbAsmDiskGroupOfflineDisksMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbAsmDiskgroupOfflineDisksMetricAttributeKeyOracledbAsmDiskgroupName:
+		case OracledbAsmDiskGroupOfflineDisksMetricAttributeKeyOracledbAsmDiskGroupName:
 		default:
-			return fmt.Errorf("metric oracledb.asm_diskgroup.offline_disks doesn't have an attribute %v, valid attributes: [oracledb.asm_diskgroup.name]", val)
+			return fmt.Errorf("metric oracledb.asm.disk_group.offline_disks doesn't have an attribute %v, valid attributes: [oracledb.asm.disk_group.name]", val)
 		}
 	}
 
@@ -156,23 +156,23 @@ func (ms *OracledbAsmDiskgroupOfflineDisksMetricConfig) Validate() error {
 	return nil
 }
 
-// OracledbAsmDiskgroupTotalMetricAttributeKey specifies the key of an attribute for the oracledb.asm_diskgroup.total metric.
-type OracledbAsmDiskgroupTotalMetricAttributeKey string
+// OracledbAsmDiskGroupTotalMetricAttributeKey specifies the key of an attribute for the oracledb.asm.disk_group.total metric.
+type OracledbAsmDiskGroupTotalMetricAttributeKey string
 
 const (
-	OracledbAsmDiskgroupTotalMetricAttributeKeyOracledbAsmDiskgroupName OracledbAsmDiskgroupTotalMetricAttributeKey = "oracledb.asm_diskgroup.name"
+	OracledbAsmDiskGroupTotalMetricAttributeKeyOracledbAsmDiskGroupName OracledbAsmDiskGroupTotalMetricAttributeKey = "oracledb.asm.disk_group.name"
 )
 
-// OracledbAsmDiskgroupTotalMetricConfig provides config for the oracledb.asm_diskgroup.total metric.
-type OracledbAsmDiskgroupTotalMetricConfig struct {
+// OracledbAsmDiskGroupTotalMetricConfig provides config for the oracledb.asm.disk_group.total metric.
+type OracledbAsmDiskGroupTotalMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
 	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbAsmDiskgroupTotalMetricAttributeKey `mapstructure:"attributes"`
+	EnabledAttributes   []OracledbAsmDiskGroupTotalMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *OracledbAsmDiskgroupTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbAsmDiskGroupTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -186,12 +186,12 @@ func (ms *OracledbAsmDiskgroupTotalMetricConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-func (ms *OracledbAsmDiskgroupTotalMetricConfig) Validate() error {
+func (ms *OracledbAsmDiskGroupTotalMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbAsmDiskgroupTotalMetricAttributeKeyOracledbAsmDiskgroupName:
+		case OracledbAsmDiskGroupTotalMetricAttributeKeyOracledbAsmDiskGroupName:
 		default:
-			return fmt.Errorf("metric oracledb.asm_diskgroup.total doesn't have an attribute %v, valid attributes: [oracledb.asm_diskgroup.name]", val)
+			return fmt.Errorf("metric oracledb.asm.disk_group.total doesn't have an attribute %v, valid attributes: [oracledb.asm.disk_group.name]", val)
 		}
 	}
 
@@ -204,23 +204,23 @@ func (ms *OracledbAsmDiskgroupTotalMetricConfig) Validate() error {
 	return nil
 }
 
-// OracledbAsmDiskgroupUsableFreeMetricAttributeKey specifies the key of an attribute for the oracledb.asm_diskgroup.usable_free metric.
-type OracledbAsmDiskgroupUsableFreeMetricAttributeKey string
+// OracledbAsmDiskGroupUsableFreeMetricAttributeKey specifies the key of an attribute for the oracledb.asm.disk_group.usable_free metric.
+type OracledbAsmDiskGroupUsableFreeMetricAttributeKey string
 
 const (
-	OracledbAsmDiskgroupUsableFreeMetricAttributeKeyOracledbAsmDiskgroupName OracledbAsmDiskgroupUsableFreeMetricAttributeKey = "oracledb.asm_diskgroup.name"
+	OracledbAsmDiskGroupUsableFreeMetricAttributeKeyOracledbAsmDiskGroupName OracledbAsmDiskGroupUsableFreeMetricAttributeKey = "oracledb.asm.disk_group.name"
 )
 
-// OracledbAsmDiskgroupUsableFreeMetricConfig provides config for the oracledb.asm_diskgroup.usable_free metric.
-type OracledbAsmDiskgroupUsableFreeMetricConfig struct {
+// OracledbAsmDiskGroupUsableFreeMetricConfig provides config for the oracledb.asm.disk_group.usable_free metric.
+type OracledbAsmDiskGroupUsableFreeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
 	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbAsmDiskgroupUsableFreeMetricAttributeKey `mapstructure:"attributes"`
+	EnabledAttributes   []OracledbAsmDiskGroupUsableFreeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *OracledbAsmDiskgroupUsableFreeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbAsmDiskGroupUsableFreeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -234,12 +234,12 @@ func (ms *OracledbAsmDiskgroupUsableFreeMetricConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-func (ms *OracledbAsmDiskgroupUsableFreeMetricConfig) Validate() error {
+func (ms *OracledbAsmDiskGroupUsableFreeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbAsmDiskgroupUsableFreeMetricAttributeKeyOracledbAsmDiskgroupName:
+		case OracledbAsmDiskGroupUsableFreeMetricAttributeKeyOracledbAsmDiskGroupName:
 		default:
-			return fmt.Errorf("metric oracledb.asm_diskgroup.usable_free doesn't have an attribute %v, valid attributes: [oracledb.asm_diskgroup.name]", val)
+			return fmt.Errorf("metric oracledb.asm.disk_group.usable_free doesn't have an attribute %v, valid attributes: [oracledb.asm.disk_group.name]", val)
 		}
 	}
 
@@ -5316,11 +5316,11 @@ func (ms *OracledbUserRollbacksMetricConfig) Validate() error {
 
 // MetricsConfig provides config for oracledb metrics.
 type MetricsConfig struct {
-	OracledbAsmDiskErrors                         OracledbAsmDiskErrorsMetricConfig                         `mapstructure:"oracledb.asm_disk.errors"`
-	OracledbAsmDiskgroupFree                      OracledbAsmDiskgroupFreeMetricConfig                      `mapstructure:"oracledb.asm_diskgroup.free"`
-	OracledbAsmDiskgroupOfflineDisks              OracledbAsmDiskgroupOfflineDisksMetricConfig              `mapstructure:"oracledb.asm_diskgroup.offline_disks"`
-	OracledbAsmDiskgroupTotal                     OracledbAsmDiskgroupTotalMetricConfig                     `mapstructure:"oracledb.asm_diskgroup.total"`
-	OracledbAsmDiskgroupUsableFree                OracledbAsmDiskgroupUsableFreeMetricConfig                `mapstructure:"oracledb.asm_diskgroup.usable_free"`
+	OracledbAsmDiskErrors                         OracledbAsmDiskErrorsMetricConfig                         `mapstructure:"oracledb.asm.disk.errors"`
+	OracledbAsmDiskGroupFree                      OracledbAsmDiskGroupFreeMetricConfig                      `mapstructure:"oracledb.asm.disk_group.free"`
+	OracledbAsmDiskGroupOfflineDisks              OracledbAsmDiskGroupOfflineDisksMetricConfig              `mapstructure:"oracledb.asm.disk_group.offline_disks"`
+	OracledbAsmDiskGroupTotal                     OracledbAsmDiskGroupTotalMetricConfig                     `mapstructure:"oracledb.asm.disk_group.total"`
+	OracledbAsmDiskGroupUsableFree                OracledbAsmDiskGroupUsableFreeMetricConfig                `mapstructure:"oracledb.asm.disk_group.usable_free"`
 	OracledbBufferInspected                       OracledbBufferInspectedMetricConfig                       `mapstructure:"oracledb.buffer.inspected"`
 	OracledbBufferRequests                        OracledbBufferRequestsMetricConfig                        `mapstructure:"oracledb.buffer.requests"`
 	OracledbBufferCacheBlockChanges               OracledbBufferCacheBlockChangesMetricConfig               `mapstructure:"oracledb.buffer_cache.block.changes"`
@@ -5458,27 +5458,27 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbAsmDiskErrors: OracledbAsmDiskErrorsMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []OracledbAsmDiskErrorsMetricAttributeKey{OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskgroupName, OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskName, OracledbAsmDiskErrorsMetricAttributeKeyDiskIoDirection},
+			EnabledAttributes:   []OracledbAsmDiskErrorsMetricAttributeKey{OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskGroupName, OracledbAsmDiskErrorsMetricAttributeKeyOracledbAsmDiskName, OracledbAsmDiskErrorsMetricAttributeKeyDiskIoDirection},
 		},
-		OracledbAsmDiskgroupFree: OracledbAsmDiskgroupFreeMetricConfig{
+		OracledbAsmDiskGroupFree: OracledbAsmDiskGroupFreeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbAsmDiskgroupFreeMetricAttributeKey{OracledbAsmDiskgroupFreeMetricAttributeKeyOracledbAsmDiskgroupName},
+			EnabledAttributes:   []OracledbAsmDiskGroupFreeMetricAttributeKey{OracledbAsmDiskGroupFreeMetricAttributeKeyOracledbAsmDiskGroupName},
 		},
-		OracledbAsmDiskgroupOfflineDisks: OracledbAsmDiskgroupOfflineDisksMetricConfig{
+		OracledbAsmDiskGroupOfflineDisks: OracledbAsmDiskGroupOfflineDisksMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbAsmDiskgroupOfflineDisksMetricAttributeKey{OracledbAsmDiskgroupOfflineDisksMetricAttributeKeyOracledbAsmDiskgroupName},
+			EnabledAttributes:   []OracledbAsmDiskGroupOfflineDisksMetricAttributeKey{OracledbAsmDiskGroupOfflineDisksMetricAttributeKeyOracledbAsmDiskGroupName},
 		},
-		OracledbAsmDiskgroupTotal: OracledbAsmDiskgroupTotalMetricConfig{
+		OracledbAsmDiskGroupTotal: OracledbAsmDiskGroupTotalMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbAsmDiskgroupTotalMetricAttributeKey{OracledbAsmDiskgroupTotalMetricAttributeKeyOracledbAsmDiskgroupName},
+			EnabledAttributes:   []OracledbAsmDiskGroupTotalMetricAttributeKey{OracledbAsmDiskGroupTotalMetricAttributeKeyOracledbAsmDiskGroupName},
 		},
-		OracledbAsmDiskgroupUsableFree: OracledbAsmDiskgroupUsableFreeMetricConfig{
+		OracledbAsmDiskGroupUsableFree: OracledbAsmDiskGroupUsableFreeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbAsmDiskgroupUsableFreeMetricAttributeKey{OracledbAsmDiskgroupUsableFreeMetricAttributeKeyOracledbAsmDiskgroupName},
+			EnabledAttributes:   []OracledbAsmDiskGroupUsableFreeMetricAttributeKey{OracledbAsmDiskGroupUsableFreeMetricAttributeKeyOracledbAsmDiskGroupName},
 		},
 		OracledbBufferInspected: OracledbBufferInspectedMetricConfig{
 			Enabled:             false,

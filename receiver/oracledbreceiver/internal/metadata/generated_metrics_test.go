@@ -67,11 +67,11 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["oracledb.asm_disk.errors"] = mb.metricOracledbAsmDiskErrors.config.AggregationStrategy
-			aggMap["oracledb.asm_diskgroup.free"] = mb.metricOracledbAsmDiskgroupFree.config.AggregationStrategy
-			aggMap["oracledb.asm_diskgroup.offline_disks"] = mb.metricOracledbAsmDiskgroupOfflineDisks.config.AggregationStrategy
-			aggMap["oracledb.asm_diskgroup.total"] = mb.metricOracledbAsmDiskgroupTotal.config.AggregationStrategy
-			aggMap["oracledb.asm_diskgroup.usable_free"] = mb.metricOracledbAsmDiskgroupUsableFree.config.AggregationStrategy
+			aggMap["oracledb.asm.disk.errors"] = mb.metricOracledbAsmDiskErrors.config.AggregationStrategy
+			aggMap["oracledb.asm.disk_group.free"] = mb.metricOracledbAsmDiskGroupFree.config.AggregationStrategy
+			aggMap["oracledb.asm.disk_group.offline_disks"] = mb.metricOracledbAsmDiskGroupOfflineDisks.config.AggregationStrategy
+			aggMap["oracledb.asm.disk_group.total"] = mb.metricOracledbAsmDiskGroupTotal.config.AggregationStrategy
+			aggMap["oracledb.asm.disk_group.usable_free"] = mb.metricOracledbAsmDiskGroupUsableFree.config.AggregationStrategy
 			aggMap["oracledb.buffer.inspected"] = mb.metricOracledbBufferInspected.config.AggregationStrategy
 			aggMap["oracledb.buffer_cache.block.changes.rate"] = mb.metricOracledbBufferCacheBlockChangesRate.config.AggregationStrategy
 			aggMap["oracledb.buffer_cache.utilization"] = mb.metricOracledbBufferCacheUtilization.config.AggregationStrategy
@@ -169,33 +169,33 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordOracledbAsmDiskErrorsDataPoint(ts, "1", "oracledb.asm_diskgroup.name-val", "oracledb.asm_disk.name-val", AttributeDiskIoDirectionRead)
+			mb.RecordOracledbAsmDiskErrorsDataPoint(ts, "1", "oracledb.asm.disk_group.name-val", "oracledb.asm.disk.name-val", AttributeDiskIoDirectionRead)
 			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbAsmDiskErrorsDataPoint(ts, "3", "oracledb.asm_diskgroup.name-val-2", "oracledb.asm_disk.name-val-2", AttributeDiskIoDirectionWrite)
+				mb.RecordOracledbAsmDiskErrorsDataPoint(ts, "3", "oracledb.asm.disk_group.name-val-2", "oracledb.asm.disk.name-val-2", AttributeDiskIoDirectionWrite)
 			}
 
 			allMetricsCount++
-			mb.RecordOracledbAsmDiskgroupFreeDataPoint(ts, 1, "oracledb.asm_diskgroup.name-val")
+			mb.RecordOracledbAsmDiskGroupFreeDataPoint(ts, 1, "oracledb.asm.disk_group.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbAsmDiskgroupFreeDataPoint(ts, 3, "oracledb.asm_diskgroup.name-val-2")
+				mb.RecordOracledbAsmDiskGroupFreeDataPoint(ts, 3, "oracledb.asm.disk_group.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordOracledbAsmDiskgroupOfflineDisksDataPoint(ts, 1, "oracledb.asm_diskgroup.name-val")
+			mb.RecordOracledbAsmDiskGroupOfflineDisksDataPoint(ts, 1, "oracledb.asm.disk_group.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbAsmDiskgroupOfflineDisksDataPoint(ts, 3, "oracledb.asm_diskgroup.name-val-2")
+				mb.RecordOracledbAsmDiskGroupOfflineDisksDataPoint(ts, 3, "oracledb.asm.disk_group.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordOracledbAsmDiskgroupTotalDataPoint(ts, 1, "oracledb.asm_diskgroup.name-val")
+			mb.RecordOracledbAsmDiskGroupTotalDataPoint(ts, 1, "oracledb.asm.disk_group.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbAsmDiskgroupTotalDataPoint(ts, 3, "oracledb.asm_diskgroup.name-val-2")
+				mb.RecordOracledbAsmDiskGroupTotalDataPoint(ts, 3, "oracledb.asm.disk_group.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordOracledbAsmDiskgroupUsableFreeDataPoint(ts, 1, "oracledb.asm_diskgroup.name-val")
+			mb.RecordOracledbAsmDiskGroupUsableFreeDataPoint(ts, 1, "oracledb.asm.disk_group.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordOracledbAsmDiskgroupUsableFreeDataPoint(ts, 3, "oracledb.asm_diskgroup.name-val-2")
+				mb.RecordOracledbAsmDiskGroupUsableFreeDataPoint(ts, 3, "oracledb.asm.disk_group.name-val-2")
 			}
 
 			allMetricsCount++
@@ -863,10 +863,10 @@ func TestMetricsBuilder(t *testing.T) {
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
 				assert.Empty(t, mb.metricOracledbAsmDiskErrors.aggDataPoints)
-				assert.Empty(t, mb.metricOracledbAsmDiskgroupFree.aggDataPoints)
-				assert.Empty(t, mb.metricOracledbAsmDiskgroupOfflineDisks.aggDataPoints)
-				assert.Empty(t, mb.metricOracledbAsmDiskgroupTotal.aggDataPoints)
-				assert.Empty(t, mb.metricOracledbAsmDiskgroupUsableFree.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbAsmDiskGroupFree.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbAsmDiskGroupOfflineDisks.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbAsmDiskGroupTotal.aggDataPoints)
+				assert.Empty(t, mb.metricOracledbAsmDiskGroupUsableFree.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbBufferInspected.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbBufferCacheBlockChangesRate.aggDataPoints)
 				assert.Empty(t, mb.metricOracledbBufferCacheUtilization.aggDataPoints)
@@ -981,10 +981,10 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for _, mi := range allMetricsList {
 				switch mi.Name() {
-				case "oracledb.asm_disk.errors":
+				case "oracledb.asm.disk.errors":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["oracledb.asm_disk.errors"], "Found a duplicate in the metrics slice: oracledb.asm_disk.errors")
-						validatedMetrics["oracledb.asm_disk.errors"] = true
+						assert.False(t, validatedMetrics["oracledb.asm.disk.errors"], "Found a duplicate in the metrics slice: oracledb.asm.disk.errors")
+						validatedMetrics["oracledb.asm.disk.errors"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Count of I/O errors on an ASM disk.", mi.Description())
@@ -996,18 +996,18 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						oracledbAsmDiskgroupNameAttrVal, ok := dp.Attributes().Get("oracledb.asm_diskgroup.name")
+						oracledbAsmDiskGroupNameAttrVal, ok := dp.Attributes().Get("oracledb.asm.disk_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "oracledb.asm_diskgroup.name-val", oracledbAsmDiskgroupNameAttrVal.Str())
-						oracledbAsmDiskNameAttrVal, ok := dp.Attributes().Get("oracledb.asm_disk.name")
+						assert.Equal(t, "oracledb.asm.disk_group.name-val", oracledbAsmDiskGroupNameAttrVal.Str())
+						oracledbAsmDiskNameAttrVal, ok := dp.Attributes().Get("oracledb.asm.disk.name")
 						assert.True(t, ok)
-						assert.Equal(t, "oracledb.asm_disk.name-val", oracledbAsmDiskNameAttrVal.Str())
+						assert.Equal(t, "oracledb.asm.disk.name-val", oracledbAsmDiskNameAttrVal.Str())
 						diskIoDirectionAttrVal, ok := dp.Attributes().Get("disk.io.direction")
 						assert.True(t, ok)
 						assert.Equal(t, "read", diskIoDirectionAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["oracledb.asm_disk.errors"], "Found a duplicate in the metrics slice: oracledb.asm_disk.errors")
-						validatedMetrics["oracledb.asm_disk.errors"] = true
+						assert.False(t, validatedMetrics["oracledb.asm.disk.errors"], "Found a duplicate in the metrics slice: oracledb.asm.disk.errors")
+						validatedMetrics["oracledb.asm.disk.errors"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Count of I/O errors on an ASM disk.", mi.Description())
@@ -1018,7 +1018,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["oracledb.asm_disk.errors"] {
+						switch aggMap["oracledb.asm.disk.errors"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":
@@ -1028,17 +1028,17 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("oracledb.asm_diskgroup.name")
+						_, ok := dp.Attributes().Get("oracledb.asm.disk_group.name")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("oracledb.asm_disk.name")
+						_, ok = dp.Attributes().Get("oracledb.asm.disk.name")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("disk.io.direction")
 						assert.False(t, ok)
 					}
-				case "oracledb.asm_diskgroup.free":
+				case "oracledb.asm.disk_group.free":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["oracledb.asm_diskgroup.free"], "Found a duplicate in the metrics slice: oracledb.asm_diskgroup.free")
-						validatedMetrics["oracledb.asm_diskgroup.free"] = true
+						assert.False(t, validatedMetrics["oracledb.asm.disk_group.free"], "Found a duplicate in the metrics slice: oracledb.asm.disk_group.free")
+						validatedMetrics["oracledb.asm.disk_group.free"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Free space in an ASM diskgroup.", mi.Description())
@@ -1048,12 +1048,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						oracledbAsmDiskgroupNameAttrVal, ok := dp.Attributes().Get("oracledb.asm_diskgroup.name")
+						oracledbAsmDiskGroupNameAttrVal, ok := dp.Attributes().Get("oracledb.asm.disk_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "oracledb.asm_diskgroup.name-val", oracledbAsmDiskgroupNameAttrVal.Str())
+						assert.Equal(t, "oracledb.asm.disk_group.name-val", oracledbAsmDiskGroupNameAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["oracledb.asm_diskgroup.free"], "Found a duplicate in the metrics slice: oracledb.asm_diskgroup.free")
-						validatedMetrics["oracledb.asm_diskgroup.free"] = true
+						assert.False(t, validatedMetrics["oracledb.asm.disk_group.free"], "Found a duplicate in the metrics slice: oracledb.asm.disk_group.free")
+						validatedMetrics["oracledb.asm.disk_group.free"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Free space in an ASM diskgroup.", mi.Description())
@@ -1062,7 +1062,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["oracledb.asm_diskgroup.free"] {
+						switch aggMap["oracledb.asm.disk_group.free"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":
@@ -1072,13 +1072,13 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("oracledb.asm_diskgroup.name")
+						_, ok := dp.Attributes().Get("oracledb.asm.disk_group.name")
 						assert.False(t, ok)
 					}
-				case "oracledb.asm_diskgroup.offline_disks":
+				case "oracledb.asm.disk_group.offline_disks":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["oracledb.asm_diskgroup.offline_disks"], "Found a duplicate in the metrics slice: oracledb.asm_diskgroup.offline_disks")
-						validatedMetrics["oracledb.asm_diskgroup.offline_disks"] = true
+						assert.False(t, validatedMetrics["oracledb.asm.disk_group.offline_disks"], "Found a duplicate in the metrics slice: oracledb.asm.disk_group.offline_disks")
+						validatedMetrics["oracledb.asm.disk_group.offline_disks"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Count of disks currently offline within an ASM diskgroup.", mi.Description())
@@ -1088,12 +1088,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						oracledbAsmDiskgroupNameAttrVal, ok := dp.Attributes().Get("oracledb.asm_diskgroup.name")
+						oracledbAsmDiskGroupNameAttrVal, ok := dp.Attributes().Get("oracledb.asm.disk_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "oracledb.asm_diskgroup.name-val", oracledbAsmDiskgroupNameAttrVal.Str())
+						assert.Equal(t, "oracledb.asm.disk_group.name-val", oracledbAsmDiskGroupNameAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["oracledb.asm_diskgroup.offline_disks"], "Found a duplicate in the metrics slice: oracledb.asm_diskgroup.offline_disks")
-						validatedMetrics["oracledb.asm_diskgroup.offline_disks"] = true
+						assert.False(t, validatedMetrics["oracledb.asm.disk_group.offline_disks"], "Found a duplicate in the metrics slice: oracledb.asm.disk_group.offline_disks")
+						validatedMetrics["oracledb.asm.disk_group.offline_disks"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Count of disks currently offline within an ASM diskgroup.", mi.Description())
@@ -1102,7 +1102,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["oracledb.asm_diskgroup.offline_disks"] {
+						switch aggMap["oracledb.asm.disk_group.offline_disks"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":
@@ -1112,13 +1112,13 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("oracledb.asm_diskgroup.name")
+						_, ok := dp.Attributes().Get("oracledb.asm.disk_group.name")
 						assert.False(t, ok)
 					}
-				case "oracledb.asm_diskgroup.total":
+				case "oracledb.asm.disk_group.total":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["oracledb.asm_diskgroup.total"], "Found a duplicate in the metrics slice: oracledb.asm_diskgroup.total")
-						validatedMetrics["oracledb.asm_diskgroup.total"] = true
+						assert.False(t, validatedMetrics["oracledb.asm.disk_group.total"], "Found a duplicate in the metrics slice: oracledb.asm.disk_group.total")
+						validatedMetrics["oracledb.asm.disk_group.total"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Total space in an ASM diskgroup.", mi.Description())
@@ -1128,12 +1128,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						oracledbAsmDiskgroupNameAttrVal, ok := dp.Attributes().Get("oracledb.asm_diskgroup.name")
+						oracledbAsmDiskGroupNameAttrVal, ok := dp.Attributes().Get("oracledb.asm.disk_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "oracledb.asm_diskgroup.name-val", oracledbAsmDiskgroupNameAttrVal.Str())
+						assert.Equal(t, "oracledb.asm.disk_group.name-val", oracledbAsmDiskGroupNameAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["oracledb.asm_diskgroup.total"], "Found a duplicate in the metrics slice: oracledb.asm_diskgroup.total")
-						validatedMetrics["oracledb.asm_diskgroup.total"] = true
+						assert.False(t, validatedMetrics["oracledb.asm.disk_group.total"], "Found a duplicate in the metrics slice: oracledb.asm.disk_group.total")
+						validatedMetrics["oracledb.asm.disk_group.total"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Total space in an ASM diskgroup.", mi.Description())
@@ -1142,7 +1142,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["oracledb.asm_diskgroup.total"] {
+						switch aggMap["oracledb.asm.disk_group.total"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":
@@ -1152,13 +1152,13 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("oracledb.asm_diskgroup.name")
+						_, ok := dp.Attributes().Get("oracledb.asm.disk_group.name")
 						assert.False(t, ok)
 					}
-				case "oracledb.asm_diskgroup.usable_free":
+				case "oracledb.asm.disk_group.usable_free":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["oracledb.asm_diskgroup.usable_free"], "Found a duplicate in the metrics slice: oracledb.asm_diskgroup.usable_free")
-						validatedMetrics["oracledb.asm_diskgroup.usable_free"] = true
+						assert.False(t, validatedMetrics["oracledb.asm.disk_group.usable_free"], "Found a duplicate in the metrics slice: oracledb.asm.disk_group.usable_free")
+						validatedMetrics["oracledb.asm.disk_group.usable_free"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Free space that can safely be used for files after accounting for ASM redundancy and required mirror recovery capacity.", mi.Description())
@@ -1168,12 +1168,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						oracledbAsmDiskgroupNameAttrVal, ok := dp.Attributes().Get("oracledb.asm_diskgroup.name")
+						oracledbAsmDiskGroupNameAttrVal, ok := dp.Attributes().Get("oracledb.asm.disk_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "oracledb.asm_diskgroup.name-val", oracledbAsmDiskgroupNameAttrVal.Str())
+						assert.Equal(t, "oracledb.asm.disk_group.name-val", oracledbAsmDiskGroupNameAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["oracledb.asm_diskgroup.usable_free"], "Found a duplicate in the metrics slice: oracledb.asm_diskgroup.usable_free")
-						validatedMetrics["oracledb.asm_diskgroup.usable_free"] = true
+						assert.False(t, validatedMetrics["oracledb.asm.disk_group.usable_free"], "Found a duplicate in the metrics slice: oracledb.asm.disk_group.usable_free")
+						validatedMetrics["oracledb.asm.disk_group.usable_free"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "Free space that can safely be used for files after accounting for ASM redundancy and required mirror recovery capacity.", mi.Description())
@@ -1182,7 +1182,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["oracledb.asm_diskgroup.usable_free"] {
+						switch aggMap["oracledb.asm.disk_group.usable_free"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":
@@ -1192,7 +1192,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("oracledb.asm_diskgroup.name")
+						_, ok := dp.Attributes().Get("oracledb.asm.disk_group.name")
 						assert.False(t, ok)
 					}
 				case "oracledb.buffer.inspected":
