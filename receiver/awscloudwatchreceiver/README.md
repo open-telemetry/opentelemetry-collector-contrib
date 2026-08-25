@@ -94,11 +94,25 @@ Instead of listing metrics manually, the receiver can call [ListMetrics](https:/
 
 | Parameter              | Type            | Default | Description |
 | ---------------------- | --------------- | ------- | ----------- |
-| `filters`              | Object          | —       | Optional sub-block to narrow which metrics are discovered. If omitted, all metrics in all namespaces are discovered. |
-| `filters.namespace`    | String          | —       | Restrict discovery to a single namespace (e.g. `AWS/EC2`). |
-| `filters.metric_name`  | String          | —       | Restrict discovery to metrics with this name. |
-| `limit`                | Integer         | 100     | Maximum number of metrics to discover and scrape per collection cycle. |
-| `stats`                | List of strings | —       | Statistics to fetch for every discovered metric. Same values as in `queries`. |
+| `filters`               | Object          | —       | Optional sub-block to narrow which metrics are discovered. If omitted, all metrics in all namespaces are discovered. |
+| `filters.namespace`     | String          | —       | Restrict discovery to a single namespace (e.g. `AWS/EC2`). |
+| `filters.metric_name`   | String          | —       | Restrict discovery to metrics with this name. |
+| `filters.resource_tags` | List of objects | —       | Restrict discovery to metrics whose dimensions reference AWS resources carrying the given tags (see below). |
+| `limit`                 | Integer         | 100     | Maximum number of metrics to discover and scrape per collection cycle. |
+| `stats`                 | List of strings | —       | Statistics to fetch for every discovered metric. Same values as in `queries`. |
+
+##### Filtering by resource tags (`filters.resource_tags`)
+
+CloudWatch `ListMetrics` cannot filter by tag, so when `resource_tags` is set the receiver first resolves the ARNs of matching resources via the AWS [resourcegroupstaggingapi `GetResources`](https://docs.aws.amazon.com/resourcegroupstagging/latest/APIReference/API_GetResources.html) API, then keeps only discovered metrics whose dimension values reference one of those resources. This is useful for autoscaling fleets where the instance/resource IDs are not known ahead of time. Requires the `tag:GetResources` IAM permission in addition to the CloudWatch permissions.
+
+Each entry has:
+
+| Parameter | Type            | Description |
+| --------- | --------------- | ----------- |
+| `key`     | String          | Tag key to match. Required. |
+| `values`  | List of strings | Optional tag values; a resource matches if it has this key with one of these values. When omitted, any value matches. |
+
+Multiple entries are ANDed together (a resource must match every entry); the `values` within a single entry are ORed. These semantics mirror the underlying `GetResources` `TagFilters`. A discovered metric is kept when any of its dimension values matches a tagged resource, so metrics without dimensions are excluded when `resource_tags` is set.
 
 #### Statistics
 
@@ -174,6 +188,26 @@ awscloudwatch:
     discovery:
       filters:
         namespace: AWS/EC2
+      limit: 200
+```
+
+Auto-discover EC2 metrics only for instances tagged `Environment=production` (e.g. an autoscaling fleet):
+
+```yaml
+awscloudwatch:
+  region: us-east-1
+  metrics:
+    collection_interval: 5m
+    period: 300s
+    delay: 10m
+    discovery:
+      filters:
+        namespace: AWS/EC2
+        resource_tags:
+          - key: Environment
+            values: [production]
+          - key: Team
+            values: [backend, platform]
       limit: 200
 ```
 
