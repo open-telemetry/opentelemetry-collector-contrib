@@ -50,7 +50,8 @@ func withFakeDetector(t *testing.T, res *sdkresource.Resource, err error) {
 // fullResource mirrors what the SDK detector reports for a healthy instance. It
 // already prefers the v2 UUID for host.id and lower-cases the region code.
 func fullResource() *sdkresource.Resource {
-	return sdkresource.NewSchemaless(
+	return sdkresource.NewWithAttributes(
+		"https://opentelemetry.io/schemas/1.43.0",
 		attribute.String("cloud.provider", "vultr"),
 		attribute.String("cloud.platform", "vultr.cloud_compute"),
 		attribute.String("cloud.region", region),
@@ -74,8 +75,9 @@ func TestVultrDetector_Detect_OK(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
-	res, _, err := d.Detect(t.Context())
+	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	want := map[string]any{
 		"cloud.provider": TypeStr,
@@ -95,8 +97,9 @@ func TestVultrDetector_Detect_DefaultConfig(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
-	res, _, err := d.Detect(t.Context())
+	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	want := map[string]any{
 		"cloud.provider": TypeStr,
@@ -105,6 +108,26 @@ func TestVultrDetector_Detect_DefaultConfig(t *testing.T) {
 		"host.name":      hostName,
 	}
 	require.Equal(t, want, res.Attributes().AsRaw())
+}
+
+// All attributes disabled is not the same as not being on the platform: the
+// instance was still detected, so the schema URL survives an empty attribute set.
+func TestVultrDetector_Detect_AllAttributesDisabled_FailOnMissingMetadata(t *testing.T) {
+	withFakeDetector(t, fullResource(), nil)
+
+	cfg := CreateDefaultConfig()
+	cfg.ResourceAttributes.CloudProvider.Enabled = false
+	cfg.ResourceAttributes.CloudPlatform.Enabled = false
+	cfg.ResourceAttributes.CloudRegion.Enabled = false
+	cfg.ResourceAttributes.HostID.Enabled = false
+	cfg.ResourceAttributes.HostName.Enabled = false
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, true)
+	require.NoError(t, err)
+
+	res, schemaURL, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
+	require.Equal(t, 0, res.Attributes().Len())
 }
 
 func TestVultrDetector_NotOnVultr(t *testing.T) {
@@ -167,7 +190,8 @@ func TestVultrDetector_FailOnMissingMetadata(t *testing.T) {
 // attributes absent from the metadata response are omitted rather than emitted
 // with an empty value.
 func TestVultrDetector_PartialMetadata(t *testing.T) {
-	partial := sdkresource.NewSchemaless(
+	partial := sdkresource.NewWithAttributes(
+		"https://opentelemetry.io/schemas/1.43.0",
 		attribute.String("cloud.provider", "vultr"),
 		attribute.String("cloud.platform", "vultr.cloud_compute"),
 		attribute.String("host.name", hostName),
@@ -177,8 +201,9 @@ func TestVultrDetector_PartialMetadata(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
-	res, _, err := d.Detect(t.Context())
+	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	want := map[string]any{
 		"cloud.provider": TypeStr,
@@ -190,7 +215,8 @@ func TestVultrDetector_PartialMetadata(t *testing.T) {
 // fail_on_missing_metadata covers an unusable metadata service, not a field
 // absent from an otherwise good response, so a partial result still succeeds.
 func TestVultrDetector_PartialMetadata_FailOnMissingMetadata(t *testing.T) {
-	partial := sdkresource.NewSchemaless(
+	partial := sdkresource.NewWithAttributes(
+		"https://opentelemetry.io/schemas/1.43.0",
 		attribute.String("cloud.provider", "vultr"),
 		attribute.String("host.name", hostName),
 	)
@@ -199,8 +225,9 @@ func TestVultrDetector_PartialMetadata_FailOnMissingMetadata(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), true)
 	require.NoError(t, err)
 
-	res, _, err := d.Detect(t.Context())
+	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	want := map[string]any{
 		"cloud.provider": TypeStr,
