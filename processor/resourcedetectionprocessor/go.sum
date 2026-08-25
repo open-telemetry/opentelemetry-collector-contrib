@@ -453,6 +453,8 @@ go.opentelemetry.io/collector/receiver/xreceiver v0.159.1-0.20260824174011-67fef
 go.opentelemetry.io/collector/receiver/xreceiver v0.159.1-0.20260824174011-67fef8cb7049/go.mod h1:s3NbBkniAzIzMXv0aXNJ0qvT8MoOqjXnFG42aIxQX50=
 go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.17.0 h1:jddCxr64BvBbJcXSRqFGDqf8On3rAcKSSWMxUsQySok=
 go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.17.0/go.mod h1:p1ynrM9EAEk72cNYQtwOLl39gVOtE5zbSy+/vnnlLm4=
+go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.17.0 h1:sSDJeWCxpJQQA/og5mbH6t1lMXs2pXeeIh3vTKTaxwI=
+go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.17.0/go.mod h1:gjTLF6FGtedGD3c70yX5h+RLztW2aa+XbvpiGhvfK9g=
 go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0 h1:6TvMbWB8r3b3bDnmEOINXY4LGDkS5Tb/KdMIRk1b8gQ=
 go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0/go.mod h1:l5PtALrPd1LdGoCatPskfemVbh1KupYQ6GyWX+JiyRY=
 go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.17.0 h1:zhELKuXxvdj0t3hWImgDdSm8Aaujhf8RjFBhIGe1yY4=

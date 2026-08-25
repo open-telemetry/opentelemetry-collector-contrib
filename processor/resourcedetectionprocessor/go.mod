@@ -49,6 +49,7 @@ require (
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.159.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/receiver/receivertest v0.159.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.17.0
+	go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.17.0
 	go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0
 	go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.17.0
 	go.opentelemetry.io/contrib/detectors/vultr v0.17.0
