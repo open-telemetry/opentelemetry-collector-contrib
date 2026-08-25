@@ -2491,12 +2491,17 @@ func Test_String(t *testing.T) {
 func Test_parseStatement(t *testing.T) {
 	converterNameErrorPrefix := "converter names must start with an uppercase letter"
 	editorWithIndexErrorPrefix := "only paths and converters may be indexed"
+	mapKeyErrorPrefix := "map keys must be quoted strings"
 
 	tests := []struct {
 		statement         string
 		wantErr           bool
 		wantErrContaining string
 	}{
+		{statement: `set(attributes["x"], {foo: "bar"})`, wantErrContaining: mapKeyErrorPrefix},
+		{statement: `set(attributes["x"], {fooBar: "bar"})`, wantErrContaining: mapKeyErrorPrefix},
+		{statement: `set(attributes["x"], {"a": {b: 1}})`, wantErrContaining: mapKeyErrorPrefix},
+		{statement: `set(attributes["x"], {"foo": "bar"})`},
 		{statement: `set(`, wantErr: true},
 		{statement: `set("foo)`, wantErr: true},
 		{statement: `set(name.)`, wantErr: true},
@@ -2643,12 +2648,20 @@ func Test_parseCondition(t *testing.T) {
 func Test_parseValueExpression(t *testing.T) {
 	converterNameErrorPrefix := "converter names must start with an uppercase letter"
 	editorWithIndexErrorPrefix := "only paths and converters may be indexed"
+	byteSliceErrorPrefix := "byte literals must have an even number of hexadecimal digits"
+	mapKeyErrorPrefix := "map keys must be quoted strings"
 
 	tests := []struct {
 		valueExpression   string
 		wantErr           bool
 		wantErrContaining string
 	}{
+		{valueExpression: `0xABCD`},
+		{valueExpression: `0xABC`, wantErrContaining: byteSliceErrorPrefix},
+		{valueExpression: `{"foo": "bar"}`},
+		{valueExpression: `{foo: "bar"}`, wantErrContaining: mapKeyErrorPrefix},
+		{valueExpression: `{fooBar: "bar"}`, wantErrContaining: mapKeyErrorPrefix},
+		{valueExpression: `{"a": {b: 1}}`, wantErrContaining: mapKeyErrorPrefix},
 		{valueExpression: `time_end - time_end`},
 		{valueExpression: `time_end - time_end - attributes["foo"]`},
 		{valueExpression: `Test("foo")`},

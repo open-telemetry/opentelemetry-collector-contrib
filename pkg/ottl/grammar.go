@@ -403,8 +403,10 @@ func (m *mapValue) accept(v grammarVisitor) {
 
 // mapItem is a single key/value entry within a mapValue.
 type mapItem struct {
-	Key   *string `parser:"@String ':'"`
-	Value *value  `parser:"@@"`
+	Key *string `parser:"( @String"`
+	// If an unquoted identifier is matched then return an error.
+	InvalidKey *string `parser:"| @( Lowercase (Uppercase | Lowercase)* | Uppercase (Uppercase | Lowercase)* ) ) ':'"`
+	Value      *value  `parser:"@@"`
 }
 
 // byteSlice type for capturing byte slices
@@ -414,7 +416,7 @@ func (b *byteSlice) Capture(values []string) error {
 	rawStr := values[0][2:]
 	newBytes, err := hex.DecodeString(rawStr)
 	if err != nil {
-		return err
+		return fmt.Errorf("byte literals must have an even number of hexadecimal digits, but got %s: %w", values[0], err)
 	}
 	*b = newBytes
 	return nil
@@ -672,7 +674,15 @@ func (g *grammarCustomErrorsVisitor) join() error {
 
 func (*grammarCustomErrorsVisitor) visitPath(*path) {}
 
-func (*grammarCustomErrorsVisitor) visitValue(*value) {}
+func (g *grammarCustomErrorsVisitor) visitValue(v *value) {
+	if v.Map != nil {
+		for _, item := range v.Map.Values {
+			if item.InvalidKey != nil {
+				g.add(fmt.Errorf("map keys must be quoted strings but got %s", *item.InvalidKey))
+			}
+		}
+	}
+}
 
 func (*grammarCustomErrorsVisitor) visitConverter(*converter) {}
 
