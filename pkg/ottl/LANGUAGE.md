@@ -7,9 +7,9 @@ OTTL grammar includes function invocations, Values and Boolean Expressions. Thes
 A Statement is a single [Editor](#editors) invocation optionally followed by the keyword `where` and a [Boolean Expression](#boolean-expressions). When a `where` clause is present, the Editor is only executed if the Boolean Expression evaluates to `true`.
 
 Example Statements
-- `set(attributes["namespace"], resource.attributes["k8s.namespace.name"])`
-- `set(attributes["env"], "prod") where resource.attributes["k8s.namespace.name"] == "prod"`
-- `delete_key(attributes, "http.request.header.authorization") where attributes["http.request.header.authorization"] != nil`
+- `set(log.attributes["namespace"], resource.attributes["k8s.namespace.name"])`
+- `set(log.attributes["env"], "prod") where resource.attributes["k8s.namespace.name"] == "prod"`
+- `delete_key(log.attributes, "http.request.header.authorization") where log.attributes["http.request.header.authorization"] != nil`
 
 OTTL can also parse a [Boolean Expression](#boolean-expressions) on its own, without an Editor or the `where` keyword, as a Condition. Conditions are used to calculate a decision rather than a produce a mutation.
 
@@ -177,7 +177,7 @@ Example List Values:
 - `[]`
 - `[1]`
 - `["1", "2", "3"]`
-- `["a", attributes["key"], Concat(["a", "b"], "-")]`
+- `["a", log.attributes["key"], Concat(["a", "b"], "-")]`
 
 ### Maps
 
@@ -187,7 +187,22 @@ Example Map Values:
 - `{}`
 - `{"foo": "bar"}`
 - `{"foo": {"a": 2}}`
-- `{"foo": {"a": attributes["key"]}}`
+- `{"foo": {"a": log.attributes["key"]}}`
+
+> [!IMPORTANT]
+> The examples above include a space after each `:` for readability, but a statement
+> written this way cannot be used as an unquoted YAML scalar in a Collector configuration.
+> YAML interprets a colon followed by a space (`: `) inside an unquoted scalar as a mapping
+> key separator, so loading the config fails Collector config parsing. When a statement
+> contains a map literal, wrap the whole statement in a YAML string (single quotes are
+> simplest, since OTTL uses double quotes internally):
+>
+> ```yaml
+> statements:
+>   - 'set(log.attributes["a"], {"foo": "bar"})'
+> ```
+>
+> Alternatively, omit the space after `:` (`{"foo":"bar"}`).
 
 ### Literals
 
@@ -244,7 +259,7 @@ __As a result, in order for a function to be able to accept a Math Expression as
 
 Example Math Expressions
 - `1 + 1`
-- `end_time_unix_nano - end_time_unix_nano`
+- `span.end_time_unix_nano - span.start_time_unix_nano`
 - `sum([1, 2, 3, 4]) + (10 / 1) - 1`
 
 
@@ -278,8 +293,8 @@ The valid operators are:
 
 Booleans can be negated with the `not` keyword such as
 - `not true`
-- `not name == "foo"`
-- `not (IsMatch(name, "http_.*") and kind > 0)`
+- `not span.name == "foo"`
+- `not (IsMatch(span.name, "http_.*") and span.kind > 0)`
 
 ## Comparison Rules
 
@@ -314,9 +329,9 @@ The `time.Time` and `time.Duration` types are compared using comparison function
 | pcommon.Value  | compared as bool if compatible | compared as numeric if compatible | compared as numeric if compatible | compared as Go strings if compatible | byte-for-byte comparison if compatible | ValueTypeEmpty == nil | not equal                            | not equal                                            | uses reflect.DeepEqual if compatible | uses pcommon.Map Equal if compatible | uses reflect.DeepEqual if compatible | uses pcommon.Slice Equal if compatible | compared using underlying type rules |
 
 Examples:
-- `name == "a name"`
+- `span.name == "a name"`
 - `1 < 2`
-- `attributes["custom-attr"] != nil`
+- `log.attributes["custom-attr"] != nil`
 - `IsMatch(resource.attributes["host.name"], "pod-*")`
 
 ## Accessing signal telemetry
