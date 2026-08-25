@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
@@ -17,7 +18,7 @@ import (
 
 type ProfilesConsumer interface {
 	Context() ContextID
-	ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error
+	ConsumeProfiles(ctx context.Context, ld pprofile.Profiles, cache *pcommon.Map) error
 }
 
 type profileStatements struct {
@@ -29,12 +30,12 @@ func (profileStatements) Context() ContextID {
 	return Profile
 }
 
-func (l profileStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error {
+func (l profileStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles, cache *pcommon.Map) error {
 	dic := ld.Dictionary()
 	for _, rprofiles := range ld.ResourceProfiles().All() {
 		for _, sprofiles := range rprofiles.ScopeProfiles().All() {
 			for _, profile := range sprofiles.Profiles().All() {
-				tCtx := ottlprofile.NewTransformContextPtr(rprofiles, sprofiles, profile, dic)
+				tCtx := ottlprofile.NewTransformContextPtr(rprofiles, sprofiles, profile, dic, ottlprofile.WithCache(cache))
 				condition, err := l.Eval(ctx, tCtx)
 				if err != nil {
 					tCtx.Close()

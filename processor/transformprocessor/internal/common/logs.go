@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
@@ -17,7 +18,7 @@ import (
 
 type LogsConsumer interface {
 	Context() ContextID
-	ConsumeLogs(ctx context.Context, ld plog.Logs) error
+	ConsumeLogs(ctx context.Context, ld plog.Logs, cache *pcommon.Map) error
 }
 
 type logStatements struct {
@@ -29,14 +30,14 @@ func (logStatements) Context() ContextID {
 	return Log
 }
 
-func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs, cache *pcommon.Map) error {
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rlogs := ld.ResourceLogs().At(i)
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
 			slogs := rlogs.ScopeLogs().At(j)
 			logs := slogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				tCtx := ottllog.NewTransformContextPtr(rlogs, slogs, logs.At(k))
+				tCtx := ottllog.NewTransformContextPtr(rlogs, slogs, logs.At(k), ottllog.WithCache(cache))
 				condition, err := l.Eval(ctx, tCtx)
 				if err != nil {
 					tCtx.Close()

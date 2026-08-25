@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -16,8 +17,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
+type parsedContextStatements struct {
+	common.ProfilesConsumer
+	sharedCache bool
+}
+
 type Processor struct {
-	contexts []common.ProfilesConsumer
+	contexts []parsedContextStatements
 	logger   *zap.Logger
 }
 
@@ -27,14 +33,14 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 		return nil, err
 	}
 
-	contexts := make([]common.ProfilesConsumer, len(contextStatements))
+	contexts := make([]parsedContextStatements, len(contextStatements))
 	var errors error
 	for i, cs := range contextStatements {
 		context, err := pc.ParseContextStatements(cs)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 		}
-		contexts[i] = context
+		contexts[i] = parsedContextStatements{context, cs.SharedCache}
 	}
 
 	if errors != nil {
@@ -48,8 +54,10 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 }
 
 func (p *Processor) ProcessProfiles(ctx context.Context, ld pprofile.Profiles) (pprofile.Profiles, error) {
+	sharedContextCache := make(map[common.ContextID]*pcommon.Map, len(p.contexts))
 	for _, c := range p.contexts {
-		err := c.ConsumeProfiles(ctx, ld)
+		cache := common.LoadContextCache(sharedContextCache, c.Context(), c.sharedCache)
+		err := c.ConsumeProfiles(ctx, ld, cache)
 		if err != nil {
 			p.logger.Error("failed processing profiles", zap.Error(err))
 			return ld, err

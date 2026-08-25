@@ -141,6 +141,7 @@ transform:
   <trace|metric|log|profile>_statements:
     - context: string
       error_mode: propagate
+      shared_cache: true
       conditions: 
         - string
         - string
@@ -157,6 +158,8 @@ transform:
 ```
 
 `error_mode`: allows overriding the top-level `error_mode`. See [General Config](#general-config) for details on how to configure `error_mode`.
+
+`shared_cache`: enables sharing per-context caches between all advanced statement groups with the option enabled in this Transform Processor instance. Use this when you want to do hold state across multiple iterations over a set of data.
 
 `conditions`: a list comprised of multiple where clauses, which will be processed as global conditions for the accompanying set of statements. The conditions are ORed together, which means only one condition needs to evaluate to true in order for the statements (including their individual Where clauses) to be executed.
 
@@ -258,20 +261,51 @@ In addition to the common OTTL functions, the processor defines its own function
 
 **Metrics only functions**
 
-- [convert_sum_to_gauge](#convert_sum_to_gauge)
-- [convert_gauge_to_sum](#convert_gauge_to_sum)
-- [extract_count_metric](#extract_count_metric)
-- [extract_percentile_metric](#extract_percentile_metric)
-- [extract_sum_metric](#extract_sum_metric)
-- [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
-- [convert_summary_quantile_val_to_gauge](#convert_summary_quantile_val_to_gauge)
-- [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
-- [copy_metric](#copy_metric)
-- [scale_metric](#scale_metric)
-- [aggregate_on_attributes](#aggregate_on_attributes)
-- [convert_exponential_histogram_to_histogram](#convert_exponential_histogram_to_histogram)
-- [aggregate_on_attribute_value](#aggregate_on_attribute_value)
-- [merge_histogram_buckets](#merge_histogram_buckets)
+- [Transform Processor](#transform-processor)
+  - [Config](#config)
+    - [General Config](#general-config)
+    - [Basic Config](#basic-config)
+    - [Advanced Config](#advanced-config)
+    - [Context inference](#context-inference)
+  - [Grammar](#grammar)
+  - [Supported functions:](#supported-functions)
+    - [convert\_sum\_to\_gauge](#convert_sum_to_gauge)
+    - [convert\_gauge\_to\_sum](#convert_gauge_to_sum)
+    - [extract\_count\_metric](#extract_count_metric)
+    - [extract\_percentile\_metric](#extract_percentile_metric)
+    - [extract\_sum\_metric](#extract_sum_metric)
+    - [convert\_summary\_count\_val\_to\_sum](#convert_summary_count_val_to_sum)
+    - [convert\_summary\_quantile\_val\_to\_gauge](#convert_summary_quantile_val_to_gauge)
+    - [convert\_summary\_sum\_val\_to\_sum](#convert_summary_sum_val_to_sum)
+    - [copy\_metric](#copy_metric)
+    - [convert\_exponential\_histogram\_to\_histogram](#convert_exponential_histogram_to_histogram)
+    - [scale\_metric](#scale_metric)
+    - [aggregate\_on\_attributes](#aggregate_on_attributes)
+    - [aggregate\_on\_attribute\_value](#aggregate_on_attribute_value)
+    - [merge\_histogram\_buckets](#merge_histogram_buckets)
+    - [ParseCEF](#parsecef)
+    - [ParseCLF](#parseclf)
+    - [ParseELF](#parseelf)
+    - [ParseLEEF](#parseleef)
+    - [set\_semconv\_span\_name](#set_semconv_span_name)
+  - [Examples](#examples)
+    - [Perform transformation if field does not exist](#perform-transformation-if-field-does-not-exist)
+    - [Rename attribute](#rename-attribute)
+    - [Move field to attribute](#move-field-to-attribute)
+    - [Combine two attributes](#combine-two-attributes)
+    - [Parsing JSON logs](#parsing-json-logs)
+    - [Override context statements error mode](#override-context-statements-error-mode)
+    - [Get Severity of an Unstructured Log Body](#get-severity-of-an-unstructured-log-body)
+  - [Copy attributes matching regular expression to a separate location](#copy-attributes-matching-regular-expression-to-a-separate-location)
+  - [Troubleshooting](#troubleshooting)
+  - [Contributing](#contributing)
+  - [Warnings](#warnings)
+  - [Feature Gate](#feature-gate)
+    - [`processor.transform.defaultErrorModeIgnore`](#processortransformdefaulterrormodeignore)
+    - [`transform.flatten.logs`](#transformflattenlogs)
+      - [Example Usage](#example-usage)
+    - [`ottl.set.allowNil`](#ottlsetallownil)
+  - [Available Benchmarks](#available-benchmarks)
 
 **Logs only functions**
 
