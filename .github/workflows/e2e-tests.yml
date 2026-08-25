@@ -119,8 +119,8 @@ jobs:
       fail-fast: false
       matrix:
         k8s-version:
-          - "v1.34.0"
           - "v1.35.0"
+          - "v1.36.1"
         component:
           - receiver/k8sclusterreceiver
           - processor/k8sattributesprocessor
