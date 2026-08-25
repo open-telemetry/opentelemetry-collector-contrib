@@ -808,10 +808,10 @@ func TestGetContributors(t *testing.T) {
 				contribResponse: contribResponse{
 					contribs: [][]*github.Contributor{{
 						{
-							ID: github.Ptr(int64(1)),
+							ID: new(int64(1)),
 						},
 						{
-							ID: github.Ptr(int64(2)),
+							ID: new(int64(2)),
 						},
 					}},
 					responseCode: http.StatusOK,

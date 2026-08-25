@@ -21,16 +21,16 @@ The Dynamic Sampling Processor performs adaptive tail-based trace sampling using
 ## How it works
 
 1. Spans are accumulated in memory, grouped by trace ID.
-2. A trace becomes ready for evaluation when **either** of two events fires (whichever comes first):
+2. A trace becomes ready for evaluation when **either** of two triggers fires (whichever comes first):
    - a root span arrives (any span with an empty `ParentSpanID`), or
    - `trace_timeout` elapses since the first span of the trace arrived. This timer is set on first-seen and is never extended by subsequent spans, ensuring a predictable upper bound on buffer occupancy.
-3. After the trigger fires, the processor pauses for `decision_delay` to let in-flight straggler spans land. The same delay applies regardless of which event fired the trigger.
+3. After the trigger fires, the processor pauses for `decision_delay` to let in-flight straggler spans land. The same delay applies regardless of which trigger fired.
 4. Rules are then evaluated in order against the accumulated trace. The first rule whose conditions all match selects the sampler; once a rule is selected, its sampler's keep/drop decision is final and no later rules are considered. A rule with no conditions is a catch-all.
 5. The matched sampler produces a sample rate (1-in-N). Samplers only ever produce rates; no sampler makes a keep/drop decision itself.
 6. The processor converts the rate to a threshold (a rate of N becomes the threshold encoding probability 1/N) and makes the keep/drop decision by comparing that threshold against the trace's randomness (`ot=rv` when present, otherwise derived from the trace ID), using the [OTel consistent probability sampling](https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/) algorithm.
 
 > [!NOTE]
-> The adaptive samplers come from [dynsampler-go](https://github.com/honeycombio/dynsampler-go), which the processor uses **only** to compute rates. dynsampler-go's own samplers can make keep/drop decisions internally (its `DeterministicSampler` applies its own hash-based check, for example), but this processor never uses that path: the rate-to-threshold conversion and the randomness comparison in step 6 are the single decision mechanism for every sampler type, including this processor's `deterministic` type. This is what makes decisions reproducible for a given trace and correctly weighted downstream via `ot=th`.
+> The adaptive samplers come from [dynsampler-go](https://github.com/honeycombio/dynsampler-go), which the processor uses **only** to compute rates. dynsampler-go's own samplers can make keep/drop decisions internally (its `DeterministicSampler` applies its own hash-based check, for example), but this processor never uses that path: the rate-to-threshold conversion and the randomness comparison in step 6 are the single decision mechanism for every sampler type, including this processor's `probabilistic` type. This is what makes decisions reproducible for a given trace and correctly weighted downstream via `ot=th`.
 7. Sampled traces are forwarded with two annotations on every span:
    - `otelcol.processor.dynamic_sampling.rule`: the name of the matched rule
    - W3C TraceState `ot=th:<hex>`: the threshold encoding the effective sample rate
@@ -69,18 +69,22 @@ processors:
         conditions:
           - 'resource.attributes["service.name"] == "payment"'
         sampler:
-          type: ema_dynamic
-          goal_sampling_percentage: 5
-          key_attributes: ["http.method", "http.route"]
+          type: dynamic_percentage
+          goal_percentage: 5
+          fingerprint_attributes:
+            - span.attributes["http.method"]
+            - span.attributes["http.route"]
           adjustment_interval: 15s
           weight: 0.5
 
       # Catch-all: no conditions, always matches.
       - name: default
         sampler:
-          type: ema_dynamic
-          goal_sampling_percentage: 20
-          key_attributes: ["service.name", "http.status_code"]
+          type: dynamic_percentage
+          goal_percentage: 20
+          fingerprint_attributes:
+            - resource.attributes["service.name"]
+            - span.attributes["http.status_code"]
 
     # Optional. OTTL boolean expression evaluated per span. When it returns true
     # for any span in the trace, the trace transitions from accumulation to the
@@ -127,7 +131,7 @@ Each rule's `name` must be unique. It is recorded on the decision metrics (the `
 > [!WARNING]
 > A rule with no conditions (a catch-all) placed before another rule consumes every trace and renders the later rules unreachable. The processor logs a warning at startup when it detects this configuration so it shows up in collector logs.
 
-Conditions are [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl) boolean expressions evaluated in the [`ottlspan`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan) context, which gives access to the span, its resource, and its instrumentation scope. Path expressions must be qualified with the context they refer to: `span.attributes["k"]`, `resource.attributes["k"]`, `span.status.code`, and so on. See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/LANGUAGE.md#boolean-expressions) for the full grammar (including `and`, `or`, and parentheses), and the [ottlspan paths reference](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspan/README.md) for the list of accessible fields.
+Conditions are [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl) boolean expressions evaluated in the [`ottlspan`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan) context, which gives access to the span, its resource, and its instrumentation scope. Path expressions should be qualified with the context they refer to (`span.attributes["k"]`, `resource.attributes["k"]`, `span.status.code`, and so on); unqualified paths are valid OTTL and resolve against the span context. We recommend qualifying every path, all examples in this README do, and it keeps conditions visually consistent with fingerprint selectors, which require a scope. See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/LANGUAGE.md#boolean-expressions) for the full grammar (including `and`, `or`, and parentheses), and the [ottlspan paths reference](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspan/README.md) for the list of accessible fields.
 
 The intended pattern is specific-conditions rules first, catch-all last:
 
@@ -140,12 +144,13 @@ rules:
       type: always_sample
   - name: default              # catch-all
     sampler:
-      type: ema_dynamic
-      goal_sampling_percentage: 10
-      key_attributes: ["service.name"]
+      type: dynamic_percentage
+      goal_percentage: 10
+      fingerprint_attributes:
+        - resource.attributes["service.name"]
 ```
 
-With the order above, error traces are always kept and every other trace is decided by `ema_dynamic`. Flipping the order so `default` comes first would mean `default` swallows every trace (including errors) and `keep-errors` is never reached, which is what the startup warning flags.
+With the order above, error traces are always kept and every other trace is decided by `dynamic_percentage`. Flipping the order so `default` comes first would mean `default` swallows every trace (including errors) and `keep-errors` is never reached, which is what the startup warning flags.
 
 #### How multiple conditions combine
 
@@ -212,9 +217,11 @@ Keep traces from either the checkout or the billing service, at a modest adaptiv
   conditions:
     - resource.attributes["service.name"] == "checkout" or resource.attributes["service.name"] == "billing"
   sampler:
-    type: ema_dynamic
-    goal_sampling_percentage: 25
-    key_attributes: ["service.name", "http.route"]
+    type: dynamic_percentage
+    goal_percentage: 25
+    fingerprint_attributes:
+      - resource.attributes["service.name"]
+      - span.attributes["http.route"]
 ```
 
 Match on span name prefix using OTTL's `IsMatch` regex helper:
@@ -225,78 +232,133 @@ Match on span name prefix using OTTL's `IsMatch` regex helper:
   conditions:
     - IsMatch(span.name, "^GET /api/")
   sampler:
-    type: deterministic
-    deterministic:
-      sampling_percentage: 5
+    type: probabilistic
+    sampling_percentage: 5
 ```
 
 For the full set of comparison operators, string functions, and converter helpers available in conditions, see [OTTL Functions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md).
 
 ### Samplers
 
-| Type                  | Behaviour                                                                                          |
-|-----------------------|----------------------------------------------------------------------------------------------------|
-| `always_sample`       | Keep every matching trace (sample rate 1).                                                         |
-| `deterministic`       | Fixed-rate probabilistic sampling using `sampling_percentage` (0, 100].                            |
-| `ema_dynamic`         | EMA-based adaptive sampling targeting an average sampling percentage across keys.                   |
-| `ema_throughput`      | EMA-based adaptive sampling targeting a fixed events-per-second throughput across keys.            |
-| `windowed_throughput` | Sliding-window throughput sampler with separate update and lookback frequencies.                   |
+Each type names a distinct intent:
 
-The adaptive samplers (`ema_dynamic`, `ema_throughput`, `windowed_throughput`) are backed by [`dynsampler-go`](https://github.com/honeycombio/dynsampler-go).
+| Type                 | Behaviour                                                                                       |
+|----------------------|--------------------------------------------------------------------------------------------------|
+| `always_sample`      | Keep every matching trace (sample rate 1).                                                      |
+| `probabilistic`      | Keep a fixed fraction of traces, the same for all traffic (`sampling_percentage`, (0, 100]).    |
+| `dynamic_percentage` | Adapt per key toward a target percentage of traffic (`goal_percentage`, (0, 100]).              |
+| `dynamic_throughput` | Adapt per key toward a volume budget in spans per second (`goal_throughput`, > 0).              |
 
-#### `deterministic`
+Decisions are always made per trace; volume is measured in spans, so a kept
+trace counts all of its spans against a throughput budget, and a percentage
+goal is measured over span volume (equal to the percentage of traces when
+trace sizes are uniform).
+
+The `dynamic_*` samplers are backed by
+[`dynsampler-go`](https://github.com/honeycombio/dynsampler-go) and accept an
+optional `algorithm` selecting how per-key rates are computed: `ema` (the
+default) smooths traffic with an exponential moving average, tuned with
+`adjustment_interval` and `weight`; `windowed` (supported by
+`dynamic_throughput` only) computes rates over a sliding window, reacting
+faster to traffic shifts at the cost of more spike sensitivity, tuned with
+`update_frequency` and `lookback_frequency`.
+
+Migrating from Refinery: `DeterministicSampler` -> `probabilistic` (the same
+hash-consistent fixed fraction), `EMADynamicSampler` -> `dynamic_percentage`
+(note Refinery's `GoalSampleRate: N` means keep 1-in-N, so `GoalSampleRate: 5`
+becomes `goal_percentage: 20`), `EMAThroughputSampler` -> `dynamic_throughput`,
+`WindowedThroughputSampler` -> `dynamic_throughput` with `algorithm: windowed`.
+
+#### `probabilistic`
+
+The inline equivalent of the `probabilistic_sampler` processor.
 
 ```yaml
 sampler:
-  type: deterministic
+  type: probabilistic
   sampling_percentage: 10   # keep 10% of traces
 ```
 
-#### `ema_dynamic`
+#### `dynamic_percentage`
 
-Adapts the sample rate per traffic key over time, keeping a target average sampling percentage across all keys.
+Adapts the sample rate per traffic key over time, keeping a target average
+percentage across all keys: rare keys survive, chatty keys are sampled
+aggressively.
 
 ```yaml
 sampler:
-  type: ema_dynamic
-  goal_sampling_percentage: 10            # target % across all keys
-  key_attributes: ["service.name", "http.status_code"]
-  adjustment_interval: 15s                # how often the EMA recalculates
-  weight: 0.5                             # EMA weighting factor in [0, 1); 0 or omitted = 0.5
+  type: dynamic_percentage
+  goal_percentage: 10                     # target % across all keys
+  fingerprint_attributes:
+    - resource.attributes["service.name"]
+    - span.attributes["http.status_code"]
+  adjustment_interval: 15s                # how often the ema recalculates
+  weight: 0.5                             # ema weighting factor in [0, 1); 0 or omitted = 0.5
   max_keys: 500                           # 0 = unlimited
 ```
 
-#### `ema_throughput`
+#### `dynamic_throughput`
 
-Adjusts rates per key to hit a target sustained throughput in events per second.
+Adjusts rates per key to hit a sustained volume budget in spans per second.
 
 ```yaml
 sampler:
-  type: ema_throughput
-  goal_throughput_per_sec: 100            # target events/sec across all keys
-  key_attributes: ["service.name", "http.status_code"]
+  type: dynamic_throughput
+  goal_throughput: 100                    # target spans/sec per instance, across all keys
+  fingerprint_attributes:
+    - resource.attributes["service.name"]
+    - span.attributes["http.status_code"]
   adjustment_interval: 15s
   weight: 0.5
   max_keys: 500
 ```
 
-#### `windowed_throughput`
+> [!IMPORTANT]
+> `goal_throughput` is enforced **per collector instance**. Each instance targets the goal against the traffic it sees, so a fleet of N instances emits up to N times the configured throughput. Divide the backend budget by the instance count when sizing this value. See [Deployment considerations](#deployment-considerations).
 
-Sliding-window throughput sampler that decouples how often rates are recalculated (`update_frequency`) from the historical window used for the calculation (`lookback_frequency`). This reacts to traffic shifts faster than the EMA samplers at the cost of being more sensitive to short-term spikes.
+With `algorithm: windowed`, rate recalculation (`update_frequency`) is
+decoupled from the historical window used for the calculation
+(`lookback_frequency`):
 
 ```yaml
 sampler:
-  type: windowed_throughput
-  goal_throughput_per_sec: 100
-  key_attributes: ["service.name", "http.status_code"]
+  type: dynamic_throughput
+  algorithm: windowed
+  goal_throughput: 100
+  fingerprint_attributes:
+    - resource.attributes["service.name"]
+    - span.attributes["http.status_code"]
   update_frequency: 1s                    # how often rates recalculate; 0 or omitted = 1s
   lookback_frequency: 30s                 # historical window; floored to a multiple of update_frequency
   max_keys: 500
 ```
 
-### Sampling keys
+### Fingerprints
 
-For samplers that accept `key_attributes`, the sampling key for a trace is built by collecting distinct values of each named attribute (across resource and span attributes), sorting and joining them with `,` within each attribute, then joining the attributes with the `•` separator. Missing attributes are replaced with `<missing>`. A trace whose spans carry several values for one attribute therefore keys as the combination (e.g. `checkout,billing•/api`), which is worth knowing when debugging unexpectedly high key cardinality.
+The `fingerprint_attributes` field names the attributes that identify what kind of trace this is for sampling purposes. Each distinct fingerprint value gets its own adaptive sample rate, so choose attributes that classify traffic (route, status code, method, service) rather than identify individual requests (user IDs, request IDs, raw URLs), which would give every trace its own key and defeat the adaptation.
+
+Each entry is a scoped attribute selector of the form `<scope>.attributes["<name>"]`:
+
+| Scope | Reads from |
+|-------|------------|
+| `resource.` | each resource's attributes |
+| `scope.`    | each instrumentation scope's attributes |
+| `span.`     | every span's attributes |
+| `root.`     | the spans matching the configured `root_span_condition` |
+| `any.`      | the union of resource, instrumentation scope, and span attributes |
+
+The `resource.`, `scope.`, and `span.` prefixes match OTTL's span-context path names, so conditions and fingerprint entries share one spelling; `root.` and `any.` are trace-level scopes OTTL cannot express (fingerprints are built from the whole trace, while OTTL evaluates one span at a time). Note that fingerprint entries are selectors, not OTTL expressions. The two concepts have distinct jobs throughout the config: OTTL conditions appear wherever a single span is evaluated (`conditions`, `root_span_condition`), and selectors appear wherever a trace-level value is collected. Qualifying every path in conditions keeps the two styles identical in practice.
+
+```yaml
+fingerprint_attributes:
+  - resource.attributes["service.name"]
+  - span.attributes["http.route"]
+  - root.attributes["http.status_code"]
+```
+
+Every scope collects **all** distinct matching values, there is no first-match or precedence: `any.` is simply the widest search, and a value present at several origins appears once. The fingerprint for a trace is built by sorting the distinct values each selector matched and joining them with `,` within each entry, then joining the entries with the `•` separator. A trace whose spans carry several values for one selector keys as the combination (e.g. `checkout,billing•/api`), which is worth knowing when debugging unexpectedly high key cardinality. Selectors that match nothing are replaced with `<missing>`.
+
+Extraction cost scales with the scope: `resource.` and `scope.` are independent of trace size, while `span.`, `any.`, and `root.` walk every span of the trace at decision time. `root.` additionally evaluates the root-span condition per span, which is cheap for the default condition but costs an OTTL evaluation per span for custom ones.
 
 ## Worked examples
 
@@ -326,9 +388,11 @@ processors:
       # low-traffic routes stay visible while hot routes are downsampled.
       - name: default
         sampler:
-          type: ema_dynamic
-          goal_sampling_percentage: 10
-          key_attributes: ["service.name", "http.route"]
+          type: dynamic_percentage
+          goal_percentage: 10
+          fingerprint_attributes:
+            - resource.attributes["service.name"]
+            - span.attributes["http.route"]
           adjustment_interval: 15s
           weight: 0.5
 ```
@@ -357,9 +421,11 @@ processors:
     rules:
       - name: throughput-cap
         sampler:
-          type: windowed_throughput
-          goal_throughput_per_sec: 1000
-          key_attributes: ["service.name"]
+          type: dynamic_throughput
+          algorithm: windowed
+          goal_throughput: 1000
+          fingerprint_attributes:
+            - resource.attributes["service.name"]
           update_frequency: 1s
           lookback_frequency: 30s
 ```
@@ -434,6 +500,8 @@ SDKs → Collectors (loadbalancing exporter, hash by traceID)
            → Backend
 ```
 
+Each processor instance runs its samplers independently against the traffic it sees; there is no coordination between instances. For `dynamic_throughput` (with either algorithm) this means `goal_throughput` is a **per-instance** target: a fleet of N instances emits up to N times the configured goal, so divide the backend's ingest budget by the instance count when sizing it. The percentage-based samplers (`dynamic_percentage`, `probabilistic`) are unaffected, since a target percentage composes across instances. Automatic cluster-size awareness for the throughput goal is not currently implemented.
+
 ## Known limitations
 
 - **Decisions are per-instance.** All spans of a trace must reach the same
@@ -507,9 +575,10 @@ processors:
     rules:
       - name: default
         sampler:
-          type: ema_dynamic
-          goal_sampling_percentage: 10
-          key_attributes: ["service.name"]
+          type: dynamic_percentage
+          goal_percentage: 10
+          fingerprint_attributes:
+            - resource.attributes["service.name"]
 
 service:
   pipelines:
@@ -531,7 +600,7 @@ effective end-to-end probability:
 
 ### Accuracy under non-uniform upstream sampling
 
-The equalizing composition above is exact when upstream sampling is uniform across the keys the rule's adaptive sampler uses (`key_attributes`). If upstream head-samples different classes of traffic at different rates and those classes overlap with the tail sampler's keys, the adaptive samplers observe a population that under-represents heavily-downsampled keys and can misjudge their per-key rate. Improving accuracy in that case requires per-key upstream tracking in the sampler and is tracked as follow-up work in [#49517](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49517). Under uniform upstream sampling (the common case, e.g. an SDK `TraceIdRatioBased` sampler) the rates are exact.
+The equalizing composition above is exact when upstream sampling is uniform across the keys the rule's adaptive sampler uses (`fingerprint_attributes`). If upstream head-samples different classes of traffic at different rates and those classes overlap with the tail sampler's keys, the adaptive samplers observe a population that under-represents heavily-downsampled keys and can misjudge their per-key rate. Improving accuracy in that case requires per-key upstream tracking in the sampler and is tracked as follow-up work in [#49517](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49517). Under uniform upstream sampling (the common case, e.g. an SDK `TraceIdRatioBased` sampler) the rates are exact.
 
 ### Grouping unrelated traces with a shared `ot=rv`
 
@@ -547,7 +616,7 @@ The `ot=rv` value is a 56-bit number, so a stable hash of the entity ID truncate
 
 Under the standard two-tier deployment pattern (`loadbalancing` exporter routing traces to a downstream tier running this processor), how traces are routed interacts with rv-based grouping in two useful ways:
 
-- **Routing by trace ID (default).** Traces in the same rv-group land on different collector instances because their trace IDs are unrelated. Sampling decisions remain correct without any coordination between collectors: because our decision is deterministic against the shared rv, every instance reaches the same keep/drop outcome for a given rv. The trade-off is that the adaptive samplers (`ema_dynamic`, `ema_throughput`, `windowed_throughput`) each see only a slice of the group's traffic, so per-key rate calculations converge more slowly than if the whole group were visible to one instance.
+- **Routing by trace ID (default).** Traces in the same rv-group land on different collector instances because their trace IDs are unrelated. Sampling decisions remain correct without any coordination between collectors: because our decision is deterministic against the shared rv, every instance reaches the same keep/drop outcome for a given rv. The trade-off is that the adaptive samplers (`dynamic_percentage`, `dynamic_throughput`) each see only a slice of the group's traffic, so per-key rate calculations converge more slowly than if the whole group were visible to one instance.
 - **Routing by a group-carrying attribute.** If the producer sets both a shared `conversation.id` (or similar) and the derived `ot=rv`, `loadbalancing` can be configured with `routing_key: attributes` naming that attribute so all traces for one group land on the same collector. Adaptive-sampler learning is coherent across the group at the cost of load distribution: heavy-tailed group sizes (one active conversation among many quiet ones) skew load onto specific instances, and `num_traces` on the busy instance must be sized for the largest concurrently-pending group or `traces_evicted` will start climbing. Group size is upstream-controlled, so an unexpected traffic spike within one group shifts the skew unpredictably.
 
 Route-by-trace-ID is the safe default (uniform load, correct decisions, coarser sampler learning). Route-by-attribute is worth reaching for when coherent adaptive learning across a group matters and `num_traces` can be sized conservatively.
@@ -563,6 +632,7 @@ Future work on shared trace context across collector instances (tracked under "C
 | `otelcol_processor_dynamic_sampling_traces_dropped` | Counter  | `rule`   | Traces dropped, attributed to the rule that selected them.                  |
 | `otelcol_processor_dynamic_sampling_decision_sample_rate` | Histogram | `rule` | Distribution of effective sample rates produced per rule.                  |
 | `otelcol_processor_dynamic_sampling_decision_triggers` | Counter  | `trigger` | Number of trace decisions made, labelled by which event triggered them (`root_span`, `trace_timeout`, `eviction`, `shutdown`). |
+| `otelcol_processor_dynamic_sampling_fingerprint_duration` | Histogram | `rule` | Time spent extracting a rule's fingerprint per decision (microseconds). A relative signal for spotting expensive fingerprints, eg wide `any.` scopes on large traces. |
 | `otelcol_processor_dynamic_sampling_traces_evicted` | Counter  |          | Traces evicted from the buffer under pressure. Each still receives a decision per the eviction policy. |
 | `otelcol_processor_dynamic_sampling_incoming_tracestate_unparseable` | Counter |     | Spans whose incoming W3C tracestate could not be parsed while applying the sampling threshold. |
 | `otelcol_processor_dynamic_sampling_ottl_eval_errors` | Counter | `rule`  | OTTL condition evaluation errors, labelled by the rule the condition belongs to. |
@@ -583,6 +653,16 @@ Every span in a sampled trace is annotated with:
 | Attribute                                            | Type    | Example      | Description                                            |
 |------------------------------------------------------|---------|--------------|--------------------------------------------------------|
 | `otelcol.processor.dynamic_sampling.rule`            | string  | `keep-errors`| Name of the rule that selected this trace.             |
+| `otelcol.processor.dynamic_sampling.fingerprint`     | string  | `9f86d081884c7d65` | The matched rule's fingerprint, raw or hashed, when `record_fingerprint` is enabled. |
+
+### Recording the fingerprint
+
+`record_fingerprint` (default `none`) stamps the matched rule's fingerprint on every span of a kept trace, the same way the rule name is recorded:
+
+- `value` records the raw fingerprint (eg `checkout,billing•/api`). Long combination keys grow the sampled decision cache, which stores the recorded string for late spans.
+- `hash` records the first 8 bytes of the fingerprint's SHA-256 as 16 hex characters. The size is fixed and the hash is deterministic across instances and restarts, so grouping works fleet-wide. Verify a span's hash by recomputing it from the raw fingerprint, `echo -n '<fingerprint>' | sha256sum | cut -c1-16`.
+
+Hashing obfuscates values and fixes the attribute size. It does not protect guessable values, anyone who knows the attribute space can enumerate candidate fingerprints and hash them. Rules whose sampler has no `fingerprint_attributes` (`always_sample`, `probabilistic`) never produce the attribute, and enabling either mode adds one attribute write per span on kept traces.
 
 The sample rate is encoded in W3C TraceState as `ot=th:<hex>` per the OTel consistent probability sampling spec. The `spanmetrics` connector (`enable_metrics_sampling_method: true`) reads this field to produce correctly weighted R.E.D metrics from sampled data.
 

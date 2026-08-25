@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
 
-go 1.25.7
+go 1.26.0
 
 require (
 	github.com/Showmax/go-fqdn v1.0.0
