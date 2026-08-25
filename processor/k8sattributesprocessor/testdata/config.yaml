@@ -245,6 +245,13 @@ k8s_attributes/extract_from_job:
         key: app
         from: job
 
+k8s_attributes/extract_from_cronjob:
+  extract:
+    labels:
+      - tag_name: cronjob_label
+        key: app
+        from: cronjob
+
 k8s_attributes/all_metadata_fields:
   extract:
     metadata:
