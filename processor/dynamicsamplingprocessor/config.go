@@ -14,6 +14,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dynamicsamplingprocessor/internal/sampler"
 )
 
 // SamplerType identifies the kind of sampler attached to a rule.
@@ -47,6 +48,22 @@ const (
 	// with update_frequency and lookback_frequency. Supported by
 	// dynamic_throughput only.
 	AlgorithmWindowed SamplerAlgorithm = "windowed"
+)
+
+// RecordFingerprint controls whether the matched rule's fingerprint value is
+// recorded as an attribute on the spans of kept traces.
+type RecordFingerprint string
+
+const (
+	// RecordFingerprintNone (default) records nothing.
+	RecordFingerprintNone RecordFingerprint = "none"
+	// RecordFingerprintValue records the raw fingerprint value.
+	RecordFingerprintValue RecordFingerprint = "value"
+	// RecordFingerprintHash records the first 8 bytes of the fingerprint's
+	// SHA-256, hex encoded. Deterministic across instances and restarts;
+	// obfuscates values and fixes the attribute size, but does not protect
+	// guessable values from enumeration.
+	RecordFingerprintHash RecordFingerprint = "hash"
 )
 
 // Config holds the top-level configuration for the dynamic sampling processor.
@@ -85,6 +102,12 @@ type Config struct {
 	//   - Only trigger on explicit hints (no default):
 	//       span.attributes["otelcol.dynamic_sampling.root_span"] == true
 	RootSpanCondition string `mapstructure:"root_span_condition"`
+	// RecordFingerprint records the matched rule's fingerprint on every span
+	// of a kept trace (attribute otelcol.processor.dynamic_sampling.fingerprint),
+	// as the raw value or a hash. Defaults to none. Only rules whose sampler
+	// has fingerprint_attributes produce the attribute. The value mode grows
+	// sampled decision-cache entries by the key string; hash is fixed size.
+	RecordFingerprint RecordFingerprint `mapstructure:"record_fingerprint"`
 	// Eviction controls what happens to the oldest pending trace when the
 	// buffer is full (NumTraces reached) and a new trace arrives. Both
 	// policies emit a real decision (recorded in the decision cache and, for
@@ -205,10 +228,12 @@ type SamplerConfig struct {
 	// Used by: dynamic_throughput.
 	GoalThroughput int `mapstructure:"goal_throughput"`
 
-	// FingerprintAttributes is the list of attribute names that identify what kind of
-	// trace this is for sampling purposes. Values are collected from resource
-	// attributes and from every span of the accumulated trace, so the
-	// fingerprint reflects the whole trace rather than any single span.
+	// FingerprintAttributes is the list of scoped attribute selectors that
+	// identify what kind of trace this is for sampling purposes. Each entry
+	// has the form `<scope>.attributes["<name>"]` where scope is one of
+	// resource, scope, span, root, or any. Values are collected across the
+	// accumulated trace, so the fingerprint reflects the whole trace rather
+	// than any single span.
 	// Used by: dynamic_percentage, dynamic_throughput.
 	FingerprintAttributes []string `mapstructure:"fingerprint_attributes"`
 
@@ -292,6 +317,11 @@ func (c *Config) Validate() error {
 	}
 	if err := c.Eviction.validate(); err != nil {
 		return err
+	}
+	switch c.RecordFingerprint {
+	case "", RecordFingerprintNone, RecordFingerprintValue, RecordFingerprintHash:
+	default:
+		return fmt.Errorf("record_fingerprint must be %q, %q, or %q", RecordFingerprintNone, RecordFingerprintValue, RecordFingerprintHash)
 	}
 	return nil
 }
@@ -383,6 +413,9 @@ func (s *SamplerConfig) validate(ruleName string) error {
 		if len(s.FingerprintAttributes) == 0 {
 			return fmt.Errorf("rule %q: fingerprint_attributes must contain at least one entry", ruleName)
 		}
+		if _, err := sampler.ParseSelectors(s.FingerprintAttributes); err != nil {
+			return fmt.Errorf("rule %q: %w", ruleName, err)
+		}
 		if s.Weight < 0 || s.Weight >= 1 {
 			return fmt.Errorf("rule %q: weight must be in [0, 1)", ruleName)
 		}
@@ -403,6 +436,9 @@ func (s *SamplerConfig) validate(ruleName string) error {
 		}
 		if len(s.FingerprintAttributes) == 0 {
 			return fmt.Errorf("rule %q: fingerprint_attributes must contain at least one entry", ruleName)
+		}
+		if _, err := sampler.ParseSelectors(s.FingerprintAttributes); err != nil {
+			return fmt.Errorf("rule %q: %w", ruleName, err)
 		}
 		if s.MaxKeys < 0 {
 			return fmt.Errorf("rule %q: max_keys must be non-negative", ruleName)

@@ -8,8 +8,6 @@ import (
 
 	"github.com/alecthomas/participle/v2/lexer"
 	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_getParsedStatementPaths(t *testing.T) {
@@ -72,7 +70,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 							Name: "attributes",
 							Keys: []key{
 								{
-									String: ottltest.Strp("bar"),
+									String: new("bar"),
 								},
 							},
 						},
@@ -99,7 +97,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 							Name: "attributes",
 							Keys: []key{
 								{
-									String: ottltest.Strp("bar"),
+									String: new("bar"),
 								},
 							},
 						},
@@ -122,7 +120,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 							Name: "attributes",
 							Keys: []key{
 								{
-									String: ottltest.Strp("message"),
+									String: new("message"),
 								},
 							},
 						},
@@ -139,7 +137,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 							Name: "attributes",
 							Keys: []key{
 								{
-									String: ottltest.Strp("device_name"),
+									String: new("device_name"),
 								},
 							},
 						},
@@ -163,10 +161,10 @@ func Test_getParsedStatementPaths(t *testing.T) {
 							Name: "bar",
 							Keys: []key{
 								{
-									String: ottltest.Strp("x"),
+									String: new("x"),
 								},
 								{
-									String: ottltest.Strp("y"),
+									String: new("y"),
 								},
 							},
 						},
@@ -193,7 +191,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 							Name: "attributes",
 							Keys: []key{
 								{
-									String: ottltest.Strp("bar"),
+									String: new("bar"),
 								},
 							},
 						},
@@ -232,7 +230,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 							Name: "attributes",
 							Keys: []key{
 								{
-									String: ottltest.Strp("bar"),
+									String: new("bar"),
 								},
 							},
 						},
@@ -295,7 +293,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 							Name: "attributes",
 							Keys: []key{
 								{
-									String: ottltest.Strp("bar"),
+									String: new("bar"),
 								},
 							},
 						},
@@ -346,7 +344,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 							Name: "attributes",
 							Keys: []key{
 								{
-									String: ottltest.Strp("test"),
+									String: new("test"),
 								},
 							},
 						},
@@ -387,7 +385,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 							Name: "attributes",
 							Keys: []key{
 								{
-									String: ottltest.Strp("test"),
+									String: new("test"),
 								},
 							},
 						},
