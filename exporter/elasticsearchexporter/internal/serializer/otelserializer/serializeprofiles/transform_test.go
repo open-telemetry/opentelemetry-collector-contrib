@@ -220,9 +220,8 @@ func TestTransform(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						EcsVersion: EcsVersion{V: EcsVersionString},
-						DocID:      wantedTraceID,
-						FrameIDs:   frameID2Base64 + frameIDBase64,
+						DocID:    wantedTraceID,
+						FrameIDs: frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.NativeFrame,
 							libpf.NativeFrame,
@@ -244,7 +243,6 @@ func TestTransform(t *testing.T) {
 						),
 					},
 					ResourceAttrs: ResourceData{
-						EcsVersion: EcsVersion{V: EcsVersionString},
 						Data: map[string]string{
 							"service.name": "my_service.name",
 						},
@@ -350,9 +348,8 @@ func TestStackPayloads(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						EcsVersion: EcsVersion{V: EcsVersionString},
-						DocID:      wantedTraceID,
-						FrameIDs:   frameID2Base64 + frameIDBase64,
+						DocID:    wantedTraceID,
+						FrameIDs: frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.FrameType(3),
 							libpf.FrameType(3),
@@ -374,8 +371,7 @@ func TestStackPayloads(t *testing.T) {
 						),
 					},
 					ResourceAttrs: ResourceData{
-						EcsVersion: EcsVersion{V: EcsVersionString},
-						Data:       map[string]string{},
+						Data: map[string]string{},
 					},
 				},
 				{
@@ -445,9 +441,8 @@ func TestStackPayloads(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						EcsVersion: EcsVersion{V: EcsVersionString},
-						DocID:      wantedTraceID,
-						FrameIDs:   frameID2Base64 + frameIDBase64,
+						DocID:    wantedTraceID,
+						FrameIDs: frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.FrameType(3),
 							libpf.FrameType(3),
@@ -469,8 +464,7 @@ func TestStackPayloads(t *testing.T) {
 						),
 					},
 					ResourceAttrs: ResourceData{
-						EcsVersion: EcsVersion{V: EcsVersionString},
-						Data:       map[string]string{},
+						Data: map[string]string{},
 					},
 				},
 				{
@@ -550,9 +544,8 @@ func TestStackPayloads(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						EcsVersion: EcsVersion{V: EcsVersionString},
-						DocID:      wantedTraceID,
-						FrameIDs:   frameID2Base64 + frameIDBase64,
+						DocID:    wantedTraceID,
+						FrameIDs: frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.FrameType(3),
 							libpf.FrameType(3),
@@ -575,8 +568,7 @@ func TestStackPayloads(t *testing.T) {
 						// Note: no ExeMetadata for the third mapping since it has no BuildID
 					},
 					ResourceAttrs: ResourceData{
-						EcsVersion: EcsVersion{V: EcsVersionString},
-						Data:       map[string]string{},
+						Data: map[string]string{},
 					},
 				},
 				{
@@ -849,8 +841,7 @@ func TestStackTrace(t *testing.T) {
 			},
 
 			wantTrace: StackTrace{
-				EcsVersion: EcsVersion{V: EcsVersionString},
-				FrameIDs:   "5y1yFRb3UCHnLXIVFvdQIQAAAAAAAABj" + frameID3Base64 + frameID2Base64 + frameIDBase64,
+				FrameIDs: "5y1yFRb3UCHnLXIVFvdQIQAAAAAAAABj" + frameID3Base64 + frameID2Base64 + frameIDBase64,
 				Types: frameTypesToString([]libpf.FrameType{
 					libpf.KernelFrame,
 					libpf.DotnetFrame,

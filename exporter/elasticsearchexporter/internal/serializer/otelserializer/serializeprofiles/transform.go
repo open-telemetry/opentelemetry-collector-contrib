@@ -114,9 +114,6 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 			StackTrace:  stackTrace(traceID, frames, frameTypes),
 			StackFrames: symbolizedFrames(frames),
 			ResourceAttrs: ResourceData{
-				EcsVersion: EcsVersion{
-					V: EcsVersionString,
-				},
 				Data: commonResourceAttributes,
 			},
 		})
@@ -149,38 +146,6 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 	}
 
 	return stackPayload, nil
-}
-
-func unsymbolizedExecutables(executables map[libpf.FileID]struct{}) []UnsymbolizedExecutable {
-	now := time.Now()
-	unsymbolized := make([]UnsymbolizedExecutable, 0, len(executables))
-	for fileID := range executables {
-		unsymbolized = append(unsymbolized, UnsymbolizedExecutable{
-			EcsVersion: EcsVersion{V: EcsVersionString},
-			DocID:      fileID.Base64(),
-			FileID:     []string{fileID.Base64()},
-			Created:    now,
-			Next:       now,
-			Retries:    0,
-		})
-	}
-	return unsymbolized
-}
-
-func unsymbolizedLeafFrames(frameIDs map[frameID]struct{}) []UnsymbolizedLeafFrame {
-	now := time.Now()
-	unsymbolized := make([]UnsymbolizedLeafFrame, 0, len(frameIDs))
-	for frameID := range frameIDs {
-		unsymbolized = append(unsymbolized, UnsymbolizedLeafFrame{
-			EcsVersion: EcsVersion{V: EcsVersionString},
-			DocID:      frameID.String(),
-			FrameID:    []string{frameID.String()},
-			Created:    now,
-			Next:       now,
-			Retries:    0,
-		})
-	}
-	return unsymbolized
 }
 
 // symbolizedFrames returns a slice of StackFrames that have symbols.
@@ -247,10 +212,9 @@ func stackTrace(stackTraceID string, frames []StackFrame, frameTypes []libpf.Fra
 	encodeFrameTypesTo(buf, frameTypes)
 
 	return StackTrace{
-		EcsVersion: EcsVersion{V: EcsVersionString},
-		DocID:      stackTraceID,
-		FrameIDs:   strings.Join(frameIDs, ""),
-		Types:      buf.String(),
+		DocID:    stackTraceID,
+		FrameIDs: strings.Join(frameIDs, ""),
+		Types:    buf.String(),
 	}
 }
 
@@ -298,7 +262,6 @@ func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]Sta
 
 		frames = append([]StackFrame{
 			{
-				EcsVersion:   EcsVersion{V: EcsVersionString},
 				DocID:        frameID.String(),
 				FileName:     fileNames,
 				FunctionName: functionNames,

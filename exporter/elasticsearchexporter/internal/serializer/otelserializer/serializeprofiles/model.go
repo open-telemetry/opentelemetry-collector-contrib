@@ -11,17 +11,6 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
-// EcsVersionString is the value for the `ecs.version` metrics field.
-// It is relatively arbitrary and currently has no consumer.
-// APM server is using 1.12.0. We stick with it as well.
-const EcsVersionString = "1.12.0"
-
-// EcsVersion is a struct to hold the `ecs.version` metrics field.
-// Used as a helper in ES index struct types.
-type EcsVersion struct {
-	V string `json:"ecs.version"`
-}
-
 // StackPayload represents a single [StackTraceEvent], with a [StackTrace], a
 // map of [StackFrames] and a map of [ExeMetadata] that have been serialized,
 // and need to be ingested into ES.
@@ -59,7 +48,6 @@ type StackTraceEvent struct {
 // StackTrace represents a stacktrace serializable into the stacktraces index.
 // DocID should be the base64-encoded Stacktrace ID.
 type StackTrace struct {
-	EcsVersion
 	DocID    string `json:"-"`
 	FrameIDs string `json:"Stacktrace.frame.ids"`
 	Types    string `json:"Stacktrace.frame.types"`
@@ -71,7 +59,6 @@ type StackTrace struct {
 // doesn't send inline information yet. The symbolizer already stores arrays, which requires
 // the reader to handle both formats if we don't use arrays here.
 type StackFrame struct {
-	EcsVersion
 	DocID          string   `json:"-"`
 	FileName       []string `json:"Stackframe.file.name,omitempty"`
 	FunctionName   []string `json:"Stackframe.function.name,omitempty"`
@@ -82,7 +69,6 @@ type StackFrame struct {
 // ResourceData represents the resources metadata related to a sample for the
 // profiling-hosts index.
 type ResourceData struct {
-	EcsVersion
 	HostID string `json:"host.id"`
 	Data   map[string]string
 }
@@ -93,7 +79,6 @@ func (h ResourceData) MarshalJSON() ([]byte, error) {
 	combinedData := make(map[string]any)
 
 	combinedData[string(conventions.HostIDKey)] = h.HostID
-	combinedData["ecs.version"] = h.V
 	// The ES index profiling-hosts expects a second-precise timestamp
 	combinedData["@timestamp"] = time.Now().UTC().Unix()
 
@@ -119,7 +104,6 @@ if (ctx.op == 'create') {
 		ctx._source['@timestamp']            = params.timestamp;
 		ctx._source['Executable.build.id']   = params.buildid;
 		ctx._source['Executable.file.name']  = params.filename;
-		ctx._source['ecs.version']           = params.ecsversion;
 } else {
 		if (ctx._source['@timestamp'] == params.timestamp) {
 				ctx.op = 'noop'
@@ -135,10 +119,9 @@ type ExeMetadataScript struct {
 }
 
 type ExeMetadataParams struct {
-	LastSeen   uint32 `json:"timestamp"`
-	BuildID    string `json:"buildid"`
-	FileName   string `json:"filename"`
-	EcsVersion string `json:"ecs.version"`
+	LastSeen uint32 `json:"timestamp"`
+	BuildID  string `json:"buildid"`
+	FileName string `json:"filename"`
 }
 
 // ExeMetadata represents executable metadata serializable into the executables index.
@@ -161,33 +144,10 @@ func NewExeMetadata(docID string, lastSeen uint32, buildID, fileName string) Exe
 		Script: ExeMetadataScript{
 			Source: ExeMetadataUpsertScript,
 			Params: ExeMetadataParams{
-				LastSeen:   lastSeen,
-				BuildID:    buildID,
-				FileName:   fileName,
-				EcsVersion: EcsVersionString,
+				LastSeen: lastSeen,
+				BuildID:  buildID,
+				FileName: fileName,
 			},
 		},
 	}
-}
-
-// UnsymbolizedExecutable represents an array of executable FileIDs written into the
-// executable symbolization queue index.
-type UnsymbolizedExecutable struct {
-	EcsVersion
-	DocID   string    `json:"-"`
-	FileID  []string  `json:"Executable.file.id"`
-	Created time.Time `json:"Time.created"`
-	Next    time.Time `json:"Symbolization.time.next"`
-	Retries int       `json:"Symbolization.retries"`
-}
-
-// UnsymbolizedLeafFrame represents an array of frame IDs written into the
-// leaf frame symbolization queue index.
-type UnsymbolizedLeafFrame struct {
-	EcsVersion
-	DocID   string    `json:"-"`
-	FrameID []string  `json:"Stacktrace.frame.id"`
-	Created time.Time `json:"Time.created"`
-	Next    time.Time `json:"Symbolization.time.next"`
-	Retries int       `json:"Symbolization.retries"`
 }
