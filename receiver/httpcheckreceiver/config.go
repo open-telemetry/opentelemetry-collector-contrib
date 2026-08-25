@@ -69,8 +69,8 @@ func (cfg *targetConfig) Unmarshal(conf *confmap.Conf) error {
 	}
 	cfg.ClientConfig = confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	cfg.ClientConfig.MaxIdleConns = 0
-	cfg.ClientConfig.IdleConnTimeout = 0
+	cfg.ClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	cfg.ClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	cfg.ClientConfig.ForceAttemptHTTP2 = false
 	return conf.Unmarshal(cfg)
 }
