@@ -30,6 +30,7 @@ type TelemetryBuilder struct {
 	ProcessorAdaptiveTailSamplingFingerprintDuration           metric.Int64Histogram
 	ProcessorAdaptiveTailSamplingIncomingTracestateUnparseable metric.Int64Counter
 	ProcessorAdaptiveTailSamplingOttlEvalErrors                metric.Int64Counter
+	ProcessorAdaptiveTailSamplingTraceSpanCount                metric.Int64Histogram
 	ProcessorAdaptiveTailSamplingTracesActive                  metric.Int64Gauge
 	ProcessorAdaptiveTailSamplingTracesDropped                 metric.Int64Counter
 	ProcessorAdaptiveTailSamplingTracesEvicted                 metric.Int64Counter
@@ -73,7 +74,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingDecisionTriggers, err = builder.meter.Int64Counter(
 		"otelcol_processor_adaptive_tail_sampling_decision_triggers",
-		metric.WithDescription("Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction, shutdown). [Development]"),
+		metric.WithDescription("Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction, shutdown, span_limit). [Development]"),
 		metric.WithUnit("{decisions}"),
 	)
 	errs = errors.Join(errs, err)
@@ -93,6 +94,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_processor_adaptive_tail_sampling_ottl_eval_errors",
 		metric.WithDescription("Number of OTTL condition evaluation errors, labelled by the rule the condition belongs to (_root_span_condition for the root-span condition). [Development]"),
 		metric.WithUnit("{errors}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorAdaptiveTailSamplingTraceSpanCount, err = builder.meter.Int64Histogram(
+		"otelcol_processor_adaptive_tail_sampling_trace_span_count",
+		metric.WithDescription("Distribution of buffered span counts per trace at decision time, labelled by rule. Useful for sizing span_limit against the real trace-size distribution. [Development]"),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingTracesActive, err = builder.meter.Int64Gauge(

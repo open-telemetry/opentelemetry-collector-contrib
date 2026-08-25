@@ -45,6 +45,16 @@ const ruleAttributeKey = "otelcol.processor.adaptive_tail_sampling.rule"
 // hashed, per record_fingerprint) on every span of a kept trace.
 const fingerprintAttributeKey = "otelcol.processor.adaptive_tail_sampling.fingerprint"
 
+// triggerAttributeKey records on every span of a kept trace what actually
+// caused its decision, using the same value set as the decision-triggers
+// metric's trigger label (root_span, trace_timeout, eviction, shutdown,
+// span_limit). Unlike the metric, which counts the event that first made a
+// trace decision-eligible, eviction and shutdown override the original
+// reason on traces they decide mid-delay, so the attribute always names the
+// event that produced the decision. Non-root_span values indicate the
+// decision may have seen an incomplete trace.
+const triggerAttributeKey = "otelcol.processor.adaptive_tail_sampling.trigger"
+
 // triggerSource identifies which event caused a pending trace to transition
 // from the buffering phase to the decision-delay phase. Reported on the
 // decision-trigger counter.
@@ -55,6 +65,7 @@ const (
 	triggerTraceTimeout triggerSource = "trace_timeout"
 	triggerEviction     triggerSource = "eviction"
 	triggerShutdown     triggerSource = "shutdown"
+	triggerSpanLimit    triggerSource = "span_limit"
 )
 
 // evictionRuleLabel is the sentinel `rule` label used on decision metrics for
@@ -76,6 +87,7 @@ var (
 	triggerTraceTimeoutAttr = metric.WithAttributes(attribute.String("trigger", string(triggerTraceTimeout)))
 	triggerEvictionAttr     = metric.WithAttributes(attribute.String("trigger", string(triggerEviction)))
 	triggerShutdownAttr     = metric.WithAttributes(attribute.String("trigger", string(triggerShutdown)))
+	triggerSpanLimitAttr    = metric.WithAttributes(attribute.String("trigger", string(triggerSpanLimit)))
 )
 
 func triggerAttr(source triggerSource) metric.MeasurementOption {
@@ -86,6 +98,8 @@ func triggerAttr(source triggerSource) metric.MeasurementOption {
 		return triggerTraceTimeoutAttr
 	case triggerShutdown:
 		return triggerShutdownAttr
+	case triggerSpanLimit:
+		return triggerSpanLimitAttr
 	default:
 		return triggerEvictionAttr
 	}
@@ -100,6 +114,9 @@ type pendingTrace struct {
 	firstSeen   time.Time
 	hasRootSpan bool
 	triggered   bool
+	// triggerReason records which event moved the trace out of buffering,
+	// stamped on kept spans and mirrored by the decision-triggers metric.
+	triggerReason triggerSource
 }
 
 // adaptiveTailSamplingProcessor implements processor.Traces. It accumulates spans by
@@ -330,10 +347,13 @@ func (p *adaptiveTailSamplingProcessor) Shutdown(ctx context.Context) error {
 	// so the next consumer still accepts the forwarded traces.
 	for _, pt := range pending {
 		// A trace already in its decision_delay window was counted when its
-		// trigger fired; shutdown merely completes that decision early.
+		// trigger fired; shutdown merely completes that decision early. As
+		// with eviction, the trigger attribute reports what actually caused
+		// this decision, so shutdown overrides the original reason.
 		if !pt.triggered {
 			p.telemetry.ProcessorAdaptiveTailSamplingDecisionTriggers.Add(ctx, 1, triggerShutdownAttr)
 		}
+		pt.triggerReason = triggerShutdown
 		p.decideTrace(ctx, pt)
 	}
 
@@ -443,6 +463,16 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 		for id, copied := range pendingBuckets {
 			if pt, ok := p.traces[id]; ok {
 				pt.spans = append(pt.spans, copied)
+				// The span-limit check runs before the root-span check so a
+				// trace that crosses the limit decides immediately rather
+				// than waiting decision_delay; the check sits after the
+				// batch attach so the decision covers every span already
+				// received, including the ones in this batch.
+				if p.cfg.SpanLimit > 0 && !pt.triggered && pt.spanCount >= p.cfg.SpanLimit {
+					if p.trigger(id, triggerSpanLimit) {
+						triggered[id] = struct{}{}
+					}
+				}
 				if pt.hasRootSpan && !pt.triggered {
 					if p.trigger(id, triggerRootSpan) {
 						triggered[id] = struct{}{}
@@ -639,6 +669,7 @@ func (p *adaptiveTailSamplingProcessor) trigger(id pcommon.TraceID, source trigg
 		return false
 	}
 	pt.triggered = true
+	pt.triggerReason = source
 	p.telemetry.ProcessorAdaptiveTailSamplingDecisionTriggers.Add(context.Background(), 1, triggerAttr(source))
 	// Cancel the existing timer (trace_timeout). If Stop returns false, the
 	// timer's callback is already running or queued; that callback will re-enter
@@ -648,11 +679,32 @@ func (p *adaptiveTailSamplingProcessor) trigger(id pcommon.TraceID, source trigg
 	}
 	p.wg.Add(1)
 	traceID := id
-	p.timers[id] = time.AfterFunc(p.cfg.DecisionDelay, func() {
+	// A trace at its span limit is already at peak memory, so its decision
+	// runs immediately; waiting decision_delay would let a hot trace keep
+	// growing for the whole delay. Other sources keep the straggler grace.
+	delay := p.cfg.DecisionDelay
+	if source == triggerSpanLimit {
+		delay = 0
+	}
+	p.timers[id] = time.AfterFunc(delay, func() {
 		defer p.wg.Done()
 		p.decide(traceID)
 	})
 	return true
+}
+
+// stampSpanAttributes applies the decision attributes shared by freshly
+// decided and late spans: rule attribution, the fingerprint when recording is
+// enabled, and the decision trigger. Both stamping paths must stay identical
+// so late spans never diverge from the originally decided trace.
+func stampSpanAttributes(span ptrace.Span, ruleName, fingerprint string, trigger triggerSource) {
+	span.Attributes().PutStr(ruleAttributeKey, ruleName)
+	if fingerprint != "" {
+		span.Attributes().PutStr(fingerprintAttributeKey, fingerprint)
+	}
+	if trigger != "" {
+		span.Attributes().PutStr(triggerAttributeKey, string(trigger))
+	}
 }
 
 // stampLateBatch stamps every span in a late batch with the original rule
@@ -662,10 +714,7 @@ func (p *adaptiveTailSamplingProcessor) stampLateBatch(ctx context.Context, td p
 	for _, rs := range td.ResourceSpans().All() {
 		for _, ss := range rs.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
-				span.Attributes().PutStr(ruleAttributeKey, md.ruleName)
-				if md.fingerprint != "" {
-					span.Attributes().PutStr(fingerprintAttributeKey, md.fingerprint)
-				}
+				stampSpanAttributes(span, md.ruleName, md.fingerprint, md.trigger)
 				p.updateTraceState(ctx, span, md.threshold, emptyTS)
 			}
 		}
@@ -759,15 +808,18 @@ func (p *adaptiveTailSamplingProcessor) finishDecision(ctx context.Context, pt *
 	// rate: under equalizing, an upstream stricter than the sampler's rate caps
 	// what we emit, and the histogram should reflect that.
 	p.telemetry.ProcessorAdaptiveTailSamplingDecisionSampleRate.Record(ctx, int64(effectiveTh.AdjustedCount()), ruleAttr)
+	// Buffered span count at decision time, for sizing span_limit against the
+	// real trace-size distribution.
+	p.telemetry.ProcessorAdaptiveTailSamplingTraceSpanCount.Record(ctx, int64(pt.spanCount), ruleAttr)
 	if !effectiveTh.ShouldSample(randomness) {
 		p.telemetry.ProcessorAdaptiveTailSamplingTracesDropped.Add(ctx, 1, ruleAttr)
 		p.cache.recordNotSampled(pt.traceID)
 		return
 	}
 
-	p.cache.recordSampled(pt.traceID, cachedDecision{ruleName: ruleName, threshold: effectiveTh, fingerprint: fingerprint})
+	p.cache.recordSampled(pt.traceID, cachedDecision{ruleName: ruleName, threshold: effectiveTh, fingerprint: fingerprint, trigger: pt.triggerReason})
 	// assembleTrace consumes pt.spans; nothing may read them after this call.
-	annotated := p.assembleTrace(ctx, pt.spans, ruleName, effectiveTh, fingerprint)
+	annotated := p.assembleTrace(ctx, pt.spans, ruleName, effectiveTh, fingerprint, pt.triggerReason)
 	pt.spans = nil
 	p.telemetry.ProcessorAdaptiveTailSamplingTracesSampled.Add(ctx, 1, ruleAttr)
 	if err := p.next.ConsumeTraces(ctx, annotated); err != nil {
@@ -781,10 +833,13 @@ func (p *adaptiveTailSamplingProcessor) finishDecision(ctx context.Context, pt *
 func (p *adaptiveTailSamplingProcessor) decideEvicted(ctx context.Context, pt *pendingTrace) {
 	// Same rule as the shutdown drain: a trace already in its decision_delay
 	// window was counted when its trigger fired, so eviction of a mid-delay
-	// trace must not count the decision twice.
+	// trace must not count the decision twice. The trigger attribute is
+	// different: it reports what actually caused this decision, so eviction
+	// overrides the original reason even for mid-delay traces.
 	if !pt.triggered {
 		p.telemetry.ProcessorAdaptiveTailSamplingDecisionTriggers.Add(ctx, 1, triggerEvictionAttr)
 	}
+	pt.triggerReason = triggerEviction
 	if p.cfg.Eviction.Policy == EvictionProbabilistic {
 		p.decideEvictedProbabilistic(ctx, pt)
 		return
@@ -926,7 +981,7 @@ func effectiveThreshold(upstream sampling.Threshold, rate int) (sampling.Thresho
 // processor-owned (created fresh in ConsumeTraces) and the pendingTrace is
 // discarded after the decision, so the sources are left empty deliberately.
 // readIncomingSampling must run before this (it reads the same spans).
-func (p *adaptiveTailSamplingProcessor) assembleTrace(ctx context.Context, spans []ptrace.ResourceSpans, ruleName string, threshold sampling.Threshold, fingerprint string) ptrace.Traces {
+func (p *adaptiveTailSamplingProcessor) assembleTrace(ctx context.Context, spans []ptrace.ResourceSpans, ruleName string, threshold sampling.Threshold, fingerprint string, trigger triggerSource) ptrace.Traces {
 	emptyTS := serializedEmptyTraceState(threshold)
 	out := ptrace.NewTraces()
 	for _, rs := range spans {
@@ -934,10 +989,7 @@ func (p *adaptiveTailSamplingProcessor) assembleTrace(ctx context.Context, spans
 		rs.MoveTo(dst)
 		for _, ss := range dst.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
-				span.Attributes().PutStr(ruleAttributeKey, ruleName)
-				if fingerprint != "" {
-					span.Attributes().PutStr(fingerprintAttributeKey, fingerprint)
-				}
+				stampSpanAttributes(span, ruleName, fingerprint, trigger)
 				p.updateTraceState(ctx, span, threshold, emptyTS)
 			}
 		}
