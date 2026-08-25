@@ -498,29 +498,29 @@ Maximum number of connections used simultaneously since the server started.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | 1 | Sum | Int | Cumulative | false | Development |
 
-### mysql.myisam.key_cache.block.max_used
-
-The maximum number of MyISAM key cache blocks simultaneously in use since the server started or status counters were reset.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | Development |
-
 ### mysql.myisam.key_cache.block.unused
 
 The number of unused MyISAM key cache blocks.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | Development |
+| {block} | Gauge | Int | Development |
 
-### mysql.myisam.key_cache.disk.operation.count
+### mysql.myisam.key_cache.block.used.max
+
+The maximum number of MyISAM key cache blocks simultaneously in use since the server started or status counters were reset.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {block} | Gauge | Int | Development |
+
+### mysql.myisam.key_cache.disk.operation
 
 The number of physical MyISAM key cache disk operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | Development |
+| {operation} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
@@ -534,7 +534,7 @@ The number of logical MyISAM key cache requests.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | true | Development |
+| {request} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 

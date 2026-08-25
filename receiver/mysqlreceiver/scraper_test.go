@@ -254,9 +254,9 @@ func TestScrapeGlobalStatsRecordsReplicaOpenTempTablesFromLegacyGlobalStatusName
 
 func TestScrapeGlobalStatsRecordsMyisamKeyCacheMetricsWhenEnabled(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.MetricsBuilderConfig.Metrics.MysqlMyisamKeyCacheBlockMaxUsed.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlMyisamKeyCacheBlockUsedMax.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.MysqlMyisamKeyCacheBlockUnused.Enabled = true
-	cfg.MetricsBuilderConfig.Metrics.MysqlMyisamKeyCacheDiskOperationCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlMyisamKeyCacheDiskOperation.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.MysqlMyisamKeyCacheRequest.Enabled = true
 
 	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
@@ -269,12 +269,12 @@ func TestScrapeGlobalStatsRecordsMyisamKeyCacheMetricsWhenEnabled(t *testing.T) 
 
 	require.NoError(t, errs.Combine())
 	metrics := scraper.mb.Emit()
-	assert.Equal(t, []intMetricDataPoint{{value: 288}}, intMetricDataPointsByName(t, metrics, "mysql.myisam.key_cache.block.max_used"))
+	assert.Equal(t, []intMetricDataPoint{{value: 288}}, intMetricDataPointsByName(t, metrics, "mysql.myisam.key_cache.block.used.max"))
 	assert.Equal(t, []intMetricDataPoint{{value: 287}}, intMetricDataPointsByName(t, metrics, "mysql.myisam.key_cache.block.unused"))
 	assert.ElementsMatch(t, []intMetricDataPoint{
 		{attributes: map[string]string{"operation": "read"}, value: 290},
 		{attributes: map[string]string{"operation": "write"}, value: 292},
-	}, intMetricDataPointsByName(t, metrics, "mysql.myisam.key_cache.disk.operation.count"))
+	}, intMetricDataPointsByName(t, metrics, "mysql.myisam.key_cache.disk.operation"))
 	assert.ElementsMatch(t, []intMetricDataPoint{
 		{attributes: map[string]string{"operation": "read"}, value: 289},
 		{attributes: map[string]string{"operation": "write"}, value: 291},

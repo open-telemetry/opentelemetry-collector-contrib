@@ -65,11 +65,11 @@ all_set:
       attributes: ["operation"]
     mysql.max_used_connections:
       enabled: true
-    mysql.myisam.key_cache.block.max_used:
-      enabled: true
     mysql.myisam.key_cache.block.unused:
       enabled: true
-    mysql.myisam.key_cache.disk.operation.count:
+    mysql.myisam.key_cache.block.used.max:
+      enabled: true
+    mysql.myisam.key_cache.disk.operation:
       enabled: true
       attributes: ["operation"]
     mysql.myisam.key_cache.request:
@@ -251,11 +251,11 @@ reaggregate_set:
       attributes: []
     mysql.max_used_connections:
       enabled: true
-    mysql.myisam.key_cache.block.max_used:
-      enabled: true
     mysql.myisam.key_cache.block.unused:
       enabled: true
-    mysql.myisam.key_cache.disk.operation.count:
+    mysql.myisam.key_cache.block.used.max:
+      enabled: true
+    mysql.myisam.key_cache.disk.operation:
       enabled: true
       attributes: []
     mysql.myisam.key_cache.request:
@@ -437,11 +437,11 @@ none_set:
       attributes: ["operation"]
     mysql.max_used_connections:
       enabled: false
-    mysql.myisam.key_cache.block.max_used:
-      enabled: false
     mysql.myisam.key_cache.block.unused:
       enabled: false
-    mysql.myisam.key_cache.disk.operation.count:
+    mysql.myisam.key_cache.block.used.max:
+      enabled: false
+    mysql.myisam.key_cache.disk.operation:
       enabled: false
       attributes: ["operation"]
     mysql.myisam.key_cache.request:

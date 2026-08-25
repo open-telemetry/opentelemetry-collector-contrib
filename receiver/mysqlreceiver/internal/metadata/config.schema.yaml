@@ -433,13 +433,6 @@ $defs:
           enabled:
             type: boolean
             default: false
-      mysql.myisam.key_cache.block.max_used:
-        description: "MysqlMyisamKeyCacheBlockMaxUsedMetricConfig provides config for the mysql.myisam.key_cache.block.max_used metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
       mysql.myisam.key_cache.block.unused:
         description: "MysqlMyisamKeyCacheBlockUnusedMetricConfig provides config for the mysql.myisam.key_cache.block.unused metric."
         type: object
@@ -447,8 +440,15 @@ $defs:
           enabled:
             type: boolean
             default: false
-      mysql.myisam.key_cache.disk.operation.count:
-        description: "MysqlMyisamKeyCacheDiskOperationCountMetricConfig provides config for the mysql.myisam.key_cache.disk.operation.count metric."
+      mysql.myisam.key_cache.block.used.max:
+        description: "MysqlMyisamKeyCacheBlockUsedMaxMetricConfig provides config for the mysql.myisam.key_cache.block.used.max metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      mysql.myisam.key_cache.disk.operation:
+        description: "MysqlMyisamKeyCacheDiskOperationMetricConfig provides config for the mysql.myisam.key_cache.disk.operation metric."
         type: object
         properties:
           enabled:
