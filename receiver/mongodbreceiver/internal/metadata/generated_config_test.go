@@ -207,7 +207,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 					MongodbWtConcurrentTransactionsInUse: MongodbWtConcurrentTransactionsInUseMetricConfig{
 						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
+						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []MongodbWtConcurrentTransactionsInUseMetricAttributeKey{MongodbWtConcurrentTransactionsInUseMetricAttributeKeyMongodbWtConcurrentTransactionType},
 					},
 					MongodbWtFsyncCount: MongodbWtFsyncCountMetricConfig{
@@ -421,7 +421,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 					MongodbWtConcurrentTransactionsInUse: MongodbWtConcurrentTransactionsInUseMetricConfig{
 						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
+						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []MongodbWtConcurrentTransactionsInUseMetricAttributeKey{MongodbWtConcurrentTransactionsInUseMetricAttributeKeyMongodbWtConcurrentTransactionType},
 					},
 					MongodbWtFsyncCount: MongodbWtFsyncCountMetricConfig{

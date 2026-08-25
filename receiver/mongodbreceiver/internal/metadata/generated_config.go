@@ -1916,7 +1916,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		MongodbWtConcurrentTransactionsInUse: MongodbWtConcurrentTransactionsInUseMetricConfig{
 			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
+			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MongodbWtConcurrentTransactionsInUseMetricAttributeKey{MongodbWtConcurrentTransactionsInUseMetricAttributeKeyMongodbWtConcurrentTransactionType},
 		},
 		MongodbWtFsyncCount: MongodbWtFsyncCountMetricConfig{

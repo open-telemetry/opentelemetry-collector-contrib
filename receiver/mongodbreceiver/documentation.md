@@ -530,9 +530,9 @@ The amount of time that the server has been running.
 
 The number of in-flight WiredTiger read/write concurrent-transaction tickets.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {transaction} | Gauge | Int | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {transaction} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 

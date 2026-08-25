@@ -47,20 +47,6 @@ func sumIntByAttr(t *testing.T, m pmetric.Metric, attrKey string) map[string]int
 	return out
 }
 
-// gaugeIntByAttr maps an attribute value to its int data-point value for a Gauge metric.
-func gaugeIntByAttr(t *testing.T, m pmetric.Metric, attrKey string) map[string]int64 {
-	t.Helper()
-	out := map[string]int64{}
-	dps := m.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
-		v, ok := dp.Attributes().Get(attrKey)
-		require.True(t, ok, "data point missing attribute %q", attrKey)
-		out[v.Str()] = dp.IntValue()
-	}
-	return out
-}
-
 // newWTScraper builds a scraper with all five WiredTiger metrics enabled.
 func newWTScraper(t *testing.T) *mongodbScraper {
 	t.Helper()
@@ -155,8 +141,8 @@ func TestRecordWTConcurrentTransactionsOutLegacy(t *testing.T) {
 	require.NoError(t, errs.Combine())
 
 	m := findMetric(t, s.mb.Emit(), "mongodb.wt.concurrent_transactions.in_use")
-	require.Equal(t, pmetric.MetricTypeGauge, m.Type())
-	byDir := gaugeIntByAttr(t, m, "mongodb.wt.concurrent_transaction.type")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	byDir := sumIntByAttr(t, m, "mongodb.wt.concurrent_transaction.type")
 	require.Equal(t, map[string]int64{"read": 3, "write": 1}, byDir)
 }
 
@@ -189,9 +175,39 @@ func TestRecordWTConcurrentTransactionsOut80(t *testing.T) {
 	require.NoError(t, errs.Combine())
 
 	m := findMetric(t, s.mb.Emit(), "mongodb.wt.concurrent_transactions.in_use")
-	require.Equal(t, pmetric.MetricTypeGauge, m.Type())
-	byDir := gaugeIntByAttr(t, m, "mongodb.wt.concurrent_transaction.type")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	byDir := sumIntByAttr(t, m, "mongodb.wt.concurrent_transaction.type")
 	require.Equal(t, map[string]int64{"read": 7, "write": 4}, byDir)
+}
+
+// TestRecordWTConcurrentTransactionsAttributeDisabled verifies the metric is a non-monotonic
+// Sum, not a Gauge: when the read/write attribute is disabled the two data points collapse by
+// addition (7 + 4 = 11), not by averaging (which a Gauge would do, yielding 5).
+func TestRecordWTConcurrentTransactionsAttributeDisabled(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionsInUse.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionsInUse.EnabledAttributes = []metadata.MongodbWtConcurrentTransactionsInUseMetricAttributeKey{}
+	s := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+
+	doc := bson.M{
+		"storageEngine": bson.M{"name": "wiredTiger"},
+		"wiredTiger": bson.M{
+			"concurrentTransactions": bson.M{
+				"read":  bson.M{"out": int64(7)},
+				"write": bson.M{"out": int64(4)},
+			},
+		},
+	}
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordWTConcurrentTransactionsOut(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.wt.concurrent_transactions.in_use")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	require.Equal(t, 1, m.Sum().DataPoints().Len())
+	require.Equal(t, int64(11), m.Sum().DataPoints().At(0).IntValue())
 }
 
 // TestRecordWTConcurrentTransactionsNonWiredTiger80 asserts that on MongoDB 8.0+ the

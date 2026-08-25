@@ -760,8 +760,10 @@ metrics:
     stability: development
     unit: "{transaction}"
     enabled: false
-    gauge:
+    sum:
       value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
     attributes: [mongodb.wt.concurrent_transaction.type]
   mongodb.wt.fsync.count:
     description: The total number of fsync I/Os issued by the WiredTiger storage engine.
