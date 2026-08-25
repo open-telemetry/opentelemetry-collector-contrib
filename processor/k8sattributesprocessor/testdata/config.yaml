@@ -217,6 +217,13 @@ k8s_attributes/extract_from_deployment:
         key: app
         from: deployment
 
+k8s_attributes/extract_from_replicaset:
+  extract:
+    labels:
+      - tag_name: replicaset_label
+        key: app
+        from: replicaset
+
 k8s_attributes/extract_from_statefulset:
   extract:
     labels:

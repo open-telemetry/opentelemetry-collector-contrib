@@ -1,6 +1,6 @@
 change_type: enhancement
 
-component: receiver/windowsperfcounters
+component: receiver/windows_perf_counters
 
 note: Allow Windows performance counter wildcard queries to include their aggregation instance
 

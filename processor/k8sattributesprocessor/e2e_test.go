@@ -233,6 +233,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"container.id":                          newExpectedValue(exist, ""),
 				"k8s.namespace.labels.foons":            newExpectedValue(equal, "barns"),
 				"simple-deployment-workload-annotation": newExpectedValue(equal, "deployment-annotation"),
+				"simple-replicaset-workload-annotation": newExpectedValue(equal, "deployment-annotation"),
 			},
 		},
 		{
@@ -360,6 +361,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"container.id":                          newExpectedValue(exist, ""),
 				"k8s.namespace.labels.foons":            newExpectedValue(equal, "barns"),
 				"simple-deployment-workload-annotation": newExpectedValue(equal, "deployment-annotation"),
+				"simple-replicaset-workload-annotation": newExpectedValue(equal, "deployment-annotation"),
 			},
 		},
 		{
@@ -487,6 +489,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.node.labels.foo":                   newExpectedValue(equal, "too"),
 				"k8s.namespace.labels.foons":            newExpectedValue(equal, "barns"),
 				"simple-deployment-workload-annotation": newExpectedValue(equal, "deployment-annotation"),
+				"simple-replicaset-workload-annotation": newExpectedValue(equal, "deployment-annotation"),
 			},
 		},
 		{
@@ -1597,6 +1600,7 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"container.id":                          newExpectedValue(exist, ""),
 				"k8s.namespace.labels.foons":            newExpectedValue(equal, "barns"),
 				"simple-deployment-workload-annotation": newExpectedValue(equal, "deployment-annotation"),
+				"simple-replicaset-workload-annotation": newExpectedValue(equal, "deployment-annotation"),
 			},
 		},
 		{
@@ -1724,6 +1728,7 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"container.id":                          newExpectedValue(exist, ""),
 				"k8s.namespace.labels.foons":            newExpectedValue(equal, "barns"),
 				"simple-deployment-workload-annotation": newExpectedValue(equal, "deployment-annotation"),
+				"simple-replicaset-workload-annotation": newExpectedValue(equal, "deployment-annotation"),
 			},
 		},
 		{
@@ -1851,6 +1856,7 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				"k8s.node.labels.foo":                   newExpectedValue(equal, "too"),
 				"k8s.namespace.labels.foons":            newExpectedValue(equal, "barns"),
 				"simple-deployment-workload-annotation": newExpectedValue(equal, "deployment-annotation"),
+				"simple-replicaset-workload-annotation": newExpectedValue(equal, "deployment-annotation"),
 			},
 		},
 		{

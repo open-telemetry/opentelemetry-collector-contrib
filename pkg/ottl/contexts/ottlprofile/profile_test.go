@@ -16,7 +16,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_newPathGetSetter(t *testing.T) {
@@ -87,7 +86,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				N: "cache",
 				KeySlice: []ottl.Key[*TransformContext]{
 					&pathtest.Key[*TransformContext]{
-						S: ottltest.Strp("temp"),
+						S: new("temp"),
 					},
 				},
 			},
@@ -148,7 +147,12 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	instrumentationScope := pcommon.NewInstrumentationScope()
 	instrumentationScope.SetName("instrumentation_scope")
 
-	ctx := NewTransformContext(pprofile.NewProfile(), pprofile.NewProfilesDictionary(), instrumentationScope, resource, pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
+	resourceProfiles := pprofile.NewResourceProfiles()
+	resource.CopyTo(resourceProfiles.Resource())
+	scopeProfiles := pprofile.NewScopeProfiles()
+	instrumentationScope.CopyTo(scopeProfiles.Scope())
+
+	ctx := NewTransformContextPtr(resourceProfiles, scopeProfiles, pprofile.NewProfile(), pprofile.NewProfilesDictionary())
 
 	tests := []struct {
 		name     string
@@ -161,7 +165,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 				N: "attributes",
 				KeySlice: []ottl.Key[*TransformContext]{
 					&pathtest.Key[*TransformContext]{
-						S: ottltest.Strp("foo"),
+						S: new("foo"),
 					},
 				},
 			}},
@@ -171,7 +175,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			name: "resource with context",
 			path: &pathtest.Path[*TransformContext]{C: "resource", N: "attributes", KeySlice: []ottl.Key[*TransformContext]{
 				&pathtest.Key[*TransformContext]{
-					S: ottltest.Strp("foo"),
+					S: new("foo"),
 				},
 			}},
 			expected: "bar",
@@ -207,7 +211,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			require.NoError(t, err)
 
-			got, err := accessor.Get(t.Context(), &ctx)
+			got, err := accessor.Get(t.Context(), ctx)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})

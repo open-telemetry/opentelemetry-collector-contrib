@@ -5,6 +5,8 @@ package dynamicsamplingprocessor
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"strings"
 	"testing"
 	"time"
@@ -1336,10 +1338,10 @@ func TestProcessor_ThroughputSamplersEndToEnd(t *testing.T) {
 				DecisionCache: DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
 				Rules: []RuleConfig{
 					{Name: "default", Sampler: SamplerConfig{
-						Type:           DynamicThroughput,
-						Algorithm:      alg,
-						GoalThroughput: 1000,
-						KeyAttributes:  []string{"service.name"},
+						Type:                  DynamicThroughput,
+						Algorithm:             alg,
+						GoalThroughput:        1000,
+						FingerprintAttributes: []string{`resource.attributes["service.name"]`},
 					}},
 				},
 			}
@@ -1368,4 +1370,155 @@ func TestProcessor_ThroughputSamplersEndToEnd(t *testing.T) {
 			assert.Contains(t, span.TraceState().AsRaw(), "ot=th:", "kept spans must carry a threshold")
 		})
 	}
+}
+
+func TestProcessor_RootScopedFingerprint(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Millisecond,
+		NumTraces:     10,
+		DecisionCache: DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{
+				Type:                  DynamicPercentage,
+				GoalPercentage:        100,
+				FingerprintAttributes: []string{`root.attributes["http.route"]`, `resource.attributes["service.name"]`},
+			}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	// Root selector resolution runs at decide time through the processor's
+	// root-span condition; this pins the wiring end to end.
+	td := newRootTrace(pcommon.TraceID([16]byte{0xF9}))
+	td.ResourceSpans().At(0).Resource().Attributes().PutStr("service.name", "svc")
+	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("http.route", "/users")
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 1
+	}, time.Second, 10*time.Millisecond)
+	span := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	assert.Contains(t, span.TraceState().AsRaw(), "ot=th:", "trace decided through a root-scoped fingerprint must carry a threshold")
+}
+
+func TestProcessor_RecordFingerprint(t *testing.T) {
+	newCfg := func(mode RecordFingerprint) *Config {
+		return &Config{
+			TraceTimeout:      time.Hour,
+			DecisionDelay:     time.Millisecond,
+			NumTraces:         10,
+			DecisionCache:     DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
+			RecordFingerprint: mode,
+			Rules: []RuleConfig{
+				{Name: "default", Sampler: SamplerConfig{
+					Type:                  DynamicPercentage,
+					GoalPercentage:        100,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+				}},
+			},
+		}
+	}
+	consume := func(t *testing.T, p *dynamicSamplingProcessor, sink *consumertest.TracesSink, id byte) ptrace.Span {
+		td := newRootTrace(pcommon.TraceID([16]byte{id}))
+		td.ResourceSpans().At(0).Resource().Attributes().PutStr("service.name", "svc")
+		require.NoError(t, p.ConsumeTraces(t.Context(), td))
+		assert.Eventually(t, func() bool { return sink.SpanCount() >= 1 }, time.Second, 10*time.Millisecond)
+		out := sink.AllTraces()[len(sink.AllTraces())-1]
+		return out.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	}
+
+	t.Run("none_by_default", func(t *testing.T) {
+		sink := &consumertest.TracesSink{}
+		p := newTestProcessor(t, newCfg(""), sink)
+		span := consume(t, p, sink, 0xA1)
+		_, ok := span.Attributes().Get(fingerprintAttributeKey)
+		assert.False(t, ok, "no fingerprint attribute unless enabled")
+	})
+
+	t.Run("value_records_raw_key", func(t *testing.T) {
+		sink := &consumertest.TracesSink{}
+		p := newTestProcessor(t, newCfg(RecordFingerprintValue), sink)
+		span := consume(t, p, sink, 0xA2)
+		v, ok := span.Attributes().Get(fingerprintAttributeKey)
+		require.True(t, ok)
+		assert.Equal(t, "svc", v.AsString())
+	})
+
+	t.Run("hash_records_truncated_sha256", func(t *testing.T) {
+		sink := &consumertest.TracesSink{}
+		p := newTestProcessor(t, newCfg(RecordFingerprintHash), sink)
+		span := consume(t, p, sink, 0xA3)
+		v, ok := span.Attributes().Get(fingerprintAttributeKey)
+		require.True(t, ok)
+		sum := sha256.Sum256([]byte("svc"))
+		assert.Equal(t, hex.EncodeToString(sum[:8]), v.AsString(), "hash must be the documented recompute recipe")
+		assert.Len(t, v.AsString(), 16)
+	})
+
+	t.Run("late_spans_get_same_attribute", func(t *testing.T) {
+		sink := &consumertest.TracesSink{}
+		p := newTestProcessor(t, newCfg(RecordFingerprintValue), sink)
+		id := pcommon.TraceID([16]byte{0xA4})
+		td := newRootTrace(id)
+		td.ResourceSpans().At(0).Resource().Attributes().PutStr("service.name", "svc")
+		require.NoError(t, p.ConsumeTraces(t.Context(), td))
+		assert.Eventually(t, func() bool { return sink.SpanCount() == 1 }, time.Second, 10*time.Millisecond)
+
+		late := newTrace(id, ptrace.StatusCodeUnset)
+		require.NoError(t, p.ConsumeTraces(t.Context(), late))
+		assert.Eventually(t, func() bool { return sink.SpanCount() == 2 }, time.Second, 10*time.Millisecond)
+		span := sink.AllTraces()[len(sink.AllTraces())-1].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		v, ok := span.Attributes().Get(fingerprintAttributeKey)
+		require.True(t, ok, "late spans must carry the original decision's fingerprint")
+		assert.Equal(t, "svc", v.AsString())
+	})
+
+	t.Run("no_attribute_for_fingerprintless_samplers", func(t *testing.T) {
+		sink := &consumertest.TracesSink{}
+		cfg := newCfg(RecordFingerprintValue)
+		cfg.Rules = []RuleConfig{{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}}}
+		p := newTestProcessor(t, cfg, sink)
+		span := consume(t, p, sink, 0xA5)
+		_, ok := span.Attributes().Get(fingerprintAttributeKey)
+		assert.False(t, ok, "always_sample has no fingerprint to record")
+	})
+}
+
+func TestProcessor_FingerprintDurationMetric(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Millisecond,
+		NumTraces:     10,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{
+				Type:                  DynamicPercentage,
+				GoalPercentage:        100,
+				FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+			}},
+		},
+	}
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), newRootTrace(pcommon.TraceID([16]byte{0xB1}))))
+	assert.Eventually(t, func() bool { return sink.SpanCount() == 1 }, time.Second, 10*time.Millisecond)
+
+	metadatatest.AssertEqualProcessorDynamicSamplingFingerprintDuration(t, tt,
+		[]metricdata.HistogramDataPoint[int64]{{
+			Attributes: attribute.NewSet(attribute.String("rule", "default")),
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+		metricdatatest.IgnoreValue(),
+	)
 }
