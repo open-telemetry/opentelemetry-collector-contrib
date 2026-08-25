@@ -16,7 +16,7 @@ Distribution of effective sample rates produced per rule. Useful for detecting a
 
 ### otelcol_processor_adaptive_tail_sampling_decision_triggers
 
-Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction, shutdown).
+Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction, shutdown, span_limit).
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -45,6 +45,14 @@ Number of OTTL condition evaluation errors, labelled by the rule the condition b
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {errors} | Sum | Int | true | Development |
+
+### otelcol_processor_adaptive_tail_sampling_trace_span_count
+
+Distribution of buffered span counts per trace at decision time, labelled by rule. Useful for sizing span_limit against the real trace-size distribution.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {spans} | Histogram | Int | Development |
 
 ### otelcol_processor_adaptive_tail_sampling_traces_active
 
