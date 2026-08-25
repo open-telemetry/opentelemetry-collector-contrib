@@ -1651,7 +1651,7 @@ type metricOracledbAsmDiskgroupUsableFree struct {
 // init fills oracledb.asm_diskgroup.usable_free metric with initial data.
 func (m *metricOracledbAsmDiskgroupUsableFree) init() {
 	m.data.SetName("oracledb.asm_diskgroup.usable_free")
-	m.data.SetDescription("Free space in an ASM diskgroup.")
+	m.data.SetDescription("Free space that can safely be used for files after accounting for ASM redundancy and required mirror recovery capacity.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)

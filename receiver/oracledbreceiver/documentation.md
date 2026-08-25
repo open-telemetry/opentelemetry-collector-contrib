@@ -370,7 +370,7 @@ Total space in an ASM diskgroup.
 
 ### oracledb.asm_diskgroup.usable_free
 
-Free space in an ASM diskgroup.
+Free space that can safely be used for files after accounting for ASM redundancy and required mirror recovery capacity.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

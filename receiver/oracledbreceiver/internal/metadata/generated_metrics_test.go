@@ -1161,7 +1161,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.asm_diskgroup.usable_free"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Free space in an ASM diskgroup.", mi.Description())
+						assert.Equal(t, "Free space that can safely be used for files after accounting for ASM redundancy and required mirror recovery capacity.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -1176,7 +1176,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["oracledb.asm_diskgroup.usable_free"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Free space in an ASM diskgroup.", mi.Description())
+						assert.Equal(t, "Free space that can safely be used for files after accounting for ASM redundancy and required mirror recovery capacity.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())

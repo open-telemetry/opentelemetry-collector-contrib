@@ -516,7 +516,7 @@ metrics:
     unit: By
   oracledb.asm_diskgroup.usable_free:
     attributes: [oracledb.asm_diskgroup.name]
-    description: Free space in an ASM diskgroup.
+    description: Free space that can safely be used for files after accounting for ASM redundancy and required mirror recovery capacity.
     enabled: false
     stability: development
     gauge:
