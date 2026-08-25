@@ -6,7 +6,7 @@ resourceMetrics:
             stringValue: localhost:3306
         - key: service.instance.id
           value:
-            stringValue: 24770532-5e1e-5d8a-8f7c-d5d61b1baf28
+            stringValue: placeholder
     scopeMetrics:
       - metrics:
           - description: The number of data pages in the InnoDB buffer pool.
@@ -322,13 +322,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "256"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: fsyncs
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
                 - asInt: "253"
                   attributes:
                     - key: operation
@@ -348,6 +341,13 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: writes
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "256"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: fsyncs
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
