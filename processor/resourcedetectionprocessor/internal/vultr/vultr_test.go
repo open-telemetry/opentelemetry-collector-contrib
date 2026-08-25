@@ -17,6 +17,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
+// sdkSchemaURL is the schema URL the fake SDK detector reports. It is read from the SDK
+// itself rather than hardcoded so that an upstream semconv bump does not break these
+// tests, and semconv packages must not be imported from test files.
+var sdkSchemaURL = sdkresource.Default().SchemaURL()
+
 const (
 	hostName = "vultr-guest"
 	v2ID     = "36e9cf60-5d93-4e31-8ebf-613b3d2874fb"
@@ -51,7 +56,7 @@ func withFakeDetector(t *testing.T, res *sdkresource.Resource, err error) {
 // already prefers the v2 UUID for host.id and lower-cases the region code.
 func fullResource() *sdkresource.Resource {
 	return sdkresource.NewWithAttributes(
-		"https://opentelemetry.io/schemas/1.43.0",
+		sdkSchemaURL,
 		attribute.String("cloud.provider", "vultr"),
 		attribute.String("cloud.platform", "vultr.cloud_compute"),
 		attribute.String("cloud.region", region),
@@ -191,7 +196,7 @@ func TestVultrDetector_FailOnMissingMetadata(t *testing.T) {
 // with an empty value.
 func TestVultrDetector_PartialMetadata(t *testing.T) {
 	partial := sdkresource.NewWithAttributes(
-		"https://opentelemetry.io/schemas/1.43.0",
+		sdkSchemaURL,
 		attribute.String("cloud.provider", "vultr"),
 		attribute.String("cloud.platform", "vultr.cloud_compute"),
 		attribute.String("host.name", hostName),
@@ -216,7 +221,7 @@ func TestVultrDetector_PartialMetadata(t *testing.T) {
 // absent from an otherwise good response, so a partial result still succeeds.
 func TestVultrDetector_PartialMetadata_FailOnMissingMetadata(t *testing.T) {
 	partial := sdkresource.NewWithAttributes(
-		"https://opentelemetry.io/schemas/1.43.0",
+		sdkSchemaURL,
 		attribute.String("cloud.provider", "vultr"),
 		attribute.String("host.name", hostName),
 	)
