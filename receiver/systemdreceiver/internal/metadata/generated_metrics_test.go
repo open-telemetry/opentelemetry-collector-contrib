@@ -83,6 +83,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemdServiceCPUTimeDataPoint(ts, 3, AttributeCPUModeUser)
 			}
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemdServiceMemoryUsageDataPoint(ts, 1)
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemdServiceMemoryUsageMaxDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordSystemdServiceRestartsDataPoint(ts, 1)
@@ -171,6 +177,34 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("cpu.mode")
 						assert.False(t, ok)
 					}
+				case "systemd.service.memory.usage":
+					assert.False(t, validatedMetrics["systemd.service.memory.usage"], "Found a duplicate in the metrics slice: systemd.service.memory.usage")
+					validatedMetrics["systemd.service.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes of memory in use by this service.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "systemd.service.memory.usage.max":
+					assert.False(t, validatedMetrics["systemd.service.memory.usage.max"], "Found a duplicate in the metrics slice: systemd.service.memory.usage.max")
+					validatedMetrics["systemd.service.memory.usage.max"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Maximum memory used by this service, in bytes.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "systemd.service.restarts":
 					assert.False(t, validatedMetrics["systemd.service.restarts"], "Found a duplicate in the metrics slice: systemd.service.restarts")
 					validatedMetrics["systemd.service.restarts"] = true

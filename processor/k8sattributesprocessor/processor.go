@@ -259,6 +259,14 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		}
 	}
 
+	replicaset := getReplicaSetUID(pod, resource.Attributes())
+	if replicaset != "" {
+		attrsToAdd := kp.getAttributesForPodsReplicaSet(replicaset)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+	}
+
 	statefulset := getStatefulSetUID(pod, resource.Attributes())
 	if statefulset != "" {
 		attrsToAdd := kp.getAttributesForPodsStatefulSet(statefulset)
@@ -310,6 +318,13 @@ func getDeploymentUID(pod *kube.Pod, resAttrs pcommon.Map) string {
 		return pod.DeploymentUID
 	}
 	return stringAttributeFromMap(resAttrs, string(conventions.K8SDeploymentUIDKey))
+}
+
+func getReplicaSetUID(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.ReplicaSetUID != "" {
+		return pod.ReplicaSetUID
+	}
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SReplicaSetUIDKey))
 }
 
 func getStatefulSetUID(pod *kube.Pod, resAttrs pcommon.Map) string {
@@ -441,6 +456,14 @@ func (kp *kubernetesprocessor) getAttributesForPodsDeployment(deploymentUID stri
 		return nil
 	}
 	return d.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForPodsReplicaSet(replicaSetUID string) map[string]string {
+	rs, ok := kp.kc.GetReplicaSet(replicaSetUID)
+	if !ok {
+		return nil
+	}
+	return rs.Attributes
 }
 
 func (kp *kubernetesprocessor) getAttributesForPodsStatefulSet(statefulsetUID string) map[string]string {
