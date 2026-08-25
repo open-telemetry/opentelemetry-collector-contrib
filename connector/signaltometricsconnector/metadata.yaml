@@ -17,6 +17,13 @@ status:
   codeowners:
     active: [ChrsMark, lahsivjar]
 
+feature_gates:
+  - id: "connector.signaltometricsconnector.defaultIgnoreErrorMode"
+    description: "When enabled, sets the default error_mode to 'ignore' instead of 'propagate'."
+    stage: alpha
+    from_version: v0.159.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48419
+
 tests:
   config:
     spans:
