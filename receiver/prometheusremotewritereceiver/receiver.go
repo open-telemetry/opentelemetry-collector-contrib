@@ -564,9 +564,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 }
 
 // validateTimeSeriesPayload checks what a series carries against what the protocol allows it to.
-// A series holds samples or histograms and never both, and the metric type decides which of the
-// two the receiver goes looking for, so histograms attached to a sample type are data the
-// receiver would silently walk past.
+// Samples and histograms never travel together, and the metric type decides which of the two the
+// receiver goes looking for, so histograms attached to a sample type are data it would silently
+// walk past.
 func validateTimeSeriesPayload(ts *writev2.TimeSeries, name string) error {
 	hasSamples, hasHistograms := len(ts.Samples) > 0, len(ts.Histograms) > 0
 	if hasSamples && hasHistograms {
