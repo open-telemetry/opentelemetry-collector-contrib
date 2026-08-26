@@ -33,7 +33,7 @@ func SumFields(fields []map[string]any) map[string]float64 {
 		return result
 	}
 
-	for _, currentField := range fields[1:] {
+	for _, currentField := range fields[1:] { // #nosec G602 -- len(fields) >= 2 here: len==0 and len==1 are both returned above
 		for k, v := range result {
 			fieldValue, exists := currentField[k]
 			if !exists || fieldValue == nil {

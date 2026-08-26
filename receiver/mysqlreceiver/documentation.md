@@ -452,6 +452,30 @@ The number of pending InnoDB data file operations.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | operation | The operation types. | Str: ``fsyncs``, ``reads``, ``writes`` | Recommended | - |
 
+### mysql.innodb.row_lock.wait.count
+
+The number of InnoDB row lock waits currently pending.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {wait} | Gauge | Int | Development |
+
+### mysql.innodb.row_lock.wait.duration.avg
+
+The average InnoDB row lock wait duration since server startup or last status reset.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+### mysql.innodb.row_lock.wait.duration.max
+
+The maximum InnoDB row lock wait duration since server startup or last status reset.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
 ### mysql.joins
 
 The number of joins that perform table scans.
@@ -473,6 +497,50 @@ Maximum number of connections used simultaneously since the server started.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | 1 | Sum | Int | Cumulative | false | Development |
+
+### mysql.myisam.key_cache.block.unused
+
+The number of unused MyISAM key cache blocks.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {block} | Gauge | Int | Development |
+
+### mysql.myisam.key_cache.block.used.max
+
+The maximum number of MyISAM key cache blocks simultaneously in use since the server started or status counters were reset.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {block} | Gauge | Int | Development |
+
+### mysql.myisam.key_cache.disk.operation
+
+The number of physical MyISAM key cache disk operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operation} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The MyISAM key cache operation type. | Str: ``read``, ``write`` | Recommended | - |
+
+### mysql.myisam.key_cache.request
+
+The number of logical MyISAM key cache requests.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {request} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The MyISAM key cache operation type. | Str: ``read``, ``write`` | Recommended | - |
 
 ### mysql.mysqlx_worker_threads
 

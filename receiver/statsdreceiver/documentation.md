@@ -13,3 +13,13 @@ Number of statsd metrics received.
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | true | Development |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.statsd.monotonicCounterDefault` | alpha | When enabled, changes the default value of is_monotonic_counter to true, so that statsd counters are treated as monotonic sums by default. Explicitly setting is_monotonic_counter in the receiver config always takes precedence over this feature gate. | v0.159.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14956) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

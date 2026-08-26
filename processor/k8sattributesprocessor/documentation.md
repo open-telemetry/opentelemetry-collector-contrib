@@ -61,6 +61,30 @@ Number of pod associations' evaluations
 | pod_identifier | The source(s) used to identify the pod, formatted as 'from/name' (e.g., 'connection', 'resource_attribute/k8s.pod.ip'). Does not contain actual identifier values to avoid high cardinality. | Any Str | - |
 | otelcol.signal | The signal type the telemetry metric is associated with | Str: ``metrics``, ``traces``, ``logs``, ``profiles`` | - |
 
+### otelcol.k8s.watcher.cronjob.added
+
+Number of cronjob add events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.cronjob.deleted
+
+Number of cronjob delete events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+### otelcol.k8s.watcher.cronjob.updated
+
+Number of cronjob update events received
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
 ### otelcol.k8s.watcher.job.added
 
 Number of job add events received

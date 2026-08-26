@@ -7,6 +7,53 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.159.0
+
+### 🛑 Breaking changes 🛑
+
+- `extension/observer`: Removes the `kafka.topics` endpoint type along with the kafkatopicsobserver extension (#48186)
+  The `observer.KafkaTopicType` endpoint type and its `observer.KafkaTopic` details struct are
+  removed, as the kafkatopicsobserver was the only observer emitting them. The receivercreator
+  no longer accepts `type == "kafka.topics"` rules or resource attributes for that endpoint type.
+  
+- `pkg/fileconsumer`: `matcher.OrderingCriteria.TopN` is now a `*int` instead of `int`, so the matcher can distinguish an unset value from an explicit zero. (#47444)
+- `pkg/ottl`: Remove the deprecated `NewIsRootSpanFactory` and rename `NewIsRootSpanFactoryNew` to `NewIsRootSpanFactory`. (#50093)
+
+### 🚩 Deprecations 🚩
+
+- `receiver/signalfx`: Deprecate the signalfxreceiver package and module (#50201)
+  The receiver is deprecated and will be removed in the next release.
+  
+- `testbed`: Deprecate testbed.signalfxdatareceiver (#50200)
+
+### 💡 Enhancements 💡
+
+- `exporter/awscloudwatchlogs`: Add max_event_payload_bytes config option to opt in to the CloudWatch Logs 1 MiB per-event limit (previously hardcoded to 256 KiB). (#48559)
+  The CloudWatch Logs PutLogEvents API began accepting events up to 1 MiB on
+  2025-04-02. The exporter previously truncated every event at 256 KiB (the
+  pre-2025 service limit) via a hardcoded package constant. The default stays
+  at 256 KiB for backwards compatibility; set `max_event_payload_bytes: 1048576`
+  to take advantage of the new ceiling. A new `cwlogs.WithMaxEventPayloadBytes`
+  pusher option exposes the same knob to direct callers of the internal package.
+  
+- `extension/storage`: Implement the `storage.Walker` interface for storagetest (#49969)
+- `pkg/datadog`: Add the `datadog.EnableScopeConvention` feature gate to control the `otel.scope` name and version conventions in the Datadog exporter. (#49001)
+  When the `datadog.EnableScopeConvention` feature gate is enabled, spans additionally
+  carry the `otel.scope.name` and `otel.scope.version` attributes. The deprecated
+  `otel.library.name` and `otel.library.version` attributes are still emitted with the
+  same values for backward compatibility, so existing dashboards and monitors keyed on
+  them keep working.
+  
+- `pkg/ottl`: `pcommon.Value` is now comparable using all comparison operators (==, !=, <, <=, >=, >) in OTTL expressions (#49170)
+- `pkg/pdatatest`: Support `/exists` and `/regex` operators on the scope `version` field in pmetricassert assertion files. (#48393)
+  The assertion-file equivalent of `pmetrictest.IgnoreScopeVersion`: `version/exists`
+  requires a version without pinning its value, `version/regex` matches a full-string pattern.
+  
+- `pkg/pdatatest`: Add empty container validation logic to pmetrictest.ValidateMetrics (#49072)
+- `pkg/pdatatest`: Update pmetricassert assertion schema to use strongly typed `int_value` and `double_value` fields instead of a generic `value` field. (#48473)
+
+<!-- previous-version -->
+
 ## v0.158.0
 
 ### 🛑 Breaking changes 🛑
