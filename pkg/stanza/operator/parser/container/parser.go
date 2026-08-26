@@ -646,11 +646,11 @@ func parseLogPath(raw string) (map[string]any, bool) {
 
 // splitFirstOn splits s on the first occurrence of sep.
 func splitFirstOnInterval(s string) (head, tail string, ok bool) {
-	idx := strings.IndexByte(s, ' ')
-	if idx == -1 {
+	before, after, ok := strings.Cut(s, " ")
+	if !ok {
 		return "", "", false
 	}
-	return s[:idx], s[idx+1:], true
+	return before, after, true
 }
 
 // isNamespace matches [^_]+ from the regex — any char except underscore, one or more.
