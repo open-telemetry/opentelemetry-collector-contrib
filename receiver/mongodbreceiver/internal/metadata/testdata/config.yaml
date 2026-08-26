@@ -113,9 +113,9 @@ all_set:
       enabled: true
     mongodb.uptime:
       enabled: true
-    mongodb.wt.concurrent_transactions.in_use:
+    mongodb.wt.concurrent_transaction.ticket.in_use:
       enabled: true
-      attributes: ["mongodb.wt.concurrent_transaction.type"]
+      attributes: ["mongodb.wt.concurrent_transaction.ticket.type"]
     mongodb.wt.fsync.count:
       enabled: true
     mongodb.wt.log.operation.count:
@@ -257,7 +257,7 @@ reaggregate_set:
       enabled: true
     mongodb.uptime:
       enabled: true
-    mongodb.wt.concurrent_transactions.in_use:
+    mongodb.wt.concurrent_transaction.ticket.in_use:
       enabled: true
       attributes: []
     mongodb.wt.fsync.count:
@@ -401,9 +401,9 @@ none_set:
       enabled: false
     mongodb.uptime:
       enabled: false
-    mongodb.wt.concurrent_transactions.in_use:
+    mongodb.wt.concurrent_transaction.ticket.in_use:
       enabled: false
-      attributes: ["mongodb.wt.concurrent_transaction.type"]
+      attributes: ["mongodb.wt.concurrent_transaction.ticket.type"]
     mongodb.wt.fsync.count:
       enabled: false
     mongodb.wt.log.operation.count:

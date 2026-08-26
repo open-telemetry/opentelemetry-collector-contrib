@@ -87,7 +87,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["mongodb.operation.repl.count"] = mb.metricMongodbOperationReplCount.config.AggregationStrategy
 			aggMap["mongodb.operation.time"] = mb.metricMongodbOperationTime.config.AggregationStrategy
 			aggMap["mongodb.storage.size"] = mb.metricMongodbStorageSize.config.AggregationStrategy
-			aggMap["mongodb.wt.concurrent_transactions.in_use"] = mb.metricMongodbWtConcurrentTransactionsInUse.config.AggregationStrategy
+			aggMap["mongodb.wt.concurrent_transaction.ticket.in_use"] = mb.metricMongodbWtConcurrentTransactionTicketInUse.config.AggregationStrategy
 			aggMap["mongodb.wt.log.operation.count"] = mb.metricMongodbWtLogOperationCount.config.AggregationStrategy
 
 			expectedWarnings := 0
@@ -297,9 +297,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbUptimeDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordMongodbWtConcurrentTransactionsInUseDataPoint(ts, 1, AttributeMongodbWtConcurrentTransactionTypeRead)
+			mb.RecordMongodbWtConcurrentTransactionTicketInUseDataPoint(ts, 1, AttributeMongodbWtConcurrentTransactionTicketTypeRead)
 			if tt.name == "reaggregate_set" {
-				mb.RecordMongodbWtConcurrentTransactionsInUseDataPoint(ts, 3, AttributeMongodbWtConcurrentTransactionTypeWrite)
+				mb.RecordMongodbWtConcurrentTransactionTicketInUseDataPoint(ts, 3, AttributeMongodbWtConcurrentTransactionTicketTypeWrite)
 			}
 
 			allMetricsCount++
@@ -349,7 +349,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricMongodbOperationReplCount.aggDataPoints)
 				assert.Empty(t, mb.metricMongodbOperationTime.aggDataPoints)
 				assert.Empty(t, mb.metricMongodbStorageSize.aggDataPoints)
-				assert.Empty(t, mb.metricMongodbWtConcurrentTransactionsInUse.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbWtConcurrentTransactionTicketInUse.aggDataPoints)
 				assert.Empty(t, mb.metricMongodbWtLogOperationCount.aggDataPoints)
 			}
 
@@ -1650,14 +1650,14 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "mongodb.wt.concurrent_transactions.in_use":
+				case "mongodb.wt.concurrent_transaction.ticket.in_use":
 					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["mongodb.wt.concurrent_transactions.in_use"], "Found a duplicate in the metrics slice: mongodb.wt.concurrent_transactions.in_use")
-						validatedMetrics["mongodb.wt.concurrent_transactions.in_use"] = true
+						assert.False(t, validatedMetrics["mongodb.wt.concurrent_transaction.ticket.in_use"], "Found a duplicate in the metrics slice: mongodb.wt.concurrent_transaction.ticket.in_use")
+						validatedMetrics["mongodb.wt.concurrent_transaction.ticket.in_use"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "The number of in-flight WiredTiger read/write concurrent-transaction tickets.", mi.Description())
-						assert.Equal(t, "{transaction}", mi.Unit())
+						assert.Equal(t, "{ticket}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1665,23 +1665,23 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						mongodbWtConcurrentTransactionTypeAttrVal, ok := dp.Attributes().Get("mongodb.wt.concurrent_transaction.type")
+						mongodbWtConcurrentTransactionTicketTypeAttrVal, ok := dp.Attributes().Get("mongodb.wt.concurrent_transaction.ticket.type")
 						assert.True(t, ok)
-						assert.Equal(t, "read", mongodbWtConcurrentTransactionTypeAttrVal.Str())
+						assert.Equal(t, "read", mongodbWtConcurrentTransactionTicketTypeAttrVal.Str())
 					} else {
-						assert.False(t, validatedMetrics["mongodb.wt.concurrent_transactions.in_use"], "Found a duplicate in the metrics slice: mongodb.wt.concurrent_transactions.in_use")
-						validatedMetrics["mongodb.wt.concurrent_transactions.in_use"] = true
+						assert.False(t, validatedMetrics["mongodb.wt.concurrent_transaction.ticket.in_use"], "Found a duplicate in the metrics slice: mongodb.wt.concurrent_transaction.ticket.in_use")
+						validatedMetrics["mongodb.wt.concurrent_transaction.ticket.in_use"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "The number of in-flight WiredTiger read/write concurrent-transaction tickets.", mi.Description())
-						assert.Equal(t, "{transaction}", mi.Unit())
+						assert.Equal(t, "{ticket}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["mongodb.wt.concurrent_transactions.in_use"] {
+						switch aggMap["mongodb.wt.concurrent_transaction.ticket.in_use"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":
@@ -1691,7 +1691,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("mongodb.wt.concurrent_transaction.type")
+						_, ok := dp.Attributes().Get("mongodb.wt.concurrent_transaction.ticket.type")
 						assert.False(t, ok)
 					}
 				case "mongodb.wt.fsync.count":

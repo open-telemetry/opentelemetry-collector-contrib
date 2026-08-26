@@ -201,7 +201,7 @@ attributes:
   mongodb.query.truncated:
     description: Whether the value carried by db.query.text is a truncated rendering of the MongoDB command, as indicated by `$truncated` in the currentOp output.
     type: bool
-  mongodb.wt.concurrent_transaction.type:
+  mongodb.wt.concurrent_transaction.ticket.type:
     description: The WiredTiger concurrent-transaction ticket type.
     type: string
     requirement_level: recommended
@@ -755,16 +755,16 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: []
-  mongodb.wt.concurrent_transactions.in_use:
+  mongodb.wt.concurrent_transaction.ticket.in_use:
     description: The number of in-flight WiredTiger read/write concurrent-transaction tickets.
     stability: development
-    unit: "{transaction}"
+    unit: "{ticket}"
     enabled: false
     sum:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
-    attributes: [mongodb.wt.concurrent_transaction.type]
+    attributes: [mongodb.wt.concurrent_transaction.ticket.type]
   mongodb.wt.fsync.count:
     description: The total number of fsync I/Os issued by the WiredTiger storage engine.
     stability: development

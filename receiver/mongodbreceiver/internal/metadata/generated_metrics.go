@@ -208,30 +208,30 @@ var MapAttributeMongodbOperationState = map[string]AttributeMongodbOperationStat
 	"waiting": AttributeMongodbOperationStateWaiting,
 }
 
-// AttributeMongodbWtConcurrentTransactionType specifies the value mongodb.wt.concurrent_transaction.type attribute.
-type AttributeMongodbWtConcurrentTransactionType int
+// AttributeMongodbWtConcurrentTransactionTicketType specifies the value mongodb.wt.concurrent_transaction.ticket.type attribute.
+type AttributeMongodbWtConcurrentTransactionTicketType int
 
 const (
-	_ AttributeMongodbWtConcurrentTransactionType = iota
-	AttributeMongodbWtConcurrentTransactionTypeRead
-	AttributeMongodbWtConcurrentTransactionTypeWrite
+	_ AttributeMongodbWtConcurrentTransactionTicketType = iota
+	AttributeMongodbWtConcurrentTransactionTicketTypeRead
+	AttributeMongodbWtConcurrentTransactionTicketTypeWrite
 )
 
-// String returns the string representation of the AttributeMongodbWtConcurrentTransactionType.
-func (av AttributeMongodbWtConcurrentTransactionType) String() string {
+// String returns the string representation of the AttributeMongodbWtConcurrentTransactionTicketType.
+func (av AttributeMongodbWtConcurrentTransactionTicketType) String() string {
 	switch av {
-	case AttributeMongodbWtConcurrentTransactionTypeRead:
+	case AttributeMongodbWtConcurrentTransactionTicketTypeRead:
 		return "read"
-	case AttributeMongodbWtConcurrentTransactionTypeWrite:
+	case AttributeMongodbWtConcurrentTransactionTicketTypeWrite:
 		return "write"
 	}
 	return ""
 }
 
-// MapAttributeMongodbWtConcurrentTransactionType is a helper map of string to AttributeMongodbWtConcurrentTransactionType attribute value.
-var MapAttributeMongodbWtConcurrentTransactionType = map[string]AttributeMongodbWtConcurrentTransactionType{
-	"read":  AttributeMongodbWtConcurrentTransactionTypeRead,
-	"write": AttributeMongodbWtConcurrentTransactionTypeWrite,
+// MapAttributeMongodbWtConcurrentTransactionTicketType is a helper map of string to AttributeMongodbWtConcurrentTransactionTicketType attribute value.
+var MapAttributeMongodbWtConcurrentTransactionTicketType = map[string]AttributeMongodbWtConcurrentTransactionTicketType{
+	"read":  AttributeMongodbWtConcurrentTransactionTicketTypeRead,
+	"write": AttributeMongodbWtConcurrentTransactionTicketTypeWrite,
 }
 
 // AttributeMongodbWtLogOperationType specifies the value mongodb.wt.log.operation.type attribute.
@@ -521,9 +521,9 @@ var MetricsInfo = metricsInfo{
 	MongodbUptime: metricInfo{
 		Name: "mongodb.uptime",
 	},
-	MongodbWtConcurrentTransactionsInUse: metricInfo{
-		Name:       "mongodb.wt.concurrent_transactions.in_use",
-		Attributes: []string{"mongodb.wt.concurrent_transaction.type"},
+	MongodbWtConcurrentTransactionTicketInUse: metricInfo{
+		Name:       "mongodb.wt.concurrent_transaction.ticket.in_use",
+		Attributes: []string{"mongodb.wt.concurrent_transaction.ticket.type"},
 	},
 	MongodbWtFsyncCount: metricInfo{
 		Name: "mongodb.wt.fsync.count",
@@ -544,58 +544,58 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-	MongodbActiveReads                   metricInfo
-	MongodbActiveWrites                  metricInfo
-	MongodbCacheOperations               metricInfo
-	MongodbCollectionCount               metricInfo
-	MongodbCommandsRate                  metricInfo
-	MongodbConnectionCount               metricInfo
-	MongodbCursorCount                   metricInfo
-	MongodbCursorTimeoutCount            metricInfo
-	MongodbDataSize                      metricInfo
-	MongodbDatabaseCount                 metricInfo
-	MongodbDeletesRate                   metricInfo
-	MongodbDocumentOperationCount        metricInfo
-	MongodbExtentCount                   metricInfo
-	MongodbFlushesRate                   metricInfo
-	MongodbGetmoresRate                  metricInfo
-	MongodbGlobalLockTime                metricInfo
-	MongodbHealth                        metricInfo
-	MongodbIndexAccessCount              metricInfo
-	MongodbIndexCount                    metricInfo
-	MongodbIndexSize                     metricInfo
-	MongodbInsertsRate                   metricInfo
-	MongodbLockAcquireCount              metricInfo
-	MongodbLockAcquireTime               metricInfo
-	MongodbLockAcquireWaitCount          metricInfo
-	MongodbLockDeadlockCount             metricInfo
-	MongodbMemoryUsage                   metricInfo
-	MongodbNetworkIoReceive              metricInfo
-	MongodbNetworkIoTransmit             metricInfo
-	MongodbNetworkRequestCount           metricInfo
-	MongodbObjectCount                   metricInfo
-	MongodbOperationCount                metricInfo
-	MongodbOperationLatencyTime          metricInfo
-	MongodbOperationReplCount            metricInfo
-	MongodbOperationTime                 metricInfo
-	MongodbPageFaults                    metricInfo
-	MongodbQueriesRate                   metricInfo
-	MongodbReplCommandsPerSec            metricInfo
-	MongodbReplDeletesPerSec             metricInfo
-	MongodbReplGetmoresPerSec            metricInfo
-	MongodbReplInsertsPerSec             metricInfo
-	MongodbReplQueriesPerSec             metricInfo
-	MongodbReplUpdatesPerSec             metricInfo
-	MongodbSessionCount                  metricInfo
-	MongodbStorageSize                   metricInfo
-	MongodbUpdatesRate                   metricInfo
-	MongodbUptime                        metricInfo
-	MongodbWtConcurrentTransactionsInUse metricInfo
-	MongodbWtFsyncCount                  metricInfo
-	MongodbWtLogOperationCount           metricInfo
-	MongodbWtLogSyncTime                 metricInfo
-	MongodbWtLogWrite                    metricInfo
-	MongodbWtcacheBytesRead              metricInfo
+	MongodbActiveReads                        metricInfo
+	MongodbActiveWrites                       metricInfo
+	MongodbCacheOperations                    metricInfo
+	MongodbCollectionCount                    metricInfo
+	MongodbCommandsRate                       metricInfo
+	MongodbConnectionCount                    metricInfo
+	MongodbCursorCount                        metricInfo
+	MongodbCursorTimeoutCount                 metricInfo
+	MongodbDataSize                           metricInfo
+	MongodbDatabaseCount                      metricInfo
+	MongodbDeletesRate                        metricInfo
+	MongodbDocumentOperationCount             metricInfo
+	MongodbExtentCount                        metricInfo
+	MongodbFlushesRate                        metricInfo
+	MongodbGetmoresRate                       metricInfo
+	MongodbGlobalLockTime                     metricInfo
+	MongodbHealth                             metricInfo
+	MongodbIndexAccessCount                   metricInfo
+	MongodbIndexCount                         metricInfo
+	MongodbIndexSize                          metricInfo
+	MongodbInsertsRate                        metricInfo
+	MongodbLockAcquireCount                   metricInfo
+	MongodbLockAcquireTime                    metricInfo
+	MongodbLockAcquireWaitCount               metricInfo
+	MongodbLockDeadlockCount                  metricInfo
+	MongodbMemoryUsage                        metricInfo
+	MongodbNetworkIoReceive                   metricInfo
+	MongodbNetworkIoTransmit                  metricInfo
+	MongodbNetworkRequestCount                metricInfo
+	MongodbObjectCount                        metricInfo
+	MongodbOperationCount                     metricInfo
+	MongodbOperationLatencyTime               metricInfo
+	MongodbOperationReplCount                 metricInfo
+	MongodbOperationTime                      metricInfo
+	MongodbPageFaults                         metricInfo
+	MongodbQueriesRate                        metricInfo
+	MongodbReplCommandsPerSec                 metricInfo
+	MongodbReplDeletesPerSec                  metricInfo
+	MongodbReplGetmoresPerSec                 metricInfo
+	MongodbReplInsertsPerSec                  metricInfo
+	MongodbReplQueriesPerSec                  metricInfo
+	MongodbReplUpdatesPerSec                  metricInfo
+	MongodbSessionCount                       metricInfo
+	MongodbStorageSize                        metricInfo
+	MongodbUpdatesRate                        metricInfo
+	MongodbUptime                             metricInfo
+	MongodbWtConcurrentTransactionTicketInUse metricInfo
+	MongodbWtFsyncCount                       metricInfo
+	MongodbWtLogOperationCount                metricInfo
+	MongodbWtLogSyncTime                      metricInfo
+	MongodbWtLogWrite                         metricInfo
+	MongodbWtcacheBytesRead                   metricInfo
 }
 
 type metricInfo struct {
@@ -3781,18 +3781,18 @@ func newMetricMongodbUptime(cfg MongodbUptimeMetricConfig) metricMongodbUptime {
 	return m
 }
 
-type metricMongodbWtConcurrentTransactionsInUse struct {
-	data          pmetric.Metric                                   // data buffer for generated metric.
-	config        MongodbWtConcurrentTransactionsInUseMetricConfig // metric config provided by user.
-	capacity      int                                              // max observed number of data points added to the metric.
-	aggDataPoints []int64                                          // slice containing number of aggregated datapoints at each index
+type metricMongodbWtConcurrentTransactionTicketInUse struct {
+	data          pmetric.Metric                                        // data buffer for generated metric.
+	config        MongodbWtConcurrentTransactionTicketInUseMetricConfig // metric config provided by user.
+	capacity      int                                                   // max observed number of data points added to the metric.
+	aggDataPoints []int64                                               // slice containing number of aggregated datapoints at each index
 }
 
-// init fills mongodb.wt.concurrent_transactions.in_use metric with initial data.
-func (m *metricMongodbWtConcurrentTransactionsInUse) init() {
-	m.data.SetName("mongodb.wt.concurrent_transactions.in_use")
+// init fills mongodb.wt.concurrent_transaction.ticket.in_use metric with initial data.
+func (m *metricMongodbWtConcurrentTransactionTicketInUse) init() {
+	m.data.SetName("mongodb.wt.concurrent_transaction.ticket.in_use")
 	m.data.SetDescription("The number of in-flight WiredTiger read/write concurrent-transaction tickets.")
-	m.data.SetUnit("{transaction}")
+	m.data.SetUnit("{ticket}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3800,7 +3800,7 @@ func (m *metricMongodbWtConcurrentTransactionsInUse) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricMongodbWtConcurrentTransactionsInUse) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, mongodbWtConcurrentTransactionTypeAttributeValue string) {
+func (m *metricMongodbWtConcurrentTransactionTicketInUse) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, mongodbWtConcurrentTransactionTicketTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3808,8 +3808,8 @@ func (m *metricMongodbWtConcurrentTransactionsInUse) recordDataPoint(start pcomm
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, MongodbWtConcurrentTransactionsInUseMetricAttributeKeyMongodbWtConcurrentTransactionType) {
-		dp.Attributes().PutStr("mongodb.wt.concurrent_transaction.type", mongodbWtConcurrentTransactionTypeAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, MongodbWtConcurrentTransactionTicketInUseMetricAttributeKeyMongodbWtConcurrentTransactionTicketType) {
+		dp.Attributes().PutStr("mongodb.wt.concurrent_transaction.ticket.type", mongodbWtConcurrentTransactionTicketTypeAttributeValue)
 	}
 
 	var s string
@@ -3842,14 +3842,14 @@ func (m *metricMongodbWtConcurrentTransactionsInUse) recordDataPoint(start pcomm
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMongodbWtConcurrentTransactionsInUse) updateCapacity() {
+func (m *metricMongodbWtConcurrentTransactionTicketInUse) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMongodbWtConcurrentTransactionsInUse) emit(metrics pmetric.MetricSlice) {
+func (m *metricMongodbWtConcurrentTransactionTicketInUse) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
@@ -3862,8 +3862,8 @@ func (m *metricMongodbWtConcurrentTransactionsInUse) emit(metrics pmetric.Metric
 	}
 }
 
-func newMetricMongodbWtConcurrentTransactionsInUse(cfg MongodbWtConcurrentTransactionsInUseMetricConfig) metricMongodbWtConcurrentTransactionsInUse {
-	m := metricMongodbWtConcurrentTransactionsInUse{config: cfg}
+func newMetricMongodbWtConcurrentTransactionTicketInUse(cfg MongodbWtConcurrentTransactionTicketInUseMetricConfig) metricMongodbWtConcurrentTransactionTicketInUse {
+	m := metricMongodbWtConcurrentTransactionTicketInUse{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -4174,65 +4174,65 @@ func newMetricMongodbWtcacheBytesRead(cfg MongodbWtcacheBytesReadMetricConfig) m
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                     MetricsBuilderConfig // config of the metrics builder.
-	startTime                                  pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                            int                  // maximum observed number of metrics per resource.
-	metricsBuffer                              pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                  component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter             map[string]filter.Filter
-	resourceAttributeExcludeFilter             map[string]filter.Filter
-	metricMongodbActiveReads                   metricMongodbActiveReads
-	metricMongodbActiveWrites                  metricMongodbActiveWrites
-	metricMongodbCacheOperations               metricMongodbCacheOperations
-	metricMongodbCollectionCount               metricMongodbCollectionCount
-	metricMongodbCommandsRate                  metricMongodbCommandsRate
-	metricMongodbConnectionCount               metricMongodbConnectionCount
-	metricMongodbCursorCount                   metricMongodbCursorCount
-	metricMongodbCursorTimeoutCount            metricMongodbCursorTimeoutCount
-	metricMongodbDataSize                      metricMongodbDataSize
-	metricMongodbDatabaseCount                 metricMongodbDatabaseCount
-	metricMongodbDeletesRate                   metricMongodbDeletesRate
-	metricMongodbDocumentOperationCount        metricMongodbDocumentOperationCount
-	metricMongodbExtentCount                   metricMongodbExtentCount
-	metricMongodbFlushesRate                   metricMongodbFlushesRate
-	metricMongodbGetmoresRate                  metricMongodbGetmoresRate
-	metricMongodbGlobalLockTime                metricMongodbGlobalLockTime
-	metricMongodbHealth                        metricMongodbHealth
-	metricMongodbIndexAccessCount              metricMongodbIndexAccessCount
-	metricMongodbIndexCount                    metricMongodbIndexCount
-	metricMongodbIndexSize                     metricMongodbIndexSize
-	metricMongodbInsertsRate                   metricMongodbInsertsRate
-	metricMongodbLockAcquireCount              metricMongodbLockAcquireCount
-	metricMongodbLockAcquireTime               metricMongodbLockAcquireTime
-	metricMongodbLockAcquireWaitCount          metricMongodbLockAcquireWaitCount
-	metricMongodbLockDeadlockCount             metricMongodbLockDeadlockCount
-	metricMongodbMemoryUsage                   metricMongodbMemoryUsage
-	metricMongodbNetworkIoReceive              metricMongodbNetworkIoReceive
-	metricMongodbNetworkIoTransmit             metricMongodbNetworkIoTransmit
-	metricMongodbNetworkRequestCount           metricMongodbNetworkRequestCount
-	metricMongodbObjectCount                   metricMongodbObjectCount
-	metricMongodbOperationCount                metricMongodbOperationCount
-	metricMongodbOperationLatencyTime          metricMongodbOperationLatencyTime
-	metricMongodbOperationReplCount            metricMongodbOperationReplCount
-	metricMongodbOperationTime                 metricMongodbOperationTime
-	metricMongodbPageFaults                    metricMongodbPageFaults
-	metricMongodbQueriesRate                   metricMongodbQueriesRate
-	metricMongodbReplCommandsPerSec            metricMongodbReplCommandsPerSec
-	metricMongodbReplDeletesPerSec             metricMongodbReplDeletesPerSec
-	metricMongodbReplGetmoresPerSec            metricMongodbReplGetmoresPerSec
-	metricMongodbReplInsertsPerSec             metricMongodbReplInsertsPerSec
-	metricMongodbReplQueriesPerSec             metricMongodbReplQueriesPerSec
-	metricMongodbReplUpdatesPerSec             metricMongodbReplUpdatesPerSec
-	metricMongodbSessionCount                  metricMongodbSessionCount
-	metricMongodbStorageSize                   metricMongodbStorageSize
-	metricMongodbUpdatesRate                   metricMongodbUpdatesRate
-	metricMongodbUptime                        metricMongodbUptime
-	metricMongodbWtConcurrentTransactionsInUse metricMongodbWtConcurrentTransactionsInUse
-	metricMongodbWtFsyncCount                  metricMongodbWtFsyncCount
-	metricMongodbWtLogOperationCount           metricMongodbWtLogOperationCount
-	metricMongodbWtLogSyncTime                 metricMongodbWtLogSyncTime
-	metricMongodbWtLogWrite                    metricMongodbWtLogWrite
-	metricMongodbWtcacheBytesRead              metricMongodbWtcacheBytesRead
+	config                                          MetricsBuilderConfig // config of the metrics builder.
+	startTime                                       pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                                 int                  // maximum observed number of metrics per resource.
+	metricsBuffer                                   pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                       component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter                  map[string]filter.Filter
+	resourceAttributeExcludeFilter                  map[string]filter.Filter
+	metricMongodbActiveReads                        metricMongodbActiveReads
+	metricMongodbActiveWrites                       metricMongodbActiveWrites
+	metricMongodbCacheOperations                    metricMongodbCacheOperations
+	metricMongodbCollectionCount                    metricMongodbCollectionCount
+	metricMongodbCommandsRate                       metricMongodbCommandsRate
+	metricMongodbConnectionCount                    metricMongodbConnectionCount
+	metricMongodbCursorCount                        metricMongodbCursorCount
+	metricMongodbCursorTimeoutCount                 metricMongodbCursorTimeoutCount
+	metricMongodbDataSize                           metricMongodbDataSize
+	metricMongodbDatabaseCount                      metricMongodbDatabaseCount
+	metricMongodbDeletesRate                        metricMongodbDeletesRate
+	metricMongodbDocumentOperationCount             metricMongodbDocumentOperationCount
+	metricMongodbExtentCount                        metricMongodbExtentCount
+	metricMongodbFlushesRate                        metricMongodbFlushesRate
+	metricMongodbGetmoresRate                       metricMongodbGetmoresRate
+	metricMongodbGlobalLockTime                     metricMongodbGlobalLockTime
+	metricMongodbHealth                             metricMongodbHealth
+	metricMongodbIndexAccessCount                   metricMongodbIndexAccessCount
+	metricMongodbIndexCount                         metricMongodbIndexCount
+	metricMongodbIndexSize                          metricMongodbIndexSize
+	metricMongodbInsertsRate                        metricMongodbInsertsRate
+	metricMongodbLockAcquireCount                   metricMongodbLockAcquireCount
+	metricMongodbLockAcquireTime                    metricMongodbLockAcquireTime
+	metricMongodbLockAcquireWaitCount               metricMongodbLockAcquireWaitCount
+	metricMongodbLockDeadlockCount                  metricMongodbLockDeadlockCount
+	metricMongodbMemoryUsage                        metricMongodbMemoryUsage
+	metricMongodbNetworkIoReceive                   metricMongodbNetworkIoReceive
+	metricMongodbNetworkIoTransmit                  metricMongodbNetworkIoTransmit
+	metricMongodbNetworkRequestCount                metricMongodbNetworkRequestCount
+	metricMongodbObjectCount                        metricMongodbObjectCount
+	metricMongodbOperationCount                     metricMongodbOperationCount
+	metricMongodbOperationLatencyTime               metricMongodbOperationLatencyTime
+	metricMongodbOperationReplCount                 metricMongodbOperationReplCount
+	metricMongodbOperationTime                      metricMongodbOperationTime
+	metricMongodbPageFaults                         metricMongodbPageFaults
+	metricMongodbQueriesRate                        metricMongodbQueriesRate
+	metricMongodbReplCommandsPerSec                 metricMongodbReplCommandsPerSec
+	metricMongodbReplDeletesPerSec                  metricMongodbReplDeletesPerSec
+	metricMongodbReplGetmoresPerSec                 metricMongodbReplGetmoresPerSec
+	metricMongodbReplInsertsPerSec                  metricMongodbReplInsertsPerSec
+	metricMongodbReplQueriesPerSec                  metricMongodbReplQueriesPerSec
+	metricMongodbReplUpdatesPerSec                  metricMongodbReplUpdatesPerSec
+	metricMongodbSessionCount                       metricMongodbSessionCount
+	metricMongodbStorageSize                        metricMongodbStorageSize
+	metricMongodbUpdatesRate                        metricMongodbUpdatesRate
+	metricMongodbUptime                             metricMongodbUptime
+	metricMongodbWtConcurrentTransactionTicketInUse metricMongodbWtConcurrentTransactionTicketInUse
+	metricMongodbWtFsyncCount                       metricMongodbWtFsyncCount
+	metricMongodbWtLogOperationCount                metricMongodbWtLogOperationCount
+	metricMongodbWtLogSyncTime                      metricMongodbWtLogSyncTime
+	metricMongodbWtLogWrite                         metricMongodbWtLogWrite
+	metricMongodbWtcacheBytesRead                   metricMongodbWtcacheBytesRead
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -4254,64 +4254,64 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                     mbc,
-		startTime:                                  pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                              pmetric.NewMetrics(),
-		buildInfo:                                  settings.BuildInfo,
-		metricMongodbActiveReads:                   newMetricMongodbActiveReads(mbc.Metrics.MongodbActiveReads),
-		metricMongodbActiveWrites:                  newMetricMongodbActiveWrites(mbc.Metrics.MongodbActiveWrites),
-		metricMongodbCacheOperations:               newMetricMongodbCacheOperations(mbc.Metrics.MongodbCacheOperations),
-		metricMongodbCollectionCount:               newMetricMongodbCollectionCount(mbc.Metrics.MongodbCollectionCount),
-		metricMongodbCommandsRate:                  newMetricMongodbCommandsRate(mbc.Metrics.MongodbCommandsRate),
-		metricMongodbConnectionCount:               newMetricMongodbConnectionCount(mbc.Metrics.MongodbConnectionCount),
-		metricMongodbCursorCount:                   newMetricMongodbCursorCount(mbc.Metrics.MongodbCursorCount),
-		metricMongodbCursorTimeoutCount:            newMetricMongodbCursorTimeoutCount(mbc.Metrics.MongodbCursorTimeoutCount),
-		metricMongodbDataSize:                      newMetricMongodbDataSize(mbc.Metrics.MongodbDataSize),
-		metricMongodbDatabaseCount:                 newMetricMongodbDatabaseCount(mbc.Metrics.MongodbDatabaseCount),
-		metricMongodbDeletesRate:                   newMetricMongodbDeletesRate(mbc.Metrics.MongodbDeletesRate),
-		metricMongodbDocumentOperationCount:        newMetricMongodbDocumentOperationCount(mbc.Metrics.MongodbDocumentOperationCount),
-		metricMongodbExtentCount:                   newMetricMongodbExtentCount(mbc.Metrics.MongodbExtentCount),
-		metricMongodbFlushesRate:                   newMetricMongodbFlushesRate(mbc.Metrics.MongodbFlushesRate),
-		metricMongodbGetmoresRate:                  newMetricMongodbGetmoresRate(mbc.Metrics.MongodbGetmoresRate),
-		metricMongodbGlobalLockTime:                newMetricMongodbGlobalLockTime(mbc.Metrics.MongodbGlobalLockTime),
-		metricMongodbHealth:                        newMetricMongodbHealth(mbc.Metrics.MongodbHealth),
-		metricMongodbIndexAccessCount:              newMetricMongodbIndexAccessCount(mbc.Metrics.MongodbIndexAccessCount),
-		metricMongodbIndexCount:                    newMetricMongodbIndexCount(mbc.Metrics.MongodbIndexCount),
-		metricMongodbIndexSize:                     newMetricMongodbIndexSize(mbc.Metrics.MongodbIndexSize),
-		metricMongodbInsertsRate:                   newMetricMongodbInsertsRate(mbc.Metrics.MongodbInsertsRate),
-		metricMongodbLockAcquireCount:              newMetricMongodbLockAcquireCount(mbc.Metrics.MongodbLockAcquireCount),
-		metricMongodbLockAcquireTime:               newMetricMongodbLockAcquireTime(mbc.Metrics.MongodbLockAcquireTime),
-		metricMongodbLockAcquireWaitCount:          newMetricMongodbLockAcquireWaitCount(mbc.Metrics.MongodbLockAcquireWaitCount),
-		metricMongodbLockDeadlockCount:             newMetricMongodbLockDeadlockCount(mbc.Metrics.MongodbLockDeadlockCount),
-		metricMongodbMemoryUsage:                   newMetricMongodbMemoryUsage(mbc.Metrics.MongodbMemoryUsage),
-		metricMongodbNetworkIoReceive:              newMetricMongodbNetworkIoReceive(mbc.Metrics.MongodbNetworkIoReceive),
-		metricMongodbNetworkIoTransmit:             newMetricMongodbNetworkIoTransmit(mbc.Metrics.MongodbNetworkIoTransmit),
-		metricMongodbNetworkRequestCount:           newMetricMongodbNetworkRequestCount(mbc.Metrics.MongodbNetworkRequestCount),
-		metricMongodbObjectCount:                   newMetricMongodbObjectCount(mbc.Metrics.MongodbObjectCount),
-		metricMongodbOperationCount:                newMetricMongodbOperationCount(mbc.Metrics.MongodbOperationCount),
-		metricMongodbOperationLatencyTime:          newMetricMongodbOperationLatencyTime(mbc.Metrics.MongodbOperationLatencyTime),
-		metricMongodbOperationReplCount:            newMetricMongodbOperationReplCount(mbc.Metrics.MongodbOperationReplCount),
-		metricMongodbOperationTime:                 newMetricMongodbOperationTime(mbc.Metrics.MongodbOperationTime),
-		metricMongodbPageFaults:                    newMetricMongodbPageFaults(mbc.Metrics.MongodbPageFaults),
-		metricMongodbQueriesRate:                   newMetricMongodbQueriesRate(mbc.Metrics.MongodbQueriesRate),
-		metricMongodbReplCommandsPerSec:            newMetricMongodbReplCommandsPerSec(mbc.Metrics.MongodbReplCommandsPerSec),
-		metricMongodbReplDeletesPerSec:             newMetricMongodbReplDeletesPerSec(mbc.Metrics.MongodbReplDeletesPerSec),
-		metricMongodbReplGetmoresPerSec:            newMetricMongodbReplGetmoresPerSec(mbc.Metrics.MongodbReplGetmoresPerSec),
-		metricMongodbReplInsertsPerSec:             newMetricMongodbReplInsertsPerSec(mbc.Metrics.MongodbReplInsertsPerSec),
-		metricMongodbReplQueriesPerSec:             newMetricMongodbReplQueriesPerSec(mbc.Metrics.MongodbReplQueriesPerSec),
-		metricMongodbReplUpdatesPerSec:             newMetricMongodbReplUpdatesPerSec(mbc.Metrics.MongodbReplUpdatesPerSec),
-		metricMongodbSessionCount:                  newMetricMongodbSessionCount(mbc.Metrics.MongodbSessionCount),
-		metricMongodbStorageSize:                   newMetricMongodbStorageSize(mbc.Metrics.MongodbStorageSize),
-		metricMongodbUpdatesRate:                   newMetricMongodbUpdatesRate(mbc.Metrics.MongodbUpdatesRate),
-		metricMongodbUptime:                        newMetricMongodbUptime(mbc.Metrics.MongodbUptime),
-		metricMongodbWtConcurrentTransactionsInUse: newMetricMongodbWtConcurrentTransactionsInUse(mbc.Metrics.MongodbWtConcurrentTransactionsInUse),
-		metricMongodbWtFsyncCount:                  newMetricMongodbWtFsyncCount(mbc.Metrics.MongodbWtFsyncCount),
-		metricMongodbWtLogOperationCount:           newMetricMongodbWtLogOperationCount(mbc.Metrics.MongodbWtLogOperationCount),
-		metricMongodbWtLogSyncTime:                 newMetricMongodbWtLogSyncTime(mbc.Metrics.MongodbWtLogSyncTime),
-		metricMongodbWtLogWrite:                    newMetricMongodbWtLogWrite(mbc.Metrics.MongodbWtLogWrite),
-		metricMongodbWtcacheBytesRead:              newMetricMongodbWtcacheBytesRead(mbc.Metrics.MongodbWtcacheBytesRead),
-		resourceAttributeIncludeFilter:             make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:             make(map[string]filter.Filter),
+		config:                                          mbc,
+		startTime:                                       pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                                   pmetric.NewMetrics(),
+		buildInfo:                                       settings.BuildInfo,
+		metricMongodbActiveReads:                        newMetricMongodbActiveReads(mbc.Metrics.MongodbActiveReads),
+		metricMongodbActiveWrites:                       newMetricMongodbActiveWrites(mbc.Metrics.MongodbActiveWrites),
+		metricMongodbCacheOperations:                    newMetricMongodbCacheOperations(mbc.Metrics.MongodbCacheOperations),
+		metricMongodbCollectionCount:                    newMetricMongodbCollectionCount(mbc.Metrics.MongodbCollectionCount),
+		metricMongodbCommandsRate:                       newMetricMongodbCommandsRate(mbc.Metrics.MongodbCommandsRate),
+		metricMongodbConnectionCount:                    newMetricMongodbConnectionCount(mbc.Metrics.MongodbConnectionCount),
+		metricMongodbCursorCount:                        newMetricMongodbCursorCount(mbc.Metrics.MongodbCursorCount),
+		metricMongodbCursorTimeoutCount:                 newMetricMongodbCursorTimeoutCount(mbc.Metrics.MongodbCursorTimeoutCount),
+		metricMongodbDataSize:                           newMetricMongodbDataSize(mbc.Metrics.MongodbDataSize),
+		metricMongodbDatabaseCount:                      newMetricMongodbDatabaseCount(mbc.Metrics.MongodbDatabaseCount),
+		metricMongodbDeletesRate:                        newMetricMongodbDeletesRate(mbc.Metrics.MongodbDeletesRate),
+		metricMongodbDocumentOperationCount:             newMetricMongodbDocumentOperationCount(mbc.Metrics.MongodbDocumentOperationCount),
+		metricMongodbExtentCount:                        newMetricMongodbExtentCount(mbc.Metrics.MongodbExtentCount),
+		metricMongodbFlushesRate:                        newMetricMongodbFlushesRate(mbc.Metrics.MongodbFlushesRate),
+		metricMongodbGetmoresRate:                       newMetricMongodbGetmoresRate(mbc.Metrics.MongodbGetmoresRate),
+		metricMongodbGlobalLockTime:                     newMetricMongodbGlobalLockTime(mbc.Metrics.MongodbGlobalLockTime),
+		metricMongodbHealth:                             newMetricMongodbHealth(mbc.Metrics.MongodbHealth),
+		metricMongodbIndexAccessCount:                   newMetricMongodbIndexAccessCount(mbc.Metrics.MongodbIndexAccessCount),
+		metricMongodbIndexCount:                         newMetricMongodbIndexCount(mbc.Metrics.MongodbIndexCount),
+		metricMongodbIndexSize:                          newMetricMongodbIndexSize(mbc.Metrics.MongodbIndexSize),
+		metricMongodbInsertsRate:                        newMetricMongodbInsertsRate(mbc.Metrics.MongodbInsertsRate),
+		metricMongodbLockAcquireCount:                   newMetricMongodbLockAcquireCount(mbc.Metrics.MongodbLockAcquireCount),
+		metricMongodbLockAcquireTime:                    newMetricMongodbLockAcquireTime(mbc.Metrics.MongodbLockAcquireTime),
+		metricMongodbLockAcquireWaitCount:               newMetricMongodbLockAcquireWaitCount(mbc.Metrics.MongodbLockAcquireWaitCount),
+		metricMongodbLockDeadlockCount:                  newMetricMongodbLockDeadlockCount(mbc.Metrics.MongodbLockDeadlockCount),
+		metricMongodbMemoryUsage:                        newMetricMongodbMemoryUsage(mbc.Metrics.MongodbMemoryUsage),
+		metricMongodbNetworkIoReceive:                   newMetricMongodbNetworkIoReceive(mbc.Metrics.MongodbNetworkIoReceive),
+		metricMongodbNetworkIoTransmit:                  newMetricMongodbNetworkIoTransmit(mbc.Metrics.MongodbNetworkIoTransmit),
+		metricMongodbNetworkRequestCount:                newMetricMongodbNetworkRequestCount(mbc.Metrics.MongodbNetworkRequestCount),
+		metricMongodbObjectCount:                        newMetricMongodbObjectCount(mbc.Metrics.MongodbObjectCount),
+		metricMongodbOperationCount:                     newMetricMongodbOperationCount(mbc.Metrics.MongodbOperationCount),
+		metricMongodbOperationLatencyTime:               newMetricMongodbOperationLatencyTime(mbc.Metrics.MongodbOperationLatencyTime),
+		metricMongodbOperationReplCount:                 newMetricMongodbOperationReplCount(mbc.Metrics.MongodbOperationReplCount),
+		metricMongodbOperationTime:                      newMetricMongodbOperationTime(mbc.Metrics.MongodbOperationTime),
+		metricMongodbPageFaults:                         newMetricMongodbPageFaults(mbc.Metrics.MongodbPageFaults),
+		metricMongodbQueriesRate:                        newMetricMongodbQueriesRate(mbc.Metrics.MongodbQueriesRate),
+		metricMongodbReplCommandsPerSec:                 newMetricMongodbReplCommandsPerSec(mbc.Metrics.MongodbReplCommandsPerSec),
+		metricMongodbReplDeletesPerSec:                  newMetricMongodbReplDeletesPerSec(mbc.Metrics.MongodbReplDeletesPerSec),
+		metricMongodbReplGetmoresPerSec:                 newMetricMongodbReplGetmoresPerSec(mbc.Metrics.MongodbReplGetmoresPerSec),
+		metricMongodbReplInsertsPerSec:                  newMetricMongodbReplInsertsPerSec(mbc.Metrics.MongodbReplInsertsPerSec),
+		metricMongodbReplQueriesPerSec:                  newMetricMongodbReplQueriesPerSec(mbc.Metrics.MongodbReplQueriesPerSec),
+		metricMongodbReplUpdatesPerSec:                  newMetricMongodbReplUpdatesPerSec(mbc.Metrics.MongodbReplUpdatesPerSec),
+		metricMongodbSessionCount:                       newMetricMongodbSessionCount(mbc.Metrics.MongodbSessionCount),
+		metricMongodbStorageSize:                        newMetricMongodbStorageSize(mbc.Metrics.MongodbStorageSize),
+		metricMongodbUpdatesRate:                        newMetricMongodbUpdatesRate(mbc.Metrics.MongodbUpdatesRate),
+		metricMongodbUptime:                             newMetricMongodbUptime(mbc.Metrics.MongodbUptime),
+		metricMongodbWtConcurrentTransactionTicketInUse: newMetricMongodbWtConcurrentTransactionTicketInUse(mbc.Metrics.MongodbWtConcurrentTransactionTicketInUse),
+		metricMongodbWtFsyncCount:                       newMetricMongodbWtFsyncCount(mbc.Metrics.MongodbWtFsyncCount),
+		metricMongodbWtLogOperationCount:                newMetricMongodbWtLogOperationCount(mbc.Metrics.MongodbWtLogOperationCount),
+		metricMongodbWtLogSyncTime:                      newMetricMongodbWtLogSyncTime(mbc.Metrics.MongodbWtLogSyncTime),
+		metricMongodbWtLogWrite:                         newMetricMongodbWtLogWrite(mbc.Metrics.MongodbWtLogWrite),
+		metricMongodbWtcacheBytesRead:                   newMetricMongodbWtcacheBytesRead(mbc.Metrics.MongodbWtcacheBytesRead),
+		resourceAttributeIncludeFilter:                  make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:                  make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.ServerAddress.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsInclude)
@@ -4458,7 +4458,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMongodbStorageSize.emit(ils.Metrics())
 	mb.metricMongodbUpdatesRate.emit(ils.Metrics())
 	mb.metricMongodbUptime.emit(ils.Metrics())
-	mb.metricMongodbWtConcurrentTransactionsInUse.emit(ils.Metrics())
+	mb.metricMongodbWtConcurrentTransactionTicketInUse.emit(ils.Metrics())
 	mb.metricMongodbWtFsyncCount.emit(ils.Metrics())
 	mb.metricMongodbWtLogOperationCount.emit(ils.Metrics())
 	mb.metricMongodbWtLogSyncTime.emit(ils.Metrics())
@@ -4725,9 +4725,9 @@ func (mb *MetricsBuilder) RecordMongodbUptimeDataPoint(ts pcommon.Timestamp, val
 	mb.metricMongodbUptime.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordMongodbWtConcurrentTransactionsInUseDataPoint adds a data point to mongodb.wt.concurrent_transactions.in_use metric.
-func (mb *MetricsBuilder) RecordMongodbWtConcurrentTransactionsInUseDataPoint(ts pcommon.Timestamp, val int64, mongodbWtConcurrentTransactionTypeAttributeValue AttributeMongodbWtConcurrentTransactionType) {
-	mb.metricMongodbWtConcurrentTransactionsInUse.recordDataPoint(mb.startTime, ts, val, mongodbWtConcurrentTransactionTypeAttributeValue.String())
+// RecordMongodbWtConcurrentTransactionTicketInUseDataPoint adds a data point to mongodb.wt.concurrent_transaction.ticket.in_use metric.
+func (mb *MetricsBuilder) RecordMongodbWtConcurrentTransactionTicketInUseDataPoint(ts pcommon.Timestamp, val int64, mongodbWtConcurrentTransactionTicketTypeAttributeValue AttributeMongodbWtConcurrentTransactionTicketType) {
+	mb.metricMongodbWtConcurrentTransactionTicketInUse.recordDataPoint(mb.startTime, ts, val, mongodbWtConcurrentTransactionTicketTypeAttributeValue.String())
 }
 
 // RecordMongodbWtFsyncCountDataPoint adds a data point to mongodb.wt.fsync.count metric.

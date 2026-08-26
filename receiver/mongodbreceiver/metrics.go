@@ -499,10 +499,10 @@ func (s *mongodbScraper) recordWTConcurrentTransactionsOut(now pcommon.Timestamp
 	if !isWiredTiger(doc) {
 		return
 	}
-	metricName := "mongodb.wt.concurrent_transactions.in_use"
-	directions := map[string]metadata.AttributeMongodbWtConcurrentTransactionType{
-		"read":  metadata.AttributeMongodbWtConcurrentTransactionTypeRead,
-		"write": metadata.AttributeMongodbWtConcurrentTransactionTypeWrite,
+	metricName := "mongodb.wt.concurrent_transaction.ticket.in_use"
+	directions := map[string]metadata.AttributeMongodbWtConcurrentTransactionTicketType{
+		"read":  metadata.AttributeMongodbWtConcurrentTransactionTicketTypeRead,
+		"write": metadata.AttributeMongodbWtConcurrentTransactionTicketTypeWrite,
 	}
 	// MongoDB 8.0+ path
 	if _, err := dig(doc, []string{"queues", "execution"}); err == nil {
@@ -512,7 +512,7 @@ func (s *mongodbScraper) recordWTConcurrentTransactionsOut(now pcommon.Timestamp
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dir, e))
 				continue
 			}
-			s.mb.RecordMongodbWtConcurrentTransactionsInUseDataPoint(now, val, attr)
+			s.mb.RecordMongodbWtConcurrentTransactionTicketInUseDataPoint(now, val, attr)
 		}
 		return
 	}
@@ -523,7 +523,7 @@ func (s *mongodbScraper) recordWTConcurrentTransactionsOut(now pcommon.Timestamp
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dir, e))
 			continue
 		}
-		s.mb.RecordMongodbWtConcurrentTransactionsInUseDataPoint(now, val, attr)
+		s.mb.RecordMongodbWtConcurrentTransactionTicketInUseDataPoint(now, val, attr)
 	}
 }
 

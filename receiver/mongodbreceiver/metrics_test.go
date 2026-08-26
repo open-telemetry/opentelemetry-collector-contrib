@@ -55,7 +55,7 @@ func newWTScraper(t *testing.T) *mongodbScraper {
 	cfg.MetricsBuilderConfig.Metrics.MongodbWtLogOperationCount.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.MongodbWtLogSyncTime.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.MongodbWtFsyncCount.Enabled = true
-	cfg.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionsInUse.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionTicketInUse.Enabled = true
 	return newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 }
 
@@ -140,9 +140,9 @@ func TestRecordWTConcurrentTransactionsOutLegacy(t *testing.T) {
 	s.recordWTConcurrentTransactionsOut(now, doc, errs)
 	require.NoError(t, errs.Combine())
 
-	m := findMetric(t, s.mb.Emit(), "mongodb.wt.concurrent_transactions.in_use")
+	m := findMetric(t, s.mb.Emit(), "mongodb.wt.concurrent_transaction.ticket.in_use")
 	require.Equal(t, pmetric.MetricTypeSum, m.Type())
-	byDir := sumIntByAttr(t, m, "mongodb.wt.concurrent_transaction.type")
+	byDir := sumIntByAttr(t, m, "mongodb.wt.concurrent_transaction.ticket.type")
 	require.Equal(t, map[string]int64{"read": 3, "write": 1}, byDir)
 }
 
@@ -174,9 +174,9 @@ func TestRecordWTConcurrentTransactionsOut80(t *testing.T) {
 	s.recordWTConcurrentTransactionsOut(now, doc, errs)
 	require.NoError(t, errs.Combine())
 
-	m := findMetric(t, s.mb.Emit(), "mongodb.wt.concurrent_transactions.in_use")
+	m := findMetric(t, s.mb.Emit(), "mongodb.wt.concurrent_transaction.ticket.in_use")
 	require.Equal(t, pmetric.MetricTypeSum, m.Type())
-	byDir := sumIntByAttr(t, m, "mongodb.wt.concurrent_transaction.type")
+	byDir := sumIntByAttr(t, m, "mongodb.wt.concurrent_transaction.ticket.type")
 	require.Equal(t, map[string]int64{"read": 7, "write": 4}, byDir)
 }
 
@@ -185,8 +185,8 @@ func TestRecordWTConcurrentTransactionsOut80(t *testing.T) {
 // addition (7 + 4 = 11), not by averaging (which a Gauge would do, yielding 5).
 func TestRecordWTConcurrentTransactionsAttributeDisabled(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionsInUse.Enabled = true
-	cfg.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionsInUse.EnabledAttributes = []metadata.MongodbWtConcurrentTransactionsInUseMetricAttributeKey{}
+	cfg.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionTicketInUse.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionTicketInUse.EnabledAttributes = []metadata.MongodbWtConcurrentTransactionTicketInUseMetricAttributeKey{}
 	s := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 
 	doc := bson.M{
@@ -204,7 +204,7 @@ func TestRecordWTConcurrentTransactionsAttributeDisabled(t *testing.T) {
 	s.recordWTConcurrentTransactionsOut(now, doc, errs)
 	require.NoError(t, errs.Combine())
 
-	m := findMetric(t, s.mb.Emit(), "mongodb.wt.concurrent_transactions.in_use")
+	m := findMetric(t, s.mb.Emit(), "mongodb.wt.concurrent_transaction.ticket.in_use")
 	require.Equal(t, pmetric.MetricTypeSum, m.Type())
 	require.Equal(t, 1, m.Sum().DataPoints().Len())
 	require.Equal(t, int64(11), m.Sum().DataPoints().At(0).IntValue())

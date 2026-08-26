@@ -526,19 +526,19 @@ The amount of time that the server has been running.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | ms | Sum | Int | Cumulative | true | Development |
 
-### mongodb.wt.concurrent_transactions.in_use
+### mongodb.wt.concurrent_transaction.ticket.in_use
 
 The number of in-flight WiredTiger read/write concurrent-transaction tickets.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {transaction} | Sum | Int | Cumulative | false | Development |
+| {ticket} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| mongodb.wt.concurrent_transaction.type | The WiredTiger concurrent-transaction ticket type. | Str: ``read``, ``write`` | Recommended | - |
+| mongodb.wt.concurrent_transaction.ticket.type | The WiredTiger concurrent-transaction ticket type. | Str: ``read``, ``write`` | Recommended | - |
 
 ### mongodb.wt.fsync.count
 

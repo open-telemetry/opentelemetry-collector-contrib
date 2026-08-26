@@ -1502,23 +1502,23 @@ func (ms *MongodbUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MongodbWtConcurrentTransactionsInUseMetricAttributeKey specifies the key of an attribute for the mongodb.wt.concurrent_transactions.in_use metric.
-type MongodbWtConcurrentTransactionsInUseMetricAttributeKey string
+// MongodbWtConcurrentTransactionTicketInUseMetricAttributeKey specifies the key of an attribute for the mongodb.wt.concurrent_transaction.ticket.in_use metric.
+type MongodbWtConcurrentTransactionTicketInUseMetricAttributeKey string
 
 const (
-	MongodbWtConcurrentTransactionsInUseMetricAttributeKeyMongodbWtConcurrentTransactionType MongodbWtConcurrentTransactionsInUseMetricAttributeKey = "mongodb.wt.concurrent_transaction.type"
+	MongodbWtConcurrentTransactionTicketInUseMetricAttributeKeyMongodbWtConcurrentTransactionTicketType MongodbWtConcurrentTransactionTicketInUseMetricAttributeKey = "mongodb.wt.concurrent_transaction.ticket.type"
 )
 
-// MongodbWtConcurrentTransactionsInUseMetricConfig provides config for the mongodb.wt.concurrent_transactions.in_use metric.
-type MongodbWtConcurrentTransactionsInUseMetricConfig struct {
+// MongodbWtConcurrentTransactionTicketInUseMetricConfig provides config for the mongodb.wt.concurrent_transaction.ticket.in_use metric.
+type MongodbWtConcurrentTransactionTicketInUseMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []MongodbWtConcurrentTransactionsInUseMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MongodbWtConcurrentTransactionTicketInUseMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MongodbWtConcurrentTransactionsInUseMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *MongodbWtConcurrentTransactionTicketInUseMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1532,12 +1532,12 @@ func (ms *MongodbWtConcurrentTransactionsInUseMetricConfig) Unmarshal(parser *co
 	return nil
 }
 
-func (ms *MongodbWtConcurrentTransactionsInUseMetricConfig) Validate() error {
+func (ms *MongodbWtConcurrentTransactionTicketInUseMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case MongodbWtConcurrentTransactionsInUseMetricAttributeKeyMongodbWtConcurrentTransactionType:
+		case MongodbWtConcurrentTransactionTicketInUseMetricAttributeKeyMongodbWtConcurrentTransactionTicketType:
 		default:
-			return fmt.Errorf("metric mongodb.wt.concurrent_transactions.in_use doesn't have an attribute %v, valid attributes: [mongodb.wt.concurrent_transaction.type]", val)
+			return fmt.Errorf("metric mongodb.wt.concurrent_transaction.ticket.in_use doesn't have an attribute %v, valid attributes: [mongodb.wt.concurrent_transaction.ticket.type]", val)
 		}
 	}
 
@@ -1680,58 +1680,58 @@ func (ms *MongodbWtcacheBytesReadMetricConfig) Unmarshal(parser *confmap.Conf) e
 
 // MetricsConfig provides config for mongodb metrics.
 type MetricsConfig struct {
-	MongodbActiveReads                   MongodbActiveReadsMetricConfig                   `mapstructure:"mongodb.active.reads"`
-	MongodbActiveWrites                  MongodbActiveWritesMetricConfig                  `mapstructure:"mongodb.active.writes"`
-	MongodbCacheOperations               MongodbCacheOperationsMetricConfig               `mapstructure:"mongodb.cache.operations"`
-	MongodbCollectionCount               MongodbCollectionCountMetricConfig               `mapstructure:"mongodb.collection.count"`
-	MongodbCommandsRate                  MongodbCommandsRateMetricConfig                  `mapstructure:"mongodb.commands.rate"`
-	MongodbConnectionCount               MongodbConnectionCountMetricConfig               `mapstructure:"mongodb.connection.count"`
-	MongodbCursorCount                   MongodbCursorCountMetricConfig                   `mapstructure:"mongodb.cursor.count"`
-	MongodbCursorTimeoutCount            MongodbCursorTimeoutCountMetricConfig            `mapstructure:"mongodb.cursor.timeout.count"`
-	MongodbDataSize                      MongodbDataSizeMetricConfig                      `mapstructure:"mongodb.data.size"`
-	MongodbDatabaseCount                 MongodbDatabaseCountMetricConfig                 `mapstructure:"mongodb.database.count"`
-	MongodbDeletesRate                   MongodbDeletesRateMetricConfig                   `mapstructure:"mongodb.deletes.rate"`
-	MongodbDocumentOperationCount        MongodbDocumentOperationCountMetricConfig        `mapstructure:"mongodb.document.operation.count"`
-	MongodbExtentCount                   MongodbExtentCountMetricConfig                   `mapstructure:"mongodb.extent.count"`
-	MongodbFlushesRate                   MongodbFlushesRateMetricConfig                   `mapstructure:"mongodb.flushes.rate"`
-	MongodbGetmoresRate                  MongodbGetmoresRateMetricConfig                  `mapstructure:"mongodb.getmores.rate"`
-	MongodbGlobalLockTime                MongodbGlobalLockTimeMetricConfig                `mapstructure:"mongodb.global_lock.time"`
-	MongodbHealth                        MongodbHealthMetricConfig                        `mapstructure:"mongodb.health"`
-	MongodbIndexAccessCount              MongodbIndexAccessCountMetricConfig              `mapstructure:"mongodb.index.access.count"`
-	MongodbIndexCount                    MongodbIndexCountMetricConfig                    `mapstructure:"mongodb.index.count"`
-	MongodbIndexSize                     MongodbIndexSizeMetricConfig                     `mapstructure:"mongodb.index.size"`
-	MongodbInsertsRate                   MongodbInsertsRateMetricConfig                   `mapstructure:"mongodb.inserts.rate"`
-	MongodbLockAcquireCount              MongodbLockAcquireCountMetricConfig              `mapstructure:"mongodb.lock.acquire.count"`
-	MongodbLockAcquireTime               MongodbLockAcquireTimeMetricConfig               `mapstructure:"mongodb.lock.acquire.time"`
-	MongodbLockAcquireWaitCount          MongodbLockAcquireWaitCountMetricConfig          `mapstructure:"mongodb.lock.acquire.wait_count"`
-	MongodbLockDeadlockCount             MongodbLockDeadlockCountMetricConfig             `mapstructure:"mongodb.lock.deadlock.count"`
-	MongodbMemoryUsage                   MongodbMemoryUsageMetricConfig                   `mapstructure:"mongodb.memory.usage"`
-	MongodbNetworkIoReceive              MongodbNetworkIoReceiveMetricConfig              `mapstructure:"mongodb.network.io.receive"`
-	MongodbNetworkIoTransmit             MongodbNetworkIoTransmitMetricConfig             `mapstructure:"mongodb.network.io.transmit"`
-	MongodbNetworkRequestCount           MongodbNetworkRequestCountMetricConfig           `mapstructure:"mongodb.network.request.count"`
-	MongodbObjectCount                   MongodbObjectCountMetricConfig                   `mapstructure:"mongodb.object.count"`
-	MongodbOperationCount                MongodbOperationCountMetricConfig                `mapstructure:"mongodb.operation.count"`
-	MongodbOperationLatencyTime          MongodbOperationLatencyTimeMetricConfig          `mapstructure:"mongodb.operation.latency.time"`
-	MongodbOperationReplCount            MongodbOperationReplCountMetricConfig            `mapstructure:"mongodb.operation.repl.count"`
-	MongodbOperationTime                 MongodbOperationTimeMetricConfig                 `mapstructure:"mongodb.operation.time"`
-	MongodbPageFaults                    MongodbPageFaultsMetricConfig                    `mapstructure:"mongodb.page_faults"`
-	MongodbQueriesRate                   MongodbQueriesRateMetricConfig                   `mapstructure:"mongodb.queries.rate"`
-	MongodbReplCommandsPerSec            MongodbReplCommandsPerSecMetricConfig            `mapstructure:"mongodb.repl_commands_per_sec"`
-	MongodbReplDeletesPerSec             MongodbReplDeletesPerSecMetricConfig             `mapstructure:"mongodb.repl_deletes_per_sec"`
-	MongodbReplGetmoresPerSec            MongodbReplGetmoresPerSecMetricConfig            `mapstructure:"mongodb.repl_getmores_per_sec"`
-	MongodbReplInsertsPerSec             MongodbReplInsertsPerSecMetricConfig             `mapstructure:"mongodb.repl_inserts_per_sec"`
-	MongodbReplQueriesPerSec             MongodbReplQueriesPerSecMetricConfig             `mapstructure:"mongodb.repl_queries_per_sec"`
-	MongodbReplUpdatesPerSec             MongodbReplUpdatesPerSecMetricConfig             `mapstructure:"mongodb.repl_updates_per_sec"`
-	MongodbSessionCount                  MongodbSessionCountMetricConfig                  `mapstructure:"mongodb.session.count"`
-	MongodbStorageSize                   MongodbStorageSizeMetricConfig                   `mapstructure:"mongodb.storage.size"`
-	MongodbUpdatesRate                   MongodbUpdatesRateMetricConfig                   `mapstructure:"mongodb.updates.rate"`
-	MongodbUptime                        MongodbUptimeMetricConfig                        `mapstructure:"mongodb.uptime"`
-	MongodbWtConcurrentTransactionsInUse MongodbWtConcurrentTransactionsInUseMetricConfig `mapstructure:"mongodb.wt.concurrent_transactions.in_use"`
-	MongodbWtFsyncCount                  MongodbWtFsyncCountMetricConfig                  `mapstructure:"mongodb.wt.fsync.count"`
-	MongodbWtLogOperationCount           MongodbWtLogOperationCountMetricConfig           `mapstructure:"mongodb.wt.log.operation.count"`
-	MongodbWtLogSyncTime                 MongodbWtLogSyncTimeMetricConfig                 `mapstructure:"mongodb.wt.log.sync.time"`
-	MongodbWtLogWrite                    MongodbWtLogWriteMetricConfig                    `mapstructure:"mongodb.wt.log.write"`
-	MongodbWtcacheBytesRead              MongodbWtcacheBytesReadMetricConfig              `mapstructure:"mongodb.wtcache.bytes.read"`
+	MongodbActiveReads                        MongodbActiveReadsMetricConfig                        `mapstructure:"mongodb.active.reads"`
+	MongodbActiveWrites                       MongodbActiveWritesMetricConfig                       `mapstructure:"mongodb.active.writes"`
+	MongodbCacheOperations                    MongodbCacheOperationsMetricConfig                    `mapstructure:"mongodb.cache.operations"`
+	MongodbCollectionCount                    MongodbCollectionCountMetricConfig                    `mapstructure:"mongodb.collection.count"`
+	MongodbCommandsRate                       MongodbCommandsRateMetricConfig                       `mapstructure:"mongodb.commands.rate"`
+	MongodbConnectionCount                    MongodbConnectionCountMetricConfig                    `mapstructure:"mongodb.connection.count"`
+	MongodbCursorCount                        MongodbCursorCountMetricConfig                        `mapstructure:"mongodb.cursor.count"`
+	MongodbCursorTimeoutCount                 MongodbCursorTimeoutCountMetricConfig                 `mapstructure:"mongodb.cursor.timeout.count"`
+	MongodbDataSize                           MongodbDataSizeMetricConfig                           `mapstructure:"mongodb.data.size"`
+	MongodbDatabaseCount                      MongodbDatabaseCountMetricConfig                      `mapstructure:"mongodb.database.count"`
+	MongodbDeletesRate                        MongodbDeletesRateMetricConfig                        `mapstructure:"mongodb.deletes.rate"`
+	MongodbDocumentOperationCount             MongodbDocumentOperationCountMetricConfig             `mapstructure:"mongodb.document.operation.count"`
+	MongodbExtentCount                        MongodbExtentCountMetricConfig                        `mapstructure:"mongodb.extent.count"`
+	MongodbFlushesRate                        MongodbFlushesRateMetricConfig                        `mapstructure:"mongodb.flushes.rate"`
+	MongodbGetmoresRate                       MongodbGetmoresRateMetricConfig                       `mapstructure:"mongodb.getmores.rate"`
+	MongodbGlobalLockTime                     MongodbGlobalLockTimeMetricConfig                     `mapstructure:"mongodb.global_lock.time"`
+	MongodbHealth                             MongodbHealthMetricConfig                             `mapstructure:"mongodb.health"`
+	MongodbIndexAccessCount                   MongodbIndexAccessCountMetricConfig                   `mapstructure:"mongodb.index.access.count"`
+	MongodbIndexCount                         MongodbIndexCountMetricConfig                         `mapstructure:"mongodb.index.count"`
+	MongodbIndexSize                          MongodbIndexSizeMetricConfig                          `mapstructure:"mongodb.index.size"`
+	MongodbInsertsRate                        MongodbInsertsRateMetricConfig                        `mapstructure:"mongodb.inserts.rate"`
+	MongodbLockAcquireCount                   MongodbLockAcquireCountMetricConfig                   `mapstructure:"mongodb.lock.acquire.count"`
+	MongodbLockAcquireTime                    MongodbLockAcquireTimeMetricConfig                    `mapstructure:"mongodb.lock.acquire.time"`
+	MongodbLockAcquireWaitCount               MongodbLockAcquireWaitCountMetricConfig               `mapstructure:"mongodb.lock.acquire.wait_count"`
+	MongodbLockDeadlockCount                  MongodbLockDeadlockCountMetricConfig                  `mapstructure:"mongodb.lock.deadlock.count"`
+	MongodbMemoryUsage                        MongodbMemoryUsageMetricConfig                        `mapstructure:"mongodb.memory.usage"`
+	MongodbNetworkIoReceive                   MongodbNetworkIoReceiveMetricConfig                   `mapstructure:"mongodb.network.io.receive"`
+	MongodbNetworkIoTransmit                  MongodbNetworkIoTransmitMetricConfig                  `mapstructure:"mongodb.network.io.transmit"`
+	MongodbNetworkRequestCount                MongodbNetworkRequestCountMetricConfig                `mapstructure:"mongodb.network.request.count"`
+	MongodbObjectCount                        MongodbObjectCountMetricConfig                        `mapstructure:"mongodb.object.count"`
+	MongodbOperationCount                     MongodbOperationCountMetricConfig                     `mapstructure:"mongodb.operation.count"`
+	MongodbOperationLatencyTime               MongodbOperationLatencyTimeMetricConfig               `mapstructure:"mongodb.operation.latency.time"`
+	MongodbOperationReplCount                 MongodbOperationReplCountMetricConfig                 `mapstructure:"mongodb.operation.repl.count"`
+	MongodbOperationTime                      MongodbOperationTimeMetricConfig                      `mapstructure:"mongodb.operation.time"`
+	MongodbPageFaults                         MongodbPageFaultsMetricConfig                         `mapstructure:"mongodb.page_faults"`
+	MongodbQueriesRate                        MongodbQueriesRateMetricConfig                        `mapstructure:"mongodb.queries.rate"`
+	MongodbReplCommandsPerSec                 MongodbReplCommandsPerSecMetricConfig                 `mapstructure:"mongodb.repl_commands_per_sec"`
+	MongodbReplDeletesPerSec                  MongodbReplDeletesPerSecMetricConfig                  `mapstructure:"mongodb.repl_deletes_per_sec"`
+	MongodbReplGetmoresPerSec                 MongodbReplGetmoresPerSecMetricConfig                 `mapstructure:"mongodb.repl_getmores_per_sec"`
+	MongodbReplInsertsPerSec                  MongodbReplInsertsPerSecMetricConfig                  `mapstructure:"mongodb.repl_inserts_per_sec"`
+	MongodbReplQueriesPerSec                  MongodbReplQueriesPerSecMetricConfig                  `mapstructure:"mongodb.repl_queries_per_sec"`
+	MongodbReplUpdatesPerSec                  MongodbReplUpdatesPerSecMetricConfig                  `mapstructure:"mongodb.repl_updates_per_sec"`
+	MongodbSessionCount                       MongodbSessionCountMetricConfig                       `mapstructure:"mongodb.session.count"`
+	MongodbStorageSize                        MongodbStorageSizeMetricConfig                        `mapstructure:"mongodb.storage.size"`
+	MongodbUpdatesRate                        MongodbUpdatesRateMetricConfig                        `mapstructure:"mongodb.updates.rate"`
+	MongodbUptime                             MongodbUptimeMetricConfig                             `mapstructure:"mongodb.uptime"`
+	MongodbWtConcurrentTransactionTicketInUse MongodbWtConcurrentTransactionTicketInUseMetricConfig `mapstructure:"mongodb.wt.concurrent_transaction.ticket.in_use"`
+	MongodbWtFsyncCount                       MongodbWtFsyncCountMetricConfig                       `mapstructure:"mongodb.wt.fsync.count"`
+	MongodbWtLogOperationCount                MongodbWtLogOperationCountMetricConfig                `mapstructure:"mongodb.wt.log.operation.count"`
+	MongodbWtLogSyncTime                      MongodbWtLogSyncTimeMetricConfig                      `mapstructure:"mongodb.wt.log.sync.time"`
+	MongodbWtLogWrite                         MongodbWtLogWriteMetricConfig                         `mapstructure:"mongodb.wt.log.write"`
+	MongodbWtcacheBytesRead                   MongodbWtcacheBytesReadMetricConfig                   `mapstructure:"mongodb.wtcache.bytes.read"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -1914,10 +1914,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		MongodbUptime: MongodbUptimeMetricConfig{
 			Enabled: false,
 		},
-		MongodbWtConcurrentTransactionsInUse: MongodbWtConcurrentTransactionsInUseMetricConfig{
+		MongodbWtConcurrentTransactionTicketInUse: MongodbWtConcurrentTransactionTicketInUseMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []MongodbWtConcurrentTransactionsInUseMetricAttributeKey{MongodbWtConcurrentTransactionsInUseMetricAttributeKeyMongodbWtConcurrentTransactionType},
+			EnabledAttributes:   []MongodbWtConcurrentTransactionTicketInUseMetricAttributeKey{MongodbWtConcurrentTransactionTicketInUseMetricAttributeKeyMongodbWtConcurrentTransactionTicketType},
 		},
 		MongodbWtFsyncCount: MongodbWtFsyncCountMetricConfig{
 			Enabled: false,
