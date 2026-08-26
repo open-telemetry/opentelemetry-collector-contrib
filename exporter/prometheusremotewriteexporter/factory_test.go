@@ -27,9 +27,9 @@ func Test_createDefaultConfig(t *testing.T) {
 // Tests whether or not a correct Metrics Exporter from the default Config parameters
 func Test_createMetricsExporter(t *testing.T) {
 	invalidConfig := createDefaultConfig().(*Config)
-	invalidConfig.ClientConfig = confighttp.NewDefaultClientConfig()
+	invalidConfig.HTTP = confighttp.NewDefaultClientConfig()
 	invalidTLSConfig := createDefaultConfig().(*Config)
-	invalidTLSConfig.ClientConfig.TLS = configtls.ClientConfig{
+	invalidTLSConfig.HTTP.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile:   "nonexistent file",
 			CertFile: "",

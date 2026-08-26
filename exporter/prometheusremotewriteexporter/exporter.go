@@ -172,7 +172,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		return nil, err
 	}
 
-	endpointURL, err := url.ParseRequestURI(cfg.ClientConfig.Endpoint)
+	endpointURL, err := url.ParseRequestURI(cfg.HTTP.Endpoint)
 	if err != nil {
 		return nil, errors.New("invalid endpoint")
 	}
@@ -210,7 +210,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		userAgentHeader:     userAgentHeader,
 		maxBatchSizeBytes:   cfg.MaxBatchSizeBytes,
 		concurrency:         concurrency,
-		clientSettings:      &cfg.ClientConfig,
+		clientSettings:      &cfg.HTTP,
 		settings:            set.TelemetrySettings,
 		retrySettings:       cfg.BackOffConfig,
 		retryOnHTTP429:      metadata.ExporterPrometheusremotewritexporterRetryOn429FeatureGate.IsEnabled(),
@@ -319,7 +319,9 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 
 func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	namer := otlptranslator.LabelNamer{
-		UnderscoreLabelSanitization: !prometheustranslator.DropSanitizationGate.IsEnabled(),
+		// TODO: SA1019: (github.com/prometheus/otlptranslator.LabelNamer).UnderscoreLabelSanitization is deprecated: This will be removed in a future version of otlptranslator.
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50429
+		UnderscoreLabelSanitization: !prometheustranslator.DropSanitizationGate.IsEnabled(), //nolint:staticcheck
 	}
 	sanitizedLabels := make(map[string]string)
 	for key, value := range cfg.ExternalLabels {

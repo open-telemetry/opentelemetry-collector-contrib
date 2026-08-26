@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	coreconfig "github.com/DataDog/datadog-agent/comp/core/config"
-	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
+	defaultforwarderimpl "github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder/impl"
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -394,8 +394,8 @@ func TestWithProxy(t *testing.T) {
 
 			clientConfig := confighttp.NewDefaultClientConfig()
 			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			clientConfig.MaxIdleConns = 0
-			clientConfig.IdleConnTimeout = 0
+			clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+			clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 			clientConfig.ForceAttemptHTTP2 = false
 			clientConfig.ProxyURL = tt.proxyURL
 			cfg := &datadogconfig.Config{
@@ -432,8 +432,8 @@ func TestWithTLSSetting(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			clientConfig := confighttp.NewDefaultClientConfig()
 			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			clientConfig.MaxIdleConns = 0
-			clientConfig.IdleConnTimeout = 0
+			clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+			clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 			clientConfig.ForceAttemptHTTP2 = false
 			clientConfig.TLS = configtls.ClientConfig{InsecureSkipVerify: tt.insecureSkipVerify}
 			cfg := &datadogconfig.Config{
@@ -517,12 +517,12 @@ func TestSerializerWithForwarder_LifecycleMethods(t *testing.T) {
 	require.NotNil(t, serializer)
 
 	// Test initial state - should be stopped
-	assert.Equal(t, defaultforwarder.Stopped, serializer.State())
+	assert.Equal(t, defaultforwarderimpl.Stopped, serializer.State())
 
 	// Test Start method
 	err = serializer.Start()
 	assert.NoError(t, err, "Start should succeed")
-	assert.Equal(t, defaultforwarder.Started, serializer.State())
+	assert.Equal(t, defaultforwarderimpl.Started, serializer.State())
 
 	// Test that we can call Start again (should return error or be idempotent)
 	err = serializer.Start()
@@ -530,7 +530,7 @@ func TestSerializerWithForwarder_LifecycleMethods(t *testing.T) {
 
 	// Test Stop method
 	serializer.Stop()
-	assert.Equal(t, defaultforwarder.Stopped, serializer.State())
+	assert.Equal(t, defaultforwarderimpl.Stopped, serializer.State())
 
 	// Test that we can stop again (should be safe)
 	serializer.Stop() // Should not panic
@@ -562,11 +562,11 @@ func TestForwarderWithLifecycle_CompileTimeCheck(t *testing.T) {
 	require.NotNil(t, forwarder)
 
 	// Lifecycle methods
-	assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
+	assert.Equal(t, defaultforwarderimpl.Stopped, forwarder.State())
 
 	err = forwarder.Start()
 	assert.NoError(t, err)
-	assert.Equal(t, defaultforwarder.Started, forwarder.State())
+	assert.Equal(t, defaultforwarderimpl.Started, forwarder.State())
 
 	// Test that it implements both Forwarder and lifecycle methods
 	// Forwarder interface methods
@@ -574,7 +574,7 @@ func TestForwarderWithLifecycle_CompileTimeCheck(t *testing.T) {
 	assert.NoError(t, err) // Should not panic, may return error
 
 	forwarder.Stop()
-	assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
+	assert.Equal(t, defaultforwarderimpl.Stopped, forwarder.State())
 }
 
 func TestAgentComponents_NewLogComponent(t *testing.T) {
@@ -621,7 +621,7 @@ func TestNewForwarderComponent(t *testing.T) {
 				assert.NotNil(t, forwarder)
 
 				// Test that the forwarder is in stopped state initially
-				assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
+				assert.Equal(t, defaultforwarderimpl.Stopped, forwarder.State())
 			},
 		},
 		{
@@ -709,15 +709,15 @@ func TestNewForwarderComponent_Internal(t *testing.T) {
 	require.NotNil(t, forwarder)
 
 	// Test internal state
-	assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
+	assert.Equal(t, defaultforwarderimpl.Stopped, forwarder.State())
 
 	// Test that we can start and stop the forwarder (this tests internal configuration)
 	err = forwarder.Start()
 	assert.NoError(t, err)
-	assert.Equal(t, defaultforwarder.Started, forwarder.State())
+	assert.Equal(t, defaultforwarderimpl.Started, forwarder.State())
 
 	forwarder.Stop()
-	assert.Equal(t, defaultforwarder.Stopped, forwarder.State())
+	assert.Equal(t, defaultforwarderimpl.Stopped, forwarder.State())
 }
 
 func TestNewForwarderComponent_KeysPerDomainConfiguration(t *testing.T) {

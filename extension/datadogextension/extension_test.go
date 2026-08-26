@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
+	defaultforwarderimpl "github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder/impl"
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	"github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/metrics/event"
@@ -97,8 +97,8 @@ func TestExtensionLifecycle(t *testing.T) {
 		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 		serverConfig.WriteTimeout = 0
 		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
+		serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+		serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -180,8 +180,8 @@ func TestNotifyConfig(t *testing.T) {
 		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 		serverConfig.WriteTimeout = 0
 		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
+		serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+		serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -238,8 +238,8 @@ func TestCollectorResourceAttributesArePopulated(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -290,8 +290,8 @@ func TestCollectorResourceAttributesWithMultipleKeys(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -354,8 +354,8 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 		serverConfig.WriteTimeout = 0
 		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
+		serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+		serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -401,8 +401,8 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 		serverConfig.WriteTimeout = 0
 		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
+		serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+		serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -446,8 +446,8 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 		serverConfig.WriteTimeout = 0
 		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
+		serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+		serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -537,8 +537,8 @@ func TestExtension_DeploymentTypeInPayload(t *testing.T) {
 			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 			serverConfig.WriteTimeout = 0
 			serverConfig.ReadHeaderTimeout = 0
-			serverConfig.IdleTimeout = 0
-			serverConfig.KeepAlivesEnabled = false
+			serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+			serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 			serverConfig.NetAddr = confignet.AddrConfig{
 				Transport: confignet.TransportTypeTCP,
 				Endpoint:  "localhost:0",
@@ -595,8 +595,8 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 		serverConfig.WriteTimeout = 0
 		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
+		serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+		serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -658,8 +658,8 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 		serverConfig.WriteTimeout = 0
 		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
+		serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+		serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -723,8 +723,8 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 		serverConfig.WriteTimeout = 0
 		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
+		serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+		serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -795,8 +795,8 @@ func TestNotifyConfigConcurrentAccess(t *testing.T) {
 		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 		serverConfig.WriteTimeout = 0
 		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
+		serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+		serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -872,8 +872,8 @@ func TestBuildAgentConfigPropagatesTLSSetting(t *testing.T) {
 	t.Run("insecure_skip_verify true propagates to skip_ssl_validation", func(t *testing.T) {
 		clientConfig := confighttp.NewDefaultClientConfig()
 		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		clientConfig.MaxIdleConns = 0
-		clientConfig.IdleConnTimeout = 0
+		clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+		clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 		clientConfig.ForceAttemptHTTP2 = false
 		clientConfig.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
 		cfg := &Config{
@@ -933,7 +933,7 @@ func (m *mockSerializer) Start() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.startCalled = true
-	m.state = defaultforwarder.Started
+	m.state = defaultforwarderimpl.Started
 	return nil
 }
 
@@ -941,7 +941,7 @@ func (m *mockSerializer) Stop() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.stopCalled = true
-	m.state = defaultforwarder.Stopped
+	m.state = defaultforwarderimpl.Stopped
 }
 
 func (*mockSerializer) SendSeriesWithMetadata(_ metrics.Series) error {
@@ -1001,6 +1001,10 @@ func (*mockSerializer) SendOrchestratorManifests([]types.ProcessMessageBody, str
 	return nil
 }
 
+func (*mockSerializer) SendAgentShutdownEvent(context.Context, *event.Event) error {
+	return nil
+}
+
 // Mock serializer that fails SendPayload for testing error paths
 type mockFailingSerializer struct {
 	mockSerializer
@@ -1055,15 +1059,15 @@ func TestExtensionLivenessMetric(t *testing.T) {
 	t.Run("sends liveness metric with configured hostname", func(t *testing.T) {
 		// Create tracking mock serializer
 		mockSerializer := &trackingMockSerializer{}
-		mockSerializer.state = defaultforwarder.Started
+		mockSerializer.state = defaultforwarderimpl.Started
 
 		// Create extension with test config
 		serverConfig := confighttp.NewDefaultServerConfig()
 		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 		serverConfig.WriteTimeout = 0
 		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
+		serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+		serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -1137,15 +1141,15 @@ func TestExtensionLivenessMetric(t *testing.T) {
 	t.Run("sends liveness metric with inferred hostname", func(t *testing.T) {
 		// Create tracking mock serializer
 		mockSerializer := &trackingMockSerializer{}
-		mockSerializer.state = defaultforwarder.Started
+		mockSerializer.state = defaultforwarderimpl.Started
 
 		// Create extension without configured hostname
 		serverConfig := confighttp.NewDefaultServerConfig()
 		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 		serverConfig.WriteTimeout = 0
 		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
+		serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+		serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -1215,15 +1219,15 @@ func TestExtensionLivenessMetric(t *testing.T) {
 	t.Run("liveness metric sent periodically", func(t *testing.T) {
 		// Create tracking mock serializer
 		mockSerializer := &trackingMockSerializer{}
-		mockSerializer.state = defaultforwarder.Started
+		mockSerializer.state = defaultforwarderimpl.Started
 
 		// Create extension
 		serverConfig := confighttp.NewDefaultServerConfig()
 		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 		serverConfig.WriteTimeout = 0
 		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
+		serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+		serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
