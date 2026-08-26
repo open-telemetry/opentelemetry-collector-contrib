@@ -312,7 +312,9 @@ func (o *Observer) sendInitialState(ctx context.Context, resource dynamic.Resour
 // setLatestRV is called with each new resourceVersion to update the in-memory value
 // that the periodic checkpoint flush will persist.
 func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}, setLatestRV func(string)) bool {
-	watcher, err := watch.NewRetryWatcherWithContext(ctx, resourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
+	// TODO: SA1019: (k8s.io/client-go/tools/cache.ListWatch).WatchFunc is deprecated: use WatchWithContext instead.
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50432
+	watcher, err := watch.NewRetryWatcherWithContext(ctx, resourceVersion, &cache.ListWatch{WatchFunc: watchFunc}) //nolint:staticcheck
 	if err != nil {
 		o.logger.Error("error in watching object",
 			zap.String("resource", o.config.Gvr.String()),

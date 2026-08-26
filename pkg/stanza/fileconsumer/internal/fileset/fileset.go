@@ -237,6 +237,16 @@ func (set *Fileset[T]) updateBucketPosition(idx int) {
 	pos.bucket.indices[pos.idx] = idx
 }
 
+// RemoveAt removes the element at the given index. Caller is responsible for
+// bounds checking; this method is a no-op if idx is out of range. Removal goes
+// through the bucket-aware path so the fingerprint index stays consistent.
+func (set *Fileset[T]) RemoveAt(idx int) {
+	if idx < 0 || idx >= len(set.readers) {
+		return
+	}
+	set.removeAt(idx)
+}
+
 // comparators
 func StartsWith(a, b *fingerprint.Fingerprint) bool {
 	return a.StartsWith(b)

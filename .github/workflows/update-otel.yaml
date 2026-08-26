@@ -18,11 +18,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: opentelemetry-collector-contrib
+          # Keep token so the "Push and create PR" step can push.
+          persist-credentials: true # zizmor: ignore[artipacked]
       - name: Pull the latest collector repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: opentelemetry-collector
           repository: open-telemetry/opentelemetry-collector
+          persist-credentials: false
       # Disable git's automatic maintenance to avoid go-git issues.
       # Workaround for https://github.com/go-git/go-git/issues/2242
       - name: Disable git auto maintenance
@@ -32,6 +35,7 @@ jobs:
         with:
           client-id: ${{ vars.OTELBOT_CLIENT_ID }}
           private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
+          permission-pull-requests: write
       - name: Prepare to update dependencies
         run: |
           exec > >(tee log.out) 2>&1
@@ -66,11 +70,11 @@ jobs:
         run: |
           exec > >(tee -a log.out) 2>&1
           cd opentelemetry-collector-contrib
-          git push --set-upstream origin ${{ env.BRANCH_NAME }}
-          gh pr create --base main --title "[chore] Update core dependencies" --body "$(cat <<'EOF'
-          This PR updates the opentelemetry-collector dependencies to open-telemetry/opentelemetry-collector@${{ env.LAST_COMMIT }}.
+          git push --set-upstream origin "${BRANCH_NAME}"
+          gh pr create --base main --title "[chore] Update core dependencies" --body "$(cat <<EOF
+          This PR updates the opentelemetry-collector dependencies to open-telemetry/opentelemetry-collector@${LAST_COMMIT}.
 
-          Changes included in this PR: https://github.com/open-telemetry/opentelemetry-collector/compare/${{ env.CURRENT_VERSION }}...${{ env.LAST_COMMIT }}
+          Changes included in this PR: https://github.com/open-telemetry/opentelemetry-collector/compare/${CURRENT_VERSION}...${LAST_COMMIT}
           EOF
           )" --draft
         env:
