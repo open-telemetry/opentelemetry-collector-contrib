@@ -171,6 +171,39 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "too_many_sources"),
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "duplicate_association_single_source"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "duplicate_association_reordered_sources"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "distinct_associations"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata:                     enabledAttributes(),
+					DeploymentNameFromReplicaSet: true,
+				},
+				Association: []PodAssociationConfig{
+					{
+						Sources: []PodAssociationSourceConfig{
+							{From: "resource_attribute", Name: "k8s.pod.uid"},
+							{From: "resource_attribute", Name: "container.id"},
+						},
+					},
+					{
+						Sources: []PodAssociationSourceConfig{
+							{From: "resource_attribute", Name: "k8s.pod.uid"},
+						},
+					},
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "bad_keys_labels"),
 		},
 		{
@@ -400,6 +433,23 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "extract_from_cronjob"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata: enabledAttributes(),
+					Labels: []FieldExtractConfig{
+						{TagName: "cronjob_label", Key: "app", From: "cronjob"},
+					},
+					DeploymentNameFromReplicaSet: true,
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+				WatchSyncPeriod:        5 * time.Minute,
+				PodDeleteGracePeriod:   120 * time.Second,
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "all_metadata_fields"),
 			expected: &Config{
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
@@ -499,6 +549,84 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestConfigValidateDuplicatePodAssociations(t *testing.T) {
+	newSource := func(from, name string) PodAssociationSourceConfig {
+		return PodAssociationSourceConfig{From: from, Name: name}
+	}
+
+	tests := []struct {
+		name        string
+		association []PodAssociationConfig
+		wantErr     bool
+	}{
+		{
+			name: "identical single source",
+			association: []PodAssociationConfig{
+				{Sources: []PodAssociationSourceConfig{newSource("resource_attribute", "container.id")}},
+				{Sources: []PodAssociationSourceConfig{newSource("resource_attribute", "container.id")}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "same multi-source set in different order",
+			association: []PodAssociationConfig{
+				{Sources: []PodAssociationSourceConfig{
+					newSource("resource_attribute", "k8s.pod.uid"),
+					newSource("resource_attribute", "container.id"),
+				}},
+				{Sources: []PodAssociationSourceConfig{
+					newSource("resource_attribute", "container.id"),
+					newSource("resource_attribute", "k8s.pod.uid"),
+				}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "differ by one source",
+			association: []PodAssociationConfig{
+				{Sources: []PodAssociationSourceConfig{
+					newSource("resource_attribute", "k8s.pod.uid"),
+					newSource("resource_attribute", "container.id"),
+				}},
+				{Sources: []PodAssociationSourceConfig{
+					newSource("resource_attribute", "k8s.pod.uid"),
+				}},
+			},
+			wantErr: false,
+		},
+		{
+			name: "same name different source type",
+			association: []PodAssociationConfig{
+				{Sources: []PodAssociationSourceConfig{newSource("resource_attribute", "ip")}},
+				{Sources: []PodAssociationSourceConfig{newSource("connection", "ip")}},
+			},
+			wantErr: false,
+		},
+		{
+			name: "single valid association",
+			association: []PodAssociationConfig{
+				{Sources: []PodAssociationSourceConfig{newSource("resource_attribute", "k8s.pod.ip")}},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Association: tt.association,
+			}
+			err := cfg.Validate()
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

@@ -2322,6 +2322,66 @@ func Test_ParseValueExpression_full(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:            "int list",
+			valueExpression: `[1, 2, 3]`,
+			expected: func() any {
+				return []any{int64(1), int64(2), int64(3)}
+			},
+		},
+		{
+			name:            "float list",
+			valueExpression: `[1.5, 2.5]`,
+			expected: func() any {
+				return []any{1.5, 2.5}
+			},
+		},
+		{
+			name:            "bool list",
+			valueExpression: `[true, false, true]`,
+			expected: func() any {
+				return []any{true, false, true}
+			},
+		},
+		{
+			name:            "nil list",
+			valueExpression: `[nil, nil]`,
+			expected: func() any {
+				return []any{nil, nil}
+			},
+		},
+		{
+			name:            "enum list",
+			valueExpression: `[TEST_ENUM_ONE, TEST_ENUM_TWO]`,
+			expected: func() any {
+				return []any{int64(1), int64(2)}
+			},
+		},
+		{
+			name:            "math expression list",
+			valueExpression: `[1 + 1, 2 * 3]`,
+			expected: func() any {
+				return []any{int64(2), int64(6)}
+			},
+		},
+		{
+			name:            "map list",
+			valueExpression: `[{"a": 1}, {"b": 2}]`,
+			expected: func() any {
+				m1 := pcommon.NewMap()
+				m1.PutInt("a", 1)
+				m2 := pcommon.NewMap()
+				m2.PutInt("b", 2)
+				return []any{m1, m2}
+			},
+		},
+		{
+			name:            "mixed type list",
+			valueExpression: `[1, "two", true, nil, 3.5]`,
+			expected: func() any {
+				return []any{int64(1), "two", true, nil, 3.5}
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -2543,6 +2603,28 @@ func Test_parseStatement(t *testing.T) {
 		{statement: `Test()`, wantErr: true},
 		{statement: `set() where test(foo)["key"] == "bar"`, wantErrContaining: converterNameErrorPrefix},
 		{statement: `set() where test(foo)["key"] == "bar"`, wantErrContaining: editorWithIndexErrorPrefix},
+		{statement: `set(attributes["test"], [1 2 3])`, wantErr: true},
+		{statement: `set(attributes["test"], [1 2, 3])`, wantErr: true},
+		{statement: `set(attributes["test"], [,1,2])`, wantErr: true},
+		{statement: `set(attributes["test"], [1, 2,])`, wantErr: true},
+		{statement: `set(attributes["test"], [1,,2])`, wantErr: true},
+		{statement: `set(attributes["test"], [1.5 2.5])`, wantErr: true},
+		{statement: `set(attributes["test"], ["a" "b"])`, wantErr: true},
+		{statement: `set(attributes["test"], [true false])`, wantErr: true},
+		{statement: `set(attributes["test"], [nil nil])`, wantErr: true},
+		{statement: `set(attributes["test"], [{"a": 1} {"b": 2}])`, wantErr: true},
+		{statement: `set(attributes["test"], [[1, 2] [3, 4]])`, wantErr: true},
+		{statement: `set(attributes["test"], [1 "two"])`, wantErr: true},
+		{statement: `set(attributes["test"], [1, 2, 3])`},
+		{statement: `set(attributes["test"], [1.5, 2.5])`},
+		{statement: `set(attributes["test"], ["a", "b"])`},
+		{statement: `set(attributes["test"], [true, false])`},
+		{statement: `set(attributes["test"], [nil, nil])`},
+		{statement: `set(attributes["test"], [{"a": 1}, {"b": 2}])`},
+		{statement: `set(attributes["test"], [[1, 2], [3, 4]])`},
+		{statement: `set(attributes["test"], [1, "two", true, nil, 3.5])`},
+		{statement: `set(attributes["test"], [])`},
+		{statement: `set(attributes["test"], [1])`},
 	}
 	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
 	for _, tt := range tests {
