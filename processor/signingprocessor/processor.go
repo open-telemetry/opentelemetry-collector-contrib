@@ -29,6 +29,16 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	// jcsMaxDepth caps nesting depth before calling jcs.Transform.
+	// gowebpki/jcs has no depth limit: beyond ~1M levels the Go runtime kills
+	// the process with a fatal stack overflow that recover() cannot catch, and
+	// shallower depths cause quadratic CPU cost via string concatenation.
+	jcsMaxDepth = 128
+	// jcsMaxInputBytes caps the serialized JSON size before JCS canonicalization.
+	jcsMaxInputBytes = 1 << 20 // 1 MiB
+)
+
 type signingProcessor struct {
 	config       *Config
 	logger       *zap.Logger
@@ -245,10 +255,29 @@ func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error)
 // marshalJCS produces a RFC 8785 (JCS) canonical JSON byte slice.
 // json.Marshal sorts map keys (Go ≥ 1.12), then jcs.Transform normalises
 // number representation and validates the result per the JCS spec.
+//
+// Guards against gowebpki/jcs having no depth or size cap: deep nesting
+// causes quadratic runtime and eventually a fatal stack overflow that
+// recover() cannot catch.
 func (*signingProcessor) marshalJCS(v any) ([]byte, error) {
 	raw, err := json.Marshal(v)
 	if err != nil {
 		return nil, err
+	}
+	if len(raw) > jcsMaxInputBytes {
+		return nil, fmt.Errorf("serialized log record exceeds size limit (%d > %d bytes)", len(raw), jcsMaxInputBytes)
+	}
+	depth := 0
+	for _, b := range raw {
+		switch b {
+		case '{', '[':
+			depth++
+			if depth > jcsMaxDepth {
+				return nil, fmt.Errorf("serialized log record exceeds nesting depth limit (%d)", jcsMaxDepth)
+			}
+		case '}', ']':
+			depth--
+		}
 	}
 	return jcs.Transform(raw)
 }
