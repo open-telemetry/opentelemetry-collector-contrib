@@ -240,8 +240,3 @@ metrics:
       value_type: int
     enabled: true
     stability: development
-
-# TODO: Update the receiver to pass the tests
-tests:
-  skip_lifecycle: true
-  skip_shutdown: true

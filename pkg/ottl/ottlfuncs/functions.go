@@ -11,6 +11,7 @@ import (
 func StandardFuncs[K any]() map[string]ottl.Factory[K] {
 	f := []ottl.Factory[K]{
 		// Editors
+		NewClearFactory[K](),
 		NewDeleteKeyFactory[K](),
 		NewDeleteMatchingKeysFactory[K](),
 		NewKeepMatchingKeysFactory[K](),

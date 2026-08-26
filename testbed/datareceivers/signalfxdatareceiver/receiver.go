@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver" //nolint:staticcheck // SA1019
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -44,8 +44,8 @@ func (sr *SFxMetricsDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  fmt.Sprintf("127.0.0.1:%d", sr.Port),
