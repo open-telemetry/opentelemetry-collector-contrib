@@ -315,34 +315,53 @@ func TestHistogramExemplarsAttachToTheirOwnDataPoint(t *testing.T) {
 }
 
 func TestHistogramExemplarsAreAttachedOnce(t *testing.T) {
-	// Two series with the same labels produce two data points under one key. The exemplars are
-	// consumed when they are attached, so the second data point does not take a copy of them.
-	prwReceiver := setupMetricsReceiver(t)
-
-	series := func(exemplars []writev2.Exemplar) writev2.TimeSeries {
+	// One key can end up with several data points, either because the request repeats a series or
+	// because one of them carries several histograms. The exemplars belong to the series once.
+	series := func(histograms []writev2.Histogram, exemplars []writev2.Exemplar) writev2.TimeSeries {
 		return writev2.TimeSeries{
 			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
 			LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
-			Histograms: exemplarHistogram([]int64{1, 1}),
+			Histograms: histograms,
 			Exemplars:  exemplars,
 		}
 	}
+	first := exemplarHistogram([]int64{1, 1})
+	later := first[0]
+	later.Timestamp = 2
 
-	metrics, _, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
-		Symbols:    exemplarSymbols,
-		Timeseries: []writev2.TimeSeries{series(theExemplar()), series(nil)},
-	})
-	require.NoError(t, err)
+	for _, tc := range []struct {
+		name       string
+		timeseries []writev2.TimeSeries
+	}{
+		{
+			name:       "series sent twice",
+			timeseries: []writev2.TimeSeries{series(first, theExemplar()), series(first, nil)},
+		},
+		{
+			name:       "two histograms in one series",
+			timeseries: []writev2.TimeSeries{series([]writev2.Histogram{first[0], later}, theExemplar())},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
 
-	dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
-		ExponentialHistogram().DataPoints()
-	require.Equal(t, 2, dps.Len())
+			metrics, _, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols:    exemplarSymbols,
+				Timeseries: tc.timeseries,
+			})
+			require.NoError(t, err)
 
-	attached := 0
-	for i := 0; i < dps.Len(); i++ {
-		attached += dps.At(i).Exemplars().Len()
+			dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+				ExponentialHistogram().DataPoints()
+			require.Equal(t, 2, dps.Len(), "the request produces two data points")
+
+			attached := 0
+			for i := 0; i < dps.Len(); i++ {
+				attached += dps.At(i).Exemplars().Len()
+			}
+			assert.Equal(t, 1, attached, "the exemplars must not be copied onto both data points")
+		})
 	}
-	assert.Equal(t, 1, attached, "the exemplar must not be copied onto both data points")
 }
 
 func TestDroppedHistogramExemplarDoesNotAttachToPreviousDataPoint(t *testing.T) {

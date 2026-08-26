@@ -532,8 +532,27 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		return
 	}
 	attrs := extractAttributes(ls)
-	// Nothing to look up when the request carries no exemplars, so the hashing below is skipped.
-	lookupExemplars := len(exemplarMap) > 0
+
+	// One TimeSeries is one series, so every histogram below shares the key its exemplars were
+	// collected under. A request that carries none never reaches the hashing.
+	var (
+		exemplars     pmetric.ExemplarSlice
+		exemplarsKey  uint64
+		haveExemplars bool
+	)
+	if len(exemplarMap) > 0 {
+		key := exemplarKey{
+			ScopeName:    si.Name,
+			ScopeVersion: si.Version,
+			MetricName:   metricName,
+			MetricType:   ts.Metadata.Type,
+			AttrsHash:    pdatautil.MapHash(attrs),
+		}
+		exemplarsKey = key.hash()
+		if ex, ok := exemplarMap[exemplarsKey]; ok && ex.Len() > 0 {
+			exemplars, haveExemplars = ex, true
+		}
+	}
 
 	var (
 		hashedLabels uint64
@@ -654,8 +673,8 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			// Reference to this behavior: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model-producer-recommendations
 			histMetric.SetDescription(description)
 		}
-		// A metric holds a data point per series, so the exemplars of this histogram belong to
-		// the one this conversion appends, not to whichever came first.
+		// A metric holds one data point per series, so this histogram's exemplars belong to the
+		// data point the conversion appends below.
 		var (
 			exemplarSlice pmetric.ExemplarSlice
 			appended      bool
@@ -677,26 +696,13 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		}
 
 		// A dropped histogram has no data point of its own, so attaching here would land on one
-		// built for an earlier series. Every histogram in this TimeSeries shares one key, so the
-		// lookup only has to happen once.
-		if !appended || !lookupExemplars {
+		// built for an earlier series. Its exemplars stay in the map for a later one to claim.
+		if !appended || !haveExemplars {
 			continue
 		}
-		lookupExemplars = false
-
-		key := exemplarKey{
-			ScopeName:    si.Name,
-			ScopeVersion: si.Version,
-			MetricName:   metricName,
-			MetricType:   ts.Metadata.Type,
-			AttrsHash:    pdatautil.MapHash(attrs),
-		}
-
-		keyHash := key.hash()
-		if ex, ok := exemplarMap[keyHash]; ok && ex.Len() > 0 {
-			ex.CopyTo(exemplarSlice)
-			delete(exemplarMap, keyHash)
-		}
+		exemplars.CopyTo(exemplarSlice)
+		delete(exemplarMap, exemplarsKey)
+		haveExemplars = false
 	}
 }
 
