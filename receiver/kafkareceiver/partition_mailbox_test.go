@@ -17,14 +17,14 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 	cases := []struct {
 		name              string
 		capacity          int
-		initialOffset     *int64
-		pendingRewind     *int64
+		initialOffset     *int
+		pendingRewind     *int
 		cancel            bool
 		batch             kgo.FetchTopicPartition
 		wantAccepted      bool
 		wantPauseCalls    int
 		wantPauseReason   partitionPauseReason
-		wantPendingOffset *int64
+		wantPendingOffset *int
 	}{
 		{
 			name:         "accepts batch",
@@ -43,20 +43,20 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 		{
 			name:              "rejects full mailbox",
 			capacity:          1,
-			initialOffset:     int64Ptr(5),
+			initialOffset:     new(5),
 			batch:             mailboxBatch(10),
 			wantPauseCalls:    1,
 			wantPauseReason:   partitionPauseRewind,
-			wantPendingOffset: int64Ptr(10),
+			wantPendingOffset: new(10),
 		},
 		{
 			name:              "rejects while rewind pending",
 			capacity:          2,
-			pendingRewind:     int64Ptr(5),
+			pendingRewind:     new(5),
 			batch:             mailboxBatch(10),
 			wantPauseCalls:    1,
 			wantPauseReason:   partitionPauseRewind,
-			wantPendingOffset: int64Ptr(5),
+			wantPendingOffset: new(5),
 		},
 		{
 			name:         "rejects after cancellation",
@@ -72,10 +72,10 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 			ctx, cancel := context.WithCancel(t.Context())
 			mailbox := newPartitionMailbox(ctx, tc.capacity)
 			if tc.initialOffset != nil {
-				require.True(t, mailbox.enqueue(mailboxBatch(*tc.initialOffset), func(partitionPauseReason) {}))
+				require.True(t, mailbox.enqueue(mailboxBatch(int64(*tc.initialOffset)), func(partitionPauseReason) {}))
 			}
 			if tc.pendingRewind != nil {
-				mailbox.requestRewind(recordAtOffset(*tc.pendingRewind), false, func() {})
+				mailbox.requestRewind(recordAtOffset(int64(*tc.pendingRewind)), false, func() {})
 			}
 			if tc.cancel {
 				cancel()
@@ -95,7 +95,7 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 			require.Equal(t, tc.wantPauseReason, pauseReason)
 			var pendingOffset *int64
 			if mailbox.hasPendingOffsetChange() {
-				pendingOffset = int64Ptr(mailbox.takeOffsetChange().Offset)
+				pendingOffset = new(mailbox.takeOffsetChange().Offset)
 			}
 			require.Equal(t, tc.wantPendingOffset, pendingOffset)
 		})
@@ -222,7 +222,7 @@ func TestPartitionMailboxSerializesPauseBeforeResume(t *testing.T) {
 func TestPartitionMailboxRequestRewind(t *testing.T) {
 	cases := []struct {
 		name          string
-		existing      *int64
+		existing      *int
 		requested     int64
 		clearQueue    bool
 		wantOffset    int64
@@ -230,14 +230,14 @@ func TestPartitionMailboxRequestRewind(t *testing.T) {
 	}{
 		{
 			name:          "retains earlier existing offset",
-			existing:      int64Ptr(5),
+			existing:      new(5),
 			requested:     8,
 			wantOffset:    5,
 			wantQueueSize: 1,
 		},
 		{
 			name:          "replaces with earlier requested offset",
-			existing:      int64Ptr(8),
+			existing:      new(8),
 			requested:     5,
 			wantOffset:    5,
 			wantQueueSize: 1,
@@ -256,7 +256,7 @@ func TestPartitionMailboxRequestRewind(t *testing.T) {
 			mailbox := newPartitionMailbox(t.Context(), 2)
 			require.True(t, mailbox.enqueue(mailboxBatch(1), func(partitionPauseReason) {}))
 			if tc.existing != nil {
-				mailbox.requestRewind(recordAtOffset(*tc.existing), false, func() {})
+				mailbox.requestRewind(recordAtOffset(int64(*tc.existing)), false, func() {})
 			}
 
 			pauseCalls := 0
@@ -291,8 +291,4 @@ func recordAtOffset(offset int64) *kgo.Record {
 	return &kgo.Record{
 		Offset: offset,
 	}
-}
-
-func int64Ptr(value int64) *int64 {
-	return &value
 }
