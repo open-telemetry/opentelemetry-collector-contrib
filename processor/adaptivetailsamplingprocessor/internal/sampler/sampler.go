@@ -75,15 +75,11 @@ type dynsamplerImpl interface {
 	GetMetrics(prefix string) map[string]int64
 }
 
-// MetricsProvider is implemented by samplers backed by dynsampler-go that
-// expose internal performance counters (request/event counts, keyspace
-// size, burst/interval counts) via GetMetrics. AlwaysSample and
-// Deterministic do not implement it, since they have no such counters.
+// MetricsProvider returns a set of metric values that expose sampler's internal performance
+// counters (request/event counts, keyspace size, burst/interval counts) via GetMetrics.
 type MetricsProvider interface {
-	// GetMetrics returns dynsampler-go's internal counters with keys
-	// prefixed by prefix. prefix must be the same on every call for a
-	// given sampler instance; dynsampler-go caches it on first call and
-	// returns nil if a later call passes a different prefix.
+	// GetMetrics returns metric values with keys prefixed by the passed-in prefix.
+	// Must use the same prefix value for every call for a given sampler instance.
 	GetMetrics(prefix string) map[string]int64
 }
 

@@ -200,6 +200,9 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*a
 }
 
 // dynsampler-go GetMetrics suffixes. See dynsampler-go's dynsampler.go.
+// dynsamplerEventCountSuffix maps to our sampler_span_count metric: samplers
+// are always called with a span count (see dynsamplerWrapper.GetSampleRate),
+// so dynsampler-go's generic "event" is always a span in this processor.
 const (
 	dynsamplerRequestCountSuffix  = "request_count"
 	dynsamplerEventCountSuffix    = "event_count"
@@ -209,9 +212,9 @@ const (
 )
 
 // registerSamplerMetricsCallbacks wires each adaptive-sampler rule's
-// dynsampler-go internal counters into the processor's async OTel metrics.
+// dynsampler-go internal metrics into the processor's async OTel metrics.
 // Rules whose sampler does not implement sampler.MetricsProvider (e.g.
-// always_sample, probabilistic) are silently skipped, as are counters a
+// always_sample, probabilistic) are skipped, as are metrics a
 // given dynsampler-go implementation does not produce (e.g.
 // adaptive_throughput_windowed has no burst/interval count).
 func registerSamplerMetricsCallbacks(tb *metadata.TelemetryBuilder, rules []*rule) error {
@@ -221,12 +224,11 @@ func registerSamplerMetricsCallbacks(tb *metadata.TelemetryBuilder, rules []*rul
 			if !ok {
 				continue
 			}
-			// dynsampler-go concatenates prefix+suffix verbatim with no
-			// separator, so the prefix passed to GetMetrics must include
-			// the trailing "_" to yield readable keys like
-			// "adaptive_percentage_request_count".
-			prefix := r.samplerTypePrefix + "_"
-			if v, ok := mp.GetMetrics(prefix)[prefix+suffix]; ok {
+			// GetMetrics prefixes its map keys with whatever string is
+			// passed in; since the rule/sampler_type attribution comes from
+			// r.dynsamplerAttrSet instead, an empty prefix keeps the keys
+			// (and this lookup) as plain suffixes.
+			if v, ok := mp.GetMetrics("")[suffix]; ok {
 				o.Observe(v, r.dynsamplerAttrSet)
 			}
 		}
@@ -244,7 +246,7 @@ func registerSamplerMetricsCallbacks(tb *metadata.TelemetryBuilder, rules []*rul
 		suffix   string
 	}{
 		{tb.RegisterProcessorAdaptiveTailSamplingSamplerRequestCountCallback, dynsamplerRequestCountSuffix},
-		{tb.RegisterProcessorAdaptiveTailSamplingSamplerEventCountCallback, dynsamplerEventCountSuffix},
+		{tb.RegisterProcessorAdaptiveTailSamplingSamplerSpanCountCallback, dynsamplerEventCountSuffix},
 		{tb.RegisterProcessorAdaptiveTailSamplingSamplerKeyspaceSizeCallback, dynsamplerKeyspaceSizeSuffix},
 		{tb.RegisterProcessorAdaptiveTailSamplingSamplerBurstCountCallback, dynsamplerBurstCountSuffix},
 		{tb.RegisterProcessorAdaptiveTailSamplingSamplerIntervalCountCallback, dynsamplerIntervalCountSuffix},

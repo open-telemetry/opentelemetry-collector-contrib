@@ -501,6 +501,11 @@ func TestProcessor_SamplerMetrics(t *testing.T) {
 		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
 	})
 
+	// WindowedThroughput only recomputes keyspace_size on its background
+	// update-frequency tick, so use a short one and wait for it below instead
+	// of asserting a possibly-stale value.
+	const windowedUpdateFrequency = 10 * time.Millisecond
+
 	sink := &consumertest.TracesSink{}
 	cfg := &Config{
 		TraceTimeout:  time.Hour,
@@ -517,6 +522,7 @@ func TestProcessor_SamplerMetrics(t *testing.T) {
 				Type:                  AdaptiveThroughput,
 				Algorithm:             AlgorithmWindowed,
 				GoalThroughput:        1000,
+				UpdateFrequency:       windowedUpdateFrequency,
 				FingerprintAttributes: []string{`resource.attributes["service.name"]`},
 			}},
 		},
@@ -525,6 +531,9 @@ func TestProcessor_SamplerMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, p.Start(t.Context(), nil))
 	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
+
+	emaAttrs := attribute.NewSet(attribute.String("rule", "ema"), attribute.String("sampler_type", "adaptive_percentage"))
+	windowedAttrs := attribute.NewSet(attribute.String("rule", "windowed"), attribute.String("sampler_type", "adaptive_throughput_windowed"))
 
 	emaTrace := newRootTrace(pcommon.TraceID([16]byte{0xC1}))
 	emaTrace.ResourceSpans().At(0).Resource().Attributes().PutStr("service.name", "svc-ema")
@@ -538,8 +547,22 @@ func TestProcessor_SamplerMetrics(t *testing.T) {
 		return sink.SpanCount() == 2
 	}, time.Second, 10*time.Millisecond)
 
-	emaAttrs := attribute.NewSet(attribute.String("rule", "ema"), attribute.String("sampler_type", "adaptive_percentage"))
-	windowedAttrs := attribute.NewSet(attribute.String("rule", "windowed"), attribute.String("sampler_type", "adaptive_throughput_windowed"))
+	require.Eventually(t, func() bool {
+		m, err := tt.GetMetric("otelcol_processor_adaptive_tail_sampling_sampler_keyspace_size")
+		if err != nil {
+			return false
+		}
+		gauge, ok := m.Data.(metricdata.Gauge[int64])
+		if !ok {
+			return false
+		}
+		for _, dp := range gauge.DataPoints {
+			if dp.Attributes.Equals(&windowedAttrs) && dp.Value == 1 {
+				return true
+			}
+		}
+		return false
+	}, time.Second, windowedUpdateFrequency, "windowed rule's keyspace_size should reach 1 after an update-frequency tick")
 
 	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerRequestCount(t, tt,
 		[]metricdata.DataPoint[int64]{
@@ -548,22 +571,19 @@ func TestProcessor_SamplerMetrics(t *testing.T) {
 		},
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(),
 	)
-	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerEventCount(t, tt,
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerSpanCount(t, tt,
 		[]metricdata.DataPoint[int64]{
 			{Value: 1, Attributes: emaAttrs},
 			{Value: 1, Attributes: windowedAttrs},
 		},
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(),
 	)
-	// keyspace_size is ignored here: WindowedThroughput only recomputes it on
-	// its background update-frequency tick, so it can legitimately still read
-	// 0 immediately after the first request.
 	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerKeyspaceSize(t, tt,
 		[]metricdata.DataPoint[int64]{
-			{Attributes: emaAttrs},
-			{Attributes: windowedAttrs},
+			{Value: 1, Attributes: emaAttrs},
+			{Value: 1, Attributes: windowedAttrs},
 		},
-		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(), metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(),
 	)
 	// adaptive_throughput_windowed does not track burst/interval counts, so
 	// only the ema rule contributes a data point to these two metrics.

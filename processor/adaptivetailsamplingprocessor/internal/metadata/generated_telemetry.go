@@ -33,10 +33,10 @@ type TelemetryBuilder struct {
 	ProcessorAdaptiveTailSamplingIncomingTracestateUnparseable metric.Int64Counter
 	ProcessorAdaptiveTailSamplingOttlEvalErrors                metric.Int64Counter
 	ProcessorAdaptiveTailSamplingSamplerBurstCount             metric.Int64ObservableCounter
-	ProcessorAdaptiveTailSamplingSamplerEventCount             metric.Int64ObservableCounter
 	ProcessorAdaptiveTailSamplingSamplerIntervalCount          metric.Int64ObservableCounter
 	ProcessorAdaptiveTailSamplingSamplerKeyspaceSize           metric.Int64ObservableGauge
 	ProcessorAdaptiveTailSamplingSamplerRequestCount           metric.Int64ObservableCounter
+	ProcessorAdaptiveTailSamplingSamplerSpanCount              metric.Int64ObservableCounter
 	ProcessorAdaptiveTailSamplingTraceSpanCount                metric.Int64Histogram
 	ProcessorAdaptiveTailSamplingTracesActive                  metric.Int64Gauge
 	ProcessorAdaptiveTailSamplingTracesDropped                 metric.Int64Counter
@@ -61,21 +61,6 @@ func (builder *TelemetryBuilder) RegisterProcessorAdaptiveTailSamplingSamplerBur
 		cb(ctx, &observerInt64{inst: builder.ProcessorAdaptiveTailSamplingSamplerBurstCount, obs: o})
 		return nil
 	}, builder.ProcessorAdaptiveTailSamplingSamplerBurstCount)
-	if err != nil {
-		return err
-	}
-	builder.mu.Lock()
-	defer builder.mu.Unlock()
-	builder.registrations = append(builder.registrations, reg)
-	return nil
-}
-
-// RegisterProcessorAdaptiveTailSamplingSamplerEventCountCallback sets callback for observable ProcessorAdaptiveTailSamplingSamplerEventCount metric.
-func (builder *TelemetryBuilder) RegisterProcessorAdaptiveTailSamplingSamplerEventCountCallback(cb metric.Int64Callback) error {
-	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
-		cb(ctx, &observerInt64{inst: builder.ProcessorAdaptiveTailSamplingSamplerEventCount, obs: o})
-		return nil
-	}, builder.ProcessorAdaptiveTailSamplingSamplerEventCount)
 	if err != nil {
 		return err
 	}
@@ -121,6 +106,21 @@ func (builder *TelemetryBuilder) RegisterProcessorAdaptiveTailSamplingSamplerReq
 		cb(ctx, &observerInt64{inst: builder.ProcessorAdaptiveTailSamplingSamplerRequestCount, obs: o})
 		return nil
 	}, builder.ProcessorAdaptiveTailSamplingSamplerRequestCount)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
+}
+
+// RegisterProcessorAdaptiveTailSamplingSamplerSpanCountCallback sets callback for observable ProcessorAdaptiveTailSamplingSamplerSpanCount metric.
+func (builder *TelemetryBuilder) RegisterProcessorAdaptiveTailSamplingSamplerSpanCountCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ProcessorAdaptiveTailSamplingSamplerSpanCount, obs: o})
+		return nil
+	}, builder.ProcessorAdaptiveTailSamplingSamplerSpanCount)
 	if err != nil {
 		return err
 	}
@@ -190,32 +190,32 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingSamplerBurstCount, err = builder.meter.Int64ObservableCounter(
 		"otelcol_processor_adaptive_tail_sampling_sampler_burst_count",
-		metric.WithDescription("Cumulative number of intervals in which a dynsampler-go adaptive sampler detected a burst of traffic, labelled by rule and sampler_type. Not emitted for adaptive_throughput_windowed rules, which do not track this counter. [Development]"),
+		metric.WithDescription("Cumulative number of intervals in which an adaptive sampler (adaptive_percentage or adaptive_throughput) detected a burst of traffic, labelled by rule and sampler_type. Not emitted for adaptive_throughput_windowed rules, which do not track this counter. [Development]"),
 		metric.WithUnit("{bursts}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorAdaptiveTailSamplingSamplerEventCount, err = builder.meter.Int64ObservableCounter(
-		"otelcol_processor_adaptive_tail_sampling_sampler_event_count",
-		metric.WithDescription("Cumulative number of events (spans) observed by a dynsampler-go adaptive sampler since it started, labelled by rule and sampler_type. [Development]"),
-		metric.WithUnit("{events}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingSamplerIntervalCount, err = builder.meter.Int64ObservableCounter(
 		"otelcol_processor_adaptive_tail_sampling_sampler_interval_count",
-		metric.WithDescription("Cumulative number of rate-adjustment intervals a dynsampler-go adaptive sampler has completed, labelled by rule and sampler_type. Not emitted for adaptive_throughput_windowed rules, which do not track this counter. [Development]"),
+		metric.WithDescription("Cumulative number of rate-adjustment intervals an adaptive sampler (adaptive_percentage or adaptive_throughput) has completed, labelled by rule and sampler_type. Not emitted for adaptive_throughput_windowed rules, which do not track this counter. [Development]"),
 		metric.WithUnit("{intervals}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingSamplerKeyspaceSize, err = builder.meter.Int64ObservableGauge(
 		"otelcol_processor_adaptive_tail_sampling_sampler_keyspace_size",
-		metric.WithDescription("Current number of distinct sampling keys tracked by a dynsampler-go adaptive sampler, labelled by rule and sampler_type. A rising value indicates growing key cardinality, which can degrade sampler accuracy and memory use. [Development]"),
+		metric.WithDescription("Current number of distinct sampling keys tracked by an adaptive sampler (adaptive_percentage or adaptive_throughput), labelled by rule and sampler_type. A rising value indicates growing key cardinality, which can degrade sampler accuracy and memory use. [Development]"),
 		metric.WithUnit("{keys}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingSamplerRequestCount, err = builder.meter.Int64ObservableCounter(
 		"otelcol_processor_adaptive_tail_sampling_sampler_request_count",
-		metric.WithDescription("Cumulative number of sample-rate requests made to a dynsampler-go adaptive sampler since it started, labelled by rule and sampler_type. [Development]"),
+		metric.WithDescription("Cumulative number of sample-rate requests made to an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule and sampler_type. [Development]"),
 		metric.WithUnit("{requests}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorAdaptiveTailSamplingSamplerSpanCount, err = builder.meter.Int64ObservableCounter(
+		"otelcol_processor_adaptive_tail_sampling_sampler_span_count",
+		metric.WithDescription("Cumulative number of spans observed by an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule and sampler_type. [Development]"),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingTraceSpanCount, err = builder.meter.Int64Histogram(

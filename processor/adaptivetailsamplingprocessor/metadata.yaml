@@ -58,17 +58,8 @@ telemetry:
       stability: development
     processor_adaptive_tail_sampling_sampler_burst_count:
       enabled: true
-      description: Cumulative number of intervals in which a dynsampler-go adaptive sampler detected a burst of traffic, labelled by rule and sampler_type. Not emitted for adaptive_throughput_windowed rules, which do not track this counter.
+      description: Cumulative number of intervals in which an adaptive sampler (adaptive_percentage or adaptive_throughput) detected a burst of traffic, labelled by rule and sampler_type. Not emitted for adaptive_throughput_windowed rules, which do not track this counter.
       unit: "{bursts}"
-      sum:
-        value_type: int
-        monotonic: true
-        async: true
-      stability: development
-    processor_adaptive_tail_sampling_sampler_event_count:
-      enabled: true
-      description: Cumulative number of events (spans) observed by a dynsampler-go adaptive sampler since it started, labelled by rule and sampler_type.
-      unit: "{events}"
       sum:
         value_type: int
         monotonic: true
@@ -76,7 +67,7 @@ telemetry:
       stability: development
     processor_adaptive_tail_sampling_sampler_interval_count:
       enabled: true
-      description: Cumulative number of rate-adjustment intervals a dynsampler-go adaptive sampler has completed, labelled by rule and sampler_type. Not emitted for adaptive_throughput_windowed rules, which do not track this counter.
+      description: Cumulative number of rate-adjustment intervals an adaptive sampler (adaptive_percentage or adaptive_throughput) has completed, labelled by rule and sampler_type. Not emitted for adaptive_throughput_windowed rules, which do not track this counter.
       unit: "{intervals}"
       sum:
         value_type: int
@@ -85,7 +76,7 @@ telemetry:
       stability: development
     processor_adaptive_tail_sampling_sampler_keyspace_size:
       enabled: true
-      description: Current number of distinct sampling keys tracked by a dynsampler-go adaptive sampler, labelled by rule and sampler_type. A rising value indicates growing key cardinality, which can degrade sampler accuracy and memory use.
+      description: Current number of distinct sampling keys tracked by an adaptive sampler (adaptive_percentage or adaptive_throughput), labelled by rule and sampler_type. A rising value indicates growing key cardinality, which can degrade sampler accuracy and memory use.
       unit: "{keys}"
       gauge:
         value_type: int
@@ -93,8 +84,17 @@ telemetry:
       stability: development
     processor_adaptive_tail_sampling_sampler_request_count:
       enabled: true
-      description: Cumulative number of sample-rate requests made to a dynsampler-go adaptive sampler since it started, labelled by rule and sampler_type.
+      description: Cumulative number of sample-rate requests made to an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule and sampler_type.
       unit: "{requests}"
+      sum:
+        value_type: int
+        monotonic: true
+        async: true
+      stability: development
+    processor_adaptive_tail_sampling_sampler_span_count:
+      enabled: true
+      description: Cumulative number of spans observed by an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule and sampler_type.
+      unit: "{spans}"
       sum:
         value_type: int
         monotonic: true
