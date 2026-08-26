@@ -102,7 +102,7 @@ func AssertEqualProcessorAdaptiveTailSamplingOttlEvalErrors(t *testing.T, tt *co
 func AssertEqualProcessorAdaptiveTailSamplingSamplerBurstCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_adaptive_tail_sampling_sampler_burst_count",
-		Description: "Cumulative number of intervals in which an adaptive sampler (adaptive_percentage or adaptive_throughput) detected a burst of traffic, labelled by rule and sampler_type. Not emitted for adaptive_throughput_windowed rules, which do not track this counter. [Development]",
+		Description: "Cumulative number of intervals in which an adaptive sampler (adaptive_percentage or adaptive_throughput) detected a burst of traffic, labelled by rule, sampler_type, and algorithm. Not emitted for adaptive_throughput rules using the windowed algorithm, which do not track this counter. [Development]",
 		Unit:        "{bursts}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -118,7 +118,7 @@ func AssertEqualProcessorAdaptiveTailSamplingSamplerBurstCount(t *testing.T, tt 
 func AssertEqualProcessorAdaptiveTailSamplingSamplerIntervalCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_adaptive_tail_sampling_sampler_interval_count",
-		Description: "Cumulative number of rate-adjustment intervals an adaptive sampler (adaptive_percentage or adaptive_throughput) has completed, labelled by rule and sampler_type. Not emitted for adaptive_throughput_windowed rules, which do not track this counter. [Development]",
+		Description: "Cumulative number of rate-adjustment intervals an adaptive sampler (adaptive_percentage or adaptive_throughput) has completed, labelled by rule, sampler_type, and algorithm. Not emitted for adaptive_throughput rules using the windowed algorithm, which do not track this counter. [Development]",
 		Unit:        "{intervals}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -134,7 +134,7 @@ func AssertEqualProcessorAdaptiveTailSamplingSamplerIntervalCount(t *testing.T, 
 func AssertEqualProcessorAdaptiveTailSamplingSamplerKeyspaceSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_adaptive_tail_sampling_sampler_keyspace_size",
-		Description: "Current number of distinct sampling keys tracked by an adaptive sampler (adaptive_percentage or adaptive_throughput), labelled by rule and sampler_type. A rising value indicates growing key cardinality, which can degrade sampler accuracy and memory use. [Development]",
+		Description: "Current number of distinct sampling keys tracked by an adaptive sampler (adaptive_percentage or adaptive_throughput), labelled by rule, sampler_type, and algorithm. A rising value indicates growing key cardinality, which can degrade sampler accuracy and memory use. [Development]",
 		Unit:        "{keys}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -148,7 +148,7 @@ func AssertEqualProcessorAdaptiveTailSamplingSamplerKeyspaceSize(t *testing.T, t
 func AssertEqualProcessorAdaptiveTailSamplingSamplerRequestCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_adaptive_tail_sampling_sampler_request_count",
-		Description: "Cumulative number of sample-rate requests made to an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule and sampler_type. [Development]",
+		Description: "Cumulative number of sample-rate requests made to an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule, sampler_type, and algorithm. [Development]",
 		Unit:        "{requests}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -164,7 +164,7 @@ func AssertEqualProcessorAdaptiveTailSamplingSamplerRequestCount(t *testing.T, t
 func AssertEqualProcessorAdaptiveTailSamplingSamplerSpanCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_adaptive_tail_sampling_sampler_span_count",
-		Description: "Cumulative number of spans observed by an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule and sampler_type. [Development]",
+		Description: "Cumulative number of spans observed by an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule, sampler_type, and algorithm. [Development]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

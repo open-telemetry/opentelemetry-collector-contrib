@@ -127,23 +127,6 @@ func (r *rule) recordEvalErr(ctx context.Context, err error) {
 	}
 }
 
-// samplerType identifies the dynsampler-go implementation backing sc, used
-// as the sampler_type attribute on metrics derived from it. Returns "" for
-// samplers not backed by dynsampler-go (always_sample, probabilistic).
-func samplerType(sc SamplerConfig) string {
-	switch sc.Type {
-	case AdaptivePercentage:
-		return "adaptive_percentage"
-	case AdaptiveThroughput:
-		if sc.effectiveAlgorithm() == AlgorithmWindowed {
-			return "adaptive_throughput_windowed"
-		}
-		return "adaptive_throughput_ema"
-	default:
-		return ""
-	}
-}
-
 // compileRule turns a config rule into a runtime rule. The sampler must be
 // supplied by the caller because constructing it depends on processor-wide
 // resources.
@@ -159,7 +142,6 @@ func compileRule(cfg *RuleConfig, s sampler.Sampler, fingerprint []sampler.Selec
 			break
 		}
 	}
-	typ := samplerType(cfg.Sampler)
 	r := &rule{
 		name:             cfg.Name,
 		sampler:          s,
@@ -169,9 +151,15 @@ func compileRule(cfg *RuleConfig, s sampler.Sampler, fingerprint []sampler.Selec
 		logger:           settings.Logger,
 		evalErrs:         evalErrs,
 		ruleAttrSet:      metric.WithAttributes(attribute.String("rule", cfg.Name)),
+		// sampler_type and algorithm mirror cfg.Sampler.Type and
+		// effectiveAlgorithm(); the values are meaningless for non-adaptive
+		// samplers (always_sample, probabilistic), but this attribute set is
+		// only ever read for rules whose sampler implements
+		// sampler.MetricsProvider, which those two never do.
 		dynsamplerAttrSet: metric.WithAttributes(
 			attribute.String("rule", cfg.Name),
-			attribute.String("sampler_type", typ),
+			attribute.String("sampler_type", string(cfg.Sampler.Type)),
+			attribute.String("algorithm", string(cfg.Sampler.effectiveAlgorithm())),
 		),
 	}
 	if len(cfg.Conditions) == 0 {

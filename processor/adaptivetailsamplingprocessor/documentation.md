@@ -48,7 +48,7 @@ Number of OTTL condition evaluation errors, labelled by the rule the condition b
 
 ### otelcol_processor_adaptive_tail_sampling_sampler_burst_count
 
-Cumulative number of intervals in which an adaptive sampler (adaptive_percentage or adaptive_throughput) detected a burst of traffic, labelled by rule and sampler_type. Not emitted for adaptive_throughput_windowed rules, which do not track this counter.
+Cumulative number of intervals in which an adaptive sampler (adaptive_percentage or adaptive_throughput) detected a burst of traffic, labelled by rule, sampler_type, and algorithm. Not emitted for adaptive_throughput rules using the windowed algorithm, which do not track this counter.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -56,7 +56,7 @@ Cumulative number of intervals in which an adaptive sampler (adaptive_percentage
 
 ### otelcol_processor_adaptive_tail_sampling_sampler_interval_count
 
-Cumulative number of rate-adjustment intervals an adaptive sampler (adaptive_percentage or adaptive_throughput) has completed, labelled by rule and sampler_type. Not emitted for adaptive_throughput_windowed rules, which do not track this counter.
+Cumulative number of rate-adjustment intervals an adaptive sampler (adaptive_percentage or adaptive_throughput) has completed, labelled by rule, sampler_type, and algorithm. Not emitted for adaptive_throughput rules using the windowed algorithm, which do not track this counter.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -64,7 +64,7 @@ Cumulative number of rate-adjustment intervals an adaptive sampler (adaptive_per
 
 ### otelcol_processor_adaptive_tail_sampling_sampler_keyspace_size
 
-Current number of distinct sampling keys tracked by an adaptive sampler (adaptive_percentage or adaptive_throughput), labelled by rule and sampler_type. A rising value indicates growing key cardinality, which can degrade sampler accuracy and memory use.
+Current number of distinct sampling keys tracked by an adaptive sampler (adaptive_percentage or adaptive_throughput), labelled by rule, sampler_type, and algorithm. A rising value indicates growing key cardinality, which can degrade sampler accuracy and memory use.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -72,7 +72,7 @@ Current number of distinct sampling keys tracked by an adaptive sampler (adaptiv
 
 ### otelcol_processor_adaptive_tail_sampling_sampler_request_count
 
-Cumulative number of sample-rate requests made to an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule and sampler_type.
+Cumulative number of sample-rate requests made to an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule, sampler_type, and algorithm.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -80,7 +80,7 @@ Cumulative number of sample-rate requests made to an adaptive sampler (adaptive_
 
 ### otelcol_processor_adaptive_tail_sampling_sampler_span_count
 
-Cumulative number of spans observed by an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule and sampler_type.
+Cumulative number of spans observed by an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule, sampler_type, and algorithm.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
