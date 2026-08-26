@@ -10,7 +10,7 @@ rules:
     resources: ["replicasets", "deployments", "statefulsets", "daemonsets"]
     verbs: ["get", "watch", "list"]
   - apiGroups: ["batch"]
-    resources: ["jobs"]
+    resources: ["jobs", "cronjobs"]
     verbs: ["get", "watch", "list"]
   - apiGroups: [ "" ]
     resources: ["namespaces"]
