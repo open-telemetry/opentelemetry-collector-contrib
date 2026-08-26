@@ -15,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/config/confighttp v0.159.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/config/confignet v1.65.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/config/configopaque v1.65.1-0.20260824174011-67fef8cb7049
+	go.opentelemetry.io/collector/config/configoptional v1.65.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/config/configtelemetry v0.159.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/config/configtls v1.65.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/confmap v1.65.1-0.20260824174011-67fef8cb7049
@@ -114,7 +115,6 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.65.1-0.20260824174011-67fef8cb7049 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v1.65.1-0.20260824174011-67fef8cb7049 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.65.1-0.20260824174011-67fef8cb7049 // indirect
-	go.opentelemetry.io/collector/config/configoptional v1.65.1-0.20260824174011-67fef8cb7049 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.65.1-0.20260824174011-67fef8cb7049 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.159.1-0.20260824174011-67fef8cb7049 // indirect
 	go.opentelemetry.io/collector/connector v0.159.1-0.20260824174011-67fef8cb7049 // indirect
