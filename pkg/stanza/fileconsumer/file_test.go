@@ -1243,7 +1243,8 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	// Verify we have no checkpointed files
 	require.Equal(t, 0, operator.tracker.TotalReaders())
 
-	// Consume tokens only until the first long-file line arrives.
+	// Consume tokens until both the short file's only line and at least one
+	// long-file line have been observed.
 	ctx, cancel := context.WithCancel(t.Context())
 
 	var wg sync.WaitGroup
@@ -1251,19 +1252,21 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 		operator.poll(ctx)
 	})
 
-	for {
-		token := sink.NextToken(t)
-		if string(token) != shortFileLine {
-			break
+	var shortConsumed, longConsumed bool
+	for !shortConsumed || !longConsumed {
+		if string(sink.NextToken(t)) == shortFileLine {
+			shortConsumed = true
+		} else {
+			longConsumed = true
 		}
 	}
 
-	// Short file was fully consumed and should eventually be deleted.
-	// Enforce assertion before canceling because EOF is not necessarily detected
-	// immediately when the token is emitted. An additional scan may be necessary.
-	require.EventuallyWithT(t, func(c *assert.CollectT) {
-		assert.NoFileExists(c, shortFile.Name())
-	}, 100*time.Millisecond, time.Millisecond)
+	// A reader deletes its file synchronously before emitting the file's final
+	// batch of tokens (see Reader.readContents), so observing the short file's
+	// line guarantees the short file has already been deleted. Observing a
+	// long-file line guarantees the long file's reader is still mid-read
+	// (blocked on the unbuffered sink), so the long file has not been deleted.
+	require.NoFileExists(t, shortFile.Name())
 
 	// Stop consuming before long file has been fully consumed
 	cancel()
