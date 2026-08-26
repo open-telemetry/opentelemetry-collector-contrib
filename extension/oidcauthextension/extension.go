@@ -300,9 +300,6 @@ func (e *oidcExtension) processProviderConfig(ctx context.Context, p ProviderCfg
 		DialContext: (&net.Dialer{
 			Timeout:   5 * time.Second,
 			KeepAlive: 10 * time.Second,
-			// TODO: SA1019: (net.Dialer).DualStack has been deprecated since Go 1.12: Fast Fallback is enabled by default. To disable, set FallbackDelay to a negative value.
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50431
-			DualStack: true, //nolint:staticcheck
 		}).DialContext,
 		ForceAttemptHTTP2:     true,
 		MaxIdleConns:          100,
