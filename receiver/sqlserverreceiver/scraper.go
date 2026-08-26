@@ -77,7 +77,7 @@ func newSQLServerScraper(id component.ID,
 	serviceInstanceID, err := computeServiceInstanceID(cfg)
 	if err != nil {
 		params.Logger.Warn("Failed to compute service.instance.id", zap.Error(err))
-		serviceInstanceID = "unknown:1433"
+		serviceInstanceID = defaultServiceName
 	}
 
 	return &sqlServerScraperHelper{
@@ -333,19 +333,9 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetSqlserverComputerName(row[computerNameKey])
 	rb.SetSqlserverInstanceName(row[instanceNameKey])
 
-	hostName := s.config.Server
-	serverAddress := s.config.Server
-	serverPort := int64(s.config.Port)
-
-	if s.config.DataSource != "" {
-		host, port, err := parseDataSource(s.config.DataSource)
-		if err != nil {
-			s.logger.Warn("Failed to parse datasource for host.name attribute, using fallback", zap.Error(err))
-		} else {
-			hostName = host
-			serverAddress = host
-			serverPort = int64(port)
-		}
+	hostName, port, err := resolveResourceHostPort(s.config)
+	if err != nil {
+		s.logger.Warn("Failed to resolve host/port for resource attributes, using fallback", zap.Error(err))
 	}
 
 	rb.SetHostName(hostName)
@@ -354,8 +344,8 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetServiceNamespace("")
 
 	if !metadata.ReceiverSqlserverRemoveServerResourceAttributeFeatureGate.IsEnabled() {
-		rb.SetServerAddress(serverAddress)
-		rb.SetServerPort(serverPort)
+		rb.SetServerAddress(hostName)
+		rb.SetServerPort(int64(port))
 	}
 
 	return rb
@@ -1647,6 +1637,16 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	now := time.Now()
 	timestamp := pcommon.NewTimestampFromTime(now)
 	s.lastExecutionTimestamp = now
+
+	// Resolve the reported host/port once for the event's server.address /
+	// server.port attributes, using the same resolver as the resource attributes
+	// so the record-level and resource-level values agree (DataSource parsing,
+	// default port, and localhost -> os.Hostname rewrite all applied).
+	serverAddress, serverPort, resolveErr := resolveResourceHostPort(s.config)
+	if resolveErr != nil {
+		s.logger.Warn("Failed to resolve host/port for top query event attributes, using fallback", zap.Error(resolveErr))
+	}
+
 	for i, row := range rows {
 		// reporting human-readable query hash and query hash plan
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
@@ -1751,8 +1751,8 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			rowsReturnedVal.(int64),
 			totalElapsedTimeVal,
 			totalGrantVal.(int64),
-			s.config.Server,
-			int64(s.config.Port),
+			serverAddress,
+			int64(serverPort),
 			dbSystemNameVal,
 			procExecCountVal.(int64),
 			row[storedProcedureID],

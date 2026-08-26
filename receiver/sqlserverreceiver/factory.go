@@ -374,7 +374,37 @@ func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.Contr
 		opts = append(opts, opt)
 	}
 
+	// The connection-health scraper implements scraper.Metrics directly and is
+	// intentionally kept off the shared connection pool: its queryable probe
+	// opens and closes its own connection every scrape so that it always tests a
+	// fresh authenticated session (see connection_health_scraper.go). It does not
+	// use the shared provider, so provider lifecycle is unaffected here.
+	if healthScraper := setupConnectionHealthScraper(params, cfg); healthScraper != nil {
+		opts = append(opts, scraperhelper.AddMetricsScraper(metadata.Type, healthScraper))
+	}
+
 	return opts, provider, nil
+}
+
+// setupConnectionHealthScraper creates the scraper backing the sqlserver.health
+// metric. It requires a direct DB connection (server/port/credentials or a
+// datasource); it returns nil when the receiver runs in performance-counter-only
+// mode or when the health metric is disabled.
+func setupConnectionHealthScraper(params receiver.Settings, cfg *Config) *connectionHealthScraper {
+	if !cfg.isDirectDBConnectionEnabled {
+		return nil
+	}
+
+	if !cfg.MetricsBuilderConfig.Metrics.SqlserverHealth.Enabled {
+		return nil
+	}
+
+	dbProviderFunc := func() (*sql.DB, error) {
+		return sql.Open("sqlserver", getDBConnectionString(cfg))
+	}
+
+	id := component.NewIDWithName(metadata.Type, "connection-health")
+	return newConnectionHealthScraper(id, dbProviderFunc, sqlquery.NewDbClient, params, cfg)
 }
 
 // Note: This method will fail silently if there is no work to do. This is an acceptable use case
