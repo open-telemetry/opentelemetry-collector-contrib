@@ -27,7 +27,24 @@ func (l *literal[K, T]) Get(context.Context, K) (T, error) {
 
 func (*literal[K, T]) isLiteral() {}
 
-func isLiteralGetter[K, V any](getter typedGetter[K, V]) bool {
+// likeLiteral is the "Like" Getter equivalent of literal, caching the pre-computed value and
+// ok result of a Getter whose Get returns (T, bool, error).
+type likeLiteral[K any, T any] struct {
+	value T
+	ok    bool
+}
+
+func newLikeLiteral[K, T any](value T, ok bool) *likeLiteral[K, T] {
+	return &likeLiteral[K, T]{value: value, ok: ok}
+}
+
+func (l *likeLiteral[K, T]) Get(context.Context, K) (T, bool, error) {
+	return l.value, l.ok, nil
+}
+
+func (*likeLiteral[K, T]) isLiteral() {}
+
+func isLiteralGetter(getter any) bool {
 	_, isLiteral := getter.(literalGetter)
 	return isLiteral
 }
@@ -46,4 +63,24 @@ func GetLiteralValue[K, V any](getter typedGetter[K, V]) (V, bool) {
 	}
 
 	return val, true
+}
+
+// GetLikeLiteralValue retrieves the literal value from the given "Like" getter.
+// It returns the value, whether a value was found (false if the underlying value was nil),
+// and whether the getter is a literal getter. If the getter is not a literal getter, it
+// returns the zero value of V, false, and false.
+func GetLikeLiteralValue[K, V any](getter interface {
+	Get(ctx context.Context, tCtx K) (V, bool, error)
+},
+) (V, bool, bool) {
+	if _, isLiteral := getter.(literalGetter); !isLiteral {
+		return *new(V), false, false
+	}
+
+	val, found, err := getter.Get(context.Background(), *new(K))
+	if err != nil {
+		return *new(V), false, false
+	}
+
+	return val, found, true
 }

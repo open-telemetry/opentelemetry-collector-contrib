@@ -6,7 +6,6 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -39,14 +38,14 @@ func concat[K any](vals []ottl.StringLikeGetter[K], delimiter ottl.StringGetter[
 			return nil, err
 		}
 		for i, rv := range vals {
-			val, err := rv.Get(ctx, tCtx)
+			val, ok, err := rv.Get(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
-			if val == nil {
-				fmt.Fprint(&builder, val)
+			if !ok {
+				builder.WriteString("<nil>")
 			} else {
-				builder.WriteString(*val)
+				builder.WriteString(val)
 			}
 			if i != len(vals)-1 {
 				builder.WriteString(delimiterVal)

@@ -916,3 +916,31 @@ func NewTestingLiteralGetter[K, V any](literal bool, getter typedGetter[K, V]) (
 	}
 	return mockLiteralGetter[K, V]{valueGetter: getter.Get}, nil
 }
+
+// likeGetter is like typedGetter, but for the "Like" getters that also return a found bool.
+type likeGetter[K, V any] interface {
+	Get(ctx context.Context, tCtx K) (V, bool, error)
+}
+
+// mockLikeLiteralGetter is a mock implementation of a "Like" literal getter for testing.
+type mockLikeLiteralGetter[K, V any] struct {
+	valueGetter func(context.Context, K) (V, bool, error)
+}
+
+func (m mockLikeLiteralGetter[K, V]) Get(_ context.Context, _ K) (V, bool, error) {
+	return m.valueGetter(context.Background(), *new(K))
+}
+
+// NewTestingLikeLiteralGetter creates a mock literal getter for testing OTTL functions that
+// take a "Like" getter (whose Get returns a found bool). Pass `literal` as true if the getter
+// should be treated as a literal.
+func NewTestingLikeLiteralGetter[K, V any](literal bool, getter likeGetter[K, V]) (likeGetter[K, V], error) {
+	if literal {
+		val, found, err := getter.Get(context.Background(), *new(K))
+		if err != nil {
+			return nil, err
+		}
+		return newLikeLiteral[K, V](val, found), nil
+	}
+	return mockLikeLiteralGetter[K, V]{valueGetter: getter.Get}, nil
+}
