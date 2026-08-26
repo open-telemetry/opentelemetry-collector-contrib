@@ -46,6 +46,46 @@ Number of OTTL condition evaluation errors, labelled by the rule the condition b
 | ---- | ----------- | ---------- | --------- | --------- |
 | {errors} | Sum | Int | true | Development |
 
+### otelcol_processor_adaptive_tail_sampling_sampler_burst_count
+
+Cumulative number of intervals in which a dynsampler-go adaptive sampler detected a burst of traffic, labelled by rule and sampler_type. Not emitted for adaptive_throughput_windowed rules, which do not track this counter.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {bursts} | Sum | Int | true | Development |
+
+### otelcol_processor_adaptive_tail_sampling_sampler_event_count
+
+Cumulative number of events (spans) observed by a dynsampler-go adaptive sampler since it started, labelled by rule and sampler_type.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {events} | Sum | Int | true | Development |
+
+### otelcol_processor_adaptive_tail_sampling_sampler_interval_count
+
+Cumulative number of rate-adjustment intervals a dynsampler-go adaptive sampler has completed, labelled by rule and sampler_type. Not emitted for adaptive_throughput_windowed rules, which do not track this counter.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {intervals} | Sum | Int | true | Development |
+
+### otelcol_processor_adaptive_tail_sampling_sampler_keyspace_size
+
+Current number of distinct sampling keys tracked by a dynsampler-go adaptive sampler, labelled by rule and sampler_type. A rising value indicates growing key cardinality, which can degrade sampler accuracy and memory use.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {keys} | Gauge | Int | Development |
+
+### otelcol_processor_adaptive_tail_sampling_sampler_request_count
+
+Cumulative number of sample-rate requests made to a dynsampler-go adaptive sampler since it started, labelled by rule and sampler_type.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {requests} | Sum | Int | true | Development |
+
 ### otelcol_processor_adaptive_tail_sampling_trace_span_count
 
 Distribution of buffered span counts per trace at decision time, labelled by rule. Useful for sizing span_limit against the real trace-size distribution.
