@@ -26,18 +26,18 @@ func testManagerWithSink(t *testing.T, cfg *Config, sink *emittest.Sink, opts ..
 // testManagerKeepFilesOpen builds a manager whose tracker keeps files open between poll
 // cycles regardless of platform or feature-gate state. This lets the keep-open behavior
 // be exercised in a parallel-safe way, without mutating the global feature-gate registry.
-func testManagerKeepFilesOpen(t *testing.T, cfg *Config, opts ...Option) (*Manager, *emittest.Sink) {
+func testManagerKeepFilesOpen(t *testing.T, cfg *Config) (*Manager, *emittest.Sink) {
 	sink := emittest.NewSink()
 	keepOpen := true
-	return buildTestManager(t, cfg, sink, &keepOpen, opts...), sink
+	return buildTestManager(t, cfg, sink, &keepOpen), sink
 }
 
 // testManagerKeepFilesClosed builds a manager whose tracker closes files immediately
 // after each poll (the legacy Windows behavior), regardless of platform or gate state.
-func testManagerKeepFilesClosed(t *testing.T, cfg *Config, opts ...Option) (*Manager, *emittest.Sink) {
+func testManagerKeepFilesClosed(t *testing.T, cfg *Config) (*Manager, *emittest.Sink) {
 	sink := emittest.NewSink()
 	keepOpen := false
-	return buildTestManager(t, cfg, sink, &keepOpen, opts...), sink
+	return buildTestManager(t, cfg, sink, &keepOpen), sink
 }
 
 // buildTestManager builds a Manager and wires up its tracker for direct poll() calls in
