@@ -21,6 +21,9 @@ type cachedDecision struct {
 	// record_fingerprint), empty when recording is disabled or the rule has
 	// no fingerprint. Stored so late spans receive the same attribute.
 	fingerprint string
+	// trigger records which event triggered the decision, stored so late
+	// spans carry the same trigger attribution as the decided trace.
+	trigger triggerSource
 }
 
 // decisionCache holds two independent LRU caches: one tracks traces that have

@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.159.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.159.0
-	github.com/stretchr/testify v1.12.0
+	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.65.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/component/componenttest v0.159.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/confmap v1.65.1-0.20260824174011-67fef8cb7049
@@ -52,7 +52,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/monitoring v1.27.0
+	cloud.google.com/go/monitoring v1.30.0
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect

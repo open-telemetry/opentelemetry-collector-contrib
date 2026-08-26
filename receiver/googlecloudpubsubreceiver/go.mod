@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/google
 go 1.26.0
 
 require (
-	cloud.google.com/go/pubsub/v2 v2.6.0
+	cloud.google.com/go/pubsub/v2 v2.6.2
 	github.com/googleapis/gax-go/v2 v2.24.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.159.0
-	github.com/stretchr/testify v1.12.0
+	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.65.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/component/componenttest v0.159.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/confmap v1.65.1-0.20260824174011-67fef8cb7049
@@ -17,10 +17,10 @@ require (
 	go.opentelemetry.io/collector/receiver v1.65.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.159.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/receiver/receivertest v0.159.1-0.20260824174011-67fef8cb7049
-	go.opentelemetry.io/otel v1.45.0
-	go.opentelemetry.io/otel/metric v1.45.0
-	go.opentelemetry.io/otel/sdk/metric v1.45.0
-	go.opentelemetry.io/otel/trace v1.45.0
+	go.opentelemetry.io/otel v1.46.0
+	go.opentelemetry.io/otel/metric v1.46.0
+	go.opentelemetry.io/otel/sdk/metric v1.46.0
+	go.opentelemetry.io/otel/trace v1.46.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 	google.golang.org/api v0.293.0
@@ -55,7 +55,6 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	go.einride.tech/aip v0.83.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.65.1-0.20260824174011-67fef8cb7049 // indirect
 	go.opentelemetry.io/collector/config/configoptional v1.65.1-0.20260824174011-67fef8cb7049 // indirect
@@ -74,7 +73,7 @@ require (
 	go.opentelemetry.io/collector/receiver/xreceiver v0.159.1-0.20260824174011-67fef8cb7049 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.67.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.45.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.54.0 // indirect
@@ -87,7 +86,6 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20260715232425-e75dac1f907d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260807164820-c8921c73eeea // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 retract (
