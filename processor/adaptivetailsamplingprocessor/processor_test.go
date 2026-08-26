@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -117,6 +118,25 @@ func buildTrace(traceID pcommon.TraceID, statusCode ptrace.StatusCode, root bool
 	}
 	span.SetName("op")
 	span.Status().SetCode(statusCode)
+	return td
+}
+
+// newRootTraceWithSpans builds a single trace containing spanCount spans: one
+// root span plus spanCount-1 children of it.
+func newRootTraceWithSpans(traceID pcommon.TraceID, spanCount int) ptrace.Traces {
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+	rootSpanID := pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	for i := range spanCount {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{byte(i + 1), 2, 3, 4, 5, 6, 7, 8}))
+		if i > 0 {
+			span.SetParentSpanID(rootSpanID)
+		}
+		span.SetName("op")
+	}
 	return td
 }
 
@@ -504,7 +524,11 @@ func TestProcessor_SamplerMetrics(t *testing.T) {
 	// WindowedThroughput only recomputes keyspace_size on its background
 	// update-frequency tick, so use a short one and wait for it below instead
 	// of asserting a possibly-stale value.
-	const windowedUpdateFrequency = 10 * time.Millisecond
+	const (
+		windowedUpdateFrequency = 10 * time.Millisecond
+		tracesPerRule           = 5
+		spansPerTrace           = 5
+	)
 
 	sink := &consumertest.TracesSink{}
 	cfg := &Config{
@@ -516,14 +540,14 @@ func TestProcessor_SamplerMetrics(t *testing.T) {
 			{Name: "ema", Conditions: []string{`resource.attributes["service.name"] == "svc-ema"`}, Sampler: SamplerConfig{
 				Type:                  AdaptivePercentage,
 				GoalPercentage:        100,
-				FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+				FingerprintAttributes: []string{`resource.attributes["fingerprint.key"]`},
 			}},
 			{Name: "windowed", Sampler: SamplerConfig{
 				Type:                  AdaptiveThroughput,
 				Algorithm:             AlgorithmWindowed,
 				GoalThroughput:        1000,
 				UpdateFrequency:       windowedUpdateFrequency,
-				FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+				FingerprintAttributes: []string{`resource.attributes["fingerprint.key"]`},
 			}},
 		},
 	}
@@ -535,16 +559,24 @@ func TestProcessor_SamplerMetrics(t *testing.T) {
 	emaAttrs := attribute.NewSet(attribute.String("rule", "ema"), attribute.String("sampler_type", "adaptive_percentage"), attribute.String("sampler_algorithm", "ema"))
 	windowedAttrs := attribute.NewSet(attribute.String("rule", "windowed"), attribute.String("sampler_type", "adaptive_throughput"), attribute.String("sampler_algorithm", "windowed"))
 
-	emaTrace := newRootTrace(pcommon.TraceID([16]byte{0xC1}))
-	emaTrace.ResourceSpans().At(0).Resource().Attributes().PutStr("service.name", "svc-ema")
-	require.NoError(t, p.ConsumeTraces(t.Context(), emaTrace))
+	// Each trace carries its own fingerprint.key, so the two samplers'
+	// keyspaces grow to tracesPerRule distinct keys instead of staying at 1.
+	for i := range byte(tracesPerRule) {
+		emaTrace := newRootTraceWithSpans(pcommon.TraceID([16]byte{0xC1, i}), spansPerTrace)
+		emaRes := emaTrace.ResourceSpans().At(0).Resource().Attributes()
+		emaRes.PutStr("service.name", "svc-ema")
+		emaRes.PutStr("fingerprint.key", "ema-"+strconv.Itoa(int(i)))
+		require.NoError(t, p.ConsumeTraces(t.Context(), emaTrace))
 
-	windowedTrace := newRootTrace(pcommon.TraceID([16]byte{0xC2}))
-	windowedTrace.ResourceSpans().At(0).Resource().Attributes().PutStr("service.name", "svc-windowed")
-	require.NoError(t, p.ConsumeTraces(t.Context(), windowedTrace))
+		windowedTrace := newRootTraceWithSpans(pcommon.TraceID([16]byte{0xC2, i}), spansPerTrace)
+		windowedRes := windowedTrace.ResourceSpans().At(0).Resource().Attributes()
+		windowedRes.PutStr("service.name", "svc-windowed")
+		windowedRes.PutStr("fingerprint.key", "windowed-"+strconv.Itoa(int(i)))
+		require.NoError(t, p.ConsumeTraces(t.Context(), windowedTrace))
+	}
 
 	require.Eventually(t, func() bool {
-		return sink.SpanCount() == 2
+		return sink.SpanCount() == 2*tracesPerRule*spansPerTrace
 	}, time.Second, 10*time.Millisecond)
 
 	require.Eventually(t, func() bool {
@@ -557,31 +589,31 @@ func TestProcessor_SamplerMetrics(t *testing.T) {
 			return false
 		}
 		for _, dp := range gauge.DataPoints {
-			if dp.Attributes.Equals(&windowedAttrs) && dp.Value == 1 {
+			if dp.Attributes.Equals(&windowedAttrs) && dp.Value == tracesPerRule {
 				return true
 			}
 		}
 		return false
-	}, time.Second, windowedUpdateFrequency, "windowed rule's keyspace_size should reach 1 after an update-frequency tick")
+	}, time.Second, windowedUpdateFrequency, "windowed rule's keyspace_size should reach tracesPerRule after an update-frequency tick")
 
 	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerRequestCount(t, tt,
 		[]metricdata.DataPoint[int64]{
-			{Value: 1, Attributes: emaAttrs},
-			{Value: 1, Attributes: windowedAttrs},
+			{Value: tracesPerRule, Attributes: emaAttrs},
+			{Value: tracesPerRule, Attributes: windowedAttrs},
 		},
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(),
 	)
 	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerSpanCount(t, tt,
 		[]metricdata.DataPoint[int64]{
-			{Value: 1, Attributes: emaAttrs},
-			{Value: 1, Attributes: windowedAttrs},
+			{Value: tracesPerRule * spansPerTrace, Attributes: emaAttrs},
+			{Value: tracesPerRule * spansPerTrace, Attributes: windowedAttrs},
 		},
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(),
 	)
 	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerKeyspaceSize(t, tt,
 		[]metricdata.DataPoint[int64]{
-			{Value: 1, Attributes: emaAttrs},
-			{Value: 1, Attributes: windowedAttrs},
+			{Value: tracesPerRule, Attributes: emaAttrs},
+			{Value: tracesPerRule, Attributes: windowedAttrs},
 		},
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(),
 	)
