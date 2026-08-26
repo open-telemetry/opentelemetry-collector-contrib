@@ -102,6 +102,7 @@ For more information about the approver role, see the [community repository](htt
 - [Dónal O'Sullivan](https://github.com/osullivandonal), Elastic
 - [Douglas Camata](https://github.com/douglascamata), Coralogix
 - [Dylan Strohschein](https://github.com/dyl10s), Dynatrace
+- [George Krajcsovits](https://github.com/krajorama), Grafana Labs
 - [James Moessis](https://github.com/jamesmoessis), Atlassian
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Khushi Jain](https://github.com/khushijain21), Elastic
