@@ -211,11 +211,24 @@ func TestConfig_Validate(t *testing.T) {
 				Sampler: SamplerConfig{
 					Type:                      AdaptiveThroughput,
 					GoalThroughput:            100,
-					InitialSamplingPercentage: 25,
+					InitialSamplingPercentage: new(25.0),
 					FingerprintAttributes:     []string{`resource.attributes["service.name"]`},
 					Weight:                    0.5,
 				},
 			}),
+		},
+		{
+			name: "adaptive_throughput_initial_sampling_percentage_zero_rejected",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                      AdaptiveThroughput,
+					GoalThroughput:            100,
+					InitialSamplingPercentage: new(0.0),
+					FingerprintAttributes:     []string{`resource.attributes["service.name"]`},
+				},
+			}),
+			wantErr: "initial_sampling_percentage must be in (0, 100]",
 		},
 		{
 			name: "adaptive_throughput_initial_sampling_percentage_too_high",
@@ -224,7 +237,7 @@ func TestConfig_Validate(t *testing.T) {
 				Sampler: SamplerConfig{
 					Type:                      AdaptiveThroughput,
 					GoalThroughput:            100,
-					InitialSamplingPercentage: 101,
+					InitialSamplingPercentage: new(101.0),
 					FingerprintAttributes:     []string{`resource.attributes["service.name"]`},
 				},
 			}),
@@ -237,7 +250,7 @@ func TestConfig_Validate(t *testing.T) {
 				Sampler: SamplerConfig{
 					Type:                      AdaptivePercentage,
 					GoalPercentage:            10,
-					InitialSamplingPercentage: 25,
+					InitialSamplingPercentage: new(25.0),
 					FingerprintAttributes:     []string{`resource.attributes["service.name"]`},
 				},
 			}),

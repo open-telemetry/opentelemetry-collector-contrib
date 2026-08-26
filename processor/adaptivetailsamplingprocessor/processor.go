@@ -266,9 +266,9 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []sampler.Selector, err
 		// A throughput goal cannot be converted to a sample rate without
 		// observed volume, so the pre-warmup rate comes from the explicit
 		// initial_sampling_percentage bootstrap (default 10%, i.e. 1-in-10).
-		initialPct := sc.InitialSamplingPercentage
-		if initialPct == 0 {
-			initialPct = 10
+		initialPct := 10.0
+		if sc.InitialSamplingPercentage != nil {
+			initialPct = *sc.InitialSamplingPercentage
 		}
 		initialRate := max(int(100.0/initialPct), 1)
 		var s sampler.Sampler

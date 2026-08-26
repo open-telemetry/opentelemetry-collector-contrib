@@ -242,9 +242,10 @@ type SamplerConfig struct {
 	// cycle after start, and (windowed algorithm) for fingerprints the
 	// sampler has no computed rate for, including max_keys overflow. A
 	// throughput goal cannot be converted to a sample rate without observed
-	// volume, so the bootstrap is explicit. Defaults to 10 (keep 10%).
-	// Used by: adaptive_throughput.
-	InitialSamplingPercentage float64 `mapstructure:"initial_sampling_percentage"`
+	// volume, so the bootstrap is explicit. Omit for the default of 10
+	// (keep 10%); supplied values must be in (0, 100] like every other
+	// percentage. Used by: adaptive_throughput.
+	InitialSamplingPercentage *float64 `mapstructure:"initial_sampling_percentage"`
 
 	// FingerprintAttributes is the list of scoped attribute selectors that
 	// identify what kind of trace this is for sampling purposes. Each entry
@@ -464,8 +465,8 @@ func (s *SamplerConfig) validate(ruleName string) error {
 		if s.MaxKeys < 0 {
 			return fmt.Errorf("rule %q: max_keys must be non-negative", ruleName)
 		}
-		if s.InitialSamplingPercentage < 0 || s.InitialSamplingPercentage > 100 {
-			return fmt.Errorf("rule %q: initial_sampling_percentage must be in (0, 100], or 0 for the default", ruleName)
+		if s.InitialSamplingPercentage != nil && (*s.InitialSamplingPercentage <= 0 || *s.InitialSamplingPercentage > 100) {
+			return fmt.Errorf("rule %q: initial_sampling_percentage must be in (0, 100]", ruleName)
 		}
 		switch s.effectiveAlgorithm() {
 		case AlgorithmEMA:
@@ -537,7 +538,7 @@ func (s *SamplerConfig) rejectUnusedFields(ruleName, typeName string, allowed ma
 	if err := set("goal_throughput", s.GoalThroughput != 0); err != nil {
 		return err
 	}
-	if err := set("initial_sampling_percentage", s.InitialSamplingPercentage != 0); err != nil {
+	if err := set("initial_sampling_percentage", s.InitialSamplingPercentage != nil); err != nil {
 		return err
 	}
 	if err := set("fingerprint_attributes", len(s.FingerprintAttributes) > 0); err != nil {
