@@ -175,7 +175,7 @@ jobs:
         env:
           MATRIX_GOOS: ${{ matrix.goos }}
           MATRIX_GROUP: ${{ matrix.group }}
-        run: GOOS="${MATRIX_GOOS}" GOARCH=amd64 make -j2 golint GROUP="${MATRIX_GROUP}"
+        run: GOGC=50 GOMEMLIMIT=2GiB GOOS="${MATRIX_GOOS}" GOARCH=amd64 make -j2 golint GROUP="${MATRIX_GROUP}"
       - run: ./.github/workflows/scripts/check-disk-space.sh
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
@@ -213,6 +213,7 @@ jobs:
           - internal
           - pkg
           - cmd-0
+          - other
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     needs: [setup-environment]
@@ -458,10 +459,13 @@ jobs:
     needs: [setup-environment, integration-tests-matrix, integration-sudo-tests-matrix]
     steps:
       - name: Print result
-        run: echo ${{ needs.integration-tests-matrix.result }}
+        run: |
+          echo "integration-tests-matrix: ${{ needs.integration-tests-matrix.result }}"
+          echo "integration-sudo-tests-matrix: ${{ needs.integration-sudo-tests-matrix.result }}"
       - name: Interpret result
         run: |
-          if [[ success == ${{ needs.integration-tests-matrix.result }} || skipped == ${{ needs.integration-tests-matrix.result }} ]]
+          if [[ ( success == ${{ needs.integration-tests-matrix.result }} || skipped == ${{ needs.integration-tests-matrix.result }} ) && \
+                ( success == ${{ needs.integration-sudo-tests-matrix.result }} || skipped == ${{ needs.integration-sudo-tests-matrix.result }} ) ]]
           then
             echo "All matrix jobs passed!"
           else
