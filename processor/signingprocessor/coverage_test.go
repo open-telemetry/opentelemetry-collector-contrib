@@ -4,6 +4,7 @@
 package signingprocessor
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -322,7 +323,7 @@ func TestDecodeIfBase64(t *testing.T) {
 
 	t.Run("plain PEM returned as-is", func(t *testing.T) {
 		result := decodeIfBase64(certPEM)
-		if string(result) != string(certPEM) {
+		if !bytes.Equal(result, certPEM) {
 			t.Error("plain PEM should be returned unchanged")
 		}
 	})
@@ -330,7 +331,7 @@ func TestDecodeIfBase64(t *testing.T) {
 	t.Run("base64-encoded PEM decoded", func(t *testing.T) {
 		encoded := []byte(base64.StdEncoding.EncodeToString(certPEM))
 		result := decodeIfBase64(encoded)
-		if string(result) != string(certPEM) {
+		if !bytes.Equal(result, certPEM) {
 			t.Errorf("base64 decode failed: got %q", result[:20])
 		}
 	})
@@ -436,7 +437,7 @@ func TestBuildCertificateRef(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if len(ref) == 0 {
+		if ref == "" {
 			t.Error("full ref should be non-empty")
 		}
 		// Should be valid base64
@@ -562,7 +563,7 @@ func TestSerializeLogRecordNonStringBody(t *testing.T) {
 		t.Fatalf("serializeLogRecord: %v", err)
 	}
 	// Non-string body must not appear in payload
-	if string(b) == "" {
+	if len(b) == 0 {
 		t.Error("expected non-empty serialized payload")
 	}
 }
