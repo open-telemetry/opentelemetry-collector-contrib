@@ -385,7 +385,7 @@ func (k *key) accept(v grammarVisitor) {
 
 // list represents a literal list of values.
 type list struct {
-	Values []value `parser:"'[' (@@)* (',' @@)* ']'"`
+	Values []value `parser:"'[' (@@ (',' @@)*)? ']'"`
 }
 
 // mapValue represents a literal map of key/value pairs.
