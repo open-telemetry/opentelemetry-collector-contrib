@@ -349,12 +349,15 @@ func formatParseError(kind, raw string, err error) error {
 	return fmt.Errorf("%s has invalid syntax at %d:%d:%s", kind, pos.Line, pos.Column, expected)
 }
 
+// parseErrorSnippetLen is the number of source characters shown after the error position in the "near" clause.
+const parseErrorSnippetLen = 10
+
 // nearParseError returns a short, UTF-8 safe snippet of raw starting at offset for use in error messages.
 func nearParseError(raw string, offset int) string {
 	if offset < 0 || offset >= len(raw) {
 		return ""
 	}
-	end := min(offset+10, len(raw))
+	end := min(offset+parseErrorSnippetLen, len(raw))
 	return strings.TrimSpace(strings.ToValidUTF8(raw[offset:end], ""))
 }
 
