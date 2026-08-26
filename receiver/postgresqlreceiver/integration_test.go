@@ -152,7 +152,13 @@ func integrationTest(
 					},
 				},
 				ExposedPorts: []string{postgresqlPort},
-				WaitingFor: wait.ForListeningPort(postgresqlPort).
+				// A listening port is not enough: the postgres image runs a temporary
+				// server for its init scripts, so the port accepts connections while the
+				// real server is still "starting up" (57P03). The readiness log line is
+				// emitted twice -- once for the init server, once for the real one -- so
+				// waiting for the second occurrence guarantees the DB is ready to query.
+				WaitingFor: wait.ForLog("database system is ready to accept connections").
+					WithOccurrence(2).
 					WithStartupTimeout(2 * time.Minute),
 			},
 		),
@@ -207,7 +213,13 @@ func TestGetDatabaseTableMetricsIgnoresAccessExclusiveLocks(t *testing.T) {
 					FileMode:          700,
 				}},
 				ExposedPorts: []string{postgresqlPort},
-				WaitingFor: wait.ForListeningPort(postgresqlPort).
+				// A listening port is not enough: the postgres image runs a temporary
+				// server for its init scripts, so the port accepts connections while the
+				// real server is still "starting up" (57P03). The readiness log line is
+				// emitted twice -- once for the init server, once for the real one -- so
+				// waiting for the second occurrence guarantees the DB is ready to query.
+				WaitingFor: wait.ForLog("database system is ready to accept connections").
+					WithOccurrence(2).
 					WithStartupTimeout(2 * time.Minute),
 			},
 		},
@@ -278,7 +290,13 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 					FileMode:          700,
 				}},
 				ExposedPorts: []string{postgresqlPort},
-				WaitingFor: wait.ForListeningPort(postgresqlPort).
+				// A listening port is not enough: the postgres image runs a temporary
+				// server for its init scripts, so the port accepts connections while the
+				// real server is still "starting up" (57P03). The readiness log line is
+				// emitted twice -- once for the init server, once for the real one -- so
+				// waiting for the second occurrence guarantees the DB is ready to query.
+				WaitingFor: wait.ForLog("database system is ready to accept connections").
+					WithOccurrence(2).
 					WithStartupTimeout(2 * time.Minute),
 			},
 		},
@@ -335,7 +353,6 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 // count for the two shapes that broke text-based $N counting: a placeholder repeated in the
 // query text, and a string literal that merely looks like one.
 func TestExplainQueryParamCount(t *testing.T) {
-	t.Skip("flaky test http://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50144")
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
@@ -353,7 +370,13 @@ func TestExplainQueryParamCount(t *testing.T) {
 					FileMode:          700,
 				}},
 				ExposedPorts: []string{postgresqlPort},
-				WaitingFor: wait.ForListeningPort(postgresqlPort).
+				// A listening port is not enough: the postgres image runs a temporary
+				// server for its init scripts, so the port accepts connections while the
+				// real server is still "starting up" (57P03). The readiness log line is
+				// emitted twice -- once for the init server, once for the real one -- so
+				// waiting for the second occurrence guarantees the DB is ready to query.
+				WaitingFor: wait.ForLog("database system is ready to accept connections").
+					WithOccurrence(2).
 					WithStartupTimeout(2 * time.Minute),
 			},
 		},

@@ -69,6 +69,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
+- [Braydon Kains](https://github.com/braydonk), Google
 - [Christos Markou](https://github.com/ChrsMark), Elastic
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Edmo Vamerlatti Costa](https://github.com/edmocosta), Elastic
@@ -83,7 +84,6 @@ For more information about the maintainer role, see the [community repository](h
 ### Approvers
 
 - [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
-- [Braydon Kains](https://github.com/braydonk), Google
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
 - [Israel Blancas](https://github.com/iblancasa), Coralogix

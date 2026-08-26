@@ -36,6 +36,7 @@ to the Pod IP. But for cases where this approach doesn't work (sending through a
 Each association is specified as a list of sources of associations. The maximum number of sources within an association is 4.
 A source is a rule that matches metadata from the datapoint to pod metadata.
 In order to get an association applied, all the sources specified need to match.
+Each association must be unique: two associations with the same set of sources (regardless of the order they are listed in) are rejected during configuration validation.
 
 Each sources rule is specified as a pair of `from` (representing the rule type) and `name` (representing the attribute name if `from` is set to `resource_attribute`).
 The following rule types are available:
@@ -243,14 +244,14 @@ After receiving a pod deletion event, the processor can keep the pod's metadata 
 
 ## Extracting attributes from pod labels and annotations
 
-The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces, deployments, statefulsets, daemonsets, jobs and nodes.
-The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace/Deployment/StatefulSet/DaemonSet/Job/Node annotations/labels is configured via "annotations"  and "labels" keys.
-This config represents a list of annotations/labels that are extracted from pods/namespaces/deployments/statefulsets/daemonsets/jobs/nodes and added to spans, metrics and logs.
+The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces, deployments, replicasets, statefulsets, daemonsets, jobs and nodes.
+The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace/Deployment/ReplicaSet/StatefulSet/DaemonSet/Job/Node annotations/labels is configured via "annotations"  and "labels" keys.
+This config represents a list of annotations/labels that are extracted from pods/namespaces/deployments/replicasets/statefulsets/daemonsets/jobs/nodes and added to spans, metrics and logs.
 Each item is specified as a config of tag_name (representing the tag name to tag the spans with),
 key (representing the key used to extract value) and from (representing the kubernetes object used to extract the value).
-The "from" field has the following possible values: "pod", "namespace", "deployment", "statefulset", "daemonset", "job" and "node" and defaults to "pod" if none is specified.
+The "from" field has the following possible values: "pod", "namespace", "deployment", "replicaset", "statefulset", "daemonset", "job" and "node" and defaults to "pod" if none is specified.
 
-By default, extracting metadata from `Deployments`, `StatefulSets`, `DaemonSets` and `Jobs` is disabled. Enabling extraction of these metadata comes with an extra memory consumption cost.
+By default, extracting metadata from `Deployments`, `ReplicaSets`, `StatefulSets`, `DaemonSets` and `Jobs` is disabled. Enabling extraction of these metadata comes with an extra memory consumption cost.
 
 A few examples to use this config are as follows:
 
@@ -510,7 +511,7 @@ processors:
 
 ## Cluster-scoped RBAC
 
-If you'd like to set up the k8sattributesprocessor to receive telemetry from across namespaces, it will need `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters. Additionally, when using `k8s.deployment.uid`, when using `k8s.deployment.name` with the deprecated `deployment_name_from_replicaset: false`, or when extracting labels or annotations with `from: deployment`, the processor needs `get`, `watch` and `list` permissions for `replicasets` resources.
+If you'd like to set up the k8sattributesprocessor to receive telemetry from across namespaces, it will need `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters. Additionally, when using `k8s.deployment.uid`, when using `k8s.deployment.name` with the deprecated `deployment_name_from_replicaset: false`, or when extracting labels or annotations with `from: deployment` or `from: replicaset`, the processor needs `get`, `watch` and `list` permissions for `replicasets` resources.
 
 When using `k8s.node.uid` or extracting metadata from `node`, the processor needs `get`, `watch` and `list` permissions for `nodes` resources.
 
@@ -566,7 +567,7 @@ k8s_attributes:
   filter:
     namespace: <WORKLOAD_NAMESPACE>
 ```
-With the namespace filter set, the processor will only look up pods and replicasets (when ReplicaSet lookup is needed, such as `deployment_name_from_replicaset: false`, `k8s.deployment.uid`, or deployment label/annotation extraction) in the selected namespace. Note that with just a role binding, the processor cannot query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor cannot set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
+With the namespace filter set, the processor will only look up pods and replicasets (when ReplicaSet lookup is needed, such as `deployment_name_from_replicaset: false`, `k8s.deployment.uid`, or deployment/replicaset label/annotation extraction) in the selected namespace. Note that with just a role binding, the processor cannot query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor cannot set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
 
 Please note, when extracting the workload related attributes, these workloads need to be present in the `Role` with the correct permissions. For example, an extraction of `k8s.deployment.label.*` attributes, `deployments` need to be present in `Role`.
 

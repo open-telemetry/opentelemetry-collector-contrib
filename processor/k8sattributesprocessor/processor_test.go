@@ -2341,6 +2341,35 @@ func TestGetAttributesForPodsDaemonSet(t *testing.T) {
 	assert.Nil(t, attrs)
 }
 
+func TestGetAttributesForPodsReplicaSet(t *testing.T) {
+	kc := &fakeClient{
+		ReplicaSets: map[string]*kube.ReplicaSet{
+			"replicaset-789": {
+				Name: "test-replicaset",
+				UID:  "replicaset-789",
+				Attributes: map[string]string{
+					"k8s.replicaset.name": "test-replicaset",
+					"k8s.replicaset.uid":  "replicaset-789",
+				},
+			},
+		},
+	}
+
+	p := &kubernetesprocessor{
+		kc: kc,
+	}
+
+	// Test getting attributes for existing replicaset
+	attrs := p.getAttributesForPodsReplicaSet("replicaset-789")
+	assert.NotNil(t, attrs)
+	assert.Equal(t, "test-replicaset", attrs["k8s.replicaset.name"])
+	assert.Equal(t, "replicaset-789", attrs["k8s.replicaset.uid"])
+
+	// Test getting attributes for non-existent replicaset
+	attrs = p.getAttributesForPodsReplicaSet("non-existent")
+	assert.Nil(t, attrs)
+}
+
 func TestGetAttributesForPodsJob(t *testing.T) {
 	kc := &fakeClient{
 		Jobs: map[string]*kube.Job{

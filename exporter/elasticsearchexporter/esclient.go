@@ -60,13 +60,32 @@ func countRetriesInterceptor() elastictransport.InterceptorFunc {
 func timeoutInterceptor(perRequestTimeout time.Duration) elastictransport.InterceptorFunc {
 	return func(next elastictransport.RoundTripFunc) elastictransport.RoundTripFunc {
 		return func(req *http.Request) (*http.Response, error) {
+			if perRequestTimeout <= 0 {
+				return next(req)
+			}
 			// ctx is not reused across retries
 			// Therefore, timeoutInterceptor would not result in nesting of WithTimeout
 			ctx, cancel := context.WithTimeout(req.Context(), perRequestTimeout)
-			defer cancel()
-			return next(req.WithContext(ctx))
+			res, err := next(req.WithContext(ctx))
+			if err != nil {
+				cancel()
+				return res, err
+			}
+			// Cancel the context once the body is read/discarded.
+			res.Body = &cancelOnCloseBody{ReadCloser: res.Body, cancel: cancel}
+			return res, nil
 		}
 	}
+}
+
+type cancelOnCloseBody struct {
+	io.ReadCloser
+	cancel context.CancelFunc
+}
+
+func (b *cancelOnCloseBody) Close() error {
+	defer b.cancel()
+	return b.ReadCloser.Close()
 }
 
 // clientLogger implements the estransport.Logger interface

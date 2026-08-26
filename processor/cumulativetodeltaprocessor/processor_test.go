@@ -120,10 +120,6 @@ func (tm testHistogramMetric) addToMetrics(ms pmetric.MetricSlice, now time.Time
 	}
 }
 
-func ptr[T any](v T) *T {
-	return &v
-}
-
 type testExponentialHistogramPoint struct {
 	startTs         int64
 	ts              int64
@@ -743,9 +739,9 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 								startTs:         1,
 								ts:              2,
 								count:           10,
-								sum:             ptr(10.0),
-								min:             ptr(1.0),
-								max:             ptr(1.0),
+								sum:             new(10.0),
+								min:             new(1.0),
+								max:             new(1.0),
 								scale:           0, // base == 2
 								positiveOffset:  -1,
 								positiveBuckets: []uint64{10}, // ]0.5, 1]
@@ -755,9 +751,9 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 								startTs:         1,
 								ts:              3,
 								count:           30,
-								sum:             ptr(-10.0),
-								min:             ptr(-4.0),
-								max:             ptr(1.0),
+								sum:             new(-10.0),
+								min:             new(-4.0),
+								max:             new(1.0),
 								scale:           0,
 								positiveOffset:  -1,
 								positiveBuckets: []uint64{10, 10}, // ]0.5, 1], ]1, 2]
@@ -769,9 +765,9 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 								startTs:         1,
 								ts:              4,
 								count:           30,
-								sum:             ptr(-10.0),
-								min:             ptr(-4.0),
-								max:             ptr(1.0),
+								sum:             new(-10.0),
+								min:             new(-4.0),
+								max:             new(1.0),
 								scale:           0,
 								positiveOffset:  -1,
 								positiveBuckets: []uint64{10, 10}, // ]0.5, 1], ]1, 2]
@@ -792,7 +788,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 								startTs:         1,
 								ts:              2,
 								count:           10,
-								sum:             ptr(10.0),
+								sum:             new(10.0),
 								scale:           0,
 								positiveOffset:  -1,
 								positiveBuckets: []uint64{10},
@@ -801,7 +797,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 								startTs:         2,
 								ts:              3,
 								count:           20,
-								sum:             ptr(-20.0),
+								sum:             new(-20.0),
 								scale:           0,
 								positiveOffset:  0,
 								positiveBuckets: []uint64{10},
@@ -811,7 +807,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 							{
 								startTs: 3,
 								ts:      4,
-								sum:     ptr(0.0),
+								sum:     new(0.0),
 							},
 						},
 					},
@@ -831,9 +827,9 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 								startTs:         1,
 								ts:              2,
 								count:           15,
-								sum:             ptr(20.0),
-								min:             ptr(1.0),
-								max:             ptr(2.0),
+								sum:             new(20.0),
+								min:             new(1.0),
+								max:             new(2.0),
 								scale:           0, // base == 2
 								positiveOffset:  -1,
 								positiveBuckets: []uint64{10, 5}, // ]0.5, 1], ]1, 2]
@@ -845,9 +841,9 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 								startTs:         1,
 								ts:              3,
 								count:           45,
-								sum:             ptr(5.0),
-								min:             ptr(-4.0),
-								max:             ptr(2.0),
+								sum:             new(5.0),
+								min:             new(-4.0),
+								max:             new(2.0),
 								zeroThreshold:   1.0,
 								zeroCount:       20,
 								scale:           -1,
@@ -870,7 +866,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 								startTs:         1,
 								ts:              2,
 								count:           15,
-								sum:             ptr(20.0),
+								sum:             new(20.0),
 								scale:           0,
 								positiveOffset:  -1,
 								positiveBuckets: []uint64{10, 5},
@@ -879,7 +875,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 								startTs:         2,
 								ts:              3,
 								count:           30,
-								sum:             ptr(-15.0),
+								sum:             new(-15.0),
 								zeroThreshold:   1.0,
 								zeroCount:       10,
 								scale:           -1,
