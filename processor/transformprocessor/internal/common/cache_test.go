@@ -23,7 +23,7 @@ func TestLoadContextCache(t *testing.T) {
 		cache := make(map[ContextID]*pcommon.Map)
 		result := LoadContextCache(cache, Resource, true)
 		require.NotNil(t, result)
-		assert.Equal(t, 1, len(cache))
+		assert.Len(t, cache, 1)
 		assert.Equal(t, result, cache[Resource])
 	})
 
@@ -41,7 +41,7 @@ func TestLoadContextCache(t *testing.T) {
 		require.NotNil(t, resourceCache)
 		require.NotNil(t, logCache)
 		assert.NotSame(t, resourceCache, logCache)
-		assert.Equal(t, 2, len(cache))
+		assert.Len(t, cache, 2)
 	})
 
 	t.Run("writes are visible through subsequent lookups", func(t *testing.T) {
