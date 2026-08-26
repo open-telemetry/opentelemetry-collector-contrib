@@ -63,6 +63,17 @@ func TestFileProfilesReceiver(t *testing.T) {
 	expected, err := unmarshaler.UnmarshalProfiles(b[:len(b)-1]) // remove trailing newline
 	assert.NoError(t, err)
 
+	// include_file_name is true by default. Profile attributes live in the shared
+	// dictionary, so the expected key and key/value pair are appended to it and the
+	// profile references the new attribute by index.
+	expectedDic := expected.Dictionary()
+	expectedKvu := expectedDic.AttributeTable().AppendEmpty()
+	expectedKvu.SetKeyStrindex(int32(expectedDic.StringTable().Len()))
+	expectedDic.StringTable().Append("log.file.name")
+	expectedKvu.Value().SetStr("profiles.json")
+	expected.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).
+		AttributeIndices().Append(int32(expectedDic.AttributeTable().Len() - 1))
+
 	require.Len(t, sink.AllProfiles(), 1)
 	assert.Equal(t, expected, sink.AllProfiles()[0])
 	err = receiver.Shutdown(t.Context())
