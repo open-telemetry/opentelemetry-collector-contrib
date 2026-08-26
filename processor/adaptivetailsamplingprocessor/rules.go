@@ -34,6 +34,18 @@ type rule struct {
 	logger      *zap.Logger
 	evalErrs    metric.Int64Counter
 	ruleAttrSet metric.MeasurementOption
+
+	// samplerTypePrefix identifies the underlying dynsampler-go
+	// implementation ("adaptive_percentage", "adaptive_throughput_ema",
+	// "adaptive_throughput_windowed"), or "" for non-dynsampler samplers
+	// (always_sample, probabilistic). It doubles as the sampler_type
+	// attribute value and, with a trailing "_" appended, as the prefix
+	// passed to the sampler's GetMetrics; that prefix must stay the same
+	// for the lifetime of the rule since dynsampler-go caches it.
+	samplerTypePrefix string
+	// dynsamplerAttrSet carries the rule and sampler_type attributes for
+	// metrics derived from the sampler's GetMetrics output.
+	dynsamplerAttrSet metric.MeasurementOption
 }
 
 // matches returns true when the rule's conditions are satisfied by the
@@ -123,6 +135,24 @@ func (r *rule) recordEvalErr(ctx context.Context, err error) {
 	}
 }
 
+// samplerTypePrefix identifies the dynsampler-go implementation backing sc,
+// used as the sampler_type attribute on metrics derived from it and, with a
+// trailing "_" appended, as the GetMetrics prefix. Returns "" for samplers
+// not backed by dynsampler-go (always_sample, probabilistic).
+func samplerTypePrefix(sc SamplerConfig) string {
+	switch sc.Type {
+	case AdaptivePercentage:
+		return "adaptive_percentage"
+	case AdaptiveThroughput:
+		if sc.effectiveAlgorithm() == AlgorithmWindowed {
+			return "adaptive_throughput_windowed"
+		}
+		return "adaptive_throughput_ema"
+	default:
+		return ""
+	}
+}
+
 // compileRule turns a config rule into a runtime rule. The sampler must be
 // supplied by the caller because constructing it depends on processor-wide
 // resources.
@@ -138,15 +168,21 @@ func compileRule(cfg *RuleConfig, s sampler.Sampler, fingerprint []sampler.Selec
 			break
 		}
 	}
+	typePrefix := samplerTypePrefix(cfg.Sampler)
 	r := &rule{
-		name:             cfg.Name,
-		sampler:          s,
-		fingerprint:      fingerprint,
-		needsRootMatcher: needsRoot,
-		matchMode:        matchMode,
-		logger:           settings.Logger,
-		evalErrs:         evalErrs,
-		ruleAttrSet:      metric.WithAttributes(attribute.String("rule", cfg.Name)),
+		name:              cfg.Name,
+		sampler:           s,
+		fingerprint:       fingerprint,
+		needsRootMatcher:  needsRoot,
+		matchMode:         matchMode,
+		logger:            settings.Logger,
+		evalErrs:          evalErrs,
+		ruleAttrSet:       metric.WithAttributes(attribute.String("rule", cfg.Name)),
+		samplerTypePrefix: typePrefix,
+		dynsamplerAttrSet: metric.WithAttributes(
+			attribute.String("rule", cfg.Name),
+			attribute.String("sampler_type", typePrefix),
+		),
 	}
 	if len(cfg.Conditions) == 0 {
 		return r, nil
