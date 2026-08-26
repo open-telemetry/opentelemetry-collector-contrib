@@ -238,8 +238,9 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.DataPointCount(), err)
 	if err != nil {
 		prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
-		// The consumer reports one error for the whole batch and no partial count, so the batch
-		// counts as unwritten and the resource cache is not updated either.
+		// One error covers the batch and carries no accepted count, so the receiver cannot confirm
+		// a write. It reports zero and drops its cache updates, while a fanout consumer may still
+		// have passed the batch to some of the consumers behind it.
 		promremote.WriteResponseStats{}.SetHeaders(w)
 		if consumererror.IsPermanent(err) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
