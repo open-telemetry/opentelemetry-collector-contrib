@@ -169,6 +169,7 @@ components:
     - pkg/prometheus
     - pkg/resourcetotelemetry
     - pkg/sampling
+    - pkg/semconvtest
     - pkg/skywalking
     - pkg/stanza
     - pkg/stanza/operator/input/journald
@@ -185,6 +186,7 @@ components:
     - pkg/xk8stest
     - pkg/xstreamencoding
     - pkg/zipkin
+    - processor/adaptive_tail_sampling
     - processor/akamaidetector
     - processor/alibabaecsdetector
     - processor/attributes
@@ -197,7 +199,6 @@ components:
     - processor/delta_to_rate
     - processor/digitaloceandetector
     - processor/drain
-    - processor/dynamic_sampling
     - processor/dynatracedetector
     - processor/filter
     - processor/gen_ai_normalizer
@@ -225,6 +226,7 @@ components:
     - processor/resource_detection
     - processor/scalewaydetector
     - processor/schema
+    - processor/signing
     - processor/span
     - processor/span_pruning
     - processor/sumologic
