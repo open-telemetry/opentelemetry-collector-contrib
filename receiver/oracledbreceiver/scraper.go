@@ -7,7 +7,6 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -1898,7 +1897,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 				commandType:   commandType,
 				firstLoadTime: row[firstLoadTimeAttr],
 				lastLoadTime:  row[lastLoadTimeAttr],
-				planHashValue: hex.EncodeToString([]byte(row[planHashValueAttr])),
+				planHashValue: row[planHashValueAttr],
 				service:       row[serviceAttr],
 				dbNamespace:   row[dbNamespaceAttr],
 			}
@@ -2078,7 +2077,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 			continue
 		}
 
-		queryPlanHashVal := hex.EncodeToString([]byte(row[planHashValue]))
+		queryPlanHashVal := row[planHashValue]
 
 		queryDuration, err := strconv.ParseFloat(row[duration], 64)
 		if err != nil {
