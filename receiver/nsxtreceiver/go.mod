@@ -6,7 +6,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.159.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.159.0
-	github.com/stretchr/testify v1.12.0
+	github.com/stretchr/testify v1.12.1
 	github.com/vmware/go-vmware-nsxt v0.0.0-20230223012718-d31b8a1ca05e
 	go.opentelemetry.io/collector/component v1.65.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/component/componenttest v0.159.1-0.20260824174011-67fef8cb7049
