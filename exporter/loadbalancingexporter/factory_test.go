@@ -97,7 +97,7 @@ func TestBuildExporterConfig(t *testing.T) {
 	assert.Equal(t, grpcSettings, exporterCfg.ClientConfig)
 
 	assert.Equal(t, defaultCfg.TimeoutConfig, exporterCfg.TimeoutConfig)
-	assert.Equal(t, defaultCfg.QueueConfig, exporterCfg.QueueConfig)
+	assert.False(t, exporterCfg.QueueConfig.HasValue())
 	assert.Equal(t, defaultCfg.RetryConfig, exporterCfg.RetryConfig)
 }
 

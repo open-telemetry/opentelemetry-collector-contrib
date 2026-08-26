@@ -139,9 +139,8 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		}
 	}
 
-	var retryableErrs, permanentErrs []error
-	var failed plog.Logs
-	hasFailure := false
+	var failures backendFailures
+	var retryable []plog.Logs
 	for exp, lds := range logsByExporter {
 		start := time.Now()
 		err := exp.ConsumeLogs(ctx, lds)
@@ -155,22 +154,22 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		}
 		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
 		e.logger.Debug("failed to export logs", zap.Error(err))
-		if consumererror.IsPermanent(err) {
-			permanentErrs = append(permanentErrs, err)
-		} else {
-			retryableErrs = append(retryableErrs, err)
+		if failures.add(err) {
+			retryable = append(retryable, lds)
 		}
-		if !hasFailure {
-			failed = plog.NewLogs()
-			hasFailure = true
-		}
-		copyLogsInto(failed, lds)
 	}
 
-	if hasFailure {
-		return consumererror.NewLogs(joinPartialFailure(retryableErrs, permanentErrs), failed)
+	if failures.hasPermanent {
+		return failures.err
 	}
-	return nil
+	if len(retryable) == 0 {
+		return nil
+	}
+	failed := plog.NewLogs()
+	for _, lds := range retryable {
+		copyLogsInto(failed, lds)
+	}
+	return consumererror.NewLogs(failures.err, failed)
 }
 
 func splitLogsByServiceName(ld plog.Logs) map[string]plog.Logs {

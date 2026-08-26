@@ -145,9 +145,8 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 		metrics.Merge(expMetrics, mds)
 	}
 
-	var retryableErrs, permanentErrs []error
-	var failed pmetric.Metrics
-	hasFailure := false
+	var failures backendFailures
+	var retryable []pmetric.Metrics
 	for exp, mds := range metricsByExporter {
 		start := time.Now()
 		err := exp.ConsumeMetrics(ctx, mds)
@@ -161,22 +160,22 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 		}
 		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
 		e.logger.Debug("failed to export metrics", zap.Error(err))
-		if consumererror.IsPermanent(err) {
-			permanentErrs = append(permanentErrs, err)
-		} else {
-			retryableErrs = append(retryableErrs, err)
+		if failures.add(err) {
+			retryable = append(retryable, mds)
 		}
-		if !hasFailure {
-			failed = pmetric.NewMetrics()
-			hasFailure = true
-		}
-		copyMetricsInto(failed, mds)
 	}
 
-	if hasFailure {
-		return consumererror.NewMetrics(joinPartialFailure(retryableErrs, permanentErrs), failed)
+	if failures.hasPermanent {
+		return failures.err
 	}
-	return nil
+	if len(retryable) == 0 {
+		return nil
+	}
+	failed := pmetric.NewMetrics()
+	for _, mds := range retryable {
+		copyMetricsInto(failed, mds)
+	}
+	return consumererror.NewMetrics(failures.err, failed)
 }
 
 func splitMetricsByResourceServiceName(md pmetric.Metrics) (map[string]pmetric.Metrics, []error) {

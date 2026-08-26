@@ -413,120 +413,38 @@ func TestConsumeLogs_PartialFailureReturnsFailedSubset(t *testing.T) {
 	require.NoError(t, plogtest.CompareLogs(originalCopy, ld))
 }
 
-// TestConsumeLogs_TotalFailureReturnsFullData verifies that when every backend fails, the
-// embedded failed data covers the full input, and the caller's input logs are left
-// untouched (#50437).
-func TestConsumeLogs_TotalFailureReturnsFullData(t *testing.T) {
+func TestConsumeLogs_MixedFailurePreservesWholeRequestError(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 
-	err1 := errors.New("endpoint-1: unreachable")
-	err2 := errors.New("endpoint-2: unreachable")
-	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
-		failWith := err1
-		if endpoint == endpointWithPort("endpoint-2") {
-			failWith = err2
-		}
-		return newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
-			return failWith
-		}), nil
-	}
-
-	cfg := serviceBasedRoutingConfig()
-	endpoints := []string{"endpoint-1", "endpoint-2"}
-
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
-	require.NoError(t, err)
-
-	p, err := newLogsExporter(ts, cfg)
-	require.NoError(t, err)
-
-	lb.addMissingExporters(t.Context(), endpoints)
-	lb.res = &mockResolver{
-		triggerCallbacks: true,
-		onResolve: func(context.Context) ([]string, error) {
-			return endpoints, nil
-		},
-	}
-	p.loadBalancer = lb
-
-	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, p.Shutdown(t.Context()))
-	}()
-
-	svc1, svc2 := logsRoutedToBothEndpoints(t, lb.ring, "endpoint-1", "endpoint-2")
-
-	ld := plog.NewLogs()
-	rl1 := ld.ResourceLogs().AppendEmpty()
-	rl1.Resource().Attributes().PutStr("service.name", svc1)
-	rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log one")
-	rl2 := ld.ResourceLogs().AppendEmpty()
-	rl2.Resource().Attributes().PutStr("service.name", svc2)
-	rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log two")
-
-	originalCopy := plog.NewLogs()
-	ld.CopyTo(originalCopy)
-
-	res := p.ConsumeLogs(t.Context(), ld)
-
-	require.Error(t, res)
-	var partial consumererror.Logs
-	require.True(t, errors.As(res, &partial), "error must be a consumererror.Logs")
-	failed := partial.Data()
-
-	require.NoError(t, plogtest.CompareLogs(originalCopy, failed,
-		plogtest.IgnoreResourceLogsOrder(),
-		plogtest.IgnoreScopeLogsOrder(),
-		plogtest.IgnoreLogRecordsOrder(),
-	))
-
-	// Mutating the extracted failed data must not be observable on the original input:
-	// proves the embedded data is a deep copy, not an alias into ld's buffers.
-	mutateLogRecordBodies(failed, "mutated")
-
-	// The original input must be left untouched.
-	require.NoError(t, plogtest.CompareLogs(originalCopy, ld,
-		plogtest.IgnoreResourceLogsOrder(),
-		plogtest.IgnoreScopeLogsOrder(),
-		plogtest.IgnoreLogRecordsOrder(),
-	))
-}
-
-// TestConsumeLogs_MixedPermanentAndRetryableFailure verifies that when one backend fails
-// permanently and another fails retryably, ConsumeLogs returns an error that is NOT
-// permanent - so a parent retry sender still fires - and that the embedded data covers BOTH
-// backends' resource logs. The permanent backend's logs stay embedded (rather than being
-// dropped) because dropping them would let a later successful retry of the retryable
-// remainder report the whole original request as sent, hiding the permanent loss (#50437).
-func TestConsumeLogs_MixedPermanentAndRetryableFailure(t *testing.T) {
-	ts, tb := getTelemetryAssets(t)
-
-	retryableErr := errors.New("endpoint-retryable: unreachable")
+	retryableErr := errors.New("endpoint-retryable: unavailable")
 	permanentErr := consumererror.NewPermanent(errors.New("endpoint-permanent: bad data"))
+	var goodCalls, retryableCalls, permanentCalls int
 	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
-		permanent := endpoint == endpointWithPort("endpoint-permanent")
 		return newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
-			if permanent {
+			switch endpoint {
+			case endpointWithPort("endpoint-retryable"):
+				retryableCalls++
+				return retryableErr
+			case endpointWithPort("endpoint-permanent"):
+				permanentCalls++
 				return permanentErr
+			default:
+				goodCalls++
+				return nil
 			}
-			return retryableErr
 		}), nil
 	}
 
-	endpoints := []string{"endpoint-retryable", "endpoint-permanent"}
+	endpoints := []string{"endpoint-good", "endpoint-retryable", "endpoint-permanent"}
 	cfg := &Config{
-		Resolver: ResolverSettings{
-			Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
-		},
-		RoutingKey: "service",
+		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
+		RoutingKey: svcRoutingStr,
 	}
-
 	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
 	require.NoError(t, err)
 
 	p, err := newLogsExporter(ts, cfg)
 	require.NoError(t, err)
-	require.Equal(t, svcRouting, p.routingKey)
 
 	lb.addMissingExporters(t.Context(), endpoints)
 	lb.res = &mockResolver{
@@ -542,9 +460,12 @@ func TestConsumeLogs_MixedPermanentAndRetryableFailure(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	retryableSvc, permanentSvc := logsRoutedToBothEndpoints(t, lb.ring, "endpoint-retryable", "endpoint-permanent")
-
+	goodSvc, permanentSvc := logsRoutedToBothEndpoints(t, lb.ring, endpoints[0], endpoints[2])
+	retryableSvc, _ := logsRoutedToBothEndpoints(t, lb.ring, endpoints[1], endpoints[2])
 	ld := plog.NewLogs()
+	goodRL := ld.ResourceLogs().AppendEmpty()
+	goodRL.Resource().Attributes().PutStr("service.name", goodSvc)
+	goodRL.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("good log")
 	retryableRL := ld.ResourceLogs().AppendEmpty()
 	retryableRL.Resource().Attributes().PutStr("service.name", retryableSvc)
 	retryableRL.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("retryable log")
@@ -555,101 +476,18 @@ func TestConsumeLogs_MixedPermanentAndRetryableFailure(t *testing.T) {
 	res := p.ConsumeLogs(t.Context(), ld)
 
 	require.Error(t, res)
-	assert.False(t, consumererror.IsPermanent(res), "a mixed failure must stay retryable so the retry sender still fires")
-
+	assert.True(t, consumererror.IsPermanent(res))
+	assert.ErrorIs(t, res, retryableErr)
+	assert.ErrorIs(t, res, permanentErr)
 	var partial consumererror.Logs
-	require.True(t, errors.As(res, &partial), "error must be a consumererror.Logs")
-	failed := partial.Data()
-
-	expectedFailed := plog.NewLogs()
-	retryableExpectedRL := expectedFailed.ResourceLogs().AppendEmpty()
-	retryableExpectedRL.Resource().Attributes().PutStr("service.name", retryableSvc)
-	retryableExpectedRL.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("retryable log")
-	permanentExpectedRL := expectedFailed.ResourceLogs().AppendEmpty()
-	permanentExpectedRL.Resource().Attributes().PutStr("service.name", permanentSvc)
-	permanentExpectedRL.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("permanent log")
-	require.NoError(t, plogtest.CompareLogs(expectedFailed, failed, plogtest.IgnoreResourceLogsOrder()))
+	assert.False(t, errors.As(res, &partial))
+	assert.Equal(t, 1, goodCalls)
+	assert.Equal(t, 1, retryableCalls)
+	assert.Equal(t, 1, permanentCalls)
 }
 
-// TestConsumeLogs_AllPermanentFailureIsPermanent verifies that when every backend fails
-// permanently, the returned error still satisfies consumererror.IsPermanent - so the parent
-// retry sender drops the batch instead of retrying forever - and the embedded failed data
-// covers every permanently-failed backend's resource logs (#50437).
-func TestConsumeLogs_AllPermanentFailureIsPermanent(t *testing.T) {
-	ts, tb := getTelemetryAssets(t)
-
-	err1 := consumererror.NewPermanent(errors.New("endpoint-1: bad data"))
-	err2 := consumererror.NewPermanent(errors.New("endpoint-2: bad data"))
-	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
-		failWith := err1
-		if endpoint == endpointWithPort("endpoint-2") {
-			failWith = err2
-		}
-		return newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
-			return failWith
-		}), nil
-	}
-
-	cfg := serviceBasedRoutingConfig()
-	endpoints := []string{"endpoint-1", "endpoint-2"}
-
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
-	require.NoError(t, err)
-
-	p, err := newLogsExporter(ts, cfg)
-	require.NoError(t, err)
-
-	lb.addMissingExporters(t.Context(), endpoints)
-	lb.res = &mockResolver{
-		triggerCallbacks: true,
-		onResolve: func(context.Context) ([]string, error) {
-			return endpoints, nil
-		},
-	}
-	p.loadBalancer = lb
-
-	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, p.Shutdown(t.Context()))
-	}()
-
-	svc1, svc2 := logsRoutedToBothEndpoints(t, lb.ring, "endpoint-1", "endpoint-2")
-
-	ld := plog.NewLogs()
-	rl1 := ld.ResourceLogs().AppendEmpty()
-	rl1.Resource().Attributes().PutStr("service.name", svc1)
-	rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log one")
-	rl2 := ld.ResourceLogs().AppendEmpty()
-	rl2.Resource().Attributes().PutStr("service.name", svc2)
-	rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log two")
-
-	originalCopy := plog.NewLogs()
-	ld.CopyTo(originalCopy)
-
-	res := p.ConsumeLogs(t.Context(), ld)
-
-	require.Error(t, res)
-	assert.True(t, consumererror.IsPermanent(res), "an all-permanent failure must stay permanent so the retry sender drops it")
-
-	var partial consumererror.Logs
-	require.True(t, errors.As(res, &partial), "error must be a consumererror.Logs")
-	failed := partial.Data()
-
-	require.NoError(t, plogtest.CompareLogs(originalCopy, failed,
-		plogtest.IgnoreResourceLogsOrder(),
-		plogtest.IgnoreScopeLogsOrder(),
-		plogtest.IgnoreLogRecordsOrder(),
-	))
-}
-
-// TestConsumeLogs_RetryRecordsOriginalItemCountNotResidual documents the metric semantics
-// left open by #50437: the parent exporterhelper's retry sender extracts and resends only
-// the residual failed subset via OnError/consumererror.Logs (proved here by goodCalls
-// staying at 1 across every retry), but the outer obs-report sender's
-// otelcol_exporter_send_failed_log_records metric is recorded once per top-level Send call,
-// using the ORIGINAL request's item count captured before the retry loop starts. So once
-// retries are exhausted, the metric still reports every record in the original request, not
-// just the ones that kept failing.
+// The retry sender resends only the failed subset. ObsReportSender records an exhausted
+// retry with the original request count, including records delivered by earlier attempts.
 func TestConsumeLogs_RetryRecordsOriginalItemCountNotResidual(t *testing.T) {
 	ctx := t.Context()
 	shutdownCtx := context.Background() //nolint:usetesting // Context must outlive test for cleanup
@@ -741,142 +579,6 @@ func TestConsumeLogs_RetryRecordsOriginalItemCountNotResidual(t *testing.T) {
 	// because the metric is recorded against the original 2-record request, not the 1-record
 	// residual that was still failing when retries ran out.
 	assert.Equal(t, int64(2), totalFailed)
-}
-
-// TestConsumeLogs_MixedFailureConvergesToPermanentAfterRetry drives ConsumeLogs through the
-// real exporterhelper retry chain to prove the mixed-failure contract converges rather than
-// looping or hiding loss: round 1 fails one endpoint retryably and one permanently, so the
-// retry sender re-sends both (per the mixed-case contract: permanent data stays embedded so
-// a later success on the retryable remainder can't make ObsReportSender count the permanent
-// loss as delivered); round 2's retryable endpoint now succeeds, leaving only the permanent
-// failure, so the returned error becomes permanent and the retry sender stops. Also asserts
-// the resulting observation via a real componenttest.NewTelemetry harness: the permanently
-// failed batch is never counted in otelcol_exporter_sent_log_records (#50437).
-func TestConsumeLogs_MixedFailureConvergesToPermanentAfterRetry(t *testing.T) {
-	ctx := t.Context()
-	shutdownCtx := context.Background() //nolint:usetesting // Context must outlive test for cleanup
-	telemetry := componenttest.NewTelemetry()
-	t.Cleanup(func() {
-		require.NoError(t, telemetry.Shutdown(shutdownCtx))
-	})
-
-	parentParams := exportertest.NewNopSettings(metadata.Type)
-	parentParams.TelemetrySettings = telemetry.NewTelemetrySettings()
-
-	endpoints := []string{"endpoint-healthy", "endpoint-flaky", "endpoint-permanent"}
-	cfg := &Config{
-		Resolver: ResolverSettings{
-			Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
-		},
-		RoutingKey: "service",
-		BackOffConfig: configretry.BackOffConfig{
-			Enabled:             true,
-			InitialInterval:     time.Millisecond,
-			RandomizationFactor: 0,
-			Multiplier:          1,
-			MaxInterval:         time.Millisecond,
-			MaxElapsedTime:      50 * time.Millisecond,
-		},
-	}
-
-	logsExporter, err := newLogsExporter(parentParams, cfg)
-	require.NoError(t, err)
-	require.Equal(t, svcRouting, logsExporter.routingKey)
-
-	retryableErr := errors.New("endpoint-flaky: unreachable")
-	permanentErr := consumererror.NewPermanent(errors.New("endpoint-permanent: bad data"))
-	var healthyCalls, flakyCalls, permanentCalls atomic.Int64
-	logsExporter.loadBalancer.componentFactory = func(_ context.Context, endpoint string) (component.Component, error) {
-		switch endpoint {
-		case endpointWithPort("endpoint-flaky"):
-			return newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
-				if flakyCalls.Add(1) == 1 {
-					return retryableErr
-				}
-				return nil
-			}), nil
-		case endpointWithPort("endpoint-permanent"):
-			return newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
-				permanentCalls.Add(1)
-				return permanentErr
-			}), nil
-		default:
-			return newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
-				healthyCalls.Add(1)
-				return nil
-			}), nil
-		}
-	}
-
-	wrapped, err := exporterhelper.NewLogs(
-		ctx,
-		parentParams,
-		cfg,
-		logsExporter.ConsumeLogs,
-		exporterhelper.WithStart(logsExporter.Start),
-		exporterhelper.WithShutdown(logsExporter.Shutdown),
-		exporterhelper.WithCapabilities(logsExporter.Capabilities()),
-		exporterhelper.WithRetry(cfg.BackOffConfig),
-	)
-	require.NoError(t, err)
-
-	require.NoError(t, wrapped.Start(ctx, componenttest.NewNopHost()))
-	t.Cleanup(func() {
-		require.NoError(t, wrapped.Shutdown(ctx))
-	})
-
-	svcByEndpoint := map[string]string{}
-	for i := 0; len(svcByEndpoint) < len(endpoints); i++ {
-		name := fmt.Sprintf("svc-%d", i)
-		ep := logsExporter.loadBalancer.ring.endpointFor([]byte(name))
-		if _, ok := svcByEndpoint[ep]; !ok {
-			svcByEndpoint[ep] = name
-		}
-		require.Less(t, i, 1000, "could not find distinct service names for all endpoints")
-	}
-
-	ld := plog.NewLogs()
-	for _, label := range []string{"healthy", "flaky", "permanent"} {
-		rl := ld.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutStr("service.name", svcByEndpoint["endpoint-"+label])
-		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(label + " log")
-	}
-
-	finalErr := wrapped.ConsumeLogs(ctx, ld)
-
-	require.Error(t, finalErr)
-	assert.True(t, consumererror.IsPermanent(finalErr), "once only the permanent endpoint is still failing, the error must be permanent so retry stops")
-	assert.Equal(t, int64(1), healthyCalls.Load(), "the healthy endpoint must never be resent once it succeeds")
-	assert.Equal(t, int64(2), flakyCalls.Load(), "the flaky endpoint is resent exactly once, on the round its own failure was retryable")
-	assert.Equal(t, int64(2), permanentCalls.Load(), "the permanent endpoint is re-attempted alongside the retryable remainder before the batch converges to permanent-only")
-
-	// ObsReportSender wraps RetrySender, so it calls next.Send exactly once for the whole
-	// two-round retry sequence, reading the original 3-record request's item count before
-	// the retry loop runs and judging success/failure once for that single call. Because
-	// that call ultimately returns the permanent error, ObsReportSender records the entire
-	// original request - including the healthy endpoint's already-delivered record - as
-	// failed, never as sent. Observed empirically (not assumed): sent=0, failed=3. This is
-	// the property the mixed-outcome contract exists to guarantee: permanently-lost data
-	// (and, as a side effect here, the record that did succeed) is never reported as sent.
-	sentMetric, err := telemetry.GetMetric("otelcol_exporter_sent_log_records")
-	require.NoError(t, err)
-	sentSum, ok := sentMetric.Data.(metricdata.Sum[int64])
-	require.True(t, ok)
-	var totalSent int64
-	for _, dp := range sentSum.DataPoints {
-		totalSent += dp.Value
-	}
-	assert.Equal(t, int64(0), totalSent, "a batch that ends in a permanent error must never report any records as sent, even ones an earlier round delivered")
-
-	failedMetric, err := telemetry.GetMetric("otelcol_exporter_send_failed_log_records")
-	require.NoError(t, err)
-	failedSum, ok := failedMetric.Data.(metricdata.Sum[int64])
-	require.True(t, ok)
-	var totalFailed int64
-	for _, dp := range failedSum.DataPoints {
-		totalFailed += dp.Value
-	}
-	assert.Equal(t, int64(3), totalFailed, "the full original 3-record request is recorded as failed, per the send_failed_* metric semantics documented in TestConsumeLogs_RetryRecordsOriginalItemCountNotResidual")
 }
 
 func generateSingleLogRecord() plog.Logs {

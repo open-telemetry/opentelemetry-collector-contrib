@@ -1,35 +1,12 @@
-# Use this changelog template to create an entry for release notes.
-
-# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
 change_type: enhancement
-
-# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
 component: exporter/load_balancing
-
-# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Return partial-failure errors from ConsumeTraces/ConsumeMetrics/ConsumeLogs so a parent retry re-sends only the data destined for the endpoints that failed, instead of the whole fan-out.
-
-# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+note: Return partial-failure errors so exporter-level retries resend only data for retryably failed endpoints.
 issues: [50437]
-
-# (Optional) One or more lines of additional information to render under the primary note.
-# These lines will be padded with 2 spaces and then inserted directly into the document.
-# Use pipe (|) for multiline entries.
 subtext: |
-  When a batch is split across several backends and only some of the per-backend sends fail,
-  the exporter now returns a consumererror.Traces/Metrics/Logs carrying a deep copy of just
-  the retryably-failed backends' data; permanently-failed backends are named in the error
-  message only and never embedded, so they are never replayed. The top-level
-  retry_on_failure setting documented in the exporter's README is what narrows a resend to
-  this subset: without it enabled, a parent retry resends every endpoint's data on every
-  attempt, duplicating traffic to endpoints that had already succeeded. sending_queue only
-  wraps the retry loop; it does not narrow what gets requeued.
-
-# If your change doesn't affect end users or the exported elements of any package,
-# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
-# Optional: The change log or logs in which this entry should be included.
-# e.g. '[user]' or '[user, api]'
-# Include 'user' if the change is relevant to end users.
-# Include 'api' if there is a change to a library API.
-# Default: '[user]'
+  Partial retry applies only when every failed child send is retryable. Any permanent child
+  failure preserves the existing whole-request error behaviour. Partial retry requires
+  retry_on_failure at the load-balancing exporter level and
+  protocol.otlp.sending_queue.enabled: false. Child retries run before exporter-level retry.
+  If exporter-level retry exhausts, parent failed-item metrics still count the original
+  request, including telemetry delivered during earlier attempts.
 change_logs: [user]

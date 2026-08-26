@@ -299,6 +299,34 @@ func tracesRoutedToBothEndpoints(t *testing.T, ring *hashRing, endpointA, endpoi
 	return tidA, tidB
 }
 
+func routingValuesForBothEndpoints(
+	t *testing.T,
+	ring *hashRing,
+	endpointA,
+	endpointB string,
+	encode func(string) []byte,
+) (valueA, valueB string) {
+	for i := range 1000 {
+		value := fmt.Sprintf("route-%d", i)
+		switch ring.endpointFor(encode(value)) {
+		case endpointA:
+			if valueA == "" {
+				valueA = value
+			}
+		case endpointB:
+			if valueB == "" {
+				valueB = value
+			}
+		}
+		if valueA != "" && valueB != "" {
+			break
+		}
+	}
+	require.NotEmpty(t, valueA, "no routing value maps to %q", endpointA)
+	require.NotEmpty(t, valueB, "no routing value maps to %q", endpointB)
+	return valueA, valueB
+}
+
 // spansByTraceID collects every span in td keyed by trace ID, along with its "which"
 // attribute, for content comparisons that don't depend on resource/scope nesting shape.
 func spansByTraceID(td ptrace.Traces) map[pcommon.TraceID]string {
@@ -334,178 +362,151 @@ func mutateSpansWhichAttr(td ptrace.Traces, value string) {
 	}
 }
 
-// TestConsumeTracesByID_PartialFailureReturnsFailedSubset verifies that when one of two
-// backends fails, ConsumeTraces returns a consumererror.Traces embedding only the spans
-// destined for the failed backend, and leaves the caller's input traces untouched (#50437).
-func TestConsumeTracesByID_PartialFailureReturnsFailedSubset(t *testing.T) {
-	ts, tb := getTelemetryAssets(t)
+func TestConsumeTraces_PartialFailureReturnsFailedSubset(t *testing.T) {
+	const (
+		goodEndpoint = "endpoint-good"
+		badEndpoint  = "endpoint-bad"
+	)
+	endpoints := []string{goodEndpoint, badEndpoint}
 
-	badErr := errors.New("endpoint-bad: unreachable")
-	var goodCalls, badCalls int
-	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
-		bad := endpoint == endpointWithPort("endpoint-bad")
-		return newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
-			if bad {
-				badCalls++
-				return badErr
+	makeTraces := func(
+		goodTID,
+		badTID pcommon.TraceID,
+		goodRoute,
+		badRoute string,
+		setRoute func(ptrace.ResourceSpans, string),
+	) ptrace.Traces {
+		td := ptrace.NewTraces()
+		goodRS := td.ResourceSpans().AppendEmpty()
+		goodRS.Resource().Attributes().PutStr("res", "good")
+		setRoute(goodRS, goodRoute)
+		goodSpan := goodRS.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		goodSpan.SetTraceID(goodTID)
+		goodSpan.Attributes().PutStr("which", "good")
+
+		badRS := td.ResourceSpans().AppendEmpty()
+		badRS.Resource().Attributes().PutStr("res", "bad")
+		setRoute(badRS, badRoute)
+		badSpan := badRS.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		badSpan.SetTraceID(badTID)
+		badSpan.Attributes().PutStr("which", "bad")
+		return td
+	}
+
+	tests := []struct {
+		name            string
+		routingKey      string
+		routingAttrs    []string
+		expectedRouting routingKey
+		build           func(*testing.T, *hashRing) (ptrace.Traces, pcommon.TraceID, pcommon.TraceID)
+	}{
+		{
+			name:            "trace ID",
+			expectedRouting: traceIDRouting,
+			build: func(t *testing.T, ring *hashRing) (ptrace.Traces, pcommon.TraceID, pcommon.TraceID) {
+				goodTID, badTID := tracesRoutedToBothEndpoints(t, ring, goodEndpoint, badEndpoint)
+				return makeTraces(goodTID, badTID, "", "", func(ptrace.ResourceSpans, string) {}), goodTID, badTID
+			},
+		},
+		{
+			name:            "service",
+			routingKey:      svcRoutingStr,
+			expectedRouting: svcRouting,
+			build: func(t *testing.T, ring *hashRing) (ptrace.Traces, pcommon.TraceID, pcommon.TraceID) {
+				goodRoute, badRoute := routingValuesForBothEndpoints(t, ring, goodEndpoint, badEndpoint, func(value string) []byte {
+					return fmt.Appendf(nil, "service.name=%s|", value)
+				})
+				goodTID := pcommon.TraceID([16]byte{1})
+				badTID := pcommon.TraceID([16]byte{2})
+				return makeTraces(goodTID, badTID, goodRoute, badRoute, func(rs ptrace.ResourceSpans, route string) {
+					rs.Resource().Attributes().PutStr("service.name", route)
+				}), goodTID, badTID
+			},
+		},
+		{
+			name:            "attributes",
+			routingKey:      attrRoutingStr,
+			routingAttrs:    []string{"route"},
+			expectedRouting: attrRouting,
+			build: func(t *testing.T, ring *hashRing) (ptrace.Traces, pcommon.TraceID, pcommon.TraceID) {
+				goodRoute, badRoute := routingValuesForBothEndpoints(t, ring, goodEndpoint, badEndpoint, func(value string) []byte {
+					return fmt.Appendf(nil, "route=%s|", value)
+				})
+				goodTID := pcommon.TraceID([16]byte{1})
+				badTID := pcommon.TraceID([16]byte{2})
+				return makeTraces(goodTID, badTID, goodRoute, badRoute, func(rs ptrace.ResourceSpans, route string) {
+					rs.Resource().Attributes().PutStr("route", route)
+				}), goodTID, badTID
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ts, tb := getTelemetryAssets(t)
+			badErr := errors.New("endpoint-bad: unreachable")
+			var goodCalls, badCalls int
+			componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+				bad := endpoint == endpointWithPort(badEndpoint)
+				return newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
+					if bad {
+						badCalls++
+						return badErr
+					}
+					goodCalls++
+					return nil
+				}), nil
 			}
-			goodCalls++
-			return nil
-		}), nil
+
+			cfg := &Config{
+				Resolver:          ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
+				RoutingKey:        tc.routingKey,
+				RoutingAttributes: tc.routingAttrs,
+			}
+			lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+			require.NoError(t, err)
+
+			p, err := newTracesExporter(ts, cfg)
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedRouting, p.routingKey)
+
+			lb.addMissingExporters(t.Context(), endpoints)
+			lb.res = &mockResolver{
+				triggerCallbacks: true,
+				onResolve: func(context.Context) ([]string, error) {
+					return endpoints, nil
+				},
+			}
+			p.loadBalancer = lb
+
+			require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() {
+				require.NoError(t, p.Shutdown(t.Context()))
+			}()
+
+			td, goodTID, badTID := tc.build(t, lb.ring)
+			res := p.ConsumeTraces(t.Context(), td)
+
+			require.Error(t, res)
+			var partial consumererror.Traces
+			require.True(t, errors.As(res, &partial))
+			failed := partial.Data()
+			assert.Equal(t, 1, failed.SpanCount())
+			assert.Equal(t, map[pcommon.TraceID]string{badTID: "bad"}, spansByTraceID(failed))
+			assert.Equal(t, 1, goodCalls)
+			assert.Equal(t, 1, badCalls)
+
+			mutateSpansWhichAttr(failed, "mutated")
+			assert.Equal(t, 2, td.SpanCount())
+			assert.Equal(t, map[pcommon.TraceID]string{goodTID: "good", badTID: "bad"}, spansByTraceID(td))
+		})
 	}
-
-	endpoints := []string{"endpoint-good", "endpoint-bad"}
-	cfg := &Config{
-		Resolver: ResolverSettings{
-			Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
-		},
-	}
-
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
-	require.NoError(t, err)
-
-	p, err := newTracesExporter(ts, cfg)
-	require.NoError(t, err)
-	require.Equal(t, traceIDRouting, p.routingKey)
-
-	lb.addMissingExporters(t.Context(), endpoints)
-	lb.res = &mockResolver{
-		triggerCallbacks: true,
-		onResolve: func(context.Context) ([]string, error) {
-			return endpoints, nil
-		},
-	}
-	p.loadBalancer = lb
-
-	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, p.Shutdown(t.Context()))
-	}()
-
-	goodTID, badTID := tracesRoutedToBothEndpoints(t, lb.ring, "endpoint-good", "endpoint-bad")
-
-	td := ptrace.NewTraces()
-	goodRS := td.ResourceSpans().AppendEmpty()
-	goodRS.Resource().Attributes().PutStr("res", "good")
-	goodSpan := goodRS.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	goodSpan.SetTraceID(goodTID)
-	goodSpan.Attributes().PutStr("which", "good")
-	badRS := td.ResourceSpans().AppendEmpty()
-	badRS.Resource().Attributes().PutStr("res", "bad")
-	badSpan := badRS.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	badSpan.SetTraceID(badTID)
-	badSpan.Attributes().PutStr("which", "bad")
-
-	res := p.ConsumeTraces(t.Context(), td)
-
-	require.Error(t, res)
-	var partial consumererror.Traces
-	require.True(t, errors.As(res, &partial), "error must be a consumererror.Traces")
-	failed := partial.Data()
-	assert.Equal(t, 1, failed.SpanCount())
-	assert.Equal(t, map[pcommon.TraceID]string{badTID: "bad"}, spansByTraceID(failed))
-
-	assert.Equal(t, 1, goodCalls)
-	assert.Equal(t, 1, badCalls)
-
-	// Mutating the extracted failed data must not be observable on the original input:
-	// proves the embedded data is a deep copy, not an alias into td's buffers.
-	mutateSpansWhichAttr(failed, "mutated")
-
-	// The original input must be left untouched: both spans still present.
-	assert.Equal(t, 2, td.SpanCount())
-	assert.Equal(t, map[pcommon.TraceID]string{goodTID: "good", badTID: "bad"}, spansByTraceID(td))
 }
 
-// TestConsumeTracesByID_TotalFailureReturnsFullData verifies that when every backend fails,
-// the embedded failed data covers the full input, and the caller's input traces are left
-// untouched (#50437).
-func TestConsumeTracesByID_TotalFailureReturnsFullData(t *testing.T) {
+func TestConsumeTraces_MixedFailurePreservesWholeRequestError(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 
-	err1 := errors.New("endpoint-1: unreachable")
-	err2 := errors.New("endpoint-2: unreachable")
-	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
-		failWith := err1
-		if endpoint == endpointWithPort("endpoint-2") {
-			failWith = err2
-		}
-		return newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
-			return failWith
-		}), nil
-	}
-
-	endpoints := []string{"endpoint-1", "endpoint-2"}
-	cfg := &Config{
-		Resolver: ResolverSettings{
-			Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
-		},
-	}
-
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
-	require.NoError(t, err)
-
-	p, err := newTracesExporter(ts, cfg)
-	require.NoError(t, err)
-
-	lb.addMissingExporters(t.Context(), endpoints)
-	lb.res = &mockResolver{
-		triggerCallbacks: true,
-		onResolve: func(context.Context) ([]string, error) {
-			return endpoints, nil
-		},
-	}
-	p.loadBalancer = lb
-
-	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, p.Shutdown(t.Context()))
-	}()
-
-	tid1, tid2 := tracesRoutedToBothEndpoints(t, lb.ring, "endpoint-1", "endpoint-2")
-
-	td := ptrace.NewTraces()
-	rs1 := td.ResourceSpans().AppendEmpty()
-	rs1.Resource().Attributes().PutStr("res", "one")
-	span1 := rs1.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	span1.SetTraceID(tid1)
-	span1.Attributes().PutStr("which", "one")
-	rs2 := td.ResourceSpans().AppendEmpty()
-	rs2.Resource().Attributes().PutStr("res", "two")
-	span2 := rs2.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	span2.SetTraceID(tid2)
-	span2.Attributes().PutStr("which", "two")
-
-	originalByTraceID := spansByTraceID(td)
-
-	res := p.ConsumeTraces(t.Context(), td)
-
-	require.Error(t, res)
-	var partial consumererror.Traces
-	require.True(t, errors.As(res, &partial), "error must be a consumererror.Traces")
-	failed := partial.Data()
-	assert.Equal(t, td.SpanCount(), failed.SpanCount())
-	assert.Equal(t, originalByTraceID, spansByTraceID(failed))
-
-	// Mutating the extracted failed data must not be observable on the original input:
-	// proves the embedded data is a deep copy, not an alias into td's buffers.
-	mutateSpansWhichAttr(failed, "mutated")
-
-	// The original input must be left untouched.
-	assert.Equal(t, 2, td.SpanCount())
-	assert.Equal(t, originalByTraceID, spansByTraceID(td))
-}
-
-// TestConsumeTracesByID_MixedPermanentAndRetryableFailure verifies that when one backend
-// fails permanently and another fails retryably, ConsumeTraces returns an error that is NOT
-// permanent - so a parent retry sender still fires - and that the embedded data covers BOTH
-// backends' spans. The permanent backend's spans stay embedded (rather than being dropped)
-// because dropping them would let a later successful retry of the retryable remainder report
-// the whole original request as sent, hiding the permanent loss (#50437).
-func TestConsumeTracesByID_MixedPermanentAndRetryableFailure(t *testing.T) {
-	ts, tb := getTelemetryAssets(t)
-
-	retryableErr := errors.New("endpoint-retryable: unreachable")
+	retryableErr := errors.New("endpoint-retryable: unavailable")
 	permanentErr := consumererror.NewPermanent(errors.New("endpoint-permanent: bad data"))
 	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
 		permanent := endpoint == endpointWithPort("endpoint-permanent")
@@ -518,18 +519,12 @@ func TestConsumeTracesByID_MixedPermanentAndRetryableFailure(t *testing.T) {
 	}
 
 	endpoints := []string{"endpoint-retryable", "endpoint-permanent"}
-	cfg := &Config{
-		Resolver: ResolverSettings{
-			Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
-		},
-	}
-
+	cfg := &Config{Resolver: ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})}}
 	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
 	require.NoError(t, err)
 
 	p, err := newTracesExporter(ts, cfg)
 	require.NoError(t, err)
-	require.Equal(t, traceIDRouting, p.routingKey)
 
 	lb.addMissingExporters(t.Context(), endpoints)
 	lb.res = &mockResolver{
@@ -545,104 +540,21 @@ func TestConsumeTracesByID_MixedPermanentAndRetryableFailure(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	retryableTID, permanentTID := tracesRoutedToBothEndpoints(t, lb.ring, "endpoint-retryable", "endpoint-permanent")
-
+	retryableTID, permanentTID := tracesRoutedToBothEndpoints(t, lb.ring, endpoints[0], endpoints[1])
 	td := ptrace.NewTraces()
-	retryableRS := td.ResourceSpans().AppendEmpty()
-	retryableRS.Resource().Attributes().PutStr("res", "retryable")
-	retryableSpan := retryableRS.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	retryableSpan := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	retryableSpan.SetTraceID(retryableTID)
-	retryableSpan.Attributes().PutStr("which", "retryable")
-	permanentRS := td.ResourceSpans().AppendEmpty()
-	permanentRS.Resource().Attributes().PutStr("res", "permanent")
-	permanentSpan := permanentRS.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	permanentSpan := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	permanentSpan.SetTraceID(permanentTID)
-	permanentSpan.Attributes().PutStr("which", "permanent")
 
 	res := p.ConsumeTraces(t.Context(), td)
 
 	require.Error(t, res)
-	assert.False(t, consumererror.IsPermanent(res), "a mixed failure must stay retryable so the retry sender still fires")
-
+	assert.True(t, consumererror.IsPermanent(res))
+	assert.ErrorIs(t, res, retryableErr)
+	assert.ErrorIs(t, res, permanentErr)
 	var partial consumererror.Traces
-	require.True(t, errors.As(res, &partial), "error must be a consumererror.Traces")
-	failed := partial.Data()
-	assert.Equal(t, 2, failed.SpanCount(), "both the retryable and permanent backends' spans must stay embedded")
-	assert.Equal(t, map[pcommon.TraceID]string{retryableTID: "retryable", permanentTID: "permanent"}, spansByTraceID(failed))
-}
-
-// TestConsumeTracesByID_AllPermanentFailureIsPermanent verifies that when every backend
-// fails permanently, the returned error still satisfies consumererror.IsPermanent - so the
-// parent retry sender drops the batch instead of retrying forever - and the embedded failed
-// data covers every permanently-failed backend's spans (#50437).
-func TestConsumeTracesByID_AllPermanentFailureIsPermanent(t *testing.T) {
-	ts, tb := getTelemetryAssets(t)
-
-	err1 := consumererror.NewPermanent(errors.New("endpoint-1: bad data"))
-	err2 := consumererror.NewPermanent(errors.New("endpoint-2: bad data"))
-	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
-		failWith := err1
-		if endpoint == endpointWithPort("endpoint-2") {
-			failWith = err2
-		}
-		return newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
-			return failWith
-		}), nil
-	}
-
-	endpoints := []string{"endpoint-1", "endpoint-2"}
-	cfg := &Config{
-		Resolver: ResolverSettings{
-			Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
-		},
-	}
-
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
-	require.NoError(t, err)
-
-	p, err := newTracesExporter(ts, cfg)
-	require.NoError(t, err)
-
-	lb.addMissingExporters(t.Context(), endpoints)
-	lb.res = &mockResolver{
-		triggerCallbacks: true,
-		onResolve: func(context.Context) ([]string, error) {
-			return endpoints, nil
-		},
-	}
-	p.loadBalancer = lb
-
-	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, p.Shutdown(t.Context()))
-	}()
-
-	tid1, tid2 := tracesRoutedToBothEndpoints(t, lb.ring, "endpoint-1", "endpoint-2")
-
-	td := ptrace.NewTraces()
-	rs1 := td.ResourceSpans().AppendEmpty()
-	rs1.Resource().Attributes().PutStr("res", "one")
-	span1 := rs1.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	span1.SetTraceID(tid1)
-	span1.Attributes().PutStr("which", "one")
-	rs2 := td.ResourceSpans().AppendEmpty()
-	rs2.Resource().Attributes().PutStr("res", "two")
-	span2 := rs2.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	span2.SetTraceID(tid2)
-	span2.Attributes().PutStr("which", "two")
-
-	originalByTraceID := spansByTraceID(td)
-
-	res := p.ConsumeTraces(t.Context(), td)
-
-	require.Error(t, res)
-	assert.True(t, consumererror.IsPermanent(res), "an all-permanent failure must stay permanent so the retry sender drops it")
-
-	var partial consumererror.Traces
-	require.True(t, errors.As(res, &partial), "error must be a consumererror.Traces")
-	failed := partial.Data()
-	assert.Equal(t, td.SpanCount(), failed.SpanCount())
-	assert.Equal(t, originalByTraceID, spansByTraceID(failed))
+	assert.False(t, errors.As(res, &partial))
 }
 
 // This test validates that exporter is can concurrently change the endpoints while consuming traces.

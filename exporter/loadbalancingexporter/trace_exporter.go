@@ -141,29 +141,28 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 		}
 	}
 
-	var retryableErrs, permanentErrs []error
-	var failed ptrace.Traces
-	hasFailure := false
+	var failures backendFailures
+	var retryable []ptrace.Traces
 	for exp, td := range exporterSegregatedTraces {
 		err := e.exportToBackend(ctx, exp, td)
 		if err == nil {
 			continue
 		}
-		if consumererror.IsPermanent(err) {
-			permanentErrs = append(permanentErrs, err)
-		} else {
-			retryableErrs = append(retryableErrs, err)
+		if failures.add(err) {
+			retryable = append(retryable, td)
 		}
-		if !hasFailure {
-			failed = ptrace.NewTraces()
-			hasFailure = true
-		}
+	}
+	if failures.hasPermanent {
+		return failures.err
+	}
+	if len(retryable) == 0 {
+		return nil
+	}
+	failed := ptrace.NewTraces()
+	for _, td := range retryable {
 		copyTracesInto(failed, td)
 	}
-	if hasFailure {
-		return consumererror.NewTraces(joinPartialFailure(retryableErrs, permanentErrs), failed)
-	}
-	return nil
+	return consumererror.NewTraces(failures.err, failed)
 }
 
 // consumeTracesByID routes each span to the backend for its trace ID, accumulating spans
@@ -234,29 +233,28 @@ func (e *traceExporterImp) consumeTracesByID(ctx context.Context, td ptrace.Trac
 		}
 	}
 
-	var retryableErrs, permanentErrs []error
-	var failed ptrace.Traces
-	hasFailure := false
+	var failures backendFailures
+	var retryable []ptrace.Traces
 	for exp, d := range dests {
 		err := e.exportToBackend(ctx, exp, d.traces)
 		if err == nil {
 			continue
 		}
-		if consumererror.IsPermanent(err) {
-			permanentErrs = append(permanentErrs, err)
-		} else {
-			retryableErrs = append(retryableErrs, err)
+		if failures.add(err) {
+			retryable = append(retryable, d.traces)
 		}
-		if !hasFailure {
-			failed = ptrace.NewTraces()
-			hasFailure = true
-		}
-		copyTracesInto(failed, d.traces)
 	}
-	if hasFailure {
-		return consumererror.NewTraces(joinPartialFailure(retryableErrs, permanentErrs), failed)
+	if failures.hasPermanent {
+		return failures.err
 	}
-	return nil
+	if len(retryable) == 0 {
+		return nil
+	}
+	failed := ptrace.NewTraces()
+	for _, td := range retryable {
+		copyTracesInto(failed, td)
+	}
+	return consumererror.NewTraces(failures.err, failed)
 }
 
 // exportToBackend sends td to one backend, records per-backend telemetry, and signals the

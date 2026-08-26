@@ -1085,97 +1085,10 @@ func TestConsumeMetrics_PartialFailureReturnsFailedSubset(t *testing.T) {
 	require.NoError(t, pmetrictest.CompareMetrics(originalCopy, md))
 }
 
-// TestConsumeMetrics_TotalFailureReturnsFullData verifies that when every backend fails,
-// the embedded failed data covers the full input, and the caller's input metrics are left
-// untouched (#50437).
-func TestConsumeMetrics_TotalFailureReturnsFullData(t *testing.T) {
+func TestConsumeMetrics_MixedFailurePreservesWholeRequestError(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 
-	err1 := errors.New("endpoint-1: unreachable")
-	err2 := errors.New("endpoint-2: unreachable")
-	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
-		failWith := err1
-		if endpoint == endpointWithPort("endpoint-2") {
-			failWith = err2
-		}
-		return newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
-			return failWith
-		}), nil
-	}
-
-	cfg := serviceBasedRoutingConfig()
-	endpoints := []string{"endpoint-1", "endpoint-2"}
-
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
-	require.NoError(t, err)
-
-	p, err := newMetricsExporter(ts, cfg)
-	require.NoError(t, err)
-
-	lb.addMissingExporters(t.Context(), endpoints)
-	lb.res = &mockResolver{
-		triggerCallbacks: true,
-		onResolve: func(context.Context) ([]string, error) {
-			return endpoints, nil
-		},
-	}
-	p.loadBalancer = lb
-
-	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, p.Shutdown(t.Context()))
-	}()
-
-	svc1, svc2 := metricsRoutedToBothEndpoints(t, lb.ring, "endpoint-1", "endpoint-2")
-
-	md := pmetric.NewMetrics()
-	rm1 := md.ResourceMetrics().AppendEmpty()
-	rm1.Resource().Attributes().PutStr("service.name", svc1)
-	appendSimpleMetricWithID(rm1, "m1")
-	rm2 := md.ResourceMetrics().AppendEmpty()
-	rm2.Resource().Attributes().PutStr("service.name", svc2)
-	appendSimpleMetricWithID(rm2, "m2")
-
-	originalCopy := pmetric.NewMetrics()
-	md.CopyTo(originalCopy)
-
-	res := p.ConsumeMetrics(t.Context(), md)
-
-	require.Error(t, res)
-	var partial consumererror.Metrics
-	require.True(t, errors.As(res, &partial), "error must be a consumererror.Metrics")
-	failed := partial.Data()
-
-	require.NoError(t, pmetrictest.CompareMetrics(originalCopy, failed,
-		pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreScopeMetricsOrder(),
-		pmetrictest.IgnoreMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder(),
-	))
-
-	// Mutating the extracted failed data must not be observable on the original input:
-	// proves the embedded data is a deep copy, not an alias into md's buffers.
-	mutateMetricNames(failed, "mutated")
-
-	// The original input must be left untouched.
-	require.NoError(t, pmetrictest.CompareMetrics(originalCopy, md,
-		pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreScopeMetricsOrder(),
-		pmetrictest.IgnoreMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder(),
-	))
-}
-
-// TestConsumeMetrics_MixedPermanentAndRetryableFailure verifies that when one backend fails
-// permanently and another fails retryably, ConsumeMetrics returns an error that is NOT
-// permanent - so a parent retry sender still fires - and that the embedded data covers BOTH
-// backends' resource metrics. The permanent backend's metrics stay embedded (rather than
-// being dropped) because dropping them would let a later successful retry of the retryable
-// remainder report the whole original request as sent, hiding the permanent loss (#50437).
-func TestConsumeMetrics_MixedPermanentAndRetryableFailure(t *testing.T) {
-	ts, tb := getTelemetryAssets(t)
-
-	retryableErr := errors.New("endpoint-retryable: unreachable")
+	retryableErr := errors.New("endpoint-retryable: unavailable")
 	permanentErr := consumererror.NewPermanent(errors.New("endpoint-permanent: bad data"))
 	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
 		permanent := endpoint == endpointWithPort("endpoint-permanent")
@@ -1189,18 +1102,14 @@ func TestConsumeMetrics_MixedPermanentAndRetryableFailure(t *testing.T) {
 
 	endpoints := []string{"endpoint-retryable", "endpoint-permanent"}
 	cfg := &Config{
-		Resolver: ResolverSettings{
-			Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
-		},
-		RoutingKey: "service",
+		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
+		RoutingKey: svcRoutingStr,
 	}
-
 	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
 	require.NoError(t, err)
 
 	p, err := newMetricsExporter(ts, cfg)
 	require.NoError(t, err)
-	require.Equal(t, svcRouting, p.routingKey)
 
 	lb.addMissingExporters(t.Context(), endpoints)
 	lb.res = &mockResolver{
@@ -1216,105 +1125,23 @@ func TestConsumeMetrics_MixedPermanentAndRetryableFailure(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	retryableSvc, permanentSvc := metricsRoutedToBothEndpoints(t, lb.ring, "endpoint-retryable", "endpoint-permanent")
-
+	retryableSvc, permanentSvc := metricsRoutedToBothEndpoints(t, lb.ring, endpoints[0], endpoints[1])
 	md := pmetric.NewMetrics()
 	retryableRM := md.ResourceMetrics().AppendEmpty()
 	retryableRM.Resource().Attributes().PutStr("service.name", retryableSvc)
-	appendSimpleMetricWithID(retryableRM, "retryable-metric")
+	appendSimpleMetricWithID(retryableRM, "retryable")
 	permanentRM := md.ResourceMetrics().AppendEmpty()
 	permanentRM.Resource().Attributes().PutStr("service.name", permanentSvc)
-	appendSimpleMetricWithID(permanentRM, "permanent-metric")
+	appendSimpleMetricWithID(permanentRM, "permanent")
 
 	res := p.ConsumeMetrics(t.Context(), md)
 
 	require.Error(t, res)
-	assert.False(t, consumererror.IsPermanent(res), "a mixed failure must stay retryable so the retry sender still fires")
-
+	assert.True(t, consumererror.IsPermanent(res))
+	assert.ErrorIs(t, res, retryableErr)
+	assert.ErrorIs(t, res, permanentErr)
 	var partial consumererror.Metrics
-	require.True(t, errors.As(res, &partial), "error must be a consumererror.Metrics")
-	failed := partial.Data()
-
-	expectedFailed := pmetric.NewMetrics()
-	retryableFailedRM := expectedFailed.ResourceMetrics().AppendEmpty()
-	retryableFailedRM.Resource().Attributes().PutStr("service.name", retryableSvc)
-	appendSimpleMetricWithID(retryableFailedRM, "retryable-metric")
-	permanentFailedRM := expectedFailed.ResourceMetrics().AppendEmpty()
-	permanentFailedRM.Resource().Attributes().PutStr("service.name", permanentSvc)
-	appendSimpleMetricWithID(permanentFailedRM, "permanent-metric")
-	require.NoError(t, pmetrictest.CompareMetrics(expectedFailed, failed, pmetrictest.IgnoreResourceMetricsOrder()))
-}
-
-// TestConsumeMetrics_AllPermanentFailureIsPermanent verifies that when every backend fails
-// permanently, the returned error still satisfies consumererror.IsPermanent - so the parent
-// retry sender drops the batch instead of retrying forever - and the embedded failed data
-// covers every permanently-failed backend's resource metrics (#50437).
-func TestConsumeMetrics_AllPermanentFailureIsPermanent(t *testing.T) {
-	ts, tb := getTelemetryAssets(t)
-
-	err1 := consumererror.NewPermanent(errors.New("endpoint-1: bad data"))
-	err2 := consumererror.NewPermanent(errors.New("endpoint-2: bad data"))
-	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
-		failWith := err1
-		if endpoint == endpointWithPort("endpoint-2") {
-			failWith = err2
-		}
-		return newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
-			return failWith
-		}), nil
-	}
-
-	cfg := serviceBasedRoutingConfig()
-	endpoints := []string{"endpoint-1", "endpoint-2"}
-
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
-	require.NoError(t, err)
-
-	p, err := newMetricsExporter(ts, cfg)
-	require.NoError(t, err)
-
-	lb.addMissingExporters(t.Context(), endpoints)
-	lb.res = &mockResolver{
-		triggerCallbacks: true,
-		onResolve: func(context.Context) ([]string, error) {
-			return endpoints, nil
-		},
-	}
-	p.loadBalancer = lb
-
-	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, p.Shutdown(t.Context()))
-	}()
-
-	svc1, svc2 := metricsRoutedToBothEndpoints(t, lb.ring, "endpoint-1", "endpoint-2")
-
-	md := pmetric.NewMetrics()
-	rm1 := md.ResourceMetrics().AppendEmpty()
-	rm1.Resource().Attributes().PutStr("service.name", svc1)
-	appendSimpleMetricWithID(rm1, "m1")
-	rm2 := md.ResourceMetrics().AppendEmpty()
-	rm2.Resource().Attributes().PutStr("service.name", svc2)
-	appendSimpleMetricWithID(rm2, "m2")
-
-	originalCopy := pmetric.NewMetrics()
-	md.CopyTo(originalCopy)
-
-	res := p.ConsumeMetrics(t.Context(), md)
-
-	require.Error(t, res)
-	assert.True(t, consumererror.IsPermanent(res), "an all-permanent failure must stay permanent so the retry sender drops it")
-
-	var partial consumererror.Metrics
-	require.True(t, errors.As(res, &partial), "error must be a consumererror.Metrics")
-	failed := partial.Data()
-
-	require.NoError(t, pmetrictest.CompareMetrics(originalCopy, failed,
-		pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreScopeMetricsOrder(),
-		pmetrictest.IgnoreMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder(),
-	))
+	assert.False(t, errors.As(res, &partial))
 }
 
 // TestConsumeMetrics_FailedDataPreservesDistinctSchemaURLs verifies that when two

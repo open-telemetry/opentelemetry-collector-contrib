@@ -8,6 +8,8 @@ exporters:
     protocol:
       otlp:
         endpoint: should-be-replaced:4317
+        sending_queue:
+          enabled: false
 
     resolver:
       static:
