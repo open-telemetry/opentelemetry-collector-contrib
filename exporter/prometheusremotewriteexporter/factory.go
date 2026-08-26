@@ -8,45 +8,27 @@ import (
 	"errors"
 	"time"
 
-	"github.com/prometheus/prometheus/config"
+	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
-var retryOn429FeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.prometheusremotewritexporter.RetryOn429",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterFromVersion("v0.101.0"),
-	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will retry 429 http status code. Requires exporter.prometheusremotewritexporter.metrics.RetryOn429 to be enabled."),
-)
-
-var enableMultipleWorkersFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.prometheusremotewritexporter.EnableMultipleWorkers",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled and settings configured, the Prometheus remote exporter will"+
-		" spawn multiple workers/goroutines to handle incoming metrics batches concurrently"),
-)
-
-var enableSendingRW2FeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.prometheusremotewritexporter.enableSendingRW2",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterFromVersion("v0.125.0"),
-	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will support sending rw2. Extra configuration is still required besides enabling this feature gate."),
-)
-
 // NewFactory creates a new Prometheus Remote Write exporter.
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability))
+		xexporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		xexporter.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 func createMetricsExporter(ctx context.Context, set exporter.Settings,
@@ -57,8 +39,12 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 		return nil, errors.New("invalid configuration")
 	}
 
-	if !enableMultipleWorkersFeatureGate.IsEnabled() && prwCfg.RemoteWriteQueue.NumConsumers != 5 {
+	if !metadata.ExporterPrometheusremotewritexporterEnableMultipleWorkersFeatureGate.IsEnabled() && prwCfg.RemoteWriteQueue.NumConsumers != 5 {
 		set.Logger.Warn("`remote_write_queue.num_consumers` will be used to configure processing parallelism, rather than request parallelism in a future release. This may cause out-of-order issues unless you take action. Please migrate to using `max_batch_request_parallelism` to keep the your existing behavior.")
+	}
+
+	if !prwCfg.AddMetricSuffixes {
+		set.Logger.Warn("`add_metric_suffixes` is deprecated. Please use `translation_strategy: UnderscoreEscapingWithoutSuffixes` instead.")
 	}
 
 	prwe, err := newPRWExporter(prwCfg, set)
@@ -67,21 +53,26 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 	}
 
 	numConsumers := 1
-	if enableMultipleWorkersFeatureGate.IsEnabled() {
+	if metadata.ExporterPrometheusremotewritexporterEnableMultipleWorkersFeatureGate.IsEnabled() {
 		numConsumers = prwCfg.RemoteWriteQueue.NumConsumers
 	}
+
+	qCfg := configoptional.Default(exporterhelper.QueueBatchConfig{
+		NumConsumers: numConsumers,
+		QueueSize:    int64(prwCfg.RemoteWriteQueue.QueueSize),
+		Sizer:        exporterhelper.RequestSizerTypeRequests,
+	})
+	if prwCfg.RemoteWriteQueue.Enabled {
+		qCfg.GetOrInsertDefault()
+	}
+
 	exporter, err := exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
-		exporterhelper.WithQueue(exporterhelper.QueueBatchConfig{
-			Enabled:      prwCfg.RemoteWriteQueue.Enabled,
-			NumConsumers: numConsumers,
-			QueueSize:    int64(prwCfg.RemoteWriteQueue.QueueSize),
-			Sizer:        exporterhelper.RequestSizerTypeRequests,
-		}),
+		exporterhelper.WithQueue(qCfg),
 		exporterhelper.WithStart(prwe.Start),
 		exporterhelper.WithShutdown(prwe.Shutdown),
 	)
@@ -94,15 +85,9 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 func createDefaultConfig() component.Config {
 	retrySettings := configretry.NewDefaultBackOffConfig()
 	retrySettings.InitialInterval = 50 * time.Millisecond
-	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.Endpoint = "http://some.url:9411/api/prom/push"
-	// We almost read 0 bytes, so no need to tune ReadBufferSize.
-	clientConfig.ReadBufferSize = 0
-	clientConfig.WriteBufferSize = 512 * 1024
-	clientConfig.Timeout = exporterhelper.NewDefaultTimeoutConfig().Timeout
 
 	numConsumers := 5
-	if enableMultipleWorkersFeatureGate.IsEnabled() {
+	if metadata.ExporterPrometheusremotewritexporterEnableMultipleWorkersFeatureGate.IsEnabled() {
 		numConsumers = 1
 	}
 	return &Config{
@@ -111,12 +96,14 @@ func createDefaultConfig() component.Config {
 		MaxBatchSizeBytes: 3000000,
 		// To set this as default once `exporter.prometheusremotewritexporter.EnableMultipleWorkers` is removed
 		// MaxBatchRequestParallelism: 5,
-		TimeoutSettings:     exporterhelper.NewDefaultTimeoutConfig(),
-		BackOffConfig:       retrySettings,
-		AddMetricSuffixes:   true,
+		TimeoutSettings:   exporterhelper.NewDefaultTimeoutConfig(),
+		BackOffConfig:     retrySettings,
+		AddMetricSuffixes: true,
+		// TODO: Set TranslationStrategy to UnderscoreEscapingWithSuffixes once AddMetricSuffixes is removed.
 		SendMetadata:        false,
-		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,
-		ClientConfig:        clientConfig,
+		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+		// TODO: Remove ClientConfig in favor of HTTP settings eventually.
+		ClientConfig: getDefaultHTTPClientConfig(),
 		// TODO(jbd): Adjust the default queue size.
 		RemoteWriteQueue: RemoteWriteQueue{
 			Enabled:      true,
@@ -126,5 +113,16 @@ func createDefaultConfig() component.Config {
 		TargetInfo: TargetInfo{
 			Enabled: true,
 		},
+		HTTP: getDefaultHTTPClientConfig(),
 	}
+}
+
+func getDefaultHTTPClientConfig() confighttp.ClientConfig {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "http://some.url:9411/api/prom/push"
+	// We almost read 0 bytes, so no need to tune ReadBufferSize.
+	clientConfig.ReadBufferSize = 0
+	clientConfig.WriteBufferSize = 512 * 1024
+	clientConfig.Timeout = exporterhelper.NewDefaultTimeoutConfig().Timeout
+	return clientConfig
 }

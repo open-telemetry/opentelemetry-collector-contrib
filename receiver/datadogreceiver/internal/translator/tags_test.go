@@ -7,8 +7,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 )
 
 func TestGetMetricAttributes(t *testing.T) {
@@ -33,7 +36,7 @@ func TestGetMetricAttributes(t *testing.T) {
 			tags: []string{},
 			host: "host",
 			expectedResourceAttrs: newMapFromKV(t, map[string]any{
-				string(semconv.HostNameKey): "host",
+				"host.name": "host",
 			}),
 			expectedScopeAttrs: pcommon.NewMap(),
 			expectedDpAttrs:    pcommon.NewMap(),
@@ -43,10 +46,10 @@ func TestGetMetricAttributes(t *testing.T) {
 			tags: []string{"env:prod", "service:my-service", "version:1.0"},
 			host: "host",
 			expectedResourceAttrs: newMapFromKV(t, map[string]any{
-				string(semconv.HostNameKey):                  "host",
-				string(semconv.DeploymentEnvironmentNameKey): "prod",
-				string(semconv.ServiceNameKey):               "my-service",
-				string(semconv.ServiceVersionKey):            "1.0",
+				"host.name":                   "host",
+				"deployment.environment.name": "prod",
+				"service.name":                "my-service",
+				"service.version":             "1.0",
 			}),
 			expectedScopeAttrs: pcommon.NewMap(),
 			expectedDpAttrs:    pcommon.NewMap(),
@@ -56,8 +59,8 @@ func TestGetMetricAttributes(t *testing.T) {
 			tags: []string{"env:prod", "foo"},
 			host: "host",
 			expectedResourceAttrs: newMapFromKV(t, map[string]any{
-				string(semconv.HostNameKey):                  "host",
-				string(semconv.DeploymentEnvironmentNameKey): "prod",
+				"host.name":                   "host",
+				"deployment.environment.name": "prod",
 			}),
 			expectedScopeAttrs: pcommon.NewMap(),
 			expectedDpAttrs: newMapFromKV(t, map[string]any{
@@ -156,6 +159,20 @@ func TestTranslateDataDogKeyToOtel(t *testing.T) {
 	assert.Equal(t, "http.response.header.content-type", translateDatadogKeyToOTel("http.response.headers.content-type"))
 }
 
+func TestTranslateKubernetesAppLabels(t *testing.T) {
+	// Datadog kube_app_* tags map to the Kubernetes recommended labels.
+	for ddKey, otelKey := range map[string]string{
+		"kube_app_name":       "app.kubernetes.io/name",
+		"kube_app_instance":   "app.kubernetes.io/instance",
+		"kube_app_version":    "app.kubernetes.io/version",
+		"kube_app_component":  "app.kubernetes.io/component",
+		"kube_app_part_of":    "app.kubernetes.io/part-of",
+		"kube_app_managed_by": "app.kubernetes.io/managed-by",
+	} {
+		assert.Equal(t, otelKey, translateDatadogKeyToOTel(ddKey))
+	}
+}
+
 func TestImageTags(t *testing.T) {
 	// make sure container.image.tags is a string[]
 	expected := "[\"tag1\"]"
@@ -164,7 +181,7 @@ func TestImageTags(t *testing.T) {
 	pool := newStringPool()
 
 	attrs := tagsToAttributes(tags, host, pool)
-	imageTags, _ := attrs.resource.Get(string(semconv.ContainerImageTagsKey))
+	imageTags, _ := attrs.resource.Get("container.image.tags")
 	assert.Equal(t, expected, imageTags.AsString())
 }
 
@@ -182,4 +199,32 @@ func TestHTTPHeaders(t *testing.T) {
 	header, found = attrs.resource.Get("http.response.header.header")
 	assert.True(t, found)
 	assert.Equal(t, expected, header.AsString())
+}
+
+func TestKeyOverlapWithFeatureGate(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverDatadogreceiverEnableMultiTagParsingFeatureGate.ID(), true))
+
+	expected := "[\"value1\",\"value2\"]"
+	tags := []string{"env:prod", "foo", "kube_service:value1", "kube_service:value2"}
+	host := "host"
+	pool := newStringPool()
+
+	attrs := tagsToAttributes(tags, host, pool)
+	kubeService, found := attrs.dp.Get("kube_service")
+	assert.True(t, found)
+	assert.Equal(t, expected, kubeService.AsString())
+}
+
+func TestKeyOverlapWithoutFeatureGate(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverDatadogreceiverEnableMultiTagParsingFeatureGate.ID(), false))
+
+	expected := "value2"
+	tags := []string{"env:prod", "foo", "kube_service:value1", "kube_service:value2"}
+	host := "host"
+	pool := newStringPool()
+
+	attrs := tagsToAttributes(tags, host, pool)
+	kubeService, found := attrs.dp.Get("kube_service")
+	assert.True(t, found)
+	assert.Equal(t, expected, kubeService.AsString())
 }

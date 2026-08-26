@@ -14,8 +14,12 @@ formatters:
         - default
         - prefix(github.com/open-telemetry/opentelemetry-collector-contrib)
     gofumpt:
-      # Choose whether to use the extra rules.
-      extra-rules: true
+      # `extra-rules: true` is deprecated in favor of enabling each extra rule
+      # individually; these three together are equivalent to the old setting.
+      extra:
+        group-params: true
+        clothe-returns: true
+        balance-calls: true
 
 issues:
   # Maximum issues count per one linter.
@@ -32,10 +36,12 @@ linters:
     - errcheck
     - errorlint
     - exhaustive
+    - forbidigo
     - gocritic
     - gosec
     - govet
     - misspell
+    - modernize
     - nolintlint
     - predeclared
     - reassign
@@ -72,6 +78,91 @@ linters:
         path: pagefile.go # This exclusion is required for Windows only
         text: cachedBytes
 
+      # G101 and G602 are not new rules, but gosec v2.28.0 changed their
+      # detection and they now fire on test fixtures. The production-code
+      # reports are still wanted, so only exclude them under tests.
+      # TODO: triage these separately from the go 1.26 bump.
+      - linters:
+          - gosec
+        path: _test\.go
+        text: "^G(101|602):"
+
+      # handleConn has no `return nil` path, so `err != nil` is always true.
+      # staticcheck only started reporting this in v0.8.0. Keep the check
+      # rather than rely on an invariant that is easy to break.
+      - linters:
+          - staticcheck
+        path: receiver/fluentforwardreceiver/server.go
+        text: SA4023
+
+      # On windows, addPermissionInfo always returns a non-nil error (owner/permission info
+      # isn't implemented there), so `err != nil` is always true on that platform only.
+      # Keep the check rather than rely on an invariant that is easy to break.
+      - linters:
+          - staticcheck
+        path: pkg/stanza/fileconsumer/attrs/attrs.go
+        text: SA4023
+
+      - linters:
+          - unused
+        path: receiver/macosunifiedloggingreceiver/config_common.go
+        text: resolvedArchivePaths
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45002
+      - linters:
+          - revive
+        path: processor/transformprocessor/internal/common/
+        text: "var-naming: avoid meaningless package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45004
+      - linters:
+          - revive
+        path: cmd/telemetrygen/pkg/
+        text: "var-naming: avoid meaningless package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45005
+      - linters:
+          - revive
+        path: extension/encoding/googlecloudlogentryencodingextension/internal/shared/
+        text: "var-naming: avoid meaningless package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45008
+      - linters:
+          - revive
+        path: extension/jaegerremotesampling/internal/server/http/
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45008
+      - linters:
+          - revive
+        path: extension/sumologicextension/internal/api/
+        text: "var-naming: avoid meaningless package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116
+      - linters:
+          - forbidigo
+        path: exporter/awsxrayexporter/internal/translator/
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47586
+      - linters:
+          - forbidigo
+        path: testbed/
+        text: confighttp
+
+      # Exclude tests and examples from the confighttp rule.
+      - linters:
+          - forbidigo
+        path: _test\.go
+        text: confighttp
+      - linters:
+          - forbidigo
+        path: examples/
+        text: confighttp
+      - linters:
+          - forbidigo
+        path: testdata/
+        text: confighttp
+
     # Log a warning if an exclusion rule is unused.
     warn-unused: true
 
@@ -83,7 +174,7 @@ linters:
           deny:
             - pkg: github.com/azure/go-autorest
               desc: "This package is deprecated (EOL). Please use an alternative Azure SDK."
-              
+
             - pkg: go.uber.org/atomic
               desc: Use 'sync/atomic' instead of go.uber.org/atomic
 
@@ -99,6 +190,76 @@ linters:
             - pkg: sigs.k8s.io/yaml
               desc: "Use 'go.yaml.in/yaml' instead of sigs.k8s.io/yaml"
 
+            # Block AWS SDK v1 to prevent new usage while migration to v2 is in progress.
+            # See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
+            - pkg: github.com/aws/aws-sdk-go/
+              desc: "Use github.com/aws/aws-sdk-go-v2 instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699"
+
+        semconv:
+          list-mode: lax
+          deny:
+            - pkg: go.opentelemetry.io/otel/semconv
+              desc: Use go.opentelemetry.io/otel/semconv/v1.40.0 instead. If a newer semconv version has been released, update the depguard rule.
+          allow:
+            # TODO: Remove older semconv versions after v1.40.0 migration is complete.
+            # If for any reason an individual package needs to use an older semconv version,
+            # add a nolint directive on the import line.
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35325
+            - go.opentelemetry.io/otel/semconv/v1.9.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45041
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45076
+            - go.opentelemetry.io/otel/semconv/v1.12.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45077
+            - go.opentelemetry.io/otel/semconv/v1.16.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45080
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45293
+            - go.opentelemetry.io/otel/semconv/v1.18.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45294
+            - go.opentelemetry.io/otel/semconv/v1.19.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45085
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45295
+            - go.opentelemetry.io/otel/semconv/v1.20.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45079
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45087
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45296
+            - go.opentelemetry.io/otel/semconv/v1.21.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45036
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45084
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44801
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45089
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45297
+            - go.opentelemetry.io/otel/semconv/v1.25.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43806
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45074
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45298
+            - go.opentelemetry.io/otel/semconv/v1.26.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45086
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45299
+            - go.opentelemetry.io/otel/semconv/v1.28.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47544
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47545
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47546
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47547
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47548
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47551
+            - go.opentelemetry.io/otel/semconv/v1.38.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47543
+            - go.opentelemetry.io/otel/semconv/v1.39.0
+            - go.opentelemetry.io/otel/semconv/v1.40.0
+            - go.opentelemetry.io/otel/semconv/v1.41.0
+            - go.opentelemetry.io/otel/semconv/v1.42.0
+            - go.opentelemetry.io/otel/semconv/v1.43.0
+
+        semconv-in-test:
+          list-mode: lax
+          deny:
+            - pkg: go.opentelemetry.io/otel/semconv
+              desc: Don't import semconv packages in test files, use strings directly instead.
+
+          files:
+            - "**/*_test.go"
+
         # Add a different guard rule so that we can ignore tests.
         ignore-in-test:
           deny:
@@ -107,7 +268,18 @@ linters:
 
           # Allow in tests for testing pdata or other receivers/exporters that expect OTLP.
           files:
-            - '!**/*_test.go'
+            - "!**/*_test.go"
+
+    forbidigo:
+      analyze-types: true
+      forbid:
+        - pattern: ^featuregate\.Registry\.(MustRegister|Register)$
+          msg: >-
+            Define feature gates in metadata.yaml instead of registering them manually.
+            See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116.
+        - pattern: ^http\.(ListenAndServe|ListenAndServeTLS|Serve|ServeTLS)$
+          msg: >-
+            Use confighttp.ServerConfig to create HTTP servers instead of net/http directly.
 
     exhaustive:
       # Presence of "default" case in switch statements satisfies exhaustiveness,
@@ -142,6 +314,29 @@ linters:
         - G115
         - G402
         - G404
+        # Everything below is new in gosec v2.28.0, which arrived with the
+        # golangci-lint v2.13.1 bump, and fires on code that predates it.
+        # TODO: triage these separately from the go 1.26 bump.
+        - G113
+        - G117
+        - G118
+        - G119
+        - G120
+        - G121
+        - G122
+        - G123
+        - G124
+        - G408
+        - G701
+        - G702
+        - G703
+        - G704
+        - G705
+        - G706
+        - G707
+        - G708
+        - G709
+        - G710
 
     govet:
       # TODO: Enable this and fix the alignment issues.
@@ -166,6 +361,10 @@ linters:
       # Default is to use a neutral variety of English.
       # Setting locale to US will correct the British spelling of 'colour' to 'color'.
       locale: US
+
+    modernize:
+      disable:
+        - importcomment
 
     nolintlint:
       require-specific: true
@@ -261,6 +460,9 @@ linters:
 
       test:
         begin: false
+
+    usetesting:
+      context-background: true
 
 output:
   # The formats used to render issues.

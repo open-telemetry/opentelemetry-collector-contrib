@@ -13,10 +13,14 @@ import (
 	"time"
 )
 
+type logSyntaxType string
+
 const (
-	albAccessLogs = "alb_access_logs"
-	nlbAccessLogs = "nlb_access_logs"
-	clbAccessLogs = "clb_access_logs"
+	albAccessLogs  logSyntaxType = "alb_access_logs"
+	nlbAccessLogs  logSyntaxType = "nlb_access_logs"
+	clbAccessLogs  logSyntaxType = "clb_access_logs"
+	controlMessage logSyntaxType = "control_message"
+
 	// any field can be set to - to indicate that the data was unknown
 	// or unavailable, or that the field was not applicable to this request.
 	unknownField = "-"
@@ -165,7 +169,8 @@ func convertTextToNLBAccessLogRecord(fields []string) (NLBAccessLogRecord, error
 	fieldsCount := len(fields)
 	if fieldsCount < 22 {
 		return NLBAccessLogRecord{}, fmt.Errorf(
-			"nlb access logs do not have enough fields. Expected 22, got %d", fieldsCount)
+			"nlb access logs do not have enough fields. Expected 22, got %d", fieldsCount,
+		)
 	}
 
 	// Map fields to the struct
@@ -373,7 +378,7 @@ func safeConvertStrToFloat(stringNum string) (float64, error) {
 // ALB supports http, https, h2, grpcs, ws, wss and NLB supports tls.
 // Only if those are not matched, it checks if the field is a valid timestamp (for CLB logs).
 // If none match, it returns an error.
-func findLogSyntaxByField(field string) (string, error) {
+func findLogSyntaxByField(field string) (logSyntaxType, error) {
 	switch field {
 	case "http", "https", "h2", "grpcs", "ws", "wss":
 		return albAccessLogs, nil
@@ -419,12 +424,11 @@ func convertToUnixEpoch(isoTimestamp string) (int64, error) {
 	return t.UnixNano(), nil
 }
 
-// scanField gets the next value in the log line by moving
-// one space. If the value starts with a quote, it moves
-// forward until it finds the ending quote, and considers
-// that just 1 value. Otherwise, it returns the value as
-// it is.
-func scanField(logLine string) (string, string, error) {
+// scanField gets the next value in the log line by moving through space delimiters.
+// If the value starts with a quote, it moves forward until it finds the ending quote.
+// Note that quotes are not preserved. For example "a","b" becomes a,b.
+// Otherwise, it returns the value as it is.
+func scanField(logLine string) (value, remainder string, err error) {
 	if logLine == "" {
 		return "", "", io.EOF
 	}
@@ -434,19 +438,35 @@ func scanField(logLine string) (string, string, error) {
 		return value, remaining, nil
 	}
 
-	// if there is a quote, we need to get the rest of the value
-	logLine = logLine[1:] // remove first quote
-	value, remaining, found := strings.Cut(logLine, `"`)
-	if !found {
-		return "", "", fmt.Errorf("value %q has no end quote", logLine)
+	// preserve values without quotes, terminate at space after the closing quote or at line end
+	var quoteStack []rune
+	var unquotedValue []rune
+	for i, char := range logLine {
+		if char == ' ' && len(quoteStack) == 0 {
+			// terminating space found, return the value
+			return string(unquotedValue), logLine[i+1:], nil
+		}
+
+		if char != '"' {
+			unquotedValue = append(unquotedValue, char)
+		}
+
+		if char == '"' {
+			if len(quoteStack) > 0 && quoteStack[len(quoteStack)-1] == '"' {
+				quoteStack = quoteStack[:len(quoteStack)-1]
+			} else {
+				quoteStack = append(quoteStack, char)
+			}
+		}
 	}
 
-	// Remove space after closing quote if present
-	if remaining != "" && remaining[0] == ' ' {
-		remaining = remaining[1:]
+	if len(quoteStack) == 0 {
+		// No quotes means we are at the end of log line
+		return string(unquotedValue), "", nil
 	}
 
-	return value, remaining, nil
+	// Invalid log line - must not happen in well-formed logs
+	return "", "", fmt.Errorf("log line has no end quote: %v", logLine)
 }
 
 func extractFields(logLine string) ([]string, error) {
@@ -473,20 +493,23 @@ func extractFields(logLine string) ([]string, error) {
 func parseRequestField(raw string) (method, uri, protoName, protoVersion string, err error) {
 	method, remaining, _ := strings.Cut(raw, " ")
 	if method == "" {
-		err = fmt.Errorf("unexpected: request field %q has no method", raw)
+		err = fmt.Errorf("unexpected: field %q has no method section", raw)
 		return method, uri, protoName, protoVersion, err
 	}
 
-	uri, remaining, _ = strings.Cut(remaining, " ")
-	if uri == "" {
-		err = fmt.Errorf("unexpected: request field %q has no URI", raw)
-		return method, uri, protoName, protoVersion, err
-	}
+	var protocol string
 
-	protocol, leftover, _ := strings.Cut(remaining, " ")
-	if protocol == "" || leftover != "" {
-		err = fmt.Errorf(`request field %q does not match expected format "<method> <uri> <protocol>"`, raw)
+	index := strings.LastIndex(remaining, " ")
+	switch {
+	case index == -1:
+		err = fmt.Errorf("unexpected: field %q has no protocol/version section", raw)
 		return method, uri, protoName, protoVersion, err
+	case index == len(remaining)-1:
+		uri = strings.TrimSpace(remaining)
+		protocol = unknownField
+	default:
+		uri = remaining[:index]
+		protocol = remaining[index+1:]
 	}
 
 	protoName, protoVersion, err = netProtocol(protocol)
@@ -494,11 +517,16 @@ func parseRequestField(raw string) (method, uri, protoName, protoVersion string,
 		err = fmt.Errorf("invalid protocol in request field: %w", err)
 		return method, uri, protoName, protoVersion, err
 	}
-	return method, uri, protoName, protoVersion, err
+
+	return method, uri, protoName, protoVersion, nil
 }
 
 // netProtocol returns protocol name and version based on proto value
 func netProtocol(proto string) (string, string, error) {
+	if proto == unknownField {
+		return unknownField, unknownField, nil
+	}
+
 	name, version, found := strings.Cut(proto, "/")
 	if !found || name == "" || version == "" {
 		return "", "", errors.New(`request uri protocol does not follow expected scheme "<name>/<version>"`)

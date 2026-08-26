@@ -20,6 +20,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/precision"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
 )
 
@@ -67,7 +68,7 @@ type diskScraper struct {
 
 	// for mocking
 	bootTime           func(ctx context.Context) (uint64, error)
-	perfCounterFactory func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
+	perfCounterFactory func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error)
 }
 
 // newDiskScraper creates a Disk Scraper
@@ -110,13 +111,14 @@ func (s *diskScraper) start(ctx context.Context, _ component.Host) error {
 	// Initialize the performance counter watchers
 	s.perfCounters = make([]winperfcounters.PerfCounterWatcher, len(counterNames))
 	for i, counterName := range counterNames {
-		s.perfCounters[i], err = s.perfCounterFactory(logicalDisk, "*", counterName)
+		s.perfCounters[i], err = s.perfCounterFactory(logicalDisk, "*", counterName, winperfcounters.WithLogger(s.settings.Logger))
 		if err != nil {
 			s.skipScrape = true
 			s.settings.Logger.Error(
 				"Failed to create performance counter watcher, disk metrics will not be scraped",
 				zap.String("counter", counterName),
-				zap.Error(err))
+				zap.Error(err),
+			)
 		}
 	}
 
@@ -162,12 +164,13 @@ func (s *diskScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 				s.mb.RecordSystemDiskOperationsDataPoint(now, values[i], instance, metadata.AttributeDirectionRead)
 			case writesPerSec:
 				s.mb.RecordSystemDiskOperationsDataPoint(now, values[i], instance, metadata.AttributeDirectionWrite)
+			// NOTE: int64-to-uint64 cast is safe because perf counter values are non-negative.
 			case idleTime:
-				s.mb.RecordSystemDiskIoTimeDataPoint(now, float64(now-s.startTime)/1e9-float64(values[i])/1e7, instance)
+				s.mb.RecordSystemDiskIoTimeDataPoint(now, precision.Scale(uint64(now-s.startTime), time.Nanosecond)-precision.Scale(uint64(values[i]), time.Nanosecond*100), instance)
 			case avgDiskSecsPerRead:
-				s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(values[i])/1e7, instance, metadata.AttributeDirectionRead)
+				s.mb.RecordSystemDiskOperationTimeDataPoint(now, precision.Scale(uint64(values[i]), time.Nanosecond*100), instance, metadata.AttributeDirectionRead)
 			case avgDiskSecsPerWrite:
-				s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(values[i])/1e7, instance, metadata.AttributeDirectionWrite)
+				s.mb.RecordSystemDiskOperationTimeDataPoint(now, precision.Scale(uint64(values[i]), time.Nanosecond*100), instance, metadata.AttributeDirectionWrite)
 			case queueLength:
 				s.mb.RecordSystemDiskPendingOperationsDataPoint(now, values[i], instance)
 			default:

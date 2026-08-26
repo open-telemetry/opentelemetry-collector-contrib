@@ -41,7 +41,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	// have to enable at least one protocol for the jaeger receiver to be created
-	cfg.(*Config).GRPC = configoptional.Some(configgrpc.ServerConfig{
+	cfg.(*Config).Protocols.GRPC = configoptional.Some(configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: confignet.TransportTypeTCP,
@@ -82,7 +82,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).GRPC = configoptional.Some(configgrpc.ServerConfig{
+	cfg.(*Config).Protocols.GRPC = configoptional.Some(configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: confignet.TransportTypeTCP,
@@ -99,7 +99,7 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).GRPC = configoptional.Some(configgrpc.ServerConfig{
+	cfg.(*Config).Protocols.GRPC = configoptional.Some(configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: confignet.TransportTypeTCP,
@@ -121,15 +121,23 @@ func TestCreateTLSThriftHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).ThriftHTTP = configoptional.Some(confighttp.ServerConfig{
-		Endpoint: "0.0.0.0:14268",
-		TLS: configoptional.Some(configtls.ServerConfig{
-			Config: configtls.Config{
-				CertFile: "./testdata/server.crt",
-				KeyFile:  "./testdata/server.key",
-			},
-		}),
+	thriftHTTPServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	thriftHTTPServerConfig.WriteTimeout = 0
+	thriftHTTPServerConfig.ReadHeaderTimeout = 0
+	thriftHTTPServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	thriftHTTPServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	thriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  "0.0.0.0:14268",
+		Transport: confignet.TransportTypeTCP,
+	}
+	thriftHTTPServerConfig.TLS = configoptional.Some(configtls.ServerConfig{
+		Config: configtls.Config{
+			CertFile: "./testdata/server.crt",
+			KeyFile:  "./testdata/server.key",
+		},
 	})
+	cfg.(*Config).Protocols.ThriftHTTP = configoptional.Some(thriftHTTPServerConfig)
 
 	set := receivertest.NewNopSettings(metadata.Type)
 
@@ -151,14 +159,14 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	r, err := factory.CreateTraces(t.Context(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
-	assert.Equal(t, "localhost:14268", r.(*jReceiver).config.ThriftHTTP.Get().Endpoint, "http port should be default")
+	assert.Equal(t, "localhost:14268", r.(*jReceiver).config.ThriftHTTP.Get().NetAddr.Endpoint, "http port should be default")
 }
 
 func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
+	cfg.(*Config).Protocols.ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
 		Endpoint: "0.0.0.0:6832",
 	})
 	set := receivertest.NewNopSettings(metadata.Type)
@@ -172,7 +180,7 @@ func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).ThriftCompactUDP = configoptional.Some(ProtocolUDP{
+	cfg.(*Config).Protocols.ThriftCompactUDP = configoptional.Some(ProtocolUDP{
 		Endpoint: "0.0.0.0:6831",
 	})
 	set := receivertest.NewNopSettings(metadata.Type)

@@ -5,11 +5,13 @@ package prometheusremotewrite
 
 import (
 	"fmt"
+	"math"
 	"testing"
 	"time"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/otlptranslator"
+	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
@@ -18,6 +20,16 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
+
+// nhcbCumulativeBucketsV2 decodes an RW2 NHCB histogram into its cumulative buckets.
+func nhcbCumulativeBucketsV2(h writev2.Histogram) []nhcbBucket {
+	var got []nhcbBucket
+	for it := h.ToIntHistogram().CumulativeBucketIterator(); it.Next(); {
+		b := it.At()
+		got = append(got, nhcbBucket{b.Upper, b.Count})
+	}
+	return got
+}
 
 type expectedBucketLayoutV2 struct {
 	wantSpans  []writev2.BucketSpan
@@ -402,6 +414,137 @@ func BenchmarkConvertBucketLayoutV2(b *testing.B) {
 	}
 }
 
+func TestExplicitToNHCBHistogramV2(t *testing.T) {
+	startTimestamp := testHistTimestamp - pcommon.Timestamp(time.Hour)
+	tests := []struct {
+		name               string
+		hist               func() pmetric.HistogramDataPoint
+		wantValues         []float64
+		wantCount          uint64
+		wantSum            float64
+		wantBuckets        []nhcbBucket
+		wantStartTimestamp int64
+		stale              bool
+	}{
+		{
+			name:        "consistent count and buckets",
+			hist:        func() pmetric.HistogramDataPoint { return newTestExplicitHistogram().Histogram().DataPoints().At(0) },
+			wantValues:  []float64{1, 2, 3},
+			wantCount:   10,
+			wantSum:     42.5,
+			wantBuckets: []nhcbBucket{{1, 1}, {2, 3}, {3, 6}, {math.Inf(1), 10}},
+		},
+		{
+			name: "start timestamp",
+			hist: func() pmetric.HistogramDataPoint {
+				pt := newTestExplicitHistogram().Histogram().DataPoints().At(0)
+				pt.SetStartTimestamp(startTimestamp)
+				return pt
+			},
+			wantValues:         []float64{1, 2, 3},
+			wantCount:          10,
+			wantSum:            42.5,
+			wantBuckets:        []nhcbBucket{{1, 1}, {2, 3}, {3, 6}, {math.Inf(1), 10}},
+			wantStartTimestamp: convertTimeStamp(startTimestamp),
+		},
+		{
+			// Count below the bucket sum is clamped up so the +Inf bucket stays non-negative.
+			name: "count below bucket sum",
+			hist: func() pmetric.HistogramDataPoint {
+				pt := newTestExplicitHistogram().Histogram().DataPoints().At(0)
+				pt.SetCount(5) // below finite cumulative (6)
+				return pt
+			},
+			wantValues:  []float64{1, 2, 3},
+			wantCount:   10,
+			wantSum:     42.5,
+			wantBuckets: []nhcbBucket{{1, 1}, {2, 3}, {3, 6}, {math.Inf(1), 10}},
+		},
+		{
+			// Count above the bucket sum is preserved; the surplus lands in +Inf.
+			name: "count above bucket sum",
+			hist: func() pmetric.HistogramDataPoint {
+				pt := newTestExplicitHistogram().Histogram().DataPoints().At(0)
+				pt.SetCount(20) // above bucket sum (10)
+				return pt
+			},
+			wantValues:  []float64{1, 2, 3},
+			wantCount:   20,
+			wantSum:     42.5,
+			wantBuckets: []nhcbBucket{{1, 1}, {2, 3}, {3, 6}, {math.Inf(1), 20}},
+		},
+		{
+			name: "no sum",
+			hist: func() pmetric.HistogramDataPoint {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_hist")
+				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				pt := metric.Histogram().DataPoints().AppendEmpty()
+				pt.SetTimestamp(testHistTimestamp)
+				pt.ExplicitBounds().FromRaw([]float64{1, 2, 3})
+				pt.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+				pt.SetCount(10)
+				return pt
+			},
+			wantValues:  []float64{1, 2, 3},
+			wantCount:   10,
+			wantSum:     0,
+			wantBuckets: []nhcbBucket{{1, 1}, {2, 3}, {3, 6}, {math.Inf(1), 10}},
+		},
+		{
+			name: "no explicit bounds (single +Inf bucket)",
+			hist: func() pmetric.HistogramDataPoint {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_hist")
+				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				pt := metric.Histogram().DataPoints().AppendEmpty()
+				pt.SetTimestamp(testHistTimestamp)
+				pt.BucketCounts().FromRaw([]uint64{5})
+				pt.SetCount(5)
+				pt.SetSum(12.5)
+				return pt
+			},
+			wantValues:  nil,
+			wantCount:   5,
+			wantSum:     12.5,
+			wantBuckets: []nhcbBucket{{math.Inf(1), 5}},
+		},
+		{
+			name: "stale marker",
+			hist: func() pmetric.HistogramDataPoint {
+				pt := newTestExplicitHistogram().Histogram().DataPoints().At(0)
+				pt.SetFlags(pt.Flags().WithNoRecordedValue(true))
+				return pt
+			},
+			stale: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h, err := explicitToNHCBHistogramV2(tt.hist())
+			require.NoError(t, err)
+			assert.Equal(t, histogram.CustomBucketsSchema, h.Schema, "must be NHCB schema -53")
+			assert.Equal(t, convertTimeStamp(testHistTimestamp), h.Timestamp)
+			assert.Equal(t, tt.wantStartTimestamp, h.StartTimestamp, "start timestamp")
+
+			if tt.stale {
+				assert.True(t, math.IsNaN(h.Sum), "stale marker signaled by stale-NaN sum")
+				assert.Zero(t, h.GetCountInt(), "stale marker leaves count unset")
+				return
+			}
+
+			if len(tt.wantValues) == 0 {
+				assert.Empty(t, h.CustomValues, "single +Inf bucket carries no finite bounds")
+			} else {
+				assert.Equal(t, tt.wantValues, h.CustomValues, "explicit bounds carried as custom values")
+			}
+			assert.Equal(t, tt.wantCount, h.GetCountInt(), "count")
+			assert.InDelta(t, tt.wantSum, h.Sum, 1e-9, "sum")
+			assert.Equal(t, tt.wantBuckets, nhcbCumulativeBucketsV2(h), "cumulative buckets round-trip")
+		})
+	}
+}
+
 func TestExponentialToNativeHistogramV2(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -440,6 +583,7 @@ func TestExponentialToNativeHistogramV2(t *testing.T) {
 					PositiveSpans:  []writev2.BucketSpan{{Offset: 2, Length: 2}},
 					PositiveDeltas: []int64{1, 0},
 					Timestamp:      500,
+					StartTimestamp: 100,
 				}
 			},
 		},
@@ -473,6 +617,7 @@ func TestExponentialToNativeHistogramV2(t *testing.T) {
 					PositiveSpans:  []writev2.BucketSpan{{Offset: 2, Length: 2}},
 					PositiveDeltas: []int64{1, 0},
 					Timestamp:      500,
+					StartTimestamp: 100,
 				}
 			},
 		},
@@ -546,6 +691,38 @@ func TestExponentialToNativeHistogramV2(t *testing.T) {
 					PositiveDeltas: []int64{1, 1}, // 0+1, 1+1 = 1, 2
 					NegativeSpans:  []writev2.BucketSpan{{Offset: 2, Length: 2}},
 					NegativeDeltas: []int64{2, -1}, // 1+1, 1+0 = 2, 1
+					Timestamp:      500,
+				}
+			},
+		},
+		{
+			name: "convert exp. to native histogram with non-zero zero threshold",
+			exponentialHist: func() pmetric.ExponentialHistogramDataPoint {
+				pt := pmetric.NewExponentialHistogramDataPoint()
+				pt.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
+				pt.SetCount(4)
+				pt.SetScale(1)
+				pt.SetZeroCount(1)
+				pt.SetZeroThreshold(0.5)
+
+				pt.Positive().BucketCounts().FromRaw([]uint64{1, 1})
+				pt.Positive().SetOffset(1)
+
+				pt.Negative().BucketCounts().FromRaw([]uint64{1, 1})
+				pt.Negative().SetOffset(1)
+
+				return pt
+			},
+			wantNativeHist: func() writev2.Histogram {
+				return writev2.Histogram{
+					Count:          &writev2.Histogram_CountInt{CountInt: 4},
+					Schema:         1,
+					ZeroThreshold:  0.5,
+					ZeroCount:      &writev2.Histogram_ZeroCountInt{ZeroCountInt: 1},
+					NegativeSpans:  []writev2.BucketSpan{{Offset: 2, Length: 2}},
+					NegativeDeltas: []int64{1, 0},
+					PositiveSpans:  []writev2.BucketSpan{{Offset: 2, Length: 2}},
+					PositiveDeltas: []int64{1, 0},
 					Timestamp:      500,
 				}
 			},
@@ -652,6 +829,10 @@ func TestPrometheusConverterV2_addExponentialHistogramDataPoints(t *testing.T) {
 								PositiveDeltas: []int64{4, -2, -1},
 							},
 						},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 0},
+							{Value: 2, Timestamp: 0},
+						},
 						Metadata: writev2.Metadata{
 							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
 						},
@@ -707,6 +888,9 @@ func TestPrometheusConverterV2_addExponentialHistogramDataPoints(t *testing.T) {
 								PositiveDeltas: []int64{4, -2},
 							},
 						},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 0},
+						},
 						Metadata: writev2.Metadata{
 							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
 						},
@@ -722,6 +906,9 @@ func TestPrometheusConverterV2_addExponentialHistogramDataPoints(t *testing.T) {
 								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
 								NegativeDeltas: []int64{4, -2, -1},
 							},
+						},
+						Exemplars: []writev2.Exemplar{
+							{Value: 2, Timestamp: 0},
 						},
 						Metadata: writev2.Metadata{
 							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
@@ -747,6 +934,7 @@ func TestPrometheusConverterV2_addExponentialHistogramDataPoints(t *testing.T) {
 			require.NoError(t, converter.addExponentialHistogramDataPoints(
 				metric.ExponentialHistogram().DataPoints(),
 				pcommon.NewResource(),
+				pcommon.NewInstrumentationScope(),
 				Settings{},
 				metricName,
 				m,

@@ -1,0 +1,23 @@
+$defs:
+  ssh_client_settings:
+    type: object
+    properties:
+      endpoint:
+        description: Endpoint is always required
+        type: string
+      ignore_host_key:
+        description: IgnoreHostKey provides an insecure path to quickstarts and testing
+        type: boolean
+      key_file:
+        type: string
+      known_hosts:
+        description: file path to the known_hosts
+        type: string
+      password:
+        type: string
+      timeout:
+        type: string
+        format: duration
+      username:
+        description: authentication requires a Username and either a Password or KeyFile
+        type: string

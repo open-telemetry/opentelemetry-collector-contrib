@@ -19,13 +19,16 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
 		APIConfig: k8sconfig.APIConfig{
-			AuthType: k8sconfig.AuthTypeServiceAccount,
+			AuthType:     k8sconfig.AuthTypeServiceAccount,
+			KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
+			KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
 		},
 	}
 }

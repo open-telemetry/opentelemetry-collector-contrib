@@ -18,14 +18,16 @@ import (
 	"sync"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
-	"github.com/hashicorp/golang-lru/v2/simplelru"
+	ddsampler "github.com/DataDog/datadog-agent/pkg/trace/sampler"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
 
@@ -48,6 +50,8 @@ const (
 var spanProcessor = map[string]func(*pb.Span, *ptrace.Span){
 	// HTTP
 	"servlet.request": processHTTPSpan,
+	"http.request":    processHTTPSpan,
+	"web.request":     processHTTPSpan,
 
 	// Internal
 	"spring.handler": processInternalSpan,
@@ -55,18 +59,26 @@ var spanProcessor = map[string]func(*pb.Span, *ptrace.Span){
 	// Database
 	"postgresql.query": processDBSpan,
 	"redis.query":      processDBSpan,
+
+	// GRPC
+	"grpc.server": processGRPCSpan,
+	"grpc.client": processGRPCSpan,
+
+	// AWS
+	"aws.request": processAWSSdkSpan,
+	"aws.command": processAWSSdkSpan,
 }
 
 func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 	if ddTracerVersion := req.Header.Get(header.TracerVersion); ddTracerVersion != "" {
-		attrs.PutStr(string(semconv.TelemetrySDKVersionKey), "Datadog-"+ddTracerVersion)
+		attrs.PutStr(string(conventions.TelemetrySDKVersionKey), "Datadog-"+ddTracerVersion)
 	}
 	if ddTracerLang := req.Header.Get(header.Lang); ddTracerLang != "" {
 		otelLang := ddTracerLang
 		if ddTracerLang == ".NET" {
 			otelLang = "dotnet"
 		}
-		attrs.PutStr(string(semconv.TelemetrySDKLanguageKey), otelLang)
+		attrs.PutStr(string(conventions.TelemetrySDKLanguageKey), otelLang)
 	}
 }
 
@@ -84,7 +96,7 @@ func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 //
 // This is currently gated by a feature gate (receiver.datadogreceiver.Enable128BitTraceID). If we don't get a cache
 // in traceIDCache, we don't enable this behavior.
-func traceID64to128(span *pb.Span, traceIDCache *simplelru.LRU[uint64, pcommon.TraceID]) (pcommon.TraceID, error) {
+func traceID64to128(span *pb.Span, traceIDCache *lru.Cache[uint64, pcommon.TraceID]) (pcommon.TraceID, error) {
 	if val, ok := traceIDCache.Get(span.TraceID); ok {
 		return val, nil
 	} else if val, ok := span.Meta["_dd.p.tid"]; ok {
@@ -119,6 +131,8 @@ func processHTTPSpan(span *pb.Span, newSpan *ptrace.Span) {
 }
 
 func processDBSpan(span *pb.Span, newSpan *ptrace.Span) {
+	// references:
+	// https://github.com/DataDog/documentation/blob/master/content/en/tracing/guide/ignoring_apm_resources.md#database
 	// https://opentelemetry.io/docs/specs/semconv/database/database-spans/#name
 	if val, ok := span.Meta["db.query.summary"]; ok {
 		newSpan.SetName(val)
@@ -135,27 +149,116 @@ func processDBSpan(span *pb.Span, newSpan *ptrace.Span) {
 	}
 }
 
+func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
+	// references:
+	// https://github.com/DataDog/documentation/blob/master/content/en/tracing/guide/ignoring_apm_resources.md#remote-procedure-calls
+	// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
+
+	// ddSpan.Attributes["grpc.status.code"] contains the gRPC status code name (eg "OK")
+	// not the numeric value (eg "0")
+	// it's ddSpan.error that indicates holds the gRPC status code numeric value
+	newSpan.Attributes().PutStr(string(conventions.RPCSystemNameKey), conventions.RPCSystemNameGRPC.Value.AsString())
+	newSpan.Attributes().PutStr(string(conventions.RPCResponseStatusCodeKey), strconv.Itoa(int(span.GetError())))
+
+	method := ""
+	service := ""
+	if rpcMethod, ok := span.Meta["rpc.method"]; ok {
+		// "rpc.method" is used by dd-trace-rb, check dd-trace-php
+		method = rpcMethod
+		if rpcService, ok := span.Meta["rpc.service"]; ok {
+			service = rpcService
+		}
+	} else if grpcFullMethod, ok := span.Meta["rpc.grpc.full_method"]; ok {
+		// "rpc.grpc.full_method" is used by dd-trace-go & dd-trace-rb, they also set span.Resource to the full method name
+		// format: /$package.$service/$method
+		grpcFullMethodElements := strings.SplitN(strings.TrimPrefix(grpcFullMethod, "/"), "/", 2)
+		if len(grpcFullMethodElements) == 2 {
+			method = grpcFullMethodElements[1]
+			service = grpcFullMethodElements[0]
+		}
+	} else if grpcMethod, ok := span.Meta["grpc.method.name"]; ok {
+		// format: /$package.$service/$method
+		// "grpc.method.name" is used by dd-trace-dotnet dd-trace-python & dd-trace-go
+		grpcMethodElements := strings.SplitN(strings.TrimPrefix(grpcMethod, "/"), "/", 2)
+		if len(grpcMethodElements) == 2 {
+			method = grpcMethodElements[1]
+			service = grpcMethodElements[0]
+		} else if len(grpcMethodElements) == 1 {
+			// unexpected format
+			method = ""
+			service = grpcMethodElements[0]
+		}
+	} else {
+		// resource is used by dd-trace-java
+		ddResource := strings.SplitN(strings.TrimPrefix(span.Resource, "/"), "/", 2)
+		if len(ddResource) == 2 {
+			method = ddResource[1]
+			service = ddResource[0]
+		}
+	}
+
+	spanName := ""
+	if method != "" {
+		newSpan.Attributes().PutStr(string(conventions.RPCMethodKey), method)
+		if !metadata.ReceiverDatadogreceiverDontEmitDeprecatedRPCServiceAttrFeatureGate.IsEnabled() {
+			newSpan.Attributes().PutStr("rpc.service", service)
+		}
+		spanName = service + "/" + method
+	} else if service != "" {
+		if !metadata.ReceiverDatadogreceiverDontEmitDeprecatedRPCServiceAttrFeatureGate.IsEnabled() {
+			newSpan.Attributes().PutStr("rpc.service", service)
+		}
+		spanName = service
+	}
+	if spanName != "" {
+		newSpan.SetName(spanName)
+	}
+}
+
+func processAWSSdkSpan(span *pb.Span, newSpan *ptrace.Span) {
+	// https://opentelemetry.io/docs/specs/semconv/cloud-providers/aws-sdk/
+	newSpan.Attributes().PutStr(string(conventions.RPCSystemNameKey), "aws-api")
+	if service, ok := span.Meta["aws.service"]; ok {
+		if operation, ok := span.Meta["aws.operation"]; ok {
+			newSpan.SetName(service + "/" + operation)
+		} else {
+			newSpan.SetName(service)
+		}
+	}
+}
+
 func processSpanByName(span *pb.Span, newSpan *ptrace.Span) {
 	if processor, ok := spanProcessor[span.Name]; ok {
 		processor(span, newSpan)
 	}
 }
 
-func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, traceIDCache *simplelru.LRU[uint64, pcommon.TraceID]) (ptrace.Traces, error) {
-	var traces pb.Traces
-	for _, p := range payload.GetChunks() {
-		traces = append(traces, p.GetSpans())
+func traceChunkSamplingPriority(traceChunk *pb.TraceChunk) (float64, bool) {
+	if traceChunk == nil {
+		return 0, false
 	}
+	if traceChunk.Priority != int32(ddsampler.PriorityNone) {
+		return float64(traceChunk.Priority), true
+	}
+	for _, span := range traceChunk.GetSpans() {
+		if samplingPriority, ok := span.Metrics["_sampling_priority_v1"]; ok {
+			return samplingPriority, true
+		}
+	}
+	return 0, false
+}
+
+func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, traceIDCache *lru.Cache[uint64, pcommon.TraceID]) (ptrace.Traces, error) {
 	sharedAttributes := pcommon.NewMap()
 	for k, v := range map[string]string{
-		string(semconv.ContainerIDKey):               payload.ContainerID,
-		string(semconv.TelemetrySDKLanguageKey):      payload.LanguageName,
-		string(semconv.ProcessRuntimeVersionKey):     payload.LanguageVersion,
-		string(semconv.DeploymentEnvironmentNameKey): payload.Env,
-		string(semconv.HostNameKey):                  payload.Hostname,
-		string(semconv.ServiceVersionKey):            payload.AppVersion,
-		string(semconv.TelemetrySDKNameKey):          "Datadog",
-		string(semconv.TelemetrySDKVersionKey):       payload.TracerVersion,
+		string(conventions.ContainerIDKey):               payload.ContainerID,
+		string(conventions.TelemetrySDKLanguageKey):      payload.LanguageName,
+		string(conventions.ProcessRuntimeVersionKey):     payload.LanguageVersion,
+		string(conventions.DeploymentEnvironmentNameKey): payload.Env,
+		string(conventions.HostNameKey):                  payload.Hostname,
+		string(conventions.ServiceVersionKey):            payload.AppVersion,
+		string(conventions.TelemetrySDKNameKey):          "Datadog",
+		string(conventions.TelemetrySDKVersionKey):       payload.TracerVersion,
 	} {
 		if v != "" {
 			sharedAttributes.PutStr(k, v)
@@ -176,11 +279,31 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 	// now instead of being a span level attribute.
 	groupByService := make(map[string]ptrace.SpanSlice)
 
-	for _, trace := range traces {
-		for _, span := range trace {
+	// Datadog splits a 128-bit trace ID into the 64-bit TraceID field plus the _dd.p.tid tag
+	// (upper 64 bits, hex), and only the chunk-local root span carries _dd.p.tid. Spans within a
+	// chunk are not ordered root-first, so reconstruct the full IDs for the whole payload before
+	// building spans; otherwise a span processed ahead of its root keeps the 64-bit (zero-padded)
+	// ID and no longer correlates with the rest of its trace. The shared cache additionally carries
+	// the mapping across payloads whose spans are flushed in separate requests.
+	if traceIDCache != nil {
+		for _, traceChunk := range payload.GetChunks() {
+			for _, span := range traceChunk.GetSpans() {
+				if _, err := traceID64to128(span, traceIDCache); err != nil {
+					logger.Error("error reconstructing 128-bit trace ID", zap.Error(err))
+				}
+			}
+		}
+	}
+
+	for _, traceChunk := range payload.GetChunks() {
+		samplingPriority, hasSamplingPriority := traceChunkSamplingPriority(traceChunk)
+		for _, span := range traceChunk.GetSpans() {
 			// Restore base service name as the service name.
 			// Without this, internal spans such as postgresql queries have a service.name set to postgresql
 			if val, ok := span.Meta["_dd.base_service"]; ok {
+				// Preserve original per-span service name so the DD exporter
+				// can recover it via span-level service.name precedence
+				span.Meta["service.name"] = span.Service
 				span.Service = val
 			}
 			slice, exist := groupByService[span.Service]
@@ -190,7 +313,8 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 			}
 			newSpan := slice.AppendEmpty()
 
-			_ = tagsToSpanLinks(span.GetMeta(), newSpan.Links())
+			setSpanLinks(span, newSpan.Links(), logger)
+			setSpanEvents(span, newSpan.Events(), logger)
 
 			newSpan.SetTraceID(uInt64ToTraceID(0, span.TraceID))
 			// Try to get the 128-bit traceID, if available.
@@ -211,7 +335,7 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 			newSpan.SetName(span.Name)
 			newSpan.Status().SetCode(ptrace.StatusCodeOk)
 			newSpan.Attributes().PutStr("dd.span.Resource", span.Resource)
-			if samplingPriority, ok := span.Metrics["_sampling_priority_v1"]; ok {
+			if hasSamplingPriority {
 				newSpan.Attributes().PutStr("sampling.priority", fmt.Sprintf("%f", samplingPriority))
 			}
 			if span.Error > 0 {
@@ -264,7 +388,7 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 				}
 			}
 
-			// Some spans need specific processing (http, db, ...)
+			// Some spans need specific processing (http, db, grpc...)
 			processSpanByName(span, &newSpan)
 		}
 	}
@@ -272,9 +396,9 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 	results := ptrace.NewTraces()
 	for service, spans := range groupByService {
 		rs := results.ResourceSpans().AppendEmpty()
-		rs.SetSchemaUrl(semconv.SchemaURL)
+		rs.SetSchemaUrl(conventions.SchemaURL)
 		sharedAttributes.CopyTo(rs.Resource().Attributes())
-		rs.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), service)
+		rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), service)
 
 		in := rs.ScopeSpans().AppendEmpty()
 		in.Scope().SetName("Datadog")
@@ -285,55 +409,226 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 	return results, nil
 }
 
-// DDSpanLink represents the structure of each JSON object
-type DDSpanLink struct {
-	TraceID    string         `json:"trace_id"`
-	SpanID     string         `json:"span_id"`
-	Tracestate string         `json:"tracestate"`
-	Attributes map[string]any `json:"attributes"`
+// setSpanLinks populates the OTel span links from a Datadog span. Datadog tracers send links in the
+// native span_links field, which carries the full 128-bit trace id (trace_id + trace_id_high) and
+// the W3C trace flags; spans converted from OTLP by the Datadog agent instead carry a _dd.span_links
+// meta JSON string. Native links take precedence. The meta key is always removed so it does not also
+// surface as a raw span attribute.
+func setSpanLinks(span *pb.Span, dest ptrace.SpanLinkSlice, logger *zap.Logger) {
+	raw, hasMeta := span.Meta["_dd.span_links"]
+	delete(span.Meta, "_dd.span_links")
+
+	if len(span.SpanLinks) > 0 {
+		for _, l := range span.SpanLinks {
+			link := dest.AppendEmpty()
+			link.SetTraceID(uInt64ToTraceID(l.TraceIDHigh, l.TraceID))
+			link.SetSpanID(uInt64ToSpanID(l.SpanID))
+			link.TraceState().FromRaw(l.Tracestate)
+			link.SetFlags(l.Flags)
+			for k, v := range l.Attributes {
+				link.Attributes().PutStr(k, v)
+			}
+		}
+		return
+	}
+
+	if hasMeta {
+		if err := metaSpanLinks(raw, dest); err != nil {
+			logger.Error("error parsing _dd.span_links", zap.Error(err))
+		}
+	}
 }
 
-func tagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
-	key := "_dd.span_links"
-	val, ok := tags[key]
-	if !ok {
-		return nil
-	}
-	delete(tags, key)
+// ddSpanLink mirrors an entry of the _dd.span_links meta JSON array. Datadog encodes the ids either
+// as decimal numbers (dd-trace tracers: trace_id + optional trace_id_high + span_id) or as hex
+// strings (OTLP spans converted by the Datadog agent: 32-char trace_id, 16-char span_id), so the ids
+// are kept raw and decoded to accept both encodings.
+type ddSpanLink struct {
+	TraceID     json.RawMessage `json:"trace_id"`
+	TraceIDHigh json.RawMessage `json:"trace_id_high"`
+	SpanID      json.RawMessage `json:"span_id"`
+	Tracestate  string          `json:"tracestate"`
+	Flags       uint32          `json:"flags"`
+	Attributes  map[string]any  `json:"attributes"`
+}
 
-	var spans []DDSpanLink
-	err := json.Unmarshal([]byte(val), &spans)
-	if err != nil {
+func metaSpanLinks(raw string, dest ptrace.SpanLinkSlice) error {
+	var links []ddSpanLink
+	if err := json.Unmarshal([]byte(raw), &links); err != nil {
 		return err
 	}
 
-	for i := 0; i < len(spans); i++ {
-		span := spans[i]
+	for _, l := range links {
 		link := dest.AppendEmpty()
 
-		// Convert trace id.
-		rawTrace, errTrace := oteltrace.TraceIDFromHex(span.TraceID)
-		if errTrace != nil {
-			return fmt.Errorf("error converting trace id (%s) from hex: %w", span.TraceID, errTrace)
-		}
-		link.SetTraceID(pcommon.TraceID(rawTrace))
-
-		// Convert span id.
-		rawSpan, errSpan := oteltrace.SpanIDFromHex(span.SpanID)
-		if errSpan != nil {
-			return fmt.Errorf("error converting span id (%s) from hex: %w", span.SpanID, errTrace)
-		}
-		link.SetSpanID(pcommon.SpanID(rawSpan))
-
-		link.TraceState().FromRaw(span.Tracestate)
-
-		err = link.Attributes().FromRaw(span.Attributes)
+		traceID, err := decodeLinkTraceID(l.TraceID, l.TraceIDHigh)
 		if err != nil {
+			return err
+		}
+		link.SetTraceID(traceID)
+
+		spanID, err := decodeLinkSpanID(l.SpanID)
+		if err != nil {
+			return err
+		}
+		link.SetSpanID(spanID)
+
+		link.TraceState().FromRaw(l.Tracestate)
+		link.SetFlags(l.Flags)
+		if err := link.Attributes().FromRaw(l.Attributes); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func decodeLinkTraceID(traceID, traceIDHigh json.RawMessage) (pcommon.TraceID, error) {
+	if isJSONString(traceID) {
+		var s string
+		if err := json.Unmarshal(traceID, &s); err != nil {
+			return pcommon.TraceID{}, err
+		}
+		raw, err := oteltrace.TraceIDFromHex(s)
+		if err != nil {
+			return pcommon.TraceID{}, fmt.Errorf("error converting trace id (%s) from hex: %w", s, err)
+		}
+		return pcommon.TraceID(raw), nil
+	}
+
+	low, err := rawUint64(traceID)
+	if err != nil {
+		return pcommon.TraceID{}, err
+	}
+	var high uint64
+	if len(traceIDHigh) > 0 {
+		if high, err = rawUint64(traceIDHigh); err != nil {
+			return pcommon.TraceID{}, err
+		}
+	}
+	return uInt64ToTraceID(high, low), nil
+}
+
+func decodeLinkSpanID(spanID json.RawMessage) (pcommon.SpanID, error) {
+	if isJSONString(spanID) {
+		var s string
+		if err := json.Unmarshal(spanID, &s); err != nil {
+			return pcommon.SpanID{}, err
+		}
+		raw, err := oteltrace.SpanIDFromHex(s)
+		if err != nil {
+			return pcommon.SpanID{}, fmt.Errorf("error converting span id (%s) from hex: %w", s, err)
+		}
+		return pcommon.SpanID(raw), nil
+	}
+
+	id, err := rawUint64(spanID)
+	if err != nil {
+		return pcommon.SpanID{}, err
+	}
+	return uInt64ToSpanID(id), nil
+}
+
+func isJSONString(raw json.RawMessage) bool {
+	return len(raw) > 0 && raw[0] == '"'
+}
+
+func rawUint64(raw json.RawMessage) (uint64, error) {
+	var n uint64
+	if err := json.Unmarshal(raw, &n); err != nil {
+		return 0, err
+	}
+	return n, nil
+}
+
+// setSpanEvents populates OTel span events from a Datadog span. Datadog tracers send events in the
+// native span_events field when the endpoint advertises support; otherwise (and for older tracers)
+// they arrive as an "events" meta JSON string. Native events take precedence. The events meta keys
+// are removed so they do not also surface as raw span attributes.
+func setSpanEvents(span *pb.Span, dest ptrace.SpanEventSlice, logger *zap.Logger) {
+	raw, hasMeta := span.Meta["events"]
+	delete(span.Meta, "events")
+	delete(span.Meta, "_dd.span_events.has_exception")
+
+	if len(span.SpanEvents) > 0 {
+		for _, e := range span.SpanEvents {
+			event := dest.AppendEmpty()
+			event.SetName(e.Name)
+			event.SetTimestamp(pcommon.Timestamp(e.TimeUnixNano))
+			for k, v := range e.Attributes {
+				putAttributeAnyValue(event.Attributes(), k, v)
+			}
+		}
+		return
+	}
+
+	if hasMeta {
+		if err := metaSpanEvents(raw, dest); err != nil {
+			logger.Error("error parsing span events", zap.Error(err))
+		}
+	}
+}
+
+// ddSpanEvent mirrors an entry of the "events" meta JSON array emitted by tracers that do not use the
+// native span_events field.
+type ddSpanEvent struct {
+	TimeUnixNano uint64         `json:"time_unix_nano"`
+	Name         string         `json:"name"`
+	Attributes   map[string]any `json:"attributes"`
+}
+
+func metaSpanEvents(raw string, dest ptrace.SpanEventSlice) error {
+	var events []ddSpanEvent
+	if err := json.Unmarshal([]byte(raw), &events); err != nil {
+		return err
+	}
+
+	for _, e := range events {
+		event := dest.AppendEmpty()
+		event.SetName(e.Name)
+		event.SetTimestamp(pcommon.Timestamp(e.TimeUnixNano))
+		if err := event.Attributes().FromRaw(e.Attributes); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func putAttributeAnyValue(attrs pcommon.Map, key string, v *pb.AttributeAnyValue) {
+	if v == nil {
+		return
+	}
+	switch v.Type {
+	case pb.AttributeAnyValue_STRING_VALUE:
+		attrs.PutStr(key, v.StringValue)
+	case pb.AttributeAnyValue_BOOL_VALUE:
+		attrs.PutBool(key, v.BoolValue)
+	case pb.AttributeAnyValue_INT_VALUE:
+		attrs.PutInt(key, v.IntValue)
+	case pb.AttributeAnyValue_DOUBLE_VALUE:
+		attrs.PutDouble(key, v.DoubleValue)
+	case pb.AttributeAnyValue_ARRAY_VALUE:
+		if v.ArrayValue == nil {
+			return
+		}
+		slice := attrs.PutEmptySlice(key)
+		for _, av := range v.ArrayValue.Values {
+			if av == nil {
+				continue
+			}
+			switch av.Type {
+			case pb.AttributeArrayValue_STRING_VALUE:
+				slice.AppendEmpty().SetStr(av.StringValue)
+			case pb.AttributeArrayValue_BOOL_VALUE:
+				slice.AppendEmpty().SetBool(av.BoolValue)
+			case pb.AttributeArrayValue_INT_VALUE:
+				slice.AppendEmpty().SetInt(av.IntValue)
+			case pb.AttributeArrayValue_DOUBLE_VALUE:
+				slice.AppendEmpty().SetDouble(av.DoubleValue)
+			}
+		}
+	}
 }
 
 var bufferPool = sync.Pool{
@@ -486,7 +781,7 @@ func traceChunksFromSpans(spans []pb.Span) []*pb.TraceChunk {
 	}
 	for _, t := range byID {
 		traceChunks = append(traceChunks, &pb.TraceChunk{
-			Priority: int32(0),
+			Priority: int32(ddsampler.PriorityNone),
 			Spans:    t,
 		})
 	}
@@ -497,7 +792,7 @@ func traceChunksFromTraces(traces pb.Traces) []*pb.TraceChunk {
 	traceChunks := make([]*pb.TraceChunk, 0, len(traces))
 	for _, trace := range traces {
 		traceChunks = append(traceChunks, &pb.TraceChunk{
-			Priority: int32(0),
+			Priority: int32(ddsampler.PriorityNone),
 			Spans:    trace,
 		})
 	}

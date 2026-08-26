@@ -39,6 +39,7 @@ func (cl DbSQLClient) QueryRows(ctx context.Context, args ...any) ([]StringMap, 
 	if err != nil {
 		return nil, err
 	}
+	defer sqlRows.Close()
 	var out []StringMap
 	colTypes, err := sqlRows.ColumnTypes()
 	if err != nil {
@@ -72,16 +73,21 @@ func (cl DbSQLClient) prepareQueryFields(sql string, args []any) []zap.Field {
 
 // This is only used for testing, but need to be exposed to other packages.
 type FakeDBClient struct {
-	RequestCounter int
-	StringMaps     [][]StringMap
-	Err            error
+	RequestCounter      int
+	StringMaps          [][]StringMap
+	Err                 error
+	ErrNullValueWarning bool
 }
 
 func (c *FakeDBClient) QueryRows(context.Context, ...any) ([]StringMap, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
+	var err error
+	if c.ErrNullValueWarning {
+		err = ErrNullValueWarning
+	}
 	idx := c.RequestCounter
 	c.RequestCounter++
-	return c.StringMaps[idx], nil
+	return c.StringMaps[idx], err
 }

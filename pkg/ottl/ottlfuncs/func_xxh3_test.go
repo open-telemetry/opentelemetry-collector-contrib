@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -41,7 +42,7 @@ func Test_XXH3(t *testing.T) {
 			if tt.err {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			assert.Equal(t, tt.expected, result)
 		})
@@ -77,4 +78,40 @@ func Test_XXH3Error(t *testing.T) {
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
+}
+
+func Test_XXH3Factory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewXXH3Factory[any]()
+		assert.Equal(t, "XXH3", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewXXH3Factory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &XXH3Arguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewXXH3Factory[any]()
+		args := factory.CreateDefaultArguments()
+		XXH3Args, ok := args.(*XXH3Arguments[any])
+		require.True(t, ok)
+		XXH3Args.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "hello", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createXXH3Function[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "XXH3Factory args must be of type *XXH3Arguments[K]")
+	})
 }

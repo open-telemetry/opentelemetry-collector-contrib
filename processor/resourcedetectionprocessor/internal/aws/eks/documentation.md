@@ -6,15 +6,15 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| cloud.account.id | The cloud account id | Any Str | false |
-| cloud.availability_zone | The cloud availability zone | Any Str | false |
-| cloud.platform | The cloud.platform | Any Str | true |
-| cloud.provider | The cloud.provider | Any Str | true |
-| cloud.region | The cloud region | Any Str | false |
-| host.id | The host.id | Any Str | false |
-| host.image.id | The host image id | Any Str | false |
-| host.name | The hostname | Any Str | false |
-| host.type | The host id | Any Str | false |
-| k8s.cluster.name | The EKS cluster name. This attribute is currently only available when running on EC2 instances, and requires permission to run the EC2:DescribeInstances action. | Any Str | false |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| cloud.account.id | The cloud account id | Any Str | false | [cloud.account.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-account-id) | - |
+| cloud.availability_zone | The cloud availability zone | Any Str | false | [cloud.availability_zone](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-availability-zone) | - |
+| cloud.platform | The cloud.platform | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
+| cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
+| cloud.region | The cloud region | Any Str | false | [cloud.region](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-region) | - |
+| host.id | The host.id | Any Str | false | [host.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-id) | - |
+| host.image.id | The host image id | Any Str | false | [host.image.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-image-id) | - |
+| host.name | The hostname | Any Str | false | [host.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-name) | - |
+| host.type | The host id | Any Str | false | [host.type](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-type) | - |
+| k8s.cluster.name | The EKS cluster name. This attribute is currently only available when running on EC2 instances, and requires permission to run the EC2:DescribeInstances action. | Any Str | false | [k8s.cluster.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/k8s.md#k8s-cluster-name) | - |

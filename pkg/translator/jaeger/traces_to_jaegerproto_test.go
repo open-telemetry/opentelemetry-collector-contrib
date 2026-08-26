@@ -9,9 +9,9 @@ import (
 	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.16.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -27,7 +27,7 @@ func TestGetTagFromStatusCode(t *testing.T) {
 			name: "ok",
 			code: ptrace.StatusCodeOk,
 			tag: model.KeyValue{
-				Key:   string(conventions.OtelStatusCodeKey),
+				Key:   "otel.status_code",
 				VType: model.ValueType_STRING,
 				VStr:  statusOk,
 			},
@@ -37,7 +37,7 @@ func TestGetTagFromStatusCode(t *testing.T) {
 			name: "error",
 			code: ptrace.StatusCodeError,
 			tag: model.KeyValue{
-				Key:   string(conventions.OtelStatusCodeKey),
+				Key:   "otel.status_code",
 				VType: model.ValueType_STRING,
 				VStr:  statusError,
 			},
@@ -78,7 +78,7 @@ func TestGetTagFromStatusMsg(t *testing.T) {
 	got, ok := getTagFromStatusMsg("test-error")
 	assert.True(t, ok)
 	assert.Equal(t, model.KeyValue{
-		Key:   string(conventions.OtelStatusDescriptionKey),
+		Key:   "otel.status_description",
 		VStr:  "test-error",
 		VType: model.ValueType_STRING,
 	}, got)
@@ -170,7 +170,7 @@ func TestAttributesToJaegerProtoTags(t *testing.T) {
 	attributes.PutStr("string-val", "abc")
 	attributes.PutDouble("double-val", 1.23)
 	attributes.PutEmptyBytes("bytes-val").FromRaw([]byte{1, 2, 3, 4})
-	attributes.PutStr(string(conventions.ServiceNameKey), "service-name")
+	attributes.PutStr("service.name", "service-name")
 
 	expected := []model.KeyValue{
 		{
@@ -199,7 +199,7 @@ func TestAttributesToJaegerProtoTags(t *testing.T) {
 			VBinary: []byte{1, 2, 3, 4},
 		},
 		{
-			Key:   string(conventions.ServiceNameKey),
+			Key:   "service.name",
 			VType: model.ValueType_STRING,
 			VStr:  "service-name",
 		},
@@ -333,7 +333,8 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 func TestInternalTracesToJaegerProtoBatchesAndBack(t *testing.T) {
 	tds, err := goldendataset.GenerateTraces(
 		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",
-		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt")
+		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt",
+	)
 	assert.NoError(t, err)
 	for _, td := range tds {
 		protoBatches := ProtoFromTraces(td)
@@ -376,5 +377,50 @@ func BenchmarkInternalTracesToJaegerProto(b *testing.B) {
 	for b.Loop() {
 		batches := ProtoFromTraces(td)
 		assert.NotEmpty(b, batches)
+	}
+}
+
+func TestAppendTagsFromAttributesHTTPConventionsMigration(t *testing.T) {
+	cases := []struct {
+		name       string
+		emitV1     bool
+		dontEmitV0 bool
+		expectsV0  bool
+		expectsV1  bool
+	}{
+		{name: "v0 only", emitV1: false, dontEmitV0: false, expectsV0: true, expectsV1: false},
+		{name: "double publish", emitV1: true, dontEmitV0: false, expectsV0: true, expectsV1: true},
+		{name: "v1 only", emitV1: true, dontEmitV0: true, expectsV0: false, expectsV1: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := featuregate.GlobalRegistry().Set("pkg.translator.jaeger.EmitV1HttpConventions", tc.emitV1)
+			assert.NoError(t, err)
+			err = featuregate.GlobalRegistry().Set("pkg.translator.jaeger.DontEmitV0HttpConventions", tc.dontEmitV0)
+			assert.NoError(t, err)
+			t.Cleanup(func() {
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.jaeger.DontEmitV0HttpConventions", false))
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.jaeger.EmitV1HttpConventions", false))
+			})
+
+			attrs := pcommon.NewMap()
+			attrs.PutStr("http.status_code", "500")
+
+			tags := appendTagsFromAttributes(nil, attrs)
+
+			hasV0 := false
+			hasV1 := false
+			for _, tag := range tags {
+				if tag.Key == "http.status_code" {
+					hasV0 = true
+				}
+				if tag.Key == "http.response.status_code" {
+					hasV1 = true
+				}
+			}
+			assert.Equal(t, tc.expectsV0, hasV0)
+			assert.Equal(t, tc.expectsV1, hasV1)
+		})
 	}
 }

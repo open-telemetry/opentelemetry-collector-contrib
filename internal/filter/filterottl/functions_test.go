@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
@@ -125,7 +124,9 @@ func Test_HasAttrKeyOnDatapoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := hasAttributeKeyOnDatapoint(tt.key)
 			assert.NoError(t, err)
-			result, err := exprFunc(t.Context(), ottlmetric.NewTransformContext(tt.input(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
+			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), tt.input())
+			defer tCtx.Close()
+			result, err := exprFunc(t.Context(), tCtx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -350,7 +351,9 @@ func Test_HasAttrOnDatapoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := hasAttributeOnDatapoint(tt.key, tt.expectedVal)
 			assert.NoError(t, err)
-			result, err := exprFunc(t.Context(), ottlmetric.NewTransformContext(tt.input(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
+			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), tt.input())
+			defer tCtx.Close()
+			result, err := exprFunc(t.Context(), tCtx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})

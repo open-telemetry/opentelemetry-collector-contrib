@@ -39,28 +39,38 @@ func TestScrape(t *testing.T) {
 		config       *Config
 	}
 
+	mockLoadFunc := func(_ context.Context) (*load.AvgStat, error) {
+		return &load.AvgStat{
+			Load1:  1.0,
+			Load5:  5.0,
+			Load15: 15.0,
+		}, nil
+	}
+
 	testCases := []testCase{
 		{
 			name:        testStandard,
 			saveMetrics: true,
 			config: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
+			loadFunc: mockLoadFunc,
 		},
 		{
 			name:        testAverage,
 			saveMetrics: true,
 			config: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				CPUAverage:           true,
 			},
 			bootTimeFunc: func(context.Context) (uint64, error) { return bootTime, nil },
+			loadFunc:     mockLoadFunc,
 		},
 		{
 			name:     "Load Error",
 			loadFunc: func(context.Context) (*load.AvgStat, error) { return nil, errors.New("err1") },
 			config: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 			expectedErr: "err1",
 		},

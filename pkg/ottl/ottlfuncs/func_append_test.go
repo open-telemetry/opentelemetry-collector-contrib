@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -17,7 +18,7 @@ func Test_Append(t *testing.T) {
 	setter := func(_ context.Context, res, val any) error {
 		rSlice := res.(pcommon.Slice)
 		vSlice := val.(pcommon.Slice)
-		assert.NoError(t, rSlice.FromRaw(vSlice.AsRaw()))
+		require.NoError(t, rSlice.FromRaw(vSlice.AsRaw()))
 
 		return nil
 	}
@@ -426,11 +427,11 @@ func Test_Append(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			exprFunc, err := appendTo[any](tc.Target, tc.Value, tc.Values)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			res := pcommon.NewSlice()
 			result, err := exprFunc(t.Context(), res)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Nil(t, result)
 			assert.NotNil(t, res)
 
@@ -444,7 +445,7 @@ func Test_Append(t *testing.T) {
 func TestTargetType(t *testing.T) {
 	expectedInt := 5
 	expectedSlice := pcommon.NewValueSlice()
-	assert.NoError(t, expectedSlice.Slice().FromRaw([]any{"a"}))
+	require.NoError(t, expectedSlice.Slice().FromRaw([]any{"a"}))
 	singleIntGetter := ottl.NewTestingOptional[ottl.Getter[any]](ottl.StandardGetSetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return expectedInt, nil
@@ -625,7 +626,7 @@ func TestTargetType(t *testing.T) {
 				Setter: func(_ context.Context, res, val any) error {
 					rSlice := res.(pcommon.Slice)
 					vSlice := val.(pcommon.Slice)
-					assert.NoError(t, rSlice.FromRaw(vSlice.AsRaw()))
+					require.NoError(t, rSlice.FromRaw(vSlice.AsRaw()))
 
 					return nil
 				},
@@ -633,7 +634,7 @@ func TestTargetType(t *testing.T) {
 
 			var nilSlice ottl.Optional[[]ottl.Getter[any]]
 			exprFunc, err := appendTo[any](target, singleIntGetter, nilSlice)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			res := pcommon.NewSlice()
 			result, err := exprFunc(t.Context(), res)
@@ -641,7 +642,7 @@ func TestTargetType(t *testing.T) {
 			if tc.expectedError {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Nil(t, result)
 				assert.NotNil(t, res)
 
@@ -694,4 +695,48 @@ func Test_ArgumentsArePresent(t *testing.T) {
 			assert.Equal(t, tc.IsErrorExpected, err != nil)
 		})
 	}
+}
+
+func Test_AppendFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewAppendFactory[any]()
+		assert.Equal(t, "append", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewAppendFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &AppendArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Value", "Values"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewAppendFactory[any]()
+		args := factory.CreateDefaultArguments()
+		appendArgs, ok := args.(*AppendArguments[any])
+		require.True(t, ok)
+		appendArgs.Target = &ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return nil, nil
+			},
+			Setter: func(context.Context, any, any) error {
+				return nil
+			},
+		}
+		appendArgs.Value = ottl.NewTestingOptional[ottl.Getter[any]](&ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "value", nil
+			},
+		})
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createAppendFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "AppendFactory args must be of type *Appendrguments[K]")
+	})
 }

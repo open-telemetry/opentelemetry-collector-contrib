@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -139,7 +140,7 @@ func Test_ContainsValue(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "not find pcommon.Value in target",
+			name: "find pcommon.Value in target",
 			target: ottl.StandardPSliceGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					s := pcommon.NewSlice()
@@ -152,7 +153,7 @@ func Test_ContainsValue(t *testing.T) {
 					return pcommon.NewValueInt(4), nil
 				},
 			},
-			expected: false,
+			expected: true,
 		},
 		{
 			name: "Target is []string",
@@ -173,7 +174,7 @@ func Test_ContainsValue(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := containsValue(tt.target, tt.item)
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -194,4 +195,45 @@ func Test_ContainsValue_Error(t *testing.T) {
 	exprFunc := containsValue(target, item)
 	_, err := exprFunc(t.Context(), nil)
 	assert.Error(t, err)
+}
+
+func Test_ContainsValueFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewContainsValueFactory[any]()
+		assert.Equal(t, "ContainsValue", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewContainsValueFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ContainsValueArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Item"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewContainsValueFactory[any]()
+		args := factory.CreateDefaultArguments()
+		containsValueArgs, ok := args.(*ContainsValueArguments[any])
+		require.True(t, ok)
+		containsValueArgs.Target = &ottl.StandardPSliceGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return pcommon.NewSlice(), nil
+			},
+		}
+		containsValueArgs.Item = &ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "value", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createContainsValueFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ContainsValueFactory args must be of type *ContainsValueArguments[K]")
+	})
 }

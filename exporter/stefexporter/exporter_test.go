@@ -13,7 +13,7 @@ import (
 
 	stefgrpc "github.com/splunk/stef/go/grpc"
 	"github.com/splunk/stef/go/grpc/stef_proto"
-	"github.com/splunk/stef/go/otel/oteltef"
+	"github.com/splunk/stef/go/otel/otelstef"
 	"github.com/splunk/stef/go/pkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -66,7 +66,7 @@ func (m *mockMetricDestServer) start() {
 
 	m.grpcServer = grpcServer
 
-	schema, err := oteltef.MetricsWireSchema()
+	schema, err := otelstef.MetricsWireSchema()
 	if err != nil {
 		m.logger.Fatal("Failed to load schema", zap.Error(err))
 	}
@@ -96,7 +96,7 @@ func (m *mockMetricDestServer) stop() {
 func (m *mockMetricDestServer) onStream(grpcReader stefgrpc.GrpcReader, stream stefgrpc.STEFStream) error {
 	m.logger.Info("Incoming TEF/gRPC connection.")
 
-	reader, err := oteltef.NewMetricsReader(grpcReader)
+	reader, err := otelstef.NewMetricsReader(grpcReader)
 	if err != nil {
 		m.logger.Error("Error creating metrics reader from connection", zap.Error(err))
 		return err
@@ -143,9 +143,9 @@ func runTest(
 	if cfg == nil {
 		cfg = factory.CreateDefaultConfig().(*Config)
 	}
-	cfg.Endpoint = mockSrv.endpoint
+	cfg.ClientConfig.Endpoint = mockSrv.endpoint
 	// Use insecure mode for tests so that we don't bother with certificates.
-	cfg.TLS.Insecure = true
+	cfg.ClientConfig.TLS.Insecure = true
 
 	// Make retries quick. We will be testing failure modes and don't want test to take too long.
 	cfg.RetryConfig.InitialInterval = 10 * time.Millisecond
@@ -174,7 +174,7 @@ func TestExport(t *testing.T) {
 			compression, func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig().(*Config)
-				cfg.Compression = configcompression.Type(compression)
+				cfg.ClientConfig.Compression = configcompression.Type(compression)
 
 				runTest(
 					t,
@@ -187,7 +187,7 @@ func TestExport(t *testing.T) {
 						// the case where exporter begins to forcedly flush
 						// encoded data.
 						pointCount := int64(0)
-						for i := 0; i < 2*cfg.QueueConfig.NumConsumers; i++ {
+						for i := 0; i < 2*cfg.QueueConfig.Get().NumConsumers; i++ {
 							md := testdata.GenerateMetrics(1)
 							pointCount += int64(md.DataPointCount())
 							err := exp.ConsumeMetrics(t.Context(), md)
@@ -214,7 +214,7 @@ func TestReconnect(t *testing.T) {
 	// Shorten max ack waiting time so that the attempt to send on a failed
 	// connection times out quickly and attempt to send again is tried
 	// until the broken connection is detected and reconnection happens.
-	cfg.Timeout = 300 * time.Millisecond
+	cfg.TimeoutConfig.Timeout = 300 * time.Millisecond
 
 	runTest(
 		t,
@@ -263,7 +263,7 @@ func TestAckTimeout(t *testing.T) {
 
 	// Shorten max ack waiting time so that tests run fast.
 	// Increase this if the second eventually() below fails sporadically.
-	cfg.Timeout = 300 * time.Millisecond
+	cfg.TimeoutConfig.Timeout = 300 * time.Millisecond
 
 	runTest(
 		t,

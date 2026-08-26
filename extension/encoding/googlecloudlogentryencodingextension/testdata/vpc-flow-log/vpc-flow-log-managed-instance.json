@@ -1,0 +1,51 @@
+{
+  "insertId": "abriadf35gp7q",
+  "jsonPayload": {
+    "bytes_sent": "0",
+    "connection": {
+      "dest_ip": "10.10.0.2",
+      "dest_port": 22,
+      "protocol": 6,
+      "src_ip": "45.78.219.169",
+      "src_port": 39552
+    },
+    "dest_instance": {
+      "managed_instance_group": {
+        "name": "andrewvc-flowfixtures-mig",
+        "region": "us-central1"
+      },
+      "project_id": "elastic-logstash",
+      "region": "us-central1",
+      "vm_name": "andrewvc-flowfixtures-vm-zh8x",
+      "zone": "us-central1-c"
+    },
+    "dest_vpc": {
+      "project_id": "elastic-logstash",
+      "subnetwork_name": "andrewvc-flowfixtures-subnet",
+      "subnetwork_region": "us-central1",
+      "vpc_name": "andrewvc-flowfixtures-network"
+    },
+    "end_time": "2025-11-07T21:18:58.489621532Z",
+    "packets_sent": "8",
+    "reporter": "DEST",
+    "src_location": {
+      "asn": 150436,
+      "city": "Singapore",
+      "continent": "Asia",
+      "country": "sgp"
+    },
+    "start_time": "2025-11-07T21:18:58.489621532Z"
+  },
+  "logName": "projects/elastic-logstash/logs/compute.googleapis.com%2Fvpc_flows",
+  "receiveTimestamp": "2025-11-07T21:23:01.376765230Z",
+  "resource": {
+    "labels": {
+      "location": "us-central1",
+      "project_id": "elastic-logstash",
+      "subnetwork_id": "3489268495624148348",
+      "subnetwork_name": "andrewvc-flowfixtures-subnet"
+    },
+    "type": "gce_subnetwork"
+  },
+  "timestamp": "2025-11-07T21:23:01.376765230Z"
+}

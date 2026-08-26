@@ -1,4 +1,12 @@
-type: webhookevent
+display_name: Webhook Event Receiver
+type: webhook_event
+deprecated_type: webhookevent
+
+description: |
+  The Webhook Event Receiver is a push based event collector component meant to act as a generally available receiver
+  for any webhook style data source. It is designed to work alongside other pipeline components like the
+  [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor)
+  to allow the ingestion of generic events as logs into the opentelemetry collector.
 
 status:
   class: receiver

@@ -1,0 +1,42 @@
+name: Setup Go & repo tooling
+description: Common setup for Go-based workflows (disk cleanup, setup-go cache, optional gomoddownload).
+
+inputs:
+  go-version:
+    description: Version passed to actions/setup-go.
+    required: false
+    default: "oldstable"
+  gomoddownload:
+    description: Whether to run `make -j2 gomoddownload` when Go cache is cold.
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Free disk space
+      shell: bash
+      # Force 'bash' to use Git Bash on Windows runners.
+      # This allows us to share the same cleanup script across OSs.
+      run: |
+        chmod +x ./.github/workflows/scripts/free-disk-space.sh
+        ./.github/workflows/scripts/free-disk-space.sh
+
+    - name: Setup Go
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+      id: go-setup
+      with:
+        go-version: ${{ inputs.go-version }}
+        # Narrow the cache key to high-stability files (tooling and testbed) so
+        # per-component Renovate bumps don't invalidate the shared Go module
+        # cache. `go test`/`go build` lazy-fetches any module versions not
+        # present in the restored cache.
+        cache-dependency-path: |
+          internal/tools/go.sum
+          testbed/go.sum
+
+    - name: Install dependencies (gomoddownload)
+      # Only download if setup-go didn't restore a cache.
+      if: inputs.gomoddownload == 'true' && steps.go-setup.outputs.cache-hit != 'true'
+      shell: bash
+      run: make -j8 gomoddownload

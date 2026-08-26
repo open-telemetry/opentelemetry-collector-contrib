@@ -11,11 +11,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 	maxmind "github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider/maxmindprovider"
@@ -42,6 +43,7 @@ func TestLoadConfig(t *testing.T) {
 					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
 				},
 				Attributes: defaultAttributes,
+				ErrorMode:  ottl.PropagateError,
 			},
 		},
 		{
@@ -52,6 +54,7 @@ func TestLoadConfig(t *testing.T) {
 					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
 				},
 				Attributes: defaultAttributes,
+				ErrorMode:  ottl.PropagateError,
 			},
 		},
 		{
@@ -74,7 +77,23 @@ func TestLoadConfig(t *testing.T) {
 					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
 				},
 				Attributes: []attribute.Key{"client.address", "source.address", "custom.address"},
+				ErrorMode:  ottl.PropagateError,
 			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "error_mode_ignore"),
+			expected: &Config{
+				Context: resource,
+				Providers: map[string]provider.Config{
+					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
+				},
+				Attributes: defaultAttributes,
+				ErrorMode:  ottl.IgnoreError,
+			},
+		},
+		{
+			id:                    component.NewIDWithName(metadata.Type, "invalid_error_mode"),
+			unmarshalErrorMessage: "unknown error mode not_a_mode",
 		},
 	}
 
@@ -96,11 +115,11 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.validateErrorMessage != "" {
-				assert.EqualError(t, xconfmap.Validate(cfg), tt.validateErrorMessage)
+				assert.EqualError(t, confmap.Validate(cfg), tt.validateErrorMessage)
 				return
 			}
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -147,7 +166,7 @@ func TestLoadConfig_ValidProviderKey(t *testing.T) {
 	factories.Processors[metadata.Type] = factory
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-mockProvider.yaml"), factories)
 
-	require.ErrorContains(t, err, "has invalid keys: database")
+	require.ErrorContains(t, err, "'geoipprocessor.providerConfigMock' has invalid keys: database")
 }
 
 func TestLoadConfig_ProviderValidateError(t *testing.T) {

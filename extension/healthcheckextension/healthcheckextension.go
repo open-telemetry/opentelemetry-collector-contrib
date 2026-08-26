@@ -30,19 +30,19 @@ var _ extensioncapabilities.PipelineWatcher = (*healthCheckExtension)(nil)
 
 func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) error {
 	hc.logger.Info("Starting health_check extension", zap.Any("config", hc.config))
-	ln, err := hc.config.ToListener(ctx)
+	ln, err := hc.config.Config.ServerConfig.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", hc.config.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", hc.config.Config.ServerConfig.NetAddr.Endpoint, err)
 	}
 
-	hc.server, err = hc.config.ToServer(ctx, host, hc.settings, nil)
+	hc.server, err = hc.config.Config.ServerConfig.ToServer(ctx, host.GetExtensions(), hc.settings, nil)
 	if err != nil {
 		return err
 	}
 
 	// Mount HC handler
 	mux := http.NewServeMux()
-	mux.Handle(hc.config.Path, hc.baseHandler())
+	mux.Handle(hc.config.Config.Path, hc.baseHandler())
 	hc.server.Handler = mux
 	hc.stopCh = make(chan struct{})
 	go func() {
@@ -59,14 +59,14 @@ func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) 
 
 // base handler function
 func (hc *healthCheckExtension) baseHandler() http.Handler {
-	if hc.config.ResponseBody != nil {
+	if hc.config.Config.ResponseBody != nil {
 		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			if hc.state.Get() == healthcheck.Ready {
 				w.WriteHeader(http.StatusOK)
-				_, _ = w.Write([]byte(hc.config.ResponseBody.Healthy))
+				_, _ = w.Write([]byte(hc.config.Config.ResponseBody.Healthy))
 			} else {
 				w.WriteHeader(http.StatusServiceUnavailable)
-				_, _ = w.Write([]byte(hc.config.ResponseBody.Unhealthy))
+				_, _ = w.Write([]byte(hc.config.Config.ResponseBody.Unhealthy))
 			}
 		})
 	}

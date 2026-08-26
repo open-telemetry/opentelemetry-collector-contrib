@@ -8,6 +8,7 @@ package iisreceiver // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"errors"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -60,6 +61,27 @@ func TestScrape(t *testing.T) {
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+}
+
+func TestAllMetricsDisabledScrape(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	disableAllMetricEnabledFlags(&cfg.MetricsBuilderConfig.Metrics)
+
+	scraper := newIisReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		consumertest.NewNop(),
+	)
+
+	// Do not mock the watchers in this test, because if the metrics are all disabled,
+	// the scraper should not even attempt to create watchers
+
+	err := scraper.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	actualMetrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 0, actualMetrics.MetricCount())
 }
 
 func TestScrapeFailure(t *testing.T) {
@@ -142,8 +164,8 @@ func TestMaxQueueItemAgeNegativeDenominatorScrapeFailure(t *testing.T) {
 		consumertest.NewNop(),
 	)
 
-	expectedError := "Failed to scrape counter \"counter\": A counter with a negative denominator value was detected.\r\n"
-	mockWatcher, err := newMockWatcherFactory(errors.New(expectedError))("", "", "")
+	expectedError := "A counter with a negative denominator value was detected.\r\n"
+	mockWatcher, err := newMockWatcherFactory(mockIgnorableError{errors.New(expectedError)})("", "", "")
 	require.NoError(t, err)
 	scraper.queueMaxAgeWatchers = []instanceWatcher{
 		{
@@ -163,20 +185,53 @@ func TestMaxQueueItemAgeNegativeDenominatorScrapeFailure(t *testing.T) {
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
+func disableAllMetricEnabledFlags(metricsConfig any) {
+	disableEnabledFieldsRecursively(reflect.ValueOf(metricsConfig))
+}
+
+func disableEnabledFieldsRecursively(v reflect.Value) {
+	for v.Kind() == reflect.Pointer {
+		if v.IsNil() {
+			return
+		}
+		v = v.Elem()
+	}
+
+	if v.Kind() != reflect.Struct {
+		return
+	}
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		fieldType := v.Type().Field(i)
+
+		if fieldType.Name == "Enabled" && field.Kind() == reflect.Bool && field.CanSet() {
+			field.SetBool(false)
+			continue
+		}
+
+		disableEnabledFieldsRecursively(field)
+	}
+}
+
+type mockIgnorableError struct{ error }
+
+func (mockIgnorableError) IsIgnorable() bool { return true }
+
 type mockPerfCounter struct {
 	watchErr error
 	value    float64
 }
 
 func newMockWatcherFactory(watchErr error) func(string, string,
-	string) (winperfcounters.PerfCounterWatcher, error) {
-	return func(string, string, string) (winperfcounters.PerfCounterWatcher, error) {
+	string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
+	return func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
 		return &mockPerfCounter{watchErr: watchErr, value: 1}, nil
 	}
 }
 
-func newMockWatcherFactorFromPath(watchErr error, value float64) func(string) (winperfcounters.PerfCounterWatcher, error) {
-	return func(_ string) (winperfcounters.PerfCounterWatcher, error) {
+func newMockWatcherFactorFromPath(watchErr error, value float64) func(string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
+	return func(string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
 		return &mockPerfCounter{watchErr: watchErr, value: value}, nil
 	}
 }

@@ -95,7 +95,7 @@ func (p Profile) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	}
 
 	encoder.AddInt64("time_nanos", int64(p.Time()))
-	encoder.AddInt64("duration_nanos", int64(p.Duration()))
+	encoder.AddInt64("duration_nanos", int64(p.DurationNano()))
 
 	vt, err := newValueType(p, p.PeriodType())
 	joinedErr = errors.Join(joinedErr, err)

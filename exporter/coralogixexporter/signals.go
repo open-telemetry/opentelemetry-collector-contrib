@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	experimentalgrpc "google.golang.org/grpc/experimental"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
@@ -27,6 +28,7 @@ type signalConfig interface {
 	ToHTTPClient(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error)
 	GetWaitForReady() bool
 	GetEndpoint() string
+	GetAcceptEncoding() string
 }
 
 var _ signalConfig = (*signalConfigWrapper)(nil)
@@ -36,7 +38,7 @@ type signalConfigWrapper struct {
 }
 
 func (w *signalConfigWrapper) ToClientConn(ctx context.Context, host component.Host, settings component.TelemetrySettings, opts ...configgrpc.ToClientConnOption) (*grpc.ClientConn, error) {
-	return w.config.ToClientConn(ctx, host, settings, opts...)
+	return w.config.ClientConfig.ToClientConn(ctx, host.GetExtensions(), settings, opts...)
 }
 
 func (w *signalConfigWrapper) ToHTTPClient(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
@@ -44,11 +46,15 @@ func (w *signalConfigWrapper) ToHTTPClient(ctx context.Context, host component.H
 }
 
 func (w *signalConfigWrapper) GetWaitForReady() bool {
-	return w.config.WaitForReady
+	return w.config.ClientConfig.WaitForReady
 }
 
 func (w *signalConfigWrapper) GetEndpoint() string {
-	return w.config.Endpoint
+	return w.config.ClientConfig.Endpoint
+}
+
+func (w *signalConfigWrapper) GetAcceptEncoding() string {
+	return w.config.GetAcceptEncoding()
 }
 
 func newSignalExporter(oCfg *Config, set exp.Settings, signalEndpoint string, headers configopaque.MapList) (*signalExporter, error) {
@@ -120,9 +126,9 @@ func (e *signalExporter) enhanceContext(ctx context.Context) context.Context {
 
 func (e *signalExporter) startSignalExporter(ctx context.Context, host component.Host, signalConfig signalConfig) (err error) {
 	if signalConfigWrapper, ok := signalConfig.(*signalConfigWrapper); ok {
-		signalConfigWrapper.config.Headers.Set("Authorization", configopaque.String("Bearer "+string(e.config.PrivateKey)))
+		signalConfigWrapper.config.ClientConfig.Headers.Set("Authorization", configopaque.String("Bearer "+string(e.config.PrivateKey)))
 		if e.config.Protocol != httpProtocol {
-			for k, v := range signalConfigWrapper.config.Headers.Iter {
+			for k, v := range signalConfigWrapper.config.ClientConfig.Headers.Iter {
 				e.metadata.Set(k, string(v))
 			}
 		}
@@ -133,25 +139,23 @@ func (e *signalExporter) startSignalExporter(ctx context.Context, host component
 		return errors.New("unexpected signal config type")
 	}
 
-	var transportConfig *TransportConfig
-	if !isEmpty(e.config.Domain) && isEmpty(signalConfig.GetEndpoint()) {
-		transportConfig = e.config.getMergedTransportConfig(signalConfigWrapper.config)
-	} else {
-		transportConfig = signalConfigWrapper.config
-	}
-
 	if e.config.Protocol == httpProtocol {
-		e.clientHTTP, err = transportConfig.ToHTTPClient(ctx, host, e.settings)
+		e.clientHTTP, err = signalConfigWrapper.config.ToHTTPClient(ctx, host, e.settings)
 		if err != nil {
 			return err
 		}
 	} else {
-		if e.clientConn, err = transportConfig.ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
+		if e.clientConn, err = signalConfigWrapper.config.ClientConfig.ToClientConn(ctx, host.GetExtensions(), e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
-		e.callOptions = []grpc.CallOption{
+		callOptions := []grpc.CallOption{
 			grpc.WaitForReady(signalConfig.GetWaitForReady()),
 		}
+		// Only add AcceptCompressors if a compression encoding is specified
+		if acceptEncoding := signalConfig.GetAcceptEncoding(); acceptEncoding != "" {
+			callOptions = append(callOptions, experimentalgrpc.AcceptCompressors(acceptEncoding))
+		}
+		e.callOptions = callOptions
 	}
 
 	return nil

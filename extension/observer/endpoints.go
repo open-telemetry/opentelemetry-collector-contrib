@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"runtime"
 )
 
 type (
@@ -35,8 +36,6 @@ const (
 	HostPortType EndpointType = "hostport"
 	// ContainerType is a container endpoint.
 	ContainerType EndpointType = "container"
-	// KafkaTopicType is a kafka topic endpoint
-	KafkaTopicType EndpointType = "kafka.topics"
 )
 
 var (
@@ -46,7 +45,6 @@ var (
 	_ EndpointDetails = (*K8sNode)(nil)
 	_ EndpointDetails = (*HostPort)(nil)
 	_ EndpointDetails = (*Container)(nil)
-	_ EndpointDetails = (*KafkaTopic)(nil)
 )
 
 // EndpointDetails provides additional context about an endpoint such as a Pod or Port.
@@ -238,14 +236,23 @@ type Port struct {
 	Port uint16
 	// Transport is the transport protocol used by the Endpoint. (TCP or UDP).
 	Transport Transport
+	// ContainerName is the name of the container.
+	ContainerName string
+	// ContainerID is the ID of the container.
+	ContainerID string
+	// ContainerImage is the image of the container.
+	ContainerImage string
 }
 
 func (p *Port) Env() EndpointEnv {
 	return map[string]any{
-		"name":      p.Name,
-		"port":      p.Port,
-		"pod":       p.Pod.Env(),
-		"transport": p.Transport,
+		"name":            p.Name,
+		"port":            p.Port,
+		"pod":             p.Pod.Env(),
+		"transport":       p.Transport,
+		"container_name":  p.ContainerName,
+		"container_id":    p.ContainerID,
+		"container_image": p.ContainerImage,
 	}
 }
 
@@ -276,6 +283,7 @@ func (h *HostPort) Env() EndpointEnv {
 		"is_ipv6":      h.IsIPv6,
 		"port":         h.Port,
 		"transport":    h.Transport,
+		"os":           runtime.GOOS,
 	}
 }
 
@@ -369,14 +377,4 @@ func (n *K8sNode) Env() EndpointEnv {
 
 func (*K8sNode) Type() EndpointType {
 	return K8sNodeType
-}
-
-type KafkaTopic struct{}
-
-func (*KafkaTopic) Env() EndpointEnv {
-	return map[string]any{}
-}
-
-func (*KafkaTopic) Type() EndpointType {
-	return KafkaTopicType
 }

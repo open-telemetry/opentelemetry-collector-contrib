@@ -24,7 +24,7 @@ import (
 // TestDiskScrapeWithRealData validates that the disk scraper can collect actual disk metrics from Windows performance counters.
 func TestDiskScrapeWithRealData(t *testing.T) {
 	config := Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	scraper, err := newDiskScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &config)
 	require.NoError(t, err, "Failed to create disk scraper")
@@ -69,7 +69,7 @@ func TestScrape_Error(t *testing.T) {
 			scraper, err := newDiskScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{})
 			require.NoError(t, err, "Failed to create disk scraper: %v", err)
 
-			scraper.perfCounterFactory = func(string, string, string) (winperfcounters.PerfCounterWatcher, error) {
+			scraper.perfCounterFactory = func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
 				return &testmocks.PerfCounterWatcherMock{
 					ScrapeErr: test.scrapeErr,
 				}, nil
@@ -95,7 +95,7 @@ func TestScrape_Error(t *testing.T) {
 func TestStart_Error(t *testing.T) {
 	testCases := []struct {
 		name                  string
-		newPerfCounterFactory func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
+		newPerfCounterFactory func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error)
 		expectedSkipScrape    bool
 	}{
 		{
@@ -103,7 +103,7 @@ func TestStart_Error(t *testing.T) {
 		},
 		{
 			name: "new_perf_counter_watcher_fails",
-			newPerfCounterFactory: func(string, string, string) (winperfcounters.PerfCounterWatcher, error) {
+			newPerfCounterFactory: func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
 				return nil, errors.New("err1")
 			},
 			expectedSkipScrape: true,

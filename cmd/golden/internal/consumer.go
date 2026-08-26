@@ -16,12 +16,19 @@ import (
 
 var _ consumer.Metrics = (*MetricsSink)(nil)
 
+// AttemptError tracks an error from a specific comparison attempt
+type AttemptError struct {
+	AttemptNumber int
+	Error         error
+}
+
 type MetricsSink struct {
-	cfg        *Config
-	noExpected bool
-	expected   pmetric.Metrics
-	DoneChan   chan struct{}
-	Error      error
+	cfg            *Config
+	noExpected     bool
+	expected       pmetric.Metrics
+	DoneChan       chan struct{}
+	Errors         []AttemptError
+	attemptCounter int
 }
 
 func (*MetricsSink) Capabilities() consumer.Capabilities {
@@ -41,9 +48,11 @@ func (m *MetricsSink) ConsumeMetrics(_ context.Context, md pmetric.Metrics) erro
 		close(m.DoneChan)
 		return nil
 	}
+	m.attemptCounter++
 	err := pmetrictest.CompareMetrics(m.expected, md, m.cfg.CompareOptions...)
 	if err == nil {
-		m.Error = nil
+		// Clear errors on success
+		m.Errors = nil
 		if m.cfg.WriteExpected {
 			err = golden.WriteMetrics(&testing.T{}, m.cfg.ExpectedFile, md)
 			if err != nil {
@@ -52,7 +61,11 @@ func (m *MetricsSink) ConsumeMetrics(_ context.Context, md pmetric.Metrics) erro
 		}
 		close(m.DoneChan)
 	} else {
-		m.Error = err
+		// Append error with attempt number
+		m.Errors = append(m.Errors, AttemptError{
+			AttemptNumber: m.attemptCounter,
+			Error:         err,
+		})
 	}
 	return nil
 }
@@ -68,5 +81,6 @@ func NewConsumer(cfg *Config) (*MetricsSink, error) {
 		cfg:        cfg,
 		noExpected: noExpected,
 		DoneChan:   make(chan struct{}),
+		Errors:     []AttemptError{},
 	}, nil
 }

@@ -1,0 +1,63 @@
+namespace: github.com/open-telemetry/opentelemetry-collector-contrib
+mappings:
+  time:
+    Time:
+      schemaType: string
+      format: date-time
+      skipAnnotation: true
+    Duration:
+      schemaType: string
+      format: duration
+      skipAnnotation: true
+  go.opentelemetry.io/collector/component:
+    ID:
+      schemaType: string
+  github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator:
+    Config:
+      schemaType: ""
+  golang.org/x/time/rate:
+    Limit:
+      schemaType: number
+  k8s.io/apimachinery/pkg/watch:
+    EventType:
+      schemaType: string
+  go.opentelemetry.io/collector/exporter/exporterhelper/internal/request:
+    SizerType:
+      schemaType: string
+allowedRefs:
+  - go.opentelemetry.io/collector
+  - github.com/open-telemetry/opentelemetry-collector-contrib
+componentOverrides:
+  receiver/named_pipe:
+    configName: 'NamedPipeConfig'
+  receiver/file_log:
+    configName: 'FileLogConfig'
+  receiver/journald:
+    configName: 'JournaldConfig'
+  receiver/syslog:
+    configName: 'SysLogConfig'
+  receiver/tcp_log:
+    configName: 'TCPLogConfig'
+  receiver/udp_log:
+    configName: 'UDPLogConfig'
+  receiver/windows_event_log:
+    configName: 'WindowsLogConfig'
+  connector/signaltometrics:
+    configName: 'config.Config'
+  receiver/host_metrics:
+    factoryMaps:
+      - property: scrapers
+        factoriesVar: scraperFactories
+        description: Map of scrapers to be run, keyed by scraper type.
+  receiver/cisco_os:
+    factoryMaps:
+      - property: scrapers
+        factoriesVar: scraperFactories
+        description: Map of scrapers to be run, keyed by scraper type.
+  processor/geoip:
+    factoryMaps:
+      - property: providers
+        factoriesVar: providerFactories
+        description: Map of GeoIP provider configurations, keyed by provider type.
+  receiver/prometheus:
+    overlayFile: receiver/prometheusreceiver/config.schema.overlay.yaml

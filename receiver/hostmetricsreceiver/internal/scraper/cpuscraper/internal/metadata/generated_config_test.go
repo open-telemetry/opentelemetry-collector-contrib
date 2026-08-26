@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -21,17 +20,33 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemCPUFrequency:     MetricConfig{Enabled: true},
-					SystemCPULogicalCount:  MetricConfig{Enabled: true},
-					SystemCPUPhysicalCount: MetricConfig{Enabled: true},
-					SystemCPUTime:          MetricConfig{Enabled: true},
-					SystemCPUUtilization:   MetricConfig{Enabled: true},
+					SystemCPUFrequency: SystemCPUFrequencyMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCPUFrequency},
+					},
+					SystemCPULogicalCount: SystemCPULogicalCountMetricConfig{
+						Enabled: true,
+					},
+					SystemCPUPhysicalCount: SystemCPUPhysicalCountMetricConfig{
+						Enabled: true,
+					},
+					SystemCPUTime: SystemCPUTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCPU, SystemCPUTimeMetricAttributeKeyState},
+					},
+					SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCPU, SystemCPUUtilizationMetricAttributeKeyState},
+					},
 				},
 			},
 		},
@@ -39,11 +54,27 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemCPUFrequency:     MetricConfig{Enabled: false},
-					SystemCPULogicalCount:  MetricConfig{Enabled: false},
-					SystemCPUPhysicalCount: MetricConfig{Enabled: false},
-					SystemCPUTime:          MetricConfig{Enabled: false},
-					SystemCPUUtilization:   MetricConfig{Enabled: false},
+					SystemCPUFrequency: SystemCPUFrequencyMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCPUFrequency},
+					},
+					SystemCPULogicalCount: SystemCPULogicalCountMetricConfig{
+						Enabled: false,
+					},
+					SystemCPUPhysicalCount: SystemCPUPhysicalCountMetricConfig{
+						Enabled: false,
+					},
+					SystemCPUTime: SystemCPUTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCPU, SystemCPUTimeMetricAttributeKeyState},
+					},
+					SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCPU, SystemCPUUtilizationMetricAttributeKeyState},
+					},
 				},
 			},
 		},
@@ -51,10 +82,45 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemCPUFrequencyMetricConfig{}, SystemCPULogicalCountMetricConfig{}, SystemCPUPhysicalCountMetricConfig{}, SystemCPUTimeMetricConfig{}, SystemCPUUtilizationMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+func TestSystemCPUFrequencyMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemCPUFrequency
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemCPUFrequencyMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.cpu.frequency doesn't have an attribute invalid, valid attributes: [cpu]")
+
+	cfg = DefaultMetricsConfig().SystemCPUFrequency
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemCPUTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemCPUTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemCPUTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.cpu.time doesn't have an attribute invalid, valid attributes: [cpu, state]")
+
+	cfg = DefaultMetricsConfig().SystemCPUTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemCPUUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemCPUUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemCPUUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.cpu.utilization doesn't have an attribute invalid, valid attributes: [cpu, state]")
+
+	cfg = DefaultMetricsConfig().SystemCPUUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
@@ -62,7 +128,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

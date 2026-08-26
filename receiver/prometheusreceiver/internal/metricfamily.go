@@ -49,6 +49,7 @@ type metricGroup struct {
 	// - https://github.com/prometheus/OpenMetrics/blob/main/specification/OpenMetrics.md#counter-1
 	createdSeconds float64
 	value          float64
+	hasValue       bool
 	hValue         *histogram.Histogram
 	fhValue        *histogram.FloatHistogram
 	complexValue   []*dataPoint
@@ -80,6 +81,9 @@ func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *z
 
 // includesMetric returns true if the metric is part of the family
 func (mf *metricFamily) includesMetric(metricName string) bool {
+	if mf.mtype == pmetric.MetricTypeSum {
+		return normalizeMetricName(metricName) == mf.metadata.MetricFamily
+	}
 	if mf.mtype != pmetric.MetricTypeGauge {
 		// If it is a merged family type, then it should match the
 		// family name when suffixes are trimmed.
@@ -100,25 +104,25 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 		return
 	}
 
+	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
+	// NHCB conversion loses whether _count was absent. Reject the inconsistent
+	// form that identifies a sum-only classic histogram.
+	if mg.isNHCB && !pointIsStale && mg.count == 0 && mg.sum != 0 {
+		return
+	}
+
 	mg.sortPoints()
 
 	var bounds []float64
 	var bucketCounts []uint64
-	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
 
 	if mg.isNHCB {
 		switch {
 		case mg.hValue != nil:
-			if len(mg.hValue.CustomValues) == 0 {
-				return
-			}
 			bounds = make([]float64, len(mg.hValue.CustomValues))
 			copy(bounds, mg.hValue.CustomValues)
 			bucketCounts = convertNHCBBDeltBuckets(mg.hValue)
 		case mg.fhValue != nil:
-			if len(mg.fhValue.CustomValues) == 0 {
-				return
-			}
 			bounds = make([]float64, len(mg.fhValue.CustomValues))
 			copy(bounds, mg.fhValue.CustomValues)
 			bucketCounts = convertNHCBAbsoluteBuckets(mg.fhValue)
@@ -178,9 +182,6 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	tsNanos := timestampFromMs(mg.ts)
 	if mg.createdSeconds != 0 {
 		point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
-	} else if !removeStartTimeAdjustment.IsEnabled() {
-		// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-		point.SetStartTimestamp(tsNanos)
 	}
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
@@ -256,9 +257,6 @@ func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.Exponential
 	tsNanos := timestampFromMs(mg.ts)
 	if mg.createdSeconds != 0 {
 		point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
-	} else if !removeStartTimeAdjustment.IsEnabled() {
-		// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-		point.SetStartTimestamp(tsNanos)
 	}
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
@@ -397,23 +395,20 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	point.SetTimestamp(tsNanos)
 	if mg.createdSeconds != 0 {
 		point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
-	} else if !removeStartTimeAdjustment.IsEnabled() {
-		// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-		point.SetStartTimestamp(tsNanos)
 	}
 	populateAttributes(pmetric.MetricTypeSummary, mg.ls, point.Attributes())
 }
 
 func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
+	if !mg.hasValue {
+		return
+	}
 	tsNanos := timestampFromMs(mg.ts)
 	point := dest.AppendEmpty()
 	// gauge/undefined types have no start time.
 	if mg.mtype == pmetric.MetricTypeSum {
 		if mg.createdSeconds != 0 {
 			point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
-		} else if !removeStartTimeAdjustment.IsEnabled() {
-			// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-			point.SetStartTimestamp(tsNanos)
 		}
 	}
 	point.SetTimestamp(tsNanos)
@@ -435,6 +430,9 @@ func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon
 			j++
 		}
 		if j < len(names) && l.Name == names[j] {
+			return
+		}
+		if strings.HasPrefix(l.Name, prometheus.ScopeLabelPrefix) {
 			return
 		}
 		if l.Value == "" {
@@ -495,9 +493,11 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 			mg.createdSeconds = v
 		} else {
 			mg.value = v
+			mg.hasValue = true
 		}
 	default:
 		mg.value = v
+		mg.hasValue = true
 	}
 
 	return nil

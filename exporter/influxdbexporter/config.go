@@ -5,13 +5,15 @@ package influxdbexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"golang.org/x/exp/maps"
 )
 
 // V1Compatibility is used to specify if the exporter should use the v1.X InfluxDB API schema.
@@ -28,9 +30,9 @@ type V1Compatibility struct {
 
 // Config defines configuration for the InfluxDB exporter.
 type Config struct {
-	confighttp.ClientConfig   `mapstructure:",squash"`
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	ClientConfig  confighttp.ClientConfig                                  `mapstructure:",squash"`
+	QueueSettings configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	BackOffConfig configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 
 	// Org is the InfluxDB organization name of the destination bucket.
 	Org string `mapstructure:"org"`
@@ -91,7 +93,7 @@ func (cfg *Config) Validate() error {
 	}
 	if len(duplicateSpanDimensions) > 0 {
 		return fmt.Errorf("duplicate span dimension(s) configured: %s",
-			strings.Join(maps.Keys(duplicateSpanDimensions), ","))
+			strings.Join(slices.Collect(maps.Keys(duplicateSpanDimensions)), ","))
 	}
 
 	logRecordDimensions := make(map[string]struct{}, len(cfg.LogRecordDimensions))
@@ -105,19 +107,12 @@ func (cfg *Config) Validate() error {
 	}
 	if len(duplicateLogRecordDimensions) > 0 {
 		return fmt.Errorf("duplicate log record dimension(s) configured: %s",
-			strings.Join(maps.Keys(duplicateLogRecordDimensions), ","))
+			strings.Join(slices.Collect(maps.Keys(duplicateLogRecordDimensions)), ","))
 	}
 
 	// Validate precision
 	validPrecisions := []string{"ns", "ms", "s", "us"}
-	validPrecision := false
-	for _, p := range validPrecisions {
-		if cfg.Precision == p {
-			validPrecision = true
-			break
-		}
-	}
-	if !validPrecision {
+	if !slices.Contains(validPrecisions, cfg.Precision) {
 		return fmt.Errorf("invalid precision %q, must be one of: %s",
 			cfg.Precision, strings.Join(validPrecisions, ", "))
 	}

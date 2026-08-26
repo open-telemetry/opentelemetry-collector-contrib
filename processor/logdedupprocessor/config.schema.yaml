@@ -1,0 +1,30 @@
+description: Config is the config of the processor.
+type: object
+properties:
+  conditions:
+    type: array
+    items:
+      type: string
+  exclude_fields:
+    type: array
+    items:
+      type: string
+  include_fields:
+    type: array
+    items:
+      type: string
+  interval:
+    type: string
+    format: duration
+  log_count_attribute:
+    type: string
+  metadata_cardinality_limit:
+    description: MetadataCardinalityLimit limits the number of unique metadata combinations tracked simultaneously. 0 (default) means unbounded.
+    type: integer
+    x-customType: uint32
+  metadata_keys:
+    type: array
+    items:
+      type: string
+  timezone:
+    type: string

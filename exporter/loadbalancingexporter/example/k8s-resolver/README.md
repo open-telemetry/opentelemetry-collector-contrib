@@ -24,9 +24,9 @@ metadata:
   namespace: observability
 rules:
 - apiGroups:
-  - ""
+  - discovery.k8s.io
   resources:
-  - endpoints
+  - endpointslices
   verbs:
   - list
   - watch
@@ -69,7 +69,7 @@ spec:
     processors:
 
     exporters:
-      loadbalancing:
+      load_balancing:
         protocol:
           otlp:
             tls:
@@ -85,7 +85,7 @@ spec:
             - otlp
           processors: []
           exporters:
-            - loadbalancing
+            - load_balancing
 ---
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
@@ -120,5 +120,5 @@ EOF
 
 - The `loadbalancer` and `backends` OpenTelemetryCollector are recognised by the opentelemetry-operator, which then creates the appropriate deployment resources.
 - The `loadbalancer` ServiceAccount is used to assign to the pods corresponding to the deployment loadbalancer and backends.
-- The `loadbalancer-role` Role grants `get`, `list`, and `watch` permissions on endpoint resources in its namespace. Having these permissions is essential for a kubernetes service resolver to work properly.
+- The `loadbalancer-role` Role grants `get`, `list`, and `watch` permissions on endpointslice resources in its namespace. Having these permissions is essential for a kubernetes service resolver to work properly.
 - The `loadbalancer-rolebinding` RoleBinding is used to bind Role `loadbalancer-role` to ServiceAccount `loadbalancer`.

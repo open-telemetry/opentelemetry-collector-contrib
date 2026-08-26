@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package sematextexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter"
 
@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -40,14 +41,18 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Timeout = 5 * time.Second
+	clientConfig.Headers = configopaque.MapList{
+		{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
+	}
 	cfg := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Timeout: 5 * time.Second,
-			Headers: configopaque.MapList{
-				{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
-			},
-		},
-		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+		ClientConfig:  clientConfig,
+		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		MetricsConfig: MetricsConfig{
 			MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),
 			PayloadMaxLines: 1_000,
@@ -73,9 +78,9 @@ func createMetricsExporter(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Sematext HTTP writer: %w", err)
 	}
-	schema, found := common.MetricsSchemata[cfg.MetricsSchema]
+	schema, found := common.MetricsSchemata[cfg.MetricsConfig.MetricsSchema]
 	if !found {
-		return nil, fmt.Errorf("schema '%s' not recognized", cfg.MetricsSchema)
+		return nil, fmt.Errorf("schema '%s' not recognized", cfg.MetricsConfig.MetricsSchema)
 	}
 
 	expConfig := otel2influx.DefaultOtelMetricsToLineProtocolConfig()

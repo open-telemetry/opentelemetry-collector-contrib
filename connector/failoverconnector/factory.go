@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -28,10 +29,8 @@ func NewFactory() connector.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		RetryInterval: 10 * time.Minute,
-		RetryGap:      0,
-		MaxRetries:    0,
 	}
 }
 
@@ -54,15 +53,19 @@ func createTracesToTraces(
 	oCfg := cfg.(*Config)
 
 	// If queue is disabled, return the raw failover connector
-	if !oCfg.QueueSettings.Enabled {
+	if !oCfg.QueueSettings.HasValue() {
 		return t, nil
 	}
 
-	// If queue is enabled, wrap with exporterhelper
+	// If queue is enabled, wrap with exporterhelper.
+	// Explicitly disable exporterhelper's default 5s timeout: this wrapper exists only to provide
+	// the sending_queue, and any context deadline it imposes would silently cap downstream
+	// exporters' configured timeouts. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48567.
 	wrapped, err := exporterhelper.NewTraces(ctx, expSettings, cfg,
 		t.ConsumeTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 	)
 	if err != nil {
 		return nil, err
@@ -91,15 +94,16 @@ func createMetricsToMetrics(
 	oCfg := cfg.(*Config)
 
 	// If queue is disabled, return the raw failover connector directly (original behavior)
-	if !oCfg.QueueSettings.Enabled {
+	if !oCfg.QueueSettings.HasValue() {
 		return t, nil
 	}
 
-	// If queue is enabled, wrap with exporterhelper
+	// If queue is enabled, wrap with exporterhelper. See WithTimeout note in createTracesToTraces.
 	wrapped, err := exporterhelper.NewMetrics(ctx, expSettings, cfg,
 		t.ConsumeMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 	)
 	if err != nil {
 		return nil, err
@@ -128,15 +132,16 @@ func createLogsToLogs(
 	oCfg := cfg.(*Config)
 
 	// If queue is disabled, return the raw failover connector directly (original behavior)
-	if !oCfg.QueueSettings.Enabled {
+	if !oCfg.QueueSettings.HasValue() {
 		return t, nil
 	}
 
-	// If queue is enabled, wrap with exporterhelper
+	// If queue is enabled, wrap with exporterhelper. See WithTimeout note in createTracesToTraces.
 	wrapped, err := exporterhelper.NewLogs(ctx, expSettings, cfg,
 		t.ConsumeLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 	)
 	if err != nil {
 		return nil, err

@@ -17,7 +17,7 @@ type TrimPrefixArguments[K any] struct {
 }
 
 func NewTrimPrefixFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Trim", &TrimPrefixArguments[K]{}, createTrimPrefixFunction[K])
+	return ottl.NewFactory("TrimPrefix", &TrimPrefixArguments[K]{}, createTrimPrefixFunction[K])
 }
 
 func createTrimPrefixFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {

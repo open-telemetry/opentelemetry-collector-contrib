@@ -45,3 +45,63 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NoError(t, tp.Start(t.Context(), componenttest.NewNopHost()))
 	assert.NoError(t, tp.Shutdown(t.Context()))
 }
+
+func TestCreateProcessorRejectsInvalidSamplingStrategy(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.SamplingStrategy = "invalid"
+
+	params := processortest.NewNopSettings(metadata.Type)
+	tp, err := factory.CreateTraces(t.Context(), params, cfg, consumertest.NewNop())
+	assert.Nil(t, tp)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid sampling_strategy")
+}
+
+func TestCreateProcessorAllowsSpanIngest(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.SamplingStrategy = samplingStrategySpanIngest
+	cfg.PolicyCfgs = []PolicyCfg{
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "policy",
+				Type: Probabilistic,
+				ProbabilisticCfg: ProbabilisticCfg{
+					SamplingPercentage: 1,
+				},
+			},
+		},
+	}
+
+	params := processortest.NewNopSettings(metadata.Type)
+	tp, err := factory.CreateTraces(t.Context(), params, cfg, consumertest.NewNop())
+	assert.NotNil(t, tp)
+	assert.NoError(t, err)
+}
+
+func TestCreateProcessorRejectsStatefulPolicyForSpanIngest(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.SamplingStrategy = samplingStrategySpanIngest
+	cfg.PolicyCfgs = []PolicyCfg{
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "stateful-policy",
+				Type: RateLimiting,
+				RateLimitingCfg: RateLimitingCfg{
+					SpansPerSecond: 10,
+				},
+			},
+		},
+	}
+
+	params := processortest.NewNopSettings(metadata.Type)
+	tp, err := factory.CreateTraces(t.Context(), params, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, tp)
+	err = tp.Start(t.Context(), componenttest.NewNopHost())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "requires all policies to be stateless")
+	assert.Contains(t, err.Error(), "stateful-policy")
+}

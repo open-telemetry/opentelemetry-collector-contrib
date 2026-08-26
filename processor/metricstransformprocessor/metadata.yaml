@@ -1,4 +1,6 @@
-type: metricstransform
+display_name: Metrics Transform Processor
+type: metrics_transform
+deprecated_type: metricstransform
 
 status:
   class: processor

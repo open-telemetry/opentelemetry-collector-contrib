@@ -1,0 +1,28 @@
+$defs:
+  config:
+    description: Config is the configuration for the local TCP proxy server.
+    type: object
+    properties:
+      aws_endpoint:
+        description: AWSEndpoint is the X-Ray service endpoint which the local TCP server forwards requests to.
+        type: string
+      local_mode:
+        description: LocalMode determines whether the EC2 instance metadata endpoint will be called or not. Set to `true` to skip EC2 instance metadata check.
+        type: boolean
+      proxy_address:
+        description: ProxyAddress defines the proxy address that the local TCP server forwards HTTP requests to AWS X-Ray backend through.
+        type: string
+      region:
+        description: Region is the AWS region the local TCP server forwards requests to.
+        type: string
+      role_arn:
+        description: RoleARN is the IAM role used by the local TCP server when communicating with the AWS X-Ray service.
+        type: string
+      service_name:
+        description: ServiceName determines which service the requests are sent to. will be default to `xray`. This is mandatory for SigV4
+        type: string
+      tls:
+        description: TLS struct exposes TLS client configuration when forwarding calls to the AWS X-Ray backend.
+        $ref: go.opentelemetry.io/collector/config/configtls.client_config
+    allOf:
+      - $ref: go.opentelemetry.io/collector/config/confignet.tcp_addr_config

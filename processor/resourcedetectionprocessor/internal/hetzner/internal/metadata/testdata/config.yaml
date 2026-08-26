@@ -3,6 +3,8 @@ all_set:
   resource_attributes:
     cloud.availability_zone:
       enabled: true
+    cloud.platform:
+      enabled: true
     cloud.provider:
       enabled: true
     cloud.region:
@@ -14,6 +16,8 @@ all_set:
 none_set:
   resource_attributes:
     cloud.availability_zone:
+      enabled: false
+    cloud.platform:
       enabled: false
     cloud.provider:
       enabled: false

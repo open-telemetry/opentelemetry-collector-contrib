@@ -14,7 +14,7 @@ import (
 
 // Config defines configuration for docker observer
 type Config struct {
-	docker.Config `mapstructure:",squash"`
+	Config docker.Config `mapstructure:",squash"`
 
 	// If true, the "Config.Hostname" field (if present) of the docker
 	// container will be used as the discovered host that is used to configure
@@ -33,6 +33,12 @@ type Config struct {
 	// to an instance of the agent running outside of the docker network stack.
 	IgnoreNonHostBindings bool `mapstructure:"ignore_non_host_bindings"`
 
+	// If true, the observer will emit a port-less endpoint for every running container,
+	// alongside any per-port endpoints. This makes every container, including those
+	// without exposed ports, discoverable by receiver_creator rules matching
+	// `type == "container"`.
+	IncludeAllContainers bool `mapstructure:"include_all_containers"`
+
 	// The time to wait before resyncing the list of containers the observer maintains
 	// through the docker event listener example: cache_sync_interval: "20m"
 	// Default: "60m"
@@ -40,10 +46,12 @@ type Config struct {
 }
 
 func (config Config) Validate() error {
-	if err := docker.VersionIsValidAndGTE(config.DockerAPIVersion, minimumRequiredDockerAPIVersion); err != nil {
-		return err
+	if config.Config.DockerAPIVersion != "" {
+		if err := docker.VersionIsValidAndGTE(config.Config.DockerAPIVersion, minimumRequiredDockerAPIVersion); err != nil {
+			return err
+		}
 	}
-	if config.Timeout == 0 {
+	if config.Config.Timeout == 0 {
 		return errors.New("timeout must be specified")
 	}
 	if config.CacheSyncInterval == 0 {
@@ -58,8 +66,8 @@ func (config *Config) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 
-	if len(config.ExcludedImages) == 0 {
-		config.ExcludedImages = nil
+	if len(config.Config.ExcludedImages) == 0 {
+		config.Config.ExcludedImages = nil
 	}
 
 	return err

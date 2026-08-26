@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
@@ -61,14 +62,22 @@ func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 
 // Create the default config based on the const(s) defined above.
 func createDefaultConfig() component.Config {
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
+	netAddr.Endpoint = defaultEndpoint
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.NetAddr = netAddr
+	serverConfig.ReadTimeout = defaultReadTimeout
+	serverConfig.WriteTimeout = defaultWriteTimeout
 	return &Config{
-		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		WebHook: WebHook{
-			ServerConfig: confighttp.ServerConfig{
-				Endpoint:     defaultEndpoint,
-				ReadTimeout:  defaultReadTimeout,
-				WriteTimeout: defaultWriteTimeout,
-			},
+			ServerConfig: serverConfig,
 			GitHubHeaders: GitHubHeaders{
 				Customizable: map[string]string{
 					defaultUserAgentHeader: "",
@@ -143,7 +152,7 @@ func createAddScraperOpts(
 			return nil, fmt.Errorf("failed to create scraper %q: %w", key, err)
 		}
 
-		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(metadata.Type, githubScraper))
+		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddMetricsScraper(metadata.Type, githubScraper))
 	}
 
 	return scraperControllerOptions, nil

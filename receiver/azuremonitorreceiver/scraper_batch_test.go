@@ -10,9 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v4"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -25,7 +27,7 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 		{
 			params: queryResourcesResponseMockParams{
 				subscriptionID:  "subscriptionId3",
-				metricNamespace: "type1",
+				metricNamespace: "namespace2",
 				metricNames:     []string{"metric7"},
 				resourceIDs:     []string{"/subscriptions/subscriptionId3/resourceGroups/group1/resourceId1"},
 			},
@@ -41,13 +43,13 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 									{
 										// Send only timestamp with all other values nil is a case that can
 										// happen in the Azure responses.
-										TimeStamp: to.Ptr(time.Now()),
+										TimeStamp: new(time.Now()),
 									},
 									{
-										TimeStamp: to.Ptr(time.Now()),
+										TimeStamp: new(time.Now()),
 										// Keep only Total to make sure that all values are considered.
 										// Not only Average
-										Total: to.Ptr(1.),
+										Total: new(1.),
 									},
 								},
 							}},
@@ -59,7 +61,7 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 		{
 			params: queryResourcesResponseMockParams{
 				subscriptionID:  "subscriptionId1",
-				metricNamespace: "type1",
+				metricNamespace: "namespace1",
 				metricNames:     []string{"metric1", "metric2"},
 				resourceIDs: []string{
 					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
@@ -76,12 +78,12 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 							Unit: azmetrics.MetricUnitPercent,
 							TimeSeries: []azmetrics.TimeSeriesElement{{
 								Data: []azmetrics.MetricValue{{
-									TimeStamp: to.Ptr(time.Now()),
-									Average:   to.Ptr(1.),
-									Count:     to.Ptr(1.),
-									Maximum:   to.Ptr(1.),
-									Minimum:   to.Ptr(1.),
-									Total:     to.Ptr(1.),
+									TimeStamp: new(time.Now()),
+									Average:   new(1.),
+									Count:     new(1.),
+									Maximum:   new(1.),
+									Minimum:   new(1.),
+									Total:     new(1.),
 								}},
 							}},
 						},
@@ -90,12 +92,12 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 							Unit: azmetrics.MetricUnitCount,
 							TimeSeries: []azmetrics.TimeSeriesElement{{
 								Data: []azmetrics.MetricValue{{
-									TimeStamp: to.Ptr(time.Now()),
-									Average:   to.Ptr(1.),
-									Count:     to.Ptr(1.),
-									Maximum:   to.Ptr(1.),
-									Minimum:   to.Ptr(1.),
-									Total:     to.Ptr(1.),
+									TimeStamp: new(time.Now()),
+									Average:   new(1.),
+									Count:     new(1.),
+									Maximum:   new(1.),
+									Minimum:   new(1.),
+									Total:     new(1.),
 								}},
 							}},
 						},
@@ -106,7 +108,7 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 		{
 			params: queryResourcesResponseMockParams{
 				subscriptionID:  "subscriptionId1",
-				metricNamespace: "type1",
+				metricNamespace: "namespace1",
 				metricNames:     []string{"metric3"},
 				resourceIDs: []string{
 					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
@@ -123,12 +125,12 @@ func getMetricsQueryResponseMockData() []queryResourcesResponseMock {
 							Unit: azmetrics.MetricUnitBytes,
 							TimeSeries: []azmetrics.TimeSeriesElement{{
 								Data: []azmetrics.MetricValue{{
-									TimeStamp: to.Ptr(time.Now()),
-									Average:   to.Ptr(1.),
-									Count:     to.Ptr(1.),
-									Maximum:   to.Ptr(1.),
-									Minimum:   to.Ptr(1.),
-									Total:     to.Ptr(1.),
+									TimeStamp: new(time.Now()),
+									Average:   new(1.),
+									Count:     new(1.),
+									Maximum:   new(1.),
+									Minimum:   new(1.),
+									Total:     new(1.),
 								}},
 							}},
 						},
@@ -223,13 +225,14 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 			)
 
 			s := &azureBatchScraper{
-				cfg:                   tt.fields.cfg,
-				mbs:                   newConcurrentMapImpl[*metadata.MetricsBuilder](),
-				mutex:                 &sync.Mutex{},
-				time:                  getTimeMock(),
-				clientOptionsResolver: optionsResolver,
-				receiverSettings:      settings,
-				settings:              settings.TelemetrySettings,
+				cfg:                          tt.fields.cfg,
+				mbs:                          newConcurrentMapImpl[*metadata.MetricsBuilder](),
+				mutex:                        &sync.Mutex{},
+				time:                         getTimeMock(),
+				clientOptionsResolver:        optionsResolver,
+				receiverSettings:             settings,
+				settings:                     settings.TelemetrySettings,
+				storageAccountSpecificConfig: newStorageAccountSpecificConfig(tt.fields.cfg.Services),
 
 				// From there, initialize everything that is normally initialized in start() func
 				subscriptions: map[string]*azureSubscription{},
@@ -257,4 +260,313 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 			))
 		})
 	}
+}
+
+// TestAzureScraperBatchScrape_NoDuplicateOnRescrape is a regression test for the
+// "duplicate sample for timestamp" 409 errors emitted by Prometheus-compatible
+// backends (Thanos/Mimir/Cortex) when the batch scraper was re-emitting the
+// same Azure timestamps on every scrape.
+//
+// The batch scraper emits points using the original Azure timestamp
+// (cf. processQueryTimeseriesData). Without a per-(resourceType, compositeKey)
+// temporal guard, calling scrape() faster than the metric's timeGrain would
+// republish the exact same (labels, ts) tuples. This test calls scrape()
+// twice back-to-back; with the guard in place the second call must not emit
+// any data point because the configured timeGrains (PT1M / PT1H in the mocks)
+// are far larger than the wall-clock interval between the two calls.
+func TestAzureScraperBatchScrape_NoDuplicateOnRescrape(t *testing.T) {
+	cfg := createDefaultTestConfig()
+	cfg.MaximumNumberOfMetricsInACall = 2
+	cfg.AppendTagsAsAttributes = []string{}
+	cfg.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+
+	optionsResolver := newMockClientOptionsResolver(
+		getSubscriptionByIDMockData(),
+		getSubscriptionsMockData(),
+		getResourcesMockData(),
+		getMetricsDefinitionsMockData(),
+		nil,
+		getMetricsQueryResponseMockData(),
+	)
+
+	s := &azureBatchScraper{
+		cfg:                          cfg,
+		mbs:                          newConcurrentMapImpl[*metadata.MetricsBuilder](),
+		mutex:                        &sync.Mutex{},
+		time:                         getTimeMock(),
+		clientOptionsResolver:        optionsResolver,
+		receiverSettings:             settings,
+		settings:                     settings.TelemetrySettings,
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
+
+		subscriptions: map[string]*azureSubscription{},
+		resources:     map[string]map[string]*azureResource{},
+		regions:       map[string]map[string]struct{}{},
+		resourceTypes: map[string]map[string]*azureType{},
+	}
+
+	// First scrape: must produce data.
+	first, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Positive(t, first.DataPointCount(), "first scrape should emit at least one data point")
+
+	// Second scrape immediately after: the temporal guard must prevent
+	// re-querying Azure for the same compositeKey, so no new data point
+	// should be emitted (which is what avoids the 409 duplicates downstream).
+	second, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 0, second.DataPointCount(),
+		"second scrape must not re-emit Azure data points (would cause 409 duplicate sample for timestamp on Prometheus remote write backends)")
+}
+
+func TestAzureScraperBatchScrape_ChronologicalAndNoDuplicate(t *testing.T) {
+	cfg := createDefaultTestConfig()
+	cfg.SubscriptionIDs = []string{"subscriptionId1"}
+	cfg.Metrics = NestedListAlias{
+		"namespace1": {
+			"metric1": {"Average"},
+		},
+	}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+
+	resourceID := "/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1"
+	t1 := time.Now().Add(-2 * time.Minute).Truncate(time.Minute)
+	t2 := time.Now().Add(-1 * time.Minute).Truncate(time.Minute)
+	value1 := 10.0
+	value2 := 12.0
+
+	mockQueryResponse1 := []queryResourcesResponseMock{
+		{
+			params: queryResourcesResponseMockParams{
+				subscriptionID:  "subscriptionId1",
+				metricNamespace: "namespace1",
+				metricNames:     []string{"metric1"},
+				resourceIDs: []string{
+					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
+					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2",
+					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId3",
+				},
+			},
+			response: newQueryResourcesResponseMockData([]queryResourceMockInput{
+				{
+					ResourceID: resourceID,
+					Metrics: []metricMockInput{
+						{
+							Name: "metric1",
+							Unit: azmetrics.MetricUnitPercent,
+							TimeSeries: []azmetrics.TimeSeriesElement{{
+								Data: []azmetrics.MetricValue{
+									{TimeStamp: &t1, Average: &value1},
+									{TimeStamp: &t2, Average: &value2},
+								},
+							}},
+						},
+					},
+				},
+			}),
+		},
+	}
+
+	optionsResolver1 := newMockClientOptionsResolver(
+		getSubscriptionByIDMockData(),
+		getSubscriptionsMockData(),
+		getResourcesMockData(),
+		getMetricsDefinitionsMockData(),
+		nil,
+		mockQueryResponse1,
+	)
+
+	s := &azureBatchScraper{
+		cfg:                          cfg,
+		mbs:                          newConcurrentMapImpl[*metadata.MetricsBuilder](),
+		mutex:                        &sync.Mutex{},
+		time:                         getTimeMock(),
+		clientOptionsResolver:        optionsResolver1,
+		receiverSettings:             settings,
+		settings:                     settings.TelemetrySettings,
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
+
+		subscriptions: map[string]*azureSubscription{},
+		resources:     map[string]map[string]*azureResource{},
+		regions:       map[string]map[string]struct{}{},
+		resourceTypes: map[string]map[string]*azureType{},
+	}
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 2, metrics.DataPointCount())
+
+	rm := metrics.ResourceMetrics().At(0)
+	sm := rm.ScopeMetrics().At(0)
+	m := sm.Metrics().At(0)
+	dps := m.Gauge().DataPoints()
+
+	dp1 := dps.At(0)
+	dp2 := dps.At(1)
+	assert.Equal(t, value1, dp1.DoubleValue())
+	assert.Equal(t, pcommon.NewTimestampFromTime(t1), dp1.Timestamp())
+	assert.Equal(t, value2, dp2.DoubleValue())
+	assert.Equal(t, pcommon.NewTimestampFromTime(t2), dp2.Timestamp())
+
+	t3 := time.Now().Truncate(time.Minute)
+	value3 := 15.0
+	mockQueryResponse2 := []queryResourcesResponseMock{
+		{
+			params: queryResourcesResponseMockParams{
+				subscriptionID:  "subscriptionId1",
+				metricNamespace: "namespace1",
+				metricNames:     []string{"metric1"},
+				resourceIDs: []string{
+					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
+					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2",
+					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId3",
+				},
+			},
+			response: newQueryResourcesResponseMockData([]queryResourceMockInput{
+				{
+					ResourceID: resourceID,
+					Metrics: []metricMockInput{
+						{
+							Name: "metric1",
+							Unit: azmetrics.MetricUnitPercent,
+							TimeSeries: []azmetrics.TimeSeriesElement{{
+								Data: []azmetrics.MetricValue{
+									{TimeStamp: &t1, Average: &value1},
+									{TimeStamp: &t2, Average: &value2},
+									{TimeStamp: &t3, Average: &value3},
+								},
+							}},
+						},
+					},
+				},
+			}),
+		},
+	}
+
+	s.clientOptionsResolver = newMockClientOptionsResolver(
+		getSubscriptionByIDMockData(),
+		getSubscriptionsMockData(),
+		getResourcesMockData(),
+		getMetricsDefinitionsMockData(),
+		nil,
+		mockQueryResponse2,
+	)
+
+	mockTime := s.time.(*timeMock)
+	mockTime.time = mockTime.time.Add(time.Minute)
+
+	metrics2, err := s.scrape(t.Context())
+	require.NoError(t, err)
+
+	require.Equal(t, 1, metrics2.DataPointCount())
+	dp3 := metrics2.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+	assert.Equal(t, value3, dp3.DoubleValue())
+	assert.Equal(t, pcommon.NewTimestampFromTime(t3), dp3.Timestamp())
+}
+
+// TestAzureScraperBatchScrapeCustomNamespaceMetrics verifies that the batch scraper discovers and
+// collects metrics from custom metric namespaces (e.g. "azure.vm.linux.guestmetrics" published by
+// Azure Monitor Agent / MetricsExtension). The MetricDefinitions API only returns such metrics when
+// the metricnamespace query parameter is explicitly provided; without it only platform metrics are
+// returned. The batch scraper must also pass compositeKey.namespace (not resourceType) to
+// QueryResources so that the correct namespace is used in the values API call.
+func TestAzureScraperBatchScrapeCustomNamespaceMetrics(t *testing.T) {
+	fakeSubID := "sub-id-1"
+	vmType := "Microsoft.Compute/virtualMachines"
+	customNamespace := "azure.vm.linux.guestmetrics"
+	metricName := "disk/free_percent"
+	timeGrain := "PT1M"
+	diskFreePercent := 92.5
+
+	cfg := createDefaultTestConfig()
+	cfg.SubscriptionIDs = []string{fakeSubID}
+	cfg.Services = []string{vmType}
+	cfg.Metrics = NestedListAlias{
+		customNamespace: {
+			metricName: {"Average"},
+		},
+	}
+
+	vmName := "my-vm"
+	vmID := "/subscriptions/" + fakeSubID + "/resourceGroups/rg/providers/" + vmType + "/" + vmName
+	location := "eastus"
+
+	subscriptionsByIDMockData := newSubscriptionsByIDMockData(map[string]string{
+		fakeSubID: "My Subscription",
+	})
+	resourceMockData := newResourcesMockData(map[string][][]*armresources.GenericResourceExpanded{
+		fakeSubID: {
+			{{ID: &vmID, Location: &location, Name: &vmName, Type: &vmType}},
+		},
+	})
+
+	// Default definition call returns empty (no key in map).
+	// Namespace-filtered call for customNamespace returns the custom metric.
+	metricsDefinitionMockData := newMetricsDefinitionMockData(map[string][]metricsDefinitionMockInput{
+		vmID + "::" + customNamespace: {
+			{namespace: customNamespace, name: metricName, timeGrain: timeGrain},
+		},
+	})
+
+	metricsQueryResponseMockData := []queryResourcesResponseMock{
+		{
+			params: queryResourcesResponseMockParams{
+				subscriptionID:  fakeSubID,
+				metricNamespace: customNamespace,
+				metricNames:     []string{metricName},
+				resourceIDs:     []string{vmID},
+			},
+			response: newQueryResourcesResponseMockData([]queryResourceMockInput{
+				{
+					ResourceID: vmID,
+					Metrics: []metricMockInput{
+						{
+							Name: metricName,
+							Unit: azmetrics.MetricUnitPercent,
+							TimeSeries: []azmetrics.TimeSeriesElement{{
+								Data: []azmetrics.MetricValue{{
+									TimeStamp: new(time.Now()),
+									Average:   new(diskFreePercent),
+								}},
+							}},
+						},
+					},
+				},
+			}),
+		},
+	}
+
+	optionsResolver := newMockClientOptionsResolver(
+		subscriptionsByIDMockData,
+		getSubscriptionsMockData(),
+		resourceMockData,
+		metricsDefinitionMockData,
+		nil,
+		metricsQueryResponseMockData,
+	)
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	s := &azureBatchScraper{
+		cfg:                          cfg,
+		mbs:                          newConcurrentMapImpl[*metadata.MetricsBuilder](),
+		mutex:                        &sync.Mutex{},
+		time:                         getTimeMock(),
+		clientOptionsResolver:        optionsResolver,
+		receiverSettings:             settings,
+		settings:                     settings.TelemetrySettings,
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
+
+		subscriptions: map[string]*azureSubscription{},
+		resources:     map[string]map[string]*azureResource{},
+		regions:       map[string]map[string]struct{}{},
+		resourceTypes: map[string]map[string]*azureType{},
+	}
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Positive(t, metrics.DataPointCount(),
+		"batch scraper should collect custom namespace metric (disk/free_percent from azure.vm.linux.guestmetrics)")
 }

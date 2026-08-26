@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
@@ -55,7 +54,7 @@ func generateTraceData(serviceName, inputName string, attrs map[string]any) ptra
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	if serviceName != "" {
-		rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceName)
+		rs.Resource().Attributes().PutStr("service.name", serviceName)
 	}
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName(inputName)
@@ -97,7 +96,7 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Config:   *createMatchConfig(filterset.Strict),
 		Services: []string{"service"},
 	}
@@ -308,7 +307,8 @@ func TestSpanProcessor_Separator(t *testing.T) {
 		"ensure no separator in the rename with one key",
 		map[string]any{
 			"key1": "bob",
-		})
+		},
+	)
 	assert.NoError(t, tp.ConsumeTraces(t.Context(), traceData))
 
 	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
@@ -316,7 +316,8 @@ func TestSpanProcessor_Separator(t *testing.T) {
 		"bob",
 		map[string]any{
 			"key1": "bob",
-		}), traceData))
+		},
+	), traceData))
 }
 
 // TestSpanProcessor_NoSeparatorMultipleKeys tests naming a span using multiple keys and no separator.
@@ -336,7 +337,8 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 		"ensure no separator in the rename with two keys", map[string]any{
 			"key1": "bob",
 			"key2": 123,
-		})
+		},
+	)
 	assert.NoError(t, tp.ConsumeTraces(t.Context(), traceData))
 
 	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
@@ -345,7 +347,8 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 		map[string]any{
 			"key1": "bob",
 			"key2": 123,
-		}), traceData))
+		},
+	), traceData))
 }
 
 // TestSpanProcessor_SeparatorMultipleKeys tests naming a span with multiple keys and a separator.
@@ -368,7 +371,8 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 			"key2": 123,
 			"key3": 234.129312,
 			"key4": true,
-		})
+		},
+	)
 	assert.NoError(t, tp.ConsumeTraces(t.Context(), traceData))
 
 	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
@@ -379,7 +383,8 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 			"key2": 123,
 			"key3": 234.129312,
 			"key4": true,
-		}), traceData))
+		},
+	), traceData))
 }
 
 // TestSpanProcessor_NilName tests naming a span when the input span had no name.
@@ -399,7 +404,8 @@ func TestSpanProcessor_NilName(t *testing.T) {
 		"",
 		map[string]any{
 			"key1": "bob",
-		})
+		},
+	)
 	assert.NoError(t, tp.ConsumeTraces(t.Context(), traceData))
 
 	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
@@ -407,7 +413,8 @@ func TestSpanProcessor_NilName(t *testing.T) {
 		"bob",
 		map[string]any{
 			"key1": "bob",
-		}), traceData))
+		},
+	), traceData))
 }
 
 // TestSpanProcessor_ToAttributes
@@ -564,12 +571,12 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Config:    *createMatchConfig(filterset.Regexp),
 		Services:  []string{`^banks$`},
 		SpanNames: []string{"/"},
 	}
-	oCfg.Exclude = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Exclude = &filterconfig.MatchProperties{
 		Config:    *createMatchConfig(filterset.Strict),
 		SpanNames: []string{`donot/change`},
 	}
@@ -624,7 +631,7 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 		Description: "custom error message",
 	}
 	// This test number two include rule for applying rule only for status code 400
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Config: filterset.Config{
 			MatchType: filterset.Strict,
 		},

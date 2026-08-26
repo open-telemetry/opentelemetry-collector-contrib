@@ -1,4 +1,13 @@
-type: metricstarttime
+display_name: Metric Start Time Processor
+type: metric_start_time
+deprecated_type: metricstarttime
+
+
+description: |
+  The Metric Start Time Processor (`metric_start_time`) is used to set the start
+  time for metric points with a cumulative aggregation temporality. It is
+  commonly used with the `prometheus` receiver, which usually produces metric
+  points without a start time.
 
 status:
   class: processor

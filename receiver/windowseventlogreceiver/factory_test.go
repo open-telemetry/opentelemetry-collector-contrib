@@ -6,11 +6,12 @@ package windowseventlogreceiver // import "github.com/open-telemetry/opentelemet
 import (
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/metadata"
@@ -29,6 +30,38 @@ func TestCreateDefaultConfig(t *testing.T) {
 	require.NotNil(t, cfg, "failed to create default config")
 }
 
+func TestNegativeCacheSizeRejected(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	cm := confmap.NewFromStringMap(map[string]any{
+		"resolve_sids": map[string]any{
+			"cache_size": -1,
+		},
+	})
+	err := cm.Unmarshal(cfg)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "cache_size")
+}
+
+func TestNegativeCacheTTLRejected(t *testing.T) {
+	cfg := &ResolveSIDsConfig{
+		Enabled:  true,
+		CacheTTL: -1 * time.Second,
+	}
+	err := cfg.Validate()
+	require.Error(t, err)
+	require.ErrorContains(t, err, "cache_ttl must not be negative")
+}
+
+func TestZeroCacheTTLAccepted(t *testing.T) {
+	cfg := &ResolveSIDsConfig{
+		Enabled:  true,
+		CacheTTL: 0,
+	}
+	require.NoError(t, cfg.Validate())
+}
+
 func TestCreateAndShutdown(t *testing.T) {
 	factory := NewFactory()
 	defaultConfig := factory.CreateDefaultConfig()
@@ -42,7 +75,7 @@ func TestCreateAndShutdown(t *testing.T) {
 
 	if runtime.GOOS != "windows" {
 		assert.Error(t, err)
-		assert.IsType(t, pipeline.ErrSignalNotSupported, err)
+		assert.ErrorContains(t, err, "windows eventlog receiver is only supported on Windows")
 		assert.Nil(t, receiver)
 	} else {
 		assert.NoError(t, err)

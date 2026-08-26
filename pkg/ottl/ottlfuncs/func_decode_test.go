@@ -7,6 +7,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -19,10 +20,11 @@ func TestDecode(t *testing.T) {
 	testByteSliceB64 := pcommon.NewByteSlice()
 	testByteSliceB64.FromRaw([]byte("aGVsbG8gd29ybGQ="))
 
-	testValue := pcommon.NewValueEmpty()
-	_ = testValue.FromRaw("test string")
-	testValueB64 := pcommon.NewValueEmpty()
-	_ = testValueB64.FromRaw("aGVsbG8gd29ybGQ=")
+	testValue := pcommon.NewValueStr("test string")
+	testValueB64 := pcommon.NewValueStr("aGVsbG8gd29ybGQ=")
+
+	testValueBytes := pcommon.NewValueBytes()
+	testValueBytes.Bytes().FromRaw([]byte{116, 0, 101, 0, 115, 0, 116, 0, 32, 0, 115, 0, 116, 0, 114, 0, 105, 0, 110, 0, 103, 0})
 
 	type testCase struct {
 		name          string
@@ -141,6 +143,12 @@ func TestDecode(t *testing.T) {
 			want:     "test string",
 		},
 		{
+			name:     "decode UTF-16 encoded value bytes",
+			value:    testValueBytes,
+			encoding: "UTF16",
+			want:     "test string",
+		},
+		{
 			name:          "decode GB2312 encoded string; no decoder available",
 			value:         "test string",
 			encoding:      "GB2312",
@@ -210,7 +218,6 @@ func TestDecode(t *testing.T) {
 					},
 				},
 			})
-
 			require.NoError(t, err)
 
 			result, err := expressionFunc(nil, nil)
@@ -223,4 +230,103 @@ func TestDecode(t *testing.T) {
 			require.Equal(t, tt.want, result)
 		})
 	}
+}
+
+func BenchmarkDecodeBytes(b *testing.B) {
+	val := pcommon.NewValueBytes()
+	val.Bytes().FromRaw([]byte(benchData))
+
+	encGetter, err := ottl.NewTestingLiteralGetter[any, string](true, &ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "utf-8", nil
+		},
+	})
+	require.NoError(b, err)
+
+	dec, err := decode(ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return val, nil
+		},
+	}, encGetter)
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ResetTimer()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err = dec(ctx, nil)
+		if err != nil {
+			b.Fatal(err)
+		}
+		require.NoError(b, err)
+	}
+}
+
+func BenchmarkDecodeString(b *testing.B) {
+	val := pcommon.NewValueStr(benchData)
+	encGetter, err := ottl.NewTestingLiteralGetter[any, string](true, &ottl.StandardStringGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "utf-8", nil
+		},
+	})
+	require.NoError(b, err)
+
+	dec, err := decode(ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return val, nil
+		},
+	}, encGetter)
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ResetTimer()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err = dec(ctx, nil)
+		if err != nil {
+			b.Fatal(err)
+		}
+		require.NoError(b, err)
+	}
+}
+
+func Test_DecodeFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewDecodeFactory[any]()
+		assert.Equal(t, "Decode", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewDecodeFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &DecodeArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Encoding"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewDecodeFactory[any]()
+		args := factory.CreateDefaultArguments()
+		decodeArgs, ok := args.(*DecodeArguments[any])
+		require.True(t, ok)
+		decodeArgs.Target = &ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "aGVsbG8gd29ybGQ=", nil
+			},
+		}
+		decodeArgs.Encoding = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "base64", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createDecodeFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "DecodeFactory args must be of type *DecodeArguments[K]")
+	})
 }

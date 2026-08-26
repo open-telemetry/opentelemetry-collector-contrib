@@ -23,7 +23,7 @@ func TestPushMetricData(t *testing.T) {
 	require.NoError(t, err)
 
 	config := createDefaultConfig().(*Config)
-	config.Endpoint = fmt.Sprintf("http://127.0.0.1:%d", port)
+	config.ClientConfig.Endpoint = fmt.Sprintf("http://127.0.0.1:%d", port)
 	config.CreateSchema = false
 	require.NoError(t, config.Validate())
 
@@ -31,7 +31,7 @@ func TestPushMetricData(t *testing.T) {
 
 	ctx := t.Context()
 
-	client, err := createDorisHTTPClient(ctx, config, nil, componenttest.NewNopTelemetrySettings())
+	client, err := createDorisHTTPClient(ctx, config, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, client)
 

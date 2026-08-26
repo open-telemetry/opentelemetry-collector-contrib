@@ -13,7 +13,7 @@ import (
 // Config has the configuration for the sumologic extension.
 type Config struct {
 	// squash ensures fields are correctly decoded in embedded struct.
-	confighttp.ClientConfig `mapstructure:",squash"`
+	ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
 
 	// Credentials contains Installation Token for Sumo Logic service.
 	// Please refer to https://help.sumologic.com/docs/manage/security/installation-tokens
@@ -76,6 +76,9 @@ type Config struct {
 	// https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List.
 	TimeZone string `mapstructure:"time_zone"`
 
+	// FleetID is the ID of the fleet to assign this collector to during registration.
+	FleetID string `mapstructure:"fleet_id"`
+
 	// BackOff defines configuration of collector registration backoff algorithm
 	// Exponential algorithm is being used.
 	// Please see following link for details: https://github.com/cenkalti/backoff
@@ -84,6 +87,11 @@ type Config struct {
 	// StickySessionEnabled defines if sticky session support is enable.
 	// By default this is false.
 	StickySessionEnabled bool `mapstructure:"sticky_session_enabled"`
+
+	// UpdateMetadata defines whether the collector will update its metadata
+	// on startup. This includes host details, collector details, network details,
+	// and optionally discovered tags. By default this is true.
+	UpdateMetadata bool `mapstructure:"update_metadata"`
 }
 
 type accessCredentials struct {

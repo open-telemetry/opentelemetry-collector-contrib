@@ -16,11 +16,12 @@ import (
 
 func Test_newDynamicRegex_LiteralPattern(t *testing.T) {
 	// Test with valid literal pattern
-	getter := ottl.NewTestingLiteralGetter[any, string](true, &ottl.StandardStringGetter[any]{
+	getter, err := ottl.NewTestingLiteralGetter[any, string](true, &ottl.StandardStringGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return "test.*pattern", nil
 		},
 	})
+	require.NoError(t, err)
 
 	dr, err := newDynamicRegex("testFunc", getter)
 	require.NoError(t, err)
@@ -32,26 +33,28 @@ func Test_newDynamicRegex_LiteralPattern(t *testing.T) {
 
 func Test_newDynamicRegex_LiteralPattern_Invalid(t *testing.T) {
 	// Test with invalid literal pattern
-	getter := ottl.NewTestingLiteralGetter[any, string](true, &ottl.StandardStringGetter[any]{
+	getter, err := ottl.NewTestingLiteralGetter[any, string](true, &ottl.StandardStringGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return "[invalid(regex", nil
 		},
 	})
+	require.NoError(t, err)
 
 	dr, err := newDynamicRegex("testFunc", getter)
 	assert.Error(t, err)
 	assert.Nil(t, dr)
-	assert.Contains(t, err.Error(), "testFunc")
-	assert.Contains(t, err.Error(), "[invalid(regex")
+	assert.ErrorContains(t, err, "testFunc")
+	assert.ErrorContains(t, err, "[invalid(regex")
 }
 
 func Test_newDynamicRegex_DynamicPattern(t *testing.T) {
 	// Test with dynamic pattern (non-literal getter)
-	getter := ottl.NewTestingLiteralGetter[any, string](false, &ottl.StandardStringGetter[any]{
+	getter, err := ottl.NewTestingLiteralGetter[any, string](false, &ottl.StandardStringGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return "dynamic.*pattern", nil
 		},
 	})
+	require.NoError(t, err)
 
 	dr, err := newDynamicRegex("testFunc", getter)
 	require.NoError(t, err)
@@ -63,11 +66,12 @@ func Test_newDynamicRegex_DynamicPattern(t *testing.T) {
 func Test_dynamicRegex_compile_Literal_NoOp(t *testing.T) {
 	// Test that literal patterns are compiled once and compile() is a no-op
 	pattern := "test.*pattern"
-	getter := ottl.NewTestingLiteralGetter[any, string](true, &ottl.StandardStringGetter[any]{
+	getter, err := ottl.NewTestingLiteralGetter[any, string](true, &ottl.StandardStringGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return pattern, nil
 		},
 	})
+	require.NoError(t, err)
 
 	dr, err := newDynamicRegex("testFunc", getter)
 	require.NoError(t, err)
@@ -102,11 +106,12 @@ func Test_dynamicRegex_compile_Literal_NoOp(t *testing.T) {
 func Test_dynamicRegex_compile_Dynamic_NewRegex(t *testing.T) {
 	// Test that dynamic patterns return new compiled regexes each time
 	pattern := "dynamic.*pattern"
-	getter := ottl.NewTestingLiteralGetter[any, string](false, &ottl.StandardStringGetter[any]{
+	getter, err := ottl.NewTestingLiteralGetter[any, string](false, &ottl.StandardStringGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return pattern, nil
 		},
 	})
+	require.NoError(t, err)
 
 	dr, err := newDynamicRegex("testFunc", getter)
 	require.NoError(t, err)
@@ -138,11 +143,12 @@ func Test_dynamicRegex_compile_Dynamic_NewRegex(t *testing.T) {
 
 func Test_dynamicRegex_compile_Dynamic_InvalidPattern(t *testing.T) {
 	// Test that invalid dynamic patterns return errors
-	getter := ottl.NewTestingLiteralGetter[any, string](false, &ottl.StandardStringGetter[any]{
+	getter, err := ottl.NewTestingLiteralGetter[any, string](false, &ottl.StandardStringGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return "[invalid(regex", nil
 		},
 	})
+	require.NoError(t, err)
 
 	dr, err := newDynamicRegex("testFunc", getter)
 	require.NoError(t, err)
@@ -174,7 +180,7 @@ func Test_dynamicRegex_compile_Dynamic_GetterError(t *testing.T) {
 	compiled, err := dr.compile(ctx, tCtx)
 	assert.Error(t, err)
 	assert.Nil(t, compiled)
-	assert.Contains(t, err.Error(), "testFunc")
+	assert.ErrorContains(t, err, "testFunc")
 }
 
 func Test_dynamicRegex_compile_Dynamic_DifferentPatterns(t *testing.T) {

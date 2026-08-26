@@ -7,8 +7,11 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
 )
@@ -20,24 +23,37 @@ const (
 	// endpoint to be declared by the user.
 	// Default endpoints to bind to.
 	// defaultEndpoint = "localhost:8080"
-	defaultReadTimeout  = "500ms"
-	defaultWriteTimeout = "500ms"
-	defaultPath         = "/events"
-	defaultHealthPath   = "/health_check"
+	defaultReadTimeout        = "500ms"
+	defaultWriteTimeout       = "500ms"
+	defaultPath               = "/events"
+	defaultHealthPath         = "/health_check"
+	defaultMaxRequestBodySize = 100 * 1024 // 100KB
 )
 
 // NewFactory creates a factory for Generic Webhook Receiver.
 func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		xreceiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 
 // Default configuration for the generic webhook receiver
 func createDefaultConfig() component.Config {
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.NetAddr = netAddr
+	serverConfig.MaxRequestBodySize = defaultMaxRequestBodySize
 	return &Config{
+		ServerConfig:               serverConfig,
 		Path:                       defaultPath,
 		HealthPath:                 defaultHealthPath,
 		ReadTimeout:                defaultReadTimeout,

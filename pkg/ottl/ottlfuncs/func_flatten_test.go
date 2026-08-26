@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -340,7 +341,7 @@ func Test_flatten(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := pcommon.NewMap()
 			err := m.FromRaw(tt.target)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			setterWasCalled := false
 			target := ottl.StandardPMapGetSetter[any]{
@@ -358,10 +359,10 @@ func Test_flatten(t *testing.T) {
 			}
 
 			exprFunc, err := flatten[any](target, tt.prefix, tt.depth, ottl.NewTestingOptional[bool](tt.conflict))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.True(t, setterWasCalled)
 
 			assert.Equal(t, tt.expected, m.AsRaw())
@@ -502,7 +503,7 @@ func Test_flatten_undeterministic(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := pcommon.NewMap()
 			err := m.FromRaw(tt.target)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			setterWasCalled := false
 			target := ottl.StandardPMapGetSetter[any]{
@@ -520,10 +521,10 @@ func Test_flatten_undeterministic(t *testing.T) {
 			}
 
 			exprFunc, err := flatten[any](target, tt.prefix, tt.depth, ottl.NewTestingOptional[bool](tt.conflict))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.True(t, setterWasCalled)
 
 			keys, val := extractKeysAndValues(m.AsRaw())
@@ -589,4 +590,43 @@ func compareSlices[K string | any](a, b []K) bool {
 	}
 
 	return reflect.DeepEqual(aMap, bMap)
+}
+
+func Test_FlattenFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewFlattenFactory[any]()
+		assert.Equal(t, "flatten", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewFlattenFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &FlattenArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Prefix", "Depth", "ResolveConflicts"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewFlattenFactory[any]()
+		args := factory.CreateDefaultArguments()
+		flattenArgs, ok := args.(*FlattenArguments[any])
+		require.True(t, ok)
+		flattenArgs.Target = &ottl.StandardPMapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return pcommon.NewMap(), nil
+			},
+			Setter: func(context.Context, any, any) error {
+				return nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createFlattenFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "FlattenFactory args must be of type *FlattenArguments[K]")
+	})
 }

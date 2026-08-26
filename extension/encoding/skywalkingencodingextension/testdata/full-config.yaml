@@ -4,8 +4,9 @@ receivers:
       grpc:
         endpoint: 0.0.0.0:4317
   kafka:
-    encoding: skywalking_encoding
-    topic: skywalking-segments
+    traces:
+      encoding: skywalking_encoding
+      topic: skywalking-segments
     brokers:
       - "localhost:9092"
     resolve_canonical_bootstrap_servers_only: true

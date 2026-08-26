@@ -26,7 +26,7 @@ type Protocols struct {
 
 // Config defines configuration for skywalking receiver.
 type Config struct {
-	Protocols `mapstructure:"protocols"`
+	Protocols Protocols `mapstructure:"protocols"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -38,19 +38,19 @@ var (
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.GRPC == nil && cfg.HTTP == nil {
+	if cfg.Protocols.GRPC == nil && cfg.Protocols.HTTP == nil {
 		return errors.New("must specify at least one protocol when using the Skywalking receiver")
 	}
 
-	if cfg.GRPC != nil {
+	if cfg.Protocols.GRPC != nil {
 		var err error
-		if _, err = extractPortFromEndpoint(cfg.GRPC.NetAddr.Endpoint); err != nil {
+		if _, err = extractPortFromEndpoint(cfg.Protocols.GRPC.NetAddr.Endpoint); err != nil {
 			return fmt.Errorf("unable to extract port for the gRPC endpoint: %w", err)
 		}
 	}
 
-	if cfg.HTTP != nil {
-		if _, err := extractPortFromEndpoint(cfg.HTTP.Endpoint); err != nil {
+	if cfg.Protocols.HTTP != nil {
+		if _, err := extractPortFromEndpoint(cfg.Protocols.HTTP.NetAddr.Endpoint); err != nil {
 			return fmt.Errorf("unable to extract port for the HTTP endpoint: %w", err)
 		}
 	}
@@ -77,11 +77,11 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	}
 
 	if !protocols.IsSet(protoGRPC) {
-		cfg.GRPC = nil
+		cfg.Protocols.GRPC = nil
 	}
 
 	if !protocols.IsSet(protoHTTP) {
-		cfg.HTTP = nil
+		cfg.Protocols.HTTP = nil
 	}
 
 	return nil

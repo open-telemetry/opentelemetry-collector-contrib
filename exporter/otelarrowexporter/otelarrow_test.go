@@ -95,7 +95,7 @@ func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.ExportRe
 		v1 := r.metadata.Get("key1")
 		v2 := r.metadata.Get("key2")
 		hashKey := fmt.Sprintf("%s|%s", v1, v2)
-		r.spanCountByMetadata[hashKey] += (td.SpanCount())
+		r.spanCountByMetadata[hashKey] += td.SpanCount()
 	}
 	r.lastRequest = td
 	return r.exportResponse(), r.exportError
@@ -307,7 +307,7 @@ func TestSendTraces(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see any errors.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLS: configtls.ClientConfig{
@@ -464,10 +464,10 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.ClientConfig = test.gRPCClientSettings
-			cfg.Endpoint = test.scheme + ln.Addr().String()
+			cfg.ClientConfig.Endpoint = test.scheme + ln.Addr().String()
 			cfg.Arrow.MaxStreamLifetime = 100 * time.Second
 			if test.useTLS {
-				cfg.TLS.InsecureSkipVerify = true
+				cfg.ClientConfig.TLS.InsecureSkipVerify = true
 			}
 			set := exportertest.NewNopSettings(factory.Type())
 			exp, err := factory.CreateTraces(t.Context(), set, cfg)
@@ -512,7 +512,7 @@ func TestSendMetrics(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeMetrics
 	// otherwise we will not see any errors.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	cfg.RetryConfig.Enabled = false
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
@@ -612,7 +612,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLS: configtls.ClientConfig{
@@ -811,7 +811,7 @@ func TestSendLogData(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeLogs
 	// otherwise we will not see any errors.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLS: configtls.ClientConfig{
@@ -933,7 +933,7 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 	// Arrow client is enabled, but the server doesn't support it.
 	cfg.Arrow.NumStreams = 1
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 
 	set := exportertest.NewNopSettings(factory.Type())
 	exp, err := factory.CreateTraces(t.Context(), set, cfg)
@@ -1101,7 +1101,7 @@ func TestSendArrowFailedTraces(t *testing.T) {
 		NumStreams:        1,
 		MaxStreamLifetime: 100 * time.Second,
 	}
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 
 	set := exportertest.NewNopSettings(factory.Type())
 	set.Logger = zaptest.NewLogger(t)
@@ -1158,7 +1158,7 @@ func TestUserDialOptions(t *testing.T) {
 		WaitForReady: true,
 	}
 	cfg.Arrow.Disabled = true
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 
 	const testAgent = "test-user-agent (release=:+1:)"
 

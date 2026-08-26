@@ -7,49 +7,130 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
+// PingLossRatioMetricConfig provides config for the ping.loss.ratio metric.
+type PingLossRatioMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *PingLossRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
+
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
+
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
-// MetricsConfig provides config for icmpcheckreceiver metrics.
+// PingRttAvgMetricConfig provides config for the ping.rtt.avg metric.
+type PingRttAvgMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PingRttAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PingRttMaxMetricConfig provides config for the ping.rtt.max metric.
+type PingRttMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PingRttMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PingRttMinMetricConfig provides config for the ping.rtt.min metric.
+type PingRttMinMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PingRttMinMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// PingRttStddevMetricConfig provides config for the ping.rtt.stddev metric.
+type PingRttStddevMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *PingRttStddevMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MetricsConfig provides config for icmp_check metrics.
 type MetricsConfig struct {
-	PingLossRatio MetricConfig `mapstructure:"ping.loss.ratio"`
-	PingRttAvg    MetricConfig `mapstructure:"ping.rtt.avg"`
-	PingRttMax    MetricConfig `mapstructure:"ping.rtt.max"`
-	PingRttMin    MetricConfig `mapstructure:"ping.rtt.min"`
-	PingRttStddev MetricConfig `mapstructure:"ping.rtt.stddev"`
+	PingLossRatio PingLossRatioMetricConfig `mapstructure:"ping.loss.ratio"`
+	PingRttAvg    PingRttAvgMetricConfig    `mapstructure:"ping.rtt.avg"`
+	PingRttMax    PingRttMaxMetricConfig    `mapstructure:"ping.rtt.max"`
+	PingRttMin    PingRttMinMetricConfig    `mapstructure:"ping.rtt.min"`
+	PingRttStddev PingRttStddevMetricConfig `mapstructure:"ping.rtt.stddev"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		PingLossRatio: MetricConfig{
+		PingLossRatio: PingLossRatioMetricConfig{
 			Enabled: true,
 		},
-		PingRttAvg: MetricConfig{
+		PingRttAvg: PingRttAvgMetricConfig{
 			Enabled: true,
 		},
-		PingRttMax: MetricConfig{
+		PingRttMax: PingRttMaxMetricConfig{
 			Enabled: true,
 		},
-		PingRttMin: MetricConfig{
+		PingRttMin: PingRttMinMetricConfig{
 			Enabled: true,
 		},
-		PingRttStddev: MetricConfig{
+		PingRttStddev: PingRttStddevMetricConfig{
 			Enabled: true,
 		},
 	}
@@ -81,7 +162,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for icmpcheckreceiver resource attributes.
+// ResourceAttributesConfig provides config for icmp_check resource attributes.
 type ResourceAttributesConfig struct {
 	NetPeerIP   ResourceAttributeConfig `mapstructure:"net.peer.ip"`
 	NetPeerName ResourceAttributeConfig `mapstructure:"net.peer.name"`
@@ -98,15 +179,20 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for icmpcheckreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for icmp_check metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }

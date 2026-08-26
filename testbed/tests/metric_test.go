@@ -15,8 +15,12 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/otelarrowdatareceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/signalfxdatareceiver" //nolint:staticcheck // SA1019
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/stefdatareceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/otelarrowdatasender"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/signalfxdatasender"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/stefdatasender"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -28,15 +32,6 @@ func TestMetric10kDPS(t *testing.T) {
 		resourceSpec testbed.ResourceSpec
 		skipMessage  string
 	}{
-		{
-			name:     "Carbon",
-			sender:   datasenders.NewCarbonDataSender(testutil.GetAvailablePort(t)),
-			receiver: datareceivers.NewCarbonDataReceiver(testutil.GetAvailablePort(t)),
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 237,
-				ExpectedMaxRAM: 150,
-			},
-		},
 		{
 			name:     "OTLP",
 			sender:   testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
@@ -57,8 +52,8 @@ func TestMetric10kDPS(t *testing.T) {
 		},
 		{
 			name:     "SignalFx",
-			sender:   datasenders.NewSFxMetricDataSender(testutil.GetAvailablePort(t)),
-			receiver: datareceivers.NewSFxMetricsDataReceiver(testutil.GetAvailablePort(t)),
+			sender:   signalfxdatasender.NewSFxMetricDataSender(testutil.GetAvailablePort(t)),
+			receiver: signalfxdatareceiver.NewSFxMetricsDataReceiver(testutil.GetAvailablePort(t)), //nolint:staticcheck // SA1019
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 120,
 				ExpectedMaxRAM: 150,
@@ -66,8 +61,8 @@ func TestMetric10kDPS(t *testing.T) {
 		},
 		{
 			name:     "STEF",
-			sender:   datasenders.NewStefDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-			receiver: datareceivers.NewStefDataReceiver(testutil.GetAvailablePort(t)),
+			sender:   stefdatasender.NewStefDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			receiver: stefdatareceiver.NewStefDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 60,
 				ExpectedMaxRAM: 150,
@@ -75,10 +70,10 @@ func TestMetric10kDPS(t *testing.T) {
 		},
 		{
 			name: "OtelArrow",
-			sender: datasenders.NewOtelarrowDataSender(
+			sender: otelarrowdatasender.NewOtelarrowDataSender(
 				testbed.DefaultHost, testutil.GetAvailablePort(t),
 			),
-			receiver: datareceivers.NewOtelarrowDataReceiver(testutil.GetAvailablePort(t)),
+			receiver: otelarrowdatareceiver.NewOtelarrowDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 160,
 				ExpectedMaxRAM: 250,

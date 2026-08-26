@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -68,6 +69,8 @@ type esDataReceiver struct {
 	endpoint          string
 	decodeBulkRequest bool
 	enableBatching    bool
+	queueStorage      string
+	maxRetries        int
 	t                 testing.TB
 }
 
@@ -78,6 +81,7 @@ func newElasticsearchDataReceiver(tb testing.TB, opts ...dataReceiverOption) *es
 		DataReceiverBase:  testbed.DataReceiverBase{},
 		endpoint:          fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(tb)),
 		decodeBulkRequest: true,
+		maxRetries:        10000,
 		t:                 tb,
 	}
 	for _, opt := range opts {
@@ -98,6 +102,21 @@ func withBatching(enabled bool) dataReceiverOption {
 	}
 }
 
+// withQueueStorage sets sending_queue::storage to the named extension, making
+// the exporter use a persistent (storage-backed) sending queue.
+func withQueueStorage(name string) dataReceiverOption {
+	return func(r *esDataReceiver) {
+		r.queueStorage = name
+	}
+}
+
+// withMaxRetries overrides the exporter's retry::max_retries.
+func withMaxRetries(n int) dataReceiverOption {
+	return func(r *esDataReceiver) {
+		r.maxRetries = n
+	}
+}
+
 func (es *esDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
 	factory := receiver.NewFactory(
 		metadata.Type,
@@ -111,7 +130,7 @@ func (es *esDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc cons
 		return fmt.Errorf("invalid ES URL specified %s: %w", es.endpoint, err)
 	}
 	cfg := factory.CreateDefaultConfig().(*config)
-	cfg.Endpoint = esURL.Host
+	cfg.ServerConfig.NetAddr.Endpoint = esURL.Host
 	cfg.DecodeBulkRequests = es.decodeBulkRequest
 
 	set := receivertest.NewNopSettings(metadata.Type)
@@ -159,11 +178,11 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
       enabled: true
       initial_interval: 100ms
       max_interval: 500ms
-      max_retries: 10000
+      max_retries: %d
       retry_on_status: [429, 503]
     timeout: 10m
 `,
-		es.endpoint, TestLogsIndex, TestMetricsIndex, TestTracesIndex,
+		es.endpoint, TestLogsIndex, TestMetricsIndex, TestTracesIndex, es.maxRetries,
 	)
 
 	if es.enableBatching {
@@ -185,6 +204,9 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
         min_size: 0
         sizer: bytes`
 	}
+	if es.queueStorage != "" {
+		cfgFormat += "\n      storage: " + es.queueStorage
+	}
 	return cfgFormat + "\n"
 }
 
@@ -193,7 +215,7 @@ func (*esDataReceiver) ProtocolName() string {
 }
 
 type config struct {
-	confighttp.ServerConfig
+	ServerConfig confighttp.ServerConfig
 
 	// DecodeBulkRequests controls decoding of the bulk request in the mock
 	// ES receiver. Decoding requests would consume resources and might
@@ -204,10 +226,18 @@ type config struct {
 }
 
 func createDefaultConfig() component.Config {
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
+	netAddr.Endpoint = "127.0.0.1:9200"
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.NetAddr = netAddr
 	return &config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "127.0.0.1:9200",
-		},
+		ServerConfig:       serverConfig,
 		DecodeBulkRequests: true,
 	}
 }
@@ -274,9 +304,9 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		return nil
 	}
 
-	ln, err := es.config.ToListener(ctx)
+	ln, err := es.config.ServerConfig.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", es.config.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", es.config.ServerConfig.NetAddr.Endpoint, err)
 	}
 
 	r := mux.NewRouter()
@@ -368,7 +398,7 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		}
 	})
 
-	es.server, err = es.config.ToServer(ctx, host, es.params.TelemetrySettings, r)
+	es.server, err = es.config.ServerConfig.ToServer(ctx, host.GetExtensions(), es.params.TelemetrySettings, r)
 	if err != nil {
 		return fmt.Errorf("failed to create mock ES server: %w", err)
 	}

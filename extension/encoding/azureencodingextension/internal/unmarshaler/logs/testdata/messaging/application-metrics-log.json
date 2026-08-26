@@ -1,0 +1,29 @@
+{
+  "records": [
+	  {
+      "Environment": "PROD",
+      "Region": "East US",
+      "ScaleUnit": "PROD-BL-VAZ704",
+      "ActivityId": "827dd245-4318-4307-9d1f-a8ac07e36804",
+      "SubscriptionId": "a70b8550-49b1-4c60-b9f9-86b7edbf31e4",
+      "NamespaceName": "some-namespace",
+      "EntityType": "EventHub",
+      "EntityName": "some-eventhub",
+      "ChildEntityType": "",
+      "ChildEntityName": "",
+      "PartitionId": "0",
+      "ActivityName": "IncomingBytes",
+      "ResourceId": "/SUBSCRIPTIONS/XXXX-YYYY-ZZZZ/RESOURCEGROUPS/TESTGROUP/PROVIDERS/MICROSOFT.SERVICEBUS/NAMESPACES/NAMESPACE",
+      "Outcome": "Success",
+      "Protocol": "AMQP",
+      "AuthType": "SAS",
+      "AuthId": "namespace-sas",
+      "NetworkType": "Unknown",
+      "ClientIp": "10.0.0.1",
+      "Count": 199038,
+      "Properties": "{\"ApplicationGroupName\":\"myappgroup2\"}",
+      "category": "ApplicationMetricsLogs",
+      "eventTimestamp": "1/1/2021 8:40:06 PM +00:00"
+    }
+  ]
+}

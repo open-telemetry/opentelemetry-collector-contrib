@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -21,16 +20,32 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemPagingFaults:      MetricConfig{Enabled: true},
-					SystemPagingOperations:  MetricConfig{Enabled: true},
-					SystemPagingUsage:       MetricConfig{Enabled: true},
-					SystemPagingUtilization: MetricConfig{Enabled: true},
+					SystemPagingFaults: SystemPagingFaultsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemPagingFaultsMetricAttributeKey{SystemPagingFaultsMetricAttributeKeyType},
+					},
+					SystemPagingOperations: SystemPagingOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemPagingOperationsMetricAttributeKey{SystemPagingOperationsMetricAttributeKeyDirection, SystemPagingOperationsMetricAttributeKeyType},
+					},
+					SystemPagingUsage: SystemPagingUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemPagingUsageMetricAttributeKey{SystemPagingUsageMetricAttributeKeyDevice, SystemPagingUsageMetricAttributeKeyState},
+					},
+					SystemPagingUtilization: SystemPagingUtilizationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemPagingUtilizationMetricAttributeKey{SystemPagingUtilizationMetricAttributeKeyDevice, SystemPagingUtilizationMetricAttributeKeyState},
+					},
 				},
 			},
 		},
@@ -38,10 +53,26 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemPagingFaults:      MetricConfig{Enabled: false},
-					SystemPagingOperations:  MetricConfig{Enabled: false},
-					SystemPagingUsage:       MetricConfig{Enabled: false},
-					SystemPagingUtilization: MetricConfig{Enabled: false},
+					SystemPagingFaults: SystemPagingFaultsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemPagingFaultsMetricAttributeKey{SystemPagingFaultsMetricAttributeKeyType},
+					},
+					SystemPagingOperations: SystemPagingOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemPagingOperationsMetricAttributeKey{SystemPagingOperationsMetricAttributeKeyDirection, SystemPagingOperationsMetricAttributeKeyType},
+					},
+					SystemPagingUsage: SystemPagingUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemPagingUsageMetricAttributeKey{SystemPagingUsageMetricAttributeKeyDevice, SystemPagingUsageMetricAttributeKeyState},
+					},
+					SystemPagingUtilization: SystemPagingUtilizationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemPagingUtilizationMetricAttributeKey{SystemPagingUtilizationMetricAttributeKeyDevice, SystemPagingUtilizationMetricAttributeKeyState},
+					},
 				},
 			},
 		},
@@ -49,10 +80,57 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemPagingFaultsMetricConfig{}, SystemPagingOperationsMetricConfig{}, SystemPagingUsageMetricConfig{}, SystemPagingUtilizationMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+func TestSystemPagingFaultsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemPagingFaults
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemPagingFaultsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.paging.faults doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().SystemPagingFaults
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemPagingOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemPagingOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemPagingOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.paging.operations doesn't have an attribute invalid, valid attributes: [direction, type]")
+
+	cfg = DefaultMetricsConfig().SystemPagingOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemPagingUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemPagingUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemPagingUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.paging.usage doesn't have an attribute invalid, valid attributes: [device, state]")
+
+	cfg = DefaultMetricsConfig().SystemPagingUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemPagingUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemPagingUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemPagingUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.paging.utilization doesn't have an attribute invalid, valid attributes: [device, state]")
+
+	cfg = DefaultMetricsConfig().SystemPagingUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
@@ -60,7 +138,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

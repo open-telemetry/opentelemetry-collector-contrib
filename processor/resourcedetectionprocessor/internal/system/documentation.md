@@ -6,22 +6,22 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| host.arch | The host.arch | Any Str | false |
-| host.cpu.cache.l2.size | The host.cpu.cache.l2.size | Any Int | false |
-| host.cpu.family | The host.cpu.family | Any Str | false |
-| host.cpu.model.id | The host.cpu.model.id | Any Str | false |
-| host.cpu.model.name | The host.cpu.model.name | Any Str | false |
-| host.cpu.stepping | The host.cpu.stepping | Any Str | false |
-| host.cpu.vendor.id | The host.cpu.vendor.id | Any Str | false |
-| host.id | The host.id | Any Str | false |
-| host.interface | Network interfaces for the host | Any Slice | false |
-| host.ip | IP addresses for the host | Any Slice | false |
-| host.mac | MAC addresses for the host | Any Slice | false |
-| host.name | The host.name | Any Str | true |
-| os.build.id | The os.build.id | Any Str | false |
-| os.description | Human readable OS version information. | Any Str | false |
-| os.name | The os.name | Any Str | false |
-| os.type | The os.type | Any Str | true |
-| os.version | The os.version | Any Str | false |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| host.arch | The host.arch | Any Str | false | [host.arch](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-arch) | - |
+| host.cpu.cache.l2.size | The host.cpu.cache.l2.size | Any Int | false | [host.cpu.cache.l2.size](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-cpu-cache-l2-size) | - |
+| host.cpu.family | The host.cpu.family | Any Str | false | [host.cpu.family](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-cpu-family) | - |
+| host.cpu.model.id | The host.cpu.model.id | Any Str | false | [host.cpu.model.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-cpu-model-id) | - |
+| host.cpu.model.name | The host.cpu.model.name | Any Str | false | [host.cpu.model.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-cpu-model-name) | - |
+| host.cpu.stepping | The host.cpu.stepping | Any Str | false | [host.cpu.stepping](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-cpu-stepping) | - |
+| host.cpu.vendor.id | The host.cpu.vendor.id | Any Str | false | [host.cpu.vendor.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-cpu-vendor-id) | - |
+| host.id | The host.id | Any Str | false | [host.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-id) | - |
+| host.interface | Network interfaces for the host | Any Slice | false | - | - |
+| host.ip | IP addresses for the host | Any Slice | false | [host.ip](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-ip) | - |
+| host.mac | MAC addresses for the host | Any Slice | false | [host.mac](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-mac) | - |
+| host.name | The host.name | Any Str | true | [host.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-name) | - |
+| os.build.id | The os.build.id | Any Str | false | [os.build.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/os.md#os-build-id) | - |
+| os.description | Human readable OS version information. | Any Str | false | [os.description](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/os.md#os-description) | - |
+| os.name | The os.name | Any Str | false | [os.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/os.md#os-name) | - |
+| os.type | The os.type | Any Str | true | [os.type](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/os.md#os-type) | - |
+| os.version | The os.version | Any Str | false | [os.version](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/os.md#os-version) | - |

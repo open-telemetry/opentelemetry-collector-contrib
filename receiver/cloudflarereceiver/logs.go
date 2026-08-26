@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -20,6 +19,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -32,13 +34,15 @@ import (
 )
 
 type logsReceiver struct {
-	logger   *zap.Logger
-	cfg      *LogsConfig
-	server   *http.Server
-	consumer consumer.Logs
-	wg       *sync.WaitGroup
-	id       component.ID // ID of the receiver component
-	obsrecv  *receiverhelper.ObsReport
+	logger            *zap.Logger
+	cfg               *LogsConfig
+	serverConfig      *confighttp.ServerConfig
+	server            *http.Server
+	consumer          consumer.Logs
+	wg                *sync.WaitGroup
+	telemetrySettings component.TelemetrySettings
+	id                component.ID // ID of the receiver component
+	obsrecv           *receiverhelper.ObsReport
 }
 
 const secretHeaderName = "X-CF-Secret"
@@ -54,27 +58,31 @@ func newLogsReceiver(params rcvr.Settings, cfg *Config, consumer consumer.Logs) 
 	}
 
 	recv := &logsReceiver{
-		cfg:      &cfg.Logs,
-		consumer: consumer,
-		logger:   params.Logger,
-		wg:       &sync.WaitGroup{},
-		obsrecv:  obsrecv,
-		id:       params.ID,
+		cfg:               &cfg.Logs,
+		consumer:          consumer,
+		logger:            params.Logger,
+		wg:                &sync.WaitGroup{},
+		obsrecv:           obsrecv,
+		telemetrySettings: params.TelemetrySettings,
+		id:                params.ID,
 	}
 
-	recv.server = &http.Server{
-		Handler:           http.HandlerFunc(recv.handleRequest),
-		ReadHeaderTimeout: 20 * time.Second,
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  recv.cfg.Endpoint,
+		Transport: "tcp",
+	}
+	serverConfig.ReadHeaderTimeout = 20 * time.Second
+
+	if tlsConfig := recv.cfg.TLS; tlsConfig != nil {
+		serverConfig.TLS = configoptional.Some(*tlsConfig)
 	}
 
-	if recv.cfg.TLS != nil {
-		tlsConfig, err := recv.cfg.TLS.LoadTLSConfig(context.Background())
-		if err != nil {
-			return nil, err
-		}
-
-		recv.server.TLSConfig = tlsConfig
-	}
+	recv.serverConfig = &serverConfig
 
 	return recv, nil
 }
@@ -85,9 +93,11 @@ func (l *logsReceiver) Start(ctx context.Context, host component.Host) error {
 
 func (l *logsReceiver) Shutdown(ctx context.Context) error {
 	l.logger.Debug("Shutting down server")
-	err := l.server.Shutdown(ctx)
-	if err != nil {
-		return err
+	if l.server != nil {
+		err := l.server.Shutdown(ctx)
+		if err != nil {
+			return err
+		}
 	}
 
 	l.logger.Debug("Waiting for shutdown to complete.")
@@ -97,47 +107,47 @@ func (l *logsReceiver) Shutdown(ctx context.Context) error {
 
 func (l *logsReceiver) startListening(ctx context.Context, host component.Host) error {
 	l.logger.Debug("starting receiver HTTP server")
-	// We use l.server.Serve* over l.server.ListenAndServe*
-	// So that we can catch and return errors relating to binding to network interface on start.
-	var lc net.ListenConfig
+	server, err := l.serverConfig.ToServer(
+		ctx,
+		host.GetExtensions(),
+		l.telemetrySettings,
+		http.HandlerFunc(l.handleRequest),
+	)
+	if err != nil {
+		return err
+	}
+	l.server = server
 
-	listener, err := lc.Listen(ctx, "tcp", l.cfg.Endpoint)
+	listener, err := l.serverConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}
 
-	l.wg.Add(1)
-	go func() {
-		defer l.wg.Done()
-
-		if l.cfg.TLS != nil {
-			l.logger.Debug("Starting ServeTLS",
-				zap.String("address", l.cfg.Endpoint),
-				zap.String("certfile", l.cfg.TLS.CertFile),
-				zap.String("keyfile", l.cfg.TLS.KeyFile))
-
-			err := l.server.ServeTLS(listener, l.cfg.TLS.CertFile, l.cfg.TLS.KeyFile)
-
-			l.logger.Debug("ServeTLS done")
-
-			if !errors.Is(err, http.ErrServerClosed) {
-				l.logger.Error("ServeTLS failed", zap.Error(err))
-				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-			}
+	l.wg.Go(func() {
+		if l.serverConfig.TLS.HasValue() {
+			tlsConfig := l.serverConfig.TLS.Get()
+			l.logger.Debug(
+				"Starting ServeTLS",
+				zap.String("address", l.serverConfig.NetAddr.Endpoint),
+				zap.String("certfile", tlsConfig.CertFile),
+				zap.String("keyfile", tlsConfig.KeyFile),
+			)
 		} else {
-			l.logger.Debug("Starting Serve",
-				zap.String("address", l.cfg.Endpoint))
-
-			err := l.server.Serve(listener)
-
-			l.logger.Debug("Serve done")
-
-			if !errors.Is(err, http.ErrServerClosed) {
-				l.logger.Error("Serve failed", zap.Error(err))
-				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-			}
+			l.logger.Debug(
+				"Starting Serve",
+				zap.String("address", l.serverConfig.NetAddr.Endpoint),
+			)
 		}
-	}()
+
+		err := server.Serve(listener)
+
+		l.logger.Debug("Serve done")
+
+		if !errors.Is(err, http.ErrServerClosed) {
+			l.logger.Error("Serve failed", zap.Error(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+		}
+	})
 	return nil
 }
 
@@ -155,6 +165,9 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 		}
 	}
 
+	// Limit request body size
+	req.Body = http.MaxBytesReader(rw, req.Body, l.cfg.MaxRequestBodySize)
+
 	var payload []byte
 	if req.Header.Get("Content-Encoding") == "gzip" {
 		reader, err := gzip.NewReader(req.Body)
@@ -164,11 +177,25 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 			return
 		}
 		defer reader.Close()
-		// Read the decompressed response body
-		payload, err = io.ReadAll(reader)
+		// Read the decompressed response body. MaxBytesReader above bounds the
+		// compressed bytes only, so the decompressed stream needs its own limit:
+		// a small gzip payload can otherwise expand without bound. Read one byte
+		// past the limit so exceeding it can be distinguished from meeting it.
+		var decompressed io.Reader = reader
+		if l.cfg.MaxRequestBodySize > 0 {
+			decompressed = io.LimitReader(reader, l.cfg.MaxRequestBodySize+1)
+		}
+		payload, err = io.ReadAll(decompressed)
 		if err != nil {
 			rw.WriteHeader(http.StatusUnprocessableEntity)
 			l.logger.Debug("Got payload with gzip, but failed to read", zap.Error(err))
+			return
+		}
+		if l.cfg.MaxRequestBodySize > 0 && int64(len(payload)) > l.cfg.MaxRequestBodySize {
+			rw.WriteHeader(http.StatusUnprocessableEntity)
+			l.logger.Debug("Got gzip payload whose decompressed size exceeds max_request_body_size, dropping...",
+				zap.Int64("max_request_body_size", l.cfg.MaxRequestBodySize),
+				zap.String("remote", req.RemoteAddr))
 			return
 		}
 	} else {
@@ -361,6 +388,13 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 					attrs.PutDouble(attrName, v)
 				case bool:
 					attrs.PutBool(attrName, v)
+				case []any:
+					if err := attrs.PutEmptySlice(attrName).FromRaw(v); err != nil {
+						l.logger.Warn("unable to translate field to attribute, unsupported array value",
+							zap.String("field", field),
+							zap.Any("value", v),
+							zap.Error(err))
+					}
 				case map[string]any:
 					// Flatten the map and add each field with a prefixed key
 					flattened := make(map[string]any)
@@ -377,6 +411,13 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 							attrs.PutDouble(k, v)
 						case bool:
 							attrs.PutBool(k, v)
+						case []any:
+							if err := attrs.PutEmptySlice(k).FromRaw(v); err != nil {
+								l.logger.Warn("unable to translate flattened field to attribute, unsupported array value",
+									zap.String("field", k),
+									zap.Any("value", v),
+									zap.Error(err))
+							}
 						default:
 							l.logger.Warn("unable to translate flattened field to attribute, unsupported type",
 								zap.String("field", k),

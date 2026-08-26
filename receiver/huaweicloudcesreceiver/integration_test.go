@@ -65,40 +65,40 @@ func TestHuaweiCloudCESReceiverIntegration(t *testing.T) {
 	}, nil)
 
 	mc.On("ShowMetricData", mock.Anything).Return(&model.ShowMetricDataResponse{
-		MetricName: stringPtr("cpu_util"),
+		MetricName: new("cpu_util"),
 		Datapoints: &[]model.Datapoint{
 			{
-				Average:   float64Ptr(10),
+				Average:   new(float64(10)),
 				Timestamp: 1556625610000,
 			},
 			{
-				Average:   float64Ptr(20),
+				Average:   new(float64(20)),
 				Timestamp: 1556625715000,
 			},
 		},
 	}, nil).Times(1)
 	mc.On("ShowMetricData", mock.Anything).Return(&model.ShowMetricDataResponse{
-		MetricName: stringPtr("mem_util"),
+		MetricName: new("mem_util"),
 		Datapoints: &[]model.Datapoint{
 			{
-				Average:   float64Ptr(30),
+				Average:   new(float64(30)),
 				Timestamp: 1556625610000,
 			},
 			{
-				Average:   float64Ptr(40),
+				Average:   new(float64(40)),
 				Timestamp: 1556625715000,
 			},
 		},
 	}, nil).Times(1)
 	mc.On("ShowMetricData", mock.Anything).Return(&model.ShowMetricDataResponse{
-		MetricName: stringPtr("upstream_bandwidth_usage"),
+		MetricName: new("upstream_bandwidth_usage"),
 		Datapoints: &[]model.Datapoint{
 			{
-				Average:   float64Ptr(50),
+				Average:   new(float64(50)),
 				Timestamp: 1556625610000,
 			},
 			{
-				Average:   float64Ptr(60),
+				Average:   new(float64(60)),
 				Timestamp: 1556625715000,
 			},
 		},
@@ -107,7 +107,7 @@ func TestHuaweiCloudCESReceiverIntegration(t *testing.T) {
 	sink := &consumertest.MetricsSink{}
 	cfg := createDefaultConfig().(*Config)
 	cfg.RegionID = "us-east-2"
-	cfg.CollectionInterval = time.Second
+	cfg.ControllerConfig.CollectionInterval = time.Second
 	cfg.ProjectID = "my-project"
 	cfg.Filter = "average"
 

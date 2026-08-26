@@ -11,12 +11,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
 func Test_IsRootSpan(t *testing.T) {
 	exprFunc, err := isRootSpan()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// root span
 	spanRoot := ptrace.NewSpan()
@@ -24,8 +25,10 @@ func Test_IsRootSpan(t *testing.T) {
 		0, 0, 0, 0, 0, 0, 0, 0,
 	})
 
-	value, err := exprFunc(nil, ottlspan.NewTransformContext(spanRoot, pcommon.NewInstrumentationScope(), pcommon.NewResource(), ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
-	assert.NoError(t, err)
+	rootCtx := ottlspan.NewTransformContextPtr(ptrace.NewResourceSpans(), ptrace.NewScopeSpans(), spanRoot)
+	defer rootCtx.Close()
+	value, err := exprFunc(nil, rootCtx)
+	require.NoError(t, err)
 	require.Equal(t, true, value)
 
 	// non root span
@@ -34,7 +37,25 @@ func Test_IsRootSpan(t *testing.T) {
 		1, 0, 0, 0, 0, 0, 0, 0,
 	})
 
-	value, err = exprFunc(nil, ottlspan.NewTransformContext(spanNonRoot, pcommon.NewInstrumentationScope(), pcommon.NewResource(), ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
-	assert.NoError(t, err)
+	nonRootCtx := ottlspan.NewTransformContextPtr(ptrace.NewResourceSpans(), ptrace.NewScopeSpans(), spanNonRoot)
+	defer nonRootCtx.Close()
+	value, err = exprFunc(nil, nonRootCtx)
+	require.NoError(t, err)
 	require.Equal(t, false, value)
+}
+
+func Test_IsRootSpanFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		assert.Equal(t, "IsRootSpan", NewIsRootSpanFactory().Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		assert.Nil(t, NewIsRootSpanFactory().CreateDefaultArguments())
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		fn, err := NewIsRootSpanFactory().CreateFunction(ottl.FunctionContext{}, nil)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
 }

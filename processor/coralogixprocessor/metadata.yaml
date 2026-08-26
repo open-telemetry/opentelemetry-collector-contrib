@@ -1,4 +1,14 @@
+display_name: Coralogix Processor
 type: coralogix
+
+description: The Coralogix processor adds attributes to spans that enable features in Coralogix.
+
+tests:
+  config:
+    transactions:
+      enabled: true
+    critical_path:
+      enabled: true
 
 status:
   class: processor

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -252,16 +253,16 @@ hello!!world  `, nil
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := parseKeyValue[any](tt.target, tt.delimiter, tt.pairDelimiter)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			result, err := exprFunc(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			actual, ok := result.(pcommon.Map)
 			assert.True(t, ok)
 
 			expected := pcommon.NewMap()
-			assert.NoError(t, expected.FromRaw(tt.expected))
+			require.NoError(t, expected.FromRaw(tt.expected))
 
 			assert.Equal(t, expected.Len(), actual.Len())
 			for k := range expected.All() {
@@ -299,7 +300,7 @@ func Test_parseKeyValue_bad_target(t *testing.T) {
 	delimiter := ottl.NewTestingOptional[string]("=")
 	pairDelimiter := ottl.NewTestingOptional[string]("!")
 	exprFunc, err := parseKeyValue[any](target, delimiter, pairDelimiter)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
@@ -313,7 +314,7 @@ func Test_parseKeyValue_empty_target(t *testing.T) {
 	delimiter := ottl.NewTestingOptional[string]("=")
 	pairDelimiter := ottl.NewTestingOptional[string]("!")
 	exprFunc, err := parseKeyValue[any](target, delimiter, pairDelimiter)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
@@ -327,7 +328,7 @@ func Test_parseKeyValue_bad_split(t *testing.T) {
 	delimiter := ottl.NewTestingOptional[string]("=")
 	pairDelimiter := ottl.NewTestingOptional[string]("!")
 	exprFunc, err := parseKeyValue[any](target, delimiter, pairDelimiter)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = exprFunc(t.Context(), nil)
 	assert.ErrorContains(t, err, "failed to split pairs into key-values: cannot split \"hello_world\" into 2 items, got 1 item(s)")
 }
@@ -339,7 +340,7 @@ func Test_parseKeyValue_mismatch_quotes(t *testing.T) {
 		},
 	}
 	exprFunc, err := parseKeyValue[any](target, ottl.Optional[string]{}, ottl.Optional[string]{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
@@ -354,7 +355,7 @@ func Test_parseKeyValue_bad_delimiter(t *testing.T) {
 	// covers too long of a delimiter && delimiter not found
 	delimiter := ottl.NewTestingOptional[string]("=============")
 	exprFunc, err := parseKeyValue[any](target, delimiter, ottl.Optional[string]{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = exprFunc(t.Context(), nil)
 	assert.ErrorContains(t, err, "failed to split pairs into key-values: cannot split \"a=b\" into 2 items, got 1 item(s)")
 }
@@ -372,4 +373,40 @@ func Test_parseKeyValue_empty_delimiters(t *testing.T) {
 
 	_, err = parseKeyValue[any](target, ottl.Optional[string]{}, delimiter)
 	assert.ErrorContains(t, err, "pair delimiter cannot be set to an empty string")
+}
+
+func Test_ParseKeyValueFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewParseKeyValueFactory[any]()
+		assert.Equal(t, "ParseKeyValue", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewParseKeyValueFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ParseKeyValueArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Delimiter", "PairDelimiter"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewParseKeyValueFactory[any]()
+		args := factory.CreateDefaultArguments()
+		kvArgs, ok := args.(*ParseKeyValueArguments[any])
+		require.True(t, ok)
+		kvArgs.Target = ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "key=value", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createParseKeyValueFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ParseKeyValueFactory args must be of type *ParseKeyValueArguments[K]")
+	})
 }

@@ -21,10 +21,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
@@ -133,21 +135,17 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 
 	addr := testutil.GetAvailableLocalAddress(t)
 
-	receiverCfg.GRPC.NetAddr.Endpoint = addr
+	receiverCfg.Protocols.GRPC.NetAddr.Endpoint = addr
 
-	exporterCfg.Endpoint = addr
-	exporterCfg.WaitForReady = true
-	exporterCfg.TLS.Insecure = true
+	exporterCfg.ClientConfig.Endpoint = addr
+	exporterCfg.ClientConfig.WaitForReady = true
+	exporterCfg.ClientConfig.TLS.Insecure = true
 	exporterCfg.TimeoutSettings.Timeout = time.Minute
-	exporterCfg.QueueSettings.Enabled = false
+	exporterCfg.QueueSettings = configoptional.None[exporterhelper.QueueBatchConfig]()
 	exporterCfg.RetryConfig.Enabled = true
 	exporterCfg.Arrow.NumStreams = 1
 	exporterCfg.Arrow.MaxStreamLifetime = 5 * time.Second
 	exporterCfg.Arrow.DisableDowngrade = true
-
-	// The default exporter setting enables the memory queue; we
-	// disable to avoid flaky tests.
-	exporterCfg.QueueSettings.WaitForResult = true
 
 	if cfgF != nil {
 		cfgF(exporterCfg, receiverCfg)
@@ -537,7 +535,7 @@ func TestIntegrationMemoryLimited(t *testing.T) {
 	}
 
 	testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, rcfg *RecvConfig) {
-		rcfg.Arrow.MemoryLimitMiB = 1
+		rcfg.Protocols.Arrow.MemoryLimitMiB = 1
 		ecfg.Arrow.NumStreams = 10
 		// Shorten timeouts for this test, because we intend
 		// for it to fail and don't want to wait for retries.

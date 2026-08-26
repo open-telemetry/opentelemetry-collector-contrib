@@ -93,6 +93,16 @@ func TestUnmarshal(t *testing.T) {
 					return cfg
 				}(),
 			},
+			{
+				Name:               "on_error_drop",
+				ExpectUnmarshalErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.CombineWith = "\\t"
+					cfg.OnError = "drop"
+					return cfg
+				}(),
+			},
 		},
 	}.Run(t)
 }

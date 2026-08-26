@@ -23,7 +23,7 @@ declare -A COMMON_LABELS
 COMMON_LABELS["arm64"]="arm64"
 COMMON_LABELS["good-first-issue"]="good first issue"
 COMMON_LABELS["help-wanted"]="help wanted"
-COMMON_LABELS["needs-discussion"]="needs discussion"
+COMMON_LABELS["discussion-needed"]="discussion needed"
 COMMON_LABELS["needs-triage"]="needs triage"
 COMMON_LABELS["os:mac"]="os:mac"
 COMMON_LABELS["os:windows"]="os:windows"
@@ -36,6 +36,7 @@ COMMON_LABELS["priority:p2"]="priority:p2"
 COMMON_LABELS["priority:p3"]="priority:p3"
 COMMON_LABELS["stale"]="Stale"
 COMMON_LABELS["never-stale"]="never stale"
+COMMON_LABELS["skip-changelog"]="Skip Changelog"
 
 LABELS=$(echo "${COMMENT}" | sed -E 's%^/label%%')
 

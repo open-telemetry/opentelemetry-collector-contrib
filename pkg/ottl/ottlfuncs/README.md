@@ -46,6 +46,8 @@ Editors:
 Available Editors:
 
 - [append](#append)
+- [clear](#clear)
+- [delete_index](#delete_index)
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
 - [keep_matching_keys](#keep_matching_keys)
@@ -58,6 +60,7 @@ Available Editors:
 - [replace_match](#replace_match)
 - [replace_pattern](#replace_pattern)
 - [set](#set)
+- [stringify_all](#stringify_all)
 - [truncate_all](#truncate_all)
 
 ### append
@@ -72,6 +75,55 @@ Resulting field is always of type `pcommon.Slice` and will not convert the types
 - `append(log.attributes["tags"], "prod")`
 - `append(log.attributes["tags"], values = ["staging", "staging:east"])`
 - `append(log.attributes["tags_copy"], log.attributes["tags"])`
+
+### clear
+
+`clear(target)`
+
+The `clear` function reads the current value of `target`, computes that value's default empty form, and passes it to the target's setter. How that value is ultimately applied depends on the specific target implementation.
+
+The table below shows what `clear` passes to setters for the common target types supported by OTTL paths.
+
+| Current target value type | Value passed by `clear` |
+| --- | --- |
+| `string` | `""` |
+| `int64` | `0` |
+| `float64` | `0` |
+| `bool` | `false` |
+| `[]byte` | `nil` |
+| slices (for example `[]any`) | `nil` |
+| maps (for example `map[string]any`) | `nil` |
+| `pcommon.Map` | empty `pcommon.Map` |
+| `pcommon.Slice` | empty `pcommon.Slice` |
+| `pcommon.Value` | empty `pcommon.Value` |
+| `pcommon.TraceID` | empty TraceID (`[16]byte{}`) |
+| `pcommon.SpanID` | empty SpanID (`[8]byte{}`) |
+| `time.Time` | `time.Time{}` |
+| `time.Duration` | `0` |
+| pointers | `nil` pointer |
+| `nil` | `nil` |
+
+Whether `nil` is accepted depends on the target setter. Some setters treat `nil` as "clear the field", while others return an error.
+
+**Examples:**
+- `clear(attributes["http.method"])`
+- `clear(resource.attributes["host.name"])`
+
+### delete_index
+
+`delete_index(target, startIndex, Optional[endIndex])`
+
+The `delete_index` function removes elements from a slice. It deletes elements from `startIndex` up to, but not including, `endIndex`. If `endIndex` is not provided, only the element at `target[startIndex]` is deleted. If `startIndex` equals `endIndex`, no changes are applied to the target.
+
+Examples:
+
+- `delete_index(attributes["tags"], 0)` # deletes first
+
+- `delete_index(attributes["tags"], Len(attributes["tags"]) - 1)` # deletes last
+
+- `delete_index(attributes["tags"], 0, 3)` # deletes indices 0, 1, & 2
+
+- `delete_index(attributes["tags"], Index(attributes["tags"], "unparsed"))` # deletes first occurrence of "unparsed"
 
 ### delete_key
 
@@ -410,6 +462,9 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 
 `set(target, value)`
 
+> [!NOTE]
+> The [`ottl.set.allowNil`](../documentation.md#feature-gates) feature gate changes the behavior of `set` when a `nil` value is passed. Prior to this gate, passing `nil` was a no-op. When enabled, `set` will pass the `nil` value directly to the target, which may result in an error or an empty value depending on the target's underlying type.
+
 The `set` function allows users to set a telemetry field using a value.
 
 `target` is a path expression to a telemetry field. `value` is any value type. If `value` resolves to `nil`, e.g. it references an unset map value, there will be no action.
@@ -429,22 +484,49 @@ Examples:
 
 - `set(span.attributes["source"], span.trace_state["source"])`
 
+### stringify_all
+
+`stringify_all(target)`
+
+The `stringify_all` function converts all non-string values in a `pcommon.Map` to their string representation.
+
+`target` is a path expression to a `pcommon.Map` type field.
+
+The map will be mutated such that all values are of type string. Values already of type string are unchanged. Non-string values are converted using their standard string representation:
+- `int64`/`float64`: numeric string (e.g., `"42"`, `"3.14"`)
+- `bool`: `"true"` or `"false"`
+- `[]byte`: base64-encoded string
+- `pcommon.Map`: JSON-marshaled string
+- `pcommon.Slice`: JSON-marshaled string
+- Empty: `""`
+
+Examples:
+
+- `stringify_all(log.attributes)`
+- `stringify_all(resource.attributes)`
+
 ### truncate_all
 
-`truncate_all(target, limit)`
+`truncate_all(target, limit, Optional[utf8_safe], Optional[truncation_marker])`
 
 The `truncate_all` function truncates all string values in a `pcommon.Map` so that none are longer than the limit.
 
-`target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer.
+`target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer representing the maximum number of bytes. `utf8_safe` is an optional boolean (default: `true`) that enables UTF-8 aware truncation. `truncation_marker` is an optional string (default: `""`) that is appended to values that are truncated.
 
-The map will be mutated such that the number of characters in all string values is less than or equal to the limit. Non-string values are ignored.
+The map will be mutated such that the number of bytes in all string values is less than or equal to the limit. Non-string values are ignored.
+
+This function treats input as valid UTF-8. Truncation is done only at UTF-8 character boundaries so that multi-byte characters are never cut in the middle and the result is always valid UTF-8. If cutting at exactly the `limit` would split a multi-byte character, the string is cut earlier, so the result may be slightly shorter than `limit`.
+
+When `utf8_safe` is set to `false`, truncation is applied at the byte limit only. Multi-byte UTF-8 characters may be split and the result can be invalid UTF-8. This mode is faster but should only be used when preserving valid UTF-8 is not required.
+
+`truncation_marker` is a string that will be appended to any value that has been truncated. The marker counts against the `limit` so the result (including the marker) never exceeds it. If the length of `truncation_marker` is larger than `limit`, `truncate_all` will return an error.
 
 Examples:
 
 - `truncate_all(log.attributes, 100)`
-
-
-- `truncate_all(resource.attributes, 50)`
+- `truncate_all(resource.attributes, 50, false)`
+- `truncate_all(resource.attributes, 50, false, "(...)")`
+- `truncate_all(log.attributes, 100, truncation_marker = "(truncated)")` 
 
 ## Converters
 
@@ -453,8 +535,14 @@ Unlike functions, they do not modify any input telemetry and always return a val
 
 Available Converters:
 
-- [Base64Decode](#base64decode)
+- [All](#all)
+- [Any](#any)
+- [Base64Decode](#base64decode-deprecated)
+- [Base64Encode](#base64encode)
+- [Bool](#bool)
 - [Decode](#decode)
+- [Coalesce](#coalesce)
+- [CommunityID](#communityid)
 - [Concat](#concat)
 - [ContainsValue](#containsvalue)
 - [ConvertCase](#convertcase)
@@ -465,6 +553,8 @@ Available Converters:
 - [Duration](#duration)
 - [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
+- [Filter](#filter)
+- [Find](#find)
 - [FNV](#fnv)
 - [Format](#format)
 - [FormatTime](#formattime)
@@ -479,6 +569,8 @@ Available Converters:
 - [Int](#int)
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
+- [IsEmpty](#isempty)
+- [IsInCIDR](#isincidr)
 - [IsInt](#isint)
 - [IsRootSpan](#isrootspan)
 - [IsMap](#ismap)
@@ -489,6 +581,8 @@ Available Converters:
 - [Len](#len)
 - [Log](#log)
 - [IsValidLuhn](#isvalidluhn)
+- [MapEach](#mapeach)
+- [MapKeys](#mapkeys)
 - [MD5](#md5)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
@@ -504,9 +598,11 @@ Available Converters:
 - [ParseInt](#parseint)
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
+- [ParseSeverity](#parseseverity)
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
 - [ProfileID](#profileid)
+- [Reduce](#reduce)
 - [RemoveXML](#removexml)
 - [Second](#second)
 - [Seconds](#seconds)
@@ -526,20 +622,93 @@ Available Converters:
 - [ToSnakeCase](#tosnakecase)
 - [ToUpperCase](#touppercase)
 - [TraceID](#traceid)
+- [Trim](#trim)
+- [TrimPrefix](#trimprefix)
+- [TrimSuffix](#trimsuffix) 
 - [TruncateTime](#truncatetime)
 - [Unix](#unix)
 - [UnixMicro](#unixmicro)
 - [UnixMilli](#unixmilli)
 - [UnixNano](#unixnano)
 - [UnixSeconds](#unixseconds)
+- [URL](#url)
 - [UserAgent](#useragent)
 - [UUID](#UUID)
 - [UUIDv7](#UUIDv7)
 - [Values](#values)
 - [Weekday](#weekday)
+- [When](#when)
 - [XXH3](#xxh3)
 - [XXH128](#xxh128)
 - [Year](#year)
+
+### All
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`All(source, predicate)`
+
+The `All` converter returns `true` if `predicate` evaluates to `true` for every element in `source`.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`predicate` is a lambda expression with exactly two parameters and a boolean result. 
+The first parameter is the element index when evaluating a slice (`int64`), or the element 
+key when evaluating a map (`string`). The second parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+An empty slice or map returns `true`.
+
+If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
+
+Examples:
+
+Check that every slice element matches:
+
+- `All(log.attributes["tags"], (_, v) => v == "prod")`
+
+Check that every map key matches:
+
+- `All(log.attributes, (k, _) => HasPrefix(k, "http."))`
+
+Use in a condition:
+
+- `set(log.attributes["all_prod"], true) where All(log.attributes["tags"], (_, v) => v == "prod")`
+
+### Any
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`Any(source, predicate)`
+
+The `Any` converter returns `true` if `predicate` evaluates to `true` for at least one element in `source`.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`predicate` is a lambda expression with exactly two parameters and a boolean result. 
+The first parameter is the element index when evaluating a slice (`int64`), or the element 
+key when evaluating a map (`string`). The second parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+An empty slice or map returns `false`.
+
+If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
+
+Examples:
+
+Check whether any slice element matches:
+
+- `Any(log.attributes["tags"], (_, v) => v == "prod")`
+
+Check whether any map key matches:
+
+- `Any(log.attributes, (k, _) => HasPrefix(k, "http."))`
+
+Use in a condition:
+
+- `set(log.attributes["has_prod"], true) where Any(log.attributes["tags"], (_, v) => v == "prod")`
 
 ### Base64Decode (Deprecated)
 
@@ -558,6 +727,58 @@ Examples:
 
 - `Base64Decode(resource.attributes["encoded field"])`
 
+### Base64Encode
+
+`Base64Encode(value, Optional[variant])`
+
+The `Base64Encode` Converter takes a string and returns a base64 encoded string.
+
+`value` is a string to encode.
+`variant` (optional) is the base64 encoding variant to use. Valid values are `base64` (standard, with padding), `base64-raw` (standard, no padding), `base64-url` (URL-safe, with padding), or `base64-raw-url` (URL-safe, no padding). Defaults to `base64` if not specified.
+
+Examples:
+
+- `Base64Encode("test string")`
+
+
+- `Base64Encode(resource.attributes["field"])`
+
+
+- `Base64Encode(body, "base64-url")`
+
+
+- `Base64Encode(attributes["data"], "base64-raw")`
+
+### Bool
+
+`Bool(value)`
+
+The `Bool` Converter converts the `value` to a bool type.
+
+The returned type is `bool`.
+
+The accepted input `value` types are:
+
+- `bool`: Returns the value without changes.
+- `float64`: Returns `true` if non-zero, otherwise `false`.
+- `int64`: Returns `true` if non-zero, otherwise `false`.
+- `string`: Tries to parse a boolean from the string. It returns `true` for "1", "t", "T", "true", "TRUE", or "True"; returns `false` for "0", "f", "F", "false", "FALSE" or "False".
+- `nil`: Returns `nil`.
+
+If `value` is another type or parsing failed, `nil` is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+Examples:
+
+- `Bool(log.attributes["truthy_attribute"])`
+
+
+- `Bool("true")`
+
+
+- `Bool("0")`
+
 ### Decode
 
 `Decode(value, encoding)`
@@ -573,6 +794,45 @@ Examples:
 
 
 - `Decode(resource.attributes["encoded field"], "us-ascii")`
+
+### Coalesce
+
+`Coalesce(values[])`
+
+The `Coalesce` Converter returns the first non-nil value from a list of values.
+
+`values` is a list of values. Each can be a path expression, a literal, or a nested converter call. At least one value is required.
+
+If all values are `nil`, the Converter returns `nil`.
+
+Examples:
+
+- `Coalesce([attributes["user.id"], attributes["enduser.id"], "unknown"])`
+
+
+- `Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]])`
+
+### CommunityID
+
+`CommunityID(sourceIP, sourcePort, destinationIP, destinationPort, Optional[protocol], Optional[seed])`
+
+The `CommunityID` converter generates a network hash flow. Community ID is a standardized flow hashing algorithm that produces consistent hash values for network connections, useful when correlating network traffic across different monitoring systems.
+The output format is base64 encoding string of <2-byte-seed><source-IP-bytes><destination-IP-bytes><1-byte-protocol><2-byte-source-port><2-byte-destination-port>.
+
+`sourceIP` is a source IP address (IPv4 or IPv6).
+`sourcePort` is a source port (must be between 0 and 65535).
+`destinationIP` is a destination IP address (IPv4 or IPv6).
+`destinationPort` is a destination port (must be between 0 and 65535).
+`protocol` (optional) is a protocol, one of `ICMP`, `TCP`, `UDP`, `RSVP`, `ICMP6` or `SCTP`. Defaults to `TCP` if not specified.
+`seed` (optional) is seed value (must be between 0 and 65535). Defaults to `0` if not specified.
+
+Examples:
+
+- `CommunityID(attributes["source.ip"], attributes["source.port"], attributes["destination.ip"], attributes["destination.port"], "TCP", 1)`
+
+
+- `CommunityID("192.168.1.1", 54321, "10.0.0.1", 90, "UDP", 2)`
+
 
 ### Concat
 
@@ -666,6 +926,7 @@ The `ConvertTextToElementsXML` Converter returns an edited version of an XML str
 
 `target` is a Getter that returns a string. This string should be in XML format.
 If `target` is not a string, nil, or cannot be parsed as XML, `ConvertTextToElementsXML` will return an error.
+Conversion is bounded by a maximum XML nesting depth of 10,000 levels; deeper documents return an error.
 
 `xpath` (optional) is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
 selects one or more elements. Content will only be converted within the result(s) of the xpath. The default is `/`.
@@ -848,6 +1109,83 @@ Examples:
      - `user.name`: smith
      - `user.password`: pass123
 
+### Filter
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`Filter(source, predicate)`
+
+The `Filter` converter returns a new `pcommon.Slice` or `pcommon.Map` containing only the elements for which
+`predicate` evaluates to `true`.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`predicate` is a lambda expression with exactly two parameters and a boolean result. The first parameter is
+the element index when filtering a slice (`int64`), or the element key when filtering a map (`string`). The
+second parameter is the element value. Use `_` as a parameter name to ignore unused parameters.
+
+If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
+
+Examples:
+
+Filter a slice by value:
+
+- `Filter(log.attributes["tags"], (_, v) => v == "prod")`
+
+Filter a map by key:
+
+- `Filter(log.attributes, (k, _) => HasPrefix(k, "http."))`
+
+Store the filtered result:
+
+- `set(log.attributes["prod_tags"], Filter(log.attributes["tags"], (_, v) => v == "prod"))`
+
+### Find
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`Find(source, predicate, Optional[mapper])`
+
+The `Find` converter returns the value of the first element in `source` for which `predicate` evaluates to `true`. 
+If no element matches, it returns `nil`.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`predicate` is a lambda expression with exactly two parameters and a boolean result. 
+The first parameter is the element index when searching a slice (`int64`), or the element 
+key when searching a map (`string`). The second parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+`mapper` is an optional lambda expression with exactly two parameters. When provided, 
+it transforms the matched element before returning it. The first parameter is the found element 
+index or key, and the second parameter is the element value. When omitted, the matched value 
+is returned as-is.
+
+If `source` is not a slice or map, or if `predicate` does not return a boolean, it returns an error.
+
+Examples:
+
+Find a slice element by value:
+
+- `Find(log.attributes["tags"], (_, v) => v == "prod")`
+
+Find a map element by key:
+
+- `Find(log.attributes, (k, _) => k == "http.method")`
+
+Find a map element key instead of value:
+
+- `Find(log.attributes, (_, v) => v == "prod", (k, _) => k)`
+
+Transform the found element:
+
+- `Find(log.attributes, (_, v) => v == "prod", (_, v) => String(v))`
+
+Store the found value:
+
+- `set(log.attributes["first_prod"], Find(log.attributes["tags"], (_, v) => v == "prod"))`
 
 ### FNV
 
@@ -1194,6 +1532,46 @@ Examples:
 
 - `IsDouble(log.attributes["maybe a double"])`
 
+### IsEmpty
+
+`IsEmpty(value)`
+
+The `IsEmpty` Converter returns `true` if the given `value` is considered empty.
+
+The `value` is either a path expression to a telemetry field to retrieve, or a literal.
+
+Specifically, it will return `true` if the provided `value` is one of the following:
+
+1. `nil`.
+2. An empty `pcommon.Value` (`pcommon.ValueTypeEmpty`).
+3. A `pcommon.Map` or native map with no entries.
+4. A `pcommon.Slice` or native slice (including `[]byte`) with no elements.
+5. Any other value equal to its type's zero value (for example, `""`, `0`, `false`, or an unset all-zero `pcommon.TraceID`/`pcommon.SpanID`).
+
+Otherwise, it will return `false`.
+
+Examples:
+
+- `IsEmpty(log.body)`
+
+- `IsEmpty(resource.attributes["maybe empty"])`
+
+- `IsEmpty("")`
+
+### IsInCIDR
+
+`IsInCIDR(target, networks[])`
+
+The `IsInCIDR` Converter returns true if the given target IP address falls within any of the specified network ranges.
+
+The `target` is either a path expression to a telemetry field to retrieve, or a literal. The `networks` is a list of CIDR addresses.
+
+Examples:
+
+- `IsInCIDR(resource.attributes["server.ip"], ["192.168.0.0/16"])`
+
+- `IsInCIDR(resource.attributes["server.ip"], ["192.168.0.0/16", "10.0.0.0/8"])`
+
 ### IsInt
 
 `IsInt(value)`
@@ -1371,6 +1749,72 @@ Examples:
 - `IsValidLuhn(span.attributes["credit_card_number"])`
 
 - `IsValidLuhn("17893729974")`
+
+### MapEach
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`MapEach(source, mapper)`
+
+The `MapEach` converter returns a new `pcommon.Slice` or `pcommon.Map` with each element value 
+transformed by `mapper`.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`mapper` is a lambda expression with exactly two parameters. The first parameter is the element
+index when mapping a slice (`int64`), or the element key when mapping a map (`string`). The
+second parameter is the element value. Use `_` as a parameter name to ignore unused parameters.
+
+If `source` is not a slice or map, it returns an error.
+
+Examples:
+
+Mapping slice values:
+
+- `MapEach(log.attributes["counts"], (_, v) => Int(v) * 2)`
+
+Stringify map values:
+
+- `MapEach(log.attributes, (_, v) => String(v))`
+
+Store the mapped result:
+
+- `set(log.attributes["doubled"], MapEach(log.attributes["counts"], (_, v) => Int(v)))`
+
+### MapKeys
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`MapKeys(source, keyMapper)`
+
+The `MapKeys` converter returns a new `pcommon.Map` with each key transformed by `keyMapper`. Values are unchanged.
+
+`source` is a path expression or another getter that resolves to a map.
+
+`keyMapper` is a lambda expression with exactly two parameters that returns a `string`.
+The first parameter is the element key (`string`). The second parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+If `keyMapper` produces duplicate keys, only one value is retained and which one is unspecified. 
+Keys are processed in the order they appear in the `source` map, though this is not guaranteed.
+
+If `source` is not a map, or if `keyMapper` does not return a `string`, it returns an error.
+
+Examples:
+
+Prefix map keys:
+
+- `MapKeys(log.attributes, (k, _) => Concat(["http.", k], ""))`
+
+Derive keys from key and value:
+
+- `MapKeys(log.attributes, (k, v) => Concat([k, ":", String(v)], ""))`
+
+Store the result:
+
+- `set(log.attributes["prefixed"], MapKeys(log.attributes, (k, _) => Concat(["http.", k], "")))`
 
 ### MD5
 
@@ -1646,6 +2090,34 @@ Examples:
 - `ParseKeyValue("k1!v1_k2!v2_k3!v3", "!", "_")`
 - `ParseKeyValue(log.attributes["pairs"])`
 
+### ParseSeverity
+
+`ParseSeverity(target, severityMapping)`
+
+The `ParseSeverity` converter returns a `string` that represents one of the log levels defined by `severityMapping`.
+
+`target` is a Getter that returns a string or an integer.
+`severityMapping` is a map containing the log levels, and a list of values they are mapped from. These values can be either
+strings, or map items containing a numeric range, defined by a `min` and `max` key (inclusive bounds), for the given log level.
+A value will be mapped to the given log level if any of these conditions are true. 
+For example, the following mapping will map to the `info` level, if the `target` is either a string with the value `inf`,
+or an integer in the range `[200,299]`:
+
+`{"info":[{"equals": ["inf"]}, {"range":{"min":200, "max":299}}]}`
+
+There is also support for expressing certain status code ranges via a placeholder string. The supported placeholders are the following:
+
+- `"2xx"`: This string matches integer values between `[200,299]`
+- `"3xx"`: This string matches integer values between `[300,399]`
+- `"4xx"`: This string matches integer values between `[400,499]`
+- `"5xx"`: This string matches integer values between `[500,599]`
+
+Examples:
+
+- `ParseSeverity(attributes["log-level"] {"info":[{"equals": ["inf"]}, {"range":{"min":200, "max":299}}]})`
+- `ParseSeverity(attributes["log-level"] {"info":[{"range":"2xx""}]})`
+- `ParseSeverity(severity_number {"info":[{"equals": ["inf"]}, {"range":{"min":200, "max":299}}], "error":[{"range":{"min":400, "max":499}}]})`
+
 ### ParseSimplifiedXML
 
 `ParseSimplifiedXML(target)`
@@ -1657,6 +2129,8 @@ This Converter should be preferred over `ParseXML` when minor semantic details (
 
 This Converter disregards certain aspects of XML, specifically attributes and extraneous text content, in order to produce
 a direct representation of XML data. Users are encouraged to simplify their XML documents prior to using `ParseSimplifiedXML`.
+
+Parsing is bounded by a maximum nesting depth of 10,000 levels; deeper documents return an error.
 
 See other functions which may be useful for preparing XML documents:
 
@@ -1789,6 +2263,8 @@ Unmarshalling XML is done using the following rules:
 4. Processing instructions, directives, and comments are ignored and not represented in the resultant map.
 5. All child elements are parsed as above, and placed in a `pcommon.Slice`, which is then placed into the `children` field.
 
+Parsing is bounded by a maximum nesting depth of 10,000 levels; deeper documents return an error.
+
 For example, the following XML document:
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>
@@ -1845,15 +2321,57 @@ Examples:
 
 ### ProfileID
 
-`ProfileID(bytes)`
+`ProfileID(bytes|string)`
 
-The `ProfileID` Converter returns a `pprofile.ProfileID` struct from the given byte slice.
+The `ProfileID` Converter returns a `pprofile.ProfileID` struct from the given byte slice OR hex string.
 
-`bytes` is a byte slice of exactly 16 bytes.
+`bytes`  byte slice of exactly 16 bytes.
+`string` is a string of exactly 32 hex characters solely composed of valid hexadecimal chars.
 
 Examples:
 
 - `ProfileID(0x00112233445566778899aabbccddeeff)`
+- `ProfileID("a389023abaa839283293ed323892389d")`
+
+### Reduce
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`Reduce(source, seed, accumulator)`
+
+The `Reduce` converter folds `source` into a single value, starting from `seed` and applying `accumulator` to each element.
+
+`source` is a path expression or another getter that resolves to a slice or map.
+
+`seed` is the initial accumulator value.
+
+`accumulator` is a lambda expression with exactly three parameters. 
+The first parameter is the current accumulator value. 
+The second parameter is the element index when reducing a slice (`int64`), or the element 
+key when reducing a map (`string`). The third parameter is the element value.
+Use `_` as a parameter name to ignore unused parameters.
+
+An empty slice or map returns `seed` unchanged.
+
+For maps, element processing order follows map iteration and is not guaranteed to be stable. 
+This matters when `accumulator` is not commutative.
+
+If `source` is not a slice or map, it returns an error.
+
+Examples:
+
+Sum a slice of numbers:
+
+- `Reduce(log.attributes["counts"], 0, (acc, _, v) => acc + Int(v))`
+
+Build a semicolon-separated key=value string:
+
+- `Reduce(log.attributes["labels"], "", (acc, k, v) => Concat([acc, k, "=", String(v), ";"], ""))`
+
+Store the result:
+
+- `set(log.attributes["total"], Reduce(log.attributes["counts"], 0, (acc, _, v) => acc + Int(v)))`
 
 ### RemoveXML
 
@@ -2111,15 +2629,17 @@ Examples:
 
 ### SpanID
 
-`SpanID(bytes)`
+`SpanID(bytes|string)`
 
-The `SpanID` Converter returns a `pdata.SpanID` struct from the given byte slice.
+The `SpanID` Converter returns a `pdata.SpanID` struct from the given byte slice OR hex string.
 
-`bytes` is a byte slice of exactly 8 bytes.
+`bytes`  byte slice of exactly 8 bytes.
+`string` is a string of exactly 16 hex characters solely composed of valid hexadecimal chars.
 
 Examples:
 
 - `SpanID(0x0000000000000000)`
+- `SpanID("0102030405060708")`
 
 ### Split
 
@@ -2214,11 +2734,11 @@ Examples:
 
 ### Substring
 
-`Substring(target, start, length)`
+`Substring(target, start, length, Optional[utf8_safe])`
 
 The `Substring` Converter returns a substring from the given start index to the specified length.
 
-`target` is a string. `start` and `length` are `int64`.
+`target` is a string. `start` and `length` are byte offsets as `int64`. `utf8_safe` is an optional boolean (default: `false`); when `true`, a mid-character `start` advances to the next UTF-8 boundary and a mid-character end (`start+length`) backs up to the previous one, so multi-byte characters are never split, and the result may be shorter than `length` bytes.
 
 If `target` is not a string or is nil, an error is returned.
 If the start/length exceed the length of the `target` string, an error is returned.
@@ -2226,6 +2746,7 @@ If the start/length exceed the length of the `target` string, an error is return
 Examples:
 
 - `Substring("123456789", 0, 3)`
+- `Substring("一二三", 0, 4, true)`
 
 ### Time
 
@@ -2396,15 +2917,18 @@ Examples:
 
 ### TraceID
 
-`TraceID(bytes)`
+`TraceID(bytes|string)`
 
-The `TraceID` Converter returns a `pdata.TraceID` struct from the given byte slice.
+The `TraceID` Converter returns a `pdata.TraceID` struct from the given byte slice OR hex string.
 
-`bytes` is a byte slice of exactly 16 bytes.
+`bytes`  byte slice of exactly 16 bytes.
+`string` is a string of exactly 16 bytes solely composed of valid hexadecimal chars.
 
 Examples:
 
 - `TraceID(0x00000000000000000000000000000000)`
+- `TraceID("a389023abaa839283293ed323892389d")`
+
 
 ### TruncateTime
 
@@ -2608,6 +3132,35 @@ The returned range is 0-6 (Sun-Sat)
 Examples:
 
 - `Weekday(Now())`
+
+### When
+
+> [!IMPORTANT]
+> This function is alpha and may change in future releases. It requires the [`ottl.functions.enableLambda`](../documentation.md#feature-gates) feature gate to be enabled.
+
+`When(condition, trueValue, falseValue)`
+
+The `When` converter returns `trueValue` when `condition` evaluates to true, otherwise it returns `falseValue`.
+
+`condition` is a lambda expression with no parameters that returns a `boolean`.
+
+`trueValue` and `falseValue` are OTTL expressions or literal values.
+
+If `condition` does not return a `boolean`, it returns an error.
+
+Examples:
+
+Select a value based on a type check:
+
+- `When(() => IsMap(log.attributes), "map", "not map")`
+
+Select a value based on a comparison:
+
+- `When(() => attributes["int_value"] > 0, "positive", "negative")`
+
+Store the result:
+
+- `set(log.attributes["result"], When(() => IsMap(log.attributes), "yes", "no"))`
 
 ### XXH3
 

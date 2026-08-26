@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -171,7 +172,7 @@ func Test_IsList(t *testing.T) {
 				},
 			})
 			result, err := exprFunc(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -185,5 +186,42 @@ func Test_IsList_Error(t *testing.T) {
 	})
 	result, err := exprFunc(t.Context(), nil)
 	assert.Equal(t, false, result)
-	assert.IsType(t, ottl.TypeError(""), err)
+	var typeErr ottl.TypeError
+	assert.ErrorAs(t, err, &typeErr)
+}
+
+func Test_IsListFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewIsListFactory[any]()
+		assert.Equal(t, "IsList", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewIsListFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &IsListArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewIsListFactory[any]()
+		args := factory.CreateDefaultArguments()
+		isListArgs, ok := args.(*IsListArguments[any])
+		require.True(t, ok)
+		isListArgs.Target = &ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return []any{}, nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createIsListFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "IsListFactory args must be of type *IsListArguments[K]")
+	})
 }

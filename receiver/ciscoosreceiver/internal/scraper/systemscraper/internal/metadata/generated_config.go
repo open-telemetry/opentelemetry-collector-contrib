@@ -7,41 +7,82 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
+// CiscoDeviceUpMetricConfig provides config for the cisco.device.up metric.
+type CiscoDeviceUpMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *CiscoDeviceUpMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
+
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SystemCPUUtilizationMetricConfig provides config for the system.cpu.utilization metric.
+type SystemCPUUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SystemMemoryUtilizationMetricConfig provides config for the system.memory.utilization metric.
+type SystemMemoryUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemMemoryUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
 // MetricsConfig provides config for system metrics.
 type MetricsConfig struct {
-	CiscoDeviceUp           MetricConfig `mapstructure:"cisco.device.up"`
-	SystemCPUUtilization    MetricConfig `mapstructure:"system.cpu.utilization"`
-	SystemMemoryUtilization MetricConfig `mapstructure:"system.memory.utilization"`
+	CiscoDeviceUp           CiscoDeviceUpMetricConfig           `mapstructure:"cisco.device.up"`
+	SystemCPUUtilization    SystemCPUUtilizationMetricConfig    `mapstructure:"system.cpu.utilization"`
+	SystemMemoryUtilization SystemMemoryUtilizationMetricConfig `mapstructure:"system.memory.utilization"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		CiscoDeviceUp: MetricConfig{
+		CiscoDeviceUp: CiscoDeviceUpMetricConfig{
 			Enabled: true,
 		},
-		SystemCPUUtilization: MetricConfig{
+		SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
 			Enabled: true,
 		},
-		SystemMemoryUtilization: MetricConfig{
+		SystemMemoryUtilization: SystemMemoryUtilizationMetricConfig{
 			Enabled: true,
 		},
 	}
@@ -100,9 +141,14 @@ type MetricsBuilderConfig struct {
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }

@@ -6,15 +6,28 @@ status:
     beta: [metrics]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: [dmitryax, braydonk]
+    active: [dmitryax, braydonk, rogercoll]
 
-sem_conv_version: 1.9.0
+feature_gates:
+  - id: scraper.process.DontEmitV0SystemConventions
+    description: When enabled, semconv legacy attributes are disabled.
+    stage: alpha
+    from_version: v0.158.0
+    reference_url: https://github.com/open-telemetry/semantic-conventions/issues/3041
+  - id: scraper.process.EmitV1SystemConventions
+    description: When enabled, semconv stable attributes are enabled.
+    stage: alpha
+    from_version: v0.158.0
+    reference_url: https://github.com/open-telemetry/semantic-conventions/issues/3041
+
+sem_conv_version: 1.43.0
 
 resource_attributes:
   process.cgroup:
     description: cgroup associated with the process (Linux only).
     enabled: false
     type: string
+
   process.command:
     description: >-
       The command used to launch the process (i.e. the command name). On Linux based
@@ -44,6 +57,12 @@ resource_attributes:
       GetProcessImageFileNameW.
     enabled: true
     type: string
+
+  process.linux.cgroup:
+    description: The control group associated with the process.
+    enabled: false
+    type: string
+
   process.owner:
     description: The username of the user that owns the process.
     enabled: true
@@ -62,21 +81,51 @@ attributes:
     name_override: type
     description: Type of context switched.
     type: string
+    requirement_level: recommended
     enum: [involuntary, voluntary]
+
+  cpu.mode:
+    description: The CPU mode for this data point.
+    type: string
+    requirement_level: required
+    enum: [system, user, iowait]
+
   direction:
     description: Direction of flow of bytes (read or write).
     type: string
+    requirement_level: recommended
+    enum: [read, write]
+
+  disk.io.direction:
+    description: The disk IO operation direction.
+    type: string
+    requirement_level: required
     enum: [read, write]
 
   paging_fault_type:
     name_override: type
     description: Type of memory paging fault.
     type: string
+    requirement_level: recommended
     enum: [major, minor]
+
+  process.context_switch.type:
+    description: Specifies whether the context switches for this data point were voluntary or involuntary.
+    type: string
+    requirement_level: required
+    enum: [involuntary, voluntary]
+
   state:
     description: Breakdown of CPU usage by type.
     type: string
+    requirement_level: recommended
     enum: [system, user, wait]
+
+  system.paging.fault.type:
+    description: Type of memory paging fault.
+    type: string
+    requirement_level: recommended
+    enum: [major, minor]
 
 metrics:
   process.context_switches:
@@ -84,24 +133,56 @@ metrics:
     description: Number of times the process has been context switched.
     extended_documentation: This metric is only available on Linux.
     unit: '{count}'
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: true
     attributes: [context_switch_type]
+    migration:
+      to: process.context_switches@v1
+      through_gates:
+        disable_old: scraper.process.DontEmitV0SystemConventions
+        enable_new: scraper.process.EmitV1SystemConventions
+
+  process.context_switches@v1:
+    enabled: false
+    description: Number of times the process has been context switched.
+    extended_documentation: This metric is only available on Linux.
+    unit: '{context_switch}'
+    stability: beta
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [process.context_switch.type]
+
   process.cpu.time:
     enabled: true
     description: Total CPU seconds broken down by different states.
     unit: s
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: double
       aggregation_temporality: cumulative
       monotonic: true
     attributes: [state]
+    migration:
+      to: process.cpu.time@v1
+      through_gates:
+        disable_old: scraper.process.DontEmitV0SystemConventions
+        enable_new: scraper.process.EmitV1SystemConventions
+
+  process.cpu.time@v1:
+    enabled: false
+    description: Total CPU seconds broken down by different CPU modes.
+    unit: s
+    stability: beta
+    sum:
+      value_type: double
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [cpu.mode]
 
   process.cpu.utilization:
     enabled: false
@@ -110,52 +191,87 @@ metrics:
       expressed as a value between 0 and 1.
       On the first scrape, no data point is emitted for this metric.
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: [state]
+    migration:
+      to: process.cpu.utilization@v1
+      through_gates:
+        disable_old: scraper.process.DontEmitV0SystemConventions
+        enable_new: scraper.process.EmitV1SystemConventions
+
+  process.cpu.utilization@v1:
+    enabled: false
+    description: >-
+      Difference in process.cpu.time since the last measurement,
+      divided by the elapsed time and number of CPUs available to the process.
+      On the first scrape, no data point is emitted for this metric.
+    unit: "1"
+    stability: beta
+    gauge:
+      value_type: double
+    attributes: [cpu.mode]
+
   process.disk.io:
     enabled: true
     description: Disk bytes transferred.
     unit: By
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: true
     attributes: [direction]
+    migration:
+      to: process.disk.io@v1
+      through_gates:
+        disable_old: scraper.process.DontEmitV0SystemConventions
+        enable_new: scraper.process.EmitV1SystemConventions
+
+  process.disk.io@v1:
+    enabled: false
+    description: Disk bytes transferred.
+    unit: By
+    stability: beta
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [disk.io.direction]
 
   process.disk.operations:
     enabled: false
     description: Number of disk operations performed by the process.
     unit: "{operations}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: true
     attributes: [direction]
+
   process.handles:
     enabled: false
     description: Number of open handles held by the process.
     extended_documentation: This metric is only available on Windows.
     unit: '{count}'
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+    migration:
+      to: process.windows.handle.count@v1
+      through_gates:
+        disable_old: scraper.process.DontEmitV0SystemConventions
+        enable_new: scraper.process.EmitV1SystemConventions
 
   process.memory.usage:
     enabled: true
     description: The amount of physical memory in use.
     unit: By
-    stability:
-      level: development
+    stability: beta
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -165,17 +281,15 @@ metrics:
     enabled: false
     description: Percentage of total physical memory that is used by the process.
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
 
   process.memory.virtual:
     enabled: true
-    description: Virtual memory size.
+    description: The amount of committed virtual memory.
     unit: By
-    stability:
-      level: development
+    stability: beta
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -189,33 +303,62 @@ metrics:
       by the process. If you want to capture this data on Windows use the
       `process.handles` metric instead to avoid any confusion.
     unit: '{count}'
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+    migration:
+      to: process.unix.file_descriptor.count@v1
+      through_gates:
+        disable_old: scraper.process.DontEmitV0SystemConventions
+        enable_new: scraper.process.EmitV1SystemConventions
 
   process.paging.faults:
     enabled: false
     description: Number of page faults the process has made.
     extended_documentation: This metric is only available on Linux.
     unit: "{faults}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: true
     attributes: [paging_fault_type]
+    migration:
+      to: process.paging.faults@v1
+      through_gates:
+        disable_old: scraper.process.DontEmitV0SystemConventions
+        enable_new: scraper.process.EmitV1SystemConventions
+
+  process.paging.faults@v1:
+    enabled: false
+    description: Number of page faults the process has made.
+    extended_documentation: This metric is only available on Linux.
+    unit: "{fault}"
+    stability: beta
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: [system.paging.fault.type]
 
   process.signals_pending:
     enabled: false
     description: Number of pending signals for the process.
     extended_documentation: This metric is only available on Linux.
     unit: "{signals}"
-    stability:
-      level: development
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+
+  process.thread.count@v1:
+    enabled: false
+    description: Process threads count.
+    unit: "{thread}"
+    stability: beta
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -225,8 +368,22 @@ metrics:
     enabled: false
     description: Process threads count.
     unit: "{threads}"
-    stability:
-      level: development
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    migration:
+      to: process.thread.count@v1
+      through_gates:
+        disable_old: scraper.process.DontEmitV0SystemConventions
+        enable_new: scraper.process.EmitV1SystemConventions
+
+  process.unix.file_descriptor.count@v1:
+    enabled: false
+    description: Number of unix file descriptors in use by the process.
+    unit: '{file_descriptor}'
+    stability: beta
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -236,7 +393,17 @@ metrics:
     enabled: false
     description: The time the process has been running.
     unit: s
-    stability:
-      level: development
+    stability: beta
     gauge:
       value_type: double
+
+  process.windows.handle.count@v1:
+    enabled: false
+    description: Number of handles held by the process.
+    extended_documentation: This metric is only available on Windows.
+    unit: '{handle}'
+    stability: beta
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false

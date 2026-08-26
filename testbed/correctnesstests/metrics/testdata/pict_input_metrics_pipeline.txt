@@ -1,2 +1,2 @@
 Receiver: otlp, stef
-Exporter: otlp, stef
+Exporter: otlp_grpc, stef

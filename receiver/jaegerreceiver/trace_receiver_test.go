@@ -33,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -79,10 +78,18 @@ func TestThriftHTTPBodyDecode(t *testing.T) {
 func TestReception(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	// 1. Create the Jaeger receiver aka "server"
+	thriftHTTPServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	thriftHTTPServerConfig.WriteTimeout = 0
+	thriftHTTPServerConfig.ReadHeaderTimeout = 0
+	thriftHTTPServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	thriftHTTPServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	thriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  addr,
+		Transport: confignet.TransportTypeTCP,
+	}
 	config := Protocols{
-		ThriftHTTP: configoptional.Some(confighttp.ServerConfig{
-			Endpoint: addr,
-		}),
+		ThriftHTTP: configoptional.Some(thriftHTTPServerConfig),
 	}
 	sink := new(consumertest.TracesSink)
 
@@ -253,13 +260,14 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 
 func expectedTraceData(t1, t2, t3 time.Time) ptrace.Traces {
 	traceID := pcommon.TraceID(
-		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
+		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+	)
 	parentSpanID := pcommon.SpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
 	childSpanID := pcommon.SpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "issaTest")
+	rs.Resource().Attributes().PutStr("service.name", "issaTest")
 	rs.Resource().Attributes().PutBool("bool", true)
 	rs.Resource().Attributes().PutStr("string", "yes")
 	rs.Resource().Attributes().PutInt("int64", 10000000)
@@ -312,8 +320,8 @@ func grpcFixture(t *testing.T, t1 time.Time, d1, d2 time.Duration) *api_v2.PostS
 					StartTime:     t1,
 					Duration:      d1,
 					Tags: []model.KeyValue{
-						model.String(string(conventions.OTelStatusDescriptionKey), "Stale indices"),
-						model.Int64(string(conventions.OTelStatusCodeKey), int64(ptrace.StatusCodeError)),
+						model.String("otel.status_description", "Stale indices"),
+						model.Int64("otel.status_code", int64(ptrace.StatusCodeError)),
 						model.Bool("error", true),
 					},
 					References: []model.SpanRef{
@@ -331,8 +339,8 @@ func grpcFixture(t *testing.T, t1 time.Time, d1, d2 time.Duration) *api_v2.PostS
 					StartTime:     t1.Add(d1),
 					Duration:      d2,
 					Tags: []model.KeyValue{
-						model.String(string(conventions.OTelStatusDescriptionKey), "Frontend crash"),
-						model.Int64(string(conventions.OTelStatusCodeKey), int64(ptrace.StatusCodeError)),
+						model.String("otel.status_description", "Frontend crash"),
+						model.Int64("otel.status_code", int64(ptrace.StatusCodeError)),
 						model.Bool("error", true),
 					},
 				},

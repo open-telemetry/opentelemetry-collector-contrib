@@ -47,13 +47,14 @@ var (
 			Severity:     entry.Info,
 			SeverityText: "info",
 			Attributes: map[string]any{
-				"appname":  "SecureAuth0",
-				"facility": 10,
-				"hostname": "192.168.2.132",
-				"message":  "Found the user for retrieving user's profile",
-				"msg_id":   "ID52020",
-				"priority": 86,
-				"proc_id":  "23108",
+				"appname":       "SecureAuth0",
+				"facility":      10,
+				"facility_text": "authpriv",
+				"hostname":      "192.168.2.132",
+				"message":       "Found the user for retrieving user's profile",
+				"msg_id":        "ID52020",
+				"priority":      86,
+				"proc_id":       "23108",
 				"structured_data": map[string]any{
 					"SecureAuth@27389": map[string]any{
 						"PEN":             "27389",
@@ -68,6 +69,40 @@ var (
 		},
 		ValidForTCP: true,
 	}
+	// RFC3164 with octet counting - tests RFC6587 framing with RFC3164 message format
+	OctetCaseRFC3164 = func() syslogtest.Case {
+		// Build the RFC3164 message without the length prefix
+		rfc3164Msg := fmt.Sprintf("<34>%s 1.2.3.4 app: test msg", ts.Format("Jan _2 15:04:05"))
+		// Build the full octet-counted message with correct length
+		octetCountedMsg := fmt.Sprintf("%d %s", len(rfc3164Msg), rfc3164Msg)
+		return syslogtest.Case{
+			Name: "RFC6587 Octet Counting RFC3164",
+			Config: func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.RFC3164
+				cfg.EnableOctetCounting = true
+				return cfg
+			}(),
+			Input: &entry.Entry{
+				Body: octetCountedMsg,
+			},
+			Expect: &entry.Entry{
+				Timestamp:    time.Date(ts.Year(), ts.Month(), ts.Day(), ts.Hour(), ts.Minute(), ts.Second(), 0, time.UTC),
+				Severity:     entry.Error2,
+				SeverityText: "crit",
+				Attributes: map[string]any{
+					"appname":       "app",
+					"facility":      4,
+					"facility_text": "auth",
+					"hostname":      "1.2.3.4",
+					"message":       "test msg",
+					"priority":      34,
+				},
+				Body: octetCountedMsg,
+			},
+			ValidForTCP: true,
+		}
+	}()
 	WithMetadata = syslogtest.Case{
 		Name: "RFC3164",
 		Config: func() *syslog.Config {
@@ -86,12 +121,13 @@ var (
 				"service.name": "apache_server",
 			},
 			Attributes: map[string]any{
-				"foo":      "bar",
-				"appname":  "apache_server",
-				"facility": 4,
-				"hostname": "1.2.3.4",
-				"message":  "test message",
-				"priority": 34,
+				"foo":           "bar",
+				"appname":       "apache_server",
+				"facility":      4,
+				"facility_text": "auth",
+				"hostname":      "1.2.3.4",
+				"message":       "test message",
+				"priority":      34,
 			},
 			Body: fmt.Sprintf("<34>%s 1.2.3.4 apache_server: test message", ts.Format("Jan _2 15:04:05")),
 		},
@@ -103,7 +139,7 @@ var (
 func TestInput(t *testing.T) {
 	cases, err := syslogtest.CreateCases(basicConfig)
 	require.NoError(t, err)
-	cases = append(cases, OctetCase)
+	cases = append(cases, OctetCase, OctetCaseRFC3164)
 
 	for _, tc := range cases {
 		cfg := tc.Config.BaseConfig

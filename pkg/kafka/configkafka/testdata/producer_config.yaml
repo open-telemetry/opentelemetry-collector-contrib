@@ -25,15 +25,33 @@ kafka/required_acks_all:
   required_acks: all
 kafka/disable_auto_topic_creation:
   allow_auto_topic_creation: false
+kafka/large_message:
+  max_message_bytes: 209715200
+  max_broker_write_bytes: 268435456
 
 # Invalid configurations
 kafka/invalid_compression:
   compression: brotli
 kafka/invalid_required_acks:
   required_acks: 3
+kafka/flush_max_messages_zero:
+  flush_max_messages: 0
+kafka/flush_max_messages_negative:
+  flush_max_messages: -1
+kafka/max_message_bytes_negative:
+  max_message_bytes: -1000
+kafka/max_broker_write_bytes_too_small:
+  max_broker_write_bytes: 1000
+kafka/max_message_bytes_exceeds_broker:
+  max_message_bytes: 209715200
+kafka/max_broker_write_bytes_negative:
+  max_broker_write_bytes: -1000
 
 kafka/producer_linger:
   linger: 100ms
 
 kafka/producer_linger_1s:
   linger: 1s
+
+kafka/custom_flush_max_messages:
+  flush_max_messages: 5000

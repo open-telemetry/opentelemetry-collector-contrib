@@ -4,6 +4,7 @@
 package datadogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -12,10 +13,13 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
-	"github.com/hashicorp/golang-lru/v2/simplelru"
+	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/klauspost/compress/zstd"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -28,6 +32,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
@@ -48,7 +53,10 @@ type datadogReceiver struct {
 	server    *http.Server
 	tReceiver *receiverhelper.ObsReport
 
-	traceIDCache *simplelru.LRU[uint64, pcommon.TraceID]
+	traceIDCache *lru.Cache[uint64, pcommon.TraceID]
+
+	shutdownCh chan struct{}
+	wg         sync.WaitGroup
 }
 
 // Endpoint specifies an API endpoint definition.
@@ -107,6 +115,18 @@ func (ddr *datadogReceiver) getEndpoints() []endpoint {
 				Handler: ddr.handleV2Series,
 			},
 			{
+				// the default series endpoint for datadog agent >= 7.81.0:
+				// https://github.com/DataDog/datadog-agent/blob/7.81.0/comp/forwarder/defaultforwarder/endpoints/endpoints.go#L33
+				Pattern: "/api/intake/metrics/v3/series",
+				Handler: ddr.handleV3Series,
+			},
+			{
+				// the v3beta route carries the same payload format and is used
+				// by agents configured for v3 validation/shadow traffic
+				Pattern: "/api/intake/metrics/v3beta/series",
+				Handler: ddr.handleV3Series,
+			},
+			{
 				Pattern: "/api/v1/check_run",
 				Handler: ddr.handleCheckRun,
 			},
@@ -136,6 +156,10 @@ func (ddr *datadogReceiver) getEndpoints() []endpoint {
 				Pattern: "/v0.6/stats",
 				Handler: ddr.handleStats,
 			},
+			{
+				Pattern: "/api/v0.2/stats",
+				Handler: ddr.handleStatsV2,
+			},
 		}...)
 	}
 
@@ -164,9 +188,9 @@ func newDataDogReceiver(ctx context.Context, config *Config, params receiver.Set
 		return nil, err
 	}
 
-	var cache *simplelru.LRU[uint64, pcommon.TraceID]
-	if FullTraceIDFeatureGate.IsEnabled() {
-		cache, err = simplelru.NewLRU[uint64, pcommon.TraceID](config.TraceIDCacheSize, func(k uint64, _ pcommon.TraceID) {
+	var cache *lru.Cache[uint64, pcommon.TraceID]
+	if metadata.ReceiverDatadogreceiverEnable128BitTraceIDFeatureGate.IsEnabled() {
+		cache, err = lru.NewWithEvict(config.TraceIDCacheSize, func(k uint64, _ pcommon.TraceID) {
 			params.Logger.Debug("evicting datadog trace id from cache", zap.Uint64("id", k))
 		})
 		if err != nil {
@@ -181,7 +205,7 @@ func newDataDogReceiver(ctx context.Context, config *Config, params receiver.Set
 			datadogSite = defaultConfigIntakeProxyAPISite
 		}
 		intakeReverseProxy = &httputil.ReverseProxy{
-			Director: createIntakeReverseProxyDirector(datadogSite, string(config.Intake.Proxy.API.Key)),
+			Rewrite: createIntakeReverseProxyRewrite(datadogSite, string(config.Intake.Proxy.API.Key)),
 		}
 		if config.Intake.Proxy.API.FailOnInvalidKey {
 			apiClient := clientutil.CreateAPIClient(
@@ -200,13 +224,11 @@ func newDataDogReceiver(ctx context.Context, config *Config, params receiver.Set
 		params:             params,
 		config:             config,
 		intakeReverseProxy: intakeReverseProxy,
-		server: &http.Server{
-			ReadTimeout: config.ReadTimeout,
-		},
-		tReceiver:         instance,
-		metricsTranslator: translator.NewMetricsTranslator(params.BuildInfo),
-		statsTranslator:   translator.NewStatsTranslator(),
-		traceIDCache:      cache,
+		tReceiver:          instance,
+		metricsTranslator:  translator.NewMetricsTranslator(params.BuildInfo, config.IdleSeriesTimeout),
+		statsTranslator:    translator.NewStatsTranslator(),
+		traceIDCache:       cache,
+		shutdownCh:         make(chan struct{}),
 	}, nil
 }
 
@@ -219,16 +241,16 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 	}
 
 	var err error
-	ddr.server, err = ddr.config.ToServer(
+	ddr.server, err = ddr.config.ServerConfig.ToServer(
 		ctx,
-		host,
+		host.GetExtensions(),
 		ddr.params.TelemetrySettings,
 		ddmux,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create server definition: %w", err)
 	}
-	hln, err := ddr.config.ToListener(ctx)
+	hln, err := ddr.config.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create datadog listener: %w", err)
 	}
@@ -240,10 +262,31 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(fmt.Errorf("error starting datadog receiver: %w", err)))
 		}
 	}()
+
+	// Starts the cleanup loop to remove idle series
+	if ddr.config.IdleSeriesTimeout > 0 {
+		if ddr.config.IdleSeriesCleanupInterval <= 0 {
+			return fmt.Errorf(
+				"idle_series_cleanup_interval must be positive when idle_series_timeout is enabled; found %v",
+				ddr.config.IdleSeriesCleanupInterval,
+			)
+		}
+
+		ddr.wg.Go(ddr.runIdleSeriesCleanup)
+	}
+
 	return nil
 }
 
 func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
+	// Signal background goroutines to stop
+	close(ddr.shutdownCh)
+	// Wait for them to finish
+	ddr.wg.Wait()
+
+	if ddr.server == nil {
+		return nil
+	}
 	return ddr.server.Shutdown(ctx)
 }
 
@@ -277,6 +320,8 @@ func (ddr *datadogReceiver) handleLogs(w http.ResponseWriter, req *http.Request)
 		http.Error(w, "Fake featuresdiscovery", http.StatusBadRequest) // The response code should be different of 404 to be considered ok by Datadog SDK.
 		return
 	}
+
+	receivedAt := time.Now()
 	obsCtx := ddr.tReceiver.StartLogsOp(req.Context())
 	var (
 		logCount int
@@ -295,7 +340,17 @@ func (ddr *datadogReceiver) handleLogs(w http.ResponseWriter, req *http.Request)
 	case "application/json":
 		buf := translator.GetBuffer()
 		defer translator.PutBuffer(buf)
-		if _, err = io.Copy(buf, req.Body); err != nil {
+
+		reader, derr := createDecompressingReader(req.Body, req.Header.Get("Content-Encoding"))
+		if derr != nil {
+			err = derr
+			http.Error(w, "Error decompressing payload", http.StatusBadRequest)
+			ddr.params.Logger.Error("error creating decompressing reader", zap.Error(derr))
+			return
+		}
+		defer reader.Close()
+
+		if _, err = io.Copy(buf, reader); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			ddr.params.Logger.Error(err.Error())
 			return
@@ -315,7 +370,7 @@ func (ddr *datadogReceiver) handleLogs(w http.ResponseWriter, req *http.Request)
 			ddLogs = append(ddLogs, ddLog)
 		}
 
-		plogs := translator.ToPlog(ddLogs)
+		plogs := translator.ToPlog(ddLogs, receivedAt, ddr.config.Logs.DecodeJSONMessage)
 
 		logCount = plogs.LogRecordCount()
 		err = ddr.nextLogsConsumer.ConsumeLogs(obsCtx, plogs)
@@ -335,6 +390,76 @@ func (ddr *datadogReceiver) handleLogs(w http.ResponseWriter, req *http.Request)
 		"errors": []string{},
 	}
 	_ = json.NewEncoder(w).Encode(response)
+}
+
+// handleStatsV2 handles incoming stats payloads from datadog agent
+// Stats payloads are sent from the DataDog agent at /api/v0.2/stats
+func (ddr *datadogReceiver) handleStatsV2(w http.ResponseWriter, req *http.Request) {
+	obsCtx := ddr.tReceiver.StartMetricsOp(req.Context())
+	var err error
+	metricsCount := 0
+	defer func(metricsCount *int) {
+		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
+	}(&metricsCount)
+
+	// Get content encoding from header
+	contentEncoding := req.Header.Get("Content-Encoding")
+
+	// Create a reader that handles decompression if needed
+	reader, err := createDecompressingReader(req.Body, contentEncoding)
+	if err != nil {
+		ddr.params.Logger.Error("Error creating decompressing reader", zap.Error(err), zap.String("encoding", contentEncoding))
+		http.Error(w, "Error decompressing payload", http.StatusBadRequest)
+		return
+	}
+	defer reader.Close()
+
+	// Decode the StatsPayload (NOT ClientStatsPayload directly)
+	// The agent wraps ClientStatsPayload(s) inside a StatsPayload
+	statsPayload := &pb.StatsPayload{}
+	err = msgp.Decode(reader, statsPayload)
+	if err != nil {
+		ddr.params.Logger.Error("Error decoding pb.StatsPayload", zap.Error(err))
+		http.Error(w, "Error decoding pb.StatsPayload", http.StatusBadRequest)
+		return
+	}
+
+	// Validate the payload
+	if len(statsPayload.Stats) == 0 {
+		ddr.params.Logger.Warn("Received empty stats payload")
+		_, _ = w.Write([]byte("OK"))
+		return
+	}
+
+	// Process each ClientStatsPayload within the StatsPayload
+	// The agent may send multiple ClientStatsPayload entries in a single request
+	for _, clientStats := range statsPayload.Stats {
+		// Extract metadata from headers (fallback if not in payload)
+		lang := req.Header.Get(header.Lang)
+		tracerVersion := req.Header.Get(header.TracerVersion)
+
+		// Translate each client stats payload to metrics
+		metrics, translateErr := ddr.statsTranslator.TranslateStats(clientStats, lang, tracerVersion)
+		if translateErr != nil {
+			err = translateErr
+			ddr.params.Logger.Error("Error translating stats", zap.Error(err))
+			http.Error(w, "Error translating stats", http.StatusBadRequest)
+			return
+		}
+
+		metricsCount += metrics.DataPointCount()
+
+		// Send to metrics consumer
+		consumeErr := ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
+		if consumeErr != nil {
+			err = consumeErr
+			ddr.params.Logger.Error("Metrics consumer errored out", zap.Error(err))
+			errorutil.HTTPError(w, err)
+			return
+		}
+	}
+
+	_, _ = w.Write([]byte("OK"))
 }
 
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
@@ -362,7 +487,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 			ddr.params.Logger.Error("Error converting traces", zap.Error(err))
 			continue
 		}
-		spanCount = otelTraces.SpanCount()
+		spanCount += otelTraces.SpanCount()
 		err = ddr.nextTracesConsumer.ConsumeTraces(obsCtx, otelTraces)
 		if err != nil {
 			errorutil.HTTPError(w, err)
@@ -465,6 +590,43 @@ func (ddr *datadogReceiver) handleV2Series(w http.ResponseWriter, req *http.Requ
 	_ = json.NewEncoder(w).Encode(response)
 }
 
+// handleV3Series handles the v3 series intake endpoint, the default series
+// endpoint for Datadog Agent 7.81.0 and later. The payload is a columnar,
+// dictionary-encoded protobuf format; it is decoded into the v2 series
+// representation and then shares the v2 translation to OTLP.
+func (ddr *datadogReceiver) handleV3Series(w http.ResponseWriter, req *http.Request) {
+	obsCtx := ddr.tReceiver.StartMetricsOp(req.Context())
+	var err error
+	var metricsCount int
+	defer func(metricsCount *int) {
+		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
+	}(&metricsCount)
+
+	series, err := ddr.metricsTranslator.HandleSeriesV3Payload(req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		ddr.params.Logger.Error(err.Error())
+		return
+	}
+
+	metrics := ddr.metricsTranslator.TranslateSeriesV2(series)
+	metricsCount = metrics.DataPointCount()
+
+	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
+	if err != nil {
+		errorutil.HTTPError(w, err)
+		ddr.params.Logger.Error("metrics consumer errored out", zap.Error(err))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	response := map[string]any{
+		"errors": []string{},
+	}
+	_ = json.NewEncoder(w).Encode(response)
+}
+
 // handleCheckRun handles the service checks endpoint https://docs.datadoghq.com/api/latest/service-checks/
 func (ddr *datadogReceiver) handleCheckRun(w http.ResponseWriter, req *http.Request) {
 	obsCtx := ddr.tReceiver.StartMetricsOp(req.Context())
@@ -482,13 +644,20 @@ func (ddr *datadogReceiver) handleCheckRun(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
+	// try parsing as array first, then single service check
 	var services []translator.ServiceCheck
 
 	err = json.Unmarshal(buf.Bytes(), &services)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		ddr.params.Logger.Error(err.Error())
-		return
+		// now try parsing as a single service check
+		var service translator.ServiceCheck
+		err = json.Unmarshal(buf.Bytes(), &service)
+		if err != nil {
+			http.Error(w, "unable to unmarshal service checks", http.StatusBadRequest)
+			ddr.params.Logger.Error("unable to unmarshal service checks", zap.Error(err))
+			return
+		}
+		services = append(services, service)
 	}
 
 	metrics := ddr.metricsTranslator.TranslateServices(services)
@@ -601,20 +770,76 @@ func (ddr *datadogReceiver) handleStats(w http.ResponseWriter, req *http.Request
 	_, _ = w.Write([]byte("OK"))
 }
 
-func createIntakeReverseProxyDirector(site, key string) func(*http.Request) {
+func createIntakeReverseProxyRewrite(site, key string) func(*httputil.ProxyRequest) {
 	host := fmt.Sprintf("api.%s", site)
 	query := fmt.Sprintf("api_key=%s", key)
-	return func(req *http.Request) {
-		req.URL.Scheme = "https"
-		req.URL.Host = host
+	return func(pr *httputil.ProxyRequest) {
+		pr.Out.URL.Scheme = "https"
+		pr.Out.URL.Host = host
 		// we want to use our own API key for all calls
-		req.Header.Set("Dd-Api-Key", key)
+		pr.Out.Header.Set("Dd-Api-Key", key)
 		// intake puts the API key in the query string as well
-		req.URL.RawQuery = query
+		pr.Out.URL.RawQuery = query
+		// Unlike Director, Rewrite strips the X-Forwarded-* headers before it is
+		// called and does not re-add them, so set them explicitly to preserve the
+		// behavior we had when this proxy used Director.
+		pr.SetXForwarded()
 		// Technically, the JSON body of the `/intake` request contains the API key as well
 		// (it's the top-level `apiKey` field of the payload JSON object),
 		// but it appears as though the value of that field does not matter,
 		// at least when it comes to matching the actual `DD-API-KEY` we set in the header above.
 		// So, to avoid a bunch of extra expensive work in the collector, we don't touch the body.
+	}
+}
+
+// runIdleSeriesCleanup runs the loop that checks for and removes idle series.
+func (ddr *datadogReceiver) runIdleSeriesCleanup() {
+	cleanupInterval := ddr.config.IdleSeriesCleanupInterval
+	idleTimeout := ddr.config.IdleSeriesTimeout
+
+	// Assumes validation was done in Start(), so cleanupInterval is positive.
+	ticker := time.NewTicker(cleanupInterval)
+	defer ticker.Stop()
+
+	ddr.params.Logger.Info("Starting idle series cleanup",
+		zap.Duration("idle_series_timeout", idleTimeout),
+		zap.Duration("idle_series_cleanup_interval", cleanupInterval))
+
+	for {
+		select {
+		case <-ddr.shutdownCh:
+			return
+		case <-ticker.C:
+			removedCount := ddr.metricsTranslator.Prune()
+			if removedCount > 0 {
+				ddr.params.Logger.Debug("Pruned idle series from memory",
+					zap.Int("removed_series", removedCount))
+			}
+		}
+	}
+}
+
+// createDecompressingReader creates a reader that handles decompression based on the content encoding.
+// Supported encodings: gzip, zstd. The Datadog Agent gzips by default on older versions and uses
+// zstd for HTTP logs on newer ones (7.59+). Returns the original reader if encoding is empty or
+// unsupported.
+func createDecompressingReader(body io.ReadCloser, contentEncoding string) (io.ReadCloser, error) {
+	switch contentEncoding {
+	case "gzip":
+		gzReader, err := gzip.NewReader(body)
+		if err != nil {
+			return nil, fmt.Errorf("error creating gzip reader: %w", err)
+		}
+
+		return gzReader, nil
+	case "zstd":
+		zReader, err := zstd.NewReader(body)
+		if err != nil {
+			return nil, fmt.Errorf("error creating zstd reader: %w", err)
+		}
+
+		return zReader.IOReadCloser(), nil
+	default:
+		return body, nil
 	}
 }

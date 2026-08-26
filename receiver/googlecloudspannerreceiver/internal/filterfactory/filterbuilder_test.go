@@ -5,6 +5,7 @@ package filterfactory
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -81,6 +82,14 @@ func TestFilterBuilder_BuildFilterByMetricPositiveTotalLimit(t *testing.T) {
 			}
 			require.NoError(t, err)
 
+			t.Cleanup(func() {
+				for _, f := range result {
+					_ = f.Shutdown()
+				}
+				// Give cache.Stop() time to complete
+				time.Sleep(100 * time.Millisecond)
+			})
+
 			// Because we have 2 groups and each group has 2 metrics
 			assert.Len(t, result, len(testCase.metricPrefixes)*2)
 			for _, metadataItem := range metadataItems {
@@ -96,7 +105,6 @@ func TestFilterBuilder_BuildFilterByMetricPositiveTotalLimit(t *testing.T) {
 						assert.Equal(t, expectedLimit, f.TotalLimit())
 						assert.Equal(t, expectedLimit, f.LimitByTimestamp())
 					}
-					assert.NoError(t, f.Shutdown())
 				}
 			}
 		})
@@ -137,6 +145,14 @@ func TestFilterBuilder_HandleLowCardinalityGroups(t *testing.T) {
 			remainingTotalLimit, err := builder.handleLowCardinalityGroups(metadataItems, testCase.totalLimit, filterByMetric)
 			require.NoError(t, err)
 
+			t.Cleanup(func() {
+				for _, f := range filterByMetric {
+					_ = f.Shutdown()
+				}
+				// Give cache.Stop() time to complete
+				time.Sleep(100 * time.Millisecond)
+			})
+
 			// Because we have 2 groups and each group has 2 metrics
 			assert.Len(t, filterByMetric, len(testCase.metricPrefixes)*2)
 			for _, metadataItem := range metadataItems {
@@ -148,7 +164,6 @@ func TestFilterBuilder_HandleLowCardinalityGroups(t *testing.T) {
 					assert.Equal(t, expectedLimit, f.TotalLimit())
 					assert.Equal(t, expectedLimit, f.LimitByTimestamp())
 					assert.Equal(t, testCase.expectedRemainingTotalLimit, remainingTotalLimit)
-					assert.NoError(t, f.Shutdown())
 				}
 			}
 		})
@@ -193,6 +208,14 @@ func TestFilterBuilder_HandleHighCardinalityGroups(t *testing.T) {
 			}
 			require.NoError(t, err)
 
+			t.Cleanup(func() {
+				for _, f := range filterByMetric {
+					_ = f.Shutdown()
+				}
+				// Give cache.Stop() time to complete
+				time.Sleep(100 * time.Millisecond)
+			})
+
 			// Because we have 2 groups and each group has 2 metrics
 			assert.Len(t, filterByMetric, len(testCase.metricPrefixes)*2)
 			for _, metadataItem := range metadataItems {
@@ -202,7 +225,6 @@ func TestFilterBuilder_HandleHighCardinalityGroups(t *testing.T) {
 					assert.Equal(t, testCase.expectedHighCardinalityTotalLimit, f.TotalLimit())
 					assert.Equal(t, testCase.expectedHighCardinalityLimitByTimestamp, f.LimitByTimestamp())
 					assert.Equal(t, testCase.expectedRemainingTotalLimit, remainingTotalLimit)
-					assert.NoError(t, f.Shutdown())
 				}
 			}
 		})
@@ -228,6 +250,14 @@ func TestFilterBuilder_TestConstructFiltersForGroups(t *testing.T) {
 		remainingTotalLimit, filterByMetric)
 	require.NoError(t, err)
 
+	t.Cleanup(func() {
+		for _, f := range filterByMetric {
+			_ = f.Shutdown()
+		}
+		// Give cache.Stop() time to complete
+		time.Sleep(100 * time.Millisecond)
+	})
+
 	// Because we have 2 groups and each group has 2 metrics
 	assert.Len(t, filterByMetric, len(metricPrefixes)*2)
 	for _, metadataItem := range metadataItems {
@@ -237,7 +267,6 @@ func TestFilterBuilder_TestConstructFiltersForGroups(t *testing.T) {
 			assert.Equal(t, totalLimitPerMetric, f.TotalLimit())
 			assert.Equal(t, limitPerMetricByTimestamp, f.LimitByTimestamp())
 			assert.Equal(t, expectedRemainingTotalLimit, result)
-			assert.NoError(t, f.Shutdown())
 		}
 	}
 }

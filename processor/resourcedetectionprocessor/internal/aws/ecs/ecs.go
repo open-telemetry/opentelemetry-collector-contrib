@@ -12,7 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
@@ -28,29 +28,32 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	provider ecsutil.MetadataProvider
-	rb       *metadata.ResourceBuilder
+	provider              ecsutil.MetadataProvider
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
-func NewDetector(params processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(params processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	provider, err := ecsutil.NewDetectedTaskMetadataProvider(params.TelemetrySettings)
 	if err != nil {
 		// Allow metadata provider to be created in incompatible environments and just have a noop Detect()
-		var errNTMED endpoints.ErrNoTaskMetadataEndpointDetected
-		if errors.As(err, &errNTMED) {
-			return &Detector{provider: nil}, nil
+		if _, ok := errors.AsType[endpoints.ErrNoTaskMetadataEndpointDetected](err); ok {
+			return &Detector{provider: nil, failOnMissingMetadata: failOnMissingMetadata}, nil
 		}
 		return nil, fmt.Errorf("unable to create task metadata provider: %w", err)
 	}
-	return &Detector{provider: provider, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes)}, nil
+	return &Detector{provider: provider, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes), failOnMissingMetadata: failOnMissingMetadata}, nil
 }
 
 // Detect records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes
 // TODO(willarmiros): Replace all attribute fields and enums with values defined in "conventions" once they exist
-func (d *Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	// don't attempt to fetch metadata if there's no provider (incompatible env)
 	if d.provider == nil {
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errors.New("ecs metadata unavailable: no task metadata endpoint detected")
+		}
 		return pcommon.NewResource(), "", nil
 	}
 
@@ -97,7 +100,12 @@ func (d *Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 	selfMetaData, err := d.provider.FetchContainerMetadata()
 
 	if err != nil || selfMetaData == nil {
-		return d.rb.Emit(), "", err
+		if err != nil && d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", fmt.Errorf("ecs container metadata unavailable: %w", err)
+		}
+		// Task metadata was retrieved successfully, so return it without the container
+		// log attributes rather than reporting a failure the caller cannot act on.
+		return d.rb.Emit(), conventions.SchemaURL, nil
 	}
 
 	addValidLogData(tmdeResp.Containers, selfMetaData, account, d.rb)

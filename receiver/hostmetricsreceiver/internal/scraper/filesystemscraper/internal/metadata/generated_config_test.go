@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -21,15 +20,27 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemFilesystemInodesUsage: MetricConfig{Enabled: true},
-					SystemFilesystemUsage:       MetricConfig{Enabled: true},
-					SystemFilesystemUtilization: MetricConfig{Enabled: true},
+					SystemFilesystemInodesUsage: SystemFilesystemInodesUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemFilesystemInodesUsageMetricAttributeKey{SystemFilesystemInodesUsageMetricAttributeKeyDevice, SystemFilesystemInodesUsageMetricAttributeKeyMode, SystemFilesystemInodesUsageMetricAttributeKeyMountpoint, SystemFilesystemInodesUsageMetricAttributeKeyType, SystemFilesystemInodesUsageMetricAttributeKeyState},
+					},
+					SystemFilesystemUsage: SystemFilesystemUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemFilesystemUsageMetricAttributeKey{SystemFilesystemUsageMetricAttributeKeyDevice, SystemFilesystemUsageMetricAttributeKeyMode, SystemFilesystemUsageMetricAttributeKeyMountpoint, SystemFilesystemUsageMetricAttributeKeyType, SystemFilesystemUsageMetricAttributeKeyState},
+					},
+					SystemFilesystemUtilization: SystemFilesystemUtilizationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemFilesystemUtilizationMetricAttributeKey{SystemFilesystemUtilizationMetricAttributeKeyDevice, SystemFilesystemUtilizationMetricAttributeKeyMode, SystemFilesystemUtilizationMetricAttributeKeyMountpoint, SystemFilesystemUtilizationMetricAttributeKeyType},
+					},
 				},
 			},
 		},
@@ -37,9 +48,21 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemFilesystemInodesUsage: MetricConfig{Enabled: false},
-					SystemFilesystemUsage:       MetricConfig{Enabled: false},
-					SystemFilesystemUtilization: MetricConfig{Enabled: false},
+					SystemFilesystemInodesUsage: SystemFilesystemInodesUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemFilesystemInodesUsageMetricAttributeKey{SystemFilesystemInodesUsageMetricAttributeKeyDevice, SystemFilesystemInodesUsageMetricAttributeKeyMode, SystemFilesystemInodesUsageMetricAttributeKeyMountpoint, SystemFilesystemInodesUsageMetricAttributeKeyType, SystemFilesystemInodesUsageMetricAttributeKeyState},
+					},
+					SystemFilesystemUsage: SystemFilesystemUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemFilesystemUsageMetricAttributeKey{SystemFilesystemUsageMetricAttributeKeyDevice, SystemFilesystemUsageMetricAttributeKeyMode, SystemFilesystemUsageMetricAttributeKeyMountpoint, SystemFilesystemUsageMetricAttributeKeyType, SystemFilesystemUsageMetricAttributeKeyState},
+					},
+					SystemFilesystemUtilization: SystemFilesystemUtilizationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemFilesystemUtilizationMetricAttributeKey{SystemFilesystemUtilizationMetricAttributeKeyDevice, SystemFilesystemUtilizationMetricAttributeKeyMode, SystemFilesystemUtilizationMetricAttributeKeyMountpoint, SystemFilesystemUtilizationMetricAttributeKeyType},
+					},
 				},
 			},
 		},
@@ -47,10 +70,45 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemFilesystemInodesUsageMetricConfig{}, SystemFilesystemUsageMetricConfig{}, SystemFilesystemUtilizationMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+func TestSystemFilesystemInodesUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemFilesystemInodesUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemFilesystemInodesUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.filesystem.inodes.usage doesn't have an attribute invalid, valid attributes: [device, mode, mountpoint, type, state]")
+
+	cfg = DefaultMetricsConfig().SystemFilesystemInodesUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemFilesystemUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemFilesystemUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemFilesystemUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.filesystem.usage doesn't have an attribute invalid, valid attributes: [device, mode, mountpoint, type, state]")
+
+	cfg = DefaultMetricsConfig().SystemFilesystemUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemFilesystemUtilizationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemFilesystemUtilization
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemFilesystemUtilizationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.filesystem.utilization doesn't have an attribute invalid, valid attributes: [device, mode, mountpoint, type]")
+
+	cfg = DefaultMetricsConfig().SystemFilesystemUtilization
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
@@ -58,7 +116,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

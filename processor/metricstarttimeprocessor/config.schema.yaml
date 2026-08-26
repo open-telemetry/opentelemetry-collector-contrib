@@ -1,0 +1,12 @@
+description: Config holds configuration of the metric start time processor.
+type: object
+properties:
+  gc_interval:
+    description: GCInterval specifies how long to wait before removing a metric from the cache.
+    type: string
+    format: duration
+  start_time_metric_regex:
+    description: StartTimeMetricRegex allows specifying alternate metrics to determine start time using a regular expression. It only applies when the `start_time_metric strategy` is used.
+    type: string
+  strategy:
+    type: string

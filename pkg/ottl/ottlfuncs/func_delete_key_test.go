@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -86,7 +87,7 @@ func Test_deleteKey(t *testing.T) {
 			exprFunc := deleteKey(target, tt.key)
 
 			_, err := exprFunc(nil, scenarioMap)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.True(t, setterWasCalled)
 
 			expected := pcommon.NewMap()
@@ -138,4 +139,48 @@ func Test_deleteKey_get_nil(t *testing.T) {
 	exprFunc := deleteKey(target, key)
 	_, err := exprFunc(nil, nil)
 	assert.Error(t, err)
+}
+
+func Test_DeleteKeyFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewDeleteKeyFactory[any]()
+		assert.Equal(t, "delete_key", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewDeleteKeyFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &DeleteKeyArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Key"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewDeleteKeyFactory[any]()
+		args := factory.CreateDefaultArguments()
+		deleteKeyArgs, ok := args.(*DeleteKeyArguments[any])
+		require.True(t, ok)
+		deleteKeyArgs.Target = &ottl.StandardPMapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return pcommon.NewMap(), nil
+			},
+			Setter: func(context.Context, any, any) error {
+				return nil
+			},
+		}
+		deleteKeyArgs.Key = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "key", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createDeleteKeyFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "DeleteKeysFactory args must be of type *DeleteKeyArguments[K]")
+	})
 }

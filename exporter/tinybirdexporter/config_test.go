@@ -12,9 +12,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -40,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 					return cfg
 				}(),
 				RetryConfig: configretry.NewDefaultBackOffConfig(),
-				QueueConfig: exporterhelper.NewDefaultQueueConfig(),
+				QueueConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				Token:       "test-token",
 				Metrics: metricSignalConfigs{
 					MetricsGauge:                SignalConfig{Datasource: "gauge"},
@@ -67,12 +68,8 @@ func TestLoadConfig(t *testing.T) {
 					cfg.Enabled = false
 					return cfg
 				}(),
-				QueueConfig: func() exporterhelper.QueueBatchConfig {
-					cfg := createDefaultConfig().(*Config).QueueConfig
-					cfg.Enabled = false
-					return cfg
-				}(),
-				Token: "test-token",
+				QueueConfig: configoptional.None[exporterhelper.QueueBatchConfig](),
+				Token:       "test-token",
 				Metrics: metricSignalConfigs{
 					MetricsGauge:                SignalConfig{Datasource: "gauge"},
 					MetricsSum:                  SignalConfig{Datasource: "sum"},
@@ -116,10 +113,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, xconfmap.Validate(cfg), tt.errorMessage)
+				assert.EqualError(t, confmap.Validate(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

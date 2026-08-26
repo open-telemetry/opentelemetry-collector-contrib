@@ -49,10 +49,13 @@ var portEndpoint = observer.Endpoint{
 	ID:     "port-1",
 	Target: "localhost:1234",
 	Details: &observer.Port{
-		Name:      "http",
-		Pod:       pod,
-		Port:      1234,
-		Transport: observer.ProtocolTCP,
+		Name:           "http",
+		Pod:            pod,
+		Port:           1234,
+		Transport:      observer.ProtocolTCP,
+		ContainerName:  "container-1",
+		ContainerID:    "container-id-1",
+		ContainerImage: "redis:latest",
 	},
 }
 
@@ -74,7 +77,10 @@ var portEndpointWithHints = observer.Endpoint{
 				otelMetricsHints + "/config":  config,
 			},
 		},
-		Port: 6379,
+		Port:           6379,
+		ContainerName:  "redis",
+		ContainerID:    "container-id-redis",
+		ContainerImage: "redis:6.0",
 	},
 }
 
@@ -148,12 +154,6 @@ var k8sNodeEndpoint = observer.Endpoint{
 		Name: "a.name",
 		UID:  "b344f2a7-1ec1-40f0-8557-8a9bfd8b6f99",
 	},
-}
-
-var kafkaTopicsEndpoint = observer.Endpoint{
-	ID:      "topic1",
-	Target:  "topic1",
-	Details: &observer.KafkaTopic{},
 }
 
 var unsupportedEndpoint = observer.Endpoint{

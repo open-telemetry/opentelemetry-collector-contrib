@@ -5,16 +5,22 @@ package webhookeventreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 	"github.com/julienschmidt/httprouter"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -27,11 +33,15 @@ import (
 )
 
 var (
-	errNilLogsConsumer       = errors.New("missing a logs consumer")
-	errInvalidRequestMethod  = errors.New("invalid method. Valid method is POST")
-	errInvalidEncodingType   = errors.New("invalid encoding type")
-	errEmptyResponseBody     = errors.New("request body content length is zero")
-	errMissingRequiredHeader = errors.New("request was missing required header or incorrect header value")
+	errNilLogsConsumer          = errors.New("missing a logs consumer")
+	errInvalidRequestMethod     = errors.New("invalid method. Valid method is POST")
+	errInvalidEncodingType      = errors.New("invalid encoding type")
+	errEmptyResponseBody        = errors.New("request body content length is zero")
+	errMissingRequiredHeader    = errors.New("request was missing required header or incorrect header value")
+	errMissingSignatureHeader   = errors.New("missing HMAC signature header")
+	errInvalidSignaturePrefix   = errors.New("HMAC signature header has invalid prefix")
+	errInvalidSignatureEncoding = errors.New("HMAC signature hex encoding is invalid")
+	errSignatureMismatch        = errors.New("HMAC signature does not match payload")
 )
 
 const healthyResponse = `{"text": "Webhookevent receiver is healthy"}`
@@ -45,6 +55,7 @@ type eventReceiver struct {
 	obsrecv             *receiverhelper.ObsReport
 	gzipPool            *sync.Pool
 	includeHeadersRegex *regexp.Regexp
+	maxRequestBodySize  int // Computed max token size for scanner (minimum 64KB)
 }
 
 func newLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Logs) (receiver.Logs, error) {
@@ -55,6 +66,7 @@ func newLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Log
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
+
 	var includeHeaderRegex *regexp.Regexp
 	if cfg.HeaderAttributeRegex != "" {
 		// Valdiate() call above has already ensured this will compile
@@ -62,7 +74,7 @@ func newLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Log
 	}
 
 	transport := "http"
-	if cfg.TLS.HasValue() {
+	if cfg.ServerConfig.TLS.HasValue() {
 		transport = "https"
 	}
 
@@ -83,6 +95,7 @@ func newLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Log
 		obsrecv:             obsrecv,
 		gzipPool:            &sync.Pool{New: func() any { return new(gzip.Reader) }},
 		includeHeadersRegex: includeHeaderRegex,
+		maxRequestBodySize:  int(cfg.ServerConfig.MaxRequestBodySize),
 	}
 
 	return er, nil
@@ -96,7 +109,7 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	}
 
 	// create listener from config
-	ln, err := er.cfg.ToListener(ctx)
+	ln, err := er.cfg.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}
@@ -108,7 +121,7 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	router.GET(er.cfg.HealthPath, er.handleHealthCheck)
 
 	// webhook server standup and configuration
-	er.server, err = er.cfg.ToServer(ctx, host, er.settings.TelemetrySettings, router)
+	er.server, err = er.cfg.ServerConfig.ToServer(ctx, host.GetExtensions(), er.settings.TelemetrySettings, router)
 	if err != nil {
 		return err
 	}
@@ -128,13 +141,11 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	er.server.WriteTimeout = writeTimeout
 
 	// shutdown
-	er.shutdownWG.Add(1)
-	go func() {
-		defer er.shutdownWG.Done()
+	er.shutdownWG.Go(func() {
 		if errHTTP := er.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
-	}()
+	})
 
 	return nil
 }
@@ -158,6 +169,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 
 	if r.Method != http.MethodPost {
 		er.failBadReq(ctx, w, http.StatusBadRequest, errInvalidRequestMethod)
+		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, errInvalidRequestMethod)
 		return
 	}
 
@@ -165,6 +177,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 		requiredHeaderValue := r.Header.Get(er.cfg.RequiredHeader.Key)
 		if requiredHeaderValue != er.cfg.RequiredHeader.Value {
 			er.failBadReq(ctx, w, http.StatusUnauthorized, errMissingRequiredHeader)
+			er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, errMissingRequiredHeader)
 			return
 		}
 	}
@@ -173,12 +186,43 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 	// only support gzip if encoding header is set.
 	if encoding != "" && encoding != "gzip" {
 		er.failBadReq(ctx, w, http.StatusUnsupportedMediaType, errInvalidEncodingType)
+		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, errInvalidEncodingType)
 		return
 	}
 
 	if r.ContentLength == 0 {
-		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, nil)
 		er.failBadReq(ctx, w, http.StatusBadRequest, errEmptyResponseBody)
+		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, errEmptyResponseBody)
+		return
+	}
+
+	// If HMAC signature verification is configured, read the raw body for verification
+	// before any decompression, since webhook providers sign the raw payload.
+	if er.cfg.HMACSignature.Secret != "" {
+		limitedBody := io.LimitReader(r.Body, int64(er.maxRequestBodySize)+1)
+		rawBody, readErr := io.ReadAll(limitedBody)
+		_ = r.Body.Close()
+		if readErr != nil {
+			er.failBadReq(ctx, w, http.StatusBadRequest, readErr)
+			er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, readErr)
+			return
+		}
+
+		if len(rawBody) > er.maxRequestBodySize {
+			tooLargeErr := fmt.Errorf("%w: limit is %d bytes", errRequestBodyTooLarge, er.maxRequestBodySize)
+			er.failBadReq(ctx, w, http.StatusBadRequest, tooLargeErr)
+			er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, tooLargeErr)
+			return
+		}
+
+		if verifyErr := er.verifyHMACSignature(rawBody, r.Header.Get(er.cfg.HMACSignature.Header)); verifyErr != nil {
+			er.failBadReq(ctx, w, http.StatusUnauthorized, verifyErr)
+			er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, verifyErr)
+			return
+		}
+
+		// Replace the body with a reader over the raw bytes for subsequent processing
+		r.Body = io.NopCloser(bytes.NewReader(rawBody))
 	}
 
 	bodyReader := r.Body
@@ -188,6 +232,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 		err := reader.Reset(bodyReader)
 		if err != nil {
 			er.failBadReq(ctx, w, http.StatusBadRequest, err)
+			er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, err)
 			_, _ = io.ReadAll(r.Body)
 			_ = r.Body.Close()
 			return
@@ -198,11 +243,17 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 
 	// send body into a scanner and then convert the request body into a log
 	sc := bufio.NewScanner(bodyReader)
-	ld, numLogs := er.reqToLog(sc, r.Header, r.URL.Query())
-	consumerErr := er.logConsumer.ConsumeLogs(ctx, ld)
+	ld, numLogs, err := er.reqToLog(sc, r.Header, r.URL.Query())
 
 	_ = bodyReader.Close()
 
+	if err != nil {
+		er.failBadReq(ctx, w, http.StatusBadRequest, err)
+		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), numLogs, err)
+		return
+	}
+
+	consumerErr := er.logConsumer.ConsumeLogs(ctx, ld)
 	if consumerErr != nil {
 		er.failBadReq(ctx, w, http.StatusInternalServerError, consumerErr)
 	} else {
@@ -219,6 +270,36 @@ func (*eventReceiver) handleHealthCheck(w http.ResponseWriter, _ *http.Request, 
 	_, _ = w.Write([]byte(healthyResponse))
 }
 
+// verifyHMACSignature verifies the HMAC-SHA256 hex digest signature of the request body.
+// The signature header value is expected to be in the format "<prefix><hex-digest>",
+// e.g. "sha256=abc123..." (GitHub) or "v1=abc123..." (Fingerprint).
+func (er *eventReceiver) verifyHMACSignature(payload []byte, signatureHeader string) error {
+	if signatureHeader == "" {
+		return errMissingSignatureHeader
+	}
+
+	prefix := er.cfg.HMACSignature.Prefix
+	if !strings.HasPrefix(signatureHeader, prefix) {
+		return fmt.Errorf("%w: expected prefix %q", errInvalidSignaturePrefix, prefix)
+	}
+
+	hexDigest := strings.TrimPrefix(signatureHeader, prefix)
+	sigBytes, err := hex.DecodeString(hexDigest)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errInvalidSignatureEncoding, err)
+	}
+
+	mac := hmac.New(sha256.New, []byte(er.cfg.HMACSignature.Secret))
+	mac.Write(payload)
+	expectedMAC := mac.Sum(nil)
+
+	if !hmac.Equal(sigBytes, expectedMAC) {
+		return errSignatureMismatch
+	}
+
+	return nil
+}
+
 // write response on a failed/bad request. Generates a small json body based on the thrown by
 // the handle func and the appropriate http status code. many webhooks will either log these responses or
 // notify webhook users should a none 2xx code be detected.
@@ -227,7 +308,7 @@ func (er *eventReceiver) failBadReq(_ context.Context,
 	httpStatusCode int,
 	err error,
 ) {
-	jsonResp, err := jsoniter.Marshal(err.Error())
+	jsonResp, err := json.Marshal(err.Error())
 	if err != nil {
 		er.settings.Logger.Warn("failed to marshall error to json")
 	}

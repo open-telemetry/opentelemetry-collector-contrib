@@ -1,0 +1,8 @@
+description: Config defines the configuration for the processor.
+type: object
+properties:
+  metrics:
+    description: List of delta sum metrics to convert to rates
+    type: array
+    items:
+      type: string

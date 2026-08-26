@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
@@ -24,7 +24,7 @@ func TestDurationAndLogsInteraction(t *testing.T) {
 		{
 			name: "Default behavior - respects logs parameter",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 				NumLogs: 3,
@@ -35,7 +35,7 @@ func TestDurationAndLogsInteraction(t *testing.T) {
 		{
 			name: "Finite duration overrides logs",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.DurationWithInf(100 * time.Millisecond),
 				},
@@ -47,7 +47,7 @@ func TestDurationAndLogsInteraction(t *testing.T) {
 		{
 			name: "Infinite duration overrides logs",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.MustDurationWithInf("Inf"),
 				},
@@ -59,7 +59,7 @@ func TestDurationAndLogsInteraction(t *testing.T) {
 		{
 			name: "Zero duration with logs",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.DurationWithInf(0),
 				},
@@ -71,7 +71,7 @@ func TestDurationAndLogsInteraction(t *testing.T) {
 		{
 			name: "Negative duration with logs",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.DurationWithInf(-100 * time.Millisecond),
 				},
@@ -118,7 +118,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "Valid config with logs",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 				NumLogs: 5,
@@ -129,7 +129,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "Valid config with finite duration",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.DurationWithInf(1 * time.Second),
 				},
@@ -141,7 +141,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "Valid config with infinite duration",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.MustDurationWithInf("Inf"),
 				},
@@ -153,7 +153,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "Invalid config - no logs and no duration",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 				NumLogs: 0,
@@ -186,7 +186,7 @@ func TestWorkerBehavior(t *testing.T) {
 		{
 			name: "Worker with finite logs and no duration",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 				NumLogs: 2,
@@ -197,7 +197,7 @@ func TestWorkerBehavior(t *testing.T) {
 		{
 			name: "Worker with infinite duration",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.MustDurationWithInf("Inf"),
 				},
@@ -209,7 +209,7 @@ func TestWorkerBehavior(t *testing.T) {
 		{
 			name: "Worker with finite duration",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.DurationWithInf(100 * time.Millisecond),
 				},

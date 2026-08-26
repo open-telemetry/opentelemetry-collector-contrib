@@ -6,112 +6,205 @@ package vultr
 import (
 	"context"
 	"errors"
-	"strings"
+	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	"go.opentelemetry.io/otel/attribute"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
-	vultrmeta "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/vultr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+)
+
+const (
+	hostName = "vultr-guest"
+	v2ID     = "36e9cf60-5d93-4e31-8ebf-613b3d2874fb"
+	region   = "ewr"
 )
 
 // ---- test stub + hook ----
 
-type fakeProvider struct {
-	md  *vultrmeta.Metadata
+// fakeDetector stands in for the upstream SDK detector. Its metadata endpoint is
+// not injectable, so the adapter is exercised against canned SDK results instead
+// of a fake metadata server.
+type fakeDetector struct {
+	res *sdkresource.Resource
 	err error
 }
 
-func (f *fakeProvider) Metadata(_ context.Context) (*vultrmeta.Metadata, error) {
-	if f.err != nil {
-		return nil, f.err
-	}
-	return f.md, nil
+func (f fakeDetector) Detect(context.Context) (*sdkresource.Resource, error) {
+	return f.res, f.err
 }
 
-func withFakeProvider(t *testing.T, p vultrmeta.Provider) {
+func withFakeDetector(t *testing.T, res *sdkresource.Resource, err error) {
 	t.Helper()
-	orig := newVultrProvider
-	newVultrProvider = func() vultrmeta.Provider { return p }
-	t.Cleanup(func() { newVultrProvider = orig })
+
+	orig := newResourceDetector
+	newResourceDetector = func() sdkresource.Detector {
+		return fakeDetector{res: res, err: err}
+	}
+	t.Cleanup(func() { newResourceDetector = orig })
+}
+
+// fullResource mirrors what the SDK detector reports for a healthy instance. It
+// already prefers the v2 UUID for host.id and lower-cases the region code.
+func fullResource() *sdkresource.Resource {
+	return sdkresource.NewSchemaless(
+		attribute.String("cloud.provider", "vultr"),
+		attribute.String("cloud.platform", "vultr.cloud_compute"),
+		attribute.String("cloud.region", region),
+		attribute.String("host.id", v2ID),
+		attribute.String("host.name", hostName),
+	)
 }
 
 // ---- tests ----
-
 func TestNewDetector(t *testing.T) {
-	withFakeProvider(t, &fakeProvider{
-		md: &vultrmeta.Metadata{
-			Hostname:     "vultr-guest",
-			InstanceID:   "i-abc",
-			InstanceV2ID: "uuid-123",
-			Region:       vultrmeta.Region{RegionCode: "EWR"},
-		},
-	})
-
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
-	assert.NotNil(t, d)
+	require.NotNil(t, d)
 }
 
 func TestVultrDetector_Detect_OK(t *testing.T) {
-	const (
-		hostName = "vultr-guest"
-		v2ID     = "36e9cf60-5d93-4e31-8ebf-613b3d2874fb"
-		region   = "EWR"
-	)
+	withFakeDetector(t, fullResource(), nil)
 
-	withFakeProvider(t, &fakeProvider{
-		md: &vultrmeta.Metadata{
-			Hostname:     hostName,
-			InstanceID:   "legacy-id-ignored-here",
-			InstanceV2ID: v2ID,
-			Region:       vultrmeta.Region{RegionCode: region},
-		},
-	})
-
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	cfg := CreateDefaultConfig()
+	cfg.ResourceAttributes.CloudPlatform.Enabled = true
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, conventions.SchemaURL, schemaURL)
 
-	got := res.Attributes().AsRaw()
 	want := map[string]any{
-		string(conventions.CloudProviderKey): TypeStr,
-		string(conventions.CloudRegionKey):   strings.ToLower(region),
-		string(conventions.HostIDKey):        v2ID,
-		string(conventions.HostNameKey):      hostName,
+		"cloud.provider": TypeStr,
+		"cloud.platform": TypeStr + ".cloud_compute",
+		"cloud.region":   region,
+		"host.id":        v2ID,
+		"host.name":      hostName,
 	}
-	assert.Equal(t, want, got)
+	require.Equal(t, want, res.Attributes().AsRaw())
+}
+
+// cloud.platform is disabled by default, so the detector must drop it even
+// though the SDK detector always reports it.
+func TestVultrDetector_Detect_DefaultConfig(t *testing.T) {
+	withFakeDetector(t, fullResource(), nil)
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	require.NoError(t, err)
+
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+
+	want := map[string]any{
+		"cloud.provider": TypeStr,
+		"cloud.region":   region,
+		"host.id":        v2ID,
+		"host.name":      hostName,
+	}
+	require.Equal(t, want, res.Attributes().AsRaw())
 }
 
 func TestVultrDetector_NotOnVultr(t *testing.T) {
-	withFakeProvider(t, &fakeProvider{err: errors.New("no metadata")})
+	withFakeDetector(t, sdkresource.Empty(), nil)
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	assert.True(t, internal.IsEmptyResource(res))
-	assert.Empty(t, schemaURL)
+	require.True(t, internal.IsEmptyResource(res))
+	require.Empty(t, schemaURL)
+}
+
+// The metadata service answered but the response was unusable. Without
+// fail_on_missing_metadata this stays a debug log, not an error.
+func TestVultrDetector_MetadataError(t *testing.T) {
+	withFakeDetector(t, nil, errors.New("no metadata"))
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	require.NoError(t, err)
+
+	res, schemaURL, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	require.True(t, internal.IsEmptyResource(res))
+	require.Empty(t, schemaURL)
+}
+
+func TestVultrDetector_MetadataError_FailOnMissingMetadata(t *testing.T) {
+	errNoMetadata := errors.New("no metadata")
+	withFakeDetector(t, nil, errNoMetadata)
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), true)
+	require.NoError(t, err)
+
+	res, schemaURL, err := d.Detect(t.Context())
+	require.ErrorIs(t, err, errNoMetadata)
+	require.True(t, internal.IsEmptyResource(res))
+	require.Empty(t, schemaURL)
 }
 
 func TestVultrDetector_FailOnMissingMetadata(t *testing.T) {
-	withFakeProvider(t, &fakeProvider{err: errors.New("no metadata")})
+	withFakeDetector(t, sdkresource.Empty(), nil)
 
 	cfg := CreateDefaultConfig()
 	cfg.FailOnMissingMetadata = true
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	// Inject top-level false: the deprecated per-detector flag alone must still
+	// trigger fail-on-missing for this detector (backward compatibility).
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())
 	require.Error(t, err)
-	assert.True(t, internal.IsEmptyResource(res))
-	assert.Empty(t, schemaURL)
+	require.True(t, internal.IsEmptyResource(res))
+	require.Empty(t, schemaURL)
+}
+
+// A partial result is kept as-is when fail_on_missing_metadata is false: the
+// attributes absent from the metadata response are omitted rather than emitted
+// with an empty value.
+func TestVultrDetector_PartialMetadata(t *testing.T) {
+	partial := sdkresource.NewSchemaless(
+		attribute.String("cloud.provider", "vultr"),
+		attribute.String("cloud.platform", "vultr.cloud_compute"),
+		attribute.String("host.name", hostName),
+	)
+	withFakeDetector(t, partial, fmt.Errorf("%w: region: not present in metadata", sdkresource.ErrPartialResource))
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	require.NoError(t, err)
+
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+
+	want := map[string]any{
+		"cloud.provider": TypeStr,
+		"host.name":      hostName,
+	}
+	require.Equal(t, want, res.Attributes().AsRaw())
+}
+
+// fail_on_missing_metadata covers an unusable metadata service, not a field
+// absent from an otherwise good response, so a partial result still succeeds.
+func TestVultrDetector_PartialMetadata_FailOnMissingMetadata(t *testing.T) {
+	partial := sdkresource.NewSchemaless(
+		attribute.String("cloud.provider", "vultr"),
+		attribute.String("host.name", hostName),
+	)
+	withFakeDetector(t, partial, fmt.Errorf("%w: region: not present in metadata", sdkresource.ErrPartialResource))
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), true)
+	require.NoError(t, err)
+
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+
+	want := map[string]any{
+		"cloud.provider": TypeStr,
+		"host.name":      hostName,
+	}
+	require.Equal(t, want, res.Attributes().AsRaw())
 }

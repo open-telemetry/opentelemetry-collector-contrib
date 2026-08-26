@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 // Package awsproxy defines an extension that accepts requests without any authentication of AWS signatures
 // applied and forwards them to the AWS API, applying authentication and signing.

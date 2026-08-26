@@ -11,8 +11,25 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
+	clientmeta "k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/cache"
 )
+
+// alreadyDone is a cache.DoneChecker whose Done channel is always closed,
+// matching the fakes' HasSynced() always returning true.
+var alreadyDone = doneChecker{}
+
+type doneChecker struct{}
+
+func (doneChecker) Name() string {
+	return "fakeInformer"
+}
+
+func (doneChecker) Done() <-chan struct{} {
+	ch := make(chan struct{})
+	close(ch)
+	return ch
+}
 
 type FakeInformer struct {
 	*FakeController
@@ -73,7 +90,7 @@ type FakeNamespaceInformer struct {
 }
 
 func NewFakeNamespaceInformer(
-	_ kubernetes.Interface,
+	_ clientmeta.Interface,
 ) cache.SharedInformer {
 	return &FakeInformer{
 		FakeController: &FakeController{},
@@ -98,7 +115,7 @@ type FakeReplicaSetInformer struct {
 }
 
 func NewFakeReplicaSetInformer(
-	_ kubernetes.Interface,
+	_ clientmeta.Interface,
 	_ string,
 ) cache.SharedInformer {
 	return &FakeInformer{
@@ -153,6 +170,10 @@ func (*FakeController) LastSyncResourceVersion() string {
 	return ""
 }
 
+func (*FakeController) HasSyncedChecker() cache.DoneChecker {
+	return alreadyDone
+}
+
 func (*FakeInformer) SetWatchErrorHandler(cache.WatchErrorHandler) error {
 	return nil
 }
@@ -166,7 +187,7 @@ type NoOpInformer struct {
 }
 
 func NewNoOpInformer(
-	_ kubernetes.Interface,
+	_ clientmeta.Interface,
 ) cache.SharedInformer {
 	return &NoOpInformer{
 		NoOpController: &NoOpController{},
@@ -226,6 +247,10 @@ func (*NoOpController) HasSynced() bool {
 
 func (*NoOpController) LastSyncResourceVersion() string {
 	return ""
+}
+
+func (*NoOpController) HasSyncedChecker() cache.DoneChecker {
+	return alreadyDone
 }
 
 func (*NoOpController) SetWatchErrorHandler(cache.WatchErrorHandler) error {

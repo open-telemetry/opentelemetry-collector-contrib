@@ -1,0 +1,19 @@
+{
+  "records": [
+    {
+      "resourceId": "/SUBSCRIPTIONS/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/RESOURCEGROUPS/PEERINGTEST/PROVIDERS/MICROSOFT.NETWORK/APPLICATIONGATEWAYS/Application-Gateway-Name",
+      "operationName": "ApplicationGatewayPerformance",
+      "time": "2016-04-09T00:00:00Z",
+      "category": "ApplicationGatewayPerformanceLog",
+      "properties": {
+        "instanceId": "ApplicationGatewayRole_IN_1",
+        "healthyHostCount": "4",
+        "unHealthyHostCount": "0",
+        "requestCount": "185",
+        "latency": "0",
+        "failedRequestCount": "0",
+        "throughput": "119427"
+      }
+    }
+  ]
+}

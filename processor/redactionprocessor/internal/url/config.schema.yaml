@@ -1,0 +1,15 @@
+$defs:
+  url_sanitization_config:
+    type: object
+    properties:
+      attributes:
+        description: Attributes is the list of attributes that will be sanitized.
+        type: array
+        items:
+          type: string
+      enabled:
+        type: boolean
+      sanitize_span_name:
+        description: SanitizeSpanName controls whether span names should be sanitized.
+        x-pointer: true
+        type: boolean

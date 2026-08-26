@@ -8,7 +8,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 const (
@@ -60,7 +59,8 @@ func buildSampleTrace() ptrace.Traces {
 					statusCode: ptrace.StatusCodeError,
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(
 		serviceSpans{
 			serviceName: "service-b",
@@ -71,14 +71,15 @@ func buildSampleTrace() ptrace.Traces {
 					statusCode: ptrace.StatusCodeError,
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(serviceSpans{}, traces.ResourceSpans().AppendEmpty())
 	return traces
 }
 
 func initServiceSpans(serviceSpans serviceSpans, spans ptrace.ResourceSpans) {
 	if serviceSpans.serviceName != "" {
-		spans.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceSpans.serviceName)
+		spans.Resource().Attributes().PutStr("service.name", serviceSpans.serviceName)
 	}
 
 	ils := spans.ScopeSpans().AppendEmpty()

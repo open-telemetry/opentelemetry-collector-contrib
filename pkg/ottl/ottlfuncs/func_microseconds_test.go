@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -59,10 +60,46 @@ func Test_Microseconds(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := Microseconds(tt.duration)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func Test_MicrosecondsFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewMicrosecondsFactory[any]()
+		assert.Equal(t, "Microseconds", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewMicrosecondsFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &MicrosecondsArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Duration"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewMicrosecondsFactory[any]()
+		args := factory.CreateDefaultArguments()
+		microsecondsArgs, ok := args.(*MicrosecondsArguments[any])
+		require.True(t, ok)
+		microsecondsArgs.Duration = ottl.StandardDurationGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return time.Duration(100), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createMicrosecondsFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "MicrosecondsFactory args must be of type *MicrosecondsArguments[K]")
+	})
 }

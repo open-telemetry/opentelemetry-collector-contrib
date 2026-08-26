@@ -16,6 +16,7 @@ func (rs *redisScraper) dataPointRecorders() map[string]any {
 		"blocked_clients":                   rs.mb.RecordRedisClientsBlockedDataPoint,
 		"client_recent_max_input_buffer":    rs.mb.RecordRedisClientsMaxInputBufferDataPoint,
 		"client_recent_max_output_buffer":   rs.mb.RecordRedisClientsMaxOutputBufferDataPoint,
+		"cluster_enabled":                   rs.mb.RecordRedisClusterClusterEnabledDataPoint,
 		"connected_clients":                 rs.mb.RecordRedisClientsConnectedDataPoint,
 		"connected_slaves":                  rs.mb.RecordRedisSlavesConnectedDataPoint,
 		"evicted_keys":                      rs.mb.RecordRedisKeysEvictedDataPoint,
@@ -35,6 +36,7 @@ func (rs *redisScraper) dataPointRecorders() map[string]any {
 		"total_connections_received":        rs.mb.RecordRedisConnectionsReceivedDataPoint,
 		"total_net_input_bytes":             rs.mb.RecordRedisNetInputDataPoint,
 		"total_net_output_bytes":            rs.mb.RecordRedisNetOutputDataPoint,
+		"tracking_total_keys":               rs.mb.RecordRedisTrackingTotalKeysDataPoint,
 		"uptime_in_seconds":                 rs.mb.RecordRedisUptimeDataPoint,
 		"used_cpu_sys":                      rs.recordUsedCPUSys,
 		"used_cpu_sys_children":             rs.recordUsedCPUSysChildren,
@@ -44,8 +46,10 @@ func (rs *redisScraper) dataPointRecorders() map[string]any {
 		"used_cpu_user_main_thread":         rs.recordUsedCPUUserMainThread,
 		"used_memory":                       rs.mb.RecordRedisMemoryUsedDataPoint,
 		"used_memory_lua":                   rs.mb.RecordRedisMemoryLuaDataPoint,
+		"used_memory_overhead":              rs.mb.RecordRedisMemoryUsedMemoryOverheadDataPoint,
 		"used_memory_peak":                  rs.mb.RecordRedisMemoryPeakDataPoint,
 		"used_memory_rss":                   rs.mb.RecordRedisMemoryRssDataPoint,
+		"used_memory_startup":               rs.mb.RecordRedisMemoryUsedMemoryStartupDataPoint,
 		"cluster_state":                     rs.mb.RecordRedisClusterStateDataPoint,
 		"cluster_slots_assigned":            rs.mb.RecordRedisClusterSlotsAssignedDataPoint,
 		"cluster_slots_ok":                  rs.mb.RecordRedisClusterSlotsOkDataPoint,
@@ -58,6 +62,10 @@ func (rs *redisScraper) dataPointRecorders() map[string]any {
 		"cluster_stats_messages_sent":       rs.mb.RecordRedisClusterStatsMessagesSentDataPoint,
 		"cluster_stats_messages_received":   rs.mb.RecordRedisClusterStatsMessagesReceivedDataPoint,
 		"links_buffer_limit_exceeded.count": rs.mb.RecordRedisClusterLinksBufferLimitExceededCountDataPoint,
+		"pubsub_channels":                   rs.recordPubsubChannels,
+		"pubsub_clients":                    rs.mb.RecordRedisPubsubConnectionCountDataPoint,
+		"pubsub_patterns":                   rs.recordPubsubPatternsActive,
+		"pubsub_shardchannels":              rs.recordPubsubShardChannels,
 	}
 }
 
@@ -83,4 +91,16 @@ func (rs *redisScraper) recordUsedCPUUserChildren(now pcommon.Timestamp, val flo
 
 func (rs *redisScraper) recordUsedCPUUserMainThread(now pcommon.Timestamp, val float64) {
 	rs.mb.RecordRedisCPUTimeDataPoint(now, val, metadata.AttributeStateUserMainThread)
+}
+
+func (rs *redisScraper) recordPubsubChannels(now pcommon.Timestamp, val int64) {
+	rs.mb.RecordRedisPubsubChannelStatusDataPoint(now, val, metadata.AttributeRedisPubsubChannelStateActive)
+}
+
+func (rs *redisScraper) recordPubsubShardChannels(now pcommon.Timestamp, val int64) {
+	rs.mb.RecordRedisPubsubChannelStatusDataPoint(now, val, metadata.AttributeRedisPubsubChannelStateShard)
+}
+
+func (rs *redisScraper) recordPubsubPatternsActive(now pcommon.Timestamp, val int64) {
+	rs.mb.RecordRedisPubsubPatternStatusDataPoint(now, val, metadata.AttributeRedisPubsubPatternStateActive)
 }

@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package datadogextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension"
 
 import (
@@ -12,6 +14,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
@@ -45,6 +48,16 @@ func NewFactory() extension.Factory {
 }
 
 func (*factory) createDefaultConfig() component.Config {
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
+	netAddr.Endpoint = httpserver.DefaultServerEndpoint
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.NetAddr = netAddr
 	return &Config{
 		ClientConfig: confighttp.NewDefaultClientConfig(),
 		API: datadogconfig.APIConfig{
@@ -52,10 +65,8 @@ func (*factory) createDefaultConfig() component.Config {
 			FailOnInvalidKey: true,
 		},
 		HTTPConfig: &httpserver.Config{
-			ServerConfig: confighttp.ServerConfig{
-				Endpoint: httpserver.DefaultServerEndpoint,
-			},
-			Path: "/metadata",
+			ServerConfig: serverConfig,
+			Path:         "/metadata",
 		},
 	}
 }

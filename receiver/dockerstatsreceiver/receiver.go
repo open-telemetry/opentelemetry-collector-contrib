@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	ctypes "github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
+	ctypes "github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -25,8 +25,8 @@ import (
 )
 
 var (
-	defaultDockerAPIVersion         = "1.25"
-	minimumRequiredDockerAPIVersion = docker.MustNewAPIVersion(defaultDockerAPIVersion)
+	defaultDockerAPIVersion         = docker.MustNewAPIVersion("1.44")
+	minimumRequiredDockerAPIVersion = docker.MustNewAPIVersion("1.25")
 )
 
 type resultV2 struct {
@@ -53,7 +53,7 @@ func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver 
 
 func (r *metricsReceiver) clientOptions() []client.Opt {
 	var opts []client.Opt
-	if r.config.Endpoint == "" {
+	if r.config.Config.Endpoint == "" {
 		opts = append(opts, client.WithHostFromEnv())
 	}
 	return opts
@@ -82,11 +82,40 @@ func (r *metricsReceiver) shutdown(context.Context) error {
 	if r.cancel != nil {
 		r.cancel()
 	}
+	if r.client != nil {
+		return r.client.Close()
+	}
 	return nil
 }
 
 func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error) {
 	containers := r.client.Containers()
+	var errs error
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	if r.config.Config.StreamStats {
+		for _, container := range containers {
+			stats, ok := r.client.LatestContainerStats(container.ID, r.config.ControllerConfig.CollectionInterval)
+			if !ok {
+				// Stream is still starting up; skip until first frame arrives.
+				errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(
+					fmt.Errorf("no stats available yet for container %s", container.ID), 0,
+				))
+				continue
+			}
+			if container.State.Health != nil {
+				if updated, ok := r.client.InspectAndPersistContainer(ctx, container.ID); ok {
+					container.InspectResponse = updated
+				}
+			}
+			if err := r.recordContainerStats(now, stats, &container); err != nil {
+				errs = multierr.Append(errs, err)
+			}
+		}
+		return r.mb.Emit(), errs
+	}
+
+	// Default (non-streaming): open a fresh connection per container each scrape.
 	results := make(chan resultV2, len(containers))
 
 	wg := &sync.WaitGroup{}
@@ -98,6 +127,11 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 			if err != nil {
 				results <- resultV2{nil, &c, err}
 				return
+			}
+			if c.State.Health != nil {
+				if updated, ok := r.client.InspectAndPersistContainer(ctx, c.ID); ok {
+					c.InspectResponse = updated
+				}
 			}
 
 			results <- resultV2{
@@ -111,9 +145,6 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 	wg.Wait()
 	close(results)
 
-	var errs error
-
-	now := pcommon.NewTimestampFromTime(time.Now())
 	for res := range results {
 		if res.err != nil {
 			// Don't know the number of failed stats, but one container fetch is a partial error.
@@ -135,13 +166,16 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 	r.recordBlkioMetrics(now, &containerStats.BlkioStats)
 	r.recordNetworkMetrics(now, &containerStats.Networks)
 	r.recordPidsMetrics(now, &containerStats.PidsStats)
-	if err := r.recordBaseMetrics(now, container.ContainerJSONBase); err != nil {
+	if err := r.recordBaseMetrics(now, container.InspectResponse); err != nil {
 		errs = multierr.Append(errs, err)
 	}
-	if err := r.recordHostConfigMetrics(now, container.ContainerJSON); err != nil {
+	if err := r.recordHostConfigMetrics(now, container.InspectResponse); err != nil {
 		errs = multierr.Append(errs, err)
 	}
 	r.mb.RecordContainerRestartsDataPoint(now, int64(container.RestartCount))
+
+	// Record container health status metrics
+	r.recordContainerHealthMetrics(now, container)
 
 	// Always-present resource attrs + the user-configured resource attrs
 	rb := r.mb.NewResourceBuilder()
@@ -245,7 +279,8 @@ func recordSingleBlkioStat(now pcommon.Timestamp, statEntries []ctypes.BlkioStat
 			int64(stat.Value),
 			strconv.FormatUint(stat.Major, 10),
 			strconv.FormatUint(stat.Minor, 10),
-			strings.ToLower(stat.Op))
+			strings.ToLower(stat.Op),
+		)
 	}
 }
 
@@ -293,7 +328,7 @@ func (r *metricsReceiver) recordPidsMetrics(now pcommon.Timestamp, pidsStats *ct
 	}
 }
 
-func (r *metricsReceiver) recordBaseMetrics(now pcommon.Timestamp, base *ctypes.ContainerJSONBase) error {
+func (r *metricsReceiver) recordBaseMetrics(now pcommon.Timestamp, base *ctypes.InspectResponse) error {
 	t, err := time.Parse(time.RFC3339, base.State.StartedAt)
 	if err != nil {
 		// value not available or invalid
@@ -316,4 +351,23 @@ func (r *metricsReceiver) recordHostConfigMetrics(now pcommon.Timestamp, contain
 		r.mb.RecordContainerCPULimitDataPoint(now, cpuLimit)
 	}
 	return nil
+}
+
+func (r *metricsReceiver) recordContainerHealthMetrics(now pcommon.Timestamp, container *docker.Container) {
+	if container.State != nil && container.State.Health != nil {
+		switch container.State.Health.Status {
+		case "starting":
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 1, metadata.AttributeContainerStateHealthStateStarting)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateHealthy)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateUnhealthy)
+		case "healthy":
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateStarting)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 1, metadata.AttributeContainerStateHealthStateHealthy)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateUnhealthy)
+		case "unhealthy":
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateStarting)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 0, metadata.AttributeContainerStateHealthStateHealthy)
+			r.mb.RecordContainerStateHealthStatusDataPoint(now, 1, metadata.AttributeContainerStateHealthStateUnhealthy)
+		}
+	}
 }

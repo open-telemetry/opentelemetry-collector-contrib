@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -25,8 +26,7 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	qs := exporterhelper.NewDefaultQueueConfig()
-	qs.Enabled = false
+	qs := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 
 	return &Config{
 		Port:            DefaultPort,

@@ -60,8 +60,8 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 		},
 		telemetrySettings: telemetrySettings,
 		writeURL:          writeURL,
-		payloadMaxLines:   config.PayloadMaxLines,
-		payloadMaxBytes:   config.PayloadMaxBytes,
+		payloadMaxLines:   config.MetricsConfig.PayloadMaxLines,
+		payloadMaxBytes:   config.MetricsConfig.PayloadMaxBytes,
 		logger:            logger,
 		hostname:          hostname,
 		token:             config.MetricsConfig.AppToken,
@@ -69,7 +69,7 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 }
 
 func composeWriteURL(config *Config) (string, error) {
-	writeURL, err := url.Parse(config.MetricsEndpoint)
+	writeURL, err := url.Parse(config.MetricsConfig.MetricsEndpoint)
 	if err != nil {
 		return "", err
 	}
@@ -88,7 +88,7 @@ func composeWriteURL(config *Config) (string, error) {
 
 // Start implements component.StartFunc
 func (w *sematextHTTPWriter) Start(ctx context.Context, host component.Host) error {
-	httpClient, err := w.httpClientSettings.ToClient(ctx, host, w.telemetrySettings)
+	httpClient, err := w.httpClientSettings.ToClient(ctx, host.GetExtensions(), w.telemetrySettings)
 	if err != nil {
 		return err
 	}

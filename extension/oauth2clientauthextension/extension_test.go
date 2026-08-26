@@ -4,9 +4,14 @@
 package oauth2clientauthextension
 
 import (
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,99 +19,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
-	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
-	grpcOAuth "google.golang.org/grpc/credentials/oauth"
+	"google.golang.org/grpc/credentials"
 )
 
-func TestOAuthClientSettings(t *testing.T) {
-	// test files for TLS testing
-	var (
-		testCAFile   = "testdata/testCA.pem"
-		testCertFile = "testdata/test-cert.pem"
-		testKeyFile  = "testdata/test-key.pem"
-	)
-
-	tests := []struct {
-		name          string
-		settings      *Config
-		shouldError   bool
-		expectedError string
-	}{
-		{
-			name: "all_valid_settings",
-			settings: &Config{
-				ClientID:       "testclientid",
-				ClientSecret:   "testsecret",
-				EndpointParams: url.Values{"audience": []string{"someaudience"}},
-				TokenURL:       "https://example.com/v1/token",
-				Scopes:         []string{"resource.read"},
-				Timeout:        2,
-				ExpiryBuffer:   10 * time.Second,
-				TLS: configtls.ClientConfig{
-					Config: configtls.Config{
-						CAFile:   testCAFile,
-						CertFile: testCertFile,
-						KeyFile:  testKeyFile,
-					},
-					Insecure:           false,
-					InsecureSkipVerify: false,
-				},
-			},
-			shouldError:   false,
-			expectedError: "",
-		},
-		{
-			name: "invalid_tls",
-			settings: &Config{
-				ClientID:     "testclientid",
-				ClientSecret: "testsecret",
-				TokenURL:     "https://example.com/v1/token",
-				Scopes:       []string{"resource.read"},
-				Timeout:      2,
-				ExpiryBuffer: 15 * time.Second,
-				TLS: configtls.ClientConfig{
-					Config: configtls.Config{
-						CAFile:   testCAFile,
-						CertFile: "nonexistent.cert",
-						KeyFile:  testKeyFile,
-					},
-					Insecure:           false,
-					InsecureSkipVerify: false,
-				},
-			},
-			shouldError:   true,
-			expectedError: "failed to load TLS config: failed to load TLS cert and key",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			rc, err := newClientAuthenticator(test.settings, zap.NewNop())
-			if test.shouldError {
-				assert.ErrorContains(t, err, test.expectedError)
-				return
-			}
-			assert.NoError(t, err)
-			assert.Equal(t, test.settings.Scopes, rc.clientCredentials.Scopes)
-			assert.Equal(t, test.settings.TokenURL, rc.clientCredentials.TokenURL)
-			assert.EqualValues(t, test.settings.ClientSecret, rc.clientCredentials.ClientSecret)
-			assert.Equal(t, test.settings.ClientID, rc.clientCredentials.ClientID)
-			assert.Equal(t, test.settings.Timeout, rc.client.Timeout)
-			assert.Equal(t, test.settings.ExpiryBuffer, rc.clientCredentials.ExpiryBuffer)
-			assert.Equal(t, test.settings.EndpointParams, rc.clientCredentials.EndpointParams)
-
-			// test tls settings
-			transport := rc.client.Transport.(*http.Transport)
-			tlsClientConfig := transport.TLSClientConfig
-			tlsTestSettingConfig, err := test.settings.TLS.LoadTLSConfig(t.Context())
-			assert.NoError(t, err)
-			assert.Equal(t, tlsClientConfig.Certificates, tlsTestSettingConfig.Certificates)
-		})
-	}
-}
-
-func TestOAuthClientSettingsCredsConfig(t *testing.T) {
+func TestOAuthClientCredentialsSettingsConfig(t *testing.T) {
 	var (
 		testCredsFile        = "testdata/test-cred.txt"
 		testCredsEmptyFile   = "testdata/test-cred-empty.txt"
@@ -120,6 +37,27 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 		shouldError          bool
 		expectedError        error
 	}{
+		{
+			name: "all_values",
+			settings: &Config{
+				ClientID:       "testclientid",
+				ClientSecret:   "testsecret",
+				EndpointParams: url.Values{"audience": []string{"someaudience"}},
+				TokenURL:       "https://example.com/v1/token",
+				Scopes:         []string{"resource.read"},
+				Timeout:        2,
+				ExpiryBuffer:   10 * time.Second,
+			},
+			expectedClientConfig: &clientcredentials.Config{
+				ClientID:       "testclientid",
+				ClientSecret:   "testsecret",
+				TokenURL:       "https://example.com/v1/token",
+				Scopes:         []string{"resource.read"},
+				EndpointParams: url.Values{"audience": []string{"someaudience"}},
+			},
+			shouldError:   false,
+			expectedError: nil,
+		},
 		{
 			name: "client_id_file",
 			settings: &Config{
@@ -168,8 +106,8 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			rc, _ := newClientAuthenticator(test.settings, zap.NewNop())
-			cfg, err := rc.clientCredentials.createConfig()
+			credentials := newClientCredentialsGrantTypeConfig(test.settings)
+			cfg, err := credentials.createConfig()
 			if test.shouldError {
 				assert.Error(t, err)
 				assert.ErrorIs(t, err, test.expectedError)
@@ -178,6 +116,98 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedClientConfig.ClientID, cfg.ClientID)
 			assert.Equal(t, test.expectedClientConfig.ClientSecret, cfg.ClientSecret)
+		})
+	}
+}
+
+func TestOAuthJwtGrantTypeSettings(t *testing.T) {
+	// test files for TLS testing
+	var (
+		testCAFile   = "testdata/testCA.pem"
+		testCertFile = "testdata/test-cert.pem"
+		testKeyFile  = "testdata/test-key.pem"
+	)
+
+	tests := []struct {
+		name          string
+		settings      *Config
+		shouldError   bool
+		expectedError string
+	}{
+		{
+			name: "all_valid_settings",
+			settings: &Config{
+				ClientID:               "testclientid",
+				ClientCertificateKey:   "testsecret",
+				EndpointParams:         url.Values{"audience": []string{"someaudience"}},
+				TokenURL:               "https://example.com/v1/token",
+				Scopes:                 []string{"resource.read"},
+				SignatureAlgorithm:     "RS512",
+				Iss:                    "my-issuer",
+				Audience:               "my-audience",
+				ClientCertificateKeyID: "1234",
+				Claims:                 map[string]any{"random": "value"},
+				Timeout:                2,
+				ExpiryBuffer:           10 * time.Second,
+				TLS: configtls.ClientConfig{
+					Config: configtls.Config{
+						CAFile:   testCAFile,
+						CertFile: testCertFile,
+						KeyFile:  testKeyFile,
+					},
+					Insecure:           false,
+					InsecureSkipVerify: false,
+				},
+			},
+			shouldError:   false,
+			expectedError: "",
+		},
+		{
+			name: "empty_signature_algorithm_defaults",
+			settings: &Config{
+				SignatureAlgorithm: "RS256",
+			},
+			shouldError: false,
+		},
+		{
+			name: "invalid_signature_algorithm_fails",
+			settings: &Config{
+				ClientID:             "testclientid",
+				ClientCertificateKey: "testsecret",
+				TokenURL:             "https://example.com/v1/token",
+				SignatureAlgorithm:   "INVALID_ALGORITHM",
+			},
+			shouldError:   true,
+			expectedError: "invalid signature algorithm",
+		},
+		{
+			name: "iss_falls_back_to_client_id",
+			settings: &Config{
+				ClientID:           "testclientid",
+				SignatureAlgorithm: "RS256",
+				Iss:                "testclientid",
+			},
+			shouldError: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			rc, err := newJwtGrantTypeConfig(test.settings)
+			if test.shouldError {
+				assert.ErrorContains(t, err, test.expectedError)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, test.settings.Scopes, rc.Scopes)
+			assert.Equal(t, test.settings.TokenURL, rc.TokenURL)
+			assert.EqualValues(t, test.settings.ClientCertificateKey, rc.PrivateKey)
+			assert.Equal(t, test.settings.ClientID, rc.Subject)
+			assert.Equal(t, test.settings.SignatureAlgorithm, rc.SigningAlgorithm.Name)
+			assert.Equal(t, test.settings.ClientCertificateKeyID, rc.PrivateKeyID)
+			assert.Equal(t, test.settings.EndpointParams, rc.EndpointParams)
+			assert.Equal(t, test.settings.Iss, rc.Iss)
+			assert.Equal(t, test.settings.Claims, rc.PrivateClaims)
 		})
 	}
 }
@@ -197,7 +227,7 @@ func TestRoundTripper(t *testing.T) {
 		shouldError bool
 	}{
 		{
-			name: "returns_http_round_tripper",
+			name: "returns_empty_grant_http_round_tripper",
 			settings: &Config{
 				ClientID:     "testclientid",
 				ClientSecret: "testsecret",
@@ -205,6 +235,39 @@ func TestRoundTripper(t *testing.T) {
 				Scopes:       []string{"resource.read"},
 			},
 			shouldError: false,
+		},
+		{
+			name: "returns_client_credentials_grant_http_round_tripper",
+			settings: &Config{
+				ClientID:     "testclientid",
+				ClientSecret: "testsecret",
+				GrantType:    "client_credentials",
+				TokenURL:     "https://example.com/v1/token",
+				Scopes:       []string{"resource.read"},
+			},
+			shouldError: false,
+		},
+		{
+			name: "returns_jwt_bearer_grant_http_round_tripper",
+			settings: &Config{
+				ClientID:             "testclientid",
+				ClientCertificateKey: "testsecret",
+				GrantType:            "urn:ietf:params:oauth:grant-type:jwt-bearer",
+				TokenURL:             "https://example.com/v1/token",
+				Scopes:               []string{"resource.read"},
+			},
+			shouldError: false,
+		},
+		{
+			name: "invalid_grant_type_returns_error",
+			settings: &Config{
+				ClientID:     "testclientid",
+				ClientSecret: "testsecret",
+				GrantType:    "worong_grant_type",
+				TokenURL:     "https://example.com/v1/token",
+				Scopes:       []string{"resource.read"},
+			},
+			shouldError: true,
 		},
 	}
 
@@ -221,19 +284,99 @@ func TestRoundTripper(t *testing.T) {
 			}
 
 			assert.NotNil(t, oauth2Authenticator)
-			roundTripper, err := oauth2Authenticator.RoundTripper(baseRoundTripper)
+			rt, err := oauth2Authenticator.RoundTripper(baseRoundTripper)
 			assert.NoError(t, err)
 
-			// test roundTripper is an OAuth RoundTripper
-			oAuth2Transport, ok := roundTripper.(*oauth2.Transport)
-			assert.True(t, ok)
+			roundTripper, ok := rt.(*roundTripper)
+			require.True(t, ok)
 
 			// test oAuthRoundTripper wrapped the base roundTripper properly
-			wrappedRoundTripper, ok := oAuth2Transport.Base.(*testRoundTripper)
+			wrappedRoundTripper, ok := roundTripper.base.(*testRoundTripper)
 			assert.True(t, ok)
 			assert.Equal(t, wrappedRoundTripper.testString, testString)
 		})
 	}
+}
+
+func TestToken(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"access_token": "test-token",
+			"token_type":   "Bearer",
+		})
+	}))
+	defer server.Close()
+
+	oauth2Authenticator, err := newClientAuthenticator(&Config{
+		ClientID:                 "testclient",
+		ClientCertificateKeyFile: "testdata/client.key",
+		GrantType:                "urn:ietf:params:oauth:grant-type:jwt-bearer",
+		TokenURL:                 server.URL,
+	}, zap.NewNop())
+	require.NoError(t, err)
+
+	token, err := oauth2Authenticator.Token(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, "test-token", token.AccessToken)
+	assert.Equal(t, "Bearer", token.TokenType)
+}
+
+func TestToken_Cancellation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		<-t.Context().Done()
+	}))
+	defer server.Close()
+
+	oauth2Authenticator, err := newClientAuthenticator(&Config{
+		ClientID:     "testclient",
+		ClientSecret: "testsecret",
+		TokenURL:     server.URL,
+	}, zap.NewNop())
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	_, err = oauth2Authenticator.Token(ctx)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, context.Canceled)
+}
+
+func TestToken_CancellationWhileBlocked(t *testing.T) {
+	started := make(chan struct{})
+	unblock := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		close(started)
+		<-unblock
+	}))
+	defer server.Close()
+	defer close(unblock)
+
+	oauth2Authenticator, err := newClientAuthenticator(&Config{
+		ClientID:     "testclient",
+		ClientSecret: "testsecret",
+		TokenURL:     server.URL,
+	}, zap.NewNop())
+	require.NoError(t, err)
+
+	// First goroutine: holds the semaphore while blocked on a slow token fetch.
+	go func() {
+		_, _ = oauth2Authenticator.Token(t.Context())
+	}()
+
+	// Wait until the token server has received the request, meaning the
+	// first goroutine holds the semaphore.
+	<-started
+
+	// Second call: should respect cancellation while waiting for the semaphore.
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	_, err = oauth2Authenticator.Token(ctx)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, context.Canceled)
 }
 
 func TestOAuth2PerRPCCredentials(t *testing.T) {
@@ -244,13 +387,25 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			name: "returns_http_round_tripper",
+			name: "returns_client_credentials_grant_http_round_tripper",
 			settings: &Config{
 				ClientID:     "testclientid",
 				ClientSecret: "testsecret",
 				TokenURL:     "https://example.com/v1/token",
 				Scopes:       []string{"resource.read"},
 				Timeout:      1,
+			},
+			shouldError: false,
+		},
+		{
+			name: "returns_jwt_bearer_grant_http_round_tripper",
+			settings: &Config{
+				ClientID:             "testclientid",
+				ClientCertificateKey: "testsecret",
+				GrantType:            "urn:ietf:params:oauth:grant-type:jwt-bearer",
+				TokenURL:             "https://example.com/v1/token",
+				Scopes:               []string{"resource.read"},
+				Timeout:              1,
 			},
 			shouldError: false,
 		},
@@ -265,10 +420,9 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
-			perRPCCredentials, err := oauth2Authenticator.PerRPCCredentials()
+			creds, err := oauth2Authenticator.PerRPCCredentials()
 			assert.NoError(t, err)
-			// test perRPCCredentials is an grpc OAuthTokenSource
-			_, ok := perRPCCredentials.(grpcOAuth.TokenSource)
+			_, ok := creds.(*perRPCCredentials)
 			assert.True(t, ok)
 		})
 	}
@@ -314,4 +468,350 @@ func TestFailContactingOAuth(t *testing.T) {
 	_, err = client.Do(req)
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
 	assert.ErrorContains(t, err, serverURL.String())
+}
+
+func TestHTTPClientTokenReuse(t *testing.T) {
+	var tokenRequests int
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		tokenRequests++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"access_token":"reused-token","token_type":"Bearer","expires_in":3600}`))
+	}))
+	defer tokenServer.Close()
+
+	resourceServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "Bearer reused-token", r.Header.Get("Authorization"))
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer resourceServer.Close()
+
+	oauth2Authenticator, err := newClientAuthenticator(&Config{
+		ClientID:     "testclient",
+		ClientSecret: "testsecret",
+		GrantType:    "client_credentials",
+		TokenURL:     tokenServer.URL,
+		Scopes:       []string{"scope1"},
+	}, zap.NewNop())
+	require.NoError(t, err)
+
+	rt, err := oauth2Authenticator.RoundTripper(http.DefaultTransport)
+	require.NoError(t, err)
+
+	client := &http.Client{Transport: rt}
+	for i := range 5 {
+		resp, err := client.Get(resourceServer.URL)
+		require.NoError(t, err, "request %d", i)
+		resp.Body.Close()
+	}
+
+	assert.Equal(t, 1, tokenRequests, "token endpoint should be called exactly once; token should be reused")
+}
+
+func TestHTTPClientTokenReuse_JWTBearer(t *testing.T) {
+	var tokenRequests int
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		tokenRequests++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"access_token":"jwt-reused","token_type":"Bearer","expires_in":3600}`))
+	}))
+	defer tokenServer.Close()
+
+	resourceServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "Bearer jwt-reused", r.Header.Get("Authorization"))
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer resourceServer.Close()
+
+	oauth2Authenticator, err := newClientAuthenticator(&Config{
+		ClientID:                 "testclient",
+		ClientCertificateKeyFile: "testdata/client.key",
+		GrantType:                "urn:ietf:params:oauth:grant-type:jwt-bearer",
+		TokenURL:                 tokenServer.URL,
+	}, zap.NewNop())
+	require.NoError(t, err)
+
+	rt, err := oauth2Authenticator.RoundTripper(http.DefaultTransport)
+	require.NoError(t, err)
+
+	client := &http.Client{Transport: rt}
+	for i := range 5 {
+		resp, err := client.Get(resourceServer.URL)
+		require.NoError(t, err, "request %d", i)
+		resp.Body.Close()
+	}
+
+	assert.Equal(t, 1, tokenRequests, "token endpoint should be called exactly once; token should be reused")
+}
+
+func TestGRPCClientTokenReuse(t *testing.T) {
+	var tokenRequests int
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		tokenRequests++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"access_token":"grpc-reused","token_type":"Bearer","expires_in":3600}`))
+	}))
+	defer tokenServer.Close()
+
+	oauth2Authenticator, err := newClientAuthenticator(&Config{
+		ClientID:     "testclient",
+		ClientSecret: "testsecret",
+		GrantType:    "client_credentials",
+		TokenURL:     tokenServer.URL,
+	}, zap.NewNop())
+	require.NoError(t, err)
+
+	creds, err := oauth2Authenticator.PerRPCCredentials()
+	require.NoError(t, err)
+
+	ctx := credentials.NewContextWithRequestInfo(t.Context(), credentials.RequestInfo{
+		AuthInfo: credentials.TLSInfo{CommonAuthInfo: credentials.CommonAuthInfo{SecurityLevel: credentials.PrivacyAndIntegrity}},
+	})
+
+	for i := range 5 {
+		md, err := creds.GetRequestMetadata(ctx)
+		require.NoError(t, err, "request %d", i)
+		assert.Equal(t, "Bearer grpc-reused", md["authorization"], "request %d", i)
+	}
+
+	assert.Equal(t, 1, tokenRequests, "token endpoint should be called exactly once; token should be reused")
+}
+
+func TestTokenMethodReuse(t *testing.T) {
+	var tokenRequests int
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		tokenRequests++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"access_token":"ctx-reused","token_type":"Bearer","expires_in":3600}`))
+	}))
+	defer tokenServer.Close()
+
+	oauth2Authenticator, err := newClientAuthenticator(&Config{
+		ClientID:     "testclient",
+		ClientSecret: "testsecret",
+		GrantType:    "client_credentials",
+		TokenURL:     tokenServer.URL,
+	}, zap.NewNop())
+	require.NoError(t, err)
+
+	for i := range 5 {
+		tok, err := oauth2Authenticator.Token(t.Context())
+		require.NoError(t, err, "call %d", i)
+		assert.Equal(t, "ctx-reused", tok.AccessToken, "call %d", i)
+	}
+
+	assert.Equal(t, 1, tokenRequests, "token endpoint should be called exactly once; token should be reused")
+}
+
+func TestTokenExpiryBuffer(t *testing.T) {
+	t.Run("token_reused_when_expiry_exceeds_buffer", func(t *testing.T) {
+		var tokenRequests int
+		tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			tokenRequests++
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"access_token":"buffered","token_type":"Bearer","expires_in":3600}`))
+		}))
+		defer tokenServer.Close()
+
+		oauth2Authenticator, err := newClientAuthenticator(&Config{
+			ClientID:     "testclient",
+			ClientSecret: "testsecret",
+			GrantType:    "client_credentials",
+			TokenURL:     tokenServer.URL,
+			ExpiryBuffer: 5 * time.Minute,
+		}, zap.NewNop())
+		require.NoError(t, err)
+
+		for i := range 5 {
+			tok, err := oauth2Authenticator.Token(t.Context())
+			require.NoError(t, err, "call %d", i)
+			assert.Equal(t, "buffered", tok.AccessToken, "call %d", i)
+		}
+
+		assert.Equal(t, 1, tokenRequests,
+			"token with 1h lifetime and 5m buffer should be fetched once and reused")
+	})
+
+	t.Run("token_refreshed_when_expiry_within_buffer", func(t *testing.T) {
+		var tokenRequests int
+		tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			tokenRequests++
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintf(w, `{"access_token":"tok-%d","token_type":"Bearer","expires_in":10}`, tokenRequests)
+		}))
+		defer tokenServer.Close()
+
+		// Buffer equals the token lifetime, so every call
+		// should treat the cached token as expired and re-fetch.
+		oauth2Authenticator, err := newClientAuthenticator(&Config{
+			ClientID:     "testclient",
+			ClientSecret: "testsecret",
+			GrantType:    "client_credentials",
+			TokenURL:     tokenServer.URL,
+			ExpiryBuffer: 10 * time.Second,
+		}, zap.NewNop())
+		require.NoError(t, err)
+
+		for i := range 3 {
+			tok, err := oauth2Authenticator.Token(t.Context())
+			require.NoError(t, err, "call %d", i)
+			assert.Equal(t, fmt.Sprintf("tok-%d", i+1), tok.AccessToken, "call %d", i)
+		}
+
+		assert.Equal(t, 3, tokenRequests,
+			"token with 2s lifetime and 10s buffer should be re-fetched every call")
+	})
+}
+
+func TestClientCredentials(t *testing.T) {
+	resourceServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		if auth != "Bearer ok" {
+			t.Errorf("unexpected Authorization header: %q", auth)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("success"))
+	}))
+	defer resourceServer.Close()
+
+	var tokenRequests int
+	var tokenRequest *http.Request
+	var tokenRequestForm url.Values
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tokenRequests++
+		if err := r.ParseForm(); err != nil {
+			panic(err)
+		}
+		tokenRequest = r
+		tokenRequestForm = r.PostForm
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"access_token":"ok","token_type":"Bearer"}`))
+	}))
+	defer tokenServer.Close()
+
+	cfg := &Config{
+		ClientID:     "test-client-id",
+		ClientSecret: "test-client-secret",
+		GrantType:    "client_credentials",
+		TokenURL:     tokenServer.URL,
+		Scopes:       []string{"scope1"},
+	}
+	oauth2Authenticator, err := newClientAuthenticator(cfg, zap.NewNop())
+	require.NoError(t, err)
+
+	roundTripper, err := oauth2Authenticator.RoundTripper(http.DefaultTransport)
+	require.NoError(t, err)
+
+	client := &http.Client{Transport: roundTripper}
+	resp, err := client.Get(resourceServer.URL)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	// Token endpoint must have been called with client_credentials flow
+	require.Equal(t, 1, tokenRequests, "token endpoint should have been called once")
+
+	// client-credentials will first attempt with client ID and secret in the
+	// Authorization header, and if that fails it will fall back to passing them
+	// as form values. We just check the first here.
+	assert.Equal(t, url.Values{
+		"grant_type": []string{"client_credentials"},
+		"scope":      []string{"scope1"},
+	}, tokenRequestForm)
+
+	username, password, ok := tokenRequest.BasicAuth()
+	require.True(t, ok)
+	assert.Equal(t, "test-client-id", username)
+	assert.Equal(t, "test-client-secret", password)
+}
+
+func TestJwtOAuth(t *testing.T) {
+	tokenTS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Helper()
+
+		auth := r.Header.Get("Authorization")
+		if auth == "" {
+			assert.NoErrorf(t, r.ParseForm(), "Failed to parse form")
+			auth = r.FormValue("assertion")
+		}
+
+		jwtParts := strings.Split(auth, ".")
+		assert.Lenf(t, jwtParts, 3, "Expected JWT to have 3 parts, got %d", len(jwtParts))
+
+		// Decode the JWT payload.
+		payload, err := base64.RawURLEncoding.DecodeString(jwtParts[1])
+		assert.NoErrorf(t, err, "Failed to decode JWT payload: %v", err)
+
+		var jwt struct {
+			Aud     string `json:"aud"`
+			Scope   string `json:"scope"`
+			Sub     string `json:"sub"`
+			Iss     string `json:"iss"`
+			Integer int    `json:"integer"`
+		}
+
+		err = json.Unmarshal(payload, &jwt)
+		assert.NoErrorf(t, err, "Failed to unmarshal JWT payload: %v", err)
+
+		assert.Equalf(t, "common-test", jwt.Aud, "Expected aud to be 'common-test', got '%s'", jwt.Aud)
+		assert.Equalf(t, "A B", jwt.Scope, "Expected scope to be 'A B', got '%s'", jwt.Scope)
+		assert.Equalf(t, "common", jwt.Sub, "Expected sub to be 'common', got '%s'", jwt.Sub)
+		assert.Equalf(t, "https://example.com", jwt.Iss, "Expected iss to be 'https://example.com', got '%s'", jwt.Iss)
+		assert.Equalf(t, 1, jwt.Integer, "Expected integer to be 1, got '%d'", jwt.Integer)
+
+		w.Header().Add("Content-Type", "application/json")
+
+		type oauth2TestServerResponse struct {
+			AccessToken string `json:"access_token"`
+			TokenType   string `json:"token_type"`
+		}
+		res, _ := json.Marshal(oauth2TestServerResponse{
+			AccessToken: "12345",
+			TokenType:   "Bearer",
+		})
+		w.Header().Add("Content-Type", "application/json")
+		_, _ = w.Write(res)
+	}))
+	defer tokenTS.Close()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		assert.Equalf(t, "Bearer 12345", auth, "bad auth, expected %s, got %s", "Bearer 12345", auth)
+		fmt.Fprintln(w, "Hello, client")
+	}))
+	defer ts.Close()
+
+	serverURL, err := url.Parse(tokenTS.URL)
+	require.NoError(t, err)
+
+	oauth2Authenticator, err := newClientAuthenticator(&Config{
+		ClientID:                 "1",
+		ClientCertificateKeyFile: "testdata/client.key",
+		GrantType:                "urn:ietf:params:oauth:grant-type:jwt-bearer",
+		Scopes:                   []string{"A", "B"},
+		TokenURL:                 serverURL.String(),
+		Claims: map[string]any{
+			"iss":     "https://example.com",
+			"aud":     "common-test",
+			"sub":     "common",
+			"integer": 1,
+		},
+		EndpointParams: url.Values{"hi": []string{"hello"}},
+	}, zap.NewNop())
+	require.NoError(t, err)
+
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	baseRoundTripper := http.RoundTripper(transport)
+	roundTripper, err := oauth2Authenticator.RoundTripper(baseRoundTripper)
+	require.NoError(t, err)
+
+	client := &http.Client{
+		Transport: roundTripper,
+	}
+
+	req, err := http.NewRequest(http.MethodPost, ts.URL, http.NoBody)
+	require.NoError(t, err)
+	_, err = client.Do(req)
+	assert.NoError(t, err)
 }

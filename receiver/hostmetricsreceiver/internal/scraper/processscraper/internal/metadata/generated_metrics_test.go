@@ -3,9 +3,12 @@
 package metadata
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
@@ -19,6 +22,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +39,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -59,57 +68,130 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := scrapertest.NewNopSettings(scrapertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
+			if tt.name == "all_set" {
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.EmitV1SystemConventions", true))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
+				})
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.EmitV1SystemConventions", true))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
+				})
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.EmitV1SystemConventions", true))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
+				})
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.EmitV1SystemConventions", true))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
+				})
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.EmitV1SystemConventions", true))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
+				})
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.EmitV1SystemConventions", true))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
+				})
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.EmitV1SystemConventions", true))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
+				})
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.EmitV1SystemConventions", true))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
+				})
+			}
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["process.context_switches"] = mb.metricProcessContextSwitches.config.AggregationStrategy
+			aggMap["process.cpu.time"] = mb.metricProcessCPUTime.config.AggregationStrategy
+			aggMap["process.cpu.utilization"] = mb.metricProcessCPUUtilization.config.AggregationStrategy
+			aggMap["process.disk.io"] = mb.metricProcessDiskIo.config.AggregationStrategy
+			aggMap["process.disk.operations"] = mb.metricProcessDiskOperations.config.AggregationStrategy
+			aggMap["process.paging.faults"] = mb.metricProcessPagingFaults.config.AggregationStrategy
+			aggMap["process.paging.faults@v1"] = mb.metricProcessPagingFaultsV1.config.AggregationStrategy
 
 			expectedWarnings := 0
-
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.name == "all_set" {
+				expectedWarnings++ // attributes differ
+				expectedWarnings++ // attributes differ
+				expectedWarnings++ // attributes differ
+				expectedWarnings++ // attributes differ
+				expectedWarnings++ // attributes differ
+			}
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
+			if tt.name != "all_set" {
 
-			allMetricsCount++
-			mb.RecordProcessContextSwitchesDataPoint(ts, 1, AttributeContextSwitchTypeInvoluntary)
+				allMetricsCount++
+				mb.RecordProcessContextSwitchesDataPoint(ts, 1, AttributeContextSwitchTypeInvoluntary, AttributeProcessContextSwitchTypeInvoluntary)
+			}
+			if tt.name != "all_set" {
+				defaultMetricsCount++
+				allMetricsCount++
+				mb.RecordProcessCPUTimeDataPoint(ts, 1, AttributeStateSystem, AttributeCPUModeSystem)
+			}
+			if tt.name != "all_set" {
 
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordProcessCPUTimeDataPoint(ts, 1, AttributeStateSystem)
-
-			allMetricsCount++
-			mb.RecordProcessCPUUtilizationDataPoint(ts, 1, AttributeStateSystem)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordProcessDiskIoDataPoint(ts, 1, AttributeDirectionRead)
+				allMetricsCount++
+				mb.RecordProcessCPUUtilizationDataPoint(ts, 1, AttributeStateSystem, AttributeCPUModeSystem)
+			}
+			if tt.name != "all_set" {
+				defaultMetricsCount++
+				allMetricsCount++
+				mb.RecordProcessDiskIoDataPoint(ts, 1, AttributeDirectionRead, AttributeDiskIoDirectionRead)
+			}
 
 			allMetricsCount++
 			mb.RecordProcessDiskOperationsDataPoint(ts, 1, AttributeDirectionRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordProcessDiskOperationsDataPoint(ts, 3, AttributeDirectionWrite)
+			}
+			if tt.name != "all_set" {
 
-			allMetricsCount++
-			mb.RecordProcessHandlesDataPoint(ts, 1)
-
+				allMetricsCount++
+				mb.RecordProcessHandlesDataPoint(ts, 1)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessMemoryUsageDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordProcessMemoryUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessMemoryVirtualDataPoint(ts, 1)
+			if tt.name != "all_set" {
 
-			allMetricsCount++
-			mb.RecordProcessOpenFileDescriptorsDataPoint(ts, 1)
+				allMetricsCount++
+				mb.RecordProcessOpenFileDescriptorsDataPoint(ts, 1)
+			}
+			if tt.name != "all_set" {
 
-			allMetricsCount++
-			mb.RecordProcessPagingFaultsDataPoint(ts, 1, AttributePagingFaultTypeMajor)
+				allMetricsCount++
+				mb.RecordProcessPagingFaultsDataPoint(ts, 1, AttributePagingFaultTypeMajor, AttributeSystemPagingFaultTypeMajor)
+			}
 
 			allMetricsCount++
 			mb.RecordProcessSignalsPendingDataPoint(ts, 1)
+			if tt.name != "all_set" {
 
-			allMetricsCount++
-			mb.RecordProcessThreadsDataPoint(ts, 1)
+				allMetricsCount++
+				mb.RecordProcessThreadsDataPoint(ts, 1)
+			}
 
 			allMetricsCount++
 			mb.RecordProcessUptimeDataPoint(ts, 1)
@@ -120,138 +202,101 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetProcessCommandLine("process.command_line-val")
 			rb.SetProcessExecutableName("process.executable.name-val")
 			rb.SetProcessExecutablePath("process.executable.path-val")
+			rb.SetProcessLinuxCgroup("process.linux.cgroup-val")
 			rb.SetProcessOwner("process.owner-val")
 			rb.SetProcessParentPid(18)
 			rb.SetProcessPid(11)
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricProcessContextSwitches.aggDataPoints)
+				assert.Empty(t, mb.metricProcessCPUTime.aggDataPoints)
+				assert.Empty(t, mb.metricProcessCPUUtilization.aggDataPoints)
+				assert.Empty(t, mb.metricProcessDiskIo.aggDataPoints)
+				assert.Empty(t, mb.metricProcessDiskOperations.aggDataPoints)
+				assert.Empty(t, mb.metricProcessPagingFaults.aggDataPoints)
+				assert.Empty(t, mb.metricProcessPagingFaultsV1.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
 
-			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-			rm := metrics.ResourceMetrics().At(0)
-			assert.Equal(t, res, rm.Resource())
-			assert.Equal(t, 1, rm.ScopeMetrics().Len())
-			ms := rm.ScopeMetrics().At(0).Metrics()
+			var allMetricsList []pmetric.Metric
+			totalMetricsCount := 0
+			for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+				rm := metrics.ResourceMetrics().At(ri)
+				assert.Equal(t, 1, rm.ScopeMetrics().Len())
+				ms := rm.ScopeMetrics().At(0).Metrics()
+				totalMetricsCount += ms.Len()
+				for mi := 0; mi < ms.Len(); mi++ {
+					allMetricsList = append(allMetricsList, ms.At(mi))
+				}
+			}
 			if tt.metricsSet == testDataSetDefault {
-				assert.Equal(t, defaultMetricsCount, ms.Len())
+				assert.Equal(t, defaultMetricsCount, totalMetricsCount)
 			}
 			if tt.metricsSet == testDataSetAll {
-				assert.Equal(t, allMetricsCount, ms.Len())
+				assert.Equal(t, allMetricsCount, totalMetricsCount)
 			}
 			validatedMetrics := make(map[string]bool)
-			for i := 0; i < ms.Len(); i++ {
-				switch ms.At(i).Name() {
-				case "process.context_switches":
-					assert.False(t, validatedMetrics["process.context_switches"], "Found a duplicate in the metrics slice: process.context_switches")
-					validatedMetrics["process.context_switches"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of times the process has been context switched.", ms.At(i).Description())
-					assert.Equal(t, "{count}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "involuntary", attrVal.Str())
-				case "process.cpu.time":
-					assert.False(t, validatedMetrics["process.cpu.time"], "Found a duplicate in the metrics slice: process.cpu.time")
-					validatedMetrics["process.cpu.time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total CPU seconds broken down by different states.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.Equal(t, "system", attrVal.Str())
-				case "process.cpu.utilization":
-					assert.False(t, validatedMetrics["process.cpu.utilization"], "Found a duplicate in the metrics slice: process.cpu.utilization")
-					validatedMetrics["process.cpu.utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Percentage of total CPU time used by the process since last scrape, expressed as a value between 0 and 1. On the first scrape, no data point is emitted for this metric.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.Equal(t, "system", attrVal.Str())
-				case "process.disk.io":
-					assert.False(t, validatedMetrics["process.disk.io"], "Found a duplicate in the metrics slice: process.disk.io")
-					validatedMetrics["process.disk.io"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Disk bytes transferred.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+			for _, mi := range allMetricsList {
+				switch mi.Name() {
 				case "process.disk.operations":
-					assert.False(t, validatedMetrics["process.disk.operations"], "Found a duplicate in the metrics slice: process.disk.operations")
-					validatedMetrics["process.disk.operations"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of disk operations performed by the process.", ms.At(i).Description())
-					assert.Equal(t, "{operations}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
-				case "process.handles":
-					assert.False(t, validatedMetrics["process.handles"], "Found a duplicate in the metrics slice: process.handles")
-					validatedMetrics["process.handles"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of open handles held by the process.", ms.At(i).Description())
-					assert.Equal(t, "{count}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["process.disk.operations"], "Found a duplicate in the metrics slice: process.disk.operations")
+						validatedMetrics["process.disk.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of disk operations performed by the process.", mi.Description())
+						assert.Equal(t, "{operations}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", directionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["process.disk.operations"], "Found a duplicate in the metrics slice: process.disk.operations")
+						validatedMetrics["process.disk.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of disk operations performed by the process.", mi.Description())
+						assert.Equal(t, "{operations}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["process.disk.operations"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "process.memory.usage":
 					assert.False(t, validatedMetrics["process.memory.usage"], "Found a duplicate in the metrics slice: process.memory.usage")
 					validatedMetrics["process.memory.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of physical memory in use.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of physical memory in use.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -259,11 +304,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.memory.utilization":
 					assert.False(t, validatedMetrics["process.memory.utilization"], "Found a duplicate in the metrics slice: process.memory.utilization")
 					validatedMetrics["process.memory.utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Percentage of total physical memory that is used by the process.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Percentage of total physical memory that is used by the process.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -271,72 +316,27 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.memory.virtual":
 					assert.False(t, validatedMetrics["process.memory.virtual"], "Found a duplicate in the metrics slice: process.memory.virtual")
 					validatedMetrics["process.memory.virtual"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Virtual memory size.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of committed virtual memory.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "process.open_file_descriptors":
-					assert.False(t, validatedMetrics["process.open_file_descriptors"], "Found a duplicate in the metrics slice: process.open_file_descriptors")
-					validatedMetrics["process.open_file_descriptors"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of file descriptors in use by the process.", ms.At(i).Description())
-					assert.Equal(t, "{count}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "process.paging.faults":
-					assert.False(t, validatedMetrics["process.paging.faults"], "Found a duplicate in the metrics slice: process.paging.faults")
-					validatedMetrics["process.paging.faults"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of page faults the process has made.", ms.At(i).Description())
-					assert.Equal(t, "{faults}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "major", attrVal.Str())
 				case "process.signals_pending":
 					assert.False(t, validatedMetrics["process.signals_pending"], "Found a duplicate in the metrics slice: process.signals_pending")
 					validatedMetrics["process.signals_pending"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of pending signals for the process.", ms.At(i).Description())
-					assert.Equal(t, "{signals}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "process.threads":
-					assert.False(t, validatedMetrics["process.threads"], "Found a duplicate in the metrics slice: process.threads")
-					validatedMetrics["process.threads"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Process threads count.", ms.At(i).Description())
-					assert.Equal(t, "{threads}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of pending signals for the process.", mi.Description())
+					assert.Equal(t, "{signals}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -344,11 +344,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.uptime":
 					assert.False(t, validatedMetrics["process.uptime"], "Found a duplicate in the metrics slice: process.uptime")
 					validatedMetrics["process.uptime"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The time the process has been running.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The time the process has been running.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -357,4 +357,681 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 		})
 	}
+}
+func TestVersionedMetrics(t *testing.T) {
+	t.Run("process.context_switches", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+			expectLegacyAttrs  bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+				expectLegacyAttrs:  true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+				expectLegacyAttrs:  false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.DontEmitV0SystemConventions", tt.disableOld))
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.EmitV1SystemConventions", tt.enableNew))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("scraper.process.DontEmitV0SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
+				})
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				settings := scrapertest.NewNopSettings(scrapertest.NopType)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordProcessContextSwitchesDataPoint(ts, 1, AttributeContextSwitchTypeInvoluntary, AttributeProcessContextSwitchTypeInvoluntary)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Same emitted name, same type - distinguish by attributes
+						if m.Name() == "process.context_switches" {
+							dp := m.Sum().DataPoints().At(0)
+							_, hasNewAttr := dp.Attributes().Get("process.context_switch.type")
+							if hasNewAttr && m.Unit() == "{context_switch}" {
+								// Has v1-specific attribute - this is the new metric
+								newFound = true
+								if tt.expectLegacyAttrs {
+									_, hasContextSwitchType := dp.Attributes().Get("type")
+									assert.True(t, hasContextSwitchType, "expected legacy attr context_switch_type")
+								}
+							} else {
+								// No v1-specific attribute - this is the legacy metric
+								legacyFound = true
+							}
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+			})
+		}
+	})
+	t.Run("process.cpu.time", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+			expectLegacyAttrs  bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+				expectLegacyAttrs:  true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+				expectLegacyAttrs:  false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.DontEmitV0SystemConventions", tt.disableOld))
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.EmitV1SystemConventions", tt.enableNew))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("scraper.process.DontEmitV0SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
+				})
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				settings := scrapertest.NewNopSettings(scrapertest.NopType)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordProcessCPUTimeDataPoint(ts, 1, AttributeStateSystem, AttributeCPUModeSystem)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Same emitted name, same type - distinguish by attributes
+						if m.Name() == "process.cpu.time" {
+							dp := m.Sum().DataPoints().At(0)
+							_, hasNewAttr := dp.Attributes().Get("cpu.mode")
+							if hasNewAttr && m.Unit() == "s" {
+								// Has v1-specific attribute - this is the new metric
+								newFound = true
+								if tt.expectLegacyAttrs {
+									_, hasState := dp.Attributes().Get("state")
+									assert.True(t, hasState, "expected legacy attr state")
+								}
+							} else {
+								// No v1-specific attribute - this is the legacy metric
+								legacyFound = true
+							}
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+			})
+		}
+	})
+	t.Run("process.cpu.utilization", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+			expectLegacyAttrs  bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+				expectLegacyAttrs:  true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+				expectLegacyAttrs:  false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.DontEmitV0SystemConventions", tt.disableOld))
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.EmitV1SystemConventions", tt.enableNew))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("scraper.process.DontEmitV0SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
+				})
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				settings := scrapertest.NewNopSettings(scrapertest.NopType)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordProcessCPUUtilizationDataPoint(ts, 1, AttributeStateSystem, AttributeCPUModeSystem)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Same emitted name, same type - distinguish by attributes
+						if m.Name() == "process.cpu.utilization" {
+							dp := m.Gauge().DataPoints().At(0)
+							_, hasNewAttr := dp.Attributes().Get("cpu.mode")
+							if hasNewAttr && m.Unit() == "1" {
+								// Has v1-specific attribute - this is the new metric
+								newFound = true
+								if tt.expectLegacyAttrs {
+									_, hasState := dp.Attributes().Get("state")
+									assert.True(t, hasState, "expected legacy attr state")
+								}
+							} else {
+								// No v1-specific attribute - this is the legacy metric
+								legacyFound = true
+							}
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+			})
+		}
+	})
+	t.Run("process.disk.io", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+			expectLegacyAttrs  bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+				expectLegacyAttrs:  true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+				expectLegacyAttrs:  false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.DontEmitV0SystemConventions", tt.disableOld))
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.EmitV1SystemConventions", tt.enableNew))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("scraper.process.DontEmitV0SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
+				})
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				settings := scrapertest.NewNopSettings(scrapertest.NopType)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordProcessDiskIoDataPoint(ts, 1, AttributeDirectionRead, AttributeDiskIoDirectionRead)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Same emitted name, same type - distinguish by attributes
+						if m.Name() == "process.disk.io" {
+							dp := m.Sum().DataPoints().At(0)
+							_, hasNewAttr := dp.Attributes().Get("disk.io.direction")
+							if hasNewAttr && m.Unit() == "By" {
+								// Has v1-specific attribute - this is the new metric
+								newFound = true
+								if tt.expectLegacyAttrs {
+									_, hasDirection := dp.Attributes().Get("direction")
+									assert.True(t, hasDirection, "expected legacy attr direction")
+								}
+							} else {
+								// No v1-specific attribute - this is the legacy metric
+								legacyFound = true
+							}
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+			})
+		}
+	})
+	t.Run("process.handles", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: true,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.DontEmitV0SystemConventions", tt.disableOld))
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.EmitV1SystemConventions", tt.enableNew))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("scraper.process.DontEmitV0SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
+				})
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+				settings := scrapertest.NewNopSettings(scrapertest.NopType)
+				settings.Logger = zap.New(observedZapCore)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordProcessHandlesDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Different emitted names - distinguish by name
+						if m.Name() == "process.handles" {
+							legacyFound = true
+						}
+						if m.Name() == "process.windows.handle.count" {
+							newFound = true
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+				// For metrics with different emitted names, no collison warning shoulds be logged
+				// This guards against the regression where same name collision logic was
+				// incorrectly applied to renamed metrics.
+				if tt.enableNew {
+					for _, log := range observedLogs.All() {
+						if strings.Contains(log.Message, "process.handles") {
+							assert.NotContains(t, log.Message, "same emitted name",
+								"should not log same name collision warning for metrics with different names")
+						}
+					}
+				}
+			})
+		}
+	})
+	t.Run("process.open_file_descriptors", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: true,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.DontEmitV0SystemConventions", tt.disableOld))
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.EmitV1SystemConventions", tt.enableNew))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("scraper.process.DontEmitV0SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
+				})
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+				settings := scrapertest.NewNopSettings(scrapertest.NopType)
+				settings.Logger = zap.New(observedZapCore)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordProcessOpenFileDescriptorsDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Different emitted names - distinguish by name
+						if m.Name() == "process.open_file_descriptors" {
+							legacyFound = true
+						}
+						if m.Name() == "process.unix.file_descriptor.count" {
+							newFound = true
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+				// For metrics with different emitted names, no collison warning shoulds be logged
+				// This guards against the regression where same name collision logic was
+				// incorrectly applied to renamed metrics.
+				if tt.enableNew {
+					for _, log := range observedLogs.All() {
+						if strings.Contains(log.Message, "process.open_file_descriptors") {
+							assert.NotContains(t, log.Message, "same emitted name",
+								"should not log same name collision warning for metrics with different names")
+						}
+					}
+				}
+			})
+		}
+	})
+	t.Run("process.paging.faults", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+			expectLegacyAttrs  bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+				expectLegacyAttrs:  true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+				expectLegacyAttrs:  false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.DontEmitV0SystemConventions", tt.disableOld))
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.EmitV1SystemConventions", tt.enableNew))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("scraper.process.DontEmitV0SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
+				})
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				settings := scrapertest.NewNopSettings(scrapertest.NopType)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordProcessPagingFaultsDataPoint(ts, 1, AttributePagingFaultTypeMajor, AttributeSystemPagingFaultTypeMajor)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Same emitted name, same type - distinguish by attributes
+						if m.Name() == "process.paging.faults" {
+							dp := m.Sum().DataPoints().At(0)
+							_, hasNewAttr := dp.Attributes().Get("system.paging.fault.type")
+							if hasNewAttr && m.Unit() == "{fault}" {
+								// Has v1-specific attribute - this is the new metric
+								newFound = true
+								if tt.expectLegacyAttrs {
+									_, hasPagingFaultType := dp.Attributes().Get("type")
+									assert.True(t, hasPagingFaultType, "expected legacy attr paging_fault_type")
+								}
+							} else {
+								// No v1-specific attribute - this is the legacy metric
+								legacyFound = true
+							}
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+			})
+		}
+	})
+	t.Run("process.threads", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: true,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.DontEmitV0SystemConventions", tt.disableOld))
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"scraper.process.EmitV1SystemConventions", tt.enableNew))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("scraper.process.DontEmitV0SystemConventions", false)
+					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
+				})
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+				settings := scrapertest.NewNopSettings(scrapertest.NopType)
+				settings.Logger = zap.New(observedZapCore)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordProcessThreadsDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Different emitted names - distinguish by name
+						if m.Name() == "process.threads" {
+							legacyFound = true
+						}
+						if m.Name() == "process.thread.count" {
+							newFound = true
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+				// For metrics with different emitted names, no collison warning shoulds be logged
+				// This guards against the regression where same name collision logic was
+				// incorrectly applied to renamed metrics.
+				if tt.enableNew {
+					for _, log := range observedLogs.All() {
+						if strings.Contains(log.Message, "process.threads") {
+							assert.NotContains(t, log.Message, "same emitted name",
+								"should not log same name collision warning for metrics with different names")
+						}
+					}
+				}
+			})
+		}
+	})
 }

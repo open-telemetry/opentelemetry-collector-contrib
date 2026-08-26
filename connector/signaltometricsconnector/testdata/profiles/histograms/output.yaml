@@ -7,7 +7,7 @@ resourceMetrics:
         - key: resource.foo
           value:
             stringValue: foo
-        - key: signaltometrics.service.instance.id
+        - key: signal_to_metrics.service.instance.id
           value:
             stringValue: 627cc493-f310-47de-96bd-71410b7dec09
     scopeMetrics:
@@ -56,6 +56,7 @@ resourceMetrics:
                     - 100
                     - 200
                   sum: 0
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
             name: profiles.foo.histogram
         scope:
@@ -65,7 +66,7 @@ resourceMetrics:
         - key: resource.foo
           value:
             stringValue: foo
-        - key: signaltometrics.service.instance.id
+        - key: signal_to_metrics.service.instance.id
           value:
             stringValue: 627cc493-f310-47de-96bd-71410b7dec09
     scopeMetrics:
@@ -89,6 +90,7 @@ resourceMetrics:
                     - 100
                     - 200
                   sum: 0
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
             name: total.profiles.resource.foo.histogram
         scope:

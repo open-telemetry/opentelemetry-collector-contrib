@@ -14,6 +14,7 @@ func TestResourceBuilder(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
 			rb.SetCloudAvailabilityZone("cloud.availability_zone-val")
+			rb.SetCloudPlatform("cloud.platform-val")
 			rb.SetCloudProvider("cloud.provider-val")
 			rb.SetCloudRegion("cloud.region-val")
 			rb.SetHostID("host.id-val")
@@ -26,38 +27,42 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 5, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 5, res.Attributes().Len())
+				assert.Equal(t, 6, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("cloud.availability_zone")
+			cloudAvailabilityZoneAttrVal, ok := res.Attributes().Get("cloud.availability_zone")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.availability_zone-val", val.Str())
+				assert.Equal(t, "cloud.availability_zone-val", cloudAvailabilityZoneAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("cloud.provider")
-			assert.True(t, ok)
+			cloudPlatformAttrVal, ok := res.Attributes().Get("cloud.platform")
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "cloud.provider-val", val.Str())
+				assert.Equal(t, "cloud.platform-val", cloudPlatformAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("cloud.region")
+			cloudProviderAttrVal, ok := res.Attributes().Get("cloud.provider")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.region-val", val.Str())
+				assert.Equal(t, "cloud.provider-val", cloudProviderAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("host.id")
+			cloudRegionAttrVal, ok := res.Attributes().Get("cloud.region")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "host.id-val", val.Str())
+				assert.Equal(t, "cloud.region-val", cloudRegionAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("host.name")
+			hostIDAttrVal, ok := res.Attributes().Get("host.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "host.name-val", val.Str())
+				assert.Equal(t, "host.id-val", hostIDAttrVal.Str())
+			}
+			hostNameAttrVal, ok := res.Attributes().Get("host.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "host.name-val", hostNameAttrVal.Str())
 			}
 		})
 	}

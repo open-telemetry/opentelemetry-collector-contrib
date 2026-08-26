@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -34,11 +35,47 @@ func Test_Unix(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := Unix(tt.seconds, tt.nanoseconds)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			want := time.Unix(tt.expected, 0)
 			assert.Equal(t, want, result)
 		})
 	}
+}
+
+func Test_UnixFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewUnixFactory[any]()
+		assert.Equal(t, "Unix", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewUnixFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &UnixArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Seconds", "Nanoseconds"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewUnixFactory[any]()
+		args := factory.CreateDefaultArguments()
+		unixArgs, ok := args.(*UnixArguments[any])
+		require.True(t, ok)
+		unixArgs.Seconds = &ottl.StandardIntGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return int64(1672531200), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createUnixFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "UnixFactory args must be of type *UnixArguments[K]")
+	})
 }

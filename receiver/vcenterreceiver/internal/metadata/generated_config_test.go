@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -21,83 +20,301 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					VcenterClusterCPUEffective:          MetricConfig{Enabled: true},
-					VcenterClusterCPULimit:              MetricConfig{Enabled: true},
-					VcenterClusterHostCount:             MetricConfig{Enabled: true},
-					VcenterClusterMemoryEffective:       MetricConfig{Enabled: true},
-					VcenterClusterMemoryLimit:           MetricConfig{Enabled: true},
-					VcenterClusterVMCount:               MetricConfig{Enabled: true},
-					VcenterClusterVMTemplateCount:       MetricConfig{Enabled: true},
-					VcenterClusterVsanCongestions:       MetricConfig{Enabled: true},
-					VcenterClusterVsanLatencyAvg:        MetricConfig{Enabled: true},
-					VcenterClusterVsanOperations:        MetricConfig{Enabled: true},
-					VcenterClusterVsanThroughput:        MetricConfig{Enabled: true},
-					VcenterDatacenterClusterCount:       MetricConfig{Enabled: true},
-					VcenterDatacenterCPULimit:           MetricConfig{Enabled: true},
-					VcenterDatacenterDatastoreCount:     MetricConfig{Enabled: true},
-					VcenterDatacenterDiskSpace:          MetricConfig{Enabled: true},
-					VcenterDatacenterHostCount:          MetricConfig{Enabled: true},
-					VcenterDatacenterMemoryLimit:        MetricConfig{Enabled: true},
-					VcenterDatacenterVMCount:            MetricConfig{Enabled: true},
-					VcenterDatastoreDiskUsage:           MetricConfig{Enabled: true},
-					VcenterDatastoreDiskUtilization:     MetricConfig{Enabled: true},
-					VcenterHostCPUCapacity:              MetricConfig{Enabled: true},
-					VcenterHostCPUReserved:              MetricConfig{Enabled: true},
-					VcenterHostCPUUsage:                 MetricConfig{Enabled: true},
-					VcenterHostCPUUtilization:           MetricConfig{Enabled: true},
-					VcenterHostDiskLatencyAvg:           MetricConfig{Enabled: true},
-					VcenterHostDiskLatencyMax:           MetricConfig{Enabled: true},
-					VcenterHostDiskThroughput:           MetricConfig{Enabled: true},
-					VcenterHostMemoryCapacity:           MetricConfig{Enabled: true},
-					VcenterHostMemoryUsage:              MetricConfig{Enabled: true},
-					VcenterHostMemoryUtilization:        MetricConfig{Enabled: true},
-					VcenterHostNetworkPacketDropRate:    MetricConfig{Enabled: true},
-					VcenterHostNetworkPacketErrorRate:   MetricConfig{Enabled: true},
-					VcenterHostNetworkPacketRate:        MetricConfig{Enabled: true},
-					VcenterHostNetworkThroughput:        MetricConfig{Enabled: true},
-					VcenterHostNetworkUsage:             MetricConfig{Enabled: true},
-					VcenterHostVsanCacheHitRate:         MetricConfig{Enabled: true},
-					VcenterHostVsanCongestions:          MetricConfig{Enabled: true},
-					VcenterHostVsanLatencyAvg:           MetricConfig{Enabled: true},
-					VcenterHostVsanOperations:           MetricConfig{Enabled: true},
-					VcenterHostVsanThroughput:           MetricConfig{Enabled: true},
-					VcenterResourcePoolCPUShares:        MetricConfig{Enabled: true},
-					VcenterResourcePoolCPUUsage:         MetricConfig{Enabled: true},
-					VcenterResourcePoolMemoryBallooned:  MetricConfig{Enabled: true},
-					VcenterResourcePoolMemoryGranted:    MetricConfig{Enabled: true},
-					VcenterResourcePoolMemoryShares:     MetricConfig{Enabled: true},
-					VcenterResourcePoolMemorySwapped:    MetricConfig{Enabled: true},
-					VcenterResourcePoolMemoryUsage:      MetricConfig{Enabled: true},
-					VcenterVMCPUReadiness:               MetricConfig{Enabled: true},
-					VcenterVMCPUTime:                    MetricConfig{Enabled: true},
-					VcenterVMCPUUsage:                   MetricConfig{Enabled: true},
-					VcenterVMCPUUtilization:             MetricConfig{Enabled: true},
-					VcenterVMDiskLatencyAvg:             MetricConfig{Enabled: true},
-					VcenterVMDiskLatencyMax:             MetricConfig{Enabled: true},
-					VcenterVMDiskThroughput:             MetricConfig{Enabled: true},
-					VcenterVMDiskUsage:                  MetricConfig{Enabled: true},
-					VcenterVMDiskUtilization:            MetricConfig{Enabled: true},
-					VcenterVMMemoryBallooned:            MetricConfig{Enabled: true},
-					VcenterVMMemoryGranted:              MetricConfig{Enabled: true},
-					VcenterVMMemorySwapped:              MetricConfig{Enabled: true},
-					VcenterVMMemorySwappedSsd:           MetricConfig{Enabled: true},
-					VcenterVMMemoryUsage:                MetricConfig{Enabled: true},
-					VcenterVMMemoryUtilization:          MetricConfig{Enabled: true},
-					VcenterVMNetworkBroadcastPacketRate: MetricConfig{Enabled: true},
-					VcenterVMNetworkMulticastPacketRate: MetricConfig{Enabled: true},
-					VcenterVMNetworkPacketDropRate:      MetricConfig{Enabled: true},
-					VcenterVMNetworkPacketRate:          MetricConfig{Enabled: true},
-					VcenterVMNetworkThroughput:          MetricConfig{Enabled: true},
-					VcenterVMNetworkUsage:               MetricConfig{Enabled: true},
-					VcenterVMVsanLatencyAvg:             MetricConfig{Enabled: true},
-					VcenterVMVsanOperations:             MetricConfig{Enabled: true},
-					VcenterVMVsanThroughput:             MetricConfig{Enabled: true},
+					VcenterClusterCPUEffective: VcenterClusterCPUEffectiveMetricConfig{
+						Enabled: true,
+					},
+					VcenterClusterCPULimit: VcenterClusterCPULimitMetricConfig{
+						Enabled: true,
+					},
+					VcenterClusterHostCount: VcenterClusterHostCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterClusterHostCountMetricAttributeKey{VcenterClusterHostCountMetricAttributeKeyHostEffective},
+					},
+					VcenterClusterMemoryEffective: VcenterClusterMemoryEffectiveMetricConfig{
+						Enabled: true,
+					},
+					VcenterClusterMemoryLimit: VcenterClusterMemoryLimitMetricConfig{
+						Enabled: true,
+					},
+					VcenterClusterVMCount: VcenterClusterVMCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterClusterVMCountMetricAttributeKey{VcenterClusterVMCountMetricAttributeKeyVMCountPowerState},
+					},
+					VcenterClusterVMTemplateCount: VcenterClusterVMTemplateCountMetricConfig{
+						Enabled: true,
+					},
+					VcenterClusterVsanCongestions: VcenterClusterVsanCongestionsMetricConfig{
+						Enabled: true,
+					},
+					VcenterClusterVsanLatencyAvg: VcenterClusterVsanLatencyAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterClusterVsanLatencyAvgMetricAttributeKey{VcenterClusterVsanLatencyAvgMetricAttributeKeyVsanLatencyType},
+					},
+					VcenterClusterVsanOperations: VcenterClusterVsanOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterClusterVsanOperationsMetricAttributeKey{VcenterClusterVsanOperationsMetricAttributeKeyVsanOperationType},
+					},
+					VcenterClusterVsanThroughput: VcenterClusterVsanThroughputMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterClusterVsanThroughputMetricAttributeKey{VcenterClusterVsanThroughputMetricAttributeKeyVsanThroughputDirection},
+					},
+					VcenterDatacenterClusterCount: VcenterDatacenterClusterCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterDatacenterClusterCountMetricAttributeKey{VcenterDatacenterClusterCountMetricAttributeKeyEntityStatus},
+					},
+					VcenterDatacenterCPULimit: VcenterDatacenterCPULimitMetricConfig{
+						Enabled: true,
+					},
+					VcenterDatacenterDatastoreCount: VcenterDatacenterDatastoreCountMetricConfig{
+						Enabled: true,
+					},
+					VcenterDatacenterDiskSpace: VcenterDatacenterDiskSpaceMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterDatacenterDiskSpaceMetricAttributeKey{VcenterDatacenterDiskSpaceMetricAttributeKeyDiskState},
+					},
+					VcenterDatacenterHostCount: VcenterDatacenterHostCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterDatacenterHostCountMetricAttributeKey{VcenterDatacenterHostCountMetricAttributeKeyEntityStatus, VcenterDatacenterHostCountMetricAttributeKeyHostPowerState},
+					},
+					VcenterDatacenterMemoryLimit: VcenterDatacenterMemoryLimitMetricConfig{
+						Enabled: true,
+					},
+					VcenterDatacenterVMCount: VcenterDatacenterVMCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterDatacenterVMCountMetricAttributeKey{VcenterDatacenterVMCountMetricAttributeKeyEntityStatus, VcenterDatacenterVMCountMetricAttributeKeyVMCountPowerState},
+					},
+					VcenterDatastoreDiskUsage: VcenterDatastoreDiskUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterDatastoreDiskUsageMetricAttributeKey{VcenterDatastoreDiskUsageMetricAttributeKeyDiskState},
+					},
+					VcenterDatastoreDiskUtilization: VcenterDatastoreDiskUtilizationMetricConfig{
+						Enabled: true,
+					},
+					VcenterHostCPUCapacity: VcenterHostCPUCapacityMetricConfig{
+						Enabled: true,
+					},
+					VcenterHostCPUReserved: VcenterHostCPUReservedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterHostCPUReservedMetricAttributeKey{VcenterHostCPUReservedMetricAttributeKeyCPUReservationType},
+					},
+					VcenterHostCPUUsage: VcenterHostCPUUsageMetricConfig{
+						Enabled: true,
+					},
+					VcenterHostCPUUtilization: VcenterHostCPUUtilizationMetricConfig{
+						Enabled: true,
+					},
+					VcenterHostDiskLatencyAvg: VcenterHostDiskLatencyAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterHostDiskLatencyAvgMetricAttributeKey{VcenterHostDiskLatencyAvgMetricAttributeKeyDiskDirection, VcenterHostDiskLatencyAvgMetricAttributeKeyObjectName},
+					},
+					VcenterHostDiskLatencyMax: VcenterHostDiskLatencyMaxMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterHostDiskLatencyMaxMetricAttributeKey{VcenterHostDiskLatencyMaxMetricAttributeKeyObjectName},
+					},
+					VcenterHostDiskThroughput: VcenterHostDiskThroughputMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterHostDiskThroughputMetricAttributeKey{VcenterHostDiskThroughputMetricAttributeKeyDiskDirection, VcenterHostDiskThroughputMetricAttributeKeyObjectName},
+					},
+					VcenterHostMemoryCapacity: VcenterHostMemoryCapacityMetricConfig{
+						Enabled: true,
+					},
+					VcenterHostMemoryUsage: VcenterHostMemoryUsageMetricConfig{
+						Enabled: true,
+					},
+					VcenterHostMemoryUtilization: VcenterHostMemoryUtilizationMetricConfig{
+						Enabled: true,
+					},
+					VcenterHostNetworkPacketDropRate: VcenterHostNetworkPacketDropRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterHostNetworkPacketDropRateMetricAttributeKey{VcenterHostNetworkPacketDropRateMetricAttributeKeyThroughputDirection, VcenterHostNetworkPacketDropRateMetricAttributeKeyObjectName},
+					},
+					VcenterHostNetworkPacketErrorRate: VcenterHostNetworkPacketErrorRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterHostNetworkPacketErrorRateMetricAttributeKey{VcenterHostNetworkPacketErrorRateMetricAttributeKeyThroughputDirection, VcenterHostNetworkPacketErrorRateMetricAttributeKeyObjectName},
+					},
+					VcenterHostNetworkPacketRate: VcenterHostNetworkPacketRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterHostNetworkPacketRateMetricAttributeKey{VcenterHostNetworkPacketRateMetricAttributeKeyThroughputDirection, VcenterHostNetworkPacketRateMetricAttributeKeyObjectName},
+					},
+					VcenterHostNetworkThroughput: VcenterHostNetworkThroughputMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterHostNetworkThroughputMetricAttributeKey{VcenterHostNetworkThroughputMetricAttributeKeyThroughputDirection, VcenterHostNetworkThroughputMetricAttributeKeyObjectName},
+					},
+					VcenterHostNetworkUsage: VcenterHostNetworkUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterHostNetworkUsageMetricAttributeKey{VcenterHostNetworkUsageMetricAttributeKeyObjectName},
+					},
+					VcenterHostVsanCacheHitRate: VcenterHostVsanCacheHitRateMetricConfig{
+						Enabled: true,
+					},
+					VcenterHostVsanCongestions: VcenterHostVsanCongestionsMetricConfig{
+						Enabled: true,
+					},
+					VcenterHostVsanLatencyAvg: VcenterHostVsanLatencyAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterHostVsanLatencyAvgMetricAttributeKey{VcenterHostVsanLatencyAvgMetricAttributeKeyVsanLatencyType},
+					},
+					VcenterHostVsanOperations: VcenterHostVsanOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterHostVsanOperationsMetricAttributeKey{VcenterHostVsanOperationsMetricAttributeKeyVsanOperationType},
+					},
+					VcenterHostVsanThroughput: VcenterHostVsanThroughputMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterHostVsanThroughputMetricAttributeKey{VcenterHostVsanThroughputMetricAttributeKeyVsanThroughputDirection},
+					},
+					VcenterResourcePoolCPUShares: VcenterResourcePoolCPUSharesMetricConfig{
+						Enabled: true,
+					},
+					VcenterResourcePoolCPUUsage: VcenterResourcePoolCPUUsageMetricConfig{
+						Enabled: true,
+					},
+					VcenterResourcePoolMemoryBallooned: VcenterResourcePoolMemoryBalloonedMetricConfig{
+						Enabled: true,
+					},
+					VcenterResourcePoolMemoryGranted: VcenterResourcePoolMemoryGrantedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterResourcePoolMemoryGrantedMetricAttributeKey{VcenterResourcePoolMemoryGrantedMetricAttributeKeyMemoryGrantedType},
+					},
+					VcenterResourcePoolMemoryShares: VcenterResourcePoolMemorySharesMetricConfig{
+						Enabled: true,
+					},
+					VcenterResourcePoolMemorySwapped: VcenterResourcePoolMemorySwappedMetricConfig{
+						Enabled: true,
+					},
+					VcenterResourcePoolMemoryUsage: VcenterResourcePoolMemoryUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterResourcePoolMemoryUsageMetricAttributeKey{VcenterResourcePoolMemoryUsageMetricAttributeKeyMemoryUsageType},
+					},
+					VcenterVMCPUReadiness: VcenterVMCPUReadinessMetricConfig{
+						Enabled: true,
+					},
+					VcenterVMCPUTime: VcenterVMCPUTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMCPUTimeMetricAttributeKey{VcenterVMCPUTimeMetricAttributeKeyCPUState, VcenterVMCPUTimeMetricAttributeKeyObjectName},
+					},
+					VcenterVMCPUUsage: VcenterVMCPUUsageMetricConfig{
+						Enabled: true,
+					},
+					VcenterVMCPUUtilization: VcenterVMCPUUtilizationMetricConfig{
+						Enabled: true,
+					},
+					VcenterVMDiskLatencyAvg: VcenterVMDiskLatencyAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMDiskLatencyAvgMetricAttributeKey{VcenterVMDiskLatencyAvgMetricAttributeKeyDiskDirection, VcenterVMDiskLatencyAvgMetricAttributeKeyDiskType, VcenterVMDiskLatencyAvgMetricAttributeKeyObjectName},
+					},
+					VcenterVMDiskLatencyMax: VcenterVMDiskLatencyMaxMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMDiskLatencyMaxMetricAttributeKey{VcenterVMDiskLatencyMaxMetricAttributeKeyObjectName},
+					},
+					VcenterVMDiskThroughput: VcenterVMDiskThroughputMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMDiskThroughputMetricAttributeKey{VcenterVMDiskThroughputMetricAttributeKeyDiskDirection, VcenterVMDiskThroughputMetricAttributeKeyObjectName},
+					},
+					VcenterVMDiskUsage: VcenterVMDiskUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterVMDiskUsageMetricAttributeKey{VcenterVMDiskUsageMetricAttributeKeyDiskState},
+					},
+					VcenterVMDiskUtilization: VcenterVMDiskUtilizationMetricConfig{
+						Enabled: true,
+					},
+					VcenterVMMemoryBallooned: VcenterVMMemoryBalloonedMetricConfig{
+						Enabled: true,
+					},
+					VcenterVMMemoryGranted: VcenterVMMemoryGrantedMetricConfig{
+						Enabled: true,
+					},
+					VcenterVMMemorySwapped: VcenterVMMemorySwappedMetricConfig{
+						Enabled: true,
+					},
+					VcenterVMMemorySwappedSsd: VcenterVMMemorySwappedSsdMetricConfig{
+						Enabled: true,
+					},
+					VcenterVMMemoryUsage: VcenterVMMemoryUsageMetricConfig{
+						Enabled: true,
+					},
+					VcenterVMMemoryUtilization: VcenterVMMemoryUtilizationMetricConfig{
+						Enabled: true,
+					},
+					VcenterVMNetworkBroadcastPacketRate: VcenterVMNetworkBroadcastPacketRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMNetworkBroadcastPacketRateMetricAttributeKey{VcenterVMNetworkBroadcastPacketRateMetricAttributeKeyThroughputDirection, VcenterVMNetworkBroadcastPacketRateMetricAttributeKeyObjectName},
+					},
+					VcenterVMNetworkMulticastPacketRate: VcenterVMNetworkMulticastPacketRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMNetworkMulticastPacketRateMetricAttributeKey{VcenterVMNetworkMulticastPacketRateMetricAttributeKeyThroughputDirection, VcenterVMNetworkMulticastPacketRateMetricAttributeKeyObjectName},
+					},
+					VcenterVMNetworkPacketDropRate: VcenterVMNetworkPacketDropRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMNetworkPacketDropRateMetricAttributeKey{VcenterVMNetworkPacketDropRateMetricAttributeKeyThroughputDirection, VcenterVMNetworkPacketDropRateMetricAttributeKeyObjectName},
+					},
+					VcenterVMNetworkPacketRate: VcenterVMNetworkPacketRateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMNetworkPacketRateMetricAttributeKey{VcenterVMNetworkPacketRateMetricAttributeKeyThroughputDirection, VcenterVMNetworkPacketRateMetricAttributeKeyObjectName},
+					},
+					VcenterVMNetworkThroughput: VcenterVMNetworkThroughputMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterVMNetworkThroughputMetricAttributeKey{VcenterVMNetworkThroughputMetricAttributeKeyThroughputDirection, VcenterVMNetworkThroughputMetricAttributeKeyObjectName},
+					},
+					VcenterVMNetworkUsage: VcenterVMNetworkUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterVMNetworkUsageMetricAttributeKey{VcenterVMNetworkUsageMetricAttributeKeyObjectName},
+					},
+					VcenterVMVsanLatencyAvg: VcenterVMVsanLatencyAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMVsanLatencyAvgMetricAttributeKey{VcenterVMVsanLatencyAvgMetricAttributeKeyVsanLatencyType},
+					},
+					VcenterVMVsanOperations: VcenterVMVsanOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMVsanOperationsMetricAttributeKey{VcenterVMVsanOperationsMetricAttributeKeyVsanOperationType},
+					},
+					VcenterVMVsanThroughput: VcenterVMVsanThroughputMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMVsanThroughputMetricAttributeKey{VcenterVMVsanThroughputMetricAttributeKeyVsanThroughputDirection},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					VcenterClusterName:               ResourceAttributeConfig{Enabled: true},
@@ -119,77 +336,295 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					VcenterClusterCPUEffective:          MetricConfig{Enabled: false},
-					VcenterClusterCPULimit:              MetricConfig{Enabled: false},
-					VcenterClusterHostCount:             MetricConfig{Enabled: false},
-					VcenterClusterMemoryEffective:       MetricConfig{Enabled: false},
-					VcenterClusterMemoryLimit:           MetricConfig{Enabled: false},
-					VcenterClusterVMCount:               MetricConfig{Enabled: false},
-					VcenterClusterVMTemplateCount:       MetricConfig{Enabled: false},
-					VcenterClusterVsanCongestions:       MetricConfig{Enabled: false},
-					VcenterClusterVsanLatencyAvg:        MetricConfig{Enabled: false},
-					VcenterClusterVsanOperations:        MetricConfig{Enabled: false},
-					VcenterClusterVsanThroughput:        MetricConfig{Enabled: false},
-					VcenterDatacenterClusterCount:       MetricConfig{Enabled: false},
-					VcenterDatacenterCPULimit:           MetricConfig{Enabled: false},
-					VcenterDatacenterDatastoreCount:     MetricConfig{Enabled: false},
-					VcenterDatacenterDiskSpace:          MetricConfig{Enabled: false},
-					VcenterDatacenterHostCount:          MetricConfig{Enabled: false},
-					VcenterDatacenterMemoryLimit:        MetricConfig{Enabled: false},
-					VcenterDatacenterVMCount:            MetricConfig{Enabled: false},
-					VcenterDatastoreDiskUsage:           MetricConfig{Enabled: false},
-					VcenterDatastoreDiskUtilization:     MetricConfig{Enabled: false},
-					VcenterHostCPUCapacity:              MetricConfig{Enabled: false},
-					VcenterHostCPUReserved:              MetricConfig{Enabled: false},
-					VcenterHostCPUUsage:                 MetricConfig{Enabled: false},
-					VcenterHostCPUUtilization:           MetricConfig{Enabled: false},
-					VcenterHostDiskLatencyAvg:           MetricConfig{Enabled: false},
-					VcenterHostDiskLatencyMax:           MetricConfig{Enabled: false},
-					VcenterHostDiskThroughput:           MetricConfig{Enabled: false},
-					VcenterHostMemoryCapacity:           MetricConfig{Enabled: false},
-					VcenterHostMemoryUsage:              MetricConfig{Enabled: false},
-					VcenterHostMemoryUtilization:        MetricConfig{Enabled: false},
-					VcenterHostNetworkPacketDropRate:    MetricConfig{Enabled: false},
-					VcenterHostNetworkPacketErrorRate:   MetricConfig{Enabled: false},
-					VcenterHostNetworkPacketRate:        MetricConfig{Enabled: false},
-					VcenterHostNetworkThroughput:        MetricConfig{Enabled: false},
-					VcenterHostNetworkUsage:             MetricConfig{Enabled: false},
-					VcenterHostVsanCacheHitRate:         MetricConfig{Enabled: false},
-					VcenterHostVsanCongestions:          MetricConfig{Enabled: false},
-					VcenterHostVsanLatencyAvg:           MetricConfig{Enabled: false},
-					VcenterHostVsanOperations:           MetricConfig{Enabled: false},
-					VcenterHostVsanThroughput:           MetricConfig{Enabled: false},
-					VcenterResourcePoolCPUShares:        MetricConfig{Enabled: false},
-					VcenterResourcePoolCPUUsage:         MetricConfig{Enabled: false},
-					VcenterResourcePoolMemoryBallooned:  MetricConfig{Enabled: false},
-					VcenterResourcePoolMemoryGranted:    MetricConfig{Enabled: false},
-					VcenterResourcePoolMemoryShares:     MetricConfig{Enabled: false},
-					VcenterResourcePoolMemorySwapped:    MetricConfig{Enabled: false},
-					VcenterResourcePoolMemoryUsage:      MetricConfig{Enabled: false},
-					VcenterVMCPUReadiness:               MetricConfig{Enabled: false},
-					VcenterVMCPUTime:                    MetricConfig{Enabled: false},
-					VcenterVMCPUUsage:                   MetricConfig{Enabled: false},
-					VcenterVMCPUUtilization:             MetricConfig{Enabled: false},
-					VcenterVMDiskLatencyAvg:             MetricConfig{Enabled: false},
-					VcenterVMDiskLatencyMax:             MetricConfig{Enabled: false},
-					VcenterVMDiskThroughput:             MetricConfig{Enabled: false},
-					VcenterVMDiskUsage:                  MetricConfig{Enabled: false},
-					VcenterVMDiskUtilization:            MetricConfig{Enabled: false},
-					VcenterVMMemoryBallooned:            MetricConfig{Enabled: false},
-					VcenterVMMemoryGranted:              MetricConfig{Enabled: false},
-					VcenterVMMemorySwapped:              MetricConfig{Enabled: false},
-					VcenterVMMemorySwappedSsd:           MetricConfig{Enabled: false},
-					VcenterVMMemoryUsage:                MetricConfig{Enabled: false},
-					VcenterVMMemoryUtilization:          MetricConfig{Enabled: false},
-					VcenterVMNetworkBroadcastPacketRate: MetricConfig{Enabled: false},
-					VcenterVMNetworkMulticastPacketRate: MetricConfig{Enabled: false},
-					VcenterVMNetworkPacketDropRate:      MetricConfig{Enabled: false},
-					VcenterVMNetworkPacketRate:          MetricConfig{Enabled: false},
-					VcenterVMNetworkThroughput:          MetricConfig{Enabled: false},
-					VcenterVMNetworkUsage:               MetricConfig{Enabled: false},
-					VcenterVMVsanLatencyAvg:             MetricConfig{Enabled: false},
-					VcenterVMVsanOperations:             MetricConfig{Enabled: false},
-					VcenterVMVsanThroughput:             MetricConfig{Enabled: false},
+					VcenterClusterCPUEffective: VcenterClusterCPUEffectiveMetricConfig{
+						Enabled: false,
+					},
+					VcenterClusterCPULimit: VcenterClusterCPULimitMetricConfig{
+						Enabled: false,
+					},
+					VcenterClusterHostCount: VcenterClusterHostCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterClusterHostCountMetricAttributeKey{VcenterClusterHostCountMetricAttributeKeyHostEffective},
+					},
+					VcenterClusterMemoryEffective: VcenterClusterMemoryEffectiveMetricConfig{
+						Enabled: false,
+					},
+					VcenterClusterMemoryLimit: VcenterClusterMemoryLimitMetricConfig{
+						Enabled: false,
+					},
+					VcenterClusterVMCount: VcenterClusterVMCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterClusterVMCountMetricAttributeKey{VcenterClusterVMCountMetricAttributeKeyVMCountPowerState},
+					},
+					VcenterClusterVMTemplateCount: VcenterClusterVMTemplateCountMetricConfig{
+						Enabled: false,
+					},
+					VcenterClusterVsanCongestions: VcenterClusterVsanCongestionsMetricConfig{
+						Enabled: false,
+					},
+					VcenterClusterVsanLatencyAvg: VcenterClusterVsanLatencyAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterClusterVsanLatencyAvgMetricAttributeKey{VcenterClusterVsanLatencyAvgMetricAttributeKeyVsanLatencyType},
+					},
+					VcenterClusterVsanOperations: VcenterClusterVsanOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterClusterVsanOperationsMetricAttributeKey{VcenterClusterVsanOperationsMetricAttributeKeyVsanOperationType},
+					},
+					VcenterClusterVsanThroughput: VcenterClusterVsanThroughputMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterClusterVsanThroughputMetricAttributeKey{VcenterClusterVsanThroughputMetricAttributeKeyVsanThroughputDirection},
+					},
+					VcenterDatacenterClusterCount: VcenterDatacenterClusterCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterDatacenterClusterCountMetricAttributeKey{VcenterDatacenterClusterCountMetricAttributeKeyEntityStatus},
+					},
+					VcenterDatacenterCPULimit: VcenterDatacenterCPULimitMetricConfig{
+						Enabled: false,
+					},
+					VcenterDatacenterDatastoreCount: VcenterDatacenterDatastoreCountMetricConfig{
+						Enabled: false,
+					},
+					VcenterDatacenterDiskSpace: VcenterDatacenterDiskSpaceMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterDatacenterDiskSpaceMetricAttributeKey{VcenterDatacenterDiskSpaceMetricAttributeKeyDiskState},
+					},
+					VcenterDatacenterHostCount: VcenterDatacenterHostCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterDatacenterHostCountMetricAttributeKey{VcenterDatacenterHostCountMetricAttributeKeyEntityStatus, VcenterDatacenterHostCountMetricAttributeKeyHostPowerState},
+					},
+					VcenterDatacenterMemoryLimit: VcenterDatacenterMemoryLimitMetricConfig{
+						Enabled: false,
+					},
+					VcenterDatacenterVMCount: VcenterDatacenterVMCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterDatacenterVMCountMetricAttributeKey{VcenterDatacenterVMCountMetricAttributeKeyEntityStatus, VcenterDatacenterVMCountMetricAttributeKeyVMCountPowerState},
+					},
+					VcenterDatastoreDiskUsage: VcenterDatastoreDiskUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterDatastoreDiskUsageMetricAttributeKey{VcenterDatastoreDiskUsageMetricAttributeKeyDiskState},
+					},
+					VcenterDatastoreDiskUtilization: VcenterDatastoreDiskUtilizationMetricConfig{
+						Enabled: false,
+					},
+					VcenterHostCPUCapacity: VcenterHostCPUCapacityMetricConfig{
+						Enabled: false,
+					},
+					VcenterHostCPUReserved: VcenterHostCPUReservedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterHostCPUReservedMetricAttributeKey{VcenterHostCPUReservedMetricAttributeKeyCPUReservationType},
+					},
+					VcenterHostCPUUsage: VcenterHostCPUUsageMetricConfig{
+						Enabled: false,
+					},
+					VcenterHostCPUUtilization: VcenterHostCPUUtilizationMetricConfig{
+						Enabled: false,
+					},
+					VcenterHostDiskLatencyAvg: VcenterHostDiskLatencyAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterHostDiskLatencyAvgMetricAttributeKey{VcenterHostDiskLatencyAvgMetricAttributeKeyDiskDirection, VcenterHostDiskLatencyAvgMetricAttributeKeyObjectName},
+					},
+					VcenterHostDiskLatencyMax: VcenterHostDiskLatencyMaxMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterHostDiskLatencyMaxMetricAttributeKey{VcenterHostDiskLatencyMaxMetricAttributeKeyObjectName},
+					},
+					VcenterHostDiskThroughput: VcenterHostDiskThroughputMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterHostDiskThroughputMetricAttributeKey{VcenterHostDiskThroughputMetricAttributeKeyDiskDirection, VcenterHostDiskThroughputMetricAttributeKeyObjectName},
+					},
+					VcenterHostMemoryCapacity: VcenterHostMemoryCapacityMetricConfig{
+						Enabled: false,
+					},
+					VcenterHostMemoryUsage: VcenterHostMemoryUsageMetricConfig{
+						Enabled: false,
+					},
+					VcenterHostMemoryUtilization: VcenterHostMemoryUtilizationMetricConfig{
+						Enabled: false,
+					},
+					VcenterHostNetworkPacketDropRate: VcenterHostNetworkPacketDropRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterHostNetworkPacketDropRateMetricAttributeKey{VcenterHostNetworkPacketDropRateMetricAttributeKeyThroughputDirection, VcenterHostNetworkPacketDropRateMetricAttributeKeyObjectName},
+					},
+					VcenterHostNetworkPacketErrorRate: VcenterHostNetworkPacketErrorRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterHostNetworkPacketErrorRateMetricAttributeKey{VcenterHostNetworkPacketErrorRateMetricAttributeKeyThroughputDirection, VcenterHostNetworkPacketErrorRateMetricAttributeKeyObjectName},
+					},
+					VcenterHostNetworkPacketRate: VcenterHostNetworkPacketRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterHostNetworkPacketRateMetricAttributeKey{VcenterHostNetworkPacketRateMetricAttributeKeyThroughputDirection, VcenterHostNetworkPacketRateMetricAttributeKeyObjectName},
+					},
+					VcenterHostNetworkThroughput: VcenterHostNetworkThroughputMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterHostNetworkThroughputMetricAttributeKey{VcenterHostNetworkThroughputMetricAttributeKeyThroughputDirection, VcenterHostNetworkThroughputMetricAttributeKeyObjectName},
+					},
+					VcenterHostNetworkUsage: VcenterHostNetworkUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterHostNetworkUsageMetricAttributeKey{VcenterHostNetworkUsageMetricAttributeKeyObjectName},
+					},
+					VcenterHostVsanCacheHitRate: VcenterHostVsanCacheHitRateMetricConfig{
+						Enabled: false,
+					},
+					VcenterHostVsanCongestions: VcenterHostVsanCongestionsMetricConfig{
+						Enabled: false,
+					},
+					VcenterHostVsanLatencyAvg: VcenterHostVsanLatencyAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterHostVsanLatencyAvgMetricAttributeKey{VcenterHostVsanLatencyAvgMetricAttributeKeyVsanLatencyType},
+					},
+					VcenterHostVsanOperations: VcenterHostVsanOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterHostVsanOperationsMetricAttributeKey{VcenterHostVsanOperationsMetricAttributeKeyVsanOperationType},
+					},
+					VcenterHostVsanThroughput: VcenterHostVsanThroughputMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterHostVsanThroughputMetricAttributeKey{VcenterHostVsanThroughputMetricAttributeKeyVsanThroughputDirection},
+					},
+					VcenterResourcePoolCPUShares: VcenterResourcePoolCPUSharesMetricConfig{
+						Enabled: false,
+					},
+					VcenterResourcePoolCPUUsage: VcenterResourcePoolCPUUsageMetricConfig{
+						Enabled: false,
+					},
+					VcenterResourcePoolMemoryBallooned: VcenterResourcePoolMemoryBalloonedMetricConfig{
+						Enabled: false,
+					},
+					VcenterResourcePoolMemoryGranted: VcenterResourcePoolMemoryGrantedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterResourcePoolMemoryGrantedMetricAttributeKey{VcenterResourcePoolMemoryGrantedMetricAttributeKeyMemoryGrantedType},
+					},
+					VcenterResourcePoolMemoryShares: VcenterResourcePoolMemorySharesMetricConfig{
+						Enabled: false,
+					},
+					VcenterResourcePoolMemorySwapped: VcenterResourcePoolMemorySwappedMetricConfig{
+						Enabled: false,
+					},
+					VcenterResourcePoolMemoryUsage: VcenterResourcePoolMemoryUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterResourcePoolMemoryUsageMetricAttributeKey{VcenterResourcePoolMemoryUsageMetricAttributeKeyMemoryUsageType},
+					},
+					VcenterVMCPUReadiness: VcenterVMCPUReadinessMetricConfig{
+						Enabled: false,
+					},
+					VcenterVMCPUTime: VcenterVMCPUTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMCPUTimeMetricAttributeKey{VcenterVMCPUTimeMetricAttributeKeyCPUState, VcenterVMCPUTimeMetricAttributeKeyObjectName},
+					},
+					VcenterVMCPUUsage: VcenterVMCPUUsageMetricConfig{
+						Enabled: false,
+					},
+					VcenterVMCPUUtilization: VcenterVMCPUUtilizationMetricConfig{
+						Enabled: false,
+					},
+					VcenterVMDiskLatencyAvg: VcenterVMDiskLatencyAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMDiskLatencyAvgMetricAttributeKey{VcenterVMDiskLatencyAvgMetricAttributeKeyDiskDirection, VcenterVMDiskLatencyAvgMetricAttributeKeyDiskType, VcenterVMDiskLatencyAvgMetricAttributeKeyObjectName},
+					},
+					VcenterVMDiskLatencyMax: VcenterVMDiskLatencyMaxMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMDiskLatencyMaxMetricAttributeKey{VcenterVMDiskLatencyMaxMetricAttributeKeyObjectName},
+					},
+					VcenterVMDiskThroughput: VcenterVMDiskThroughputMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMDiskThroughputMetricAttributeKey{VcenterVMDiskThroughputMetricAttributeKeyDiskDirection, VcenterVMDiskThroughputMetricAttributeKeyObjectName},
+					},
+					VcenterVMDiskUsage: VcenterVMDiskUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterVMDiskUsageMetricAttributeKey{VcenterVMDiskUsageMetricAttributeKeyDiskState},
+					},
+					VcenterVMDiskUtilization: VcenterVMDiskUtilizationMetricConfig{
+						Enabled: false,
+					},
+					VcenterVMMemoryBallooned: VcenterVMMemoryBalloonedMetricConfig{
+						Enabled: false,
+					},
+					VcenterVMMemoryGranted: VcenterVMMemoryGrantedMetricConfig{
+						Enabled: false,
+					},
+					VcenterVMMemorySwapped: VcenterVMMemorySwappedMetricConfig{
+						Enabled: false,
+					},
+					VcenterVMMemorySwappedSsd: VcenterVMMemorySwappedSsdMetricConfig{
+						Enabled: false,
+					},
+					VcenterVMMemoryUsage: VcenterVMMemoryUsageMetricConfig{
+						Enabled: false,
+					},
+					VcenterVMMemoryUtilization: VcenterVMMemoryUtilizationMetricConfig{
+						Enabled: false,
+					},
+					VcenterVMNetworkBroadcastPacketRate: VcenterVMNetworkBroadcastPacketRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMNetworkBroadcastPacketRateMetricAttributeKey{VcenterVMNetworkBroadcastPacketRateMetricAttributeKeyThroughputDirection, VcenterVMNetworkBroadcastPacketRateMetricAttributeKeyObjectName},
+					},
+					VcenterVMNetworkMulticastPacketRate: VcenterVMNetworkMulticastPacketRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMNetworkMulticastPacketRateMetricAttributeKey{VcenterVMNetworkMulticastPacketRateMetricAttributeKeyThroughputDirection, VcenterVMNetworkMulticastPacketRateMetricAttributeKeyObjectName},
+					},
+					VcenterVMNetworkPacketDropRate: VcenterVMNetworkPacketDropRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMNetworkPacketDropRateMetricAttributeKey{VcenterVMNetworkPacketDropRateMetricAttributeKeyThroughputDirection, VcenterVMNetworkPacketDropRateMetricAttributeKeyObjectName},
+					},
+					VcenterVMNetworkPacketRate: VcenterVMNetworkPacketRateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMNetworkPacketRateMetricAttributeKey{VcenterVMNetworkPacketRateMetricAttributeKeyThroughputDirection, VcenterVMNetworkPacketRateMetricAttributeKeyObjectName},
+					},
+					VcenterVMNetworkThroughput: VcenterVMNetworkThroughputMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterVMNetworkThroughputMetricAttributeKey{VcenterVMNetworkThroughputMetricAttributeKeyThroughputDirection, VcenterVMNetworkThroughputMetricAttributeKeyObjectName},
+					},
+					VcenterVMNetworkUsage: VcenterVMNetworkUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterVMNetworkUsageMetricAttributeKey{VcenterVMNetworkUsageMetricAttributeKeyObjectName},
+					},
+					VcenterVMVsanLatencyAvg: VcenterVMVsanLatencyAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMVsanLatencyAvgMetricAttributeKey{VcenterVMVsanLatencyAvgMetricAttributeKeyVsanLatencyType},
+					},
+					VcenterVMVsanOperations: VcenterVMVsanOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMVsanOperationsMetricAttributeKey{VcenterVMVsanOperationsMetricAttributeKeyVsanOperationType},
+					},
+					VcenterVMVsanThroughput: VcenterVMVsanThroughputMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []VcenterVMVsanThroughputMetricAttributeKey{VcenterVMVsanThroughputMetricAttributeKeyVsanThroughputDirection},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					VcenterClusterName:               ResourceAttributeConfig{Enabled: false},
@@ -211,10 +646,466 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(VcenterClusterCPUEffectiveMetricConfig{}, VcenterClusterCPULimitMetricConfig{}, VcenterClusterHostCountMetricConfig{}, VcenterClusterMemoryEffectiveMetricConfig{}, VcenterClusterMemoryLimitMetricConfig{}, VcenterClusterVMCountMetricConfig{}, VcenterClusterVMTemplateCountMetricConfig{}, VcenterClusterVsanCongestionsMetricConfig{}, VcenterClusterVsanLatencyAvgMetricConfig{}, VcenterClusterVsanOperationsMetricConfig{}, VcenterClusterVsanThroughputMetricConfig{}, VcenterDatacenterClusterCountMetricConfig{}, VcenterDatacenterCPULimitMetricConfig{}, VcenterDatacenterDatastoreCountMetricConfig{}, VcenterDatacenterDiskSpaceMetricConfig{}, VcenterDatacenterHostCountMetricConfig{}, VcenterDatacenterMemoryLimitMetricConfig{}, VcenterDatacenterVMCountMetricConfig{}, VcenterDatastoreDiskUsageMetricConfig{}, VcenterDatastoreDiskUtilizationMetricConfig{}, VcenterHostCPUCapacityMetricConfig{}, VcenterHostCPUReservedMetricConfig{}, VcenterHostCPUUsageMetricConfig{}, VcenterHostCPUUtilizationMetricConfig{}, VcenterHostDiskLatencyAvgMetricConfig{}, VcenterHostDiskLatencyMaxMetricConfig{}, VcenterHostDiskThroughputMetricConfig{}, VcenterHostMemoryCapacityMetricConfig{}, VcenterHostMemoryUsageMetricConfig{}, VcenterHostMemoryUtilizationMetricConfig{}, VcenterHostNetworkPacketDropRateMetricConfig{}, VcenterHostNetworkPacketErrorRateMetricConfig{}, VcenterHostNetworkPacketRateMetricConfig{}, VcenterHostNetworkThroughputMetricConfig{}, VcenterHostNetworkUsageMetricConfig{}, VcenterHostVsanCacheHitRateMetricConfig{}, VcenterHostVsanCongestionsMetricConfig{}, VcenterHostVsanLatencyAvgMetricConfig{}, VcenterHostVsanOperationsMetricConfig{}, VcenterHostVsanThroughputMetricConfig{}, VcenterResourcePoolCPUSharesMetricConfig{}, VcenterResourcePoolCPUUsageMetricConfig{}, VcenterResourcePoolMemoryBalloonedMetricConfig{}, VcenterResourcePoolMemoryGrantedMetricConfig{}, VcenterResourcePoolMemorySharesMetricConfig{}, VcenterResourcePoolMemorySwappedMetricConfig{}, VcenterResourcePoolMemoryUsageMetricConfig{}, VcenterVMCPUReadinessMetricConfig{}, VcenterVMCPUTimeMetricConfig{}, VcenterVMCPUUsageMetricConfig{}, VcenterVMCPUUtilizationMetricConfig{}, VcenterVMDiskLatencyAvgMetricConfig{}, VcenterVMDiskLatencyMaxMetricConfig{}, VcenterVMDiskThroughputMetricConfig{}, VcenterVMDiskUsageMetricConfig{}, VcenterVMDiskUtilizationMetricConfig{}, VcenterVMMemoryBalloonedMetricConfig{}, VcenterVMMemoryGrantedMetricConfig{}, VcenterVMMemorySwappedMetricConfig{}, VcenterVMMemorySwappedSsdMetricConfig{}, VcenterVMMemoryUsageMetricConfig{}, VcenterVMMemoryUtilizationMetricConfig{}, VcenterVMNetworkBroadcastPacketRateMetricConfig{}, VcenterVMNetworkMulticastPacketRateMetricConfig{}, VcenterVMNetworkPacketDropRateMetricConfig{}, VcenterVMNetworkPacketRateMetricConfig{}, VcenterVMNetworkThroughputMetricConfig{}, VcenterVMNetworkUsageMetricConfig{}, VcenterVMVsanLatencyAvgMetricConfig{}, VcenterVMVsanOperationsMetricConfig{}, VcenterVMVsanThroughputMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+
+func TestVcenterClusterHostCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterClusterHostCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterClusterHostCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.cluster.host.count doesn't have an attribute invalid, valid attributes: [effective]")
+
+	cfg = DefaultMetricsConfig().VcenterClusterHostCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterClusterVMCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterClusterVMCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterClusterVMCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.cluster.vm.count doesn't have an attribute invalid, valid attributes: [power_state]")
+
+	cfg = DefaultMetricsConfig().VcenterClusterVMCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterClusterVsanLatencyAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterClusterVsanLatencyAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterClusterVsanLatencyAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.cluster.vsan.latency.avg doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().VcenterClusterVsanLatencyAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterClusterVsanOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterClusterVsanOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterClusterVsanOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.cluster.vsan.operations doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().VcenterClusterVsanOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterClusterVsanThroughputMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterClusterVsanThroughput
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterClusterVsanThroughputMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.cluster.vsan.throughput doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().VcenterClusterVsanThroughput
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterDatacenterClusterCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterDatacenterClusterCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterDatacenterClusterCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.datacenter.cluster.count doesn't have an attribute invalid, valid attributes: [status]")
+
+	cfg = DefaultMetricsConfig().VcenterDatacenterClusterCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterDatacenterDiskSpaceMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterDatacenterDiskSpace
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterDatacenterDiskSpaceMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.datacenter.disk.space doesn't have an attribute invalid, valid attributes: [disk_state]")
+
+	cfg = DefaultMetricsConfig().VcenterDatacenterDiskSpace
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterDatacenterHostCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterDatacenterHostCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterDatacenterHostCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.datacenter.host.count doesn't have an attribute invalid, valid attributes: [status, power_state]")
+
+	cfg = DefaultMetricsConfig().VcenterDatacenterHostCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterDatacenterVMCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterDatacenterVMCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterDatacenterVMCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.datacenter.vm.count doesn't have an attribute invalid, valid attributes: [status, power_state]")
+
+	cfg = DefaultMetricsConfig().VcenterDatacenterVMCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterDatastoreDiskUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterDatastoreDiskUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterDatastoreDiskUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.datastore.disk.usage doesn't have an attribute invalid, valid attributes: [disk_state]")
+
+	cfg = DefaultMetricsConfig().VcenterDatastoreDiskUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostCPUReservedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostCPUReserved
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostCPUReservedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.cpu.reserved doesn't have an attribute invalid, valid attributes: [cpu_reservation_type]")
+
+	cfg = DefaultMetricsConfig().VcenterHostCPUReserved
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostDiskLatencyAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostDiskLatencyAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostDiskLatencyAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.disk.latency.avg doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterHostDiskLatencyAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostDiskLatencyMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostDiskLatencyMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostDiskLatencyMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.disk.latency.max doesn't have an attribute invalid, valid attributes: [object]")
+
+	cfg = DefaultMetricsConfig().VcenterHostDiskLatencyMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostDiskThroughputMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostDiskThroughput
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostDiskThroughputMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.disk.throughput doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterHostDiskThroughput
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostNetworkPacketDropRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostNetworkPacketDropRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostNetworkPacketDropRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.network.packet.drop.rate doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterHostNetworkPacketDropRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostNetworkPacketErrorRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostNetworkPacketErrorRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostNetworkPacketErrorRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.network.packet.error.rate doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterHostNetworkPacketErrorRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostNetworkPacketRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostNetworkPacketRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostNetworkPacketRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.network.packet.rate doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterHostNetworkPacketRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostNetworkThroughputMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostNetworkThroughput
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostNetworkThroughputMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.network.throughput doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterHostNetworkThroughput
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostNetworkUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostNetworkUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostNetworkUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.network.usage doesn't have an attribute invalid, valid attributes: [object]")
+
+	cfg = DefaultMetricsConfig().VcenterHostNetworkUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostVsanLatencyAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostVsanLatencyAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostVsanLatencyAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.vsan.latency.avg doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().VcenterHostVsanLatencyAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostVsanOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostVsanOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostVsanOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.vsan.operations doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().VcenterHostVsanOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterHostVsanThroughputMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterHostVsanThroughput
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterHostVsanThroughputMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.host.vsan.throughput doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().VcenterHostVsanThroughput
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterResourcePoolMemoryGrantedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterResourcePoolMemoryGranted
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterResourcePoolMemoryGrantedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.resource_pool.memory.granted doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().VcenterResourcePoolMemoryGranted
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterResourcePoolMemoryUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterResourcePoolMemoryUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterResourcePoolMemoryUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.resource_pool.memory.usage doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().VcenterResourcePoolMemoryUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMCPUTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMCPUTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMCPUTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.cpu.time doesn't have an attribute invalid, valid attributes: [cpu_state, object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMCPUTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMDiskLatencyAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMDiskLatencyAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMDiskLatencyAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.disk.latency.avg doesn't have an attribute invalid, valid attributes: [direction, disk_type, object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMDiskLatencyAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMDiskLatencyMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMDiskLatencyMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMDiskLatencyMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.disk.latency.max doesn't have an attribute invalid, valid attributes: [object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMDiskLatencyMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMDiskThroughputMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMDiskThroughput
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMDiskThroughputMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.disk.throughput doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMDiskThroughput
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMDiskUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMDiskUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMDiskUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.disk.usage doesn't have an attribute invalid, valid attributes: [disk_state]")
+
+	cfg = DefaultMetricsConfig().VcenterVMDiskUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMNetworkBroadcastPacketRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMNetworkBroadcastPacketRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMNetworkBroadcastPacketRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.network.broadcast.packet.rate doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMNetworkBroadcastPacketRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMNetworkMulticastPacketRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMNetworkMulticastPacketRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMNetworkMulticastPacketRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.network.multicast.packet.rate doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMNetworkMulticastPacketRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMNetworkPacketDropRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMNetworkPacketDropRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMNetworkPacketDropRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.network.packet.drop.rate doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMNetworkPacketDropRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMNetworkPacketRateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMNetworkPacketRate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMNetworkPacketRateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.network.packet.rate doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMNetworkPacketRate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMNetworkThroughputMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMNetworkThroughput
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMNetworkThroughputMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.network.throughput doesn't have an attribute invalid, valid attributes: [direction, object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMNetworkThroughput
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMNetworkUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMNetworkUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMNetworkUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.network.usage doesn't have an attribute invalid, valid attributes: [object]")
+
+	cfg = DefaultMetricsConfig().VcenterVMNetworkUsage
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMVsanLatencyAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMVsanLatencyAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMVsanLatencyAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.vsan.latency.avg doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().VcenterVMVsanLatencyAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMVsanOperationsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMVsanOperations
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMVsanOperationsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.vsan.operations doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().VcenterVMVsanOperations
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMVsanThroughputMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMVsanThroughput
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMVsanThroughputMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.vsan.throughput doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().VcenterVMVsanThroughput
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
@@ -222,7 +1113,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
@@ -28,7 +29,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -41,7 +43,10 @@ func createDefaultConfig() component.Config {
 		AddrConfig: confignet.AddrConfig{
 			Endpoint: defaultEndpoint,
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		TLS: configtls.ClientConfig{
+			Insecure: true,
+		},
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -62,6 +67,6 @@ func createMetricsReceiver(
 
 	return scraperhelper.NewMetricsController(
 		&cfg.ControllerConfig, params, consumer,
-		scraperhelper.AddScraper(metadata.Type, scraper),
+		scraperhelper.AddMetricsScraper(metadata.Type, scraper),
 	)
 }

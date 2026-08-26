@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -23,6 +24,7 @@ type testMetric struct {
 	metricIntValues [][]int64
 	isDelta         []bool
 	deltaSecond     int
+	metricUnit      string
 }
 
 type deltaToRateTest struct {
@@ -107,6 +109,22 @@ var testCases = []deltaToRateTest{
 			metricValues: [][]float64{{1, 2, 3}, {3}},
 		}),
 	},
+	{
+		name:    "delta_to_rate_with_unit",
+		metrics: []string{"metric_1"},
+		inMetrics: generateSumMetrics(testMetric{
+			metricNames:  []string{"metric_1"},
+			metricValues: [][]float64{{120}},
+			isDelta:      []bool{true},
+			deltaSecond:  120,
+			metricUnit:   "By",
+		}),
+		outMetrics: generateGaugeMetrics(testMetric{
+			metricNames:  []string{"metric_1"},
+			metricValues: [][]float64{{1}},
+			metricUnit:   "By/s",
+		}),
+	},
 }
 
 func TestCumulativeToDeltaProcessor(t *testing.T) {
@@ -130,7 +148,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			caps := mgp.Capabilities()
 			assert.True(t, caps.MutatesData)
 			ctx := t.Context()
-			require.NoError(t, mgp.Start(ctx, nil))
+			require.NoError(t, mgp.Start(ctx, componenttest.NewNopHost()))
 
 			cErr := mgp.ConsumeMetrics(t.Context(), test.inMetrics)
 			assert.NoError(t, cErr)
@@ -149,6 +167,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 				aM := actualMetrics.At(i)
 
 				require.Equal(t, eM.Name(), aM.Name())
+				require.Equal(t, eM.Unit(), aM.Unit())
 
 				if eM.Type() == pmetric.MetricTypeGauge {
 					eDataPoints := eM.Gauge().DataPoints()
@@ -188,6 +207,7 @@ func generateSumMetrics(tm testMetric) pmetric.Metrics {
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)
+		m.SetUnit(tm.metricUnit)
 		sum := m.SetEmptySum()
 		sum.SetIsMonotonic(true)
 
@@ -227,6 +247,7 @@ func generateGaugeMetrics(tm testMetric) pmetric.Metrics {
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)
+		m.SetUnit(tm.metricUnit)
 		dps := m.SetEmptyGauge().DataPoints()
 		if i < len(tm.metricValues) {
 			for _, value := range tm.metricValues[i] {

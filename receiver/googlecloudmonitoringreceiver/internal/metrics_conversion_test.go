@@ -66,6 +66,46 @@ func TestConvertGaugeToMetrics(t *testing.T) {
 			},
 			fileNameExpected: "TestConvertGaugeToMetrics_InvalidEndTime.yaml",
 		},
+		{
+			name: "valid boolean true",
+			ts: &monitoringpb.TimeSeries{
+				Points: []*monitoringpb.Point{
+					{
+						Interval: &monitoringpb.TimeInterval{
+							StartTime: &timestamppb.Timestamp{Seconds: 10},
+							EndTime:   &timestamppb.Timestamp{Seconds: 20},
+						},
+						Value: &monitoringpb.TypedValue{
+							Value: &monitoringpb.TypedValue_BoolValue{BoolValue: true},
+						},
+					},
+				},
+				Metric: &metric.Metric{
+					Labels: map[string]string{"boolKey": "trueValue"},
+				},
+			},
+			fileNameExpected: "TestConvertGaugeToMetrics_ValidBooleanTrue.yaml",
+		},
+		{
+			name: "valid boolean false",
+			ts: &monitoringpb.TimeSeries{
+				Points: []*monitoringpb.Point{
+					{
+						Interval: &monitoringpb.TimeInterval{
+							StartTime: &timestamppb.Timestamp{Seconds: 30},
+							EndTime:   &timestamppb.Timestamp{Seconds: 40},
+						},
+						Value: &monitoringpb.TypedValue{
+							Value: &monitoringpb.TypedValue_BoolValue{BoolValue: false},
+						},
+					},
+				},
+				Metric: &metric.Metric{
+					Labels: map[string]string{"boolKey": "falseValue"},
+				},
+			},
+			fileNameExpected: "TestConvertGaugeToMetrics_ValidBooleanFalse.yaml",
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := zap.NewNop()
@@ -82,6 +122,38 @@ func TestConvertGaugeToMetrics(t *testing.T) {
 			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, wrapMetric(m)))
 		})
 	}
+}
+
+func TestConvertSumToMetrics(t *testing.T) {
+	logger := zap.NewNop()
+	mb := NewMetricsBuilder(logger)
+
+	ts := &monitoringpb.TimeSeries{
+		Points: []*monitoringpb.Point{
+			{
+				Interval: &monitoringpb.TimeInterval{
+					StartTime: &timestamppb.Timestamp{Seconds: 10},
+					EndTime:   &timestamppb.Timestamp{Seconds: 20},
+				},
+				Value: &monitoringpb.TypedValue{
+					Value: &monitoringpb.TypedValue_Int64Value{Int64Value: 100},
+				},
+			},
+		},
+		Metric: &metric.Metric{
+			Labels: map[string]string{"labelKey": "labelValue"},
+		},
+	}
+
+	m := pmetric.NewMetric()
+	mb.ConvertSumToMetrics(ts, m)
+
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	sum := m.Sum()
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, sum.AggregationTemporality())
+	assert.True(t, sum.IsMonotonic(), "cumulative sums must be marked monotonic")
+	require.Equal(t, 1, sum.DataPoints().Len())
+	assert.Equal(t, int64(100), sum.DataPoints().At(0).IntValue())
 }
 
 func TestConvertDistributionToMetrics_NoDataPoints(t *testing.T) {

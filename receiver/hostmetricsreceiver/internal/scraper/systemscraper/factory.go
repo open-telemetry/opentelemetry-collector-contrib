@@ -14,9 +14,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/systemscraper/internal/metadata"
 )
 
+// Hardcoded supported-OS list pending mdatagen `supported_os` annotation support.
+// See https://github.com/open-telemetry/opentelemetry-collector/issues/15020;
+// migrate to a metadata.yaml declaration and drop the runtime.GOOS check once it lands.
 var (
-	supportedOS      = runtime.GOOS == "linux" || runtime.GOOS == "windows" || runtime.GOOS == "darwin"
-	errUnsupportedOS = errors.New("the system scraper is only available on Linux, Windows, or macOS")
+	supportedOS      = runtime.GOOS == "linux" || runtime.GOOS == "windows" || runtime.GOOS == "darwin" || runtime.GOOS == "aix"
+	errUnsupportedOS = errors.New("the system scraper is only available on Linux, Windows, macOS, or AIX")
 )
 
 // NewFactory for System scraper.
@@ -27,7 +30,7 @@ func NewFactory() scraper.Factory {
 // createDefaultConfig creates the default configuration for the Scraper.
 func createDefaultConfig() component.Config {
 	return &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 }
 

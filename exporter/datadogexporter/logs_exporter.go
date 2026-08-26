@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
@@ -45,12 +47,20 @@ func newLogsAgentExporter(
 		agentcomponents.WithLogsConfig(cfg),
 		agentcomponents.WithLogsDefaults(),
 		agentcomponents.WithProxy(cfg),
+		agentcomponents.WithTLSSetting(cfg),
 	)
+	hostnameComponent := logs.NewHostnameService(sourceProvider)
 	logsAgentConfig := &logsagentexporter.Config{
 		OtelSource:    otelSource,
 		LogSourceName: logSourceName,
+		OrchestratorConfig: logsagentexporter.OrchestratorConfig{
+			Hostname: hostnameComponent,
+			Key:      string(cfg.API.Key),
+			Site:     cfg.API.Site,
+			Endpoint: cfg.OrchestratorExplorer.Endpoint,
+			Enabled:  cfg.OrchestratorExplorer.Enabled,
+		},
 	}
-	hostnameComponent := logs.NewHostnameService(sourceProvider)
 	logsAgent := logsagentpipelineimpl.NewLogsAgent(logsagentpipelineimpl.Dependencies{
 		Log:          logComponent,
 		Config:       cfgComponent,

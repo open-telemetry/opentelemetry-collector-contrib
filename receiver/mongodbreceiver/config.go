@@ -22,17 +22,41 @@ import (
 )
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	configtls.ClientConfig         `mapstructure:"tls,omitempty"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ClientConfig     configtls.ClientConfig         `mapstructure:"tls,omitempty"`
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig  metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	LogsBuilderConfig     metadata.LogsBuilderConfig    `mapstructure:",squash"`
+	QuerySampleCollection QuerySampleCollection         `mapstructure:"query_sample_collection"`
+	TopQueryCollection    TopQueryCollection            `mapstructure:"top_query_collection,omitempty"`
 	// Deprecated - Transport option will be removed in v0.102.0
-	Hosts            []confignet.TCPAddrConfig `mapstructure:"hosts"`
-	Username         string                    `mapstructure:"username"`
-	Password         configopaque.String       `mapstructure:"password"`
-	ReplicaSet       string                    `mapstructure:"replica_set,omitempty"`
-	Timeout          time.Duration             `mapstructure:"timeout"`
-	DirectConnection bool                      `mapstructure:"direct_connection"`
+	Hosts                   []confignet.TCPAddrConfig `mapstructure:"hosts"`
+	Scheme                  string                    `mapstructure:"scheme"`
+	Username                string                    `mapstructure:"username"`
+	Password                configopaque.String       `mapstructure:"password"`
+	AuthMechanism           string                    `mapstructure:"auth_mechanism,omitempty"`
+	AuthSource              string                    `mapstructure:"auth_source,omitempty"`
+	AuthMechanismProperties map[string]string         `mapstructure:"auth_mechanism_properties,omitempty"`
+	ReplicaSet              string                    `mapstructure:"replica_set,omitempty"`
+	Timeout                 time.Duration             `mapstructure:"timeout"`
+	DirectConnection        bool                      `mapstructure:"direct_connection"`
+}
+
+type QuerySampleCollection struct {
+	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// TopQueryCollection holds configuration for the db.server.top_query log event collection.
+type TopQueryCollection struct {
+	CollectionInterval     time.Duration `mapstructure:"collection_interval"`
+	MaxQuerySampleCount    int64         `mapstructure:"max_query_sample_count"`
+	MaxExplainEachInterval int64         `mapstructure:"max_explain_each_interval"`
+	TopQueryCount          int64         `mapstructure:"top_query_count"`
+	QueryPlanCacheSize     int           `mapstructure:"query_plan_cache_size"`
+	QueryPlanCacheTTL      time.Duration `mapstructure:"query_plan_cache_ttl"`
 }
 
 func (c *Config) Validate() error {
@@ -47,14 +71,47 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	if c.Scheme != "" && c.Scheme != "mongodb" && c.Scheme != "mongodb+srv" {
+		err = multierr.Append(err, fmt.Errorf("invalid scheme %q, must be \"mongodb\" or \"mongodb+srv\"", c.Scheme))
+	}
+
+	if c.Scheme == "mongodb+srv" && len(c.Hosts) != 1 {
+		err = multierr.Append(err, errors.New("mongodb+srv scheme requires exactly one host"))
+	}
+
 	if c.Username != "" && c.Password == "" {
 		err = multierr.Append(err, errors.New("username provided without password"))
 	} else if c.Username == "" && c.Password != "" {
 		err = multierr.Append(err, errors.New("password provided without user"))
 	}
 
-	if _, tlsErr := c.LoadTLSConfig(context.Background()); tlsErr != nil {
+	if c.QuerySampleCollection.MaxRowsPerQuery == 0 {
+		err = multierr.Append(err, errors.New("query_sample_collection.max_rows_per_query must be greater than 0"))
+	}
+
+	if _, tlsErr := c.ClientConfig.LoadTLSConfig(context.Background()); tlsErr != nil {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
+	}
+
+	if c.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
+		if c.TopQueryCollection.TopQueryCount <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.top_query_count must be greater than 0"))
+		}
+		if c.TopQueryCollection.MaxQuerySampleCount <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.max_query_sample_count must be greater than 0"))
+		}
+		if c.TopQueryCollection.MaxExplainEachInterval < 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.max_explain_each_interval must not be negative"))
+		}
+		if c.TopQueryCollection.QueryPlanCacheSize < 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.query_plan_cache_size must not be negative"))
+		}
+		if c.TopQueryCollection.CollectionInterval <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.collection_interval must be greater than 0"))
+		}
+		if c.TopQueryCollection.QueryPlanCacheTTL <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.query_plan_cache_ttl must be greater than 0"))
+		}
 	}
 
 	return err
@@ -72,24 +129,28 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 			clientOptions.SetConnectTimeout(c.Timeout)
 		}
 
-		if c.Username != "" && c.Password != "" {
-			clientOptions.SetAuth(options.Credential{
-				Username: c.Username,
-				Password: string(c.Password),
-			})
+		// Set up authentication if username/password are provided or if an auth mechanism is specified
+		// Some mechanisms (e.g., MONGODB-X509, MONGODB-AWS with IAM) don't require username/password
+		if c.Username != "" && c.Password != "" || c.AuthMechanism != "" {
+			credential := c.buildCredential()
+			clientOptions.SetAuth(credential)
 		}
 
 		return clientOptions
 	}
 	clientOptions := options.Client()
-	connString := "mongodb://" + strings.Join(c.hostlist(), ",")
+	scheme := c.Scheme
+	if scheme == "" {
+		scheme = "mongodb"
+	}
+	connString := scheme + "://" + strings.Join(c.hostlist(), ",")
 	clientOptions.ApplyURI(connString)
 
 	if c.Timeout > 0 {
 		clientOptions.SetConnectTimeout(c.Timeout)
 	}
 
-	tlsConfig, err := c.LoadTLSConfig(context.Background())
+	tlsConfig, err := c.ClientConfig.LoadTLSConfig(context.Background())
 	if err == nil && tlsConfig != nil {
 		clientOptions.SetTLSConfig(tlsConfig)
 	}
@@ -102,14 +163,37 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 		clientOptions.SetDirect(c.DirectConnection)
 	}
 
-	if c.Username != "" && c.Password != "" {
-		clientOptions.SetAuth(options.Credential{
-			Username: c.Username,
-			Password: string(c.Password),
-		})
+	// Set up authentication if username/password are provided or if an auth mechanism is specified
+	// Some mechanisms (e.g., MONGODB-X509, MONGODB-AWS with IAM) don't require username/password
+	if c.Username != "" && c.Password != "" || c.AuthMechanism != "" {
+		credential := c.buildCredential()
+		clientOptions.SetAuth(credential)
 	}
 
 	return clientOptions
+}
+
+func (c *Config) buildCredential() options.Credential {
+	credential := options.Credential{}
+	if c.Username != "" {
+		credential.Username = c.Username
+	}
+	if c.Password != "" {
+		credential.Password = string(c.Password)
+		// PasswordSet is required for GSSAPI (Kerberos) when a password is explicitly provided.
+		// For other mechanisms, this field is ignored by the driver.
+		credential.PasswordSet = true
+	}
+	if c.AuthMechanism != "" {
+		credential.AuthMechanism = c.AuthMechanism
+	}
+	if c.AuthSource != "" {
+		credential.AuthSource = c.AuthSource
+	}
+	if len(c.AuthMechanismProperties) > 0 {
+		credential.AuthMechanismProperties = c.AuthMechanismProperties
+	}
+	return credential
 }
 
 func (c *Config) hostlist() []string {

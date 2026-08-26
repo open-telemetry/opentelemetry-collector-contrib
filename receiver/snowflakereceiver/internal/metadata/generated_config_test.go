@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -21,47 +20,181 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SnowflakeBillingCloudServiceTotal:              MetricConfig{Enabled: true},
-					SnowflakeBillingTotalCreditTotal:               MetricConfig{Enabled: true},
-					SnowflakeBillingVirtualWarehouseTotal:          MetricConfig{Enabled: true},
-					SnowflakeBillingWarehouseCloudServiceTotal:     MetricConfig{Enabled: true},
-					SnowflakeBillingWarehouseTotalCreditTotal:      MetricConfig{Enabled: true},
-					SnowflakeBillingWarehouseVirtualWarehouseTotal: MetricConfig{Enabled: true},
-					SnowflakeDatabaseBytesScannedAvg:               MetricConfig{Enabled: true},
-					SnowflakeDatabaseQueryCount:                    MetricConfig{Enabled: true},
-					SnowflakeLoginsTotal:                           MetricConfig{Enabled: true},
-					SnowflakePipeCreditsUsedTotal:                  MetricConfig{Enabled: true},
-					SnowflakeQueryBlocked:                          MetricConfig{Enabled: true},
-					SnowflakeQueryBytesDeletedAvg:                  MetricConfig{Enabled: true},
-					SnowflakeQueryBytesSpilledLocalAvg:             MetricConfig{Enabled: true},
-					SnowflakeQueryBytesSpilledRemoteAvg:            MetricConfig{Enabled: true},
-					SnowflakeQueryBytesWrittenAvg:                  MetricConfig{Enabled: true},
-					SnowflakeQueryCompilationTimeAvg:               MetricConfig{Enabled: true},
-					SnowflakeQueryDataScannedCacheAvg:              MetricConfig{Enabled: true},
-					SnowflakeQueryExecuted:                         MetricConfig{Enabled: true},
-					SnowflakeQueryExecutionTimeAvg:                 MetricConfig{Enabled: true},
-					SnowflakeQueryPartitionsScannedAvg:             MetricConfig{Enabled: true},
-					SnowflakeQueryQueuedOverload:                   MetricConfig{Enabled: true},
-					SnowflakeQueryQueuedProvision:                  MetricConfig{Enabled: true},
-					SnowflakeQueuedOverloadTimeAvg:                 MetricConfig{Enabled: true},
-					SnowflakeQueuedProvisioningTimeAvg:             MetricConfig{Enabled: true},
-					SnowflakeQueuedRepairTimeAvg:                   MetricConfig{Enabled: true},
-					SnowflakeRowsDeletedAvg:                        MetricConfig{Enabled: true},
-					SnowflakeRowsInsertedAvg:                       MetricConfig{Enabled: true},
-					SnowflakeRowsProducedAvg:                       MetricConfig{Enabled: true},
-					SnowflakeRowsUnloadedAvg:                       MetricConfig{Enabled: true},
-					SnowflakeRowsUpdatedAvg:                        MetricConfig{Enabled: true},
-					SnowflakeSessionIDCount:                        MetricConfig{Enabled: true},
-					SnowflakeStorageFailsafeBytesTotal:             MetricConfig{Enabled: true},
-					SnowflakeStorageStageBytesTotal:                MetricConfig{Enabled: true},
-					SnowflakeStorageStorageBytesTotal:              MetricConfig{Enabled: true},
-					SnowflakeTotalElapsedTimeAvg:                   MetricConfig{Enabled: true},
+					SnowflakeBillingCloudServiceTotal: SnowflakeBillingCloudServiceTotalMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingCloudServiceTotalMetricAttributeKey{SnowflakeBillingCloudServiceTotalMetricAttributeKeyServiceType},
+					},
+					SnowflakeBillingTotalCreditTotal: SnowflakeBillingTotalCreditTotalMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingTotalCreditTotalMetricAttributeKey{SnowflakeBillingTotalCreditTotalMetricAttributeKeyServiceType},
+					},
+					SnowflakeBillingVirtualWarehouseTotal: SnowflakeBillingVirtualWarehouseTotalMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingVirtualWarehouseTotalMetricAttributeKey{SnowflakeBillingVirtualWarehouseTotalMetricAttributeKeyServiceType},
+					},
+					SnowflakeBillingWarehouseCloudServiceTotal: SnowflakeBillingWarehouseCloudServiceTotalMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingWarehouseCloudServiceTotalMetricAttributeKey{SnowflakeBillingWarehouseCloudServiceTotalMetricAttributeKeyWarehouseName},
+					},
+					SnowflakeBillingWarehouseTotalCreditTotal: SnowflakeBillingWarehouseTotalCreditTotalMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingWarehouseTotalCreditTotalMetricAttributeKey{SnowflakeBillingWarehouseTotalCreditTotalMetricAttributeKeyWarehouseName},
+					},
+					SnowflakeBillingWarehouseVirtualWarehouseTotal: SnowflakeBillingWarehouseVirtualWarehouseTotalMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingWarehouseVirtualWarehouseTotalMetricAttributeKey{SnowflakeBillingWarehouseVirtualWarehouseTotalMetricAttributeKeyWarehouseName},
+					},
+					SnowflakeDatabaseBytesScannedAvg: SnowflakeDatabaseBytesScannedAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeDatabaseBytesScannedAvgMetricAttributeKey{SnowflakeDatabaseBytesScannedAvgMetricAttributeKeySchemaName, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyExecutionStatus, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyErrorMessage, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyQueryType, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyWarehouseName, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyDatabaseName, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeDatabaseQueryCount: SnowflakeDatabaseQueryCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeDatabaseQueryCountMetricAttributeKey{SnowflakeDatabaseQueryCountMetricAttributeKeySchemaName, SnowflakeDatabaseQueryCountMetricAttributeKeyExecutionStatus, SnowflakeDatabaseQueryCountMetricAttributeKeyErrorMessage, SnowflakeDatabaseQueryCountMetricAttributeKeyQueryType, SnowflakeDatabaseQueryCountMetricAttributeKeyWarehouseName, SnowflakeDatabaseQueryCountMetricAttributeKeyDatabaseName, SnowflakeDatabaseQueryCountMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeLoginsTotal: SnowflakeLoginsTotalMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeLoginsTotalMetricAttributeKey{SnowflakeLoginsTotalMetricAttributeKeyErrorMessage, SnowflakeLoginsTotalMetricAttributeKeyReportedClientType, SnowflakeLoginsTotalMetricAttributeKeyIsSuccess},
+					},
+					SnowflakePipeCreditsUsedTotal: SnowflakePipeCreditsUsedTotalMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakePipeCreditsUsedTotalMetricAttributeKey{SnowflakePipeCreditsUsedTotalMetricAttributeKeyPipeName},
+					},
+					SnowflakeQueryBlocked: SnowflakeQueryBlockedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBlockedMetricAttributeKey{SnowflakeQueryBlockedMetricAttributeKeyWarehouseName},
+					},
+					SnowflakeQueryBytesDeletedAvg: SnowflakeQueryBytesDeletedAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBytesDeletedAvgMetricAttributeKey{SnowflakeQueryBytesDeletedAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryBytesSpilledLocalAvg: SnowflakeQueryBytesSpilledLocalAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKey{SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryBytesSpilledRemoteAvg: SnowflakeQueryBytesSpilledRemoteAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKey{SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryBytesWrittenAvg: SnowflakeQueryBytesWrittenAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBytesWrittenAvgMetricAttributeKey{SnowflakeQueryBytesWrittenAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryCompilationTimeAvg: SnowflakeQueryCompilationTimeAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryCompilationTimeAvgMetricAttributeKey{SnowflakeQueryCompilationTimeAvgMetricAttributeKeySchemaName, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyQueryType, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryDataScannedCacheAvg: SnowflakeQueryDataScannedCacheAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryDataScannedCacheAvgMetricAttributeKey{SnowflakeQueryDataScannedCacheAvgMetricAttributeKeySchemaName, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyErrorMessage, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyQueryType, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyWarehouseName, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyDatabaseName, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryExecuted: SnowflakeQueryExecutedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryExecutedMetricAttributeKey{SnowflakeQueryExecutedMetricAttributeKeyWarehouseName},
+					},
+					SnowflakeQueryExecutionTimeAvg: SnowflakeQueryExecutionTimeAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryExecutionTimeAvgMetricAttributeKey{SnowflakeQueryExecutionTimeAvgMetricAttributeKeySchemaName, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyQueryType, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryPartitionsScannedAvg: SnowflakeQueryPartitionsScannedAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryPartitionsScannedAvgMetricAttributeKey{SnowflakeQueryPartitionsScannedAvgMetricAttributeKeySchemaName, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyErrorMessage, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyQueryType, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyWarehouseName, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyDatabaseName, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryQueuedOverload: SnowflakeQueryQueuedOverloadMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryQueuedOverloadMetricAttributeKey{SnowflakeQueryQueuedOverloadMetricAttributeKeyWarehouseName},
+					},
+					SnowflakeQueryQueuedProvision: SnowflakeQueryQueuedProvisionMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryQueuedProvisionMetricAttributeKey{SnowflakeQueryQueuedProvisionMetricAttributeKeyWarehouseName},
+					},
+					SnowflakeQueuedOverloadTimeAvg: SnowflakeQueuedOverloadTimeAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueuedOverloadTimeAvgMetricAttributeKey{SnowflakeQueuedOverloadTimeAvgMetricAttributeKeySchemaName, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyQueryType, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueuedProvisioningTimeAvg: SnowflakeQueuedProvisioningTimeAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueuedProvisioningTimeAvgMetricAttributeKey{SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeySchemaName, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyQueryType, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueuedRepairTimeAvg: SnowflakeQueuedRepairTimeAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueuedRepairTimeAvgMetricAttributeKey{SnowflakeQueuedRepairTimeAvgMetricAttributeKeySchemaName, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyQueryType, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsDeletedAvg: SnowflakeRowsDeletedAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsDeletedAvgMetricAttributeKey{SnowflakeRowsDeletedAvgMetricAttributeKeySchemaName, SnowflakeRowsDeletedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsDeletedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsDeletedAvgMetricAttributeKeyQueryType, SnowflakeRowsDeletedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsDeletedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsDeletedAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsInsertedAvg: SnowflakeRowsInsertedAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsInsertedAvgMetricAttributeKey{SnowflakeRowsInsertedAvgMetricAttributeKeySchemaName, SnowflakeRowsInsertedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsInsertedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsInsertedAvgMetricAttributeKeyQueryType, SnowflakeRowsInsertedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsInsertedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsInsertedAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsProducedAvg: SnowflakeRowsProducedAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsProducedAvgMetricAttributeKey{SnowflakeRowsProducedAvgMetricAttributeKeySchemaName, SnowflakeRowsProducedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsProducedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsProducedAvgMetricAttributeKeyQueryType, SnowflakeRowsProducedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsProducedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsProducedAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsUnloadedAvg: SnowflakeRowsUnloadedAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsUnloadedAvgMetricAttributeKey{SnowflakeRowsUnloadedAvgMetricAttributeKeySchemaName, SnowflakeRowsUnloadedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsUnloadedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsUnloadedAvgMetricAttributeKeyQueryType, SnowflakeRowsUnloadedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsUnloadedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsUnloadedAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsUpdatedAvg: SnowflakeRowsUpdatedAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsUpdatedAvgMetricAttributeKey{SnowflakeRowsUpdatedAvgMetricAttributeKeySchemaName, SnowflakeRowsUpdatedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsUpdatedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsUpdatedAvgMetricAttributeKeyQueryType, SnowflakeRowsUpdatedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsUpdatedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsUpdatedAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeSessionIDCount: SnowflakeSessionIDCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeSessionIDCountMetricAttributeKey{SnowflakeSessionIDCountMetricAttributeKeyUserName},
+					},
+					SnowflakeStorageFailsafeBytesTotal: SnowflakeStorageFailsafeBytesTotalMetricConfig{
+						Enabled: true,
+					},
+					SnowflakeStorageStageBytesTotal: SnowflakeStorageStageBytesTotalMetricConfig{
+						Enabled: true,
+					},
+					SnowflakeStorageStorageBytesTotal: SnowflakeStorageStorageBytesTotalMetricConfig{
+						Enabled: true,
+					},
+					SnowflakeTotalElapsedTimeAvg: SnowflakeTotalElapsedTimeAvgMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeTotalElapsedTimeAvgMetricAttributeKey{SnowflakeTotalElapsedTimeAvgMetricAttributeKeySchemaName, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyErrorMessage, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyQueryType, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyWarehouseName, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyDatabaseName, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyWarehouseSize},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SnowflakeAccountName: ResourceAttributeConfig{Enabled: true},
@@ -72,41 +205,175 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SnowflakeBillingCloudServiceTotal:              MetricConfig{Enabled: false},
-					SnowflakeBillingTotalCreditTotal:               MetricConfig{Enabled: false},
-					SnowflakeBillingVirtualWarehouseTotal:          MetricConfig{Enabled: false},
-					SnowflakeBillingWarehouseCloudServiceTotal:     MetricConfig{Enabled: false},
-					SnowflakeBillingWarehouseTotalCreditTotal:      MetricConfig{Enabled: false},
-					SnowflakeBillingWarehouseVirtualWarehouseTotal: MetricConfig{Enabled: false},
-					SnowflakeDatabaseBytesScannedAvg:               MetricConfig{Enabled: false},
-					SnowflakeDatabaseQueryCount:                    MetricConfig{Enabled: false},
-					SnowflakeLoginsTotal:                           MetricConfig{Enabled: false},
-					SnowflakePipeCreditsUsedTotal:                  MetricConfig{Enabled: false},
-					SnowflakeQueryBlocked:                          MetricConfig{Enabled: false},
-					SnowflakeQueryBytesDeletedAvg:                  MetricConfig{Enabled: false},
-					SnowflakeQueryBytesSpilledLocalAvg:             MetricConfig{Enabled: false},
-					SnowflakeQueryBytesSpilledRemoteAvg:            MetricConfig{Enabled: false},
-					SnowflakeQueryBytesWrittenAvg:                  MetricConfig{Enabled: false},
-					SnowflakeQueryCompilationTimeAvg:               MetricConfig{Enabled: false},
-					SnowflakeQueryDataScannedCacheAvg:              MetricConfig{Enabled: false},
-					SnowflakeQueryExecuted:                         MetricConfig{Enabled: false},
-					SnowflakeQueryExecutionTimeAvg:                 MetricConfig{Enabled: false},
-					SnowflakeQueryPartitionsScannedAvg:             MetricConfig{Enabled: false},
-					SnowflakeQueryQueuedOverload:                   MetricConfig{Enabled: false},
-					SnowflakeQueryQueuedProvision:                  MetricConfig{Enabled: false},
-					SnowflakeQueuedOverloadTimeAvg:                 MetricConfig{Enabled: false},
-					SnowflakeQueuedProvisioningTimeAvg:             MetricConfig{Enabled: false},
-					SnowflakeQueuedRepairTimeAvg:                   MetricConfig{Enabled: false},
-					SnowflakeRowsDeletedAvg:                        MetricConfig{Enabled: false},
-					SnowflakeRowsInsertedAvg:                       MetricConfig{Enabled: false},
-					SnowflakeRowsProducedAvg:                       MetricConfig{Enabled: false},
-					SnowflakeRowsUnloadedAvg:                       MetricConfig{Enabled: false},
-					SnowflakeRowsUpdatedAvg:                        MetricConfig{Enabled: false},
-					SnowflakeSessionIDCount:                        MetricConfig{Enabled: false},
-					SnowflakeStorageFailsafeBytesTotal:             MetricConfig{Enabled: false},
-					SnowflakeStorageStageBytesTotal:                MetricConfig{Enabled: false},
-					SnowflakeStorageStorageBytesTotal:              MetricConfig{Enabled: false},
-					SnowflakeTotalElapsedTimeAvg:                   MetricConfig{Enabled: false},
+					SnowflakeBillingCloudServiceTotal: SnowflakeBillingCloudServiceTotalMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingCloudServiceTotalMetricAttributeKey{SnowflakeBillingCloudServiceTotalMetricAttributeKeyServiceType},
+					},
+					SnowflakeBillingTotalCreditTotal: SnowflakeBillingTotalCreditTotalMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingTotalCreditTotalMetricAttributeKey{SnowflakeBillingTotalCreditTotalMetricAttributeKeyServiceType},
+					},
+					SnowflakeBillingVirtualWarehouseTotal: SnowflakeBillingVirtualWarehouseTotalMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingVirtualWarehouseTotalMetricAttributeKey{SnowflakeBillingVirtualWarehouseTotalMetricAttributeKeyServiceType},
+					},
+					SnowflakeBillingWarehouseCloudServiceTotal: SnowflakeBillingWarehouseCloudServiceTotalMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingWarehouseCloudServiceTotalMetricAttributeKey{SnowflakeBillingWarehouseCloudServiceTotalMetricAttributeKeyWarehouseName},
+					},
+					SnowflakeBillingWarehouseTotalCreditTotal: SnowflakeBillingWarehouseTotalCreditTotalMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingWarehouseTotalCreditTotalMetricAttributeKey{SnowflakeBillingWarehouseTotalCreditTotalMetricAttributeKeyWarehouseName},
+					},
+					SnowflakeBillingWarehouseVirtualWarehouseTotal: SnowflakeBillingWarehouseVirtualWarehouseTotalMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeBillingWarehouseVirtualWarehouseTotalMetricAttributeKey{SnowflakeBillingWarehouseVirtualWarehouseTotalMetricAttributeKeyWarehouseName},
+					},
+					SnowflakeDatabaseBytesScannedAvg: SnowflakeDatabaseBytesScannedAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeDatabaseBytesScannedAvgMetricAttributeKey{SnowflakeDatabaseBytesScannedAvgMetricAttributeKeySchemaName, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyExecutionStatus, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyErrorMessage, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyQueryType, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyWarehouseName, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyDatabaseName, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeDatabaseQueryCount: SnowflakeDatabaseQueryCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeDatabaseQueryCountMetricAttributeKey{SnowflakeDatabaseQueryCountMetricAttributeKeySchemaName, SnowflakeDatabaseQueryCountMetricAttributeKeyExecutionStatus, SnowflakeDatabaseQueryCountMetricAttributeKeyErrorMessage, SnowflakeDatabaseQueryCountMetricAttributeKeyQueryType, SnowflakeDatabaseQueryCountMetricAttributeKeyWarehouseName, SnowflakeDatabaseQueryCountMetricAttributeKeyDatabaseName, SnowflakeDatabaseQueryCountMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeLoginsTotal: SnowflakeLoginsTotalMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeLoginsTotalMetricAttributeKey{SnowflakeLoginsTotalMetricAttributeKeyErrorMessage, SnowflakeLoginsTotalMetricAttributeKeyReportedClientType, SnowflakeLoginsTotalMetricAttributeKeyIsSuccess},
+					},
+					SnowflakePipeCreditsUsedTotal: SnowflakePipeCreditsUsedTotalMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakePipeCreditsUsedTotalMetricAttributeKey{SnowflakePipeCreditsUsedTotalMetricAttributeKeyPipeName},
+					},
+					SnowflakeQueryBlocked: SnowflakeQueryBlockedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBlockedMetricAttributeKey{SnowflakeQueryBlockedMetricAttributeKeyWarehouseName},
+					},
+					SnowflakeQueryBytesDeletedAvg: SnowflakeQueryBytesDeletedAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBytesDeletedAvgMetricAttributeKey{SnowflakeQueryBytesDeletedAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryBytesSpilledLocalAvg: SnowflakeQueryBytesSpilledLocalAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKey{SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryBytesSpilledRemoteAvg: SnowflakeQueryBytesSpilledRemoteAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKey{SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryBytesWrittenAvg: SnowflakeQueryBytesWrittenAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryBytesWrittenAvgMetricAttributeKey{SnowflakeQueryBytesWrittenAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryCompilationTimeAvg: SnowflakeQueryCompilationTimeAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryCompilationTimeAvgMetricAttributeKey{SnowflakeQueryCompilationTimeAvgMetricAttributeKeySchemaName, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyQueryType, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryDataScannedCacheAvg: SnowflakeQueryDataScannedCacheAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryDataScannedCacheAvgMetricAttributeKey{SnowflakeQueryDataScannedCacheAvgMetricAttributeKeySchemaName, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyErrorMessage, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyQueryType, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyWarehouseName, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyDatabaseName, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryExecuted: SnowflakeQueryExecutedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryExecutedMetricAttributeKey{SnowflakeQueryExecutedMetricAttributeKeyWarehouseName},
+					},
+					SnowflakeQueryExecutionTimeAvg: SnowflakeQueryExecutionTimeAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryExecutionTimeAvgMetricAttributeKey{SnowflakeQueryExecutionTimeAvgMetricAttributeKeySchemaName, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyQueryType, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryPartitionsScannedAvg: SnowflakeQueryPartitionsScannedAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryPartitionsScannedAvgMetricAttributeKey{SnowflakeQueryPartitionsScannedAvgMetricAttributeKeySchemaName, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyErrorMessage, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyQueryType, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyWarehouseName, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyDatabaseName, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueryQueuedOverload: SnowflakeQueryQueuedOverloadMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryQueuedOverloadMetricAttributeKey{SnowflakeQueryQueuedOverloadMetricAttributeKeyWarehouseName},
+					},
+					SnowflakeQueryQueuedProvision: SnowflakeQueryQueuedProvisionMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueryQueuedProvisionMetricAttributeKey{SnowflakeQueryQueuedProvisionMetricAttributeKeyWarehouseName},
+					},
+					SnowflakeQueuedOverloadTimeAvg: SnowflakeQueuedOverloadTimeAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueuedOverloadTimeAvgMetricAttributeKey{SnowflakeQueuedOverloadTimeAvgMetricAttributeKeySchemaName, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyQueryType, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueuedProvisioningTimeAvg: SnowflakeQueuedProvisioningTimeAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueuedProvisioningTimeAvgMetricAttributeKey{SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeySchemaName, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyQueryType, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeQueuedRepairTimeAvg: SnowflakeQueuedRepairTimeAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeQueuedRepairTimeAvgMetricAttributeKey{SnowflakeQueuedRepairTimeAvgMetricAttributeKeySchemaName, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyQueryType, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsDeletedAvg: SnowflakeRowsDeletedAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsDeletedAvgMetricAttributeKey{SnowflakeRowsDeletedAvgMetricAttributeKeySchemaName, SnowflakeRowsDeletedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsDeletedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsDeletedAvgMetricAttributeKeyQueryType, SnowflakeRowsDeletedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsDeletedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsDeletedAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsInsertedAvg: SnowflakeRowsInsertedAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsInsertedAvgMetricAttributeKey{SnowflakeRowsInsertedAvgMetricAttributeKeySchemaName, SnowflakeRowsInsertedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsInsertedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsInsertedAvgMetricAttributeKeyQueryType, SnowflakeRowsInsertedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsInsertedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsInsertedAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsProducedAvg: SnowflakeRowsProducedAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsProducedAvgMetricAttributeKey{SnowflakeRowsProducedAvgMetricAttributeKeySchemaName, SnowflakeRowsProducedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsProducedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsProducedAvgMetricAttributeKeyQueryType, SnowflakeRowsProducedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsProducedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsProducedAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsUnloadedAvg: SnowflakeRowsUnloadedAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsUnloadedAvgMetricAttributeKey{SnowflakeRowsUnloadedAvgMetricAttributeKeySchemaName, SnowflakeRowsUnloadedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsUnloadedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsUnloadedAvgMetricAttributeKeyQueryType, SnowflakeRowsUnloadedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsUnloadedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsUnloadedAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeRowsUpdatedAvg: SnowflakeRowsUpdatedAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeRowsUpdatedAvgMetricAttributeKey{SnowflakeRowsUpdatedAvgMetricAttributeKeySchemaName, SnowflakeRowsUpdatedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsUpdatedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsUpdatedAvgMetricAttributeKeyQueryType, SnowflakeRowsUpdatedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsUpdatedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsUpdatedAvgMetricAttributeKeyWarehouseSize},
+					},
+					SnowflakeSessionIDCount: SnowflakeSessionIDCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeSessionIDCountMetricAttributeKey{SnowflakeSessionIDCountMetricAttributeKeyUserName},
+					},
+					SnowflakeStorageFailsafeBytesTotal: SnowflakeStorageFailsafeBytesTotalMetricConfig{
+						Enabled: false,
+					},
+					SnowflakeStorageStageBytesTotal: SnowflakeStorageStageBytesTotalMetricConfig{
+						Enabled: false,
+					},
+					SnowflakeStorageStorageBytesTotal: SnowflakeStorageStorageBytesTotalMetricConfig{
+						Enabled: false,
+					},
+					SnowflakeTotalElapsedTimeAvg: SnowflakeTotalElapsedTimeAvgMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SnowflakeTotalElapsedTimeAvgMetricAttributeKey{SnowflakeTotalElapsedTimeAvgMetricAttributeKeySchemaName, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyErrorMessage, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyQueryType, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyWarehouseName, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyDatabaseName, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyWarehouseSize},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SnowflakeAccountName: ResourceAttributeConfig{Enabled: false},
@@ -117,10 +384,393 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SnowflakeBillingCloudServiceTotalMetricConfig{}, SnowflakeBillingTotalCreditTotalMetricConfig{}, SnowflakeBillingVirtualWarehouseTotalMetricConfig{}, SnowflakeBillingWarehouseCloudServiceTotalMetricConfig{}, SnowflakeBillingWarehouseTotalCreditTotalMetricConfig{}, SnowflakeBillingWarehouseVirtualWarehouseTotalMetricConfig{}, SnowflakeDatabaseBytesScannedAvgMetricConfig{}, SnowflakeDatabaseQueryCountMetricConfig{}, SnowflakeLoginsTotalMetricConfig{}, SnowflakePipeCreditsUsedTotalMetricConfig{}, SnowflakeQueryBlockedMetricConfig{}, SnowflakeQueryBytesDeletedAvgMetricConfig{}, SnowflakeQueryBytesSpilledLocalAvgMetricConfig{}, SnowflakeQueryBytesSpilledRemoteAvgMetricConfig{}, SnowflakeQueryBytesWrittenAvgMetricConfig{}, SnowflakeQueryCompilationTimeAvgMetricConfig{}, SnowflakeQueryDataScannedCacheAvgMetricConfig{}, SnowflakeQueryExecutedMetricConfig{}, SnowflakeQueryExecutionTimeAvgMetricConfig{}, SnowflakeQueryPartitionsScannedAvgMetricConfig{}, SnowflakeQueryQueuedOverloadMetricConfig{}, SnowflakeQueryQueuedProvisionMetricConfig{}, SnowflakeQueuedOverloadTimeAvgMetricConfig{}, SnowflakeQueuedProvisioningTimeAvgMetricConfig{}, SnowflakeQueuedRepairTimeAvgMetricConfig{}, SnowflakeRowsDeletedAvgMetricConfig{}, SnowflakeRowsInsertedAvgMetricConfig{}, SnowflakeRowsProducedAvgMetricConfig{}, SnowflakeRowsUnloadedAvgMetricConfig{}, SnowflakeRowsUpdatedAvgMetricConfig{}, SnowflakeSessionIDCountMetricConfig{}, SnowflakeStorageFailsafeBytesTotalMetricConfig{}, SnowflakeStorageStageBytesTotalMetricConfig{}, SnowflakeStorageStorageBytesTotalMetricConfig{}, SnowflakeTotalElapsedTimeAvgMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+func TestSnowflakeBillingCloudServiceTotalMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeBillingCloudServiceTotal
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeBillingCloudServiceTotalMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.billing.cloud_service.total doesn't have an attribute invalid, valid attributes: [service_type]")
+
+	cfg = DefaultMetricsConfig().SnowflakeBillingCloudServiceTotal
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeBillingTotalCreditTotalMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeBillingTotalCreditTotal
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeBillingTotalCreditTotalMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.billing.total_credit.total doesn't have an attribute invalid, valid attributes: [service_type]")
+
+	cfg = DefaultMetricsConfig().SnowflakeBillingTotalCreditTotal
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeBillingVirtualWarehouseTotalMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeBillingVirtualWarehouseTotal
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeBillingVirtualWarehouseTotalMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.billing.virtual_warehouse.total doesn't have an attribute invalid, valid attributes: [service_type]")
+
+	cfg = DefaultMetricsConfig().SnowflakeBillingVirtualWarehouseTotal
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeBillingWarehouseCloudServiceTotalMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeBillingWarehouseCloudServiceTotal
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeBillingWarehouseCloudServiceTotalMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.billing.warehouse.cloud_service.total doesn't have an attribute invalid, valid attributes: [warehouse_name]")
+
+	cfg = DefaultMetricsConfig().SnowflakeBillingWarehouseCloudServiceTotal
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeBillingWarehouseTotalCreditTotalMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeBillingWarehouseTotalCreditTotal
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeBillingWarehouseTotalCreditTotalMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.billing.warehouse.total_credit.total doesn't have an attribute invalid, valid attributes: [warehouse_name]")
+
+	cfg = DefaultMetricsConfig().SnowflakeBillingWarehouseTotalCreditTotal
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeBillingWarehouseVirtualWarehouseTotalMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeBillingWarehouseVirtualWarehouseTotal
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeBillingWarehouseVirtualWarehouseTotalMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.billing.warehouse.virtual_warehouse.total doesn't have an attribute invalid, valid attributes: [warehouse_name]")
+
+	cfg = DefaultMetricsConfig().SnowflakeBillingWarehouseVirtualWarehouseTotal
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeDatabaseBytesScannedAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeDatabaseBytesScannedAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeDatabaseBytesScannedAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.database.bytes_scanned.avg doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeDatabaseBytesScannedAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeDatabaseQueryCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeDatabaseQueryCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeDatabaseQueryCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.database.query.count doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeDatabaseQueryCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeLoginsTotalMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeLoginsTotal
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeLoginsTotalMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.logins.total doesn't have an attribute invalid, valid attributes: [error_message, reported_client_type, is_success]")
+
+	cfg = DefaultMetricsConfig().SnowflakeLoginsTotal
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakePipeCreditsUsedTotalMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakePipeCreditsUsedTotal
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakePipeCreditsUsedTotalMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.pipe.credits_used.total doesn't have an attribute invalid, valid attributes: [pipe_name]")
+
+	cfg = DefaultMetricsConfig().SnowflakePipeCreditsUsedTotal
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeQueryBlockedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeQueryBlocked
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeQueryBlockedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.query.blocked doesn't have an attribute invalid, valid attributes: [warehouse_name]")
+
+	cfg = DefaultMetricsConfig().SnowflakeQueryBlocked
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeQueryBytesDeletedAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeQueryBytesDeletedAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeQueryBytesDeletedAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.query.bytes_deleted.avg doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeQueryBytesDeletedAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeQueryBytesSpilledLocalAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeQueryBytesSpilledLocalAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.query.bytes_spilled.local.avg doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeQueryBytesSpilledLocalAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeQueryBytesSpilledRemoteAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeQueryBytesSpilledRemoteAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.query.bytes_spilled.remote.avg doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeQueryBytesSpilledRemoteAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeQueryBytesWrittenAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeQueryBytesWrittenAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeQueryBytesWrittenAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.query.bytes_written.avg doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeQueryBytesWrittenAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeQueryCompilationTimeAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeQueryCompilationTimeAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeQueryCompilationTimeAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.query.compilation_time.avg doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeQueryCompilationTimeAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeQueryDataScannedCacheAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeQueryDataScannedCacheAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeQueryDataScannedCacheAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.query.data_scanned_cache.avg doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeQueryDataScannedCacheAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeQueryExecutedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeQueryExecuted
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeQueryExecutedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.query.executed doesn't have an attribute invalid, valid attributes: [warehouse_name]")
+
+	cfg = DefaultMetricsConfig().SnowflakeQueryExecuted
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeQueryExecutionTimeAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeQueryExecutionTimeAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeQueryExecutionTimeAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.query.execution_time.avg doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeQueryExecutionTimeAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeQueryPartitionsScannedAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeQueryPartitionsScannedAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeQueryPartitionsScannedAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.query.partitions_scanned.avg doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeQueryPartitionsScannedAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeQueryQueuedOverloadMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeQueryQueuedOverload
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeQueryQueuedOverloadMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.query.queued_overload doesn't have an attribute invalid, valid attributes: [warehouse_name]")
+
+	cfg = DefaultMetricsConfig().SnowflakeQueryQueuedOverload
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeQueryQueuedProvisionMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeQueryQueuedProvision
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeQueryQueuedProvisionMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.query.queued_provision doesn't have an attribute invalid, valid attributes: [warehouse_name]")
+
+	cfg = DefaultMetricsConfig().SnowflakeQueryQueuedProvision
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeQueuedOverloadTimeAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeQueuedOverloadTimeAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeQueuedOverloadTimeAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.queued_overload_time.avg doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeQueuedOverloadTimeAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeQueuedProvisioningTimeAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeQueuedProvisioningTimeAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeQueuedProvisioningTimeAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.queued_provisioning_time.avg doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeQueuedProvisioningTimeAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeQueuedRepairTimeAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeQueuedRepairTimeAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeQueuedRepairTimeAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.queued_repair_time.avg doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeQueuedRepairTimeAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeRowsDeletedAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeRowsDeletedAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeRowsDeletedAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.rows_deleted.avg doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeRowsDeletedAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeRowsInsertedAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeRowsInsertedAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeRowsInsertedAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.rows_inserted.avg doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeRowsInsertedAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeRowsProducedAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeRowsProducedAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeRowsProducedAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.rows_produced.avg doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeRowsProducedAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeRowsUnloadedAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeRowsUnloadedAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeRowsUnloadedAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.rows_unloaded.avg doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeRowsUnloadedAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeRowsUpdatedAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeRowsUpdatedAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeRowsUpdatedAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.rows_updated.avg doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeRowsUpdatedAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeSessionIDCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeSessionIDCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeSessionIDCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.session_id.count doesn't have an attribute invalid, valid attributes: [user_name]")
+
+	cfg = DefaultMetricsConfig().SnowflakeSessionIDCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSnowflakeTotalElapsedTimeAvgMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SnowflakeTotalElapsedTimeAvg
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SnowflakeTotalElapsedTimeAvgMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric snowflake.total_elapsed_time.avg doesn't have an attribute invalid, valid attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]")
+
+	cfg = DefaultMetricsConfig().SnowflakeTotalElapsedTimeAvg
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
@@ -128,7 +778,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

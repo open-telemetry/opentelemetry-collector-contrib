@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -36,9 +37,9 @@ func (cfg SignalConfig) Validate() error {
 
 // Config defines configuration for the Tinybird exporter.
 type Config struct {
-	ClientConfig confighttp.ClientConfig         `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	RetryConfig  configretry.BackOffConfig       `mapstructure:"retry_on_failure"`
-	QueueConfig  exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	ClientConfig confighttp.ClientConfig                                  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	RetryConfig  configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	QueueConfig  configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// Tinybird API token.
 	Token   configopaque.String `mapstructure:"token"`

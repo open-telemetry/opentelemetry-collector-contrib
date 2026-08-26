@@ -1,0 +1,24 @@
+$defs:
+  http_config:
+    description: HTTPConfig defines the configuration for the HTTP server receiving traces.
+    type: object
+    properties:
+      traces_url_paths:
+        description: The URL path to receive traces on. If omitted "/" will be used.
+        type: array
+        items:
+          type: string
+    allOf:
+      - $ref: go.opentelemetry.io/collector/config/confighttp.server_config
+description: Config represents the receiver config settings within the collector's config.yaml
+type: object
+properties:
+  auth_api:
+    type: string
+  fields:
+    $ref: ./internal/libhoneyevent.field_map_config
+  http:
+    x-optional: true
+    $ref: http_config
+  wrapper:
+    type: string

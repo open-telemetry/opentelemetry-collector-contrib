@@ -18,9 +18,10 @@ import (
 
 	"github.com/cenkalti/backoff/v5"
 	"github.com/golang/snappy"
+	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/otlptranslator"
-	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/prompb"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -138,7 +139,10 @@ type prwExporter struct {
 	wal                 *prweWAL
 	exporterSettings    prometheusremotewrite.Settings
 	telemetry           prwTelemetry
-	RemoteWriteProtoMsg config.RemoteWriteProtoMsg
+	RemoteWriteProtoMsg remoteapi.WriteMessageType
+	// includeMetadataKeys lists client metadata keys that are forwarded as
+	// HTTP headers on every outbound remote write request.
+	includeMetadataKeys []string
 
 	// When concurrency is enabled, concurrent goroutines would potentially
 	// fight over the same batchState object. To avoid this, we use a pool
@@ -168,7 +172,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		return nil, err
 	}
 
-	endpointURL, err := url.ParseRequestURI(cfg.ClientConfig.Endpoint)
+	endpointURL, err := url.ParseRequestURI(cfg.HTTP.Endpoint)
 	if err != nil {
 		return nil, errors.New("invalid endpoint")
 	}
@@ -186,11 +190,14 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(set.BuildInfo.Description), " ", "-"), set.BuildInfo.Version)
 
 	concurrency := 5
-	if !enableMultipleWorkersFeatureGate.IsEnabled() {
+	if !metadata.ExporterPrometheusremotewritexporterEnableMultipleWorkersFeatureGate.IsEnabled() {
 		concurrency = cfg.RemoteWriteQueue.NumConsumers
 	}
 	if cfg.MaxBatchRequestParallelism != nil {
 		concurrency = *cfg.MaxBatchRequestParallelism
+	}
+	if concurrency < 1 {
+		concurrency = 1
 	}
 
 	// Set the desired number of consumers as a metric for the exporter.
@@ -203,17 +210,22 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		userAgentHeader:     userAgentHeader,
 		maxBatchSizeBytes:   cfg.MaxBatchSizeBytes,
 		concurrency:         concurrency,
-		clientSettings:      &cfg.ClientConfig,
+		clientSettings:      &cfg.HTTP,
 		settings:            set.TelemetrySettings,
 		retrySettings:       cfg.BackOffConfig,
-		retryOnHTTP429:      retryOn429FeatureGate.IsEnabled(),
+		retryOnHTTP429:      metadata.ExporterPrometheusremotewritexporterRetryOn429FeatureGate.IsEnabled(),
 		RemoteWriteProtoMsg: cfg.RemoteWriteProtoMsg,
+		includeMetadataKeys: cfg.IncludeMetadataKeys,
 		exporterSettings: prometheusremotewrite.Settings{
-			Namespace:         cfg.Namespace,
-			ExternalLabels:    sanitizedLabels,
-			DisableTargetInfo: !cfg.TargetInfo.Enabled,
-			AddMetricSuffixes: cfg.AddMetricSuffixes,
-			SendMetadata:      cfg.SendMetadata,
+			Namespace:                       cfg.Namespace,
+			ExternalLabels:                  sanitizedLabels,
+			DisableTargetInfo:               !cfg.TargetInfo.Enabled,
+			DisableScopeInfo:                cfg.DisableScopeInfo,
+			AddMetricSuffixes:               cfg.AddMetricSuffixes,
+			TranslationStrategy:             string(cfg.TranslationStrategy),
+			SendMetadata:                    cfg.SendMetadata,
+			ConvertExplicitHistogramsToNHCB: cfg.ConvertExplicitHistogramsToNHCB,
+			KeepClassicHistograms:           cfg.KeepClassicHistograms,
 		},
 		telemetry:      telemetry,
 		batchStatePool: sync.Pool{New: func() any { return newBatchTimeServicesState() }},
@@ -230,7 +242,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 
 // Start creates the prometheus client
 func (prwe *prwExporter) Start(ctx context.Context, host component.Host) (err error) {
-	prwe.client, err = prwe.clientSettings.ToClient(ctx, host, prwe.settings)
+	prwe.client, err = prwe.clientSettings.ToClient(ctx, host.GetExtensions(), prwe.settings)
 	if err != nil {
 		return err
 	}
@@ -267,7 +279,7 @@ func (prwe *prwExporter) pushMetricsV1(ctx context.Context, md pmetric.Metrics) 
 
 	var m []*prompb.MetricMetadata
 	if prwe.exporterSettings.SendMetadata {
-		m, err = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes, prwe.exporterSettings.Namespace)
+		m, err = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings)
 		if err != nil {
 			prwe.settings.Logger.Debug("failed to translate metrics into metadata, exporting remaining metadata", zap.Error(err), zap.Int("translated", len(m)))
 		}
@@ -289,15 +301,15 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 	default:
 
 		// If feature flag not enabled support only RW1.
-		if !enableSendingRW2FeatureGate.IsEnabled() {
+		if !metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate.IsEnabled() {
 			return prwe.pushMetricsV1(ctx, md)
 		}
 
 		// If feature flag was enabled check if we want to send RW1 or RW2.
 		switch prwe.RemoteWriteProtoMsg {
-		case config.RemoteWriteProtoMsgV1:
+		case remoteapi.WriteV1MessageType:
 			return prwe.pushMetricsV1(ctx, md)
-		case config.RemoteWriteProtoMsgV2:
+		case remoteapi.WriteV2MessageType:
 			return prwe.pushMetricsV2(ctx, md)
 		default:
 			return fmt.Errorf("unsupported remote-write protobuf message: %v", prwe.RemoteWriteProtoMsg)
@@ -307,7 +319,9 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 
 func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	namer := otlptranslator.LabelNamer{
-		UnderscoreLabelSanitization: !prometheustranslator.DropSanitizationGate.IsEnabled(),
+		// TODO: SA1019: (github.com/prometheus/otlptranslator.LabelNamer).UnderscoreLabelSanitization is deprecated: This will be removed in a future version of otlptranslator.
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50429
+		UnderscoreLabelSanitization: !prometheustranslator.DropSanitizationGate.IsEnabled(), //nolint:staticcheck
 	}
 	sanitizedLabels := make(map[string]string)
 	for key, value := range cfg.ExternalLabels {
@@ -408,7 +422,7 @@ func (prwe *prwExporter) handleRequests(ctx context.Context, input chan *prompb.
 			}
 
 			if errExecute := prwe.execute(ctx, reqBuf); errExecute != nil {
-				errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
+				errs = multierr.Append(errs, errExecute)
 			}
 		}
 	}
@@ -441,14 +455,24 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 
 		switch {
 		// If feature flag not enabled support only RW1
-		case !enableSendingRW2FeatureGate.IsEnabled(), prwe.RemoteWriteProtoMsg == config.RemoteWriteProtoMsgV1:
+		case !metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate.IsEnabled(), prwe.RemoteWriteProtoMsg == remoteapi.WriteV1MessageType:
 			req.Header.Set("Content-Type", "application/x-protobuf")
 			req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
-		case prwe.RemoteWriteProtoMsg == config.RemoteWriteProtoMsgV2:
+		case prwe.RemoteWriteProtoMsg == remoteapi.WriteV2MessageType:
 			req.Header.Set("Content-Type", "application/x-protobuf;proto=io.prometheus.write.v2.Request")
 			req.Header.Set("X-Prometheus-Remote-Write-Version", "2.0.0")
 		default:
 			return http.StatusBadRequest, fmt.Errorf("unsupported remote-write protobuf message: %v (should be validated earlier)", prwe.RemoteWriteProtoMsg)
+		}
+
+		// Forward configured client metadata keys as HTTP headers
+		if len(prwe.includeMetadataKeys) > 0 {
+			md := client.FromContext(ctx).Metadata
+			for _, key := range prwe.includeMetadataKeys {
+				for _, val := range md.Get(key) {
+					req.Header.Add(key, val)
+				}
+			}
 		}
 
 		resp, err := prwe.client.Do(req)
@@ -466,7 +490,7 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 		// If the header is missing, it suggests that the endpoint does not support RW2 or the
 		// implementation is not compliant with the specification. Reference:
 		// https://prometheus.io/docs/specs/prw/remote_write_spec_2_0/#required-written-response-headers
-		if enableSendingRW2FeatureGate.IsEnabled() && prwe.RemoteWriteProtoMsg == config.RemoteWriteProtoMsgV2 {
+		if metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate.IsEnabled() && prwe.RemoteWriteProtoMsg == remoteapi.WriteV2MessageType {
 			prwe.handleWrittenHeaders(ctx, resp)
 		}
 
@@ -518,8 +542,10 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 	}
 
 	if err != nil {
-		// A permanent error is being returned here so we don't retry on context deadline exceeded.
-		return consumererror.NewPermanent(err)
+		if errors.Is(err, context.Canceled) {
+			return consumererror.NewPermanent(err)
+		}
+		return err
 	}
 
 	return nil

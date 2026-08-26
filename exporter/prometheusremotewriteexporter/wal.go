@@ -84,7 +84,9 @@ func newPRWWalTelemetry(set exporter.Settings) (prwWalTelemetry, error) {
 	}
 	return &prwWalTelemetryOTel{
 		telemetryBuilder: telemetryBuilder,
-		otelAttrs:        []attribute.KeyValue{},
+		otelAttrs: []attribute.KeyValue{
+			attribute.String("exporter", set.ID.String()),
+		},
 	}, nil
 }
 
@@ -156,10 +158,12 @@ func newWAL(walConfig *WALConfig, set exporter.Settings, exportSink func(context
 		exportSink: exportSink,
 		walConfig:  walConfig,
 		stopChan:   make(chan struct{}),
-		rNotify:    make(chan struct{}),
-		rWALIndex:  &atomic.Uint64{},
-		wWALIndex:  &atomic.Uint64{},
-		telemetry:  telemetryPRWWal,
+		// Buffered to avoid lost wake-ups when the writer signals before the
+		// reader starts waiting on notifications.
+		rNotify:   make(chan struct{}, 1),
+		rWALIndex: &atomic.Uint64{},
+		wWALIndex: &atomic.Uint64{},
+		telemetry: telemetryPRWWal,
 	}, nil
 }
 
@@ -168,6 +172,7 @@ func (wc *WALConfig) createWAL() (*wal.Log, string, error) {
 	log, err := wal.Open(walPath, &wal.Options{
 		SegmentCacheSize: wc.bufferSize(),
 		NoCopy:           true,
+		AllowEmpty:       true,
 	})
 	if err != nil {
 		return nil, "", fmt.Errorf("prometheusremotewriteexporter: failed to open WAL: %w", err)
@@ -178,6 +183,7 @@ func (wc *WALConfig) createWAL() (*wal.Log, string, error) {
 var (
 	errAlreadyClosed = errors.New("already closed")
 	errNilWAL        = errors.New("wal is nil")
+	errWALTimeout    = errors.New("WAL read timed out waiting for new data")
 )
 
 // retrieveWALIndices queries the WriteAheadLog for its current first and last indices.
@@ -335,6 +341,23 @@ func (prweWAL *prweWAL) continuallyPopWALThenExport(ctx context.Context, signalS
 
 		var req *prompb.WriteRequest
 		req, err = prweWAL.readPrompbFromWAL(ctx, prweWAL.rWALIndex.Load())
+		if errors.Is(err, errWALTimeout) {
+			// Read timed out waiting for new data. Flush any buffered entries
+			// if the truncation timer has fired.
+			err = nil
+			if len(reqL) > 0 {
+				select {
+				case <-timer.C:
+					timer = freshTimer()
+					if errT := prweWAL.exportThenFrontTruncateWAL(ctx, reqL); errT != nil {
+						return errT
+					}
+					reqL = reqL[:0]
+				default:
+				}
+			}
+			continue
+		}
 		if err != nil {
 			return err
 		}
@@ -431,13 +454,17 @@ func (prweWAL *prweWAL) persistToWAL(ctx context.Context, requests []*prompb.Wri
 		batch.Write(wIndex, protoBlob)
 	}
 
+	if err := prweWAL.wal.WriteBatch(batch); err != nil {
+		return err
+	}
+
 	// Notify reader go routine that is possibly waiting for writes.
 	select {
 	case prweWAL.rNotify <- struct{}{}:
 	default:
 	}
 
-	return prweWAL.wal.WriteBatch(batch)
+	return nil
 }
 
 func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wreq *prompb.WriteRequest, err error) {
@@ -480,13 +507,24 @@ func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wr
 		}
 		prweWAL.mu.Unlock()
 		// If WAL was empty, let's wait for a notification from
-		// the writer go routine.
+		// the writer go routine, but with a timeout so the caller
+		// can flush any buffered entries and check the truncation timer.
 		if errors.Is(err, wal.ErrNotFound) {
+			readWaitTimeout := prweWAL.walConfig.truncateFrequency() / 2
+			if readWaitTimeout <= 0 {
+				readWaitTimeout = time.Millisecond
+			}
+			waitTimer := time.NewTimer(readWaitTimeout)
 			select {
 			case <-prweWAL.rNotify:
+				waitTimer.Stop()
+			case <-waitTimer.C:
+				return nil, errWALTimeout
 			case <-ctx.Done():
+				waitTimer.Stop()
 				return nil, ctx.Err()
 			case <-prweWAL.stopChan:
+				waitTimer.Stop()
 				return nil, errors.New("attempt to read from WAL after stopped")
 			}
 		}

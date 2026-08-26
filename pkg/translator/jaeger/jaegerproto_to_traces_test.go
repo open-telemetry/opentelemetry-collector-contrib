@@ -13,9 +13,9 @@ import (
 	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.16.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -290,7 +290,7 @@ func TestProtoToTraces(t *testing.T) {
 									VStr:  string(tracetranslator.OpenTracingSpanKindServer),
 								},
 								{
-									Key:   string(conventions.HTTPStatusCodeKey),
+									Key:   "http.status_code",
 									VType: model.ValueType_STRING,
 									VStr:  "404",
 								},
@@ -307,7 +307,7 @@ func TestProtoToTraces(t *testing.T) {
 				span.SetKind(ptrace.SpanKindClient)
 				span.SetKind(ptrace.SpanKindServer)
 				span.Status().SetCode(ptrace.StatusCodeUnset)
-				span.Attributes().PutStr(string(conventions.HTTPStatusCodeKey), "404")
+				span.Attributes().PutStr("http.status_code", "404")
 				return traces
 			}(),
 		},
@@ -334,11 +334,11 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 				OperationName: "operation2",
 				Tags: []model.KeyValue{
 					{
-						Key:   string(conventions.OtelScopeNameKey),
+						Key:   "otel.scope.name",
 						VType: model.ValueType_STRING,
 						VStr:  "library2",
 					}, {
-						Key:   string(conventions.OtelScopeVersionKey),
+						Key:   "otel.scope.version",
 						VType: model.ValueType_STRING,
 						VStr:  "0.42.0",
 					},
@@ -351,11 +351,11 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 				OperationName: "operation1",
 				Tags: []model.KeyValue{
 					{
-						Key:   string(conventions.OtelScopeNameKey),
+						Key:   "otel.scope.name",
 						VType: model.ValueType_STRING,
 						VStr:  "library1",
 					}, {
-						Key:   string(conventions.OtelScopeVersionKey),
+						Key:   "otel.scope.version",
 						VType: model.ValueType_STRING,
 						VStr:  "0.42.0",
 					},
@@ -424,7 +424,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "status.code is set as string",
 			attrs: map[string]any{
-				string(conventions.OtelStatusCodeKey): statusOk,
+				"otel.status_code": statusOk,
 			},
 			status:           okStatus,
 			attrsModifiedLen: 0,
@@ -432,9 +432,9 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "status.code, status.message and error tags are set",
 			attrs: map[string]any{
-				tracetranslator.TagError:                     true,
-				string(conventions.OtelStatusCodeKey):        statusError,
-				string(conventions.OtelStatusDescriptionKey): "Error: Invalid argument",
+				tracetranslator.TagError:  true,
+				"otel.status_code":        statusError,
+				"otel.status_description": "Error: Invalid argument",
 			},
 			status:           errorStatusWithMessage,
 			attrsModifiedLen: 0,
@@ -442,7 +442,15 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "http.status_code tag is set as string",
 			attrs: map[string]any{
-				string(conventions.HTTPStatusCodeKey): "404",
+				"http.status_code": "404",
+			},
+			status:           errorStatus,
+			attrsModifiedLen: 1,
+		},
+		{
+			name: "http.response.status_code tag is set as string (v1 conventions)",
+			attrs: map[string]any{
+				"http.response.status_code": "404",
 			},
 			status:           errorStatus,
 			attrsModifiedLen: 1,
@@ -450,9 +458,9 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "http.status_code, http.status_message and error tags are set",
 			attrs: map[string]any{
-				tracetranslator.TagError:              true,
-				string(conventions.HTTPStatusCodeKey): 404,
-				tracetranslator.TagHTTPStatusMsg:      "HTTP 404: Not Found",
+				tracetranslator.TagError:         true,
+				"http.status_code":               404,
+				tracetranslator.TagHTTPStatusMsg: "HTTP 404: Not Found",
 			},
 			status:           errorStatusWith404Message,
 			attrsModifiedLen: 2,
@@ -460,9 +468,9 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "status.code has precedence over http.status_code.",
 			attrs: map[string]any{
-				string(conventions.OtelStatusCodeKey): statusOk,
-				string(conventions.HTTPStatusCodeKey): 500,
-				tracetranslator.TagHTTPStatusMsg:      "Server Error",
+				"otel.status_code":               statusOk,
+				"http.status_code":               500,
+				tracetranslator.TagHTTPStatusMsg: "Server Error",
 			},
 			status:           okStatus,
 			attrsModifiedLen: 2,
@@ -470,8 +478,8 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "Ignore http.status_code == 200 if error set to true.",
 			attrs: map[string]any{
-				tracetranslator.TagError:              true,
-				string(conventions.HTTPStatusCodeKey): http.StatusOK,
+				tracetranslator.TagError: true,
+				"http.status_code":       http.StatusOK,
 			},
 			status:           errorStatus,
 			attrsModifiedLen: 1,
@@ -480,8 +488,8 @@ func TestSetInternalSpanStatus(t *testing.T) {
 			name: "the 4xx range span status MUST be left unset in case of SpanKind.SERVER",
 			kind: ptrace.SpanKindServer,
 			attrs: map[string]any{
-				tracetranslator.TagError:              false,
-				string(conventions.HTTPStatusCodeKey): 404,
+				tracetranslator.TagError: false,
+				"http.status_code":       404,
 			},
 			status:           emptyStatus,
 			attrsModifiedLen: 2,
@@ -662,7 +670,7 @@ func TestChecksum(t *testing.T) {
 func generateTracesResourceOnly() ptrace.Traces {
 	td := testdata.GenerateTracesOneEmptyResourceSpans()
 	rs := td.ResourceSpans().At(0).Resource()
-	rs.Attributes().PutStr(string(conventions.ServiceNameKey), "service-1")
+	rs.Attributes().PutStr("service.name", "service-1")
 	rs.Attributes().PutInt("int-attr-1", 123)
 	return td
 }
@@ -689,7 +697,8 @@ func generateTracesOneSpanNoResource() ptrace.Traces {
 	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	span.SetSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
 	span.SetTraceID(
-		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
+		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+	)
 	span.SetDroppedAttributesCount(0)
 	span.SetDroppedEventsCount(0)
 	span.SetStartTimestamp(testSpanStartTimestamp)
@@ -766,7 +775,7 @@ func generateProtoSpan() *model.Span {
 				VStr:  string(tracetranslator.OpenTracingSpanKindClient),
 			},
 			{
-				Key:   string(conventions.OtelStatusCodeKey),
+				Key:   "otel.status_code",
 				VType: model.ValueType_STRING,
 				VStr:  statusError,
 			},
@@ -776,7 +785,7 @@ func generateProtoSpan() *model.Span {
 				VType: model.ValueType_BOOL,
 			},
 			{
-				Key:   string(conventions.OtelStatusDescriptionKey),
+				Key:   "otel.status_description",
 				VType: model.ValueType_STRING,
 				VStr:  "status-cancelled",
 			},
@@ -788,11 +797,11 @@ func generateProtoSpanWithLibraryInfo(libraryName string) *model.Span {
 	span := generateProtoSpan()
 	span.Tags = append([]model.KeyValue{
 		{
-			Key:   string(conventions.OtelScopeNameKey),
+			Key:   "otel.scope.name",
 			VType: model.ValueType_STRING,
 			VStr:  libraryName,
 		}, {
-			Key:   string(conventions.OtelScopeVersionKey),
+			Key:   "otel.scope.version",
 			VType: model.ValueType_STRING,
 			VStr:  "0.42.0",
 		},
@@ -845,7 +854,7 @@ func generateProtoSpanWithTraceState() *model.Span {
 				VStr:  string(tracetranslator.OpenTracingSpanKindClient),
 			},
 			{
-				Key:   string(conventions.OtelStatusCodeKey),
+				Key:   "otel.status_code",
 				VType: model.ValueType_STRING,
 				VStr:  statusError,
 			},
@@ -855,7 +864,7 @@ func generateProtoSpanWithTraceState() *model.Span {
 				VType: model.ValueType_BOOL,
 			},
 			{
-				Key:   string(conventions.OtelStatusDescriptionKey),
+				Key:   "otel.status_description",
 				VType: model.ValueType_STRING,
 				VStr:  "status-cancelled",
 			},
@@ -881,7 +890,7 @@ func generateTracesTwoSpansChildParent() ptrace.Traces {
 	span.SetStartTimestamp(spans.At(0).StartTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp())
 	span.Status().SetCode(ptrace.StatusCodeUnset)
-	span.Attributes().PutInt(string(conventions.HTTPStatusCodeKey), 404)
+	span.Attributes().PutInt("http.status_code", 404)
 	return td
 }
 
@@ -898,7 +907,7 @@ func generateProtoChildSpan() *model.Span {
 		Duration:      testSpanEndTime.Sub(testSpanStartTime),
 		Tags: []model.KeyValue{
 			{
-				Key:    string(conventions.HTTPStatusCodeKey),
+				Key:    "http.status_code",
 				VType:  model.ValueType_INT64,
 				VInt64: 404,
 			},
@@ -936,8 +945,8 @@ func generateTracesTwoSpansWithFollower() ptrace.Traces {
 	link.SetTraceID(span.TraceID())
 	link.SetSpanID(spans.At(0).SpanID())
 	link.Attributes().PutStr(
-		string(conventions.OpentracingRefTypeKey),
-		conventions.OpentracingRefTypeFollowsFrom.Value.AsString(),
+		"opentracing.ref_type",
+		"follows_from",
 	)
 	return td
 }
@@ -960,12 +969,12 @@ func generateProtoFollowerSpan() *model.Span {
 				VStr:  string(tracetranslator.OpenTracingSpanKindConsumer),
 			},
 			{
-				Key:   string(conventions.OtelStatusCodeKey),
+				Key:   "otel.status_code",
 				VType: model.ValueType_STRING,
 				VStr:  statusOk,
 			},
 			{
-				Key:   string(conventions.OtelStatusDescriptionKey),
+				Key:   "otel.status_description",
 				VType: model.ValueType_STRING,
 				VStr:  "status-ok",
 			},
@@ -1000,8 +1009,8 @@ func generateTracesSpanWithTwoParents() ptrace.Traces {
 	link.SetTraceID(parent2.TraceID())
 	link.SetSpanID(parent2.SpanID())
 	link.Attributes().PutStr(
-		string(conventions.OpentracingRefTypeKey),
-		conventions.OpentracingRefTypeChildOf.Value.AsString(),
+		"opentracing.ref_type",
+		"child_of",
 	)
 	return td
 }
@@ -1024,12 +1033,12 @@ func generateProtoTwoParentsSpan() *model.Span {
 				VStr:  string(tracetranslator.OpenTracingSpanKindConsumer),
 			},
 			{
-				Key:   string(conventions.OtelStatusCodeKey),
+				Key:   "otel.status_code",
 				VType: model.ValueType_STRING,
 				VStr:  statusOk,
 			},
 			{
-				Key:   string(conventions.OtelStatusDescriptionKey),
+				Key:   "otel.status_description",
 				VType: model.ValueType_STRING,
 				VStr:  "status-ok",
 			},
@@ -1093,4 +1102,40 @@ func generateTracesTwoSpansFromTwoLibraries() ptrace.Traces {
 	span2.SetEndTimestamp(testSpanEndTimestamp)
 
 	return td
+}
+
+func TestJTagsToInternalAttributesHTTPConventionsMigration(t *testing.T) {
+	cases := []struct {
+		name       string
+		emitV1     bool
+		dontEmitV0 bool
+		expectsV0  bool
+		expectsV1  bool
+	}{
+		{name: "v0 only", emitV1: false, dontEmitV0: false, expectsV0: true, expectsV1: false},
+		{name: "double publish", emitV1: true, dontEmitV0: false, expectsV0: true, expectsV1: true},
+		{name: "v1 only", emitV1: true, dontEmitV0: true, expectsV0: false, expectsV1: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := featuregate.GlobalRegistry().Set("pkg.translator.jaeger.EmitV1HttpConventions", tc.emitV1)
+			assert.NoError(t, err)
+			err = featuregate.GlobalRegistry().Set("pkg.translator.jaeger.DontEmitV0HttpConventions", tc.dontEmitV0)
+			assert.NoError(t, err)
+			t.Cleanup(func() {
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.jaeger.DontEmitV0HttpConventions", false))
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.jaeger.EmitV1HttpConventions", false))
+			})
+
+			tags := []model.KeyValue{{Key: "http.status_code", VType: model.ValueType_STRING, VStr: "500"}}
+			dest := pcommon.NewMap()
+			jTagsToInternalAttributes(tags, dest)
+
+			_, hasV0 := dest.Get("http.status_code")
+			_, hasV1 := dest.Get("http.response.status_code")
+			assert.Equal(t, tc.expectsV0, hasV0)
+			assert.Equal(t, tc.expectsV1, hasV1)
+		})
+	}
 }

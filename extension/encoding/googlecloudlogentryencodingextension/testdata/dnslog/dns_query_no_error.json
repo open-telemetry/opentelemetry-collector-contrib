@@ -1,0 +1,34 @@
+{
+  "insertId": "10x6hrzevg2qw",
+  "jsonPayload": {
+    "rdata": "logging.googleapis.com.\t186\tIN\tcname\tlogging-alv.googleapis.com.\nlogging-alv.googleapis.com.\t300\tIN\ta\t216.239.38.174\nlogging-alv.googleapis.com.\t300\tIN\ta\t216.239.36.174\nlogging-alv.googleapis.com.\t300\tIN\ta\t216.239.32.174\nlogging-alv.googleapis.com.\t300\tIN\ta\t21...",
+    "responseCode": "NOERROR",
+    "vmZoneName": "europe-west1-c",
+    "vmInstanceIdString": "2838092002611613780",
+    "vmProjectId": "elastic-logstash",
+    "queryName": "logging.googleapis.com.",
+    "sourceIP": "10.132.0.43",
+    "protocol": "UDP",
+    "queryType": "A",
+    "authAnswer": false,
+    "dns64Translated": false,
+    "serverLatency": 4,
+    "sourceNetwork": "default",
+    "vmInstanceId": 2838092002611613700,
+    "vmInstanceName": "228025391384.instance-20251126-211431"
+  },
+  "resource": {
+    "type": "dns_query",
+    "labels": {
+      "target_name": "",
+      "target_type": "external",
+      "location": "europe-west1",
+      "project_id": "elastic-logstash",
+      "source_type": "gce-vm"
+    }
+  },
+  "timestamp": "2025-11-27T13:45:55.469213028Z",
+  "severity": "INFO",
+  "logName": "projects/elastic-logstash/logs/dns.googleapis.com%2Fdns_queries",
+  "receiveTimestamp": "2025-11-27T13:45:56.356561793Z"
+}

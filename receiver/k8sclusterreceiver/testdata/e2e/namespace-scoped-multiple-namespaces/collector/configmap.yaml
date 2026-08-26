@@ -6,7 +6,7 @@ metadata:
 data:
   relay: |
     exporters:
-      otlp:
+      otlp_grpc:
         endpoint: {{ .HostEndpoint }}:4317
         tls:
           insecure: true
@@ -31,7 +31,7 @@ data:
       pipelines:
         metrics:
           exporters:
-          - otlp
+          - otlp_grpc
           - debug
           receivers:
           - k8s_cluster

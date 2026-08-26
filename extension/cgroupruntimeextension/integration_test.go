@@ -1,13 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 //go:build integration && linux
-// +build integration,linux
 
 // Privileged access is required to set cgroup's memory and cpu max values
 
 package cgroupruntimeextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension"
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"net/http"
@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/containerd/cgroups/v3/cgroup2"
 	"github.com/stretchr/testify/assert"
@@ -50,14 +51,6 @@ func checkCgroupSystem(tb testing.TB) {
 	}
 }
 
-func pointerInt64(val int64) *int64 {
-	return &val
-}
-
-func pointerUint64(uval uint64) *uint64 {
-	return &uval
-}
-
 // setupMemoryCgroupCleanUp returns a cleanup function that restores the cgroup's max memory to its initial value
 func setupMemoryCgroupCleanUp(t *testing.T, manager *cgroup2.Manager, cgroupPath string) func() {
 	stats, err := manager.Stat()
@@ -67,7 +60,7 @@ func setupMemoryCgroupCleanUp(t *testing.T, manager *cgroup2.Manager, cgroupPath
 	memoryCgroupCleanUp := func() {
 		err = manager.Update(&cgroup2.Resources{
 			Memory: &cgroup2.Memory{
-				Max: pointerInt64(int64(initialMaxMemory)),
+				Max: new(int64(initialMaxMemory)),
 			},
 		})
 		assert.NoError(t, err)
@@ -103,9 +96,13 @@ func cgroupMaxCPU(filename string) (quota int64, period uint64, err error) {
 // startExtension starts the extension with the given config
 func startExtension(t *testing.T, config *Config) {
 	factory := NewFactory()
-	ctx := t.Context()
+	ctx, cancel := context.WithCancel(t.Context())
 	extension, err := factory.Create(ctx, extensiontest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		assert.NoError(t, extension.Shutdown(ctx))
+		cancel()
+	})
 
 	err = extension.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -128,7 +125,7 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 	}{
 		{
 			name:            "90% the max cgroup memory and 12 GOMAXPROCS",
-			cgroupCPUQuota:  pointerInt64(100000),
+			cgroupCPUQuota:  new(int64(100000)),
 			cgroupCPUPeriod: 8000,
 			cgroupMaxMemory: maxMem,
 			config: &Config{
@@ -146,7 +143,7 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 		},
 		{
 			name:            "80% of the max cgroup memory and 4 GOMAXPROCS",
-			cgroupCPUQuota:  pointerInt64(100000),
+			cgroupCPUQuota:  new(int64(100000)),
 			cgroupCPUPeriod: 25000,
 			cgroupMaxMemory: maxMem,
 			config: &Config{
@@ -197,7 +194,7 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 	cpuCgroupCleanUp := func() {
 		err = manager.Update(&cgroup2.Resources{
 			CPU: &cgroup2.CPU{
-				Max: cgroup2.NewCPUMax(pointerInt64(initialCPUQuota), pointerUint64(initialCPUPeriod)),
+				Max: cgroup2.NewCPUMax(new(initialCPUQuota), new(initialCPUPeriod)),
 			},
 		})
 		assert.NoError(t, err)
@@ -230,10 +227,10 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 					// overwritten
 					// to automemlimit change the GOMEMLIMIT
 					// value
-					Max: pointerInt64(test.cgroupMaxMemory),
+					Max: new(test.cgroupMaxMemory),
 				},
 				CPU: &cgroup2.CPU{
-					Max: cgroup2.NewCPUMax(test.cgroupCPUQuota, pointerUint64(test.cgroupCPUPeriod)),
+					Max: cgroup2.NewCPUMax(test.cgroupCPUQuota, new(test.cgroupCPUPeriod)),
 				},
 			})
 			require.NoError(t, err)
@@ -347,7 +344,7 @@ func TestECSCgroupV2SudoIntegration(t *testing.T) {
 					// overwritten
 					// to automemlimit change the GOMEMLIMIT
 					// value
-					Max: pointerInt64(test.cgroupMaxMemory),
+					Max: new(test.cgroupMaxMemory),
 				},
 			})
 			require.NoError(t, err)
@@ -358,4 +355,45 @@ func TestECSCgroupV2SudoIntegration(t *testing.T) {
 			assert.Equal(t, test.expectedGoMemLimit, debug.SetMemoryLimit(-1))
 		})
 	}
+}
+
+func TestDynamicMemoryLimitRefreshSudo(t *testing.T) {
+	checkCgroupSystem(t)
+
+	cgroupPath, err := cgroup2.PidGroupPath(os.Getpid())
+	require.NoError(t, err)
+	manager, err := cgroup2.Load(cgroupPath)
+	require.NoError(t, err)
+
+	memoryCgroupCleanUp := setupMemoryCgroupCleanUp(t, manager, cgroupPath)
+	initialGoMem := debug.SetMemoryLimit(-1)
+
+	t.Cleanup(func() {
+		debug.SetMemoryLimit(initialGoMem)
+		memoryCgroupCleanUp()
+	})
+
+	var initialMem int64 = 4294967296 // 4GB
+	var updatedMem int64 = 2147483648 // 2GB
+	ratio := 0.8
+	refreshInterval := 100 * time.Millisecond
+
+	err = manager.Update(&cgroup2.Resources{Memory: &cgroup2.Memory{Max: new(initialMem)}})
+	require.NoError(t, err)
+
+	config := &Config{
+		GoMaxProcs: GoMaxProcsConfig{Enabled: false},
+		GoMemLimit: GoMemLimitConfig{Enabled: true, Ratio: ratio, RefreshInterval: refreshInterval},
+	}
+
+	startExtension(t, config)
+	assert.Equal(t, int64(float64(initialMem)*ratio), debug.SetMemoryLimit(-1))
+
+	err = manager.Update(&cgroup2.Resources{Memory: &cgroup2.Memory{Max: new(updatedMem)}})
+	require.NoError(t, err)
+
+	expectedUpdatedLimit := int64(float64(updatedMem) * ratio)
+	assert.Eventually(t, func() bool {
+		return debug.SetMemoryLimit(-1) == expectedUpdatedLimit
+	}, 2*time.Second, 50*time.Millisecond, "GOMEMLIMIT was not updated")
 }

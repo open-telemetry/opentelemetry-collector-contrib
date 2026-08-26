@@ -1,4 +1,4 @@
-signaltometrics:
+signal_to_metrics:
   spans:
     - name: metric.trace.duration
       description: Spans with resource attribute including resource.foo as a histogram metric

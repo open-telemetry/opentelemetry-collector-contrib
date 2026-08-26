@@ -21,7 +21,7 @@ import (
 // invocation and the boolean expression to match telemetry for invoking the function.
 type Statement[K any] struct {
 	function          Expr[K]
-	condition         BoolExpr[K]
+	condition         boolExpr[K]
 	origText          string
 	telemetrySettings component.TelemetrySettings
 }
@@ -34,7 +34,7 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 	condition, err := s.condition.Eval(ctx, tCtx)
 	defer func() {
 		if s.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
-			s.telemetrySettings.Logger.Debug("TransformContext after statement execution", zap.String("statement", s.origText), zap.Bool("condition matched", condition), zap.Any("TransformContext", tCtx))
+			s.telemetrySettings.Logger.Debug("TransformContext after statement execution", zap.String("statement", s.origText), zap.Bool("condition matched", condition), newTransformContextField(tCtx))
 		}
 	}()
 	if err != nil {
@@ -50,10 +50,20 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 	return result, condition, nil
 }
 
+// String returns the original statement text used to create the Statement.
+func (s *Statement[K]) String() string {
+	return s.origText
+}
+
 // Condition holds a top level Condition. A Condition is a boolean expression to match telemetry.
 type Condition[K any] struct {
-	condition BoolExpr[K]
+	condition boolExpr[K]
 	origText  string
+}
+
+// String returns the original condition text used to create the Condition.
+func (c *Condition[K]) String() string {
+	return c.origText
 }
 
 // Eval returns true if the condition was met for the given TransformContext and false otherwise.
@@ -152,11 +162,13 @@ func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 	if err != nil {
 		return nil, err
 	}
-	function, err := p.newFunctionCall(parsed.Editor)
+
+	pc := p.newParseContext()
+	function, err := pc.newFunctionCall(parsed.Editor)
 	if err != nil {
 		return nil, err
 	}
-	expression, err := p.newBoolExpr(parsed.WhereClause)
+	expression, err := pc.newBoolExpr(parsed.WhereClause)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +211,8 @@ func (p *Parser[K]) ParseCondition(condition string) (*Condition[K], error) {
 	if err != nil {
 		return nil, err
 	}
-	expression, err := p.newBoolExpr(parsed)
+
+	expression, err := p.newParseContext().newBoolExpr(parsed)
 	if err != nil {
 		return nil, err
 	}
@@ -472,7 +485,7 @@ func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	for _, condition := range c.conditions {
 		match, err := condition.Eval(ctx, tCtx)
 		if c.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
-			c.telemetrySettings.Logger.Debug("condition evaluation result", zap.String("condition", condition.origText), zap.Bool("match", match), zap.Any("TransformContext", tCtx))
+			c.telemetrySettings.Logger.Debug("condition evaluation result", zap.String("condition", condition.origText), zap.Bool("match", match), newTransformContextField(tCtx))
 		}
 		if err != nil {
 			if c.errorMode == PropagateError {
@@ -516,6 +529,11 @@ func (e *ValueExpression[K]) Eval(ctx context.Context, tCtx K) (any, error) {
 	return e.getter.Get(ctx, tCtx)
 }
 
+// String returns the original OTTL expression used to create the ValueExpression.
+func (e *ValueExpression[K]) String() string {
+	return e.origText
+}
+
 // ParseValueExpressions parses string expressions into a ValueExpression slice ready for execution.
 // Returns a slice of ValueExpression and a nil error on successful parsing.
 // If parsing fails, returns nil and an error containing each error per failed condition.
@@ -546,7 +564,7 @@ func (p *Parser[K]) ParseValueExpression(raw string) (*ValueExpression[K], error
 	if err != nil {
 		return nil, err
 	}
-	getter, err := p.newGetter(*parsed)
+	getter, err := p.newParseContext().newGetter(*parsed)
 	if err != nil {
 		return nil, err
 	}
@@ -572,4 +590,17 @@ func (p *Parser[K]) ParseValueExpression(raw string) (*ValueExpression[K], error
 			},
 		},
 	}, nil
+}
+
+// parseContext represents the context used during parsing operations. It is used to store
+// the current parser reference and lexical scopes for local identifiers (e.g. in lambda bodies).
+type parseContext[K any] struct {
+	*Parser[K]
+	localScopes localScopeStack
+}
+
+func (p *Parser[K]) newParseContext() *parseContext[K] {
+	return &parseContext[K]{
+		Parser: p,
+	}
 }

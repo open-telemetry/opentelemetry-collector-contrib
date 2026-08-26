@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
@@ -18,6 +20,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
+	containertagsbuffer "github.com/DataDog/datadog-agent/pkg/trace/containertags"
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
 	"github.com/DataDog/datadog-agent/pkg/trace/timing"
 	"github.com/DataDog/datadog-agent/pkg/trace/writer"
@@ -43,46 +46,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.UseLogsAgentExporter",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, datadogexporter uses the Datadog agent logs pipeline for exporting logs."),
-	featuregate.WithRegisterFromVersion("v0.100.0"),
-	featuregate.WithRegisterToVersion("v0.129.0"),
-)
-
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.metricexportnativeclient",
-	featuregate.StageStable,
-	featuregate.WithRegisterToVersion("v0.135.0"),
-	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
-)
-
-// noAPMStatsFeatureGate causes the trace consumer to skip APM stats computation.
-var noAPMStatsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.DisableAPMStats",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("Datadog Exporter will not compute APM Stats"),
-)
-
-var metricExportSerializerClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.metricexportserializerclient",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses the serializer exporter from the Datadog Agent."),
-)
-
-var inferIntervalDeltaFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.InferIntervalForDeltaMetrics",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, the exporter will infer the metrics interval for OTLP delta sums using a heuristic."),
-)
-
 func init() {
 	log.SetupLogger(log.Disabled(), "off")
 }
 
 func isMetricExportSerializerEnabled() bool {
-	return metricExportSerializerClientFeatureGate.IsEnabled()
+	return metadata.ExporterDatadogexporterMetricexportserializerclientFeatureGate.IsEnabled()
 }
 
 func consumeResource(metadataReporter *inframetadata.Reporter, res pcommon.Resource, logger *zap.Logger) {
@@ -163,11 +132,9 @@ func (*factory) TraceAgent(ctx context.Context, wg *sync.WaitGroup, params expor
 	if err != nil {
 		return nil, err
 	}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		agnt.Run()
-	}()
+	})
 	return agnt, nil
 }
 
@@ -200,9 +167,7 @@ func (*factory) createDefaultConfig() component.Config {
 
 func (*factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, statsIn <-chan []byte, statsWriter *writer.DatadogStatsWriter, tracerVersion, agentVersion string, logger *zap.Logger) {
 	for i := 0; i < runtime.NumCPU(); i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for {
 				select {
 				case <-ctx.Done():
@@ -225,7 +190,7 @@ func (*factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, sta
 					statsWriter.Write(sp)
 				}
 			}
-		}()
+		})
 	}
 }
 
@@ -266,7 +231,8 @@ func (f *factory) createMetricsExporter(
 		return nil, err
 	}
 	timingReporter := timing.New(metricsClient)
-	statsWriter := writer.NewStatsWriter(acfg, telemetry.NewNoopCollector(), metricsClient, timingReporter)
+	containerTagsBuffer := containertagsbuffer.NewContainerTagsBuffer(acfg, metricsClient)
+	statsWriter := writer.NewStatsWriter(acfg, telemetry.NewNoopCollector(), metricsClient, timingReporter, containerTagsBuffer)
 
 	set.Logger.Debug("Starting Datadog Trace-Agent StatsWriter")
 	go statsWriter.Run()
@@ -312,7 +278,8 @@ func (f *factory) createMetricsExporter(
 		apiClient := clientutil.CreateAPIClient(
 			set.BuildInfo,
 			cfg.Metrics.Endpoint,
-			cfg.ClientConfig)
+			cfg.ClientConfig,
+		)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), set.Logger, apiClient) }()
 		if cfg.API.FailOnInvalidKey {
 			err = <-errchan
@@ -340,10 +307,11 @@ func (f *factory) createMetricsExporter(
 				Metrics: cfg.Metrics,
 			},
 			TimeoutConfig: exporterhelper.TimeoutConfig{
-				Timeout: cfg.Timeout,
+				Timeout: cfg.ClientConfig.Timeout,
 			},
-			ClientConfig:     cfg.TLS,
+			ClientConfig:     cfg.ClientConfig.TLS,
 			QueueBatchConfig: cfg.QueueSettings,
+			RetryConfig:      cfg.BackOffConfig,
 			API:              cfg.API,
 			HostProvider: func(ctx context.Context) (string, error) {
 				h, err2 := hostProvider.Source(ctx)
@@ -402,7 +370,8 @@ func (f *factory) createMetricsExporter(
 		return nil, err
 	}
 	return resourcetotelemetry.WrapMetricsExporter(
-		resourcetotelemetry.Settings{Enabled: cfg.Metrics.ExporterConfig.ResourceAttributesAsTags}, exporter), nil
+		resourcetotelemetry.Settings{Enabled: cfg.Metrics.ExporterConfig.ResourceAttributesAsTags}, exporter,
+	), nil
 }
 
 // createTracesExporter creates a trace exporter based on this config.
@@ -416,11 +385,11 @@ func (f *factory) createTracesExporter(
 		return nil, err
 	}
 	cfg.LogWarnings(set.Logger)
-	if noAPMStatsFeatureGate.IsEnabled() {
+	if metadata.ExporterDatadogexporterDisableAPMStatsFeatureGate.IsEnabled() {
 		set.Logger.Info(
 			"Trace metrics are now disabled in the Datadog Exporter by default. To continue receiving Trace Metrics, configure the Datadog Connector or disable the feature gate.",
 			zap.String("documentation", "https://docs.datadoghq.com/opentelemetry/guide/migration/"),
-			zap.String("feature gate ID", noAPMStatsFeatureGate.ID()),
+			zap.String("feature gate ID", metadata.ExporterDatadogexporterDisableAPMStatsFeatureGate.ID()),
 		)
 	}
 
@@ -575,12 +544,20 @@ func (f *factory) createLogsExporter(
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0 * time.Second}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithShutdown(func(context.Context) error {
+		exporterhelper.WithShutdown(func(shutdownCtx context.Context) error {
+			// Stop the logs agent before canceling ctx. cancel() pre-cancels
+			// the context that pipeline goroutines were started with, causing
+			// the serial stopper inside logsAgent.Stop() to find them already
+			// gone and skip the proper DestinationSender.Stop() sequence — which
+			// leaves startRetryReader goroutines alive and blocks server.Close()
+			// in tests (and keeps connections open in production).
+			if logsAgent != nil {
+				if err := logsAgent.Stop(shutdownCtx); err != nil {
+					return err
+				}
+			}
 			cancel()
 			f.StopReporter()
-			if logsAgent != nil {
-				return logsAgent.Stop(ctx)
-			}
 			return nil
 		}),
 	)

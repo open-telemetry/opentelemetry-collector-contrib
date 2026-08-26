@@ -56,6 +56,10 @@ func TestQueryEndpointCorrect(t *testing.T) {
 		VMSize:            "vmSize",
 		SubscriptionID:    "subscriptionID",
 		ResourceGroupName: "resourceGroup",
+		AvailabilityZone:  "availabilityZone",
+		OSProfile: OSProfile{
+			ComputerName: "computerName",
+		},
 		TagsList: []ComputeTagsListMetadata{
 			{
 				Name:  "tag1",

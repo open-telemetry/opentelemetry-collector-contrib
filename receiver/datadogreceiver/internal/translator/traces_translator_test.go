@@ -12,13 +12,13 @@ import (
 	"testing"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
-	"github.com/hashicorp/golang-lru/v2/simplelru"
+	ddsampler "github.com/DataDog/datadog-agent/pkg/trace/sampler"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	vmsgp "github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -147,6 +147,50 @@ func TestTracePayloadV07Unmarshalling(t *testing.T) {
 	assert.Equal(t, "my-resource", span.GetResource())
 }
 
+// TestTraceNativeLinksAndEventsRoundTrip verifies that the msgpack v0.7 decoder populates the native
+// span_links/span_events proto fields from the wire and that they translate into OTel span links and
+// events end-to-end (HandleTracesPayload -> ToTraces).
+func TestTraceNativeLinksAndEventsRoundTrip(t *testing.T) {
+	payload := pb.TracerPayload{
+		Chunks: []*pb.TraceChunk{{Spans: []*pb.Span{{
+			Service: "svc", Name: "op", Resource: "res", TraceID: 1, SpanID: 2,
+			SpanLinks: []*pb.SpanLink{{
+				TraceID: 0x1d99f09757cf199d, TraceIDHigh: 0xf233b7e1421e8bde,
+				SpanID: 0x5ab19b8ebe922796, Tracestate: "dd=s:1", Flags: 1,
+				Attributes: map[string]string{"link.reason": "batch"},
+			}},
+			SpanEvents: []*pb.SpanEvent{{
+				TimeUnixNano: 111, Name: "exception",
+				Attributes: map[string]*pb.AttributeAnyValue{
+					"exception.message": {Type: pb.AttributeAnyValue_STRING_VALUE, StringValue: "boom"},
+				},
+			}},
+		}}}},
+	}
+	var buf []byte
+	bytez, err := payload.MarshalMsg(buf)
+	require.NoError(t, err)
+	req, _ := http.NewRequest(http.MethodPost, "/v0.7/traces", io.NopCloser(bytes.NewReader(bytez)))
+
+	tracerPayloads, err := HandleTracesPayload(req)
+	require.NoError(t, err)
+	require.Len(t, tracerPayloads, 1)
+
+	traces, err := ToTraces(zap.NewNop(), tracerPayloads[0], req, nil)
+	require.NoError(t, err)
+	span := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+
+	require.Equal(t, 1, span.Links().Len())
+	assert.Equal(t, "f233b7e1421e8bde1d99f09757cf199d", span.Links().At(0).TraceID().String())
+	assert.Equal(t, "5ab19b8ebe922796", span.Links().At(0).SpanID().String())
+
+	require.Equal(t, 1, span.Events().Len())
+	assert.Equal(t, "exception", span.Events().At(0).Name())
+	msg, ok := span.Events().At(0).Attributes().Get("exception.message")
+	require.True(t, ok)
+	assert.Equal(t, "boom", msg.Str())
+}
+
 func BenchmarkTranslatorv05(b *testing.B) {
 	for b.Loop() {
 		TestTracePayloadV05Unmarshalling(&testing.T{})
@@ -209,7 +253,7 @@ func TestUpsertHeadersAttributes(t *testing.T) {
 	req1.Header.Set(header.TracerVersion, "1.2.3")
 	attrs1 := pcommon.NewMap()
 	upsertHeadersAttributes(req1, attrs1)
-	val, ok := attrs1.Get(string(semconv.TelemetrySDKVersionKey))
+	val, ok := attrs1.Get("telemetry.sdk.version")
 	assert.True(t, ok)
 	assert.Equal(t, "Datadog-1.2.3", val.Str())
 
@@ -218,7 +262,7 @@ func TestUpsertHeadersAttributes(t *testing.T) {
 	req2.Header.Set(header.Lang, ".NET")
 	attrs2 := pcommon.NewMap()
 	upsertHeadersAttributes(req2, attrs2)
-	val, ok = attrs2.Get(string(semconv.TelemetrySDKLanguageKey))
+	val, ok = attrs2.Get("telemetry.sdk.language")
 	assert.True(t, ok)
 	assert.Equal(t, "dotnet", val.Str())
 }
@@ -260,7 +304,7 @@ func TestToTraces64to128bits(t *testing.T) {
 	req.Header.Set(header.Lang, "go")
 
 	// Test 1: We reconstructed the 128 bits trace id on both spans
-	cache, _ := simplelru.NewLRU[uint64, pcommon.TraceID](2, func(_ uint64, _ pcommon.TraceID) {})
+	cache, _ := lru.NewWithEvict(2, func(_ uint64, _ pcommon.TraceID) {})
 
 	traces, _ := ToTraces(zap.NewNop(), payload, req, cache)
 	assert.Equal(t, 2, traces.SpanCount(), "Expected 2 spans")
@@ -283,6 +327,164 @@ func TestToTraces64to128bits(t *testing.T) {
 				assert.Equal(t, expectedTraceID64, span.TraceID().String())
 			}
 		}
+	}
+}
+
+// TestToTraces128BitTraceIDSpanOrdering verifies that the 128-bit TraceID is reconstructed for
+// every span of a trace regardless of the order spans appear in a chunk or how they are split
+// across chunks. Only the chunk-local root span carries _dd.p.tid, and Datadog does not order
+// spans root-first, so reconstructing per span in iteration order leaves spans that precede the
+// root with a 64-bit (zero-padded) TraceID that no longer correlates with the rest of the trace.
+func TestToTraces128BitTraceIDSpanOrdering(t *testing.T) {
+	const (
+		traceIDLower    = uint64(2133000431340558749)
+		tidHex          = "f233b7e1421e8bde"
+		expectedTraceID = "f233b7e1421e8bde1d99f09757cf199d"
+	)
+
+	rootSpan := func() *pb.Span {
+		return &pb.Span{TraceID: traceIDLower, SpanID: 1, ParentID: 0, Meta: map[string]string{"_dd.p.tid": tidHex}}
+	}
+	childSpan := func() *pb.Span {
+		return &pb.Span{TraceID: traceIDLower, SpanID: 2, ParentID: 1}
+	}
+
+	tests := []struct {
+		name   string
+		chunks []*pb.TraceChunk
+	}{
+		{
+			name:   "child before root in same chunk",
+			chunks: []*pb.TraceChunk{{Spans: []*pb.Span{childSpan(), rootSpan()}}},
+		},
+		{
+			name: "child and root in separate chunks, root last",
+			chunks: []*pb.TraceChunk{
+				{Spans: []*pb.Span{childSpan()}},
+				{Spans: []*pb.Span{rootSpan()}},
+			},
+		},
+	}
+
+	req := &http.Request{Header: http.Header{}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cache, _ := lru.New[uint64, pcommon.TraceID](100)
+			traces, err := ToTraces(zap.NewNop(), &pb.TracerPayload{Chunks: tt.chunks}, req, cache)
+			require.NoError(t, err)
+
+			var count int
+			for _, rs := range traces.ResourceSpans().All() {
+				for _, ss := range rs.ScopeSpans().All() {
+					for _, span := range ss.Spans().All() {
+						count++
+						assert.Equal(t, expectedTraceID, span.TraceID().String(),
+							"span %s should carry the reconstructed 128-bit trace ID", span.SpanID().String())
+					}
+				}
+			}
+			assert.Equal(t, 2, count, "expected 2 spans")
+		})
+	}
+}
+
+// TestToTraces128BitTraceIDMatchesLogs guards trace<->log correlation: a span's reconstructed
+// 128-bit TraceID must be byte-identical to the one the logs translator derives from the same
+// dd.trace_id + _dd.p.tid, otherwise logs and spans of the same trace would not join.
+func TestToTraces128BitTraceIDMatchesLogs(t *testing.T) {
+	const (
+		traceIDLower = uint64(2133000431340558749)
+		tidHex       = "f233b7e1421e8bde"
+	)
+
+	cache, _ := lru.New[uint64, pcommon.TraceID](100)
+	payload := &pb.TracerPayload{Chunks: []*pb.TraceChunk{
+		{Spans: []*pb.Span{{TraceID: traceIDLower, SpanID: 1, Meta: map[string]string{"_dd.p.tid": tidHex}}}},
+	}}
+	traces, err := ToTraces(zap.NewNop(), payload, &http.Request{Header: http.Header{}}, cache)
+	require.NoError(t, err)
+
+	logTraceID, ok := parseDatadogTraceID(strconv.FormatUint(traceIDLower, 10), tidHex)
+	require.True(t, ok)
+
+	spanTraceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
+	assert.Equal(t, logTraceID, spanTraceID)
+}
+
+func TestToTracesSamplingPriority(t *testing.T) {
+	newPayload := func(priority ddsampler.SamplingPriority, rootMetrics map[string]float64) *pb.TracerPayload {
+		return &pb.TracerPayload{
+			Chunks: []*pb.TraceChunk{
+				{
+					Priority: int32(priority),
+					Spans: []*pb.Span{
+						{
+							TraceID:  1,
+							SpanID:   1,
+							Service:  "svc",
+							Name:     "root",
+							Resource: "/root",
+							Metrics:  rootMetrics,
+						},
+						{
+							TraceID:  1,
+							SpanID:   2,
+							ParentID: 1,
+							Service:  "svc",
+							Name:     "child",
+							Resource: "/child",
+						},
+					},
+				},
+			},
+		}
+	}
+
+	testCases := []struct {
+		name             string
+		payload          *pb.TracerPayload
+		expectPresent    bool
+		expectedPriority string
+	}{
+		{
+			name: "propagates from span metric",
+			payload: newPayload(ddsampler.PriorityNone, map[string]float64{
+				"_sampling_priority_v1": float64(ddsampler.PriorityUserKeep),
+			}),
+			expectPresent:    true,
+			expectedPriority: fmt.Sprintf("%f", float64(ddsampler.PriorityUserKeep)),
+		},
+		{
+			name:             "propagates from chunk priority",
+			payload:          newPayload(ddsampler.PriorityUserKeep, nil),
+			expectPresent:    true,
+			expectedPriority: fmt.Sprintf("%f", float64(ddsampler.PriorityUserKeep)),
+		},
+		{
+			name:          "absent when unset",
+			payload:       newPayload(ddsampler.PriorityNone, nil),
+			expectPresent: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			traces, err := ToTraces(zap.NewNop(), tc.payload, &http.Request{Header: http.Header{}}, nil)
+			require.NoError(t, err)
+			require.Equal(t, 2, traces.SpanCount())
+
+			for _, rs := range traces.ResourceSpans().All() {
+				for _, ss := range rs.ScopeSpans().All() {
+					for _, span := range ss.Spans().All() {
+						samplingPriority, ok := span.Attributes().Get("sampling.priority")
+						assert.Equal(t, tc.expectPresent, ok, "unexpected sampling.priority presence on span %s", span.Name())
+						if tc.expectPresent {
+							assert.Equal(t, tc.expectedPriority, samplingPriority.Str())
+						}
+					}
+				}
+			}
+		})
 	}
 }
 
@@ -334,7 +536,7 @@ func TestToTracesServiceName(t *testing.T) {
 
 			traces, _ := ToTraces(zap.NewNop(), payload, req, nil)
 			for _, rs := range traces.ResourceSpans().All() {
-				actualServiceName, _ := rs.Resource().Attributes().Get(string(semconv.ServiceNameKey))
+				actualServiceName, _ := rs.Resource().Attributes().Get("service.name")
 				assert.Equal(t, tt.expectedServiceName, actualServiceName.AsString())
 				for _, ss := range rs.ScopeSpans().All() {
 					for _, span := range ss.Spans().All() {
@@ -346,57 +548,259 @@ func TestToTracesServiceName(t *testing.T) {
 	}
 }
 
-func TestProcessSpanByName(t *testing.T) {
+// TestToTracesBaseServicePreservesPerSpanServiceName verifies the DD→OTEL→DD
+// roundtrip path for spans that have a dedicated per-span service name (e.g.,
+// database child spans like "defaultdb" or "postgresql") together with a
+// _dd.base_service override. Without the fix, the original per-span service
+// name is lost because span.Service is overwritten by _dd.base_service and
+// nothing preserves the original value as a span attribute.
+func TestToTracesBaseServicePreservesPerSpanServiceName(t *testing.T) {
 	cases := []struct {
-		name             string
-		expectedSpanName string
-		span             pb.Span
+		name                        string
+		spans                       []pb.Span
+		expectedResourceServiceName string
+		// expectedSpanServiceNames maps span name → expected span-level service.name attribute.
+		// This is the value the DD exporter uses to recover the original per-span service.
+		expectedSpanServiceNames map[string]string
+	}{
+		{
+			name: "postgresql-child-with-dedicated-service",
+			spans: []pb.Span{
+				{
+					Name:     "web.request",
+					Service:  "my-app",
+					TraceID:  1,
+					SpanID:   1,
+					ParentID: 0,
+					Meta: map[string]string{
+						"http.method": "GET",
+						"http.route":  "/api/users",
+					},
+				},
+				{
+					Name:     "postgresql.query",
+					Service:  "defaultdb",
+					TraceID:  1,
+					SpanID:   2,
+					ParentID: 1,
+					Meta: map[string]string{
+						"_dd.base_service": "my-app",
+						"db.type":          "postgresql",
+						"db.operation":     "select",
+						"db.instance":      "pg_users",
+						"span.kind":        "client",
+					},
+				},
+			},
+			expectedResourceServiceName: "my-app",
+			expectedSpanServiceNames: map[string]string{
+				"select pg_users": "defaultdb",
+			},
+		},
+		{
+			name: "postgresql-child-with-insert-operation",
+			spans: []pb.Span{
+				{
+					Name:     "web.request",
+					Service:  "my-app",
+					TraceID:  2,
+					SpanID:   10,
+					ParentID: 0,
+					Meta: map[string]string{
+						"http.method": "POST",
+						"http.route":  "/api/orders",
+					},
+				},
+				{
+					Name:     "postgresql.query",
+					Service:  "orders-db",
+					TraceID:  2,
+					SpanID:   11,
+					ParentID: 10,
+					Meta: map[string]string{
+						"_dd.base_service": "my-app",
+						"db.type":          "postgresql",
+						"db.operation":     "insert",
+						"db.instance":      "orders",
+						"span.kind":        "client",
+					},
+				},
+			},
+			expectedResourceServiceName: "my-app",
+			expectedSpanServiceNames: map[string]string{
+				"insert orders": "orders-db",
+			},
+		},
+		{
+			name: "multiple-db-children-different-services",
+			spans: []pb.Span{
+				{
+					Name:     "web.request",
+					Service:  "my-app",
+					TraceID:  3,
+					SpanID:   100,
+					ParentID: 0,
+					Meta: map[string]string{
+						"http.method": "GET",
+						"http.route":  "/dashboard",
+					},
+				},
+				{
+					Name:     "postgresql.query",
+					Service:  "defaultdb",
+					TraceID:  3,
+					SpanID:   101,
+					ParentID: 100,
+					Meta: map[string]string{
+						"_dd.base_service": "my-app",
+						"db.type":          "postgresql",
+						"db.operation":     "select",
+						"db.instance":      "analytics",
+						"span.kind":        "client",
+					},
+				},
+				{
+					Name:     "redis.query",
+					Service:  "redis-cache",
+					TraceID:  3,
+					SpanID:   102,
+					ParentID: 100,
+					Meta: map[string]string{
+						"_dd.base_service": "my-app",
+						"db.type":          "redis",
+						"span.kind":        "client",
+					},
+				},
+			},
+			expectedResourceServiceName: "my-app",
+			expectedSpanServiceNames: map[string]string{
+				"select analytics": "defaultdb",
+				"redis":            "redis-cache",
+			},
+		},
+		{
+			name: "span-without-base-service-has-no-span-level-service-name",
+			spans: []pb.Span{
+				{
+					Name:     "web.request",
+					Service:  "my-app",
+					TraceID:  4,
+					SpanID:   200,
+					ParentID: 0,
+					Meta: map[string]string{
+						"http.method": "GET",
+						"http.route":  "/health",
+					},
+				},
+			},
+			expectedResourceServiceName: "my-app",
+			// No span should have a span-level service.name injected
+			expectedSpanServiceNames: map[string]string{},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			payload := &pb.TracerPayload{
+				LanguageName:    "go",
+				LanguageVersion: "1.20",
+				TracerVersion:   "v1",
+				Chunks:          traceChunksFromSpans(tt.spans),
+			}
+
+			req := &http.Request{
+				Header: http.Header{},
+			}
+			req.Header.Set(header.Lang, "go")
+
+			traces, err := ToTraces(zap.NewNop(), payload, req, nil)
+			require.NoError(t, err)
+
+			for _, rs := range traces.ResourceSpans().All() {
+				actualServiceName, ok := rs.Resource().Attributes().Get("service.name")
+				assert.True(t, ok, "resource should have service.name")
+				assert.Equal(t, tt.expectedResourceServiceName, actualServiceName.AsString())
+
+				for _, ss := range rs.ScopeSpans().All() {
+					for _, span := range ss.Spans().All() {
+						expectedPerSpanSvc, shouldHaveAttr := tt.expectedSpanServiceNames[span.Name()]
+						val, exists := span.Attributes().Get("service.name")
+						if shouldHaveAttr {
+							if assert.True(t, exists, "span %q should have span-level service.name attribute", span.Name()) {
+								assert.Equal(t, expectedPerSpanSvc, val.AsString(),
+									"span %q: per-span service.name should preserve the original dedicated service name", span.Name())
+							}
+						} else {
+							assert.False(t, exists, "span %q should not have a span-level service.name attribute", span.Name())
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestToTraces(t *testing.T) {
+	cases := []struct {
+		name                   string
+		ddSpan                 pb.Span
+		expectedSpanName       string
+		expectedSpanAttributes map[string]string
 	}{
 		{
 			"db-query-summary",
-			"select table",
 			pb.Span{
 				Name: "postgresql.query",
 				Meta: map[string]string{
-					"db.query.summary": "select table",
+					"db.query.summary": "select customers",
+					"db.statement":     "select * from customers",
 					"db.operation":     "select",
-					"db.instance":      "instance",
+					"db.instance":      "pg_customers",
+					"db.sql.table":     "customers",
 					"db.type":          "postgresql",
-					"db.namespace":     "namespace",
 					"peer.hostname":    "localhost",
 				},
+			},
+			"select customers",
+			map[string]string{
+				"db.query.summary":   "select customers",
+				"db.query.text":      "select * from customers",
+				"db.operation.name":  "select",
+				"db.collection.name": "customers",
+				"db.namespace":       "pg_customers",
 			},
 		},
 		{
 			"db-operation-instance",
-			"select instance",
 			pb.Span{
 				Name: "postgresql.query",
 				Meta: map[string]string{
 					"db.operation":  "select",
-					"db.instance":   "instance",
+					"db.instance":   "pg_customers",
 					"db.type":       "postgresql",
 					"db.namespace":  "namespace",
 					"peer.hostname": "localhost",
 				},
 			},
+			"select pg_customers",
+			map[string]string{},
 		},
 		{
 			"db-operation-namespace",
-			"select namespace",
 			pb.Span{
 				Name: "postgresql.query",
 				Meta: map[string]string{
 					"db.operation":  "select",
 					"db.type":       "postgresql",
-					"db.namespace":  "namespace",
+					"db.namespace":  "pg_customers",
 					"peer.hostname": "localhost",
 				},
 			},
+			"select pg_customers",
+			map[string]string{},
 		},
 		{
 			"db-operation-hostname",
-			"select localhost",
 			pb.Span{
 				Name: "postgresql.query",
 				Meta: map[string]string{
@@ -405,10 +809,11 @@ func TestProcessSpanByName(t *testing.T) {
 					"peer.hostname": "localhost",
 				},
 			},
+			"select localhost",
+			map[string]string{},
 		},
 		{
 			"db-operation",
-			"select",
 			pb.Span{
 				Name: "postgresql.query",
 				Meta: map[string]string{
@@ -416,10 +821,11 @@ func TestProcessSpanByName(t *testing.T) {
 					"db.type":      "postgresql",
 				},
 			},
+			"select",
+			map[string]string{},
 		},
 		{
 			"db-type",
-			"postgresql",
 			pb.Span{
 				Name: "postgresql.query",
 				Meta: map[string]string{
@@ -429,38 +835,72 @@ func TestProcessSpanByName(t *testing.T) {
 					"peer.hostname": "localhost",
 				},
 			},
+			"postgresql",
+			map[string]string{},
 		},
 		{
 			"db-redis",
-			"redis",
 			pb.Span{
 				Name: "redis.query",
 				Meta: map[string]string{
 					"db.type": "redis",
 				},
 			},
+			"redis",
+			map[string]string{},
 		},
 		{
 			"internal-spring-handler",
-			"ShippingController.shipOrder",
 			pb.Span{
 				Name:     "spring.handler",
 				Resource: "ShippingController.shipOrder",
 			},
+			"ShippingController.shipOrder",
+			map[string]string{},
+		},
+		{
+			"http-request-request-with-route",
+			pb.Span{
+				Name: "http.request",
+				Meta: map[string]string{
+					"http.method": "POST",
+					"http.route":  "/api/order",
+				},
+			},
+			"POST /api/order",
+			map[string]string{
+				"http.request.method": "POST",
+				"http.route":          "/api/order",
+			},
+		},
+		{
+			"web-request-request-withut-route",
+			pb.Span{
+				Name: "web.request",
+				Meta: map[string]string{
+					"http.method": "POST",
+				},
+			},
+			"POST",
+			map[string]string{
+				"http.request.method": "POST",
+			},
 		},
 		{
 			"http-servlet-request-no-route",
-			"POST",
 			pb.Span{
 				Name: "servlet.request",
 				Meta: map[string]string{
 					"http.method": "POST",
 				},
 			},
+			"POST",
+			map[string]string{
+				"http.request.method": "POST",
+			},
 		},
 		{
 			"http-servlet-request-with-route",
-			"POST /route",
 			pb.Span{
 				Name: "servlet.request",
 				Meta: map[string]string{
@@ -468,15 +908,170 @@ func TestProcessSpanByName(t *testing.T) {
 					"http.route":  "/route",
 				},
 			},
+			"POST /route",
+			map[string]string{
+				"http.request.method": "POST",
+				"http.route":          "/route",
+			},
+		},
+		{
+			"rpc.client-ok-with-method-and-service",
+			pb.Span{
+				Name: "grpc.client",
+				Meta: map[string]string{
+					"rpc.grpc.full_method": "/mydomain.MyDomainService/MyMethod",
+					"grpc.code":            "OK",
+					"rpc.system":           "grpc",
+				},
+				Error: 0,
+			},
+			"mydomain.MyDomainService/MyMethod",
+			map[string]string{
+				"rpc.service":              "mydomain.MyDomainService",
+				"rpc.method":               "MyMethod",
+				"rpc.response.status_code": "0",
+			},
+		},
+		{
+			"rpc.client-ok-dd-trace-java-style",
+			pb.Span{
+				Name:     "grpc.client",
+				Resource: "/mydomain.MyDomainService/MyMethod",
+				Meta: map[string]string{
+					"grpc.code": "OK",
+				},
+				Error: 0,
+			},
+			"mydomain.MyDomainService/MyMethod",
+			map[string]string{
+				"rpc.service":              "mydomain.MyDomainService",
+				"rpc.method":               "MyMethod",
+				"rpc.response.status_code": "0",
+				"rpc.system.name":          "grpc",
+			},
+		},
+		{
+			"rpc.client-error-with-method-and-service",
+			pb.Span{
+				Name: "grpc.client",
+				Meta: map[string]string{
+					"rpc.grpc.full_method": "/mydomain.MyDomainService/MyMethod",
+					"grpc.code":            "UNKNOWN",
+					"rpc.system":           "grpc",
+				},
+				Error: 2,
+			},
+			"mydomain.MyDomainService/MyMethod",
+			map[string]string{
+				"rpc.service":              "mydomain.MyDomainService",
+				"rpc.method":               "MyMethod",
+				"rpc.response.status_code": "2",
+			},
+		},
+		{
+			"rpc.client-ok-with-unexpected-full-method-format-missing-method",
+			pb.Span{
+				Name: "grpc.client",
+				Meta: map[string]string{
+					"rpc.grpc.full_method": "/mydomain.MyDomainService/",
+					"grpc.code":            "OK",
+					"rpc.system":           "grpc",
+				},
+				Error: 0,
+			},
+			"mydomain.MyDomainService",
+			map[string]string{
+				"rpc.service":              "mydomain.MyDomainService",
+				"rpc.response.status_code": "0",
+			},
+		},
+		{
+			"rpc.client-ok-with-unexpected-full-method-format-missing-slash",
+			pb.Span{
+				Name: "grpc.client",
+				Meta: map[string]string{
+					"rpc.grpc.full_method": "mydomain.MyDomainService/MyMethod",
+					"grpc.code":            "OK",
+					"rpc.system":           "grpc",
+				},
+				Error: 0,
+			},
+			"mydomain.MyDomainService/MyMethod",
+			map[string]string{
+				"rpc.service":              "mydomain.MyDomainService",
+				"rpc.method":               "MyMethod",
+				"rpc.response.status_code": "0",
+			},
+		},
+		{
+			"rpc.server-ok-with-method-and-service",
+			pb.Span{
+				Name: "grpc.server",
+				Meta: map[string]string{
+					"rpc.grpc.full_method": "/mydomain.MyDomainService/MyMethod",
+					"grpc.code":            "OK",
+					"rpc.system":           "grpc",
+				},
+				Error: 0,
+			},
+			"mydomain.MyDomainService/MyMethod",
+			map[string]string{
+				"rpc.service":              "mydomain.MyDomainService",
+				"rpc.method":               "MyMethod",
+				"rpc.response.status_code": "0",
+			},
+		},
+		{
+			"aws-s3-headObject",
+			pb.Span{
+				Name: "aws.request",
+				Meta: map[string]string{
+					"aws.service":             "S3",
+					"aws.operation":           "headObject",
+					"aws.s3.bucket_name":      "my-bucket",
+					"aws.response.request_id": "1234567890",
+				},
+			},
+			"S3/headObject",
+			map[string]string{
+				"rpc.system.name": "aws-api",
+				"rpc.service":     "S3",
+				"rpc.method":      "headObject",
+				"aws.s3.bucket":   "my-bucket",
+				"aws.request_id":  "1234567890",
+			},
 		},
 	}
 
 	//nolint:govet
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			span := ptrace.NewSpan()
-			processSpanByName(&tt.span, &span)
-			assert.Equal(t, tt.expectedSpanName, span.Name())
+			payload := &pb.TracerPayload{
+				LanguageName:    "go",
+				LanguageVersion: "1.20",
+				TracerVersion:   "v1",
+				ContainerID:     "container-123",
+				Chunks: []*pb.TraceChunk{
+					{
+						Priority: 0,
+						Spans:    []*pb.Span{&tt.ddSpan},
+					},
+				},
+			}
+			logger, _ := zap.NewDevelopment()
+			traceIDCache, _ := lru.New[uint64, pcommon.TraceID](100)
+			req, _ := http.NewRequest(http.MethodPost, "/v0.5/traces", http.NoBody)
+
+			got, err := ToTraces(logger, payload, req, traceIDCache)
+			assert.NoError(t, err)
+			assert.Equal(t, 1, got.SpanCount())
+			gotSpan := got.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+			assert.Equal(t, tt.expectedSpanName, gotSpan.Name())
+			for k, want := range tt.expectedSpanAttributes {
+				val, ok := gotSpan.Attributes().Get(k)
+				assert.True(t, ok, "attribute %s missing", k)
+				assert.Equal(t, want, val.AsString(), "attribute %s value mismatch", k)
+			}
 		})
 	}
 }
@@ -563,4 +1158,159 @@ func TestToTracesServerAddress(t *testing.T) {
 			}
 		})
 	}
+}
+
+// translateSingleSpan runs a single Datadog span through ToTraces and returns the resulting OTel span.
+func translateSingleSpan(t *testing.T, span *pb.Span) ptrace.Span {
+	t.Helper()
+	span.Service = "svc"
+	span.Name = "op"
+	payload := &pb.TracerPayload{Chunks: []*pb.TraceChunk{{Spans: []*pb.Span{span}}}}
+	traces, err := ToTraces(zap.NewNop(), payload, &http.Request{Header: http.Header{}}, nil)
+	require.NoError(t, err)
+	require.Equal(t, 1, traces.SpanCount())
+	return traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+}
+
+func TestSetSpanLinks(t *testing.T) {
+	// A 128-bit linked trace id split as Datadog stores it, so it can be reassembled either from the
+	// native trace_id_high field or from the decimal _dd.span_links meta form.
+	const (
+		linkLow      = uint64(0x1d99f09757cf199d) // 2133000431340558749
+		linkHigh     = uint64(0xf233b7e1421e8bde) // 17452495159095626718
+		linkSpan     = uint64(0x5ab19b8ebe922796) // 6535175571676211094
+		wantTraceID  = "f233b7e1421e8bde1d99f09757cf199d"
+		wantSpanID   = "5ab19b8ebe922796"
+		decimalLinks = `[{"trace_id":2133000431340558749,"trace_id_high":17452495159095626718,"span_id":6535175571676211094,"attributes":{"link.reason":"batch"},"tracestate":"dd=s:1","flags":1}]`
+		hexLinks     = `[{"trace_id":"f233b7e1421e8bde1d99f09757cf199d","span_id":"5ab19b8ebe922796","tracestate":"dd=s:1","attributes":{"link.reason":"batch"}}]`
+	)
+
+	assertLink := func(t *testing.T, span ptrace.Span, wantFlags uint32) {
+		require.Equal(t, 1, span.Links().Len())
+		link := span.Links().At(0)
+		assert.Equal(t, wantTraceID, link.TraceID().String())
+		assert.Equal(t, wantSpanID, link.SpanID().String())
+		assert.Equal(t, "dd=s:1", link.TraceState().AsRaw())
+		assert.Equal(t, wantFlags, link.Flags())
+		attr, ok := link.Attributes().Get("link.reason")
+		require.True(t, ok)
+		assert.Equal(t, "batch", attr.Str())
+		// The meta form must never surface as a raw span attribute.
+		_, leaked := span.Attributes().Get("_dd.span_links")
+		assert.False(t, leaked, "_dd.span_links leaked as a span attribute")
+	}
+
+	t.Run("native span_links", func(t *testing.T) {
+		span := translateSingleSpan(t, &pb.Span{
+			TraceID: 1, SpanID: 1,
+			SpanLinks: []*pb.SpanLink{{
+				TraceID: linkLow, TraceIDHigh: linkHigh, SpanID: linkSpan,
+				Tracestate: "dd=s:1", Flags: 1,
+				Attributes: map[string]string{"link.reason": "batch"},
+			}},
+			// Native links take precedence over a meta copy; the meta copy must not add a duplicate.
+			Meta: map[string]string{"_dd.span_links": `[{"trace_id":42,"span_id":42}]`},
+		})
+		assertLink(t, span, 1)
+	})
+
+	t.Run("meta _dd.span_links decimal (dd-trace)", func(t *testing.T) {
+		span := translateSingleSpan(t, &pb.Span{
+			TraceID: 1, SpanID: 1,
+			Meta: map[string]string{"_dd.span_links": decimalLinks},
+		})
+		assertLink(t, span, 1)
+	})
+
+	t.Run("meta _dd.span_links hex (agent OTLP)", func(t *testing.T) {
+		span := translateSingleSpan(t, &pb.Span{
+			TraceID: 1, SpanID: 1,
+			Meta: map[string]string{"_dd.span_links": hexLinks},
+		})
+		assertLink(t, span, 0)
+	})
+}
+
+func TestSetSpanEvents(t *testing.T) {
+	assertEvents := func(t *testing.T, span ptrace.Span) {
+		require.Equal(t, 2, span.Events().Len())
+
+		custom := span.Events().At(0)
+		assert.Equal(t, "custom.checkpoint", custom.Name())
+		assert.Equal(t, pcommon.Timestamp(111), custom.Timestamp())
+		stage, ok := custom.Attributes().Get("stage")
+		require.True(t, ok)
+		assert.Equal(t, "validate", stage.Str())
+		ok2, ok := custom.Attributes().Get("ok")
+		require.True(t, ok)
+		assert.True(t, ok2.Bool())
+
+		exc := span.Events().At(1)
+		assert.Equal(t, "exception", exc.Name())
+		msg, ok := exc.Attributes().Get("exception.message")
+		require.True(t, ok)
+		assert.Equal(t, "connection refused", msg.Str())
+
+		// Event meta keys must never surface as raw span attributes.
+		_, leaked := span.Attributes().Get("events")
+		assert.False(t, leaked, "events leaked as a span attribute")
+		_, leaked = span.Attributes().Get("_dd.span_events.has_exception")
+		assert.False(t, leaked)
+	}
+
+	t.Run("native span_events", func(t *testing.T) {
+		span := translateSingleSpan(t, &pb.Span{
+			TraceID: 1, SpanID: 1,
+			SpanEvents: []*pb.SpanEvent{
+				{TimeUnixNano: 111, Name: "custom.checkpoint", Attributes: map[string]*pb.AttributeAnyValue{
+					"stage": {Type: pb.AttributeAnyValue_STRING_VALUE, StringValue: "validate"},
+					"ok":    {Type: pb.AttributeAnyValue_BOOL_VALUE, BoolValue: true},
+				}},
+				{TimeUnixNano: 222, Name: "exception", Attributes: map[string]*pb.AttributeAnyValue{
+					"exception.message": {Type: pb.AttributeAnyValue_STRING_VALUE, StringValue: "connection refused"},
+				}},
+			},
+			// Native events take precedence over the meta copy.
+			Meta: map[string]string{"events": `[{"name":"ignored"}]`, "_dd.span_events.has_exception": "true"},
+		})
+		assertEvents(t, span)
+	})
+
+	t.Run("meta events fallback", func(t *testing.T) {
+		span := translateSingleSpan(t, &pb.Span{
+			TraceID: 1, SpanID: 1,
+			Meta: map[string]string{
+				"events":                        `[{"name":"custom.checkpoint","time_unix_nano":111,"attributes":{"stage":"validate","ok":true}},{"name":"exception","time_unix_nano":222,"attributes":{"exception.message":"connection refused"}}]`,
+				"_dd.span_events.has_exception": "true",
+			},
+		})
+		assertEvents(t, span)
+	})
+
+	t.Run("native span_events typed attributes", func(t *testing.T) {
+		span := translateSingleSpan(t, &pb.Span{
+			TraceID: 1, SpanID: 1,
+			SpanEvents: []*pb.SpanEvent{{TimeUnixNano: 1, Name: "typed", Attributes: map[string]*pb.AttributeAnyValue{
+				"i": {Type: pb.AttributeAnyValue_INT_VALUE, IntValue: 7},
+				"d": {Type: pb.AttributeAnyValue_DOUBLE_VALUE, DoubleValue: 2.5},
+				"arr": {Type: pb.AttributeAnyValue_ARRAY_VALUE, ArrayValue: &pb.AttributeArray{Values: []*pb.AttributeArrayValue{
+					{Type: pb.AttributeArrayValue_STRING_VALUE, StringValue: "a"},
+					{Type: pb.AttributeArrayValue_STRING_VALUE, StringValue: "b"},
+				}}},
+			}}},
+		})
+		require.Equal(t, 1, span.Events().Len())
+		attrs := span.Events().At(0).Attributes()
+		i, ok := attrs.Get("i")
+		require.True(t, ok)
+		assert.Equal(t, int64(7), i.Int())
+		d, ok := attrs.Get("d")
+		require.True(t, ok)
+		assert.Equal(t, 2.5, d.Double())
+		arr, ok := attrs.Get("arr")
+		require.True(t, ok)
+		require.Equal(t, 2, arr.Slice().Len())
+		assert.Equal(t, "a", arr.Slice().At(0).Str())
+		assert.Equal(t, "b", arr.Slice().At(1).Str())
+	})
 }

@@ -9,7 +9,6 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -37,8 +36,8 @@ type iisReceiver struct {
 	mb                      *metadata.MetricsBuilder
 
 	// for mocking
-	newWatcher         func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
-	newWatcherFromPath func(string) (winperfcounters.PerfCounterWatcher, error)
+	newWatcher         func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error)
+	newWatcherFromPath func(string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error)
 	expandWildcardPath func(string) ([]string, error)
 }
 
@@ -60,7 +59,7 @@ func newIisReceiver(settings receiver.Settings, cfg *Config, consumer consumer.M
 		params:             settings.TelemetrySettings,
 		config:             cfg,
 		consumer:           consumer,
-		rb:                 metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		rb:                 metadata.NewResourceBuilder(cfg.MetricsBuilderConfig.ResourceAttributes),
 		mb:                 metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		newWatcher:         winperfcounters.NewWatcher,
 		newWatcherFromPath: winperfcounters.NewWatcherFromPath,
@@ -71,6 +70,10 @@ func newIisReceiver(settings receiver.Settings, cfg *Config, consumer consumer.M
 // start builds the paths to the watchers
 func (rcvr *iisReceiver) start(_ context.Context, _ component.Host) error {
 	errs := &scrapererror.ScrapeErrors{}
+
+	totalPerfCounterRecorders := buildTotalPerfCounterRecordersFromConfig(rcvr.config.MetricsBuilderConfig.Metrics)
+	sitePerfCounterRecorders := buildSitePerfCounterRecordersFromConfig(rcvr.config.MetricsBuilderConfig.Metrics)
+	appPoolPerfCounterRecorders := buildAppPoolPerfCounterRecordersFromConfig(rcvr.config.MetricsBuilderConfig.Metrics)
 
 	rcvr.totalWatcherRecorders = rcvr.buildWatcherRecorders(totalPerfCounterRecorders, errs)
 	rcvr.siteWatcherRecorders = rcvr.buildWatcherRecorders(sitePerfCounterRecorders, errs)
@@ -153,15 +156,13 @@ func (rcvr *iisReceiver) scrapeInstanceMetrics(wrs []watcherRecorder, instanceTo
 	}
 }
 
-var negativeDenominatorError = "A counter with a negative denominator value was detected.\r\n"
-
 func (rcvr *iisReceiver) scrapeMaxQueueAgeMetrics(appToRecorders map[string][]valRecorder) {
 	for _, wr := range rcvr.queueMaxAgeWatchers {
 		counterValues, err := wr.watcher.ScrapeData()
 
 		var value float64
 		switch {
-		case err != nil && strings.HasSuffix(err.Error(), negativeDenominatorError):
+		case err != nil && winperfcounters.IsIgnorableError(err):
 			// This error occurs when there are no items in the queue;
 			// in this case, we would like to emit a 0 instead of logging an error (this is an expected scenario).
 			value = 0
@@ -209,7 +210,7 @@ func (rcvr *iisReceiver) buildWatcherRecorders(confs []perfCounterRecorderConf, 
 
 	for _, pcr := range confs {
 		for perfCounterName, recorder := range pcr.recorders {
-			w, err := rcvr.newWatcher(pcr.object, pcr.instance, perfCounterName)
+			w, err := rcvr.newWatcher(pcr.object, pcr.instance, perfCounterName, winperfcounters.WithLogger(rcvr.params.Logger))
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 				continue
@@ -227,6 +228,11 @@ var maxQueueItemAgeInstanceRegex = regexp.MustCompile(`\\HTTP Service Request Qu
 // This is done in order to capture the error when scraping each individual instance, because we want to ignore
 // negative denominator errors.
 func (rcvr *iisReceiver) buildMaxQueueItemAgeWatchers(scrapeErrors *scrapererror.ScrapeErrors) []instanceWatcher {
+	if !rcvr.config.MetricsBuilderConfig.Metrics.IisRequestQueueAgeMax.Enabled {
+		// if the metric is not enabled, we don't need to build any watchers
+		return nil
+	}
+
 	wrs := []instanceWatcher{}
 
 	paths, err := rcvr.expandWildcardPath(`\HTTP Service Request Queues(*)\MaxQueueItemAge`)
@@ -249,7 +255,7 @@ func (rcvr *iisReceiver) buildMaxQueueItemAgeWatchers(scrapeErrors *scrapererror
 			continue
 		}
 
-		watcher, err := rcvr.newWatcherFromPath(path)
+		watcher, err := rcvr.newWatcherFromPath(path, winperfcounters.WithLogger(rcvr.params.Logger))
 		if err != nil {
 			scrapeErrors.AddPartial(1, fmt.Errorf("failed to create watcher from %q: %w", path, err))
 			continue

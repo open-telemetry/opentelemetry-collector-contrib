@@ -14,13 +14,13 @@ import (
 	"sync"
 
 	"github.com/gorilla/mux"
-	gitlab "gitlab.com/gitlab-org/api/client-go"
+	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver/internal/metadata"
@@ -67,12 +67,12 @@ type gitlabTracesReceiver struct {
 }
 
 func newTracesReceiver(settings receiver.Settings, cfg *Config, traceConsumer consumer.Traces) (*gitlabTracesReceiver, error) {
-	if cfg.WebHook.Endpoint == "" {
+	if cfg.WebHook.ServerConfig.NetAddr.Endpoint == "" {
 		return nil, errMissingEndpoint
 	}
 
 	transport := "http"
-	if cfg.WebHook.TLS.HasValue() {
+	if cfg.WebHook.ServerConfig.TLS.HasValue() {
 		transport = "https"
 	}
 
@@ -103,7 +103,7 @@ func newTracesReceiver(settings receiver.Settings, cfg *Config, traceConsumer co
 }
 
 func (gtr *gitlabTracesReceiver) Start(ctx context.Context, host component.Host) error {
-	endpoint := fmt.Sprintf("%s%s", gtr.cfg.WebHook.Endpoint, gtr.cfg.WebHook.Path)
+	endpoint := fmt.Sprintf("%s%s", gtr.cfg.WebHook.ServerConfig.NetAddr.Endpoint, gtr.cfg.WebHook.Path)
 	gtr.logger.Info("Starting GitLab WebHook receiving server", zap.String("endpoint", endpoint))
 
 	// noop if not nil. if start has not been called before these values should be nil.
@@ -112,7 +112,7 @@ func (gtr *gitlabTracesReceiver) Start(ctx context.Context, host component.Host)
 	}
 
 	// create listener from config
-	ln, err := gtr.cfg.WebHook.ToListener(ctx)
+	ln, err := gtr.cfg.WebHook.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}
@@ -127,19 +127,22 @@ func (gtr *gitlabTracesReceiver) Start(ctx context.Context, host component.Host)
 	router.HandleFunc(gtr.cfg.WebHook.Path, gtr.handleWebhook)
 
 	// webhook server standup and configuration
-	gtr.server, err = gtr.cfg.WebHook.ToServer(ctx, host, gtr.settings.TelemetrySettings, router)
+	gtr.server, err = gtr.cfg.WebHook.ServerConfig.ToServer(ctx, host.GetExtensions(), gtr.settings.TelemetrySettings, router)
 	if err != nil {
 		return err
 	}
-	gtr.logger.Info("Health check now listening at", zap.String("health_path", fmt.Sprintf("%s%s", gtr.cfg.WebHook.Endpoint, gtr.cfg.WebHook.HealthPath)))
+	gtr.logger.Info(
+		"Health check now listening at",
+		zap.String("health_path",
+			fmt.Sprintf("%s%s", gtr.cfg.WebHook.ServerConfig.NetAddr.Endpoint, gtr.cfg.WebHook.HealthPath),
+		),
+	)
 
-	gtr.shutdownWG.Add(1)
-	go func() {
-		defer gtr.shutdownWG.Done()
+	gtr.shutdownWG.Go(func() {
 		if errHTTP := gtr.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
-	}()
+	})
 
 	return nil
 }
@@ -335,5 +338,5 @@ func (gtr *gitlabTracesReceiver) failBadReq(ctx context.Context,
 		gtr.logger.Warn("failed to write json response", zap.Error(writeErr))
 	}
 
-	gtr.logger.Debug(string(jsonResp), zap.Int(string(semconv.HTTPResponseStatusCodeKey), httpStatusCode), zap.Error(err))
+	gtr.logger.Debug(string(jsonResp), zap.Int(string(conventions.HTTPResponseStatusCodeKey), httpStatusCode), zap.Error(err))
 }

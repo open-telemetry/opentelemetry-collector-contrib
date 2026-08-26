@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -52,13 +52,10 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.(*Config)
 	assert.Equal(t, "demo", r1.PrometheusConfig.ScrapeConfigs[0].JobName)
 	assert.Equal(t, 5*time.Second, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval))
-	assert.True(t, r1.UseStartTimeMetric)
 	assert.True(t, r1.TrimMetricSuffixes)
-	assert.Equal(t, "^(.+_)*process_start_time_seconds$", r1.StartTimeMetricRegex)
-	assert.True(t, r1.ReportExtraScrapeMetrics)
 
 	ta := r1.TargetAllocator.Get()
-	assert.Equal(t, "http://my-targetallocator-service", ta.Endpoint)
+	assert.Equal(t, "http://my-targetallocator-service", ta.ClientConfig.Endpoint)
 	assert.Equal(t, 30*time.Second, ta.Interval)
 	assert.Equal(t, "collector-1", ta.CollectorID)
 	assert.Equal(t, promModel.Duration(60*time.Second), ta.HTTPSDConfig.RefreshInterval)
@@ -77,15 +74,15 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	r0 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
 	ta0 := r0.TargetAllocator.Get()
-	assert.Equal(t, "http://localhost:8080", ta0.Endpoint)
-	assert.Equal(t, 5*time.Second, ta0.Timeout)
-	assert.Equal(t, "client.crt", ta0.TLS.CertFile)
-	assert.Equal(t, "client.key", ta0.TLS.KeyFile)
+	assert.Equal(t, "http://localhost:8080", ta0.ClientConfig.Endpoint)
+	assert.Equal(t, 5*time.Second, ta0.ClientConfig.Timeout)
+	assert.Equal(t, "client.crt", ta0.ClientConfig.TLS.CertFile)
+	assert.Equal(t, "client.key", ta0.ClientConfig.TLS.KeyFile)
 	assert.Equal(t, 30*time.Second, ta0.Interval)
 	assert.Equal(t, "collector-1", ta0.CollectorID)
 	assert.NotNil(t, r0.PrometheusConfig)
@@ -94,12 +91,12 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	r1 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
 	ta1 := r0.TargetAllocator.Get()
-	assert.Equal(t, "http://localhost:8080", ta1.Endpoint)
+	assert.Equal(t, "http://localhost:8080", ta1.ClientConfig.Endpoint)
 	assert.Equal(t, 30*time.Second, ta1.Interval)
 	assert.Equal(t, "collector-1", ta1.CollectorID)
 
@@ -111,12 +108,63 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	r2 := cfg.(*Config)
 	assert.Len(t, r2.PrometheusConfig.ScrapeConfigs, 1)
 	assert.Equal(t, "demo", r2.PrometheusConfig.ScrapeConfigs[0].JobName)
 	assert.Equal(t, promModel.Duration(5*time.Second), r2.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
+}
+
+func TestLoadScrapeOptionsConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_scrape_options.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+
+	tests := []struct {
+		name     string
+		validate func(*testing.T, *Config)
+	}{
+		{
+			name: "default",
+			validate: func(t *testing.T, r *Config) {
+				assert.False(t, r.ScrapeOnShutdown)
+				assert.False(t, r.DiscoveryReloadOnStartup)
+				assert.Zero(t, r.InitialScrapeOffset)
+			},
+		},
+		{
+			name: "scrape_on_shutdown",
+			validate: func(t *testing.T, r *Config) {
+				assert.True(t, r.ScrapeOnShutdown)
+			},
+		},
+		{
+			name: "discovery_reload_on_startup",
+			validate: func(t *testing.T, r *Config) {
+				assert.True(t, r.DiscoveryReloadOnStartup)
+			},
+		},
+		{
+			name: "initial_scrape_offset",
+			validate: func(t *testing.T, r *Config) {
+				assert.Equal(t, 10*time.Second, r.InitialScrapeOffset)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := factory.CreateDefaultConfig()
+			sub, err := cm.Sub(component.NewIDWithName(metadata.Type, tt.name).String())
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+			require.NoError(t, confmap.Validate(cfg))
+
+			r := cfg.(*Config)
+			tt.validate(t, r)
+		})
+	}
 }
 
 func TestValidateConfigWithScrapeConfigFiles(t *testing.T) {
@@ -129,7 +177,7 @@ func TestValidateConfigWithScrapeConfigFiles(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
@@ -152,25 +200,25 @@ func TestLoadConfigFailsOnNoPrometheusOrTAConfig(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.ErrorContains(t, xconfmap.Validate(cfg), "no Prometheus scrape_configs or target_allocator set")
+	require.ErrorContains(t, confmap.Validate(cfg), "no Prometheus scrape_configs or target_allocator set")
 
 	cfg = factory.CreateDefaultConfig()
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withConfigAndTA").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	cfg = factory.CreateDefaultConfig()
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withOnlyTA").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	cfg = factory.CreateDefaultConfig()
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withOnlyScrape").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 // As one of the config parameters is consuming prometheus
@@ -218,7 +266,7 @@ func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	err = xconfmap.Validate(cfg)
+	err = confmap.Validate(cfg)
 	require.Error(t, err)
 
 	wantErrMsg := `unsupported features:
@@ -243,7 +291,7 @@ func TestNonExistentAuthCredentialsFile(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.ErrorContains(t,
-		xconfmap.Validate(cfg),
+		confmap.Validate(cfg),
 		`error checking authorization credentials file "/nonexistentauthcredentialsfile"`)
 }
 
@@ -258,7 +306,7 @@ func TestTLSConfigNonExistentCertFile(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.ErrorContains(t,
-		xconfmap.Validate(cfg),
+		confmap.Validate(cfg),
 		`error checking client cert file "/nonexistentcertfile"`)
 }
 
@@ -273,7 +321,7 @@ func TestTLSConfigNonExistentKeyFile(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.ErrorContains(t,
-		xconfmap.Validate(cfg),
+		confmap.Validate(cfg),
 		`error checking client key file "/nonexistentkeyfile"`)
 }
 
@@ -328,7 +376,7 @@ func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
@@ -341,7 +389,7 @@ func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 func TestTargetAllocatorInvalidHTTPScrape(t *testing.T) {
@@ -365,7 +413,7 @@ func TestFileSDConfigWithoutSDFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
@@ -377,38 +425,56 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "withAPIEnabled").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	r0 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
-	assert.True(t, r0.APIServer.Enabled)
-	assert.NotNil(t, r0.APIServer.ServerConfig)
-	assert.Equal(t, "localhost:9090", r0.APIServer.ServerConfig.Endpoint)
-
-	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIDisabled").String())
-	require.NoError(t, err)
-	cfg = factory.CreateDefaultConfig()
-	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
-
-	r1 := cfg.(*Config)
-	assert.False(t, r1.APIServer.Enabled)
+	require.True(t, r0.APIServer.Enabled)
+	assert.Equal(t, "localhost:9090", r0.APIServer.ServerConfig.NetAddr.Endpoint)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withoutAPI").String())
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
+
+	r1 := cfg.(*Config)
+	assert.NotNil(t, r1.PrometheusConfig)
+	assert.False(t, r1.APIServer.Enabled)
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIUsingDefaults").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	r2 := cfg.(*Config)
-	assert.NotNil(t, r2.PrometheusConfig)
 	assert.False(t, r2.APIServer.Enabled)
+	assert.Equal(t, "127.0.0.1:9090", r2.APIServer.ServerConfig.NetAddr.Endpoint)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withInvalidAPIConfig").String())
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
+	require.Error(t, sub.Unmarshal(cfg))
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIEnabledExplicitly").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.Error(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
+
+	r4 := cfg.(*Config)
+	require.True(t, r4.APIServer.Enabled, "api_server with enabled: true should be enabled")
+	assert.Equal(t, "localhost:9090", r4.APIServer.ServerConfig.NetAddr.Endpoint)
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIDisabledExplicitly").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, confmap.Validate(cfg))
+
+	r5 := cfg.(*Config)
+	assert.False(t, r5.APIServer.Enabled, "api_server with enabled: false should not be enabled")
 }
 
 func TestReloadPromConfigSecretHandling(t *testing.T) {
@@ -465,6 +531,75 @@ scrape_configs:
 				credentials := string(scrapeConfig.HTTPClientConfig.Authorization.Credentials)
 				assert.Equal(t, "mySecretBearerToken123", credentials, "credentials should preserve original value")
 				assert.Equal(t, "Bearer", scrapeConfig.HTTPClientConfig.Authorization.Type)
+			},
+		},
+		{
+			name: "oauth2 client credentials secret preservation",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-client-secredentialscret-auth"
+    oauth2:
+      client_id: "id-1"
+      client_secret: "mySuperSecretClientSecret"
+      token_url: "https://auth.example.com/token"
+    static_configs:
+      - targets: ["localhost:8080"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				scrapeConfig := dst.ScrapeConfigs[0]
+				assert.Equal(t, "test-client-secredentialscret-auth", scrapeConfig.JobName)
+
+				// The critical check: ensure the client_secret is not "<secret>"
+				require.NotNil(t, scrapeConfig.HTTPClientConfig.OAuth2, "basic auth should be configured")
+				secret := string(scrapeConfig.HTTPClientConfig.OAuth2.ClientSecret)
+				assert.Equal(t, "mySuperSecretClientSecret", secret, "client_secret should preserve original value")
+			},
+		},
+		{
+			name: "oauth2 jwt-bearer certificate preservation",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-jwt-bearer-auth"
+    oauth2:
+      client_id: "id-1"
+      client_certificate_key: "mySuperSecretCertificateKey"
+      token_url: "https://auth.example.com/token"
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer"
+    static_configs:
+      - targets: ["localhost:8080"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				scrapeConfig := dst.ScrapeConfigs[0]
+				assert.Equal(t, "test-jwt-bearer-auth", scrapeConfig.JobName)
+
+				// The critical check: ensure the client_certificate_key is not "<secret>"
+				require.NotNil(t, scrapeConfig.HTTPClientConfig.OAuth2, "basic auth should be configured")
+				key := string(scrapeConfig.HTTPClientConfig.OAuth2.ClientCertificateKey)
+				assert.Equal(t, "mySuperSecretCertificateKey", key, "client_certificate_key should preserve original value")
+			},
+		},
+		{
+			name: "basic auth password starting with %",
+			configYAML: `
+scrape_configs:
+  - job_name: "foo"
+    basic_auth:
+      username: "user"
+      password: "%password"
+    static_configs:
+      - targets: ["target:8000"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				scrapeConfig := dst.ScrapeConfigs[0]
+				assert.Equal(t, "foo", scrapeConfig.JobName)
+
+				// Ensure basic_auth is present
+				require.NotNil(t, scrapeConfig.HTTPClientConfig.BasicAuth, "basic auth should be configured")
+				password := string(scrapeConfig.HTTPClientConfig.BasicAuth.Password)
+				assert.Equal(t, "%password", password, "password should preserve original value with leading %")
 			},
 		},
 	}

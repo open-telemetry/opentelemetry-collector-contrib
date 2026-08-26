@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -173,10 +175,10 @@ func Test_toKeyValueString(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := toKeyValueString[any](tt.target, tt.delimiter, tt.pairDelimiter, ottl.NewTestingOptional[bool](true))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			result, err := exprFunc(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			actual, ok := result.(string)
 			assert.True(t, ok)
@@ -214,7 +216,7 @@ func Test_toKeyValueString_bad_target(t *testing.T) {
 	delimiter := ottl.NewTestingOptional[string]("=")
 	pairDelimiter := ottl.NewTestingOptional[string]("!")
 	exprFunc, err := toKeyValueString[any](target, delimiter, pairDelimiter, ottl.NewTestingOptional[bool](false))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
@@ -228,7 +230,7 @@ func Test_toKeyValueString_empty_target(t *testing.T) {
 	delimiter := ottl.NewTestingOptional[string]("=")
 	pairDelimiter := ottl.NewTestingOptional[string]("!")
 	exprFunc, err := toKeyValueString[any](target, delimiter, pairDelimiter, ottl.NewTestingOptional[bool](false))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
@@ -246,4 +248,40 @@ func Test_toKeyValueString_empty_delimiters(t *testing.T) {
 
 	_, err = toKeyValueString[any](target, ottl.Optional[string]{}, delimiter, ottl.NewTestingOptional[bool](false))
 	assert.ErrorContains(t, err, "pair delimiter cannot be set to an empty string")
+}
+
+func Test_ToKeyValueStringFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewToKeyValueStringFactory[any]()
+		assert.Equal(t, "ToKeyValueString", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewToKeyValueStringFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ToKeyValueStringArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Delimiter", "PairDelimiter", "SortOutput"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewToKeyValueStringFactory[any]()
+		args := factory.CreateDefaultArguments()
+		toKeyValueStringArgs, ok := args.(*ToKeyValueStringArguments[any])
+		require.True(t, ok)
+		toKeyValueStringArgs.Target = &ottl.StandardPMapGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return pcommon.NewMap(), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createToKeyValueStringFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ToKeyValueStringFactory args must be of type *ToKeyValueStringArguments[K]")
+	})
 }

@@ -5,11 +5,12 @@ package azure // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
@@ -27,14 +28,15 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is an Azure metadata detector
 type Detector struct {
-	provider      azure.Provider
-	tagKeyRegexes []*regexp.Regexp
-	logger        *zap.Logger
-	rb            *metadata.ResourceBuilder
+	provider              azure.Provider
+	tagKeyRegexes         []*regexp.Regexp
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
 // NewDetector creates a new Azure metadata detector
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	tagKeyRegexes, err := compileRegexes(cfg)
@@ -43,10 +45,11 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.D
 	}
 
 	return &Detector{
-		provider:      azure.NewProvider(),
-		tagKeyRegexes: tagKeyRegexes,
-		logger:        p.Logger,
-		rb:            metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		provider:              azure.NewProvider(),
+		tagKeyRegexes:         tagKeyRegexes,
+		logger:                p.Logger,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
@@ -55,23 +58,35 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	compute, err := d.provider.Metadata(ctx)
 	if err != nil {
 		d.logger.Debug("Azure detector metadata retrieval failed", zap.Error(err))
-		// return an empty Resource and no error
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", fmt.Errorf("azure metadata unavailable: %w", err)
+		}
 		return pcommon.NewResource(), "", nil
 	}
 
 	d.rb.SetCloudProvider(conventions.CloudProviderAzure.Value.AsString())
 	d.rb.SetCloudPlatform(conventions.CloudPlatformAzureVM.Value.AsString())
-	d.rb.SetHostName(compute.Name)
+	// Use osProfile.computerName for host.name, falling back to the VM name
+	// if computerName is empty (e.g., VMs created from specialized disks).
+	if compute.OSProfile.ComputerName != "" {
+		d.rb.SetHostName(compute.OSProfile.ComputerName)
+	} else if compute.Name != "" {
+		d.rb.SetHostName(compute.Name)
+	}
 	d.rb.SetCloudRegion(compute.Location)
 	d.rb.SetHostID(compute.VMID)
 	d.rb.SetCloudAccountID(compute.SubscriptionID)
-	d.rb.SetCloudAvailabilityZone(compute.AvailabilityZone)
+	if compute.AvailabilityZone != "" {
+		d.rb.SetCloudAvailabilityZone(compute.AvailabilityZone)
+	}
 
 	// Also save compute.Name in "azure.vm.name" as host.id (AttributeHostName) is
 	// used by system detector.
 	d.rb.SetAzureVMName(compute.Name)
 	d.rb.SetAzureVMSize(compute.VMSize)
-	d.rb.SetAzureVMScalesetName(compute.VMScaleSetName)
+	if compute.VMScaleSetName != "" {
+		d.rb.SetAzureVMScalesetName(compute.VMScaleSetName)
+	}
 	d.rb.SetAzureResourcegroupName(compute.ResourceGroupName)
 	res := d.rb.Emit()
 

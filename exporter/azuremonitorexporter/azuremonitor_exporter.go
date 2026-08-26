@@ -34,7 +34,7 @@ func (exporter *azureMonitorExporter) Start(ctx context.Context, host component.
 	exporter.config.InstrumentationKey = configopaque.String(connectionVars.InstrumentationKey)
 	exporter.config.ClientConfig.Endpoint = connectionVars.IngestionURL
 	telemetryConfiguration := appinsights.NewTelemetryConfiguration(connectionVars.InstrumentationKey)
-	telemetryConfiguration.Client, err = exporter.config.ClientConfig.ToClient(ctx, host, exporter.settings)
+	telemetryConfiguration.Client, err = exporter.config.ClientConfig.ToClient(ctx, host.GetExtensions(), exporter.settings)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,12 @@ func (v *traceVisitor) visit(
 	scope pcommon.InstrumentationScope,
 	span ptrace.Span,
 ) (ok bool) {
-	envelopes, err := spanToEnvelopes(resource, scope, span, v.exporter.config.SpanEventsEnabled, v.exporter.logger)
+	httpSuccessMapping := v.exporter.config.TelemetryMappings.Traces.HTTP.Success
+	httpSuccessConfig := httpStatusCodeSuccessConfig{
+		NonErrorHTTPStatusCodes:                   httpSuccessMapping.AdditionalSuccessStatusCodes,
+		AlignHTTPServerRequestSuccessWithOTelSpec: httpSuccessMapping.ServerPolicy == "otel",
+	}
+	envelopes, err := spanToEnvelopes(resource, scope, span, v.exporter.config.SpanEventsEnabled, httpSuccessConfig, &v.exporter.config.TagMappings, v.exporter.logger)
 	if err != nil {
 		// record the error and short-circuit
 		v.err = consumererror.NewPermanent(err)

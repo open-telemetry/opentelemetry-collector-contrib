@@ -5,28 +5,30 @@ package healthcheck // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/grpc"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/http"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/httpserver"
 )
 
 // Type aliases to expose internal types publicly
 type (
-	HTTPLegacyConfig             = http.LegacyConfig
-	HTTPConfig                   = http.Config
-	PathConfig                   = http.PathConfig
+	HTTPLegacyConfig             = httpserver.LegacyConfig
+	HTTPConfig                   = httpserver.Config
+	PathConfig                   = httpserver.PathConfig
 	GRPCConfig                   = grpc.Config
-	ComponentHealthConfig        = common.ComponentHealthConfig
-	CheckCollectorPipelineConfig = http.CheckCollectorPipelineConfig
+	ComponentHealthConfig        = config.ComponentHealthConfig
+	CheckCollectorPipelineConfig = httpserver.CheckCollectorPipelineConfig
+	ResponseBodyConfig           = httpserver.ResponseBodyConfig
 )
 
 const (
@@ -43,20 +45,25 @@ var (
 	ErrInvalidPath          = errors.New("path must start with /")
 )
 
+// endpointForPort returns a localhost endpoint for the given port.
+func endpointForPort(port int) string {
+	return fmt.Sprintf("localhost:%d", port)
+}
+
 // Config has the configuration for the extension enabling the health check
 // extension, used to report the health status of the service.
 type Config struct {
 	// LegacyConfig contains the config for the existing healthcheck extension.
-	http.LegacyConfig `mapstructure:",squash"`
+	httpserver.LegacyConfig `mapstructure:",squash"`
 
 	// GRPCConfig is v2 config for the grpc healthcheck service.
 	GRPCConfig *grpc.Config `mapstructure:"grpc"`
 
 	// HTTPConfig is v2 config for the http healthcheck service.
-	HTTPConfig *http.Config `mapstructure:"http"`
+	HTTPConfig *httpserver.Config `mapstructure:"http"`
 
 	// ComponentHealthConfig is v2 config shared between http and grpc services
-	ComponentHealthConfig *common.ComponentHealthConfig `mapstructure:"component_health"`
+	ComponentHealthConfig *config.ComponentHealthConfig `mapstructure:"component_health"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -64,7 +71,7 @@ var _ component.Config = (*Config)(nil)
 // Validate checks if the extension configuration is valid
 func (c *Config) Validate() error {
 	if !c.UseV2 {
-		if c.Endpoint == "" {
+		if c.ServerConfig.NetAddr.Endpoint == "" {
 			return ErrHTTPEndpointRequired
 		}
 		if !strings.HasPrefix(c.Path, "/") {
@@ -78,7 +85,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.HTTPConfig != nil {
-		if c.HTTPConfig.Endpoint == "" {
+		if c.HTTPConfig.ServerConfig.NetAddr.Endpoint == "" {
 			return ErrHTTPEndpointRequired
 		}
 		if c.HTTPConfig.Status.Enabled && !strings.HasPrefix(c.HTTPConfig.Status.Path, "/") {
@@ -89,7 +96,7 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if c.GRPCConfig != nil && c.GRPCConfig.NetAddr.Endpoint == "" {
+	if c.GRPCConfig != nil && c.GRPCConfig.ServerConfig.NetAddr.Endpoint == "" {
 		return ErrGRPCEndpointRequired
 	}
 
@@ -98,11 +105,52 @@ func (c *Config) Validate() error {
 
 // Unmarshal a confmap.Conf into the config struct.
 func (c *Config) Unmarshal(conf *confmap.Conf) error {
+	// Initialize with default values to enable unmarshaling into nested structs.
+	// For healthcheckextension: the feature gate determines behavior, not these fields.
+	// For healthcheckv2extension: these fields control which protocols are enabled.
+	// We conditionally initialize and then clear to preserve "user specified" vs "not specified".
+	if conf.IsSet(httpConfigKey) {
+		httpServerConfig := confighttp.NewDefaultServerConfig()
+		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+		httpServerConfig.WriteTimeout = 0
+		httpServerConfig.ReadHeaderTimeout = 0
+		httpServerConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+		httpServerConfig.NetAddr = confignet.AddrConfig{
+			Endpoint:  endpointForPort(DefaultHTTPPort),
+			Transport: confignet.TransportTypeTCP,
+		}
+		httpServerConfig.KeepAlivesEnabled = true //nolint:staticcheck // SA1019: see TODO above
+		c.HTTPConfig = &httpserver.Config{
+			ServerConfig: httpServerConfig,
+			Status: httpserver.PathConfig{
+				Enabled: true,
+				Path:    "/status",
+			},
+			Config: httpserver.PathConfig{
+				Enabled: false,
+				Path:    "/config",
+			},
+		}
+	}
+	if conf.IsSet(grpcConfigKey) {
+		c.GRPCConfig = &grpc.Config{
+			ServerConfig: configgrpc.ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  endpointForPort(DefaultGRPCPort),
+					Transport: confignet.TransportTypeTCP,
+				},
+				Keepalive: configoptional.Some(configgrpc.NewDefaultKeepaliveServerConfig()),
+			},
+		}
+	}
+
 	err := conf.Unmarshal(c)
 	if err != nil {
 		return err
 	}
 
+	// Clear configs that weren't actually set in the confmap.
+	// This preserves the distinction between "user didn't specify" vs "user specified with defaults".
 	if !conf.IsSet(httpConfigKey) {
 		c.HTTPConfig = nil
 	}
@@ -115,22 +163,39 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 }
 
 func NewDefaultConfig() component.Config {
+	legacyServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	legacyServerConfig.WriteTimeout = 0
+	legacyServerConfig.ReadHeaderTimeout = 0
+	legacyServerConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	legacyServerConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  endpointForPort(DefaultHTTPPort),
+		Transport: "tcp",
+	}
+	legacyServerConfig.KeepAlivesEnabled = true //nolint:staticcheck // SA1019: see TODO above
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	httpServerConfig.WriteTimeout = 0
+	httpServerConfig.ReadHeaderTimeout = 0
+	httpServerConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  endpointForPort(DefaultHTTPPort),
+		Transport: "tcp",
+	}
+	httpServerConfig.KeepAlivesEnabled = true //nolint:staticcheck // SA1019: see TODO above
 	return &Config{
-		LegacyConfig: http.LegacyConfig{
-			ServerConfig: confighttp.ServerConfig{
-				Endpoint: testutil.EndpointForPort(DefaultHTTPPort),
-			},
-			Path: "/",
+		LegacyConfig: httpserver.LegacyConfig{
+			ServerConfig: legacyServerConfig,
+			Path:         "/",
 		},
-		HTTPConfig: &http.Config{
-			ServerConfig: confighttp.ServerConfig{
-				Endpoint: testutil.EndpointForPort(DefaultHTTPPort),
+		HTTPConfig: &httpserver.Config{
+			ServerConfig: httpServerConfig,
+			Status: httpserver.PathConfig{
+				Enabled:           true,
+				Path:              "/status",
+				IncludeAttributes: false,
 			},
-			Status: http.PathConfig{
-				Enabled: true,
-				Path:    "/status",
-			},
-			Config: http.PathConfig{
+			Config: httpserver.PathConfig{
 				Enabled: false,
 				Path:    "/config",
 			},
@@ -138,9 +203,10 @@ func NewDefaultConfig() component.Config {
 		GRPCConfig: &grpc.Config{
 			ServerConfig: configgrpc.ServerConfig{
 				NetAddr: confignet.AddrConfig{
-					Endpoint:  testutil.EndpointForPort(DefaultGRPCPort),
+					Endpoint:  endpointForPort(DefaultGRPCPort),
 					Transport: "tcp",
 				},
+				Keepalive: configoptional.Some(configgrpc.NewDefaultKeepaliveServerConfig()),
 			},
 		},
 	}

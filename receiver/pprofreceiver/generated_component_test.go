@@ -10,8 +10,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
 var typ = component.MustNewType("pprof")
@@ -30,7 +32,15 @@ func TestComponentLifecycle(t *testing.T) {
 	tests := []struct {
 		createFn func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error)
 		name     string
-	}{}
+	}{
+
+		{
+			name: "profiles",
+			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
+				return factory.(xreceiver.Factory).CreateProfiles(ctx, set, cfg, consumertest.NewNop())
+			},
+		},
+	}
 
 	cm, err := confmaptest.LoadConf("metadata.yaml")
 	require.NoError(t, err)

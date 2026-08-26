@@ -7,10 +7,12 @@ import (
 	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.16.0"
+	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger/internal/metadata"
 )
 
 // ProtoFromTraces translates internal trace data into the Jaeger Proto for GRPC.
@@ -111,6 +113,15 @@ func appendTagsFromAttributes(dest []model.KeyValue, attrs pcommon.Map) []model.
 		return dest
 	}
 	for key, attr := range attrs.All() {
+		if key == string(conventionsv125.HTTPStatusCodeKey) || key == string(conventions.HTTPResponseStatusCodeKey) {
+			if !metadata.PkgTranslatorJaegerDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				dest = append(dest, attributeToJaegerProtoTag(string(conventionsv125.HTTPStatusCodeKey), attr))
+			}
+			if metadata.PkgTranslatorJaegerEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				dest = append(dest, attributeToJaegerProtoTag(string(conventions.HTTPResponseStatusCodeKey), attr))
+			}
+			continue
+		}
 		dest = append(dest, attributeToJaegerProtoTag(key, attr))
 	}
 	return dest
@@ -146,6 +157,12 @@ func spanToJaegerProto(span ptrace.Span, libraryTags pcommon.InstrumentationScop
 	jReferences := makeJaegerProtoReferences(span.Links(), spanIDToJaegerProto(span.ParentSpanID()), traceID)
 
 	startTime := span.StartTimestamp().AsTime()
+
+	var flags model.Flags
+	if span.Flags()&spanFlagsSampled != 0 {
+		flags.SetSampled()
+	}
+
 	return &model.Span{
 		TraceID:       traceID,
 		SpanID:        spanIDToJaegerProto(span.SpanID()),
@@ -155,6 +172,7 @@ func spanToJaegerProto(span ptrace.Span, libraryTags pcommon.InstrumentationScop
 		Duration:      span.EndTimestamp().AsTime().Sub(startTime),
 		Tags:          getJaegerProtoSpanTags(span, libraryTags),
 		Logs:          spanEventsToJaegerProtoLogs(span.Events()),
+		Flags:         flags,
 	}
 }
 
@@ -329,13 +347,13 @@ func getTagFromStatusCode(statusCode ptrace.StatusCode) (model.KeyValue, bool) {
 	switch statusCode {
 	case ptrace.StatusCodeError:
 		return model.KeyValue{
-			Key:   string(conventions.OtelStatusCodeKey),
+			Key:   string(conventions.OTelStatusCodeKey),
 			VType: model.ValueType_STRING,
 			VStr:  statusError,
 		}, true
 	case ptrace.StatusCodeOk:
 		return model.KeyValue{
-			Key:   string(conventions.OtelStatusCodeKey),
+			Key:   string(conventions.OTelStatusCodeKey),
 			VType: model.ValueType_STRING,
 			VStr:  statusOk,
 		}, true
@@ -359,7 +377,7 @@ func getTagFromStatusMsg(statusMsg string) (model.KeyValue, bool) {
 		return model.KeyValue{}, false
 	}
 	return model.KeyValue{
-		Key:   string(conventions.OtelStatusDescriptionKey),
+		Key:   string(conventions.OTelStatusDescriptionKey),
 		VStr:  statusMsg,
 		VType: model.ValueType_STRING,
 	}, true
@@ -384,7 +402,7 @@ func getTagsFromInstrumentationLibrary(il pcommon.InstrumentationScope) ([]model
 	var keyValues []model.KeyValue
 	if ilName := il.Name(); ilName != "" {
 		kv := model.KeyValue{
-			Key:   string(conventions.OtelScopeNameKey),
+			Key:   string(conventions.OTelScopeNameKey),
 			VStr:  ilName,
 			VType: model.ValueType_STRING,
 		}
@@ -392,7 +410,7 @@ func getTagsFromInstrumentationLibrary(il pcommon.InstrumentationScope) ([]model
 	}
 	if ilVersion := il.Version(); ilVersion != "" {
 		kv := model.KeyValue{
-			Key:   string(conventions.OtelScopeVersionKey),
+			Key:   string(conventions.OTelScopeVersionKey),
 			VStr:  ilVersion,
 			VType: model.ValueType_STRING,
 		}
@@ -403,7 +421,7 @@ func getTagsFromInstrumentationLibrary(il pcommon.InstrumentationScope) ([]model
 }
 
 func refTypeFromLink(link ptrace.SpanLink) model.SpanRefType {
-	refTypeAttr, ok := link.Attributes().Get(string(conventions.OpentracingRefTypeKey))
+	refTypeAttr, ok := link.Attributes().Get(string(conventions.OpenTracingRefTypeKey))
 	if !ok {
 		return model.SpanRefType_FOLLOWS_FROM
 	}
@@ -411,7 +429,7 @@ func refTypeFromLink(link ptrace.SpanLink) model.SpanRefType {
 }
 
 func strToJRefType(attr string) model.SpanRefType {
-	if attr == conventions.OpentracingRefTypeChildOf.Value.AsString() {
+	if attr == conventions.OpenTracingRefTypeChildOf.Value.AsString() {
 		return model.ChildOf
 	}
 	// There are only 2 types of SpanRefType we assume that everything

@@ -31,21 +31,20 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("cloud.platform")
+			cloudPlatformAttrVal, ok := res.Attributes().Get("cloud.platform")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.platform-val", val.Str())
+				assert.Equal(t, "cloud.platform-val", cloudPlatformAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("cloud.provider")
+			cloudProviderAttrVal, ok := res.Attributes().Get("cloud.provider")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.provider-val", val.Str())
+				assert.Equal(t, "cloud.provider-val", cloudProviderAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.cluster.name")
+			k8sClusterNameAttrVal, ok := res.Attributes().Get("k8s.cluster.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "k8s.cluster.name-val", val.Str())
+				assert.Equal(t, "k8s.cluster.name-val", k8sClusterNameAttrVal.Str())
 			}
 		})
 	}

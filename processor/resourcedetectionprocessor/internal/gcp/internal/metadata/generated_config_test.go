@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -30,7 +29,6 @@ func TestResourceAttributesConfig(t *testing.T) {
 				CloudPlatform:                    ResourceAttributeConfig{Enabled: true},
 				CloudProvider:                    ResourceAttributeConfig{Enabled: true},
 				CloudRegion:                      ResourceAttributeConfig{Enabled: true},
-				FaasID:                           ResourceAttributeConfig{Enabled: true},
 				FaasInstance:                     ResourceAttributeConfig{Enabled: true},
 				FaasName:                         ResourceAttributeConfig{Enabled: true},
 				FaasVersion:                      ResourceAttributeConfig{Enabled: true},
@@ -55,7 +53,6 @@ func TestResourceAttributesConfig(t *testing.T) {
 				CloudPlatform:                    ResourceAttributeConfig{Enabled: false},
 				CloudProvider:                    ResourceAttributeConfig{Enabled: false},
 				CloudRegion:                      ResourceAttributeConfig{Enabled: false},
-				FaasID:                           ResourceAttributeConfig{Enabled: false},
 				FaasInstance:                     ResourceAttributeConfig{Enabled: false},
 				FaasName:                         ResourceAttributeConfig{Enabled: false},
 				FaasVersion:                      ResourceAttributeConfig{Enabled: false},

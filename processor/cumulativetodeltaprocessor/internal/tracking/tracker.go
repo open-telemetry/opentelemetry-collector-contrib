@@ -8,7 +8,9 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -18,6 +20,19 @@ import (
 
 // Allocate a minimum of 64 bytes to the builder initially
 const initialBytes = 64
+
+// Reason constants surfaced by Convert. The Initial and BucketMismatch values
+// match the processor's metadata.yaml `reason` attribute on the
+// `cumulativetodelta_datapoints_dropped` metric. Reset is reported on every
+// reset detection — sum and exponential-histogram resets drop the point and
+// the reason is recorded on the dropped metric, while histogram resets pass
+// the point through with the full cumulative value (see
+// processor_telemetry_test.go for the case).
+const (
+	ReasonReset          = "reset"
+	ReasonInitial        = "initial"
+	ReasonBucketMismatch = "bucket_mismatch"
+)
 
 type InitialValue int
 
@@ -65,10 +80,11 @@ type state struct {
 }
 
 type DeltaValue struct {
-	StartTimestamp pcommon.Timestamp
-	FloatValue     float64
-	IntValue       int64
-	HistogramValue *HistogramPoint
+	StartTimestamp            pcommon.Timestamp
+	FloatValue                float64
+	IntValue                  int64
+	HistogramValue            *HistogramPoint
+	ExponentialHistogramPoint *ExponentialHistogramPoint
 }
 
 func NewMetricTracker(ctx context.Context, logger *zap.Logger, maxStaleness time.Duration, initialValue InitialValue) *MetricTracker {
@@ -88,22 +104,44 @@ type MetricTracker struct {
 	logger       *zap.Logger
 	maxStaleness time.Duration
 	states       sync.Map
+	streams      atomic.Int64
 	initialValue InitialValue
 	startTime    pcommon.Timestamp
 }
 
-func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
+// Streams returns the number of metric streams currently tracked.
+func (t *MetricTracker) Streams() int64 {
+	return t.streams.Load()
+}
+
+// isMonotonicHistogram reports if a histogram is monotonic.
+// A histogram is not monotonic when there is a drop in the total count or a bucket count.
+func isMonotonicHistogram(value, prevValue *HistogramPoint) bool {
+	if value.Count < prevValue.Count {
+		return false
+	}
+
+	for index, prevBucket := range prevValue.BucketCounts {
+		if value.BucketCounts[index] < prevBucket {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, reason string) {
 	metricID := in.Identity
 	metricPoint := in.Value
 	if !metricID.IsSupportedMetricType() {
-		return out, valid
+		return out, valid, reason
 	}
 
 	// NaN is used to signal "stale" metrics.
 	// These are ignored for now.
 	// https://github.com/open-telemetry/opentelemetry-collector/pull/3423
 	if metricID.IsFloatVal() && math.IsNaN(metricPoint.FloatValue) {
-		return out, valid
+		return out, valid, reason
 	}
 
 	b := identityBufferPool.Get().(*bytes.Buffer)
@@ -116,27 +154,33 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 		prevPoint: metricPoint,
 	})
 	if !ok {
+		t.streams.Add(1)
 		switch metricID.MetricType {
 		case pmetric.MetricTypeHistogram:
 			val := metricPoint.HistogramValue.Clone()
 			out.HistogramValue = &val
+		case pmetric.MetricTypeExponentialHistogram:
+			val := metricPoint.ExponentialHistogramValue.Clone()
+			out.ExponentialHistogramPoint = &val
 		case pmetric.MetricTypeSum:
 			out.IntValue = metricPoint.IntValue
 			out.FloatValue = metricPoint.FloatValue
-		case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
+		case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSummary:
 		}
 		switch t.initialValue {
 		case InitialValueAuto:
 			if metricID.StartTimestamp < t.startTime || metricPoint.ObservedTimestamp == metricID.StartTimestamp {
-				return out, valid
+				reason = ReasonInitial
+				return out, valid, reason
 			}
 			out.StartTimestamp = metricID.StartTimestamp
 			valid = true
 		case InitialValueKeep:
 			valid = true
 		case InitialValueDrop:
+			reason = ReasonInitial
 		}
-		return out, valid
+		return out, valid, reason
 	}
 
 	valid = true
@@ -155,22 +199,78 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 			value.Sum = prevValue.Sum
 		}
 
-		if len(value.Buckets) != len(prevValue.Buckets) {
+		if len(value.BucketCounts) != len(prevValue.BucketCounts) {
 			valid = false
+			reason = ReasonBucketMismatch
+			t.logger.Warn("Points in histogram series have different numbers of buckets; some data will be dropped")
+		} else if !slices.Equal(value.BucketBounds, prevValue.BucketBounds) {
+			valid = false
+			reason = ReasonBucketMismatch
+			t.logger.Warn("Points in histogram series have different bucket boundaries; some data will be dropped")
 		}
 
 		delta := value.Clone()
 
-		// Calculate deltas unless histogram count was reset
-		if valid && delta.Count >= prevValue.Count {
+		// Calculate deltas unless there was a reset.
+		if valid {
+			if !isMonotonicHistogram(&delta, prevValue) {
+				return out, false, ReasonReset
+			}
 			delta.Count -= prevValue.Count
 			delta.Sum -= prevValue.Sum
-			for index, prevBucket := range prevValue.Buckets {
-				delta.Buckets[index] -= prevBucket
+			for index, prevBucket := range prevValue.BucketCounts {
+				delta.BucketCounts[index] -= prevBucket
 			}
 		}
 
 		out.HistogramValue = &delta
+
+	case pmetric.MetricTypeExponentialHistogram:
+		value := metricPoint.ExponentialHistogramValue
+		prevValue := state.prevPoint.ExponentialHistogramValue
+
+		// Count and ZeroThreshold should only increase when merging, and Scale should only decrease.
+		if value.Count < prevValue.Count || value.ZeroThreshold < prevValue.ZeroThreshold || value.Scale > prevValue.Scale {
+			return out, false, ReasonReset
+		}
+
+		delta := value.Clone()
+		delta.Count -= prevValue.Count
+		delta.Sum -= prevValue.Sum
+
+		if value.ZeroThreshold > prevValue.ZeroThreshold {
+			// Coarsen previous histogram zero bucket to match the new histogram.
+			// Find the bucket the threshold falls into, i.e.
+			// the greatest i such that 2**(2**(-scale) * index) < threshold
+			scaleFactor := math.Ldexp(math.Log2E, int(prevValue.Scale))
+			thresholdBucket := int32(math.Ceil(math.Log(value.ZeroThreshold)*scaleFactor) - 1)
+			// If the bucket the threshold falls into is populated in the old histogram,
+			// then it must also be populated in the new histogram, which has ill-defined semantics,
+			// so we will assume this doesn't happen instead of adjusting the threshold as recommended in the spec.
+			prevValue.ZeroCount += prevValue.Positive.TrimZeros(thresholdBucket)
+			prevValue.ZeroCount += prevValue.Negative.TrimZeros(thresholdBucket)
+		}
+		delta.ZeroCount -= prevValue.ZeroCount
+
+		if value.Scale < prevValue.Scale {
+			// Coarsen previous histogram buckets to match the new histogram.
+			bitsLost := prevValue.Scale - value.Scale
+			prevValue.Scale = value.Scale
+			prevValue.Positive = prevValue.Positive.Coarsen(bitsLost)
+			prevValue.Negative = prevValue.Negative.Coarsen(bitsLost)
+		}
+		var reset bool
+		delta.Positive, reset = value.Positive.Diff(&prevValue.Positive)
+		if reset {
+			return out, false, ReasonReset
+		}
+		delta.Negative, reset = value.Negative.Diff(&prevValue.Negative)
+		if reset {
+			return out, false, ReasonReset
+		}
+
+		out.ExponentialHistogramPoint = &delta
+
 	case pmetric.MetricTypeSum:
 		if metricID.IsFloatVal() {
 			value := metricPoint.FloatValue
@@ -180,6 +280,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 			// Detect reset (non-monotonic sums are not converted)
 			if value < prevValue {
 				valid = false
+				reason = ReasonReset
 			}
 
 			out.FloatValue = delta
@@ -191,15 +292,16 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 			// Detect reset (non-monotonic sums are not converted)
 			if value < prevValue {
 				valid = false
+				reason = ReasonReset
 			}
 
 			out.IntValue = delta
 		}
-	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSummary:
 	}
 
 	state.prevPoint = metricPoint
-	return out, valid
+	return out, valid, reason
 }
 
 func (t *MetricTracker) removeStale(staleBefore pcommon.Timestamp) {
@@ -225,6 +327,7 @@ func (t *MetricTracker) removeStale(staleBefore pcommon.Timestamp) {
 		if lastObserved < staleBefore {
 			t.logger.Debug("removing stale state key", zap.String("key", key.(string)))
 			t.states.Delete(key)
+			t.streams.Add(-1)
 		}
 		return true
 	})

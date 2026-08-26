@@ -139,9 +139,9 @@ func Test_isMatch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := isMatch(tt.target, tt.pattern)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			result, err := exprFunc(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -159,7 +159,7 @@ func Test_isMatch_validation(t *testing.T) {
 		},
 	}
 	exprFunc, err := isMatch[any](target, invalidRegexPattern)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = exprFunc(t.Context(), nil)
 	require.Error(t, err)
 }
@@ -176,7 +176,48 @@ func Test_isMatch_error(t *testing.T) {
 		},
 	}
 	exprFunc, err := isMatch[any](target, regexPattern)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = exprFunc(t.Context(), nil)
 	require.Error(t, err)
+}
+
+func Test_IsMatchFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewIsMatchFactory[any]()
+		assert.Equal(t, "IsMatch", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewIsMatchFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &IsMatchArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Pattern"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewIsMatchFactory[any]()
+		args := factory.CreateDefaultArguments()
+		isMatchArgs, ok := args.(*IsMatchArguments[any])
+		require.True(t, ok)
+		isMatchArgs.Target = &ottl.StandardStringLikeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "hello", nil
+			},
+		}
+		isMatchArgs.Pattern = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return ".*", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createIsMatchFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "IsMatchFactory args must be of type *IsMatchArguments[K]")
+	})
 }

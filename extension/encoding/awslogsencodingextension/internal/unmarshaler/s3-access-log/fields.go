@@ -4,7 +4,7 @@
 package s3accesslog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
 
 import (
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 const (
@@ -14,6 +14,7 @@ const (
 	attributeAWSS3ObjectSize     = "aws.s3.object.size"
 	attributeAWSS3TurnAroundTime = "aws.s3.turn_around_time"
 	attributeAWSS3AclRequired    = "aws.s3.acl_required"
+	attributeAWSS3SourceRegion   = "aws.s3.source_region"
 
 	fieldIndexS3BucketOwner    = 0
 	fieldIndexS3BucketName     = 1
@@ -41,6 +42,7 @@ const (
 	fieldIndexTLSVersion       = 23
 	fieldIndexAccessPointARN   = 24
 	fieldIndexACLRequired      = 25
+	fieldIndexSourceRegion     = 26
 )
 
 // Some of the attribute names are based on semantic conventions for AWS S3.
@@ -53,26 +55,27 @@ const (
 // a comment in front of each attribute to help the reader navigate the mapping.
 // See available fields: https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html.
 var attributeNames = [...]string{
-	fieldIndexSourceAddress:    string(semconv.SourceAddressKey),          // remote IP
-	fieldIndexRequester:        string(semconv.UserIDKey),                 // requester
-	fieldIndexRequestID:        "aws.request_id",                          // request ID
-	fieldIndexOperation:        string(semconv.RPCMethodKey),              // operation
-	fieldIndexS3Key:            string(semconv.AWSS3KeyKey),               // key
-	fieldIndexHTTPStatus:       string(semconv.HTTPResponseStatusCodeKey), // HTTP status
-	fieldIndexErrorCode:        string(semconv.ErrorTypeKey),              // error code
-	fieldIndexBytesSent:        string(semconv.HTTPResponseBodySizeKey),   // bytes sent
-	fieldIndexObjectSize:       attributeAWSS3ObjectSize,                  // object size
-	fieldIndexTotalTime:        duration,                                  // total time
-	fieldIndexTurnAroundTime:   attributeAWSS3TurnAroundTime,              // turn around time
-	fieldIndexReferer:          "http.request.header.referer",             // referer
-	fieldIndexUserAgent:        string(semconv.UserAgentOriginalKey),      // user agent
-	fieldIndexVersionID:        "aws.s3.version_id",                       // version ID
-	fieldIndexHostID:           "aws.extended_request_id",                 // host ID
-	fieldIndexSignatureVersion: "aws.signature.version",                   // signature version
-	fieldIndexTLSCipher:        string(semconv.TLSCipherKey),              // cipher suite
-	fieldIndexAuthType:         "aws.s3.auth_type",                        // authentication type
-	fieldIndexHostHeader:       "http.request.header.host",                // host header
-	fieldIndexTLSVersion:       string(semconv.TLSProtocolVersionKey),     // TLS version
-	fieldIndexAccessPointARN:   "aws.s3.access_point.arn",                 // access point ARN
-	fieldIndexACLRequired:      attributeAWSS3AclRequired,                 // acl required
+	fieldIndexSourceAddress:    string(conventions.SourceAddressKey),          // remote IP
+	fieldIndexRequester:        string(conventions.UserIDKey),                 // requester
+	fieldIndexRequestID:        "aws.request_id",                              // request ID
+	fieldIndexOperation:        string(conventions.RPCMethodKey),              // operation
+	fieldIndexS3Key:            string(conventions.AWSS3KeyKey),               // key
+	fieldIndexHTTPStatus:       string(conventions.HTTPResponseStatusCodeKey), // HTTP status
+	fieldIndexErrorCode:        string(conventions.ErrorTypeKey),              // error code
+	fieldIndexBytesSent:        string(conventions.HTTPResponseBodySizeKey),   // bytes sent
+	fieldIndexObjectSize:       attributeAWSS3ObjectSize,                      // object size
+	fieldIndexTotalTime:        duration,                                      // total time
+	fieldIndexTurnAroundTime:   attributeAWSS3TurnAroundTime,                  // turn around time
+	fieldIndexReferer:          "http.request.header.referer",                 // referer
+	fieldIndexUserAgent:        string(conventions.UserAgentOriginalKey),      // user agent
+	fieldIndexVersionID:        "aws.s3.version_id",                           // version ID
+	fieldIndexHostID:           "aws.extended_request_id",                     // host ID
+	fieldIndexSignatureVersion: "aws.signature.version",                       // signature version
+	fieldIndexTLSCipher:        string(conventions.TLSCipherKey),              // cipher suite
+	fieldIndexAuthType:         "aws.s3.auth_type",                            // authentication type
+	fieldIndexHostHeader:       "http.request.header.host",                    // host header
+	fieldIndexTLSVersion:       string(conventions.TLSProtocolVersionKey),     // TLS version
+	fieldIndexAccessPointARN:   "aws.s3.access_point.arn",                     // access point ARN
+	fieldIndexACLRequired:      attributeAWSS3AclRequired,                     // acl required
+	fieldIndexSourceRegion:     attributeAWSS3SourceRegion,                    // source region
 }

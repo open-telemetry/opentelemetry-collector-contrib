@@ -12,16 +12,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
-func NewAdjustedCountFactory() ottl.Factory[ottlspan.TransformContext] {
+func NewAdjustedCountFactory() ottl.Factory[*ottlspan.TransformContext] {
 	return ottl.NewFactory("AdjustedCount", nil, createAdjustedCountFunction)
 }
 
-func createAdjustedCountFunction(ottl.FunctionContext, ottl.Arguments) (ottl.ExprFunc[ottlspan.TransformContext], error) {
+func createAdjustedCountFunction(ottl.FunctionContext, ottl.Arguments) (ottl.ExprFunc[*ottlspan.TransformContext], error) {
 	return adjustedCount()
 }
 
-func adjustedCount() (ottl.ExprFunc[ottlspan.TransformContext], error) {
-	return func(_ context.Context, tCtx ottlspan.TransformContext) (any, error) {
+func adjustedCount() (ottl.ExprFunc[*ottlspan.TransformContext], error) {
+	return func(_ context.Context, tCtx *ottlspan.TransformContext) (any, error) {
 		tracestate := tCtx.GetSpan().TraceState().AsRaw()
 		w3cTraceState, err := sampling.NewW3CTraceState(tracestate)
 		if err != nil {

@@ -7,12 +7,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 // Mock implementations for AttributeContext and dependencies
@@ -62,7 +62,7 @@ func TestAccessAttributes_Getter(t *testing.T) {
 	getSetter := AccessAttributes[*mockAttributeContext](mockAttributeSource)
 
 	got, err := getSetter.Getter(t.Context(), ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	m, ok := got.(pcommon.Map)
 	assert.True(t, ok)
@@ -124,7 +124,7 @@ func TestAccessAttributes_Setter(t *testing.T) {
 	m.PutInt("num", 123)
 
 	err := getSetter.Setter(t.Context(), ctx, m)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Verify that the shared attribute table preserves existing entries
 	// The existing attributes should still be in the shared table even though
@@ -187,6 +187,10 @@ func TestAccessAttributes_Setter_InvalidValue(t *testing.T) {
 	// Pass a value that is not a ctxutil.Map
 	err := getSetter.Setter(t.Context(), ctx, "not_a_map")
 	assert.Error(t, err)
+
+	// Passing nil clears the attributes to empty via ctxutil.GetMap, so it must not error.
+	err = getSetter.Setter(t.Context(), ctx, nil)
+	require.NoError(t, err)
 }
 
 func TestAccessAttributesKey_Getter(t *testing.T) {
@@ -212,13 +216,13 @@ func TestAccessAttributesKey_Getter(t *testing.T) {
 		path := pathtest.Path[*mockAttributeContext]{
 			KeySlice: []ottl.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
-					S: ottltest.Strp("key1"),
+					S: new("key1"),
 				},
 			},
 		}
 		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
 		got, err := getSetter.Getter(t.Context(), ctx)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Nil(t, got)
 	})
 
@@ -226,13 +230,13 @@ func TestAccessAttributesKey_Getter(t *testing.T) {
 		path := pathtest.Path[*mockAttributeContext]{
 			KeySlice: []ottl.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
-					S: ottltest.Strp("foo"),
+					S: new("foo"),
 				},
 			},
 		}
 		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
 		got, err := getSetter.Getter(t.Context(), ctx)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "bar", got)
 	})
 }
@@ -284,13 +288,13 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 		path := pathtest.Path[*mockAttributeContext]{
 			KeySlice: []ottl.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
-					S: ottltest.Strp("key1"),
+					S: new("key1"),
 				},
 			},
 		}
 		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
 		err := getSetter.Setter(t.Context(), ctx, "value1")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// Verify existing attributes in shared tables remain unchanged
 		assert.Equal(t, "foo", strTable.At(int(attr.KeyStrindex())),
@@ -329,13 +333,13 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 		path := pathtest.Path[*mockAttributeContext]{
 			KeySlice: []ottl.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
-					S: ottltest.Strp("foo"),
+					S: new("foo"),
 				},
 			},
 		}
 		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
 		err := getSetter.Setter(t.Context(), ctx, "bazinga")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// CRITICAL: Verify all original attributes in shared table remain unchanged
 		// PutAttribute creates new entries rather than modifying existing ones
@@ -375,6 +379,21 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 		assert.True(t, foundUpdatedFoo, "Should find updated 'foo' attribute with new value")
 	})
 
+	t.Run("nil-value", func(t *testing.T) {
+		path := pathtest.Path[*mockAttributeContext]{
+			KeySlice: []ottl.Key[*mockAttributeContext]{
+				&pathtest.Key[*mockAttributeContext]{
+					S: new("foo"),
+				},
+			},
+		}
+		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
+		// Keyed access routes through ctxutil.SetValue, which accepts nil and
+		// sets an empty value, so nil must not error.
+		err := getSetter.Setter(t.Context(), ctx, nil)
+		require.NoError(t, err)
+	})
+
 	t.Run("insert-new-key", func(t *testing.T) {
 		// Capture original shared table state
 		originalAttrTableLen := attrTable.Len()
@@ -403,13 +422,13 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 		path := pathtest.Path[*mockAttributeContext]{
 			KeySlice: []ottl.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
-					S: ottltest.Strp("bazinga"),
+					S: new("bazinga"),
 				},
 			},
 		}
 		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
-		err := getSetter.Setter(t.Context(), ctx, 42)
-		assert.NoError(t, err)
+		err := getSetter.Setter(t.Context(), ctx, int64(42))
+		require.NoError(t, err)
 
 		// Verify all original attributes in shared tables remain unchanged
 		for _, orig := range originalValues {

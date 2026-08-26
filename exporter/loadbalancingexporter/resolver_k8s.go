@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -18,14 +19,12 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/ptr"
-	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -34,7 +33,8 @@ import (
 var _ resolver = (*k8sResolver)(nil)
 
 var (
-	errNoSvc = errors.New("no service specified to resolve the backends")
+	errNoSvc          = errors.New("no service specified to resolve the backends")
+	errInvalidSvcFQDN = errors.New("invalid Kubernetes service FQDN")
 
 	k8sResolverAttr           = attribute.String("resolver", "k8s")
 	k8sResolverAttrSet        = attribute.NewSet(k8sResolverAttr)
@@ -43,7 +43,7 @@ var (
 )
 
 const (
-	defaultListWatchTimeout = 1 * time.Second
+	defaultListWatchTimeout = 1 * time.Minute
 )
 
 type k8sResolver struct {
@@ -52,6 +52,7 @@ type k8sResolver struct {
 	svcNs   string
 	port    []int32
 
+	client         kubernetes.Interface
 	handler        *handler
 	once           *sync.Once
 	epsListWatcher cache.ListerWatcher
@@ -87,11 +88,18 @@ func newK8sResolver(clt kubernetes.Interface,
 		timeout = defaultListWatchTimeout
 	}
 
-	nAddr := strings.SplitN(service, ".", 2)
-	name, namespace := nAddr[0], "default"
-	if len(nAddr) > 1 {
-		namespace = nAddr[1]
-	} else {
+	parts := strings.Split(service, ".")
+	if len(parts) == 0 || parts[0] == "" {
+		return nil, errNoSvc
+	}
+
+	name, namespace := parts[0], "default"
+	switch {
+	case len(parts) > 1 && parts[1] != "":
+		namespace = parts[1]
+	case len(parts) > 2:
+		return nil, fmt.Errorf("%w: namespace segment missing in %q", errInvalidSvcFQDN, service)
+	default:
 		logger.Info("the namespace for the Kubernetes service wasn't provided, trying to determine the current namespace", zap.String("name", name))
 		if ns, err := getInClusterNamespace(); err == nil {
 			namespace = ns
@@ -101,18 +109,13 @@ func newK8sResolver(clt kubernetes.Interface,
 		}
 	}
 
-	epsSelector := fmt.Sprintf("metadata.name=%s", name)
-	epsListWatcher := &cache.ListWatch{
-		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			options.FieldSelector = epsSelector
-			options.TimeoutSeconds = ptr.To[int64](int64(timeout.Seconds()))
-			return clt.CoreV1().Endpoints(namespace).List(context.Background(), options)
-		},
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			options.FieldSelector = epsSelector
-			options.TimeoutSeconds = ptr.To[int64](int64(timeout.Seconds()))
-			return clt.CoreV1().Endpoints(namespace).Watch(context.Background(), options)
-		},
+	if len(parts) > 2 {
+		if parts[2] != "svc" {
+			return nil, fmt.Errorf("%w: expected third DNS label to be 'svc' in %q", errInvalidSvcFQDN, service)
+		}
+		if len(parts) == 3 {
+			return nil, fmt.Errorf("%w: missing cluster domain in %q", errInvalidSvcFQDN, service)
+		}
 	}
 
 	epsStore := &sync.Map{}
@@ -127,9 +130,9 @@ func newK8sResolver(clt kubernetes.Interface,
 		svcName:        name,
 		svcNs:          namespace,
 		port:           ports,
+		client:         clt,
 		once:           &sync.Once{},
 		endpointsStore: epsStore,
-		epsListWatcher: epsListWatcher,
 		handler:        h,
 		stopCh:         make(chan struct{}),
 		lwTimeout:      timeout,
@@ -144,17 +147,39 @@ func newK8sResolver(clt kubernetes.Interface,
 func (r *k8sResolver) start(_ context.Context) error {
 	var initErr error
 	r.once.Do(func() {
-		if r.epsListWatcher != nil {
-			r.logger.Debug("creating and starting endpoints informer")
-			//nolint:staticcheck // SA1019 TODO: resolve as part of https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43891
-			epsInformer := cache.NewSharedInformer(r.epsListWatcher, &corev1.Endpoints{}, 0)
-			if _, err := epsInformer.AddEventHandler(r.handler); err != nil {
-				r.logger.Error("unable to start watching for changes to the specified service names", zap.Error(err))
+		// Create the k8s client if not already provided (for testing)
+		if r.client == nil {
+			var err error
+			r.client, err = newInClusterClient()
+			if err != nil {
+				initErr = err
+				return
 			}
-			go epsInformer.Run(r.stopCh)
-			if !cache.WaitForCacheSync(r.stopCh, epsInformer.HasSynced) {
-				initErr = errors.New("endpoints informer not sync")
-			}
+		}
+
+		// Create the epsListWatcher now that we have a client
+		epsSelector := fmt.Sprintf("kubernetes.io/service-name=%s", r.svcName)
+		r.epsListWatcher = &cache.ListWatch{
+			ListWithContextFunc: func(ctx context.Context, options metav1.ListOptions) (runtime.Object, error) {
+				options.LabelSelector = epsSelector
+				options.TimeoutSeconds = new(int64(r.lwTimeout.Seconds()))
+				return r.client.DiscoveryV1().EndpointSlices(r.svcNs).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
+				options.LabelSelector = epsSelector
+				options.TimeoutSeconds = new(int64(r.lwTimeout.Seconds()))
+				return r.client.DiscoveryV1().EndpointSlices(r.svcNs).Watch(ctx, options)
+			},
+		}
+
+		r.logger.Debug("creating and starting endpoints informer")
+		epsInformer := cache.NewSharedInformer(r.epsListWatcher, &discoveryv1.EndpointSlice{}, 0)
+		if _, err := epsInformer.AddEventHandler(r.handler); err != nil {
+			r.logger.Error("unable to start watching for changes to the specified service names", zap.Error(err))
+		}
+		go epsInformer.Run(r.stopCh)
+		if !cache.WaitForCacheSync(r.stopCh, epsInformer.HasSynced) {
+			initErr = errors.New("endpoints informer not sync")
 		}
 	})
 	if initErr != nil {

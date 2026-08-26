@@ -8,11 +8,13 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -26,9 +28,9 @@ type Config struct {
 	// collectorVersion is the build version of the collector. This is overridden when an exporter is initialized.
 	collectorVersion string
 
-	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
+	BackOffConfig   configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// Endpoint is the clickhouse endpoint.
 	Endpoint string `mapstructure:"endpoint"`
@@ -46,6 +48,8 @@ type Config struct {
 	LogsTableName string `mapstructure:"logs_table_name"`
 	// TracesTableName is the table name for traces. default is `otel_traces`.
 	TracesTableName string `mapstructure:"traces_table_name"`
+	// ProfilesTableName is the table name for profiles. default is `otel_profiles`.
+	ProfilesTableName string `mapstructure:"profiles_table_name"`
 	// MetricsTableName is the table name for metrics. default is `otel_metrics`.
 	//
 	// Deprecated: MetricsTableName exists for historical compatibility
@@ -66,6 +70,11 @@ type Config struct {
 	// Ignored if async inserts are configured in the `endpoint` or `connection_params`.
 	// Async inserts may still be overridden server-side.
 	AsyncInsert bool `mapstructure:"async_insert"`
+	// JSON enables the JSON column type for attributes in logs and traces tables.
+	// When false (default), Map columns are used. When true, JSON columns are used.
+	// ClickHouse v25+ is recommended for reliable JSON support.
+	// You may also need to add `enable_json_type=1` to your endpoint or connection_params.
+	JSON bool `mapstructure:"json"`
 	// MetricsTables defines the table names for metric types.
 	MetricsTables MetricTablesConfig `mapstructure:"metrics_tables"`
 }
@@ -109,16 +118,17 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		collectorVersion: "unknown",
 
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
-		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
-		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
-		ConnectionParams: map[string]string{},
-		Database:         defaultDatabase,
-		LogsTableName:    "otel_logs",
-		TracesTableName:  "otel_traces",
-		TTL:              0,
-		CreateSchema:     true,
-		AsyncInsert:      true,
+		TimeoutSettings:   exporterhelper.NewDefaultTimeoutConfig(),
+		QueueSettings:     configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		BackOffConfig:     configretry.NewDefaultBackOffConfig(),
+		ConnectionParams:  map[string]string{},
+		Database:          defaultDatabase,
+		LogsTableName:     "otel_logs",
+		TracesTableName:   "otel_traces",
+		ProfilesTableName: "otel_profiles",
+		TTL:               0,
+		CreateSchema:      true,
+		AsyncInsert:       true,
 		MetricsTables: MetricTablesConfig{
 			Gauge:                metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultGaugeSuffix},
 			Sum:                  metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultSumSuffix},
@@ -210,7 +220,13 @@ func (cfg *Config) buildClickHouseOptions() (*clickhouse.Options, error) {
 		return nil, fmt.Errorf("failed to parse DSN: %w", err)
 	}
 
-	if cfg.TLS.CertFile != "" || cfg.TLS.KeyFile != "" {
+	// Load TLS config if any TLS-related field is set (not just cert/key).
+	if cfg.TLS.CertFile != "" ||
+		cfg.TLS.KeyFile != "" ||
+		cfg.TLS.CAFile != "" ||
+		cfg.TLS.ServerName != "" ||
+		cfg.TLS.Insecure ||
+		cfg.TLS.InsecureSkipVerify {
 		opt.TLS, err = cfg.TLS.LoadTLSConfig(context.Background())
 		if err != nil {
 			return nil, fmt.Errorf("failed to load TLS config: %w", err)
@@ -301,6 +317,6 @@ func (cfg *Config) clusterString() string {
 	if cfg.ClusterName == "" {
 		return ""
 	}
-
-	return fmt.Sprintf("ON CLUSTER %s", cfg.ClusterName)
+	escaped := strings.ReplaceAll(cfg.ClusterName, "`", "``")
+	return fmt.Sprintf("ON CLUSTER `%s`", escaped)
 }

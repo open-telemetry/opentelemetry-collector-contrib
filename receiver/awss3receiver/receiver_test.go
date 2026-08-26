@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -19,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.22.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver/internal/metadata"
@@ -28,7 +28,7 @@ import (
 func generateTraceData() ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "test")
+	rs.Resource().Attributes().PutStr("service.name", "test")
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
 	span.SetTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0})
@@ -62,6 +62,14 @@ func gzipCompress(data []byte) []byte {
 	gz := gzip.NewWriter(&buf)
 	_, _ = gz.Write(data)
 	_ = gz.Close()
+	return buf.Bytes()
+}
+
+func zstdCompress(data []byte) []byte {
+	var buf bytes.Buffer
+	zw, _ := zstd.NewWriter(&buf)
+	_, _ = zw.Write(data)
+	_ = zw.Close()
 	return buf.Bytes()
 }
 
@@ -208,12 +216,59 @@ func Test_receiveBytes_traces(t *testing.T) {
 			wantErr:   true,
 			wantTrace: false,
 		},
+		{
+			name: "mismatched compression",
+			args: args{
+				key:  "test.json.zst",
+				data: gzipCompress(jsonTrace),
+			},
+			wantErr:   true,
+			wantTrace: false,
+		},
+		{
+			name: ".json.zst",
+			args: args{
+				key:  "test.json.zst",
+				data: zstdCompress(jsonTrace),
+			},
+			wantErr:   false,
+			wantTrace: true,
+		},
+		{
+			name: ".binpb.zst",
+			args: args{
+				key:  "test.binpb.zst",
+				data: zstdCompress(protobufTrace),
+			},
+			wantErr:   false,
+			wantTrace: true,
+		},
+		{
+			name: "encoding extension .zst",
+			args: args{
+				key:  "test.test",
+				data: zstdCompress([]byte("test")),
+			},
+			wantErr:   false,
+			wantTrace: true,
+		},
+		{
+			name: "invalid zstd",
+			args: args{
+				key:  "test.json.zst",
+				data: []byte("invalid zst"),
+			},
+			wantErr:   true,
+			wantTrace: false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var traceConsumed bool
 			tracesConsumer, _ := consumer.NewTraces(func(_ context.Context, td ptrace.Traces) error {
 				t.Helper()
+				traceConsumed = true
 				if !tt.wantTrace {
 					t.Errorf("receiveBytes() received unexpected trace")
 				} else {
@@ -238,6 +293,9 @@ func Test_receiveBytes_traces(t *testing.T) {
 			}
 			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
 				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantTrace && !traceConsumed {
+				t.Errorf("receiveBytes() expected trace to be consumed, none received")
 			}
 		})
 	}
@@ -342,14 +400,61 @@ func Test_receiveBytes_metrics(t *testing.T) {
 			wantErr:    true,
 			wantMetric: false,
 		},
+		{
+			name: "mismatched compression",
+			args: args{
+				key:  "test.json.zst",
+				data: gzipCompress(jsonMetric),
+			},
+			wantErr:    true,
+			wantMetric: false,
+		},
+		{
+			name: ".json.zst",
+			args: args{
+				key:  "test.json.zst",
+				data: zstdCompress(jsonMetric),
+			},
+			wantErr:    false,
+			wantMetric: true,
+		},
+		{
+			name: ".binpb.zst",
+			args: args{
+				key:  "test.binpb.zst",
+				data: zstdCompress(protobufMetric),
+			},
+			wantErr:    false,
+			wantMetric: true,
+		},
+		{
+			name: "encoding extension .zst",
+			args: args{
+				key:  "test.test",
+				data: zstdCompress([]byte("test")),
+			},
+			wantErr:    false,
+			wantMetric: true,
+		},
+		{
+			name: "invalid zst",
+			args: args{
+				key:  "test.json.zst",
+				data: []byte("invalid zstd"),
+			},
+			wantErr:    true,
+			wantMetric: false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var metricConsumed bool
 			tracesConsumer, _ := consumer.NewMetrics(func(_ context.Context, md pmetric.Metrics) error {
 				t.Helper()
+				metricConsumed = true
 				if !tt.wantMetric {
-					t.Errorf("receiveBytes() received unexpected trace")
+					t.Errorf("receiveBytes() received unexpected metric")
 				} else {
 					require.Equal(t, testMetric, md)
 				}
@@ -372,6 +477,9 @@ func Test_receiveBytes_metrics(t *testing.T) {
 			}
 			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
 				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantMetric && !metricConsumed {
+				t.Errorf("receiveBytes() expected metric to be consumed, none received")
 			}
 		})
 	}
@@ -476,14 +584,61 @@ func Test_receiveBytes_logs(t *testing.T) {
 			wantErr:    true,
 			wantMetric: false,
 		},
+		{
+			name: "mismatched compression",
+			args: args{
+				key:  "test.json.zst",
+				data: gzipCompress(jsonLog),
+			},
+			wantErr:    true,
+			wantMetric: false,
+		},
+		{
+			name: ".json.zst",
+			args: args{
+				key:  "test.json.zst",
+				data: zstdCompress(jsonLog),
+			},
+			wantErr:    false,
+			wantMetric: true,
+		},
+		{
+			name: ".binpb.zst",
+			args: args{
+				key:  "test.binpb.zst",
+				data: zstdCompress(protobufLog),
+			},
+			wantErr:    false,
+			wantMetric: true,
+		},
+		{
+			name: "encoding extension .zst",
+			args: args{
+				key:  "test.test",
+				data: zstdCompress([]byte("test")),
+			},
+			wantErr:    false,
+			wantMetric: true,
+		},
+		{
+			name: "invalid zstd",
+			args: args{
+				key:  "test.json.zst",
+				data: []byte("invalid zstd"),
+			},
+			wantErr:    true,
+			wantMetric: false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var logConsumed bool
 			tracesConsumer, _ := consumer.NewLogs(func(_ context.Context, ld plog.Logs) error {
 				t.Helper()
+				logConsumed = true
 				if !tt.wantMetric {
-					t.Errorf("receiveBytes() received unexpected trace")
+					t.Errorf("receiveBytes() received unexpected log")
 				} else {
 					require.Equal(t, testLog, ld)
 				}
@@ -506,6 +661,9 @@ func Test_receiveBytes_logs(t *testing.T) {
 			}
 			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
 				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantMetric && !logConsumed {
+				t.Errorf("receiveBytes() expected log to be consumed, none received")
 			}
 		})
 	}

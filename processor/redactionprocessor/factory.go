@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package redactionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
 
@@ -53,7 +53,8 @@ func createTracesProcessor(
 		cfg,
 		next,
 		redaction.processTraces,
-		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+	)
 }
 
 // createLogsProcessor creates an instance of redaction for processing logs
@@ -64,8 +65,14 @@ func createLogsProcessor(
 	next consumer.Logs,
 ) (processor.Logs, error) {
 	oCfg := cfg.(*Config)
+	logCfg := *oCfg
+	// Attributes are defined for metrics and traces:
+	// https://opentelemetry.io/docs/specs/semconv/database/
+	// For logs, we don't rely on the "db.system.name" attribute to
+	// do the sanitization.
+	logCfg.DBSanitizer.AllowFallbackWithoutSystem = true
 
-	red, err := newRedaction(ctx, oCfg, set.Logger)
+	red, err := newRedaction(ctx, &logCfg, set.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("error creating a redaction processor: %w", err)
 	}
@@ -76,7 +83,8 @@ func createLogsProcessor(
 		cfg,
 		next,
 		red.processLogs,
-		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+	)
 }
 
 // createMetricsProcessor creates an instance of redaction for processing metrics
@@ -99,5 +107,6 @@ func createMetricsProcessor(
 		cfg,
 		next,
 		red.processMetrics,
-		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+	)
 }

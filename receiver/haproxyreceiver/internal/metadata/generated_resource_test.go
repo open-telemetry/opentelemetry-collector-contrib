@@ -15,6 +15,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb := NewResourceBuilder(cfg)
 			rb.SetHaproxyAddr("haproxy.addr-val")
 			rb.SetHaproxyProxyName("haproxy.proxy_name-val")
+			rb.SetHaproxyServerState("haproxy.server.state-val")
 			rb.SetHaproxyServiceName("haproxy.service_name-val")
 
 			res := rb.Emit()
@@ -24,28 +25,32 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 3, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 3, res.Attributes().Len())
+				assert.Equal(t, 4, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("haproxy.addr")
+			haproxyAddrAttrVal, ok := res.Attributes().Get("haproxy.addr")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "haproxy.addr-val", val.Str())
+				assert.Equal(t, "haproxy.addr-val", haproxyAddrAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("haproxy.proxy_name")
+			haproxyProxyNameAttrVal, ok := res.Attributes().Get("haproxy.proxy_name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "haproxy.proxy_name-val", val.Str())
+				assert.Equal(t, "haproxy.proxy_name-val", haproxyProxyNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("haproxy.service_name")
+			haproxyServerStateAttrVal, ok := res.Attributes().Get("haproxy.server.state")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "haproxy.server.state-val", haproxyServerStateAttrVal.Str())
+			}
+			haproxyServiceNameAttrVal, ok := res.Attributes().Get("haproxy.service_name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "haproxy.service_name-val", val.Str())
+				assert.Equal(t, "haproxy.service_name-val", haproxyServiceNameAttrVal.Str())
 			}
 		})
 	}

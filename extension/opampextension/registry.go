@@ -7,12 +7,12 @@ import (
 	"container/list"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"sync"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 )
@@ -136,7 +136,7 @@ func (cr *customCapabilityRegistry) removeCapabilityFunc(capability string, call
 // capabilities gives the current set of custom capabilities with at least one
 // callback registered.
 func (cr *customCapabilityRegistry) capabilities() []string {
-	return maps.Keys(cr.capabilityToMsgChannels)
+	return slices.Collect(maps.Keys(cr.capabilityToMsgChannels))
 }
 
 type customMessageHandler struct {

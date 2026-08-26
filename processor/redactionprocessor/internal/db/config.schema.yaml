@@ -1,0 +1,91 @@
+$defs:
+  db_sanitizer_config:
+    type: object
+    properties:
+      es:
+        $ref: es_config
+      memcached:
+        $ref: memcached_config
+      mongo:
+        $ref: mongo_config
+      opensearch:
+        $ref: open_search_config
+      redis:
+        $ref: redis_config
+      sanitize_span_name:
+        x-pointer: true
+        type: boolean
+      sql:
+        $ref: sql_config
+      valkey:
+        $ref: valkey_config
+  es_config:
+    type: object
+    properties:
+      attributes:
+        description: Attributes specifies which attribute keys to apply Elasticsearch sanitization to. If empty, Elasticsearch sanitization is applied to all string values in log bodies but not to span/metric attributes
+        type: array
+        items:
+          type: string
+      enabled:
+        type: boolean
+  memcached_config:
+    type: object
+    properties:
+      attributes:
+        description: Attributes specifies which attribute keys to apply Memcached sanitization to. If empty, Memcached sanitization is applied to all string values in log bodies but not to span/metric attributes
+        type: array
+        items:
+          type: string
+      enabled:
+        type: boolean
+  mongo_config:
+    type: object
+    properties:
+      attributes:
+        description: Attributes specifies which attribute keys to apply MongoDB sanitization to. If empty, MongoDB sanitization is applied to all string values in log bodies but not to span/metric attributes
+        type: array
+        items:
+          type: string
+      enabled:
+        type: boolean
+  open_search_config:
+    type: object
+    properties:
+      attributes:
+        description: Attributes specifies which attribute keys to apply OpenSearch sanitization to. If empty, OpenSearch sanitization is applied to all string values in log bodies but not to span/metric attributes
+        type: array
+        items:
+          type: string
+      enabled:
+        type: boolean
+  redis_config:
+    type: object
+    properties:
+      attributes:
+        description: Attributes specifies which attribute keys to apply Redis sanitization to. If empty, Redis sanitization is applied to all string values in log bodies but not to span/metric attributes
+        type: array
+        items:
+          type: string
+      enabled:
+        type: boolean
+  sql_config:
+    type: object
+    properties:
+      attributes:
+        description: Attributes specifies which attribute keys to apply SQL sanitization to. If empty, SQL sanitization is applied to all string values in log bodies but not to span/metric attributes
+        type: array
+        items:
+          type: string
+      enabled:
+        type: boolean
+  valkey_config:
+    type: object
+    properties:
+      attributes:
+        description: Attributes specifies which attribute keys to apply Valkey sanitization to. If empty, Valkey sanitization is applied to all string values in log bodies but not to span/metric attributes
+        type: array
+        items:
+          type: string
+      enabled:
+        type: boolean

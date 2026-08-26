@@ -5,11 +5,12 @@ package lambda // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"errors"
 	"os"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.16.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -33,20 +34,24 @@ const (
 var _ internal.Detector = (*detector)(nil)
 
 type detector struct {
-	logger *zap.Logger
-	rb     *metadata.ResourceBuilder
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
-func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	return &detector{logger: set.Logger, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes)}, nil
+	return &detector{logger: set.Logger, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes), failOnMissingMetadata: failOnMissingMetadata}, nil
 }
 
 func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	functionName, ok := os.LookupEnv(awsLambdaFunctionNameEnvVar)
 	if !ok || functionName == "" {
-		d.logger.Debug("Unable to identify AWS Lambda environment", zap.Error(err))
-		return pcommon.NewResource(), "", err
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errors.New("lambda metadata unavailable: " + awsLambdaFunctionNameEnvVar + " env var not set")
+		}
+		d.logger.Debug("Unable to identify AWS Lambda environment")
+		return pcommon.NewResource(), "", nil
 	}
 
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md

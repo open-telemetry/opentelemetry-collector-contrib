@@ -7,7 +7,7 @@ import (
 	"bufio"
 	"time"
 
-	internaltime "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/time"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/stanzatime"
 )
 
 type State struct {
@@ -32,7 +32,7 @@ func (s *State) Func(splitFunc bufio.SplitFunc, period time.Duration) bufio.Spli
 
 		// If there's a token, return it
 		if token != nil {
-			s.LastDataChange = internaltime.Now()
+			s.LastDataChange = stanzatime.Now()
 			s.LastDataLength = 0
 			return advance, token, err
 		}
@@ -45,14 +45,14 @@ func (s *State) Func(splitFunc bufio.SplitFunc, period time.Duration) bufio.Spli
 
 		// We're seeing new data so postpone the next flush
 		if len(data) > s.LastDataLength {
-			s.LastDataChange = internaltime.Now()
+			s.LastDataChange = stanzatime.Now()
 			s.LastDataLength = len(data)
 			return 0, nil, nil
 		}
 
 		// Flush timed out
-		if internaltime.Since(s.LastDataChange) > period {
-			s.LastDataChange = internaltime.Now()
+		if stanzatime.Since(s.LastDataChange) > period {
+			s.LastDataChange = stanzatime.Now()
 			s.LastDataLength = 0
 			return len(data), data, nil
 		}

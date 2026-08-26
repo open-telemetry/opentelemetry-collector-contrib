@@ -1,12 +1,17 @@
 type: mezmo
+display_name: Mezmo Exporter
 
 status:
   class: exporter
   stability:
-    beta: [logs]
+    deprecated: [logs]
   distributions: [contrib]
   codeowners:
     active: [dashpole, billmeyer, gjanco]
+  deprecation:
+    logs:
+      migration: "Use the OTLP/HTTP exporter to send logs directly to Mezmo instead. See https://docs.mezmo.com/telemetry-pipelines/otel-collector and https://docs.mezmo.com/telemetry-pipelines/open-telemetry-source for migration guidance. This component will be removed in a future release."
+      date: "2026-07-30"
 
 tests:
   config:

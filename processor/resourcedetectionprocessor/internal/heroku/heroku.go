@@ -5,11 +5,12 @@ package heroku // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"errors"
 	"os"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -22,17 +23,19 @@ const (
 )
 
 // NewDetector returns a detector which can detect resource attributes on Heroku
-func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	return &detector{
-		logger: set.Logger,
-		rb:     metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		logger:                set.Logger,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
 type detector struct {
-	logger *zap.Logger
-	rb     *metadata.ResourceBuilder
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
 // Detect detects heroku metadata and returns a resource with the available ones
@@ -50,16 +53,17 @@ func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 	} else {
 		herokuAppIDMissing = true
 	}
-	if dynoIDMissing {
-		if herokuAppIDMissing {
-			d.logger.Debug("Heroku metadata is missing. Please check metadata is enabled.")
-		} else {
-			// some heroku deployments will enable some of the metadata.
-			d.logger.Debug("Partial Heroku metadata is missing. Please check metadata is supported.")
+	if dynoIDMissing && herokuAppIDMissing {
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errors.New("heroku metadata unavailable: HEROKU_DYNO_ID and HEROKU_APP_ID env vars not set")
 		}
+		d.logger.Debug("Heroku metadata is missing. Please check metadata is enabled.")
+	} else if dynoIDMissing {
+		// some heroku deployments will enable some of the metadata.
+		d.logger.Debug("Partial Heroku metadata is missing. Please check metadata is supported.")
 	}
 	if !herokuAppIDMissing {
-		d.rb.SetCloudProvider("heroku")
+		d.rb.SetCloudProvider(conventions.CloudProviderHeroku.Value.AsString())
 	}
 	if v, ok := os.LookupEnv("HEROKU_APP_NAME"); ok {
 		d.rb.SetServiceName(v)

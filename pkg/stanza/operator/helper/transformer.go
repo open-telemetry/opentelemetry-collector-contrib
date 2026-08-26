@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	stanza_errors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 )
 
 // NewTransformerConfig creates a new transformer config with default values
@@ -37,13 +37,13 @@ type TransformerConfig struct {
 func (c TransformerConfig) Build(set component.TelemetrySettings) (TransformerOperator, error) {
 	writerOperator, err := c.WriterConfig.Build(set)
 	if err != nil {
-		return TransformerOperator{}, stanza_errors.WithDetails(err, "operator_id", c.ID())
+		return TransformerOperator{}, stanzaerrors.WithDetails(err, "operator_id", c.ID())
 	}
 
 	switch c.OnError {
 	case SendOnError, SendOnErrorQuiet, DropOnError, DropOnErrorQuiet:
 	default:
-		return TransformerOperator{}, stanza_errors.NewError(
+		return TransformerOperator{}, stanzaerrors.NewError(
 			"operator config has an invalid `on_error` field.",
 			"ensure that the `on_error` field is set to one of `send`, `send_quiet`, `drop`, `drop_quiet`.",
 			"on_error", c.OnError,
@@ -135,17 +135,23 @@ func (t *TransformerOperator) ProcessWith(ctx context.Context, entry *entry.Entr
 	return t.Write(ctx, entry)
 }
 
-// HandleEntryError will handle an entry error using the on_error strategy.
+// HandleEntryError handles an entry error using the on_error strategy.
+// In quiet modes (drop_quiet, send_quiet) the processing error is swallowed,
+// but a downstream write error from send_quiet is still returned so the
+// pipeline can react to delivery failures.
 func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry.Entry, err error) error {
 	return t.HandleEntryErrorWithWrite(ctx, entry, err, t.Write)
 }
 
+// HandleEntryErrorWithWrite is like HandleEntryError but uses the supplied write function.
+// In quiet modes the processing error is swallowed; a downstream write error
+// from send_quiet is still returned.
 func (t *TransformerOperator) HandleEntryErrorWithWrite(ctx context.Context, entry *entry.Entry, err error, write WriteFunction) error {
 	if entry == nil {
 		return errors.New("got a nil entry, this should not happen and is potentially a bug")
 	}
 
-	if t.OnError == SendOnErrorQuiet || t.OnError == DropOnErrorQuiet {
+	if t.isQuietMode() {
 		// No need to construct the zap attributes if logging not enabled at debug level.
 		if t.Logger().Core().Enabled(zapcore.DebugLevel) {
 			t.Logger().Debug("Failed to process entry", zapAttributes(entry, t.OnError, err)...)
@@ -153,13 +159,22 @@ func (t *TransformerOperator) HandleEntryErrorWithWrite(ctx context.Context, ent
 	} else {
 		t.Logger().Error("Failed to process entry", zapAttributes(entry, t.OnError, err)...)
 	}
+
 	if t.OnError == SendOnError || t.OnError == SendOnErrorQuiet {
 		if writeErr := write(ctx, entry); writeErr != nil {
-			err = fmt.Errorf("failed to send entry after error: %w", writeErr)
+			return fmt.Errorf("failed to send entry after error: %w", writeErr)
 		}
 	}
 
+	if t.isQuietMode() {
+		return nil
+	}
 	return err
+}
+
+// isQuietMode returns true if the operator is configured to use quiet mode
+func (t *TransformerOperator) isQuietMode() bool {
+	return t.OnError == DropOnErrorQuiet || t.OnError == SendOnErrorQuiet
 }
 
 func (t *TransformerOperator) Skip(_ context.Context, entry *entry.Entry) (bool, error) {

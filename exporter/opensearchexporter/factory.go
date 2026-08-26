@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package opensearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter"
 
@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -25,6 +26,7 @@ func NewFactory() exporter.Factory {
 		newDefaultConfig,
 		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
 	)
 }
 
@@ -36,6 +38,7 @@ func newDefaultConfig() component.Config {
 		BulkAction:       defaultBulkAction,
 		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 		MappingsSettings: MappingsSettings{Mode: defaultMappingMode},
+		QueueConfig:      configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
 	}
 }
 
@@ -66,6 +69,25 @@ func createLogsExporter(ctx context.Context,
 		le.pushLogData,
 		exporterhelper.WithStart(le.Start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+		exporterhelper.WithRetry(c.BackOffConfig),
+		exporterhelper.WithQueue(c.QueueConfig),
+		exporterhelper.WithTimeout(c.TimeoutSettings))
+}
+
+func createMetricsExporter(ctx context.Context,
+	set exporter.Settings,
+	cfg component.Config,
+) (exporter.Metrics, error) {
+	c := cfg.(*Config)
+	if c.MappingsSettings.Mode != MappingSS4O.String() && c.MappingsSettings.Mode != MappingOTelV1.String() {
+		return nil, errMetricsMappingModeUnsupported
+	}
+	me := newMetricExporter(c, set)
+
+	return exporterhelper.NewMetrics(ctx, set, cfg,
+		me.pushMetricData,
+		exporterhelper.WithStart(me.Start),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(c.BackOffConfig),
 		exporterhelper.WithQueue(c.QueueConfig),
 		exporterhelper.WithTimeout(c.TimeoutSettings))

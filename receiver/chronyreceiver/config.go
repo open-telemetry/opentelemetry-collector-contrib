@@ -6,6 +6,7 @@ package chronyreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -16,8 +17,8 @@ import (
 )
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	ControllerConfig     scraperhelper.ControllerConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 	// Endpoint is the published address or unix socket
 	// that allows clients to connect to:
 	// The allowed format is:
@@ -26,6 +27,17 @@ type Config struct {
 	//
 	// The default value is unix:///var/run/chrony/chronyd.sock
 	Endpoint string `mapstructure:"endpoint"`
+
+	// FileMountPath is the directory where the receiver creates a random
+	// unixgram reply socket.
+	// Use it only when the collector and chronyd run in different network
+	// namespaces but share a filesystem volume.
+	// This directory should be dedicated to chronyd and the collector.
+	// Prefer an ephemeral mount because ungraceful exits can leave stale socket
+	// files behind.
+	// When empty, Go's default abstract socket autobind is used (same-namespace only).
+	// Example: /run/chrony
+	FileMountPath string `mapstructure:"file_mount_path"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -42,16 +54,31 @@ func newDefaultConfig() component.Config {
 	cfg.Timeout = 10 * time.Second
 	return &Config{
 		ControllerConfig:     cfg,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 
 		Endpoint: "unix:///var/run/chrony/chronyd.sock",
 	}
 }
 
 func (c *Config) Validate() error {
-	if c.Timeout < 1 {
+	if c.ControllerConfig.Timeout < 1 {
 		return fmt.Errorf("must have a positive timeout: %w", errInvalidValue)
 	}
-	_, _, err := chrony.SplitNetworkEndpoint(c.Endpoint)
-	return err
+	network, _, err := chrony.SplitNetworkEndpoint(c.Endpoint)
+	if err != nil {
+		return err
+	}
+	if c.FileMountPath != "" {
+		if network != "unixgram" {
+			return fmt.Errorf("file_mount_path is only supported with unix/unixgram endpoints: %w", errInvalidValue)
+		}
+		fi, err := os.Stat(c.FileMountPath)
+		if err != nil {
+			return fmt.Errorf("file_mount_path directory %q: %w", c.FileMountPath, err)
+		}
+		if !fi.IsDir() {
+			return fmt.Errorf("file_mount_path %q is not a directory: %w", c.FileMountPath, errInvalidValue)
+		}
+	}
+	return nil
 }

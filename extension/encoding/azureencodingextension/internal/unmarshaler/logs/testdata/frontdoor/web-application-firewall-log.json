@@ -1,0 +1,32 @@
+{
+  "records":[
+    {
+      "time":"2025-04-24T15:35:06.0000000Z",
+      "resourceId":"/SUBSCRIPTIONS/OPENTELEMETRY-AZURE-SUB/RESOURCEGROUPS/OPENTELEMETRY-FRONTDOOR/PROVIDERS/MICROSOFT.CDN/PROFILES/OPENTELEMETRY-FRONTDOOR-PROFILE",
+      "category":"FrontDoorWebApplicationFirewallLog",
+      "operationName":"Microsoft.Cdn/Profiles/WebApplicationFirewallLog/Write",
+      "properties":{
+        "clientIP":"2001:1c00:3280:6700:fbfa:bf04:1296:ebfc",
+        "clientPort":"57660",
+        "socketIP":"2001:1c00:3280:6700:fbfa:bf04:1296:ebfc",
+        "requestUri":"http://opentelemetry-test-fmagg0exgdcfhefq.z01.azurefd.net:80/",
+        "ruleName":"Rule1",
+        "policy":"policy",
+        "action":"Block",
+        "host":"opentelemetry-test-fmagg0exgdcfhefq.z01.azurefd.net",
+        "trackingReference":"20250424T153506Z-1756f49cc78nldhvhC1DUS3dhw000000080000000000d207",
+        "policyMode":"prevention",
+        "details":{
+          "matches":[
+            {
+              "matchVariableName":"Method",
+              "matchVariableValue":"GET"
+            }
+          ],
+          "msg":"",
+          "data":""
+        }
+      }
+    }
+  ]
+}

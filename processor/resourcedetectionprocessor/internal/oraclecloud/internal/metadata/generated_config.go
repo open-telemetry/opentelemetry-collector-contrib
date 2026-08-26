@@ -25,16 +25,18 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for resourcedetectionprocessor/oraclecloud resource attributes.
+// ResourceAttributesConfig provides config for oracleclouddetector resource attributes.
 type ResourceAttributesConfig struct {
 	CloudAvailabilityZone ResourceAttributeConfig `mapstructure:"cloud.availability_zone"`
 	CloudPlatform         ResourceAttributeConfig `mapstructure:"cloud.platform"`
 	CloudProvider         ResourceAttributeConfig `mapstructure:"cloud.provider"`
 	CloudRegion           ResourceAttributeConfig `mapstructure:"cloud.region"`
+	CloudResourceID       ResourceAttributeConfig `mapstructure:"cloud.resource_id"`
 	HostID                ResourceAttributeConfig `mapstructure:"host.id"`
 	HostName              ResourceAttributeConfig `mapstructure:"host.name"`
 	HostType              ResourceAttributeConfig `mapstructure:"host.type"`
 	K8sClusterName        ResourceAttributeConfig `mapstructure:"k8s.cluster.name"`
+	OracleCloudRealm      ResourceAttributeConfig `mapstructure:"oracle_cloud.realm"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -51,6 +53,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		CloudRegion: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		CloudResourceID: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		HostID: ResourceAttributeConfig{
 			Enabled: true,
 		},
@@ -61,6 +66,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		K8sClusterName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		OracleCloudRealm: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}

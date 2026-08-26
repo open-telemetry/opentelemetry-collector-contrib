@@ -17,11 +17,12 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"google.golang.org/grpc/encoding/gzip"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/metadata"
 )
@@ -39,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+				QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				Protocol:      "grpc",
 				PrivateKey:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
@@ -51,6 +52,7 @@ func TestLoadConfig(t *testing.T) {
 					ClientConfig: configgrpc.ClientConfig{
 						Compression: configcompression.TypeGzip,
 					},
+					AcceptEncoding: gzip.Name,
 				},
 				Metrics: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
@@ -58,16 +60,18 @@ func TestLoadConfig(t *testing.T) {
 						Compression:     configcompression.TypeGzip,
 						WriteBufferSize: 512 * 1024,
 					},
+					AcceptEncoding: gzip.Name,
 				},
 				Logs: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
 						Endpoint:    "https://",
 						Compression: configcompression.TypeGzip,
 					},
+					AcceptEncoding: gzip.Name,
 				},
 				Traces: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
-						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317",
 						Compression: configcompression.TypeGzip,
 						TLS: configtls.ClientConfig{
 							Config:             configtls.Config{},
@@ -80,6 +84,7 @@ func TestLoadConfig(t *testing.T) {
 						WaitForReady:    false,
 						BalancerName:    "",
 					},
+					AcceptEncoding: gzip.Name,
 				},
 				RateLimiter: RateLimiterConfig{
 					Enabled:   true,
@@ -91,7 +96,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "all"),
 			expected: &Config{
-				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+				QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				Protocol:      "grpc",
 				PrivateKey:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
@@ -103,23 +108,26 @@ func TestLoadConfig(t *testing.T) {
 					ClientConfig: configgrpc.ClientConfig{
 						Compression: configcompression.TypeGzip,
 					},
+					AcceptEncoding: gzip.Name,
 				},
 				Metrics: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
-						Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317",
 						Compression:     configcompression.TypeGzip,
 						WriteBufferSize: 512 * 1024,
 					},
+					AcceptEncoding: gzip.Name,
 				},
 				Logs: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
-						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317",
 						Compression: configcompression.TypeGzip,
 					},
+					AcceptEncoding: gzip.Name,
 				},
 				Traces: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
-						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317",
 						Compression: configcompression.TypeGzip,
 						TLS: configtls.ClientConfig{
 							Config:             configtls.Config{},
@@ -132,6 +140,7 @@ func TestLoadConfig(t *testing.T) {
 						WaitForReady:    false,
 						BalancerName:    "",
 					},
+					AcceptEncoding: gzip.Name,
 				},
 				AppNameAttributes:   []string{"service.namespace", "k8s.namespace.name"},
 				SubSystemAttributes: []string{"service.name", "k8s.deployment.name", "k8s.statefulset.name", "k8s.daemonset.name", "k8s.cronjob.name", "k8s.job.name", "k8s.container.name"},
@@ -153,7 +162,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -186,7 +195,7 @@ func TestMetricsExporter(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "metrics").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	params := exportertest.NewNopSettings(metadata.Type)
 
@@ -206,7 +215,7 @@ func TestLogsExporter(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "logs").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	params := exportertest.NewNopSettings(metadata.Type)
 
@@ -274,6 +283,55 @@ func TestEndpointsAndDomainWithAllExporters(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, le, "failed to create logs exporter")
 	require.NoError(t, le.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, le.shutdown(t.Context()))
+}
+
+func TestHTTPProtocolDoesNotAutoPopulateProfilesEndpoint(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "http_protocol").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	oCfg := cfg.(*Config)
+
+	assert.Equal(t, "http", oCfg.Protocol)
+	assert.True(t, isEmpty(oCfg.Profiles.Endpoint), "profiles endpoint should not be auto-populated when using HTTP protocol")
+	assert.False(t, isEmpty(oCfg.Logs.ClientConfig.Endpoint), "logs endpoint should be auto-populated")
+	assert.False(t, isEmpty(oCfg.Metrics.ClientConfig.Endpoint), "metrics endpoint should be auto-populated")
+	assert.False(t, isEmpty(oCfg.Traces.ClientConfig.Endpoint), "traces endpoint should be auto-populated")
+
+	assert.Contains(t, oCfg.Logs.ClientConfig.Endpoint, "https://", "logs endpoint should have https:// scheme")
+	assert.Contains(t, oCfg.Metrics.ClientConfig.Endpoint, "https://", "metrics endpoint should have https:// scheme")
+	assert.Contains(t, oCfg.Traces.ClientConfig.Endpoint, "https://", "traces endpoint should have https:// scheme")
+
+	assert.Equal(t, "https://ingress.coralogix.com:443", oCfg.Traces.ClientConfig.Endpoint)
+	assert.Equal(t, "https://ingress.coralogix.com:443", oCfg.Metrics.ClientConfig.Endpoint)
+	assert.Equal(t, "https://ingress.coralogix.com:443", oCfg.Logs.ClientConfig.Endpoint)
+
+	assert.NoError(t, oCfg.Validate())
+
+	params := exportertest.NewNopSettings(metadata.Type)
+
+	te, err := newTracesExporter(cfg, params)
+	assert.NoError(t, err)
+	assert.NotNil(t, te)
+	assert.NoError(t, te.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, te.shutdown(t.Context()))
+
+	me, err := newMetricsExporter(cfg, params)
+	assert.NoError(t, err)
+	assert.NotNil(t, me)
+	assert.NoError(t, me.start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, me.shutdown(t.Context()))
+
+	le, err := newLogsExporter(cfg, params)
+	assert.NoError(t, err)
+	assert.NotNil(t, le)
+	assert.NoError(t, le.start(t.Context(), componenttest.NewNopHost()))
 	assert.NoError(t, le.shutdown(t.Context()))
 }
 
@@ -397,8 +455,8 @@ func TestGetDomainGrpcSettings(t *testing.T) {
 				},
 			}
 
-			settings := cfg.getDomainGrpcSettings()
-			assert.Equal(t, tt.expectedEndpoint, settings.Endpoint)
+			endpoint := setDomainGrpcSettings(cfg)
+			assert.Equal(t, tt.expectedEndpoint, endpoint)
 		})
 	}
 }
@@ -409,8 +467,8 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 	cfg.Domain = "localhost"
 	cfg.PrivateKey = "test-key"
 	cfg.AppName = "test-app"
-	cfg.QueueSettings.Enabled = true
-	cfg.QueueSettings.Batch = configoptional.Some(exporterhelper.BatchConfig{
+	cfg.QueueSettings.GetOrInsertDefault()
+	cfg.QueueSettings.Get().Batch = configoptional.Some(exporterhelper.BatchConfig{
 		FlushTimeout: 1 * time.Second,
 		MinSize:      100,
 	})
@@ -438,6 +496,41 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, exp)
 	})
+}
+
+func TestGetAcceptEncoding(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name             string
+		acceptEncoding   string
+		expectedEncoding string
+	}{
+		{
+			name:             "empty_returns_empty",
+			acceptEncoding:   "",
+			expectedEncoding: "",
+		},
+		{
+			name:             "explicit_gzip",
+			acceptEncoding:   gzip.Name,
+			expectedEncoding: gzip.Name,
+		},
+		{
+			name:             "custom_encoding",
+			acceptEncoding:   "snappy",
+			expectedEncoding: "snappy",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &TransportConfig{
+				AcceptEncoding: tt.acceptEncoding,
+			}
+			assert.Equal(t, tt.expectedEncoding, cfg.GetAcceptEncoding())
+		})
+	}
 }
 
 func TestConfigValidation(t *testing.T) {
@@ -506,6 +599,45 @@ func TestConfigValidation(t *testing.T) {
 			},
 			expectedErr: "",
 		},
+		{
+			name: "valid_gzip_accept_encoding",
+			config: &Config{
+				Protocol:   "grpc",
+				Domain:     "coralogix.com",
+				PrivateKey: "test-key",
+				AppName:    "test-app",
+				Traces: TransportConfig{
+					AcceptEncoding: gzip.Name,
+				},
+			},
+			expectedErr: "",
+		},
+		{
+			name: "invalid_accept_encoding",
+			config: &Config{
+				Protocol:   "grpc",
+				Domain:     "coralogix.com",
+				PrivateKey: "test-key",
+				AppName:    "test-app",
+				Traces: TransportConfig{
+					AcceptEncoding: "invalid-encoding",
+				},
+			},
+			expectedErr: "traces.accept_encoding: unsupported compression encoding",
+		},
+		{
+			name: "empty_accept_encoding_is_valid",
+			config: &Config{
+				Protocol:   "grpc",
+				Domain:     "coralogix.com",
+				PrivateKey: "test-key",
+				AppName:    "test-app",
+				Traces: TransportConfig{
+					AcceptEncoding: "",
+				},
+			},
+			expectedErr: "",
+		},
 	}
 
 	for _, tt := range tests {
@@ -517,6 +649,159 @@ func TestConfigValidation(t *testing.T) {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedErr)
 			}
+		})
+	}
+}
+
+func TestDomainSettingsCompressionMerge(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name                      string
+		config                    map[string]any
+		wantLogsCompression       configcompression.Type
+		wantMetricsCompression    configcompression.Type
+		wantTracesCompression     configcompression.Type
+		wantProfilesCompression   configcompression.Type
+		wantLogsAcceptEncoding    string
+		wantMetricsAcceptEncoding string
+		wantTracesAcceptEncoding  string
+	}{
+		{
+			name: "domain_settings_compression_applied_to_signals",
+			config: map[string]any{
+				"domain":           "coralogix.com",
+				"private_key":      "test-key",
+				"application_name": "test-app",
+				"subsystem_name":   "test-sub",
+				"domain_settings": map[string]any{
+					"compression": "zstd",
+				},
+			},
+			wantLogsCompression:       configcompression.TypeZstd,
+			wantMetricsCompression:    configcompression.TypeZstd,
+			wantTracesCompression:     configcompression.TypeZstd,
+			wantProfilesCompression:   configcompression.TypeZstd,
+			wantLogsAcceptEncoding:    gzip.Name,
+			wantMetricsAcceptEncoding: gzip.Name,
+			wantTracesAcceptEncoding:  gzip.Name,
+		},
+		{
+			name: "signal_compression_overrides_domain_settings",
+			config: map[string]any{
+				"domain":           "coralogix.com",
+				"private_key":      "test-key",
+				"application_name": "test-app",
+				"subsystem_name":   "test-sub",
+				"domain_settings": map[string]any{
+					"compression": "zstd",
+				},
+				"logs": map[string]any{
+					"compression": "snappy",
+				},
+			},
+			wantLogsCompression:       configcompression.TypeSnappy,
+			wantMetricsCompression:    configcompression.TypeZstd,
+			wantTracesCompression:     configcompression.TypeZstd,
+			wantProfilesCompression:   configcompression.TypeZstd,
+			wantLogsAcceptEncoding:    gzip.Name,
+			wantMetricsAcceptEncoding: gzip.Name,
+			wantTracesAcceptEncoding:  gzip.Name,
+		},
+		{
+			name: "default_gzip_when_compression_not_set",
+			config: map[string]any{
+				"domain":           "coralogix.com",
+				"private_key":      "test-key",
+				"application_name": "test-app",
+				"subsystem_name":   "test-sub",
+			},
+			wantLogsCompression:       configcompression.TypeGzip,
+			wantMetricsCompression:    configcompression.TypeGzip,
+			wantTracesCompression:     configcompression.TypeGzip,
+			wantProfilesCompression:   configcompression.TypeGzip,
+			wantLogsAcceptEncoding:    gzip.Name,
+			wantMetricsAcceptEncoding: gzip.Name,
+			wantTracesAcceptEncoding:  gzip.Name,
+		},
+		{
+			name: "domain_settings_accept_encoding_applied_to_signals",
+			config: map[string]any{
+				"domain":           "coralogix.com",
+				"private_key":      "test-key",
+				"application_name": "test-app",
+				"subsystem_name":   "test-sub",
+				"domain_settings": map[string]any{
+					"accept_encoding": "snappy",
+				},
+			},
+			wantLogsCompression:       configcompression.TypeGzip,
+			wantMetricsCompression:    configcompression.TypeGzip,
+			wantTracesCompression:     configcompression.TypeGzip,
+			wantProfilesCompression:   configcompression.TypeGzip,
+			wantLogsAcceptEncoding:    "snappy",
+			wantMetricsAcceptEncoding: "snappy",
+			wantTracesAcceptEncoding:  "snappy",
+		},
+		{
+			name: "signal_accept_encoding_overrides_domain_settings",
+			config: map[string]any{
+				"domain":           "coralogix.com",
+				"private_key":      "test-key",
+				"application_name": "test-app",
+				"subsystem_name":   "test-sub",
+				"domain_settings": map[string]any{
+					"accept_encoding": "snappy",
+				},
+				"metrics": map[string]any{
+					"accept_encoding": gzip.Name,
+				},
+			},
+			wantLogsCompression:       configcompression.TypeGzip,
+			wantMetricsCompression:    configcompression.TypeGzip,
+			wantTracesCompression:     configcompression.TypeGzip,
+			wantProfilesCompression:   configcompression.TypeGzip,
+			wantLogsAcceptEncoding:    "snappy",
+			wantMetricsAcceptEncoding: gzip.Name,
+			wantTracesAcceptEncoding:  "snappy",
+		},
+		{
+			name: "profiles_compression_from_domain_settings",
+			config: map[string]any{
+				"domain":           "coralogix.com",
+				"private_key":      "test-key",
+				"application_name": "test-app",
+				"subsystem_name":   "test-sub",
+				"domain_settings": map[string]any{
+					"compression": "zstd",
+				},
+				"profiles": map[string]any{
+					"compression": "snappy",
+				},
+			},
+			wantLogsCompression:       configcompression.TypeZstd,
+			wantMetricsCompression:    configcompression.TypeZstd,
+			wantTracesCompression:     configcompression.TypeZstd,
+			wantProfilesCompression:   configcompression.TypeSnappy,
+			wantLogsAcceptEncoding:    gzip.Name,
+			wantMetricsAcceptEncoding: gzip.Name,
+			wantTracesAcceptEncoding:  gzip.Name,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			conf := confmap.NewFromStringMap(tt.config)
+			cfg := createDefaultConfig().(*Config)
+			require.NoError(t, cfg.Unmarshal(conf))
+
+			assert.Equal(t, tt.wantLogsCompression, cfg.Logs.ClientConfig.Compression)
+			assert.Equal(t, tt.wantMetricsCompression, cfg.Metrics.ClientConfig.Compression)
+			assert.Equal(t, tt.wantTracesCompression, cfg.Traces.ClientConfig.Compression)
+			assert.Equal(t, tt.wantProfilesCompression, cfg.Profiles.Compression)
+			assert.Equal(t, tt.wantLogsAcceptEncoding, cfg.Logs.AcceptEncoding)
+			assert.Equal(t, tt.wantMetricsAcceptEncoding, cfg.Metrics.AcceptEncoding)
+			assert.Equal(t, tt.wantTracesAcceptEncoding, cfg.Traces.AcceptEncoding)
 		})
 	}
 }

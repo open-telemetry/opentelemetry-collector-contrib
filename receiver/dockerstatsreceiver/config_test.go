@@ -5,17 +5,18 @@ package dockerstatsreceiver
 
 import (
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
@@ -40,6 +41,25 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: createDefaultConfig(),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "tls"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 10 * time.Second,
+					InitialDelay:       time.Second,
+					Timeout:            5 * time.Second,
+				},
+				Config: docker.Config{
+					Endpoint:         "https://example.com/",
+					DockerAPIVersion: "1.44",
+					Timeout:          5 * time.Second,
+					TLS: configoptional.Some(configtls.ClientConfig{
+						InsecureSkipVerify: true,
+					}),
+				},
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "allsettings"),
@@ -70,13 +90,10 @@ func TestLoadConfig(t *testing.T) {
 					"MY_OTHER_ENVIRONMENT_VARIABLE": "my-other-metric-label",
 				},
 				MetricsBuilderConfig: func() metadata.MetricsBuilderConfig {
-					m := metadata.DefaultMetricsBuilderConfig()
-					m.Metrics.ContainerCPUUsageSystem = metadata.MetricConfig{
-						Enabled: false,
-					}
-					m.Metrics.ContainerMemoryTotalRss = metadata.MetricConfig{
-						Enabled: true,
-					}
+					m := metadata.NewDefaultMetricsBuilderConfig()
+					m.Metrics.ContainerCPUUsageSystem.Enabled = false
+					m.Metrics.ContainerMemoryTotalRss.Enabled = true
+					m.Metrics.ContainerStateHealthStatus.Enabled = true
 					return m
 				}(),
 			},
@@ -90,8 +107,17 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
-			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
+			assert.NoError(t, confmap.Validate(cfg))
+			if diff := cmp.Diff(tt.expected, cfg,
+				// mdatagen gives metric and resource attribute configs an unexported enabledSetByUser,
+				// set from parser.IsSet("enabled"), so it is only true on the unmarshaled side:
+				// https://github.com/open-telemetry/opentelemetry-collector/blob/e4e58cda0aa6d5d4d275ff12072ae418410e6ae7/cmd/mdatagen/internal/templates/config.go.tmpl#L42-L44
+				cmp.FilterPath(func(p cmp.Path) bool {
+					return p.Last().String() == ".enabledSetByUser"
+				}, cmp.Ignore()),
+				// Allow go-cmp to read unexported fields instead of panicking on them, so new
+				// upstream fields can't break this (https://pkg.go.dev/github.com/google/go-cmp/cmp#Exporter).
+				cmp.Exporter(func(reflect.Type) bool { return true })); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}
 		})
@@ -102,7 +128,7 @@ func TestValidateErrors(t *testing.T) {
 	cfg := &Config{ControllerConfig: scraperhelper.NewDefaultControllerConfig(), Config: docker.Config{
 		DockerAPIVersion: "1.25",
 	}}
-	assert.ErrorContains(t, xconfmap.Validate(cfg), "endpoint must be specified")
+	assert.ErrorContains(t, confmap.Validate(cfg), "endpoint must be specified")
 
 	cfg = &Config{
 		Config: docker.Config{
@@ -111,7 +137,7 @@ func TestValidateErrors(t *testing.T) {
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 1 * time.Second},
 	}
-	assert.ErrorContains(t, xconfmap.Validate(cfg), `"api_version" 1.21 must be at least 1.25`)
+	assert.ErrorContains(t, confmap.Validate(cfg), `"api_version" 1.21 must be at least 1.25`)
 
 	cfg = &Config{
 		Config: docker.Config{
@@ -120,7 +146,7 @@ func TestValidateErrors(t *testing.T) {
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{},
 	}
-	assert.ErrorContains(t, xconfmap.Validate(cfg), `"collection_interval": requires positive value`)
+	assert.ErrorContains(t, confmap.Validate(cfg), `"collection_interval": requires positive value`)
 }
 
 func TestApiVersionCustomError(t *testing.T) {

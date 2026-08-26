@@ -6,6 +6,7 @@ package googlecloudspannerreceiver // import "github.com/open-telemetry/opentele
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
@@ -16,7 +17,7 @@ const (
 )
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	TopMetricsQueryMaxRows            int       `mapstructure:"top_metrics_query_max_rows"`
 	BackfillEnabled                   bool      `mapstructure:"backfill_enabled"`
@@ -38,8 +39,8 @@ type Instance struct {
 }
 
 func (config *Config) Validate() error {
-	if config.CollectionInterval.Seconds() < minCollectionIntervalSeconds {
-		return fmt.Errorf("\"collection_interval\" must be not lower than %v seconds, current value is %v seconds", minCollectionIntervalSeconds, config.CollectionInterval.Seconds())
+	if config.ControllerConfig.CollectionInterval.Seconds() < minCollectionIntervalSeconds {
+		return fmt.Errorf("\"collection_interval\" must be not lower than %v seconds, current value is %v seconds", minCollectionIntervalSeconds, config.ControllerConfig.CollectionInterval.Seconds())
 	}
 
 	if config.TopMetricsQueryMaxRows <= 0 {
@@ -94,10 +95,8 @@ func (instance Instance) Validate() error {
 		return errors.New("field \"databases\" is required and cannot be empty for instance configuration")
 	}
 
-	for _, database := range instance.Databases {
-		if database == "" {
-			return errors.New("field \"databases\" contains empty database names")
-		}
+	if slices.Contains(instance.Databases, "") {
+		return errors.New("field \"databases\" contains empty database names")
 	}
 
 	return nil

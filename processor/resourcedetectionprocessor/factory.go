@@ -11,15 +11,18 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper"
 	"go.opentelemetry.io/collector/processor/xprocessor"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai"
+	alibabaecs "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibaba/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks"
@@ -27,6 +30,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/appservice"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/containerapps"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
@@ -35,7 +40,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/hetzner"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8snode"
+	ibmcloudclassic "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/classic"
+	ibmcloudvpc "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/vpc"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8sapi"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
@@ -43,6 +50,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/oraclecloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
+	tencentcvm "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/tencent/cvm"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/upcloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/vultr"
 )
@@ -62,8 +70,11 @@ type factory struct {
 func NewFactory() processor.Factory {
 	resourceProviderFactory := internal.NewProviderFactory(map[internal.DetectorType]internal.DetectorFactory{
 		akamai.TypeStr:           akamai.NewDetector,
+		alibabaecs.TypeStr:       alibabaecs.NewDetector,
 		aks.TypeStr:              aks.NewDetector,
 		azure.TypeStr:            azure.NewDetector,
+		appservice.TypeStr:       appservice.NewDetector,
+		containerapps.TypeStr:    containerapps.NewDetector,
 		consul.TypeStr:           consul.NewDetector,
 		digitalocean.TypeStr:     digitalocean.NewDetector,
 		docker.TypeStr:           docker.NewDetector,
@@ -76,14 +87,18 @@ func NewFactory() processor.Factory {
 		gcp.TypeStr:              gcp.NewDetector,
 		heroku.TypeStr:           heroku.NewDetector,
 		hetzner.TypeStr:          hetzner.NewDetector,
+		ibmcloudclassic.TypeStr:  ibmcloudclassic.NewDetector,
+		ibmcloudvpc.TypeStr:      ibmcloudvpc.NewDetector,
 		scaleway.TypeStr:         scaleway.NewDetector,
 		system.TypeStr:           system.NewDetector,
 		openshift.TypeStr:        openshift.NewDetector,
 		nova.TypeStr:             nova.NewDetector,
 		oraclecloud.TypeStr:      oraclecloud.NewDetector,
-		k8snode.TypeStr:          k8snode.NewDetector,
+		k8sapi.TypeStr:           k8sapi.NewDetector,
+		k8sapi.TypeStrAlias:      k8sapi.NewDeprecatedDetector,
 		kubeadm.TypeStr:          kubeadm.NewDetector,
 		dynatrace.TypeStr:        dynatrace.NewDetector,
+		tencentcvm.TypeStr:       tencentcvm.NewDetector,
 		upcloud.TypeStr:          upcloud.NewDetector,
 		vultr.TypeStr:            vultr.NewDetector,
 	})
@@ -96,10 +111,12 @@ func NewFactory() processor.Factory {
 	return xprocessor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
+		xprocessor.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 		xprocessor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
 		xprocessor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
 		xprocessor.WithLogs(f.createLogsProcessor, metadata.LogsStability),
-		xprocessor.WithProfiles(f.createProfilesProcessor, metadata.ProfilesStability))
+		xprocessor.WithProfiles(f.createProfilesProcessor, metadata.ProfilesStability),
+	)
 }
 
 // Type gets the type of the Option config created by this factory.
@@ -109,13 +126,25 @@ func (*factory) Type() component.Type {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Detectors:      []string{env.TypeStr},
-		ClientConfig:   defaultClientConfig(),
-		Override:       true,
-		Attributes:     nil,
-		DetectorConfig: detectorCreateDefaultConfig(),
+		Detectors:       []string{env.TypeStr},
+		ClientConfig:    defaultClientConfig(),
+		Override:        true,
+		DetectorConfig:  detectorCreateDefaultConfig(),
+		RefreshInterval: 0,
+		Retry:           defaultRetryConfig(),
 		// TODO: Once issue(https://github.com/open-telemetry/opentelemetry-collector/issues/4001) gets resolved,
 		//		 Set the default value of 'hostname_source' here instead of 'system' detector
+	}
+}
+
+func defaultRetryConfig() configretry.BackOffConfig {
+	return configretry.BackOffConfig{
+		Enabled:             true,
+		InitialInterval:     1 * time.Second,
+		RandomizationFactor: 0.5,
+		Multiplier:          2,
+		MaxInterval:         30 * time.Second,
+		MaxElapsedTime:      0,
 	}
 }
 
@@ -143,7 +172,9 @@ func (f *factory) createTracesProcessor(
 		nextConsumer,
 		rdp.processTraces,
 		processorhelper.WithCapabilities(consumerCapabilities),
-		processorhelper.WithStart(rdp.Start))
+		processorhelper.WithStart(rdp.Start),
+		processorhelper.WithShutdown(rdp.Shutdown),
+	)
 }
 
 func (f *factory) createMetricsProcessor(
@@ -164,7 +195,9 @@ func (f *factory) createMetricsProcessor(
 		nextConsumer,
 		rdp.processMetrics,
 		processorhelper.WithCapabilities(consumerCapabilities),
-		processorhelper.WithStart(rdp.Start))
+		processorhelper.WithStart(rdp.Start),
+		processorhelper.WithShutdown(rdp.Shutdown),
+	)
 }
 
 func (f *factory) createLogsProcessor(
@@ -185,7 +218,9 @@ func (f *factory) createLogsProcessor(
 		nextConsumer,
 		rdp.processLogs,
 		processorhelper.WithCapabilities(consumerCapabilities),
-		processorhelper.WithStart(rdp.Start))
+		processorhelper.WithStart(rdp.Start),
+		processorhelper.WithShutdown(rdp.Shutdown),
+	)
 }
 
 func (f *factory) createProfilesProcessor(
@@ -206,7 +241,9 @@ func (f *factory) createProfilesProcessor(
 		nextConsumer,
 		rdp.processProfiles,
 		xprocessorhelper.WithCapabilities(consumerCapabilities),
-		xprocessorhelper.WithStart(rdp.Start))
+		xprocessorhelper.WithStart(rdp.Start),
+		xprocessorhelper.WithShutdown(rdp.Shutdown),
+	)
 }
 
 func (f *factory) getResourceDetectionProcessor(
@@ -214,10 +251,12 @@ func (f *factory) getResourceDetectionProcessor(
 	cfg component.Config,
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
-	if oCfg.Attributes != nil {
-		params.Logger.Warn("You are using deprecated `attributes` option that will be removed soon; use `resource_attributes` instead, details on configuration: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#migration-from-attributes-to-resource_attributes")
-	}
-	provider, err := f.getResourceProvider(params, oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes)
+
+	warnDeprecatedPerDetectorFlags(params.Logger, oCfg)
+
+	// The deprecated per-detector fail_on_missing_metadata fields are OR'd with this
+	// top-level flag inside each affected detector, preserving per-detector scope.
+	provider, err := f.getResourceProvider(params, oCfg.Retry, oCfg.Detectors, oCfg.DetectorConfig, oCfg.FailOnMissingMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -226,16 +265,47 @@ func (f *factory) getResourceDetectionProcessor(
 		provider:           provider,
 		override:           oCfg.Override,
 		httpClientSettings: oCfg.ClientConfig,
+		refreshInterval:    oCfg.RefreshInterval,
 		telemetrySettings:  params.TelemetrySettings,
 	}, nil
 }
 
+// warnDeprecatedPerDetectorFlags emits a deprecation warning if any per-detector
+// fail_on_missing_metadata fields are set.
+func warnDeprecatedPerDetectorFlags(logger *zap.Logger, oCfg *Config) {
+	var affectedDetectors []string
+	if oCfg.DetectorConfig.EC2Config.FailOnMissingMetadata { //nolint:staticcheck
+		affectedDetectors = append(affectedDetectors, "ec2")
+	}
+	if oCfg.DetectorConfig.AlibabaECSConfig.FailOnMissingMetadata { //nolint:staticcheck
+		affectedDetectors = append(affectedDetectors, "alibaba_ecs")
+	}
+	if oCfg.DetectorConfig.TencentCVMConfig.FailOnMissingMetadata { //nolint:staticcheck
+		affectedDetectors = append(affectedDetectors, "tencent_cvm")
+	}
+	if oCfg.DetectorConfig.UpcloudConfig.FailOnMissingMetadata { //nolint:staticcheck
+		affectedDetectors = append(affectedDetectors, "upcloud")
+	}
+	if oCfg.DetectorConfig.VultrConfig.FailOnMissingMetadata { //nolint:staticcheck
+		affectedDetectors = append(affectedDetectors, "vultr")
+	}
+	if oCfg.DetectorConfig.OpenStackNovaConfig.FailOnMissingMetadata { //nolint:staticcheck
+		affectedDetectors = append(affectedDetectors, "nova")
+	}
+	if len(affectedDetectors) > 0 {
+		logger.Warn(
+			"per-detector fail_on_missing_metadata fields are deprecated; use the top-level fail_on_missing_metadata instead",
+			zap.Strings("affected_detectors", affectedDetectors),
+		)
+	}
+}
+
 func (f *factory) getResourceProvider(
 	params processor.Settings,
-	timeout time.Duration,
+	backoffConfig configretry.BackOffConfig,
 	configuredDetectors []string,
 	detectorConfigs DetectorConfig,
-	attributes []string,
+	failOnMissingMetadata bool,
 ) (*internal.ResourceProvider, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
@@ -249,7 +319,7 @@ func (f *factory) getResourceProvider(
 		detectorTypes = append(detectorTypes, internal.DetectorType(strings.TrimSpace(key)))
 	}
 
-	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, attributes, &detectorConfigs, detectorTypes...)
+	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, backoffConfig, failOnMissingMetadata, &detectorConfigs, detectorTypes...)
 	if err != nil {
 		return nil, err
 	}

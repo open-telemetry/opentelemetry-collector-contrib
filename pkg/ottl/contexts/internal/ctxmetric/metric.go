@@ -48,9 +48,11 @@ func accessName[K Context]() ottl.StandardGetSetter[K] {
 			return tCtx.GetMetric().Name(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if str, ok := val.(string); ok {
-				tCtx.GetMetric().SetName(str)
+			str, err := ctxutil.ExpectType[string](val)
+			if err != nil {
+				return err
 			}
+			tCtx.GetMetric().SetName(str)
 			return nil
 		},
 	}
@@ -62,9 +64,11 @@ func accessDescription[K Context]() ottl.StandardGetSetter[K] {
 			return tCtx.GetMetric().Description(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if str, ok := val.(string); ok {
-				tCtx.GetMetric().SetDescription(str)
+			str, err := ctxutil.ExpectType[string](val)
+			if err != nil {
+				return err
 			}
+			tCtx.GetMetric().SetDescription(str)
 			return nil
 		},
 	}
@@ -76,9 +80,11 @@ func accessUnit[K Context]() ottl.StandardGetSetter[K] {
 			return tCtx.GetMetric().Unit(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if str, ok := val.(string); ok {
-				tCtx.GetMetric().SetUnit(str)
+			str, err := ctxutil.ExpectType[string](val)
+			if err != nil {
+				return err
 			}
+			tCtx.GetMetric().SetUnit(str)
 			return nil
 		},
 	}
@@ -112,16 +118,18 @@ func accessAggTemporality[K Context]() ottl.StandardGetSetter[K] {
 			return nil, nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if newAggTemporality, ok := val.(int64); ok {
-				metric := tCtx.GetMetric()
-				switch metric.Type() {
-				case pmetric.MetricTypeSum:
-					metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporality(newAggTemporality))
-				case pmetric.MetricTypeHistogram:
-					metric.Histogram().SetAggregationTemporality(pmetric.AggregationTemporality(newAggTemporality))
-				case pmetric.MetricTypeExponentialHistogram:
-					metric.ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporality(newAggTemporality))
-				}
+			newAggTemporality, err := ctxutil.ExpectType[int64](val)
+			if err != nil {
+				return err
+			}
+			metric := tCtx.GetMetric()
+			switch metric.Type() {
+			case pmetric.MetricTypeSum:
+				metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporality(newAggTemporality))
+			case pmetric.MetricTypeHistogram:
+				metric.Histogram().SetAggregationTemporality(pmetric.AggregationTemporality(newAggTemporality))
+			case pmetric.MetricTypeExponentialHistogram:
+				metric.ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporality(newAggTemporality))
 			}
 			return nil
 		},
@@ -138,11 +146,13 @@ func accessIsMonotonic[K Context]() ottl.StandardGetSetter[K] {
 			return nil, nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if newIsMonotonic, ok := val.(bool); ok {
-				metric := tCtx.GetMetric()
-				if metric.Type() == pmetric.MetricTypeSum {
-					metric.Sum().SetIsMonotonic(newIsMonotonic)
-				}
+			newIsMonotonic, err := ctxutil.ExpectType[bool](val)
+			if err != nil {
+				return err
+			}
+			metric := tCtx.GetMetric()
+			if metric.Type() == pmetric.MetricTypeSum {
+				metric.Sum().SetIsMonotonic(newIsMonotonic)
 			}
 			return nil
 		},
@@ -171,25 +181,15 @@ func accessDataPoints[K Context]() ottl.StandardGetSetter[K] {
 			metric := tCtx.GetMetric()
 			switch metric.Type() {
 			case pmetric.MetricTypeSum:
-				if newDataPoints, ok := val.(pmetric.NumberDataPointSlice); ok {
-					newDataPoints.CopyTo(metric.Sum().DataPoints())
-				}
+				return ctxutil.SetPSliceValue(metric.Sum().DataPoints(), pmetric.NewNumberDataPointSlice, val)
 			case pmetric.MetricTypeGauge:
-				if newDataPoints, ok := val.(pmetric.NumberDataPointSlice); ok {
-					newDataPoints.CopyTo(metric.Gauge().DataPoints())
-				}
+				return ctxutil.SetPSliceValue(metric.Gauge().DataPoints(), pmetric.NewNumberDataPointSlice, val)
 			case pmetric.MetricTypeHistogram:
-				if newDataPoints, ok := val.(pmetric.HistogramDataPointSlice); ok {
-					newDataPoints.CopyTo(metric.Histogram().DataPoints())
-				}
+				return ctxutil.SetPSliceValue(metric.Histogram().DataPoints(), pmetric.NewHistogramDataPointSlice, val)
 			case pmetric.MetricTypeExponentialHistogram:
-				if newDataPoints, ok := val.(pmetric.ExponentialHistogramDataPointSlice); ok {
-					newDataPoints.CopyTo(metric.ExponentialHistogram().DataPoints())
-				}
+				return ctxutil.SetPSliceValue(metric.ExponentialHistogram().DataPoints(), pmetric.NewExponentialHistogramDataPointSlice, val)
 			case pmetric.MetricTypeSummary:
-				if newDataPoints, ok := val.(pmetric.SummaryDataPointSlice); ok {
-					newDataPoints.CopyTo(metric.Summary().DataPoints())
-				}
+				return ctxutil.SetPSliceValue(metric.Summary().DataPoints(), pmetric.NewSummaryDataPointSlice, val)
 			}
 			return nil
 		},

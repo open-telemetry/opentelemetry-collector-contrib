@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -26,11 +27,11 @@ type Encoding struct {
 
 // Config contains the main configuration options for the awskinesis exporter
 type Config struct {
-	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:",squash"`
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
+	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	BackOffConfig   configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 
-	Encoding           `mapstructure:"encoding"`
+	Encoding           Encoding  `mapstructure:"encoding"`
 	AWS                AWSConfig `mapstructure:"aws"`
 	MaxRecordsPerBatch int       `mapstructure:"max_records_per_batch"`
 	MaxRecordSize      int       `mapstructure:"max_record_size"`

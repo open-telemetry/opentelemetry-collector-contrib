@@ -1,7 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
+
+//go:build !aix
 
 package pulsarexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
 
@@ -10,6 +12,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -61,7 +64,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		Endpoint:        defaultBroker,
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
 		Topic:                   "",
@@ -84,7 +87,7 @@ func (f *pulsarExporterFactory) createTracesExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	oCfg := *(cfg.(*Config))
+	oCfg := *cfg.(*Config)
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultTracesTopic
 	}
@@ -104,7 +107,8 @@ func (f *pulsarExporterFactory) createTracesExporter(
 		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.Close))
+		exporterhelper.WithShutdown(exp.Close),
+	)
 }
 
 func (f *pulsarExporterFactory) createMetricsExporter(
@@ -112,7 +116,7 @@ func (f *pulsarExporterFactory) createMetricsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	oCfg := *(cfg.(*Config))
+	oCfg := *cfg.(*Config)
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultMetricsTopic
 	}
@@ -132,7 +136,8 @@ func (f *pulsarExporterFactory) createMetricsExporter(
 		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.Close))
+		exporterhelper.WithShutdown(exp.Close),
+	)
 }
 
 func (f *pulsarExporterFactory) createLogsExporter(
@@ -140,7 +145,7 @@ func (f *pulsarExporterFactory) createLogsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	oCfg := *(cfg.(*Config))
+	oCfg := *cfg.(*Config)
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultLogsTopic
 	}
@@ -160,5 +165,6 @@ func (f *pulsarExporterFactory) createLogsExporter(
 		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.Close))
+		exporterhelper.WithShutdown(exp.Close),
+	)
 }

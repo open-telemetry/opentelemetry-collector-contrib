@@ -6,9 +6,9 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| cloud.platform | The cloud.platform | Any Str | true |
-| cloud.provider | The cloud.provider | Any Str | true |
-| cloud.region | The cloud.region | Any Str | true |
-| k8s.cluster.name | The k8s.cluster.name | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| cloud.platform | The cloud.platform | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
+| cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
+| cloud.region | The cloud.region | Any Str | true | [cloud.region](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-region) | - |
+| k8s.cluster.name | The k8s.cluster.name | Any Str | true | [k8s.cluster.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/k8s.md#k8s-cluster-name) | - |

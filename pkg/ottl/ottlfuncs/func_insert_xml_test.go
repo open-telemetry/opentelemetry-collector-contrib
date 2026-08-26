@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -132,12 +133,13 @@ func Test_InsertXML(t *testing.T) {
 							return tt.subdoc, nil
 						},
 					},
-				})
-			assert.NoError(t, err)
+				},
+			)
+			require.NoError(t, err)
 
 			result, err := exprFunc(t.Context(), nil)
 			if tt.expectErr == "" {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			} else {
 				assert.EqualError(t, err, tt.expectErr)
 			}
@@ -159,7 +161,8 @@ func TestCreateInsertXMLFunc(t *testing.T) {
 	exprFunc, err = factory.CreateFunction(
 		fCtx, &InsertXMLArguments[any]{
 			XPath: "!",
-		})
+		},
+	)
 	assert.Error(t, err)
 	assert.Nil(t, exprFunc)
 
@@ -168,8 +171,9 @@ func TestCreateInsertXMLFunc(t *testing.T) {
 		fCtx, &InsertXMLArguments[any]{
 			Target: invalidXMLGetter(),
 			XPath:  "/",
-		})
-	assert.NoError(t, err)
+		},
+	)
+	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
 	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
@@ -184,9 +188,52 @@ func TestCreateInsertXMLFunc(t *testing.T) {
 			},
 			XPath:       "/",
 			SubDocument: invalidXMLGetter(),
-		})
-	assert.NoError(t, err)
+		},
+	)
+	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
 	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
+}
+
+func Test_InsertXMLFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewInsertXMLFactory[any]()
+		assert.Equal(t, "InsertXML", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewInsertXMLFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &InsertXMLArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "XPath", "SubDocument"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewInsertXMLFactory[any]()
+		args := factory.CreateDefaultArguments()
+		insertXMLArgs, ok := args.(*InsertXMLArguments[any])
+		require.True(t, ok)
+		insertXMLArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "<a></a>", nil
+			},
+		}
+		insertXMLArgs.XPath = "/a"
+		insertXMLArgs.SubDocument = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "<b></b>", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createInsertXMLFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "InsertXML args must be of type *InsertXMLAguments[K]")
+	})
 }

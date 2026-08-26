@@ -43,6 +43,44 @@ func TestEndpointCorrectness(t *testing.T) {
 	errScheme = multierr.Append(errScheme, errBadScheme)
 	errScheme = multierr.Append(errScheme, errMissingAuthExtension)
 
+	missingIdxEndpoint := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	missingIdxEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	missingIdxEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	missingIdxEndpoint.ForceAttemptHTTP2 = false
+	missingIdxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
+	missingSHEndpoint := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	missingSHEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	missingSHEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	missingSHEndpoint.ForceAttemptHTTP2 = false
+	missingSHEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
+	missingCMEndpoint := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	missingCMEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	missingCMEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	missingCMEndpoint.ForceAttemptHTTP2 = false
+	missingCMEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
+	invalidIdxEndpoint := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	invalidIdxEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	invalidIdxEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	invalidIdxEndpoint.ForceAttemptHTTP2 = false
+	invalidIdxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
+	invalidIdxEndpoint.Endpoint = "123.321.12.1:1"
+	badSchemeIdxEndpoint := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	badSchemeIdxEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	badSchemeIdxEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	badSchemeIdxEndpoint.ForceAttemptHTTP2 = false
+	badSchemeIdxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
+	badSchemeIdxEndpoint.Endpoint = "gss://123.124.32.12:90"
+	missingAuthIdxEndpoint := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	missingAuthIdxEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	missingAuthIdxEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	missingAuthIdxEndpoint.ForceAttemptHTTP2 = false
+	missingAuthIdxEndpoint.Endpoint = "https://123.123.32.2:2093"
 	tests := []struct {
 		desc     string
 		expected error
@@ -52,44 +90,30 @@ func TestEndpointCorrectness(t *testing.T) {
 			desc:     "missing any endpoint setting",
 			expected: errBad,
 			config: &Config{
-				IdxEndpoint: confighttp.ClientConfig{
-					Auth: configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
-				},
-				SHEndpoint: confighttp.ClientConfig{
-					Auth: configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
-				},
-				CMEndpoint: confighttp.ClientConfig{
-					Auth: configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
-				},
+				IdxEndpoint: missingIdxEndpoint,
+				SHEndpoint:  missingSHEndpoint,
+				CMEndpoint:  missingCMEndpoint,
 			},
 		},
 		{
 			desc:     "properly configured invalid endpoint",
 			expected: errBad,
 			config: &Config{
-				IdxEndpoint: confighttp.ClientConfig{
-					Auth:     configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
-					Endpoint: "123.321.12.1:1",
-				},
+				IdxEndpoint: invalidIdxEndpoint,
 			},
 		},
 		{
 			desc:     "properly configured endpoint has bad scheme",
 			expected: errScheme,
 			config: &Config{
-				IdxEndpoint: confighttp.ClientConfig{
-					Auth:     configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
-					Endpoint: "gss://123.124.32.12:90",
-				},
+				IdxEndpoint: badSchemeIdxEndpoint,
 			},
 		},
 		{
 			desc:     "properly configured endpoint missing auth",
 			expected: errMissingAuthExtension,
 			config: &Config{
-				IdxEndpoint: confighttp.ClientConfig{
-					Endpoint: "https://123.123.32.2:2093",
-				},
+				IdxEndpoint: missingAuthIdxEndpoint,
 			},
 		},
 	}
@@ -100,6 +124,215 @@ func TestEndpointCorrectness(t *testing.T) {
 			t.Logf("%v\n", err)
 			require.Error(t, err)
 			require.Contains(t, test.expected.Error(), err.Error())
+		})
+	}
+}
+
+func TestCustomSearchConfigValidation(t *testing.T) {
+	validEndpoint := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	validEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	validEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	validEndpoint.ForceAttemptHTTP2 = false
+	validEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
+	validEndpoint.Endpoint = "https://localhost:8089"
+
+	tests := []struct {
+		desc        string
+		search      SearchConfig
+		expectError bool
+		errContains string
+	}{
+		{
+			desc: "valid search config",
+			search: SearchConfig{
+				SPL:    "search index=_internal | stats count",
+				Target: TargetClusterMaster,
+				Metrics: []MetricConfig{
+					{
+						MetricName:  "splunk.custom.count",
+						ValueColumn: "count",
+						ValueType:   MetricValueTypeInt,
+					},
+				},
+			},
+			expectError: false,
+		},
+		{
+			desc: "empty SPL",
+			search: SearchConfig{
+				SPL:    "",
+				Target: TargetClusterMaster,
+				Metrics: []MetricConfig{
+					{
+						MetricName:  "splunk.custom.count",
+						ValueColumn: "count",
+					},
+				},
+			},
+			expectError: true,
+			errContains: "search spl cannot be empty",
+		},
+		{
+			desc: "whitespace only SPL",
+			search: SearchConfig{
+				SPL:    "   ",
+				Target: TargetClusterMaster,
+				Metrics: []MetricConfig{
+					{
+						MetricName:  "splunk.custom.count",
+						ValueColumn: "count",
+					},
+				},
+			},
+			expectError: true,
+			errContains: "search spl cannot be empty",
+		},
+		{
+			desc: "invalid target",
+			search: SearchConfig{
+				SPL:    "search index=_internal",
+				Target: "invalid",
+				Metrics: []MetricConfig{
+					{
+						MetricName:  "splunk.custom.count",
+						ValueColumn: "count",
+					},
+				},
+			},
+			expectError: true,
+			errContains: "search target must be one of",
+		},
+		{
+			desc: "no metrics defined",
+			search: SearchConfig{
+				SPL:     "search index=_internal",
+				Target:  TargetClusterMaster,
+				Metrics: []MetricConfig{},
+			},
+			expectError: true,
+			errContains: "at least one metric",
+		},
+		{
+			desc: "metric missing name",
+			search: SearchConfig{
+				SPL:    "search index=_internal",
+				Target: TargetClusterMaster,
+				Metrics: []MetricConfig{
+					{
+						MetricName:  "",
+						ValueColumn: "count",
+					},
+				},
+			},
+			expectError: true,
+			errContains: "metric_name cannot be empty",
+		},
+		{
+			desc: "metric missing value column",
+			search: SearchConfig{
+				SPL:    "search index=_internal",
+				Target: TargetClusterMaster,
+				Metrics: []MetricConfig{
+					{
+						MetricName:  "splunk.custom.count",
+						ValueColumn: "",
+					},
+				},
+			},
+			expectError: true,
+			errContains: "value_column cannot be empty",
+		},
+		{
+			desc: "invalid value type",
+			search: SearchConfig{
+				SPL:    "search index=_internal",
+				Target: TargetClusterMaster,
+				Metrics: []MetricConfig{
+					{
+						MetricName:  "splunk.custom.count",
+						ValueColumn: "count",
+						ValueType:   "string",
+					},
+				},
+			},
+			expectError: true,
+			errContains: "value_type must be one of",
+		},
+		{
+			desc: "valid with indexer target",
+			search: SearchConfig{
+				SPL:    "search index=_internal",
+				Target: TargetIndexer,
+				Metrics: []MetricConfig{
+					{
+						MetricName:  "splunk.custom.count",
+						ValueColumn: "count",
+					},
+				},
+			},
+			expectError: false,
+		},
+		{
+			desc: "valid search head target",
+			search: SearchConfig{
+				SPL:    "search index=_internal",
+				Target: TargetSearchHead,
+				Metrics: []MetricConfig{
+					{
+						MetricName:  "splunk.custom.count",
+						ValueColumn: "count",
+					},
+				},
+			},
+			expectError: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			err := test.search.Validate()
+			if test.expectError {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), test.errContains)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+
+	t.Run("config validates searches", func(t *testing.T) {
+		cfg := &Config{
+			CMEndpoint: validEndpoint,
+			Searches: []SearchConfig{
+				{
+					SPL:     "",
+					Target:  "invalid",
+					Metrics: []MetricConfig{},
+				},
+			},
+		}
+		err := cfg.Validate()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "searches[0]")
+	})
+}
+
+func TestSearchConfigTargetType(t *testing.T) {
+	tests := []struct {
+		target   string
+		expected string
+	}{
+		{TargetIndexer, typeIdx},
+		{TargetSearchHead, typeSh},
+		{TargetClusterMaster, typeCm},
+		{"invalid", ""},
+	}
+
+	for _, test := range tests {
+		t.Run(test.target, func(t *testing.T) {
+			s := SearchConfig{Target: test.target}
+			require.Equal(t, test.expected, s.TargetType())
 		})
 	}
 }

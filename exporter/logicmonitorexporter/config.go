@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -19,11 +20,11 @@ import (
 
 // Config defines configuration for LogicMonitor exporter.
 type Config struct {
-	confighttp.ClientConfig `mapstructure:",squash"`
+	ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
 
-	QueueSettings               exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
-	configretry.BackOffConfig   `mapstructure:"retry_on_failure"`
-	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
+	QueueSettings               configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	BackOffConfig               configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	ResourceToTelemetrySettings resourcetotelemetry.Settings                             `mapstructure:"resource_to_telemetry_conversion"`
 
 	// ApiToken of Logicmonitor Platform
 	APIToken APIToken `mapstructure:"api_token"`
@@ -65,11 +66,11 @@ type LogsConfig struct {
 }
 
 func (c *Config) Validate() error {
-	if c.Endpoint == "" {
+	if c.ClientConfig.Endpoint == "" {
 		return errors.New("endpoint should not be empty")
 	}
 
-	u, err := url.Parse(c.Endpoint)
+	u, err := url.Parse(c.ClientConfig.Endpoint)
 	if err != nil || u.Scheme == "" || u.Host == "" {
 		return errors.New("endpoint must be valid")
 	}

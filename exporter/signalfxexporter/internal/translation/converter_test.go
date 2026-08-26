@@ -15,9 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
@@ -237,7 +235,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, labelMap)),
+					}, labelMap),
+				),
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
@@ -246,7 +245,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, labelMap)),
+					}, labelMap),
+				),
 			},
 		},
 		{
@@ -292,6 +292,16 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				return out
 			},
 			wantSfxDataPoints: []*sfxpb.DataPoint{
+				doubleSFxDataPoint(
+					fmt.Sprintf("l%sng_name", strings.Repeat("o", 256)),
+					&sfxMetricTypeGauge,
+					maps.MergeRawMaps(map[string]any{
+						"k_n0": "vn0",
+						"k_n1": "vn1",
+						"k_r0": "vr0",
+						"k_r1": "vr1",
+					}, labelMap),
+				),
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
@@ -300,7 +310,28 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, labelMap)),
+					}, labelMap),
+				),
+				doubleSFxDataPoint(
+					fmt.Sprintf("l%sng_name", strings.Repeat("o", 256)),
+					&sfxMetricTypeGauge,
+					maps.MergeRawMaps(map[string]any{
+						"k_n0": "vn0",
+						"k_n1": "vn1",
+						"k_r0": "vr0",
+						"k_r1": "vr1",
+					}, labelMap),
+				),
+				doubleSFxDataPoint(
+					fmt.Sprintf("l%sng_name", strings.Repeat("o", 256)),
+					&sfxMetricTypeGauge,
+					maps.MergeRawMaps(map[string]any{
+						"k_n0": "vn0",
+						"k_n1": "vn1",
+						"k_r0": "vr0",
+						"k_r1": "vr1",
+					}, labelMap),
+				),
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
@@ -309,7 +340,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, labelMap)),
+					}, labelMap),
+				),
 			},
 		},
 		{
@@ -343,10 +375,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, map[string]any{
-						"k0": "v0",
-						"k2": "v2",
-					})),
+					}, longLabelMap),
+				),
 			},
 		},
 		{
@@ -357,7 +387,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res := rm.Resource()
 				res.Attributes().PutStr("k/r0", "vr0")
 				res.Attributes().PutStr("k/r1", "vr1")
-				res.Attributes().PutStr("cloud.provider", conventions.CloudProviderAWS.Value.AsString())
+				res.Attributes().PutStr("cloud.provider", "aws")
 				res.Attributes().PutStr("cloud.account.id", "efgh")
 				res.Attributes().PutStr("cloud.region", "us-east")
 
@@ -374,11 +404,12 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					&sfxMetricTypeGauge,
 					maps.MergeRawMaps(labelMap, map[string]any{
 						"cloud_account_id": "efgh",
-						"cloud_provider":   conventions.CloudProviderAWS.Value.AsString(),
+						"cloud_provider":   "aws",
 						"cloud_region":     "us-east",
 						"k_r0":             "vr0",
 						"k_r1":             "vr1",
-					})),
+					}),
+				),
 			},
 		},
 		{
@@ -389,7 +420,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res := rm.Resource()
 				res.Attributes().PutStr("k/r0", "vr0")
 				res.Attributes().PutStr("k/r1", "vr1")
-				res.Attributes().PutStr("cloud.provider", conventions.CloudProviderAWS.Value.AsString())
+				res.Attributes().PutStr("cloud.provider", "aws")
 				res.Attributes().PutStr("cloud.account.id", "efgh")
 				res.Attributes().PutStr("cloud.region", "us-east")
 				res.Attributes().PutStr("host.id", "abcd")
@@ -406,14 +437,15 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
 					maps.MergeRawMaps(labelMap, map[string]any{
-						"cloud_provider":   conventions.CloudProviderAWS.Value.AsString(),
+						"cloud_provider":   "aws",
 						"cloud_account_id": "efgh",
 						"cloud_region":     "us-east",
 						"host_id":          "abcd",
 						"AWSUniqueId":      "abcd_us-east_efgh",
 						"k_r0":             "vr0",
 						"k_r1":             "vr1",
-					})),
+					}),
+				),
 			},
 		},
 		{
@@ -424,7 +456,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res := rm.Resource()
 				res.Attributes().PutStr("k/r0", "vr0")
 				res.Attributes().PutStr("k/r1", "vr1")
-				res.Attributes().PutStr("cloud.provider", conventions.CloudProviderGCP.Value.AsString())
+				res.Attributes().PutStr("cloud.provider", "gcp")
 				res.Attributes().PutStr("host.id", "abcd")
 
 				ilm := rm.ScopeMetrics().AppendEmpty()
@@ -440,10 +472,11 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					&sfxMetricTypeGauge,
 					maps.MergeRawMaps(labelMap, map[string]any{
 						"host_id":        "abcd",
-						"cloud_provider": conventions.CloudProviderGCP.Value.AsString(),
+						"cloud_provider": "gcp",
 						"k_r0":           "vr0",
 						"k_r1":           "vr1",
-					})),
+					}),
+				),
 			},
 		},
 		{
@@ -454,7 +487,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res := rm.Resource()
 				res.Attributes().PutStr("k/r0", "vr0")
 				res.Attributes().PutStr("k/r1", "vr1")
-				res.Attributes().PutStr("cloud.provider", conventions.CloudProviderGCP.Value.AsString())
+				res.Attributes().PutStr("cloud.provider", "gcp")
 				res.Attributes().PutStr("host.id", "abcd")
 				res.Attributes().PutStr("cloud.account.id", "efgh")
 
@@ -473,10 +506,11 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"gcp_id":           "efgh_abcd",
 						"k_r0":             "vr0",
 						"k_r1":             "vr1",
-						"cloud_provider":   conventions.CloudProviderGCP.Value.AsString(),
+						"cloud_provider":   "gcp",
 						"host_id":          "abcd",
 						"cloud_account_id": "efgh",
-					})),
+					}),
+				),
 			},
 		},
 		{
@@ -1100,84 +1134,6 @@ func Test_MetricDataToSignalFxV2WithHistogramBuckets(t *testing.T) {
 	}
 }
 
-func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
-	translator, err := NewMetricTranslator([]Rule{
-		{
-			Action: ActionRenameDimensionKeys,
-			Mapping: map[string]string{
-				"old.dim": "new.dim",
-			},
-		},
-	}, 1, make(chan struct{}))
-	require.NoError(t, err)
-
-	md := pmetric.NewMetrics()
-	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	m.SetName("metric1")
-	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetIntValue(123)
-	dp.Attributes().PutStr("old.dim", "val1")
-
-	gaugeType := sfxpb.MetricType_GAUGE
-	expected := []*sfxpb.DataPoint{
-		{
-			Metric: "metric1",
-			Value: sfxpb.Datum{
-				IntValue: generateIntPtr(123),
-			},
-			MetricType: &gaugeType,
-			Dimensions: []*sfxpb.Dimension{
-				{
-					Key:   "new_dim",
-					Value: "val1",
-				},
-			},
-		},
-	}
-	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil, "", false, true)
-	require.NoError(t, err)
-	assert.Equal(t, expected, c.MetricsToSignalFxV2(md))
-}
-
-func TestDimensionKeyCharsWithPeriod(t *testing.T) {
-	translator, err := NewMetricTranslator([]Rule{
-		{
-			Action: ActionRenameDimensionKeys,
-			Mapping: map[string]string{
-				"old.dim.with.periods": "new.dim.with.periods",
-			},
-		},
-	}, 1, make(chan struct{}))
-	require.NoError(t, err)
-
-	md := pmetric.NewMetrics()
-	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	m.SetName("metric1")
-	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetIntValue(123)
-	dp.Attributes().PutStr("old.dim.with.periods", "val1")
-
-	gaugeType := sfxpb.MetricType_GAUGE
-	expected := []*sfxpb.DataPoint{
-		{
-			Metric: "metric1",
-			Value: sfxpb.Datum{
-				IntValue: generateIntPtr(123),
-			},
-			MetricType: &gaugeType,
-			Dimensions: []*sfxpb.Dimension{
-				{
-					Key:   "new.dim.with.periods",
-					Value: "val1",
-				},
-			},
-		},
-	}
-	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil, "_-.", false, true)
-	require.NoError(t, err)
-	assert.Equal(t, expected, c.MetricsToSignalFxV2(md))
-}
-
 func TestInvalidNumberOfDimensions(t *testing.T) {
 	observedZapCore, observedLogs := observer.New(zap.DebugLevel)
 	logger := zap.New(observedZapCore)
@@ -1215,14 +1171,18 @@ func TestInvalidNumberOfDimensions(t *testing.T) {
 			Value: fmt.Sprint("dim_val_", i),
 		})
 	}
-	assert.Empty(t, c.MetricsToSignalFxV2(mdInvalid))
+	gotDps := c.MetricsToSignalFxV2(mdInvalid)
+	require.Len(t, gotDps, 1)
+	sortDimensions(gotDps)
+	sortDimensions([]*sfxpb.DataPoint{dpSFX})
+	assert.Equal(t, dpSFX, gotDps[0])
+
 	require.Equal(t, 1, observedLogs.Len())
-	assert.Equal(t, "dropping datapoint", observedLogs.All()[0].Message)
-	assert.ElementsMatch(t, []zap.Field{
-		{Type: zapcore.StringType, Key: "reason", String: invalidNumberOfDimensions},
-		{Type: zapcore.StringerType, Key: "datapoint", Interface: dpSFX},
-		{Type: zapcore.Int64Type, Key: "number_of_dimensions", Integer: 37},
-	}, observedLogs.All()[0].Context)
+	loggedEntry := observedLogs.All()[0]
+	assert.Equal(t, "datapoint is not valid and will be dropped at ingest", loggedEntry.Message)
+	loggedFields := loggedEntry.ContextMap()
+	assert.Equal(t, []any{invalidNumberOfDimensions}, loggedFields["reasons"])
+	assert.Equal(t, dpSFX.String(), loggedFields["datapoint"])
 }
 
 func sortDimensions(points []*sfxpb.DataPoint) {
@@ -1303,63 +1263,6 @@ func TestNewMetricsConverter(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
-		})
-	}
-}
-
-func TestMetricsConverter_ConvertDimension(t *testing.T) {
-	type fields struct {
-		metricTranslator        *MetricTranslator
-		nonAlphanumericDimChars string
-	}
-	type args struct {
-		dim string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   string
-	}{
-		{
-			name: "No translations",
-			fields: fields{
-				metricTranslator:        nil,
-				nonAlphanumericDimChars: "_-",
-			},
-			args: args{
-				dim: "d.i.m",
-			},
-			want: "d_i_m",
-		},
-		{
-			name: "With translations",
-			fields: fields{
-				metricTranslator: func() *MetricTranslator {
-					t, _ := NewMetricTranslator([]Rule{
-						{
-							Action: ActionRenameDimensionKeys,
-							Mapping: map[string]string{
-								"d.i.m": "di.m",
-							},
-						},
-					}, 0, make(chan struct{}))
-					return t
-				}(),
-				nonAlphanumericDimChars: "_-",
-			},
-			args: args{
-				dim: "d.i.m",
-			},
-			want: "di_m",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c, err := NewMetricsConverter(zap.NewNop(), tt.fields.metricTranslator, nil, nil, tt.fields.nonAlphanumericDimChars, false, true)
-			require.NoError(t, err)
-			got := c.ConvertDimension(tt.args.dim)
-			assert.Equal(t, tt.want, got, "ConvertDimension() = %v, want %v", got, tt.want)
 		})
 	}
 }

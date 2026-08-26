@@ -11,18 +11,18 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"golang.org/x/exp/maps"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
 
 var validMetricTypes = map[string]bool{
-	strings.ToLower(pmetric.MetricTypeSum.String()):       true,
-	strings.ToLower(pmetric.MetricTypeHistogram.String()): true,
+	strings.ToLower(pmetric.MetricTypeSum.String()):                  true,
+	strings.ToLower(pmetric.MetricTypeHistogram.String()):            true,
+	strings.ToLower(pmetric.MetricTypeExponentialHistogram.String()): true,
 }
 
-var validMetricTypeList = maps.Keys(validMetricTypes)
+var validMetricTypeList = []string{"exponentialhistogram", "histogram", "sum"}
 
 // Config defines the configuration for the processor.
 type Config struct {
@@ -45,7 +45,7 @@ type Config struct {
 }
 
 type MatchMetrics struct {
-	filterset.Config `mapstructure:",squash"`
+	Config filterset.Config `mapstructure:",squash"`
 
 	Metrics []string `mapstructure:"metrics"`
 
@@ -57,12 +57,12 @@ var _ component.Config = (*Config)(nil)
 // Validate checks whether the input configuration has all of the required fields for the processor.
 // An error is returned if there are any invalid inputs.
 func (config *Config) Validate() error {
-	if (len(config.Include.Metrics) > 0 && len(config.Include.MatchType) == 0) ||
-		(len(config.Exclude.Metrics) > 0 && len(config.Exclude.MatchType) == 0) {
+	if (len(config.Include.Metrics) > 0 && len(config.Include.Config.MatchType) == 0) ||
+		(len(config.Exclude.Metrics) > 0 && len(config.Exclude.Config.MatchType) == 0) {
 		return errors.New("match_type must be set if metrics are supplied")
 	}
-	if (len(config.Include.MatchType) > 0 && len(config.Include.Metrics) == 0) ||
-		(len(config.Exclude.MatchType) > 0 && len(config.Exclude.Metrics) == 0) {
+	if (len(config.Include.Config.MatchType) > 0 && len(config.Include.Metrics) == 0) ||
+		(len(config.Exclude.Config.MatchType) > 0 && len(config.Exclude.Metrics) == 0) {
 		return errors.New("metrics must be supplied if match_type is set")
 	}
 

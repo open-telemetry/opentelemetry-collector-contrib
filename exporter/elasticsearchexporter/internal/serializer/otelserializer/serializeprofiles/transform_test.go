@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/ebpf-profiler/libpf"
-	semconv "go.opentelemetry.io/otel/semconv/v1.22.0"
 )
 
 var (
@@ -199,6 +198,7 @@ func TestTransform(t *testing.T) {
 			},
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
+				rp.Resource().Attributes().PutStr("service.name", "my_service.name")
 
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
@@ -264,8 +264,11 @@ func TestTransform(t *testing.T) {
 							FileID:     []string{buildID2Base64},
 						},
 					},
-					HostMetadata: HostResourceData{
-						Data: map[string]string{},
+					ResourceAttrs: ResourceData{
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						Data: map[string]string{
+							"service.name": "my_service.name",
+						},
 					},
 				},
 				{
@@ -273,10 +276,12 @@ func TestTransform(t *testing.T) {
 						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    42000000000,
 						StackTraceID: wantedTraceID,
+						ServiceName:  "my_service.name",
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
-					HostMetadata: HostResourceData{},
+					ResourceAttrs: ResourceData{},
 				},
 			},
 			wantErr: nil,
@@ -413,8 +418,9 @@ func TestStackPayloads(t *testing.T) {
 							FileID:     []string{buildID2Base64},
 						},
 					},
-					HostMetadata: HostResourceData{
-						Data: map[string]string{},
+					ResourceAttrs: ResourceData{
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						Data:       map[string]string{},
 					},
 				},
 				{
@@ -424,8 +430,9 @@ func TestStackPayloads(t *testing.T) {
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
-					HostMetadata: HostResourceData{},
+					ResourceAttrs: ResourceData{},
 				},
 			},
 		},
@@ -527,8 +534,9 @@ func TestStackPayloads(t *testing.T) {
 							FileID:     []string{buildID2Base64},
 						},
 					},
-					HostMetadata: HostResourceData{
-						Data: map[string]string{},
+					ResourceAttrs: ResourceData{
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						Data:       map[string]string{},
 					},
 				},
 				{
@@ -538,6 +546,7 @@ func TestStackPayloads(t *testing.T) {
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
 				},
 				{
@@ -547,6 +556,7 @@ func TestStackPayloads(t *testing.T) {
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
 				},
 			},
@@ -654,8 +664,9 @@ func TestStackPayloads(t *testing.T) {
 						},
 						// Note: no unsymbolized executable for the mapping without build ID
 					},
-					HostMetadata: HostResourceData{
-						Data: map[string]string{},
+					ResourceAttrs: ResourceData{
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						Data:       map[string]string{},
 					},
 				},
 				{
@@ -665,6 +676,7 @@ func TestStackPayloads(t *testing.T) {
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
 				},
 			},
@@ -705,7 +717,7 @@ func TestStackTraceEvent(t *testing.T) {
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
 				_ = rp.Resource().Attributes().FromRaw(map[string]any{
-					string(semconv.ServiceVersionKey): "1.2.0",
+					"service.version": "1.2.0",
 				})
 
 				sp := rp.ScopeProfiles().AppendEmpty()
@@ -721,6 +733,7 @@ func TestStackTraceEvent(t *testing.T) {
 				StackTraceID: stacktraceIDBase64,
 				Frequency:    20,
 				Count:        1,
+				ProjectID:    2,
 			},
 		},
 		{
@@ -748,6 +761,7 @@ func TestStackTraceEvent(t *testing.T) {
 				StackTraceID: stacktraceIDBase64,
 				Frequency:    20,
 				Count:        1,
+				ProjectID:    2,
 			},
 		},
 		{
@@ -773,6 +787,7 @@ func TestStackTraceEvent(t *testing.T) {
 				StackTraceID: stacktraceIDBase64,
 				Frequency:    20,
 				Count:        1,
+				ProjectID:    2,
 			},
 		},
 		{
@@ -782,30 +797,30 @@ func TestStackTraceEvent(t *testing.T) {
 				dic.StringTable().Append(stacktraceIDBase64)
 				dic.StackTable().AppendEmpty()
 
+				dic.AttributeTable().AppendEmpty()
+
 				a := dic.AttributeTable().AppendEmpty()
 				a.SetKeyStrindex(1)
-				dic.StringTable().Append(string(semconv.ThreadNameKey))
+				dic.StringTable().Append("thread.name")
 				a.Value().SetStr("my_thread")
-				a = dic.AttributeTable().AppendEmpty()
-				a.SetKeyStrindex(2)
-				dic.StringTable().Append(string(semconv.ServiceNameKey))
-				a.Value().SetStr("my_service")
 
 				return dic
 			},
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
 				_ = rp.Resource().Attributes().FromRaw(map[string]any{
-					string(semconv.K8SPodNameKey):       "my_pod",
-					string(semconv.ContainerNameKey):    "my_container",
-					string(semconv.ContainerIDKey):      "my_container_id",
-					string(semconv.K8SNamespaceNameKey): "my_k8s_namespace_name",
+					"k8s.pod.name":       "my_pod",
+					"container.name":     "my_container",
+					"container.id":       "my_container_id",
+					"k8s.namespace.name": "my_k8s_namespace_name",
+					"host.name":          "my_host_name",
+					"service.name":       "my_service",
 				})
 				sp := rp.ScopeProfiles().AppendEmpty()
 				p := sp.Profiles().AppendEmpty()
 
 				s := p.Samples().AppendEmpty()
-				s.AttributeIndices().Append(0, 1)
+				s.AttributeIndices().Append(1)
 
 				return rp
 			},
@@ -818,9 +833,11 @@ func TestStackTraceEvent(t *testing.T) {
 				ContainerID:      "my_container_id",
 				ThreadName:       "my_thread",
 				ServiceName:      "my_service",
+				HostName:         "my_host_name",
 				StackTraceID:     stacktraceIDBase64,
 				Frequency:        20,
 				Count:            1,
+				ProjectID:        2,
 			},
 		},
 	} {
@@ -830,8 +847,9 @@ func TestStackTraceEvent(t *testing.T) {
 			p := rp.ScopeProfiles().At(0).Profiles().At(0)
 			s := p.Samples().At(0)
 
-			hostMetadata := newHostMetadata(dic, rp.Resource(), rp.ScopeProfiles().At(0).Scope(), p)
-			event := stackTraceEvent(dic, stacktraceIDBase64, s, 20, hostMetadata)
+			resourceAttrs, err := populateResourceData(dic, rp.Resource(), rp.ScopeProfiles().At(0).Scope(), p)
+			require.NoError(t, err)
+			event := stackTraceEvent(dic, stacktraceIDBase64, s, 20, resourceAttrs)
 			event.TimeStamp = newUnixTime64(tt.timestamp)
 
 			assert.Equal(t, tt.wantEvent, event)

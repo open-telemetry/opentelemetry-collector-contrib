@@ -25,7 +25,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ControllerConfig:     cfg,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		Servers:              make([]Server, 0),
 	}
 }
@@ -42,7 +42,7 @@ func createMetricsReceiver(_ context.Context, params receiver.Settings, baseCfg 
 		return nil, err
 	}
 
-	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, s))
+	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer, scraperhelper.AddMetricsScraper(metadata.Type, s))
 }
 
 // NewFactory creates a factory for redfish receiver.
@@ -50,5 +50,6 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment))
+		receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment),
+	)
 }

@@ -1,0 +1,71 @@
+{
+  "records": [
+    {
+      "time": "2024-06-10T14:22:45Z",
+      "resourceId": "/SUBSCRIPTIONS/ABCD1234-5678-90EF-1234-567890ABCDEF/RESOURCEGROUPS/PROD-RG/PROVIDERS/MICROSOFT.WEB/SITES/PROD-FUNCTION",
+      "category": "FunctionAppLogs",
+      "operationName": "Microsoft.Web/sites/functions/log",
+      "level": "Error",
+      "location": "West Europe",
+      "properties": {
+        "appName": "prod-function-app",
+        "roleInstance": "12345678-987654321012345678",
+        "message": "Executed Functions.processData (Failed, Id=9f8e7d6c-5b4a-3c2d-1e0f-abcdef123456, Duration=25ms)",
+        "category": "Function.processData",
+        "hostVersion": "4.22.1.0",
+        "functionInvocationId": "9f8e7d6c-5b4a-3c2d-1e0f-abcdef123456",
+        "functionName": "Functions.processData",
+        "hostInstanceId": "a1b2c3d4-e5f6-7890-abcd-1234567890ef",
+        "level": "Error",
+        "levelId": 4,
+        "processId": 101,
+        "exceptionDetails": "Microsoft.Azure.WebJobs.Host.FunctionInvocationException : Exception while executing function: Functions.processData ---> Microsoft.Azure.WebJobs.Script.Workers.Rpc.RpcException : Result: Failure\nException: Exception: Unexpected error!\nStack:   File \"/azure-functions-host/workers/python/3.9/LINUX/X64/azure_functions_worker/dispatcher.py\", line 479, in _handle__invocation_request\n    call_result = await self._loop.run_in_executor(\n  File \"/usr/local/lib/python3.9/concurrent/futures/thread.py\", line 58, in run\n    result = self.fn(*self.args, **self.kwargs)\n  File \"/azure-functions-host/workers/python/3.9/LINUX/X64/azure_functions_worker/dispatcher.py\", line 752, in _run_sync_func\n    return ExtensionManager.get_sync_invocation_wrapper(context,\n  File \"/azure-functions-host/workers/python/3.9/LINUX/X64/azure_functions_worker/extension.py\", line 215, in _raw_invocation_wrapper\n    result = function(**args)\n  File \"/home/site/wwwroot/processData/__init__.py\", line 30, in main\n    raise Exception(\"Unexpected error!\")",
+        "exceptionMessage": "Result: Failure\nException: Exception: Unexpected error!\nStack:   File \"/azure-functions-host/workers/python/3.9/LINUX/X64/azure_functions_worker/dispatcher.py\", line 479, in _handle__invocation_request\n    call_result = await self._loop.run_in_executor(\n  File \"/usr/local/lib/python3.9/concurrent/futures/thread.py\", line 58, in run\n    result = self.fn(*self.args, **self.kwargs)\n  File \"/azure-functions-host/workers/python/3.9/LINUX/X64/azure_functions_worker/dispatcher.py\", line 752, in _run_sync_func\n    return ExtensionManager.get_sync_invocation_wrapper(context,\n  File \"/azure-functions-host/workers/python/3.9/LINUX/X64/azure_functions_worker/extension.py\", line 215, in _raw_invocation_wrapper\n    result = function(**args)\n  File \"/home/site/wwwroot/processData/__init__.py\", line 30, in main\n    raise Exception(\"Unexpected error!\")\n",
+        "exceptionType": "Exception",
+        "eventId": 7,
+        "eventName": "FunctionCompleted"
+      }
+    },
+    {
+      "time": "2024-06-09T09:15:33Z",
+      "resourceId": "/SUBSCRIPTIONS/ABCD1234-5678-90EF-1234-567890ABCDEF/RESOURCEGROUPS/PROD-RG/PROVIDERS/MICROSOFT.WEB/SITES/PROD-FUNCTION",
+      "category": "FunctionAppLogs",
+      "operationName": "Microsoft.Web/sites/functions/log",
+      "level": "Informational",
+      "location": "West Europe",
+      "properties": {
+        "appName": "prod-function-app",
+        "roleInstance": "12345678-987654321012345679",
+        "message": "Executing Functions.processData (Reason=This function was programmatically called via the host APIs., Id=abcdef12-3456-7890-abcd-1234567890ab)",
+        "category": "Function.processData",
+        "hostVersion": "4.22.1.0",
+        "functionInvocationId": "abcdef12-3456-7890-abcd-1234567890ab",
+        "functionName": "Functions.processData",
+        "hostInstanceId": "b2c3d4e5-f6a7-8901-bcde-2345678901ab",
+        "level": "Information",
+        "levelId": 2,
+        "processId": 102,
+        "eventId": 2,
+        "eventName": "FunctionStarted"
+      }
+    },
+    {
+      "time": "2024-06-09T09:15:33Z",
+      "resourceId": "/SUBSCRIPTIONS/ABCD1234-5678-90EF-1234-567890ABCDEF/RESOURCEGROUPS/PROD-RG/PROVIDERS/MICROSOFT.WEB/SITES/INVALIDJSON-FUNCTION",
+      "category": "FunctionAppLogs",
+      "operationName": "Microsoft.Web/sites/functions/log",
+      "level": "Informational",
+      "location": "West Europe",
+      "properties": "{'appName': 'invalidjson-function-app','roleInstance':'12345678-987654321012345679','message':'Message','category':'Function.processData','hostVersion':'4.22.1.0','functionInvocationId':'abcdef12-3456-7890-abcd-1234567890ab','functionName':'Functions.processData','hostInstanceId':'b2c3d4e5-f6a7-8901-bcde-2345678901ab','level':'Information','levelId':2,'processId':102,'eventId':2,'eventName':'FunctionStarted'}"
+    },
+    {
+      "time": "2024-06-09T09:15:33Z",
+      "resourceId": "/SUBSCRIPTIONS/ABCD1234-5678-90EF-1234-567890ABCDEF/RESOURCEGROUPS/PROD-RG/PROVIDERS/MICROSOFT.WEB/SITES/DOUBLEJSON-FUNCTION",
+      "category": "FunctionAppLogs",
+      "operationName": "Microsoft.Web/sites/functions/log",
+      "level": "Informational",
+      "location": "West Europe",
+      "properties": "{'appName': 'doublejson-function-app','roleInstance':'12345678-987654321012345679','message':'Double-escaped encoded JSON: {\\'key1\\':\\'{\\\\\\'boolKey\\\\\\':true,\\\\\\'intKey\\\\\\':10,\\\\\\'floatKey\\\\\\':0.9,\\\\\\'stringKey\\\\\\':\\\\\\'value\\\\\\'}\\'}','category':'Function.processData','hostVersion':'4.22.1.0','functionInvocationId':'abcdef12-3456-7890-abcd-1234567890ab','functionName':'Functions.processData','hostInstanceId':'b2c3d4e5-f6a7-8901-bcde-2345678901ab','level':'Information','levelId':2,'processId':102,'eventId':2,'eventName':'FunctionStarted'}"
+    }
+  ]
+}

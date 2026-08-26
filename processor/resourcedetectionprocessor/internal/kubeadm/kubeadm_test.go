@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/kubeadm"
@@ -39,21 +38,21 @@ func TestDetect(t *testing.T) {
 	md.On("ClusterUID").Return("uid-1", nil)
 	cfg := CreateDefaultConfig()
 	// set k8s cluster env variables and auth type to create a dummy API client
-	cfg.AuthType = k8sconfig.AuthTypeNone
+	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
 	res, schemaURL, err := k8sDetector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)
 
 	expected := map[string]any{
-		string(conventions.K8SClusterNameKey): "cluster-1",
-		"k8s.cluster.uid":                     "uid-1",
+		"k8s.cluster.name": "cluster-1",
+		"k8s.cluster.uid":  "uid-1",
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -65,16 +64,16 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 	cfg.ResourceAttributes.K8sClusterName.Enabled = false
 	cfg.ResourceAttributes.K8sClusterUID.Enabled = false
 	// set k8s cluster env variables and auth type to create a dummy API client
-	cfg.AuthType = k8sconfig.AuthTypeNone
+	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
 	res, schemaURL, err := k8sDetector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)
 
 	expected := map[string]any{}

@@ -23,7 +23,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -32,7 +33,7 @@ func createDefaultConfig() component.Config {
 	clientConfig.Endpoint = defaultEndpoint
 	clientConfig.Timeout = 1 * time.Minute
 	return &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 		ClientConfig:         clientConfig,
 	}
@@ -53,6 +54,6 @@ func createMetricsReceiver(
 
 	return scraperhelper.NewMetricsController(
 		&cfg.ControllerConfig, params, consumer,
-		scraperhelper.AddScraper(metadata.Type, s),
+		scraperhelper.AddMetricsScraper(metadata.Type, s),
 	)
 }

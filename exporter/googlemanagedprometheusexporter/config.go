@@ -10,17 +10,18 @@ import (
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus"
 	"github.com/prometheus/otlptranslator"
 	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // Config defines configuration for Google Cloud Managed Service for Prometheus exporter.
 type Config struct {
-	GMPConfig `mapstructure:",squash"`
+	GMPConfig GMPConfig `mapstructure:",squash"`
 
 	// Timeout for all API calls. If not set, defaults to 12 seconds.
-	TimeoutSettings exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings   exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 }
 
 // GMPConfig is a subset of the collector config applicable to the GMP exporter.
@@ -77,10 +78,10 @@ func (c *GMPConfig) toCollectorConfig() collector.Config {
 }
 
 func (cfg *Config) Validate() error {
-	if err := collector.ValidateConfig(cfg.toCollectorConfig()); err != nil {
+	if err := collector.ValidateConfig(cfg.GMPConfig.toCollectorConfig()); err != nil {
 		return fmt.Errorf("exporter settings are invalid :%w", err)
 	}
-	if err := cfg.MetricConfig.Config.Validate(); err != nil {
+	if err := cfg.GMPConfig.MetricConfig.Config.Validate(); err != nil {
 		return fmt.Errorf("exporter settings are invalid :%w", err)
 	}
 	return nil

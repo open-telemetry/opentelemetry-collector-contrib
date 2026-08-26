@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/metadata"
 )
@@ -112,6 +112,46 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+func TestConfigValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  *Config
+		wantErr bool
+	}{
+		{
+			name: "default_config_sets_max_request_body_size",
+			config: &Config{
+				Logs: LogsConfig{
+					Endpoint: "0.0.0.0:9999",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "zero_max_request_body_size_gets_default",
+			config: &Config{
+				Logs: LogsConfig{
+					Endpoint:           "0.0.0.0:9999",
+					MaxRequestBodySize: 0,
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, int64(20*1024*1024), tt.config.Logs.MaxRequestBodySize)
+			}
+		})
+	}
+}
+
 func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -153,7 +193,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, loaded.Unmarshal(cfg))
 			require.Equal(t, tc.expectedConfig, cfg)
-			require.NoError(t, xconfmap.Validate(cfg))
+			require.NoError(t, confmap.Validate(cfg))
 		})
 	}
 }

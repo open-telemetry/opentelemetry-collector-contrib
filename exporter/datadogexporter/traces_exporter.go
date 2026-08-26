@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
@@ -22,11 +24,11 @@ import (
 	"github.com/DataDog/datadog-go/v5/statsd"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
@@ -34,13 +36,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/featuregates"
-)
-
-var traceCustomHTTPFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.TraceExportUseCustomHTTPClient",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, trace export uses the HTTP client from the exporter HTTP configs"),
-	featuregate.WithRegisterFromVersion("v0.105.0"),
 )
 
 type traceExporter struct {
@@ -86,7 +81,8 @@ func newTracesExporter(
 	apiClient := clientutil.CreateAPIClient(
 		params.BuildInfo,
 		cfg.Metrics.Endpoint,
-		cfg.ClientConfig)
+		cfg.ClientConfig,
+	)
 	go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 	exp.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	if cfg.API.FailOnInvalidKey {
@@ -129,7 +125,7 @@ func (exp *traceExporter) consumeTraces(
 	hosts := make(map[string]struct{})
 	tags := make(map[string]struct{})
 	header := make(http.Header)
-	if noAPMStatsFeatureGate.IsEnabled() {
+	if metadata.ExporterDatadogexporterDisableAPMStatsFeatureGate.IsEnabled() {
 		header[headerComputedStats] = []string{"true"}
 	}
 	for i := 0; i < rspans.Len(); i++ {
@@ -205,12 +201,12 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *dat
 	acfg.Ignore["resource"] = cfg.Traces.IgnoreResources
 	acfg.ReceiverEnabled = false // disable HTTP receiver
 	acfg.AgentVersion = fmt.Sprintf("datadogexporter-%s-%s", params.BuildInfo.Command, params.BuildInfo.Version)
-	acfg.SkipSSLValidation = cfg.TLS.InsecureSkipVerify
+	acfg.SkipSSLValidation = cfg.ClientConfig.TLS.InsecureSkipVerify
 	acfg.ComputeStatsBySpanKind = cfg.Traces.ComputeStatsBySpanKind
 	acfg.PeerTagsAggregation = cfg.Traces.PeerTagsAggregation
 	acfg.PeerTags = cfg.Traces.PeerTags
 	acfg.MaxSenderRetries = 4
-	if traceCustomHTTPFeatureGate.IsEnabled() {
+	if metadata.ExporterDatadogexporterTraceExportUseCustomHTTPClientFeatureGate.IsEnabled() {
 		params.Logger.Info("Experimental feature: datadog exporter trace export uses a custom HTTP transport from the exporter HTTP configs")
 		acfg.HTTPTransportFunc = func() *http.Transport {
 			return clientutil.NewHTTPTransport(cfg.ClientConfig)
@@ -233,6 +229,9 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *dat
 	}
 	if !featuregates.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_receive_resource_spans_v2"] = struct{}{}
+	}
+	if !featuregates.ScopeConventionFeatureGate.IsEnabled() {
+		acfg.Features["disable_otel_scope_convention"] = struct{}{}
 	}
 	tracelog.SetLogger(&agentcomponents.ZapLogger{Logger: params.Logger}) // TODO: This shouldn't be a singleton
 	return acfg, nil

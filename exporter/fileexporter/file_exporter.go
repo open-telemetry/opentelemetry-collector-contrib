@@ -5,17 +5,21 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 )
 
 // fileExporter is the implementation of file exporter that writes telemetry data to a file
 type fileExporter struct {
 	conf       *Config
+	logger     *zap.Logger
 	marshaller *marshaller
 	writer     *fileWriter
 }
@@ -54,17 +58,34 @@ func (e *fileExporter) consumeProfiles(_ context.Context, pd pprofile.Profiles) 
 
 // Start starts the flush timer if set.
 func (e *fileExporter) Start(_ context.Context, host component.Host) error {
-	var err error
-	e.marshaller, err = newMarshaller(e.conf, host)
+	marshaller, err := newMarshaller(e.conf, host)
 	if err != nil {
 		return err
 	}
+	e.marshaller = marshaller
 	export := buildExportFunc(e.conf)
 
-	e.writer, err = newFileWriter(e.conf.Path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export)
+	// Optionally ensure the output directory exists.
+	if e.conf.CreateDirectory {
+		dir := filepath.Dir(e.conf.Path)
+		perm := os.FileMode(0o755)
+		if e.conf.directoryPermissionsParsed != 0 {
+			perm = os.FileMode(e.conf.directoryPermissionsParsed)
+		}
+		if mkdirErr := os.MkdirAll(dir, perm); mkdirErr != nil {
+			return mkdirErr
+		}
+	}
+
+	if migrateErr := migrateLegacyBackups(e.conf.Path, e.conf.Rotation, e.logger); migrateErr != nil {
+		return migrateErr
+	}
+
+	writer, err := newFileWriter(e.conf.Path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export, e.conf.Compression, int(e.conf.CompressionParams.Level))
 	if err != nil {
 		return err
 	}
+	e.writer = writer
 	e.writer.start()
 	return nil
 }

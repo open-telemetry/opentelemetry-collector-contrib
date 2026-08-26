@@ -1,0 +1,19 @@
+ciscoos:
+  collection_interval: 60s
+  timeout: 30s
+  scrapers:
+    system:
+    interfaces:
+  devices:
+    - name: "device-1"
+      host: "192.168.1.1"
+      port: 22
+      auth:
+        username: "admin"
+        password: "password"
+    - name: "device-2"
+      host: "192.168.1.2"
+      port: 22
+      auth:
+        username: "admin"
+        password: "password"

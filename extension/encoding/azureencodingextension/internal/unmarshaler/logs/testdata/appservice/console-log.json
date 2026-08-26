@@ -1,0 +1,14 @@
+{
+    "records": [
+        {
+            "time": "2024-04-24T12:06:12.0000000Z",
+            "resourceId": "/SUBSCRIPTIONS/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/RESOURCEGROUPS/MYRESOURCEGROUP/PROVIDERS/MICROSOFT.WEB/SITES/MY-DEMO-APP",
+            "category": "AppServiceConsoleLogs",
+            "operationName": "ConsoleLog",
+            "properties": {
+                "ContainerId": "CONTAINER_ID",
+                "Host": "HOST"
+            }
+        }
+    ]
+}

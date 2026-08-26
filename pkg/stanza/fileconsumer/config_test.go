@@ -39,8 +39,10 @@ func TestNewConfig(t *testing.T) {
 	assert.False(t, cfg.IncludeFilePathResolved)
 	assert.False(t, cfg.IncludeFileOwnerName)
 	assert.False(t, cfg.IncludeFileOwnerGroupName)
+	assert.False(t, cfg.IncludeFilePermissions)
 	assert.False(t, cfg.IncludeFileRecordNumber)
 	assert.False(t, cfg.AcquireFSLock)
+	assert.False(t, cfg.SkipUnmodifiedFiles)
 }
 
 func TestUnmarshal(t *testing.T) {
@@ -440,8 +442,9 @@ func TestUnmarshal(t *testing.T) {
 				Name: "ordering_criteria_top_n",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
+					topN := 10
 					cfg.OrderingCriteria = matcher.OrderingCriteria{
-						TopN: 10,
+						TopN: &topN,
 					}
 					return newMockOperatorConfig(cfg)
 				}(),
@@ -583,6 +586,16 @@ func TestBuild(t *testing.T) {
 			},
 		},
 		{
+			"SkipUnmodifiedFiles",
+			func(cfg *Config) {
+				cfg.SkipUnmodifiedFiles = true
+			},
+			require.NoError,
+			func(t *testing.T, m *Manager) {
+				require.True(t, m.skipUnmodifiedFiles)
+			},
+		},
+		{
 			"HeaderConfigNoFlag",
 			func(cfg *Config) {
 				cfg.Header = &HeaderConfig{}
@@ -593,7 +606,9 @@ func TestBuild(t *testing.T) {
 		{
 			"BadOrderingCriteriaRegex",
 			func(cfg *Config) {
+				topN := 1
 				cfg.OrderingCriteria = matcher.OrderingCriteria{
+					TopN: &topN,
 					SortBy: []matcher.Sort{
 						{
 							SortType: "numeric",
@@ -608,8 +623,10 @@ func TestBuild(t *testing.T) {
 		{
 			"OrderingCriteriaTimestampMissingLayout",
 			func(cfg *Config) {
+				topN := 1
 				cfg.OrderingCriteria = matcher.OrderingCriteria{
 					Regex: ".*",
+					TopN:  &topN,
 					SortBy: []matcher.Sort{
 						{
 							SortType: "timestamp",
@@ -624,8 +641,10 @@ func TestBuild(t *testing.T) {
 		{
 			"GoodOrderingCriteriaTimestamp",
 			func(cfg *Config) {
+				topN := 1
 				cfg.OrderingCriteria = matcher.OrderingCriteria{
 					Regex: ".*",
+					TopN:  &topN,
 					SortBy: []matcher.Sort{
 						{
 							SortType: "timestamp",
@@ -637,6 +656,30 @@ func TestBuild(t *testing.T) {
 			},
 			require.NoError,
 			func(_ *testing.T, _ *Manager) {},
+		},
+		{
+			"MaxLogSizeBehaviorSplit",
+			func(cfg *Config) {
+				cfg.MaxLogSizeBehavior = MaxLogSizeBehaviorSplit
+			},
+			require.NoError,
+			func(_ *testing.T, _ *Manager) {},
+		},
+		{
+			"MaxLogSizeBehaviorTruncate",
+			func(cfg *Config) {
+				cfg.MaxLogSizeBehavior = MaxLogSizeBehaviorTruncate
+			},
+			require.NoError,
+			func(_ *testing.T, _ *Manager) {},
+		},
+		{
+			"InvalidMaxLogSizeBehavior",
+			func(cfg *Config) {
+				cfg.MaxLogSizeBehavior = "invalid"
+			},
+			require.Error,
+			nil,
 		},
 	}
 
@@ -786,8 +829,8 @@ func newMockOperatorConfig(cfg *Config) *mockOperatorConfig {
 	}
 }
 
-// This function is impelmented for compatibility with operatortest
+// This function is implemented for compatibility with operatortest
 // but is not meant to be used directly
 func (*mockOperatorConfig) Build(_ component.TelemetrySettings) (operator.Operator, error) {
-	panic("not impelemented")
+	panic("not implemented")
 }

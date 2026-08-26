@@ -163,14 +163,14 @@ func prepareBenchmark(
 
 	cfg.factory = elasticsearchexporter.NewFactory()
 	cfg.esCfg = cfg.factory.CreateDefaultConfig().(*elasticsearchexporter.Config)
-	cfg.esCfg.Mapping.Mode = mappingMode
+	cfg.esCfg.Mapping.Mode = mappingMode //nolint:staticcheck
 	cfg.esCfg.Endpoints = []string{receiver.endpoint}
 	cfg.esCfg.LogsIndex = TestLogsIndex
 	cfg.esCfg.MetricsIndex = TestMetricsIndex
 	cfg.esCfg.TracesIndex = TestTracesIndex
 	// sending_queue::batch is defined as a default config
-	cfg.esCfg.QueueBatchConfig.Batch.Get().FlushTimeout = 10 * time.Millisecond
-	cfg.esCfg.QueueBatchConfig.NumConsumers = 1
+	cfg.esCfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
+	cfg.esCfg.QueueBatchConfig.Get().NumConsumers = 1
 
 	tc, err := consumer.NewTraces(func(context.Context, ptrace.Traces) error {
 		return nil

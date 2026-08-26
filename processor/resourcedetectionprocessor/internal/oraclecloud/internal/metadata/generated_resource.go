@@ -49,6 +49,13 @@ func (rb *ResourceBuilder) SetCloudRegion(val string) {
 	}
 }
 
+// SetCloudResourceID sets provided value as "cloud.resource_id" attribute.
+func (rb *ResourceBuilder) SetCloudResourceID(val string) {
+	if rb.config.CloudResourceID.Enabled {
+		rb.res.Attributes().PutStr("cloud.resource_id", val)
+	}
+}
+
 // SetHostID sets provided value as "host.id" attribute.
 func (rb *ResourceBuilder) SetHostID(val string) {
 	if rb.config.HostID.Enabled {
@@ -74,6 +81,13 @@ func (rb *ResourceBuilder) SetHostType(val string) {
 func (rb *ResourceBuilder) SetK8sClusterName(val string) {
 	if rb.config.K8sClusterName.Enabled {
 		rb.res.Attributes().PutStr("k8s.cluster.name", val)
+	}
+}
+
+// SetOracleCloudRealm sets provided value as "oracle_cloud.realm" attribute.
+func (rb *ResourceBuilder) SetOracleCloudRealm(val string) {
+	if rb.config.OracleCloudRealm.Enabled {
+		rb.res.Attributes().PutStr("oracle_cloud.realm", val)
 	}
 }
 

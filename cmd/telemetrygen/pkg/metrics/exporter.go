@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
 )
 
 // grpcExporterOptions creates the configuration options for a gRPC-based OTLP metric exporter.
@@ -22,7 +22,7 @@ func grpcExporterOptions(cfg *Config) ([]otlpmetricgrpc.Option, error) {
 	if cfg.Insecure {
 		grpcExpOpt = append(grpcExpOpt, otlpmetricgrpc.WithInsecure())
 	} else {
-		credentials, err := common.GetTLSCredentialsForGRPCExporter(
+		credentials, err := config.GetTLSCredentialsForGRPCExporter(
 			cfg.CaFile, cfg.ClientAuth, cfg.InsecureSkipVerify,
 		)
 		if err != nil {
@@ -34,6 +34,8 @@ func grpcExporterOptions(cfg *Config) ([]otlpmetricgrpc.Option, error) {
 	if len(cfg.Headers) > 0 {
 		grpcExpOpt = append(grpcExpOpt, otlpmetricgrpc.WithHeaders(cfg.GetHeaders()))
 	}
+
+	grpcExpOpt = append(grpcExpOpt, otlpmetricgrpc.WithTimeout(cfg.Timeout))
 
 	return grpcExpOpt, nil
 }
@@ -49,7 +51,7 @@ func httpExporterOptions(cfg *Config) ([]otlpmetrichttp.Option, error) {
 	if cfg.Insecure {
 		httpExpOpt = append(httpExpOpt, otlpmetrichttp.WithInsecure())
 	} else {
-		tlsCfg, err := common.GetTLSCredentialsForHTTPExporter(
+		tlsCfg, err := config.GetTLSCredentialsForHTTPExporter(
 			cfg.CaFile, cfg.ClientAuth, cfg.InsecureSkipVerify,
 		)
 		if err != nil {
@@ -61,6 +63,8 @@ func httpExporterOptions(cfg *Config) ([]otlpmetrichttp.Option, error) {
 	if len(cfg.Headers) > 0 {
 		httpExpOpt = append(httpExpOpt, otlpmetrichttp.WithHeaders(cfg.GetHeaders()))
 	}
+
+	httpExpOpt = append(httpExpOpt, otlpmetrichttp.WithTimeout(cfg.Timeout))
 
 	return httpExpOpt, nil
 }

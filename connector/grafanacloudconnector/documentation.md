@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_grafanacloud_datapoint_count
 
-Number of datapoints sent to Grafana Cloud [Development]
+Number of datapoints sent to Grafana Cloud
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -16,7 +16,7 @@ Number of datapoints sent to Grafana Cloud [Development]
 
 ### otelcol_grafanacloud_flush_count
 
-Number of metrics flushes [Development]
+Number of metrics flushes
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -24,7 +24,7 @@ Number of metrics flushes [Development]
 
 ### otelcol_grafanacloud_host_count
 
-Number of unique hosts [Development]
+Number of unique hosts
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

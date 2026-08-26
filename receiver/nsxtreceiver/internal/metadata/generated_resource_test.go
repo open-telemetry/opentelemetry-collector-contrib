@@ -32,26 +32,25 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("device.id")
+			deviceIDAttrVal, ok := res.Attributes().Get("device.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "device.id-val", val.Str())
+				assert.Equal(t, "device.id-val", deviceIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("nsxt.node.id")
+			nsxtNodeIDAttrVal, ok := res.Attributes().Get("nsxt.node.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "nsxt.node.id-val", val.Str())
+				assert.Equal(t, "nsxt.node.id-val", nsxtNodeIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("nsxt.node.name")
+			nsxtNodeNameAttrVal, ok := res.Attributes().Get("nsxt.node.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "nsxt.node.name-val", val.Str())
+				assert.Equal(t, "nsxt.node.name-val", nsxtNodeNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("nsxt.node.type")
+			nsxtNodeTypeAttrVal, ok := res.Attributes().Get("nsxt.node.type")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "nsxt.node.type-val", val.Str())
+				assert.Equal(t, "nsxt.node.type-val", nsxtNodeTypeAttrVal.Str())
 			}
 		})
 	}

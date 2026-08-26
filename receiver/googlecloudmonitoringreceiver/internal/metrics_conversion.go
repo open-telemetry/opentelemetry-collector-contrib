@@ -64,6 +64,12 @@ func (mb *MetricsBuilder) ConvertGaugeToMetrics(ts *monitoringpb.TimeSeries, m p
 			dp.SetDoubleValue(v.DoubleValue)
 		case *monitoringpb.TypedValue_Int64Value:
 			dp.SetIntValue(v.Int64Value)
+		case *monitoringpb.TypedValue_BoolValue:
+			if v.BoolValue {
+				dp.SetIntValue(1)
+			} else {
+				dp.SetIntValue(0)
+			}
 		default:
 			mb.logger.Info("Unhandled metric value type:", zap.Reflect("Type", v))
 		}
@@ -77,6 +83,8 @@ func (mb *MetricsBuilder) ConvertSumToMetrics(ts *monitoringpb.TimeSeries, m pme
 	m.SetUnit(ts.GetUnit())
 	sum := m.SetEmptySum()
 	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	// GCP's cumulative metric kind maps to OTel's monotonic sum
+	sum.SetIsMonotonic(true)
 
 	metricAttributes := convertLabelsToMetricAttributes(ts.GetMetric().GetLabels())
 	for _, point := range ts.GetPoints() {

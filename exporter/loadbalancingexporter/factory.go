@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
@@ -10,9 +10,11 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	metricnoop "go.opentelemetry.io/otel/metric/noop"
 	tracenoop "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
@@ -26,12 +28,13 @@ const (
 
 // NewFactory creates a factory for the exporter.
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
-		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		xexporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		xexporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		xexporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		xexporter.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 
@@ -46,6 +49,7 @@ func createDefaultConfig() component.Config {
 		Protocol: Protocol{
 			OTLP: *otlpDefaultCfg,
 		},
+		QueueSettings: configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
 	}
 }
 
@@ -75,10 +79,10 @@ func buildExporterResilienceOptions(options []exporterhelper.Option, cfg *Config
 	if cfg.TimeoutSettings.Timeout > 0 {
 		options = append(options, exporterhelper.WithTimeout(cfg.TimeoutSettings))
 	}
-	if cfg.QueueSettings.Enabled {
+	if cfg.QueueSettings.HasValue() {
 		options = append(options, exporterhelper.WithQueue(cfg.QueueSettings))
 	}
-	if cfg.Enabled {
+	if cfg.BackOffConfig.Enabled {
 		options = append(options, exporterhelper.WithRetry(cfg.BackOffConfig))
 	}
 

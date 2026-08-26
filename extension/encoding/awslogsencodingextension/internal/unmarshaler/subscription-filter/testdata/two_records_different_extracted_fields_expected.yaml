@@ -1,0 +1,65 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.account.id
+          value:
+            stringValue: "111111111111"
+        - key: cloud.region
+          value:
+            stringValue: us-east-1
+        - key: aws.log.group.names
+          value:
+            arrayValue:
+              values:
+                - stringValue: test-log-group
+        - key: aws.log.stream.names
+          value:
+            arrayValue:
+              values:
+                - stringValue: test-log-stream
+    scopeLogs:
+      - logRecords:
+          - body:
+              stringValue: "First log from account 111"
+            timeUnixNano: "1725544035523000000"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.cloudwatch
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.account.id
+          value:
+            stringValue: "222222222222"
+        - key: cloud.region
+          value:
+            stringValue: us-west-2
+        - key: aws.log.group.names
+          value:
+            arrayValue:
+              values:
+                - stringValue: test-log-group
+        - key: aws.log.stream.names
+          value:
+            arrayValue:
+              values:
+                - stringValue: test-log-stream
+    scopeLogs:
+      - logRecords:
+          - body:
+              stringValue: "Second log from account 222"
+            timeUnixNano: "1725544035524000000"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.cloudwatch
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

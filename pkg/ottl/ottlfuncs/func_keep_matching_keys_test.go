@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -90,10 +91,10 @@ func Test_keepMatchingKeys(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.True(t, setterWasCalled)
 
 			assert.Equal(t, *tt.want(), scenarioMap)
@@ -119,7 +120,7 @@ func Test_keepMatchingKeys_bad_input(t *testing.T) {
 	}
 
 	exprFunc, err := keepMatchingKeys[any](target, pattern)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = exprFunc(nil, input)
 	assert.Error(t, err)
@@ -143,7 +144,7 @@ func Test_keepMatchingKeys_invalid_pattern(t *testing.T) {
 	}
 
 	exprFunc, err := keepMatchingKeys[any](target, pattern)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = exprFunc(nil, input)
 	assert.Error(t, err)
@@ -166,7 +167,48 @@ func Test_keepMatchingKeys_get_nil(t *testing.T) {
 	}
 
 	exprFunc, err := keepMatchingKeys[any](target, pattern)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)
+}
+
+func Test_KeepMatchingKeysFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewKeepMatchingKeysFactory[any]()
+		assert.Equal(t, "keep_matching_keys", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewKeepMatchingKeysFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &KeepMatchingKeysArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Pattern"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewKeepMatchingKeysFactory[any]()
+		args := factory.CreateDefaultArguments()
+		keepMatchingKeysArgs, ok := args.(*KeepMatchingKeysArguments[any])
+		require.True(t, ok)
+		keepMatchingKeysArgs.Target = &ottl.StandardPMapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return pcommon.NewMap(), nil
+			},
+		}
+		keepMatchingKeysArgs.Pattern = ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "foo.*", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createKeepMatchingKeysFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "KeepMatchingKeysFactory args must be of type *KeepMatchingKeysArguments[K")
+	})
 }

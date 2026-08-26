@@ -9,13 +9,13 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"slices"
 	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -26,7 +26,7 @@ type Config struct {
 	// QueueBatchConfig configures the sending queue and the batching done
 	// by the exporter. The performed batching can further be customized by
 	// configuring `metadata_keys` which will be used to partition the batches.
-	QueueBatchConfig exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueBatchConfig configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// Endpoints holds the Elasticsearch URLs the exporter should send events to.
 	//
@@ -65,6 +65,9 @@ type Config struct {
 	// LogsDynamicID configures whether log record attribute `elasticsearch.document_id` is set as the document ID in ES.
 	LogsDynamicID DynamicIDSettings `mapstructure:"logs_dynamic_id"`
 
+	// TracesDynamicID configures whether span attribute `elasticsearch.document_id` is set as the document ID in ES.
+	TracesDynamicID DynamicIDSettings `mapstructure:"traces_dynamic_id"`
+
 	// LogsDynamicPipeline configures whether log record attribute `elasticsearch.document_pipeline` is set as the document ingest pipeline for ES.
 	LogsDynamicPipeline DynamicPipelineSettings `mapstructure:"logs_dynamic_pipeline"`
 
@@ -74,10 +77,10 @@ type Config struct {
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html
 	Pipeline string `mapstructure:"pipeline"`
 
-	confighttp.ClientConfig `mapstructure:",squash"`
-	Authentication          AuthenticationSettings `mapstructure:",squash"`
-	Discovery               DiscoverySettings      `mapstructure:"discover"`
-	Retry                   RetrySettings          `mapstructure:"retry"`
+	ClientConfig   confighttp.ClientConfig `mapstructure:",squash"`
+	Authentication AuthenticationSettings  `mapstructure:",squash"`
+	Discovery      DiscoverySettings       `mapstructure:"discover"`
+	Retry          RetrySettings           `mapstructure:"retry"`
 
 	// Deprecated: [v0.136.0] This config is now deprecated. Use `sending_queue::batch` instead.
 	// If this config is defined then it will be used to configure sending queue's batch provided
@@ -86,9 +89,13 @@ type Config struct {
 	Mapping        MappingsSettings       `mapstructure:"mapping"`
 	LogstashFormat LogstashFormatSettings `mapstructure:"logstash_format"`
 
+	// SuppressConflictErrors configures whether 409 Conflict responses are logged as errors.
+	// If set to true, document level version conflict exceptions (409) will not be logged.
+	SuppressConflictErrors bool `mapstructure:"suppress_conflict_errors"`
+
 	// TelemetrySettings contains settings useful for testing/debugging purposes.
 	// This is experimental and may change at any time.
-	TelemetrySettings `mapstructure:"telemetry"`
+	TelemetrySettings TelemetrySettings `mapstructure:"telemetry"`
 
 	// IncludeSourceOnError configures whether the bulk index responses include
 	// a part of the source document on error.
@@ -116,6 +123,22 @@ type Config struct {
 	//
 	// Keys are case-insensitive and duplicates will trigger a validation error.
 	MetadataKeys []string `mapstructure:"metadata_keys"`
+
+	// BulkResponseFilterPath sets the filter_path parameter of bulk API requests,
+	// which controls what data is returned in the response from Elasticsearch.
+	//
+	// Note: If `items.*._index.items` is not in the BulkResponseFilterPath
+	// than for any failed documents, the exporter will not be able
+	// to log the index to which the document was being written
+	// to.
+	//
+	// Note: if `items.*._index.items` is not in the BulkResponseFilterPath
+	// than the export will log rejection of duplicates to
+	// ".profiling-stackframes" which were previously suppressed.
+	//
+	// BulkResponseFilterPath defaults to
+	// "items.*._index,items.*.status,items.*.failure_store,items.*.error.type,items.*.error.reason"
+	BulkResponseFilterPath string `mapstructure:"bulk_response_filter_path"`
 }
 
 type TelemetrySettings struct {
@@ -235,6 +258,7 @@ type RetrySettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
 	// MaxRequests configures how often an HTTP request is attempted before it is assumed to be failed.
+	//
 	// Deprecated: use MaxRetries instead.
 	MaxRequests int `mapstructure:"max_requests"`
 
@@ -247,12 +271,16 @@ type RetrySettings struct {
 	// MaxInterval configures the max waiting time if consecutive requests failed.
 	MaxInterval time.Duration `mapstructure:"max_interval"`
 
-	// RetryOnStatus configures the status codes that trigger request or document level retries.
+	// RetryOnStatus configures the status codes that trigger request level retries.
 	RetryOnStatus []int `mapstructure:"retry_on_status"`
+
+	// RetryOnDocumentStatus configures the status codes that trigger document level retries.
+	// If unset, RetryOnDocumentStatus defaults to RetryOnStatus.
+	RetryOnDocumentStatus []int `mapstructure:"retry_on_document_status"`
 }
 
 type MappingsSettings struct {
-	// Mode configures the default document mapping mode.
+	// Deprecated: [v0.145.0] Mode is ignored. The default mapping mode is "otel".
 	//
 	// The mode may be overridden in two ways:
 	//  - by the client metadata key X-Elastic-Mapping-Mode, if specified
@@ -314,10 +342,10 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 	if !conf.IsSet("sending_queue::num_consumers") && conf.IsSet("num_workers") {
-		cfg.QueueBatchConfig.NumConsumers = cfg.NumWorkers
+		cfg.QueueBatchConfig.Get().NumConsumers = cfg.NumWorkers
 	}
-	if cfg.QueueBatchConfig.Batch.HasValue() {
-		qbCfg := cfg.QueueBatchConfig.Batch.Get()
+	if cfg.QueueBatchConfig.HasValue() && cfg.QueueBatchConfig.Get().Batch.HasValue() {
+		qbCfg := cfg.QueueBatchConfig.Get().Batch.Get()
 		if !conf.IsSet("sending_queue::batch::flush_timeout") && conf.IsSet("flush::interval") {
 			qbCfg.FlushTimeout = cfg.Flush.Interval
 		}
@@ -325,6 +353,11 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 			qbCfg.MaxSize = int64(cfg.Flush.Bytes)
 		}
 	}
+
+	if !conf.IsSet("retry::retry_on_document_status") {
+		cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
+	}
+
 	return nil
 }
 
@@ -348,11 +381,8 @@ func (cfg *Config) Validate() error {
 		}
 		canonicalAllowedModes[i] = canonicalName
 	}
-	if !slices.Contains(canonicalAllowedModes, canonicalMappingModeName(cfg.Mapping.Mode)) {
-		return fmt.Errorf("invalid or disallowed default mapping mode %q", cfg.Mapping.Mode)
-	}
 
-	if cfg.Compression != "none" && cfg.Compression != configcompression.TypeGzip {
+	if cfg.ClientConfig.Compression != "none" && cfg.ClientConfig.Compression != configcompression.TypeGzip {
 		return errors.New("compression must be one of [none, gzip]")
 	}
 
@@ -423,9 +453,9 @@ func (cfg *Config) endpoints() ([]string, error) {
 	// If none are set, then $ELASTICSEARCH_URL may be specified instead.
 	var endpoints []string
 	var numEndpointConfigs int
-	if cfg.Endpoint != "" {
+	if cfg.ClientConfig.Endpoint != "" {
 		numEndpointConfigs++
-		endpoints = []string{cfg.Endpoint}
+		endpoints = []string{cfg.ClientConfig.Endpoint}
 	}
 	if len(cfg.Endpoints) > 0 {
 		numEndpointConfigs++
@@ -483,11 +513,11 @@ func parseCloudID(input string) (*url.URL, error) {
 		return nil, err
 	}
 
-	before, after, ok := strings.Cut(string(decoded), "$")
-	if !ok {
+	parts := strings.Split(string(decoded), "$")
+	if len(parts) < 2 {
 		return nil, fmt.Errorf("invalid decoded CloudID %q", string(decoded))
 	}
-	return url.Parse(fmt.Sprintf("https://%s.%s", after, before))
+	return url.Parse(fmt.Sprintf("https://%s.%s", parts[1], parts[0]))
 }
 
 func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
@@ -495,6 +525,9 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 		cfg.Retry.MaxRetries = cfg.Retry.MaxRequests - 1
 		// Do not set cfg.Retry.Enabled = false if cfg.Retry.MaxRequest = 1 to avoid breaking change on behavior
 		logger.Warn("retry::max_requests has been deprecated, and will be removed in a future version. Use retry::max_retries instead.")
+	}
+	if canonicalMappingModeName(cfg.Mapping.Mode) != MappingOTel.String() {
+		logger.Warn("mapping::mode config option is deprecated and ignored. Use the `X-Elastic-Mapping-Mode` client metadata key or the `elastic.mapping.mode` scope attribute instead. See the README for migration instructions.")
 	}
 	if cfg.LogsDynamicIndex.Enabled {
 		logger.Warn("logs_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")
@@ -514,13 +547,13 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 }
 
 func handleTelemetryConfig(cfg *Config, logger *zap.Logger) {
-	if cfg.LogRequestBody {
+	if cfg.TelemetrySettings.LogRequestBody {
 		logger.Warn("telemetry::log_request_body is enabled, and may expose sensitive data; It should only be used for testing or debugging.")
 	}
-	if cfg.LogResponseBody {
+	if cfg.TelemetrySettings.LogResponseBody {
 		logger.Warn("telemetry::log_response_body is enabled, and may expose sensitive data; It should only be used for testing or debugging.")
 	}
-	if cfg.LogFailedDocsInput {
+	if cfg.TelemetrySettings.LogFailedDocsInput {
 		logger.Warn("telemetry::log_failed_docs_input is enabled, and may expose sensitive data; It should only be used for testing or debugging.")
 	}
 }

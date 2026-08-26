@@ -83,8 +83,7 @@ func ValueFrom(err error, key string) (any, bool) {
 	if err == nil {
 		return nil, false
 	}
-	var verr ErrorWithValue
-	if errors.As(err, &verr) {
+	if verr, ok := errors.AsType[ErrorWithValue](err); ok {
 		v, vok := verr.Value(key)
 		if vok {
 			return v, vok
@@ -136,7 +135,7 @@ func (e *valuesError) Error() string {
 	sb.WriteString(e.inner.Error())
 	for _, k := range keys {
 		v := e.values[k]
-		sb.WriteString(fmt.Sprintf(" %s=%v", k, v))
+		fmt.Fprintf(&sb, " %s=%v", k, v)
 	}
 	return sb.String()
 }

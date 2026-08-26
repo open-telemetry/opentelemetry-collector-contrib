@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // TracesConfig defines the traces exporter specific configuration options
@@ -51,6 +52,7 @@ type TracesConfig struct {
 	// For the best experience with `peer.service`, it is recommended to also enable `compute_stats_by_span_kind`.
 	// If enabling both causes the datadog exporter to consume too many resources, try disabling `compute_stats_by_span_kind` first.
 	// If the overhead remains high, it will be due to a high cardinality of `peer.service` values from the traces. You may need to check your instrumentation.
+	//
 	// Deprecated: Please use PeerTagsAggregation instead
 	PeerServiceAggregation bool `mapstructure:"peer_service_aggregation"`
 
@@ -69,6 +71,29 @@ type TracesConfig struct {
 	// and will drop ones that are unapproved. The default set of peer tags can be found at
 	// https://github.com/DataDog/datadog-agent/blob/505170c4ac8c3cbff1a61cf5f84b28d835c91058/pkg/trace/stats/concentrator.go#L55.
 	PeerTags []string `mapstructure:"peer_tags"`
+}
+
+var _ confmap.Marshaler = (*TracesConfig)(nil)
+
+// Marshal emits only the canonical peer tags aggregation setting.
+func (c TracesConfig) Marshal(conf *confmap.Conf) error {
+	return conf.Marshal(struct {
+		IgnoreResources           []string          `mapstructure:"ignore_resources"`
+		SpanNameRemappings        map[string]string `mapstructure:"span_name_remappings"`
+		SpanNameAsResourceName    bool              `mapstructure:"span_name_as_resource_name"`
+		ComputeStatsBySpanKind    bool              `mapstructure:"compute_stats_by_span_kind"`
+		ComputeTopLevelBySpanKind bool              `mapstructure:"compute_top_level_by_span_kind"`
+		PeerTagsAggregation       bool              `mapstructure:"peer_tags_aggregation"`
+		PeerTags                  []string          `mapstructure:"peer_tags"`
+	}{
+		IgnoreResources:           c.IgnoreResources,
+		SpanNameRemappings:        c.SpanNameRemappings,
+		SpanNameAsResourceName:    c.SpanNameAsResourceName,
+		ComputeStatsBySpanKind:    c.ComputeStatsBySpanKind,
+		ComputeTopLevelBySpanKind: c.ComputeTopLevelBySpanKind,
+		PeerTagsAggregation:       c.PeerTagsAggregation,
+		PeerTags:                  c.PeerTags,
+	})
 }
 
 func (c *TracesConfig) Validate() error {

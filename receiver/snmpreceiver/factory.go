@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
@@ -27,7 +27,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+	)
 }
 
 // createDefaultConfig creates a config for SNMP with as many default values as possible
@@ -68,7 +69,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewMetricsController(&snmpConfig.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, s))
+	return scraperhelper.NewMetricsController(&snmpConfig.ControllerConfig, params, consumer, scraperhelper.AddMetricsScraper(metadata.Type, s))
 }
 
 // addMissingConfigDefaults adds any missing config parameters that have defaults
@@ -106,5 +107,5 @@ func addMissingConfigDefaults(cfg *Config) error {
 		}
 	}
 
-	return xconfmap.Validate(cfg)
+	return confmap.Validate(cfg)
 }

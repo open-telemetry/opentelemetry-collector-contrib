@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -35,20 +36,22 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.Timeout = 5 * time.Second
+	clientConfig.MaxIdleConns = defaultMaxIdleConns               //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.MaxIdleConnsPerHost = defaultMaxIdleConnsPerHost //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
+	clientConfig.IdleConnTimeout = defaultIdleConnTimeout //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.ForceAttemptHTTP2 = true
+
 	assert.Equal(t, &Config{
 		IngestURL: defaultIngestURL,
 		IngestKey: "",
 
-		ClientConfig: confighttp.ClientConfig{
-			Timeout:             5 * time.Second,
-			MaxIdleConns:        defaultMaxIdleConns,
-			MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
-			MaxConnsPerHost:     defaultMaxConnsPerHost,
-			IdleConnTimeout:     defaultIdleConnTimeout,
-			ForceAttemptHTTP2:   true,
-		},
+		ClientConfig:  clientConfig,
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 	}, cfg)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }

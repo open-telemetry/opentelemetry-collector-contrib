@@ -6,13 +6,13 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| cloud.provider | The cloud.provider | Any Str | true |
-| heroku.app.id | The heroku.app.id | Any Str | true |
-| heroku.dyno.id | The heroku.dyno.id | Any Str | true |
-| heroku.release.commit | The heroku.release.commit | Any Str | true |
-| heroku.release.creation_timestamp | The heroku.release.creation_timestamp | Any Str | true |
-| service.instance.id | The service.instance.id | Any Str | true |
-| service.name | Heroku app name recorded as service.name. | Any Str | true |
-| service.version | Heroku release version set as service.version. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
+| heroku.app.id | The heroku.app.id | Any Str | true | [heroku.app.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/heroku.md#heroku-app-id) | - |
+| heroku.dyno.id | The heroku.dyno.id | Any Str | true | - | - |
+| heroku.release.commit | The heroku.release.commit | Any Str | true | [heroku.release.commit](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/heroku.md#heroku-release-commit) | - |
+| heroku.release.creation_timestamp | The heroku.release.creation_timestamp | Any Str | true | [heroku.release.creation_timestamp](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/heroku.md#heroku-release-creation-timestamp) | - |
+| service.instance.id | The service.instance.id | Any Str | true | [service.instance.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/service.md#service-instance-id) | - |
+| service.name | Heroku app name recorded as service.name. | Any Str | true | [service.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/service.md#service-name) | - |
+| service.version | Heroku release version set as service.version. | Any Str | true | [service.version](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/service.md#service-version) | - |

@@ -25,6 +25,9 @@ resourceLogs:
               - key: db.namespace
                 value:
                   stringValue: ""
+              - key: oracle.db.service
+                value:
+                  stringValue: ""
               - key: client.address
                 value:
                   stringValue: TEST-MACHINE
@@ -39,7 +42,7 @@ resourceLogs:
                   intValue: "54440"
               - key: oracledb.plan_hash_value
                 value:
-                  stringValue: "34313939393139353638"
+                  stringValue: "4199919568"
               - key: oracledb.sql_id
                 value:
                   stringValue: 48bc50b6fuz4y
@@ -79,22 +82,67 @@ resourceLogs:
               - key: oracledb.event
                 value:
                   stringValue: ""
-              - key: oracledb.object_name
+              - key: oracledb.query.wait_time
+                value:
+                  doubleValue: 0.5
+              - key: oracledb.procedure_id
+                value:
+                  intValue: "12345"
+              - key: oracledb.procedure_name
                 value:
                   stringValue: BLAH
-              - key: oracledb.object_type
+              - key: oracledb.procedure_type
                 value:
-                  stringValue: OBJECT_TYPE-A
+                  stringValue: PROCEDURE_TYPE-A
               - key: oracledb.osuser
                 value:
                   stringValue: test-user
               - key: oracledb.duration_sec
                 value:
                   doubleValue: 1
+              - key: db.query.comment_tags
+                value:
+                  stringValue: ""
+              - key: oracledb.query.started
+                value:
+                  stringValue: "2026-01-01T12:00:00Z"
+              - key: oracledb.session.started
+                value:
+                  stringValue: "2026-01-01T12:00:00Z"
+              - key: oracledb.session.duration
+                value:
+                  doubleValue: 0
+              - key: oracledb.blocking.blocker.sid
+                value:
+                  stringValue: ""
+              - key: oracledb.blocking.blocker.root_sid
+                value:
+                  stringValue: ""
+              - key: oracledb.blocking.blocker.state
+                value:
+                  stringValue: ""
+              - key: oracledb.blocking.start_time
+                value:
+                  stringValue: ""
+              - key: oracledb.blocking.wait_duration
+                value:
+                  intValue: "0"
+              - key: oracledb.blocking.lock.mode
+                value:
+                  stringValue: ""
+              - key: oracledb.blocking.lock.type
+                value:
+                  stringValue: ""
+              - key: oracledb.blocking.object.owner
+                value:
+                  stringValue: ""
+              - key: oracledb.blocking.object.name
+                value:
+                  stringValue: ""
             body: {}
             eventName: db.server.query_sample
             spanId: a7ad6b7169203331
-            timeUnixNano: "1759142300369458000"
+            timeUnixNano: "1779182973079606000"
             traceId: 0af7651916cd43dd8448eb211c80319c
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver

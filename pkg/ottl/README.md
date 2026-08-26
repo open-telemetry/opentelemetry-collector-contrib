@@ -5,8 +5,8 @@
 | Stability     | [development]: profiles   |
 |               | [beta]: traces, metrics, logs   |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Apkg%2Fottl%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Apkg%2Fottl) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Apkg%2Fottl%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Apkg%2Fottl) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@evan-bradley](https://www.github.com/evan-bradley), [@edmocosta](https://www.github.com/edmocosta) \| Seeking more code owners! |
-| Emeritus      | [@anuraaga](https://www.github.com/anuraaga), [@kentquirk](https://www.github.com/kentquirk), [@bogdandrutu](https://www.github.com/bogdandrutu) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@evan-bradley](https://www.github.com/evan-bradley), [@edmocosta](https://www.github.com/edmocosta), [@bogdandrutu](https://www.github.com/bogdandrutu) \| Seeking more code owners! |
+| Emeritus      | [@anuraaga](https://www.github.com/anuraaga), [@kentquirk](https://www.github.com/kentquirk) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -73,6 +73,34 @@ There is a lot more OTTL can do, like nested functions, arithmetic, indexing, an
 - To select spans to be sampled, use the [tail sampling processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/tailsamplingprocessor/README.md).
 - To route data between pipelines, use the [routing connector](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/connector/routingconnector/README.md).
 
+## Feature Gate
+
+### `ottl.set.allowNil`
+
+The `ottl.set.allowNil` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) changes the behavior of the `set` function when a `nil` value is evaluated. This gate is currently in `alpha`. 
+
+Prior to this gate, passing `nil` to the `set` function (e.g., `set(attributes["key"], nil)`) was a no-op that preserved the existing target value. When this gate is enabled, `set` passes the `nil` value directly to the target's setter. How the `nil` value is handled depends entirely on the specific target's implementation; for example, it can be used to clear values in attribute maps, result in an error for strictly typed fields, or simply be ignored. Users relying on the old guaranteed no-op behavior should migrate their configurations to use conditional checks (e.g., `set(...) where field != nil`).
+
+## Benchmarks
+
+OTTL's performance under a realistic end-to-end pipeline is measured continuously through the
+[transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor)
+and [filter processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor)
+load tests. The CPU and memory results for executing OTTL statements and evaluating OTTL conditions
+against traces, metrics, and logs are publicly available on the benchmarks
+[page](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests):
+
+- Transform processor (OTTL statements): traces ([CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessortraces-cpu-percentage), [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessortraces-ram-mib)), metrics ([CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessormetrics-cpu-percentage), [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessormetrics-ram-mib)), logs ([CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessorlogs-cpu-percentage), [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessorlogs-ram-mib))
+- Filter processor (OTTL conditions): traces ([CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessortraces-cpu-percentage), [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessortraces-ram-mib)), metrics ([CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessormetrics-cpu-percentage), [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessormetrics-ram-mib)), logs ([CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessorlogs-cpu-percentage), [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessorlogs-ram-mib))
+
+OTTL also includes Go benchmarks that measure statement parsing, statement execution, and
+condition evaluation for traces, metrics, and logs, along with micro-benchmarks for
+individual functions and value comparisons. Run all benchmarks from the `pkg/ottl` directory:
+
+```sh
+make benchmark-ottl
+```
+
 ## Troubleshooting
 
 When using OTTL you can enable debug logging in the collector to print out useful information,
@@ -101,3 +129,4 @@ These are previous conference presentations given about OTTL:
 - [OTTL Me Why Transforming Telemetry in the OpenTelemetry Collector Just Got Better](https://youtu.be/uVs0oUV72CE)
 - [Managing Observability Data at the Edge with the OpenTelemetry Collector and OTTL](https://youtu.be/GO0ulYLxy_8)
 - [The OTTL Cookbook: A Collection of Solutions to Common Problems](https://www.youtube.com/watch?v=UGTU0-KT_60)
+- [When OTTL Goes Off the Rails: Debugging Transformations with Confidence](https://youtu.be/465RlwgsNHg)

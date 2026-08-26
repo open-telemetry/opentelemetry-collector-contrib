@@ -14,13 +14,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/xray/types"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/metadata"
 )
 
 type perSpanProperties struct {
@@ -46,17 +47,57 @@ type eventProps struct {
 	attrs pcommon.Map
 }
 
+func populateHTTPAttrsForTests(m map[string]any, httpInfo *awsxray.HTTPData) {
+	if httpInfo == nil {
+		return
+	}
+	if req := httpInfo.Request; req != nil {
+		if req.Method != nil {
+			if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				m["http.method"] = *req.Method
+			}
+			if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				m["http.request.method"] = *req.Method
+			}
+		}
+		if req.URL != nil {
+			if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				m["http.url"] = *req.URL
+			}
+			if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				m["url.full"] = *req.URL
+			}
+		}
+		if req.ClientIP != nil {
+			if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				m["http.client_ip"] = *req.ClientIP
+			}
+			if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				m["client.address"] = *req.ClientIP
+			}
+		}
+	}
+	if resp := httpInfo.Response; resp != nil {
+		if resp.Status != nil {
+			if !metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				m["http.status_code"] = *resp.Status
+			}
+			if metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				m["http.response.status_code"] = *resp.Status
+			}
+		}
+	}
+}
+
 func TestTranslation(t *testing.T) {
 	defaultServerSpanAttrs := func(seg *awsxray.Segment) pcommon.Map {
 		m := pcommon.NewMap()
-		assert.NoError(t, m.FromRaw(map[string]any{
-			string(conventions.HTTPMethodKey):     *seg.HTTP.Request.Method,
-			string(conventions.HTTPClientIPKey):   *seg.HTTP.Request.ClientIP,
-			string(conventions.HTTPUserAgentKey):  *seg.HTTP.Request.UserAgent,
+		rawMap := map[string]any{
+			"http.user_agent":                     *seg.HTTP.Request.UserAgent,
 			awsxray.AWSXRayXForwardedForAttribute: *seg.HTTP.Request.XForwardedFor,
-			string(conventions.HTTPStatusCodeKey): *seg.HTTP.Response.Status,
-			string(conventions.HTTPURLKey):        *seg.HTTP.Request.URL,
-		}))
+		}
+		populateHTTPAttrsForTests(rawMap, seg.HTTP)
+		assert.NoError(t, m.FromRaw(rawMap))
 		return m
 	}
 
@@ -78,14 +119,14 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "serverSample.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]any {
 				return map[string]any{
-					string(conventions.ServiceNameKey):          *seg.Name,
-					string(conventions.CloudProviderKey):        conventions.CloudProviderAWS.Value.AsString(),
-					string(conventions.TelemetrySDKVersionKey):  *seg.AWS.XRay.SDKVersion,
-					string(conventions.TelemetrySDKNameKey):     *seg.AWS.XRay.SDK,
-					string(conventions.TelemetrySDKLanguageKey): "Go",
-					string(conventions.K8SClusterNameKey):       *seg.AWS.EKS.ClusterName,
-					string(conventions.K8SPodNameKey):           *seg.AWS.EKS.Pod,
-					string(conventions.ContainerIDKey):          *seg.AWS.EKS.ContainerID,
+					"service.name":           *seg.Name,
+					"cloud.provider":         "aws",
+					"telemetry.sdk.version":  *seg.AWS.XRay.SDKVersion,
+					"telemetry.sdk.name":     *seg.AWS.XRay.SDK,
+					"telemetry.sdk.language": "Go",
+					"k8s.cluster.name":       *seg.AWS.EKS.ClusterName,
+					"k8s.pod.name":           *seg.AWS.EKS.Pod,
+					"container.id":           *seg.AWS.EKS.ContainerID,
 				}
 			},
 			expectedRecord: types.TelemetryRecord{
@@ -125,11 +166,11 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "ddbSample.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]any {
 				return map[string]any{
-					string(conventions.ServiceNameKey):          *seg.Name,
-					string(conventions.CloudProviderKey):        conventions.CloudProviderAWS.Value.AsString(),
-					string(conventions.TelemetrySDKVersionKey):  *seg.AWS.XRay.SDKVersion,
-					string(conventions.TelemetrySDKNameKey):     *seg.AWS.XRay.SDK,
-					string(conventions.TelemetrySDKLanguageKey): "java",
+					"service.name":           *seg.Name,
+					"cloud.provider":         "aws",
+					"telemetry.sdk.version":  *seg.AWS.XRay.SDKVersion,
+					"telemetry.sdk.name":     *seg.AWS.XRay.SDK,
+					"telemetry.sdk.language": "java",
 				}
 			},
 			expectedRecord: types.TelemetryRecord{
@@ -138,7 +179,7 @@ func TestTranslation(t *testing.T) {
 			},
 			propsPerSpan: func(t *testing.T, testCase string, seg *awsxray.Segment) []perSpanProperties {
 				rootSpanAttrs := pcommon.NewMap()
-				rootSpanAttrs.PutStr(string(conventions.EnduserIDKey), *seg.User)
+				rootSpanAttrs.PutStr("enduser.id", *seg.User)
 				rootSpanEvts := initExceptionEvents(seg)
 				assert.Len(t, rootSpanEvts, 1, testCase+": rootSpanEvts has incorrect size")
 				rootSpan := perSpanProperties{
@@ -188,16 +229,17 @@ func TestTranslation(t *testing.T) {
 
 				subseg7318 := seg.Subsegments[0].Subsegments[0]
 				childSpan7318Attrs := pcommon.NewMap()
-				assert.NoError(t, childSpan7318Attrs.FromRaw(map[string]any{
-					awsxray.AWSServiceAttribute:                      *subseg7318.Name,
-					string(conventions.HTTPResponseContentLengthKey): int64(subseg7318.HTTP.Response.ContentLength.(float64)),
-					string(conventions.HTTPStatusCodeKey):            *subseg7318.HTTP.Response.Status,
-					awsxray.AWSOperationAttribute:                    *subseg7318.AWS.Operation,
-					awsxray.AWSRegionAttribute:                       *subseg7318.AWS.RemoteRegion,
-					awsxray.AWSRequestIDAttribute:                    *subseg7318.AWS.RequestID,
-					awsxray.AWSTableNameAttribute:                    *subseg7318.AWS.TableName,
-					awsxray.AWSXrayRetriesAttribute:                  *subseg7318.AWS.Retries,
-				}))
+				rawMap7318 := map[string]any{
+					awsxray.AWSServiceAttribute:     *subseg7318.Name,
+					"http.response_content_length":  int64(subseg7318.HTTP.Response.ContentLength.(float64)),
+					awsxray.AWSOperationAttribute:   *subseg7318.AWS.Operation,
+					awsxray.AWSRegionAttribute:      *subseg7318.AWS.RemoteRegion,
+					awsxray.AWSRequestIDAttribute:   *subseg7318.AWS.RequestID,
+					awsxray.AWSTableNameAttribute:   *subseg7318.AWS.TableName,
+					awsxray.AWSXrayRetriesAttribute: *subseg7318.AWS.Retries,
+				}
+				populateHTTPAttrsForTests(rawMap7318, subseg7318.HTTP)
+				assert.NoError(t, childSpan7318Attrs.FromRaw(rawMap7318))
 
 				childSpan7318 := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -384,16 +426,17 @@ func TestTranslation(t *testing.T) {
 
 				subseg7163 := seg.Subsegments[0].Subsegments[1]
 				childSpan7163Attrs := pcommon.NewMap()
-				assert.NoError(t, childSpan7163Attrs.FromRaw(map[string]any{
-					awsxray.AWSServiceAttribute:                      *subseg7163.Name,
-					string(conventions.HTTPStatusCodeKey):            *subseg7163.HTTP.Response.Status,
-					string(conventions.HTTPResponseContentLengthKey): int64(subseg7163.HTTP.Response.ContentLength.(float64)),
-					awsxray.AWSOperationAttribute:                    *subseg7163.AWS.Operation,
-					awsxray.AWSRegionAttribute:                       *subseg7163.AWS.RemoteRegion,
-					awsxray.AWSRequestIDAttribute:                    *subseg7163.AWS.RequestID,
-					awsxray.AWSTableNameAttribute:                    *subseg7163.AWS.TableName,
-					awsxray.AWSXrayRetriesAttribute:                  *subseg7163.AWS.Retries,
-				}))
+				rawMap7163 := map[string]any{
+					awsxray.AWSServiceAttribute:     *subseg7163.Name,
+					"http.response_content_length":  int64(subseg7163.HTTP.Response.ContentLength.(float64)),
+					awsxray.AWSOperationAttribute:   *subseg7163.AWS.Operation,
+					awsxray.AWSRegionAttribute:      *subseg7163.AWS.RemoteRegion,
+					awsxray.AWSRequestIDAttribute:   *subseg7163.AWS.RequestID,
+					awsxray.AWSTableNameAttribute:   *subseg7163.AWS.TableName,
+					awsxray.AWSXrayRetriesAttribute: *subseg7163.AWS.Retries,
+				}
+				populateHTTPAttrsForTests(rawMap7163, subseg7163.HTTP)
+				assert.NoError(t, childSpan7163Attrs.FromRaw(rawMap7163))
 
 				childSpan7163Evts := initExceptionEvents(&subseg7163)
 				assert.Len(t, childSpan7163Evts, 1, testCase+": childSpan7163Evts has incorrect size")
@@ -534,8 +577,8 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "awsMissingAwsField.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]any {
 				return map[string]any{
-					string(conventions.ServiceNameKey):   *seg.Name,
-					string(conventions.CloudProviderKey): "unknown",
+					"service.name":   *seg.Name,
+					"cloud.provider": "unknown",
 				}
 			},
 			expectedRecord: types.TelemetryRecord{
@@ -575,21 +618,21 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "awsValidAwsFields.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]any {
 				return map[string]any{
-					string(conventions.ServiceNameKey):           *seg.Name,
-					string(conventions.CloudProviderKey):         conventions.CloudProviderAWS.Value.AsString(),
-					string(conventions.CloudAccountIDKey):        *seg.AWS.AccountID,
-					string(conventions.CloudAvailabilityZoneKey): *seg.AWS.EC2.AvailabilityZone,
-					string(conventions.HostIDKey):                *seg.AWS.EC2.InstanceID,
-					string(conventions.HostTypeKey):              *seg.AWS.EC2.InstanceSize,
-					string(conventions.HostImageIDKey):           *seg.AWS.EC2.AmiID,
-					string(conventions.ContainerNameKey):         *seg.AWS.ECS.ContainerName,
-					string(conventions.ContainerIDKey):           *seg.AWS.ECS.ContainerID,
-					string(conventions.ServiceNamespaceKey):      *seg.AWS.Beanstalk.Environment,
-					string(conventions.ServiceInstanceIDKey):     "32",
-					string(conventions.ServiceVersionKey):        *seg.AWS.Beanstalk.VersionLabel,
-					string(conventions.TelemetrySDKVersionKey):   *seg.AWS.XRay.SDKVersion,
-					string(conventions.TelemetrySDKNameKey):      *seg.AWS.XRay.SDK,
-					string(conventions.TelemetrySDKLanguageKey):  "Go",
+					"service.name":            *seg.Name,
+					"cloud.provider":          "aws",
+					"cloud.account.id":        *seg.AWS.AccountID,
+					"cloud.availability_zone": *seg.AWS.EC2.AvailabilityZone,
+					"host.id":                 *seg.AWS.EC2.InstanceID,
+					"host.type":               *seg.AWS.EC2.InstanceSize,
+					"host.image.id":           *seg.AWS.EC2.AmiID,
+					"container.name":          *seg.AWS.ECS.ContainerName,
+					"container.id":            *seg.AWS.ECS.ContainerID,
+					"service.namespace":       *seg.AWS.Beanstalk.Environment,
+					"service.instance.id":     "32",
+					"service.version":         *seg.AWS.Beanstalk.VersionLabel,
+					"telemetry.sdk.version":   *seg.AWS.XRay.SDKVersion,
+					"telemetry.sdk.name":      *seg.AWS.XRay.SDK,
+					"telemetry.sdk.language":  "Go",
 				}
 			},
 			expectedRecord: types.TelemetryRecord{
@@ -630,8 +673,8 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "minCauseIsExceptionId.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]any {
 				return map[string]any{
-					string(conventions.ServiceNameKey):   *seg.Name,
-					string(conventions.CloudProviderKey): "unknown",
+					"service.name":   *seg.Name,
+					"cloud.provider": "unknown",
 				}
 			},
 			expectedRecord: types.TelemetryRecord{
@@ -693,8 +736,8 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "indepSubsegment.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]any {
 				return map[string]any{
-					string(conventions.ServiceNameKey):   *seg.Name,
-					string(conventions.CloudProviderKey): "unknown",
+					"service.name":   *seg.Name,
+					"cloud.provider": "unknown",
 				}
 			},
 			expectedRecord: types.TelemetryRecord{
@@ -703,13 +746,12 @@ func TestTranslation(t *testing.T) {
 			},
 			propsPerSpan: func(_ *testing.T, _ string, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
-				assert.NoError(t, attrs.FromRaw(map[string]any{
-					string(conventions.HTTPMethodKey):                *seg.HTTP.Request.Method,
-					string(conventions.HTTPStatusCodeKey):            *seg.HTTP.Response.Status,
-					string(conventions.HTTPURLKey):                   *seg.HTTP.Request.URL,
-					string(conventions.HTTPResponseContentLengthKey): int64(seg.HTTP.Response.ContentLength.(float64)),
-					awsxray.AWSXRayTracedAttribute:                   true,
-				}))
+				rawMap := map[string]any{
+					"http.response_content_length": int64(seg.HTTP.Response.ContentLength.(float64)),
+					awsxray.AWSXRayTracedAttribute: true,
+				}
+				populateHTTPAttrsForTests(rawMap, seg.HTTP)
+				assert.NoError(t, attrs.FromRaw(rawMap))
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
 					spanID:       *seg.ID,
@@ -742,8 +784,8 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "indepSubsegmentWithContentLengthString.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]any {
 				return map[string]any{
-					string(conventions.ServiceNameKey):   *seg.Name,
-					string(conventions.CloudProviderKey): "unknown",
+					"service.name":   *seg.Name,
+					"cloud.provider": "unknown",
 				}
 			},
 			expectedRecord: types.TelemetryRecord{
@@ -752,13 +794,12 @@ func TestTranslation(t *testing.T) {
 			},
 			propsPerSpan: func(_ *testing.T, _ string, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
-				assert.NoError(t, attrs.FromRaw(map[string]any{
-					string(conventions.HTTPMethodKey):                *seg.HTTP.Request.Method,
-					string(conventions.HTTPStatusCodeKey):            *seg.HTTP.Response.Status,
-					string(conventions.HTTPURLKey):                   *seg.HTTP.Request.URL,
-					string(conventions.HTTPResponseContentLengthKey): seg.HTTP.Response.ContentLength.(string),
-					awsxray.AWSXRayTracedAttribute:                   true,
-				}))
+				rawMap := map[string]any{
+					"http.response_content_length": seg.HTTP.Response.ContentLength.(string),
+					awsxray.AWSXRayTracedAttribute: true,
+				}
+				populateHTTPAttrsForTests(rawMap, seg.HTTP)
+				assert.NoError(t, attrs.FromRaw(rawMap))
 
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -792,8 +833,8 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "indepSubsegmentWithSql.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]any {
 				return map[string]any{
-					string(conventions.ServiceNameKey):   *seg.Name,
-					string(conventions.CloudProviderKey): "unknown",
+					"service.name":   *seg.Name,
+					"cloud.provider": "unknown",
 				}
 			},
 			expectedRecord: types.TelemetryRecord{
@@ -803,12 +844,12 @@ func TestTranslation(t *testing.T) {
 			propsPerSpan: func(_ *testing.T, _ string, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
 				assert.NoError(t, attrs.FromRaw(map[string]any{
-					string(conventions.DBConnectionStringKey): "jdbc:postgresql://aawijb5u25wdoy.cpamxznpdoq8.us-west-2." +
+					"db.connection_string": "jdbc:postgresql://aawijb5u25wdoy.cpamxznpdoq8.us-west-2." +
 						"rds.amazonaws.com:5432",
-					string(conventions.DBNameKey):      "ebdb",
-					string(conventions.DBSystemKey):    *seg.SQL.DatabaseType,
-					string(conventions.DBStatementKey): *seg.SQL.SanitizedQuery,
-					string(conventions.DBUserKey):      *seg.SQL.User,
+					"db.name":      "ebdb",
+					"db.system":    *seg.SQL.DatabaseType,
+					"db.statement": *seg.SQL.SanitizedQuery,
+					"db.user":      *seg.SQL.User,
 				}))
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -864,8 +905,8 @@ func TestTranslation(t *testing.T) {
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "indepSubsegmentWithLocalNamespace.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]any {
 				return map[string]any{
-					string(conventions.ServiceNameKey):   *seg.Name,
-					string(conventions.CloudProviderKey): "unknown",
+					"service.name":   *seg.Name,
+					"cloud.provider": "unknown",
 				}
 			},
 			expectedRecord: types.TelemetryRecord{
@@ -885,6 +926,49 @@ func TestTranslation(t *testing.T) {
 					startTimeSec: *seg.StartTime,
 					endTimeSec:   seg.EndTime,
 					spanKind:     ptrace.SpanKindInternal,
+					spanStatus: spanSt{
+						code: ptrace.StatusCodeUnset,
+					},
+					attrs: attrs,
+				}
+				return []perSpanProperties{res}
+				// return nil
+			},
+			verification: func(testCase string,
+				_ *awsxray.Segment,
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error,
+			) {
+				assert.NoError(t, err, testCase+": translation should've succeeded")
+				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
+					testCase+": one segment should translate to 1 ResourceSpans")
+
+				actualRs := actualTraces.ResourceSpans().At(0)
+				assert.NoError(t, ptracetest.CompareResourceSpans(expectedRs, actualRs))
+			},
+		},
+		{
+			testCase:   "TranslateSegmentWithParentId",
+			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "segmentWithParentId.txt"),
+			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]any {
+				return map[string]any{
+					"service.name":   *seg.Name,
+					"cloud.provider": "unknown",
+				}
+			},
+			expectedRecord: types.TelemetryRecord{
+				SegmentsReceivedCount: aws.Int32(1),
+				SegmentsRejectedCount: aws.Int32(0),
+			},
+			propsPerSpan: func(_ *testing.T, _ string, seg *awsxray.Segment) []perSpanProperties {
+				attrs := pcommon.NewMap()
+				res := perSpanProperties{
+					traceID:      *seg.TraceID,
+					spanID:       *seg.ID,
+					parentSpanID: seg.ParentID,
+					name:         *seg.Name,
+					startTimeSec: *seg.StartTime,
+					endTimeSec:   seg.EndTime,
+					spanKind:     ptrace.SpanKindServer,
 					spanStatus: spanSt{
 						code: ptrace.StatusCodeUnset,
 					},
@@ -955,40 +1039,52 @@ func TestTranslation(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		t.Run(tc.testCase, func(t *testing.T) {
-			content, err := os.ReadFile(tc.samplePath)
-			assert.NoError(t, err, "cannot read raw segment")
-			assert.NotEmpty(t, content, "content length is 0")
+		for _, emitV0 := range []bool{true, false} {
+			for _, emitV1 := range []bool{true, false} {
+				if !emitV0 && !emitV1 {
+					continue
+				}
+				t.Run(fmt.Sprintf("%s/emitV0=%t/emitV1=%t", tc.testCase, emitV0, emitV1), func(t *testing.T) {
+					assert.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.ID(), !emitV0))
+					assert.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.ID(), emitV1))
 
-			var (
-				actualSeg  awsxray.Segment
-				expectedRs ptrace.ResourceSpans
-			)
-			if !tc.expectedUnmarshallFailure {
-				err = json.Unmarshal(content, &actualSeg)
-				// the correctness of the actual segment
-				// has been verified in the tracesegment_test.go
-				assert.NoError(t, err, "failed to unmarshal raw segment")
-				expectedRs = initResourceSpans(t,
-					&actualSeg,
-					tc.expectedResourceAttrs(&actualSeg),
-					tc.propsPerSpan(t, tc.testCase, &actualSeg),
-				)
-			}
+					content, err := os.ReadFile(tc.samplePath)
+					assert.NoError(t, err, "cannot read raw segment")
+					assert.NotEmpty(t, content, "content length is 0")
 
-			recorder := telemetry.NewRecorder()
-			traces, totalSpanCount, err := ToTraces(content, recorder)
-			if err == nil || (!tc.expectedUnmarshallFailure && expectedRs.ScopeSpans().Len() > 0 && expectedRs.ScopeSpans().At(0).Spans().Len() > 0) {
-				assert.Equal(t, totalSpanCount,
-					expectedRs.ScopeSpans().At(0).Spans().Len(),
-					"generated span count is different from the expected",
-				)
+					var (
+						actualSeg  awsxray.Segment
+						expectedRs ptrace.ResourceSpans
+					)
+					if !tc.expectedUnmarshallFailure {
+						err = json.Unmarshal(content, &actualSeg)
+						// the correctness of the actual segment
+						// has been verified in the tracesegment_test.go
+						assert.NoError(t, err, "failed to unmarshal raw segment")
+						expectedRs = initResourceSpans(t,
+							&actualSeg,
+							tc.expectedResourceAttrs(&actualSeg),
+							tc.propsPerSpan(t, tc.testCase, &actualSeg),
+						)
+					}
+
+					recorder := telemetry.NewRecorder()
+					traces, totalSpanCount, err := ToTraces(content, recorder)
+					if err == nil || (!tc.expectedUnmarshallFailure && expectedRs.ScopeSpans().Len() > 0 && expectedRs.ScopeSpans().At(0).Spans().Len() > 0) {
+						assert.Equal(t, totalSpanCount,
+							expectedRs.ScopeSpans().At(0).Spans().Len(),
+							"generated span count is different from the expected",
+						)
+					}
+					tc.verification(tc.testCase, &actualSeg, expectedRs, traces, err)
+					record := recorder.Rotate()
+					assert.Equal(t, *tc.expectedRecord.SegmentsReceivedCount, *record.SegmentsReceivedCount)
+					assert.Equal(t, *tc.expectedRecord.SegmentsRejectedCount, *record.SegmentsRejectedCount)
+					assert.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.ID(), false))
+					assert.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.ID(), false))
+				})
 			}
-			tc.verification(tc.testCase, &actualSeg, expectedRs, traces, err)
-			record := recorder.Rotate()
-			assert.Equal(t, *tc.expectedRecord.SegmentsReceivedCount, *record.SegmentsReceivedCount)
-			assert.Equal(t, *tc.expectedRecord.SegmentsRejectedCount, *record.SegmentsRejectedCount)
-		})
+		}
 	}
 }
 
@@ -998,11 +1094,11 @@ func initExceptionEvents(expectedSeg *awsxray.Segment) []eventProps {
 		attrs := pcommon.NewMap()
 		attrs.PutStr(awsxray.AWSXrayExceptionIDAttribute, *excp.ID)
 		if excp.Message != nil {
-			attrs.PutStr(string(conventions.ExceptionMessageKey), *excp.Message)
+			attrs.PutStr("exception.message", *excp.Message)
 		}
 
 		if excp.Type != nil {
-			attrs.PutStr(string(conventions.ExceptionTypeKey), *excp.Type)
+			attrs.PutStr("exception.type", *excp.Type)
 		}
 
 		if excp.Remote != nil {
@@ -1022,7 +1118,7 @@ func initExceptionEvents(expectedSeg *awsxray.Segment) []eventProps {
 		}
 
 		if len(excp.Stack) > 0 {
-			attrs.PutStr(string(conventions.ExceptionStacktraceKey), convertStackFramesToStackTraceStr(excp))
+			attrs.PutStr("exception.stacktrace", convertStackFramesToStackTraceStr(excp))
 		}
 		res = append(res, eventProps{
 			name:  ExceptionEventName,

@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -46,6 +47,17 @@ func Test_signalfxreceiver_New(t *testing.T) {
 		config       Config
 		nextConsumer consumer.Metrics
 	}
+	happyPathServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	happyPathServerConfig.WriteTimeout = 0
+	happyPathServerConfig.ReadHeaderTimeout = 0
+	happyPathServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	happyPathServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	happyPathServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:1234",
+	}
+
 	tests := []struct {
 		name         string
 		args         args
@@ -62,9 +74,7 @@ func Test_signalfxreceiver_New(t *testing.T) {
 			name: "happy_path",
 			args: args{
 				config: Config{
-					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "localhost:1234",
-					},
+					ServerConfig: happyPathServerConfig,
 				},
 				nextConsumer: consumertest.NewNop(),
 			},
@@ -89,7 +99,7 @@ func Test_signalfxreceiver_New(t *testing.T) {
 func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = addr
+	cfg.ServerConfig.NetAddr.Endpoint = addr
 	sink := new(consumertest.MetricsSink)
 	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *cfg)
 	require.NoError(t, err)
@@ -153,7 +163,8 @@ func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 	exp, err := signalfxexporter.NewFactory().CreateMetrics(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		expCfg)
+		expCfg,
+	)
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 	assert.Eventually(t, func() bool {
@@ -178,7 +189,7 @@ func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 
 func Test_sfxReceiver_handleReq(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 
 	currentTime := time.Now().Unix() * 1e3
 	sFxMsg := buildSFxDatapointMsg(currentTime, 13, 3)
@@ -447,8 +458,8 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 }
 
 func Test_sfxReceiver_handleEventReq(t *testing.T) {
-	config := (NewFactory()).CreateDefaultConfig().(*Config)
-	config.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 
 	currentTime := time.Now().Unix() * 1e3
 	sFxMsg := buildSFxEventMsg(currentTime, 3)
@@ -620,8 +631,8 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 func Test_sfxReceiver_TLS(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = addr
-	cfg.TLS = configoptional.Some(configtls.ServerConfig{
+	cfg.ServerConfig.NetAddr.Endpoint = addr
+	cfg.ServerConfig.TLS = configoptional.Some(configtls.ServerConfig{
 		Config: configtls.Config{
 			CertFile: "./testdata/server.crt",
 			KeyFile:  "./testdata/server.key",
@@ -708,9 +719,9 @@ func buildSFxDatapointMsg(time, value int64, dimensions uint) *sfxpb.DataPointUp
 				Metric:    "single",
 				Timestamp: time,
 				Value: sfxpb.Datum{
-					IntValue: int64Ptr(value),
+					IntValue: new(value),
 				},
-				MetricType: sfxTypePtr(sfxpb.MetricType_GAUGE),
+				MetricType: new(sfxpb.MetricType_GAUGE),
 				Dimensions: buildNDimensions(dimensions),
 			},
 		},
@@ -727,11 +738,11 @@ func buildSFxEventMsg(time int64, dimensions uint) *sfxpb.EventUploadMessage {
 					{
 						Key: "a",
 						Value: &sfxpb.PropertyValue{
-							StrValue: strPtr("b"),
+							StrValue: new("b"),
 						},
 					},
 				},
-				Category:   sfxCategoryPtr(sfxpb.EventCategory_USER_DEFINED),
+				Category:   new(sfxpb.EventCategory_USER_DEFINED),
 				Dimensions: buildNDimensions(dimensions),
 			},
 		},
@@ -748,22 +759,6 @@ func (badReqBody) Read([]byte) (n int, err error) {
 
 func (badReqBody) Close() error {
 	return nil
-}
-
-func strPtr(s string) *string {
-	return &s
-}
-
-func int64Ptr(i int64) *int64 {
-	return &i
-}
-
-func sfxTypePtr(t sfxpb.MetricType) *sfxpb.MetricType {
-	return &t
-}
-
-func sfxCategoryPtr(t sfxpb.EventCategory) *sfxpb.EventCategory {
-	return &t
 }
 
 func buildNDimensions(n uint) []*sfxpb.Dimension {

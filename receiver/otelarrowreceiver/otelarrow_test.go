@@ -93,7 +93,7 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 		},
 		{
 			okToIngest:   false,
-			expectedCode: codes.Unknown,
+			expectedCode: codes.Unavailable,
 		},
 		{
 			okToIngest:   true,
@@ -143,7 +143,7 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_accepted_spans",
 			Description: "Number of spans successfully pushed into the pipeline. [Alpha]",
-			Unit:        "{spans}",
+			Unit:        "{span}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
@@ -151,7 +151,8 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", testReceiverID.String()),
-							attribute.String("transport", "grpc")),
+							attribute.String("transport", "grpc"),
+						),
 						Value: int64(expectedReceivedBatches),
 					},
 				},
@@ -164,7 +165,7 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_refused_spans",
 			Description: "Number of spans that could not be pushed into the pipeline. [Alpha]",
-			Unit:        "{spans}",
+			Unit:        "{span}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
@@ -172,7 +173,8 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", testReceiverID.String()),
-							attribute.String("transport", "grpc")),
+							attribute.String("transport", "grpc"),
+						),
 						Value: int64(expectedIngestionBlockedRPCs),
 					},
 				},
@@ -201,7 +203,8 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 		t.Context(),
 		receivertest.NewNopSettings(componentmetadata.Type),
 		cfg,
-		consumertest.NewNop())
+		consumertest.NewNop(),
+	)
 
 	require.NoError(t, err)
 	assert.NotNil(t, r)
@@ -217,7 +220,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = addr
+	cfg.Protocols.GRPC.NetAddr.Endpoint = addr
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, testReceiverID, sink, nil)
 
@@ -232,7 +235,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	assert.NoError(t, cc.Close())
 	require.NoError(t, ocr.Shutdown(t.Context()))
 
-	cfg.GRPC.MaxRecvMsgSizeMiB = 100
+	cfg.Protocols.GRPC.MaxRecvMsgSizeMiB = 100
 
 	ocr = newReceiver(t, factory, tt, cfg, testReceiverID, sink, nil)
 
@@ -255,7 +258,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 func newGRPCReceiver(t *testing.T, endpoint string, settings component.TelemetrySettings, tc consumer.Traces, mc consumer.Metrics) component.Component {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = endpoint
+	cfg.Protocols.GRPC.NetAddr.Endpoint = endpoint
 	return newReceiver(t, factory, settings, cfg, testReceiverID, tc, mc)
 }
 
@@ -286,14 +289,15 @@ func TestStandardShutdown(t *testing.T) {
 	// Create OTelArrow receiver
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
+	cfg.Protocols.GRPC.NetAddr.Endpoint = endpointGrpc
 	set := receivertest.NewNopSettings(componentmetadata.Type)
 	set.ID = testReceiverID
 	r, err := NewFactory().CreateTraces(
 		t.Context(),
 		set,
 		cfg,
-		nextSink)
+		nextSink,
+	)
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
@@ -356,16 +360,16 @@ func TestOTelArrowShutdown(t *testing.T) {
 			// Create OTelArrow receiver
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.GRPC.Keepalive = configoptional.Some(configgrpc.KeepaliveServerConfig{
+			cfg.Protocols.GRPC.Keepalive = configoptional.Some(configgrpc.KeepaliveServerConfig{
 				ServerParameters: configoptional.None[configgrpc.KeepaliveServerParameters](),
 			})
 			if !cooperative {
-				cfg.GRPC.Keepalive.Get().ServerParameters = configoptional.Some(configgrpc.KeepaliveServerParameters{
+				cfg.Protocols.GRPC.Keepalive.Get().ServerParameters = configoptional.Some(configgrpc.KeepaliveServerParameters{
 					MaxConnectionAge:      time.Second,
 					MaxConnectionAgeGrace: 5 * time.Second,
 				})
 			}
-			cfg.GRPC.NetAddr.Endpoint = endpointGrpc
+			cfg.Protocols.GRPC.NetAddr.Endpoint = endpointGrpc
 			set := receivertest.NewNopSettings(componentmetadata.Type)
 			core, obslogs := observer.New(zapcore.DebugLevel)
 			set.Logger = zap.New(core)
@@ -375,7 +379,8 @@ func TestOTelArrowShutdown(t *testing.T) {
 				ctx,
 				set,
 				cfg,
-				nextSink)
+				nextSink,
+			)
 			require.NoError(t, err)
 			require.NotNil(t, r)
 			require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
@@ -408,22 +413,20 @@ func TestOTelArrowShutdown(t *testing.T) {
 			}()
 
 			var recvWG sync.WaitGroup
-			recvWG.Add(1)
 
 			// Receive batch responses. See the comment on
 			// https://pkg.go.dev/google.golang.org/grpc#ClientConn.NewStream
 			// to explain why this must be done.  We do not use the
 			// return value, this just avoids leaking the stream context,
 			// which can otherwise hang this test.
-			go func() {
-				defer recvWG.Done()
+			recvWG.Go(func() {
 				for {
 					if _, recvErr := stream.Recv(); recvErr == nil {
 						continue
 					}
 					break
 				}
-			}()
+			})
 
 			// Wait until the receiver outputs anything to the sink.
 			assert.Eventually(t, func() bool {
@@ -448,19 +451,67 @@ func TestOTelArrowShutdown(t *testing.T) {
 			// the sink should not change.
 			assert.Equal(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
 
-			shutdownCause := ""
-		scanLogs:
-			for _, log := range obslogs.All() {
-				if log.Message == "arrow stream shutdown" {
-					for _, f := range log.Context {
-						if f.Key == "message" {
-							shutdownCause = f.String
-							break scanLogs
-						}
+			// Verify the recv side observed the stream ending.
+			//
+			// In cooperative mode, the client called CloseSend() so the
+			// server-side Recv() returns io.EOF and we expect the Debug
+			// "arrow stream shutdown" log with message="EOF".
+			//
+			// In non-cooperative mode the gRPC server's MaxConnectionAge
+			// keepalive forces the transport closed.  Depending on
+			// platform/timing the resulting Recv() error may be a
+			// Canceled status (logged as "arrow stream shutdown") or a
+			// transport-closing status such as Unavailable (logged as
+			// "arrow stream error").  Either is a valid outcome of this
+			// shutdown path; we just verify the recv side reported a
+			// stream-ending event.
+			var shutdownLog, errorLog *observer.LoggedEntry
+			allLogs := obslogs.All()
+			for i := range allLogs {
+				switch allLogs[i].Message {
+				case "arrow stream shutdown":
+					if shutdownLog == nil {
+						shutdownLog = &allLogs[i]
+					}
+				case "arrow stream error":
+					if errorLog == nil {
+						errorLog = &allLogs[i]
 					}
 				}
 			}
-			assert.Equal(t, "EOF", shutdownCause)
+			fieldString := func(entry *observer.LoggedEntry, key string) string {
+				for _, f := range entry.Context {
+					if f.Key == key {
+						return f.String
+					}
+				}
+				return ""
+			}
+			fieldInt := func(entry *observer.LoggedEntry, key string) int64 {
+				for _, f := range entry.Context {
+					if f.Key == key {
+						return f.Integer
+					}
+				}
+				return 0
+			}
+			if cooperative {
+				if assert.NotNil(t, shutdownLog, "expected 'arrow stream shutdown' log") {
+					assert.Equal(t, "EOF", fieldString(shutdownLog, "message"))
+					assert.Equal(t, "recv", fieldString(shutdownLog, "where"))
+				}
+			} else {
+				switch {
+				case shutdownLog != nil:
+					assert.Equal(t, "recv", fieldString(shutdownLog, "where"))
+				case errorLog != nil:
+					assert.Equal(t, "recv", fieldString(errorLog, "where"))
+					assert.Equal(t, int64(codes.Unavailable), fieldInt(errorLog, "code"),
+						"unexpected gRPC code on recv-side stream error")
+				default:
+					assert.Fail(t, "expected one of 'arrow stream shutdown' or 'arrow stream error' log")
+				}
+			}
 		})
 	}
 }
@@ -583,8 +634,8 @@ func TestGRPCArrowReceiver(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = addr
-	cfg.GRPC.IncludeMetadata = true
+	cfg.Protocols.GRPC.NetAddr.Endpoint = addr
+	cfg.Protocols.GRPC.IncludeMetadata = true
 	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
@@ -693,9 +744,9 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = addr
-	cfg.GRPC.IncludeMetadata = true
-	cfg.GRPC.Auth = configoptional.Some(configauth.Config{
+	cfg.Protocols.GRPC.NetAddr.Endpoint = addr
+	cfg.Protocols.GRPC.IncludeMetadata = true
+	cfg.Protocols.GRPC.Auth = configoptional.Some(configauth.Config{
 		AuthenticatorID: authID,
 	})
 	id := component.NewID(componentmetadata.Type)
@@ -763,8 +814,8 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = addr
-	cfg.GRPC.IncludeMetadata = true
+	cfg.Protocols.GRPC.NetAddr.Endpoint = addr
+	cfg.Protocols.GRPC.IncludeMetadata = true
 	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
@@ -858,9 +909,9 @@ func TestOTelArrowHalfOpenShutdown(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.Keepalive = configoptional.None[configgrpc.KeepaliveServerConfig]()
+	cfg.Protocols.GRPC.Keepalive = configoptional.None[configgrpc.KeepaliveServerConfig]()
 	// No keepalive parameters are set
-	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
+	cfg.Protocols.GRPC.NetAddr.Endpoint = endpointGrpc
 	set := receivertest.NewNopSettings(componentmetadata.Type)
 
 	set.ID = testReceiverID
@@ -868,7 +919,8 @@ func TestOTelArrowHalfOpenShutdown(t *testing.T) {
 		ctx,
 		set,
 		cfg,
-		nextSink)
+		nextSink,
+	)
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))

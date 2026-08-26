@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -25,8 +24,8 @@ import (
 func createTestResourceMetrics() pmetric.ResourceMetrics {
 	rm := pmetric.NewResourceMetrics()
 	rm.Resource().Attributes().PutStr(occonventions.AttributeExporterVersion, "SomeVersion")
-	rm.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "myServiceName")
-	rm.Resource().Attributes().PutStr(string(conventions.ServiceNamespaceKey), "myServiceNS")
+	rm.Resource().Attributes().PutStr("service.name", "myServiceName")
+	rm.Resource().Attributes().PutStr("service.namespace", "myServiceNS")
 	rm.Resource().Attributes().PutStr("ClusterName", "myCluster")
 	rm.Resource().Attributes().PutStr("PodName", "myPod")
 	rm.Resource().Attributes().PutStr(attributeReceiver, prometheusReceiver)
@@ -258,8 +257,8 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	ilm.Scope().SetName("cloudwatch-lib")
 
 	noNamespaceMetric := createTestResourceMetrics()
-	noNamespaceMetric.Resource().Attributes().Remove(string(conventions.ServiceNamespaceKey))
-	noNamespaceMetric.Resource().Attributes().Remove(string(conventions.ServiceNameKey))
+	noNamespaceMetric.Resource().Attributes().Remove("service.namespace")
+	noNamespaceMetric.Resource().Attributes().Remove("service.name")
 
 	counterSumMetrics := map[string]*metricInfo{
 		"spanCounter": {
@@ -302,13 +301,13 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 			"w/ instrumentation library and namespace",
 			instrLibMetric,
 			map[string]string{
-				(oTellibDimensionKey): "cloudwatch-lib",
-				"isItAnError":         "false",
-				"spanName":            "testSpan",
+				oTellibDimensionKey: "cloudwatch-lib",
+				"isItAnError":       "false",
+				"spanName":          "testSpan",
 			},
 			map[string]string{
-				(oTellibDimensionKey): "cloudwatch-lib",
-				"spanName":            "testSpan",
+				oTellibDimensionKey: "cloudwatch-lib",
+				"spanName":          "testSpan",
 			},
 			"myServiceNS/myServiceName",
 		},
@@ -370,7 +369,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 	t.Run("No metrics", func(t *testing.T) {
 		rm := pmetric.NewResourceMetrics()
-		rm.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "myServiceName")
+		rm.Resource().Attributes().PutStr("service.name", "myServiceName")
 		rm.Resource().Attributes().PutStr(occonventions.AttributeExporterVersion, "SomeVersion")
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
@@ -1020,8 +1019,8 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 		{
 			"Single label, no rollup, w/ otel dim",
 			map[string]string{
-				"a":                   "foo",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				oTellibDimensionKey: instrLibName,
 			},
 			"",
 			[][]string{
@@ -1039,8 +1038,8 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 		{
 			"Single label, single rollup, w/ otel dim",
 			map[string]string{
-				"a":                   "foo",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				oTellibDimensionKey: instrLibName,
 			},
 			singleDimensionRollupOnly,
 			[][]string{
@@ -1059,8 +1058,8 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 		{
 			"Single label, zero + single rollup, w/ otel dim",
 			map[string]string{
-				"a":                   "foo",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				oTellibDimensionKey: instrLibName,
 			},
 			zeroAndSingleDimensionRollup,
 			[][]string{
@@ -1083,10 +1082,10 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 		{
 			"Multiple label, no rollup, w/ otel dim",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				"c":                   "car",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				"c":                 "car",
+				oTellibDimensionKey: instrLibName,
 			},
 			"",
 			[][]string{
@@ -1112,10 +1111,10 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 		{
 			"Multiple label, rollup, w/ otel dim",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				"c":                   "car",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				"c":                 "car",
+				oTellibDimensionKey: instrLibName,
 			},
 			zeroAndSingleDimensionRollup,
 			[][]string{
@@ -1608,8 +1607,8 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"Single label w/ no rollup",
 			map[string]string{
-				"a":                   "foo",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1623,8 +1622,8 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"Single label + OTelLib w/ no rollup",
 			map[string]string{
-				"a":                   "foo",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1638,8 +1637,8 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"Single label w/ single rollup",
 			map[string]string{
-				"a":                   "foo",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1653,8 +1652,8 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"Single label w/ zero/single rollup",
 			map[string]string{
-				"a":                   "foo",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1668,8 +1667,8 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"Single label + Otel w/ zero/single rollup",
 			map[string]string{
-				"a":                   "foo",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1683,9 +1682,9 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple labels w/ no rollup",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1699,9 +1698,9 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple labels w/ rollup",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1720,9 +1719,9 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple labels + multiple dimensions w/ no rollup",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1736,9 +1735,9 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple labels + multiple dimensions + oTellibDimensionKey w/ no rollup",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1752,9 +1751,9 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple labels + multiple dimensions w/ rollup",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1774,9 +1773,9 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple labels, multiple dimensions w/ invalid dimension",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1795,10 +1794,10 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple labels, multiple dimensions w/ missing dimension",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				"c":                   "car",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				"c":                 "car",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1819,10 +1818,10 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple metric declarations w/ no rollup",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				"c":                   "car",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				"c":                 "car",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1850,10 +1849,10 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple metric declarations w/ rollup",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				"c":                   "car",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				"c":                 "car",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1885,10 +1884,10 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"remove measurements with no dimensions",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				"c":                   "car",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				"c":                 "car",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1909,10 +1908,10 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		{
 			"multiple declarations w/ no dimensions",
 			map[string]string{
-				"a":                   "foo",
-				"b":                   "bar",
-				"c":                   "car",
-				(oTellibDimensionKey): instrLibName,
+				"a":                 "foo",
+				"b":                 "bar",
+				"c":                 "car",
+				oTellibDimensionKey: instrLibName,
 			},
 			[]*MetricDeclaration{
 				{
@@ -1958,7 +1957,7 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 			groupedMetric := &groupedMetric{
 				labels: tc.labels,
 				metrics: map[string]*metricInfo{
-					(metricName): {
+					metricName: {
 						value: int64(5),
 						unit:  "Count",
 					},

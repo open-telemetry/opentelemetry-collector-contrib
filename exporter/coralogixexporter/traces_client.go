@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/validation"
 )
 
 func newTracesExporter(cfg component.Config, set exporter.Settings) (*tracesExporter, error) {
@@ -20,7 +22,7 @@ func newTracesExporter(cfg component.Config, set exporter.Settings) (*tracesExpo
 		return nil, fmt.Errorf("invalid config exporter, expect type: %T, got: %T", &Config{}, cfg)
 	}
 
-	signalExporter, err := newSignalExporter(oCfg, set, oCfg.Traces.Endpoint, oCfg.Traces.Headers)
+	signalExporter, err := newSignalExporter(oCfg, set, oCfg.Traces.ClientConfig.Endpoint, oCfg.Traces.ClientConfig.Headers)
 	if err != nil {
 		return nil, err
 	}
@@ -83,29 +85,15 @@ func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error
 		}
 
 		if e.settings.Logger.Level() == zap.DebugLevel {
-			// We need to deduplicate the trace IDs because the same trace ID
-			// can be sent multiple times
-			traceIDSet := make(map[string]struct{})
-			rss := td.ResourceSpans()
-			for i := 0; i < rss.Len(); i++ {
-				ss := rss.At(i).ScopeSpans()
-				for j := 0; j < ss.Len(); j++ {
-					spans := ss.At(j).Spans()
-					for k := 0; k < spans.Len(); k++ {
-						traceIDSet[spans.At(k).TraceID().String()] = struct{}{}
-					}
-				}
-			}
-			traceIDs := make([]string, 0, len(traceIDSet))
-			for traceID := range traceIDSet {
-				traceIDs = append(traceIDs, traceID)
-			}
-			logFields = append(logFields, zap.Strings("trace_ids", traceIDs))
+			logFields = append(logFields, validation.BuildPartialSuccessLogFieldsForTraces(
+				partialSuccess.ErrorMessage(),
+				td,
+				cxAppNameAttrName,
+				cxSubsystemNameAttrName,
+			)...)
 		}
 
-		e.settings.Logger.Error("Partial success response from Coralogix",
-			logFields...,
-		)
+		e.settings.Logger.Error("Partial success response from Coralogix", logFields...)
 	}
 
 	e.rateError.errorCount.Store(0)

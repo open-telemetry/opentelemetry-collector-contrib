@@ -289,6 +289,25 @@ func (v *vcenterMetricScraper) buildVMMetrics(
 		return crRef, groupInfo, fmt.Errorf("no collected ComputeResource for VM [%s]'s ComputeResource ref: %s", vm.Name, crRef)
 	}
 
+	groupInfo = &vmGroupInfo{poweredOff: 0, poweredOn: 0, suspended: 0, templates: 0}
+	if vm.Config != nil && vm.Config.Template {
+		groupInfo.templates++
+	} else {
+		switch vm.Runtime.PowerState {
+		case "poweredOff":
+			groupInfo.poweredOff++
+		case "poweredOn":
+			groupInfo.poweredOn++
+		default:
+			groupInfo.suspended++
+		}
+	}
+
+	// Powered-off/suspended/template VMs can have incomplete data from vSphere.
+	if vm.Config == nil || vm.Summary.Storage == nil {
+		return crRef, groupInfo, nil
+	}
+
 	// Get related VM host info
 	hsRef := vm.Summary.Runtime.Host
 	if hsRef == nil {
@@ -305,20 +324,6 @@ func (v *vcenterMetricScraper) buildVMMetrics(
 	var rp *mo.ResourcePool
 	if rpRef != nil {
 		rp = v.scrapeData.rPoolsByRef[rpRef.Value]
-	}
-
-	groupInfo = &vmGroupInfo{poweredOff: 0, poweredOn: 0, suspended: 0, templates: 0}
-	if vm.Config != nil && vm.Config.Template {
-		groupInfo.templates++
-	} else {
-		switch vm.Runtime.PowerState {
-		case "poweredOff":
-			groupInfo.poweredOff++
-		case "poweredOn":
-			groupInfo.poweredOn++
-		default:
-			groupInfo.suspended++
-		}
 	}
 
 	// Create VM resource builder

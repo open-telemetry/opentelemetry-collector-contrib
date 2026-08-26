@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -40,9 +39,9 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr("10byteslog")
-		logRecord.Attributes().PutStr(string(conventions.ServiceNameKey), "myapp")
+		logRecord.Attributes().PutStr("service.name", "myapp")
 		logRecord.Attributes().PutStr("my-label", "myapp-type")
-		logRecord.Attributes().PutStr(string(conventions.HostNameKey), "myhost")
+		logRecord.Attributes().PutStr("host.name", "myhost")
 		logRecord.Attributes().PutStr("custom", "custom")
 		logRecord.SetTimestamp(ts)
 	}
@@ -255,13 +254,13 @@ func Test404IngestError(t *testing.T) {
 	err := exporter.pushLogData(t.Context(), logs)
 	require.NoError(t, err)
 
-	assert.Equal(t, 2, logObserver.Len())
+	assert.Equal(t, 3, logObserver.Len())
 
-	logLine := logObserver.All()[0]
+	logLine := logObserver.All()[1]
 	assert.Equal(t, "got http status (/foobar): 404 Not Found", logLine.Message)
 	assert.Equal(t, zapcore.ErrorLevel, logLine.Level)
 
-	logLine = logObserver.All()[1]
+	logLine = logObserver.All()[2]
 	assert.Equal(t, "http response", logLine.Message)
 	assert.Equal(t, zapcore.DebugLevel, logLine.Level)
 

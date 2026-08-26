@@ -12,3 +12,9 @@ sigv4auth/web_identity:
   assume_role:
     arn: "arn:aws:iam::12345678910:role/my_role"
     web_identity_token_file: "testdata/token_file"
+sigv4auth/external_id:
+  region: "region"
+  service: "service"
+  assume_role:
+    arn: "arn:aws:iam::12345678910:role/my_role"
+    external_id: "my-external-id"

@@ -1,6 +1,6 @@
 name: "Project: Tidy"
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, ready_for_review, synchronize, reopened, labeled, unlabeled]
     branches:
       - main
@@ -17,29 +17,19 @@ jobs:
   setup-environment:
     permissions:
       contents: write # required for pushing changes
+      pull-requests: write # for gh pr edit --remove-label
     timeout-minutes: 30
     runs-on: ubuntu-24.04
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependency-major-update') && (github.actor == 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, 'renovatebot')) }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependency-major-update') && (github.event.pull_request.user.login == 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, 'renovatebot')) && github.event.pull_request.head.repo.fork == false }}
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.head_ref }}
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
-        id: go-setup
+          # Keep token so the `go mod tidy` step can push.
+          persist-credentials: true # zizmor: ignore[artipacked]
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
-      - uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
-        id: otelbot-token
-        with:
-          app-id: ${{ vars.OTELBOT_APP_ID }}
-          private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
       - name: go mod tidy, make genotelcontribcol and make genoteltestbedcol
         run: |
           make gotidy && make genotelcontribcol && make genoteltestbedcol
@@ -47,8 +37,8 @@ jobs:
           git config user.email 197425009+otelbot@users.noreply.github.com
           echo "git diff --exit-code || (git add . && git commit -m \"go mod tidy, make genotelcontribcol and make genoteltestbedcol\" && git push)"
           git diff --exit-code || (git add . && git commit -m "go mod tidy, make genotelcontribcol and make genoteltestbedcol" && git push)
+      - name: Remove renovatebot label
         env:
-          GITHUB_TOKEN: ${{ steps.otelbot-token.outputs.token }}
-      - uses: actions-ecosystem/action-remove-labels@2ce5d41b4b6aa8503e285553f75ed56e0a40bae0 # v1
-        with:
-          labels: renovatebot
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr edit "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --remove-label renovatebot
+      - run: ./.github/workflows/scripts/check-disk-space.sh

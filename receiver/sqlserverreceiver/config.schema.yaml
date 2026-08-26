@@ -1,0 +1,75 @@
+$defs:
+  connection_pool:
+    description: ConnectionPool configures the shared database connection pool used by all scrapers of the receiver. Any field left unset falls back to a default derived from the number of scrapers (see setConnectionPoolSettings).
+    type: object
+    properties:
+      max_idle:
+        description: MaxIdle is the maximum number of idle connections kept in the pool.
+        x-pointer: true
+        type: integer
+      max_idle_time:
+        description: MaxIdleTime is the maximum amount of time a connection may be idle before being closed. Zero means connections are not closed due to idle time.
+        x-pointer: true
+        type: string
+        format: duration
+      max_lifetime:
+        description: MaxLifetime is the maximum amount of time a connection may be reused. Zero means connections are reused forever.
+        x-pointer: true
+        type: string
+        format: duration
+      max_open:
+        description: MaxOpen is the maximum number of open connections to the database. Zero means unlimited.
+        x-pointer: true
+        type: integer
+  query_sample:
+    type: object
+    properties:
+      max_rows_per_query:
+        type: integer
+        x-customType: uint64
+  top_query_collection:
+    type: object
+    properties:
+      collection_interval:
+        type: string
+        format: duration
+      lookback_time:
+        description: Enabled enables the collection of the top queries by the execution time. It will collect the top N queries based on totalElapsedTimeDiffs during the last collection interval. The query statement will also be reported, hence, it is not ideal to send it as a metric. Hence we are reporting them as logs. The `N` is configured via `TopQueryCount`
+        type: string
+        format: duration
+      max_query_sample_count:
+        type: integer
+        x-customType: uint
+      top_query_count:
+        type: integer
+        x-customType: uint
+description: Config defines configuration for a sqlserver receiver.
+type: object
+properties:
+  computer_name:
+    type: string
+  connection_pool:
+    description: ConnectionPool tunes the shared database connection pool used by all scrapers of this receiver.
+    $ref: connection_pool
+  datasource:
+    type: string
+  instance_name:
+    type: string
+  password:
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  port:
+    type: integer
+    x-customType: uint
+  query_sample_collection:
+    $ref: query_sample
+  server:
+    type: string
+  top_query_collection:
+    description: EnableTopQueryCollection enables the collection of the top queries by the execution time. It will collect the top N queries based on totalElapsedTimeDiffs during the last collection interval. The query statement will also be reported, hence, it is not ideal to send it as a metric. Hence we are reporting them as logs. The `N` is configured via `TopQueryCount`
+    $ref: top_query_collection
+  username:
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: ./internal/metadata.metrics_builder_config
+  - $ref: ./internal/metadata.logs_builder_config

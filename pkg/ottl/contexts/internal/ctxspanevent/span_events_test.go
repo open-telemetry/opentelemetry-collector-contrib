@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 var spanID2 = [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
@@ -53,6 +53,7 @@ func TestPathGetSetter(t *testing.T) {
 		orig              any
 		newVal            any
 		expectSetterError bool
+		nilNoError        bool
 		modified          func(spanEvent ptrace.SpanEvent)
 	}{
 		{
@@ -98,6 +99,7 @@ func TestPathGetSetter(t *testing.T) {
 			modified: func(spanEvent ptrace.SpanEvent) {
 				newAttrs.CopyTo(spanEvent.Attributes())
 			},
+			nilNoError: true,
 		},
 		{
 			name: "attributes raw map",
@@ -109,6 +111,7 @@ func TestPathGetSetter(t *testing.T) {
 			modified: func(spanEvent ptrace.SpanEvent) {
 				_ = spanEvent.Attributes().FromRaw(newAttrs.AsRaw())
 			},
+			nilNoError: true,
 		},
 		{
 			name: "attributes string",
@@ -116,12 +119,13 @@ func TestPathGetSetter(t *testing.T) {
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
 					&pathtest.Key[*testContext]{
-						S: ottltest.Strp("str"),
+						S: new("str"),
 					},
 				},
 			},
-			orig:   "val",
-			newVal: "newVal",
+			orig:       "val",
+			newVal:     "newVal",
+			nilNoError: true,
 			modified: func(spanEvent ptrace.SpanEvent) {
 				spanEvent.Attributes().PutStr("str", "newVal")
 			},
@@ -132,12 +136,13 @@ func TestPathGetSetter(t *testing.T) {
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
 					&pathtest.Key[*testContext]{
-						S: ottltest.Strp("bool"),
+						S: new("bool"),
 					},
 				},
 			},
-			orig:   true,
-			newVal: false,
+			orig:       true,
+			newVal:     false,
+			nilNoError: true,
 			modified: func(spanEvent ptrace.SpanEvent) {
 				spanEvent.Attributes().PutBool("bool", false)
 			},
@@ -148,12 +153,13 @@ func TestPathGetSetter(t *testing.T) {
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
 					&pathtest.Key[*testContext]{
-						S: ottltest.Strp("int"),
+						S: new("int"),
 					},
 				},
 			},
-			orig:   int64(10),
-			newVal: int64(20),
+			orig:       int64(10),
+			newVal:     int64(20),
+			nilNoError: true,
 			modified: func(spanEvent ptrace.SpanEvent) {
 				spanEvent.Attributes().PutInt("int", 20)
 			},
@@ -164,12 +170,13 @@ func TestPathGetSetter(t *testing.T) {
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
 					&pathtest.Key[*testContext]{
-						S: ottltest.Strp("double"),
+						S: new("double"),
 					},
 				},
 			},
-			orig:   float64(1.2),
-			newVal: float64(2.4),
+			orig:       float64(1.2),
+			newVal:     float64(2.4),
+			nilNoError: true,
 			modified: func(spanEvent ptrace.SpanEvent) {
 				spanEvent.Attributes().PutDouble("double", 2.4)
 			},
@@ -180,12 +187,13 @@ func TestPathGetSetter(t *testing.T) {
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
 					&pathtest.Key[*testContext]{
-						S: ottltest.Strp("bytes"),
+						S: new("bytes"),
 					},
 				},
 			},
-			orig:   []byte{1, 3, 2},
-			newVal: []byte{2, 3, 4},
+			orig:       []byte{1, 3, 2},
+			newVal:     []byte{2, 3, 4},
+			nilNoError: true,
 			modified: func(spanEvent ptrace.SpanEvent) {
 				spanEvent.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
@@ -196,7 +204,7 @@ func TestPathGetSetter(t *testing.T) {
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
 					&pathtest.Key[*testContext]{
-						S: ottltest.Strp("arr_str"),
+						S: new("arr_str"),
 					},
 				},
 			},
@@ -204,7 +212,8 @@ func TestPathGetSetter(t *testing.T) {
 				val, _ := refSpanEvent.Attributes().Get("arr_str")
 				return val.Slice()
 			}(),
-			newVal: []string{"new"},
+			newVal:     []string{"new"},
+			nilNoError: true,
 			modified: func(spanEvent ptrace.SpanEvent) {
 				spanEvent.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStr("new")
 			},
@@ -215,7 +224,7 @@ func TestPathGetSetter(t *testing.T) {
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
 					&pathtest.Key[*testContext]{
-						S: ottltest.Strp("arr_bool"),
+						S: new("arr_bool"),
 					},
 				},
 			},
@@ -223,7 +232,8 @@ func TestPathGetSetter(t *testing.T) {
 				val, _ := refSpanEvent.Attributes().Get("arr_bool")
 				return val.Slice()
 			}(),
-			newVal: []bool{false},
+			newVal:     []bool{false},
+			nilNoError: true,
 			modified: func(spanEvent ptrace.SpanEvent) {
 				spanEvent.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBool(false)
 			},
@@ -234,7 +244,7 @@ func TestPathGetSetter(t *testing.T) {
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
 					&pathtest.Key[*testContext]{
-						S: ottltest.Strp("arr_int"),
+						S: new("arr_int"),
 					},
 				},
 			},
@@ -242,7 +252,8 @@ func TestPathGetSetter(t *testing.T) {
 				val, _ := refSpanEvent.Attributes().Get("arr_int")
 				return val.Slice()
 			}(),
-			newVal: []int64{20},
+			newVal:     []int64{20},
+			nilNoError: true,
 			modified: func(spanEvent ptrace.SpanEvent) {
 				spanEvent.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetInt(20)
 			},
@@ -253,7 +264,7 @@ func TestPathGetSetter(t *testing.T) {
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
 					&pathtest.Key[*testContext]{
-						S: ottltest.Strp("arr_float"),
+						S: new("arr_float"),
 					},
 				},
 			},
@@ -261,7 +272,8 @@ func TestPathGetSetter(t *testing.T) {
 				val, _ := refSpanEvent.Attributes().Get("arr_float")
 				return val.Slice()
 			}(),
-			newVal: []float64{2.0},
+			newVal:     []float64{2.0},
+			nilNoError: true,
 			modified: func(spanEvent ptrace.SpanEvent) {
 				spanEvent.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDouble(2.0)
 			},
@@ -272,7 +284,7 @@ func TestPathGetSetter(t *testing.T) {
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
 					&pathtest.Key[*testContext]{
-						S: ottltest.Strp("arr_bytes"),
+						S: new("arr_bytes"),
 					},
 				},
 			},
@@ -280,7 +292,8 @@ func TestPathGetSetter(t *testing.T) {
 				val, _ := refSpanEvent.Attributes().Get("arr_bytes")
 				return val.Slice()
 			}(),
-			newVal: [][]byte{{9, 6, 4}},
+			newVal:     [][]byte{{9, 6, 4}},
+			nilNoError: true,
 			modified: func(spanEvent ptrace.SpanEvent) {
 				spanEvent.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
 			},
@@ -291,7 +304,7 @@ func TestPathGetSetter(t *testing.T) {
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
 					&pathtest.Key[*testContext]{
-						S: ottltest.Strp("pMap"),
+						S: new("pMap"),
 					},
 				},
 			},
@@ -299,7 +312,8 @@ func TestPathGetSetter(t *testing.T) {
 				val, _ := refSpanEvent.Attributes().Get("pMap")
 				return val.Map()
 			}(),
-			newVal: newPMap,
+			newVal:     newPMap,
+			nilNoError: true,
 			modified: func(spanEvent ptrace.SpanEvent) {
 				m := spanEvent.Attributes().PutEmptyMap("pMap")
 				m2 := m.PutEmptyMap("k2")
@@ -312,7 +326,7 @@ func TestPathGetSetter(t *testing.T) {
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
 					&pathtest.Key[*testContext]{
-						S: ottltest.Strp("map"),
+						S: new("map"),
 					},
 				},
 			},
@@ -320,7 +334,8 @@ func TestPathGetSetter(t *testing.T) {
 				val, _ := refSpanEvent.Attributes().Get("map")
 				return val.Map()
 			}(),
-			newVal: newMap,
+			newVal:     newMap,
+			nilNoError: true,
 			modified: func(spanEvent ptrace.SpanEvent) {
 				m := spanEvent.Attributes().PutEmptyMap("map")
 				m2 := m.PutEmptyMap("k2")
@@ -333,13 +348,13 @@ func TestPathGetSetter(t *testing.T) {
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
 					&pathtest.Key[*testContext]{
-						S: ottltest.Strp("slice"),
+						S: new("slice"),
 					},
 					&pathtest.Key[*testContext]{
-						I: ottltest.Intp(0),
+						I: new(int64(0)),
 					},
 					&pathtest.Key[*testContext]{
-						S: ottltest.Strp("map"),
+						S: new("map"),
 					},
 				},
 			},
@@ -348,7 +363,8 @@ func TestPathGetSetter(t *testing.T) {
 				val, _ = val.Slice().At(0).Map().Get("map")
 				return val.Str()
 			}(),
-			newVal: "new",
+			newVal:     "new",
+			nilNoError: true,
 			modified: func(spanEvent ptrace.SpanEvent) {
 				spanEvent.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
 			},
@@ -359,20 +375,21 @@ func TestPathGetSetter(t *testing.T) {
 				N: "attributes",
 				KeySlice: []ottl.Key[*testContext]{
 					&pathtest.Key[*testContext]{
-						S: ottltest.Strp("new"),
+						S: new("new"),
 					},
 					&pathtest.Key[*testContext]{
-						I: ottltest.Intp(2),
+						I: new(int64(2)),
 					},
 					&pathtest.Key[*testContext]{
-						I: ottltest.Intp(0),
+						I: new(int64(0)),
 					},
 				},
 			},
 			orig: func() any {
 				return nil
 			}(),
-			newVal: "new",
+			newVal:     "new",
+			nilNoError: true,
 			modified: func(spanEvent ptrace.SpanEvent) {
 				s := spanEvent.Attributes().PutEmptySlice("new")
 				s.AppendEmpty()
@@ -405,14 +422,14 @@ func TestPathGetSetter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			accessor, err := ctxspanevent.PathGetSetter(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			spanEvent := createTelemetry()
 
 			tCtx := newTestContext(spanEvent)
 
 			got, err := accessor.Get(t.Context(), tCtx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(t.Context(), tCtx, tt.newVal)
@@ -420,7 +437,19 @@ func TestPathGetSetter(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
+
+			// Verify that setting an invalid type returns an error
+			err = accessor.Set(t.Context(), tCtx, struct{}{})
+			require.Error(t, err)
+
+			// Verify nil handling
+			err = accessor.Set(t.Context(), newTestContext(createTelemetry()), nil)
+			if tt.nilNoError {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
 
 			exSpanEvent := createTelemetry()
 			tt.modified(exSpanEvent)

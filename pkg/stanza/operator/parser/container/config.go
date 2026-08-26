@@ -6,22 +6,23 @@ package container // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"errors"
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	stanza_errors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/recombine"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 )
 
 const (
 	operatorType              = "container"
 	recombineSourceIdentifier = attrs.LogFilePath
 	recombineIsLastEntry      = "attributes.logtag == 'F'"
+	defaultMaxLogSize         = 1024 * 1024
 )
 
 func init() {
@@ -39,7 +40,7 @@ func NewConfigWithID(operatorID string) *Config {
 		ParserConfig:            helper.NewParserConfig(operatorID, operatorType),
 		Format:                  "",
 		AddMetadataFromFilePath: true,
-		MaxLogSize:              0,
+		MaxLogSize:              defaultMaxLogSize,
 	}
 }
 
@@ -63,7 +64,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		switch c.Format {
 		case dockerFormat, crioFormat, containerdFormat:
 		default:
-			return &Parser{}, stanza_errors.NewError(
+			return &Parser{}, stanzaerrors.NewError(
 				"operator config has an invalid `format` field.",
 				"ensure that the `format` field is set to one of `docker`, `crio`, `containerd`.",
 				"format", c.OnError,
@@ -71,16 +72,18 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		}
 	}
 
-	wg := sync.WaitGroup{}
-
 	p := &Parser{
 		ParserOperator:          parserOperator,
 		format:                  c.Format,
 		addMetadataFromFilepath: c.AddMetadataFromFilePath,
-		criConsumers:            &wg,
+	}
+	var cLogEmitter helper.LogEmitter
+	if metadata.StanzaSynchronousLogEmitterFeatureGate.IsEnabled() {
+		cLogEmitter = helper.NewSynchronousLogEmitter(set, p.consumeEntries)
+	} else {
+		cLogEmitter = helper.NewBatchingLogEmitter(set, p.consumeEntries)
 	}
 
-	cLogEmitter := helper.NewBatchingLogEmitter(set, p.consumeEntries)
 	p.criLogEmitter = cLogEmitter
 	recombineParser, err := createRecombine(set, c, cLogEmitter)
 	if err != nil {
@@ -98,10 +101,10 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 //	combine_field: body
 //	combine_with: ""
 //	is_last_entry: attributes.logtag == 'F'
-//	max_log_size: 102400
+//	max_log_size: 1048576 (1MiB)
 //	source_identifier: attributes["log.file.path"]
 //	type: recombine
-func createRecombine(set component.TelemetrySettings, c Config, cLogEmitter *helper.BatchingLogEmitter) (operator.Operator, error) {
+func createRecombine(set component.TelemetrySettings, c Config, cLogEmitter helper.LogEmitter) (operator.Operator, error) {
 	recombineParserCfg := createRecombineConfig(c)
 	recombineParser, err := recombineParserCfg.Build(set)
 	if err != nil {
@@ -109,7 +112,7 @@ func createRecombine(set component.TelemetrySettings, c Config, cLogEmitter *hel
 	}
 
 	// set the LogEmmiter as the output of the recombine parser
-	recombineParser.SetOutputIDs([]string{cLogEmitter.OperatorID})
+	recombineParser.SetOutputIDs([]string{cLogEmitter.ID()})
 	if err := recombineParser.SetOutputs([]operator.Operator{cLogEmitter}); err != nil {
 		return nil, errors.New("failed to set outputs of internal recombine")
 	}
@@ -124,5 +127,9 @@ func createRecombineConfig(c Config) *recombine.Config {
 	recombineParserCfg.CombineWith = ""
 	recombineParserCfg.SourceIdentifier = entry.NewAttributeField(recombineSourceIdentifier)
 	recombineParserCfg.MaxLogSize = c.MaxLogSize
+	// Set batch sizes to 0 (unlimited) - rely on max_log_size for protection
+	recombineParserCfg.MaxBatchSize = 0
+	recombineParserCfg.MaxUnmatchedBatchSize = 0
+
 	return recombineParserCfg
 }

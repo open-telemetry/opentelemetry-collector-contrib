@@ -5,6 +5,7 @@ package clickhouseexporter
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -15,10 +16,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
@@ -49,15 +51,16 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
-				collectorVersion: "unknown",
-				Endpoint:         defaultEndpoint,
-				Database:         "otel",
-				Username:         "foo",
-				Password:         "bar",
-				TTL:              72 * time.Hour,
-				LogsTableName:    "otel_logs",
-				TracesTableName:  "otel_traces",
-				CreateSchema:     true,
+				collectorVersion:  "unknown",
+				Endpoint:          defaultEndpoint,
+				Database:          "otel",
+				Username:          "foo",
+				Password:          "bar",
+				TTL:               72 * time.Hour,
+				LogsTableName:     "otel_logs",
+				TracesTableName:   "otel_traces",
+				ProfilesTableName: "otel_profiles",
+				CreateSchema:      true,
 				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 5 * time.Second,
 				},
@@ -77,13 +80,13 @@ func TestLoadConfig(t *testing.T) {
 					ExponentialHistogram: metrics.MetricTypeConfig{Name: "otel_metrics_custom_exp_histogram"},
 				},
 				ConnectionParams: map[string]string{},
-				QueueSettings: func() exporterhelper.QueueBatchConfig {
+				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
 					queue.NumConsumers = 10
 					queue.QueueSize = 100
 					queue.StorageID = &storageID
 					return queue
-				}(),
+				}()),
 				AsyncInsert: true,
 				TLS: configtls.ClientConfig{
 					Config: configtls.Config{
@@ -95,6 +98,40 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}
 
+	jsonCfg := createDefaultConfig()
+	jsonCfg.(*Config).Endpoint = defaultEndpoint
+	jsonCfg.(*Config).JSON = true
+
+	tests = append(tests, struct {
+		id       component.ID
+		expected component.Config
+	}{
+		id:       component.NewIDWithName(metadata.Type, "json"),
+		expected: jsonCfg,
+	})
+
+	batchCfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoint = defaultEndpoint
+		cfg.QueueSettings = configoptional.Some(func() exporterhelper.QueueBatchConfig {
+			queue := exporterhelper.NewDefaultQueueConfig()
+			queue.Batch = configoptional.Some(exporterhelper.BatchConfig{
+				FlushTimeout: 5 * time.Second,
+				Sizer:        exporterhelper.RequestSizerTypeItems,
+				MinSize:      5000,
+				MaxSize:      10000,
+			})
+			return queue
+		}())
+	})
+
+	tests = append(tests, struct {
+		id       component.ID
+		expected component.Config
+	}{
+		id:       component.NewIDWithName(metadata.Type, "batch"),
+		expected: batchCfg,
+	})
+
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			factory := NewFactory()
@@ -104,7 +141,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -578,7 +615,7 @@ func TestShouldCreateSchema(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("ShouldCreateSchema case %s", tt.name), func(t *testing.T) {
-			assert.NoError(t, xconfmap.Validate(tt))
+			assert.NoError(t, confmap.Validate(tt))
 			assert.Equal(t, tt.expected, tt.input.shouldCreateSchema())
 		})
 	}
@@ -620,7 +657,7 @@ func TestTableEngineConfigParsing(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg.(*Config).tableEngineString())
 		})
 	}
@@ -639,11 +676,19 @@ func TestClusterString(t *testing.T) {
 		},
 		{
 			input:    "cluster_a_b",
-			expected: "ON CLUSTER cluster_a_b",
+			expected: "ON CLUSTER `cluster_a_b`",
 		},
 		{
 			input:    "cluster a b",
-			expected: "ON CLUSTER cluster a b",
+			expected: "ON CLUSTER `cluster a b`",
+		},
+		{
+			input:    "ch-cluster",
+			expected: "ON CLUSTER `ch-cluster`",
+		},
+		{
+			input:    "my`cluster",
+			expected: "ON CLUSTER `my``cluster`",
 		},
 	}
 
@@ -653,7 +698,7 @@ func TestClusterString(t *testing.T) {
 			cfg.(*Config).Endpoint = defaultEndpoint
 			cfg.(*Config).ClusterName = tt.input
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg.(*Config).clusterString())
 		})
 	}
@@ -755,4 +800,33 @@ func TestConfigDatabase(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+// TestBuildClickHouseOptions_WithCAFileOnly verifies that when only a CAFile is provided,
+// buildClickHouseOptions returns a clean TLS error instead of crashing.
+func TestBuildClickHouseOptions_WithCAFileOnly(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	// Use a valid DSN to ensure parsing succeeds before TLS setup.
+	cfg.Endpoint = "clickhouse://default:password@localhost:9000/default?secure=true"
+
+	// Create a dummy CA file (intentionally invalid to trigger TLS error).
+	tmpFile, err := os.CreateTemp(t.TempDir(), "ca*.pem")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	_, err = tmpFile.WriteString("-----BEGIN CERTIFICATE-----\nINVALID\n-----END CERTIFICATE-----")
+	require.NoError(t, err)
+	tmpFile.Close()
+
+	cfg.TLS.CAFile = tmpFile.Name()
+
+	// Run buildClickHouseOptions.
+	opt, err := cfg.buildClickHouseOptions()
+
+	// We expect an error since the CA file is invalid.
+	require.Error(t, err, "expected error due to invalid CA file")
+
+	// No panic, but options may be nil since TLS setup failed early.
+	require.Nil(t, opt, "expected nil options when TLS setup fails cleanly")
 }

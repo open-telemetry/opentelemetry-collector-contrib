@@ -1,0 +1,94 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: elastic-logstash
+        - key: cloud.resource_id
+          value:
+            stringValue: loadbalancing.googleapis.com%2Fconnections
+        - key: gcp.resource_type
+          value:
+            stringValue: l4_proxy_rule
+        - key: gcp.label.backend_type
+          value:
+            stringValue: INSTANCE_GROUP
+        - key: gcp.label.forwarding_rule_name
+          value:
+            stringValue: andrewvc-cloudtest-nlb-forwarding-rule
+        - key: gcp.label.network_name
+          value:
+            stringValue: andrewvc-cloudtest-nlb-network
+        - key: gcp.label.protocol
+          value:
+            stringValue: TCP
+        - key: gcp.label.region
+          value:
+            stringValue: us-central1
+        - key: gcp.label.backend_name
+          value:
+            stringValue: andrewvc-cloudtest-nlb-backend-mig
+        - key: gcp.label.backend_scope
+          value:
+            stringValue: us-central1-b
+        - key: gcp.label.backend_target_name
+          value:
+            stringValue: andrewvc-cloudtest-nlb-backend-service
+        - key: gcp.label.backend_target_type
+          value:
+            stringValue: BACKEND_SERVICE
+        - key: gcp.label.load_balancing_scheme
+          value:
+            stringValue: EXTERNAL_MANAGED
+        - key: gcp.label.project_id
+          value:
+            stringValue: elastic-logstash
+        - key: gcp.label.target_proxy_name
+          value:
+            stringValue: andrewvc-cloudtest-nlb-tcp-proxy
+        - key: gcp.label.backend_scope_type
+          value:
+            stringValue: ZONE
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: 1d5pdpse2al63
+              - key: client.address
+                value:
+                  stringValue: 68.168.189.182
+              - key: server.address
+                value:
+                  stringValue: 35.209.164.189
+              - key: client.port
+                value:
+                  intValue: "52885"
+              - key: server.port
+                value:
+                  intValue: "80"
+              - key: network.transport
+                value:
+                  stringValue: tcp
+              - key: gcp.load_balancing.proxy_nlb.connection.start_time
+                value:
+                  stringValue: "2025-11-17T22:21:56.628218Z"
+              - key: gcp.load_balancing.proxy_nlb.connection.end_time
+                value:
+                  stringValue: "2025-11-17T22:21:56.650306Z"
+              - key: gcp.load_balancing.proxy_nlb.server.bytes_received
+                value:
+                  intValue: "77"
+              - key: gcp.load_balancing.proxy_nlb.server.bytes_sent
+                value:
+                  intValue: "853"
+            body: {}
+            observedTimeUnixNano: "1763418123443750729"
+            severityNumber: 9
+            severityText: INFO
+            timeUnixNano: "1763418116628218000"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: gcp.proxy-nlb

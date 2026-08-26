@@ -22,63 +22,61 @@ import (
 )
 
 var (
-	metricEnabled     = metadata.MetricConfig{Enabled: true}
-	metricDisabled    = metadata.MetricConfig{Enabled: false}
 	allMetricsEnabled = metadata.MetricsConfig{
-		ProcessRuntimeMemstatsBuckHashSys:   metricEnabled,
-		ProcessRuntimeMemstatsFrees:         metricEnabled,
-		ProcessRuntimeMemstatsGcCPUFraction: metricEnabled,
-		ProcessRuntimeMemstatsGcSys:         metricEnabled,
-		ProcessRuntimeMemstatsHeapAlloc:     metricEnabled,
-		ProcessRuntimeMemstatsHeapIdle:      metricEnabled,
-		ProcessRuntimeMemstatsHeapInuse:     metricEnabled,
-		ProcessRuntimeMemstatsHeapObjects:   metricEnabled,
-		ProcessRuntimeMemstatsHeapReleased:  metricEnabled,
-		ProcessRuntimeMemstatsHeapSys:       metricEnabled,
-		ProcessRuntimeMemstatsLastPause:     metricEnabled,
-		ProcessRuntimeMemstatsLookups:       metricEnabled,
-		ProcessRuntimeMemstatsMallocs:       metricEnabled,
-		ProcessRuntimeMemstatsMcacheInuse:   metricEnabled,
-		ProcessRuntimeMemstatsMcacheSys:     metricEnabled,
-		ProcessRuntimeMemstatsMspanInuse:    metricEnabled,
-		ProcessRuntimeMemstatsMspanSys:      metricEnabled,
-		ProcessRuntimeMemstatsNextGc:        metricEnabled,
-		ProcessRuntimeMemstatsNumForcedGc:   metricEnabled,
-		ProcessRuntimeMemstatsNumGc:         metricEnabled,
-		ProcessRuntimeMemstatsOtherSys:      metricEnabled,
-		ProcessRuntimeMemstatsPauseTotal:    metricEnabled,
-		ProcessRuntimeMemstatsStackInuse:    metricEnabled,
-		ProcessRuntimeMemstatsStackSys:      metricEnabled,
-		ProcessRuntimeMemstatsSys:           metricEnabled,
-		ProcessRuntimeMemstatsTotalAlloc:    metricEnabled,
+		ProcessRuntimeMemstatsBuckHashSys:   metadata.ProcessRuntimeMemstatsBuckHashSysMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsFrees:         metadata.ProcessRuntimeMemstatsFreesMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsGcCPUFraction: metadata.ProcessRuntimeMemstatsGcCPUFractionMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsGcSys:         metadata.ProcessRuntimeMemstatsGcSysMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsHeapAlloc:     metadata.ProcessRuntimeMemstatsHeapAllocMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsHeapIdle:      metadata.ProcessRuntimeMemstatsHeapIdleMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsHeapInuse:     metadata.ProcessRuntimeMemstatsHeapInuseMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsHeapObjects:   metadata.ProcessRuntimeMemstatsHeapObjectsMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsHeapReleased:  metadata.ProcessRuntimeMemstatsHeapReleasedMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsHeapSys:       metadata.ProcessRuntimeMemstatsHeapSysMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsLastPause:     metadata.ProcessRuntimeMemstatsLastPauseMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsLookups:       metadata.ProcessRuntimeMemstatsLookupsMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsMallocs:       metadata.ProcessRuntimeMemstatsMallocsMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsMcacheInuse:   metadata.ProcessRuntimeMemstatsMcacheInuseMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsMcacheSys:     metadata.ProcessRuntimeMemstatsMcacheSysMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsMspanInuse:    metadata.ProcessRuntimeMemstatsMspanInuseMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsMspanSys:      metadata.ProcessRuntimeMemstatsMspanSysMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsNextGc:        metadata.ProcessRuntimeMemstatsNextGcMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsNumForcedGc:   metadata.ProcessRuntimeMemstatsNumForcedGcMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsNumGc:         metadata.ProcessRuntimeMemstatsNumGcMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsOtherSys:      metadata.ProcessRuntimeMemstatsOtherSysMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsPauseTotal:    metadata.ProcessRuntimeMemstatsPauseTotalMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsStackInuse:    metadata.ProcessRuntimeMemstatsStackInuseMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsStackSys:      metadata.ProcessRuntimeMemstatsStackSysMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsSys:           metadata.ProcessRuntimeMemstatsSysMetricConfig{Enabled: true},
+		ProcessRuntimeMemstatsTotalAlloc:    metadata.ProcessRuntimeMemstatsTotalAllocMetricConfig{Enabled: true},
 	}
 	allMetricsDisabled = metadata.MetricsConfig{
-		ProcessRuntimeMemstatsBuckHashSys:   metricDisabled,
-		ProcessRuntimeMemstatsFrees:         metricDisabled,
-		ProcessRuntimeMemstatsGcCPUFraction: metricDisabled,
-		ProcessRuntimeMemstatsGcSys:         metricDisabled,
-		ProcessRuntimeMemstatsHeapAlloc:     metricDisabled,
-		ProcessRuntimeMemstatsHeapIdle:      metricDisabled,
-		ProcessRuntimeMemstatsHeapInuse:     metricDisabled,
-		ProcessRuntimeMemstatsHeapObjects:   metricDisabled,
-		ProcessRuntimeMemstatsHeapReleased:  metricDisabled,
-		ProcessRuntimeMemstatsHeapSys:       metricDisabled,
-		ProcessRuntimeMemstatsLastPause:     metricDisabled,
-		ProcessRuntimeMemstatsLookups:       metricDisabled,
-		ProcessRuntimeMemstatsMallocs:       metricDisabled,
-		ProcessRuntimeMemstatsMcacheInuse:   metricDisabled,
-		ProcessRuntimeMemstatsMcacheSys:     metricDisabled,
-		ProcessRuntimeMemstatsMspanInuse:    metricDisabled,
-		ProcessRuntimeMemstatsMspanSys:      metricDisabled,
-		ProcessRuntimeMemstatsNextGc:        metricDisabled,
-		ProcessRuntimeMemstatsNumForcedGc:   metricDisabled,
-		ProcessRuntimeMemstatsNumGc:         metricDisabled,
-		ProcessRuntimeMemstatsOtherSys:      metricDisabled,
-		ProcessRuntimeMemstatsPauseTotal:    metricDisabled,
-		ProcessRuntimeMemstatsStackInuse:    metricDisabled,
-		ProcessRuntimeMemstatsStackSys:      metricDisabled,
-		ProcessRuntimeMemstatsSys:           metricDisabled,
-		ProcessRuntimeMemstatsTotalAlloc:    metricDisabled,
+		ProcessRuntimeMemstatsBuckHashSys:   metadata.ProcessRuntimeMemstatsBuckHashSysMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsFrees:         metadata.ProcessRuntimeMemstatsFreesMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsGcCPUFraction: metadata.ProcessRuntimeMemstatsGcCPUFractionMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsGcSys:         metadata.ProcessRuntimeMemstatsGcSysMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsHeapAlloc:     metadata.ProcessRuntimeMemstatsHeapAllocMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsHeapIdle:      metadata.ProcessRuntimeMemstatsHeapIdleMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsHeapInuse:     metadata.ProcessRuntimeMemstatsHeapInuseMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsHeapObjects:   metadata.ProcessRuntimeMemstatsHeapObjectsMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsHeapReleased:  metadata.ProcessRuntimeMemstatsHeapReleasedMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsHeapSys:       metadata.ProcessRuntimeMemstatsHeapSysMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsLastPause:     metadata.ProcessRuntimeMemstatsLastPauseMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsLookups:       metadata.ProcessRuntimeMemstatsLookupsMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsMallocs:       metadata.ProcessRuntimeMemstatsMallocsMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsMcacheInuse:   metadata.ProcessRuntimeMemstatsMcacheInuseMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsMcacheSys:     metadata.ProcessRuntimeMemstatsMcacheSysMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsMspanInuse:    metadata.ProcessRuntimeMemstatsMspanInuseMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsMspanSys:      metadata.ProcessRuntimeMemstatsMspanSysMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsNextGc:        metadata.ProcessRuntimeMemstatsNextGcMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsNumForcedGc:   metadata.ProcessRuntimeMemstatsNumForcedGcMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsNumGc:         metadata.ProcessRuntimeMemstatsNumGcMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsOtherSys:      metadata.ProcessRuntimeMemstatsOtherSysMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsPauseTotal:    metadata.ProcessRuntimeMemstatsPauseTotalMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsStackInuse:    metadata.ProcessRuntimeMemstatsStackInuseMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsStackSys:      metadata.ProcessRuntimeMemstatsStackSysMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsSys:           metadata.ProcessRuntimeMemstatsSysMetricConfig{Enabled: false},
+		ProcessRuntimeMemstatsTotalAlloc:    metadata.ProcessRuntimeMemstatsTotalAllocMetricConfig{Enabled: false},
 	}
 )
 
@@ -100,8 +98,8 @@ func TestAllMetrics(t *testing.T) {
 	ms := newMockServer(t, filepath.Join("testdata", "response", "expvar_response.json"))
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
-	cfg.Endpoint = ms.URL + defaultPath
-	cfg.Metrics = allMetricsEnabled
+	cfg.ClientConfig.Endpoint = ms.URL + defaultPath
+	cfg.MetricsBuilderConfig.Metrics = allMetricsEnabled
 
 	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
@@ -121,8 +119,8 @@ func TestNoMetrics(t *testing.T) {
 	ms := newMockServer(t, filepath.Join("testdata", "response", "expvar_response.json"))
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
-	cfg.Endpoint = ms.URL + defaultPath
-	cfg.Metrics = allMetricsDisabled
+	cfg.ClientConfig.Endpoint = ms.URL + defaultPath
+	cfg.MetricsBuilderConfig.Metrics = allMetricsDisabled
 	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -137,7 +135,7 @@ func TestNotFoundResponse(t *testing.T) {
 	ms := newMockServer(t, filepath.Join("testdata", "response", "expvar_response.json"))
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
-	cfg.Endpoint = ms.URL + "/nonexistent/path"
+	cfg.ClientConfig.Endpoint = ms.URL + "/nonexistent/path"
 	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -149,7 +147,7 @@ func TestBadTypeInReturnedData(t *testing.T) {
 	ms := newMockServer(t, filepath.Join("testdata", "response", "bad_data_response.json"))
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
-	cfg.Endpoint = ms.URL + defaultPath
+	cfg.ClientConfig.Endpoint = ms.URL + defaultPath
 	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -161,7 +159,7 @@ func TestJSONParseError(t *testing.T) {
 	ms := newMockServer(t, filepath.Join("testdata", "response", "bad_data_response.txt"))
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
-	cfg.Endpoint = ms.URL + defaultPath
+	cfg.ClientConfig.Endpoint = ms.URL + defaultPath
 	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -173,8 +171,8 @@ func TestEmptyResponseBodyError(t *testing.T) {
 	ms := newMockServer(t, filepath.Join("testdata", "response", "bad_data_empty_response.json"))
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
-	cfg.Endpoint = ms.URL + defaultPath
-	cfg.Metrics = allMetricsDisabled
+	cfg.ClientConfig.Endpoint = ms.URL + defaultPath
+	cfg.MetricsBuilderConfig.Metrics = allMetricsDisabled
 	scraper := newExpVarScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)

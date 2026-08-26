@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/DeRuina/timberjack"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -20,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
@@ -40,6 +40,9 @@ const (
 	defaultMaxOpenFiles = 100
 
 	defaultResourceAttribute = "fileexporter.path_segment"
+
+	// Permissions used when creating new export files.
+	defaultFilePermissions = 0o644
 )
 
 type FileExporter interface {
@@ -58,7 +61,8 @@ func NewFactory() exporter.Factory {
 		xexporter.WithTraces(createTracesExporter, metadata.TracesStability),
 		xexporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
 		xexporter.WithLogs(createLogsExporter, metadata.LogsStability),
-		xexporter.WithProfiles(createProfilesExporter, metadata.ProfilesStability))
+		xexporter.WithProfiles(createProfilesExporter, metadata.ProfilesStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -157,7 +161,8 @@ func getOrCreateFileExporter(cfg component.Config, logger *zap.Logger) FileExpor
 func newFileExporter(conf *Config, logger *zap.Logger) FileExporter {
 	if conf.GroupBy == nil || !conf.GroupBy.Enabled {
 		return &fileExporter{
-			conf: conf,
+			conf:   conf,
+			logger: logger,
 		}
 	}
 
@@ -167,8 +172,10 @@ func newFileExporter(conf *Config, logger *zap.Logger) FileExporter {
 	}
 }
 
-func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInterval time.Duration, export exportFunc) (*fileWriter, error) {
+func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInterval time.Duration, export exportFunc, compression string, compressionLevel int) (*fileWriter, error) {
+	var baseWriter io.WriteCloser
 	var wc io.WriteCloser
+
 	if rotation == nil {
 		fileFlags := os.O_RDWR | os.O_CREATE
 		if shouldAppend {
@@ -176,19 +183,35 @@ func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInte
 		} else {
 			fileFlags |= os.O_TRUNC
 		}
-		f, err := os.OpenFile(path, fileFlags, 0o644)
+		f, err := os.OpenFile(path, fileFlags, defaultFilePermissions)
 		if err != nil {
 			return nil, err
 		}
-		wc = newBufferedWriteCloser(f)
+		baseWriter = f
 	} else {
-		wc = &lumberjack.Logger{
-			Filename:   path,
-			MaxSize:    rotation.MaxMegabytes,
-			MaxAge:     rotation.MaxDays,
-			MaxBackups: rotation.MaxBackups,
-			LocalTime:  rotation.LocalTime,
+		baseWriter = &timberjack.Logger{
+			Filename:    path,
+			MaxSize:     rotation.MaxMegabytes,
+			MaxAge:      rotation.MaxDays,
+			MaxBackups:  rotation.MaxBackups,
+			LocalTime:   rotation.LocalTime,
+			FileMode:    defaultFilePermissions,
+			Compression: "none", // ensure compression is handled by the collector
 		}
+	}
+
+	switch {
+	case compression != "" && metadata.ExporterFileNativeCompressionFeatureGate.IsEnabled():
+		var err error
+		wc, err = newCompressingWriter(baseWriter, compression, compressionLevel, rotation)
+		if err != nil {
+			baseWriter.Close()
+			return nil, err
+		}
+	case rotation == nil:
+		wc = newBufferedWriteCloser(baseWriter)
+	default:
+		wc = baseWriter
 	}
 
 	return &fileWriter{

@@ -14,9 +14,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorisexporter/internal/metadata"
@@ -29,7 +30,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	defaultCfg := createDefaultConfig()
-	defaultCfg.(*Config).Endpoint = "http://localhost:8030"
+	defaultCfg.(*Config).ClientConfig.Endpoint = "http://localhost:8030"
 	defaultCfg.(*Config).MySQLEndpoint = "localhost:9030"
 	err = defaultCfg.(*Config).Validate()
 	require.NoError(t, err)
@@ -53,13 +54,12 @@ func TestLoadConfig(t *testing.T) {
 			RandomizationFactor: backoff.DefaultRandomizationFactor,
 			Multiplier:          backoff.DefaultMultiplier,
 		},
-		QueueSettings: func() exporterhelper.QueueBatchConfig {
+		QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 			queue := exporterhelper.NewDefaultQueueConfig()
-			queue.Enabled = true
 			queue.NumConsumers = 10
 			queue.QueueSize = 1000
 			return queue
-		}(),
+		}()),
 		Table: Table{
 			Logs:    "otel_logs",
 			Traces:  "otel_traces",
@@ -104,7 +104,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

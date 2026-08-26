@@ -8,12 +8,14 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.etcd.io/bbolt"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension"
@@ -629,7 +631,7 @@ func TestRecreate(t *testing.T) {
 		se, ok := ext.(storage.Extension)
 		require.True(t, ok)
 
-		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("filelog"), "")
+		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("file_log"), "")
 		require.NoError(t, err)
 		require.NotNil(t, client)
 
@@ -652,7 +654,7 @@ func TestRecreate(t *testing.T) {
 		se, ok := ext.(storage.Extension)
 		require.True(t, ok)
 
-		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("filelog"), "")
+		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("file_log"), "")
 		require.NoError(t, err)
 		require.NotNil(t, client)
 
@@ -676,7 +678,7 @@ func TestRecreate(t *testing.T) {
 		se, ok := ext.(storage.Extension)
 		require.True(t, ok)
 
-		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("filelog"), "")
+		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("file_log"), "")
 		require.NoError(t, err)
 		require.NotNil(t, client)
 
@@ -688,5 +690,154 @@ func TestRecreate(t *testing.T) {
 		// close the extension
 		require.NoError(t, client.Close(ctx))
 		require.NoError(t, ext.Shutdown(ctx))
+	}
+}
+
+func TestHashing(t *testing.T) {
+	longNameErr := "file name too long"
+	if runtime.GOOS == "windows" {
+		longNameErr = "The filename, directory name, or volume label syntax is incorrect"
+	}
+	tests := []struct {
+		name        string
+		input       string
+		expectedErr string
+	}{
+		{
+			name:  "short name",
+			input: "short_filename.txt",
+		},
+		{
+			name:  "exactly max length",
+			input: strings.Repeat("a", 255),
+		},
+		{
+			name:        "exceeds max length",
+			input:       strings.Repeat("b", 1000),
+			expectedErr: longNameErr,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			file, err := os.OpenFile(filepath.Join(tempDir, tt.input), os.O_RDWR|os.O_CREATE, 0o644)
+			if tt.expectedErr != "" {
+				if !strings.Contains(err.Error(), tt.expectedErr) {
+					require.ErrorContains(t, err, tt.expectedErr)
+				}
+				require.Nil(t, file)
+				truncated := hash(tt.input)
+				file, err = os.OpenFile(filepath.Join(tempDir, truncated), os.O_RDWR|os.O_CREATE, 0o644)
+				require.NoError(t, err)
+				require.NotNil(t, file)
+				require.NoError(t, file.Close())
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, file)
+				require.NoError(t, file.Close())
+			}
+		})
+	}
+}
+
+func TestCompactionOnStartWithCorruption(t *testing.T) {
+	testCases := []struct {
+		name         string
+		recreate     bool
+		expectBackup bool
+		expectError  bool
+	}{
+		{
+			name:         "recreate enabled - backup and recreate on compaction panic",
+			recreate:     true,
+			expectBackup: true,
+		},
+		{
+			name:        "recreate disabled - error on compaction panic",
+			expectError: true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			ctx := t.Context()
+			f := NewFactory()
+			logCore, logObserver := observer.New(zap.DebugLevel)
+			set := extensiontest.NewNopSettings(f.Type())
+			set.Logger = zap.New(logCore)
+			tempDir := t.TempDir()
+
+			cfg := f.CreateDefaultConfig().(*Config)
+			cfg.Directory = tempDir
+			cfg.Compaction.Directory = tempDir
+			cfg.Compaction.OnStart = false // Initial creation: don't compact yet
+			cfg.Recreate = testCase.recreate
+
+			ext, err := f.Create(ctx, set, cfg)
+			require.NoError(t, err)
+			se, ok := ext.(storage.Extension)
+			require.True(t, ok)
+			require.NoError(t, se.Start(ctx, componenttest.NewNopHost()))
+
+			client, err := se.GetClient(ctx, component.KindReceiver, newTestEntity("my_component"), "")
+			require.NoError(t, err)
+			require.NoError(t, client.Set(ctx, "key1", []byte("value1")))
+			require.NoError(t, client.Close(ctx))
+			require.NoError(t, se.Shutdown(ctx))
+
+			cfg.Compaction.OnStart = true
+			ext, err = f.Create(ctx, set, cfg)
+			require.NoError(t, err)
+			se, ok = ext.(storage.Extension)
+			require.True(t, ok)
+			lfs, ok := se.(*localFileStorage)
+			require.True(t, ok)
+
+			client, err = se.GetClient(ctx, component.KindReceiver, newTestEntity("my_component"), "")
+			require.NoError(t, err)
+			fileClient, ok := client.(*fileStorageClient)
+			require.True(t, ok)
+			absoluteName := fileClient.db.Path()
+			fileClient.compactFunc = func(*bbolt.DB, *bbolt.DB, int64) error {
+				panic("simulated compaction panic due to corruption")
+			}
+
+			client, err = lfs.compactOnStart(ctx, fileClient, absoluteName)
+			require.NotEmpty(t, logObserver.FilterMessage("panic during on_start compaction, database may be corrupted").All())
+
+			if testCase.expectError {
+				require.ErrorContains(t, err, "compaction failed due to panic")
+				require.Nil(t, client)
+				require.NoError(t, se.Shutdown(ctx))
+				return
+			}
+
+			require.NoError(t, err)
+			require.NotNil(t, client)
+			if testCase.expectBackup {
+				files, readErr := os.ReadDir(tempDir)
+				require.NoError(t, readErr)
+				require.Condition(t, func() bool {
+					for _, file := range files {
+						if strings.Contains(file.Name(), ".backup") {
+							return true
+						}
+					}
+					return false
+				}, "backup file should be created after compaction panic")
+				require.NotEmpty(t, logObserver.FilterMessage("Corrupted database file renamed").All())
+			}
+
+			value, err := client.Get(ctx, "key1")
+			require.NoError(t, err)
+			require.Nil(t, value, "new database should be empty after recreation")
+			require.NoError(t, client.Set(ctx, "key2", []byte("value2")))
+			value, err = client.Get(ctx, "key2")
+			require.NoError(t, err)
+			require.Equal(t, []byte("value2"), value)
+			require.NoError(t, client.Close(ctx))
+			require.NoError(t, se.Shutdown(ctx))
+		})
 	}
 }

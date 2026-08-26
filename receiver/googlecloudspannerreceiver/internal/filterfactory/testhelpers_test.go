@@ -38,6 +38,8 @@ func (*mockFilter) LimitByTimestamp() int {
 	return 0
 }
 
+func (*mockFilter) StartCache() {}
+
 func generateMetadataItems(prefixes []string, prefixHighCardinality []bool) []*metadata.MetricsMetadata {
 	metricDataType := metadata.NewMetricType(pmetric.MetricTypeGauge, pmetric.AggregationTemporalityUnspecified, false)
 	metadataItems := make([]*metadata.MetricsMetadata, len(prefixes))

@@ -1,44 +1,71 @@
-type: resourcedetectionprocessor/oraclecloud
-
-parent: resourcedetection
+type: oracleclouddetector
+sem_conv_version: 1.40.0
 
 status:
   class: processor
   stability:
     alpha: [traces, metrics, logs, profiles]
   codeowners:
-    active: [dashpole]
+    active: [dashpole, geekdave]
 
 resource_attributes:
   cloud.availability_zone:
-    description: The cloud.availability_zone
+    semantic_convention:
+      ref: cloud.md#cloud-availability-zone
+    description: The [availability domain](https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm) in which this Oracle Cloud instance is running (e.g., "PHX-AD-1").
     type: string
     enabled: true
   cloud.platform:
-    description: The cloud.platform
+    semantic_convention:
+      ref: cloud.md#cloud-platform
+    description: Identifies the Oracle Cloud platform for the resource, such as Oracle Cloud Infrastructure Compute or Oracle Container Engine for Kubernetes.
     type: string
     enabled: true
   cloud.provider:
-    description: The cloud.provider
+    semantic_convention:
+      ref: cloud.md#cloud-provider
+    description: Identifies Oracle Cloud Infrastructure as the cloud provider.
     type: string
     enabled: true
   cloud.region:
-    description: The cloud.region
+    semantic_convention:
+      ref: cloud.md#cloud-region
+    description: The Oracle Cloud region identifier for this instance (e.g., "us-phoenix-1").
     type: string
     enabled: true
+  cloud.resource_id:
+    semantic_convention:
+      ref: cloud.md#cloud-resource-id
+    description: The OCID (Oracle Cloud Identifier) of the host instance (unique per compute instance).
+    type: string
+    enabled: false
   host.id:
-    description: The host.id
+    semantic_convention:
+      ref: host.md#host-id
+    description: The OCID (Oracle Cloud Identifier) of the host instance (unique per compute instance).
     type: string
     enabled: true
   host.name:
-    description: The hostname
+    semantic_convention:
+      ref: host.md#host-name
+    description: The system hostname as reported by the OCI metadata service.
     type: string
     enabled: true
   host.type:
-    description: The instance type (shape)
+    semantic_convention:
+      ref: host.md#host-type
+    description: The compute shape (instance type) of the host, such as "VM.Standard.E4.Flex".
     enabled: true
     type: string
   k8s.cluster.name:
-    description: k8s.cluster.name
+    semantic_convention:
+      ref: k8s.md#k8s-cluster-name
+    description: The Kubernetes cluster name if running in an Oracle Container Engine for Kubernetes (OKE) cluster; unset otherwise.
+    enabled: true
+    type: string
+  oracle_cloud.realm:
+    semantic_convention:
+      ref: oracle-cloud.md#oracle-cloud-realm
+    description: The OCI realm identifier for the isolated partition where the tenancy and resources reside, such as "oc1" or "oc2".
     enabled: true
     type: string

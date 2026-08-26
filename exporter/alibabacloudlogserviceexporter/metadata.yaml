@@ -1,4 +1,5 @@
 type: alibabacloud_logservice
+display_name: AlibabaCloud LogService Exporter
 
 status:
   class: exporter
@@ -6,12 +7,11 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [shabicheng, kongluoxing, qiansheng91]
+    active: [vyagh]
+    emeritus: [shabicheng, kongluoxing, qiansheng91]
 
 tests:
   config:
     endpoint: "http://localhost:0"
     project: "otel-testing"
     logstore: "otel-data"
-  goleak:
-    skip: true

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package logzioexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 
@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -28,7 +29,8 @@ func NewFactory() exporter.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -42,7 +44,7 @@ func createDefaultConfig() component.Config {
 		Region:        "",
 		Token:         "",
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		ClientConfig:  clientConfig,
 	}
 }
@@ -62,11 +64,11 @@ func getListenerURL(region, dataType string) string {
 func generateEndpoint(cfg *Config, dataType string) (string, error) {
 	defaultURL := getListenerURL("", dataType)
 	switch {
-	case cfg.Endpoint != "":
-		return cfg.Endpoint, nil
+	case cfg.ClientConfig.Endpoint != "":
+		return cfg.ClientConfig.Endpoint, nil
 	case cfg.Region != "":
 		return getListenerURL(cfg.Region, dataType), nil
-	case cfg.Endpoint == "" && cfg.Region == "":
+	case cfg.ClientConfig.Endpoint == "" && cfg.Region == "":
 		return defaultURL, errors.New("failed to generate endpoint, Endpoint or Region must be set")
 	default:
 		return defaultURL, nil

@@ -91,7 +91,7 @@ func newReceiver(
 	config Config,
 ) (*sfxReceiver, error) {
 	transport := "http"
-	if config.TLS.HasValue() {
+	if config.ServerConfig.TLS.HasValue() {
 		transport = "https"
 	}
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -128,16 +128,16 @@ func (r *sfxReceiver) Start(ctx context.Context, host component.Host) error {
 	}
 
 	// set up the listener
-	ln, err := r.config.ToListener(ctx)
+	ln, err := r.config.ServerConfig.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", r.config.ServerConfig.NetAddr.Endpoint, err)
 	}
 
 	mx := mux.NewRouter()
 	mx.HandleFunc("/v2/datapoint", r.handleDatapointReq)
 	mx.HandleFunc("/v2/event", r.handleEventReq)
 
-	r.server, err = r.config.ToServer(ctx, host, r.settings.TelemetrySettings, mx)
+	r.server, err = r.config.ServerConfig.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, mx)
 	if err != nil {
 		return err
 	}
@@ -147,13 +147,11 @@ func (r *sfxReceiver) Start(ctx context.Context, host component.Host) error {
 	r.server.ReadHeaderTimeout = defaultServerTimeout
 	r.server.WriteTimeout = defaultServerTimeout
 
-	r.shutdownWG.Add(1)
-	go func() {
-		defer r.shutdownWG.Done()
+	r.shutdownWG.Go(func() {
 		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
-	}()
+	})
 	return nil
 }
 
@@ -319,7 +317,8 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 		ctx,
 		metadata.Type.String(),
 		len(msg.Events),
-		err)
+		err,
+	)
 
 	r.writeResponse(ctx, resp, err)
 }
@@ -339,7 +338,8 @@ func (r *sfxReceiver) failRequest(
 			r.settings.Logger.Warn(
 				"Error writing HTTP response message",
 				zap.Error(writeErr),
-				zap.String("receiver", r.settings.ID.String()))
+				zap.String("receiver", r.settings.ID.String()),
+			)
 		}
 	}
 

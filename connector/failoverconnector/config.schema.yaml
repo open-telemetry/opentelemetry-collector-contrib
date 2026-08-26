@@ -1,0 +1,17 @@
+type: object
+properties:
+  priority_levels:
+    description: PipelinePriority is the list of pipeline level priorities in a 1 - n configuration, multiple pipelines can sit at a single priority level and will be routed in a fanout. If any pipeline at a level fails, the level is considered unhealthy
+    type: array
+    items:
+      type: array
+      items:
+        $ref: go.opentelemetry.io/collector/pipeline.id
+  retry_interval:
+    description: RetryInterval is the frequency at which the pipeline levels will attempt to recover by going over all levels below the current
+    type: string
+    format: duration
+  sending_queue:
+    description: QueueSettings use the exporterhelper sending_queue to move the queue to the connector to avoid data being stuck in the queue of an unhealthy exporter
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config

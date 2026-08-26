@@ -101,11 +101,9 @@ func (lee *leaderElectionExtension) Start(_ context.Context, _ component.Host) e
 		lee.logger.Error("Failed to create k8s leader elector", zap.Error(err))
 		return err
 	}
-	lee.waitGroup.Add(1)
-	go func() {
+	lee.waitGroup.Go(func() {
 		// Leader election loop stops if context is canceled or the leader elector loses the lease.
 		// The loop allows continued participation in leader election, even if the lease is lost.
-		defer lee.waitGroup.Done()
 		for {
 			leaderElector.Run(ctx)
 			if ctx.Err() != nil {
@@ -114,7 +112,7 @@ func (lee *leaderElectionExtension) Start(_ context.Context, _ component.Host) e
 
 			lee.logger.Info("Leader lease lost. Returning to standby mode...")
 		}
-	}()
+	})
 
 	return nil
 }

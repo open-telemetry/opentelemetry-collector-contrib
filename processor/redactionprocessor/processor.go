@@ -6,8 +6,12 @@ package redactionprocessor // import "github.com/open-telemetry/opentelemetry-co
 //nolint:gosec
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/md5"
 	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha3"
+	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 	"hash"
@@ -15,12 +19,12 @@ import (
 	"sort"
 	"strings"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-	"golang.org/x/crypto/sha3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/db"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/url"
@@ -28,17 +32,22 @@ import (
 
 const attrValuesSeparator = ","
 
+// maskAllValuesRegex masks a whole value, for keys matching the blocked key patterns.
+var maskAllValuesRegex = regexp.MustCompile(".*")
+
 type redaction struct {
 	// Attribute keys allowed in a span
 	allowList map[string]string
 	// Attribute keys ignored in a span
 	ignoreList map[string]string
+	// Attribute key patterns ignored in a span
+	ignoreKeyRegexList []*regexp.Regexp
 	// Attribute values blocked in a span
-	blockRegexList map[string]*regexp.Regexp
+	blockRegexList []*regexp.Regexp
 	// Attribute values allowed in a span
-	allowRegexList map[string]*regexp.Regexp
+	allowRegexList []*regexp.Regexp
 	// Attribute keys blocked in a span
-	blockKeyRegexList map[string]*regexp.Regexp
+	blockKeyRegexList []*regexp.Regexp
 	// Hash function to hash blocked values
 	hashFunction HashFunction
 	// Redaction processor configuration
@@ -55,6 +64,11 @@ type redaction struct {
 func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*redaction, error) {
 	allowList := makeAllowList(config)
 	ignoreList := makeIgnoreList(config)
+	ignoreKeysRegexList, err := makeRegexList(ctx, config.IgnoredKeyPatterns)
+	if err != nil {
+		// TODO: Placeholder for an error metric in the next PR
+		return nil, fmt.Errorf("failed to process ignore keys list: %w", err)
+	}
 	blockRegexList, err := makeRegexList(ctx, config.BlockedValues)
 	if err != nil {
 		// TODO: Placeholder for an error metric in the next PR
@@ -79,19 +93,20 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 			return nil, fmt.Errorf("failed to create URL sanitizer: %w", err)
 		}
 	}
-	dbObfuscator := db.NewObfuscator(config.DBSanitizer)
+	dbObfuscator := db.NewObfuscator(config.DBSanitizer, logger)
 
 	return &redaction{
-		allowList:         allowList,
-		ignoreList:        ignoreList,
-		blockRegexList:    blockRegexList,
-		allowRegexList:    allowRegexList,
-		blockKeyRegexList: blockKeysRegexList,
-		hashFunction:      config.HashFunction,
-		config:            config,
-		logger:            logger,
-		urlSanitizer:      urlSanitizer,
-		dbObfuscator:      dbObfuscator,
+		allowList:          allowList,
+		ignoreList:         ignoreList,
+		ignoreKeyRegexList: ignoreKeysRegexList,
+		blockRegexList:     blockRegexList,
+		allowRegexList:     allowRegexList,
+		blockKeyRegexList:  blockKeysRegexList,
+		hashFunction:       config.HashFunction,
+		config:             config,
+		logger:             logger,
+		urlSanitizer:       urlSanitizer,
+		dbObfuscator:       dbObfuscator,
 	}, nil
 }
 
@@ -143,20 +158,7 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 			// Attributes can also be part of span events
 			s.processSpanEvents(ctx, span.Events())
 
-			if s.shouldRedactSpanName(&span) {
-				name := span.Name()
-				if s.urlSanitizer != nil {
-					name = s.urlSanitizer.SanitizeURL(name)
-				}
-				if s.dbObfuscator.HasObfuscators() {
-					var err error
-					name, err = s.dbObfuscator.Obfuscate(name)
-					if err != nil {
-						s.logger.Error(err.Error())
-					}
-				}
-				span.SetName(name)
-			}
+			s.sanitizeSpanName(span)
 		}
 	}
 }
@@ -203,7 +205,7 @@ func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attr
 			}
 			if s.shouldMaskKey(k) {
 				maskedKeys = append(maskedKeys, k)
-				v.SetStr(s.maskValue(v.Str(), regexp.MustCompile(".*")))
+				v.SetStr(s.maskValue(v.Str(), maskAllValuesRegex))
 				return true
 			}
 			s.redactLogBodyRecursive(ctx, k, v, &redactedKeys, &maskedKeys, &allowedKeys, &ignoredKeys)
@@ -220,7 +222,10 @@ func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attr
 	default:
 		strVal := body.AsString()
 		if s.shouldAllowValue(strVal) {
-			allowedKeys = append(allowedKeys, "body")
+			// TODO: this is assigned here, but return makes the assignment useless. Open an issue
+			// to investigate the correct behavior
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50417
+			allowedKeys = append(allowedKeys, "body") //nolint:staticcheck
 			return
 		}
 		processedValue := s.processStringValueForLogBody(strVal)
@@ -252,7 +257,7 @@ func (s *redaction) redactLogBodyRecursive(ctx context.Context, key string, valu
 			}
 			if s.shouldMaskKey(k) {
 				*maskedKeys = append(*maskedKeys, keyWithPath)
-				v.SetStr(s.maskValue(v.Str(), regexp.MustCompile(".*")))
+				v.SetStr(s.maskValue(v.Str(), maskAllValuesRegex))
 				return true
 			}
 			s.redactLogBodyRecursive(ctx, keyWithPath, v, redactedKeys, maskedKeys, allowedKeys, ignoredKeys)
@@ -330,6 +335,8 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	// TODO: Use the context for recording metrics
 	var redactedKeys, maskedKeys, allowedKeys, ignoredKeys []string
 
+	dbSystem := db.GetDBSystem(attributes)
+
 	// Identify attributes to redact and mask in the following sequence
 	// 1. Make a list of attribute keys to redact
 	// 2. Mask any blocked values for the other attributes
@@ -358,11 +365,11 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 		}
 		if s.shouldMaskKey(k) {
 			maskedKeys = append(maskedKeys, k)
-			maskedValue := s.maskValue(strVal, regexp.MustCompile(".*"))
+			maskedValue := s.maskValue(strVal, maskAllValuesRegex)
 			value.SetStr(maskedValue)
 			continue
 		}
-		processedString := s.processStringValueForAttribute(strVal, k)
+		processedString := s.processStringValueForAttribute(strVal, k, dbSystem)
 		if processedString != strVal {
 			maskedKeys = append(maskedKeys, k)
 			value.SetStr(processedString)
@@ -387,9 +394,13 @@ func (s *redaction) maskValue(val string, regex *regexp.Regexp) string {
 		case SHA1:
 			return hashString(match, sha1.New())
 		case SHA3:
-			return hashString(match, sha3.New256())
+			return hashString(match, hash.Hash(sha3.New256()))
 		case MD5:
 			return hashString(match, md5.New())
+		case HMACSHA256:
+			return hashStringHMAC(match, s.config.HMACKey, sha256.New)
+		case HMACSHA512:
+			return hashStringHMAC(match, s.config.HMACKey, sha512.New)
 		default:
 			return "****"
 		}
@@ -400,6 +411,12 @@ func (s *redaction) maskValue(val string, regex *regexp.Regexp) string {
 func hashString(input string, hasher hash.Hash) string {
 	hasher.Write([]byte(input))
 	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+func hashStringHMAC(input string, key configopaque.String, newHash func() hash.Hash) string {
+	h := hmac.New(newHash, []byte(string(key)))
+	h.Write([]byte(input))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // addMetaAttrs adds diagnostic information about redacted or masked attribute keys
@@ -425,7 +442,7 @@ func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes pcommon.Map,
 	}
 }
 
-func (s *redaction) processStringValueForAttribute(strVal, attributeKey string) string {
+func (s *redaction) processStringValueForAttribute(strVal, attributeKey, dbSystem string) string {
 	for _, compiledRE := range s.blockRegexList {
 		match := compiledRE.MatchString(strVal)
 		if match {
@@ -438,7 +455,7 @@ func (s *redaction) processStringValueForAttribute(strVal, attributeKey string) 
 	}
 
 	if s.dbObfuscator.HasObfuscators() {
-		obfuscatedQuery, err := s.dbObfuscator.ObfuscateAttribute(strVal, attributeKey)
+		obfuscatedQuery, err := s.dbObfuscator.ObfuscateAttribute(strVal, attributeKey, dbSystem)
 		if err != nil {
 			return strVal
 		}
@@ -496,6 +513,12 @@ func (s *redaction) shouldIgnoreKey(k string) bool {
 	if _, ignored := s.ignoreList[k]; ignored {
 		return true
 	}
+	// Check if key matches any of the ignored key patterns
+	for _, compiledRE := range s.ignoreKeyRegexList {
+		if compiledRE.MatchString(k) {
+			return true
+		}
+	}
 	return false
 }
 
@@ -508,20 +531,57 @@ func (s *redaction) shouldRedactKey(k string) bool {
 	return false
 }
 
-func (s *redaction) shouldRedactSpanName(span *ptrace.Span) bool {
-	if s.urlSanitizer == nil && !s.dbObfuscator.HasObfuscators() {
-		return false
+func (s *redaction) sanitizeSpanName(span ptrace.Span) {
+	name := span.Name()
+
+	if s.shouldAllowValue(name) {
+		return
 	}
-	spanKind := span.Kind()
-	if spanKind != ptrace.SpanKindClient && spanKind != ptrace.SpanKindServer {
+
+	if s.shouldSanitizeSpanNameForURL() {
+		if sanitized, ok := url.SanitizeSpanName(span, s.urlSanitizer); ok {
+			applySpanName(span, name, sanitized)
+			return
+		}
+	}
+
+	if s.shouldSanitizeSpanNameForDB() {
+		if sanitized, ok, err := db.SanitizeSpanName(span, s.dbObfuscator); err != nil {
+			s.logger.Error("failed to obfuscate span name", zap.Error(err))
+		} else if ok {
+			applySpanName(span, name, sanitized)
+		}
+	}
+}
+
+func applySpanName(span ptrace.Span, original, candidate string) {
+	if candidate == "" || candidate == "..." {
+		return
+	}
+	if candidate != original {
+		span.SetName(candidate)
+	}
+}
+
+func (s *redaction) shouldSanitizeSpanNameForURL() bool {
+	if s.urlSanitizer == nil {
 		return false
 	}
 
-	spanName := span.Name()
-	if !strings.Contains(spanName, "/") && !s.dbObfuscator.HasObfuscators() {
+	if s.config.URLSanitization.SanitizeSpanName == nil {
+		return true
+	}
+	return *s.config.URLSanitization.SanitizeSpanName
+}
+
+func (s *redaction) shouldSanitizeSpanNameForDB() bool {
+	if !s.dbObfuscator.HasObfuscators() {
 		return false
 	}
-	return !s.shouldAllowValue(spanName)
+	if s.config.DBSanitizer.SanitizeSpanName == nil {
+		return true
+	}
+	return *s.config.DBSanitizer.SanitizeSpanName
 }
 
 const (
@@ -577,16 +637,17 @@ func makeIgnoreList(c *Config) map[string]string {
 	return ignoreList
 }
 
-// makeRegexList precompiles all the regex patterns in the defined list
-func makeRegexList(_ context.Context, valuesList []string) (map[string]*regexp.Regexp, error) {
-	regexList := make(map[string]*regexp.Regexp, len(valuesList))
+// makeRegexList precompiles all the regex patterns in the defined list,
+// preserving the order in which they are listed in the configuration
+func makeRegexList(_ context.Context, valuesList []string) ([]*regexp.Regexp, error) {
+	regexList := make([]*regexp.Regexp, 0, len(valuesList))
 	for _, pattern := range valuesList {
 		re, err := regexp.Compile(pattern)
 		if err != nil {
 			// TODO: Placeholder for an error metric in the next PR
 			return nil, fmt.Errorf("error compiling regex in list: %w", err)
 		}
-		regexList[pattern] = re
+		regexList = append(regexList, re)
 	}
 	return regexList, nil
 }

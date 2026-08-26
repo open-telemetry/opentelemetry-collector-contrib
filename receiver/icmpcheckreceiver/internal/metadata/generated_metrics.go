@@ -12,6 +12,13 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
+)
+
 var MetricsInfo = metricsInfo{
 	PingLossRatio: metricInfo{
 		Name: "ping.loss.ratio",
@@ -39,13 +46,14 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricPingLossRatio struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric            // data buffer for generated metric.
+	config   PingLossRatioMetricConfig // metric config provided by user.
+	capacity int                       // max observed number of data points added to the metric.
 }
 
 // init fills ping.loss.ratio metric with initial data.
@@ -82,8 +90,9 @@ func (m *metricPingLossRatio) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricPingLossRatio(cfg MetricConfig) metricPingLossRatio {
+func newMetricPingLossRatio(cfg PingLossRatioMetricConfig) metricPingLossRatio {
 	m := metricPingLossRatio{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -92,9 +101,9 @@ func newMetricPingLossRatio(cfg MetricConfig) metricPingLossRatio {
 }
 
 type metricPingRttAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric         // data buffer for generated metric.
+	config   PingRttAvgMetricConfig // metric config provided by user.
+	capacity int                    // max observed number of data points added to the metric.
 }
 
 // init fills ping.rtt.avg metric with initial data.
@@ -105,14 +114,14 @@ func (m *metricPingRttAvg) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricPingRttAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricPingRttAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -131,8 +140,9 @@ func (m *metricPingRttAvg) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricPingRttAvg(cfg MetricConfig) metricPingRttAvg {
+func newMetricPingRttAvg(cfg PingRttAvgMetricConfig) metricPingRttAvg {
 	m := metricPingRttAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -141,9 +151,9 @@ func newMetricPingRttAvg(cfg MetricConfig) metricPingRttAvg {
 }
 
 type metricPingRttMax struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric         // data buffer for generated metric.
+	config   PingRttMaxMetricConfig // metric config provided by user.
+	capacity int                    // max observed number of data points added to the metric.
 }
 
 // init fills ping.rtt.max metric with initial data.
@@ -154,14 +164,14 @@ func (m *metricPingRttMax) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricPingRttMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricPingRttMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -180,8 +190,9 @@ func (m *metricPingRttMax) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricPingRttMax(cfg MetricConfig) metricPingRttMax {
+func newMetricPingRttMax(cfg PingRttMaxMetricConfig) metricPingRttMax {
 	m := metricPingRttMax{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -190,9 +201,9 @@ func newMetricPingRttMax(cfg MetricConfig) metricPingRttMax {
 }
 
 type metricPingRttMin struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric         // data buffer for generated metric.
+	config   PingRttMinMetricConfig // metric config provided by user.
+	capacity int                    // max observed number of data points added to the metric.
 }
 
 // init fills ping.rtt.min metric with initial data.
@@ -203,14 +214,14 @@ func (m *metricPingRttMin) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricPingRttMin) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricPingRttMin) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -229,8 +240,9 @@ func (m *metricPingRttMin) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricPingRttMin(cfg MetricConfig) metricPingRttMin {
+func newMetricPingRttMin(cfg PingRttMinMetricConfig) metricPingRttMin {
 	m := metricPingRttMin{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -239,9 +251,9 @@ func newMetricPingRttMin(cfg MetricConfig) metricPingRttMin {
 }
 
 type metricPingRttStddev struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric            // data buffer for generated metric.
+	config   PingRttStddevMetricConfig // metric config provided by user.
+	capacity int                       // max observed number of data points added to the metric.
 }
 
 // init fills ping.rtt.stddev metric with initial data.
@@ -252,14 +264,14 @@ func (m *metricPingRttStddev) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricPingRttStddev) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricPingRttStddev) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -278,8 +290,9 @@ func (m *metricPingRttStddev) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricPingRttStddev(cfg MetricConfig) metricPingRttStddev {
+func newMetricPingRttStddev(cfg PingRttStddevMetricConfig) metricPingRttStddev {
 	m := metricPingRttStddev{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -458,22 +471,22 @@ func (mb *MetricsBuilder) RecordPingLossRatioDataPoint(ts pcommon.Timestamp, val
 }
 
 // RecordPingRttAvgDataPoint adds a data point to ping.rtt.avg metric.
-func (mb *MetricsBuilder) RecordPingRttAvgDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordPingRttAvgDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricPingRttAvg.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPingRttMaxDataPoint adds a data point to ping.rtt.max metric.
-func (mb *MetricsBuilder) RecordPingRttMaxDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordPingRttMaxDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricPingRttMax.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPingRttMinDataPoint adds a data point to ping.rtt.min metric.
-func (mb *MetricsBuilder) RecordPingRttMinDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordPingRttMinDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricPingRttMin.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPingRttStddevDataPoint adds a data point to ping.rtt.stddev metric.
-func (mb *MetricsBuilder) RecordPingRttStddevDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordPingRttStddevDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricPingRttStddev.recordDataPoint(mb.startTime, ts, val)
 }
 

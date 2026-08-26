@@ -1,0 +1,693 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package pprof // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
+
+import (
+	"cmp"
+	"errors"
+	"fmt"
+	"slices"
+	"strconv"
+	"strings"
+
+	"github.com/google/pprof/profile"
+	"github.com/zeebo/xxh3"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pprofile"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
+)
+
+type valueKind int
+
+const (
+	unsupported valueKind = 0
+	strKind     valueKind = 1
+	numKind     valueKind = 2
+)
+
+type pprofLabelValue struct {
+	kind valueKind
+	str  string
+	num  int64
+	unit string
+}
+
+type pprofLabelMerger struct {
+	labels      map[string]pprofLabelValue
+	strLabelCnt int
+	numLabelCnt int
+	numUnitCnt  int
+}
+
+// errNotFound is returned if something requested is not available
+var errNotFound = errors.New("not found")
+
+func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
+	dst := &profile.Profile{}
+
+	rp := src.ResourceProfiles()
+	if rp.Len() != 1 {
+		return nil, errors.New("multiple ResourceProfiles can not be embedded into a single pprof profile")
+	}
+
+	sp := rp.At(0).ScopeProfiles()
+	if sp.Len() != 1 {
+		return nil, errors.New("multiple ScopeProfiles can not be embedded into a single pprof profile")
+	}
+
+	pprofiles := sp.At(0).Profiles()
+	numProfiles := pprofiles.Len()
+
+	// Basic check that all profiles hold the same number of samples.
+	numSamples := []int{}
+	for _, p := range pprofiles.All() {
+		numSamples = append(numSamples, p.Samples().Len())
+	}
+
+	if !allElementsSame(numSamples) {
+		return nil, errors.New("profiles hold varying number of samples")
+	}
+
+	// Validate that all samples within each profile use the same shape, as
+	// required by the OTel Profiles spec (profiles.proto L401-L402):
+	// "All Samples for a Profile SHOULD have the same shape."
+	for profileIdx := range numProfiles {
+		prof := pprofiles.At(profileIdx)
+		samples := prof.Samples()
+		if samples.Len() == 0 {
+			continue
+		}
+		firstShape, err := sampleShapeOf(samples.At(0))
+		if err != nil {
+			return nil, fmt.Errorf("profile %d, sample 0: %w", profileIdx, err)
+		}
+		for sampleIdx := 1; sampleIdx < samples.Len(); sampleIdx++ {
+			shape, err := sampleShapeOf(samples.At(sampleIdx))
+			if err != nil {
+				return nil, fmt.Errorf("profile %d, sample %d: %w", profileIdx, sampleIdx, err)
+			}
+			if shape != firstShape {
+				return nil, fmt.Errorf("profile %d has inconsistent sample shapes: expected shape %d (from sample 0), got shape %d at sample %d", profileIdx, firstShape, shape, sampleIdx)
+			}
+		}
+	}
+
+	// Helper maps to avoid duplicates.
+	functionMap := make(map[uint64]*profile.Function)
+	mappingMap := make(map[uint64]*profile.Mapping)
+	locationMap := make(map[uint64]*profile.Location)
+
+	// Pre-populate all mappings from the mapping table to preserve all of them
+	// (not just those referenced by locations) and maintain their original order.
+	for i, m := range src.Dictionary().MappingTable().All() {
+		if i == 0 {
+			// Skip the zero-value mapping at index 0.
+			continue
+		}
+		populateMapping(dst, mappingMap,
+			m.MemoryStart(),
+			m.MemoryLimit(),
+			m.FileOffset(),
+			getStringFromIdx(src.Dictionary(), int(m.FilenameStrindex())),
+			src.Dictionary(),
+			m,
+		)
+	}
+
+	// As all profiles hold the same number of samples,
+	// assume they only differ on the sample type and therefore can
+	// be merged into a pprof profile.
+	p := sp.At(0).Profiles().At(0)
+	var attrErr error
+
+	// Convert profiles samples into pprof samples.
+	valuesByProfile := make([][]int64, numProfiles)
+	for sampleIdx, s := range p.Samples().All() {
+		si := s.StackIndex()
+		stack := src.Dictionary().StackTable().At(int(si))
+
+		// Collect per-observation values from each profile (sample type).
+		// By convention, pprof uses the last sample type as default, while OTel
+		// Profiles uses the first profile as default. Therefore, swap first and last.
+		// All profiles must produce the same number of observations for a given sample.
+		var obsCount int
+		// Only unique attributes (key, value and unit) will be transformed.
+		labelMerger := &pprofLabelMerger{
+			labels: make(map[string]pprofLabelValue),
+		}
+		for i := range numProfiles {
+			// Swap first and last: first OTel profile becomes last pprof sample type
+			var mappedIdx int
+			switch i {
+			case 0:
+				mappedIdx = numProfiles - 1
+			case numProfiles - 1:
+				mappedIdx = 0
+			default:
+				mappedIdx = i
+			}
+			otlpSample := pprofiles.At(mappedIdx).Samples().At(sampleIdx)
+			shape, err := sampleShapeOf(otlpSample)
+			if err != nil {
+				return nil, err
+			}
+			vals, err := sampleToPprofValues(otlpSample, shape)
+			if err != nil {
+				return nil, err
+			}
+			if i == 0 {
+				obsCount = len(vals)
+			} else if len(vals) != obsCount {
+				return nil, fmt.Errorf("inconsistent sample shapes across profiles: profile 0 has %d observation(s), profile %d has %d", obsCount, i, len(vals))
+			}
+			valuesByProfile[i] = vals
+
+			for _, attrIdx := range otlpSample.AttributeIndices().All() {
+				attr := src.Dictionary().AttributeTable().At(int(attrIdx))
+				key := src.Dictionary().StringTable().At(int(attr.KeyStrindex()))
+				t := attr.Value().Type()
+				switch t {
+				case pcommon.ValueTypeStr:
+					strValue := attr.Value().Str()
+					err := labelMerger.mergeStrLabel(key, strValue)
+					if err != nil {
+						return nil, err
+					}
+				case pcommon.ValueTypeInt:
+					unit := ""
+					numValue := attr.Value().Int()
+					if attr.UnitStrindex() != 0 {
+						unit = src.Dictionary().StringTable().At(int(attr.UnitStrindex()))
+					}
+					err := labelMerger.mergeNumLabel(key, numValue, unit)
+					if err != nil {
+						return nil, err
+					}
+				case pcommon.ValueTypeBool:
+					strValue := attr.Value().AsString()
+					err := labelMerger.mergeStrLabel(key, strValue)
+					if err != nil {
+						return nil, err
+					}
+				default:
+					return nil, fmt.Errorf("incompatible sample attribute type: %s", t.String())
+				}
+			}
+		}
+
+		// Build the shared location list once; all expanded pprof samples for
+		// this OTLP sample reference the same stack.
+		locations := make([]*profile.Location, 0, stack.LocationIndices().Len())
+		for _, li := range stack.LocationIndices().All() {
+			loc := src.Dictionary().LocationTable().At(int(li))
+			var locMapping *profile.Mapping
+
+			if mi := loc.MappingIndex(); mi != 0 {
+				m := src.Dictionary().MappingTable().At(int(mi))
+				locMapping = populateMapping(dst, mappingMap,
+					m.MemoryStart(),
+					m.MemoryLimit(),
+					m.FileOffset(),
+					getStringFromIdx(src.Dictionary(), int(m.FilenameStrindex())),
+					src.Dictionary(),
+					m,
+				)
+			}
+
+			var lines []profile.Line
+			for _, l := range loc.Lines().All() {
+				pprofLine := profile.Line{
+					Line:   l.Line(),
+					Column: l.Column(),
+				}
+				fn := src.Dictionary().FunctionTable().At(int(l.FunctionIndex()))
+
+				pprofLine.Function = populateFunction(dst, functionMap,
+					getStringFromIdx(src.Dictionary(), int(fn.NameStrindex())),
+					getStringFromIdx(src.Dictionary(), int(fn.SystemNameStrindex())),
+					getStringFromIdx(src.Dictionary(), int(fn.FilenameStrindex())),
+					fn.StartLine())
+
+				lines = append(lines, pprofLine)
+			}
+
+			locations = append(locations,
+				populateLocation(dst, locationMap, locMapping, loc.Address(), lines, src.Dictionary(), loc))
+		}
+
+		// Emit one pprof Sample per observation. Shapes 1 and 3 expand a single
+		// OTLP sample into multiple pprof samples (one per timestamp); shape 2
+		// always produces exactly one.
+		for obsIdx := range obsCount {
+			pprofSample := profile.Sample{
+				Location: locations,
+				Value:    make([]int64, numProfiles),
+			}
+			for profIdx := range numProfiles {
+				pprofSample.Value[profIdx] = valuesByProfile[profIdx][obsIdx]
+			}
+			labelMerger.assignAll(&pprofSample)
+			dst.Sample = append(dst.Sample, &pprofSample)
+		}
+	}
+
+	// Set pprof values that should be common across all profiles.
+	// By convention, pprof uses the last sample type as default, while OTel Profiles
+	// uses the first profile as default. Therefore, swap first and last.
+	for i := range numProfiles {
+		// Swap first and last: first OTel profile becomes last pprof sample type
+		var mappedIdx int
+		switch i {
+		case 0:
+			mappedIdx = numProfiles - 1
+		case numProfiles - 1:
+			mappedIdx = 0
+		default:
+			mappedIdx = i
+		}
+		dst.SampleType = append(dst.SampleType, &profile.ValueType{
+			Type: getStringFromIdx(src.Dictionary(), int(pprofiles.At(mappedIdx).SampleType().TypeStrindex())),
+			Unit: getStringFromIdx(src.Dictionary(), int(pprofiles.At(mappedIdx).SampleType().UnitStrindex())),
+		})
+	}
+
+	var commentStrs []string
+	commentStrs, attrErr = getAttributeStringWithPrefix(src.Dictionary())
+	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
+		return nil, attrErr
+	}
+	if len(commentStrs) != 0 {
+		dst.Comments = append(dst.Comments, commentStrs...)
+	}
+
+	dst.KeepFrames, attrErr = getAttributeString(src.Dictionary(), string(semconv.PprofProfileKeepFramesKey))
+	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
+		return nil, attrErr
+	}
+	dst.DropFrames, attrErr = getAttributeString(src.Dictionary(), string(semconv.PprofProfileDropFramesKey))
+	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
+		return nil, attrErr
+	}
+	dst.DocURL, attrErr = getAttributeString(src.Dictionary(), string(semconv.PprofProfileDocURLKey))
+	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
+		return nil, attrErr
+	}
+	dst.TimeNanos = p.Time().AsTime().UnixNano()
+	dst.DurationNanos = int64(p.DurationNano())
+	dst.Period = p.Period()
+
+	pt := p.PeriodType()
+	dst.PeriodType = &profile.ValueType{
+		Type: getStringFromIdx(src.Dictionary(), int(pt.TypeStrindex())),
+		Unit: getStringFromIdx(src.Dictionary(), int(pt.UnitStrindex())),
+	}
+
+	if err := dst.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	return dst, nil
+}
+
+// sampleShape identifies which value/timestamp combination an OTel Profiles
+// message Sample uses.
+type sampleShape int
+
+const (
+	// timestampsOnly is shape 1: values is empty, timestamps non-empty.
+	timestampsOnly sampleShape = iota + 1
+	// singleAggregate is shape 2: exactly one value, timestamps empty.
+	singleAggregate
+	// perObservation is shape 3: values and timestamps of equal non-zero length.
+	perObservation
+)
+
+// sampleShapeOf returns the shape of an OTel profiles Sample as defined by the
+// OTel Profiles signal, or an error if the sample has an invalid combination
+// of values and timestamps.
+func sampleShapeOf(s pprofile.Sample) (sampleShape, error) {
+	nValues := s.Values().Len()
+	nTimestamps := s.TimestampsUnixNano().Len()
+	switch {
+	case nValues == 0 && nTimestamps > 0:
+		return timestampsOnly, nil
+	case nValues == 1 && nTimestamps == 0:
+		return singleAggregate, nil
+	case nValues > 0 && nValues == nTimestamps:
+		return perObservation, nil
+	default:
+		return 0, fmt.Errorf("invalid sample: %d value(s), %d timestamp(s)", nValues, nTimestamps)
+	}
+}
+
+// sampleToPprofValues maps the three valid OTel profiles Sample shapes to a
+// slice of per-observation pprof values according to the profiles proto spec:
+//
+//   - Shape 1 (timestamps only): values is empty; each timestamps_unix_nano
+//     entry represents one observation with an implicit value of 1. Returns a
+//     single-element slice with the count of timestamps as the aggregated value.
+//   - Shape 2 (single aggregate): exactly one value and no timestamps; returns
+//     a single-element slice.
+//   - Shape 3 (per-observation): values and timestamps_unix_nano have equal
+//     non-zero length; each pair is one observation.
+//
+// The caller emits one pprof Sample per returned element, all sharing the same
+// location list. This matches the pprof proto convention where aggregation is
+// done by summing samples that share the same stack, not by pre-collapsing.
+func sampleToPprofValues(s pprofile.Sample, shape sampleShape) ([]int64, error) {
+	switch shape {
+	case timestampsOnly:
+		return []int64{int64(s.TimestampsUnixNano().Len())}, nil
+	case singleAggregate:
+		return []int64{s.Values().At(0)}, nil
+	case perObservation:
+		sv := s.Values()
+		nValues := sv.Len()
+		vals := make([]int64, nValues)
+		for i := range nValues {
+			vals[i] = sv.At(i)
+		}
+		return vals, nil
+	default:
+		return []int64{}, errors.New("unknown sample shape")
+	}
+}
+
+// allElementsSame checks if all elements in the provided slice are equal.
+// It returns true if the slice contains at least one element and all elements are equal.
+// It returns false otherwise.
+func allElementsSame[T cmp.Ordered](in []T) bool {
+	if len(in) == 0 {
+		return false
+	}
+	slices.Sort(in)
+
+	return in[0] == in[len(in)-1]
+}
+
+// getAttributeString walks the attribute_table and returns the string value for
+// the given key.
+// It returns errNotFound if the key can not be found in attribute_table.
+func getAttributeString(dic pprofile.ProfilesDictionary, key string) (string, error) {
+	for _, attr := range dic.AttributeTable().All() {
+		attrKey := getStringFromIdx(dic, int(attr.KeyStrindex()))
+		if attrKey == key {
+			return attr.Value().AsString(), nil
+		}
+	}
+	return "", fmt.Errorf("attribute with key '%s': %w", key, errNotFound)
+}
+
+// getAttributeBool walks the attribute_table for the given indices and returns the bool value
+// for the given key.
+// It returns errNotFound if the key can not be found in attribute_table.
+func getAttributeBool(dic pprofile.ProfilesDictionary, attrIndices []int32, key string) (bool, error) {
+	for _, idx := range attrIndices {
+		if idx == 0 || int(idx) >= dic.AttributeTable().Len() {
+			continue
+		}
+		attr := dic.AttributeTable().At(int(idx))
+		attrKey := getStringFromIdx(dic, int(attr.KeyStrindex()))
+		if attrKey == key {
+			return attr.Value().Bool(), nil
+		}
+	}
+	return false, fmt.Errorf("attribute with key '%s': %w", key, errNotFound)
+}
+
+// getAttributeStringWithPrefix walks the attribute_table and returns a string array
+// for all keys that start with the prefix pprof.profile.comment.
+// It returns errNotFound if the key can not be found in attribute_table.
+func getAttributeStringWithPrefix(dic pprofile.ProfilesDictionary) ([]string, error) {
+	tmp := make(map[int]string)
+	keyprefix := string(semconv.PprofProfileCommentKey)
+
+	for _, attr := range dic.AttributeTable().All() {
+		attrKey := getStringFromIdx(dic, int(attr.KeyStrindex()))
+		attrIdxStr, found := strings.CutPrefix(attrKey, keyprefix+".")
+		if !found {
+			continue
+		}
+		attrIdx, err := strconv.Atoi(attrIdxStr)
+		if err != nil {
+			return []string{}, err
+		}
+		tmp[attrIdx] = attr.Value().AsString()
+	}
+
+	if len(tmp) == 0 {
+		return []string{}, fmt.Errorf("attribute with prefix '%s': %w", keyprefix, errNotFound)
+	}
+
+	result := make([]string, len(tmp))
+	for k, v := range tmp {
+		result[k] = v
+	}
+
+	return result, nil
+}
+
+// getStringFromIdx returns the string on idx.
+func getStringFromIdx(dic pprofile.ProfilesDictionary, idx int) string {
+	return dic.StringTable().At(idx)
+}
+
+// uint64Tobytes helps to convert uint64 to []byte.
+func uint64Tobytes(v uint64) []byte {
+	return []byte{
+		byte(v >> 56),
+		byte(v >> 48),
+		byte(v >> 40),
+		byte(v >> 32),
+		byte(v >> 24),
+		byte(v >> 16),
+		byte(v >> 8),
+		byte(v),
+	}
+}
+
+// getFunctionHash returns a non-cryptographic hash as identifier for a Function.
+func getFunctionHash(name, systemName, fileName string, startLine int64) uint64 {
+	h := xxh3.New()
+	h.WriteString(name)                       //nolint:errcheck
+	h.WriteString(systemName)                 //nolint:errcheck
+	h.WriteString(fileName)                   //nolint:errcheck
+	h.Write(uint64Tobytes(uint64(startLine))) //nolint:errcheck
+	return h.Sum64()
+}
+
+// populateFunction helps to populate deduplicated functions.
+func populateFunction(dst *profile.Profile, functionMap map[uint64]*profile.Function,
+	name, systemName, fileName string, startLine int64,
+) *profile.Function {
+	fnHash := getFunctionHash(name, systemName, fileName, startLine)
+	if existingFn, ok := functionMap[fnHash]; ok {
+		return existingFn
+	}
+
+	pprofFn := &profile.Function{
+		ID:         uint64(len(dst.Function) + 1),
+		Name:       name,
+		SystemName: systemName,
+		Filename:   fileName,
+		StartLine:  startLine,
+	}
+
+	dst.Function = append(dst.Function, pprofFn)
+	functionMap[fnHash] = pprofFn
+
+	return pprofFn
+}
+
+// getMappingHash returns a non-cryptographic hash as identifier for a Mapping.
+func getMappingHash(start, limit, offset uint64, file string) uint64 {
+	h := xxh3.New()
+	h.Write(uint64Tobytes(start))  //nolint:errcheck
+	h.Write(uint64Tobytes(limit))  //nolint:errcheck
+	h.Write(uint64Tobytes(offset)) //nolint:errcheck
+	h.WriteString(file)            //nolint:errcheck
+	return h.Sum64()
+}
+
+// populateMapping helps to populate deduplicated mappings.
+func populateMapping(dst *profile.Profile, mappingMap map[uint64]*profile.Mapping,
+	start, limit, offset uint64, fileName string, dic pprofile.ProfilesDictionary, m pprofile.Mapping,
+) *profile.Mapping {
+	mHash := getMappingHash(start, limit, offset, fileName)
+	if existingMapping, ok := mappingMap[mHash]; ok {
+		return existingMapping
+	}
+
+	pprofM := &profile.Mapping{
+		ID:     uint64(len(dst.Mapping) + 1),
+		Start:  start,
+		Limit:  limit,
+		Offset: offset,
+		File:   fileName,
+	}
+
+	// Extract mapping attributes from the OTel profile
+	var attrIndices []int32
+	for _, idx := range m.AttributeIndices().All() {
+		attrIndices = append(attrIndices, idx)
+	}
+
+	// Extract BuildID from attributes
+	for _, idx := range attrIndices {
+		if idx == 0 || int(idx) >= dic.AttributeTable().Len() {
+			continue
+		}
+		attr := dic.AttributeTable().At(int(idx))
+		attrKey := getStringFromIdx(dic, int(attr.KeyStrindex()))
+		if attrKey == string(semconv.ProcessExecutableBuildIDGNUKey) {
+			pprofM.BuildID = attr.Value().AsString()
+			break
+		}
+	}
+
+	// Extract boolean mapping flags
+	hasFunctions, err := getAttributeBool(dic, attrIndices, string(semconv.PprofMappingHasFunctionsKey))
+	if err == nil {
+		pprofM.HasFunctions = hasFunctions
+	}
+	hasFilenames, err := getAttributeBool(dic, attrIndices, string(semconv.PprofMappingHasFilenamesKey))
+	if err == nil {
+		pprofM.HasFilenames = hasFilenames
+	}
+	hasLineNumbers, err := getAttributeBool(dic, attrIndices, string(semconv.PprofMappingHasLineNumbersKey))
+	if err == nil {
+		pprofM.HasLineNumbers = hasLineNumbers
+	}
+	hasInlineFrames, err := getAttributeBool(dic, attrIndices, string(semconv.PprofMappingHasInlineFramesKey))
+	if err == nil {
+		pprofM.HasInlineFrames = hasInlineFrames
+	}
+
+	dst.Mapping = append(dst.Mapping, pprofM)
+	mappingMap[mHash] = pprofM
+
+	return pprofM
+}
+
+// getLocationHash returns a non-cryptographic hash as identifier for a Location.
+func getLocationHash(m *profile.Mapping, addr uint64, lines []profile.Line) uint64 {
+	h := xxh3.New()
+	if m != nil {
+		mHash := getMappingHash(m.Start, m.Limit, m.Offset, m.File)
+		h.Write(uint64Tobytes(mHash)) //nolint:errcheck
+	}
+	h.Write(uint64Tobytes(addr)) //nolint:errcheck
+	for _, l := range lines {
+		h.Write(uint64Tobytes(uint64(l.Column))) //nolint:errcheck
+		h.Write(uint64Tobytes(uint64(l.Line)))   //nolint:errcheck
+		fHash := getFunctionHash(l.Function.Name, l.Function.SystemName,
+			l.Function.Filename, l.Function.StartLine)
+		h.Write(uint64Tobytes(fHash)) //nolint:errcheck
+	}
+	return h.Sum64()
+}
+
+// populateLocation helps to populate deduplicated locations.
+func populateLocation(dst *profile.Profile, locationMap map[uint64]*profile.Location,
+	m *profile.Mapping, addr uint64, lines []profile.Line, dic pprofile.ProfilesDictionary, loc pprofile.Location,
+) *profile.Location {
+	lHash := getLocationHash(m, addr, lines)
+	if existingLocation, ok := locationMap[lHash]; ok {
+		return existingLocation
+	}
+
+	pprofL := &profile.Location{
+		ID:      uint64(len(dst.Location) + 1),
+		Mapping: m,
+		Address: addr,
+		Line:    lines,
+	}
+
+	// Extract location attributes from the OTel profile
+	var attrIndices []int32
+	for _, idx := range loc.AttributeIndices().All() {
+		attrIndices = append(attrIndices, idx)
+	}
+
+	// Extract IsFolded from attributes
+	isFolded, err := getAttributeBool(dic, attrIndices, string(semconv.PprofLocationIsFoldedKey))
+	if err == nil {
+		pprofL.IsFolded = isFolded
+	}
+
+	dst.Location = append(dst.Location, pprofL)
+	locationMap[lHash] = pprofL
+
+	return pprofL
+}
+
+func (p *pprofLabelMerger) mergeStrLabel(key, strValue string) error {
+	v, ok := p.labels[key]
+	if ok {
+		if v.kind != strKind {
+			return errors.New("inconsistent attribute value types across profiles")
+		}
+		if v.str != strValue {
+			return errors.New("inconsistent attribute str values across profiles")
+		}
+	} else {
+		p.labels[key] = pprofLabelValue{
+			kind: strKind,
+			str:  strValue,
+		}
+		p.strLabelCnt++
+	}
+	return nil
+}
+
+func (p *pprofLabelMerger) mergeNumLabel(key string, numValue int64, unit string) error {
+	v, ok := p.labels[key]
+	if ok {
+		if v.kind != numKind {
+			return errors.New("inconsistent attribute value types across profiles")
+		}
+		if v.num != numValue {
+			return errors.New("inconsistent attribute int values across profiles")
+		}
+		if v.unit != unit {
+			return errors.New("inconsistent attribute unit definitions across profiles")
+		}
+	} else {
+		p.labels[key] = pprofLabelValue{
+			kind: numKind,
+			num:  numValue,
+			unit: unit,
+		}
+		p.numLabelCnt++
+		if unit != "" {
+			p.numUnitCnt++
+		}
+	}
+	return nil
+}
+
+func (p *pprofLabelMerger) assignAll(pprofSample *profile.Sample) {
+	if len(p.labels) > 0 {
+		if p.strLabelCnt > 0 {
+			pprofSample.Label = make(map[string][]string, p.strLabelCnt)
+		}
+		if p.numLabelCnt > 0 {
+			pprofSample.NumLabel = make(map[string][]int64, p.numLabelCnt)
+		}
+		if p.numUnitCnt > 0 {
+			pprofSample.NumUnit = make(map[string][]string, p.numUnitCnt)
+		}
+		for k, v := range p.labels {
+			switch v.kind {
+			case strKind:
+				pprofSample.Label[k] = []string{v.str}
+			case numKind:
+				pprofSample.NumLabel[k] = []int64{v.num}
+				if v.unit != "" {
+					pprofSample.NumUnit[k] = []string{v.unit}
+				}
+			}
+		}
+	}
+}

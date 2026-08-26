@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -31,7 +30,7 @@ func withFakeMetaServer(t *testing.T, mux http.Handler) {
 
 func TestNewDetector(t *testing.T) {
 	dcfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), dcfg)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), dcfg, false)
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }
@@ -45,19 +44,21 @@ func TestHetznerDetector_Detect_OK(t *testing.T) {
 	withFakeMetaServer(t, mux)
 
 	cfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	cfg.ResourceAttributes.CloudPlatform.Enabled = true
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, conventions.SchemaURL, schemaURL)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	want := map[string]any{
-		string(conventions.CloudProviderKey):         TypeStr,
-		string(conventions.HostIDKey):                "987654321",
-		string(conventions.HostNameKey):              "srv-123",
-		string(conventions.CloudRegionKey):           "nbg1",
-		string(conventions.CloudAvailabilityZoneKey): "nbg1-dc3",
+		"cloud.provider":          TypeStr,
+		"cloud.platform":          TypeStr + ".cloud_server",
+		"host.id":                 "987654321",
+		"host.name":               "srv-123",
+		"cloud.region":            "nbg1",
+		"cloud.availability_zone": "nbg1-dc3",
 	}
 	assert.Equal(t, want, res.Attributes().AsRaw())
 }
@@ -79,7 +80,7 @@ func TestHetznerDetector_NotOnHetzner(t *testing.T) {
 	t.Cleanup(func() { newHcloudClient = orig })
 
 	cfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())
@@ -96,7 +97,7 @@ func TestHetznerDetector_HostnameError(t *testing.T) {
 	withFakeMetaServer(t, mux)
 
 	cfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())

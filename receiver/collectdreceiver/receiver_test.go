@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -37,6 +38,17 @@ func TestNewReceiver(t *testing.T) {
 		attrsPrefix  string
 		nextConsumer consumer.Metrics
 	}
+	happyPathServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	happyPathServerConfig.WriteTimeout = 0
+	happyPathServerConfig.ReadHeaderTimeout = 0
+	happyPathServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	happyPathServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	happyPathServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  ":0",
+	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -46,9 +58,7 @@ func TestNewReceiver(t *testing.T) {
 			name: "happy path",
 			args: args{
 				config: &Config{
-					ServerConfig: confighttp.ServerConfig{
-						Endpoint: ":0",
-					},
+					ServerConfig: happyPathServerConfig,
 				},
 				attrsPrefix:  "default_attr_",
 				nextConsumer: consumertest.NewNop(),
@@ -75,10 +85,18 @@ func TestCollectDServer(t *testing.T) {
 		WantData     []pmetric.Metrics
 	}
 
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:8081",
+	}
 	config := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:8081",
-		},
+		ServerConfig: serverConfig,
 	}
 	defaultAttrsPrefix := "dap_"
 
@@ -165,7 +183,7 @@ func TestCollectDServer(t *testing.T) {
 			sink.Reset()
 			req, err := http.NewRequest(
 				tt.HTTPMethod,
-				"http://"+config.Endpoint+"?"+tt.QueryParams,
+				"http://"+config.ServerConfig.NetAddr.Endpoint+"?"+tt.QueryParams,
 				bytes.NewBuffer([]byte(tt.RequestBody)),
 			)
 			require.NoError(t, err)

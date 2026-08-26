@@ -9,17 +9,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func createConfig(matchType filterset.MatchType) *filterset.Config {
@@ -169,8 +167,6 @@ func TestSpan_Matching_False(t *testing.T) {
 
 	span := ptrace.NewSpan()
 	span.SetName("spanName")
-	library := pcommon.NewInstrumentationScope()
-	resource := pcommon.NewResource()
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -178,7 +174,10 @@ func TestSpan_Matching_False(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, expr)
 
-			val, err := expr.Eval(t.Context(), ottlspan.NewTransformContext(span, library, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
+			tCtx := ottlspan.NewTransformContextPtr(ptrace.NewResourceSpans(), ptrace.NewScopeSpans(), span)
+			defer tCtx.Close()
+
+			val, err := expr.Eval(t.Context(), tCtx)
 			require.NoError(t, err)
 			assert.False(t, val)
 		})
@@ -196,7 +195,9 @@ func TestSpan_MissingServiceName(t *testing.T) {
 	assert.NotNil(t, mp)
 
 	emptySpan := ptrace.NewSpan()
-	val, err := mp.Eval(t.Context(), ottlspan.NewTransformContext(emptySpan, pcommon.NewInstrumentationScope(), pcommon.NewResource(), ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
+	tCtx := ottlspan.NewTransformContextPtr(ptrace.NewResourceSpans(), ptrace.NewScopeSpans(), emptySpan)
+	defer tCtx.Close()
+	val, err := mp.Eval(t.Context(), tCtx)
 	require.NoError(t, err)
 	assert.False(t, val)
 }
@@ -265,7 +266,9 @@ func TestSpan_Matching_True(t *testing.T) {
 		},
 	}
 
-	span := ptrace.NewSpan()
+	rs := ptrace.NewResourceSpans()
+	rs.Resource().Attributes().PutStr("service.name", "svcA")
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("spanName")
 
 	span.Attributes().PutStr("keyString", "arithmetic")
@@ -276,18 +279,15 @@ func TestSpan_Matching_True(t *testing.T) {
 	span.SetKind(ptrace.SpanKindClient)
 	assert.NotNil(t, span)
 
-	resource := pcommon.NewResource()
-	resource.Attributes().PutStr(string(conventions.ServiceNameKey), "svcA")
-
-	library := pcommon.NewInstrumentationScope()
-
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			mp, err := newExpr(tc.properties)
 			require.NoError(t, err)
 			assert.NotNil(t, mp)
 
-			val, err := mp.Eval(t.Context(), ottlspan.NewTransformContext(span, library, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
+			tCtx := ottlspan.NewTransformContextPtr(rs, rs.ScopeSpans().At(0), span)
+			defer tCtx.Close()
+			val, err := mp.Eval(t.Context(), tCtx)
 			require.NoError(t, err)
 			assert.True(t, val)
 		})
@@ -725,7 +725,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.1.0"),
+							Version: new("0.1.0"),
 						},
 					},
 				},
@@ -741,11 +741,11 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("2.0.0"),
+							Version: new("2.0.0"),
 						},
 						{
 							Name:    "scope",
-							Version: ottltest.Strp(`1.1.0`),
+							Version: new(`1.1.0`),
 						},
 					},
 				},
@@ -761,7 +761,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.*"),
+							Version: new("0.*"),
 						},
 					},
 				},
@@ -777,11 +777,11 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("2.*"),
+							Version: new("2.*"),
 						},
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("^1\\\\.1.*"),
+							Version: new("^1\\\\.1.*"),
 						},
 					},
 				},
@@ -797,7 +797,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.1.0"),
+							Version: new("0.1.0"),
 						},
 					},
 				},
@@ -813,11 +813,11 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("2.0.0"),
+							Version: new("2.0.0"),
 						},
 						{
 							Name:    "scope",
-							Version: ottltest.Strp(`1.1.0`),
+							Version: new(`1.1.0`),
 						},
 					},
 				},
@@ -833,7 +833,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.*"),
+							Version: new("0.*"),
 						},
 					},
 				},
@@ -849,11 +849,11 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("2.*"),
+							Version: new("2.*"),
 						},
 						{
 							Name:    "scope",
-							Version: ottltest.Strp(`1\\.1.*`),
+							Version: new(`1\\.1.*`),
 						},
 					},
 				},
@@ -1168,7 +1168,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.1.0"),
+							Version: new("0.1.0"),
 						},
 					},
 					Resources: []filterconfig.Attribute{
@@ -1197,19 +1197,19 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			span := ptrace.NewSpan()
+			rs := ptrace.NewResourceSpans()
+			rs.Resource().Attributes().PutStr("service.name", "svcA")
+			span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			span.SetName("spanName")
 			span.Attributes().PutStr("attr1", "val1")
 			span.SetKind(ptrace.SpanKindClient)
 
-			resource := pcommon.NewResource()
-			resource.Attributes().PutStr("service.name", "svcA")
-
-			scope := pcommon.NewInstrumentationScope()
+			scope := rs.ScopeSpans().At(0).Scope()
 			scope.SetName("scope")
 			scope.SetVersion("0.1.0")
 
-			tCtx := ottlspan.NewTransformContext(span, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+			tCtx := ottlspan.NewTransformContextPtr(rs, rs.ScopeSpans().At(0), span)
+			defer tCtx.Close()
 
 			boolExpr, err := NewSkipExpr(tt.condition)
 			require.NoError(t, err)
@@ -1255,16 +1255,17 @@ func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 	}
 
 	for _, tt := range testCases {
-		origVal := useOTTLBridge.IsEnabled()
-		err := featuregate.GlobalRegistry().Set("filter.filterspan.useOTTLBridge", true)
+		origVal := metadata.FilterFilterspanUseOTTLBridgeFeatureGate.IsEnabled()
+		err := featuregate.GlobalRegistry().Set(metadata.FilterFilterspanUseOTTLBridgeFeatureGate.ID(), true)
 		assert.NoError(b, err)
 
 		skipExpr, err := NewSkipExpr(tt.mc)
 		assert.NoError(b, err)
 
-		span := ptrace.NewSpan()
+		rs := ptrace.NewResourceSpans()
+		rs.Resource().Attributes().PutStr("service.name", "svcA")
+		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("spanName")
-
 		span.Attributes().PutStr("keyString", "arithmetic")
 		span.Attributes().PutInt("keyInt", 123)
 		span.Attributes().PutDouble("keyDouble", 3245.6)
@@ -1272,12 +1273,8 @@ func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 		span.Attributes().PutStr("keyExists", "present")
 		span.SetKind(ptrace.SpanKindClient)
 
-		resource := pcommon.NewResource()
-		resource.Attributes().PutStr(string(conventions.ServiceNameKey), "svcA")
-
-		scope := pcommon.NewInstrumentationScope()
-
-		tCtx := ottlspan.NewTransformContext(span, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+		tCtx := ottlspan.NewTransformContextPtr(rs, rs.ScopeSpans().At(0), span)
+		defer tCtx.Close()
 
 		b.Run(tt.name, func(b *testing.B) {
 			for b.Loop() {
@@ -1288,7 +1285,7 @@ func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 			}
 		})
 
-		err = featuregate.GlobalRegistry().Set("filter.filterspan.useOTTLBridge", origVal)
+		err = featuregate.GlobalRegistry().Set(metadata.FilterFilterspanUseOTTLBridgeFeatureGate.ID(), origVal)
 		assert.NoError(b, err)
 	}
 }

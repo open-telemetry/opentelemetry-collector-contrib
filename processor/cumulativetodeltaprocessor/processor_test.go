@@ -11,16 +11,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
 
 var (
@@ -67,6 +68,7 @@ type testHistogramMetric struct {
 	metricMins    [][]float64
 	metricMaxes   [][]float64
 	metricBuckets [][][]uint64
+	metricBounds  [][][]float64
 	isCumulative  []bool
 	flags         [][]pmetric.DataPointFlags
 }
@@ -104,12 +106,82 @@ func (tm testHistogramMetric) addToMetrics(ms pmetric.MetricSlice, now time.Time
 					dp.SetMax(maxes[index])
 				}
 			}
+			if tm.metricBounds != nil {
+				bounds := tm.metricBounds[i]
+				if len(bounds) > 0 {
+					dp.ExplicitBounds().FromRaw(bounds[index])
+				}
+			}
 			dp.BucketCounts().FromRaw(tm.metricBuckets[i][index])
 			if len(tm.flags) > i && len(tm.flags[i]) > index {
 				dp.SetFlags(tm.flags[i][index])
 			}
 		}
 	}
+}
+
+type testExponentialHistogramPoint struct {
+	startTs         int64
+	ts              int64
+	count           uint64
+	sum             *float64
+	min             *float64
+	max             *float64
+	zeroCount       uint64
+	zeroThreshold   float64
+	scale           int32
+	positiveOffset  int32
+	positiveBuckets []uint64
+	negativeOffset  int32
+	negativeBuckets []uint64
+}
+type testExponentialHistogramMetric struct {
+	name       string
+	cumulative bool
+	points     []testExponentialHistogramPoint
+}
+type testExponentialHistogramMetrics struct {
+	metrics []testExponentialHistogramMetric
+}
+
+func (tm testExponentialHistogramMetrics) generateMetrics(now time.Time) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
+	for _, metric := range tm.metrics {
+		m := ms.AppendEmpty()
+		m.SetName(metric.name)
+		eh := m.SetEmptyExponentialHistogram()
+		if metric.cumulative {
+			eh.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		} else {
+			eh.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		}
+		for i := range metric.points {
+			point := &metric.points[i]
+			dp := eh.DataPoints().AppendEmpty()
+			dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(time.Duration(point.startTs) * time.Second)))
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(time.Duration(point.ts) * time.Second)))
+			dp.SetCount(point.count)
+			if point.sum != nil {
+				dp.SetSum(*point.sum)
+			}
+			if point.min != nil {
+				dp.SetMin(*point.min)
+			}
+			if point.max != nil {
+				dp.SetMax(*point.max)
+			}
+			dp.SetZeroCount(point.zeroCount)
+			dp.SetZeroThreshold(point.zeroThreshold)
+			dp.SetScale(point.scale)
+			dp.Positive().SetOffset(point.positiveOffset)
+			dp.Positive().BucketCounts().FromRaw(point.positiveBuckets)
+			dp.Negative().SetOffset(point.negativeOffset)
+			dp.Negative().BucketCounts().FromRaw(point.negativeBuckets)
+		}
+	}
+	return md
 }
 
 type cumulativeToDeltaTest struct {
@@ -122,6 +194,8 @@ type cumulativeToDeltaTest struct {
 }
 
 func TestCumulativeToDeltaProcessor(t *testing.T) {
+	now := time.Now()
+
 	testCases := []cumulativeToDeltaTest{
 		{
 			name: "cumulative_to_delta_convert_nothing",
@@ -315,6 +389,36 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 					{{4, 4, 4}},
 				},
 				isCumulative: []bool{false, true},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_histogram_change_bounds",
+			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1"},
+				metricCounts: [][]uint64{{0, 100, 200, 500}},
+				metricSums:   [][]float64{{0, 100, 200, 500}},
+				metricBuckets: [][][]uint64{{
+					{0, 0, 0},
+					{50, 25, 25},
+					{100, 50, 50},
+					{250, 125, 125},
+				}},
+				metricBounds: [][][]float64{{
+					{1.0, 2.0},
+					{1.0, 2.0},
+					{1.5, 3.0},
+					{1.5, 3.0}, // Change of bucket bounds: first data point will be ignored
+				}},
+				isCumulative: []bool{true},
+			}),
+			outMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1"},
+				metricCounts: [][]uint64{{100, 300}},
+				metricSums:   [][]float64{{100, 300}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {150, 75, 75}},
+				},
+				isCumulative: []bool{false},
 			}),
 		},
 		{
@@ -553,7 +657,8 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 						nil,
 					},
 					isCumulative: []bool{false},
-				}),
+				},
+			),
 		},
 		{
 			name: "cumulative_to_delta_include_histogram_metrics",
@@ -604,7 +709,8 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 						nil,
 					},
 					isCumulative: []bool{false},
-				}),
+				},
+			),
 		},
 		{
 			name: "cumulative_to_delta_unsupported_include_metric_type",
@@ -619,6 +725,169 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 				MetricTypes: []string{"summary"},
 			},
 			wantError: errors.New("unsupported metric type filter: summary"),
+		},
+		{
+			name: "cumulative_to_delta_exponential_histogram",
+			inMetrics: testExponentialHistogramMetrics{
+				metrics: []testExponentialHistogramMetric{
+					{
+						name:       "metric_1",
+						cumulative: true,
+						points: []testExponentialHistogramPoint{
+							{
+								// 10 points with value 1
+								startTs:         1,
+								ts:              2,
+								count:           10,
+								sum:             new(10.0),
+								min:             new(1.0),
+								max:             new(1.0),
+								scale:           0, // base == 2
+								positiveOffset:  -1,
+								positiveBuckets: []uint64{10}, // ]0.5, 1]
+							},
+							{
+								// additionally, 10 points with value 2, and 10 with value -4
+								startTs:         1,
+								ts:              3,
+								count:           30,
+								sum:             new(-10.0),
+								min:             new(-4.0),
+								max:             new(1.0),
+								scale:           0,
+								positiveOffset:  -1,
+								positiveBuckets: []uint64{10, 10}, // ]0.5, 1], ]1, 2]
+								negativeOffset:  2,
+								negativeBuckets: []uint64{10}, // [-4, -2[
+							},
+							{
+								// then, nothing
+								startTs:         1,
+								ts:              4,
+								count:           30,
+								sum:             new(-10.0),
+								min:             new(-4.0),
+								max:             new(1.0),
+								scale:           0,
+								positiveOffset:  -1,
+								positiveBuckets: []uint64{10, 10}, // ]0.5, 1], ]1, 2]
+								negativeOffset:  2,
+								negativeBuckets: []uint64{10}, // [-4, -2[
+							},
+						},
+					},
+				},
+			}.generateMetrics(now),
+			outMetrics: testExponentialHistogramMetrics{
+				metrics: []testExponentialHistogramMetric{
+					{
+						name:       "metric_1",
+						cumulative: false,
+						points: []testExponentialHistogramPoint{
+							{
+								startTs:         1,
+								ts:              2,
+								count:           10,
+								sum:             new(10.0),
+								scale:           0,
+								positiveOffset:  -1,
+								positiveBuckets: []uint64{10},
+							},
+							{
+								startTs:         2,
+								ts:              3,
+								count:           20,
+								sum:             new(-20.0),
+								scale:           0,
+								positiveOffset:  0,
+								positiveBuckets: []uint64{10},
+								negativeOffset:  2,
+								negativeBuckets: []uint64{10},
+							},
+							{
+								startTs: 3,
+								ts:      4,
+								sum:     new(0.0),
+							},
+						},
+					},
+				},
+			}.generateMetrics(now),
+		},
+		{
+			name: "cumulative_to_delta_exponential_histogram_coarsen",
+			inMetrics: testExponentialHistogramMetrics{
+				metrics: []testExponentialHistogramMetric{
+					{
+						name:       "metric_1",
+						cumulative: true,
+						points: []testExponentialHistogramPoint{
+							{
+								// 10 points with value 1 and 5 points with value 2
+								startTs:         1,
+								ts:              2,
+								count:           15,
+								sum:             new(20.0),
+								min:             new(1.0),
+								max:             new(2.0),
+								scale:           0, // base == 2
+								positiveOffset:  -1,
+								positiveBuckets: []uint64{10, 5}, // ]0.5, 1], ]1, 2]
+							},
+							{
+								// additionally, 10 points with value 0.5, 10 points with value 2, and 10 with value -4
+								// zeroThreshold is increased to 1, so the 1 points are now counted as zeros
+								// scale is decreased to -1
+								startTs:         1,
+								ts:              3,
+								count:           45,
+								sum:             new(5.0),
+								min:             new(-4.0),
+								max:             new(2.0),
+								zeroThreshold:   1.0,
+								zeroCount:       20,
+								scale:           -1,
+								positiveOffset:  0,
+								positiveBuckets: []uint64{15}, // ]1, 4]
+								negativeOffset:  0,
+								negativeBuckets: []uint64{10}, // [-4, -1[
+							},
+						},
+					},
+				},
+			}.generateMetrics(now),
+			outMetrics: testExponentialHistogramMetrics{
+				metrics: []testExponentialHistogramMetric{
+					{
+						name:       "metric_1",
+						cumulative: false,
+						points: []testExponentialHistogramPoint{
+							{
+								startTs:         1,
+								ts:              2,
+								count:           15,
+								sum:             new(20.0),
+								scale:           0,
+								positiveOffset:  -1,
+								positiveBuckets: []uint64{10, 5},
+							},
+							{
+								startTs:         2,
+								ts:              3,
+								count:           30,
+								sum:             new(-15.0),
+								zeroThreshold:   1.0,
+								zeroCount:       10,
+								scale:           -1,
+								positiveOffset:  0,
+								positiveBuckets: []uint64{10},
+								negativeOffset:  0,
+								negativeBuckets: []uint64{10},
+							},
+						},
+					},
+				},
+			}.generateMetrics(now),
 		},
 	}
 
@@ -649,7 +918,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			caps := mgp.Capabilities()
 			assert.True(t, caps.MutatesData)
 			ctx := t.Context()
-			require.NoError(t, mgp.Start(ctx, nil))
+			require.NoError(t, mgp.Start(ctx, componenttest.NewNopHost()))
 
 			cErr := mgp.ConsumeMetrics(t.Context(), test.inMetrics)
 			assert.NoError(t, cErr)
@@ -717,6 +986,10 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 						require.Equal(t, eDataPoints.At(j).Flags(), aDataPoints.At(j).Flags())
 					}
 				}
+
+				if eM.Type() == pmetric.MetricTypeExponentialHistogram {
+					require.NoError(t, pmetrictest.CompareMetric(eM, aM))
+				}
 			}
 
 			require.NoError(t, mgp.Shutdown(ctx))
@@ -761,15 +1034,17 @@ func generateMixedTestMetrics(tsm testSumMetric, thm testHistogramMetric) pmetri
 
 func BenchmarkConsumeMetrics(b *testing.B) {
 	c := consumertest.NewNop()
-	params := processor.Settings{
-		TelemetrySettings: component.TelemetrySettings{
-			Logger: zap.NewNop(),
-		},
-		BuildInfo: component.BuildInfo{},
-	}
+	params := processortest.NewNopSettings(metadata.Type)
+	params.Logger = zap.NewNop()
 	cfg := createDefaultConfig().(*Config)
+	// InitialValueKeep so the first observation isn't dropped: with
+	// InitialValueAuto the processor would remove the empty metric container
+	// after the first call and the loop's reset() would dereference a stale
+	// pmetric.Metric.
+	cfg.InitialValue = tracking.InitialValueKeep
 	p, err := createMetricsProcessor(b.Context(), params, cfg, c)
 	require.NoError(b, err)
+	b.Cleanup(func() { require.NoError(b, p.Shutdown(b.Context())) })
 
 	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics().AppendEmpty()

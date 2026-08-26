@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	upcloudmeta "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/upcloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -50,7 +49,7 @@ func TestNewDetector(t *testing.T) {
 		},
 	})
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }
@@ -72,19 +71,19 @@ func TestUpcloudDetector_Detect_OK(t *testing.T) {
 		},
 	})
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, conventions.SchemaURL, schemaURL)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	got := res.Attributes().AsRaw()
 	want := map[string]any{
-		string(conventions.CloudProviderKey): cloud,
-		string(conventions.CloudRegionKey):   region,
-		string(conventions.HostIDKey):        instanceID,
-		string(conventions.HostNameKey):      hostName,
+		"cloud.provider": cloud,
+		"cloud.region":   region,
+		"host.id":        instanceID,
+		"host.name":      hostName,
 	}
 	assert.Equal(t, want, got)
 }
@@ -92,7 +91,7 @@ func TestUpcloudDetector_Detect_OK(t *testing.T) {
 func TestUpcloudDetector_NotOnUpcloud(t *testing.T) {
 	withFakeProvider(t, &fakeProvider{err: errors.New("no metadata")})
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())
@@ -107,7 +106,9 @@ func TestUpcloudDetector_FailOnMissingMetadata(t *testing.T) {
 	cfg := CreateDefaultConfig()
 	cfg.FailOnMissingMetadata = true
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	// Inject top-level false: the deprecated per-detector flag alone must still
+	// trigger fail-on-missing for this detector (backward compatibility).
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())

@@ -19,6 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/ptraceutiltest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
@@ -26,6 +27,9 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 	traces0 := pipeline.NewIDWithName(pipeline.SignalTraces, "0")
 	traces1 := pipeline.NewIDWithName(pipeline.SignalTraces, "1")
 
+	// The unqualified `attributes["X-Tenant"]` syntax is the legacy form that
+	// defaults to resource context for backward compatibility. The modern form
+	// is `resource.attributes["X-Tenant"]` which explicitly specifies the context.
 	cfg := &Config{
 		DefaultPipelines: []pipeline.ID{tracesDefault},
 		Table: []RoutingTableItem{
@@ -61,11 +65,11 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 	require.NoError(t, err)
 	require.Same(t, &defaultSink, rtConn.router.defaultConsumer)
 
-	route, ok := rtConn.router.routes[rtConn.router.table[0].Statement]
+	route, ok := rtConn.router.routes[key("resource", rtConn.router.routeSlice[0].statementText)]
 	assert.True(t, ok)
 	require.Same(t, &sink0, route.consumer)
 
-	route, ok = rtConn.router.routes[rtConn.router.table[1].Statement]
+	route, ok = rtConn.router.routes[key("resource", rtConn.router.routeSlice[1].statementText)]
 	assert.True(t, ok)
 
 	routeConsumer, err := router.Consumer(traces0, traces1)
@@ -74,6 +78,118 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 
 	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 	assert.NoError(t, conn.Shutdown(t.Context()))
+}
+
+func TestTracesRoutingWithInferredContexts(t *testing.T) {
+	// This test demonstrates context inference with explicit context-qualified paths.
+	tracesDefault := pipeline.NewIDWithName(pipeline.SignalTraces, "default")
+	tracesProd := pipeline.NewIDWithName(pipeline.SignalTraces, "prod")
+	tracesHTTP := pipeline.NewIDWithName(pipeline.SignalTraces, "http")
+
+	cfg := &Config{
+		DefaultPipelines: []pipeline.ID{tracesDefault},
+		Table: []RoutingTableItem{
+			{
+				Condition: `resource.attributes["env"] == "prod"`,
+				Pipelines: []pipeline.ID{tracesProd},
+			},
+			{
+				Condition: `span.attributes["http.method"] == "GET"`,
+				Pipelines: []pipeline.ID{tracesHTTP},
+			},
+		},
+	}
+
+	var defaultSink, prodSink, httpSink consumertest.TracesSink
+
+	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+		tracesDefault: &defaultSink,
+		tracesProd:    &prodSink,
+		tracesHTTP:    &httpSink,
+	})
+
+	factory := NewFactory()
+	conn, err := factory.CreateTracesToTraces(
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
+		cfg,
+		router.(consumer.Traces),
+	)
+	require.NoError(t, err)
+
+	// Helper function to create traces with specific attributes
+	createTraces := func(env, httpMethod string) ptrace.Traces {
+		traces := ptrace.NewTraces()
+		rs := traces.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("env", env)
+		rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes().PutStr("http.method", httpMethod)
+		return traces
+	}
+
+	// Helper function to reset all sinks
+	resetSinks := func() {
+		prodSink.Reset()
+		httpSink.Reset()
+		defaultSink.Reset()
+	}
+
+	// Helper function to assert sink counts
+	assertSinkCounts := func(t *testing.T, prodCount, httpCount, defaultCount int) {
+		assert.Equal(t, prodCount, prodSink.SpanCount(), "prod sink count")
+		assert.Equal(t, httpCount, httpSink.SpanCount(), "http sink count")
+		assert.Equal(t, defaultCount, defaultSink.SpanCount(), "default sink count")
+	}
+
+	testCases := []struct {
+		name            string
+		env             string
+		httpMethod      string
+		expectedProd    int
+		expectedHTTP    int
+		expectedDefault int
+	}{
+		{
+			name:            "resource context routing: env=prod routes to prod sink",
+			env:             "prod",
+			httpMethod:      "POST",
+			expectedProd:    1,
+			expectedHTTP:    0,
+			expectedDefault: 0,
+		},
+		{
+			name:            "span context routing: GET method routes to http sink",
+			env:             "dev",
+			httpMethod:      "GET",
+			expectedProd:    0,
+			expectedHTTP:    1,
+			expectedDefault: 0,
+		},
+		{
+			name:            "default routing: non-matching traces go to default",
+			env:             "dev",
+			httpMethod:      "POST",
+			expectedProd:    0,
+			expectedHTTP:    0,
+			expectedDefault: 1,
+		},
+		{
+			name:            "multiple route matches: both prod env and GET http.method",
+			env:             "prod",
+			httpMethod:      "GET",
+			expectedProd:    1,
+			expectedHTTP:    0,
+			expectedDefault: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			resetSinks()
+			traces := createTraces(tc.env, tc.httpMethod)
+			require.NoError(t, conn.ConsumeTraces(t.Context(), traces))
+			assertSinkCounts(t, tc.expectedProd, tc.expectedHTTP, tc.expectedDefault)
+		})
+	}
 }
 
 func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
@@ -899,4 +1015,172 @@ func TestTracesConnectorDetailed(t *testing.T) {
 			assertExpected(&sinkD, tt.expectSinkD, "sinkD")
 		})
 	}
+}
+
+func TestTracesForPropagateError(t *testing.T) {
+	tracesDefault := pipeline.NewIDWithName(pipeline.SignalTraces, "default")
+	traces0 := pipeline.NewIDWithName(pipeline.SignalTraces, "0")
+
+	cfg := &Config{
+		ErrorMode:        ottl.PropagateError,
+		DefaultPipelines: []pipeline.ID{tracesDefault},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where ToLowerCase(attributes["unknown"]) == "acme"`,
+				Pipelines: []pipeline.ID{traces0},
+			},
+		},
+	}
+	require.NoError(t, cfg.Validate())
+
+	var defaultSink, sink0 consumertest.TracesSink
+	conn, err := NewFactory().CreateTracesToTraces(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+			tracesDefault: &defaultSink,
+			traces0:       &sink0,
+		}))
+	require.NoError(t, err)
+
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+	require.Error(t, conn.ConsumeTraces(t.Context(), ptraceutiltest.NewTraces("1", "2", "3", "4")))
+	require.NoError(t, conn.Shutdown(t.Context()))
+
+	assert.Empty(t, sink0.AllTraces(), 0)
+	assert.Empty(t, defaultSink.AllTraces(), 0)
+}
+
+func TestTracesForIgnoreError(t *testing.T) {
+	tracesDefault := pipeline.NewIDWithName(pipeline.SignalTraces, "default")
+	traces0 := pipeline.NewIDWithName(pipeline.SignalTraces, "0")
+
+	cfg := &Config{
+		ErrorMode:        ottl.IgnoreError,
+		DefaultPipelines: []pipeline.ID{tracesDefault},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where ToLowerCase(attributes["unknown"]) == "acme"`,
+				Pipelines: []pipeline.ID{traces0},
+			},
+		},
+	}
+	require.NoError(t, cfg.Validate())
+
+	var defaultSink, sink0 consumertest.TracesSink
+	conn, err := NewFactory().CreateTracesToTraces(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+			tracesDefault: &defaultSink,
+			traces0:       &sink0,
+		}))
+	require.NoError(t, err)
+
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, conn.ConsumeTraces(t.Context(), ptraceutiltest.NewTraces("1", "2", "3", "4")))
+	require.NoError(t, conn.Shutdown(t.Context()))
+
+	assert.Empty(t, sink0.AllTraces(), 0)
+	assert.Len(t, defaultSink.AllTraces(), 1)
+	assert.Equal(t, ptraceutiltest.NewTraces("1", "2", "3", "4"), defaultSink.AllTraces()[0])
+}
+
+func TestTracesCopyAndMoveConfig(t *testing.T) {
+	tracesDefault := pipeline.NewIDWithName(pipeline.SignalTraces, "default")
+	traces0 := pipeline.NewIDWithName(pipeline.SignalTraces, "0")
+	traces1 := pipeline.NewIDWithName(pipeline.SignalTraces, "1")
+
+	cfg := &Config{
+		DefaultPipelines: []pipeline.ID{tracesDefault},
+		Table: []RoutingTableItem{
+			{
+				Condition: `attributes["value"] > 0 and attributes["value"] < 4`,
+				Pipelines: []pipeline.ID{traces0},
+				Action:    Copy,
+			},
+			{
+				Statement: `route() where attributes["value"] > 1 and attributes["value"] < 5`,
+				Pipelines: []pipeline.ID{traces1},
+				Action:    Move,
+			},
+			{
+				Statement: `route() where attributes["value"] == 5`,
+				Pipelines: []pipeline.ID{tracesDefault, traces0},
+			},
+		},
+	}
+
+	var defaultSink, sink0, sink1 consumertest.TracesSink
+
+	resetSinks := func() {
+		defaultSink.Reset()
+		sink0.Reset()
+		sink1.Reset()
+	}
+
+	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+		tracesDefault: &defaultSink,
+		traces1:       &sink1,
+		traces0:       &sink0,
+	})
+
+	factory := NewFactory()
+	conn, err := factory.CreateTracesToTraces(
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
+		cfg,
+		router.(consumer.Traces),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, conn.Shutdown(t.Context()))
+	}()
+
+	t.Run("Traces copied correctly", func(t *testing.T) {
+		resetSinks()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 1)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
+
+		assert.Len(t, defaultSink.AllTraces(), 1)
+		assert.Len(t, sink0.AllTraces(), 1)
+		assert.Empty(t, sink1.AllTraces())
+	})
+
+	t.Run("Traces moved correctly", func(t *testing.T) {
+		resetSinks()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 4)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
+
+		assert.Empty(t, defaultSink.AllTraces())
+		assert.Empty(t, sink0.AllTraces())
+		assert.Len(t, sink1.AllTraces(), 1)
+	})
+
+	t.Run("Traces copied & moved correctly", func(t *testing.T) {
+		resetSinks()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 3)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
+
+		assert.Empty(t, defaultSink.AllTraces())
+		assert.Len(t, sink0.AllTraces(), 1)
+		assert.Len(t, sink1.AllTraces(), 1)
+	})
 }

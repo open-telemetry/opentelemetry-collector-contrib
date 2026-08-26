@@ -5,6 +5,7 @@ package eks // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -15,7 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	imdsprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
@@ -31,19 +32,30 @@ const (
 	kubernetesServiceHostEnvVar = "KUBERNETES_SERVICE_HOST"
 	// EKS cluster version string identifier.
 	eksClusterStringIdentifier = "-eks-"
+	// EKS OIDC issuer identifier.
+	eksOIDCIssuerIdentifier = "oidc.eks."
+	// EKS IRSA token file path identifier.
+	eksIRSATokenPathIdentifier = "eks.amazonaws.com" //nolint:gosec // not a credential
+	// EKS Pod Identity token file path identifier.
+	eksPodIdentityPathIdentifier = "eks-pod-identity"
+	// Environment variable for IRSA web identity token file.
+	awsWebIdentityTokenFileEnvVar = "AWS_WEB_IDENTITY_TOKEN_FILE" //nolint:gosec // env var name, not a credential
+	// Environment variable for EKS Pod Identity authorization token file.
+	awsContainerAuthTokenFileEnvVar = "AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE" //nolint:gosec // env var name, not a credential
 
 	imdsCheckMaxRetry = 1
 )
 
 // detector for EKS
 type detector struct {
-	cfg          Config
-	logger       *zap.Logger
-	imdsProvider imdsprovider.Provider
-	apiProvider  apiprovider.Provider
-	ra           metadata.ResourceAttributesConfig
-	rb           *metadata.ResourceBuilder
-	utils        detectorUtils
+	cfg                   Config
+	logger                *zap.Logger
+	imdsProvider          imdsprovider.Provider
+	apiProvider           apiprovider.Provider
+	ra                    metadata.ResourceAttributesConfig
+	rb                    *metadata.ResourceBuilder
+	utils                 detectorUtils
+	failOnMissingMetadata bool
 }
 
 type eksDetectorUtils struct {
@@ -61,7 +73,7 @@ var _ internal.Detector = (*detector)(nil)
 var _ detectorUtils = (*eksDetectorUtils)(nil)
 
 // NewDetector returns a resource detector that will detect AWS EKS resources.
-func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	utils := &eksDetectorUtils{cfg: cfg, logger: set.Logger}
 
@@ -77,24 +89,30 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 	}
 
 	return &detector{
-		cfg:          cfg,
-		logger:       set.Logger,
-		apiProvider:  apiProvider,
-		imdsProvider: imdsprovider.NewProvider(awsConfig),
-		ra:           cfg.ResourceAttributes,
-		rb:           metadata.NewResourceBuilder(cfg.ResourceAttributes),
-		utils:        utils,
+		cfg:                   cfg,
+		logger:                set.Logger,
+		apiProvider:           apiProvider,
+		imdsProvider:          imdsprovider.NewProvider(awsConfig),
+		ra:                    cfg.ResourceAttributes,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		utils:                 utils,
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
 // Detect returns a Resource describing the Amazon EKS environment being run in.
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	// Check if running on EKS.
-	if isEKS, err := d.isEKS(); err != nil || !isEKS {
+	if isEKS, err := d.isEKS(ctx); err != nil || !isEKS {
 		if err != nil {
 			d.logger.Debug("Unable to identify EKS environment", zap.Error(err))
+			if d.failOnMissingMetadata {
+				return pcommon.NewResource(), "", fmt.Errorf("eks metadata unavailable: %w", err)
+			}
+		} else if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errors.New("eks metadata unavailable: not running on EKS")
 		}
-		return pcommon.NewResource(), "", err
+		return pcommon.NewResource(), "", nil
 	}
 
 	d.rb.SetCloudProvider(conventions.CloudProviderAWS.Value.AsString())
@@ -109,7 +127,11 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 func (d *detector) detectFromIMDS(ctx context.Context) (pcommon.Resource, string, error) {
 	imdsMeta, err := d.imdsProvider.Get(ctx)
 	if err != nil {
-		return d.rb.Emit(), conventions.SchemaURL, err
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", err
+		}
+		d.logger.Debug("EKS IMDS metadata unavailable", zap.Error(err))
+		return d.rb.Emit(), conventions.SchemaURL, nil
 	}
 
 	d.rb.SetHostID(imdsMeta.InstanceID)
@@ -121,7 +143,11 @@ func (d *detector) detectFromIMDS(ctx context.Context) (pcommon.Resource, string
 
 	hostname, err := d.imdsProvider.Hostname(ctx)
 	if err != nil {
-		return d.rb.Emit(), conventions.SchemaURL, err
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", err
+		}
+		d.logger.Debug("EKS IMDS hostname unavailable", zap.Error(err))
+		return d.rb.Emit(), conventions.SchemaURL, nil
 	}
 	d.rb.SetHostName(hostname)
 
@@ -129,7 +155,11 @@ func (d *detector) detectFromIMDS(ctx context.Context) (pcommon.Resource, string
 		d.apiProvider.SetRegionInstanceID(imdsMeta.Region, imdsMeta.InstanceID)
 		var apiMeta apiprovider.InstanceMetadata
 		if apiMeta, err = d.apiProvider.GetInstanceMetadata(ctx); err != nil {
-			return d.rb.Emit(), conventions.SchemaURL, err
+			if d.failOnMissingMetadata {
+				return pcommon.NewResource(), "", err
+			}
+			d.logger.Debug("EKS instance metadata unavailable", zap.Error(err))
+			return d.rb.Emit(), conventions.SchemaURL, nil
 		}
 		d.rb.SetK8sClusterName(apiMeta.ClusterName)
 	}
@@ -139,7 +169,11 @@ func (d *detector) detectFromIMDS(ctx context.Context) (pcommon.Resource, string
 func (d *detector) detectFromAPI(ctx context.Context) (pcommon.Resource, string, error) {
 	k8sMeta, err := d.apiProvider.GetK8sInstanceMetadata(ctx)
 	if err != nil {
-		return d.rb.Emit(), conventions.SchemaURL, err
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", err
+		}
+		d.logger.Debug("EKS k8s instance metadata unavailable", zap.Error(err))
+		return d.rb.Emit(), conventions.SchemaURL, nil
 	}
 
 	d.rb.SetHostID(k8sMeta.InstanceID)
@@ -148,7 +182,11 @@ func (d *detector) detectFromAPI(ctx context.Context) (pcommon.Resource, string,
 
 	apiMeta, err := d.apiProvider.GetInstanceMetadata(ctx)
 	if err != nil {
-		return d.rb.Emit(), conventions.SchemaURL, err
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", err
+		}
+		d.logger.Debug("EKS instance metadata unavailable", zap.Error(err))
+		return d.rb.Emit(), conventions.SchemaURL, nil
 	}
 
 	d.rb.SetCloudAccountID(apiMeta.AccountID)
@@ -160,11 +198,27 @@ func (d *detector) detectFromAPI(ctx context.Context) (pcommon.Resource, string,
 	return d.rb.Emit(), conventions.SchemaURL, nil
 }
 
-func (d *detector) isEKS() (bool, error) {
+func (d *detector) isEKS(ctx context.Context) (bool, error) {
 	if os.Getenv(kubernetesServiceHostEnvVar) == "" {
 		return false, nil
 	}
 
+	// Check for EKS-specific IRSA token path
+	if tokenFile := os.Getenv(awsWebIdentityTokenFileEnvVar); strings.Contains(tokenFile, eksIRSATokenPathIdentifier) {
+		return true, nil
+	}
+
+	// Check for EKS Pod Identity token path
+	if authFile := os.Getenv(awsContainerAuthTokenFileEnvVar); strings.Contains(authFile, eksPodIdentityPathIdentifier) {
+		return true, nil
+	}
+
+	// Check OIDC issuer for EKS-specific identifier
+	if issuer, err := d.apiProvider.OIDCIssuer(ctx); err == nil && strings.Contains(issuer, eksOIDCIssuerIdentifier) {
+		return true, nil
+	}
+
+	// Fallback: check cluster version for -eks- identifier
 	clusterVersion, err := d.apiProvider.ClusterVersion()
 	if err != nil {
 		return false, fmt.Errorf("isEks() error retrieving cluster version: %w", err)

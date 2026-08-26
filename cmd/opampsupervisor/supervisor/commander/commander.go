@@ -8,10 +8,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"slices"
+	"strings"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -24,23 +26,26 @@ import (
 // Commander can start/stop/restart the Agent executable and also watch for a signal
 // for the Agent process to finish.
 type Commander struct {
-	logger  *zap.Logger
-	cfg     config.Agent
-	logsDir string
-	args    []string
-	cmd     *exec.Cmd
-	doneCh  chan struct{}
-	exitCh  chan struct{}
-	running *atomic.Int64
+	logger             *zap.Logger
+	cfg                config.Agent
+	logFilePath        string
+	passthroughLogHook func(string)
+	args               []string
+	cmd                *exec.Cmd
+	doneCh             chan struct{}
+	exitCh             chan struct{}
+	outputDoneCh       chan struct{}
+	running            *atomic.Int64
 }
 
-func NewCommander(logger *zap.Logger, logsDir string, cfg config.Agent, args ...string) (*Commander, error) {
+func NewCommander(logger *zap.Logger, logFilePath string, cfg config.Agent, args ...string) (*Commander, error) {
 	return &Commander{
-		logger:  logger,
-		logsDir: logsDir,
-		cfg:     cfg,
-		args:    args,
-		running: &atomic.Int64{},
+		logger:       logger,
+		logFilePath:  logFilePath,
+		cfg:          cfg,
+		args:         args,
+		outputDoneCh: make(chan struct{}),
+		running:      &atomic.Int64{},
 		// Buffer channels so we can send messages without blocking on listeners.
 		doneCh: make(chan struct{}, 1),
 		exitCh: make(chan struct{}, 1),
@@ -71,6 +76,7 @@ func (c *Commander) Start(ctx context.Context) error {
 		default:
 		}
 	}
+	c.outputDoneCh = make(chan struct{})
 	c.logger.Debug("Starting agent", zap.String("agent", c.cfg.Executable))
 
 	args := slices.Concat(c.args, c.cfg.Arguments)
@@ -86,15 +92,6 @@ func (c *Commander) Start(ctx context.Context) error {
 	return c.startNormal()
 }
 
-func (c *Commander) Restart(ctx context.Context) error {
-	c.logger.Debug("Restarting agent", zap.String("agent", c.cfg.Executable))
-	if err := c.Stop(ctx); err != nil {
-		return err
-	}
-
-	return c.Start(ctx)
-}
-
 func (c *Commander) ReloadConfigFile() error {
 	if c.cmd == nil || c.cmd.Process == nil {
 		return errors.New("agent process is not running")
@@ -108,11 +105,33 @@ func (c *Commander) ReloadConfigFile() error {
 	return nil
 }
 
-func (c *Commander) startNormal() error {
-	logFilePath := filepath.Join(c.logsDir, "agent.log")
-	stdoutFile, err := os.Create(logFilePath)
+// ValidateConfig runs the collector's validate command on the specified configuration file
+// to check if the configuration is valid without starting the collector.
+// Returns an error if the configuration is invalid or if the validation process fails.
+func (c *Commander) ValidateConfig(ctx context.Context, configPath string, additionalArgs ...string) error {
+	c.logger.Debug("Validating agent config", zap.String("config", configPath))
+
+	args := slices.Concat([]string{"validate", "--config", configPath}, additionalArgs, c.cfg.Arguments)
+
+	cmd := exec.CommandContext(ctx, c.cfg.Executable, args...) // #nosec G204
+	cmd.Env = envVarMapToEnvMapSlice(c.cfg.Env)
+
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("cannot create %s: %w", logFilePath, err)
+		c.logger.Error("Config validation failed",
+			zap.String("output", string(output)),
+			zap.Error(err))
+		return fmt.Errorf("config validation failed: %w, output: %s", err, string(output))
+	}
+
+	c.logger.Debug("Config validation succeeded")
+	return nil
+}
+
+func (c *Commander) startNormal() error {
+	stdoutFile, err := os.Create(c.logFilePath)
+	if err != nil {
+		return fmt.Errorf("cannot create %s: %w", c.logFilePath, err)
 	}
 
 	// Capture standard output and standard error.
@@ -127,6 +146,7 @@ func (c *Commander) startNormal() error {
 
 	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
 	c.running.Store(1)
+	close(c.outputDoneCh)
 
 	go func() {
 		defer stdoutFile.Close()
@@ -154,31 +174,58 @@ func (c *Commander) startWithPassthroughLogging() error {
 	c.running.Store(1)
 
 	colLogger := c.logger.Named("collector")
+	var outputWG sync.WaitGroup
 
 	// capture agent output
-	go func() {
-		scanner := bufio.NewScanner(stdoutPipe)
-		for scanner.Scan() {
-			line := scanner.Text()
+	outputWG.Go(func() {
+		reader := bufio.NewReader(stdoutPipe)
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				if err != io.EOF {
+					c.logger.Error("Error reading agent stdout", zap.Error(err))
+				}
+				// Trim and log the last line if it exists
+				if line != "" {
+					line = strings.TrimRight(line, "\r\n")
+					colLogger.Info(line)
+					c.onPassthroughLogLine(line)
+				}
+				break
+			}
+			line = strings.TrimRight(line, "\r\n")
 			colLogger.Info(line)
+			c.onPassthroughLogLine(line)
 		}
-		if err := scanner.Err(); err != nil {
-			c.logger.Error("Error reading agent stdout: %w", zap.Error(err))
-		}
-	}()
-	go func() {
-		scanner := bufio.NewScanner(stderrPipe)
-		for scanner.Scan() {
-			line := scanner.Text()
+	})
+	outputWG.Go(func() {
+		reader := bufio.NewReader(stderrPipe)
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				if err != io.EOF {
+					c.logger.Error("Error reading agent stderr", zap.Error(err))
+				}
+				// Trim and log the last line if it exists
+				if line != "" {
+					line = strings.TrimRight(line, "\r\n")
+					colLogger.Error(line)
+					c.onPassthroughLogLine(line)
+				}
+				break
+			}
+			line = strings.TrimRight(line, "\r\n")
 			colLogger.Error(line)
+			c.onPassthroughLogLine(line)
 		}
-		if err := scanner.Err(); err != nil {
-			c.logger.Error("Error reading agent stderr: %w", zap.Error(err))
-		}
-	}()
+	})
 
 	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
 
+	go func() {
+		outputWG.Wait()
+		close(c.outputDoneCh)
+	}()
 	go c.watch()
 	return nil
 }
@@ -195,8 +242,39 @@ func (c *Commander) watch() {
 	}
 
 	c.running.Store(0)
-	c.doneCh <- struct{}{}
 	c.exitCh <- struct{}{}
+	<-c.outputDoneCh
+	c.doneCh <- struct{}{}
+}
+
+// LogFilePath returns the path where the agent stdout/stderr are captured.
+func (c *Commander) LogFilePath() string {
+	if c.cfg.PassthroughLogs {
+		return ""
+	}
+	return c.logFilePath
+}
+
+// SetPassthroughLogHook configures a callback invoked for each Collector log line
+// when passthrough logging is enabled.
+func (c *Commander) SetPassthroughLogHook(h func(string)) {
+	c.passthroughLogHook = h
+}
+
+func (c *Commander) onPassthroughLogLine(line string) {
+	if c.passthroughLogHook != nil {
+		c.passthroughLogHook(line)
+	}
+}
+
+// WaitForOutputDrain waits for passthrough log readers to finish after process exit.
+func (c *Commander) WaitForOutputDrain(timeout time.Duration) bool {
+	select {
+	case <-c.outputDoneCh:
+		return true
+	case <-time.After(timeout):
+		return false
+	}
 }
 
 // StartOneShot starts the Collector with the expectation that it will immediately
@@ -226,23 +304,49 @@ func (c *Commander) StartOneShot() ([]byte, []byte, error) {
 	}
 	// capture agent output
 	go func() {
-		scanner := bufio.NewScanner(stdoutPipe)
-		for scanner.Scan() {
-			stdout = append(stdout, scanner.Bytes()...)
+		reader := bufio.NewReader(stdoutPipe)
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				if err != io.EOF {
+					c.logger.Error("Error reading agent stdout", zap.Error(err))
+				}
+				// Trim and append the last line if it exists
+				// Normalize line endings to \n
+				if line != "" {
+					line = strings.TrimRight(line, "\r\n")
+					stdout = append(stdout, []byte(line)...)
+					stdout = append(stdout, byte('\n'))
+				}
+				break
+			}
+			// Normalize line endings to \n
+			line = strings.TrimRight(line, "\r\n")
+			stdout = append(stdout, []byte(line)...)
 			stdout = append(stdout, byte('\n'))
-		}
-		if err := scanner.Err(); err != nil {
-			c.logger.Error("Error reading agent stdout: %w", zap.Error(err))
 		}
 	}()
 	go func() {
-		scanner := bufio.NewScanner(stderrPipe)
-		for scanner.Scan() {
-			stderr = append(stderr, scanner.Bytes()...)
+		reader := bufio.NewReader(stderrPipe)
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				if err != io.EOF {
+					c.logger.Error("Error reading agent stderr", zap.Error(err))
+				}
+				// Trim and append the last line if it exists
+				// Normalize line endings to \n
+				if line != "" {
+					line = strings.TrimRight(line, "\r\n")
+					stderr = append(stderr, []byte(line)...)
+					stderr = append(stderr, byte('\n'))
+				}
+				break
+			}
+			// Normalize line endings to \n
+			line = strings.TrimRight(line, "\r\n")
+			stderr = append(stderr, []byte(line)...)
 			stderr = append(stderr, byte('\n'))
-		}
-		if err := scanner.Err(); err != nil {
-			c.logger.Error("Error reading agent stderr: %w", zap.Error(err))
 		}
 	}()
 
@@ -289,7 +393,8 @@ func (c *Commander) StartOneShot() ([]byte, []byte, error) {
 			// Time is out. Kill the process.
 			c.logger.Debug(
 				"Agent process is not responding to SIGTERM. Sending SIGKILL to kill forcibly.",
-				zap.Int("pid", pid))
+				zap.Int("pid", pid),
+			)
 			if innerErr = cmd.Process.Signal(os.Kill); innerErr != nil {
 				return
 			}
@@ -359,7 +464,8 @@ func (c *Commander) Stop(ctx context.Context) error {
 		// Time is out. Kill the process.
 		c.logger.Debug(
 			"Agent process is not responding to SIGTERM. Sending SIGKILL to kill forcibly.",
-			zap.Int("pid", pid))
+			zap.Int("pid", pid),
+		)
 		if innerErr = c.cmd.Process.Signal(os.Kill); innerErr != nil {
 			return
 		}

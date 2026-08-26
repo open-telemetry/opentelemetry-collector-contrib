@@ -22,10 +22,10 @@ The number of connections.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| protocol | Network protocol, e.g. TCP or UDP. | Str: ``tcp`` | Recommended |
-| state | State of the network connection. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| protocol | Network protocol, e.g. TCP or UDP. | Str: ``tcp`` | Recommended | - |
+| state | State of the network connection. | Any Str | Recommended | - |
 
 ### system.network.dropped
 
@@ -37,10 +37,10 @@ The number of packets dropped.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| device | Name of the network interface. | Any Str | Recommended |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| device | Name of the network interface. | Any Str | Recommended | - |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended | - |
 
 ### system.network.errors
 
@@ -52,10 +52,10 @@ The number of errors encountered.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| device | Name of the network interface. | Any Str | Recommended |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| device | Name of the network interface. | Any Str | Recommended | - |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended | - |
 
 ### system.network.io
 
@@ -67,10 +67,10 @@ The number of bytes transmitted and received.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| device | Name of the network interface. | Any Str | Recommended |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| device | Name of the network interface. | Any Str | Recommended | - |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended | - |
 
 ### system.network.packets
 
@@ -82,10 +82,10 @@ The number of packets transferred.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| device | Name of the network interface. | Any Str | Recommended |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| device | Name of the network interface. | Any Str | Recommended | - |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended | - |
 
 ## Optional Metrics
 

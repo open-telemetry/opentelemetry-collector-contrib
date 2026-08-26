@@ -8,12 +8,12 @@ components:
         - exceptions
         - failover
         - grafanacloud
-        - otlpjson
-        - roundrobin
+        - otlp_json
+        - round_robin
         - routing
-        - servicegraph
-        - signaltometrics
-        - spanmetrics
+        - service_graph
+        - signal_to_metrics
+        - span_metrics
         - sum
     exporter:
         - alibabacloud_logservice
@@ -22,11 +22,10 @@ components:
         - awskinesis
         - awss3
         - awsxray
-        - azureblob
+        - azure_blob
+        - azure_monitor
         - azuredataexplorer
-        - azuremonitor
-        - bmchelix
-        - carbon
+        - bmc_helix
         - cassandra
         - clickhouse
         - coralogix
@@ -36,24 +35,23 @@ components:
         - elasticsearch
         - faro
         - file
+        - google_cloud_storage
         - googlecloud
         - googlecloudpubsub
-        - googlecloudstorage
         - googlemanagedprometheus
-        - honeycombmarker
+        - honeycomb_marker
         - influxdb
         - kafka
-        - loadbalancing
+        - load_balancing
         - logicmonitor
         - logzio
         - mezmo
         - opensearch
         - otelarrow
         - prometheus
-        - prometheusremotewrite
+        - prometheus_remote_write
         - pulsar
         - rabbitmq
-        - sapm
         - sentry
         - signalfx
         - splunk_hec
@@ -66,20 +64,22 @@ components:
     extension:
         - ack
         - asapclient
+        - aws_iam_db_auth
+        - aws_logs_encoding
         - awscloudwatchmetricstreams_encoding
-        - awslogs_encoding
         - awsproxy
-        - azureauth
+        - azure_auth
+        - azure_encoding
         - basicauth
         - bearertokenauth
-        - cgroupruntime
+        - cgroup_runtime
         - datadog
         - db_storage
         - docker_observer
         - ecs_observer
         - file_storage
+        - google_cloud_logentry_encoding
         - googleclientauth
-        - googlecloudlogentry_encoding
         - headers_setter
         - health_check
         - host_observer
@@ -89,40 +89,45 @@ components:
         - json_log_encoding
         - k8s_leader_elector
         - k8s_observer
-        - kafkatopics_observer
         - oauth2client
         - oidc
         - opamp
         - otlp_encoding
+        - pebble_tail_storage
         - pprof
         - redis_storage
+        - sd_notify
         - sigv4auth
         - skywalking_encoding
         - text_encoding
         - zipkin_encoding
     processor:
         - attributes
-        - cumulativetodelta
-        - datadogsemantics
-        - deltatocumulative
-        - deltatorate
+        - cardinality_guardian
+        - cumulative_to_delta
+        - delta_to_cumulative
+        - delta_to_rate
+        - drain
         - filter
+        - gen_ai_normalizer
         - geoip
         - groupbyattrs
         - groupbytrace
         - interval
         - isolationforest
-        - k8sattributes
-        - logdedup
+        - k8s_attributes
+        - log_dedup
+        - metric_start_time
+        - metrics_transform
         - metricsgeneration
-        - metricstarttime
-        - metricstransform
         - probabilistic_sampler
         - redaction
         - remotetap
         - resource
-        - resourcedetection
+        - resource_detection
+        - schema
         - span
+        - span_pruning
         - sumologic
         - tail_sampling
         - transform
@@ -134,73 +139,77 @@ components:
         - secretsmanager
     receiver:
         - active_directory_ds
+        - active_directory_inv
         - aerospike
         - apache
-        - apachespark
-        - awscloudwatch
+        - apache_spark
+        - aws_cloudwatch
+        - aws_lambda
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
         - awss3
         - awsxray
-        - azureblob
-        - azureeventhub
-        - azuremonitor
-        - bigip
+        - azure_blob
+        - azure_event_hub
+        - azure_monitor
         - carbon
         - chrony
+        - cisco_os
+        - cloud_foundry
         - cloudflare
-        - cloudfoundry
         - collectd
         - couchdb
         - datadog
         - docker_stats
         - elasticsearch
-        - envoyals
+        - envoy_als
         - expvar
         - faro
-        - filelog
-        - filestats
-        - flinkmetrics
-        - fluentforward
+        - file_log
+        - file_stats
+        - flink_metrics
+        - fluent_forward
         - github
         - gitlab
+        - google_cloud_spanner
         - googlecloudmonitoring
         - googlecloudpubsub
-        - googlecloudspanner
+        - googlecloudpubsubpush
         - haproxy
-        - hostmetrics
-        - httpcheck
+        - host_metrics
+        - http_check
         - iis
         - influxdb
         - jaeger
-        - jmx
         - journald
         - k8s_cluster
         - k8s_events
-        - k8sobjects
+        - k8s_objects
         - kafka
-        - kafkametrics
-        - kubeletstats
+        - kafka_metrics
+        - kubelet_stats
         - libhoney
         - loki
+        - macos_unified_logging
         - memcached
         - mongodb
-        - mongodbatlas
+        - mongodb_atlas
         - mysql
-        - namedpipe
+        - named_pipe
         - netflow
         - nginx
         - nsxt
         - ntp
         - oracledb
         - otelarrow
-        - otlpjsonfile
+        - otlp_json_file
         - podman_stats
         - postgresql
+        - pprof
         - prometheus
+        - prometheus_remote_write
         - prometheus_simple
-        - prometheusremotewrite
         - pulsar
         - purefa
         - purefb
@@ -214,24 +223,26 @@ components:
         - snmp
         - snowflake
         - solace
+        - splunk_enterprise
         - splunk_hec
-        - splunkenterprise
-        - sqlquery
+        - sql_query
         - sqlserver
-        - sshcheck
+        - ssh_check
         - statsd
         - stef
         - syslog
-        - tcpcheck
-        - tcplog
-        - tlscheck
-        - udplog
+        - systemd
+        - tcp_check
+        - tcp_log
+        - tls_check
+        - udp_log
         - vcenter
         - wavefront
-        - webhookevent
-        - windowseventlog
-        - windowsperfcounters
-        - windowsservice
+        - webhook_event
+        - windows_event_log
+        - windows_perf_counters
+        - windows_service
+        - yang_grpc
         - zipkin
         - zookeeper
     scraper:

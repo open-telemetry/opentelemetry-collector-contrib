@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v77/github"
+	"github.com/google/go-github/v90/github"
 )
 
 const (
@@ -124,13 +124,16 @@ func genDefaultSearchQuery(ownertype, ghorg string) string {
 // https://docs.github.com/en/enterprise-server@3.8/graphql/guides/forming-calls-with-graphql#the-graphql-endpoint
 // https://docs.github.com/en/enterprise-server@3.8/rest/guides/getting-started-with-the-rest-api#making-a-request
 func (ghs *githubScraper) createClients() (gClient graphql.Client, rClient *github.Client, err error) {
-	rClient = github.NewClient(ghs.client)
+	rClient, err = github.NewClient(github.WithHTTPClient(ghs.client))
+	if err != nil {
+		return nil, nil, err
+	}
 	gClient = graphql.NewClient(defaultGraphURL, ghs.client)
 
-	if ghs.cfg.Endpoint != "" {
+	if ghs.cfg.ClientConfig.Endpoint != "" {
 		// Given endpoint set as `https://myGHEserver.com` we need to join the path
 		// with `api/graphql`
-		gu, err := url.JoinPath(ghs.cfg.Endpoint, "api/graphql")
+		gu, err := url.JoinPath(ghs.cfg.ClientConfig.Endpoint, "api/graphql")
 		if err != nil {
 			ghs.logger.Sugar().Errorf("error joining graphql endpoint: %v", err)
 			return nil, nil, err
@@ -138,8 +141,8 @@ func (ghs *githubScraper) createClients() (gClient graphql.Client, rClient *gith
 		gClient = graphql.NewClient(gu, ghs.client)
 
 		// The rest client needs the endpoint to be the root of the server
-		ru := ghs.cfg.Endpoint
-		rClient, err = github.NewClient(ghs.client).WithEnterpriseURLs(ru, ru)
+		ru := ghs.cfg.ClientConfig.Endpoint
+		rClient, err = github.NewClient(github.WithHTTPClient(ghs.client), github.WithEnterpriseURLs(ru, ru))
 		if err != nil {
 			ghs.logger.Sugar().Errorf("error creating enterprise client: %v", err)
 			return nil, nil, err
@@ -180,8 +183,9 @@ func (ghs *githubScraper) getContributorCount(
 	return len(all), nil
 }
 
-// Get the pull request data from the GraphQL API.
-func (ghs *githubScraper) getPullRequests(
+// getOpenPullRequests fetches all open pull requests for a repository.
+// Open PRs are always fetched in full regardless of lookback settings.
+func (ghs *githubScraper) getOpenPullRequests(
 	ctx context.Context,
 	client graphql.Client,
 	repoName string,
@@ -197,7 +201,6 @@ func (ghs *githubScraper) getPullRequests(
 			ghs.cfg.GitHubOrg,
 			defaultReturnItems,
 			cursor,
-			[]PullRequestState{"OPEN", "MERGED"},
 		)
 		if err != nil {
 			return nil, err
@@ -209,6 +212,89 @@ func (ghs *githubScraper) getPullRequests(
 	}
 
 	return pullRequests, nil
+}
+
+// getMergedPullRequests fetches merged pull requests with optional time-based filtering.
+// Uses backward pagination (last/before) to efficiently stop when hitting the cutoff date.
+// If lookbackDays is 0, fetches all merged PRs. Otherwise, only fetches PRs merged
+// within the last N days.
+func (ghs *githubScraper) getMergedPullRequests(
+	ctx context.Context,
+	client graphql.Client,
+	repoName string,
+	lookbackDays int,
+) ([]MergedPullRequestNode, error) {
+	var cursor *string
+	var pullRequests []MergedPullRequestNode
+
+	limit := lookbackDays > 0
+
+	// Calculate cutoff time if lookback is enabled
+	var cutoff time.Time
+	if limit {
+		cutoff = time.Now().AddDate(0, 0, -lookbackDays)
+	}
+
+	for hasPreviousPage := true; hasPreviousPage; {
+		prs, err := getMergedPullRequestData(
+			ctx,
+			client,
+			repoName,
+			ghs.cfg.GitHubOrg,
+			defaultReturnItems,
+			cursor,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// Process PRs in reverse chronological order (most recent first)
+		// Stop immediately when we hit a PR older than our cutoff
+		nodes := prs.Repository.PullRequests.Nodes
+		for i := len(nodes) - 1; i >= 0; i-- {
+			pr := &nodes[i]
+
+			// Check if this PR is older than our cutoff date using the Before
+			// method, meaning; earlier in time which is older than our cutoff.
+			if limit && pr.MergedAt.Before(cutoff) {
+				ghs.logger.Sugar().Debugf(
+					"reached pull request that is older than the cutoff date, stopping pagination (PR merged: %s, cutoff: %s)",
+					pr.MergedAt.Format(time.RFC3339),
+					cutoff.Format(time.RFC3339),
+				)
+				return pullRequests, nil
+			}
+
+			pullRequests = append(pullRequests, *pr)
+		}
+
+		cursor = &prs.Repository.PullRequests.PageInfo.StartCursor
+		hasPreviousPage = prs.Repository.PullRequests.PageInfo.HasPreviousPage
+	}
+
+	return pullRequests, nil
+}
+
+// getPullRequests fetches both open and merged pull requests for a repository.
+// Open PRs are always fetched in full. Merged PRs respect the lookback configuration.
+func (ghs *githubScraper) getPullRequests(
+	ctx context.Context,
+	client graphql.Client,
+	repoName string,
+) ([]PullRequestNode, []MergedPullRequestNode, error) {
+	// Fetch open PRs (always fetch all, no time filtering)
+	openPRs, err := ghs.getOpenPullRequests(ctx, client, repoName)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to fetch open PRs: %w", err)
+	}
+
+	// Fetch merged PRs (with lookback filtering)
+	mergedPRs, err := ghs.getMergedPullRequests(ctx, client, repoName, ghs.cfg.MergedPRLookbackDays)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to fetch merged PRs: %w", err)
+	}
+
+	return openPRs, mergedPRs, nil
 }
 
 func (ghs *githubScraper) evalCommits(

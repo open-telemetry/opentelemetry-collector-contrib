@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-var typ = component.MustNewType("otlpjson")
+var typ = component.MustNewType("otlp_json")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())

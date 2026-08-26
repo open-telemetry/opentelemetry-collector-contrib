@@ -1,4 +1,4 @@
-include-fragments = true
+include_fragments = "none"
 
 accept = ["200..=299", "429"]
 
@@ -8,8 +8,15 @@ exclude  = [
     "^https://dev.mysql.com",
     "^https://bugs.mysql.com",
     "^https://techdocs.akamai.com",
-    "^https://www.vultr.com"
+    "^https://www.vultr.com",
+    "^https://docs.splunk.com",
+    "^https://docs.honeycomb.io",
+    "^https://www.ibm.com",
+    "^https://access.redhat.com",
+    "^https://superuser.com",
+    # Slack returns 403 to automated link checkers.
+    "^https://cloud-native.slack.com"
 ]
 
 # better to be safe and avoid failures
-max-retries = 6
+max_retries = 6

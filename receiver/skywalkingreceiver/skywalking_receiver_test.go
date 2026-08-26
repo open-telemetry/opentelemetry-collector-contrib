@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"google.golang.org/grpc"
@@ -67,11 +68,19 @@ var traceJSON = []byte(`
 
 func TestStartAndShutdown(t *testing.T) {
 	port := 12800
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	httpServerConfig.WriteTimeout = 0
+	httpServerConfig.ReadHeaderTimeout = 0
+	httpServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	httpServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  fmt.Sprintf(":%d", port),
+	}
 	config := &configuration{
-		CollectorHTTPPort: port,
-		CollectorHTTPSettings: confighttp.ServerConfig{
-			Endpoint: fmt.Sprintf(":%d", port),
-		},
+		CollectorHTTPPort:     port,
+		CollectorHTTPSettings: httpServerConfig,
 	}
 	sink := new(consumertest.TracesSink)
 
@@ -122,11 +131,19 @@ func TestGRPCReception(t *testing.T) {
 }
 
 func TestHttpReception(t *testing.T) {
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	httpServerConfig.WriteTimeout = 0
+	httpServerConfig.ReadHeaderTimeout = 0
+	httpServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	httpServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  fmt.Sprintf(":%d", 12800),
+	}
 	config := &configuration{
-		CollectorHTTPPort: 12800,
-		CollectorHTTPSettings: confighttp.ServerConfig{
-			Endpoint: fmt.Sprintf(":%d", 12800),
-		},
+		CollectorHTTPPort:     12800,
+		CollectorHTTPSettings: httpServerConfig,
 	}
 
 	sink := new(consumertest.TracesSink)

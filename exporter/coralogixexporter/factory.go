@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package coralogixexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 
@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -36,34 +36,26 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+	cfg := &Config{
+		QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-		DomainSettings: TransportConfig{
-			ClientConfig: configgrpc.ClientConfig{
-				Compression: configcompression.TypeGzip,
-			},
-		},
+		DomainSettings:  TransportConfig{},
 		// Traces GRPC client
 		Traces: TransportConfig{
 			ClientConfig: configgrpc.ClientConfig{
-				Endpoint:    "https://",
-				Compression: configcompression.TypeGzip,
+				Endpoint: "https://",
 			},
 		},
 		Metrics: TransportConfig{
 			ClientConfig: configgrpc.ClientConfig{
-				Endpoint: "https://",
-				// Default to gzip compression
-				Compression:     configcompression.TypeGzip,
+				Endpoint:        "https://",
 				WriteBufferSize: 512 * 1024,
 			},
 		},
 		Logs: TransportConfig{
 			ClientConfig: configgrpc.ClientConfig{
-				Endpoint:    "https://",
-				Compression: configcompression.TypeGzip,
+				Endpoint: "https://",
 			},
 		},
 		PrivateKey: "",
@@ -75,6 +67,11 @@ func createDefaultConfig() component.Config {
 		},
 		Protocol: grpcProtocol,
 	}
+	applyTransportDefaults(&cfg.DomainSettings)
+	applyTransportDefaults(&cfg.Traces)
+	applyTransportDefaults(&cfg.Metrics)
+	applyTransportDefaults(&cfg.Logs)
+	return cfg
 }
 
 func createTraceExporter(

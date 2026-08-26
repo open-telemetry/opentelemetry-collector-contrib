@@ -19,13 +19,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
@@ -70,7 +68,6 @@ func TestConnectorConsume(t *testing.T) {
 	for _, tc := range []struct {
 		name          string
 		cfg           *Config
-		gates         []*featuregate.Gate
 		sampleTraces  ptrace.Traces
 		verifyMetrics func(t *testing.T, md pmetric.Metrics)
 	}{
@@ -155,26 +152,8 @@ func TestConnectorConsume(t *testing.T) {
 				assert.Equal(t, 0, md.MetricCount())
 			},
 		},
-		{
-			name: "complete traces with legacy latency metrics",
-			cfg: &Config{
-				Dimensions: []string{"some-attribute", "non-existing-attribute"},
-				Store: StoreConfig{
-					MaxItems: 10,
-					TTL:      time.Nanosecond,
-				},
-			},
-			sampleTraces:  buildSampleTrace(t, "val"),
-			gates:         []*featuregate.Gate{legacyLatencyUnitMsFeatureGate},
-			verifyMetrics: verifyHappyCaseLatencyMetrics(),
-		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// Set feature gates
-			for _, gate := range tc.gates {
-				require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
-			}
-
 			// Prepare
 			set := componenttest.NewNopTelemetrySettings()
 			set.Logger = zaptest.NewLogger(t)
@@ -197,11 +176,6 @@ func TestConnectorConsume(t *testing.T) {
 
 			// Shutdown the connector
 			assert.NoError(t, conn.Shutdown(t.Context()))
-
-			// Unset feature gates
-			for _, gate := range tc.gates {
-				require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
-			}
 		})
 	}
 }
@@ -235,13 +209,6 @@ func verifyHappyCaseMetricsWithDuration(serverDurationSum, clientDurationSum flo
 		mClientDuration := ms.At(2)
 		assert.Equal(t, "traces_service_graph_request_client", mClientDuration.Name())
 		verifyDuration(t, mClientDuration, clientDurationSum, []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0})
-	}
-}
-
-func verifyHappyCaseLatencyMetrics() func(t *testing.T, md pmetric.Metrics) {
-	return func(t *testing.T, md pmetric.Metrics) {
-		verifyHappyCaseMetricsWithDuration(2000, 1000)(t, md)
-		verifyUnit(t, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Unit(), millisecondsUnit)
 	}
 }
 
@@ -291,10 +258,6 @@ func verifyAttr(t *testing.T, attrs pcommon.Map, k, expected string) {
 	assert.Equal(t, expected, v.AsString())
 }
 
-func verifyUnit(t *testing.T, expected, actual string) {
-	assert.Equal(t, expected, actual)
-}
-
 func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
 	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
 	// client: 1s
@@ -305,7 +268,7 @@ func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
 	traces := ptrace.NewTraces()
 
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	resourceSpans.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), "some-service")
+	resourceSpans.Resource().Attributes().PutStr("service.name", "some-service")
 
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 
@@ -346,7 +309,7 @@ func incompleteClientTraces() ptrace.Traces {
 	traces := ptrace.NewTraces()
 
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	resourceSpans.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), "some-client-service")
+	resourceSpans.Resource().Attributes().PutStr("service.name", "some-client-service")
 
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	anotherTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
@@ -358,7 +321,7 @@ func incompleteClientTraces() ptrace.Traces {
 	clientSpanNoServerSpan.SetKind(ptrace.SpanKindClient)
 	clientSpanNoServerSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
 	clientSpanNoServerSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
-	clientSpanNoServerSpan.Attributes().PutStr(string(semconv.PeerServiceKey), "AuthTokenCache") // Attribute selected as dimension for metrics
+	clientSpanNoServerSpan.Attributes().PutStr("peer.service", "AuthTokenCache") // Attribute selected as dimension for metrics
 
 	return traces
 }
@@ -370,7 +333,7 @@ func incompleteServerTraces(withParentSpan bool) ptrace.Traces {
 	traces := ptrace.NewTraces()
 
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	resourceSpans.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), "some-server-service")
+	resourceSpans.Resource().Attributes().PutStr("service.name", "some-server-service")
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	anotherTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	serverSpanNoClientSpan := scopeSpans.Spans().AppendEmpty()
@@ -853,6 +816,9 @@ func verifyExpDuration(t *testing.T, m pmetric.Metric, expectedDp pmetric.Expone
 	assert.Equal(t, 1, dps.Len())
 	dp := dps.At(0)
 
+	assert.NotZero(t, dp.Timestamp(), "timestamp must be set")
+	assert.NotZero(t, dp.StartTimestamp(), "start timestamp must be set")
+
 	// ignore time
 	dp.SetTimestamp(pcommon.Timestamp(0))
 	dp.SetStartTimestamp(pcommon.Timestamp(0))
@@ -861,5 +827,5 @@ func verifyExpDuration(t *testing.T, m pmetric.Metric, expectedDp pmetric.Expone
 
 // ptr returns a pointer to the given value.
 func ptr[T any](value T) *T {
-	return &value
+	return new(value)
 }

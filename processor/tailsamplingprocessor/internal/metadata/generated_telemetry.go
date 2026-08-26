@@ -6,10 +6,9 @@ import (
 	"errors"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-
-	"go.opentelemetry.io/collector/component"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -23,21 +22,25 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                               metric.Meter
-	mu                                                  sync.Mutex
-	registrations                                       []metric.Registration
-	ProcessorTailSamplingCountSpansSampled              metric.Int64Counter
-	ProcessorTailSamplingCountTracesSampled             metric.Int64Counter
-	ProcessorTailSamplingEarlyReleasesFromCacheDecision metric.Int64Counter
-	ProcessorTailSamplingGlobalCountTracesSampled       metric.Int64Counter
-	ProcessorTailSamplingNewTraceIDReceived             metric.Int64Counter
-	ProcessorTailSamplingSamplingDecisionLatency        metric.Int64Histogram
-	ProcessorTailSamplingSamplingDecisionTimerLatency   metric.Int64Histogram
-	ProcessorTailSamplingSamplingLateSpanAge            metric.Int64Histogram
-	ProcessorTailSamplingSamplingPolicyEvaluationError  metric.Int64Counter
-	ProcessorTailSamplingSamplingTraceDroppedTooEarly   metric.Int64Counter
-	ProcessorTailSamplingSamplingTraceRemovalAge        metric.Int64Histogram
-	ProcessorTailSamplingSamplingTracesOnMemory         metric.Int64Gauge
+	meter                                                    metric.Meter
+	mu                                                       sync.Mutex
+	registrations                                            []metric.Registration
+	ProcessorTailSamplingCountBytesSampled                   metric.Int64Counter
+	ProcessorTailSamplingCountSpansSampled                   metric.Int64Counter
+	ProcessorTailSamplingCountSpansWithUnparseableTracestate metric.Int64Counter
+	ProcessorTailSamplingCountTracesSampled                  metric.Int64Counter
+	ProcessorTailSamplingEarlyReleasesFromCacheDecision      metric.Int64Counter
+	ProcessorTailSamplingGlobalCountTracesSampled            metric.Int64Counter
+	ProcessorTailSamplingNewTraceIDReceived                  metric.Int64Counter
+	ProcessorTailSamplingSamplingDecisionTimerLatency        metric.Int64Histogram
+	ProcessorTailSamplingSamplingLateSpanAge                 metric.Int64Histogram
+	ProcessorTailSamplingSamplingPolicyEvaluationError       metric.Int64Counter
+	ProcessorTailSamplingSamplingPolicyExecutionCount        metric.Int64Counter
+	ProcessorTailSamplingSamplingPolicyExecutionTimeSum      metric.Int64Counter
+	ProcessorTailSamplingSamplingTraceDroppedTooEarly        metric.Int64Counter
+	ProcessorTailSamplingSamplingTraceRemovalAge             metric.Int64Histogram
+	ProcessorTailSamplingSamplingTracesOnMemory              metric.Int64Gauge
+	ProcessorTailSamplingTracesDroppedTooLarge               metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -69,9 +72,21 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.ProcessorTailSamplingCountBytesSampled, err = builder.meter.Int64Counter(
+		"otelcol_processor_tail_sampling_count_bytes_sampled",
+		metric.WithDescription("Count of bytes that were sampled or not per sampling policy [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingCountSpansSampled, err = builder.meter.Int64Counter(
 		"otelcol_processor_tail_sampling_count_spans_sampled",
 		metric.WithDescription("Count of spans that were sampled or not per sampling policy [Development]"),
+		metric.WithUnit("{spans}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorTailSamplingCountSpansWithUnparseableTracestate, err = builder.meter.Int64Counter(
+		"otelcol_processor_tail_sampling_count_spans_with_unparseable_tracestate",
+		metric.WithDescription("Count of spans skipped while rewriting the effective `th` because their tracestate could not be parsed [Development]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
@@ -99,13 +114,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingSamplingDecisionLatency, err = builder.meter.Int64Histogram(
-		"otelcol_processor_tail_sampling_sampling_decision_latency",
-		metric.WithDescription("Latency (in microseconds) of a given sampling policy [Development]"),
-		metric.WithUnit("µs"),
-		metric.WithExplicitBucketBoundaries([]float64{1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000}...),
-	)
-	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingSamplingDecisionTimerLatency, err = builder.meter.Int64Histogram(
 		"otelcol_processor_tail_sampling_sampling_decision_timer_latency",
 		metric.WithDescription("Latency (in milliseconds) of each run of the sampling decision timer [Development]"),
@@ -125,6 +133,18 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{errors}"),
 	)
 	errs = errors.Join(errs, err)
+	builder.ProcessorTailSamplingSamplingPolicyExecutionCount, err = builder.meter.Int64Counter(
+		"otelcol_processor_tail_sampling_sampling_policy_execution_count",
+		metric.WithDescription("Total number of executions of a specific sampling policy [Development]"),
+		metric.WithUnit("{executions}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorTailSamplingSamplingPolicyExecutionTimeSum, err = builder.meter.Int64Counter(
+		"otelcol_processor_tail_sampling_sampling_policy_execution_time_sum",
+		metric.WithDescription("Total time spent (in microseconds) executing a specific sampling policy [Development]"),
+		metric.WithUnit("us"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingSamplingTraceDroppedTooEarly, err = builder.meter.Int64Counter(
 		"otelcol_processor_tail_sampling_sampling_trace_dropped_too_early",
 		metric.WithDescription("Count of traces that needed to be dropped before the configured wait time [Development]"),
@@ -140,6 +160,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ProcessorTailSamplingSamplingTracesOnMemory, err = builder.meter.Int64Gauge(
 		"otelcol_processor_tail_sampling_sampling_traces_on_memory",
 		metric.WithDescription("Tracks the number of traces current on memory [Development]"),
+		metric.WithUnit("{traces}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorTailSamplingTracesDroppedTooLarge, err = builder.meter.Int64Counter(
+		"otelcol_processor_tail_sampling_traces_dropped_too_large",
+		metric.WithDescription("Count of traces that were dropped because they were too large [Development]"),
 		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)

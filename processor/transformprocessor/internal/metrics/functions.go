@@ -6,23 +6,15 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"maps"
 
-	"go.opentelemetry.io/collector/featuregate"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-var UseConvertBetweenSumAndGaugeMetricContext = featuregate.GlobalRegistry().MustRegister(
-	"processor.transform.ConvertBetweenSumAndGaugeMetricContext",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled will use metric context for conversion between sum and gauge"),
-	featuregate.WithRegisterToVersion("v0.114.0"),
-)
-
-func DataPointFunctions() map[string]ottl.Factory[ottldatapoint.TransformContext] {
-	functions := ottlfuncs.StandardFuncs[ottldatapoint.TransformContext]()
+func DataPointFunctions() map[string]ottl.Factory[*ottldatapoint.TransformContext] {
+	functions := ottlfuncs.StandardFuncs[*ottldatapoint.TransformContext]()
 
 	datapointFunctions := ottl.CreateFactoryMap(
 		newConvertSummarySumValToSumFactory(),
@@ -35,13 +27,18 @@ func DataPointFunctions() map[string]ottl.Factory[ottldatapoint.TransformContext
 	return functions
 }
 
-func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
-	functions := ottlfuncs.StandardFuncs[ottlmetric.TransformContext]()
+func ExemplarFunctions() map[string]ottl.Factory[*ottlexemplar.TransformContext] {
+	return ottlfuncs.StandardFuncs[*ottlexemplar.TransformContext]()
+}
+
+func MetricFunctions() map[string]ottl.Factory[*ottlmetric.TransformContext] {
+	functions := ottlfuncs.StandardFuncs[*ottlmetric.TransformContext]()
 
 	metricFunctions := ottl.CreateFactoryMap(
 		newExtractSumMetricFactory(),
 		newExtractCountMetricFactory(),
 		newExtractAvgMetricFactory(),
+		newExtractPercentileMetricFactory(),
 		newConvertGaugeToSumFactory(),
 		newConvertSumToGaugeFactory(),
 		newCopyMetricFactory(),

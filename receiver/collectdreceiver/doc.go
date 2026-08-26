@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 // Package collectdreceiver implements a receiver that can be used by the
 // OpenTelemetry collector to receive traces from CollectD http_write plugin

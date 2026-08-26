@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -29,11 +30,13 @@ func TestPathGetSetter(t *testing.T) {
 	dataPoint.SetIntValue(1)
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[*testContext]
-		orig     any
-		newVal   any
-		modified func(metric pmetric.Metric)
+		name                string
+		path                ottl.Path[*testContext]
+		orig                any
+		newVal              any
+		modified            func(metric pmetric.Metric)
+		skipSetterTypeCheck bool
+		nilNoError          bool
 	}{
 		{
 			name: "metric name",
@@ -77,6 +80,8 @@ func TestPathGetSetter(t *testing.T) {
 			newVal: int64(pmetric.MetricTypeSum),
 			modified: func(_ pmetric.Metric) {
 			},
+			skipSetterTypeCheck: true, // metric type setter is a no-op
+			nilNoError:          true,
 		},
 		{
 			name: "metric aggregation_temporality",
@@ -101,7 +106,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "metric data points",
+			name:       "metric data points",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "data_points",
 			},
@@ -116,31 +122,105 @@ func TestPathGetSetter(t *testing.T) {
 			path: &pathtest.Path[*testContext]{
 				N: "metadata",
 			},
-			orig:   pcommon.NewMap(),
-			newVal: newMetadata,
+			orig:       pcommon.NewMap(),
+			newVal:     newMetadata,
+			nilNoError: true,
 			modified: func(metric pmetric.Metric) {
 				newMetadata.CopyTo(metric.Metadata())
+			},
+		},
+		{
+			name: "metric metadata key",
+			path: &pathtest.Path[*testContext]{
+				N: "metadata",
+				KeySlice: []ottl.Key[*testContext]{
+					&pathtest.Key[*testContext]{
+						S: new("key"),
+					},
+				},
+			},
+			orig:       nil,
+			newVal:     "value",
+			nilNoError: true,
+			modified: func(metric pmetric.Metric) {
+				metric.Metadata().PutStr("key", "value")
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			accessor, err := ctxmetric.PathGetSetter(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			metric := createTelemetry()
 
 			got, err := accessor.Get(t.Context(), newTestContext(metric))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(t.Context(), newTestContext(metric), tt.newVal)
-			assert.NoError(t, err)
+			require.NoError(t, err)
+
+			// Verify that setting an invalid type returns an error
+			if !tt.skipSetterTypeCheck {
+				err = accessor.Set(t.Context(), newTestContext(metric), struct{}{})
+				require.Error(t, err)
+			}
+
+			err = accessor.Set(t.Context(), newTestContext(createTelemetry()), nil)
+			if tt.nilNoError {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
 
 			expectedMetric := createTelemetry()
 			tt.modified(expectedMetric)
 
 			assert.Equal(t, expectedMetric, metric)
+		})
+	}
+}
+
+// TestPathGetSetter_RelaxedNames verifies that the OTTL `metric.name` path
+// getter/setter accepts arbitrary UTF-8 strings, including names that are
+// disallowed by the current OpenTelemetry instrument-name syntax (e.g. names
+// containing `:`, `\`, spaces, or starting with non-alphabetic characters).
+//
+// This test exists to demonstrate that relaxing the instrument-name
+// restrictions in the OpenTelemetry specification does not require any change
+// to OTTL itself: the path is an opaque string passthrough.
+//
+// See https://github.com/open-telemetry/opentelemetry-specification/issues/4371
+// and https://github.com/open-telemetry/opentelemetry-specification/issues/4736.
+func TestPathGetSetter_RelaxedNames(t *testing.T) {
+	relaxedNames := []string{
+		"with:colon",
+		"with space",
+		"with/slash",
+		`with\backslash`,
+		"-leadingDash",
+		".leadingDot",
+		"with🦀utf8",
+		"",
+	}
+
+	path := &pathtest.Path[*testContext]{N: "name"}
+	accessor, err := ctxmetric.PathGetSetter(path)
+	require.NoError(t, err)
+
+	for _, name := range relaxedNames {
+		t.Run(name, func(t *testing.T) {
+			metric := pmetric.NewMetric()
+			metric.SetName("original")
+
+			err := accessor.Set(t.Context(), newTestContext(metric), name)
+			require.NoError(t, err)
+
+			got, err := accessor.Get(t.Context(), newTestContext(metric))
+			require.NoError(t, err)
+			assert.Equal(t, name, got)
+			assert.Equal(t, name, metric.Name())
 		})
 	}
 }

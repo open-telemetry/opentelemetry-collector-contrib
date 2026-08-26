@@ -1,0 +1,16 @@
+{
+    "messageType": "CONTROL_MESSAGE",
+    "owner": "CloudwatchLogs",
+    "logGroup": "log_group_name",
+    "logStream": "log_stream_name",
+    "subscriptionFilters":[
+        "subscription_filter_name"
+    ],
+    "logEvents": [
+        {
+            "id": "",
+            "timestamp": 1763029869851,
+            "message": "CWL CONTROL MESSAGE: Checking health of destination Firehose."
+        }
+    ]
+}

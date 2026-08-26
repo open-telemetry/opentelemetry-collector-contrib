@@ -86,9 +86,9 @@ System CPU consumed by the Redis server in seconds since server start
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| state | Redis CPU usage state | Str: ``sys``, ``sys_children``, ``sys_main_thread``, ``user``, ``user_children``, ``user_main_thread`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| state | Redis CPU usage state | Str: ``sys``, ``sys_children``, ``sys_main_thread``, ``user``, ``user_children``, ``user_main_thread`` | Recommended | - |
 
 ### redis.db.avg_ttl
 
@@ -100,9 +100,9 @@ Average keyspace keys TTL
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| db | Redis database identifier | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db | Redis database identifier | Any Str | Recommended | - |
 
 ### redis.db.expires
 
@@ -114,9 +114,9 @@ Number of keyspace keys with an expiration
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| db | Redis database identifier | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db | Redis database identifier | Any Str | Recommended | - |
 
 ### redis.db.keys
 
@@ -128,9 +128,9 @@ Number of keyspace keys
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| db | Redis database identifier | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db | Redis database identifier | Any Str | Recommended | - |
 
 ### redis.keys.evicted
 
@@ -278,6 +278,14 @@ metrics:
     enabled: true
 ```
 
+### redis.cluster.cluster_enabled
+
+Indicate Redis cluster is enabled
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
 ### redis.cluster.known_nodes
 
 Number of known nodes in the cluster
@@ -352,9 +360,9 @@ State of the cluster
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| cluster_state | State of the cluster | Str: ``ok``, ``fail`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cluster_state | State of the cluster | Str: ``ok``, ``fail`` | Recommended | - |
 
 ### redis.cluster.stats_messages_received
 
@@ -390,9 +398,9 @@ Total number of calls for a command
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| cmd | Redis command name | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cmd | Redis command name | Any Str | Recommended | - |
 
 ### redis.cmd.latency
 
@@ -404,10 +412,10 @@ Command execution latency
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| cmd | Redis command name | Any Str | Recommended |
-| percentile | Percentile | Str: ``p50``, ``p99``, ``p99.9`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cmd | Redis command name | Any Str | Recommended | - |
+| percentile | Percentile | Str: ``p50``, ``p99``, ``p99.9`` | Recommended | - |
 
 ### redis.cmd.usec
 
@@ -419,9 +427,9 @@ Total time for all executions of this command
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| cmd | Redis command name | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cmd | Redis command name | Any Str | Recommended | - |
 
 ### redis.maxmemory
 
@@ -430,6 +438,72 @@ The value of the maxmemory configuration directive
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
+
+### redis.memory.used_memory_overhead
+
+The sum in bytes of all overheads that the server allocated for managing its internal data structures
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+### redis.memory.used_memory_startup
+
+Initial amount of memory consumed by Redis at startup in bytes
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+### redis.mode
+
+Redis server mode
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {mode} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mode | Redis server mode | Str: ``cluster``, ``sentinel``, ``standalone`` | Recommended | - |
+
+### redis.pubsub.channel.status
+
+Number of pub/sub channels
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {channel} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| redis.pubsub.channel.state | The type of pub/sub channel | Str: ``active``, ``shard`` | Recommended | - |
+
+### redis.pubsub.connection.count
+
+Number of clients subscribed to pub/sub channels or patterns (available in Redis 7.2+)
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {client} | Sum | Int | Cumulative | false | Development |
+
+### redis.pubsub.pattern.status
+
+Number of pub/sub patterns
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {pattern} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| redis.pubsub.pattern.state | The state of pub/sub patterns | Str: ``active`` | Recommended | - |
 
 ### redis.replication.replica_offset
 
@@ -449,14 +523,70 @@ Redis node's role
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| role | Redis node's role | Str: ``replica``, ``primary`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| role | Redis node's role | Str: ``replica``, ``primary`` | Recommended | - |
+
+### redis.sentinel.masters
+
+Number of masters monitored by Sentinel.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {master} | Gauge | Int | Development |
+
+### redis.sentinel.running_scripts
+
+Number of running Sentinel scripts.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {script} | Gauge | Int | Development |
+
+### redis.sentinel.scripts_queue_length
+
+Length of Sentinel scripts queue.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {script} | Gauge | Int | Development |
+
+### redis.sentinel.simulate_failure_flags
+
+Simulated failure flags bitmask.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {flag} | Gauge | Int | Development |
+
+### redis.sentinel.tilt_since_seconds
+
+Duration in seconds of current TILT, or -1 if not in TILT mode.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Int | Development |
+
+### redis.sentinel.total_tilt
+
+Total TILT occurrences since start.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {event} | Sum | Int | Cumulative | true | Development |
+
+### redis.tracking_total_keys
+
+Number of keys being tracked by the server
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {key} | Sum | Int | Cumulative | false | Development |
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| redis.version | Redis server's version. | Any Str | true |
-| server.address | Redis server's address | Any Str | false |
-| server.port | Redis server's port | Any Str | false |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| redis.version | Redis server's version. | Any Str | true | - | - |
+| server.address | Redis server's address | Any Str | false | - | - |
+| server.port | Redis server's port | Any Str | false | - | - |

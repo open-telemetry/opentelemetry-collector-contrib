@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -306,7 +305,8 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pcommon.NewValueInt(2)),
+				pcommon.NewValueInt(2),
+			),
 			sampled: true,
 		},
 		{
@@ -316,7 +316,8 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pcommon.NewValueDouble(1)),
+				pcommon.NewValueDouble(1),
+			),
 			sampled: true,
 		},
 		{
@@ -326,7 +327,8 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pcommon.NewValueStr("1")),
+				pcommon.NewValueStr("1"),
+			),
 			sampled: true,
 		},
 		{
@@ -336,7 +338,8 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pcommon.NewValueInt(0)),
+				pcommon.NewValueInt(0),
+			),
 		},
 		{
 			name: "must_not_sample_double",
@@ -345,7 +348,8 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pcommon.NewValueDouble(0)),
+				pcommon.NewValueDouble(0),
+			),
 		},
 		{
 			name: "must_not_sample_string",
@@ -354,7 +358,8 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pcommon.NewValueStr("0")),
+				pcommon.NewValueStr("0"),
+			),
 		},
 		{
 			name: "defer_sample_expect_not_sampled",
@@ -363,7 +368,8 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"no.sampling.priority",
-				pcommon.NewValueInt(2)),
+				pcommon.NewValueInt(2),
+			),
 		},
 		{
 			name: "defer_sample_expect_sampled",
@@ -372,7 +378,8 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"no.sampling.priority",
-				pcommon.NewValueInt(2)),
+				pcommon.NewValueInt(2),
+			),
 			sampled: true,
 		},
 	}
@@ -1151,7 +1158,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 				span := ils.Spans().AppendEmpty()
 				span.SetTraceID(idutils.UInt64ToTraceID(r.Uint64(), r.Uint64()))
 				span.SetSpanID(idutils.UInt64ToSpanID(r.Uint64()))
-				span.Attributes().PutInt(string(conventions.HTTPStatusCodeKey), 404)
+				span.Attributes().PutInt("http.status_code", 404)
 				span.Attributes().PutStr("http.status_text", "Not Found")
 			}
 		}

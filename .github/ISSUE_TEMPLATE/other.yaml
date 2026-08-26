@@ -18,6 +18,7 @@ body:
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
       - cmd/telemetrygen
+      - config/configdbauth
       - confmap/provider/aesprovider
       - confmap/provider/googlesecretmanagerprovider
       - confmap/provider/s3provider
@@ -27,6 +28,7 @@ body:
       - connector/exceptions
       - connector/failover
       - connector/grafanacloud
+      - connector/metricsaslogs
       - connector/otlpjson
       - connector/roundrobin
       - connector/routing
@@ -46,7 +48,6 @@ body:
       - exporter/azuredataexplorer
       - exporter/azuremonitor
       - exporter/bmchelix
-      - exporter/carbon
       - exporter/cassandra
       - exporter/clickhouse
       - exporter/coralogix
@@ -73,7 +74,6 @@ body:
       - exporter/prometheusremotewrite
       - exporter/pulsar
       - exporter/rabbitmq
-      - exporter/sapm
       - exporter/sematext
       - exporter/sentry
       - exporter/signalfx
@@ -92,10 +92,13 @@ body:
       - extension/bearertokenauth
       - extension/cgroupruntime
       - extension/datadog
+      - extension/dbauth
+      - extension/dbauth/awsiamdbauth
       - extension/encoding
       - extension/encoding/avrologencoding
       - extension/encoding/awscloudwatchmetricstreamsencoding
       - extension/encoding/awslogsencoding
+      - extension/encoding/azureencoding
       - extension/encoding/googlecloudlogentryencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
@@ -110,6 +113,7 @@ body:
       - extension/httpforwarder
       - extension/jaegerremotesampling
       - extension/k8sleaderelector
+      - extension/mcp
       - extension/oauth2clientauth
       - extension/observer
       - extension/observer/cfgardenobserver
@@ -117,12 +121,12 @@ body:
       - extension/observer/ecsobserver
       - extension/observer/hostobserver
       - extension/observer/k8sobserver
-      - extension/observer/kafkatopicsobserver
       - extension/oidcauth
       - extension/opamp
       - extension/opampcustommessages
       - extension/pprof
       - extension/remotetap
+      - extension/sdnotify
       - extension/sigv4auth
       - extension/solarwindsapmsettings
       - extension/storage
@@ -130,6 +134,7 @@ body:
       - extension/storage/filestorage
       - extension/storage/redisstorage
       - extension/sumologic
+      - extension/tailstorage/pebbletailstorage
       - internal/aws
       - internal/collectd
       - internal/common
@@ -142,6 +147,8 @@ body:
       - internal/grpcutil
       - internal/healthcheck
       - internal/k8sconfig
+      - internal/k8sinventory
+      - internal/k8sleaderelectortest
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
@@ -157,6 +164,7 @@ body:
       - pkg/core/xidutils
       - pkg/datadog
       - pkg/experimentalmetricmetadata
+      - pkg/expohisto
       - pkg/golden
       - pkg/kafka/configkafka
       - pkg/kafka/topic
@@ -165,31 +173,38 @@ body:
       - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/sampling
+      - pkg/semconvtest
       - pkg/stanza
       - pkg/stanza/fileconsumer
       - pkg/stanza/operator/input/journald
+      - pkg/stanza/operator/input/tcp
       - pkg/status
       - pkg/translator/azure
       - pkg/translator/azurelogs
       - pkg/translator/faro
       - pkg/translator/jaeger
       - pkg/translator/loki
-      - pkg/translator/opencensus
+      - pkg/translator/pprof
       - pkg/translator/prometheus
       - pkg/translator/prometheusremotewrite
       - pkg/translator/signalfx
       - pkg/translator/skywalking
+      - pkg/translator/splunk
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - pkg/xk8stest
+      - pkg/xstreamencoding
+      - processor/adaptivetailsampling
       - processor/attributes
+      - processor/awsecsattributes
+      - processor/cardinalityguardian
       - processor/coralogix
       - processor/cumulativetodelta
-      - processor/datadogsemantics
       - processor/deltatocumulative
       - processor/deltatorate
-      - processor/dnslookup
+      - processor/drain
       - processor/filter
+      - processor/genainormalizer
       - processor/geoip
       - processor/groupbyattrs
       - processor/groupbytrace
@@ -198,6 +213,7 @@ body:
       - processor/k8sattributes
       - processor/logdedup
       - processor/logstransform
+      - processor/lookup
       - processor/metricsgeneration
       - processor/metricstarttime
       - processor/metricstransform
@@ -207,21 +223,30 @@ body:
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/akamai
+      - processor/resourcedetection/internal/alibaba/ecs
+      - processor/resourcedetection/internal/azure
       - processor/resourcedetection/internal/digitalocean
       - processor/resourcedetection/internal/dynatrace
       - processor/resourcedetection/internal/hetzner
+      - processor/resourcedetection/internal/ibmcloud/classic
+      - processor/resourcedetection/internal/ibmcloud/vpc
       - processor/resourcedetection/internal/openstack/nova
       - processor/resourcedetection/internal/oraclecloud
       - processor/resourcedetection/internal/scaleway
+      - processor/resourcedetection/internal/tencent/cvm
       - processor/resourcedetection/internal/upcloud
       - processor/resourcedetection/internal/vultr
       - processor/schema
+      - processor/signing
       - processor/span
+      - processor/spanpruning
       - processor/sumologic
       - processor/tailsampling
       - processor/transform
+      - processor/transform/internal/logparsingfuncs
       - processor/unroll
       - receiver/activedirectoryds
+      - receiver/activedirectoryinv
       - receiver/aerospike
       - receiver/apache
       - receiver/apachespark
@@ -234,8 +259,8 @@ body:
       - receiver/awsxray
       - receiver/azureblob
       - receiver/azureeventhub
+      - receiver/azurefunctions
       - receiver/azuremonitor
-      - receiver/bigip
       - receiver/carbon
       - receiver/chrony
       - receiver/ciscoos
@@ -246,6 +271,7 @@ body:
       - receiver/collectd
       - receiver/couchdb
       - receiver/datadog
+      - receiver/dnscheck
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/envoyals
@@ -259,6 +285,7 @@ body:
       - receiver/gitlab
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
+      - receiver/googlecloudpubsubpush
       - receiver/googlecloudspanner
       - receiver/haproxy
       - receiver/hostmetrics
@@ -279,17 +306,16 @@ body:
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger
-      - receiver/jmx
       - receiver/journald
       - receiver/k8scluster
       - receiver/k8sevents
-      - receiver/k8slog
       - receiver/k8sobjects
       - receiver/kafka
       - receiver/kafkametrics
       - receiver/kubeletstats
       - receiver/libhoney
       - receiver/loki
+      - receiver/macosunifiedlogging
       - receiver/memcached
       - receiver/mongodb
       - receiver/mongodbatlas
@@ -337,6 +363,7 @@ body:
       - receiver/tlscheck
       - receiver/udplog
       - receiver/vcenter
+      - receiver/vcr
       - receiver/wavefront
       - receiver/webhookevent
       - receiver/windowseventlog

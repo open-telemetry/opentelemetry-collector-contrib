@@ -70,9 +70,9 @@ func Test_TruncateTime(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := TruncateTime(tt.time, tt.duration)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			result, err := exprFunc(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected.UnixNano(), result.(time.Time).UnixNano())
 		})
 	}
@@ -123,4 +123,45 @@ func Test_TruncateTimeError(t *testing.T) {
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
+}
+
+func Test_TruncateTimeFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewTruncateTimeFactory[any]()
+		assert.Equal(t, "TruncateTime", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewTruncateTimeFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &TruncateTimeArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Time", "Duration"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewTruncateTimeFactory[any]()
+		args := factory.CreateDefaultArguments()
+		truncateTimeArgs, ok := args.(*TruncateTimeArguments[any])
+		require.True(t, ok)
+		truncateTimeArgs.Time = &ottl.StandardTimeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return time.Now(), nil
+			},
+		}
+		truncateTimeArgs.Duration = &ottl.StandardDurationGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return time.Hour, nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createTruncateTimeFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "TimeFactory args must be of type *TruncateTimeArguments[K]")
+	})
 }

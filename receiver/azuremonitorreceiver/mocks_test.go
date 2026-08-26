@@ -15,15 +15,14 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	azfake "github.com/Azure/azure-sdk-for-go/sdk/azcore/fake"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics"
 	azmetricsfake "github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	armmonitorfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor/fake"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
-	armresourcesfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3/fake"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
-	armsubscriptionsfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions/fake"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v4"
+	armresourcesfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v4/fake"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions/v2"
+	armsubscriptionsfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions/v2/fake"
 )
 
 // newMockSubscriptionsListPager is a helper function to create a list pager for subscriptions.
@@ -59,11 +58,28 @@ func newMockResourcesListPager(resourcesPages []armresources.ClientListResponse)
 
 // newMockMetricsDefinitionListPager is a helper function to create a list pager for metrics definitions.
 // Don't use it, it's designed to be called in the newMockClientOptionsResolver ctor only.
+//
+// The map key is either a plain resourceURI (for the default no-filter call) or
+// "resourceURI::namespace" (for namespace-filtered calls). When a namespace-filtered
+// call is made and no namespace-specific key exists, an empty response is returned
+// rather than falling back to the plain-URI key, which prevents duplicate definitions.
 func newMockMetricsDefinitionListPager(metricDefinitionsPagesByResourceURI map[string][]armmonitor.MetricDefinitionsClientListResponse) func(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) (resp azfake.PagerResponder[armmonitor.MetricDefinitionsClientListResponse]) {
-	return func(resourceURI string, _ *armmonitor.MetricDefinitionsClientListOptions) (resp azfake.PagerResponder[armmonitor.MetricDefinitionsClientListResponse]) {
+	return func(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) (resp azfake.PagerResponder[armmonitor.MetricDefinitionsClientListResponse]) {
 		resourceURI = fmt.Sprintf("/%s", resourceURI) // Hack the fake API as it's not taking starting slash from called request
-		for _, page := range metricDefinitionsPagesByResourceURI[resourceURI] {
-			resp.AddPage(http.StatusOK, page, nil)
+		key := resourceURI
+		if options != nil && options.Metricnamespace != nil {
+			key = resourceURI + "::" + *options.Metricnamespace
+		}
+		pages, found := metricDefinitionsPagesByResourceURI[key]
+		if found {
+			for _, page := range pages {
+				resp.AddPage(http.StatusOK, page, nil)
+			}
+		} else {
+			// Return an empty success page so the fake transport removes this tracker entry,
+			// allowing subsequent calls with different query params (e.g. metricnamespace) to
+			// create a fresh tracker entry and invoke the mock handler again.
+			resp.AddPage(http.StatusOK, armmonitor.MetricDefinitionsClientListResponse{}, nil)
 		}
 		return resp
 	}
@@ -299,12 +315,13 @@ func newResourcesMockData(inputMap map[string][][]*armresources.GenericResourceE
 }
 
 // metricsDefinitionMockInput is used to mock the response of the metrics definition API.
-// Everything is required except dimensions.
+// Everything is required except dimensions and supportedAggregationTypes.
 type metricsDefinitionMockInput struct {
-	namespace  string
-	name       string
-	timeGrain  string
-	dimensions []string
+	namespace                 string                       // required
+	name                      string                       // required
+	timeGrain                 string                       // required
+	dimensions                []string                     // optional
+	supportedAggregationTypes []armmonitor.AggregationType // optional
 }
 
 // newMetricsDefinitionMockData is a helper function to create metrics definition list response.
@@ -325,6 +342,15 @@ func newMetricsDefinitionMockData(inputMap map[string][]metricsDefinitionMockInp
 			for _, dimension := range input.dimensions {
 				toAppend.Dimensions = append(toAppend.Dimensions, &armmonitor.LocalizableString{Value: &dimension})
 			}
+
+			if len(input.supportedAggregationTypes) == 0 {
+				input.supportedAggregationTypes = armmonitor.PossibleAggregationTypeValues()
+			}
+
+			for _, aggregationType := range input.supportedAggregationTypes {
+				toAppend.SupportedAggregationTypes = append(toAppend.SupportedAggregationTypes, &aggregationType)
+			}
+
 			values[i] = &toAppend
 		}
 
@@ -359,14 +385,14 @@ func newQueryResourcesResponseMockData(inputSlice []queryResourceMockInput) azme
 		for j, inputMetric := range input.Metrics {
 			values[j] = azmetrics.Metric{
 				Name: &azmetrics.LocalizableString{
-					Value: to.Ptr(inputMetric.Name),
+					Value: new(inputMetric.Name),
 				},
-				Unit:       to.Ptr(inputMetric.Unit),
+				Unit:       new(inputMetric.Unit),
 				TimeSeries: inputMetric.TimeSeries,
 			}
 		}
 		result.Values[i] = azmetrics.MetricData{
-			ResourceID: to.Ptr(input.ResourceID),
+			ResourceID: new(input.ResourceID),
 			Values:     values,
 		}
 	}
@@ -377,7 +403,7 @@ func newQueryResourcesResponseMockData(inputSlice []queryResourceMockInput) azme
 
 type metricsClientListResponseMockInput struct {
 	Name       string
-	Unit       armmonitor.Unit
+	Unit       armmonitor.MetricUnit
 	TimeSeries []*armmonitor.TimeSeriesElement
 }
 
@@ -402,6 +428,14 @@ func newMetricsClientListResponseMockData(inputMap map[string]map[string][]metri
 					},
 					Unit:       &input.Unit,
 					Timeseries: input.TimeSeries,
+				}
+				for _, ts := range result3.Value[i].Timeseries {
+					for _, d := range ts.Data {
+						if d.TimeStamp == nil {
+							t := time.Unix(1, 0).UTC()
+							d.TimeStamp = &t
+						}
+					}
 				}
 			}
 			result2[metricNames] = result3

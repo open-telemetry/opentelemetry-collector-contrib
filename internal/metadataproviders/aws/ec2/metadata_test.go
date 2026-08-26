@@ -7,8 +7,12 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
+	"sort"
 	"testing"
 	"time"
 
@@ -195,6 +199,163 @@ func TestInstanceIdentityDocumentFromImds(t *testing.T) {
 				if !reflect.DeepEqual(document, tt.expect) {
 					t.Errorf("expected document: %+v, got: %+v", tt.expect, document)
 				}
+			}
+		})
+	}
+}
+
+func newTestIMDSServer(t *testing.T, tagKeys map[string]string) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle IMDSv2 token requests
+		if r.Method == http.MethodPut && r.URL.Path == "/latest/api/token" {
+			w.Header().Set("x-aws-ec2-metadata-token", "test-token")
+			fmt.Fprint(w, "test-token")
+			return
+		}
+
+		switch r.URL.Path {
+		case "/latest/meta-data/tags/instance":
+			if tagKeys == nil {
+				http.Error(w, "Not Found", http.StatusNotFound)
+				return
+			}
+			keys := ""
+			for k := range tagKeys {
+				if keys != "" {
+					keys += "\n"
+				}
+				keys += k
+			}
+			fmt.Fprint(w, keys)
+		default:
+			// Check for individual tag value requests
+			const prefix = "/latest/meta-data/tags/instance/"
+			if len(r.URL.Path) > len(prefix) {
+				key := r.URL.Path[len(prefix):]
+				if val, ok := tagKeys[key]; ok {
+					fmt.Fprint(w, val)
+					return
+				}
+			}
+			http.Error(w, "Not Found", http.StatusNotFound)
+		}
+	}))
+}
+
+func TestTags(t *testing.T) {
+	cases := []struct {
+		name    string
+		tagKeys map[string]string
+		expect  []string
+		wantErr bool
+	}{
+		{
+			name:    "Successfully lists tag keys",
+			tagKeys: map[string]string{"Name": "my-instance", "Environment": "production"},
+			expect:  []string{"Environment", "Name"},
+			wantErr: false,
+		},
+		{
+			name: "Realistic AWS tags with colons and mixed naming",
+			tagKeys: map[string]string{
+				"Name":                          "otel-collector-prod",
+				"aws:autoscaling:groupName":     "asg-otel-prod",
+				"aws:ec2launchtemplate:id":      "lt-0123456789abcdef0",
+				"aws:ec2launchtemplate:version": "1",
+				"environment":                   "production",
+				"service":                       "opentelemetry-collector",
+				"team":                          "observability",
+			},
+			expect: []string{
+				"Name",
+				"aws:autoscaling:groupName",
+				"aws:ec2launchtemplate:id",
+				"aws:ec2launchtemplate:version",
+				"environment",
+				"service",
+				"team",
+			},
+			wantErr: false,
+		},
+		{
+			name:    "IMDS tags not enabled returns error",
+			tagKeys: nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			server := newTestIMDSServer(t, tt.tagKeys)
+			defer server.Close()
+
+			client := imds.New(imds.Options{
+				Endpoint: server.URL,
+			})
+			provider := &metadataClient{client: client}
+
+			keys, err := provider.Tags(t.Context())
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("expected error: %v, got: %v", tt.wantErr, err)
+			}
+			if !tt.wantErr {
+				sort.Strings(keys)
+				sort.Strings(tt.expect)
+				if !reflect.DeepEqual(keys, tt.expect) {
+					t.Errorf("expected keys: %v, got: %v", tt.expect, keys)
+				}
+			}
+		})
+	}
+}
+
+func TestTag(t *testing.T) {
+	cases := []struct {
+		name    string
+		tagKeys map[string]string
+		key     string
+		expect  string
+		wantErr bool
+	}{
+		{
+			name:    "Successfully retrieves tag value",
+			tagKeys: map[string]string{"Name": "my-instance", "Environment": "production"},
+			key:     "Name",
+			expect:  "my-instance",
+			wantErr: false,
+		},
+		{
+			name:    "Successfully retrieves tag value with colons in key",
+			tagKeys: map[string]string{"aws:autoscaling:groupName": "asg-otel-prod", "Name": "my-instance"},
+			key:     "aws:autoscaling:groupName",
+			expect:  "asg-otel-prod",
+			wantErr: false,
+		},
+		{
+			name:    "Tag key not found returns error",
+			tagKeys: map[string]string{"Name": "my-instance"},
+			key:     "DoesNotExist",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			server := newTestIMDSServer(t, tt.tagKeys)
+			defer server.Close()
+
+			client := imds.New(imds.Options{
+				Endpoint: server.URL,
+			})
+			provider := &metadataClient{client: client}
+
+			val, err := provider.Tag(t.Context(), tt.key)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("expected error: %v, got: %v", tt.wantErr, err)
+			}
+			if !tt.wantErr && val != tt.expect {
+				t.Errorf("expected value: %q, got: %q", tt.expect, val)
 			}
 		})
 	}

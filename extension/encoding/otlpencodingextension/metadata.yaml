@@ -1,4 +1,9 @@
+display_name: OTLP Encoding Extension
 type: otlp_encoding
+
+description: >
+  This extension unmarshals and marshals data encoded according to the
+  [OTLP specification](https://opentelemetry.io/docs/specs/otlp/).
 
 status:
   disable_codecov_badge: true

@@ -41,7 +41,7 @@ func basicProfiles() Profiles {
 
 func TestCompareProfiles(t *testing.T) {
 	timestamp1 := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
-	timestamp2 := timestamp1.Add(5 * time.Second)
+	duration := (5 * time.Second).Nanoseconds()
 	tcs := []struct {
 		name           string
 		expected       pprofile.Profiles
@@ -320,7 +320,7 @@ func TestCompareProfiles(t *testing.T) {
 						ProfileID:     pprofile.ProfileID([]byte("profileid1111111")),
 						Attributes:    []Attribute{{Key: "container-attr1", Value: "value1"}},
 						TimeNanos:     pcommon.NewTimestampFromTime(timestamp1),
-						DurationNanos: pcommon.NewTimestampFromTime(timestamp2),
+						DurationNanos: uint64(duration),
 					},
 				}
 				return p.Transform()
@@ -334,8 +334,8 @@ func TestCompareProfiles(t *testing.T) {
 					{
 						ProfileID:     pprofile.ProfileID([]byte("profileid1111111")),
 						Attributes:    []Attribute{{Key: "container-attr1", Value: "value1"}},
-						TimeNanos:     pcommon.NewTimestampFromTime(timestamp2),
-						DurationNanos: pcommon.NewTimestampFromTime(timestamp2),
+						TimeNanos:     pcommon.NewTimestampFromTime(timestamp1.Add(5 * time.Second)),
+						DurationNanos: uint64(duration),
 					},
 				}
 				return p.Transform()
@@ -357,7 +357,7 @@ func TestCompareProfiles(t *testing.T) {
 						ProfileID:     pprofile.ProfileID([]byte("profileid1111111")),
 						Attributes:    []Attribute{{Key: "container-attr1", Value: "value1"}},
 						TimeNanos:     pcommon.NewTimestampFromTime(timestamp1),
-						DurationNanos: pcommon.NewTimestampFromTime(timestamp1.Add(5 * time.Second)),
+						DurationNanos: uint64(duration),
 					},
 				}
 				return p.Transform()
@@ -372,8 +372,8 @@ func TestCompareProfiles(t *testing.T) {
 					{
 						ProfileID:     pprofile.ProfileID([]byte("profileid1111111")),
 						Attributes:    []Attribute{{Key: "container-attr1", Value: "value2"}},
-						TimeNanos:     pcommon.NewTimestampFromTime(timestamp2),
-						DurationNanos: pcommon.NewTimestampFromTime(timestamp2.Add(5 * time.Second)),
+						TimeNanos:     pcommon.NewTimestampFromTime(timestamp1),
+						DurationNanos: uint64(duration),
 					},
 				}
 				return p.Transform()
@@ -674,16 +674,10 @@ func TestCompareProfile(t *testing.T) {
 						ProfileID:              pprofile.ProfileID([]byte("profileid1111111")),
 						Attributes:             []Attribute{{Key: "key", Value: "val"}},
 						DroppedAttributesCount: 2,
-						DefaultSampleType: ValueType{
-							Typ:  "samples",
-							Unit: "count",
-						},
-						Period: 1,
-						SampleType: []ValueType{
-							{
-								Typ:  "cpu",
-								Unit: "nanoseconds",
-							},
+						Period:                 1,
+						SampleType: ValueType{
+							Typ:  "cpu",
+							Unit: "nanoseconds",
 						},
 						KeyValueAndUnits: []KeyValueAndUnit{{Key: "cpu", Value: "", Unit: "nanoseconds"}},
 					},
@@ -698,16 +692,10 @@ func TestCompareProfile(t *testing.T) {
 						ProfileID:              pprofile.ProfileID([]byte("profileid1111111")),
 						Attributes:             []Attribute{{Key: "key", Value: "val"}},
 						DroppedAttributesCount: 2,
-						DefaultSampleType: ValueType{
-							Typ:  "samples",
-							Unit: "count",
-						},
-						Period: 1,
-						SampleType: []ValueType{
-							{
-								Typ:  "cpu",
-								Unit: "nanoseconds",
-							},
+						Period:                 1,
+						SampleType: ValueType{
+							Typ:  "cpu",
+							Unit: "nanoseconds",
 						},
 						KeyValueAndUnits: []KeyValueAndUnit{{Key: "cpu", Value: "", Unit: "nanoseconds"}},
 					},
@@ -725,16 +713,10 @@ func TestCompareProfile(t *testing.T) {
 						ProfileID:              pprofile.ProfileID([]byte("profileid1111111")),
 						Attributes:             []Attribute{{Key: "key", Value: "val"}},
 						DroppedAttributesCount: 2,
-						DefaultSampleType: ValueType{
-							Typ:  "samples",
-							Unit: "count",
-						},
-						Period: 1,
-						SampleType: []ValueType{
-							{
-								Typ:  "cpu",
-								Unit: "nanoseconds",
-							},
+						Period:                 1,
+						SampleType: ValueType{
+							Typ:  "cpu",
+							Unit: "nanoseconds",
 						},
 						KeyValueAndUnits: []KeyValueAndUnit{{Key: "cpu", Value: "", Unit: "nanoseconds"}},
 					},
@@ -749,16 +731,10 @@ func TestCompareProfile(t *testing.T) {
 						ProfileID:              pprofile.ProfileID([]byte("profileid1111111")),
 						Attributes:             []Attribute{{Key: "key1", Value: "val1"}},
 						DroppedAttributesCount: 2,
-						DefaultSampleType: ValueType{
-							Typ:  "samples1",
-							Unit: "count1",
-						},
-						Period: 2,
-						SampleType: []ValueType{
-							{
-								Typ:  "cpu1",
-								Unit: "nanoseconds1",
-							},
+						Period:                 2,
+						SampleType: ValueType{
+							Typ:  "cpu1",
+							Unit: "nanoseconds1",
 						},
 						KeyValueAndUnits: []KeyValueAndUnit{{Key: "cpu2", Value: "", Unit: "nanoseconds2"}},
 					},
@@ -769,7 +745,6 @@ func TestCompareProfile(t *testing.T) {
 			err: multierr.Combine(
 				errors.New(`attributes don't match expected: map[key:val], actual: map[key1:val1]`),
 				errors.New(`period does not match expected '1', actual '2'`),
-				fmt.Errorf(`sampleType: %w`, errors.New(`expected valueType "unit: 4, type: 3",got "unit: 6, type: 5"`)),
 			),
 		},
 	}

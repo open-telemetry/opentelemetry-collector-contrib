@@ -50,7 +50,7 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_accepted_metric_points",
 			Description: "Number of metric points successfully pushed into the pipeline. [Alpha]",
-			Unit:        "{datapoints}",
+			Unit:        "{datapoint}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
@@ -58,7 +58,8 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", "tcp")),
+							attribute.String("transport", "tcp"),
+						),
 						Value: accepted,
 					},
 				},
@@ -71,7 +72,7 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_refused_metric_points",
 			Description: "Number of metric points that could not be pushed into the pipeline. [Alpha]",
-			Unit:        "{datapoints}",
+			Unit:        "{datapoint}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
@@ -79,7 +80,8 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", "tcp")),
+							attribute.String("transport", "tcp"),
+						),
 						Value: refused,
 					},
 				},

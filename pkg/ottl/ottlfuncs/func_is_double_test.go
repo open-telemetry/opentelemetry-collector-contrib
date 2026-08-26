@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -63,7 +64,7 @@ func Test_IsDouble(t *testing.T) {
 				},
 			})
 			result, err := exprFunc(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -81,4 +82,40 @@ func Test_IsDouble_Error(t *testing.T) {
 	assert.Error(t, err)
 	_, ok := err.(ottl.TypeError)
 	assert.False(t, ok)
+}
+
+func Test_IsDoubleFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewIsDoubleFactory[any]()
+		assert.Equal(t, "IsDouble", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewIsDoubleFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &IsDoubleArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewIsDoubleFactory[any]()
+		args := factory.CreateDefaultArguments()
+		isDoubleArgs, ok := args.(*IsDoubleArguments[any])
+		require.True(t, ok)
+		isDoubleArgs.Target = &ottl.StandardFloatGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return 1.0, nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createIsDoubleFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "IsDoubleFactory args must be of type *IsDoubleArguments[K]")
+	})
 }

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -32,13 +33,13 @@ type logsReceiver struct {
 	queryReceivers   []*logsQueryReceiver
 	nextConsumer     consumer.Logs
 
-	isStarted                bool
-	collectionIntervalTicker *time.Ticker
-	shutdownRequested        chan struct{}
+	isStarted         bool
+	shutdownRequested chan struct{}
 
 	id            component.ID
 	storageClient storage.Client
 	obsrecv       *receiverhelper.ObsReport
+	host          component.Host
 }
 
 func newLogsReceiver(
@@ -57,8 +58,8 @@ func newLogsReceiver(
 	}
 
 	var dataSource string
-	if config.DataSource != "" {
-		dataSource = config.DataSource
+	if config.Config.DataSource != "" {
+		dataSource = config.Config.DataSource
 	} else {
 		dataSource, err = sqlquery.BuildDataSourceString(config.Config)
 		if err != nil {
@@ -70,7 +71,7 @@ func newLogsReceiver(
 		config:   config,
 		settings: settings,
 		createConnection: func() (*sql.DB, error) {
-			return sqlOpenerFunc(config.Driver, dataSource)
+			return sqlOpenerFunc(config.Config.Driver, dataSource)
 		},
 		createClient:      createClient,
 		nextConsumer:      nextConsumer,
@@ -89,9 +90,10 @@ func (receiver *logsReceiver) Start(ctx context.Context, host component.Host) er
 	}
 	receiver.settings.Logger.Debug("starting...")
 	receiver.isStarted = true
+	receiver.host = host
 
 	var err error
-	receiver.storageClient, err = adapter.GetStorageClient(ctx, host, receiver.config.StorageID, receiver.settings.ID)
+	receiver.storageClient, err = adapter.GetStorageClient(ctx, host, receiver.config.Config.StorageID, receiver.settings.ID)
 	if err != nil {
 		return fmt.Errorf("error connecting to storage: %w", err)
 	}
@@ -114,7 +116,7 @@ func (receiver *logsReceiver) Start(ctx context.Context, host component.Host) er
 
 func (receiver *logsReceiver) createQueryReceivers() error {
 	receiver.queryReceivers = nil
-	for i, query := range receiver.config.Queries {
+	for i, query := range receiver.config.Config.Queries {
 		if len(query.Logs) == 0 {
 			continue
 		}
@@ -125,7 +127,7 @@ func (receiver *logsReceiver) createQueryReceivers() error {
 			receiver.createConnection,
 			receiver.createClient,
 			receiver.settings.Logger,
-			receiver.config.Telemetry,
+			receiver.config.Config.Telemetry,
 			receiver.storageClient,
 		)
 		receiver.queryReceivers = append(receiver.queryReceivers, queryReceiver)
@@ -134,14 +136,28 @@ func (receiver *logsReceiver) createQueryReceivers() error {
 }
 
 func (receiver *logsReceiver) startCollecting() {
-	receiver.collectionIntervalTicker = time.NewTicker(receiver.config.CollectionInterval)
+	initialDelay := receiver.config.Config.InitialDelay
 
 	go func() {
-		for {
+		if initialDelay > 0 {
+			timer := time.NewTimer(initialDelay)
 			select {
-			case <-receiver.collectionIntervalTicker.C:
+			case <-timer.C:
 				receiver.collect()
 			case <-receiver.shutdownRequested:
+				timer.Stop()
+				return
+			}
+		}
+
+		collectionIntervalTicker := time.NewTicker(receiver.config.Config.CollectionInterval)
+
+		for {
+			select {
+			case <-collectionIntervalTicker.C:
+				receiver.collect()
+			case <-receiver.shutdownRequested:
+				collectionIntervalTicker.Stop()
 				return
 			}
 		}
@@ -149,21 +165,48 @@ func (receiver *logsReceiver) startCollecting() {
 }
 
 func (receiver *logsReceiver) collect() {
-	logsChannel := make(chan plog.Logs)
+	type collectResult struct {
+		logs plog.Logs
+		err  error
+	}
+	resultsChannel := make(chan collectResult, len(receiver.queryReceivers))
 	for _, queryReceiver := range receiver.queryReceivers {
 		go func(queryReceiver *logsQueryReceiver) {
-			logs, err := queryReceiver.collect(context.Background())
+			ctx := context.Background()
+			// Bound the query execution with the configured timeout so that a
+			// locked table or otherwise slow query does not block collection
+			// indefinitely. A non-positive timeout means no deadline.
+			if receiver.config.Config.Timeout > 0 {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, receiver.config.Config.Timeout)
+				defer cancel()
+			}
+			logs, err := queryReceiver.collect(ctx)
 			if err != nil {
 				receiver.settings.Logger.Error("error collecting logs", zap.Error(err), zap.String("query", queryReceiver.ID()))
 			}
-			logsChannel <- logs
+			resultsChannel <- collectResult{logs: logs, err: err}
 		}(queryReceiver)
 	}
 
 	allLogs := plog.NewLogs()
+	var collectErr error
 	for range receiver.queryReceivers {
-		logs := <-logsChannel
-		logs.ResourceLogs().MoveAndAppendTo(allLogs.ResourceLogs())
+		select {
+		case result := <-resultsChannel:
+			result.logs.ResourceLogs().MoveAndAppendTo(allLogs.ResourceLogs())
+			if result.err != nil {
+				collectErr = errors.Join(collectErr, result.err)
+			}
+		case <-receiver.shutdownRequested:
+			return
+		}
+	}
+
+	if collectErr != nil {
+		componentstatus.ReportStatus(receiver.host, componentstatus.NewRecoverableErrorEvent(collectErr))
+	} else {
+		componentstatus.ReportStatus(receiver.host, componentstatus.NewEvent(componentstatus.StatusOK))
 	}
 
 	logRecordCount := allLogs.LogRecordCount()
@@ -172,7 +215,7 @@ func (receiver *logsReceiver) collect() {
 		err := receiver.nextConsumer.ConsumeLogs(context.Background(), allLogs)
 		receiver.obsrecv.EndLogsOp(ctx, metadata.Type.String(), logRecordCount, err)
 		if err != nil {
-			receiver.settings.Logger.Error("failed to send logs: %w", zap.Error(err))
+			receiver.settings.Logger.Error("failed to send logs", zap.Error(err))
 		}
 	}
 }
@@ -201,9 +244,6 @@ func (receiver *logsReceiver) Shutdown(ctx context.Context) error {
 }
 
 func (receiver *logsReceiver) stopCollecting() {
-	if receiver.collectionIntervalTicker != nil {
-		receiver.collectionIntervalTicker.Stop()
-	}
 	close(receiver.shutdownRequested)
 }
 
@@ -291,7 +331,12 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 		rows, err = queryReceiver.client.QueryRows(ctx)
 	}
 	if err != nil {
-		return logs, fmt.Errorf("error getting rows: %w", err)
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return logs, fmt.Errorf("scraper: %w", err)
+		}
+		if !queryReceiver.query.IgnoreNullValues {
+			queryReceiver.logger.Warn("problems encountered getting log rows", zap.Error(err))
+		}
 	}
 
 	var errs []error

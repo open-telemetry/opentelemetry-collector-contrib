@@ -13,9 +13,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter/internal/metadata"
@@ -31,6 +32,15 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg.IngestURL = defaultIngestURL
 	defaultCfg.IngestKey = "00000000000000000000000000000000"
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.Timeout = 5 * time.Second
+	clientConfig.MaxIdleConns = defaultMaxIdleConns               //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.MaxIdleConnsPerHost = defaultMaxIdleConnsPerHost //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
+	clientConfig.IdleConnTimeout = defaultIdleConnTimeout //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.ForceAttemptHTTP2 = true
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -42,14 +52,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:             5 * time.Second,
-					MaxIdleConns:        defaultMaxIdleConns,
-					MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
-					MaxConnsPerHost:     defaultMaxConnsPerHost,
-					IdleConnTimeout:     defaultIdleConnTimeout,
-					ForceAttemptHTTP2:   true,
-				},
+				ClientConfig: clientConfig,
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             false,
 					InitialInterval:     99 * time.Second,
@@ -58,15 +61,9 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: func() exporterhelper.QueueBatchConfig {
-					queue := exporterhelper.NewDefaultQueueConfig()
-					queue.Enabled = false
-					queue.NumConsumers = 7
-					queue.QueueSize = 17
-					return queue
-				}(),
-				IngestURL: "https://alternate.mezmo.com/otel/ingest/rest",
-				IngestKey: "1234509876",
+				QueueSettings: configoptional.None[exporterhelper.QueueBatchConfig](),
+				IngestURL:     "https://alternate.mezmo.com/otel/ingest/rest",
+				IngestKey:     "1234509876",
 			},
 		},
 	}
@@ -80,7 +77,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/go-github/v77/github"
+	"github.com/google/go-github/v90/github"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -42,12 +42,12 @@ func newTracesReceiver(
 	config *Config,
 	traceConsumer consumer.Traces,
 ) (*githubTracesReceiver, error) {
-	if config.WebHook.Endpoint == "" {
+	if config.WebHook.ServerConfig.NetAddr.Endpoint == "" {
 		return nil, errMissingEndpoint
 	}
 
 	transport := "http"
-	if config.WebHook.TLS.HasValue() {
+	if config.WebHook.ServerConfig.TLS.HasValue() {
 		transport = "https"
 	}
 
@@ -60,7 +60,10 @@ func newTracesReceiver(
 		return nil, err
 	}
 
-	client := github.NewClient(nil)
+	client, err := github.NewClient()
+	if err != nil {
+		return nil, err
+	}
 
 	gtr := &githubTracesReceiver{
 		traceConsumer: traceConsumer,
@@ -75,7 +78,7 @@ func newTracesReceiver(
 }
 
 func (gtr *githubTracesReceiver) Start(ctx context.Context, host component.Host) error {
-	endpoint := fmt.Sprintf("%s%s", gtr.cfg.WebHook.Endpoint, gtr.cfg.WebHook.Path)
+	endpoint := fmt.Sprintf("%s%s", gtr.cfg.WebHook.ServerConfig.NetAddr.Endpoint, gtr.cfg.WebHook.Path)
 	gtr.logger.Info("Starting GitHub WebHook receiving server", zap.String("endpoint", endpoint))
 
 	// noop if not nil. if start has not been called before these values should be nil.
@@ -84,7 +87,7 @@ func (gtr *githubTracesReceiver) Start(ctx context.Context, host component.Host)
 	}
 
 	// create listener from config
-	ln, err := gtr.cfg.WebHook.ToListener(ctx)
+	ln, err := gtr.cfg.WebHook.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}
@@ -99,21 +102,18 @@ func (gtr *githubTracesReceiver) Start(ctx context.Context, host component.Host)
 	router.HandleFunc(gtr.cfg.WebHook.Path, gtr.handleReq)
 
 	// webhook server standup and configuration
-	gtr.server, err = gtr.cfg.WebHook.ToServer(ctx, host, gtr.settings.TelemetrySettings, router)
+	gtr.server, err = gtr.cfg.WebHook.ServerConfig.ToServer(ctx, host.GetExtensions(), gtr.settings.TelemetrySettings, router)
 	if err != nil {
 		return err
 	}
 
 	gtr.logger.Info("Health check now listening at", zap.String("health_path", gtr.cfg.WebHook.HealthPath))
 
-	gtr.shutdownWG.Add(1)
-	go func() {
-		defer gtr.shutdownWG.Done()
-
+	gtr.shutdownWG.Go(func() {
 		if errHTTP := gtr.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
-	}()
+	})
 
 	return nil
 }
@@ -133,6 +133,14 @@ func (gtr *githubTracesReceiver) Shutdown(_ context.Context) error {
 // returns a 200 response code.
 func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Request) {
 	ctx := gtr.obsrecv.StartTracesOp(req.Context())
+
+	for k, v := range gtr.cfg.WebHook.RequiredHeaders {
+		if req.Header.Get(k) != string(v) {
+			gtr.logger.Sugar().Debugf("required header check failed", zap.String("header", k))
+			http.Error(w, "invalid request", http.StatusBadRequest)
+			return
+		}
+	}
 
 	p, err := github.ValidatePayload(req, []byte(gtr.cfg.WebHook.Secret))
 	if err != nil {

@@ -1,8 +1,8 @@
-cloudfoundry:
+cloud_foundry:
   uaa:
     password: "test"
 
-cloudfoundry/one:
+cloud_foundry/one:
   rlp_gateway:
     endpoint: "https://log-stream.sys.example.internal"
     shard_id: "otel-test"
@@ -16,9 +16,9 @@ cloudfoundry/one:
     tls:
       insecure_skip_verify: true
 
-cloudfoundry/empty:
+cloud_foundry/empty:
 
-cloudfoundry/invalid:
+cloud_foundry/invalid:
   rlp_gateway:
     endpoint: "https://[invalid"
     shard_id: "otel-test"
@@ -32,7 +32,7 @@ cloudfoundry/invalid:
     tls:
       insecure_skip_verify: true
 
-cloudfoundry/shardidnotdefined:
+cloud_foundry/shardidnotdefined:
   rlp_gateway:
     endpoint: "https://log-stream.sys.example.internal"
     timeout: "20s"

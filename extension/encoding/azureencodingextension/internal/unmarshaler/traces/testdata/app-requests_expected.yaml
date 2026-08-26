@@ -1,0 +1,76 @@
+resourceSpans:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/AAAA0A0A-BB1B-CC2C-DD3D-EEEEEE4E4E4E/RESOURCEGROUPS/RG-001/PROVIDERS/MICROSOFT.INSIGHTS/COMPONENTS/APPI1
+        - key: service.name
+          value:
+            stringValue: func1
+        - key: service.instance.id
+          value:
+            stringValue: 1e09daf0e46df8e4a91c6d1f2c5122246ba8f742455aaf150059835395822db6
+        - key: service.version
+          value:
+            stringValue: "1.0.0"
+        - key: telemetry.sdk.name
+          value:
+            stringValue: azurefunctions
+        - key: telemetry.sdk.version
+          value:
+            stringValue: 4.1041.200.1
+    scopeSpans:
+      - scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
+        spans:
+          - attributes:
+              - key: device.type
+                value:
+                  stringValue: PC
+              - key: azure.operation.name
+                value:
+                  stringValue: Method1
+              - key: azure.category
+                value:
+                  stringValue: AppRequests
+              - key: ProcessId
+                value:
+                  stringValue: "18"
+              - key: Category
+                value:
+                  stringValue: Host.Results
+              - key: OperationName
+                value:
+                  stringValue: Method1
+              - key: InvocationId
+                value:
+                  stringValue: a33eab53-da0f-4af6-a7f1-c2a3b5e919cd
+              - key: FunctionExecutionTimeMs
+                value:
+                  stringValue: "15.345"
+              - key: HostInstanceId
+                value:
+                  stringValue: b0bf8130-588d-4e4e-866c-72e7c2dfee0d
+              - key: LogLevel
+                value:
+                  stringValue: Information
+              - key: '{OriginalFormat}'
+                value:
+                  stringValue: Result '{Name}' (started at={StartTime}, duration={Duration}, succeeded={Succeeded})
+              - key: FullName
+                value:
+                  stringValue: Functions.Method1
+              - key: TriggerReason
+                value:
+                  stringValue: New changes on container
+            endTimeUnixNano: "1681808580015064500"
+            kind: 1
+            name: Method1
+            spanId: d5096a85972c6cb3
+            startTimeUnixNano: "1681808580000000000"
+            status: {}
+            traceId: 2ad25f23760aebd3dcc3791d6ecf140e

@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -21,19 +20,43 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NtpFrequencyOffset: MetricConfig{Enabled: true},
-					NtpSkew:            MetricConfig{Enabled: true},
-					NtpStratum:         MetricConfig{Enabled: true},
-					NtpTimeCorrection:  MetricConfig{Enabled: true},
-					NtpTimeLastOffset:  MetricConfig{Enabled: true},
-					NtpTimeRmsOffset:   MetricConfig{Enabled: true},
-					NtpTimeRootDelay:   MetricConfig{Enabled: true},
+					NtpFrequencyOffset: NtpFrequencyOffsetMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpFrequencyOffsetMetricAttributeKey{NtpFrequencyOffsetMetricAttributeKeyLeapStatus},
+					},
+					NtpSkew: NtpSkewMetricConfig{
+						Enabled: true,
+					},
+					NtpStratum: NtpStratumMetricConfig{
+						Enabled: true,
+					},
+					NtpTimeCorrection: NtpTimeCorrectionMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpTimeCorrectionMetricAttributeKey{NtpTimeCorrectionMetricAttributeKeyLeapStatus},
+					},
+					NtpTimeLastOffset: NtpTimeLastOffsetMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpTimeLastOffsetMetricAttributeKey{NtpTimeLastOffsetMetricAttributeKeyLeapStatus},
+					},
+					NtpTimeRmsOffset: NtpTimeRmsOffsetMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpTimeRmsOffsetMetricAttributeKey{NtpTimeRmsOffsetMetricAttributeKeyLeapStatus},
+					},
+					NtpTimeRootDelay: NtpTimeRootDelayMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpTimeRootDelayMetricAttributeKey{NtpTimeRootDelayMetricAttributeKeyLeapStatus},
+					},
 				},
 			},
 		},
@@ -41,13 +64,37 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NtpFrequencyOffset: MetricConfig{Enabled: false},
-					NtpSkew:            MetricConfig{Enabled: false},
-					NtpStratum:         MetricConfig{Enabled: false},
-					NtpTimeCorrection:  MetricConfig{Enabled: false},
-					NtpTimeLastOffset:  MetricConfig{Enabled: false},
-					NtpTimeRmsOffset:   MetricConfig{Enabled: false},
-					NtpTimeRootDelay:   MetricConfig{Enabled: false},
+					NtpFrequencyOffset: NtpFrequencyOffsetMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpFrequencyOffsetMetricAttributeKey{NtpFrequencyOffsetMetricAttributeKeyLeapStatus},
+					},
+					NtpSkew: NtpSkewMetricConfig{
+						Enabled: false,
+					},
+					NtpStratum: NtpStratumMetricConfig{
+						Enabled: false,
+					},
+					NtpTimeCorrection: NtpTimeCorrectionMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpTimeCorrectionMetricAttributeKey{NtpTimeCorrectionMetricAttributeKeyLeapStatus},
+					},
+					NtpTimeLastOffset: NtpTimeLastOffsetMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpTimeLastOffsetMetricAttributeKey{NtpTimeLastOffsetMetricAttributeKeyLeapStatus},
+					},
+					NtpTimeRmsOffset: NtpTimeRmsOffsetMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpTimeRmsOffsetMetricAttributeKey{NtpTimeRmsOffsetMetricAttributeKeyLeapStatus},
+					},
+					NtpTimeRootDelay: NtpTimeRootDelayMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []NtpTimeRootDelayMetricAttributeKey{NtpTimeRootDelayMetricAttributeKeyLeapStatus},
+					},
 				},
 			},
 		},
@@ -55,10 +102,69 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(NtpFrequencyOffsetMetricConfig{}, NtpSkewMetricConfig{}, NtpStratumMetricConfig{}, NtpTimeCorrectionMetricConfig{}, NtpTimeLastOffsetMetricConfig{}, NtpTimeRmsOffsetMetricConfig{}, NtpTimeRootDelayMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+func TestNtpFrequencyOffsetMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NtpFrequencyOffset
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NtpFrequencyOffsetMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric ntp.frequency.offset doesn't have an attribute invalid, valid attributes: [leap.status]")
+
+	cfg = DefaultMetricsConfig().NtpFrequencyOffset
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestNtpTimeCorrectionMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NtpTimeCorrection
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NtpTimeCorrectionMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric ntp.time.correction doesn't have an attribute invalid, valid attributes: [leap.status]")
+
+	cfg = DefaultMetricsConfig().NtpTimeCorrection
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestNtpTimeLastOffsetMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NtpTimeLastOffset
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NtpTimeLastOffsetMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric ntp.time.last_offset doesn't have an attribute invalid, valid attributes: [leap.status]")
+
+	cfg = DefaultMetricsConfig().NtpTimeLastOffset
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestNtpTimeRmsOffsetMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NtpTimeRmsOffset
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NtpTimeRmsOffsetMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric ntp.time.rms_offset doesn't have an attribute invalid, valid attributes: [leap.status]")
+
+	cfg = DefaultMetricsConfig().NtpTimeRmsOffset
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestNtpTimeRootDelayMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NtpTimeRootDelay
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NtpTimeRootDelayMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric ntp.time.root_delay doesn't have an attribute invalid, valid attributes: [leap.status]")
+
+	cfg = DefaultMetricsConfig().NtpTimeRootDelay
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
@@ -66,7 +172,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

@@ -5,6 +5,7 @@ package apachereceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"time"
 
@@ -28,7 +29,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -41,7 +43,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     cfg,
 		ClientConfig:         clientConfig,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -74,7 +76,13 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
-	serverName, port, err := parseResourceAttributes(cfg.Endpoint)
+
+	if metadata.ReceiverApacheDisableOldFormatMetricsFeatureGate.IsEnabled() &&
+		!metadata.ReceiverApacheEnableNewFormatMetricsFeatureGate.IsEnabled() {
+		return nil, errors.New("the receiver.apache.disableOldFormatMetrics feature gate requires receiver.apache.enableNewFormatMetrics to also be enabled")
+	}
+
+	serverName, port, err := parseResourceAttributes(cfg.ClientConfig.Endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -87,6 +95,6 @@ func createMetricsReceiver(
 
 	return scraperhelper.NewMetricsController(
 		&cfg.ControllerConfig, params, consumer,
-		scraperhelper.AddScraper(metadata.Type, s),
+		scraperhelper.AddMetricsScraper(metadata.Type, s),
 	)
 }

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package probabilisticsamplerprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
 
@@ -25,7 +25,8 @@ func NewFactory() processor.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
-		processor.WithLogs(createLogsProcessor, metadata.LogsStability))
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {

@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension/internal/metadata"
@@ -25,17 +26,26 @@ func NewFactory() extension.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		metadata.ExtensionStability)
+		metadata.ExtensionStability,
+	)
 }
 
 func createDefaultConfig() component.Config {
 	httpClientSettings := confighttp.NewDefaultClientConfig()
 	httpClientSettings.Timeout = 10 * time.Second
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  defaultEndpoint,
+	}
 	return &Config{
-		Ingress: confighttp.ServerConfig{
-			Endpoint: defaultEndpoint,
-		},
-		Egress: httpClientSettings,
+		Ingress: serverConfig,
+		Egress:  httpClientSettings,
 	}
 }
 

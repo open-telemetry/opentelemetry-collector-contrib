@@ -6,11 +6,14 @@ package githubreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -20,6 +23,17 @@ import (
 
 func TestCreateNewTracesReceiver(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
+
+	userServerConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	userServerConfig.WriteTimeout = 0
+	userServerConfig.ReadHeaderTimeout = 0
+	userServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	userServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	userServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
 
 	tests := []struct {
 		desc     string
@@ -37,11 +51,9 @@ func TestCreateNewTracesReceiver(t *testing.T) {
 			desc: "User defined config success",
 			config: Config{
 				WebHook: WebHook{
-					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "localhost:0",
-					},
-					Path:       "/events",
-					HealthPath: "/health_check",
+					ServerConfig: userServerConfig,
+					Path:         "/events",
+					HealthPath:   "/health_check",
 				},
 			},
 			consumer: consumertest.NewNop(),
@@ -63,7 +75,7 @@ func TestCreateNewTracesReceiver(t *testing.T) {
 
 func TestHealthCheck(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.Endpoint = "localhost:0"
+	defaultConfig.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")
@@ -79,4 +91,79 @@ func TestHealthCheck(t *testing.T) {
 
 	response := w.Result()
 	require.Equal(t, http.StatusOK, response.StatusCode)
+}
+
+func TestHandleReq_RequiredHeaders(t *testing.T) {
+	tests := []struct {
+		name            string
+		requiredHeaders map[string]configopaque.String
+		reqHeaders      map[string]string
+		wantStatus      int
+	}{
+		{
+			name:            "valid_request_with_required_headers",
+			requiredHeaders: map[string]configopaque.String{"X-Proxy-Auth": "abc"},
+			reqHeaders: map[string]string{
+				"X-Proxy-Auth":   "abc",
+				"X-GitHub-Event": "ping",
+				"Content-Type":   "application/json",
+			},
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:            "missing_required_header",
+			requiredHeaders: map[string]configopaque.String{"X-Proxy-Auth": "abc"},
+			reqHeaders: map[string]string{
+				"X-GitHub-Event": "ping",
+				"Content-Type":   "application/json",
+			},
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			name:            "wrong_required_header_value",
+			requiredHeaders: map[string]configopaque.String{"X-Proxy-Auth": "abc"},
+			reqHeaders: map[string]string{
+				"X-Proxy-Auth":   "wrong",
+				"X-GitHub-Event": "ping",
+				"Content-Type":   "application/json",
+			},
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			name:            "no_required_headers_configured",
+			requiredHeaders: nil,
+			reqHeaders: map[string]string{
+				"X-GitHub-Event": "ping",
+				"Content-Type":   "application/json",
+			},
+			wantStatus: http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
+			if tt.requiredHeaders != nil {
+				cfg.WebHook.RequiredHeaders = tt.requiredHeaders
+			}
+
+			sink := new(consumertest.TracesSink)
+			r, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), cfg, sink)
+			require.NoError(t, err)
+
+			req := httptest.NewRequest(http.MethodPost, "http://localhost/events",
+				strings.NewReader(`{}`))
+			for k, v := range tt.reqHeaders {
+				req.Header.Set(k, v)
+			}
+			w := httptest.NewRecorder()
+			r.handleReq(w, req)
+
+			require.Equal(t, tt.wantStatus, w.Result().StatusCode)
+			if tt.wantStatus == http.StatusBadRequest {
+				require.Equal(t, 0, sink.SpanCount(), "consumer must not be called when header check fails")
+			}
+		})
+	}
 }

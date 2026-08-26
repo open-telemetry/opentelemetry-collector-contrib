@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -37,12 +38,12 @@ func Test_SHA256(t *testing.T) {
 					return tt.value, nil
 				},
 			})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			if tt.err {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			assert.Equal(t, tt.expected, result)
 		})
@@ -74,9 +75,45 @@ func Test_SHA256Error(t *testing.T) {
 					return tt.value, nil
 				},
 			})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			_, err = exprFunc(nil, nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
+}
+
+func Test_SHA256Factory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewSHA256Factory[any]()
+		assert.Equal(t, "SHA256", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewSHA256Factory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &SHA256Arguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewSHA256Factory[any]()
+		args := factory.CreateDefaultArguments()
+		shaArgs, ok := args.(*SHA256Arguments[any])
+		require.True(t, ok)
+		shaArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "hello", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createSHA256Function[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "SHA256Factory args must be of type *SHA256Arguments[K]")
+	})
 }

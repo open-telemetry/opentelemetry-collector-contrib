@@ -178,9 +178,9 @@ func Test_convertCase(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := convertCase(tt.target, tt.toCase)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -247,4 +247,41 @@ func Test_convertCaseRuntimeError(t *testing.T) {
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
+}
+
+func Test_ConvertCaseFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewConvertCaseFactory[any]()
+		assert.Equal(t, "ConvertCase", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewConvertCaseFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ConvertCaseArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "ToCase"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewConvertCaseFactory[any]()
+		args := factory.CreateDefaultArguments()
+		convertArgs, ok := args.(*ConvertCaseArguments[any])
+		require.True(t, ok)
+		convertArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "SOME_NAME", nil
+			},
+		}
+		convertArgs.ToCase = "lower"
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createConvertCaseFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ConvertCaseFactory args must be of type *ConvertCaseArguments[K]")
+	})
 }

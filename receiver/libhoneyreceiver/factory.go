@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -38,13 +39,21 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	durationFieldsArr := []string{"duration_ms"}
 	endpointStr := fmt.Sprintf("localhost:%d", httpPort)
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
+	netAddr.Endpoint = endpointStr
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.NetAddr = netAddr
+	// The empty array means no decompression attempted.
+	serverConfig.CompressionAlgorithms = []string{}
 	return &Config{
 		HTTP: configoptional.Default(HTTPConfig{
-			ServerConfig: confighttp.ServerConfig{
-				Endpoint: endpointStr,
-				// Disable default decompression middleware - we handle it internally for better error logging
-				CompressionAlgorithms: []string{},
-			},
+			ServerConfig:   serverConfig,
 			TracesURLPaths: defaultTracesURLPaths,
 		}),
 		AuthAPI: "",

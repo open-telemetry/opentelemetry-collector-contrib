@@ -18,7 +18,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"gopkg.in/yaml.v3"
@@ -55,11 +57,19 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	defer cancel()
 
 	// 2. Create the Prometheus metrics exporter that'll receive and verify the metrics produced.
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:8787",
+	}
 	exporterCfg := &Config{
-		Namespace: "test",
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:8787",
-		},
+		Namespace:        "test",
+		ServerConfig:     serverConfig,
 		SendTimestamps:   true,
 		MetricExpiration: 2 * time.Hour,
 	}
@@ -67,7 +77,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	set := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := exporterFactory.CreateMetrics(ctx, set, exporterCfg)
 	require.NoError(t, err)
-	require.NoError(t, exporter.Start(ctx, nil), "Failed to start the Prometheus exporter")
+	require.NoError(t, exporter.Start(ctx, componenttest.NewNopHost()), "Failed to start the Prometheus exporter")
 	t.Cleanup(func() { require.NoError(t, exporter.Shutdown(ctx)) })
 
 	// 3. Create the Prometheus receiver scraping from the DropWizard mock server and
@@ -94,13 +104,13 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	// 3.5 Create the Prometheus receiver and pass in the previously created Prometheus exporter.
 	prometheusReceiver, err := receiverFactory.CreateMetrics(ctx, receiverCreateSet, rcvCfg, exporter)
 	require.NoError(t, err)
-	require.NoError(t, prometheusReceiver.Start(ctx, nil), "Failed to start the Prometheus receiver")
+	require.NoError(t, prometheusReceiver.Start(ctx, componenttest.NewNopHost()), "Failed to start the Prometheus receiver")
 	t.Cleanup(func() { require.NoError(t, prometheusReceiver.Shutdown(ctx)) })
 
 	// 4. Scrape from the Prometheus receiver to ensure that we export summary metrics
 	wg.Wait()
 
-	res, err := http.Get("http://" + exporterCfg.Endpoint + "/metrics")
+	res, err := http.Get("http://" + exporterCfg.ServerConfig.NetAddr.Endpoint + "/metrics")
 	require.NoError(t, err, "Failed to scrape from the exporter")
 	prometheusExporterScrape, err := io.ReadAll(res.Body)
 	res.Body.Close()
@@ -159,7 +169,6 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	require.Empty(t, prometheusExporterScrape, "Left-over unmatched Prometheus scrape content: %q\n", prometheusExporterScrape)
 }
 
-//nolint:gosec // the following triggers G101: Potential hardcoded credentials
 const dropWizardResponse = `
 # HELP jvm_memory_pool_bytes_used Used bytes of a given JVM memory pool.
 # TYPE jvm_memory_pool_bytes_used gauge

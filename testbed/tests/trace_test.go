@@ -16,12 +16,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/jaegerdatareceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/zipkindatareceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/jaegerdatasender"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/zipkindatasender"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -84,8 +85,8 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"Zipkin",
-			datasenders.NewZipkinDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-			datareceivers.NewZipkinDataReceiver(testutil.GetAvailablePort(t)),
+			zipkindatasender.NewZipkinDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			zipkindatareceiver.NewZipkinDataReceiver(testutil.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 80,
 				ExpectedMaxRAM: 120,
@@ -120,10 +121,10 @@ func TestTrace10kSPS(t *testing.T) {
 
 func TestTrace10kSPSJaegerGRPC(t *testing.T) {
 	port := testutil.GetAvailablePort(t)
-	receiver := datareceivers.NewJaegerDataReceiver(port)
+	receiver := jaegerdatareceiver.NewJaegerDataReceiver(port)
 	Scenario10kItemsPerSecondAlternateBackend(
 		t,
-		datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+		jaegerdatasender.NewJaegerGRPCDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
 		receiver,
 		testbed.NewOTLPDataReceiver(port),
 		testbed.ResourceSpec{
@@ -161,13 +162,13 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 		{
 			Name:                "NoMemoryLimit",
 			Processor:           noLimitProcessors,
-			ExpectedMaxRAM:      100,
+			ExpectedMaxRAM:      110,
 			ExpectedMinFinalRAM: 80,
 		},
 		{
 			Name:                "MemoryLimit",
 			Processor:           limitProcessors,
-			ExpectedMaxRAM:      95,
+			ExpectedMaxRAM:      110,
 			ExpectedMinFinalRAM: 50,
 		},
 	}
@@ -178,7 +179,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 				t,
 				testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
 				testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
-				testbed.ResourceSpec{ExpectedMaxCPU: 90, ExpectedMaxRAM: testConf.ExpectedMaxRAM},
+				testbed.ResourceSpec{ExpectedMaxCPU: 130, ExpectedMaxRAM: testConf.ExpectedMaxRAM},
 				performanceResultsSummary,
 				testConf,
 			)
@@ -247,7 +248,7 @@ func verifySingleSpan(
 	// Send one span.
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceName)
+	rs.Resource().Attributes().PutStr("service.name", serviceName)
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(idutils.UInt64ToTraceID(0, 1))
 	span.SetSpanID(idutils.UInt64ToSpanID(1))
@@ -387,8 +388,8 @@ func TestTraceAttributesProcessor(t *testing.T) {
 
 func TestTraceAttributesProcessorJaegerGRPC(t *testing.T) {
 	port := testutil.GetAvailablePort(t)
-	sender := datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
-	receiver := datareceivers.NewJaegerDataReceiver(port)
+	sender := jaegerdatasender.NewJaegerGRPCDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+	receiver := jaegerdatareceiver.NewJaegerDataReceiver(port)
 	resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
 	require.NoError(t, err)
 

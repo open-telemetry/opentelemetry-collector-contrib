@@ -7,8 +7,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 )
 
 // NewBasicConfig creates a new basic config
@@ -19,7 +19,7 @@ func NewBasicConfig(operatorID, operatorType string) BasicConfig {
 	}
 }
 
-// BasicConfig provides a basic implemention for an operator config.
+// BasicConfig provides a basic implementation for an operator config.
 type BasicConfig struct {
 	OperatorID   string `mapstructure:"id"`
 	OperatorType string `mapstructure:"type"`
@@ -46,7 +46,7 @@ func (c BasicConfig) Type() string {
 // Build will build a basic operator.
 func (c BasicConfig) Build(set component.TelemetrySettings) (BasicOperator, error) {
 	if c.OperatorType == "" {
-		return BasicOperator{}, errors.NewError(
+		return BasicOperator{}, stanzaerrors.NewError(
 			"missing required `type` field.",
 			"ensure that all operators have a uniquely defined `type` field.",
 			"operator_id", c.ID(),
@@ -54,7 +54,7 @@ func (c BasicConfig) Build(set component.TelemetrySettings) (BasicOperator, erro
 	}
 
 	if set.Logger == nil {
-		return BasicOperator{}, errors.NewError(
+		return BasicOperator{}, stanzaerrors.NewError(
 			"operator build context is missing a logger.",
 			"this is an unexpected internal error",
 			"operator_id", c.ID(),

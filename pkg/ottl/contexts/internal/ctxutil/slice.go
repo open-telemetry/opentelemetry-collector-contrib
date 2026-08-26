@@ -23,7 +23,7 @@ var (
 	errMissingGetKey = errors.New("cannot get slice value without key")
 )
 
-func getSliceIndexFromKeys[K any](ctx context.Context, tCtx K, sliceLen int, keys []ottl.Key[K]) (int, error) {
+func GetSliceIndexFromKeys[K any](ctx context.Context, tCtx K, sliceLen int, keys []ottl.Key[K]) (int, error) {
 	i, err := keys[0].Int(ctx, tCtx)
 	if err != nil {
 		return 0, err
@@ -50,7 +50,7 @@ func GetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, keys []o
 		return 0, errMissingGetKey
 	}
 
-	idx, err := getSliceIndexFromKeys(ctx, tCtx, s.Len(), keys)
+	idx, err := GetSliceIndexFromKeys(ctx, tCtx, s.Len(), keys)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func SetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, keys []o
 		return errMissingSetKey
 	}
 
-	idx, err := getSliceIndexFromKeys(ctx, tCtx, s.Len(), keys)
+	idx, err := GetSliceIndexFromKeys(ctx, tCtx, s.Len(), keys)
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func GetCommonTypedSliceValue[K, V any](ctx context.Context, tCtx K, s CommonTyp
 		return *new(V), fmt.Errorf(typeNotIndexableError, s)
 	}
 
-	idx, err := getSliceIndexFromKeys(ctx, tCtx, s.Len(), keys)
+	idx, err := GetSliceIndexFromKeys(ctx, tCtx, s.Len(), keys)
 	if err != nil {
 		return *new(V), err
 	}
@@ -110,7 +110,7 @@ func SetCommonTypedSliceValue[K, V any](ctx context.Context, tCtx K, s CommonTyp
 		return fmt.Errorf(typeNotIndexableError, s)
 	}
 
-	idx, err := getSliceIndexFromKeys(ctx, tCtx, s.Len(), keys)
+	idx, err := GetSliceIndexFromKeys(ctx, tCtx, s.Len(), keys)
 	if err != nil {
 		return err
 	}
@@ -129,6 +129,11 @@ func SetCommonTypedSliceValue[K, V any](ctx context.Context, tCtx K, s CommonTyp
 // If the value is a slice of [any] or pcommon.Slice, and it has an element that the type
 // is not [V], an error is returned.
 func SetCommonTypedSliceValues[V any](s CommonTypedSlice[V], val any) error {
+	if val == nil {
+		// A slice represents nil as an empty slice.
+		s.FromRaw(nil)
+		return nil
+	}
 	switch typeVal := val.(type) {
 	case CommonTypedSlice[V]:
 		s.FromRaw(typeVal.AsRaw())
@@ -158,6 +163,23 @@ func SetCommonTypedSliceValues[V any](s CommonTypedSlice[V], val any) error {
 		return fmt.Errorf("invalid type provided for setting a slice of %T: %T", val, *new(V))
 	}
 
+	return nil
+}
+
+// SetPSliceValue sets a pdata message slice (such as ptrace.SpanEventSlice or
+// pmetric.ExemplarSlice) from val by copying it into dest. These are list-like values
+// even though they are not pcommon.Slice, so a nil val clears dest to an empty slice
+// (created via newEmpty). Any value that is not a [T] returns an error.
+func SetPSliceValue[T interface{ CopyTo(dest T) }](dest T, newEmpty func() T, val any) error {
+	if val == nil {
+		newEmpty().CopyTo(dest)
+		return nil
+	}
+	src, err := ExpectType[T](val)
+	if err != nil {
+		return err
+	}
+	src.CopyTo(dest)
 	return nil
 }
 
@@ -220,6 +242,11 @@ func SetCommonIntSliceValue[K any, V constraints.Integer](ctx context.Context, t
 // or a pcommon.Slice which elements are type inferable to int64, otherwise an error is
 // returned.
 func SetCommonIntSliceValues[V constraints.Integer](s CommonTypedSlice[V], val any) error {
+	if val == nil {
+		// A slice represents nil as an empty slice.
+		s.FromRaw(nil)
+		return nil
+	}
 	switch typeVal := val.(type) {
 	case CommonTypedSlice[V]:
 		s.FromRaw(typeVal.AsRaw())

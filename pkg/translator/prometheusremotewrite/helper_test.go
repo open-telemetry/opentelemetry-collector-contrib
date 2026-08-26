@@ -12,6 +12,7 @@ import (
 	"github.com/cespare/xxhash/v2"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/otlptranslator"
+	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -19,7 +20,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -54,7 +54,8 @@ func Test_isValidAggregationTemporality(t *testing.T) {
 		{
 			name: "cumulative histogram",
 			metric: getHistogramMetric(
-				"", l, pmetric.AggregationTemporalityCumulative, 0, 0, 0, []float64{}, []uint64{}),
+				"", l, pmetric.AggregationTemporalityCumulative, 0, 0, 0, []float64{}, []uint64{},
+			),
 			want: true,
 		},
 		{
@@ -85,7 +86,8 @@ func Test_isValidAggregationTemporality(t *testing.T) {
 		{
 			name: "delta histogram",
 			metric: getHistogramMetric(
-				"", l, pmetric.AggregationTemporalityDelta, 0, 0, 0, []float64{}, []uint64{}),
+				"", l, pmetric.AggregationTemporalityDelta, 0, 0, 0, []float64{}, []uint64{},
+			),
 			want: false,
 		},
 		{
@@ -386,13 +388,44 @@ func Test_createLabelSet(t *testing.T) {
 			want:                        getPromLabels(label11, value11, label12, value12, "key"+label51, value51, label41, value41, label31, value31, label32, value32),
 			underscoreLabelSanitization: true,
 		},
+		{
+			name: "empty_attribute_value_excluded",
+			resource: func() pcommon.Resource {
+				res := pcommon.NewResource()
+				res.Attributes().PutStr("resource.attr", "")
+				return res
+			}(),
+			orig: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr(label11, value11)
+				m.PutStr(label12, "")
+				return m
+			}(),
+			externalLabels: map[string]string{},
+			extras:         []string{label31, value31},
+			want:           getPromLabels(label11, value11, label31, value31),
+		},
+		{
+			name: "empty_service_name_excluded",
+			resource: func() pcommon.Resource {
+				res := pcommon.NewResource()
+				res.Attributes().PutStr("service.name", "")
+				res.Attributes().PutStr("service.instance.id", "")
+				return res
+			}(),
+			orig:           lbs1,
+			externalLabels: map[string]string{},
+			want:           getPromLabels(label11, value11, label12, value12),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			labelNamer := otlptranslator.LabelNamer{
-				UnderscoreLabelSanitization: tt.underscoreLabelSanitization,
+				// TODO: SA1019: (github.com/prometheus/otlptranslator.LabelNamer).UnderscoreLabelSanitization is deprecated: This will be removed in a future version of otlptranslator.
+				// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50429
+				UnderscoreLabelSanitization: tt.underscoreLabelSanitization, //nolint:staticcheck
 			}
-			got, err := createAttributes(tt.resource, tt.orig, tt.externalLabels, nil, true, labelNamer, tt.extras...)
+			got, err := createAttributes(tt.resource, tt.orig, pcommon.NewInstrumentationScope(), tt.externalLabels, nil, true, labelNamer, false, tt.extras...)
 			if tt.expectErr {
 				require.Error(t, err)
 				return
@@ -417,7 +450,7 @@ func BenchmarkCreateAttributes(b *testing.B) {
 
 	for b.Loop() {
 		//nolint:errcheck
-		createAttributes(r, m, ext, nil, true, otlptranslator.LabelNamer{})
+		createAttributes(r, m, pcommon.NewInstrumentationScope(), ext, nil, true, otlptranslator.LabelNamer{}, false)
 	}
 }
 
@@ -578,48 +611,128 @@ func Test_getPromExemplars(t *testing.T) {
 func Test_getPromExemplarsV2(t *testing.T) {
 	tnow := time.Now()
 	tests := []struct {
-		name      string
-		histogram pmetric.HistogramDataPoint
-		expected  []writev2.Exemplar
+		name            string
+		histogram       pmetric.HistogramDataPoint
+		expected        []writev2.Exemplar
+		expectedStrings []string
 	}{
 		{
 			name:      "with_exemplars_double_value",
 			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, label11, value11),
 			expected: []writev2.Exemplar{
 				{
-					Value:     floatVal1,
-					Timestamp: timestamp.FromTime(tnow),
-					// TODO: after deal with examplar labels on getPromExemplarsV2, add the labels here
-					// LabelsRefs: []uint32{},
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
 				},
 			},
+			expectedStrings: []string{otlptranslator.ExemplarSpanIDKey, spanIDValue1, label11, value11, otlptranslator.ExemplarTraceIDKey, traceIDValue1},
 		},
 		{
 			name:      "with_exemplars_int_value",
 			histogram: getHistogramDataPointWithExemplars(t, tnow, intVal2, traceIDValue1, spanIDValue1, label11, value11),
 			expected: []writev2.Exemplar{
 				{
-					Value:     float64(intVal2),
-					Timestamp: timestamp.FromTime(tnow),
-					// TODO: after deal with examplar labels on getPromExemplarsV2, add the labels here
-					// LabelsRefs: []uint32{},
+					Value:      float64(intVal2),
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
 				},
 			},
+			expectedStrings: []string{otlptranslator.ExemplarSpanIDKey, spanIDValue1, label11, value11, otlptranslator.ExemplarTraceIDKey, traceIDValue1},
+		},
+		{
+			name:      "with_exemplars_without_trace_or_span",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", label11, value11),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2},
+				},
+			},
+			expectedStrings: []string{label11, value11},
+		},
+		{
+			name:      "duplicate_trace_id_dropped",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, otlptranslator.ExemplarTraceIDKey, "duplicate_val"),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2, 3, 4},
+				},
+			},
+			expectedStrings: []string{otlptranslator.ExemplarSpanIDKey, spanIDValue1, otlptranslator.ExemplarTraceIDKey, traceIDValue1},
+		},
+		{
+			name:      "too_many_runes_drops_labels",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", keyWith129Runes, ""),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: nil,
+				},
+			},
+			expectedStrings: nil,
+		},
+		{
+			name:      "runes_at_limit_bytes_over_keeps_labels",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", keyWith128Runes, ""),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2},
+				},
+			},
+			expectedStrings: []string{keyWith128Runes, ""},
+		},
+		{
+			name:      "too_many_runes_with_exemplar_drops_attrs_keeps_exemplar",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, keyWith64Runes, ""),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2, 3, 4},
+				},
+			},
+			expectedStrings: []string{otlptranslator.ExemplarSpanIDKey, spanIDValue1, otlptranslator.ExemplarTraceIDKey, traceIDValue1},
+		},
+		{
+			name:            "without_exemplar",
+			histogram:       pmetric.NewHistogramDataPoint(),
+			expected:        []writev2.Exemplar{},
+			expectedStrings: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			requests := getPromExemplarsV2(tt.histogram)
+			symbols := make(map[string]uint32)
+			var counter uint32
+			var recordedStrings []string
+			symbolize := func(s string) uint32 {
+				recordedStrings = append(recordedStrings, s)
+				if id, ok := symbols[s]; ok {
+					return id
+				}
+				counter++
+				symbols[s] = counter
+				return counter
+			}
+			requests := getPromExemplarsV2(tt.histogram, symbolize)
 			assert.Exactly(t, tt.expected, requests)
+			assert.Equal(t, tt.expectedStrings, recordedStrings)
 		})
 	}
 }
 
 func TestAddResourceTargetInfo(t *testing.T) {
 	resourceAttrMap := map[string]any{
-		string(conventions.ServiceNameKey):       "service-name",
-		string(conventions.ServiceNamespaceKey):  "service-namespace",
-		string(conventions.ServiceInstanceIDKey): "service-instance-id",
+		"service.name":        "service-name",
+		"service.namespace":   "service-namespace",
+		"service.instance.id": "service-instance-id",
 	}
 	resourceWithServiceAttrs := pcommon.NewResource()
 	require.NoError(t, resourceWithServiceAttrs.Attributes().FromRaw(resourceAttrMap))
@@ -628,11 +741,11 @@ func TestAddResourceTargetInfo(t *testing.T) {
 	require.NoError(t, resourceWithOnlyServiceAttrs.Attributes().FromRaw(resourceAttrMap))
 	// service.name is an identifying resource attribute.
 	resourceWithOnlyServiceName := pcommon.NewResource()
-	resourceWithOnlyServiceName.Attributes().PutStr(string(conventions.ServiceNameKey), "service-name")
+	resourceWithOnlyServiceName.Attributes().PutStr("service.name", "service-name")
 	resourceWithOnlyServiceName.Attributes().PutStr("resource_attr", "resource-attr-val-1")
 	// service.instance.id is an identifying resource attribute.
 	resourceWithOnlyServiceID := pcommon.NewResource()
-	resourceWithOnlyServiceID.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), "service-instance-id")
+	resourceWithOnlyServiceID.Attributes().PutStr("service.instance.id", "service-instance-id")
 	resourceWithOnlyServiceID.Attributes().PutStr("resource_attr", "resource-attr-val-1")
 	for _, tc := range []struct {
 		desc       string
@@ -852,6 +965,7 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 			err := converter.addSummaryDataPoints(
 				metric.Summary().DataPoints(),
 				pcommon.NewResource(),
+				pcommon.NewInstrumentationScope(),
 				Settings{},
 				metric.Name(),
 			)
@@ -866,9 +980,12 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	tests := []struct {
-		name   string
-		metric func() pmetric.Metric
-		want   func() map[uint64]*prompb.TimeSeries
+		name     string
+		metric   func() pmetric.Metric
+		settings Settings
+		want     func() map[uint64]*prompb.TimeSeries
+		wantErr  bool
+		check    func(t *testing.T, converter *prometheusConverter)
 	}{
 		{
 			name: "histogram with start time",
@@ -943,24 +1060,122 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:     "NHCB only",
+			metric:   newTestExplicitHistogram,
+			settings: Settings{ConvertExplicitHistogramsToNHCB: true},
+			check: func(t *testing.T, converter *prometheusConverter) {
+				require.Len(t, converter.unique, 1, "NHCB-only emits a single native series")
+				for _, series := range converter.unique {
+					require.Len(t, series.Histograms, 1)
+					assert.Empty(t, series.Samples, "no classic samples in NHCB-only mode")
+					assert.Equal(t, histogram.CustomBucketsSchema, series.Histograms[0].Schema)
+				}
+				require.NotNil(t, findSeriesTS(converter, "test_hist"), "native series uses the base metric name")
+			},
+		},
+		{
+			name:     "NHCB with classic kept",
+			metric:   newTestExplicitHistogram,
+			settings: Settings{ConvertExplicitHistogramsToNHCB: true, KeepClassicHistograms: true},
+			check: func(t *testing.T, converter *prometheusConverter) {
+				var nativeSeries, classicSamples int
+				for _, series := range converter.unique {
+					nativeSeries += len(series.Histograms)
+					classicSamples += len(series.Samples)
+				}
+				assert.Equal(t, 1, nativeSeries, "one NHCB datapoint emitted alongside classic")
+				assert.Positive(t, classicSamples, "classic _bucket/_sum/_count still emitted")
+				require.NotNil(t, findSeriesTS(converter, "test_hist"), "native series present under base name")
+				require.NotNil(t, findSeriesTS(converter, "test_hist_bucket"), "classic _bucket series present")
+				require.NotNil(t, findSeriesTS(converter, "test_hist_count"), "classic _count series present")
+			},
+		},
+		{
+			name: "NHCB carries exemplars",
+			metric: func() pmetric.Metric {
+				metric := newTestExplicitHistogram()
+				ex := metric.Histogram().DataPoints().At(0).Exemplars().AppendEmpty()
+				ex.SetTimestamp(testHistTimestamp)
+				ex.SetDoubleValue(7)
+				return metric
+			},
+			settings: Settings{ConvertExplicitHistogramsToNHCB: true},
+			check: func(t *testing.T, converter *prometheusConverter) {
+				nativeTS := findSeriesTS(converter, "test_hist")
+				require.NotNil(t, nativeTS)
+				require.Len(t, nativeTS.Exemplars, 1, "exemplar carried onto the NHCB series")
+				assert.Equal(t, 7.0, nativeTS.Exemplars[0].Value)
+			},
+		},
+		{
+			name:     "classic mode does not emit the bare metric name",
+			metric:   newTestExplicitHistogram,
+			settings: Settings{},
+			check: func(t *testing.T, converter *prometheusConverter) {
+				for _, series := range converter.unique {
+					assert.Empty(t, series.Histograms, "no native histograms when conversion is off")
+				}
+				assert.Nil(t, findSeriesTS(converter, "test_hist"),
+					"classic mode emits only _bucket/_sum/_count, never the bare name")
+			},
+		},
+		{
+			name: "NHCB conversion error keeps classic",
+			metric: func() pmetric.Metric {
+				metric := newTestExplicitHistogram()
+				metric.Histogram().DataPoints().At(0).ExplicitBounds().FromRaw([]float64{1, math.NaN(), 3})
+				return metric
+			},
+			settings: Settings{ConvertExplicitHistogramsToNHCB: true, KeepClassicHistograms: true},
+			wantErr:  true,
+			check: func(t *testing.T, converter *prometheusConverter) {
+				if ts := findSeriesTS(converter, "test_hist"); ts != nil {
+					assert.Empty(t, ts.Histograms, "no native histogram appended on conversion error")
+				}
+				require.NotNil(t, findSeriesTS(converter, "test_hist_count"), "classic series still emitted on NHCB error")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
-			converter := newPrometheusConverter(Settings{})
+			converter := newPrometheusConverter(tt.settings)
 
 			err := converter.addHistogramDataPoints(
 				metric.Histogram().DataPoints(),
 				pcommon.NewResource(),
-				Settings{},
+				pcommon.NewInstrumentationScope(),
+				tt.settings,
 				metric.Name(),
 			)
-			require.NoError(t, err)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 
-			assert.Equal(t, tt.want(), converter.unique)
-			assert.Empty(t, converter.conflicts)
+			if tt.want != nil {
+				assert.Equal(t, tt.want(), converter.unique)
+				assert.Empty(t, converter.conflicts)
+			}
+			if tt.check != nil {
+				tt.check(t, converter)
+			}
 		})
 	}
+}
+
+// findSeriesTS returns the unique RW1 time series whose __name__ label equals name, or nil.
+func findSeriesTS(c *prometheusConverter, name string) *prompb.TimeSeries {
+	for _, ts := range c.unique {
+		for _, l := range ts.Labels {
+			if l.Name == model.MetricNameLabel && l.Value == name {
+				return ts
+			}
+		}
+	}
+	return nil
 }
 
 func TestPrometheusConverter_getOrCreateTimeSeries(t *testing.T) {
@@ -1124,4 +1339,132 @@ func TestCreateLabels(t *testing.T) {
 			assert.Equal(t, tc.expected, lbls)
 		})
 	}
+}
+
+func TestScopeAttributesExported(t *testing.T) {
+	// Create a metric with scope attributes
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	// Set resource attributes just to be sure
+	rm.Resource().Attributes().PutStr("service.name", "test-service")
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	scope := sm.Scope()
+	scope.SetName("test-scope")
+	scope.SetVersion("1.0.0")
+	scope.Attributes().PutStr("scope.attr", "scope-value")
+
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("test_metric")
+	m.SetEmptyGauge()
+	dp := m.Gauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
+	dp.SetIntValue(1)
+
+	// Convert to Prometheus Remote Write format
+	tsMap, err := FromMetrics(md, Settings{})
+	require.NoError(t, err)
+	require.NotEmpty(t, tsMap)
+
+	// Verify labels
+	// We expect one time series
+	require.Len(t, tsMap, 1)
+
+	// Get the first time series (key is "0")
+	ts, ok := tsMap["0"]
+	require.True(t, ok)
+
+	labels := make(map[string]string)
+	for _, l := range ts.Labels {
+		labels[l.Name] = l.Value
+	}
+
+	// Check for scope attributes
+	assert.Equal(t, "test-scope", labels["otel_scope_name"], "otel_scope_name should be present")
+	assert.Equal(t, "1.0.0", labels["otel_scope_version"], "otel_scope_version should be present")
+	assert.Equal(t, "scope-value", labels["otel_scope_scope_attr"], "scope attribute should be present with prefix")
+}
+
+func TestDisableScopeInfo(t *testing.T) {
+	// Create a metric with scope attributes
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	// Set resource attributes just to be sure
+	rm.Resource().Attributes().PutStr("service.name", "test-service")
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	scope := sm.Scope()
+	scope.SetName("test-scope")
+	scope.SetVersion("1.0.0")
+	scope.Attributes().PutStr("scope.attr", "scope-value")
+
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("test_metric")
+	m.SetEmptyGauge()
+	dp := m.Gauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
+	dp.SetIntValue(1)
+
+	// Convert to Prometheus Remote Write format with DisableScopeInfo = true
+	tsMap, err := FromMetrics(md, Settings{DisableScopeInfo: true})
+	require.NoError(t, err)
+	require.NotEmpty(t, tsMap)
+
+	// Verify labels
+	// We expect one time series
+	require.Len(t, tsMap, 1)
+
+	// Get the first time series (key is "0")
+	ts, ok := tsMap["0"]
+	require.True(t, ok)
+
+	labels := make(map[string]string)
+	for _, l := range ts.Labels {
+		labels[l.Name] = l.Value
+	}
+
+	// Check that scope attributes are NOT present
+	assert.NotContains(t, labels, "otel_scope_name")
+	assert.NotContains(t, labels, "otel_scope_version")
+	assert.NotContains(t, labels, "otel_scope_scope_attr")
+}
+
+func TestConflictingScopeAttributesDropped(t *testing.T) {
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("service.name", "test-service")
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	scope := sm.Scope()
+	scope.SetName("test-scope")
+	scope.SetVersion("1.0.0")
+	scope.Attributes().PutStr("name", "dropped-name")
+	scope.Attributes().PutStr("version", "dropped-version")
+	scope.Attributes().PutStr("schema_url", "dropped-schema-url")
+	scope.Attributes().PutStr("valid_attr", "valid-value")
+
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("test_metric")
+	m.SetEmptyGauge()
+	dp := m.Gauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
+	dp.SetIntValue(1)
+
+	tsMap, err := FromMetrics(md, Settings{})
+	require.NoError(t, err)
+	require.NotEmpty(t, tsMap)
+	require.Len(t, tsMap, 1)
+
+	ts, ok := tsMap["0"]
+	require.True(t, ok)
+
+	labels := make(map[string]string)
+	for _, l := range ts.Labels {
+		labels[l.Name] = l.Value
+	}
+
+	assert.Equal(t, "test-scope", labels["otel_scope_name"], "otel_scope_name should come from scope.Name(), not attribute")
+	assert.Equal(t, "1.0.0", labels["otel_scope_version"], "otel_scope_version should come from scope.Version(), not attribute")
+	assert.NotContains(t, labels, "otel_scope_schema_url", "schema_url should not be exported as scope attribute")
+	assert.Equal(t, "valid-value", labels["otel_scope_valid_attr"], "valid scope attribute should be present")
 }

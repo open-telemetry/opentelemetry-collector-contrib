@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
@@ -16,6 +17,8 @@ type Provider interface {
 	Get(ctx context.Context) (imds.InstanceIdentityDocument, error)
 	Hostname(ctx context.Context) (string, error)
 	InstanceID(ctx context.Context) (string, error)
+	Tags(ctx context.Context) ([]string, error)
+	Tag(ctx context.Context, key string) (string, error)
 }
 
 type metadataClient struct {
@@ -60,4 +63,24 @@ func (c *metadataClient) Get(ctx context.Context) (imds.InstanceIdentityDocument
 	}
 
 	return output.InstanceIdentityDocument, nil
+}
+
+func (c *metadataClient) Tags(ctx context.Context) ([]string, error) {
+	tagKeysRaw, err := c.getMetadata(ctx, "tags/instance")
+	if err != nil {
+		return nil, fmt.Errorf("failed to list tag keys from IMDS: %w", err)
+	}
+
+	var keys []string
+	for key := range strings.SplitSeq(tagKeysRaw, "\n") {
+		key = strings.TrimSpace(key)
+		if key != "" {
+			keys = append(keys, key)
+		}
+	}
+	return keys, nil
+}
+
+func (c *metadataClient) Tag(ctx context.Context, key string) (string, error) {
+	return c.getMetadata(ctx, "tags/instance/"+key)
 }

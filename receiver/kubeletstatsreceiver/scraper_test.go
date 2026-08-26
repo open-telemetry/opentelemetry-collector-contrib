@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -21,26 +22,35 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	clienttesting "k8s.io/client-go/testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-const (
-	dataLen = numContainers*containerMetrics + numPods*podMetrics + numNodes*nodeMetrics + numVolumes*volumeMetrics
+func init() {
+	// Disable WatchListClient feature gate for tests as fake clientset doesn't support bookmark events
+	// See: https://github.com/kubernetes/kubernetes/issues/129408
+	os.Setenv("KUBE_FEATURE_WatchListClient", "false")
+}
 
+const (
 	// Number of resources by type in testdata/stats-summary.json
-	numContainers = 9
-	numPods       = 9
-	numNodes      = 1
-	numVolumes    = 8
+	numContainers       = 9
+	numPods             = 9
+	numNodes            = 1
+	numVolumes          = 8
+	numSystemContainers = 3
 
 	// Number of metrics by resource
-	nodeMetrics      = 15
-	podMetrics       = 15
-	containerMetrics = 11
-	volumeMetrics    = 5
+	nodeMetrics            = 15
+	podMetrics             = 15
+	containerMetrics       = 11
+	volumeMetrics          = 5
+	systemContainerMetrics = 4
+
+	dataLen = numContainers*containerMetrics + numPods*podMetrics + numNodes*nodeMetrics + numVolumes*volumeMetrics
 )
 
 var allMetricGroups = map[kubelet.MetricGroup]bool{
@@ -58,7 +68,7 @@ func TestScraper(t *testing.T) {
 		&fakeRestClient{},
 		receivertest.NewNopSettings(metadata.Type),
 		options,
-		metadata.DefaultMetricsBuilderConfig(),
+		metadata.NewDefaultMetricsBuilderConfig(),
 		"worker-42",
 	)
 	require.NoError(t, err)
@@ -67,6 +77,208 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, dataLen, md.DataPointCount())
 	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_expected.yaml")
+
+	// Uncomment to regenerate '*_expected.yaml' files
+	// golden.WriteMetrics(t, expectedFile, md)
+
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
+}
+
+func TestScraperWithCPUUsageScrapeBased(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, true)()
+
+	options := &scraperOptions{
+		metricGroupsToCollect: allMetricGroups,
+	}
+	r, err := newKubeletScraper(
+		&fakeRestClient{},
+		receivertest.NewNopSettings(metadata.Type),
+		options,
+		metadata.NewDefaultMetricsBuilderConfig(),
+		"worker-42",
+	)
+	require.NoError(t, err)
+
+	// First scrape: there is no previous CPU-time sample yet, so no *.cpu.usage metrics
+	// are emitted. container.cpu.time/k8s.pod.cpu.time/k8s.node.cpu.time (the cumulative
+	// counters the usage is calculated from) are unaffected and still emitted.
+	md, err := r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, dataLen-numNodes-numPods-numContainers, md.DataPointCount())
+
+	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_cpu_usage_scrape_based_expected.yaml")
+
+	// Uncomment to regenerate '*_expected.yaml' files
+	// golden.WriteMetrics(t, expectedFile, md)
+
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
+
+	// Second scrape: the fixture's kubelet CPU sample time is static, so the elapsed
+	// time between the two scrapes is 0 and usage still isn't recorded. This exercises
+	// the "stale/duplicate sample" guard against a real (non-synthetic) fixture.
+	md2, err := r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, dataLen-numNodes-numPods-numContainers, md2.DataPointCount())
+}
+
+func TestScraperWithCPUUsageScrapeBasedSecondScrape(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, true)()
+
+	// testdata/stats-summary-second-scrape.json is a copy of testdata/stats-summary.json
+	// with every resource's cpu.time advanced by 2 seconds and its cumulative
+	// usageCoreNanoSeconds advanced by 2 CPU-seconds, so every *.cpu.usage metric should
+	// come out to (2 CPU-seconds)/(2 seconds) = 1 core on the second scrape.
+	rc := &fakeRestClient{
+		statsSummaryFiles: []string{
+			"testdata/stats-summary.json",
+			"testdata/stats-summary-second-scrape.json",
+		},
+	}
+	options := &scraperOptions{
+		metricGroupsToCollect: allMetricGroups,
+	}
+	r, err := newKubeletScraper(
+		rc,
+		receivertest.NewNopSettings(metadata.Type),
+		options,
+		metadata.NewDefaultMetricsBuilderConfig(),
+		"worker-42",
+	)
+	require.NoError(t, err)
+
+	// First scrape: no previous CPU-time sample yet, so no *.cpu.usage metrics.
+	_, err = r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+
+	// Second scrape: a real rate can now be calculated for every resource.
+	md, err := r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, dataLen, md.DataPointCount())
+
+	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_cpu_usage_scrape_based_second_scrape_expected.yaml")
+
+	// Uncomment to regenerate '*_expected.yaml' files
+	// golden.WriteMetrics(t, expectedFile, md)
+
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
+}
+
+func TestScraperWithSystemContainerMetrics(t *testing.T) {
+	options := &scraperOptions{
+		metricGroupsToCollect: allMetricGroups,
+	}
+	metricsConfig := metadata.NewDefaultMetricsBuilderConfig()
+	metricsConfig.Metrics.K8sNodeSystemContainerCPUTime.Enabled = true
+	metricsConfig.Metrics.K8sNodeSystemContainerCPUUsage.Enabled = true
+	metricsConfig.Metrics.K8sNodeSystemContainerMemoryUsage.Enabled = true
+	metricsConfig.Metrics.K8sNodeSystemContainerMemoryWorkingSet.Enabled = true
+
+	r, err := newKubeletScraper(
+		&fakeRestClient{},
+		receivertest.NewNopSettings(metadata.Type),
+		options,
+		metricsConfig,
+		"worker-42",
+	)
+	require.NoError(t, err)
+
+	md, err := r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+
+	require.Equal(t, dataLen+numSystemContainers*systemContainerMetrics, md.DataPointCount())
+	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_with_system_container_expected.yaml")
+
+	// Uncomment to regenerate '*_expected.yaml' files
+	// golden.WriteMetrics(t, expectedFile, md)
+
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
+}
+
+func TestScraperWithEphemeralStorageMetrics(t *testing.T) {
+	options := &scraperOptions{
+		metricGroupsToCollect: allMetricGroups,
+	}
+	metricsConfig := metadata.NewDefaultMetricsBuilderConfig()
+	metricsConfig.Metrics.K8sContainerEphemeralStorageUsage.Enabled = true
+
+	r, err := newKubeletScraper(
+		&fakeRestClient{},
+		receivertest.NewNopSettings(metadata.Type),
+		options,
+		metricsConfig,
+		"worker-42",
+	)
+	require.NoError(t, err)
+
+	md, err := r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+
+	require.Equal(t, dataLen+numContainers*2, md.DataPointCount())
+	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_with_ephemeral_storage_expected.yaml")
+
+	// Uncomment to regenerate '*_expected.yaml' files
+	// golden.WriteMetrics(t, expectedFile, md)
+
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
+}
+
+func TestScraperWithNodeFilesystemInodeMetrics(t *testing.T) {
+	options := &scraperOptions{
+		metricGroupsToCollect: allMetricGroups,
+	}
+	metricsConfig := metadata.NewDefaultMetricsBuilderConfig()
+	metricsConfig.Metrics.K8sNodeFilesystemInodeCount.Enabled = true
+	metricsConfig.Metrics.K8sNodeFilesystemInodeFree.Enabled = true
+
+	r, err := newKubeletScraper(
+		&fakeRestClient{},
+		receivertest.NewNopSettings(metadata.Type),
+		options,
+		metricsConfig,
+		"worker-42",
+	)
+	require.NoError(t, err)
+
+	md, err := r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+
+	require.Equal(t, dataLen+2, md.DataPointCount())
+	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_with_node_filesystem_inode_expected.yaml")
 
 	// Uncomment to regenerate '*_expected.yaml' files
 	// golden.WriteMetrics(t, expectedFile, md)
@@ -93,7 +305,7 @@ func TestScraperWithInterfacesMetrics(t *testing.T) {
 		&fakeRestClient{},
 		receivertest.NewNopSettings(metadata.Type),
 		options,
-		metadata.DefaultMetricsBuilderConfig(),
+		metadata.NewDefaultMetricsBuilderConfig(),
 		"worker-42",
 	)
 	require.NoError(t, err)
@@ -146,10 +358,10 @@ func TestScraperWithCPUNodeUtilization(t *testing.T) {
 		options,
 		metadata.MetricsBuilderConfig{
 			Metrics: metadata.MetricsConfig{
-				K8sContainerCPUNodeUtilization: metadata.MetricConfig{
+				K8sContainerCPUNodeUtilization: metadata.K8sContainerCPUNodeUtilizationMetricConfig{
 					Enabled: true,
 				},
-				K8sPodCPUNodeUtilization: metadata.MetricConfig{
+				K8sPodCPUNodeUtilization: metadata.K8sPodCPUNodeUtilizationMetricConfig{
 					Enabled: true,
 				},
 			},
@@ -159,7 +371,7 @@ func TestScraperWithCPUNodeUtilization(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = r.Start(t.Context(), nil)
+	err = r.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// we wait until the watcher starts
@@ -226,9 +438,9 @@ func TestScraperWithMemoryNodeUtilization(t *testing.T) {
 		options,
 		metadata.MetricsBuilderConfig{
 			Metrics: metadata.MetricsConfig{
-				K8sContainerMemoryNodeUtilization: metadata.MetricConfig{
+				K8sContainerMemoryNodeUtilization: metadata.K8sContainerMemoryNodeUtilizationMetricConfig{
 					Enabled: true,
-				}, K8sPodMemoryNodeUtilization: metadata.MetricConfig{
+				}, K8sPodMemoryNodeUtilization: metadata.K8sPodMemoryNodeUtilizationMetricConfig{
 					Enabled: true,
 				},
 			},
@@ -238,7 +450,7 @@ func TestScraperWithMemoryNodeUtilization(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = r.Start(t.Context(), nil)
+	err = r.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// we wait until the watcher starts
@@ -316,7 +528,7 @@ func TestScraperWithMetadata(t *testing.T) {
 				&fakeRestClient{},
 				receivertest.NewNopSettings(metadata.Type),
 				options,
-				metadata.DefaultMetricsBuilderConfig(),
+				metadata.NewDefaultMetricsBuilderConfig(),
 				"worker-42",
 			)
 			require.NoError(t, err)
@@ -351,148 +563,148 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 	}
 	metricsConfig := metadata.MetricsBuilderConfig{
 		Metrics: metadata.MetricsConfig{
-			ContainerCPUTime: metadata.MetricConfig{
+			ContainerCPUTime: metadata.ContainerCPUTimeMetricConfig{
 				Enabled: false,
 			},
-			ContainerFilesystemAvailable: metadata.MetricConfig{
+			ContainerFilesystemAvailable: metadata.ContainerFilesystemAvailableMetricConfig{
 				Enabled: false,
 			},
-			ContainerFilesystemCapacity: metadata.MetricConfig{
+			ContainerFilesystemCapacity: metadata.ContainerFilesystemCapacityMetricConfig{
 				Enabled: false,
 			},
-			ContainerFilesystemUsage: metadata.MetricConfig{
+			ContainerFilesystemUsage: metadata.ContainerFilesystemUsageMetricConfig{
 				Enabled: false,
 			},
-			ContainerMemoryAvailable: metadata.MetricConfig{
+			ContainerMemoryAvailable: metadata.ContainerMemoryAvailableMetricConfig{
 				Enabled: false,
 			},
-			ContainerMemoryMajorPageFaults: metadata.MetricConfig{
+			ContainerMemoryMajorPageFaults: metadata.ContainerMemoryMajorPageFaultsMetricConfig{
 				Enabled: false,
 			},
-			ContainerMemoryPageFaults: metadata.MetricConfig{
+			ContainerMemoryPageFaults: metadata.ContainerMemoryPageFaultsMetricConfig{
 				Enabled: false,
 			},
-			ContainerMemoryRss: metadata.MetricConfig{
+			ContainerMemoryRss: metadata.ContainerMemoryRssMetricConfig{
 				Enabled: false,
 			},
-			ContainerMemoryUsage: metadata.MetricConfig{
+			ContainerMemoryUsage: metadata.ContainerMemoryUsageMetricConfig{
 				Enabled: false,
 			},
-			K8sContainerCPULimitUtilization: metadata.MetricConfig{
+			K8sContainerCPULimitUtilization: metadata.K8sContainerCPULimitUtilizationMetricConfig{
 				Enabled: true,
 			},
-			K8sContainerCPURequestUtilization: metadata.MetricConfig{
+			K8sContainerCPURequestUtilization: metadata.K8sContainerCPURequestUtilizationMetricConfig{
 				Enabled: true,
 			},
-			K8sContainerMemoryLimitUtilization: metadata.MetricConfig{
+			K8sContainerMemoryLimitUtilization: metadata.K8sContainerMemoryLimitUtilizationMetricConfig{
 				Enabled: true,
 			},
-			K8sContainerMemoryRequestUtilization: metadata.MetricConfig{
+			K8sContainerMemoryRequestUtilization: metadata.K8sContainerMemoryRequestUtilizationMetricConfig{
 				Enabled: true,
 			},
-			ContainerMemoryWorkingSet: metadata.MetricConfig{
+			ContainerMemoryWorkingSet: metadata.ContainerMemoryWorkingSetMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeCPUTime: metadata.MetricConfig{
+			K8sNodeCPUTime: metadata.K8sNodeCPUTimeMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeFilesystemAvailable: metadata.MetricConfig{
+			K8sNodeFilesystemAvailable: metadata.K8sNodeFilesystemAvailableMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeFilesystemCapacity: metadata.MetricConfig{
+			K8sNodeFilesystemCapacity: metadata.K8sNodeFilesystemCapacityMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeFilesystemUsage: metadata.MetricConfig{
+			K8sNodeFilesystemUsage: metadata.K8sNodeFilesystemUsageMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeMemoryAvailable: metadata.MetricConfig{
+			K8sNodeMemoryAvailable: metadata.K8sNodeMemoryAvailableMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeMemoryMajorPageFaults: metadata.MetricConfig{
+			K8sNodeMemoryMajorPageFaults: metadata.K8sNodeMemoryMajorPageFaultsMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeMemoryPageFaults: metadata.MetricConfig{
+			K8sNodeMemoryPageFaults: metadata.K8sNodeMemoryPageFaultsMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeMemoryRss: metadata.MetricConfig{
+			K8sNodeMemoryRss: metadata.K8sNodeMemoryRssMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeMemoryUsage: metadata.MetricConfig{
+			K8sNodeMemoryUsage: metadata.K8sNodeMemoryUsageMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeMemoryWorkingSet: metadata.MetricConfig{
+			K8sNodeMemoryWorkingSet: metadata.K8sNodeMemoryWorkingSetMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeNetworkErrors: metadata.MetricConfig{
+			K8sNodeNetworkErrors: metadata.K8sNodeNetworkErrorsMetricConfig{
 				Enabled: false,
 			},
-			K8sNodeNetworkIo: metadata.MetricConfig{
+			K8sNodeNetworkIo: metadata.K8sNodeNetworkIoMetricConfig{
 				Enabled: false,
 			},
-			K8sPodCPUTime: metadata.MetricConfig{
+			K8sPodCPUTime: metadata.K8sPodCPUTimeMetricConfig{
 				Enabled: false,
 			},
-			K8sPodFilesystemAvailable: metadata.MetricConfig{
+			K8sPodFilesystemAvailable: metadata.K8sPodFilesystemAvailableMetricConfig{
 				Enabled: false,
 			},
-			K8sPodFilesystemCapacity: metadata.MetricConfig{
+			K8sPodFilesystemCapacity: metadata.K8sPodFilesystemCapacityMetricConfig{
 				Enabled: false,
 			},
-			K8sPodFilesystemUsage: metadata.MetricConfig{
+			K8sPodFilesystemUsage: metadata.K8sPodFilesystemUsageMetricConfig{
 				Enabled: false,
 			},
-			K8sPodMemoryAvailable: metadata.MetricConfig{
+			K8sPodMemoryAvailable: metadata.K8sPodMemoryAvailableMetricConfig{
 				Enabled: false,
 			},
-			K8sPodMemoryMajorPageFaults: metadata.MetricConfig{
+			K8sPodMemoryMajorPageFaults: metadata.K8sPodMemoryMajorPageFaultsMetricConfig{
 				Enabled: false,
 			},
-			K8sPodMemoryPageFaults: metadata.MetricConfig{
+			K8sPodMemoryPageFaults: metadata.K8sPodMemoryPageFaultsMetricConfig{
 				Enabled: false,
 			},
-			K8sPodMemoryRss: metadata.MetricConfig{
+			K8sPodMemoryRss: metadata.K8sPodMemoryRssMetricConfig{
 				Enabled: false,
 			},
-			K8sPodMemoryUsage: metadata.MetricConfig{
+			K8sPodMemoryUsage: metadata.K8sPodMemoryUsageMetricConfig{
 				Enabled: false,
 			},
-			K8sPodCPULimitUtilization: metadata.MetricConfig{
+			K8sPodCPULimitUtilization: metadata.K8sPodCPULimitUtilizationMetricConfig{
 				Enabled: true,
 			},
-			K8sPodCPURequestUtilization: metadata.MetricConfig{
+			K8sPodCPURequestUtilization: metadata.K8sPodCPURequestUtilizationMetricConfig{
 				Enabled: true,
 			},
-			K8sPodMemoryLimitUtilization: metadata.MetricConfig{
+			K8sPodMemoryLimitUtilization: metadata.K8sPodMemoryLimitUtilizationMetricConfig{
 				Enabled: true,
 			},
-			K8sPodMemoryRequestUtilization: metadata.MetricConfig{
+			K8sPodMemoryRequestUtilization: metadata.K8sPodMemoryRequestUtilizationMetricConfig{
 				Enabled: true,
 			},
-			K8sPodMemoryWorkingSet: metadata.MetricConfig{
+			K8sPodMemoryWorkingSet: metadata.K8sPodMemoryWorkingSetMetricConfig{
 				Enabled: false,
 			},
-			K8sPodNetworkErrors: metadata.MetricConfig{
+			K8sPodNetworkErrors: metadata.K8sPodNetworkErrorsMetricConfig{
 				Enabled: false,
 			},
-			K8sPodNetworkIo: metadata.MetricConfig{
+			K8sPodNetworkIo: metadata.K8sPodNetworkIoMetricConfig{
 				Enabled: false,
 			},
-			K8sVolumeAvailable: metadata.MetricConfig{
+			K8sVolumeAvailable: metadata.K8sVolumeAvailableMetricConfig{
 				Enabled: false,
 			},
-			K8sVolumeCapacity: metadata.MetricConfig{
+			K8sVolumeCapacity: metadata.K8sVolumeCapacityMetricConfig{
 				Enabled: false,
 			},
-			K8sPodVolumeUsage: metadata.MetricConfig{
+			K8sPodVolumeUsage: metadata.K8sPodVolumeUsageMetricConfig{
 				Enabled: false,
 			},
-			K8sVolumeInodes: metadata.MetricConfig{
+			K8sVolumeInodes: metadata.K8sVolumeInodesMetricConfig{
 				Enabled: false,
 			},
-			K8sVolumeInodesFree: metadata.MetricConfig{
+			K8sVolumeInodesFree: metadata.K8sVolumeInodesFreeMetricConfig{
 				Enabled: false,
 			},
-			K8sVolumeInodesUsed: metadata.MetricConfig{
+			K8sVolumeInodesUsed: metadata.K8sVolumeInodesUsedMetricConfig{
 				Enabled: false,
 			},
 		},
@@ -581,7 +793,7 @@ func TestScraperWithMetricGroups(t *testing.T) {
 					extraMetadataLabels:   []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 					metricGroupsToCollect: test.metricGroups,
 				},
-				metadata.DefaultMetricsBuilderConfig(),
+				metadata.NewDefaultMetricsBuilderConfig(),
 				"worker-42",
 			)
 			require.NoError(t, err)
@@ -736,6 +948,14 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			mbc := metadata.NewDefaultMetricsBuilderConfig()
+			mbc.ResourceAttributes.AwsVolumeID.Enabled = true
+			mbc.ResourceAttributes.FsType.Enabled = true
+			mbc.ResourceAttributes.GcePdName.Enabled = true
+			mbc.ResourceAttributes.GlusterfsEndpointsName.Enabled = true
+			mbc.ResourceAttributes.GlusterfsPath.Enabled = true
+			mbc.ResourceAttributes.Partition.Enabled = true
+
 			r, err := newKubeletScraper(
 				&fakeRestClient{},
 				receivertest.NewNopSettings(metadata.Type),
@@ -746,7 +966,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 					},
 					k8sAPIClient: test.k8sAPIClient,
 				},
-				metadata.DefaultMetricsBuilderConfig(),
+				mbc,
 				"worker-42",
 			)
 			require.NoError(t, err)
@@ -831,7 +1051,7 @@ func TestClientErrors(t *testing.T) {
 				},
 				settings,
 				options,
-				metadata.DefaultMetricsBuilderConfig(),
+				metadata.NewDefaultMetricsBuilderConfig(),
 				"",
 			)
 			require.NoError(t, err)
@@ -852,13 +1072,29 @@ var _ kubelet.RestClient = (*fakeRestClient)(nil)
 type fakeRestClient struct {
 	statsSummaryFail bool
 	podsFail         bool
+
+	// statsSummaryFiles, if non-empty, is consulted instead of the default
+	// testdata/stats-summary.json: each call to StatsSummary returns the next file in
+	// the list, and the last file is repeated for any calls beyond the list's length.
+	// This allows tests to simulate consecutive scrapes returning different data.
+	statsSummaryFiles     []string
+	statsSummaryCallCount int
 }
 
 func (f *fakeRestClient) StatsSummary() ([]byte, error) {
 	if f.statsSummaryFail {
 		return nil, errors.New("")
 	}
-	return os.ReadFile("testdata/stats-summary.json")
+	file := "testdata/stats-summary.json"
+	if len(f.statsSummaryFiles) > 0 {
+		idx := f.statsSummaryCallCount
+		if idx >= len(f.statsSummaryFiles) {
+			idx = len(f.statsSummaryFiles) - 1
+		}
+		file = f.statsSummaryFiles[idx]
+	}
+	f.statsSummaryCallCount++
+	return os.ReadFile(file)
 }
 
 func (f *fakeRestClient) Pods() ([]byte, error) {

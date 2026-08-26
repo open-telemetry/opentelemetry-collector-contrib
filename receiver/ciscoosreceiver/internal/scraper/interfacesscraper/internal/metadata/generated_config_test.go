@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -21,17 +20,37 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemNetworkErrors:          MetricConfig{Enabled: true},
-					SystemNetworkInterfaceStatus: MetricConfig{Enabled: true},
-					SystemNetworkIo:              MetricConfig{Enabled: true},
-					SystemNetworkPacketCount:     MetricConfig{Enabled: true},
-					SystemNetworkPacketDropped:   MetricConfig{Enabled: true},
+					SystemNetworkErrors: SystemNetworkErrorsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemNetworkErrorsMetricAttributeKey{SystemNetworkErrorsMetricAttributeKeyNetworkIoDirection, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceMac, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceName, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceSpeed},
+					},
+					SystemNetworkInterfaceStatus: SystemNetworkInterfaceStatusMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemNetworkInterfaceStatusMetricAttributeKey{SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceMac, SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceName, SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceSpeed},
+					},
+					SystemNetworkIo: SystemNetworkIoMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemNetworkIoMetricAttributeKey{SystemNetworkIoMetricAttributeKeyNetworkIoDirection, SystemNetworkIoMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkIoMetricAttributeKeyNetworkInterfaceMac, SystemNetworkIoMetricAttributeKeyNetworkInterfaceName, SystemNetworkIoMetricAttributeKeyNetworkInterfaceSpeed},
+					},
+					SystemNetworkPacketCount: SystemNetworkPacketCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemNetworkPacketCountMetricAttributeKey{SystemNetworkPacketCountMetricAttributeKeyNetworkPacketType, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceMac, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceName, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceSpeed},
+					},
+					SystemNetworkPacketDropped: SystemNetworkPacketDroppedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemNetworkPacketDroppedMetricAttributeKey{SystemNetworkPacketDroppedMetricAttributeKeyNetworkIoDirection, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceMac, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceName, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceSpeed},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					HostIP: ResourceAttributeConfig{Enabled: true},
@@ -44,11 +63,31 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemNetworkErrors:          MetricConfig{Enabled: false},
-					SystemNetworkInterfaceStatus: MetricConfig{Enabled: false},
-					SystemNetworkIo:              MetricConfig{Enabled: false},
-					SystemNetworkPacketCount:     MetricConfig{Enabled: false},
-					SystemNetworkPacketDropped:   MetricConfig{Enabled: false},
+					SystemNetworkErrors: SystemNetworkErrorsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemNetworkErrorsMetricAttributeKey{SystemNetworkErrorsMetricAttributeKeyNetworkIoDirection, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceMac, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceName, SystemNetworkErrorsMetricAttributeKeyNetworkInterfaceSpeed},
+					},
+					SystemNetworkInterfaceStatus: SystemNetworkInterfaceStatusMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SystemNetworkInterfaceStatusMetricAttributeKey{SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceMac, SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceName, SystemNetworkInterfaceStatusMetricAttributeKeyNetworkInterfaceSpeed},
+					},
+					SystemNetworkIo: SystemNetworkIoMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemNetworkIoMetricAttributeKey{SystemNetworkIoMetricAttributeKeyNetworkIoDirection, SystemNetworkIoMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkIoMetricAttributeKeyNetworkInterfaceMac, SystemNetworkIoMetricAttributeKeyNetworkInterfaceName, SystemNetworkIoMetricAttributeKeyNetworkInterfaceSpeed},
+					},
+					SystemNetworkPacketCount: SystemNetworkPacketCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemNetworkPacketCountMetricAttributeKey{SystemNetworkPacketCountMetricAttributeKeyNetworkPacketType, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceMac, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceName, SystemNetworkPacketCountMetricAttributeKeyNetworkInterfaceSpeed},
+					},
+					SystemNetworkPacketDropped: SystemNetworkPacketDroppedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemNetworkPacketDroppedMetricAttributeKey{SystemNetworkPacketDroppedMetricAttributeKeyNetworkIoDirection, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceDescription, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceMac, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceName, SystemNetworkPacketDroppedMetricAttributeKeyNetworkInterfaceSpeed},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					HostIP: ResourceAttributeConfig{Enabled: false},
@@ -61,10 +100,69 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemNetworkErrorsMetricConfig{}, SystemNetworkInterfaceStatusMetricConfig{}, SystemNetworkIoMetricConfig{}, SystemNetworkPacketCountMetricConfig{}, SystemNetworkPacketDroppedMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+func TestSystemNetworkErrorsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemNetworkErrors
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemNetworkErrorsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.network.errors doesn't have an attribute invalid, valid attributes: [network.io.direction, network.interface.description, network.interface.mac, network.interface.name, network.interface.speed]")
+
+	cfg = DefaultMetricsConfig().SystemNetworkErrors
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemNetworkInterfaceStatusMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemNetworkInterfaceStatus
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemNetworkInterfaceStatusMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.network.interface.status doesn't have an attribute invalid, valid attributes: [network.interface.description, network.interface.mac, network.interface.name, network.interface.speed]")
+
+	cfg = DefaultMetricsConfig().SystemNetworkInterfaceStatus
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemNetworkIoMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemNetworkIo
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemNetworkIoMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.network.io doesn't have an attribute invalid, valid attributes: [network.io.direction, network.interface.description, network.interface.mac, network.interface.name, network.interface.speed]")
+
+	cfg = DefaultMetricsConfig().SystemNetworkIo
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemNetworkPacketCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemNetworkPacketCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemNetworkPacketCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.network.packet.count doesn't have an attribute invalid, valid attributes: [network.packet.type, network.interface.description, network.interface.mac, network.interface.name, network.interface.speed]")
+
+	cfg = DefaultMetricsConfig().SystemNetworkPacketCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemNetworkPacketDroppedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemNetworkPacketDropped
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemNetworkPacketDroppedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.network.packet.dropped doesn't have an attribute invalid, valid attributes: [network.io.direction, network.interface.description, network.interface.mac, network.interface.name, network.interface.speed]")
+
+	cfg = DefaultMetricsConfig().SystemNetworkPacketDropped
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
@@ -72,7 +170,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

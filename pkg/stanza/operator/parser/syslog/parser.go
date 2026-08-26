@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"time"
 
 	sl "github.com/leodido/go-syslog/v4"
@@ -22,6 +23,26 @@ import (
 )
 
 var priRegex = regexp.MustCompile(`<\d{1,3}>`)
+
+// octetCountingPrefixRegex matches the RFC 6587 octet counting frame prefix
+// (a non-zero message length followed by a space). It mirrors the framing regex
+// used by the syslog input operator's split function.
+var octetCountingPrefixRegex = regexp.MustCompile(`^[1-9]\d*\s`)
+
+// rawSyslogMessage is a simple container for raw syslog data that doesn't conform
+// to RFC3164 or RFC5424 formats. It implements sl.Message interface.
+type rawSyslogMessage struct {
+	message string
+}
+
+func (*rawSyslogMessage) Valid() bool                 { return true }
+func (*rawSyslogMessage) FacilityMessage() *string    { return nil }
+func (*rawSyslogMessage) FacilityLevel() *string      { return nil }
+func (*rawSyslogMessage) SeverityMessage() *string    { return nil }
+func (*rawSyslogMessage) SeverityLevel() *string      { return nil }
+func (*rawSyslogMessage) SeverityShortLevel() *string { return nil }
+func (*rawSyslogMessage) ComputeFromPriority(_ uint8) {}
+func (r *rawSyslogMessage) GetMessage() string        { return r.message }
 
 // parseFunc a parseFunc determines how the raw input is to be parsed into a syslog message
 type parseFunc func(input []byte) (sl.Message, error)
@@ -38,16 +59,70 @@ type Parser struct {
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return p.TransformerOperator.ProcessBatchWith(ctx, entries, p.Process)
+	processedEntries := make([]*entry.Entry, 0, len(entries))
+	write := func(_ context.Context, ent *entry.Entry) error {
+		processedEntries = append(processedEntries, ent)
+		return nil
+	}
+	var errs []error
+	for _, ent := range entries {
+		skip, err := p.Skip(ctx, ent)
+		if err != nil {
+			errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
+			continue
+		}
+		if skip {
+			_ = write(ctx, ent)
+			continue
+		}
+
+		// Determine which callback to use based on entry data
+		callback := postprocess
+		if p.protocol == None {
+			callback = postprocessRaw
+		} else if !p.enableOctetCounting && p.allowSkipPriHeader {
+			var bytes []byte
+			bytes, err = toBytes(ent.Body)
+			if err != nil {
+				errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
+				continue
+			}
+			if p.shouldSkipPriorityValues(bytes) {
+				callback = postprocessWithoutPriHeader
+			}
+		}
+
+		if err = p.ParseWith(ctx, ent, p.parse, write); err != nil {
+			if !errors.Is(err, helper.ErrEntryHandled) {
+				errs = append(errs, err)
+			}
+			continue
+		}
+
+		if err = callback(ent); err != nil {
+			errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
+			continue
+		}
+
+		_ = write(ctx, ent)
+	}
+
+	errs = append(errs, p.WriteBatch(ctx, processedEntries))
+	return errors.Join(errs...)
 }
 
 // Process will parse an entry field as syslog.
 func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
+	// For 'none' protocol, no postprocessing is needed
+	if p.protocol == None {
+		return p.ProcessWithCallback(ctx, entry, p.parse, postprocessRaw)
+	}
+
 	// if pri header is missing and this is an expected behavior then facility and severity values should be skipped.
 	if !p.enableOctetCounting && p.allowSkipPriHeader {
 		bytes, err := toBytes(entry.Body)
 		if err != nil {
-			return err
+			return p.HandleEntryError(ctx, entry, err)
 		}
 
 		if p.shouldSkipPriorityValues(bytes) {
@@ -82,6 +157,8 @@ func (p *Parser) parse(value any) (any, error) {
 		return p.parseRFC3164(message, skipPriHeaderValues)
 	case *rfc5424.SyslogMessage:
 		return p.parseRFC5424(message, skipPriHeaderValues)
+	case *rawSyslogMessage:
+		return p.parseRaw(message)
 	default:
 		return nil, errors.New("parsed value was not rfc3164 or rfc5424 compliant")
 	}
@@ -90,11 +167,15 @@ func (p *Parser) parse(value any) (any, error) {
 func (p *Parser) buildParseFunc() (parseFunc, error) {
 	switch p.protocol {
 	case RFC3164:
+		// Octet Counting Parsing RFC6587 with RFC3164 message format
+		if p.enableOctetCounting {
+			return newOctetCountingRFC3164ParseFunc(p.location, p.maxOctets), nil
+		}
 		return func(input []byte) (sl.Message, error) {
 			if p.allowSkipPriHeader && !priRegex.Match(input) {
 				input = append([]byte("<0>"), input...)
 			}
-			return rfc3164.NewMachine(rfc3164.WithLocaleTimezone(p.location)).Parse(input)
+			return rfc3164.NewMachine(rfc3164.WithLocaleTimezone(p.location), rfc3164.WithLenientDay()).Parse(input)
 		}, nil
 	case RFC5424:
 		switch {
@@ -115,6 +196,18 @@ func (p *Parser) buildParseFunc() (parseFunc, error) {
 				return rfc5424.NewMachine().Parse(input)
 			}, nil
 		}
+	case None:
+		return func(input []byte) (sl.Message, error) {
+			msg := input
+			// Strip the RFC 6587 octet counting frame prefix when enabled, leaving the
+			// raw message untouched.
+			if p.enableOctetCounting {
+				if loc := octetCountingPrefixRegex.FindIndex(input); len(loc) > 0 {
+					msg = input[loc[1]:]
+				}
+			}
+			return &rawSyslogMessage{message: string(msg)}, nil
+		}, nil
 
 	default:
 		return nil, fmt.Errorf("invalid protocol %s", p.protocol)
@@ -147,6 +240,7 @@ func (p *Parser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage, skipPriHeade
 		value["priority"] = syslogMessage.Priority
 		value["severity"] = syslogMessage.Severity
 		value["facility"] = syslogMessage.Facility
+		value["facility_text"] = syslogMessage.FacilityLevel()
 	}
 
 	return p.toSafeMap(value)
@@ -169,9 +263,40 @@ func (p *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage, skipPriHeade
 		value["priority"] = syslogMessage.Priority
 		value["severity"] = syslogMessage.Severity
 		value["facility"] = syslogMessage.Facility
+		value["facility_text"] = syslogMessage.FacilityLevel()
 	}
 
 	return p.toSafeMap(value)
+}
+
+// parseRaw will parse a raw syslog message that doesn't conform to RFC3164 or RFC5424.
+// A leading PRI header (e.g. "<34>") is the only structured field derivable from a raw
+// message without parsing its content, so it is decoded when present and valid. The PRI
+// header is left in place in the message field rather than stripped, since it is part of
+// the message contents.
+func (p *Parser) parseRaw(syslogMessage *rawSyslogMessage) (map[string]any, error) {
+	msg := syslogMessage.GetMessage()
+
+	if loc := priRegex.FindStringIndex(msg); len(loc) > 0 && loc[0] == 0 {
+		pri, convErr := strconv.Atoi(msg[1 : loc[1]-1])
+		if convErr == nil && pri <= 191 {
+			var base sl.Base
+			base.ComputeFromPriority(uint8(pri))
+			value, err := p.toSafeMap(map[string]any{
+				"priority":      base.Priority,
+				"severity":      base.Severity,
+				"facility":      base.Facility,
+				"facility_text": base.FacilityLevel(),
+			})
+			if err != nil {
+				return nil, err
+			}
+			value["message"] = msg
+			return value, nil
+		}
+	}
+
+	return map[string]any{"message": msg}, nil
 }
 
 // toSafeMap will dereference any pointers on the supplied map.
@@ -274,6 +399,30 @@ func postprocessWithoutPriHeader(e *entry.Entry) error {
 	return cleanupTimestamp(e)
 }
 
+// postprocessRaw applies the severity decoded from a leading PRI header, if one was
+// present. Unlike postprocess, it does not clean up a timestamp since raw messages have
+// none, and it is a no-op when no PRI header was found.
+func postprocessRaw(e *entry.Entry) error {
+	sev, ok := severityField.Delete(e)
+	if !ok {
+		return nil
+	}
+
+	sevInt, ok := sev.(int)
+	if !ok {
+		return errors.New("severity field is not an int")
+	}
+
+	if sevInt < 0 || sevInt > 7 {
+		return fmt.Errorf("invalid severity '%d'", sevInt)
+	}
+
+	e.Severity = severityMapping[sevInt]
+	e.SeverityText = severityText[sevInt]
+
+	return nil
+}
+
 func postprocess(e *entry.Entry) error {
 	sev, ok := severityField.Delete(e)
 	if !ok {
@@ -326,6 +475,34 @@ func newNonTransparentFramingParseFunc(trailerType nontransparent.TrailerType) p
 		}
 
 		parser := nontransparent.NewParser(sl.WithBestEffort(), nontransparent.WithTrailer(trailerType), sl.WithListener(listener))
+		reader := bytes.NewReader(input)
+		parser.Parse(reader)
+		return message, err
+	}
+}
+
+// newOctetCountingRFC3164ParseFunc returns a parse function that handles
+// RFC6587 octet counting framing with RFC3164 message format.
+func newOctetCountingRFC3164ParseFunc(location *time.Location, maxOctets int) parseFunc {
+	return func(input []byte) (message sl.Message, err error) {
+		listener := func(res *sl.Result) {
+			message = res.Message
+			err = res.Error
+		}
+
+		parserOpts := []sl.ParserOption{
+			sl.WithBestEffort(),
+			sl.WithListener(listener),
+			// Match the non-octet-counting RFC3164 path: honor the configured
+			// timezone and accept single-space-padded days.
+			sl.WithMachineOptions(rfc3164.WithLocaleTimezone(location), rfc3164.WithLenientDay()),
+		}
+
+		if maxOctets > 0 {
+			parserOpts = append(parserOpts, sl.WithMaxMessageLength(maxOctets))
+		}
+
+		parser := octetcounting.NewParserRFC3164(parserOpts...)
 		reader := bytes.NewReader(input)
 		parser.Parse(reader)
 		return message, err

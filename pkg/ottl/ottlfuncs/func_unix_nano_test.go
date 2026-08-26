@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -59,11 +60,47 @@ func Test_TimeUnixNano(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := UnixNano(tt.time)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			want := tt.expected.UnixNano()
 			assert.Equal(t, want, result)
 		})
 	}
+}
+
+func Test_UnixNanoFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewUnixNanoFactory[any]()
+		assert.Equal(t, "UnixNano", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewUnixNanoFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &UnixNanoArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Time"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewUnixNanoFactory[any]()
+		args := factory.CreateDefaultArguments()
+		timeArgs, ok := args.(*UnixNanoArguments[any])
+		require.True(t, ok)
+		timeArgs.Time = &ottl.StandardTimeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return time.Now(), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createUnixNanoFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "UnixNanoFactory args must be of type *UnixNanoArguments[K]")
+	})
 }

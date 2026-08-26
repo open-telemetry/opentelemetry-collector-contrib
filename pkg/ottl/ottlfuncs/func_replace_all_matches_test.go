@@ -145,10 +145,10 @@ func Test_replaceAllMatches(t *testing.T) {
 			}
 
 			exprFunc, err := replaceAllMatches(target, pattern, tt.replacement, tt.function, tt.replacementFormat)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.True(t, setterWasCalled)
 
 			expected := pcommon.NewMap()
@@ -184,7 +184,7 @@ func Test_replaceAllMatches_bad_input(t *testing.T) {
 	}
 
 	exprFunc, err := replaceAllMatches[any](target, pattern, replacement, function, replacementFormat)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = exprFunc(nil, input)
 	assert.Error(t, err)
 }
@@ -214,7 +214,7 @@ func Test_replaceAllMatches_bad_function_input(t *testing.T) {
 	}
 
 	exprFunc, err := replaceAllMatches[any](target, pattern, replacement, function, replacementFormat)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
 	require.Error(t, err)
@@ -253,7 +253,7 @@ func Test_replaceAllMatches_bad_function_result(t *testing.T) {
 	}
 
 	exprFunc, err := replaceAllMatches[any](target, pattern, replacement, function, replacementFormat)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
 	require.Error(t, err)
@@ -284,7 +284,56 @@ func Test_replaceAllMatches_get_nil(t *testing.T) {
 	}
 
 	exprFunc, err := replaceAllMatches[any](target, pattern, replacement, function, replacementFormat)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)
+}
+
+func Test_ReplaceAllMatchesFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewReplaceAllMatchesFactory[any]()
+		assert.Equal(t, "replace_all_matches", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewReplaceAllMatchesFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ReplaceAllMatchesArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Pattern", "Replacement", "Function", "ReplacementFormat"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewReplaceAllMatchesFactory[any]()
+		args := factory.CreateDefaultArguments()
+		replaceArgs, ok := args.(*ReplaceAllMatchesArguments[any])
+		require.True(t, ok)
+		replaceArgs.Target = &ottl.StandardPMapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return pcommon.NewMap(), nil
+			},
+			Setter: func(context.Context, any, any) error {
+				return nil
+			},
+		}
+		replaceArgs.Pattern = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "*", nil
+			},
+		}
+		replaceArgs.Replacement = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "replacement", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createReplaceAllMatchesFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ReplaceAllMatchesFactory args must be of type *ReplaceAllMatchesArguments[K]")
+	})
 }

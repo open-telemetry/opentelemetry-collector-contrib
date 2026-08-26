@@ -1,0 +1,36 @@
+$defs:
+  resource:
+    type: string
+  server:
+    type: object
+    properties:
+      base_url:
+        type: string
+      computer_system_id:
+        type: string
+      insecure:
+        type: boolean
+      password:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      redfish:
+        type: object
+        properties:
+          version:
+            type: string
+      resources:
+        type: array
+        items:
+          $ref: resource
+      timeout:
+        type: string
+      username:
+        type: string
+type: object
+properties:
+  servers:
+    type: array
+    items:
+      $ref: server
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: ./internal/metadata.metrics_builder_config

@@ -549,7 +549,7 @@ func Test_ParseCSV(t *testing.T) {
 				return
 			}
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			resultMap, ok := result.(pcommon.Map)
 			require.True(t, ok)
@@ -557,4 +557,45 @@ func Test_ParseCSV(t *testing.T) {
 			require.Equal(t, tt.want, resultMap.AsRaw())
 		})
 	}
+}
+
+func Test_ParseCSVFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewParseCSVFactory[any]()
+		assert.Equal(t, "ParseCSV", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewParseCSVFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ParseCSVArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Header", "Delimiter", "HeaderDelimiter", "Mode"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewParseCSVFactory[any]()
+		args := factory.CreateDefaultArguments()
+		csvArgs, ok := args.(*ParseCSVArguments[any])
+		require.True(t, ok)
+		csvArgs.Target = ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "val1,val2", nil
+			},
+		}
+		csvArgs.Header = ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "col1,col2", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createParseCSVFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ParseCSVFactory args must be of type *ParseCSVArguments[K]")
+	})
 }

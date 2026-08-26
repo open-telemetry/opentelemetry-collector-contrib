@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -21,18 +20,34 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SshcheckDuration:     MetricConfig{Enabled: true},
-					SshcheckError:        MetricConfig{Enabled: true},
-					SshcheckSftpDuration: MetricConfig{Enabled: true},
-					SshcheckSftpError:    MetricConfig{Enabled: true},
-					SshcheckSftpStatus:   MetricConfig{Enabled: true},
-					SshcheckStatus:       MetricConfig{Enabled: true},
+					SshcheckDuration: SshcheckDurationMetricConfig{
+						Enabled: true,
+					},
+					SshcheckError: SshcheckErrorMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SshcheckErrorMetricAttributeKey{SshcheckErrorMetricAttributeKeyErrorMessage},
+					},
+					SshcheckSftpDuration: SshcheckSftpDurationMetricConfig{
+						Enabled: true,
+					},
+					SshcheckSftpError: SshcheckSftpErrorMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SshcheckSftpErrorMetricAttributeKey{SshcheckSftpErrorMetricAttributeKeyErrorMessage},
+					},
+					SshcheckSftpStatus: SshcheckSftpStatusMetricConfig{
+						Enabled: true,
+					},
+					SshcheckStatus: SshcheckStatusMetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SSHEndpoint: ResourceAttributeConfig{Enabled: true},
@@ -43,12 +58,28 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SshcheckDuration:     MetricConfig{Enabled: false},
-					SshcheckError:        MetricConfig{Enabled: false},
-					SshcheckSftpDuration: MetricConfig{Enabled: false},
-					SshcheckSftpError:    MetricConfig{Enabled: false},
-					SshcheckSftpStatus:   MetricConfig{Enabled: false},
-					SshcheckStatus:       MetricConfig{Enabled: false},
+					SshcheckDuration: SshcheckDurationMetricConfig{
+						Enabled: false,
+					},
+					SshcheckError: SshcheckErrorMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SshcheckErrorMetricAttributeKey{SshcheckErrorMetricAttributeKeyErrorMessage},
+					},
+					SshcheckSftpDuration: SshcheckSftpDurationMetricConfig{
+						Enabled: false,
+					},
+					SshcheckSftpError: SshcheckSftpErrorMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SshcheckSftpErrorMetricAttributeKey{SshcheckSftpErrorMetricAttributeKeyErrorMessage},
+					},
+					SshcheckSftpStatus: SshcheckSftpStatusMetricConfig{
+						Enabled: false,
+					},
+					SshcheckStatus: SshcheckStatusMetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SSHEndpoint: ResourceAttributeConfig{Enabled: false},
@@ -59,10 +90,34 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SshcheckDurationMetricConfig{}, SshcheckErrorMetricConfig{}, SshcheckSftpDurationMetricConfig{}, SshcheckSftpErrorMetricConfig{}, SshcheckSftpStatusMetricConfig{}, SshcheckStatusMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+
+func TestSshcheckErrorMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SshcheckError
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SshcheckErrorMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sshcheck.error doesn't have an attribute invalid, valid attributes: [error.message]")
+
+	cfg = DefaultMetricsConfig().SshcheckError
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSshcheckSftpErrorMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SshcheckSftpError
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SshcheckSftpErrorMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sshcheck.sftp_error doesn't have an attribute invalid, valid attributes: [error.message]")
+
+	cfg = DefaultMetricsConfig().SshcheckSftpError
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
@@ -70,7 +125,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

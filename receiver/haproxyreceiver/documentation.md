@@ -18,7 +18,7 @@ Bytes in. Corresponds to HAProxy's `bin` metric.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| by | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### haproxy.bytes.output
 
@@ -26,7 +26,7 @@ Bytes out. Corresponds to HAProxy's `bout` metric.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| by | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### haproxy.connections.errors
 
@@ -102,9 +102,9 @@ Total number of HTTP requests received. Corresponds to HAProxy's `req_tot`, `hrs
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| status_code | Status code category, 1xx, 2xx, 3xx, 4xx, 5xx or other | Str: ``1xx``, ``2xx``, ``3xx``, ``4xx``, ``5xx``, ``other`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| status_code | Status code category, 1xx, 2xx, 3xx, 4xx, 5xx or other | Str: ``1xx``, ``2xx``, ``3xx``, ``4xx``, ``5xx``, ``other`` | Recommended | - |
 
 ### haproxy.responses.denied
 
@@ -194,7 +194,7 @@ Number of bytes that bypassed the HTTP compressor (CPU/BW limit). Corresponds to
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| by | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### haproxy.compression.count
 
@@ -210,7 +210,7 @@ Number of HTTP response bytes fed to the compressor. Corresponds to HAProxy's `c
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| by | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### haproxy.compression.output
 
@@ -218,7 +218,7 @@ Number of HTTP response bytes emitted by the compressor. Corresponds to HAProxy'
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| by | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### haproxy.connections.average_time
 
@@ -294,8 +294,9 @@ Total effective weight (backend) or effective weight (server). Corresponds to HA
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| haproxy.addr | address:port or "unix". IPv6 has brackets around the address. | Any Str | true |
-| haproxy.proxy_name | Proxy name | Any Str | true |
-| haproxy.service_name | Service name (FRONTEND for frontend, BACKEND for backend, any name for server/listener) | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| haproxy.addr | address:port or "unix". IPv6 has brackets around the address. | Any Str | true | - | - |
+| haproxy.proxy_name | Proxy name | Any Str | true | - | - |
+| haproxy.server.state | Server status (UP, DOWN, NOLB, MAINT, no check, etc.). Corresponds to HAProxy's `status` field. | Any Str | false | - | - |
+| haproxy.service_name | Service name (FRONTEND for frontend, BACKEND for backend, any name for server/listener) | Any Str | true | - | - |

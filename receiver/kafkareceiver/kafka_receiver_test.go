@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kadm"
@@ -48,21 +47,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadatatest"
 )
 
-func init() {
-	// Disable the go-metrics registry, as there's a goroutine leak in the Sarama
-	// code that uses it. See this stale issue: https://github.com/IBM/sarama/issues/1321
-	//
-	// Sarama docs suggest setting UseNilMetrics to true to disable metrics if they
-	// are not needed, which is the case here. We only disable in tests to avoid
-	// affecting other components that rely on go-metrics.
-	metrics.UseNilMetrics = true
-}
-
 func runTestForClients(t *testing.T, fn func(t *testing.T)) {
-	clients := []string{"Sarama", "Franz"}
+	clients := []string{"Franz"}
 	for _, client := range clients {
 		t.Run(client, func(t *testing.T) {
-			setFranzGo(t, client == "Franz")
 			fn(t)
 		})
 	}
@@ -147,6 +135,11 @@ func TestReceiver_Headers_Metadata(t *testing.T) {
 				for key, values := range testcase.expected {
 					assert.Equal(t, values, info.Metadata.Get(key))
 				}
+
+				// Verify Kafka record metadata is always present.
+				assert.Equal(t, []string{"otlp_spans"}, info.Metadata.Get("kafka.topic"))
+				assert.Equal(t, []string{"0"}, info.Metadata.Get("kafka.partition"))
+				assert.Equal(t, []string{"0"}, info.Metadata.Get("kafka.offset"))
 			})
 		})
 	}
@@ -310,120 +303,88 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 			Value: 1,
 		}}, metricdatatest.IgnoreTimestamp())
 
-		if franzGoConsumerFeatureGate.IsEnabled() {
-			metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
-				{
-					Value: 5,
-					Attributes: attribute.NewSet(
-						attribute.String("node_id", "0"),
-						attribute.String("topic", "otlp_spans"),
-						attribute.Int64("partition", 0),
-						attribute.String("outcome", "success"),
-						attribute.String("compression_codec", "none"),
-					),
-				},
-			}, metricdatatest.IgnoreTimestamp())
-			metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
-				{
-					Value: 5,
-					Attributes: attribute.NewSet(
-						attribute.String("node_id", "0"),
-						attribute.String("topic", "otlp_spans"),
-						attribute.Int64("partition", 0),
-						attribute.String("outcome", "success"),
-						attribute.String("compression_codec", "none"),
-					),
-				},
-			}, metricdatatest.IgnoreTimestamp())
-			metadatatest.AssertEqualKafkaReceiverBytes(t, tel, []metricdata.DataPoint[int64]{
-				{
-					Attributes: attribute.NewSet(
-						attribute.String("node_id", "0"),
-						attribute.String("topic", "otlp_spans"),
-						attribute.Int64("partition", 0),
-						attribute.String("outcome", "success"),
-						attribute.String("compression_codec", "none"),
-					),
-				},
-			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-			metadatatest.AssertEqualKafkaReceiverBytesUncompressed(t, tel, []metricdata.DataPoint[int64]{
-				{
-					Attributes: attribute.NewSet(
-						attribute.String("node_id", "0"),
-						attribute.String("topic", "otlp_spans"),
-						attribute.Int64("partition", 0),
-						attribute.String("outcome", "success"),
-						attribute.String("compression_codec", "none"),
-					),
-				},
-			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-			metadatatest.AssertEqualKafkaReceiverLatency(t, tel, []metricdata.HistogramDataPoint[int64]{
-				{
-					Attributes: attribute.NewSet(
-						attribute.String("node_id", "0"),
-						attribute.String("outcome", "success"),
-					),
-				},
-				{
-					Attributes: attribute.NewSet(
-						attribute.String("node_id", "seed_0"),
-						attribute.String("outcome", "success"),
-					),
-				},
-			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-			metadatatest.AssertEqualKafkaReceiverReadLatency(t, tel, []metricdata.HistogramDataPoint[float64]{
-				{
-					Attributes: attribute.NewSet(
-						attribute.String("node_id", "0"),
-						attribute.String("outcome", "success"),
-					),
-				},
-				{
-					Attributes: attribute.NewSet(
-						attribute.String("node_id", "seed_0"),
-						attribute.String("outcome", "success"),
-					),
-				},
-			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-			metadatatest.AssertEqualKafkaReceiverRecordsDelay(t, tel, []metricdata.HistogramDataPoint[float64]{
-				{
-					Attributes: attribute.NewSet(
-						attribute.String("topic", "otlp_spans"),
-						attribute.Int64("partition", 0),
-					),
-				},
-			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-		} else {
-			metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
-				{
-					Value: 5,
-					Attributes: attribute.NewSet(
-						attribute.String("topic", "otlp_spans"),
-						attribute.Int64("partition", 0),
-						attribute.String("outcome", "success"),
-					),
-				},
-			}, metricdatatest.IgnoreTimestamp())
-			metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
-				{
-					Value: 5,
-					Attributes: attribute.NewSet(
-						attribute.String("topic", "otlp_spans"),
-						attribute.Int64("partition", 0),
-						attribute.String("outcome", "success"),
-					),
-				},
-			}, metricdatatest.IgnoreTimestamp())
-			metadatatest.AssertEqualKafkaReceiverBytesUncompressed(t, tel, []metricdata.DataPoint[int64]{
-				{
-					Attributes: attribute.NewSet(
-						attribute.String("topic", "otlp_spans"),
-						attribute.Int64("partition", 0),
-						attribute.String("outcome", "success"),
-					),
-				},
-			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-		}
+		metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
+			{
+				Value: 5,
+				Attributes: attribute.NewSet(
+					attribute.String("node_id", "0"),
+					attribute.String("topic", "otlp_spans"),
+					attribute.Int64("partition", 0),
+					attribute.String("outcome", "success"),
+					attribute.String("compression_codec", "none"),
+				),
+			},
+		}, metricdatatest.IgnoreTimestamp())
+		metadatatest.AssertEqualKafkaReceiverRecords(t, tel, []metricdata.DataPoint[int64]{
+			{
+				Value: 5,
+				Attributes: attribute.NewSet(
+					attribute.String("node_id", "0"),
+					attribute.String("topic", "otlp_spans"),
+					attribute.Int64("partition", 0),
+					attribute.String("outcome", "success"),
+					attribute.String("compression_codec", "none"),
+				),
+			},
+		}, metricdatatest.IgnoreTimestamp())
+		metadatatest.AssertEqualKafkaReceiverBytes(t, tel, []metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("node_id", "0"),
+					attribute.String("topic", "otlp_spans"),
+					attribute.Int64("partition", 0),
+					attribute.String("outcome", "success"),
+					attribute.String("compression_codec", "none"),
+				),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+		metadatatest.AssertEqualKafkaReceiverBytesUncompressed(t, tel, []metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("node_id", "0"),
+					attribute.String("topic", "otlp_spans"),
+					attribute.Int64("partition", 0),
+					attribute.String("outcome", "success"),
+					attribute.String("compression_codec", "none"),
+				),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+		metadatatest.AssertEqualKafkaReceiverLatency(t, tel, []metricdata.HistogramDataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("node_id", "0"),
+					attribute.String("outcome", "success"),
+				),
+			},
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("node_id", "seed_0"),
+					attribute.String("outcome", "success"),
+				),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+		metadatatest.AssertEqualKafkaReceiverReadLatency(t, tel, []metricdata.HistogramDataPoint[float64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("node_id", "0"),
+					attribute.String("outcome", "success"),
+				),
+			},
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("node_id", "seed_0"),
+					attribute.String("outcome", "success"),
+				),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+		metadatatest.AssertEqualKafkaReceiverRecordsDelay(t, tel, []metricdata.HistogramDataPoint[float64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("topic", "otlp_spans"),
+					attribute.Int64("partition", 0),
+				),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 
 		// Shut down and check that the partition close metric is updated.
 		err = r.Shutdown(t.Context())
@@ -543,31 +504,18 @@ func TestReceiver_MessageMarking(t *testing.T) {
 					}, time.Second, 100*time.Millisecond, "unmarshal error should restart consumer")
 
 					// reprocesses of the same message
-					if franzGoConsumerFeatureGate.IsEnabled() {
-						metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
-							{
-								Value: timesProcessed,
-								Attributes: attribute.NewSet(
-									attribute.String("node_id", "0"),
-									attribute.String("topic", "otlp_spans"),
-									attribute.Int64("partition", 0),
-									attribute.String("outcome", "success"),
-									attribute.String("compression_codec", "none"),
-								),
-							},
-						}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
-					} else {
-						metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
-							{
-								Value: timesProcessed,
-								Attributes: attribute.NewSet(
-									attribute.String("topic", "otlp_spans"),
-									attribute.Int64("partition", 0),
-									attribute.String("outcome", "success"),
-								),
-							},
-						}, metricdatatest.IgnoreTimestamp())
-					}
+					metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
+						{
+							Value: timesProcessed,
+							Attributes: attribute.NewSet(
+								attribute.String("node_id", "0"),
+								attribute.String("topic", "otlp_spans"),
+								attribute.Int64("partition", 0),
+								attribute.String("outcome", "success"),
+								attribute.String("compression_codec", "none"),
+							),
+						},
+					}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 
 					// The invalid message should block the consumer.
 					assert.Zero(t, calls.Load())
@@ -761,6 +709,20 @@ func TestNewProfilesReceiver(t *testing.T) {
 	})
 }
 
+func TestExcludeTopic(t *testing.T) {
+	runTestForClients(t, func(t *testing.T) {
+		_, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
+
+		// Configure exclude_topic
+		receiverConfig.Traces.Topics = []string{"^otlp_spans.*"}
+		receiverConfig.Traces.ExcludeTopics = []string{"^otlp_spans-test$"}
+
+		set, _, _ := mustNewSettings(t)
+		_, err := newTracesReceiver(receiverConfig, set, &consumertest.TracesSink{})
+		require.NoError(t, err)
+	})
+}
+
 func TestComponentStatus(t *testing.T) {
 	runTestForClients(t, func(t *testing.T) {
 		_, receiverConfig := mustNewFakeCluster(t, kfake.SeedTopics(1, "otlp_spans"))
@@ -789,8 +751,8 @@ func TestComponentStatus(t *testing.T) {
 		lis, err := net.Listen("tcp", "localhost:0")
 		require.NoError(t, err)
 		t.Cleanup(func() { assert.NoError(t, lis.Close()) })
-		brokers := receiverConfig.Brokers
-		receiverConfig.Brokers = []string{lis.Addr().String()}
+		brokers := receiverConfig.ClientConfig.Brokers
+		receiverConfig.ClientConfig.Brokers = []string{lis.Addr().String()}
 
 		f := NewFactory()
 		r, err := f.CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), receiverConfig, &consumertest.TracesSink{})
@@ -910,8 +872,8 @@ func mustNewFakeCluster(tb testing.TB, opts ...kfake.Opt) (*kgo.Client, *Config)
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig = clientConfig
-	cfg.InitialOffset = "earliest"
-	cfg.MaxFetchWait = 10 * time.Millisecond
+	cfg.ConsumerConfig.InitialOffset = "earliest"
+	cfg.ConsumerConfig.MaxFetchWait = 10 * time.Millisecond
 	cfg.Telemetry.Metrics.KafkaReceiverRecordsDelay.Enabled = true
 	return kafkaClient, cfg
 }

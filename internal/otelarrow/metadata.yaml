@@ -6,14 +6,14 @@ status:
   stability:
     beta: [traces, metrics, logs]
   codeowners:
-    active: [jmacd, moh-osman3]
+    active: [jmacd, JakeDern]
+    emeritus: [moh-osman3]
 
 telemetry:
   metrics:
     otelarrow_admission_in_flight_bytes:
       description: Number of bytes that have started processing but are not finished.
-      stability:
-        level: development
+      stability: development
       unit: By
       enabled: true
       sum:
@@ -23,8 +23,7 @@ telemetry:
 
     otelarrow_admission_waiting_bytes:
       description: Number of items waiting to start processing.
-      stability:
-        level: development
+      stability: development
       enabled: true
       unit: By
       sum:

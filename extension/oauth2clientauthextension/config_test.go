@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension/internal/metadata"
 )
@@ -37,6 +37,19 @@ func TestLoadConfig(t *testing.T) {
 				TokenURL:       "https://example.com/oauth2/default/v1/token",
 				Timeout:        time.Second,
 				ExpiryBuffer:   5 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "jwt-bearer-grant-type"),
+			expected: &Config{
+				ClientCertificateKey: "secret_key",
+				ClientID:             "someclientid",
+				GrantType:            "urn:ietf:params:oauth:grant-type:jwt-bearer",
+				EndpointParams:       url.Values{"audience": []string{"someaudience"}},
+				Scopes:               []string{"api.metrics"},
+				TokenURL:             "https://example.com/oauth2/default/v1/token",
+				Timeout:              time.Second,
+				ExpiryBuffer:         5 * time.Minute,
 			},
 		},
 		{
@@ -72,6 +85,10 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "missingsecret"),
 			expectedErr: errNoClientSecretProvided,
 		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "missingcertificate"),
+			expectedErr: errNoClientCertificateProvided,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
@@ -83,10 +100,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 			if tt.expectedErr != nil {
-				assert.ErrorIs(t, xconfmap.Validate(cfg), tt.expectedErr)
+				assert.ErrorIs(t, confmap.Validate(cfg), tt.expectedErr)
 				return
 			}
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

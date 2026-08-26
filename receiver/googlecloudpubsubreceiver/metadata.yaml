@@ -1,4 +1,8 @@
+display_name: Google Pub/Sub Receiver
 type: googlecloudpubsub
+
+description: |
+  This receiver gets OTLP messages from a Google Cloud [Pubsub](https://cloud.google.com/pubsub) subscription.
 
 status:
   class: receiver
@@ -12,8 +16,7 @@ telemetry:
   metrics:
     receiver.googlecloudpubsub.encoding_error:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Number of times a message couldn't be decoded by the configured encoder
       unit: "1"
       sum:
@@ -24,8 +27,7 @@ telemetry:
         encoder. Each time a message fails to decoded the counter is increased.
     receiver.googlecloudpubsub.stream_restarts:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Number of times the stream (re)starts due to a Pub/Sub servers connection close
       unit: "1"
       sum:
@@ -42,7 +44,6 @@ tests:
     user_agent: user-agent
     timeout: 20s
     subscription: projects/my-project/subscriptions/otlp-subscription
-  skip_lifecycle: true
   goleak:
     ignore:
       # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.

@@ -16,14 +16,14 @@ import (
 
 type ScaleArguments struct {
 	Multiplier float64
-	Unit       ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]
+	Unit       ottl.Optional[ottl.StringGetter[*ottlmetric.TransformContext]]
 }
 
-func newScaleMetricFactory() ottl.Factory[ottlmetric.TransformContext] {
+func newScaleMetricFactory() ottl.Factory[*ottlmetric.TransformContext] {
 	return ottl.NewFactory("scale_metric", &ScaleArguments{}, createScaleFunction)
 }
 
-func createScaleFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func createScaleFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
 	args, ok := oArgs.(*ScaleArguments)
 
 	if !ok {
@@ -33,8 +33,8 @@ func createScaleFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.Exp
 	return Scale(*args)
 }
 
-func Scale(args ScaleArguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	return func(ctx context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+func Scale(args ScaleArguments) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
+	return func(ctx context.Context, tCtx *ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 
 		var unit *string

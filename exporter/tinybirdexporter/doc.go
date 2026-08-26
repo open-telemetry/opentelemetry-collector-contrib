@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 // Package tinybirdexporter defines the Tinybird exporter.
 // which enables sending metrics and traces to Tinybird.

@@ -1,0 +1,67 @@
+$defs:
+  aggregation_pair:
+    type: object
+    properties:
+      attribute:
+        type: string
+      prefixes:
+        type: array
+        items:
+          type: string
+  log_field_attribute:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      name:
+        type: string
+  log_field_attributes_config:
+    type: object
+    properties:
+      severity_number:
+        x-pointer: true
+        $ref: log_field_attribute
+      severity_text:
+        x-pointer: true
+        $ref: log_field_attribute
+      span_id:
+        x-pointer: true
+        $ref: log_field_attribute
+      trace_id:
+        x-pointer: true
+        $ref: log_field_attribute
+  nesting_processor_config:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      exclude:
+        type: array
+        items:
+          type: string
+      include:
+        type: array
+        items:
+          type: string
+      separator:
+        type: string
+      squash_single_values:
+        type: boolean
+type: object
+properties:
+  add_cloud_namespace:
+    type: boolean
+  aggregate_attributes:
+    type: array
+    items:
+      $ref: aggregation_pair
+  field_attributes:
+    $ref: log_field_attributes_config
+  nest_attributes:
+    $ref: nesting_processor_config
+  translate_attributes:
+    type: boolean
+  translate_docker_metrics:
+    type: boolean
+  translate_telegraf_attributes:
+    type: boolean

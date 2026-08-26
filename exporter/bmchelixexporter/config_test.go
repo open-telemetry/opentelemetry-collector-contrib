@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/bmchelixexporter/internal/metadata"
 )
@@ -33,9 +33,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "helix1"),
 			expected: &Config{
-				ClientConfig: createDefaultClientConfig("https://helix1:8080", 10*time.Second),
-				APIKey:       "api_key",
-				RetryConfig:  configretry.NewDefaultBackOffConfig(),
+				ClientConfig:               createDefaultClientConfig("https://helix1:8080", 10*time.Second),
+				APIKey:                     "api_key",
+				RetryConfig:                configretry.NewDefaultBackOffConfig(),
+				EnrichMetricWithAttributes: true,
 			},
 		},
 		{
@@ -51,6 +52,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:         1 * time.Minute,
 					MaxElapsedTime:      8 * time.Minute,
 				},
+				EnrichMetricWithAttributes: true,
 			},
 		},
 	}
@@ -64,7 +66,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
