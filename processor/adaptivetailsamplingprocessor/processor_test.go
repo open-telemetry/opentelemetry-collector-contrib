@@ -495,6 +495,88 @@ func TestProcessor_EvictionMetrics(t *testing.T) {
 	)
 }
 
+func TestProcessor_SamplerMetrics(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Millisecond,
+		NumTraces:     10,
+		DecisionCache: DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
+		Rules: []RuleConfig{
+			{Name: "ema", Conditions: []string{`resource.attributes["service.name"] == "svc-ema"`}, Sampler: SamplerConfig{
+				Type:                  AdaptivePercentage,
+				GoalPercentage:        100,
+				FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+			}},
+			{Name: "windowed", Sampler: SamplerConfig{
+				Type:                  AdaptiveThroughput,
+				Algorithm:             AlgorithmWindowed,
+				GoalThroughput:        1000,
+				FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+			}},
+		},
+	}
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
+
+	emaTrace := newRootTrace(pcommon.TraceID([16]byte{0xC1}))
+	emaTrace.ResourceSpans().At(0).Resource().Attributes().PutStr("service.name", "svc-ema")
+	require.NoError(t, p.ConsumeTraces(t.Context(), emaTrace))
+
+	windowedTrace := newRootTrace(pcommon.TraceID([16]byte{0xC2}))
+	windowedTrace.ResourceSpans().At(0).Resource().Attributes().PutStr("service.name", "svc-windowed")
+	require.NoError(t, p.ConsumeTraces(t.Context(), windowedTrace))
+
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() == 2
+	}, time.Second, 10*time.Millisecond)
+
+	emaAttrs := attribute.NewSet(attribute.String("rule", "ema"), attribute.String("sampler_type", "adaptive_percentage"))
+	windowedAttrs := attribute.NewSet(attribute.String("rule", "windowed"), attribute.String("sampler_type", "adaptive_throughput_windowed"))
+
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerRequestCount(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{Value: 1, Attributes: emaAttrs},
+			{Value: 1, Attributes: windowedAttrs},
+		},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(),
+	)
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerEventCount(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{Value: 1, Attributes: emaAttrs},
+			{Value: 1, Attributes: windowedAttrs},
+		},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(),
+	)
+	// keyspace_size is ignored here: WindowedThroughput only recomputes it on
+	// its background update-frequency tick, so it can legitimately still read
+	// 0 immediately after the first request.
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerKeyspaceSize(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{Attributes: emaAttrs},
+			{Attributes: windowedAttrs},
+		},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(), metricdatatest.IgnoreValue(),
+	)
+	// adaptive_throughput_windowed does not track burst/interval counts, so
+	// only the ema rule contributes a data point to these two metrics.
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerBurstCount(t, tt,
+		[]metricdata.DataPoint[int64]{{Attributes: emaAttrs}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(), metricdatatest.IgnoreValue(),
+	)
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerIntervalCount(t, tt,
+		[]metricdata.DataPoint[int64]{{Attributes: emaAttrs}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(), metricdatatest.IgnoreValue(),
+	)
+}
+
 func TestProcessor_RootSpanTriggersEarlyDecision(t *testing.T) {
 	sink := &consumertest.TracesSink{}
 	cfg := &Config{
