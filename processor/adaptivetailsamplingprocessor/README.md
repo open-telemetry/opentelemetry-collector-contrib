@@ -271,6 +271,34 @@ default) smooths traffic with an exponential moving average, tuned with
 faster to traffic shifts at the cost of more spike sensitivity, tuned with
 `update_frequency` and `lookback_frequency`.
 
+#### Cold start and unseen fingerprints
+
+The adaptive samplers need one adjustment cycle before they have per-fingerprint
+rates, and each behaves differently until then:
+
+| Sampler | Before the first interval | Unseen fingerprint after warmup |
+| --- | --- | --- |
+| `adaptive_percentage` (`ema`) | samples every trace at the goal rate | kept (rate 1) until the next interval learns it |
+| `adaptive_throughput` (`ema`) | samples every trace at 1-in-10 (a library default, not derived from `goal_throughput`) | kept until learned |
+| `adaptive_throughput` (`windowed`) | keeps every trace | kept until the first lookback window completes |
+
+In practice this means a short smoke test right after startup may keep far less
+(or far more) than the configured goal; give the sampler at least one
+`adjustment_interval` (or one `lookback_frequency` window) of traffic before
+judging its rates. Aligning these behaviours is tracked in
+[#50538](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50538).
+
+#### `max_keys` overflow
+
+When a sampler's key map is full, traffic for fingerprints beyond `max_keys` is
+kept at 100% rather than sampled toward the goal, for every sampler and
+algorithm. A fingerprint-cardinality explosion therefore increases output
+volume instead of degrading it, so size `max_keys` above your expected
+fingerprint cardinality and alert on the `trace_span_count` and
+`decision_sample_rate` metrics if output volume grows unexpectedly. Changing
+the overflow behaviour to fall back to the goal rate is also tracked in
+[#50538](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50538).
+
 Migrating from Refinery: `DeterministicSampler` -> `probabilistic` (the same
 hash-consistent fixed fraction), `EMADynamicSampler` -> `adaptive_percentage`
 (note Refinery's `GoalSampleRate: N` means keep 1-in-N, so `GoalSampleRate: 5`
