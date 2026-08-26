@@ -4280,8 +4280,8 @@ func TestUnsupportedShapesAreRejected(t *testing.T) {
 		},
 		{
 			name: "negative zero threshold",
-			// The Native Histograms specification defines the zero threshold as a float64 >= 0,
-			// and the value is written to the data point either way.
+			// The Native Histograms specification defines the zero threshold as a float64 at or
+			// above zero, and the value is written to the data point either way.
 			series: writev2.TimeSeries{
 				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
 				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
@@ -4295,7 +4295,25 @@ func TestUnsupportedShapesAreRejected(t *testing.T) {
 					PositiveDeltas: []int64{1, 0},
 				}},
 			},
-			expect: "negative zero threshold",
+			expect: "zero threshold",
+		},
+		{
+			name: "zero threshold that is not a number",
+			// No comparison against zero rejects NaN, so it needs naming.
+			series: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+				Histograms: []writev2.Histogram{{
+					Schema:         0,
+					Count:          &writev2.Histogram_CountInt{CountInt: 2},
+					Sum:            2,
+					Timestamp:      1,
+					ZeroThreshold:  math.NaN(),
+					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+					PositiveDeltas: []int64{1, 0},
+				}},
+			},
+			expect: "zero threshold",
 		},
 		{
 			name: "float zero count on an integer histogram",

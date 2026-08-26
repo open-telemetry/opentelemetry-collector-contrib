@@ -654,8 +654,8 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		}
 		// The zero threshold is written to the data point whether or not the histogram carries a
 		// stale marker, and the Native Histograms specification defines it as a float64 >= 0.
-		if histogram.ZeroThreshold < 0 {
-			return fmt.Errorf("Native Histogram %q at timestamp %d has a negative zero threshold %v", metricName, histogram.Timestamp, histogram.ZeroThreshold)
+		if math.IsNaN(histogram.ZeroThreshold) || histogram.ZeroThreshold < 0 {
+			return fmt.Errorf("Native Histogram %q at timestamp %d has a zero threshold of %v, which is not a width", metricName, histogram.Timestamp, histogram.ZeroThreshold)
 		}
 
 		// Validate before any resource, scope or metric is built, so that a histogram which is
