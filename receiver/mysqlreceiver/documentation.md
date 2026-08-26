@@ -809,6 +809,18 @@ This provides real-time visibility into active queries, helping users monitor da
 | client.port | TCP port used by the client. | Any Int | - |
 | network.peer.address | IP address of the peer client. | Any Str | - |
 | network.peer.port | TCP port used by the peer client. | Any Int | - |
+| mysql.blocking.pids | Comma-separated list of session IDs (processlist_id) holding locks that block this session. | Any Str | - |
+| mysql.blocking.start_time | UTC timestamp (ISO 8601) when the blocked session started waiting for the lock. | Any Str | - |
+| mysql.blocking.wait_duration | Duration in seconds that this session has been waiting for the lock. | Any Double | - |
+| mysql.innodb_lock.mode | The lock mode requested by the blocked session (e.g. X, S, IX, IS). | Any Str | - |
+| mysql.innodb_lock.type | The InnoDB lock type (e.g. RECORD, TABLE, GAP). | Any Str | - |
+| mysql.innodb_lock.wait_resource | Composite lock resource identifier (schema.table/index/lock_data) showing the exact resource being waited on. | Any Str | - |
+| mysql.blocking.transaction.start_time | UTC timestamp (ISO 8601) when the blocking transaction started. | Any Str | - |
+| mysql.blocking.lock_level | Level of the lock causing the block, either 'row' (InnoDB) or 'metadata' (MDL). | Any Str | - |
+| mysql.mdl_lock.object.type | The metadata lock object type (e.g. TABLE, SCHEMA, GLOBAL). | Any Str | - |
+| mysql.mdl_lock.object.schema | The schema of the object involved in the metadata lock. | Any Str | - |
+| mysql.mdl_lock.object.name | The name of the object involved in the metadata lock. | Any Str | - |
+| mysql.mdl_lock.type | The metadata lock type requested (e.g. EXCLUSIVE, SHARED_READ). | Any Str | - |
 
 ### db.server.top_query
 
