@@ -29,6 +29,7 @@ import (
 //   - instrumentation scope version
 //   - metric name
 //   - metric type
+//   - a hash of the remaining data labels
 //
 // TODO:
 //
@@ -71,7 +72,8 @@ func collectExemplars(
 			AttrsHash:    pdatautil.MapHash(extractAttributes(ls)),
 		}
 
-		slice, ok := result[key.hash()]
+		keyHash := key.hash()
+		slice, ok := result[keyHash]
 		if !ok {
 			slice = pmetric.NewExemplarSlice()
 		}
@@ -92,7 +94,7 @@ func collectExemplars(
 			stats.Exemplars++
 		}
 
-		result[key.hash()] = slice
+		result[keyHash] = slice
 	}
 
 	return result

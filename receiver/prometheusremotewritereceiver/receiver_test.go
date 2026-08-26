@@ -191,6 +191,190 @@ func TestHandlePRWContentTypeNegotiation(t *testing.T) {
 	}
 }
 
+// exemplarSymbols is the symbol table the histogram exemplar tests share. The histogram and its
+// exemplar always sit in the same TimeSeries, which is what the protocol asks for today.
+var exemplarSymbols = []string{
+	"",
+	"__name__", "test_hist", // 1, 2
+	"job", "service-x/test", // 3, 4
+	"instance", "107cn001", // 5, 6
+	"region", "us-east", // 7, 8
+	"us-west",                                      // 9
+	"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 10, 11
+}
+
+func exemplarHistogram(deltas []int64) []writev2.Histogram {
+	return []writev2.Histogram{{
+		Schema:         0,
+		Count:          &writev2.Histogram_CountInt{CountInt: 3},
+		Sum:            6,
+		Timestamp:      1,
+		PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+		PositiveDeltas: deltas,
+	}}
+}
+
+func nhcbExemplarHistogram() []writev2.Histogram {
+	return []writev2.Histogram{{
+		Schema:         -53,
+		Count:          &writev2.Histogram_CountInt{CountInt: 3},
+		Sum:            6,
+		Timestamp:      1,
+		CustomValues:   []float64{1.0},
+		PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+		PositiveDeltas: []int64{1, 1},
+	}}
+}
+
+func theExemplar() []writev2.Exemplar {
+	return []writev2.Exemplar{{LabelsRefs: []uint32{10, 11}, Value: 1.5, Timestamp: 1}}
+}
+
+func TestHistogramExemplarsAttachToLabelledSeries(t *testing.T) {
+	// The exemplars are collected under a key that hashes the data labels, so the lookup has to
+	// hash them too. Without that, a histogram carrying any ordinary label never finds its own.
+	prwReceiver := setupMetricsReceiver(t)
+
+	metrics, _, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: exemplarSymbols,
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Histograms: exemplarHistogram([]int64{1, 1}),
+				Exemplars:  theExemplar(),
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	dp := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+		ExponentialHistogram().DataPoints().At(0)
+	assert.Equal(t, 1, dp.Exemplars().Len(), "the exemplar belongs to this data point")
+}
+
+func TestHistogramExemplarsAttachToTheirOwnDataPoint(t *testing.T) {
+	// One metric holds a data point per series, so a histogram has to take the data point it just
+	// produced. With a single data point the first and the last are the same, which is why this
+	// uses two series and puts the exemplar on the second.
+	for _, tc := range []struct {
+		name       string
+		histograms []writev2.Histogram
+		byRegion   func(pmetric.Metric) map[string]int
+	}{
+		{
+			name:       "exponential",
+			histograms: exemplarHistogram([]int64{1, 1}),
+			byRegion: func(m pmetric.Metric) map[string]int {
+				dps := m.ExponentialHistogram().DataPoints()
+				counts := map[string]int{}
+				for i := range dps.Len() {
+					region, _ := dps.At(i).Attributes().Get("region")
+					counts[region.Str()] = dps.At(i).Exemplars().Len()
+				}
+				return counts
+			},
+		},
+		{
+			name:       "custom buckets",
+			histograms: nhcbExemplarHistogram(),
+			byRegion: func(m pmetric.Metric) map[string]int {
+				dps := m.Histogram().DataPoints()
+				counts := map[string]int{}
+				for i := range dps.Len() {
+					region, _ := dps.At(i).Attributes().Get("region")
+					counts[region.Str()] = dps.At(i).Exemplars().Len()
+				}
+				return counts
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			series := func(regionRef uint32, exemplars []writev2.Exemplar) writev2.TimeSeries {
+				return writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, regionRef},
+					Histograms: tc.histograms,
+					Exemplars:  exemplars,
+				}
+			}
+
+			metrics, _, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols:    exemplarSymbols,
+				Timeseries: []writev2.TimeSeries{series(8, nil), series(9, theExemplar())},
+			})
+			require.NoError(t, err)
+
+			counts := tc.byRegion(metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0))
+			assert.Equal(t, 1, counts["us-west"], "the exemplar belongs to the series that sent it")
+			assert.Equal(t, 0, counts["us-east"])
+		})
+	}
+}
+
+func TestHistogramExemplarsAreAttachedOnce(t *testing.T) {
+	// Two series with the same labels produce two data points under one key. The exemplars are
+	// consumed when they are attached, so the second data point does not take a copy of them.
+	prwReceiver := setupMetricsReceiver(t)
+
+	series := func(exemplars []writev2.Exemplar) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+			LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+			Histograms: exemplarHistogram([]int64{1, 1}),
+			Exemplars:  exemplars,
+		}
+	}
+
+	metrics, _, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols:    exemplarSymbols,
+		Timeseries: []writev2.TimeSeries{series(theExemplar()), series(nil)},
+	})
+	require.NoError(t, err)
+
+	dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+		ExponentialHistogram().DataPoints()
+	require.Equal(t, 2, dps.Len())
+
+	attached := 0
+	for i := 0; i < dps.Len(); i++ {
+		attached += dps.At(i).Exemplars().Len()
+	}
+	assert.Equal(t, 1, attached, "the exemplar must not be copied onto both data points")
+}
+
+func TestDroppedHistogramExemplarDoesNotAttachToPreviousDataPoint(t *testing.T) {
+	// The second histogram is refused by the converter, so it has no data point of its own. Its
+	// exemplars must not land on the one the first series produced.
+	prwReceiver := setupMetricsReceiver(t)
+
+	series := func(regionRef uint32, deltas []int64, exemplars []writev2.Exemplar) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+			LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, regionRef},
+			Histograms: exemplarHistogram(deltas),
+			Exemplars:  exemplars,
+		}
+	}
+
+	metrics, _, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: exemplarSymbols,
+		Timeseries: []writev2.TimeSeries{
+			series(8, []int64{1, 1}, nil),
+			// The second bucket resolves to a negative count, so the converter drops it.
+			series(9, []int64{1, -5}, theExemplar()),
+		},
+	})
+	require.NoError(t, err)
+
+	dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+		ExponentialHistogram().DataPoints()
+	require.Equal(t, 1, dps.Len(), "only the first histogram produced a data point")
+	assert.Equal(t, 0, dps.At(0).Exemplars().Len(), "a dropped histogram must not reach an earlier data point")
+}
+
 func TestTranslateV2(t *testing.T) {
 	prwReceiver := setupMetricsReceiver(t)
 	ctx, cancel := context.WithCancel(t.Context())
