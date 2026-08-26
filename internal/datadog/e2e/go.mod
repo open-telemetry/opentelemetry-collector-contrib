@@ -13,7 +13,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.159.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.159.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.159.0
-	github.com/stretchr/testify v1.12.0
+	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/connector v0.159.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/exporter v1.65.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/otelcol v0.159.1-0.20260824174011-67fef8cb7049
@@ -475,7 +475,7 @@ require (
 	go.opentelemetry.io/contrib/propagators/b3 v1.45.0 // indirect
 	go.opentelemetry.io/contrib/propagators/jaeger v1.45.0 // indirect
 	go.opentelemetry.io/contrib/propagators/ot v1.45.0 // indirect
-	go.opentelemetry.io/otel v1.45.0 // indirect
+	go.opentelemetry.io/otel v1.46.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.21.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.21.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.45.0 // indirect
@@ -488,11 +488,11 @@ require (
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.45.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.45.0 // indirect
 	go.opentelemetry.io/otel/log v0.21.0 // indirect
-	go.opentelemetry.io/otel/metric v1.45.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.45.0 // indirect
+	go.opentelemetry.io/otel/metric v1.46.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
 	go.opentelemetry.io/otel/sdk/log v0.21.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.45.0 // indirect
-	go.opentelemetry.io/otel/trace v1.45.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.46.0 // indirect
+	go.opentelemetry.io/otel/trace v1.46.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/dig v1.19.0 // indirect

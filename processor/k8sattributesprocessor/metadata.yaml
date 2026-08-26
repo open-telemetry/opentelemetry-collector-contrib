@@ -301,6 +301,33 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    k8s.watcher.cronjob.added:
+      prefix: otelcol.
+      enabled: true
+      description: Number of cronjob add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.cronjob.deleted:
+      prefix: otelcol.
+      enabled: true
+      description: Number of cronjob delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.cronjob.updated:
+      prefix: otelcol.
+      enabled: true
+      description: Number of cronjob update events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
     k8s.watcher.daemonset.added:
       prefix: otelcol.
       enabled: false

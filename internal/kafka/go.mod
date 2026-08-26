@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.159.0
-	github.com/stretchr/testify v1.12.0
+	github.com/stretchr/testify v1.12.1
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20260421215025-4e7a1e1569ac
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	go.opentelemetry.io/collector/component v1.65.1-0.20260824174011-67fef8cb7049
@@ -81,7 +81,6 @@ require (
 	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka => ../../pkg/kafka/configkafka

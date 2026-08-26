@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/storage v1.65.0
 	github.com/goccy/go-json v0.10.6
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.159.0
-	github.com/stretchr/testify v1.12.0
+	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/client v1.65.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/component v1.65.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/component/componentstatus v0.159.1-0.20260824174011-67fef8cb7049
@@ -22,10 +22,10 @@ require (
 	go.opentelemetry.io/collector/pdata v1.65.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/receiver v1.65.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/receiver/receivertest v0.159.1-0.20260824174011-67fef8cb7049
-	go.opentelemetry.io/otel v1.45.0
-	go.opentelemetry.io/otel/metric v1.45.0
-	go.opentelemetry.io/otel/sdk/metric v1.45.0
-	go.opentelemetry.io/otel/trace v1.45.0
+	go.opentelemetry.io/otel v1.46.0
+	go.opentelemetry.io/otel/metric v1.46.0
+	go.opentelemetry.io/otel/sdk/metric v1.46.0
+	go.opentelemetry.io/otel/trace v1.46.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 )
@@ -90,7 +90,7 @@ require (
 	go.opentelemetry.io/contrib/detectors/gcp v1.44.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.68.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.45.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.55.0 // indirect
@@ -106,7 +106,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260630182238-925bb5da69e7 // indirect
 	google.golang.org/grpc v1.83.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ../../extension/encoding
