@@ -235,7 +235,8 @@ func New(
 	//      resource, so we must associate Pods with Deployments through ReplicaSets first.
 	needReplicaSetInformer := (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet) ||
 		c.Rules.DeploymentUID ||
-		c.extractDeploymentLabelsAnnotations()
+		c.extractDeploymentLabelsAnnotations() ||
+		c.extractReplicaSetLabelsAnnotations()
 
 	if needReplicaSetInformer {
 		if informersFactory.newReplicaSetInformer == nil {
@@ -1424,6 +1425,20 @@ func (c *WatchClient) extractDaemonSetAttributes(d *meta_v1.PartialObjectMetadat
 	return tags
 }
 
+func (c *WatchClient) extractReplicaSetAttributes(d *meta_v1.PartialObjectMetadata) map[string]string {
+	tags := map[string]string{}
+
+	for _, r := range c.Rules.Labels {
+		r.extractFromReplicaSetMetadata(d.Labels, tags, conventions.K8SReplicaSetLabel)
+	}
+
+	for _, r := range c.Rules.Annotations {
+		r.extractFromReplicaSetMetadata(d.Annotations, tags, conventions.K8SReplicaSetAnnotation)
+	}
+
+	return tags
+}
+
 func (c *WatchClient) extractJobAttributes(d *meta_v1.PartialObjectMetadata) map[string]string {
 	tags := map[string]string{}
 
@@ -1453,7 +1468,8 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 		StartTime:      pod.Status.StartTime,
 	}
 
-	if replicaset, ok := c.GetReplicaSet(getPodReplicaSetUID(pod)); ok {
+	newPod.ReplicaSetUID = getPodReplicaSetUID(pod)
+	if replicaset, ok := c.GetReplicaSet(newPod.ReplicaSetUID); ok {
 		if replicaset.Deployment.UID != "" {
 			newPod.DeploymentUID = replicaset.Deployment.UID
 		}
@@ -1873,6 +1889,22 @@ func (c *WatchClient) extractDaemonSetLabelsAnnotations() bool {
 	return false
 }
 
+func (c *WatchClient) extractReplicaSetLabelsAnnotations() bool {
+	for _, r := range c.Rules.Labels {
+		if r.From == MetadataFromReplicaSet {
+			return true
+		}
+	}
+
+	for _, r := range c.Rules.Annotations {
+		if r.From == MetadataFromReplicaSet {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (c *WatchClient) extractJobLabelsAnnotations() bool {
 	for _, r := range c.Rules.Labels {
 		if r.From == MetadataFromJob {
@@ -2071,6 +2103,10 @@ func (c *WatchClient) addOrUpdateReplicaSet(replicaSet *meta_v1.PartialObjectMet
 			}
 			break
 		}
+	}
+
+	if c.extractReplicaSetLabelsAnnotations() {
+		newReplicaSet.Attributes = c.extractReplicaSetAttributes(replicaSet)
 	}
 
 	c.m.Lock()

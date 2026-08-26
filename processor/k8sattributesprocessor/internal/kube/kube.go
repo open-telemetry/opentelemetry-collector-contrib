@@ -25,6 +25,8 @@ const (
 	MetadataFromNode = "node"
 	// MetadataFromDeployment is used to specify to extract metadata/labels/annotations from deployment
 	MetadataFromDeployment = "deployment"
+	// MetadataFromReplicaSet is used to specify to extract metadata/labels/annotations from replicaset
+	MetadataFromReplicaSet = "replicaset"
 	// MetadataFromStatefulSet is used to specify to extract metadata/labels/annotations from statefulset
 	MetadataFromStatefulSet = "statefulset"
 	// MetadataFromDaemonSet  is used to specify to extract metadata/labels/annotations from daemonset
@@ -87,6 +89,7 @@ type Client interface {
 	GetNamespace(string) (*Namespace, bool)
 	GetNode(string) (*Node, bool)
 	GetDeployment(string) (*Deployment, bool)
+	GetReplicaSet(string) (*ReplicaSet, bool)
 	GetStatefulSet(string) (*StatefulSet, bool)
 	GetDaemonSet(string) (*DaemonSet, bool)
 	GetJob(string) (*Job, bool)
@@ -112,6 +115,7 @@ type Pod struct {
 	Namespace      string
 	NodeName       string
 	DeploymentUID  string
+	ReplicaSetUID  string
 	StatefulSetUID string
 	DaemonSetUID   string
 	JobUID         string
@@ -302,6 +306,7 @@ type FieldExtractionRule struct {
 	//  - namespace
 	//  - node
 	//  - deployment
+	//  - replicaset
 	//  - statefulset
 	//  - daemonset
 	//  - job
@@ -329,6 +334,12 @@ func (r *FieldExtractionRule) extractFromNodeMetadata(metadata, tags map[string]
 
 func (r *FieldExtractionRule) extractFromDeploymentMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromDeployment {
+		r.extractFromMetadata(metadata, tags, attrFunc)
+	}
+}
+
+func (r *FieldExtractionRule) extractFromReplicaSetMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
+	if r.From == MetadataFromReplicaSet {
 		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
@@ -429,6 +440,7 @@ type ReplicaSet struct {
 	Namespace  string
 	UID        string
 	Deployment Deployment
+	Attributes map[string]string
 }
 
 // StatefulSet represents a kubernetes statefulset.
