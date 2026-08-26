@@ -289,6 +289,187 @@ func validateBulkAction(t *testing.T, expectedIndex string, strMap map[string]an
 	require.Equal(t, expectedIndex, val)
 }
 
+func TestOpenSearchMetricExporter(t *testing.T) {
+	type requestHandler struct {
+		ValidateReceivedDocuments func(*testing.T, int, []map[string]any)
+		ResponseJSONPath          string
+	}
+
+	checkAndRespond := func(responsePath string) requestHandler {
+		pass := func(t *testing.T, _ int, docs []map[string]any) {
+			for _, doc := range docs {
+				require.NotEmpty(t, doc)
+			}
+		}
+		return requestHandler{pass, responsePath}
+	}
+	tests := []struct {
+		Label                  string
+		MetricPath             string
+		RequestHandlers        []requestHandler
+		ValidateExporterReturn func(error)
+	}{
+		{
+			"Round trip",
+			"testdata/metrics-sample-a.yaml",
+			[]requestHandler{
+				checkAndRespond("testdata/opensearch-response-no-error.json"),
+			},
+			func(err error) {
+				require.NoError(t, err)
+			},
+		},
+		{
+			"Permanent error",
+			"testdata/metrics-sample-a.yaml",
+			[]requestHandler{
+				checkAndRespond("testdata/opensearch-response-permanent-error.json"),
+			},
+			func(err error) {
+				require.True(t, consumererror.IsPermanent(err))
+			},
+		},
+		{
+			"Retryable error",
+			"testdata/metrics-sample-a.yaml",
+			[]requestHandler{
+				checkAndRespond("testdata/opensearch-response-retryable-error.json"),
+				checkAndRespond("testdata/opensearch-response-retryable-succeeded.json"),
+			},
+			func(err error) {
+				require.NoError(t, err)
+			},
+		},
+	}
+
+	getReceivedDocuments := func(body io.ReadCloser) []map[string]any {
+		var rtn []map[string]any
+		var err error
+		decoder := json.NewDecoder(body)
+		for decoder.More() {
+			var jsonData any
+			err = decoder.Decode(&jsonData)
+			require.NoError(t, err)
+			require.NotNil(t, jsonData)
+
+			strMap := jsonData.(map[string]any)
+			if actionData, isBulkAction := strMap["create"]; isBulkAction {
+				validateBulkAction(t, "ss4o_metrics-default-namespace", actionData.(map[string]any))
+			} else {
+				rtn = append(rtn, strMap)
+			}
+		}
+		return rtn
+	}
+
+	for _, tc := range tests {
+		// Create HTTP listener
+		requestCount := 0
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var err error
+			docs := getReceivedDocuments(r.Body)
+			assert.LessOrEqualf(t, requestCount, len(tc.RequestHandlers), "Test case generated more requests than it has response for.")
+			tc.RequestHandlers[requestCount].ValidateReceivedDocuments(t, requestCount, docs)
+
+			w.WriteHeader(http.StatusOK)
+			response, _ := os.ReadFile(tc.RequestHandlers[requestCount].ResponseJSONPath)
+			_, err = w.Write(response)
+			assert.NoError(t, err)
+
+			requestCount++
+		}))
+
+		cfg := withDefaultConfig(func(config *Config) {
+			config.ClientConfig.Endpoint = ts.URL
+			config.TimeoutSettings.Timeout = 0
+		})
+
+		// Create exporter
+		f := NewFactory()
+		exporter, err := f.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+		require.NoError(t, err)
+
+		// Initialize the exporter
+		err = exporter.Start(t.Context(), componenttest.NewNopHost())
+		require.NoError(t, err)
+
+		// Load sample data
+		metrics, err := golden.ReadMetrics(tc.MetricPath)
+		require.NoError(t, err)
+
+		// Send it
+		err = exporter.ConsumeMetrics(t.Context(), metrics)
+		tc.ValidateExporterReturn(err)
+		err = exporter.Shutdown(t.Context())
+		require.NoError(t, err)
+		ts.Close()
+	}
+}
+
+func TestOpenSearchMetricExporterOTelV1(t *testing.T) {
+	var receivedDocs []map[string]any
+	var bulkIndex string
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		decoder := json.NewDecoder(r.Body)
+		for decoder.More() {
+			var jsonData any
+			if !assert.NoError(t, decoder.Decode(&jsonData)) {
+				return
+			}
+			strMap := jsonData.(map[string]any)
+			if actionData, isBulkAction := strMap["create"]; isBulkAction {
+				bulkIndex = actionData.(map[string]any)["_index"].(string)
+			} else {
+				receivedDocs = append(receivedDocs, strMap)
+			}
+		}
+		w.WriteHeader(http.StatusOK)
+		response, _ := os.ReadFile("testdata/opensearch-response-no-error.json")
+		_, _ = w.Write(response)
+	}))
+	defer ts.Close()
+
+	cfg := withDefaultConfig(func(config *Config) {
+		config.ClientConfig.Endpoint = ts.URL
+		config.TimeoutSettings.Timeout = 0
+		config.MappingsSettings.Mode = "otel-v1"
+	})
+
+	f := NewFactory()
+	exporter, err := f.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+	err = exporter.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	metrics, err := golden.ReadMetrics("testdata/metrics-sample-a.yaml")
+	require.NoError(t, err)
+	err = exporter.ConsumeMetrics(t.Context(), metrics)
+	require.NoError(t, err)
+
+	// Verify index name
+	assert.Equal(t, "otel-v1-metrics", bulkIndex)
+
+	// One document per data point: 2 gauge + 1 sum + 1 histogram + 1 exp. histogram + 1 summary
+	require.Len(t, receivedDocs, 6)
+	doc := receivedDocs[0]
+	assert.Contains(t, doc, "name")
+	assert.Contains(t, doc, "kind")
+	assert.Contains(t, doc, "@timestamp")
+	assert.Contains(t, doc, "time")
+	assert.Contains(t, doc, "startTime")
+	assert.Contains(t, doc, "resource")
+	assert.Contains(t, doc, "instrumentationScope")
+	assert.Equal(t, "test-service", doc["serviceName"])
+
+	// Gauge documents carry a plain double value in otel-v1 mode
+	assert.Equal(t, "GAUGE", doc["kind"])
+	assert.Equal(t, 0.42, doc["value"])
+
+	err = exporter.Shutdown(t.Context())
+	require.NoError(t, err)
+}
+
 func TestOpenSearchTraceExporterOTelV1(t *testing.T) {
 	var receivedDocs []map[string]any
 	var bulkIndex string
