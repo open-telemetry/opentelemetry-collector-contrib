@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/grafana/faro/pkg/go v0.0.0-20260427090633-bb5f9417df83
-	github.com/stretchr/testify v1.12.0
+	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component/componentstatus v0.159.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/config/confighttp v0.159.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/config/confignet v1.65.1-0.20260824174011-67fef8cb7049
