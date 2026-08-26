@@ -32,7 +32,9 @@ const (
 	// MetadataFromDaemonSet  is used to specify to extract metadata/labels/annotations from daemonset
 	MetadataFromDaemonSet = "daemonset"
 	// MetadataFromJob  is used to specify to extract metadata/labels/annotations from job
-	MetadataFromJob        = "job"
+	MetadataFromJob = "job"
+	// MetadataFromCronJob is used to specify to extract metadata/labels/annotations from cronjob
+	MetadataFromCronJob    = "cronjob"
 	PodIdentifierMaxLength = 4
 
 	ResourceSource   = "resource_attribute"
@@ -93,6 +95,7 @@ type Client interface {
 	GetStatefulSet(string) (*StatefulSet, bool)
 	GetDaemonSet(string) (*DaemonSet, bool)
 	GetJob(string) (*Job, bool)
+	GetCronJob(string) (*CronJob, bool)
 	Start() error
 	Stop()
 }
@@ -119,6 +122,7 @@ type Pod struct {
 	StatefulSetUID string
 	DaemonSetUID   string
 	JobUID         string
+	CronJobUID     string
 	HostNetwork    bool
 
 	// Containers specifies all containers in this pod.
@@ -310,6 +314,7 @@ type FieldExtractionRule struct {
 	//  - statefulset
 	//  - daemonset
 	//  - job
+	//  - cronjob
 	From string
 }
 
@@ -358,6 +363,12 @@ func (r *FieldExtractionRule) extractFromDaemonSetMetadata(metadata, tags map[st
 
 func (r *FieldExtractionRule) extractFromJobMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromJob {
+		r.extractFromMetadata(metadata, tags, attrFunc)
+	}
+}
+
+func (r *FieldExtractionRule) extractFromCronJobMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
+	if r.From == MetadataFromCronJob {
 		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
