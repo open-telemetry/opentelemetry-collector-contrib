@@ -8,11 +8,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter/internal/metadata"
@@ -20,10 +22,13 @@ import (
 
 func TestExportMarkers(t *testing.T) {
 	tests := []struct {
-		name         string
-		config       Config
-		attributeMap map[string]string
-		expectedURL  string
+		name              string
+		config            Config
+		attributeMap      map[string]string
+		expectedURL       string
+		timestamp         time.Time
+		observedTimestamp time.Time
+		expectedStartTime int64
 	}{
 		{
 			name: "all fields",
@@ -48,7 +53,9 @@ func TestExportMarkers(t *testing.T) {
 				"url":     "https://api.testhost.io",
 				"type":    "test-type",
 			},
-			expectedURL: "/1/markers/test-dataset",
+			expectedURL:       "/1/markers/test-dataset",
+			timestamp:         time.Date(2026, 8, 26, 10, 0, 0, 0, time.UTC),
+			expectedStartTime: time.Date(2026, 8, 26, 10, 0, 0, 0, time.UTC).Unix(),
 		},
 		{
 			name: "no message key",
@@ -141,6 +148,87 @@ func TestExportMarkers(t *testing.T) {
 			},
 			expectedURL: "/1/markers/test-dataset",
 		},
+		{
+			name: "uses log timestamp",
+			config: Config{
+				APIKey: "test-apikey",
+				Markers: []Marker{
+					{
+						Type:        "test-type",
+						MessageKey:  "message",
+						URLKey:      "url",
+						DatasetSlug: "test-dataset",
+						Rules: Rules{
+							LogConditions: []string{
+								`body == "test"`,
+							},
+						},
+					},
+				},
+			},
+			attributeMap: map[string]string{
+				"message": "this is a test message",
+				"url":     "https://api.testhost.io",
+				"type":    "test-type",
+			},
+			expectedURL:       "/1/markers/test-dataset",
+			timestamp:         time.Date(2026, 8, 26, 10, 0, 0, 0, time.UTC),
+			observedTimestamp: time.Date(2026, 8, 26, 10, 5, 0, 0, time.UTC),
+			expectedStartTime: time.Date(2026, 8, 26, 10, 0, 0, 0, time.UTC).Unix(),
+		},
+		{
+			name: "falls back to observed timestamp",
+			config: Config{
+				APIKey: "test-apikey",
+				Markers: []Marker{
+					{
+						Type:        "test-type",
+						MessageKey:  "message",
+						URLKey:      "url",
+						DatasetSlug: "test-dataset",
+						Rules: Rules{
+							LogConditions: []string{
+								`body == "test"`,
+							},
+						},
+					},
+				},
+			},
+			attributeMap: map[string]string{
+				"message": "this is a test message",
+				"url":     "https://api.testhost.io",
+				"type":    "test-type",
+			},
+			expectedURL:       "/1/markers/test-dataset",
+			timestamp:         time.Time{},
+			observedTimestamp: time.Date(2026, 8, 26, 10, 5, 0, 0, time.UTC),
+			expectedStartTime: time.Date(2026, 8, 26, 10, 5, 0, 0, time.UTC).Unix(),
+		},
+		{
+			name: "omits start time when timestamps are unset",
+			config: Config{
+				APIKey: "test-apikey",
+				Markers: []Marker{
+					{
+						Type:        "test-type",
+						MessageKey:  "message",
+						URLKey:      "url",
+						DatasetSlug: "test-dataset",
+						Rules: Rules{
+							LogConditions: []string{
+								`body == "test"`,
+							},
+						},
+					},
+				},
+			},
+			attributeMap: map[string]string{
+				"message": "this is a test message",
+				"url":     "https://api.testhost.io",
+				"type":    "test-type",
+			},
+			expectedURL: "/1/markers/test-dataset",
+		},
 	}
 
 	for _, tt := range tests {
@@ -151,7 +239,15 @@ func TestExportMarkers(t *testing.T) {
 
 				assert.NoError(t, err)
 
-				assert.Len(t, decodedBody, len(tt.attributeMap))
+				for attr := range tt.attributeMap {
+					assert.Equal(t, tt.attributeMap[attr], decodedBody[attr])
+				}
+
+				if tt.expectedStartTime != 0 {
+					assert.Equal(t, float64(tt.expectedStartTime), decodedBody["start_time"])
+				} else {
+					assert.NotContains(t, decodedBody, "start_time")
+				}
 
 				for attr := range tt.attributeMap {
 					assert.Equal(t, tt.attributeMap[attr], decodedBody[attr])
@@ -179,14 +275,14 @@ func TestExportMarkers(t *testing.T) {
 			err = exp.Start(t.Context(), componenttest.NewNopHost())
 			assert.NoError(t, err)
 
-			logs := constructLogs(tt.attributeMap)
+			logs := constructLogs(tt.attributeMap, tt.timestamp, tt.observedTimestamp)
 			err = exp.ConsumeLogs(t.Context(), logs)
 			assert.NoError(t, err)
 		})
 	}
 }
 
-func constructLogs(attributes map[string]string) plog.Logs {
+func constructLogs(attributes map[string]string, timestamp, observedTimestamp time.Time) plog.Logs {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -195,6 +291,14 @@ func constructLogs(attributes map[string]string) plog.Logs {
 	l.Body().SetStr("test")
 	for attr, attrVal := range attributes {
 		l.Attributes().PutStr(attr, attrVal)
+	}
+
+	if !timestamp.IsZero() {
+		l.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
+	}
+
+	if !observedTimestamp.IsZero() {
+		l.SetObservedTimestamp(pcommon.NewTimestampFromTime(observedTimestamp))
 	}
 	return logs
 }
@@ -267,7 +371,7 @@ func TestExportMarkers_Error(t *testing.T) {
 			err = exp.Start(t.Context(), componenttest.NewNopHost())
 			assert.NoError(t, err)
 
-			logs := constructLogs(map[string]string{})
+			logs := constructLogs(map[string]string{}, time.Time{}, time.Time{})
 			err = exp.ConsumeLogs(t.Context(), logs)
 			assert.ErrorContains(t, err, tt.errorMessage)
 		})
@@ -318,7 +422,7 @@ func TestExportMarkers_NoAPICall(t *testing.T) {
 			err = exp.Start(t.Context(), componenttest.NewNopHost())
 			assert.NoError(t, err)
 
-			logs := constructLogs(map[string]string{})
+			logs := constructLogs(map[string]string{}, time.Time{}, time.Time{})
 			err = exp.ConsumeLogs(t.Context(), logs)
 			assert.NoError(t, err)
 		})
