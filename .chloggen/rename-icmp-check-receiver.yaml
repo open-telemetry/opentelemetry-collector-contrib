@@ -1,0 +1,13 @@
+# Use this changelog template to create an entry for release notes.
+
+change_type: deprecation
+
+component: receiver/icmp_check
+
+note: Rename `icmpcheckreceiver` receiver to `icmp_check` with deprecated alias `icmpcheckreceiver`
+
+issues: [45339]
+
+subtext:
+
+change_logs: [user]

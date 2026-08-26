@@ -18,7 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/ptr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -60,7 +59,7 @@ func TestExtension(t *testing.T) {
 
 	require.NoError(t, leaderElection.Start(ctx, componenttest.NewNopHost()))
 
-	expectedLeaseDurationSeconds := ptr.To(int32(15))
+	expectedLeaseDurationSeconds := new(int32(15))
 
 	require.EventuallyWithT(t, func(t *assert.CollectT) {
 		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
@@ -102,7 +101,7 @@ func TestExtension_WithDelay(t *testing.T) {
 	require.NoError(t, leaderElection.Start(ctx, componenttest.NewNopHost()))
 
 	// Simulate a delay of setting up callbacks after the leader has been elected.
-	expectedLeaseDurationSeconds := ptr.To(int32(15))
+	expectedLeaseDurationSeconds := new(int32(15))
 	require.EventuallyWithT(t, func(t *assert.CollectT) {
 		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
 		require.NoError(t, err)

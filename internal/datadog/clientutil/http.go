@@ -65,7 +65,7 @@ func NewHTTPTransport(hcs confighttp.ClientConfig) *http.Transport {
 		// Not supported by intake
 		ForceAttemptHTTP2: false,
 		TLSClientConfig:   &tls.Config{InsecureSkipVerify: hcs.TLS.InsecureSkipVerify},
-		DisableKeepAlives: hcs.DisableKeepAlives,
+		DisableKeepAlives: hcs.DisableKeepAlives, //nolint:staticcheck // SA1019: intentionally honoring deprecated fields for backward compatibility
 	}
 	if hcs.ReadBufferSize > 0 {
 		transport.ReadBufferSize = hcs.ReadBufferSize
@@ -73,17 +73,17 @@ func NewHTTPTransport(hcs confighttp.ClientConfig) *http.Transport {
 	if hcs.WriteBufferSize > 0 {
 		transport.WriteBufferSize = hcs.WriteBufferSize
 	}
-	if hcs.MaxIdleConns > 0 {
-		transport.MaxIdleConns = hcs.MaxIdleConns
+	if hcs.MaxIdleConns > 0 { //nolint:staticcheck // SA1019: intentionally honoring deprecated fields for backward compatibility
+		transport.MaxIdleConns = hcs.MaxIdleConns //nolint:staticcheck // SA1019: intentionally honoring deprecated fields for backward compatibility
 	}
-	if hcs.MaxIdleConnsPerHost > 0 {
-		transport.MaxIdleConnsPerHost = hcs.MaxIdleConnsPerHost
+	if hcs.MaxIdleConnsPerHost > 0 { //nolint:staticcheck // SA1019: intentionally honoring deprecated fields for backward compatibility
+		transport.MaxIdleConnsPerHost = hcs.MaxIdleConnsPerHost //nolint:staticcheck // SA1019: intentionally honoring deprecated fields for backward compatibility
 	}
 	if hcs.MaxConnsPerHost > 0 {
 		transport.MaxConnsPerHost = hcs.MaxConnsPerHost
 	}
-	if hcs.IdleConnTimeout > 0 {
-		transport.IdleConnTimeout = hcs.IdleConnTimeout
+	if hcs.IdleConnTimeout > 0 { //nolint:staticcheck // SA1019: intentionally honoring deprecated fields for backward compatibility
+		transport.IdleConnTimeout = hcs.IdleConnTimeout //nolint:staticcheck // SA1019: intentionally honoring deprecated fields for backward compatibility
 	}
 
 	return &transport
