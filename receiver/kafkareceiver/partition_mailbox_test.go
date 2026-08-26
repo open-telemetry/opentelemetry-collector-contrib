@@ -24,7 +24,7 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 		wantAccepted      bool
 		wantPauseCalls    int
 		wantPauseReason   partitionPauseReason
-		wantPendingOffset *int
+		wantPendingOffset *int64
 	}{
 		{
 			name:         "accepts batch",
@@ -47,7 +47,7 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 			batch:             mailboxBatch(10),
 			wantPauseCalls:    1,
 			wantPauseReason:   partitionPauseRewind,
-			wantPendingOffset: new(10),
+			wantPendingOffset: new(int64(10)),
 		},
 		{
 			name:              "rejects while rewind pending",
@@ -56,7 +56,7 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 			batch:             mailboxBatch(10),
 			wantPauseCalls:    1,
 			wantPauseReason:   partitionPauseRewind,
-			wantPendingOffset: new(5),
+			wantPendingOffset: new(int64(5)),
 		},
 		{
 			name:         "rejects after cancellation",
