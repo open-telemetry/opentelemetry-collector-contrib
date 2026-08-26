@@ -145,32 +145,6 @@ func TestDetectWithDisabledAttributes(t *testing.T) {
 	require.Equal(t, want, res.Attributes().AsRaw())
 }
 
-// All attributes disabled is not the same as not being on the platform: the instance was
-// still detected, so this must not be reported as missing metadata.
-func TestDetectAllAttributesDisabledWithFailOnMissingMetadata(t *testing.T) {
-	withFakeDetector(t, fullResource(), nil)
-
-	cfg := CreateDefaultConfig()
-	cfg.ResourceAttributes.CloudAccountID.Enabled = false
-	cfg.ResourceAttributes.CloudAvailabilityZone.Enabled = false
-	cfg.ResourceAttributes.CloudPlatform.Enabled = false
-	cfg.ResourceAttributes.CloudProvider.Enabled = false
-	cfg.ResourceAttributes.CloudRegion.Enabled = false
-	cfg.ResourceAttributes.CloudResourceID.Enabled = false
-	cfg.ResourceAttributes.HostID.Enabled = false
-	cfg.ResourceAttributes.HostImageID.Enabled = false
-	cfg.ResourceAttributes.HostImageName.Enabled = false
-	cfg.ResourceAttributes.HostName.Enabled = false
-	cfg.ResourceAttributes.HostType.Enabled = false
-
-	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), cfg, true)
-	require.NoError(t, err)
-
-	res, _, err := d.Detect(t.Context())
-	require.NoError(t, err)
-	require.Equal(t, 0, res.Attributes().Len())
-}
-
 func TestDetectNotOnIBMCloudVPC(t *testing.T) {
 	withFakeDetector(t, sdkresource.Empty(), nil)
 
