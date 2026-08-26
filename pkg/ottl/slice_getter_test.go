@@ -12,8 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func TestSliceGetter_setReflectValue(t *testing.T) {
@@ -70,8 +68,8 @@ func Test_buildSliceGetterValue(t *testing.T) {
 		val := value{
 			List: &list{
 				Values: []value{
-					{String: ottltest.Strp("a")},
-					{String: ottltest.Strp("b")},
+					{String: new("a")},
+					{String: new("b")},
 				},
 			},
 		}

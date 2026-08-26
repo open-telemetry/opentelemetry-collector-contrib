@@ -1127,9 +1127,9 @@ func Test_NewFunctionCall(t *testing.T) {
 						Value: value{
 							List: &list{
 								Values: []value{
-									{String: ottltest.Strp("a")},
-									{String: ottltest.Strp("b")},
-									{String: ottltest.Strp("c")},
+									{String: new("a")},
+									{String: new("b")},
+									{String: new("c")},
 								},
 							},
 						},
@@ -1163,8 +1163,8 @@ func Test_NewFunctionCall(t *testing.T) {
 						Value: value{
 							List: &list{
 								Values: []value{
-									{String: ottltest.Strp("a")},
-									{String: ottltest.Strp("b")},
+									{String: new("a")},
+									{String: new("b")},
 								},
 							},
 						},
