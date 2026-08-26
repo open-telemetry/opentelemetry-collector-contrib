@@ -1,0 +1,18 @@
+change_type: bug_fix
+
+component: receiver/prometheus_remote_write
+
+note: Fix histogram exemplars with data labels being dropped or attached to a previously translated histogram data point.
+
+issues: [50334]
+
+subtext: |
+  Exemplars are collected under a key that includes a hash of the data labels,
+  but the histogram lookup left that hash out, so a histogram carrying any
+  ordinary label never found its own exemplars. The lookup also copied them
+  into the first data point of the metric, which belongs to whichever series
+  was translated first. They are now attached once, to the data point the
+  current histogram conversion appended, and a histogram the converter drops
+  no longer reaches a data point built for an earlier series.
+
+change_logs: [user]
