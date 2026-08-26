@@ -10,10 +10,7 @@ status:
     active: [dmitryax, ChrsMark]
     emeritus: [rmfitzpatrick]
 
-# TODO: Update the extension to make the tests pass
 tests:
-  skip_lifecycle: true
-  skip_shutdown: true
   goleak:
     ignore:
       top:
