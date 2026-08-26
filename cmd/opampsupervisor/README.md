@@ -107,6 +107,28 @@ telemetry:
     encoding: console
 ```
 
+The supervisor can also configure resource detection for its own telemetry
+using the experimental `telemetry.resource.detection/development` field.
+
+```yaml
+telemetry:
+  resource:
+    detection/development:
+      detectors:
+        - host: {}
+        - process: {}
+```
+
+Supported detector entries are `container`, `host`, `process`, and `service`.
+
+Do not set the `OTEL_EXPERIMENTAL_CONFIG_FILE` environment variable for the
+Supervisor process. `xotelconf.NewSDK` uses that file to configure the SDK and
+it supersedes the configuration passed by the Supervisor. If the variable is
+set (for example to control the Collector's resource config), it can also
+override the Supervisor's own resource detection and telemetry resource
+settings. The Supervisor logs a warning at startup when the variable is set
+while `telemetry.resource.detection/development` is configured.
+
 Visit [localhost:4321](http://localhost:4321) again to verify that your Collector appears in the Agents list.
 
 ## Collector crash log snippets
