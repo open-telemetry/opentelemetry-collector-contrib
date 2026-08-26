@@ -1312,7 +1312,6 @@ func Test_ProcessTraces_SharedCache(t *testing.T) {
 			name: "cache not shared with groups where SharedCache is false",
 			statements: []common.ContextStatements{
 				{Statements: []string{`set(span.cache["k"], "fail")`}, SharedCache: true},
-				// This group does not share cache; span.cache["k"] must be empty here.
 				{Statements: []string{`set(span.attributes["result"], "pass") where span.cache["k"] == nil`}},
 			},
 			want: func(td ptrace.Traces) {

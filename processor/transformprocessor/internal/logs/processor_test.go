@@ -1195,7 +1195,6 @@ func Test_ProcessLogs_SharedCache(t *testing.T) {
 			name: "cache not shared with groups where SharedCache is false",
 			statements: []common.ContextStatements{
 				{Statements: []string{`set(log.cache["k"], "fail")`}, SharedCache: true},
-				// This group does not share cache; log.cache["k"] must be empty here.
 				{Statements: []string{`set(log.attributes["result"], "pass") where log.cache["k"] == nil`}},
 			},
 			want: func(td plog.Logs) {

@@ -1128,7 +1128,6 @@ func Test_ProcessProfiles_SharedCache(t *testing.T) {
 			name: "cache not shared with groups where SharedCache is false",
 			statements: []common.ContextStatements{
 				{Statements: []string{`set(profile.cache["k"], "fail")`}, SharedCache: true},
-				// This group does not share cache; profile.cache["k"] must be empty here.
 				{Statements: []string{`set(profile.original_payload_format, "pass") where profile.cache["k"] == nil`}},
 			},
 			want: func(td pprofile.Profiles) {

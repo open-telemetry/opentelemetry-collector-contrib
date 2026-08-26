@@ -2226,7 +2226,6 @@ func Test_ProcessMetrics_SharedCache(t *testing.T) {
 			name: "cache not shared with groups where SharedCache is false",
 			statements: []common.ContextStatements{
 				{Statements: []string{`set(metric.cache["k"], "fail")`}, SharedCache: true},
-				// This group does not share cache; metric.cache["k"] must be empty here.
 				{Statements: []string{`set(metric.name, "pass") where metric.name == "operationA" and metric.cache["k"] == nil`}},
 			},
 			want: func(td pmetric.Metrics) {
