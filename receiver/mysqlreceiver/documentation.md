@@ -444,7 +444,7 @@ The length of the InnoDB history list.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | Development |
+| {transactions} | Gauge | Int | Development |
 
 ### mysql.innodb.operation.pending
 

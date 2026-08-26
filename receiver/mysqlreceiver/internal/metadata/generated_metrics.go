@@ -2745,7 +2745,7 @@ type metricMysqlInnodbHistoryListLength struct {
 func (m *metricMysqlInnodbHistoryListLength) init() {
 	m.data.SetName("mysql.innodb.history_list.length")
 	m.data.SetDescription("The length of the InnoDB history list.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{transactions}")
 	m.data.SetEmptyGauge()
 }
 

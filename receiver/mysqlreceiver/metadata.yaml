@@ -529,7 +529,7 @@ metrics:
     enabled: false
     description: The length of the InnoDB history list.
     stability: development
-    unit: "1"
+    unit: "{transactions}"
     gauge:
       value_type: int
   mysql.innodb.operation.pending:

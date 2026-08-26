@@ -409,8 +409,9 @@ func TestGetInnodbTransactionStats(t *testing.T) {
 
 	query := "SELECT " +
 		"COALESCE((SELECT count FROM information_schema.innodb_metrics WHERE name = 'trx_rseg_history_len'), 0), " +
-		"(SELECT COUNT(*) FROM information_schema.innodb_trx), " +
-		"COALESCE((SELECT MAX(TIMESTAMPDIFF(SECOND, trx_started, NOW())) FROM information_schema.innodb_trx), 0)"
+		"COUNT(*), " +
+		"COALESCE(MAX(TIMESTAMPDIFF(SECOND, trx_started, NOW())), 0) " +
+		"FROM information_schema.innodb_trx"
 	mock.ExpectQuery(regexp.QuoteMeta(query)).
 		WillReturnRows(sqlmock.NewRows([]string{
 			"history_list_length",

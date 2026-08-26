@@ -668,7 +668,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: mysql.innodb.history_list.length
-            unit: "1"
+            unit: "{transactions}"
           - description: The number of pending InnoDB data file operations.
             name: mysql.innodb.operation.pending
             sum:
