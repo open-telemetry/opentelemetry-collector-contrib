@@ -151,11 +151,6 @@ func compileRule(cfg *RuleConfig, s sampler.Sampler, fingerprint []sampler.Selec
 		logger:           settings.Logger,
 		evalErrs:         evalErrs,
 		ruleAttrSet:      metric.WithAttributes(attribute.String("rule", cfg.Name)),
-		// sampler_type and sampler_algorithm mirror cfg.Sampler.Type and
-		// effectiveAlgorithm(); the values are meaningless for non-adaptive
-		// samplers (always_sample, probabilistic), but this attribute set is
-		// only ever read for rules whose sampler implements
-		// sampler.MetricsProvider, which those two never do.
 		dynsamplerAttrSet: metric.WithAttributes(
 			attribute.String("rule", cfg.Name),
 			attribute.String("sampler_type", string(cfg.Sampler.Type)),
