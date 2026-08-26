@@ -337,7 +337,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// This ensures that future requests start with the enriched resource attributes already applied.
 		modifiedResourceMetric = make(map[uint64]pmetric.ResourceMetrics)
 
-		// exemplarMap keeps track of exemplars and key is composed by scope_name:scope_version:metric_name:type
+		// exemplarMap holds exemplars under the series key collectExemplars builds.
 		exemplarMap = collectExemplars(req, prw.settings, &stats)
 
 		// bucketBudget bounds what every Native Histogram in this request may expand into
@@ -532,6 +532,8 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		return
 	}
 	attrs := extractAttributes(ls)
+	// Nothing to look up when the request carries no exemplars, so the hashing below is skipped.
+	lookupExemplars := len(exemplarMap) > 0
 
 	var (
 		hashedLabels uint64
@@ -652,30 +654,48 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			// Reference to this behavior: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model-producer-recommendations
 			histMetric.SetDescription(description)
 		}
-		// all the exemplars for a given histogram are attached to first data point.
-		exemplarSlice := pmetric.NewExemplarSlice()
-		// Process the individual histogram
+		// A metric holds a data point per series, so the exemplars of this histogram belong to
+		// the one this conversion appends, not to whichever came first.
+		var (
+			exemplarSlice pmetric.ExemplarSlice
+			appended      bool
+		)
 		if histogramType == "nhcb" {
-			prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, attrs, stats)
-			if histMetric.Histogram().DataPoints().Len() > 0 {
-				exemplarSlice = histMetric.Histogram().DataPoints().At(0).Exemplars()
+			dps := histMetric.Histogram().DataPoints()
+			before := dps.Len()
+			prw.addNHCBDatapoint(dps, histogram, attrs, stats)
+			if appended = dps.Len() > before; appended {
+				exemplarSlice = dps.At(dps.Len() - 1).Exemplars()
 			}
 		} else {
-			prw.addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, expLayout, attrs, ls, stats)
-			if histMetric.ExponentialHistogram().DataPoints().Len() > 0 {
-				exemplarSlice = histMetric.ExponentialHistogram().DataPoints().At(0).Exemplars()
+			dps := histMetric.ExponentialHistogram().DataPoints()
+			before := dps.Len()
+			prw.addExponentialHistogramDatapoint(dps, histogram, expLayout, attrs, ls, stats)
+			if appended = dps.Len() > before; appended {
+				exemplarSlice = dps.At(dps.Len() - 1).Exemplars()
 			}
 		}
+
+		// A dropped histogram has no data point of its own, so attaching here would land on one
+		// built for an earlier series. Every histogram in this TimeSeries shares one key, so the
+		// lookup only has to happen once.
+		if !appended || !lookupExemplars {
+			continue
+		}
+		lookupExemplars = false
 
 		key := exemplarKey{
 			ScopeName:    si.Name,
 			ScopeVersion: si.Version,
 			MetricName:   metricName,
 			MetricType:   ts.Metadata.Type,
+			AttrsHash:    pdatautil.MapHash(attrs),
 		}
 
-		if ex, ok := exemplarMap[key.hash()]; ok && ex.Len() > 0 {
+		keyHash := key.hash()
+		if ex, ok := exemplarMap[keyHash]; ok && ex.Len() > 0 {
 			ex.CopyTo(exemplarSlice)
+			delete(exemplarMap, keyHash)
 		}
 	}
 }
