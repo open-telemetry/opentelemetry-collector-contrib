@@ -693,7 +693,7 @@ func TestLogGroupTagsConfigSelectTags(t *testing.T) {
 		},
 		{
 			name: "allowlist passthrough (empty attribute prefix)",
-			cfg:  LogGroupTagsConfig{IncludeTags: true, TagNames: []string{"team", "environment"}, TagAttributePrefix: stringPtr("")},
+			cfg:  LogGroupTagsConfig{IncludeTags: true, TagNames: []string{"team", "environment"}, TagAttributePrefix: aws.String("")},
 			expected: map[string]string{
 				"team":        "messaging",
 				"environment": "production",
@@ -701,7 +701,7 @@ func TestLogGroupTagsConfigSelectTags(t *testing.T) {
 		},
 		{
 			name: "tag prefix with custom attribute prefix",
-			cfg:  LogGroupTagsConfig{IncludeTags: true, TagPrefix: "log.", TagAttributePrefix: stringPtr("org.routing.")},
+			cfg:  LogGroupTagsConfig{IncludeTags: true, TagPrefix: "log.", TagAttributePrefix: aws.String("org.routing.")},
 			expected: map[string]string{
 				"org.routing.log.tenant": "acme",
 			},
@@ -721,9 +721,5 @@ func TestLogGroupTagsConfigSelectTags(t *testing.T) {
 
 	require.Nil(t, LogGroupTagsConfig{IncludeTags: true}.selectTags(nil))
 	require.Equal(t, defaultTagAttributePrefix, LogGroupTagsConfig{}.attributePrefix())
-	require.Empty(t, LogGroupTagsConfig{TagAttributePrefix: stringPtr("")}.attributePrefix())
-}
-
-func stringPtr(s string) *string {
-	return &s
+	require.Empty(t, LogGroupTagsConfig{TagAttributePrefix: aws.String("")}.attributePrefix())
 }
