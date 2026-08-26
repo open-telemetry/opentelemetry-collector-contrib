@@ -93,7 +93,7 @@ func TestValidateFeatureGates(t *testing.T) {
 	require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), true))
 	require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), false))
 	t.Cleanup(func() {
-		require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), true))
+		require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), false))
 		require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), true))
 	})
 

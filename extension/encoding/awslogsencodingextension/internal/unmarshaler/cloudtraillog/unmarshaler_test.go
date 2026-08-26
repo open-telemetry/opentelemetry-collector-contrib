@@ -466,7 +466,7 @@ func TestRPCAttributeFeatureGates(t *testing.T) {
 			require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), tt.dontEmitV0))
 			t.Cleanup(func() {
 				require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), true))
-				require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), true))
+				require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), false))
 			})
 
 			u := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test"}, false)

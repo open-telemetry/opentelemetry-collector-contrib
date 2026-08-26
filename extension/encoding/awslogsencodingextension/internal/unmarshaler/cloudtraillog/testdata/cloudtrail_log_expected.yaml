@@ -22,12 +22,18 @@ resourceLogs:
               - key: rpc.method
                 value:
                   stringValue: StartInstances
+              - key: rpc.system
+                value:
+                  stringValue: AwsApiCall
               - key: rpc.system.name
                 value:
                   stringValue: AwsApiCall
               - key: aws.cloudtrail.api_version
                 value:
                   stringValue: v1
+              - key: rpc.service
+                value:
+                  stringValue: ec2.amazonaws.com
               - key: aws.request_id
                 value:
                   stringValue: e4336db0-149f-4a6b-844d-EXAMPLEb9d16
@@ -181,9 +187,15 @@ resourceLogs:
               - key: rpc.method
                 value:
                   stringValue: CreateUser
+              - key: rpc.system
+                value:
+                  stringValue: AwsApiCall
               - key: rpc.system.name
                 value:
                   stringValue: AwsApiCall
+              - key: rpc.service
+                value:
+                  stringValue: iam.amazonaws.com
               - key: aws.request_id
                 value:
                   stringValue: 2d528c76-329e-410b-9516-EXAMPLE565dc
@@ -280,9 +292,15 @@ resourceLogs:
               - key: rpc.method
                 value:
                   stringValue: Publish
+              - key: rpc.system
+                value:
+                  stringValue: AwsApiCall
               - key: rpc.system.name
                 value:
                   stringValue: AwsApiCall
+              - key: rpc.service
+                value:
+                  stringValue: sns.amazonaws.com
               - key: aws.request_id
                 value:
                   stringValue: 0a8ab208-11bf-5e01-bd2d-ef55861b545d
@@ -396,6 +414,9 @@ resourceLogs:
               - key: aws.cloudtrail.event_id
                 value:
                   stringValue: 654a30ff-b0f3-4527-81b6-EXAMPLEf2393
+              - key: rpc.system
+                value:
+                  stringValue: AwsCloudTrailInsight
               - key: rpc.system.name
                 value:
                   stringValue: AwsCloudTrailInsight
@@ -455,9 +476,15 @@ resourceLogs:
               - key: rpc.method
                 value:
                   stringValue: UpdateTrail
+              - key: rpc.system
+                value:
+                  stringValue: AwsApiCall
               - key: rpc.system.name
                 value:
                   stringValue: AwsApiCall
+              - key: rpc.service
+                value:
+                  stringValue: cloudtrail.amazonaws.com
               - key: aws.request_id
                 value:
                   stringValue: 28d2faaf-3319-4649-998d-EXAMPLE72818
@@ -540,9 +567,15 @@ resourceLogs:
               - key: rpc.method
                 value:
                   stringValue: ConsoleLogin
+              - key: rpc.system
+                value:
+                  stringValue: AwsConsoleSignIn
               - key: rpc.system.name
                 value:
                   stringValue: AwsConsoleSignIn
+              - key: rpc.service
+                value:
+                  stringValue: signin.amazonaws.com
               - key: aws.request_id
                 value:
                   stringValue: a1b2c3d4-5678-90ab-cdef-EXAMPLE11111
@@ -617,9 +650,15 @@ resourceLogs:
               - key: rpc.method
                 value:
                   stringValue: RotateKey
+              - key: rpc.system
+                value:
+                  stringValue: AwsServiceEvent
               - key: rpc.system.name
                 value:
                   stringValue: AwsServiceEvent
+              - key: rpc.service
+                value:
+                  stringValue: kms.amazonaws.com
               - key: aws.event.category
                 value:
                   stringValue: Management
