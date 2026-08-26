@@ -504,7 +504,16 @@ func (u *CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *C
 	attrs.PutStr("aws.cloudtrail.event_version", record.EventVersion)
 	attrs.PutStr("aws.cloudtrail.event_id", record.EventID)
 
-	if record.EventName != "" {
+	// When emitting v1.40.0 conventions, the deprecated rpc.service value (the
+	// CloudTrail eventSource) is folded into a fully-qualified rpc.method
+	// (e.g. "ec2.amazonaws.com/StartInstances") as the semconv rpc.service
+	// deprecation requires, rather than being dropped along with rpc.service.
+	// Otherwise the bare eventName is emitted as rpc.method.
+	if metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.IsEnabled() {
+		if method := fullyQualifiedRPCMethod(record.EventSource, record.EventName); method != "" {
+			attrs.PutStr(string(conventions.RPCMethodKey), method)
+		}
+	} else if record.EventName != "" {
 		attrs.PutStr(string(conventions.RPCMethodKey), record.EventName)
 	}
 
@@ -742,6 +751,23 @@ func withUserIdentityPrefix(attrs pcommon.Map, record *CloudTrailRecord) {
 	if record.UserIdentity.Type != "" {
 		attrs.PutStr("aws.user_identity.principal.type", record.UserIdentity.Type)
 	}
+}
+
+// fullyQualifiedRPCMethod builds a fully-qualified rpc.method value from the
+// CloudTrail eventSource and eventName. Per the semconv v1.40.0 deprecation of
+// rpc.service, the service (eventSource) is included in rpc.method as a
+// fully-qualified name (e.g. "ec2.amazonaws.com/StartInstances") rather than
+// emitted as a separate attribute. When eventSource is empty the bare eventName
+// is returned, and when eventName is empty an empty string is returned so no
+// rpc.method attribute is emitted.
+func fullyQualifiedRPCMethod(eventSource, eventName string) string {
+	if eventName == "" {
+		return ""
+	}
+	if eventSource == "" {
+		return eventName
+	}
+	return eventSource + "/" + eventName
 }
 
 // extract the version number from a TLS version string (e.g. "TLSv1.2" becomes "1.2")

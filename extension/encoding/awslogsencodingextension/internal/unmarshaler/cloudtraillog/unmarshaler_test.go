@@ -435,12 +435,14 @@ func TestRPCAttributeFeatureGates(t *testing.T) {
 		wantSystem     bool
 		wantService    bool
 		wantSystemName bool
+		wantMethod     string
 	}{
 		{
 			name:           "default: only v0 attributes",
 			wantSystem:     true,
 			wantService:    true,
 			wantSystemName: false,
+			wantMethod:     "TestAction",
 		},
 		{
 			name:           "emit v1: both old and new",
@@ -448,6 +450,7 @@ func TestRPCAttributeFeatureGates(t *testing.T) {
 			wantSystem:     true,
 			wantService:    true,
 			wantSystemName: true,
+			wantMethod:     "test.amazonaws.com/TestAction",
 		},
 		{
 			name:           "emit v1 and dont emit v0: only new",
@@ -456,6 +459,7 @@ func TestRPCAttributeFeatureGates(t *testing.T) {
 			wantSystem:     false,
 			wantService:    false,
 			wantSystemName: true,
+			wantMethod:     "test.amazonaws.com/TestAction",
 		},
 	}
 
@@ -476,10 +480,12 @@ func TestRPCAttributeFeatureGates(t *testing.T) {
 			_, hasSystem := attrs.Get("rpc.system")
 			_, hasService := attrs.Get("rpc.service")
 			_, hasSystemName := attrs.Get("rpc.system.name")
+			method, _ := attrs.Get("rpc.method")
 
 			require.Equal(t, tt.wantSystem, hasSystem, "rpc.system")
 			require.Equal(t, tt.wantService, hasService, "rpc.service")
 			require.Equal(t, tt.wantSystemName, hasSystemName, "rpc.system.name")
+			require.Equal(t, tt.wantMethod, method.Str(), "rpc.method")
 		})
 	}
 }
