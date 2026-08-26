@@ -190,31 +190,31 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingSamplerBurstCount, err = builder.meter.Int64ObservableCounter(
 		"otelcol_processor_adaptive_tail_sampling_sampler_burst_count",
-		metric.WithDescription("Cumulative number of intervals in which an adaptive sampler (adaptive_percentage or adaptive_throughput) detected a burst of traffic, labelled by rule, sampler_type, and algorithm. Not emitted for adaptive_throughput rules using the windowed algorithm, which do not track this counter. [Development]"),
+		metric.WithDescription("Cumulative number of intervals in which an adaptive sampler (adaptive_percentage or adaptive_throughput) detected a burst of traffic, labelled by rule, sampler_type, and sampler_algorithm. Not emitted for adaptive_throughput rules using the windowed algorithm, which do not track this counter. [Development]"),
 		metric.WithUnit("{bursts}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingSamplerIntervalCount, err = builder.meter.Int64ObservableCounter(
 		"otelcol_processor_adaptive_tail_sampling_sampler_interval_count",
-		metric.WithDescription("Cumulative number of rate-adjustment intervals an adaptive sampler (adaptive_percentage or adaptive_throughput) has completed, labelled by rule, sampler_type, and algorithm. Not emitted for adaptive_throughput rules using the windowed algorithm, which do not track this counter. [Development]"),
+		metric.WithDescription("Cumulative number of rate-adjustment intervals an adaptive sampler (adaptive_percentage or adaptive_throughput) has completed, labelled by rule, sampler_type, and sampler_algorithm. Not emitted for adaptive_throughput rules using the windowed algorithm, which do not track this counter. [Development]"),
 		metric.WithUnit("{intervals}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingSamplerKeyspaceSize, err = builder.meter.Int64ObservableGauge(
 		"otelcol_processor_adaptive_tail_sampling_sampler_keyspace_size",
-		metric.WithDescription("Current number of distinct sampling keys tracked by an adaptive sampler (adaptive_percentage or adaptive_throughput), labelled by rule, sampler_type, and algorithm. A rising value indicates growing key cardinality, which can degrade sampler accuracy and memory use. [Development]"),
+		metric.WithDescription("Current number of distinct sampling keys tracked by an adaptive sampler (adaptive_percentage or adaptive_throughput), labelled by rule, sampler_type, and sampler_algorithm. A rising value indicates growing key cardinality, which can degrade sampler accuracy and memory use. [Development]"),
 		metric.WithUnit("{keys}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingSamplerRequestCount, err = builder.meter.Int64ObservableCounter(
 		"otelcol_processor_adaptive_tail_sampling_sampler_request_count",
-		metric.WithDescription("Cumulative number of sample-rate requests made to an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule, sampler_type, and algorithm. [Development]"),
+		metric.WithDescription("Cumulative number of sample-rate requests made to an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule, sampler_type, and sampler_algorithm. [Development]"),
 		metric.WithUnit("{requests}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingSamplerSpanCount, err = builder.meter.Int64ObservableCounter(
 		"otelcol_processor_adaptive_tail_sampling_sampler_span_count",
-		metric.WithDescription("Cumulative number of spans observed by an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule, sampler_type, and algorithm. [Development]"),
+		metric.WithDescription("Cumulative number of spans observed by an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule, sampler_type, and sampler_algorithm. [Development]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)

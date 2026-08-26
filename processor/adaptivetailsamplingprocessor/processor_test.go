@@ -532,8 +532,8 @@ func TestProcessor_SamplerMetrics(t *testing.T) {
 	require.NoError(t, p.Start(t.Context(), nil))
 	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
 
-	emaAttrs := attribute.NewSet(attribute.String("rule", "ema"), attribute.String("sampler_type", "adaptive_percentage"), attribute.String("algorithm", "ema"))
-	windowedAttrs := attribute.NewSet(attribute.String("rule", "windowed"), attribute.String("sampler_type", "adaptive_throughput"), attribute.String("algorithm", "windowed"))
+	emaAttrs := attribute.NewSet(attribute.String("rule", "ema"), attribute.String("sampler_type", "adaptive_percentage"), attribute.String("sampler_algorithm", "ema"))
+	windowedAttrs := attribute.NewSet(attribute.String("rule", "windowed"), attribute.String("sampler_type", "adaptive_throughput"), attribute.String("sampler_algorithm", "windowed"))
 
 	emaTrace := newRootTrace(pcommon.TraceID([16]byte{0xC1}))
 	emaTrace.ResourceSpans().At(0).Resource().Attributes().PutStr("service.name", "svc-ema")

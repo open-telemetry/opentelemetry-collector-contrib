@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/adaptive_tail_sampling
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `sampler_request_count`, `sampler_span_count`, `sampler_keyspace_size`, `sampler_burst_count`, and `sampler_interval_count` metrics exposing the internal performance of `adaptive_percentage` and `adaptive_throughput` samplers, labelled by `rule`, `sampler_type`, and `algorithm`.
+note: Add `sampler_request_count`, `sampler_span_count`, `sampler_keyspace_size`, `sampler_burst_count`, and `sampler_interval_count` metrics exposing the internal performance of `adaptive_percentage` and `adaptive_throughput` samplers, labelled by `rule`, `sampler_type`, and `sampler_algorithm`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [49311]
@@ -17,8 +17,8 @@ issues: [49311]
 # Use pipe (|) for multiline entries.
 subtext: |
   Metrics are labelled by `rule`, `sampler_type` (`adaptive_percentage`, `adaptive_throughput`), and
-  `algorithm` (`ema`, `windowed`), matching the rule's sampler config, so keyspace growth, request/span
-  bursts, and convergence state can be compared per rule.
+  `sampler_algorithm` (`ema`, `windowed`), matching the rule's sampler config, so keyspace growth,
+  request/span bursts, and convergence state can be compared per rule.
   `sampler_burst_count` and `sampler_interval_count` are not emitted for `adaptive_throughput` rules using
   the `windowed` algorithm, which doesn't track these counters.
 
