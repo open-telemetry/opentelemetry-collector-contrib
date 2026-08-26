@@ -12,7 +12,7 @@ import (
 )
 
 // StackPayload represents a single [StackTraceEvent], with a [StackTrace], a
-// map of [StackFrames] and a map of [ExeMetadata] that have been serialized,
+// slice of [StackFrame] and a slice of [ExeMetadata] that have been serialized,
 // and need to be ingested into ES.
 type StackPayload struct {
 	StackTraceEvent StackTraceEvent

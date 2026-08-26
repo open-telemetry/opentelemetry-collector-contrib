@@ -32,7 +32,6 @@ func Transform(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope
 		return data, err
 	}
 
-	// profileContainer is checked for nil inside stackPayloads().
 	payloads, err := stackPayloads(dic, resource, scope, profile)
 	if err != nil {
 		return nil, err
