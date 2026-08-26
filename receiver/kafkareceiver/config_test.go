@@ -74,15 +74,6 @@ func TestLoadConfig(t *testing.T) {
 			}(),
 		},
 		{
-			name: "kafka/rebalance_strategy",
-			expected: func() *Config {
-				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.ConsumerConfig.GroupRebalanceStrategy = configkafka.StickyBalanceStrategy
-				cfg.ConsumerConfig.GroupInstanceID = "test-instance"
-				return cfg
-			}(),
-		},
-		{
 			name: "kafka/rebalance_strategies",
 			expected: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
