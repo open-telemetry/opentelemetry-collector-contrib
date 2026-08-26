@@ -165,6 +165,50 @@ type encodingContext struct {
 	resourceSchemaURL string
 	scope             pcommon.InstrumentationScope
 	scopeSchemaURL    string
+	// ecsBase maps resource and scope attributes once per Resource+Scope
+	// batch. Nil maps on each call. The exporter sets this only for MappingECS.
+	ecsBase *ecsAttributeBase
+}
+
+// ecsAttributeBase holds ECS-mapped resource and scope fields for one
+// Resource+Scope batch. Fields are sorted once. Per-record encode merges
+// the record into this base, then runs the rest of Dedup.
+type ecsAttributeBase struct {
+	doc   objmodel.Document
+	ready bool
+}
+
+func newECSAttributeBase(mode MappingMode) *ecsAttributeBase {
+	if mode != MappingECS {
+		return nil
+	}
+	return &ecsAttributeBase{}
+}
+
+func (b *ecsAttributeBase) mapped(resource pcommon.Resource, scope pcommon.InstrumentationScope) objmodel.Document {
+	if !b.ready {
+		// First, try to map resource-level attributes to ECS fields.
+		encodeAttributesECSMode(&b.doc, resource.Attributes(), resourceAttrsConversionMap)
+		// Then, try to map scope-level attributes to ECS fields.
+		encodeAttributesECSMode(&b.doc, scope.Attributes(), scopeAttrsConversionMap)
+		b.doc.Sort()
+		b.ready = true
+	}
+	return b.doc
+}
+
+func serializeECSDocument(
+	ec encodingContext,
+	recordDoc objmodel.Document,
+	protected map[string]struct{},
+	buf *bytes.Buffer,
+) error {
+	b := ec.ecsBase
+	if b == nil {
+		b = &ecsAttributeBase{}
+	}
+	mapped := b.mapped(ec.resource, ec.scope)
+	return objmodel.SerializeFromSortedBase(mapped, recordDoc, protected, buf, true)
 }
 
 func newEncoder(mode MappingMode) (documentEncoder, error) {
@@ -265,11 +309,7 @@ func (ecsModeEncoder) encodeLog(
 ) error {
 	var document objmodel.Document
 
-	// First, try to map resource-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
-	// Then, try to map scope-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
-	// Finally, try to map record-level attributes to ECS fields.
+	// Try to map record-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, record.Attributes(), logRecordAttrsConversionMap)
 	addDataStreamAttributes(&document, "", idx)
 
@@ -287,7 +327,7 @@ func (ecsModeEncoder) encodeLog(
 		document.AddAttribute("message", record.Body())
 	}
 
-	return document.Serialize(buf, true, logProtectedFields)
+	return serializeECSDocument(ec, document, logProtectedFields, buf)
 }
 
 func (ecsModeEncoder) encodeSpan(
@@ -298,11 +338,7 @@ func (ecsModeEncoder) encodeSpan(
 ) error {
 	var document objmodel.Document
 
-	// First, try to map resource-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
-	// Then, try to map scope-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
-	// Finally, try to map span-level attributes to ECS fields.
+	// Try to map span-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap)
 	addDataStreamAttributes(&document, "", idx)
 
@@ -321,7 +357,7 @@ func (ecsModeEncoder) encodeSpan(
 		document.AddString("span.kind", spanKind)
 	}
 
-	return document.Serialize(buf, true, spanProtectedFields)
+	return serializeECSDocument(ec, document, spanProtectedFields, buf)
 }
 
 // spanKindToECSStr converts an OTel SpanKind to its ECS equivalent string representation defined here:
@@ -554,8 +590,6 @@ func (ecsModeEncoder) encodeSpanEvent(
 	idx := elasticsearch.NewDataStreamIndex(defaultDataStreamTypeLogs, dataset, namespace)
 
 	var document objmodel.Document
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
 	encodeAttributesECSMode(&document, event.Attributes(), ecsSpanEventAttrsConversionMap)
 	addDataStreamAttributes(&document, "", idx)
 
@@ -585,7 +619,7 @@ func (ecsModeEncoder) encodeSpanEvent(
 		document.AddString("message", event.Name())
 	}
 
-	return idx, document.Serialize(buf, true, spanEventProtectedFields)
+	return idx, serializeECSDocument(ec, document, spanEventProtectedFields, buf)
 }
 
 func isExceptionSpanEvent(event ptrace.SpanEvent) bool {

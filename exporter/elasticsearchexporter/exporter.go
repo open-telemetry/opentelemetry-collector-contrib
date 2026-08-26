@@ -127,6 +127,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 				resourceSchemaURL: rl.SchemaUrl(),
 				scope:             scope,
 				scopeSchemaURL:    ill.SchemaUrl(),
+				ecsBase:           newECSAttributeBase(mappingMode),
 			}
 
 			for _, lr := range ill.LogRecords().All() {
@@ -393,6 +394,7 @@ func (e *elasticsearchExporter) pushTraceData(
 				resourceSchemaURL: il.SchemaUrl(),
 				scope:             scope,
 				scopeSchemaURL:    scopeSpan.SchemaUrl(),
+				ecsBase:           newECSAttributeBase(mappingMode),
 			}
 
 			for _, span := range scopeSpan.Spans().All() {

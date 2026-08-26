@@ -757,10 +757,8 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	}`, buf.String())
 }
 
-func TestEncodeLogECSMode(t *testing.T) {
-	logs := plog.NewLogs()
-	resource := logs.ResourceLogs().AppendEmpty().Resource()
-	err := resource.Attributes().FromRaw(map[string]any{
+func ecsModeResourceAttributes() map[string]any {
+	return map[string]any{
 		"agent.name":                  "custom-agent",
 		"agent.version":               "1.2.3",
 		"service.name":                "foo.bar",
@@ -779,6 +777,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"container.name":              "happy-seger",
 		"container.id":                "e69cc5d3dda",
 		"container.image.name":        "my-app",
+		"container.image.tags":        []any{"v3.4.0"},
 		"container.runtime":           "docker",
 		"host.name":                   "i-103de39e0a.gke.us-west-1b.cloud.google.com",
 		"host.hostname":               "hostname.example.com",
@@ -816,11 +815,19 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"source.address":              "12.53.12.1",
 		"faas.instance":               "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
 		"faas.trigger":                "api-gateway",
-	})
-	require.NoError(t, err)
+	}
+}
 
-	resourceContainerImageTags := resource.Attributes().PutEmptySlice("container.image.tags")
-	err = resourceContainerImageTags.FromRaw([]any{"v3.4.0"})
+func ecsModeResource(tb testing.TB) pcommon.Resource {
+	resource := pcommon.NewResource()
+	require.NoError(tb, resource.Attributes().FromRaw(ecsModeResourceAttributes()))
+	return resource
+}
+
+func TestEncodeLogECSMode(t *testing.T) {
+	logs := plog.NewLogs()
+	resource := logs.ResourceLogs().AppendEmpty().Resource()
+	err := resource.Attributes().FromRaw(ecsModeResourceAttributes())
 	require.NoError(t, err)
 
 	scope := pcommon.NewInstrumentationScope()
@@ -936,6 +943,166 @@ func TestEncodeLogECSMode(t *testing.T) {
 		     "trigger": { "type": "api-gateway" }
 	  }
 	}`, buf.String())
+}
+
+func TestEncodeECSMode_CachedBaseMatchesUncached(t *testing.T) {
+	encoder, err := newEncoder(MappingECS)
+	require.NoError(t, err)
+	idx := elasticsearch.Index{}
+	ts := pcommon.Timestamp(1710273641123456789)
+
+	cases := []struct {
+		name   string
+		setup  func(t *testing.T) (pcommon.Resource, pcommon.InstrumentationScope)
+		encode func(ec encodingContext) ([]string, error)
+	}{
+		{
+			name: "log record overwrites resource key",
+			setup: func(_ *testing.T) (pcommon.Resource, pcommon.InstrumentationScope) {
+				r := pcommon.NewResource()
+				r.Attributes().PutStr("service.name", "from-resource")
+				return r, pcommon.NewInstrumentationScope()
+			},
+			encode: func(ec encodingContext) ([]string, error) {
+				rec := plog.NewLogRecord()
+				rec.SetObservedTimestamp(ts)
+				rec.Attributes().PutStr("service.name", "from-record")
+				var buf bytes.Buffer
+				err := encoder.encodeLog(ec, rec, idx, &buf)
+				return []string{buf.String()}, err
+			},
+		},
+		{
+			name: "log prefix conflict across resource scope and record",
+			setup: func(_ *testing.T) (pcommon.Resource, pcommon.InstrumentationScope) {
+				r := pcommon.NewResource()
+				r.Attributes().PutStr("x", "resource")
+				s := pcommon.NewInstrumentationScope()
+				s.Attributes().PutStr("x.a", "scope")
+				return r, s
+			},
+			encode: func(ec encodingContext) ([]string, error) {
+				rec := plog.NewLogRecord()
+				rec.SetObservedTimestamp(ts)
+				rec.Attributes().PutStr("x", "record")
+				var buf bytes.Buffer
+				err := encoder.encodeLog(ec, rec, idx, &buf)
+				return []string{buf.String()}, err
+			},
+		},
+		{
+			name: "log nested array is isolated across records",
+			setup: func(t *testing.T) (pcommon.Resource, pcommon.InstrumentationScope) {
+				r := pcommon.NewResource()
+				require.NoError(t, r.Attributes().PutEmptySlice("items").FromRaw([]any{
+					map[string]any{
+						"a":   int64(1),
+						"a.b": "nested",
+					},
+				}))
+				return r, pcommon.NewInstrumentationScope()
+			},
+			encode: func(ec encodingContext) ([]string, error) {
+				docs := make([]string, 2)
+				for i := range docs {
+					rec := plog.NewLogRecord()
+					rec.SetObservedTimestamp(ts)
+					rec.Attributes().PutInt("n", int64(i))
+					var buf bytes.Buffer
+					if err := encoder.encodeLog(ec, rec, idx, &buf); err != nil {
+						return nil, err
+					}
+					docs[i] = buf.String()
+				}
+				return docs, nil
+			},
+		},
+		{
+			name: "span prefix conflict across resource scope and record",
+			setup: func(_ *testing.T) (pcommon.Resource, pcommon.InstrumentationScope) {
+				r := pcommon.NewResource()
+				r.Attributes().PutStr("x", "resource")
+				s := pcommon.NewInstrumentationScope()
+				s.Attributes().PutStr("x.a", "scope")
+				return r, s
+			},
+			encode: func(ec encodingContext) ([]string, error) {
+				sp := ptrace.NewSpan()
+				sp.SetName("GET")
+				sp.SetStartTimestamp(ts)
+				sp.Attributes().PutStr("x", "record")
+				var buf bytes.Buffer
+				err := encoder.encodeSpan(ec, sp, idx, &buf)
+				return []string{buf.String()}, err
+			},
+		},
+		{
+			name: "span event prefix conflict across resource scope and record",
+			setup: func(_ *testing.T) (pcommon.Resource, pcommon.InstrumentationScope) {
+				r := pcommon.NewResource()
+				r.Attributes().PutStr("x", "resource")
+				s := pcommon.NewInstrumentationScope()
+				s.Attributes().PutStr("x.a", "scope")
+				return r, s
+			},
+			encode: func(ec encodingContext) ([]string, error) {
+				sp := ptrace.NewSpan()
+				ev := ptrace.NewSpanEvent()
+				ev.SetName("custom")
+				ev.SetTimestamp(ts)
+				ev.Attributes().PutStr("x", "record")
+				var buf bytes.Buffer
+				_, err := encoder.encodeSpanEvent(ec, sp, ev, idx, &buf)
+				return []string{buf.String()}, err
+			},
+		},
+		{
+			name: "span then span event share cached base",
+			setup: func(t *testing.T) (pcommon.Resource, pcommon.InstrumentationScope) {
+				r := pcommon.NewResource()
+				require.NoError(t, r.Attributes().PutEmptySlice("items").FromRaw([]any{
+					map[string]any{
+						"http.response.encoded_body_size":   int64(1),
+						"http.response.encoded_body_size.x": "nested",
+					},
+				}))
+				return r, pcommon.NewInstrumentationScope()
+			},
+			encode: func(ec encodingContext) ([]string, error) {
+				sp := ptrace.NewSpan()
+				sp.SetName("GET")
+				sp.SetStartTimestamp(ts)
+				var spanBuf bytes.Buffer
+				if err := encoder.encodeSpan(ec, sp, idx, &spanBuf); err != nil {
+					return nil, err
+				}
+				ev := ptrace.NewSpanEvent()
+				ev.SetName("custom")
+				ev.SetTimestamp(ts)
+				var eventBuf bytes.Buffer
+				if _, err := encoder.encodeSpanEvent(ec, sp, ev, idx, &eventBuf); err != nil {
+					return nil, err
+				}
+				return []string{spanBuf.String(), eventBuf.String()}, nil
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			resource, scope := tc.setup(t)
+			cached := encodingContext{resource: resource, scope: scope, ecsBase: &ecsAttributeBase{}}
+			uncached := encodingContext{resource: resource, scope: scope}
+			got, err := tc.encode(cached)
+			require.NoError(t, err)
+			want, err := tc.encode(uncached)
+			require.NoError(t, err)
+			require.Len(t, got, len(want))
+			for i := range got {
+				require.JSONEq(t, want[i], got[i], "doc %d", i)
+			}
+		})
+	}
 }
 
 func TestEncodeLogECSModeTimestamps(t *testing.T) {
