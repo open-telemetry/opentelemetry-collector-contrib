@@ -123,22 +123,22 @@ func TestDynsamplerWrapper_GetMetrics(t *testing.T) {
 			build: func() (Sampler, error) {
 				return NewEMAPercentage(EMAPercentageConfig{GoalSamplingPercentage: 10, AdjustmentInterval: 15 * time.Second, Weight: 0.5})
 			},
-			wantKeys: []string{"pfx_request_count", "pfx_event_count", "pfx_keyspace_size", "pfx_burst_count", "pfx_interval_count"},
+			wantKeys: []string{"request_count", "event_count", "keyspace_size", "burst_count", "interval_count"},
 		},
 		{
 			name: "ema_throughput",
 			build: func() (Sampler, error) {
 				return NewEMAThroughput(EMAThroughputConfig{GoalThroughputPerSec: 100, AdjustmentInterval: 15 * time.Second, Weight: 0.5})
 			},
-			wantKeys: []string{"pfx_request_count", "pfx_event_count", "pfx_keyspace_size", "pfx_burst_count", "pfx_interval_count"},
+			wantKeys: []string{"request_count", "event_count", "keyspace_size", "burst_count", "interval_count"},
 		},
 		{
 			name: "windowed_throughput",
 			build: func() (Sampler, error) {
 				return NewWindowedThroughput(WindowedThroughputConfig{GoalThroughputPerSec: 100, UpdateFrequency: time.Second, LookbackFrequency: 30 * time.Second})
 			},
-			wantKeys:   []string{"pfx_request_count", "pfx_event_count", "pfx_keyspace_size"},
-			absentKeys: []string{"pfx_burst_count", "pfx_interval_count"},
+			wantKeys:   []string{"request_count", "event_count", "keyspace_size"},
+			absentKeys: []string{"burst_count", "interval_count"},
 		},
 	}
 	for _, tt := range tests {
@@ -152,14 +152,15 @@ func TestDynsamplerWrapper_GetMetrics(t *testing.T) {
 			require.True(t, ok, "dynsampler-backed sampler must implement MetricsProvider")
 
 			s.GetSampleRate("svc-a", 1)
-			metrics := mp.GetMetrics("pfx_")
+			// "" matches the prefix the processor actually passes to GetMetrics.
+			metrics := mp.GetMetrics("")
 			for _, k := range tt.wantKeys {
 				assert.Contains(t, metrics, k)
 			}
 			for _, k := range tt.absentKeys {
 				assert.NotContains(t, metrics, k)
 			}
-			assert.EqualValues(t, 1, metrics["pfx_request_count"])
+			assert.EqualValues(t, 1, metrics["request_count"])
 		})
 	}
 }
