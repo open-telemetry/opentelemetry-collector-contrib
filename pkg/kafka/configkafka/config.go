@@ -463,22 +463,11 @@ func NewDefaultMetadataConfig() MetadataConfig {
 
 // AuthenticationConfig defines authentication-related configuration.
 type AuthenticationConfig struct {
-	// PlainText is an alias for SASL/PLAIN authentication.
-	//
-	// Deprecated [v0.123.0]: use SASL with Mechanism set to PLAIN instead.
-	PlainText *PlainTextConfig `mapstructure:"plain_text"`
-
 	// SASL holds SASL authentication configuration.
 	SASL *SASLConfig `mapstructure:"sasl"`
 
 	// Kerberos holds Kerberos authentication configuration.
 	Kerberos *KerberosConfig `mapstructure:"kerberos"`
-
-	// TLS holds TLS configuration for connecting to Kafka brokers.
-	//
-	// Deprecated [v0.124.0]: use ClientConfig.TLS instead. This will
-	// be used only if ClientConfig.TLS is not set.
-	TLS *configtls.ClientConfig `mapstructure:"tls"`
 }
 
 // PlainTextConfig defines plaintext authentication.
