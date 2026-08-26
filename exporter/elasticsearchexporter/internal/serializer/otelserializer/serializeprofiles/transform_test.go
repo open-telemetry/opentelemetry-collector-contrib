@@ -229,18 +229,8 @@ func TestTransform(t *testing.T) {
 					},
 					StackFrames: []StackFrame{},
 					Executables: []ExeMetadata{
-						NewExeMetadata(
-							buildIDBase64,
-							GetStartOfWeekFromTime(time.Now()),
-							buildIDBase64,
-							"firefox",
-						),
-						NewExeMetadata(
-							buildID2Base64,
-							GetStartOfWeekFromTime(time.Now()),
-							buildID2Base64,
-							"libc.so",
-						),
+						ExeMetadata{DocID: buildIDEncoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
+						ExeMetadata{DocID: buildID2Encoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
 					},
 					ResourceAttrs: ResourceData{
 						Data: map[string]string{
@@ -357,18 +347,8 @@ func TestStackPayloads(t *testing.T) {
 					},
 					StackFrames: []StackFrame{},
 					Executables: []ExeMetadata{
-						NewExeMetadata(
-							buildIDBase64,
-							GetStartOfWeekFromTime(time.Now()),
-							buildIDBase64,
-							"firefox",
-						),
-						NewExeMetadata(
-							buildID2Base64,
-							GetStartOfWeekFromTime(time.Now()),
-							buildID2Base64,
-							"libc.so",
-						),
+						ExeMetadata{DocID: buildIDEncoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
+						ExeMetadata{DocID: buildID2Encoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
 					},
 					ResourceAttrs: ResourceData{
 						Data: map[string]string{},
@@ -450,18 +430,8 @@ func TestStackPayloads(t *testing.T) {
 					},
 					StackFrames: []StackFrame{},
 					Executables: []ExeMetadata{
-						NewExeMetadata(
-							buildIDBase64,
-							GetStartOfWeekFromTime(time.Now()),
-							buildIDBase64,
-							"firefox",
-						),
-						NewExeMetadata(
-							buildID2Base64,
-							GetStartOfWeekFromTime(time.Now()),
-							buildID2Base64,
-							"libc.so",
-						),
+						ExeMetadata{DocID: buildIDEncoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
+						ExeMetadata{DocID: buildID2Encoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
 					},
 					ResourceAttrs: ResourceData{
 						Data: map[string]string{},
@@ -553,18 +523,8 @@ func TestStackPayloads(t *testing.T) {
 					},
 					StackFrames: []StackFrame{},
 					Executables: []ExeMetadata{
-						NewExeMetadata(
-							buildIDBase64,
-							GetStartOfWeekFromTime(time.Now()),
-							buildIDBase64,
-							"firefox",
-						),
-						NewExeMetadata(
-							buildID2Base64,
-							GetStartOfWeekFromTime(time.Now()),
-							buildID2Base64,
-							"libc.so",
-						),
+						ExeMetadata{DocID: buildIDEncoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
+						ExeMetadata{DocID: buildID2Encoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
 						// Note: no ExeMetadata for the third mapping since it has no BuildID
 					},
 					ResourceAttrs: ResourceData{

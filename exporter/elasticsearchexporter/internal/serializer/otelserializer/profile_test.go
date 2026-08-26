@@ -135,16 +135,9 @@ func TestSerializeProfile(t *testing.T) {
 					"resource.attribute.process.thread.name":     "",
 				},
 				{
-					"script": map[string]any{
-						"params": map[string]any{
-							"buildid":   "YA3K_koRAADyvzjEk_X7kg",
-							"filename":  "samples",
-							"timestamp": json.Number(fmt.Sprintf("%d", serializeprofiles.GetStartOfWeekFromTime(time.Now()))),
-						},
-						"source": serializeprofiles.ExeMetadataUpsertScript,
-					},
-					"scripted_upsert": true,
-					"upsert":          map[string]any{},
+					"@timestamp":                                             json.Number(fmt.Sprintf("%d", serializeprofiles.GetStartOfWeekFromTime(time.Now()))),
+					"resource.attributes.process.executable.build_id.htlhash": "600DCAFE4A110000F2BF38C493F5FB92",
+					"resource.attributes.process.executable.name":            "samples",
 				},
 			},
 		},

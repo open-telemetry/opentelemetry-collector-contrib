@@ -366,19 +366,18 @@ func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice
 			continue
 		}
 
-		buildID, err := getBuildID(dic, mapping)
-		if err != nil {
-			return nil, err
-		}
-
-		if buildID.IsZero() {
+		buildIDStr, err := getStringFromAttribute(dic, mapping, string(conventions.ProcessExecutableBuildIDHtlhashKey))
+		if err != nil || buildIDStr == "" {
 			// No build ID was specified or could be fetched.
 			continue
 		}
 
-		docID := buildID.Base64()
-		executable := NewExeMetadata(docID, lastSeen, docID, filename)
-		metadata = append(metadata, executable)
+		metadata = append(metadata, ExeMetadata{
+			DocID:     buildIDStr,
+			Timestamp: lastSeen,
+			BuildID:   buildIDStr,
+			Name:      filename,
+		})
 	}
 
 	return metadata, nil

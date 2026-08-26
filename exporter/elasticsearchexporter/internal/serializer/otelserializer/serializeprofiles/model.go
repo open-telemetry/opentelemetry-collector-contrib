@@ -95,59 +95,11 @@ func (h ResourceData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(combinedData)
 }
 
-// Script written in Painless that will both create a new document (if DocID does not exist),
-// and update timestamp of an existing document. Named parameters are used to improve performance
-// re: script compilation (since the script does not change across executions, it can be compiled
-// once and cached).
-const ExeMetadataUpsertScript = `
-if (ctx.op == 'create') {
-		ctx._source['@timestamp']            = params.timestamp;
-		ctx._source['Executable.build.id']   = params.buildid;
-		ctx._source['Executable.file.name']  = params.filename;
-} else {
-		if (ctx._source['@timestamp'] == params.timestamp) {
-				ctx.op = 'noop'
-		} else {
-				ctx._source['@timestamp'] = params.timestamp
-		}
-}
-`
-
-type ExeMetadataScript struct {
-	Source string            `json:"source"`
-	Params ExeMetadataParams `json:"params"`
-}
-
-type ExeMetadataParams struct {
-	LastSeen uint32 `json:"timestamp"`
-	BuildID  string `json:"buildid"`
-	FileName string `json:"filename"`
-}
-
-// ExeMetadata represents executable metadata serializable into the executables index.
+// ExeMetadata represents executable metadata serializable into the profiling-executables datastream.
 // DocID should be the base64-encoded FileID.
 type ExeMetadata struct {
-	DocID string `json:"-"`
-	// ScriptedUpsert needs to be 'true' for the script to execute regardless of the
-	// document existing or not.
-	ScriptedUpsert bool              `json:"scripted_upsert"`
-	Script         ExeMetadataScript `json:"script"`
-	// This needs to exist for document creation to succeed (if document does not exist),
-	// but can be empty as the script implements both document creation and updating.
-	Upsert struct{} `json:"upsert"`
-}
-
-func NewExeMetadata(docID string, lastSeen uint32, buildID, fileName string) ExeMetadata {
-	return ExeMetadata{
-		DocID:          docID,
-		ScriptedUpsert: true,
-		Script: ExeMetadataScript{
-			Source: ExeMetadataUpsertScript,
-			Params: ExeMetadataParams{
-				LastSeen: lastSeen,
-				BuildID:  buildID,
-				FileName: fileName,
-			},
-		},
-	}
+	DocID     string `json:"-"`
+	Timestamp uint32 `json:"@timestamp"`
+	BuildID   string `json:"resource.attributes.process.executable.build_id.htlhash,omitempty"`
+	Name      string `json:"resource.attributes.process.executable.name,omitempty"`
 }
