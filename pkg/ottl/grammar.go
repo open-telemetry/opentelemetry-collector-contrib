@@ -403,10 +403,8 @@ func (m *mapValue) accept(v grammarVisitor) {
 
 // mapItem is a single key/value entry within a mapValue.
 type mapItem struct {
-	Key *string `parser:"( @String"`
-	// If an unquoted identifier is matched then return an error.
-	InvalidKey *string `parser:"| @( Lowercase (Uppercase | Lowercase)* | Uppercase (Uppercase | Lowercase)* ) ) ':'"`
-	Value      *value  `parser:"@@"`
+	Key   *string `parser:"@String ':'"`
+	Value *value  `parser:"@@"`
 }
 
 // byteSlice type for capturing byte slices
@@ -674,15 +672,7 @@ func (g *grammarCustomErrorsVisitor) join() error {
 
 func (*grammarCustomErrorsVisitor) visitPath(*path) {}
 
-func (g *grammarCustomErrorsVisitor) visitValue(v *value) {
-	if v.Map != nil {
-		for _, item := range v.Map.Values {
-			if item.InvalidKey != nil {
-				g.add(fmt.Errorf("map keys must be quoted strings but got %s", *item.InvalidKey))
-			}
-		}
-	}
-}
+func (*grammarCustomErrorsVisitor) visitValue(*value) {}
 
 func (*grammarCustomErrorsVisitor) visitConverter(*converter) {}
 

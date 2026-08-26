@@ -2484,16 +2484,15 @@ func Test_String(t *testing.T) {
 func Test_parseStatement(t *testing.T) {
 	converterNameErrorPrefix := "converter names must start with an uppercase letter"
 	editorWithIndexErrorPrefix := "only paths and converters may be indexed"
-	mapKeyErrorPrefix := "map keys must be quoted strings"
 
 	tests := []struct {
 		statement         string
 		wantErr           bool
 		wantErrContaining string
 	}{
-		{statement: `set(attributes["x"], {foo: "bar"})`, wantErrContaining: mapKeyErrorPrefix},
-		{statement: `set(attributes["x"], {fooBar: "bar"})`, wantErrContaining: mapKeyErrorPrefix},
-		{statement: `set(attributes["x"], {"a": {b: 1}})`, wantErrContaining: mapKeyErrorPrefix},
+		{statement: `set(attributes["x"], {foo: "bar"})`, wantErrContaining: "invalid syntax at 1:20 near `, {foo"},
+		{statement: `set(attributes["x"], {fooBar: "bar"})`, wantErr: true},
+		{statement: `set(attributes["x"], {"a": {b: 1}})`, wantErr: true},
 		{statement: `set(attributes["x"], {"foo": "bar"})`},
 		{statement: `set(`, wantErr: true},
 		{statement: `set("foo)`, wantErr: true},
@@ -2642,7 +2641,6 @@ func Test_parseValueExpression(t *testing.T) {
 	converterNameErrorPrefix := "converter names must start with an uppercase letter"
 	editorWithIndexErrorPrefix := "only paths and converters may be indexed"
 	byteSliceErrorPrefix := "byte literals must have an even number of hexadecimal digits"
-	mapKeyErrorPrefix := "map keys must be quoted strings"
 
 	tests := []struct {
 		valueExpression   string
@@ -2652,9 +2650,9 @@ func Test_parseValueExpression(t *testing.T) {
 		{valueExpression: `0xABCD`},
 		{valueExpression: `0xABC`, wantErrContaining: byteSliceErrorPrefix},
 		{valueExpression: `{"foo": "bar"}`},
-		{valueExpression: `{foo: "bar"}`, wantErrContaining: mapKeyErrorPrefix},
-		{valueExpression: `{fooBar: "bar"}`, wantErrContaining: mapKeyErrorPrefix},
-		{valueExpression: `{"a": {b: 1}}`, wantErrContaining: mapKeyErrorPrefix},
+		{valueExpression: `{foo: "bar"}`, wantErrContaining: "invalid syntax at 1:2 near `foo"},
+		{valueExpression: `{fooBar: "bar"}`, wantErr: true},
+		{valueExpression: `{"a": {b: 1}}`, wantErr: true},
 		{valueExpression: `time_end - time_end`},
 		{valueExpression: `time_end - time_end - attributes["foo"]`},
 		{valueExpression: `Test("foo")`},
@@ -2678,6 +2676,46 @@ func Test_parseValueExpression(t *testing.T) {
 			if tt.wantErrContaining != "" {
 				require.ErrorContains(t, err, tt.wantErrContaining)
 			}
+		})
+	}
+}
+
+func Test_formatParseError(t *testing.T) {
+	tests := []struct {
+		name    string
+		raw     string
+		parse   func(string) error
+		wantErr string
+	}{
+		{
+			name:    "unexpected token reports position and nearby source",
+			raw:     `set(attributes["x"], {foo: "bar"})`,
+			parse:   func(s string) error { _, err := parseStatement(s); return err },
+			wantErr: "statement has invalid syntax at 1:20 near `, {foo: \"b`: (expected \")\" Key*)",
+		},
+		{
+			name:    "unexpected token at end of input omits the near clause",
+			raw:     `set(`,
+			parse:   func(s string) error { _, err := parseStatement(s); return err },
+			wantErr: "statement has invalid syntax at 1:5: (expected \")\" Key*)",
+		},
+		{
+			name:    "value expression keeps its kind",
+			raw:     `{foo: "bar"}`,
+			parse:   func(s string) error { _, err := parseValueExpression(s); return err },
+			wantErr: "expression has invalid syntax at 1:2 near `foo: \"bar\"`: (expected \"}\")",
+		},
+		{
+			name:    "non-token participle errors keep their own message",
+			raw:     `0xABC`,
+			parse:   func(s string) error { _, err := parseValueExpression(s); return err },
+			wantErr: "expression has invalid syntax: 1:1: failed to capture: byte literals must have an even number of hexadecimal digits, but got 0xABC: encoding/hex: odd length hex string",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.parse(tt.raw)
+			require.EqualError(t, err, tt.wantErr)
 		})
 	}
 }
