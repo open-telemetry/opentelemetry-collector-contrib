@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 
@@ -39,6 +40,11 @@ type Manager struct {
 	fileMatcher   *matcher.Matcher
 	tracker       tracker.Tracker
 	noTracking    bool
+
+	// keepFilesOpen controls whether file handles are retained between poll cycles.
+	// It is resolved once at build time (see keepFilesOpenBetweenPolls) and passed to
+	// the tracker, so runtime behavior never depends on the global feature-gate registry.
+	keepFilesOpen bool
 
 	pollInterval   time.Duration
 	persister      operator.Persister
@@ -93,9 +99,18 @@ func (m *Manager) instantiateTracker(ctx context.Context, persister operator.Per
 	if m.noTracking {
 		t = tracker.NewNoStateTracker(m.set, m.maxBatchFiles)
 	} else {
-		t = tracker.NewFileTracker(ctx, m.set, m.maxBatchFiles, m.pollsToArchive, persister)
+		t = tracker.NewFileTracker(ctx, m.set, m.maxBatchFiles, m.pollsToArchive, persister, m.keepFilesOpen)
 	}
 	m.tracker = t
+}
+
+// keepFilesOpenBetweenPolls reports whether the tracker should retain file handles
+// between poll cycles. On non-Windows platforms this is always the case. On Windows it
+// is opt-in via the filelog.windows.keepFilesOpen feature gate; when the gate is
+// disabled (the default) files are closed immediately after each poll, preserving the
+// legacy Windows behavior so users are unaffected until they choose to enable it.
+func keepFilesOpenBetweenPolls() bool {
+	return runtime.GOOS != "windows" || metadata.FilelogWindowsKeepFilesOpenFeatureGate.IsEnabled()
 }
 
 // Stop will stop the file monitoring process

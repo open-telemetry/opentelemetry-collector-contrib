@@ -166,14 +166,14 @@ func TestMoveFile(t *testing.T) {
 }
 
 func TestTrackMovedAwayFiles(t *testing.T) {
-	// Reading a file that was moved out of the matching pattern relies on keeping the
-	// handle open between polls, which is opt-in on Windows.
-	enableKeepFilesOpen(t)
+	t.Parallel()
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, sink := testManager(t, cfg)
+	// Reading a file that was moved out of the matching pattern relies on keeping the
+	// handle open between polls, which is opt-in on Windows.
+	operator, sink := testManagerKeepFilesOpen(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temp1 := filetest.OpenTemp(t, tempDir)
@@ -208,14 +208,14 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 // Check if we read log lines from a rotated file before lines from the newly created file
 // Note that we don't guarantee ordering based on file identity - only that we read from rotated files first
 func TestTrackRotatedFilesLogOrder(t *testing.T) {
-	// Reading from a rotated-away file relies on keeping the handle open between
-	// polls, which is opt-in on Windows.
-	enableKeepFilesOpen(t)
+	t.Parallel()
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, sink := testManager(t, cfg)
+	// Reading from a rotated-away file relies on keeping the handle open between
+	// polls, which is opt-in on Windows.
+	operator, sink := testManagerKeepFilesOpen(t, cfg)
 	core, observedLogs := observer.New(zap.DebugLevel)
 	logger := zap.New(core)
 	operator.set.Logger = logger
@@ -262,15 +262,15 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 // When a file it rotated out of pattern via move/create, we should
 // detect that our old handle is still valid attempt to read from it.
 func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
-	// Detecting that our old handle is still valid after a file is rotated out of the
-	// pattern relies on keeping the handle open between polls, which is opt-in on Windows.
-	enableKeepFilesOpen(t)
+	t.Parallel()
 
 	tempDir := t.TempDir()
 	cfg := NewConfig()
 	cfg.Include = append(cfg.Include, fmt.Sprintf("%s/*.log1", tempDir))
 	cfg.StartAt = "beginning"
-	operator, sink := testManager(t, cfg)
+	// Detecting that our old handle is still valid after a file is rotated out of the
+	// pattern relies on keeping the handle open between polls, which is opt-in on Windows.
+	operator, sink := testManagerKeepFilesOpen(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
 	core, observedLogs := observer.New(zap.DebugLevel)
 	logger := zap.New(core)

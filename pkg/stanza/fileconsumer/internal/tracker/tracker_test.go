@@ -20,7 +20,7 @@ func TestFileTrackerReusesFilesetsBetweenPolls(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	persister := testutil.NewUnscopedMockPersister()
 
-	tracker := NewFileTracker(t.Context(), set, 10, 0, persister)
+	tracker := NewFileTracker(t.Context(), set, 10, 0, persister, true)
 	ft := tracker.(*fileTracker)
 
 	firstCurrent := ft.currentPollFiles
@@ -45,7 +45,7 @@ func TestFileTrackerReusesUnmatchedSlices(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	persister := testutil.NewUnscopedMockPersister()
 
-	tracker := NewFileTracker(t.Context(), set, 10, 0, persister)
+	tracker := NewFileTracker(t.Context(), set, 10, 0, persister, true)
 	ft := tracker.(*fileTracker)
 
 	ft.AddUnmatched(nil, fingerprint.New([]byte("fp1")))
@@ -66,7 +66,7 @@ func TestFileTrackerReusesKnownFilesAcrossPolls(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	persister := testutil.NewUnscopedMockPersister()
 
-	tracker := NewFileTracker(t.Context(), set, 10, 0, persister)
+	tracker := NewFileTracker(t.Context(), set, 10, 0, persister, true)
 	ft := tracker.(*fileTracker)
 
 	first := ft.knownFiles[0]
@@ -202,7 +202,7 @@ func TestTryReuseByPathMtime_NoStateTracker_AlwaysFalse(t *testing.T) {
 // no persister requirement.
 func newTestFileTracker(t *testing.T) *fileTracker {
 	t.Helper()
-	tr := NewFileTracker(t.Context(), componenttest.NewNopTelemetrySettings(), 10, 0, nil)
+	tr := NewFileTracker(t.Context(), componenttest.NewNopTelemetrySettings(), 10, 0, nil, true)
 	ft, ok := tr.(*fileTracker)
 	require.True(t, ok, "NewFileTracker should return *fileTracker")
 	return ft

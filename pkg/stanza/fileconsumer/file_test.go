@@ -1383,33 +1383,18 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	operator.wg.Wait()
 }
 
-// enableKeepFilesOpen turns on the filelog.windows.keepFilesOpen feature gate for the
-// duration of the test, so that the keep-files-open behavior is exercised on Windows
-// (where it is opt-in). It has no behavioral effect on other platforms, where handles
-// are always kept open. Tests using it must not call t.Parallel, since the feature gate
-// registry is global.
-func enableKeepFilesOpen(t *testing.T) {
-	prev := metadata.FilelogWindowsKeepFilesOpenFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogWindowsKeepFilesOpenFeatureGate.ID(), true))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogWindowsKeepFilesOpenFeatureGate.ID(), prev))
-	})
-}
-
-// TestFilesKeptOpenBetweenPolls verifies that file handles are kept open between
-// poll cycles on all platforms. On Windows this requires the opt-in
-// filelog.windows.keepFilesOpen feature gate, which the test enables explicitly.
-// It also verifies that the file can still be moved while we hold the handle (made
-// possible by opening with FILE_SHARE_DELETE on Windows) and that the handle is
-// released within a couple of polls once the file is no longer matched, so it is
-// never held perpetually.
+// TestFilesKeptOpenBetweenPolls verifies that, when keep-files-open is enabled, file
+// handles are kept open between poll cycles. It also verifies that the file can still
+// be moved while we hold the handle (made possible by opening with FILE_SHARE_DELETE on
+// Windows) and that the handle is released within a couple of polls once the file is no
+// longer matched, so it is never held perpetually.
 func TestFilesKeptOpenBetweenPolls(t *testing.T) {
-	enableKeepFilesOpen(t)
+	t.Parallel()
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, sink := testManager(t, cfg)
+	operator, sink := testManagerKeepFilesOpen(t, cfg)
 
 	temp := filetest.OpenTemp(t, tempDir)
 	filetest.WriteString(t, temp, "testlog\n")
@@ -1439,21 +1424,16 @@ func TestFilesKeptOpenBetweenPolls(t *testing.T) {
 	require.Empty(t, operator.tracker.PreviousPollFiles())
 }
 
-// TestFilesClosedImmediatelyWithGateDisabled verifies the default Windows behavior
-// (the filelog.windows.keepFilesOpen feature gate disabled): file handles are closed
-// immediately after each poll. The gate is scoped to Windows, so on other platforms
-// handles are always kept open between polls regardless of its state.
-func TestFilesClosedImmediatelyWithGateDisabled(t *testing.T) {
-	prev := metadata.FilelogWindowsKeepFilesOpenFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogWindowsKeepFilesOpenFeatureGate.ID(), false))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogWindowsKeepFilesOpenFeatureGate.ID(), prev))
-	})
+// TestFilesClosedImmediatelyBetweenPolls verifies the legacy behavior (keep-files-open
+// disabled, i.e. the default on Windows): file handles are closed immediately after each
+// poll, so nothing is retained between polls and the file can be moved right away.
+func TestFilesClosedImmediatelyBetweenPolls(t *testing.T) {
+	t.Parallel()
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, sink := testManager(t, cfg)
+	operator, sink := testManagerKeepFilesClosed(t, cfg)
 
 	temp := filetest.OpenTemp(t, tempDir)
 	filetest.WriteString(t, temp, "testlog\n")
@@ -1463,17 +1443,11 @@ func TestFilesClosedImmediatelyWithGateDisabled(t *testing.T) {
 	sink.ExpectToken(t, []byte("testlog"))
 	operator.wg.Wait()
 
-	if runtime.GOOS == windowsOS {
-		// With the gate disabled, Windows falls back to closing files immediately
-		// after each poll, so nothing is retained between polls.
-		require.Empty(t, operator.tracker.PreviousPollFiles())
+	// Files are closed immediately after the poll, so nothing is retained.
+	require.Empty(t, operator.tracker.PreviousPollFiles())
 
-		// Because the handle was released, the file can be moved out of the pattern.
-		require.NoError(t, os.Rename(temp.Name(), temp.Name()+"_renamed"))
-	} else {
-		// On other platforms the gate has no effect; handles are always retained.
-		require.Len(t, operator.tracker.PreviousPollFiles(), 1)
-	}
+	// Because the handle was released, the file can be moved out of the pattern.
+	require.NoError(t, os.Rename(temp.Name(), temp.Name()+"_renamed"))
 }
 
 func TestDelayedDisambiguation(t *testing.T) {
