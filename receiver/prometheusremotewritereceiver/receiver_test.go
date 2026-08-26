@@ -2644,9 +2644,9 @@ func TestTranslateV2(t *testing.T) {
 					"instance", "host1", // 3, 4
 					"__name__", "http_requests_total", // 5, 6
 					"status", "200", "500", // 7, 8, 9
-					"trace_id", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", // 10, 11
+					"trace_id", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", // 10, 11
 					"span_id", "aaaaaaaaaaaaaaaa", // 12, 13
-					"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", // 14
+					"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", // 14, oversized on purpose
 					"bbbbbbbbbbbbbbbb", // 15
 				},
 				Timeseries: []writev2.TimeSeries{
@@ -2710,7 +2710,7 @@ func TestTranslateV2(t *testing.T) {
 				ex200 := dp200.Exemplars().AppendEmpty()
 				ex200.SetDoubleValue(100)
 				ex200.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				traceA, _ := hex.DecodeString("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"[:32])
+				traceA, _ := hex.DecodeString("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 				var tidA [16]byte
 				copy(tidA[:], traceA)
 				ex200.SetTraceID(pcommon.TraceID(tidA))
@@ -2727,10 +2727,10 @@ func TestTranslateV2(t *testing.T) {
 				ex500 := dp500.Exemplars().AppendEmpty()
 				ex500.SetDoubleValue(5)
 				ex500.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				traceB, _ := hex.DecodeString("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"[:32])
-				var tidB [16]byte
-				copy(tidB[:], traceB)
-				ex500.SetTraceID(pcommon.TraceID(tidB))
+				// trace-B is 48 characters, which is not a valid trace ID: it must be
+				// kept as a filtered attribute instead of being truncated into the
+				// exemplar. The span ID alongside it is valid and is still converted.
+				ex500.FilteredAttributes().PutStr("trace_id", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
 				spanB, _ := hex.DecodeString("bbbbbbbbbbbbbbbb")
 				var sidB [8]byte
 				copy(sidB[:], spanB)

@@ -1,0 +1,16 @@
+change_type: bug_fix
+
+component: receiver/prometheus_remote_write
+
+note: Only convert exemplar `trace_id` and `span_id` labels that are valid IDs, and keep the rest as filtered attributes
+
+issues: [50547]
+
+subtext: |
+  A `trace_id` or `span_id` label whose value did not decode to exactly the
+  OpenTelemetry ID width was zero padded or truncated into the exemplar, and was
+  dropped rather than kept as a filtered attribute, so the exemplar carried an ID
+  the sender never wrote and the original value was lost. Such a label is now left
+  as a filtered attribute, as the Prometheus compatibility specification requires.
+
+change_logs: [user]
