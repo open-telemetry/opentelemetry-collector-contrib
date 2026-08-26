@@ -414,7 +414,7 @@ func (b *byteSlice) Capture(values []string) error {
 	rawStr := values[0][2:]
 	newBytes, err := hex.DecodeString(rawStr)
 	if err != nil {
-		return err
+		return fmt.Errorf("byte literals must have an even number of hexadecimal digits, but got %s: %w", values[0], err)
 	}
 	*b = newBytes
 	return nil
