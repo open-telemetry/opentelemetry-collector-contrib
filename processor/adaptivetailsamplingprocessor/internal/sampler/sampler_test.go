@@ -111,6 +111,69 @@ func TestWindowedThroughput_InvalidGoal(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestDynsamplerWrapper_GetMetrics(t *testing.T) {
+	tests := []struct {
+		name       string
+		build      func() (Sampler, error)
+		wantKeys   []string
+		absentKeys []string
+	}{
+		{
+			name: "ema_percentage",
+			build: func() (Sampler, error) {
+				return NewEMAPercentage(EMAPercentageConfig{GoalSamplingPercentage: 10, AdjustmentInterval: 15 * time.Second, Weight: 0.5})
+			},
+			wantKeys: []string{"pfx_request_count", "pfx_event_count", "pfx_keyspace_size", "pfx_burst_count", "pfx_interval_count"},
+		},
+		{
+			name: "ema_throughput",
+			build: func() (Sampler, error) {
+				return NewEMAThroughput(EMAThroughputConfig{GoalThroughputPerSec: 100, AdjustmentInterval: 15 * time.Second, Weight: 0.5})
+			},
+			wantKeys: []string{"pfx_request_count", "pfx_event_count", "pfx_keyspace_size", "pfx_burst_count", "pfx_interval_count"},
+		},
+		{
+			name: "windowed_throughput",
+			build: func() (Sampler, error) {
+				return NewWindowedThroughput(WindowedThroughputConfig{GoalThroughputPerSec: 100, UpdateFrequency: time.Second, LookbackFrequency: 30 * time.Second})
+			},
+			wantKeys:   []string{"pfx_request_count", "pfx_event_count", "pfx_keyspace_size"},
+			absentKeys: []string{"pfx_burst_count", "pfx_interval_count"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s, err := tt.build()
+			require.NoError(t, err)
+			require.NoError(t, s.Start())
+			t.Cleanup(func() { _ = s.Stop() })
+
+			mp, ok := s.(MetricsProvider)
+			require.True(t, ok, "dynsampler-backed sampler must implement MetricsProvider")
+
+			s.GetSampleRate("svc-a", 1)
+			metrics := mp.GetMetrics("pfx_")
+			for _, k := range tt.wantKeys {
+				assert.Contains(t, metrics, k)
+			}
+			for _, k := range tt.absentKeys {
+				assert.NotContains(t, metrics, k)
+			}
+			assert.EqualValues(t, 1, metrics["pfx_request_count"])
+		})
+	}
+}
+
+func TestNonDynsamplerSamplers_DoNotImplementMetricsProvider(t *testing.T) {
+	_, ok := NewAlwaysSample().(MetricsProvider)
+	assert.False(t, ok)
+
+	d, err := NewDeterministic(50)
+	require.NoError(t, err)
+	_, ok = d.(MetricsProvider)
+	assert.False(t, ok)
+}
+
 func TestDynsamplerWrapper_StopIsIdempotent(t *testing.T) {
 	samplers := []func() (Sampler, error){
 		func() (Sampler, error) {
