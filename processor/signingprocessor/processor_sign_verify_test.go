@@ -4,6 +4,7 @@
 package signingprocessor
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -215,7 +216,7 @@ func TestJCSCanonicalization(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if string(b1) != string(b2) {
+	if !bytes.Equal(b1, b2) {
 		t.Errorf("JCS produced different output for same data in different insertion order:\n  order1: %s\n  order2: %s", b1, b2)
 	}
 }

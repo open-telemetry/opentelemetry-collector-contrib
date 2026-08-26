@@ -7,7 +7,7 @@
 // integrity attributes to log records for use with the OpenTelemetry Audit
 // Logging signal.
 //
-// For each log record it serialises the full record to RFC 8785 (JCS)
+// For each log record it serializes the full record to RFC 8785 (JCS)
 // canonical JSON and computes a signature using the configured JWA algorithm.
 // The signature is stored as audit.integrity.value on the record.
 // audit.integrity.algorithm and audit.integrity.certificate (for asymmetric
