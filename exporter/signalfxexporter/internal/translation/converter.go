@@ -185,93 +185,56 @@ func newDatapointValidator(logger *zap.Logger, nonAlphanumericDimChars string) *
 	return &datapointValidator{logger: logger, nonAlphanumericDimChars: nonAlphanumericDimChars}
 }
 
-// sanitizeDataPoints sanitizes datapoints prior to dispatching them to the backend.
-// Datapoints that do not conform to the requirements are removed. This method drops
-// datapoints with metric name greater than 256 characters and number of dimensions greater than 36.
+// sanitizeDataPoints logs a debug message for any datapoint that violates SignalFx backend
+// constraints on metric name length, number of dimensions, dimension name length, or
+// dimension value length. These datapoints are no longer dropped by the exporter, since
+// the backend already enforces these constraints and drops offending datapoints at ingest.
 func (dpv *datapointValidator) sanitizeDataPoints(dps []*sfxpb.DataPoint) []*sfxpb.DataPoint {
-	resultDatapointsLen := 0
-	for dpIndex, dp := range dps {
-		if dpv.isValidMetricName(dp.Metric) && dpv.isValidNumberOfDimension(dp) {
-			dp.Dimensions = dpv.sanitizeDimensions(dp.Dimensions)
-			if resultDatapointsLen < dpIndex {
-				dps[resultDatapointsLen] = dp
-			}
-			resultDatapointsLen++
-		}
+	for _, dp := range dps {
+		dpv.logIfInvalid(dp)
+		dpv.sanitizeDimensionKeys(dp.Dimensions)
 	}
-
-	// Trim datapoints slice to account for any removed datapoints.
-	return dps[:resultDatapointsLen]
+	return dps
 }
 
-// sanitizeDimensions replaces all characters unsupported by SignalFx backend
-// in metric label keys and with "_" and drops dimensions when the key is greater
-// than 128 characters or when value is greater than 256 characters in length.
-func (dpv *datapointValidator) sanitizeDimensions(dims []*sfxpb.Dimension) []*sfxpb.Dimension {
-	resultDimensionsLen := 0
-	for dimensionIndex, d := range dims {
-		if dpv.isValidDimension(d) {
-			d.Key = dimensions.FilterKeyChars(d.Key, dpv.nonAlphanumericDimChars)
-			if resultDimensionsLen < dimensionIndex {
-				dims[resultDimensionsLen] = d
-			}
-			resultDimensionsLen++
-		}
+// sanitizeDimensionKeys replaces all characters unsupported by the SignalFx backend
+// in dimension keys with "_".
+func (dpv *datapointValidator) sanitizeDimensionKeys(dims []*sfxpb.Dimension) {
+	for _, d := range dims {
+		d.Key = dimensions.FilterKeyChars(d.Key, dpv.nonAlphanumericDimChars)
 	}
-
-	// Trim dimensions slice to account for any removed dimensions.
-	return dims[:resultDimensionsLen]
 }
 
-func (dpv *datapointValidator) isValidMetricName(name string) bool {
-	if len(name) > maxMetricNameLength {
-		dpv.logger.Debug("dropping datapoint",
-			zap.String("reason", invalidMetricNameReason),
-			zap.String("metric_name", name),
-			zap.Int("metric_name_length", len(name)),
-		)
-		return false
-	}
-	return true
-}
+// logIfInvalid logs a single debug message listing every distinct constraint a datapoint violates.
+func (dpv *datapointValidator) logIfInvalid(dp *sfxpb.DataPoint) {
+	var (
+		reasons             []string
+		dimNameReasonAdded  bool
+		dimValueReasonAdded bool
+	)
 
-func (dpv *datapointValidator) isValidNumberOfDimension(dp *sfxpb.DataPoint) bool {
+	if len(dp.Metric) > maxMetricNameLength {
+		reasons = append(reasons, invalidMetricNameReason)
+	}
 	if len(dp.Dimensions) > maxNumberOfDimensions {
-		dpv.logger.Warn("dropping datapoint",
-			zap.String("reason", invalidNumberOfDimensions),
-			zap.Stringer("datapoint", dp),
-			zap.Int("number_of_dimensions", len(dp.Dimensions)),
-		)
-		return false
+		reasons = append(reasons, invalidNumberOfDimensions)
 	}
-	return true
-}
-
-func (dpv *datapointValidator) isValidDimension(dimension *sfxpb.Dimension) bool {
-	return dpv.isValidDimensionName(dimension.Key) && dpv.isValidDimensionValue(dimension.Value, dimension.Key)
-}
-
-func (dpv *datapointValidator) isValidDimensionName(name string) bool {
-	if len(name) > maxDimensionNameLength {
-		dpv.logger.Debug("dropping dimension",
-			zap.String("reason", invalidDimensionNameReason),
-			zap.String("dimension_name", name),
-			zap.Int("dimension_name_length", len(name)),
-		)
-		return false
+	for _, d := range dp.Dimensions {
+		if len(d.Key) > maxDimensionNameLength && !dimNameReasonAdded {
+			dimNameReasonAdded = true
+			reasons = append(reasons, invalidDimensionNameReason)
+		}
+		if len(d.Value) > maxDimensionValueLength && !dimValueReasonAdded {
+			dimValueReasonAdded = true
+			reasons = append(reasons, invalidDimensionValueReason)
+		}
 	}
-	return true
-}
 
-func (dpv *datapointValidator) isValidDimensionValue(value, name string) bool {
-	if len(value) > maxDimensionValueLength {
-		dpv.logger.Debug("dropping dimension",
-			zap.String("dimension_name", name),
-			zap.String("reason", invalidDimensionValueReason),
-			zap.String("dimension_value", value),
-			zap.Int("dimension_value_length", len(value)),
-		)
-		return false
+	if len(reasons) == 0 {
+		return
 	}
-	return true
+	dpv.logger.Debug("datapoint is not valid and will be dropped at ingest",
+		zap.Strings("reasons", reasons),
+		zap.Stringer("datapoint", dp),
+	)
 }

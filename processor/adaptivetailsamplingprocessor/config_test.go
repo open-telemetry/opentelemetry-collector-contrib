@@ -75,6 +75,17 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: "at least one rule",
 		},
 		{
+			name: "negative_span_limit",
+			cfg: Config{
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
+				SpanLimit:     -1,
+				Rules:         []RuleConfig{{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}}},
+			},
+			wantErr: "span_limit must be non-negative",
+		},
+		{
 			name: "negative_sampled_cache_size",
 			cfg: Config{
 				TraceTimeout:  time.Second,

@@ -24,11 +24,13 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/extensions"
@@ -367,9 +369,14 @@ type Telemetry struct {
 	Metrics Metrics                        `mapstructure:"metrics"`
 	Traces  otelconftelemetry.TracesConfig `mapstructure:"traces"`
 
-	Resource otelconftelemetry.ResourceConfig `mapstructure:"resource"`
+	Resource ResourceConfig `mapstructure:"resource"`
 	// prevent unkeyed literal initialization
 	_ struct{}
+}
+
+type ResourceConfig struct {
+	otelconftelemetry.ResourceConfig `mapstructure:",squash"`
+	DetectionDevelopment             configoptional.Optional[xotelconf.ExperimentalResourceDetection] `mapstructure:"detection/development,omitempty"`
 }
 
 type HealthCheck struct {

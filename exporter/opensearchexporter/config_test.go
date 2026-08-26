@@ -228,6 +228,28 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "metrics_index_valid"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.ClientConfig.Endpoint = sampleEndpoint
+				config.MetricsIndex = "otel-metrics-%{service.name}"
+				config.MetricsIndexFallback = "default-service"
+				config.MetricsIndexTimeFormat = "yyyy.MM.dd"
+			}),
+			configValidateAssert: assert.NoError,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "metrics_index_time_format_invalid"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.ClientConfig.Endpoint = sampleEndpoint
+				config.MetricsIndex = "otel-metrics-%{service.name}"
+				config.MetricsIndexFallback = "default-service"
+				config.MetricsIndexTimeFormat = "invalid_format!"
+			}),
+			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.ErrorContains(t, err, errMetricsIndexTimeFormatInvalid.Error())
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "pipeline"),
 			expected: withDefaultConfig(func(config *Config) {
 				config.ClientConfig.Endpoint = sampleEndpoint
