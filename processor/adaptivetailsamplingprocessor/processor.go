@@ -263,11 +263,20 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []sampler.Selector, err
 		selectors, err := sampler.ParseSelectors(sc.FingerprintAttributes)
 		return s, selectors, err
 	case AdaptiveThroughput:
+		// A throughput goal cannot be converted to a sample rate without
+		// observed volume, so the pre-warmup rate comes from the explicit
+		// initial_sampling_percentage bootstrap (default 10%, i.e. 1-in-10).
+		initialPct := sc.InitialSamplingPercentage
+		if initialPct == 0 {
+			initialPct = 10
+		}
+		initialRate := max(int(100.0/initialPct), 1)
 		var s sampler.Sampler
 		var err error
 		if sc.effectiveAlgorithm() == AlgorithmWindowed {
 			s, err = sampler.NewWindowedThroughput(sampler.WindowedThroughputConfig{
 				GoalThroughputPerSec: float64(sc.GoalThroughput),
+				InitialSamplingRate:  initialRate,
 				UpdateFrequency:      sc.UpdateFrequency,
 				LookbackFrequency:    sc.LookbackFrequency,
 				MaxKeys:              sc.MaxKeys,
@@ -275,6 +284,7 @@ func newSamplerForRule(rc *RuleConfig) (sampler.Sampler, []sampler.Selector, err
 		} else {
 			s, err = sampler.NewEMAThroughput(sampler.EMAThroughputConfig{
 				GoalThroughputPerSec: sc.GoalThroughput,
+				InitialSamplingRate:  initialRate,
 				AdjustmentInterval:   sc.AdjustmentInterval,
 				Weight:               sc.Weight,
 				MaxKeys:              sc.MaxKeys,

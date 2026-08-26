@@ -205,6 +205,45 @@ func TestConfig_Validate(t *testing.T) {
 			}),
 		},
 		{
+			name: "valid_adaptive_throughput_with_initial_sampling_percentage",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                      AdaptiveThroughput,
+					GoalThroughput:            100,
+					InitialSamplingPercentage: 25,
+					FingerprintAttributes:     []string{`resource.attributes["service.name"]`},
+					Weight:                    0.5,
+				},
+			}),
+		},
+		{
+			name: "adaptive_throughput_initial_sampling_percentage_too_high",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                      AdaptiveThroughput,
+					GoalThroughput:            100,
+					InitialSamplingPercentage: 101,
+					FingerprintAttributes:     []string{`resource.attributes["service.name"]`},
+				},
+			}),
+			wantErr: "initial_sampling_percentage must be in (0, 100]",
+		},
+		{
+			name: "initial_sampling_percentage_rejected_on_adaptive_percentage",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                      AdaptivePercentage,
+					GoalPercentage:            10,
+					InitialSamplingPercentage: 25,
+					FingerprintAttributes:     []string{`resource.attributes["service.name"]`},
+				},
+			}),
+			wantErr: "adaptive_percentage does not use initial_sampling_percentage",
+		},
+		{
 			name: "adaptive_throughput_invalid_weight",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",

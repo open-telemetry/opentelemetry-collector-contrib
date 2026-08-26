@@ -274,29 +274,31 @@ faster to traffic shifts at the cost of more spike sensitivity, tuned with
 #### Cold start and unseen fingerprints
 
 The adaptive samplers need one adjustment cycle before they have per-fingerprint
-rates, and each behaves differently until then:
+rates. Until then, `adaptive_percentage` samples every trace at the goal rate,
+and `adaptive_throughput` (either algorithm) samples every trace at
+`initial_sampling_percentage` (default 10%), an explicit bootstrap because a
+throughput goal cannot be converted to a sample rate before any volume has been
+observed. After warmup, a fingerprint the sampler has not yet learned is kept
+(`ema` algorithms) or sampled at the bootstrap (`windowed`) until the next
+adjustment learns it.
 
-| Sampler | Before the first interval | Unseen fingerprint after warmup |
-| --- | --- | --- |
-| `adaptive_percentage` (`ema`) | samples every trace at the goal rate | kept (rate 1) until the next interval learns it |
-| `adaptive_throughput` (`ema`) | samples every trace at 1-in-10 (a library default, not derived from `goal_throughput`) | kept until learned |
-| `adaptive_throughput` (`windowed`) | keeps every trace | kept until the first lookback window completes |
-
-In practice this means a short smoke test right after startup may keep far less
-(or far more) than the configured goal; give the sampler at least one
+In practice this means a short smoke test right after startup keeps roughly the
+goal rate (`adaptive_percentage`) or the bootstrap percentage
+(`adaptive_throughput`), not everything; give the sampler at least one
 `adjustment_interval` (or one `lookback_frequency` window) of traffic before
-judging its rates. Aligning these behaviours is tracked in
-[#50538](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50538).
+judging its rates.
 
 #### `max_keys` overflow
 
-When a sampler's key map is full, traffic for fingerprints beyond `max_keys` is
-kept at 100% rather than sampled toward the goal, for every sampler and
-algorithm. A fingerprint-cardinality explosion therefore increases output
-volume instead of degrading it, so size `max_keys` above your expected
-fingerprint cardinality and alert on the `trace_span_count` and
-`decision_sample_rate` metrics if output volume grows unexpectedly. Changing
-the overflow behaviour to fall back to the goal rate is also tracked in
+When an `ema` sampler's key map is full, traffic for fingerprints beyond
+`max_keys` is kept at 100% rather than sampled toward the goal; the `windowed`
+algorithm samples overflow traffic at `initial_sampling_percentage` instead. A
+fingerprint-cardinality explosion under the `ema` algorithms therefore
+increases output volume instead of degrading it, so size `max_keys` above your
+expected fingerprint cardinality and alert on the `trace_span_count` and
+`decision_sample_rate` metrics if output volume grows unexpectedly. Falling
+back to the goal rate on `ema` overflow needs upstream library support and is
+tracked in
 [#50538](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50538).
 
 Migrating from Refinery: `DeterministicSampler` -> `probabilistic` (the same
@@ -341,6 +343,7 @@ Adjusts rates per key to hit a sustained volume budget in spans per second.
 sampler:
   type: adaptive_throughput
   goal_throughput: 100                    # target spans/sec per instance, across all keys
+  initial_sampling_percentage: 10         # % kept before rates are learned (default 10)
   fingerprint_attributes:
     - resource.attributes["service.name"]
     - span.attributes["http.status_code"]
