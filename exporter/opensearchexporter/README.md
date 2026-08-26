@@ -112,6 +112,12 @@ The OpenSearch exporter supports several document schemas and preprocessing beha
     - `bodymap`: uses the "body" of a log record as the exact content of the OpenSearch document, without any transformation. This mapping mode is intended for use cases where the client wishes to have complete control over the OpenSearch document structure.
     - `otel-v1`: exports logs and traces using the Data Prepper OTel v1 schema, compatible with OpenSearch Observability dashboards.
   - `manage_index_template`: (optional, default=`false`) When `true`, creates composable index templates on startup. Only valid with `otel-v1` mode.
+  - `index_template_file`: (optional) Path to a JSON file whose contents are deep-merged over the built-in `otel-v1` index template before it is created. Requires `manage_index_template: true` and `otel-v1` mode. See [Custom index mappings](#custom-index-mappings).
+  - `ism`: (optional) Opt-in [Index State Management](#index-state-management-ism-rollover) rollover for `otel-v1` indices. Only valid with `otel-v1` mode.
+    - `enabled`: (optional, default=`false`) When `true`, creates a rollover policy and an initial write-aliased index on startup.
+    - `policy_file`: (optional) Path to a JSON file containing a full ISM policy body. When set, it is used verbatim and the `rollover_*` options are ignored.
+    - `rollover_min_size`: (optional, default=`50gb`) Minimum index size before rollover. Used only by the built-in policy.
+    - `rollover_min_index_age`: (optional, default=`24h`) Minimum index age before rollover. Used only by the built-in policy.
   - `timestamp_field`: (optional) Field to store the timestamp in. If not set, uses the default `@timestamp`.
   - `unix_timestamp`: (optional) Whether to store the timestamp in epoch milliseconds.
   - `dedup`: (optional) removes fields from the document, that have duplicate keys. The filtering only keeps the last value for a key.
@@ -201,6 +207,78 @@ exporters:
       manage_index_template: true
     sending_queue:
       batch:
+```
+
+##### Custom index mappings
+
+The built-in `otel-v1` template maps every unique attribute key as its own field via
+`dynamic_templates`. On high-cardinality data this can lead to *mapping explosion* — a large field
+count that strains the cluster, and where a single bad key can produce a mapping conflict that
+affects unrelated documents. Rather than hardcoding one attribute shape for everyone, the exporter
+lets you supply your own mapping overlay so you can tune how attributes land in your cluster.
+
+Set `index_template_file` to a JSON file that is **deep-merged over the built-in template** (requires
+`manage_index_template: true`). Object values are merged recursively; array and scalar values in your
+file replace the built-in ones. This lets you, for example, uplift common attributes to typed fields
+for aggregations, or keep the free-form `attributes` object un-indexed to bound the field count —
+without restating the whole template. The overlay is applied to both the span and logs templates, so
+include only keys valid for both (extra keys are harmless).
+
+```yaml
+exporters:
+  opensearch:
+    http:
+      endpoint: http://opensearch.example.com:9200
+    mapping:
+      mode: "otel-v1"
+      manage_index_template: true
+      index_template_file: /etc/otelcol/otel-v1-overlay.json
+```
+
+Example overlay that keeps span `attributes` un-indexed (stored but not searchable) to avoid mapping
+explosion, while uplifting one common attribute to a typed field:
+
+```json
+{
+  "template": {
+    "mappings": {
+      "properties": {
+        "attributes": { "type": "object", "enabled": false },
+        "http.response.status_code": { "type": "integer" }
+      }
+    }
+  }
+}
+```
+
+Merging is best-effort: if the file cannot be read or parsed, the exporter logs a warning and falls
+back to the built-in template.
+
+##### Index State Management (ISM) rollover
+
+For `otel-v1` mode, `mapping.ism.enabled: true` makes the exporter provision an
+[Index State Management](https://opensearch.org/docs/latest/im-plugin/ism/index/) rollover policy and
+an initial write-aliased index (`<alias>-000001` with the write alias `<alias>`) on startup, so
+indices roll over by size/age instead of growing unbounded. The default policy rolls over at
+`rollover_min_size` (default `50gb`) or `rollover_min_index_age` (default `24h`), whichever comes
+first. Provide `policy_file` to use a full custom ISM policy instead.
+
+ISM is incompatible with dynamic index placeholders (`%{...}`) in `logs_index`/`traces_index`, since
+rollover writes through a fixed alias. Like template management, ISM setup is best-effort and does not
+fail `Start()`.
+
+```yaml
+exporters:
+  opensearch:
+    http:
+      endpoint: http://opensearch.example.com:9200
+    mapping:
+      mode: "otel-v1"
+      manage_index_template: true
+      ism:
+        enabled: true
+        rollover_min_size: 50gb
+        rollover_min_index_age: 24h
 ```
 
 ### HTTP Connection Options

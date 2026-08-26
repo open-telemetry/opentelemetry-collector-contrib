@@ -1,4 +1,20 @@
 $defs:
+  ism_config:
+    description: ISMConfig configures opt-in Index State Management (ISM) policy creation for otel-v1 indices. When enabled, the exporter creates a rollover policy and an initial write-aliased index on startup so otel-v1 indices roll over by size/age instead of growing unbounded.
+    type: object
+    properties:
+      enabled:
+        description: Enabled controls whether an ISM rollover policy is created on startup.
+        type: boolean
+      policy_file:
+        description: PolicyFile is an optional path to a JSON file containing a full ISM policy body. When set, it is used verbatim instead of the built-in rollover policy, and the RolloverMinSize/RolloverMinIndexAge options are ignored.
+        type: string
+      rollover_min_index_age:
+        description: RolloverMinIndexAge is the minimum index age before rollover (e.g. "24h"). Used only by the built-in policy. Defaults to "24h" when empty.
+        type: string
+      rollover_min_size:
+        description: RolloverMinSize is the minimum primary-shard-inclusive index size before rollover (e.g. "50gb"). Used only by the built-in policy. Defaults to "50gb" when empty.
+        type: string
   mappings_settings:
     type: object
     properties:
@@ -15,6 +31,12 @@ $defs:
       file:
         description: File to read additional fields mappings from.
         type: string
+      index_template_file:
+        description: IndexTemplateFile is an optional path to a JSON file whose contents are deep-merged over the built-in otel-v1 index template before it is created. Use it to uplift common attributes to typed fields or to keep high-cardinality attributes un-indexed, without forking the exporter. Object values are merged recursively; array and scalar values in the file replace the built-in ones. Only used when ManageIndexTemplate is true and Mode is "otel-v1".
+        type: string
+      ism:
+        description: ISM configures opt-in Index State Management (rollover) policy creation on startup. Only supported when Mode is "otel-v1".
+        $ref: ism_config
       manage_index_template:
         description: ManageIndexTemplate controls whether the exporter creates index templates on startup. Only supported when Mode is "otel-v1". Validation will reject this option with other modes.
         type: boolean

@@ -359,3 +359,77 @@ func TestOTelV1MappingModeValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestISMAndCustomMappingValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		mutate      func(*Config)
+		expectError string
+	}{
+		{
+			name: "ism enabled with otel-v1 is valid",
+			mutate: func(c *Config) {
+				c.MappingsSettings.Mode = "otel-v1"
+				c.MappingsSettings.ISM.Enabled = true
+			},
+		},
+		{
+			name: "ism enabled with ss4o is invalid",
+			mutate: func(c *Config) {
+				c.MappingsSettings.Mode = "ss4o"
+				c.MappingsSettings.ISM.Enabled = true
+			},
+			expectError: errISMInvalidMode.Error(),
+		},
+		{
+			name: "ism enabled with dynamic logs_index is invalid",
+			mutate: func(c *Config) {
+				c.MappingsSettings.Mode = "otel-v1"
+				c.MappingsSettings.ISM.Enabled = true
+				c.LogsIndex = "otel-logs-%{service.name}"
+			},
+			expectError: errISMDynamicIndex.Error(),
+		},
+		{
+			name: "ism enabled with dynamic traces_index is invalid",
+			mutate: func(c *Config) {
+				c.MappingsSettings.Mode = "otel-v1"
+				c.MappingsSettings.ISM.Enabled = true
+				c.TracesIndex = "otel-traces-%{service.name}"
+			},
+			expectError: errISMDynamicIndex.Error(),
+		},
+		{
+			name: "index_template_file with otel-v1 and manage_index_template is valid",
+			mutate: func(c *Config) {
+				c.MappingsSettings.Mode = "otel-v1"
+				c.MappingsSettings.ManageIndexTemplate = true
+				c.MappingsSettings.IndexTemplateFile = "/tmp/custom.json"
+			},
+		},
+		{
+			name: "index_template_file without manage_index_template is invalid",
+			mutate: func(c *Config) {
+				c.MappingsSettings.Mode = "otel-v1"
+				c.MappingsSettings.ManageIndexTemplate = false
+				c.MappingsSettings.IndexTemplateFile = "/tmp/custom.json"
+			},
+			expectError: errIndexTemplateFileInvalidMode.Error(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := withDefaultConfig(func(config *Config) {
+				config.ClientConfig.Endpoint = "http://localhost:9200"
+				tt.mutate(config)
+			})
+			err := cfg.Validate()
+			if tt.expectError != "" {
+				assert.ErrorContains(t, err, tt.expectError)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
