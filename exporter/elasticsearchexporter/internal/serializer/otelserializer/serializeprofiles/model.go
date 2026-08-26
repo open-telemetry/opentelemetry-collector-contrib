@@ -24,33 +24,64 @@ type StackPayload struct {
 }
 
 // StackTraceEvent represents a stacktrace event serializable into ES.
-// The json field names need to be case-sensitively equal to the fields defined
-// in the schema mapping.
 type StackTraceEvent struct {
-	// Event-specific metadata
-	TimeStamp    unixTime64 `json:"@timestamp"`
-	StackTraceID string     `json:"stacktrace.id"` // 128-bit hash in binary form
-	Frequency    int64      `json:"sampling_frequency"`
-	Count        uint16     `json:"count"`
-	HostID       string     `json:"resource.attribute.host.id"`
+	TimeStamp        unixTime64
+	StackTraceID     string
+	Frequency        int64
+	Count            uint16
+	HostID           string
+	PodName          string
+	ContainerID      string
+	ContainerName    string
+	K8sNamespaceName string
+	ThreadName       string
+	ExecutableName   string
+	ServiceName      string
+	HostName         string
+}
 
-	// Additional known resource attributes
-	PodName          string `json:"resource.attribute.k8s.pod.name,omitempty"`
-	ContainerID      string `json:"resource.attribute.container.id,omitempty"`
-	ContainerName    string `json:"resource.attribute.container.name,omitempty"`
-	K8sNamespaceName string `json:"resource.attribute.k8s.namespace.name,omitempty"`
-	ThreadName       string `json:"resource.attribute.process.thread.name"`
-	ExecutableName   string `json:"resource.attribute.process.executable.name"`
-	ServiceName      string `json:"resource.attribute.service.name,omitempty"`
-	HostName         string `json:"resource.attribute.host.name,omitempty"`
+// MarshalJSON serializes StackTraceEvent with resource.attributes as a nested object
+// to match the Elasticsearch passthrough mapping.
+func (e StackTraceEvent) MarshalJSON() ([]byte, error) {
+	attrs := map[string]any{
+		"host.id":                 e.HostID,
+		"thread.name":             e.ThreadName,
+		"process.executable.name": e.ExecutableName,
+	}
+	if e.PodName != "" {
+		attrs["k8s.pod.name"] = e.PodName
+	}
+	if e.ContainerID != "" {
+		attrs["container.id"] = e.ContainerID
+	}
+	if e.ContainerName != "" {
+		attrs["container.name"] = e.ContainerName
+	}
+	if e.K8sNamespaceName != "" {
+		attrs["k8s.namespace.name"] = e.K8sNamespaceName
+	}
+	if e.ServiceName != "" {
+		attrs["service.name"] = e.ServiceName
+	}
+	if e.HostName != "" {
+		attrs["host.name"] = e.HostName
+	}
+	return json.Marshal(map[string]any{
+		"@timestamp":         e.TimeStamp,
+		"stacktrace.id":      e.StackTraceID,
+		"sampling_frequency": e.Frequency,
+		"count":              e.Count,
+		"resource":           map[string]any{"attributes": attrs},
+	})
 }
 
 // StackTrace represents a stacktrace serializable into the stacktraces index.
 // DocID should be the base64-encoded Stacktrace ID.
 type StackTrace struct {
-	DocID    string `json:"-"`
-	FrameIDs string `json:"frame.ids"`
-	Types    string `json:"frame.types"`
+	DocID     string     `json:"-"`
+	Timestamp unixTime64 `json:"@timestamp"`
+	FrameIDs  string     `json:"frame.ids"`
+	Types     string     `json:"frame.types"`
 }
 
 // StackFrame represents a stacktrace serializable into the stackframes index.
@@ -59,11 +90,12 @@ type StackTrace struct {
 // doesn't send inline information yet. The symbolizer already stores arrays, which requires
 // the reader to handle both formats if we don't use arrays here.
 type StackFrame struct {
-	DocID          string   `json:"-"`
-	FileName       []string `json:"function.filename,omitempty"`
-	FunctionName   []string `json:"function.name,omitempty"`
-	LineNumber     []int32  `json:"line.number,omitempty"`
-	FunctionOffset []int32  `json:"function.offset,omitempty"`
+	DocID          string     `json:"-"`
+	Timestamp      unixTime64 `json:"@timestamp"`
+	FileName       []string   `json:"function.filename,omitempty"`
+	FunctionName   []string   `json:"function.name,omitempty"`
+	LineNumber     []int32    `json:"line.number,omitempty"`
+	FunctionOffset []int32    `json:"function.offset,omitempty"`
 }
 
 // ResourceData represents the resources metadata related to a sample for the
@@ -96,10 +128,27 @@ func (h ResourceData) MarshalJSON() ([]byte, error) {
 }
 
 // ExeMetadata represents executable metadata serializable into the profiling-executables datastream.
-// DocID should be the base64-encoded FileID.
+// DocID should be the htlhash build ID string.
 type ExeMetadata struct {
-	DocID     string `json:"-"`
-	Timestamp uint32 `json:"@timestamp"`
-	BuildID   string `json:"resource.attributes.process.executable.build_id.htlhash,omitempty"`
-	Name      string `json:"resource.attributes.process.executable.name,omitempty"`
+	DocID     string
+	Timestamp uint32
+	BuildID   string
+	Name      string
+}
+
+// MarshalJSON serializes ExeMetadata with resource.attributes as a nested object
+// to match the Elasticsearch passthrough mapping.
+func (e ExeMetadata) MarshalJSON() ([]byte, error) {
+	attrs := map[string]any{}
+	if e.BuildID != "" {
+		attrs["process.executable.build_id.htlhash"] = e.BuildID
+	}
+	if e.Name != "" {
+		attrs["process.executable.name"] = e.Name
+	}
+	m := map[string]any{"@timestamp": e.Timestamp}
+	if len(attrs) > 0 {
+		m["resource"] = map[string]any{"attributes": attrs}
+	}
+	return json.Marshal(m)
 }

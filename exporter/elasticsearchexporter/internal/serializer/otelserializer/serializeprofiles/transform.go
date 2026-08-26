@@ -108,11 +108,16 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 
 		event := stackTraceEvent(dic, traceID, sample, frequency, commonResourceAttributes)
 
+		ts := newUnixTime64(uint64(time.Now().UnixNano()))
+		if sample.TimestampsUnixNano().Len() > 0 {
+			ts = newUnixTime64(sample.TimestampsUnixNano().At(0))
+		}
+
 		// Set the stacktrace and stackframes to the payload.
 		// The docs only need to be written once.
 		stackPayload = append(stackPayload, StackPayload{
-			StackTrace:  stackTrace(traceID, frames, frameTypes),
-			StackFrames: symbolizedFrames(frames),
+			StackTrace:  stackTrace(traceID, frames, frameTypes, ts),
+			StackFrames: symbolizedFrames(frames, ts),
 			ResourceAttrs: ResourceData{
 				Data: commonResourceAttributes,
 			},
@@ -149,10 +154,11 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 }
 
 // symbolizedFrames returns a slice of StackFrames that have symbols.
-func symbolizedFrames(frames []StackFrame) []StackFrame {
+func symbolizedFrames(frames []StackFrame, ts unixTime64) []StackFrame {
 	framesWithSymbols := make([]StackFrame, 0, len(frames))
 	for i := range frames {
 		if isFrameSymbolized(frames[i]) {
+			frames[i].Timestamp = ts
 			framesWithSymbols = append(framesWithSymbols, frames[i])
 		}
 	}
@@ -196,7 +202,7 @@ func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample ppr
 	return event
 }
 
-func stackTrace(stackTraceID string, frames []StackFrame, frameTypes []libpf.FrameType) StackTrace {
+func stackTrace(stackTraceID string, frames []StackFrame, frameTypes []libpf.FrameType, ts unixTime64) StackTrace {
 	frameIDs := make([]string, 0, len(frames))
 	for i := range frames {
 		f := &frames[i]
@@ -212,9 +218,10 @@ func stackTrace(stackTraceID string, frames []StackFrame, frameTypes []libpf.Fra
 	encodeFrameTypesTo(buf, frameTypes)
 
 	return StackTrace{
-		DocID:    stackTraceID,
-		FrameIDs: strings.Join(frameIDs, ""),
-		Types:    buf.String(),
+		DocID:     stackTraceID,
+		Timestamp: ts,
+		FrameIDs:  strings.Join(frameIDs, ""),
+		Types:     buf.String(),
 	}
 }
 

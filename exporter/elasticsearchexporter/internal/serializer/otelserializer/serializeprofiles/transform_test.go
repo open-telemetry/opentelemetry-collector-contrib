@@ -221,6 +221,7 @@ func TestTransform(t *testing.T) {
 				{
 					StackTrace: StackTrace{
 						DocID:    wantedTraceID,
+						Timestamp: newUnixTime64(42),
 						FrameIDs: frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.NativeFrame,
@@ -229,8 +230,8 @@ func TestTransform(t *testing.T) {
 					},
 					StackFrames: []StackFrame{},
 					Executables: []ExeMetadata{
-						ExeMetadata{DocID: buildIDEncoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
-						ExeMetadata{DocID: buildID2Encoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
+						{DocID: buildIDEncoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
+						{DocID: buildID2Encoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
 					},
 					ResourceAttrs: ResourceData{
 						Data: map[string]string{
@@ -339,6 +340,7 @@ func TestStackPayloads(t *testing.T) {
 				{
 					StackTrace: StackTrace{
 						DocID:    wantedTraceID,
+						Timestamp: newUnixTime64(1),
 						FrameIDs: frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.FrameType(3),
@@ -347,8 +349,8 @@ func TestStackPayloads(t *testing.T) {
 					},
 					StackFrames: []StackFrame{},
 					Executables: []ExeMetadata{
-						ExeMetadata{DocID: buildIDEncoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
-						ExeMetadata{DocID: buildID2Encoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
+						{DocID: buildIDEncoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
+						{DocID: buildID2Encoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
 					},
 					ResourceAttrs: ResourceData{
 						Data: map[string]string{},
@@ -422,6 +424,7 @@ func TestStackPayloads(t *testing.T) {
 				{
 					StackTrace: StackTrace{
 						DocID:    wantedTraceID,
+						Timestamp: newUnixTime64(1),
 						FrameIDs: frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.FrameType(3),
@@ -430,8 +433,8 @@ func TestStackPayloads(t *testing.T) {
 					},
 					StackFrames: []StackFrame{},
 					Executables: []ExeMetadata{
-						ExeMetadata{DocID: buildIDEncoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
-						ExeMetadata{DocID: buildID2Encoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
+						{DocID: buildIDEncoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
+						{DocID: buildID2Encoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
 					},
 					ResourceAttrs: ResourceData{
 						Data: map[string]string{},
@@ -515,6 +518,7 @@ func TestStackPayloads(t *testing.T) {
 				{
 					StackTrace: StackTrace{
 						DocID:    wantedTraceID,
+						Timestamp: newUnixTime64(1),
 						FrameIDs: frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.FrameType(3),
@@ -523,8 +527,8 @@ func TestStackPayloads(t *testing.T) {
 					},
 					StackFrames: []StackFrame{},
 					Executables: []ExeMetadata{
-						ExeMetadata{DocID: buildIDEncoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
-						ExeMetadata{DocID: buildID2Encoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
+						{DocID: buildIDEncoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
+						{DocID: buildID2Encoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
 						// Note: no ExeMetadata for the third mapping since it has no BuildID
 					},
 					ResourceAttrs: ResourceData{
@@ -819,7 +823,7 @@ func TestStackTrace(t *testing.T) {
 			frames, frameTypes, _, err := stackFrames(dic, s)
 			require.NoError(t, err)
 
-			stacktrace := stackTrace("", frames, frameTypes)
+			stacktrace := stackTrace("", frames, frameTypes, 0)
 			assert.Equal(t, tt.wantTrace, stacktrace)
 
 			assert.Len(t, frameTypes, len(frames))
@@ -917,3 +921,4 @@ func mkStackTraceID(t *testing.T, frameIDs []frameID) string {
 func isWithinLastSecond(t time.Time) bool {
 	return time.Since(t) < time.Second
 }
+

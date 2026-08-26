@@ -122,22 +122,31 @@ func TestSerializeProfile(t *testing.T) {
 			wantErr: false,
 			expected: []map[string]any{
 				{
+					"@timestamp":  "1970-01-01T00:00:00Z",
 					"frame.ids":   "YA3K_koRAADyvzjEk_X7kgAAAAAAAABv",
 					"frame.types": "AQM",
 				},
 				{
-					"@timestamp":                 "1970-01-01T00:00:00Z",
-					"count":                      json.Number("1"),
-					"sampling_frequency":         json.Number("20"),
-					"stacktrace.id":              "02VzuClbpt_P3xxwox83Ng",
-					"resource.attribute.host.id": "localhost",
-					"resource.attribute.process.executable.name": "libc.so.6",
-					"resource.attribute.process.thread.name":     "",
+					"@timestamp":         "1970-01-01T00:00:00Z",
+					"count":              json.Number("1"),
+					"sampling_frequency": json.Number("20"),
+					"stacktrace.id":      "02VzuClbpt_P3xxwox83Ng",
+					"resource": map[string]any{
+						"attributes": map[string]any{
+							"host.id":                 "localhost",
+							"process.executable.name": "libc.so.6",
+							"thread.name":             "",
+						},
+					},
 				},
 				{
-					"@timestamp":                                             json.Number(fmt.Sprintf("%d", serializeprofiles.GetStartOfWeekFromTime(time.Now()))),
-					"resource.attributes.process.executable.build_id.htlhash": "600DCAFE4A110000F2BF38C493F5FB92",
-					"resource.attributes.process.executable.name":            "samples",
+					"@timestamp": json.Number(fmt.Sprintf("%d", serializeprofiles.GetStartOfWeekFromTime(time.Now()))),
+					"resource": map[string]any{
+						"attributes": map[string]any{
+							"process.executable.build_id.htlhash": "600DCAFE4A110000F2BF38C493F5FB92",
+							"process.executable.name":             "samples",
+						},
+					},
 				},
 			},
 		},
