@@ -909,19 +909,7 @@ func TestStaleWorkerDoesNotMutateReplacement(t *testing.T) {
 	})
 
 	t.Run("mark", func(t *testing.T) {
-		cluster, clientConfig := kafkatest.NewCluster(t, kfake.SeedTopics(1, topic))
-		kafkaClient, err := kgo.NewClient(
-			kgo.SeedBrokers(cluster.ListenAddrs()...),
-			kgo.ConsumerGroup(t.Name()),
-			kgo.AutoCommitMarks(),
-			kgo.AutoCommitInterval(time.Hour),
-			kgo.ProducerBatchCompression(kgo.NoCompression()),
-		)
-		require.NoError(t, err)
-		t.Cleanup(kafkaClient.Close)
-
-		cfg := createDefaultConfig().(*Config)
-		cfg.ClientConfig = clientConfig
+		kafkaClient, cfg := mustNewMarkedFakeCluster(t, kfake.SeedTopics(1, topic))
 		consumer := newStaleWorkerConsumer(t, kafkaClient, cfg, topic)
 		batch := mailboxBatch(10)
 		batch.Topic = topic
