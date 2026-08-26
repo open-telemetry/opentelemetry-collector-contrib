@@ -4743,6 +4743,67 @@ func TestTargetInfoReplacesWhatTheCacheHolds(t *testing.T) {
 	assert.Equal(t, "us-west", region.Str(), "the second target_info replaced the first")
 }
 
+func TestRequestWithNothingToPublishDoesNotReachTheConsumer(t *testing.T) {
+	// Nothing to hand over means the consumer is not called at all, since an empty batch would
+	// count as a delivery it never made. What target_info taught the receiver is committed anyway.
+	symbols := []string{
+		"",                        // 0
+		"__name__", "test_metric", // 1, 2
+		"job", "service-x/test", // 3, 4
+		"instance", "107cn001", // 5, 6
+		"target_info",       // 7
+		"region", "us-east", // 8, 9
+		"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 10, 11
+	}
+
+	for _, tc := range []struct {
+		name       string
+		series     []writev2.TimeSeries
+		wantRegion string
+	}{
+		{
+			name: "target_info on its own",
+			series: []writev2.TimeSeries{{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 7, 3, 4, 5, 6, 8, 9},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+			}},
+			wantRegion: "us-east",
+		},
+		{
+			// Prometheus sends exemplars in a TimeSeries of their own, so a request can arrive
+			// carrying nothing this receiver can turn into a data point.
+			name: "a series carrying only exemplars",
+			series: []writev2.TimeSeries{{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+				Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{10, 11}, Value: 1.5, Timestamp: 1}},
+			}},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			sink := &consumertest.MetricsSink{}
+			prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+
+			w := httptest.NewRecorder()
+			prwReceiver.handlePRW(w, writeRequest(t, &writev2.Request{Symbols: symbols, Timeseries: tc.series}))
+
+			require.Equal(t, http.StatusNoContent, w.Result().StatusCode)
+			assert.Empty(t, sink.AllMetrics(), "an empty batch is not a delivery")
+
+			if tc.wantRegion == "" {
+				return
+			}
+			require.Equal(t, 1, prwReceiver.rmCache.Len(), "target_info still taught the receiver a target")
+			cached, ok := prwReceiver.rmCache.Get(prwReceiver.rmCache.Keys()[0])
+			require.True(t, ok)
+			region, found := cached.Resource().Attributes().Get("region")
+			require.True(t, found)
+			assert.Equal(t, tc.wantRegion, region.Str())
+		})
+	}
+}
+
 func TestSlowRequestDoesNotUndoALearnedResource(t *testing.T) {
 	// A request that staged its resource before a target_info arrived must not put the older
 	// snapshot back when it finally commits, or the attributes target_info taught are lost for
