@@ -23,6 +23,9 @@ data:
           - from: deployment
             key: workload
             tag_name: simple-deployment-workload-annotation
+          - from: replicaset
+            key: workload
+            tag_name: simple-replicaset-workload-annotation
           - from: statefulset
             key: workload
             tag_name: simple-statefulset-workload-annotation
