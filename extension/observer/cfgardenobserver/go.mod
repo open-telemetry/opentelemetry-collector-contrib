@@ -6,7 +6,7 @@ require (
 	code.cloudfoundry.org/garden v0.0.0-20241023020423-a21e43a17f84
 	github.com/cloudfoundry/go-cfclient/v3 v3.0.0-beta.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.159.0
-	github.com/stretchr/testify v1.12.0
+	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.65.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/component/componenttest v0.159.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/confmap v1.65.1-0.20260824174011-67fef8cb7049
@@ -59,7 +59,6 @@ require (
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/tools v0.47.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../
