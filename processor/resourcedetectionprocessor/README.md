@@ -596,6 +596,25 @@ processors:
 
 > **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the `CONTAINER_APP_NAME` environment variable is not set (not running on Azure Container Apps), instead of silently returning an empty resource.
 
+### Azure App Service
+
+Uses the [Azure App Service](https://learn.microsoft.com/en-us/azure/app-service/) [injected environment variables](https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings) to retrieve related resource attributes.
+
+Note: Azure Functions apps run on the same App Service infrastructure but are not detected by this detector.
+
+The list of the populated resource attributes can be found at [Azure App Service Detector Resource Attributes](./internal/azure/appservice/documentation.md).
+
+Example:
+```yaml
+processors:
+  resourcedetection/azureappservice:
+    detectors: [env, azureappservice]
+    timeout: 2s
+    override: false
+```
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the `WEBSITE_SITE_NAME`, `WEBSITE_RESOURCE_GROUP` or `WEBSITE_OWNER_NAME` environment variables are not set (not running on Azure App Service), or if `FUNCTIONS_WORKER_RUNTIME` is set (running as an Azure Functions app), instead of silently returning an empty resource.
+
 ### Consul
 
 Queries a [consul agent](https://www.consul.io/docs/agent) and reads its [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve related resource attributes:
@@ -1035,7 +1054,7 @@ processors:
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "azurecontainerapps", "heroku", "openshift", "dynatrace", "consul", "docker", "k8s_api", "k8snode" (deprecated, use "k8s_api"), "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs", "tencent_cvm", "ibmcloud_vpc", "ibmcloud_classic"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "azureappservice", "azurecontainerapps", "heroku", "openshift", "dynatrace", "consul", "docker", "k8s_api", "k8snode" (deprecated, use "k8s_api"), "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs", "tencent_cvm", "ibmcloud_vpc", "ibmcloud_classic"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
