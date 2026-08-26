@@ -283,15 +283,15 @@ observed. After warmup, a fingerprint the sampler has not yet learned is kept
 adjustment learns it.
 
 In practice this means a short smoke test right after startup keeps roughly the
-goal rate (`adaptive_percentage`) or the bootstrap percentage
-(`adaptive_throughput`), not everything; give the sampler at least one
+goal percentage (`adaptive_percentage`) or the bootstrap percentage
+(`adaptive_throughput`), not everything. Give the sampler at least one
 `adjustment_interval` (or one `lookback_frequency` window) of traffic before
 judging its rates.
 
 #### `max_keys` overflow
 
 When an `ema` sampler's key map is full, traffic for fingerprints beyond
-`max_keys` is kept at 100% rather than sampled toward the goal; the `windowed`
+`max_keys` is kept at 100% rather than sampled toward the goal. The `windowed`
 algorithm samples overflow traffic at `initial_sampling_percentage` instead. A
 fingerprint-cardinality explosion under the `ema` algorithms therefore
 increases output volume instead of degrading it, so size `max_keys` above your
