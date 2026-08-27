@@ -128,8 +128,11 @@ jobs:
       - name: Fail workflow if tests fails
         if: always()
         shell: bash
+        env:
+          TESTS_OUTCOME: ${{ steps.tests.outcome }}
+          TESTS_WITH_JUNIT_OUTCOME: ${{ steps.tests-with-junit.outcome }}
         run: |
-          if [[ "${{ steps.tests-with-junit.outcome }}" == "failure" || "${{ steps.tests.outcome }}" == "failure" ]]; then
+          if [[ "${TESTS_WITH_JUNIT_OUTCOME}" == "failure" || "${TESTS_OUTCOME}" == "failure" ]]; then
             echo "Tests failed. Failing workflow."
             exit 1
           else

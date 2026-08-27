@@ -1147,7 +1147,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_trace"),
-			errorMessage: `condition has invalid syntax: 1:23: unexpected token "<EOF>" (expected Field ("." Field)*)`,
+			errorMessage: `condition has invalid syntax at 1:23: (expected Field ("." Field)*)`,
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_metric"),
@@ -1155,11 +1155,11 @@ func TestLoadingConfigOTTL(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_log"),
-			errorMessage: `condition has invalid syntax: 1:11: unexpected token "condition" (expected <opcomparison> Value)`,
+			errorMessage: `condition has invalid syntax at 1:11 near ` + "`condition`" + `: (expected <opcomparison> Value)`,
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_profile"),
-			errorMessage: `condition has invalid syntax: 1:11: unexpected token "condition" (expected <opcomparison> Value)`,
+			errorMessage: `condition has invalid syntax at 1:11 near ` + "`condition`" + `: (expected <opcomparison> Value)`,
 		},
 	}
 

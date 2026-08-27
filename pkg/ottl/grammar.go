@@ -385,7 +385,7 @@ func (k *key) accept(v grammarVisitor) {
 
 // list represents a literal list of values.
 type list struct {
-	Values []value `parser:"'[' (@@)* (',' @@)* ']'"`
+	Values []value `parser:"'[' (@@ (',' @@)*)? ']'"`
 }
 
 // mapValue represents a literal map of key/value pairs.
@@ -414,7 +414,7 @@ func (b *byteSlice) Capture(values []string) error {
 	rawStr := values[0][2:]
 	newBytes, err := hex.DecodeString(rawStr)
 	if err != nil {
-		return err
+		return fmt.Errorf("byte literals must have an even number of hexadecimal digits, but got %s: %w", values[0], err)
 	}
 	*b = newBytes
 	return nil
