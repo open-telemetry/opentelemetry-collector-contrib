@@ -33,9 +33,9 @@ func TestToMetrics(t *testing.T) {
 			Metric:    "single",
 			Timestamp: now.UnixNano() / 1e6,
 			Value: sfxpb.Datum{
-				IntValue: int64Ptr(13),
+				IntValue: new(int64(13)),
 			},
-			MetricType: sfxTypePtr(sfxpb.MetricType_GAUGE),
+			MetricType: new(sfxpb.MetricType_GAUGE),
 			Dimensions: buildNDimensions(3),
 		}
 	}
@@ -55,9 +55,9 @@ func TestToMetrics(t *testing.T) {
 			name: "double_gauge",
 			sfxDataPoints: func() []*sfxpb.DataPoint {
 				pt := buildDefaulstSFxDataPt()
-				pt.MetricType = sfxTypePtr(sfxpb.MetricType_GAUGE)
+				pt.MetricType = new(sfxpb.MetricType_GAUGE)
 				pt.Value = sfxpb.Datum{
-					DoubleValue: float64Ptr(13.13),
+					DoubleValue: new(13.13),
 				}
 				return []*sfxpb.DataPoint{pt}
 			}(),
@@ -77,7 +77,7 @@ func TestToMetrics(t *testing.T) {
 			name: "int_counter",
 			sfxDataPoints: func() []*sfxpb.DataPoint {
 				pt := buildDefaulstSFxDataPt()
-				pt.MetricType = sfxTypePtr(sfxpb.MetricType_COUNTER)
+				pt.MetricType = new(sfxpb.MetricType_COUNTER)
 				return []*sfxpb.DataPoint{pt}
 			}(),
 			wantMetrics: func() pmetric.Metrics {
@@ -92,9 +92,9 @@ func TestToMetrics(t *testing.T) {
 			name: "double_counter",
 			sfxDataPoints: func() []*sfxpb.DataPoint {
 				pt := buildDefaulstSFxDataPt()
-				pt.MetricType = sfxTypePtr(sfxpb.MetricType_COUNTER)
+				pt.MetricType = new(sfxpb.MetricType_COUNTER)
 				pt.Value = sfxpb.Datum{
-					DoubleValue: float64Ptr(13.13),
+					DoubleValue: new(13.13),
 				}
 				return []*sfxpb.DataPoint{pt}
 			}(),
@@ -110,9 +110,9 @@ func TestToMetrics(t *testing.T) {
 			name: "same_name_multiple_counters",
 			sfxDataPoints: func() []*sfxpb.DataPoint {
 				pt := buildDefaulstSFxDataPt()
-				pt.MetricType = sfxTypePtr(sfxpb.MetricType_COUNTER)
+				pt.MetricType = new(sfxpb.MetricType_COUNTER)
 				pt.Value = sfxpb.Datum{
-					DoubleValue: float64Ptr(13.13),
+					DoubleValue: new(13.13),
 				}
 				return []*sfxpb.DataPoint{pt, pt}
 			}(),
@@ -129,7 +129,7 @@ func TestToMetrics(t *testing.T) {
 			name: "int_cumulative",
 			sfxDataPoints: func() []*sfxpb.DataPoint {
 				pt := buildDefaulstSFxDataPt()
-				pt.MetricType = sfxTypePtr(sfxpb.MetricType_CUMULATIVE_COUNTER)
+				pt.MetricType = new(sfxpb.MetricType_CUMULATIVE_COUNTER)
 				return []*sfxpb.DataPoint{pt}
 			}(),
 			wantMetrics: func() pmetric.Metrics {
@@ -144,9 +144,9 @@ func TestToMetrics(t *testing.T) {
 			name: "double_cumulative",
 			sfxDataPoints: func() []*sfxpb.DataPoint {
 				pt := buildDefaulstSFxDataPt()
-				pt.MetricType = sfxTypePtr(sfxpb.MetricType_CUMULATIVE_COUNTER)
+				pt.MetricType = new(sfxpb.MetricType_CUMULATIVE_COUNTER)
 				pt.Value = sfxpb.Datum{
-					DoubleValue: float64Ptr(13.13),
+					DoubleValue: new(13.13),
 				}
 				return []*sfxpb.DataPoint{pt}
 			}(),
@@ -162,7 +162,7 @@ func TestToMetrics(t *testing.T) {
 			name: "same_name_multiple_cumulative",
 			sfxDataPoints: func() []*sfxpb.DataPoint {
 				pt := buildDefaulstSFxDataPt()
-				pt.MetricType = sfxTypePtr(sfxpb.MetricType_CUMULATIVE_COUNTER)
+				pt.MetricType = new(sfxpb.MetricType_CUMULATIVE_COUNTER)
 				return []*sfxpb.DataPoint{pt, pt}
 			}(),
 			wantMetrics: func() pmetric.Metrics {
@@ -178,7 +178,7 @@ func TestToMetrics(t *testing.T) {
 			name: "same_name_different_types",
 			sfxDataPoints: func() []*sfxpb.DataPoint {
 				pt := buildDefaulstSFxDataPt()
-				pt.MetricType = sfxTypePtr(sfxpb.MetricType_COUNTER)
+				pt.MetricType = new(sfxpb.MetricType_COUNTER)
 				return []*sfxpb.DataPoint{pt, buildDefaulstSFxDataPt()}
 			}(),
 			wantMetrics: func() pmetric.Metrics {
@@ -250,11 +250,11 @@ func TestToMetrics(t *testing.T) {
 
 				// Non-supported type
 				pt2 := buildDefaulstSFxDataPt()
-				pt2.MetricType = sfxTypePtr(sfxpb.MetricType_ENUM)
+				pt2.MetricType = new(sfxpb.MetricType_ENUM)
 
 				// Unknown type
 				pt3 := buildDefaulstSFxDataPt()
-				pt3.MetricType = sfxTypePtr(sfxpb.MetricType_CUMULATIVE_COUNTER + 1)
+				pt3.MetricType = new(sfxpb.MetricType_CUMULATIVE_COUNTER + 1)
 
 				return []*sfxpb.DataPoint{pt0, buildDefaulstSFxDataPt(), pt1, pt2, pt3}
 			}(),
@@ -318,18 +318,6 @@ func buildDefaultMetrics(t *testing.T, typ pmetric.MetricType, value any, now ti
 	}
 
 	return out
-}
-
-func int64Ptr(i int64) *int64 {
-	return &i
-}
-
-func float64Ptr(f float64) *float64 {
-	return &f
-}
-
-func sfxTypePtr(t sfxpb.MetricType) *sfxpb.MetricType {
-	return &t
 }
 
 func buildNDimensions(n uint) []*sfxpb.Dimension {

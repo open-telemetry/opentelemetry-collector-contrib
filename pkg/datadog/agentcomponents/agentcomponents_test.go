@@ -393,9 +393,6 @@ func TestWithProxy(t *testing.T) {
 			}
 
 			clientConfig := confighttp.NewDefaultClientConfig()
-			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			clientConfig.MaxIdleConns = 0
-			clientConfig.IdleConnTimeout = 0
 			clientConfig.ForceAttemptHTTP2 = false
 			clientConfig.ProxyURL = tt.proxyURL
 			cfg := &datadogconfig.Config{
@@ -431,9 +428,6 @@ func TestWithTLSSetting(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			clientConfig := confighttp.NewDefaultClientConfig()
-			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			clientConfig.MaxIdleConns = 0
-			clientConfig.IdleConnTimeout = 0
 			clientConfig.ForceAttemptHTTP2 = false
 			clientConfig.TLS = configtls.ClientConfig{InsecureSkipVerify: tt.insecureSkipVerify}
 			cfg := &datadogconfig.Config{
