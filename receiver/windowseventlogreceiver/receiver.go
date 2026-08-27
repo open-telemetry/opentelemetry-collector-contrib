@@ -30,8 +30,8 @@ func createDefaultConfig() component.Config {
 
 // WindowsLogConfig defines configuration for the Windows Event Log receiver.
 type WindowsLogConfig struct {
-	InputConfig        windows.Config `mapstructure:",squash"`
-	adapter.BaseConfig `mapstructure:",squash"`
+	InputConfig windows.Config     `mapstructure:",squash"`
+	BaseConfig  adapter.BaseConfig `mapstructure:",squash"`
 
 	// ResolveSIDs contains configuration for SID-to-username resolution
 	ResolveSIDs ResolveSIDsConfig `mapstructure:"resolve_sids"`

@@ -8,14 +8,36 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [antonblock, ishleenk17, cjksplunk]
+    active: [antonblock, ishleenk17, ebrdarSplunk, XSAM, akshays-19, sv-splunk, splunk-shanu]
     seeking_new: true
     emeritus: [djaglowski]
 
+override_value_enabled: true
+
 resource_attributes:
+  db.system.name:
+    description: The database product of the instance. Examples include "mysql" and "mariadb".
+    enabled: false
+    type: string
+  db.system.version:
+    description: The database version of the instance. Examples include "8.0.34" and "10.11.7-MariaDB".
+    enabled: false
+    type: string
   mysql.instance.endpoint:
     description: Endpoint of the MySQL instance.
     enabled: true
+    type: string
+  service.instance.id:
+    description: A unique identifier of the MySQL instance as a UUID v5, derived from the endpoint using the OTel namespace.
+    enabled: true
+    type: string
+  service.name:
+    description: "Logical name of the service. When enabled, defaults to unknown_service:mysql."
+    enabled: false
+    type: string
+  service.namespace:
+    description: Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration.
+    enabled: false
     type: string
 
 attributes:
@@ -52,7 +74,7 @@ attributes:
   command:
     description: The command types.
     type: string
-    enum: [delete, delete_multi, insert, select, update, update_multi]
+    enum: [alter_table, create_index, create_table, delete, delete_multi, insert, optimize, select, update, update_multi]
     requirement_level: recommended
   connection_error:
     name_override: error
@@ -89,6 +111,11 @@ attributes:
     description: The name of the transmission direction.
     type: string
     enum: [received, sent]
+    requirement_level: recommended
+  disk.io.direction:
+    description: The disk IO operation direction.
+    type: string
+    enum: [read, write]
     requirement_level: recommended
   double_writes:
     name_override: kind
@@ -159,12 +186,27 @@ attributes:
   mysql.events_waits_current.timer_wait:
     description: Timing information for the event, indicating elapsed time the event waited in seconds.
     type: double
+  mysql.myisam.key_cache.operation.type:
+    name_override: operation
+    description: The MyISAM key cache operation type.
+    type: string
+    enum: [read, write]
+    requirement_level: recommended
   mysql.query_plan:
     description: The query plan for the statement, if available.
     type: string
   mysql.query_plan.hash:
     description: This attribute is set to the same value as mysql.events_statements_summary_by_digest.digest (query digest) by design.
     type: string
+  mysql.replica.channel.name:
+    description: The replication channel name.
+    type: string
+    requirement_level: recommended
+  mysql.replica.thread.type:
+    description: The replica thread type.
+    type: string
+    enum: [io, sql]
+    requirement_level: recommended
   mysql.session.id:
     description: The unique identifier for the session associated with the event.
     type: int
@@ -438,6 +480,15 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [double_writes]
+  mysql.file.open:
+    enabled: false
+    description: The number of currently open files.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: []
   mysql.handlers:
     enabled: true
     description: The number of requests to various MySQL handlers.
@@ -469,6 +520,51 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [io_waits_operations, table_name, schema, index_name]
+  mysql.innodb.data_file.io:
+    enabled: false
+    description: The total bytes read from and written to InnoDB data files.
+    stability: development
+    unit: By
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [disk.io.direction]
+  mysql.innodb.operation.pending:
+    enabled: false
+    description: The number of pending InnoDB data file operations.
+    stability: development
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [operations]
+  mysql.innodb.row_lock.wait.count:
+    enabled: false
+    description: The number of InnoDB row lock waits currently pending.
+    stability: development
+    unit: "{wait}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: []
+  mysql.innodb.row_lock.wait.duration.avg:
+    enabled: false
+    description: The average InnoDB row lock wait duration since server startup or last status reset.
+    stability: development
+    unit: s
+    gauge:
+      value_type: double
+  mysql.innodb.row_lock.wait.duration.max:
+    enabled: false
+    description: The maximum InnoDB row lock wait duration since server startup or last status reset.
+    stability: development
+    unit: s
+    gauge:
+      value_type: double
   mysql.joins:
     enabled: false
     description: The number of joins that perform table scans.
@@ -512,6 +608,44 @@ metrics:
       input_type: string
       monotonic: false
       aggregation_temporality: cumulative
+  mysql.myisam.key_cache.block.unused:
+    enabled: false
+    description: The number of unused MyISAM key cache blocks.
+    stability: development
+    unit: "{block}"
+    gauge:
+      value_type: int
+      input_type: string
+  mysql.myisam.key_cache.block.used.max:
+    enabled: false
+    description: The maximum number of MyISAM key cache blocks simultaneously in use since the server started or status counters were reset.
+    stability: development
+    unit: "{block}"
+    gauge:
+      value_type: int
+      input_type: string
+  mysql.myisam.key_cache.disk.operation:
+    enabled: false
+    description: The number of physical MyISAM key cache disk operations.
+    stability: development
+    unit: "{operation}"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [mysql.myisam.key_cache.operation.type]
+  mysql.myisam.key_cache.request:
+    enabled: false
+    description: The number of logical MyISAM key cache requests.
+    stability: development
+    unit: "{request}"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [mysql.myisam.key_cache.operation.type]
   mysql.mysqlx_connections:
     enabled: true
     description: The number of mysqlx connections.
@@ -631,6 +765,22 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: []
+  mysql.replica.temp_table.open:
+    enabled: false
+    description: The number of temporary tables currently open by the replica while applying replicated events.
+    stability: development
+    unit: "{table}"
+    gauge:
+      value_type: int
+  mysql.replica.thread.running:
+    enabled: false
+    description: Whether the replica IO and SQL threads report a running status. A value of 1 means the thread reports Yes; 0 means any other status, including No or Connecting.
+    extended_documentation: If the thread type or channel name attributes are disabled or dropped, configure the aggregation strategy as min or max based on the desired collapsed status.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [mysql.replica.thread.type, mysql.replica.channel.name]
   mysql.replica.time_behind_source:
     enabled: false
     description: This field is an indication of how “late” the replica is.
@@ -764,6 +914,15 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [schema, table_name, write_lock_type]
+  mysql.table.open:
+    enabled: false
+    description: The number of currently open tables.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: []
   mysql.table.rows:
     enabled: false
     description: The number of rows for a given table.
@@ -795,6 +954,17 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [cache_status]
+  mysql.thread.slow_launch:
+    enabled: false
+    description: The number of threads that have taken more than slow_launch_time seconds to create.
+    stability: development
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
   mysql.threads:
     enabled: true
     description: The state of MySQL threads.

@@ -235,6 +235,9 @@ func TestFullOtelCollectorPayloadIntegration(t *testing.T) {
 
 	// Step 2: Create mock Datadog agent components
 
+	// Isolate from DD_API_KEY env var; nodetreemodel skips empty-string env vars.
+	t.Setenv("DD_API_KEY", "")
+
 	// Extract the backend URL to configure components to use our mock
 	backendURL := mockBackend.URL
 
@@ -614,14 +617,14 @@ func TestHTTPServerIntegration(t *testing.T) {
 	require.NotNil(t, serializer)
 
 	// Step 3: Create HTTP server configuration
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
 	serverConfig := &httpserver.Config{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: confignet.TransportTypeTCP,
-				Endpoint:  "localhost:0",
-			},
-		},
-		Path: "/otel/metadata",
+		ServerConfig: httpServerConfig,
+		Path:         "/otel/metadata",
 	}
 
 	// Step 4: Create and test the HTTP server
@@ -748,6 +751,16 @@ func TestHTTPServerConfigIntegration(t *testing.T) {
 	)
 
 	// Test different server configurations
+	defaultServerConfig := confighttp.NewDefaultServerConfig()
+	defaultServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  httpserver.DefaultServerEndpoint,
+	}
+	customServerConfig := confighttp.NewDefaultServerConfig()
+	customServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:9999",
+	}
 	testCases := []struct {
 		name   string
 		config *httpserver.Config
@@ -755,25 +768,15 @@ func TestHTTPServerConfigIntegration(t *testing.T) {
 		{
 			name: "default_config",
 			config: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  httpserver.DefaultServerEndpoint,
-					},
-				},
-				Path: "/metadata",
+				ServerConfig: defaultServerConfig,
+				Path:         "/metadata",
 			},
 		},
 		{
 			name: "custom_endpoint_and_path",
 			config: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:9999",
-					},
-				},
-				Path: "/custom/otel/metadata",
+				ServerConfig: customServerConfig,
+				Path:         "/custom/otel/metadata",
 			},
 		},
 	}
@@ -848,14 +851,14 @@ func TestHTTPServerConcurrentAccess(t *testing.T) {
 	)
 
 	// Create server
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
 	serverConfig := &httpserver.Config{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: confignet.TransportTypeTCP,
-				Endpoint:  "localhost:0",
-			},
-		},
-		Path: "/concurrent/metadata",
+		ServerConfig: httpServerConfig,
+		Path:         "/concurrent/metadata",
 	}
 
 	server := httpserver.NewServer(

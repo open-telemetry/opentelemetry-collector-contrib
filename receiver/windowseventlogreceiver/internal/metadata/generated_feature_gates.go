@@ -19,5 +19,5 @@ var ReceiverWindowseventlogMultipleRemoteHostsFeatureGate = featuregate.GlobalRe
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, allows configuring multiple remote hosts in a single receiver instance via the remote.servers configuration field."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47933"),
-	featuregate.WithRegisterFromVersion("v0.121.0"),
+	featuregate.WithRegisterFromVersion("v0.159.0"),
 )

@@ -451,6 +451,7 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 		Ephemeral:     se.conf.Ephemeral,
 		Clobber:       se.conf.Clobber,
 		TimeZone:      se.conf.TimeZone,
+		FleetID:       se.conf.FleetID,
 	})
 	if err != nil {
 		return credentials.CollectorCredentials{}, err
@@ -481,6 +482,18 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 	defer res.Body.Close()
 
 	if res.StatusCode < 200 || res.StatusCode >= 400 {
+		if se.conf.FleetID != "" && (res.StatusCode == http.StatusBadRequest || res.StatusCode == http.StatusNotFound) {
+			bodyBytes, readErr := io.ReadAll(res.Body)
+			if readErr == nil && isFleetIDError(bodyBytes) {
+				se.logger.Warn("Fleet ID error, retrying registration without fleet ID",
+					zap.String("fleet_id", se.conf.FleetID),
+					zap.Int("status_code", res.StatusCode),
+				)
+				se.conf.FleetID = ""
+				return se.registerCollector(ctx, collectorName)
+			}
+			res.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+		}
 		return credentials.CollectorCredentials{}, se.handleRegistrationError(res)
 	} else if res.StatusCode == http.StatusMovedPermanently {
 		// Use the URL from Location header for subsequent requests.
@@ -543,6 +556,19 @@ func (se *SumologicExtension) handleRegistrationError(res *http.Response) error 
 	return fmt.Errorf(
 		"failed to register the collector, got HTTP status code: %d", res.StatusCode,
 	)
+}
+
+func isFleetIDError(body []byte) bool {
+	var errResponse api.ErrorResponsePayload
+	if err := json.Unmarshal(body, &errResponse); err != nil {
+		return false
+	}
+	for _, e := range errResponse.Errors {
+		if e.Code == "collector-registration:invalid_fleet_id" || e.Code == "collector-registration:fleet_not_found" {
+			return true
+		}
+	}
+	return false
 }
 
 // callRegisterWithBackoff calls registration using exponential backoff algorithm
@@ -871,8 +897,7 @@ func (se *SumologicExtension) updateMetadataAsync() {
 
 		se.logger.Warn("Async metadata update failed, will retry", zap.Error(err))
 
-		var backOffErr *backoff.PermanentError
-		if errors.As(err, &backOffErr) {
+		if _, ok := errors.AsType[*backoff.PermanentError](err); ok {
 			se.logger.Error("Async metadata update encountered a permanent error, stopping retries", zap.Error(err))
 			return
 		}

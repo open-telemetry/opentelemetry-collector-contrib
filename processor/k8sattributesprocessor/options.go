@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.41.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -226,16 +226,6 @@ func withOtelAnnotations(enabled bool) option {
 		if enabled {
 			p.rules.Annotations = append(p.rules.Annotations, kube.OtelAnnotations())
 		}
-		return nil
-	}
-}
-
-func withDeploymentNameFromReplicaSet(enabled bool) option {
-	return func(p *kubernetesprocessor) error {
-		if !enabled && p.logger != nil {
-			p.logger.Warn("`deployment_name_from_replicaset: false` is deprecated and will be removed in future releases")
-		}
-		p.rules.DeploymentNameFromReplicaSet = enabled
 		return nil
 	}
 }

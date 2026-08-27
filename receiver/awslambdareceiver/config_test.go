@@ -10,9 +10,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal/metadata"
 )
 
@@ -75,6 +76,23 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			name:              "Config with S3 and AWS options",
+			componentIDToLoad: component.NewIDWithName(metadata.Type, "s3_with_aws_options"),
+			expected: &Config{
+				S3: S3Config{
+					sharedConfig: sharedConfig{
+						Encoding: "aws_logs_encoding",
+					},
+					AWSOptions: internal.AWSOptions{
+						AccessKeyID:     "key",
+						SecretAccessKey: "accessKey",
+						SessionToken:    "session",
+					},
+				},
+				CloudWatch: sharedConfig{},
+			},
+		},
+		{
 			name:              "Config with custom trigger encoding",
 			componentIDToLoad: component.NewIDWithName(metadata.Type, "custom_event"),
 			expected: &Config{
@@ -95,7 +113,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			err = xconfmap.Validate(cfg)
+			err = confmap.Validate(cfg)
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, cfg)
 		})

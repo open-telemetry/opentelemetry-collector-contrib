@@ -20,6 +20,30 @@ import (
 
 func TestMetricValidation(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
+	notValidSchemeClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	notValidSchemeClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	notValidSchemeClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	notValidSchemeClientConfig.ForceAttemptHTTP2 = false
+	notValidSchemeClientConfig.Endpoint = "wss://not-supported-websockets"
+	unparsableURLClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	unparsableURLClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	unparsableURLClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	unparsableURLClientConfig.ForceAttemptHTTP2 = false
+	unparsableURLClientConfig.Endpoint = "\x00"
+	usernameNotProvidedClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	usernameNotProvidedClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	usernameNotProvidedClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	usernameNotProvidedClientConfig.ForceAttemptHTTP2 = false
+	usernameNotProvidedClientConfig.Endpoint = "http://localhost"
+	passwordNotProvidedClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	passwordNotProvidedClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	passwordNotProvidedClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	passwordNotProvidedClientConfig.ForceAttemptHTTP2 = false
+	passwordNotProvidedClientConfig.Endpoint = "http://localhost"
 	cases := []struct {
 		desc          string
 		cfg           *Config
@@ -33,9 +57,7 @@ func TestMetricValidation(t *testing.T) {
 		{
 			desc: "not valid scheme",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "wss://not-supported-websockets",
-				},
+				ClientConfig:     notValidSchemeClientConfig,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedError: errors.New("url scheme must be http or https"),
@@ -43,9 +65,7 @@ func TestMetricValidation(t *testing.T) {
 		{
 			desc: "unparsable url",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "\x00",
-				},
+				ClientConfig:     unparsableURLClientConfig,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedError: errors.New("parse"),
@@ -53,10 +73,8 @@ func TestMetricValidation(t *testing.T) {
 		{
 			desc: "username not provided",
 			cfg: &Config{
-				Password: "password",
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "http://localhost",
-				},
+				Password:         "password",
+				ClientConfig:     usernameNotProvidedClientConfig,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedError: errors.New("username not provided"),
@@ -64,10 +82,8 @@ func TestMetricValidation(t *testing.T) {
 		{
 			desc: "password not provided",
 			cfg: &Config{
-				Username: "otelu",
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "http://localhost",
-				},
+				Username:         "otelu",
+				ClientConfig:     passwordNotProvidedClientConfig,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedError: errors.New("password not provided"),
@@ -97,11 +113,11 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Endpoint = "https://nsx-manager-endpoint"
+	expected.ClientConfig.Endpoint = "https://nsx-manager-endpoint"
 	expected.Username = "admin"
 	expected.Password = "${env:NSXT_PASSWORD}"
-	expected.TLS.Insecure = true
-	expected.CollectionInterval = time.Minute
+	expected.ClientConfig.TLS.Insecure = true
+	expected.ControllerConfig.CollectionInterval = time.Minute
 
 	require.Equal(t, expected, cfg)
 }

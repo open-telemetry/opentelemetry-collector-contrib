@@ -392,7 +392,7 @@ The number of times each type of command has been executed.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| command | The command types. | Str: ``delete``, ``delete_multi``, ``insert``, ``select``, ``update``, ``update_multi`` | Recommended | - |
+| command | The command types. | Str: ``alter_table``, ``create_index``, ``create_table``, ``delete``, ``delete_multi``, ``insert``, ``optimize``, ``select``, ``update``, ``update_multi`` | Recommended | - |
 
 ### mysql.connection.count
 
@@ -416,6 +416,66 @@ Errors that occur during the client connection process.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | error | The connection error type. | Str: ``accept``, ``internal``, ``max_connections``, ``peer_address``, ``select``, ``tcpwrap``, ``aborted``, ``aborted_clients``, ``locked`` | Recommended | - |
 
+### mysql.file.open
+
+The number of currently open files.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+### mysql.innodb.data_file.io
+
+The total bytes read from and written to InnoDB data files.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | The disk IO operation direction. | Str: ``read``, ``write`` | Recommended | - |
+
+### mysql.innodb.operation.pending
+
+The number of pending InnoDB data file operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The operation types. | Str: ``fsyncs``, ``reads``, ``writes`` | Recommended | - |
+
+### mysql.innodb.row_lock.wait.count
+
+The number of InnoDB row lock waits currently pending.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {wait} | Gauge | Int | Development |
+
+### mysql.innodb.row_lock.wait.duration.avg
+
+The average InnoDB row lock wait duration since server startup or last status reset.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+### mysql.innodb.row_lock.wait.duration.max
+
+The maximum InnoDB row lock wait duration since server startup or last status reset.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
 ### mysql.joins
 
 The number of joins that perform table scans.
@@ -437,6 +497,50 @@ Maximum number of connections used simultaneously since the server started.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | 1 | Sum | Int | Cumulative | false | Development |
+
+### mysql.myisam.key_cache.block.unused
+
+The number of unused MyISAM key cache blocks.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {block} | Gauge | Int | Development |
+
+### mysql.myisam.key_cache.block.used.max
+
+The maximum number of MyISAM key cache blocks simultaneously in use since the server started or status counters were reset.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {block} | Gauge | Int | Development |
+
+### mysql.myisam.key_cache.disk.operation
+
+The number of physical MyISAM key cache disk operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operation} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The MyISAM key cache operation type. | Str: ``read``, ``write`` | Recommended | - |
+
+### mysql.myisam.key_cache.request
+
+The number of logical MyISAM key cache requests.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {request} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The MyISAM key cache operation type. | Str: ``read``, ``write`` | Recommended | - |
 
 ### mysql.mysqlx_worker_threads
 
@@ -493,6 +597,31 @@ The number of seconds that the replica must lag the source.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | false | Development |
+
+### mysql.replica.temp_table.open
+
+The number of temporary tables currently open by the replica while applying replicated events.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {table} | Gauge | Int | Development |
+
+### mysql.replica.thread.running
+
+Whether the replica IO and SQL threads report a running status. A value of 1 means the thread reports Yes; 0 means any other status, including No or Connecting.
+
+If the thread type or channel name attributes are disabled or dropped, configure the aggregation strategy as min or max based on the desired collapsed status.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mysql.replica.thread.type | The replica thread type. | Str: ``io``, ``sql`` | Recommended | - |
+| mysql.replica.channel.name | The replication channel name. | Any Str | Recommended | - |
 
 ### mysql.replica.time_behind_source
 
@@ -614,6 +743,14 @@ The total table lock wait write events times.
 | table | Table name for event or process. | Any Str | Recommended | - |
 | kind | Write operation types. | Str: ``allow_write``, ``concurrent_insert``, ``low_priority``, ``normal``, ``external`` | Recommended | - |
 
+### mysql.table.open
+
+The number of currently open tables.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
 ### mysql.table.rows
 
 The number of rows for a given table.
@@ -659,6 +796,14 @@ The number of hits, misses or overflows for open tables cache lookups.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | status | The status of cache access. | Str: ``hit``, ``miss``, ``overflow`` | Recommended | - |
 
+### mysql.thread.slow_launch
+
+The number of threads that have taken more than slow_launch_time seconds to create.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | true | Development |
+
 ## Default Events
 
 The following events are emitted by default. Each of them can be disabled by applying the following configuration:
@@ -683,7 +828,6 @@ events:
 
 Query sample collection enables monitoring of current running database statements.
 This provides real-time visibility into active queries, helping users monitor database activity and performance as part of their observability pipeline.
-
 
 #### Attributes
 
@@ -715,7 +859,6 @@ This provides real-time visibility into active queries, helping users monitor da
 Top query collection enables monitoring of the queries that consumed the most CPU in the database.
 This provides insights into query performance and resource usage, helping users identify and optimize high-impact queries as part of their observability pipeline.
 
-
 #### Attributes
 
 | Name | Description | Values | Semantic Convention |
@@ -730,6 +873,11 @@ This provides insights into query performance and resource usage, helping users 
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| mysql.instance.endpoint | Endpoint of the MySQL instance. | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| db.system.name | The database product of the instance. Examples include "mysql" and "mariadb". | Any Str | false | - | - |
+| db.system.version | The database version of the instance. Examples include "8.0.34" and "10.11.7-MariaDB". | Any Str | false | - | - |
+| mysql.instance.endpoint | Endpoint of the MySQL instance. | Any Str | true | - | - |
+| service.instance.id | A unique identifier of the MySQL instance as a UUID v5, derived from the endpoint using the OTel namespace. | Any Str | true | - | - |
+| service.name | Logical name of the service. When enabled, defaults to unknown_service:mysql. | Any Str | false | - | - |
+| service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |

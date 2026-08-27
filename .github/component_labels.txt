@@ -5,6 +5,7 @@ cmd/opampsupervisor cmd/opampsupervisor
 cmd/otelcontribcol cmd/otelcontribcol
 cmd/oteltestbedcol cmd/oteltestbedcol
 cmd/telemetrygen cmd/telemetrygen
+config/configdbauth config/configdbauth
 confmap/provider/aesprovider confmap/provider/aesprovider
 confmap/provider/googlesecretmanagerprovider confmap/provider/googlesecretmanagerprovider
 confmap/provider/s3provider confmap/provider/s3provider
@@ -78,6 +79,8 @@ extension/basicauthextension extension/basicauth
 extension/bearertokenauthextension extension/bearertokenauth
 extension/cgroupruntimeextension extension/cgroupruntime
 extension/datadogextension extension/datadog
+extension/dbauth extension/dbauth
+extension/dbauth/awsiamdbauthextension extension/dbauth/awsiamdbauth
 extension/encoding extension/encoding
 extension/encoding/avrologencodingextension extension/encoding/avrologencoding
 extension/encoding/awscloudwatchmetricstreamsencodingextension extension/encoding/awscloudwatchmetricstreams
@@ -105,12 +108,12 @@ extension/observer/dockerobserver extension/observer/dockerobserver
 extension/observer/ecsobserver extension/observer/ecsobserver
 extension/observer/hostobserver extension/observer/hostobserver
 extension/observer/k8sobserver extension/observer/k8sobserver
-extension/observer/kafkatopicsobserver extension/observer/kafkatopicsobserver
 extension/oidcauthextension extension/oidcauth
 extension/opampcustommessages extension/opampcustommessages
 extension/opampextension extension/opamp
 extension/pprofextension extension/pprof
 extension/remotetapextension extension/remotetap
+extension/sdnotifyextension extension/sdnotify
 extension/sigv4authextension extension/sigv4auth
 extension/solarwindsapmsettingsextension extension/solarwindsapmsettings
 extension/storage extension/storage
@@ -157,9 +160,11 @@ pkg/pdatatest pkg/pdatatest
 pkg/pdatautil pkg/pdatautil
 pkg/resourcetotelemetry pkg/resourcetotelemetry
 pkg/sampling pkg/sampling
+pkg/semconvtest pkg/semconvtest
 pkg/stanza pkg/stanza
 pkg/stanza/fileconsumer pkg/stanza/fileconsumer
 pkg/stanza/operator/input/journald pkg/stanza/operator/input/journald
+pkg/stanza/operator/input/tcp pkg/stanza/operator/input/tcp
 pkg/status pkg/status
 pkg/translator/azure pkg/translator/azure
 pkg/translator/azurelogs pkg/translator/azurelogs
@@ -176,6 +181,7 @@ pkg/translator/zipkin pkg/translator/zipkin
 pkg/winperfcounters pkg/winperfcounters
 pkg/xk8stest pkg/xk8stest
 pkg/xstreamencoding pkg/xstreamencoding
+processor/adaptivetailsamplingprocessor processor/adaptivetailsampling
 processor/attributesprocessor processor/attributes
 processor/awsecsattributesprocessor processor/awsecsattributes
 processor/cardinalityguardianprocessor processor/cardinalityguardian
@@ -218,6 +224,7 @@ processor/resourcedetectionprocessor/internal/upcloud processor/resourcedetectio
 processor/resourcedetectionprocessor/internal/vultr processor/resourcedetection/internal/vultr
 processor/resourceprocessor processor/resource
 processor/schemaprocessor processor/schema
+processor/signingprocessor processor/signing
 processor/spanprocessor processor/span
 processor/spanpruningprocessor processor/spanpruning
 processor/sumologicprocessor processor/sumologic
@@ -251,6 +258,7 @@ receiver/cloudfoundryreceiver receiver/cloudfoundry
 receiver/collectdreceiver receiver/collectd
 receiver/couchdbreceiver receiver/couchdb
 receiver/datadogreceiver receiver/datadog
+receiver/dnscheckreceiver receiver/dnscheck
 receiver/dockerstatsreceiver receiver/dockerstats
 receiver/elasticsearchreceiver receiver/elasticsearch
 receiver/envoyalsreceiver receiver/envoyals
@@ -285,7 +293,6 @@ receiver/icmpcheckreceiver receiver/icmpcheck
 receiver/iisreceiver receiver/iis
 receiver/influxdbreceiver receiver/influxdb
 receiver/jaegerreceiver receiver/jaeger
-receiver/jmxreceiver receiver/jmx
 receiver/journaldreceiver receiver/journald
 receiver/k8sclusterreceiver receiver/k8scluster
 receiver/k8seventsreceiver receiver/k8sevents

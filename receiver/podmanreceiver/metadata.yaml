@@ -46,7 +46,7 @@ metrics:
     description: "Number of bytes transferred from the disk by the container"
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     stability: development
-    unit: "{operations}"
+    unit: By
     sum:
       value_type: int
       monotonic: true
@@ -56,7 +56,7 @@ metrics:
     description: "Number of bytes transferred to the disk by the container"
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     stability: development
-    unit: "{operations}"
+    unit: By
     sum:
       value_type: int
       monotonic: true
@@ -144,7 +144,3 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-
-# TODO: Update the receiver to pass the tests
-tests:
-  skip_lifecycle: true

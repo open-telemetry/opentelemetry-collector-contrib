@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/objmodel"
@@ -30,6 +31,21 @@ type mappingModel interface {
 		scope pcommon.InstrumentationScope,
 		schemaURL string,
 		record ptrace.Span) ([]byte, error)
+	encodeMetric(resource pcommon.Resource,
+		scope pcommon.InstrumentationScope,
+		schemaURL string,
+		metric pmetric.Metric,
+		dp metricDataPoint) ([]byte, error)
+}
+
+// metricDataPoint is the interface shared by all pmetric data point types
+// (NumberDataPoint, HistogramDataPoint, ExponentialHistogramDataPoint and
+// SummaryDataPoint).
+type metricDataPoint interface {
+	Attributes() pcommon.Map
+	StartTimestamp() pcommon.Timestamp
+	Timestamp() pcommon.Timestamp
+	Flags() pmetric.DataPointFlags
 }
 
 type bodyMapMappingModel struct {
@@ -43,6 +59,16 @@ func (*bodyMapMappingModel) encodeTrace(
 	_ ptrace.Span,
 ) ([]byte, error) {
 	return nil, fmt.Errorf("mapping mode '%s' does not support encoding traces", MappingBodyMap.String())
+}
+
+func (*bodyMapMappingModel) encodeMetric(
+	_ pcommon.Resource,
+	_ pcommon.InstrumentationScope,
+	_ string,
+	_ pmetric.Metric,
+	_ metricDataPoint,
+) ([]byte, error) {
+	return nil, fmt.Errorf("mapping mode '%s' does not support encoding metrics", MappingBodyMap.String())
 }
 
 func (m *bodyMapMappingModel) encodeLog(
@@ -105,6 +131,7 @@ func (m *encodeModel) encodeLogSSO(
 	sso := ssoRecord{}
 	sso.Attributes = record.Attributes().AsRaw()
 	sso.Body = record.Body().AsString()
+	sso.EventName = record.EventName()
 
 	now := time.Now()
 	ts := record.Timestamp().AsTime()
@@ -166,6 +193,7 @@ func (m *encodeModel) encodeLogDataModel(resource pcommon.Resource, record plog.
 	document.AddInt("TraceFlags", int64(record.Flags()))
 	document.AddString("SeverityText", record.SeverityText())
 	document.AddInt("SeverityNumber", int64(record.SeverityNumber()))
+	document.AddString("EventName", record.EventName())
 	document.AddAttribute("Body", record.Body())
 	if m.flattenAttributes {
 		document.AddAttributes("", record.Attributes())
@@ -279,6 +307,7 @@ func (*encodeModel) encodeLogOTelV1(
 		Time:                   ts,
 		ObservedTime:           record.ObservedTimestamp().AsTime(),
 		Body:                   record.Body().AsString(),
+		EventName:              record.EventName(),
 		TraceID:                record.TraceID().String(),
 		SpanID:                 record.SpanID().String(),
 		Flags:                  int64(record.Flags()),

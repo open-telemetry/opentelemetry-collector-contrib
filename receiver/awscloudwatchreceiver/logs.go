@@ -311,8 +311,7 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 			input := pc.request(l.maxEventsPerRequest, *nextToken, &startTime, &endTime)
 			resp, err := l.client.FilterLogEvents(ctx, input)
 			if err != nil {
-				var resourceNotFoundException *types.ResourceNotFoundException
-				if errors.As(err, &resourceNotFoundException) {
+				if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
 					l.settings.Logger.Warn("log group no longer exists, skipping",
 						zap.String("logGroup", logGroup),
 						zap.Error(err))
@@ -332,12 +331,15 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 				}
 				// the next timestamp should be 1 more millisecond than the last log
 				nextStartTime = time.UnixMilli(*resp.Events[len(resp.Events)-1].Timestamp + 1)
-			} else {
-				// Skip the time range in case there are no logs
-				nextStartTime = endTime
 			}
 			nextToken = resp.NextToken
 		}
+	}
+
+	// If no events were observed across any page of this window, advance to
+	// endTime so we don't repeatedly re-scan the same empty range.
+	if nextStartTime.Equal(startTime) {
+		nextStartTime = endTime
 	}
 
 	return nextStartTime, nil

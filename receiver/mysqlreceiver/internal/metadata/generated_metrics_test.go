@@ -78,15 +78,20 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["mysql.handlers"] = mb.metricMysqlHandlers.config.AggregationStrategy
 			aggMap["mysql.index.io.wait.count"] = mb.metricMysqlIndexIoWaitCount.config.AggregationStrategy
 			aggMap["mysql.index.io.wait.time"] = mb.metricMysqlIndexIoWaitTime.config.AggregationStrategy
+			aggMap["mysql.innodb.data_file.io"] = mb.metricMysqlInnodbDataFileIo.config.AggregationStrategy
+			aggMap["mysql.innodb.operation.pending"] = mb.metricMysqlInnodbOperationPending.config.AggregationStrategy
 			aggMap["mysql.joins"] = mb.metricMysqlJoins.config.AggregationStrategy
 			aggMap["mysql.locks"] = mb.metricMysqlLocks.config.AggregationStrategy
 			aggMap["mysql.log_operations"] = mb.metricMysqlLogOperations.config.AggregationStrategy
+			aggMap["mysql.myisam.key_cache.disk.operation"] = mb.metricMysqlMyisamKeyCacheDiskOperation.config.AggregationStrategy
+			aggMap["mysql.myisam.key_cache.request"] = mb.metricMysqlMyisamKeyCacheRequest.config.AggregationStrategy
 			aggMap["mysql.mysqlx_connections"] = mb.metricMysqlMysqlxConnections.config.AggregationStrategy
 			aggMap["mysql.mysqlx_worker_threads"] = mb.metricMysqlMysqlxWorkerThreads.config.AggregationStrategy
 			aggMap["mysql.opened_resources"] = mb.metricMysqlOpenedResources.config.AggregationStrategy
 			aggMap["mysql.operations"] = mb.metricMysqlOperations.config.AggregationStrategy
 			aggMap["mysql.page_operations"] = mb.metricMysqlPageOperations.config.AggregationStrategy
 			aggMap["mysql.prepared_statements"] = mb.metricMysqlPreparedStatements.config.AggregationStrategy
+			aggMap["mysql.replica.thread.running"] = mb.metricMysqlReplicaThreadRunning.config.AggregationStrategy
 			aggMap["mysql.row_locks"] = mb.metricMysqlRowLocks.config.AggregationStrategy
 			aggMap["mysql.row_operations"] = mb.metricMysqlRowOperations.config.AggregationStrategy
 			aggMap["mysql.sorts"] = mb.metricMysqlSorts.config.AggregationStrategy
@@ -150,9 +155,9 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordMysqlCommandsDataPoint(ts, "1", AttributeCommandDelete)
+			mb.RecordMysqlCommandsDataPoint(ts, "1", AttributeCommandAlterTable)
 			if tt.name == "reaggregate_set" {
-				mb.RecordMysqlCommandsDataPoint(ts, "3", AttributeCommandDeleteMulti)
+				mb.RecordMysqlCommandsDataPoint(ts, "3", AttributeCommandCreateIndex)
 			}
 
 			allMetricsCount++
@@ -169,6 +174,9 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlDoubleWritesDataPoint(ts, "3", AttributeDoubleWritesWrites)
 			}
+
+			allMetricsCount++
+			mb.RecordMysqlFileOpenDataPoint(ts, "1")
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlHandlersDataPoint(ts, "1", AttributeHandlerCommit)
@@ -187,6 +195,27 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlIndexIoWaitTimeDataPoint(ts, 3, AttributeIoWaitsOperationsFetch, "table_name-val-2", "schema-val-2", "index_name-val-2")
 			}
+
+			allMetricsCount++
+			mb.RecordMysqlInnodbDataFileIoDataPoint(ts, "1", AttributeDiskIoDirectionRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMysqlInnodbDataFileIoDataPoint(ts, "3", AttributeDiskIoDirectionWrite)
+			}
+
+			allMetricsCount++
+			mb.RecordMysqlInnodbOperationPendingDataPoint(ts, "1", AttributeOperationsFsyncs)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMysqlInnodbOperationPendingDataPoint(ts, "3", AttributeOperationsReads)
+			}
+
+			allMetricsCount++
+			mb.RecordMysqlInnodbRowLockWaitCountDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordMysqlInnodbRowLockWaitDurationAvgDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordMysqlInnodbRowLockWaitDurationMaxDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordMysqlJoinsDataPoint(ts, "1", AttributeJoinKindFull)
@@ -208,6 +237,24 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMysqlMaxUsedConnectionsDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordMysqlMyisamKeyCacheBlockUnusedDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordMysqlMyisamKeyCacheBlockUsedMaxDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordMysqlMyisamKeyCacheDiskOperationDataPoint(ts, "1", AttributeMysqlMyisamKeyCacheOperationTypeRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMysqlMyisamKeyCacheDiskOperationDataPoint(ts, "3", AttributeMysqlMyisamKeyCacheOperationTypeWrite)
+			}
+
+			allMetricsCount++
+			mb.RecordMysqlMyisamKeyCacheRequestDataPoint(ts, "1", AttributeMysqlMyisamKeyCacheOperationTypeRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMysqlMyisamKeyCacheRequestDataPoint(ts, "3", AttributeMysqlMyisamKeyCacheOperationTypeWrite)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlMysqlxConnectionsDataPoint(ts, "1", AttributeConnectionStatusAccepted)
@@ -259,6 +306,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMysqlReplicaSQLDelayDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordMysqlReplicaTempTableOpenDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordMysqlReplicaThreadRunningDataPoint(ts, 1, AttributeMysqlReplicaThreadTypeIo, "mysql.replica.channel.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordMysqlReplicaThreadRunningDataPoint(ts, 3, AttributeMysqlReplicaThreadTypeSQL, "mysql.replica.channel.name-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordMysqlReplicaTimeBehindSourceDataPoint(ts, 1)
@@ -336,6 +392,9 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
+			mb.RecordMysqlTableOpenDataPoint(ts, "1")
+
+			allMetricsCount++
 			mb.RecordMysqlTableRowsDataPoint(ts, 1, "table_name-val", "schema-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlTableRowsDataPoint(ts, 3, "table_name-val-2", "schema-val-2")
@@ -352,6 +411,9 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlTableOpenCacheDataPoint(ts, "3", AttributeCacheStatusMiss)
 			}
+
+			allMetricsCount++
+			mb.RecordMysqlThreadSlowLaunchDataPoint(ts, "1")
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlThreadsDataPoint(ts, "1", AttributeThreadsCached)
@@ -369,7 +431,12 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMysqlUptimeDataPoint(ts, "1")
 
 			rb := mb.NewResourceBuilder()
+			rb.SetDbSystemName("db.system.name-val")
+			rb.SetDbSystemVersion("db.system.version-val")
 			rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
+			rb.SetServiceInstanceID("service.instance.id-val")
+			rb.SetServiceName("service.name-val")
+			rb.SetServiceNamespace("service.namespace-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
@@ -384,15 +451,20 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricMysqlHandlers.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlIndexIoWaitCount.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlIndexIoWaitTime.aggDataPoints)
+				assert.Empty(t, mb.metricMysqlInnodbDataFileIo.aggDataPoints)
+				assert.Empty(t, mb.metricMysqlInnodbOperationPending.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlJoins.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlLocks.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlLogOperations.aggDataPoints)
+				assert.Empty(t, mb.metricMysqlMyisamKeyCacheDiskOperation.aggDataPoints)
+				assert.Empty(t, mb.metricMysqlMyisamKeyCacheRequest.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlMysqlxConnections.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlMysqlxWorkerThreads.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlOpenedResources.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlOperations.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlPageOperations.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlPreparedStatements.aggDataPoints)
+				assert.Empty(t, mb.metricMysqlReplicaThreadRunning.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlRowLocks.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlRowOperations.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlSorts.aggDataPoints)
@@ -702,7 +774,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, int64(1), dp.IntValue())
 						commandAttrVal, ok := dp.Attributes().Get("command")
 						assert.True(t, ok)
-						assert.Equal(t, "delete", commandAttrVal.Str())
+						assert.Equal(t, "alter_table", commandAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["mysql.commands"], "Found a duplicate in the metrics slice: mysql.commands")
 						validatedMetrics["mysql.commands"] = true
@@ -831,6 +903,18 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("kind")
 						assert.False(t, ok)
 					}
+				case "mysql.file.open":
+					assert.False(t, validatedMetrics["mysql.file.open"], "Found a duplicate in the metrics slice: mysql.file.open")
+					validatedMetrics["mysql.file.open"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of currently open files.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.handlers":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.handlers"], "Found a duplicate in the metrics slice: mysql.handlers")
@@ -993,6 +1077,130 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("index")
 						assert.False(t, ok)
 					}
+				case "mysql.innodb.data_file.io":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mysql.innodb.data_file.io"], "Found a duplicate in the metrics slice: mysql.innodb.data_file.io")
+						validatedMetrics["mysql.innodb.data_file.io"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The total bytes read from and written to InnoDB data files.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						diskIoDirectionAttrVal, ok := dp.Attributes().Get("disk.io.direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", diskIoDirectionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mysql.innodb.data_file.io"], "Found a duplicate in the metrics slice: mysql.innodb.data_file.io")
+						validatedMetrics["mysql.innodb.data_file.io"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The total bytes read from and written to InnoDB data files.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mysql.innodb.data_file.io"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("disk.io.direction")
+						assert.False(t, ok)
+					}
+				case "mysql.innodb.operation.pending":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mysql.innodb.operation.pending"], "Found a duplicate in the metrics slice: mysql.innodb.operation.pending")
+						validatedMetrics["mysql.innodb.operation.pending"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of pending InnoDB data file operations.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						operationsAttrVal, ok := dp.Attributes().Get("operation")
+						assert.True(t, ok)
+						assert.Equal(t, "fsyncs", operationsAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mysql.innodb.operation.pending"], "Found a duplicate in the metrics slice: mysql.innodb.operation.pending")
+						validatedMetrics["mysql.innodb.operation.pending"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of pending InnoDB data file operations.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mysql.innodb.operation.pending"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("operation")
+						assert.False(t, ok)
+					}
+				case "mysql.innodb.row_lock.wait.count":
+					assert.False(t, validatedMetrics["mysql.innodb.row_lock.wait.count"], "Found a duplicate in the metrics slice: mysql.innodb.row_lock.wait.count")
+					validatedMetrics["mysql.innodb.row_lock.wait.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of InnoDB row lock waits currently pending.", mi.Description())
+					assert.Equal(t, "{wait}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.innodb.row_lock.wait.duration.avg":
+					assert.False(t, validatedMetrics["mysql.innodb.row_lock.wait.duration.avg"], "Found a duplicate in the metrics slice: mysql.innodb.row_lock.wait.duration.avg")
+					validatedMetrics["mysql.innodb.row_lock.wait.duration.avg"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The average InnoDB row lock wait duration since server startup or last status reset.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "mysql.innodb.row_lock.wait.duration.max":
+					assert.False(t, validatedMetrics["mysql.innodb.row_lock.wait.duration.max"], "Found a duplicate in the metrics slice: mysql.innodb.row_lock.wait.duration.max")
+					validatedMetrics["mysql.innodb.row_lock.wait.duration.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The maximum InnoDB row lock wait duration since server startup or last status reset.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mysql.joins":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.joins"], "Found a duplicate in the metrics slice: mysql.joins")
@@ -1139,6 +1347,118 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.myisam.key_cache.block.unused":
+					assert.False(t, validatedMetrics["mysql.myisam.key_cache.block.unused"], "Found a duplicate in the metrics slice: mysql.myisam.key_cache.block.unused")
+					validatedMetrics["mysql.myisam.key_cache.block.unused"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of unused MyISAM key cache blocks.", mi.Description())
+					assert.Equal(t, "{block}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.myisam.key_cache.block.used.max":
+					assert.False(t, validatedMetrics["mysql.myisam.key_cache.block.used.max"], "Found a duplicate in the metrics slice: mysql.myisam.key_cache.block.used.max")
+					validatedMetrics["mysql.myisam.key_cache.block.used.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The maximum number of MyISAM key cache blocks simultaneously in use since the server started or status counters were reset.", mi.Description())
+					assert.Equal(t, "{block}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.myisam.key_cache.disk.operation":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mysql.myisam.key_cache.disk.operation"], "Found a duplicate in the metrics slice: mysql.myisam.key_cache.disk.operation")
+						validatedMetrics["mysql.myisam.key_cache.disk.operation"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of physical MyISAM key cache disk operations.", mi.Description())
+						assert.Equal(t, "{operation}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						mysqlMyisamKeyCacheOperationTypeAttrVal, ok := dp.Attributes().Get("operation")
+						assert.True(t, ok)
+						assert.Equal(t, "read", mysqlMyisamKeyCacheOperationTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mysql.myisam.key_cache.disk.operation"], "Found a duplicate in the metrics slice: mysql.myisam.key_cache.disk.operation")
+						validatedMetrics["mysql.myisam.key_cache.disk.operation"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of physical MyISAM key cache disk operations.", mi.Description())
+						assert.Equal(t, "{operation}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mysql.myisam.key_cache.disk.operation"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("operation")
+						assert.False(t, ok)
+					}
+				case "mysql.myisam.key_cache.request":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mysql.myisam.key_cache.request"], "Found a duplicate in the metrics slice: mysql.myisam.key_cache.request")
+						validatedMetrics["mysql.myisam.key_cache.request"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of logical MyISAM key cache requests.", mi.Description())
+						assert.Equal(t, "{request}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						mysqlMyisamKeyCacheOperationTypeAttrVal, ok := dp.Attributes().Get("operation")
+						assert.True(t, ok)
+						assert.Equal(t, "read", mysqlMyisamKeyCacheOperationTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mysql.myisam.key_cache.request"], "Found a duplicate in the metrics slice: mysql.myisam.key_cache.request")
+						validatedMetrics["mysql.myisam.key_cache.request"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of logical MyISAM key cache requests.", mi.Description())
+						assert.Equal(t, "{request}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mysql.myisam.key_cache.request"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("operation")
+						assert.False(t, ok)
+					}
 				case "mysql.mysqlx_connections":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.mysqlx_connections"], "Found a duplicate in the metrics slice: mysql.mysqlx_connections")
@@ -1473,6 +1793,63 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.replica.temp_table.open":
+					assert.False(t, validatedMetrics["mysql.replica.temp_table.open"], "Found a duplicate in the metrics slice: mysql.replica.temp_table.open")
+					validatedMetrics["mysql.replica.temp_table.open"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of temporary tables currently open by the replica while applying replicated events.", mi.Description())
+					assert.Equal(t, "{table}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.replica.thread.running":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mysql.replica.thread.running"], "Found a duplicate in the metrics slice: mysql.replica.thread.running")
+						validatedMetrics["mysql.replica.thread.running"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Whether the replica IO and SQL threads report a running status. A value of 1 means the thread reports Yes; 0 means any other status, including No or Connecting.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						mysqlReplicaThreadTypeAttrVal, ok := dp.Attributes().Get("mysql.replica.thread.type")
+						assert.True(t, ok)
+						assert.Equal(t, "io", mysqlReplicaThreadTypeAttrVal.Str())
+						mysqlReplicaChannelNameAttrVal, ok := dp.Attributes().Get("mysql.replica.channel.name")
+						assert.True(t, ok)
+						assert.Equal(t, "mysql.replica.channel.name-val", mysqlReplicaChannelNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mysql.replica.thread.running"], "Found a duplicate in the metrics slice: mysql.replica.thread.running")
+						validatedMetrics["mysql.replica.thread.running"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Whether the replica IO and SQL threads report a running status. A value of 1 means the thread reports Yes; 0 means any other status, including No or Connecting.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mysql.replica.thread.running"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("mysql.replica.thread.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("mysql.replica.channel.name")
+						assert.False(t, ok)
+					}
 				case "mysql.replica.time_behind_source":
 					assert.False(t, validatedMetrics["mysql.replica.time_behind_source"], "Found a duplicate in the metrics slice: mysql.replica.time_behind_source")
 					validatedMetrics["mysql.replica.time_behind_source"] = true
@@ -2105,6 +2482,18 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("kind")
 						assert.False(t, ok)
 					}
+				case "mysql.table.open":
+					assert.False(t, validatedMetrics["mysql.table.open"], "Found a duplicate in the metrics slice: mysql.table.open")
+					validatedMetrics["mysql.table.open"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of currently open tables.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.table.rows":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.table.rows"], "Found a duplicate in the metrics slice: mysql.table.rows")
@@ -2252,6 +2641,20 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("status")
 						assert.False(t, ok)
 					}
+				case "mysql.thread.slow_launch":
+					assert.False(t, validatedMetrics["mysql.thread.slow_launch"], "Found a duplicate in the metrics slice: mysql.thread.slow_launch")
+					validatedMetrics["mysql.thread.slow_launch"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of threads that have taken more than slow_launch_time seconds to create.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.threads":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.threads"], "Found a duplicate in the metrics slice: mysql.threads")

@@ -19,6 +19,7 @@ import (
 	// registers the mysql driver
 	"github.com/go-sql-driver/mysql"
 	"github.com/hashicorp/go-version"
+	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"go.uber.org/zap"
 )
 
@@ -52,6 +53,17 @@ func (v dbVersion) productString() string {
 		return "MariaDB"
 	}
 	return "MySQL"
+}
+
+// systemName returns the db.system.name value following OpenTelemetry semantic
+// conventions, sourced from the semconv package so the values stay tied to the
+// spec. This is distinct from productString, which is intended for
+// human-readable logging.
+func (v dbVersion) systemName() string {
+	if v.product == dbProductMariaDB {
+		return semconv.DBSystemNameMariaDB.Value.AsString()
+	}
+	return semconv.DBSystemNameMySQL.Value.AsString()
 }
 
 // supportsQuerySampleText reports whether the server's
@@ -329,8 +341,8 @@ func newMySQLClient(conf *Config) (client, error) {
 	driverConf := mysql.Config{
 		User:                 conf.Username,
 		Passwd:               string(conf.Password),
-		Net:                  string(conf.Transport),
-		Addr:                 conf.Endpoint,
+		Net:                  string(conf.AddrConfig.Transport),
+		Addr:                 conf.AddrConfig.Endpoint,
 		DBName:               conf.Database,
 		AllowNativePasswords: conf.AllowNativePasswords,
 		TLS:                  tls,

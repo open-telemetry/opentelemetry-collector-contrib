@@ -104,11 +104,12 @@ func TestTopicScraperFranz_ScrapeMetricValues(t *testing.T) {
 		ClusterAlias:         "franz-topics",
 		TopicMatch:           ".*",
 	}
-	cfg.ResourceAttributes.KafkaClusterAlias.Enabled = true
-	cfg.Metrics.KafkaTopicLogRetentionPeriod.Enabled = true
-	cfg.Metrics.KafkaTopicLogRetentionSize.Enabled = true
-	cfg.Metrics.KafkaTopicMinInsyncReplicas.Enabled = true
-	cfg.Metrics.KafkaTopicReplicationFactor.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterAlias.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterID.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.KafkaTopicLogRetentionPeriod.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.KafkaTopicLogRetentionSize.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.KafkaTopicMinInsyncReplicas.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.KafkaTopicReplicationFactor.Enabled = true
 
 	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
@@ -123,6 +124,11 @@ func TestTopicScraperFranz_ScrapeMetricValues(t *testing.T) {
 	val, ok := rm.Resource().Attributes().Get("kafka.cluster.alias")
 	require.True(t, ok)
 	require.Equal(t, "franz-topics", val.Str())
+
+	// cluster id (opt-in, enabled above) is discovered from cluster metadata ("kfake" by default)
+	idVal, ok := rm.Resource().Attributes().Get("kafka.cluster.id")
+	require.True(t, ok)
+	require.Equal(t, "kfake", idVal.Str())
 
 	// kfake topic config defaults
 	const (
@@ -175,6 +181,33 @@ func TestTopicScraperFranz_ScrapeMetricValues(t *testing.T) {
 	}
 }
 
+func TestTopicScraperFranz_EmptyClusterID(t *testing.T) {
+	// An empty cluster_id in metadata must not yield an empty-string attribute, even when enabled.
+	_, clientCfg := kafkatest.NewCluster(t,
+		kfake.SeedTopics(1, "topic-a"),
+		kfake.ClusterID(""),
+	)
+	cfg := Config{
+		ClientConfig:         clientCfg,
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		TopicMatch:           ".*",
+	}
+	cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterID.Enabled = true
+
+	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
+
+	md, err := s.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+
+	rm := md.ResourceMetrics().At(0)
+	_, ok := rm.Resource().Attributes().Get("kafka.cluster.id")
+	require.False(t, ok, "kafka.cluster.id must be omitted when the broker reports an empty cluster id")
+}
+
 func TestTopicScraperFranz_TopicFilterExcludes(t *testing.T) {
 	_, clientCfg := kafkatest.NewCluster(t, kfake.SeedTopics(1, "include-me", "_internal"))
 	cfg := Config{
@@ -222,7 +255,7 @@ func TestTopicScraperFranz_ScrapePartialError_UnparseableConfig(t *testing.T) {
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		TopicMatch:           ".*",
 	}
-	cfg.Metrics.KafkaTopicMinInsyncReplicas.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.KafkaTopicMinInsyncReplicas.Enabled = true
 
 	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)

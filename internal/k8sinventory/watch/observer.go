@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/tools/watch"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/checkpoint"
 )
 
 const (
@@ -39,7 +40,7 @@ type Config struct {
 
 type Observer struct {
 	config       Config
-	checkpointer *checkpointer
+	checkpointer *checkpoint.Checkpointer
 
 	client dynamic.Interface
 	logger *zap.Logger
@@ -57,13 +58,13 @@ func New(client dynamic.Interface, config Config, logger *zap.Logger, storageCli
 
 	// Initialize checkpointer if a storage client is provided
 	if storageClient != nil {
-		o.checkpointer = newCheckpointer(storageClient, logger)
+		o.checkpointer = checkpoint.New(storageClient, logger)
 	}
 
 	return o, nil
 }
 
-func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) chan struct{} {
+func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) (chan struct{}, error) {
 	resource := o.client.Resource(o.config.Gvr)
 	o.logger.Info("Started collecting",
 		zap.Any("gvr", o.config.Gvr),
@@ -82,7 +83,7 @@ func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) chan struct{} 
 		}
 	}
 
-	return stopperChan
+	return stopperChan, nil
 }
 
 // startCheckpointFlusher starts a goroutine that flushes all buffered
@@ -311,7 +312,9 @@ func (o *Observer) sendInitialState(ctx context.Context, resource dynamic.Resour
 // setLatestRV is called with each new resourceVersion to update the in-memory value
 // that the periodic checkpoint flush will persist.
 func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}, setLatestRV func(string)) bool {
-	watcher, err := watch.NewRetryWatcherWithContext(ctx, resourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
+	// TODO: SA1019: (k8s.io/client-go/tools/cache.ListWatch).WatchFunc is deprecated: use WatchWithContext instead.
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50432
+	watcher, err := watch.NewRetryWatcherWithContext(ctx, resourceVersion, &cache.ListWatch{WatchFunc: watchFunc}) //nolint:staticcheck
 	if err != nil {
 		o.logger.Error("error in watching object",
 			zap.String("resource", o.config.Gvr.String()),

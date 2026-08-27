@@ -54,12 +54,12 @@ and allows you to configure a list of statements for the processor to execute. T
 
 Within each `<signal_statements>` list, only certain OTTL Path prefixes can be used:
 
-| Signal             | Path Prefix Values                             |
-|--------------------|------------------------------------------------|
-| trace_statements   | `resource`, `scope`, `span`, and `spanevent`   |
-| metric_statements  | `resource`, `scope`, `metric`, and `datapoint` |
-| log_statements     | `resource`, `scope`, and `log`                 |
-| profile_statements | `resource`, `scope`, and `profile`             |
+| Signal             | Path Prefix Values                                          |
+|--------------------|-------------------------------------------------------------|
+| trace_statements   | `resource`, `scope`, `span`, and `spanevent`                |
+| metric_statements  | `resource`, `scope`, `metric`, `datapoint`, and `exemplar`  |
+| log_statements     | `resource`, `scope`, and `log`                              |
+| profile_statements | `resource`, `scope`, and `profile`                          |
 
 This means, for example, that you cannot use the Path `span.attributes` within the `log_statements` configuration section.
 
@@ -275,7 +275,9 @@ In addition to the common OTTL functions, the processor defines its own function
 
 **Logs only functions**
 
+- [ParseCEF](#parsecef)
 - [ParseCLF](#parseclf)
+- [ParseELF](#parseelf)
 - [ParseLEEF](#parseleef)
 
 **Traces only functions**
@@ -711,6 +713,32 @@ Examples:
 # counts: [84, 126, 5, 50, 1]
 ```
 
+### ParseCEF
+
+`ParseCEF(target)`
+
+The `ParseCEF` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [Common Event Format (CEF)](https://www.microfocus.com/documentation/arcsight/arcsight-smartconnectors-8.4/cef-implementation-standard/Content/CEF/Chapter%201%20What%20is%20CEF.htm) message.
+
+`target` is a Getter that returns a string. If the returned string is empty, or cannot be parsed as CEF, an error will be returned.
+
+`ParseCEF` is tolerant of an optional syslog header preceding the `CEF:` token; parsing begins at the first occurrence of `CEF:` in the input.
+
+The returned map has the following top-level fields:
+
+- `cef.version` — the CEF version (the integer following `CEF:`).
+- `cef.device_vendor`, `cef.device_product`, `cef.device_version`, `cef.device_event_class_id`, `cef.name`, `cef.severity` — the six CEF header fields.
+- `cef.extensions` — a map of the parsed key/value extension pairs.
+
+Within the header fields, the escape sequences `\|` (pipe) and `\\` (backslash) are unescaped. Within extension values, the escape sequences `\\` (backslash), `\=` (equals), `\n` (newline), and `\r` (carriage return) are unescaped.
+
+Extension parsing uses the position of the next `key=` token as the end of the current value, so values may contain spaces. All extension values are returned as strings.
+
+Examples:
+
+- `ParseCEF(body)`
+
+- `ParseCEF("CEF:0|Security|threatmanager|1.0|100|worm successfully stopped|10|src=10.0.0.1 dst=2.1.2.2 spt=1232")`
+
 ### ParseCLF
 
 `ParseCLF(target, Optional[format])`
@@ -753,6 +781,35 @@ Examples:
 - `ParseCLF("127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] \"GET /apache_pb.gif HTTP/1.0\" 200 2326")`
 - `ParseCLF(body, "combined")`
 
+### ParseELF
+
+`ParseELF(target)`
+
+The `ParseELF` function returns a `pcommon.Map` that is the result of parsing the `target` string as a [W3C Extended Log Format (ELF)](https://www.w3.org/TR/WD-logfile.html) log block.
+
+`target` is a Getter that returns a string containing a complete ELF log block (one or more directive lines followed by data lines). If the string is empty or does not contain a valid `#Version` directive, an error is returned.
+
+**Intended usage:** `ParseELF` is designed for pipelines where the full ELF block — header directives (`#Version`, `#Fields`, etc.) and data lines — is available as a single string. This is the case when using the [filelog receiver](../../receiver/filelogreceiver/README.md) with a multiline configuration that groups an entire ELF file (or rotated segment) into one log record body, or when the entire log content is read from a single field. In a line-by-line streaming pipeline where `#Fields` arrives only once at file open, each individual data line does not carry its own header; for that pattern you would need to prepend the known header directives to each data line before passing the string to `ParseELF`.
+
+The returned map contains the following keys:
+
+* `elf.version` — value of the `#Version` directive (required).
+* `elf.software` — value of `#Software` (omitted if not present).
+* `elf.date` — value of `#Date` (omitted if not present).
+* `elf.start_date` — value of `#Start-Date` (omitted if not present).
+* `elf.end_date` — value of `#End-Date` (omitted if not present).
+* `elf.remark` — value of `#Remark` (omitted if not present).
+* `elf.fields` — string slice of field names from the last `#Fields` directive.
+* `elf.entries` — slice of maps, one per data line, keyed by field name. Missing values are represented as `"-"`.
+
+Multiple `#Fields` directives within a single block are supported; each directive applies to subsequent data lines until the next `#Fields` directive is encountered. Double-quoted field values (as produced by Microsoft IIS) are handled correctly.
+
+Examples:
+
+- `ParseELF(body)`
+
+- `ParseELF("#Version: 1.0\n#Fields: time cs-method cs-uri\n00:34:23 GET /foo/bar.html")`
+
 ### ParseLEEF
 
 `ParseLEEF(target)`
@@ -793,7 +850,7 @@ The primary use case of the `set_semconv_span_name()` function is to address hig
 
 Parameters:
 
-* `semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`, older semconv attributes are supported. Versions `1.37.0` to `1.40.0` are supported.
+* `semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`. A set of older/deprecated semconv attributes are also supported for backward compatibility (see the table below). Versions `1.37.0` to `1.43.0` are supported.
 * `originalSpanNameAttribute` is the optional name of the attribute used to copy the original `span.name` if different from the name derived from semantic conventions.
 
 Sanitization examples:
@@ -808,7 +865,7 @@ Sanitization examples:
            http.route: /api/v1/users/{id}
            url.path: /api/v1/users/123
         ```
-   * Span name after applying `set_semconv_span_name("1.40.0")`: `GET /api/v1/users/{id}`
+   * Span name after applying `set_semconv_span_name("1.43.0")`: `GET /api/v1/users/{id}`
    * No loss of information on `span.name` occurs because the recommended attribute `http.route` is present.
 * Span with high-cardinality name lacking recommended semantic convention attribute `http.route`
     * Incoming span:
@@ -819,7 +876,7 @@ Sanitization examples:
             http.request.method: GET
             url.path: /api/v1/users/123
          ```
-    * Span name after applying `set_semconv_span_name("1.40.0")`: `GET`
+    * Span name after applying `set_semconv_span_name("1.43.0")`: `GET`
     * Loss of information on `span.name` occurs because the recommended attribute `http.route` is missing.
     Note that this loss of information is mitigated if the instrumentation produced attributes that contain the URL path like `url.path` or `url.full`.
 * Compliant span name is unchanged
@@ -832,26 +889,28 @@ Sanitization examples:
             http.route: /api/v1/users/{id}
             url.path: /api/v1/users/123
          ```
-    * Span name after applying `set_semconv_span_name("1.40.0")`: `GET /api/v1/users/{id}`
+    * Span name after applying `set_semconv_span_name("1.43.0")`: `GET /api/v1/users/{id}`
 
 
-Backward compatibility: `set_semconv_span_name` will map the following attributes to their equivalents per the v1.39.0 semantic conventions:
+Backward compatibility: `set_semconv_span_name` will also read the following deprecated attributes, mapping each to its current equivalent:
 
-| v1.40.0 Attribute     | Older attribute    |
-|-----------------------|--------------------|
-| `http.request.method` | `http.method`      |
-| `rpc.method`          | `rpc.grpc.method`  |
-| `rpc.service`         | `rpc.grpc.service` |
-| `rpc.system.name`     | `rpc.system`       |
-| `db.system.name`      | `db.system`        |
-| `db.operation.name`   | `db.operation`     |
-| `db.collection.name`  | `db.name`          |
+| v1.43.0 Attribute            | Older attribute         |
+|------------------------------|-------------------------|
+| `http.request.method`        | `http.method`           |
+| `rpc.method`                 | `rpc.grpc.method`       |
+| `rpc.service`                | `rpc.grpc.service`      |
+| `rpc.system.name`            | `rpc.system`            |
+| `db.system.name`             | `db.system`             |
+| `db.operation.name`          | `db.operation`          |
+| `db.namespace`               | `db.name`               |
+| `messaging.operation.name`   | `messaging.operation`   |
+| `messaging.destination.name` | `messaging.destination` |
 
 Examples:
 
-- `set_semconv_span_name("1.40.0")`
+- `set_semconv_span_name("1.43.0")`
 
-- `set_semconv_span_name("1.40.0", "original_span_name")`
+- `set_semconv_span_name("1.43.0", "original_span_name")`
 
 ## Examples
 
@@ -1085,3 +1144,21 @@ The feature is currently only available for log processing.
   ```
   
   Run collector: `./otelcol --config config.yaml --feature-gates=transform.flatten.logs`
+
+### `ottl.set.allowNil`
+
+The `ottl.set.allowNil` [feature gate](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/documentation.md) changes the behavior of the OTTL `set` function when a `nil` value is evaluated. When enabled, `set` will pass the `nil` value directly to the target. Depending on the target, this may result in an error or an empty value. See the [OTTL Documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl) for full details and migration instructions.
+
+## Available Benchmarks
+
+The transform processor is tested as part of the project's load tests, with the results being
+publicly available on the benchmarks
+[page](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests).
+There you can find the CPU and memory usage of the processor executing a representative set of OTTL
+statements against each signal at 10,000 items/second:
+
+- Traces: [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessortraces-cpu-percentage) and [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessortraces-ram-mib)
+- Metrics: [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessormetrics-cpu-percentage) and [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessormetrics-ram-mib)
+- Logs: [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessorlogs-cpu-percentage) and [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#transformprocessorlogs-ram-mib)
+
+Refer to the [test](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/testbed/tests/transform_processor_test.go) for more information about the setup.

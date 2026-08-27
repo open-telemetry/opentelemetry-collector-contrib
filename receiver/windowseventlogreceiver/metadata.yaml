@@ -12,7 +12,8 @@ status:
     alpha: [logs]
   distributions: [contrib]
   codeowners:
-    active: [armstrmi, pjanotti]
+    active: [mrsillydog, pjanotti]
+    emeritus: [armstrmi]
   unsupported_platforms: [darwin, linux]
 
 tests:
@@ -28,12 +29,10 @@ feature_gates:
       start collecting logs from specified channel.
     from_version: v0.150.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44156
-    skip_strict_validation: true
   - id: receiver.windowseventlog.multipleRemoteHosts
     stage: alpha
     description: >-
       When enabled, allows configuring multiple remote hosts in a single receiver instance
       via the remote.servers configuration field.
-    from_version: v0.155.0
+    from_version: v0.159.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47933
-    skip_strict_validation: true

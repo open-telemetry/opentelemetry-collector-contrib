@@ -19,8 +19,8 @@ var _ component.Config = (*Config)(nil)
 
 // Config defines configuration for Kafka receiver.
 type Config struct {
-	configkafka.ClientConfig   `mapstructure:",squash"`
-	configkafka.ConsumerConfig `mapstructure:",squash"`
+	ClientConfig   configkafka.ClientConfig   `mapstructure:",squash"`
+	ConsumerConfig configkafka.ConsumerConfig `mapstructure:",squash"`
 
 	// Logs holds configuration about how logs should be consumed.
 	Logs TopicEncodingConfig `mapstructure:"logs"`

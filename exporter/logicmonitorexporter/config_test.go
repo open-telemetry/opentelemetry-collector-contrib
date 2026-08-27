@@ -17,13 +17,40 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter/internal/metadata"
 )
 
 func TestConfigValidation(t *testing.T) {
+	emptyEndpointClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	emptyEndpointClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	emptyEndpointClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	emptyEndpointClientConfig.ForceAttemptHTTP2 = false
+	emptyEndpointClientConfig.Endpoint = ""
+
+	missingSchemeClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	missingSchemeClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	missingSchemeClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	missingSchemeClientConfig.ForceAttemptHTTP2 = false
+	missingSchemeClientConfig.Endpoint = "test.com/dummy"
+
+	invalidFormatClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	invalidFormatClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	invalidFormatClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	invalidFormatClientConfig.ForceAttemptHTTP2 = false
+	invalidFormatClientConfig.Endpoint = "invalid.com@#$%"
+
+	validClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	validClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	validClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	validClientConfig.ForceAttemptHTTP2 = false
+	validClientConfig.Endpoint = "http://validurl.com/rest"
+
 	testcases := []struct {
 		name         string
 		cfg          *Config
@@ -33,9 +60,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "empty endpoint",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "",
-				},
+				ClientConfig: emptyEndpointClientConfig,
 			},
 			wantErr:      true,
 			errorMessage: "endpoint should not be empty",
@@ -43,9 +68,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "missing http scheme",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "test.com/dummy",
-				},
+				ClientConfig: missingSchemeClientConfig,
 			},
 			wantErr:      true,
 			errorMessage: "endpoint must be valid",
@@ -53,9 +76,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "invalid endpoint format",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "invalid.com@#$%",
-				},
+				ClientConfig: invalidFormatClientConfig,
 			},
 			wantErr:      true,
 			errorMessage: "endpoint must be valid",
@@ -63,9 +84,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "valid config",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "http://validurl.com/rest",
-				},
+				ClientConfig: validClientConfig,
 			},
 			wantErr:      false,
 			errorMessage: "",
@@ -97,6 +116,33 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
+	apitokenClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	apitokenClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	apitokenClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	apitokenClientConfig.ForceAttemptHTTP2 = false
+	apitokenClientConfig.Endpoint = "https://company.logicmonitor.com/rest"
+
+	bearertokenClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	bearertokenClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	bearertokenClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	bearertokenClientConfig.ForceAttemptHTTP2 = false
+	bearertokenClientConfig.Endpoint = "https://company.logicmonitor.com/rest"
+	bearertokenClientConfig.Headers = configopaque.MapList{
+		{Name: "Authorization", Value: "Bearer <token>"},
+	}
+
+	resourceMappingClientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	resourceMappingClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	resourceMappingClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	resourceMappingClientConfig.ForceAttemptHTTP2 = false
+	resourceMappingClientConfig.Endpoint = "https://company.logicmonitor.com/rest"
+	resourceMappingClientConfig.Headers = configopaque.MapList{
+		{Name: "Authorization", Value: "Bearer <token>"},
+	}
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -106,9 +152,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "https://company.logicmonitor.com/rest",
-				},
+				ClientConfig:  apitokenClientConfig,
 				APIToken: APIToken{
 					AccessID:  "accessid",
 					AccessKey: "accesskey",
@@ -120,12 +164,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "https://company.logicmonitor.com/rest",
-					Headers: configopaque.MapList{
-						{Name: "Authorization", Value: "Bearer <token>"},
-					},
-				},
+				ClientConfig:  bearertokenClientConfig,
 			},
 		},
 		{
@@ -133,12 +172,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "https://company.logicmonitor.com/rest",
-					Headers: configopaque.MapList{
-						{Name: "Authorization", Value: "Bearer <token>"},
-					},
-				},
+				ClientConfig:  resourceMappingClientConfig,
 				Logs: LogsConfig{
 					ResourceMappingOperation: "or",
 				},
@@ -155,7 +189,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

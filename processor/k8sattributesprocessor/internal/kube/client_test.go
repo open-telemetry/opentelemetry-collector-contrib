@@ -8,6 +8,7 @@ import (
 	"maps"
 	"regexp"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -447,7 +448,6 @@ func TestPodUpdateQueuesStaleContainerIDAssociation(t *testing.T) {
 			Name: "container.id",
 		}},
 	}}
-	c.hasContainerIDAssociation = hasContainerIDAssociation(c.Associations)
 
 	oldID := newPodIdentifier(ResourceSource, "container.id", "old-container-id")
 	newID := newPodIdentifier(ResourceSource, "container.id", "new-container-id")
@@ -464,7 +464,7 @@ func TestPodUpdateQueuesStaleContainerIDAssociation(t *testing.T) {
 	require.Contains(t, c.Pods, newID)
 	require.Len(t, c.deleteQueue, 1)
 	assert.Equal(t, oldID, c.deleteQueue[0].id)
-	assert.Equal(t, "pod-uid", c.deleteQueue[0].podUID)
+	assert.Equal(t, "pod-uid", c.deleteQueue[0].pod.PodUID)
 
 	c.deleteLoopProcessing(time.Hour)
 	assert.Contains(t, c.Pods, oldID)
@@ -473,6 +473,177 @@ func TestPodUpdateQueuesStaleContainerIDAssociation(t *testing.T) {
 	c.deleteLoopProcessing(0)
 	assert.NotContains(t, c.Pods, oldID)
 	assert.Contains(t, c.Pods, newID)
+}
+
+// podWithLabel builds a minimal pod with a single label, used for association tests.
+func podWithLabel(uid, labelKey, labelValue string) *api_v1.Pod {
+	startTime := meta_v1.NewTime(time.Unix(1, 0))
+	return &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:   "pod-a",
+			UID:    types.UID(uid),
+			Labels: map[string]string{labelKey: labelValue},
+		},
+		Status: api_v1.PodStatus{
+			StartTime: &startTime,
+		},
+	}
+}
+
+// podWithoutLabel builds the same pod but without the label.
+func podWithoutLabel(uid string) *api_v1.Pod {
+	startTime := meta_v1.NewTime(time.Unix(1, 0))
+	return &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: "pod-a",
+			UID:  types.UID(uid),
+		},
+		Status: api_v1.PodStatus{
+			StartTime: &startTime,
+		},
+	}
+}
+
+// TestPodUpdateQueuesStaleCustomLabelAssociation verifies that when a pod update removes
+// a label used as a custom association source, the stale identifier is queued for deletion
+// (fix for the memory leak described in issue #48588).
+func TestPodUpdateQueuesStaleCustomLabelAssociation(t *testing.T) {
+	c, _ := newTestClient(t)
+	c.Rules = ExtractionRules{
+		Labels: []FieldExtractionRule{{Name: "my-label", Key: "my-label", From: MetadataFromPod}},
+	}
+	c.Associations = []Association{{
+		Sources: []AssociationSource{{
+			From: ResourceSource,
+			Name: "my-label",
+		}},
+	}}
+
+	labelID := newPodIdentifier(ResourceSource, "my-label", "my-value")
+	uidID := newPodIdentifier(ResourceSource, "k8s.pod.uid", "pod-uid")
+	pod := podWithLabel("pod-uid", "my-label", "my-value")
+
+	c.handlePodAdd(pod)
+	require.Contains(t, c.Pods, labelID)
+	require.Contains(t, c.Pods, uidID)
+
+	// Update the pod without the label — the stale identifier should be queued for deletion.
+	updatedPod := podWithoutLabel("pod-uid")
+	c.handlePodUpdate(pod, updatedPod)
+
+	require.Contains(t, c.Pods, labelID, "stale label identifier should still be in cache during grace period")
+	// The deleteQueue should contain the stale label identifier.
+	require.Len(t, c.deleteQueue, 1)
+	assert.Equal(t, labelID, c.deleteQueue[0].id)
+	assert.Equal(t, "pod-uid", c.deleteQueue[0].pod.PodUID)
+}
+
+// TestPodUpdateCancelsPendingDeleteOnReactivation verifies that when an identifier goes
+// through active->stale->active transitions, the re-activated identifier is not incorrectly
+// removed after the grace period expires (fix for issue #48588).
+// The delete loop skips stale requests via pointer comparison: re-activation writes a new
+// *Pod to c.Pods[id], so the queued delete request (which holds the old pointer) is a no-op.
+func TestPodUpdateCancelsPendingDeleteOnReactivation(t *testing.T) {
+	c, _ := newTestClient(t)
+	c.Rules = ExtractionRules{
+		Labels: []FieldExtractionRule{{Name: "my-label", Key: "my-label", From: MetadataFromPod}},
+	}
+	c.Associations = []Association{{
+		Sources: []AssociationSource{{
+			From: ResourceSource,
+			Name: "my-label",
+		}},
+	}}
+
+	labelID := newPodIdentifier(ResourceSource, "my-label", "my-value")
+	pod := podWithLabel("pod-uid", "my-label", "my-value")
+
+	// Step 1: add pod with the label.
+	c.handlePodAdd(pod)
+	require.Contains(t, c.Pods, labelID)
+	require.Empty(t, c.deleteQueue)
+
+	// Step 2: update removes the label — stale delete is queued with the old *Pod pointer.
+	podWithoutLbl := podWithoutLabel("pod-uid")
+	c.handlePodUpdate(pod, podWithoutLbl)
+	require.Len(t, c.deleteQueue, 1)
+	assert.Equal(t, labelID, c.deleteQueue[0].id)
+	stalePod := c.deleteQueue[0].pod
+
+	// Step 3: update restores the label — a new *Pod is written to c.Pods[labelID].
+	c.handlePodUpdate(podWithoutLbl, pod)
+	require.Contains(t, c.Pods, labelID)
+	// The delete request remains in the queue but holds the old pointer.
+	require.Len(t, c.deleteQueue, 1)
+	assert.NotSame(t, stalePod, c.Pods[labelID], "re-activation must write a new *Pod so the queued delete is skipped")
+
+	// Step 4: the delete loop sees the pointer mismatch and skips the delete.
+	c.deleteLoopProcessing(0)
+	assert.Contains(t, c.Pods, labelID, "re-activated identifier must not be deleted")
+}
+
+// TestReactivationRaceStress drives handlePodUpdate and deleteLoopProcessing concurrently
+// to verify that an active->stale->active identifier is never incorrectly deleted.
+// This reproduces the race described in issue #48588.
+func TestReactivationRaceStress(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping concurrency stress test in -short mode")
+	}
+
+	c, _ := newTestClient(t)
+	c.Rules = ExtractionRules{
+		Labels: []FieldExtractionRule{{Name: "my-label", Key: "my-label", From: MetadataFromPod}},
+	}
+	c.Associations = []Association{{
+		Sources: []AssociationSource{{
+			From: ResourceSource,
+			Name: "my-label",
+		}},
+	}}
+
+	labelID := newPodIdentifier(ResourceSource, "my-label", "my-value")
+	withLabel := podWithLabel("pod-uid", "my-label", "my-value")
+	noLabel := podWithoutLabel("pod-uid")
+
+	c.handlePodAdd(withLabel)
+	require.Contains(t, c.Pods, labelID)
+
+	const iterations = 20000
+	var wrongDelete atomic.Bool
+	stop := make(chan struct{})
+
+	var deleter sync.WaitGroup
+	deleter.Go(func() {
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+				c.deleteLoopProcessing(0)
+			}
+		}
+	})
+
+	var caughtAt int
+	for i := 0; i < iterations && !wrongDelete.Load(); i++ {
+		c.handlePodUpdate(withLabel, noLabel)
+		c.handlePodUpdate(noLabel, withLabel)
+
+		for range 128 {
+			if _, ok := c.GetPod(labelID); !ok {
+				wrongDelete.Store(true)
+				caughtAt = i
+				break
+			}
+		}
+	}
+
+	close(stop)
+	deleter.Wait()
+
+	assert.False(t, wrongDelete.Load(),
+		"active->stale->active identifier was deleted by the concurrent delete loop "+
+			"(caught on iteration %d of %d)", caughtAt, iterations)
 }
 
 func TestNamespaceUpdate(t *testing.T) {
@@ -547,12 +718,12 @@ func TestPodDelete(t *testing.T) {
 	assert.Len(t, c.deleteQueue, 5)
 	deleteRequest = c.deleteQueue[0]
 	assert.Equal(t, newPodIdentifier("connection", "k8s.pod.ip", "2.2.2.2"), deleteRequest.id)
-	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", deleteRequest.podUID)
+	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", deleteRequest.pod.PodUID)
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
 	deleteRequest = c.deleteQueue[1]
 	assert.Equal(t, newPodIdentifier("resource_attribute", "k8s.pod.uid", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"), deleteRequest.id)
-	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", deleteRequest.podUID)
+	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", deleteRequest.pod.PodUID)
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
 }
@@ -1989,11 +2160,10 @@ func TestDeploymentExtractionRules(t *testing.T) {
 	}
 }
 
-func TestDeploymentNameFromReplicaSet(t *testing.T) {
+func TestClientDeploymentNameFromReplicaSet(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 	c.Rules = ExtractionRules{
-		DeploymentName:               true,
-		DeploymentNameFromReplicaSet: true,
+		DeploymentName: true,
 	}
 
 	pod := &api_v1.Pod{
@@ -2255,6 +2425,117 @@ func TestDaemonSetExtractionRules(t *testing.T) {
 	}
 }
 
+func TestReplicaSetLabelsAnnotationsExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	replicaset := &meta_v1.PartialObjectMetadata{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "k8s-replicaset-example",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			CreationTimestamp: meta_v1.Now(),
+			Labels: map[string]string{
+				"label1": "lv1",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+		},
+	}
+
+	testCases := []struct {
+		name       string
+		rules      ExtractionRules
+		attributes map[string]string
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels and annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromReplicaSet,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromReplicaSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
+			},
+		},
+		{
+			name: "all-labels",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromReplicaSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.replicaset.label.label1": "lv1",
+			},
+		},
+		{
+			name: "all-annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromReplicaSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.replicaset.annotation.annotation1": "av1",
+			},
+		},
+		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromReplicaSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.replicaset.label.label1": "lv1",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			c.handleReplicaSetAdd(replicaset)
+			r, ok := c.GetReplicaSet(string(replicaset.UID))
+			require.True(t, ok)
+
+			assert.Len(t, tc.attributes, len(r.Attributes))
+			for k, v := range tc.attributes {
+				got, ok := r.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
 func TestJobExtractionRules(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 
@@ -2354,6 +2635,117 @@ func TestJobExtractionRules(t *testing.T) {
 			c.Rules = tc.rules
 			c.handleJobAdd(job)
 			n, ok := c.GetJob(string(job.UID))
+			require.True(t, ok)
+
+			assert.Len(t, tc.attributes, len(n.Attributes))
+			for k, v := range tc.attributes {
+				got, ok := n.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
+func TestCronJobExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	cronJob := &meta_v1.PartialObjectMetadata{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "k8s-cronjob-example",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			CreationTimestamp: meta_v1.Now(),
+			Labels: map[string]string{
+				"label1": "lv1",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+		},
+	}
+
+	testCases := []struct {
+		name       string
+		rules      ExtractionRules
+		attributes map[string]string
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels and annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromCronJob,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromCronJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
+			},
+		},
+		{
+			name: "all-labels",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromCronJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.cronjob.label.label1": "lv1",
+			},
+		},
+		{
+			name: "all-annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromCronJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.cronjob.annotation.annotation1": "av1",
+			},
+		},
+		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromCronJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.cronjob.label.label1": "lv1",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			c.handleCronJobAdd(cronJob)
+			n, ok := c.GetCronJob(string(cronJob.UID))
 			require.True(t, ok)
 
 			assert.Len(t, tc.attributes, len(n.Attributes))
@@ -3603,6 +3995,70 @@ func TestExtractDaemonSetLabelsAnnotations(t *testing.T) {
 	}
 }
 
+func TestExtractReplicaSetLabelsAnnotations(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	testCases := []struct {
+		name                    string
+		shouldExtractReplicaSet bool
+		rules                   ExtractionRules
+	}{
+		{
+			name:                    "empty-rules",
+			shouldExtractReplicaSet: false,
+			rules:                   ExtractionRules{},
+		}, {
+			name:                    "pod-rules",
+			shouldExtractReplicaSet: false,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					},
+				},
+			},
+		}, {
+			name:                    "replicaset-rules-only-annotations",
+			shouldExtractReplicaSet: true,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromReplicaSet,
+					},
+				},
+			},
+		}, {
+			name:                    "replicaset-rules-only-labels",
+			shouldExtractReplicaSet: true,
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromReplicaSet,
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			assert.Equal(t, tc.shouldExtractReplicaSet, c.extractReplicaSetLabelsAnnotations())
+		})
+	}
+}
+
 func TestExtractJobLabelsAnnotations(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 	testCases := []struct {
@@ -3663,6 +4119,70 @@ func TestExtractJobLabelsAnnotations(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c.Rules = tc.rules
 			assert.Equal(t, tc.shouldExtractJob, c.extractJobLabelsAnnotations())
+		})
+	}
+}
+
+func TestExtractCronJobLabelsAnnotations(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	testCases := []struct {
+		name                 string
+		shouldExtractCronJob bool
+		rules                ExtractionRules
+	}{
+		{
+			name:                 "empty-rules",
+			shouldExtractCronJob: false,
+			rules:                ExtractionRules{},
+		}, {
+			name:                 "pod-rules",
+			shouldExtractCronJob: false,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					},
+				},
+			},
+		}, {
+			name:                 "cronjob-rules-only-annotations",
+			shouldExtractCronJob: true,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromCronJob,
+					},
+				},
+			},
+		}, {
+			name:                 "cronjob-rules-only-labels",
+			shouldExtractCronJob: true,
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromCronJob,
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			assert.Equal(t, tc.shouldExtractCronJob, c.extractCronJobLabelsAnnotations())
 		})
 	}
 }
@@ -4323,23 +4843,13 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 			expectRun: true,
 		},
 		{
-			name:      "start informer if deployment name is requested without heuristic",
-			rules:     ExtractionRules{DeploymentName: true, DeploymentNameFromReplicaSet: false},
-			expectRun: true,
-		},
-		{
-			name:      "don't start informer if deployment name from replicaset is requested",
-			rules:     ExtractionRules{DeploymentName: true, DeploymentNameFromReplicaSet: true},
+			name:      "don't start informer if only deployment name is requested",
+			rules:     ExtractionRules{DeploymentName: true},
 			expectRun: false,
 		},
 		{
 			name:      "start informer if deployment UID and name are requested",
 			rules:     ExtractionRules{DeploymentName: true, DeploymentUID: true},
-			expectRun: true,
-		},
-		{
-			name:      "start informer if deployment UID and name from replicaset are requested",
-			rules:     ExtractionRules{DeploymentName: true, DeploymentUID: true, DeploymentNameFromReplicaSet: true},
 			expectRun: true,
 		},
 		{
@@ -4383,56 +4893,43 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 	}
 }
 
-func TestDeploymentNameFromReplicaSetFeature(t *testing.T) {
-	// Test the DeploymentNameFromReplicaSet flag functionality with extractPodAttributes
+func TestDeploymentNameFromReplicaSetHeuristic(t *testing.T) {
+	// Test deployment name extraction heuristic with extractPodAttributes
 
 	tests := []struct {
-		name                                string
-		deploymentNameFromReplicaSetEnabled bool
-		replicaSetInCache                   bool
-		deploymentInRS                      bool
-		replicaSetName                      string
-		expectedDeploymentName              string
+		name                   string
+		replicaSetInCache      bool
+		deploymentInRS         bool
+		replicaSetName         string
+		expectedDeploymentName string
 	}{
 		{
-			name:                                "flag disabled - no deployment name extraction from replicaset name",
-			deploymentNameFromReplicaSetEnabled: false,
-			replicaSetInCache:                   false,
-			deploymentInRS:                      false,
-			replicaSetName:                      "my-deployment-7b9f4c8d5e",
-			expectedDeploymentName:              "",
+			name:                   "replicaset not in cache",
+			replicaSetInCache:      false,
+			deploymentInRS:         true,
+			replicaSetName:         "my-deployment-7b9f4c8d5e",
+			expectedDeploymentName: "my-deployment",
 		},
 		{
-			name:                                "flag enabled - replicaset not in cache",
-			deploymentNameFromReplicaSetEnabled: true,
-			replicaSetInCache:                   false,
-			deploymentInRS:                      true,
-			replicaSetName:                      "my-deployment-7b9f4c8d5e",
-			expectedDeploymentName:              "my-deployment",
+			name:                   "replicaset in cache but no deployment",
+			replicaSetInCache:      true,
+			deploymentInRS:         false,
+			replicaSetName:         "my-deployment-7b9f4c8d5e",
+			expectedDeploymentName: "",
 		},
 		{
-			name:                                "flag enabled - replicaset in cache but no deployment",
-			deploymentNameFromReplicaSetEnabled: true,
-			replicaSetInCache:                   true,
-			deploymentInRS:                      false,
-			replicaSetName:                      "my-deployment-7b9f4c8d5e",
-			expectedDeploymentName:              "",
+			name:                   "replicaset in cache with deployment (should prefer informer)",
+			replicaSetInCache:      true,
+			deploymentInRS:         true,
+			replicaSetName:         "my-deployment-7b9f4c8d5e",
+			expectedDeploymentName: "real-deployment-name",
 		},
 		{
-			name:                                "flag enabled - replicaset in cache with deployment (should prefer informer)",
-			deploymentNameFromReplicaSetEnabled: true,
-			replicaSetInCache:                   true,
-			deploymentInRS:                      true,
-			replicaSetName:                      "my-deployment-7b9f4c8d5e",
-			expectedDeploymentName:              "real-deployment-name",
-		},
-		{
-			name:                                "flag enabled - invalid replicaset name",
-			deploymentNameFromReplicaSetEnabled: true,
-			replicaSetInCache:                   false,
-			deploymentInRS:                      false,
-			replicaSetName:                      "invalid-name",
-			expectedDeploymentName:              "",
+			name:                   "invalid replicaset name",
+			replicaSetInCache:      false,
+			deploymentInRS:         false,
+			replicaSetName:         "invalid-name",
+			expectedDeploymentName: "",
 		},
 	}
 
@@ -4440,9 +4937,6 @@ func TestDeploymentNameFromReplicaSetFeature(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 			c.Rules.DeploymentName = true
-			if tt.deploymentNameFromReplicaSetEnabled {
-				c.Rules.DeploymentNameFromReplicaSet = true
-			}
 
 			// Create a replicaset if needed
 			if tt.replicaSetInCache {
@@ -4740,6 +5234,64 @@ func TestHandleJobDelete(t *testing.T) {
 	assert.Empty(t, c.Jobs)
 }
 
+func TestHandleCronJobUpdate(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{
+		CronJobName: true,
+	}
+
+	cronJob := &meta_v1.PartialObjectMetadata{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-cronjob",
+			Namespace: "default",
+			UID:       "cronjob-uid-123",
+		},
+	}
+
+	// Add initial cronjob
+	c.handleCronJobAdd(cronJob)
+	assert.Len(t, c.CronJobs, 1)
+
+	// Update cronjob
+	updatedCronJob := &meta_v1.PartialObjectMetadata{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-cronjob-updated",
+			Namespace: "default",
+			UID:       "cronjob-uid-123",
+		},
+	}
+	c.handleCronJobUpdate(cronJob, updatedCronJob)
+
+	// Verify update
+	j, ok := c.GetCronJob(string(updatedCronJob.UID))
+	require.True(t, ok)
+	assert.Equal(t, "test-cronjob-updated", j.Name)
+}
+
+func TestHandleCronJobDelete(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	cronJob := &meta_v1.PartialObjectMetadata{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-cronjob",
+			Namespace: "default",
+			UID:       "cronjob-uid-123",
+		},
+	}
+
+	// Add cronjob
+	c.handleCronJobAdd(cronJob)
+	assert.Len(t, c.CronJobs, 1)
+
+	// Delete cronjob
+	c.handleCronJobDelete(cronJob)
+
+	// Verify deletion
+	_, ok := c.GetCronJob(string(cronJob.UID))
+	assert.False(t, ok)
+	assert.Empty(t, c.CronJobs)
+}
+
 func TestCreateRestConfigFailure(t *testing.T) {
 	// Simulate a failure in CreateRestConfig by returning nil for the informer
 	factory := InformersFactoryList{
@@ -4748,10 +5300,9 @@ func TestCreateRestConfigFailure(t *testing.T) {
 		},
 	}
 
-	// Set a rule to enable deployment monitoring
+	// Set a rule that triggers the ReplicaSet informer (DeploymentUID requires it)
 	rules := ExtractionRules{
-		DeploymentName:               true,
-		DeploymentNameFromReplicaSet: false,
+		DeploymentUID: true,
 	}
 
 	c, err := New(
@@ -4873,4 +5424,49 @@ func TestExtractPodAttributesClusterUIDRace(t *testing.T) {
 	}()
 
 	wg.Wait()
+}
+
+func TestPodDeleteIPMissingFromDeleteEvent(t *testing.T) {
+	c, _ := newTestClient(t)
+
+	pod := &api_v1.Pod{}
+	pod.Name = "podLeak"
+	pod.Status.PodIP = "4.4.4.4"
+	pod.UID = "uid-leak-test"
+	c.handlePodAdd(pod)
+
+	// Map should have 3 keys for this pod
+	assert.Contains(t, c.Pods, newPodIdentifier("resource_attribute", "k8s.pod.uid", "uid-leak-test"))
+	assert.Contains(t, c.Pods, newPodIdentifier("connection", "k8s.pod.ip", "4.4.4.4"))
+	assert.Contains(t, c.Pods, newPodIdentifier("resource_attribute", "k8s.pod.ip", "4.4.4.4"))
+
+	// Clear the delete queue
+	c.deleteQueue = c.deleteQueue[:0]
+
+	// Simulate delete event where PodIP is missing/empty!
+	deletePod := &api_v1.Pod{}
+	deletePod.Name = "podLeak"
+	deletePod.UID = "uid-leak-test"
+	deletePod.Status.PodIP = ""
+
+	c.handlePodDelete(deletePod)
+
+	// In the bug state, only the UID-based keys are queued for deletion, leaving the IP-based keys leaked.
+	// We expect all unique key patterns (UID, connection IP, and Pod IP) to be queued for deletion.
+	var ids []PodIdentifier
+	for _, req := range c.deleteQueue {
+		assert.Equal(t, "uid-leak-test", req.pod.PodUID)
+		ids = append(ids, req.id)
+	}
+
+	// Verify that each of the three key patterns was queued at least once
+	assert.Contains(t, ids, newPodIdentifier("resource_attribute", "k8s.pod.uid", "uid-leak-test"))
+	assert.Contains(t, ids, newPodIdentifier("connection", "k8s.pod.ip", "4.4.4.4"))
+	assert.Contains(t, ids, newPodIdentifier("resource_attribute", "k8s.pod.ip", "4.4.4.4"))
+
+	// Run the sweep logic to process all queued deletions immediately
+	c.deleteLoopProcessing(0)
+
+	// In the fixed state, all keys associated with the pod should be successfully cleaned up from the cache.
+	assert.Empty(t, c.Pods)
 }

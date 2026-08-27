@@ -117,3 +117,42 @@ func Test_stringifyAll_bad_input(t *testing.T) {
 	_, err := exprFunc(nil, nil)
 	assert.Error(t, err)
 }
+
+func Test_StringifyAllFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewStringifyAllFactory[any]()
+		assert.Equal(t, "stringify_all", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewStringifyAllFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &StringifyAllArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewStringifyAllFactory[any]()
+		args := factory.CreateDefaultArguments()
+		stringifyAllArgs, ok := args.(*StringifyAllArguments[any])
+		require.True(t, ok)
+		stringifyAllArgs.Target = &ottl.StandardPMapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return pcommon.NewMap(), nil
+			},
+			Setter: func(context.Context, any, any) error {
+				return nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createStringifyAllFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "StringifyAllFactory args must be of type *StringifyAllArguments[K]")
+	})
+}

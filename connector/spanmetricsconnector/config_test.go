@@ -14,8 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -257,11 +257,11 @@ func TestLoadConfig(t *testing.T) {
 			err = sub.Unmarshal(cfg)
 
 			if tt.expected == nil {
-				err = errors.Join(err, xconfmap.Validate(cfg))
+				err = errors.Join(err, confmap.Validate(cfg))
 				assert.ErrorContains(t, err, tt.errorMessage)
 				return
 			}
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 			if tt.extraAssertions != nil {
 				tt.extraAssertions(cfg.(*Config))
@@ -337,7 +337,7 @@ func TestValidateDimensions(t *testing.T) {
 		{
 			name: "default on glob",
 			dimensions: []Dimension{
-				{Glob: "db.*", Default: stringp("x")},
+				{Glob: "db.*", Default: new("x")},
 			},
 			expectedErr: "`default` is not supported on `glob` dimension \"db.*\"",
 		},

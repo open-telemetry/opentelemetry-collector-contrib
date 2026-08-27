@@ -26,10 +26,12 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 )
 
 func TestServerStart(t *testing.T) {
+	endpoint := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
 		name         string
 		setupServer  func() (*Server, *observer.ObservedLogs)
@@ -44,17 +46,17 @@ func TestServerStart(t *testing.T) {
 					w.WriteHeader(http.StatusOK)
 				}))
 				defer server.Close()
+				serverConfig := confighttp.NewDefaultServerConfig()
+				serverConfig.NetAddr = confignet.AddrConfig{
+					Transport: "tcp",
+					Endpoint:  endpoint,
+				}
 				s := NewServer(
 					logger,
 					&mockSerializer{},
 					&Config{
-						ServerConfig: confighttp.ServerConfig{
-							NetAddr: confignet.AddrConfig{
-								Transport: "tcp",
-								Endpoint:  DefaultServerEndpoint,
-							},
-						},
-						Path: "/metadata",
+						ServerConfig: serverConfig,
+						Path:         "/metadata",
 					},
 					"test-hostname",
 					"test-uuid",
@@ -63,7 +65,7 @@ func TestServerStart(t *testing.T) {
 				)
 				return s, logs
 			},
-			expectedLogs: []string{fmt.Sprintf("HTTP Server started at %s%s", DefaultServerEndpoint, "/metadata")},
+			expectedLogs: []string{fmt.Sprintf("HTTP Server started at %s%s", endpoint, "/metadata")},
 		},
 	}
 
@@ -170,17 +172,17 @@ func TestPrepareAndSendFleetAutomationPayloads(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			logger, logs, serializer := tt.setupTest()
+			serverConfig := confighttp.NewDefaultServerConfig()
+			serverConfig.NetAddr = confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  testutil.GetAvailableLocalAddress(t),
+			}
 			s := NewServer(
 				logger,
 				serializer,
 				&Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: "tcp",
-							Endpoint:  DefaultServerEndpoint,
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 				"test-hostname",
 				"test-uuid",
@@ -640,14 +642,14 @@ func TestServerStopConcurrency(t *testing.T) {
 
 func TestServer_SendPayload(t *testing.T) {
 	logger := zap.NewNop()
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:0",
+	}
 	config := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  "localhost:0",
-			},
-		},
-		Path: "/test",
+		ServerConfig: serverConfig,
+		Path:         "/test",
 	}
 	pl := payload.OtelCollector{}           // or fill as needed
 	serializer := &mockSerializer{state: 1} // 1 == defaultforwarder.Started
@@ -671,14 +673,14 @@ func TestServer_SendPayload(t *testing.T) {
 
 func TestServer_SendPayload_ForwarderNotStarted(t *testing.T) {
 	logger := zap.NewNop()
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:0",
+	}
 	config := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  "localhost:0",
-			},
-		},
-		Path: "/test",
+		ServerConfig: serverConfig,
+		Path:         "/test",
 	}
 	pl := payload.OtelCollector{}
 	serializer := &mockSerializer{state: 0} // 0 != defaultforwarder.Started
@@ -735,17 +737,17 @@ func TestNewServerErrorPaths(t *testing.T) {
 		logger := zap.New(core)
 
 		// Create server but don't start it
+		serverConfig := confighttp.NewDefaultServerConfig()
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: "tcp",
+			Endpoint:  "localhost:0", // Valid endpoint
+		}
 		s := NewServer(
 			logger,
 			&mockSerializer{},
 			&Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "localhost:0", // Valid endpoint
-					},
-				},
-				Path: "/metadata",
+				ServerConfig: serverConfig,
+				Path:         "/metadata",
 			},
 			"test-hostname",
 			"test-uuid",

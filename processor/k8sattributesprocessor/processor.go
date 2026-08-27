@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.41.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -259,6 +259,14 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		}
 	}
 
+	replicaset := getReplicaSetUID(pod, resource.Attributes())
+	if replicaset != "" {
+		attrsToAdd := kp.getAttributesForPodsReplicaSet(replicaset)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+	}
+
 	statefulset := getStatefulSetUID(pod, resource.Attributes())
 	if statefulset != "" {
 		attrsToAdd := kp.getAttributesForPodsStatefulSet(statefulset)
@@ -278,6 +286,14 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 	job := getJobUID(pod, resource.Attributes())
 	if job != "" {
 		attrsToAdd := kp.getAttributesForPodsJob(job)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+	}
+
+	cronJob := getCronJobUID(pod, resource.Attributes())
+	if cronJob != "" {
+		attrsToAdd := kp.getAttributesForPodsCronJob(cronJob)
 		for key, val := range attrsToAdd {
 			setResourceAttribute(resource.Attributes(), key, val)
 		}
@@ -312,6 +328,13 @@ func getDeploymentUID(pod *kube.Pod, resAttrs pcommon.Map) string {
 	return stringAttributeFromMap(resAttrs, string(conventions.K8SDeploymentUIDKey))
 }
 
+func getReplicaSetUID(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.ReplicaSetUID != "" {
+		return pod.ReplicaSetUID
+	}
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SReplicaSetUIDKey))
+}
+
 func getStatefulSetUID(pod *kube.Pod, resAttrs pcommon.Map) string {
 	if pod != nil && pod.StatefulSetUID != "" {
 		return pod.StatefulSetUID
@@ -331,6 +354,13 @@ func getJobUID(pod *kube.Pod, resAttrs pcommon.Map) string {
 		return pod.JobUID
 	}
 	return stringAttributeFromMap(resAttrs, string(conventions.K8SJobUIDKey))
+}
+
+func getCronJobUID(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.CronJobUID != "" {
+		return pod.CronJobUID
+	}
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SCronJobUIDKey))
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
@@ -443,6 +473,14 @@ func (kp *kubernetesprocessor) getAttributesForPodsDeployment(deploymentUID stri
 	return d.Attributes
 }
 
+func (kp *kubernetesprocessor) getAttributesForPodsReplicaSet(replicaSetUID string) map[string]string {
+	rs, ok := kp.kc.GetReplicaSet(replicaSetUID)
+	if !ok {
+		return nil
+	}
+	return rs.Attributes
+}
+
 func (kp *kubernetesprocessor) getAttributesForPodsStatefulSet(statefulsetUID string) map[string]string {
 	d, ok := kp.kc.GetStatefulSet(statefulsetUID)
 	if !ok {
@@ -461,6 +499,14 @@ func (kp *kubernetesprocessor) getAttributesForPodsDaemonSet(daemonsetUID string
 
 func (kp *kubernetesprocessor) getAttributesForPodsJob(jobUID string) map[string]string {
 	j, ok := kp.kc.GetJob(jobUID)
+	if !ok {
+		return nil
+	}
+	return j.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForPodsCronJob(cronJobUID string) map[string]string {
+	j, ok := kp.kc.GetCronJob(cronJobUID)
 	if !ok {
 		return nil
 	}

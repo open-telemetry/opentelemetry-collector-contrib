@@ -621,6 +621,8 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 		return sink.LogRecordCount() == 2
 	}, 20*time.Second, 100*time.Millisecond,
 		"logs not collected")
+
+	assert.NoError(t, r.Shutdown(t.Context()))
 }
 
 func TestNamespaceDenyListWatchObject(t *testing.T) {
@@ -691,7 +693,7 @@ func TestReceiverStorageInitialization(t *testing.T) {
 	}{
 		{
 			name:                "storage configured",
-			storageID:           ptr(storagetest.NewStorageID("file_storage")),
+			storageID:           new(storagetest.NewStorageID("file_storage")),
 			expectStorageClient: true,
 		},
 		{
@@ -752,7 +754,7 @@ func TestReceiverMultipleObjectsPersistence(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
-	rCfg.Storage = ptr(storagetest.NewStorageID("file_storage"))
+	rCfg.Storage = new(storagetest.NewStorageID("file_storage"))
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
@@ -794,7 +796,7 @@ func TestReceiverStorageClientInitializedWhenConfigured(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
-	rCfg.Storage = ptr(storagetest.NewStorageID("file_storage"))
+	rCfg.Storage = new(storagetest.NewStorageID("file_storage"))
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
@@ -825,9 +827,4 @@ func TestReceiverStorageClientInitializedWhenConfigured(t *testing.T) {
 
 	err = r.Shutdown(t.Context())
 	require.NoError(t, err)
-}
-
-// ptr is a helper to create a pointer to a value
-func ptr[T any](v T) *T {
-	return &v
 }

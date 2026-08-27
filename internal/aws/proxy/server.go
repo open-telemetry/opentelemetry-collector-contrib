@@ -140,13 +140,16 @@ func NewServer(cfg *Config, host component.Host, settings component.TelemetrySet
 		},
 	}
 
-	serverConfig := confighttp.ServerConfig{
-		NetAddr: confignet.AddrConfig{
-			Endpoint:  cfg.Endpoint,
-			Transport: "tcp",
-		},
-		ReadHeaderTimeout: 20 * time.Second,
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  cfg.Endpoint,
+		Transport: "tcp",
 	}
+	serverConfig.ReadHeaderTimeout = 20 * time.Second
 
 	httpServer, err := serverConfig.ToServer(
 		ctx,
