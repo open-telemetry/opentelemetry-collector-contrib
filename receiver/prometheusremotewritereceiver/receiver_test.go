@@ -231,8 +231,8 @@ func TestNHCBUnrepresentablePopulationIsDropped(t *testing.T) {
 
 func TestNHCBNegativeBucketPopulationIsDropped(t *testing.T) {
 	// Deltas are cumulative, so a run of them can go below zero. A bucket holds a count of
-	// observations, which cannot, and the conversion to uint64 would turn it into a very large
-	// one. This PR derives the data point count from the buckets, so it would land there too.
+	// observations, which cannot, so the conversion to uint64 would turn one into a very large
+	// population, and the data point count comes from those buckets.
 	for _, tc := range []struct {
 		name   string
 		deltas []int64
