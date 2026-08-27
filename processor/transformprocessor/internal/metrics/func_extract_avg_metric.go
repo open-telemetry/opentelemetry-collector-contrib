@@ -20,11 +20,11 @@ type extractAvgMetricArguments struct {
 	Suffix    ottl.Optional[string]
 }
 
-func newExtractAvgMetricFactory() ottl.Factory[ottlmetric.TransformContext] {
+func newExtractAvgMetricFactory() ottl.Factory[*ottlmetric.TransformContext] {
 	return ottl.NewFactory(avgFuncName, &extractAvgMetricArguments{}, createExtractAvgMetricFunction)
 }
 
-func createExtractAvgMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func createExtractAvgMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
 	args, ok := oArgs.(*extractAvgMetricArguments)
 
 	if !ok {
@@ -34,12 +34,12 @@ func createExtractAvgMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments
 	return extractAvgMetric(args.Monotonic, args.Suffix)
 }
 
-func extractAvgMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func extractAvgMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
 	metricNameSuffix := "_avg"
 	if !suffix.IsEmpty() {
 		metricNameSuffix = suffix.Get()
 	}
-	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+	return func(_ context.Context, tCtx *ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 
 		aggTemp := getAggregationTemporality(metric)
@@ -92,7 +92,7 @@ func extractAvgMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFu
 	}, nil
 }
 
-func addAvgDataPoint(dataPoint SumCountDataPoint, destination pmetric.NumberDataPointSlice) {
+func addAvgDataPoint(dataPoint sumCountDataPoint, destination pmetric.NumberDataPointSlice) {
 	newDp := destination.AppendEmpty()
 	dataPoint.Attributes().CopyTo(newDp.Attributes())
 	newDp.SetDoubleValue(dataPoint.Sum() / float64(dataPoint.Count()))
