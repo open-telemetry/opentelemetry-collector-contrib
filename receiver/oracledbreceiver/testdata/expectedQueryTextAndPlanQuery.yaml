@@ -108,7 +108,7 @@ resourceLogs:
                   stringValue: ""
               - key: oracledb.plan_hash_value
                 value:
-                  stringValue: "33313233343536373839"
+                  stringValue: "3123456789"
               - key: oracledb.plan.first_load
                 value:
                   stringValue: 2025-12-31/23:00:00
