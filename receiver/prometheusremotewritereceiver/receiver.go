@@ -1180,7 +1180,7 @@ func applyScopeInfo(sm pmetric.ScopeMetrics, si scopeInfo) {
 // the buckets. The dense form is as long as the bounds, so unlike the exponential schemas it needs
 // no separate limit.
 func validateNHCB(histogram *writev2.Histogram) error {
-	// The float flavor is turned away before this, so the integer conversion always succeeds.
+	// Callers reject the float flavor, so the integer conversion always succeeds.
 	return histogram.ToIntHistogram().Validate()
 }
 

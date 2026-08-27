@@ -4657,8 +4657,9 @@ func TestWrittenHeadersFollowTheConsumer(t *testing.T) {
 }
 
 func TestPartialWriteIsRejectedWholesale(t *testing.T) {
-	// A histogram the converter can only refuse after conversion used to be dropped while the
-	// rest of the request went through, which is the partial write the specification forbids.
+	// A histogram the converter can only refuse once it has started takes the rest of the
+	// request with it, since writing the rest would be the partial write the specification
+	// forbids.
 	sink := &consumertest.MetricsSink{}
 	prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
 
