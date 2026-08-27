@@ -70,7 +70,7 @@ The following attributes are added by default:
   - k8s.pod.name
   - k8s.pod.uid
   - k8s.pod.start_time
-  - k8s.deployment.name (derived from the ReplicaSet name by default. Set the deprecated `deployment_name_from_replicaset` option to `false` to use the ReplicaSet informer for deployment name lookup.)
+  - k8s.deployment.name (derived from the ReplicaSet name by trimming the pod-template-hash suffix)
   - k8s.node.name
 
 These attributes are also available for the use within association rules by default.
@@ -285,7 +285,7 @@ The processor can be configured to set the
 [recommended resource attributes](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/):
 
 - `otel_annotations` will translate `resource.opentelemetry.io/foo` to the `foo` resource attribute, etc.
-- `deployment_name_from_replicaset` is deprecated and will be removed in future releases. Deployment names are derived from ReplicaSet names by default by trimming the pod-template-hash suffix. Set this option to `false` only to force ReplicaSet informer lookup for deployment names. If `k8s.deployment.uid` is included in the `extract metadata` section, or deployment labels or annotations are being extracted (i.e. any `extract.labels` or `extract.annotations` rule with `from: deployment`), then the Deployment/ReplicaSet informers are started and this setting is ignored.
+- Deployment names are derived from ReplicaSet names by trimming the pod-template-hash suffix. If `k8s.deployment.uid` is included in the `extract metadata` section, or deployment/replicaset labels or annotations are being extracted (i.e. any `extract.labels` or `extract.annotations` rule with `from: deployment`), then the Deployment/ReplicaSet informers are started, and the deployment name is resolved from the Kubernetes API instead.
 
   **Important:** You **must still include** `k8s.deployment.name` (or `service.name`) in the `extract.metadata` section for the deployment name to be extracted. The processor derives the deployment name from the ReplicaSet's naming convention without requiring direct access to Deployment resources, but the extraction rules must be enabled.
 
@@ -303,9 +303,9 @@ The processor can be configured to set the
 
 The Extracted deployment name is: `opentelemetry-collector`.
 
-**Note:** When deployment names are derived from ReplicaSet names, in rare cases where deployment names are between 247 and 253 characters, Kubernetes may truncate the name in the ReplicaSet to fit the pod template hash suffix within the DNS subdomain limit (253 chars), causing the extracted `k8s.deployment.name` to be slightly truncated. If this affects your workloads, you can set `deployment_name_from_replicaset: false` or enable the `k8s.deployment.uid` attribute for accurate retrieval from the Kubernetes API, but at an extra cost in memory.
+**Note:** When deployment names are derived from ReplicaSet names, in rare cases where deployment names are between 247 and 253 characters, Kubernetes may truncate the name in the ReplicaSet to fit the pod template hash suffix within the DNS subdomain limit (253 chars), causing the extracted `k8s.deployment.name` to be slightly truncated. To get an accurate deployment name in these cases, enable the `k8s.deployment.uid` attribute, which starts the ReplicaSet informer and resolves the name from the Kubernetes API (at an extra cost in memory).
 
-Also note that for **CronJob names (`k8s.cronjob.name`)** a similar pattern applies, but it uses the **Job** informer (not ReplicaSet) and there is **no** `deployment_name_from_replicaset`-style flag. With only `k8s.cronjob.name` in `extract.metadata`, the processor derives the CronJob name from the Job's name using a heuristic (8-digit time suffix aligned with pod creation time) and does **not** start a Job informer. The Job informer is started when `k8s.cronjob.uid` is enabled, or when labels or annotations are extracted with `from: job` or `from: cronjob`, in which case the CronJob name can be resolved from the API when available. That reduces RBAC needs and memory use when you only need the CronJob name (no `jobs` watch for that attribute alone).
+Also note that for **CronJob names (`k8s.cronjob.name`)** a similar pattern applies, but it uses the **Job** informer (not ReplicaSet). With only `k8s.cronjob.name` in `extract.metadata`, the processor derives the CronJob name from the Job's name using a heuristic (8-digit time suffix aligned with pod creation time) and does **not** start a Job informer. The Job informer is started when `k8s.cronjob.uid` is enabled, or when labels or annotations are extracted with `from: job` or `from: cronjob`, in which case the CronJob name can be resolved from the API when available. That reduces RBAC needs and memory use when you only need the CronJob name (no `jobs` watch for that attribute alone).
 
 Extracting labels or annotations with `from: cronjob` additionally starts a **CronJob** informer (to read the CronJob's own labels/annotations) on top of the Job informer (needed to associate a Pod's Job with its owning CronJob's UID).
 
@@ -513,7 +513,7 @@ processors:
 
 ## Cluster-scoped RBAC
 
-If you'd like to set up the k8sattributesprocessor to receive telemetry from across namespaces, it will need `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters. Additionally, when using `k8s.deployment.uid`, when using `k8s.deployment.name` with the deprecated `deployment_name_from_replicaset: false`, or when extracting labels or annotations with `from: deployment` or `from: replicaset`, the processor needs `get`, `watch` and `list` permissions for `replicasets` resources.
+If you'd like to set up the k8sattributesprocessor to receive telemetry from across namespaces, it will need `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters. Additionally, when using `k8s.deployment.uid` or when extracting labels or annotations with `from: deployment` or `from: replicaset`, the processor needs `get`, `watch` and `list` permissions for `replicasets` resources.
 
 When using `k8s.node.uid` or extracting metadata from `node`, the processor needs `get`, `watch` and `list` permissions for `nodes` resources.
 
@@ -571,7 +571,7 @@ k8s_attributes:
   filter:
     namespace: <WORKLOAD_NAMESPACE>
 ```
-With the namespace filter set, the processor will only look up pods and replicasets (when ReplicaSet lookup is needed, such as `deployment_name_from_replicaset: false`, `k8s.deployment.uid`, or deployment/replicaset label/annotation extraction) in the selected namespace. Note that with just a role binding, the processor cannot query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor cannot set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
+With the namespace filter set, the processor will only look up pods and replicasets (when ReplicaSet lookup is needed, such as when `k8s.deployment.uid` is enabled or deployment/replicaset label/annotation extraction is configured) in the selected namespace. Note that with just a role binding, the processor cannot query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor cannot set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
 
 Please note, when extracting the workload related attributes, these workloads need to be present in the `Role` with the correct permissions. For example, an extraction of `k8s.deployment.label.*` attributes, `deployments` need to be present in `Role`.
 
@@ -819,12 +819,6 @@ k8s_attributes:
     # Example: "resource.opentelemetry.io/service.version" → "service.version"
     # Default: false
     otel_annotations: true
-    
-    # Deprecated. Deployment names are derived from ReplicaSet names by default.
-    # Set to false only to force ReplicaSet informer lookup.
-    # See [Configuring recommended resource attributes](#configuring-recommended-resource-attributes) section for more details
-    # Default: true
-    deployment_name_from_replicaset: true
   
   # Filter configuration - restrict which pods to monitor
   filter:
@@ -916,7 +910,6 @@ k8s_attributes:
 | `annotations` | []FieldExtractConfig | `[]` | Pod/namespace/node annotations to extract |
 | `labels` | []FieldExtractConfig | `[]` | Pod/namespace/node labels to extract |
 | `otel_annotations` | bool | `false` | Extract OpenTelemetry resource attributes from pod annotations with prefix `resource.opentelemetry.io/` |
-| `deployment_name_from_replicaset` | bool | `true` | Deprecated; will be removed in future releases. When `true`, ReplicaSet informer is not run for deployment names only, relying on a heuristic instead.|
 
 **Default metadata fields:**
 - `k8s.namespace.name`
@@ -1087,11 +1080,11 @@ timestamp value as an RFC3339 compliant timestamp.
 The processor exposes internal telemetry metrics for monitoring its operation. For a complete list of all available metrics, see the [Internal Telemetry documentation](./documentation.md#internal-telemetry).
 
 Key metrics to monitor:
-- **`otelcol_otelsvc_k8s_ip_lookup_miss`**: Number of times pod lookup by IP failed
+- **`otelcol.k8s.pod.association{status=error}`**: Number of times pod lookup failed
   - High values indicate association issues
-- **`otelcol_otelsvc_k8s_pod_added`** / **`otelcol_otelsvc_k8s_pod_deleted`**: Track pod churn rates
+- **`otelcol.k8s.watcher.pod.added`** / **`otelcol.k8s.watcher.pod.deleted`**: Track pod churn rates
   - Monitor for unexpected spikes in pod lifecycle events
-- **`otelcol_otelsvc_k8s_pod_table_size`**: Current size of pod metadata cache
+- **`otelcol.k8s.watcher.pod_cache.size`**: Current size of pod metadata cache
   - Use to monitor memory consumption trends
 
 ## Warnings

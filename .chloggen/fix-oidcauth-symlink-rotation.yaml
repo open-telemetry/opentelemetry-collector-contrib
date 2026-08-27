@@ -1,0 +1,30 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: extension/oidc
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Reload `public_keys_file` on any change in its parent directory so projected-secret style key rotations take effect without a collector restart.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [0]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  The JWKS file watcher previously only triggered a reload when an fsnotify event's name exactly matched the configured `public_keys_file` path. Kubernetes-style projected-secret rotations swap a `..data` symlink target rather than rewriting the leaf file, so the leaf path never appears in any event and the verifier remained stale until the collector was restarted. As a result, tokens signed by a revoked or rotated key continued to be accepted across a rotation.
+  The watcher now refreshes every provider whose `public_keys_file` resides in a watched directory whenever any relevant filesystem event occurs in that directory, so symlink-based rotations are picked up immediately.
+  Reloading also no longer mutates the `oidc.Config` shared with the verifier it replaces, which was a data race against in-flight token verification.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]

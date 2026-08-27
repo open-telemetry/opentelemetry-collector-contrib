@@ -14,5 +14,5 @@ status:
     alpha: [metrics]
   distributions: []
   codeowners:
-    active: [heitorganzeli, narcis96]
-    emeritus: [mwear]
+    active: [vyagh]
+    emeritus: [heitorganzeli, mwear, narcis96]
