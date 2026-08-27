@@ -771,13 +771,14 @@ func TestOIDCAuthenticationPublicKeysFileHotReload(t *testing.T) {
 			// Update JWKS file with server2's key
 			updateJWKSFile(t, jwksFile, oidcServer2.privateKey.Public())
 
-			// Wait for file watcher to detect the change
-			time.Sleep(100 * time.Millisecond)
-
-			// Token should now succeed
-			ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
-			assert.NoError(t, err)
-			assert.NotNil(t, ctx)
+			// Token should now succeed once the file watcher detects the change and
+			// reloads the keys. Poll instead of using a fixed sleep, since the watcher
+			// is asynchronous and reload timing varies across platforms.
+			require.EventuallyWithT(t, func(c *assert.CollectT) {
+				ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+				assert.NoError(c, err)
+				assert.NotNil(c, ctx)
+			}, 5*time.Second, 10*time.Millisecond)
 		})
 	}
 }

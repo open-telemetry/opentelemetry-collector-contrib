@@ -76,9 +76,15 @@ func (pc *providerContainer) refreshPublicKeysFile() error {
 		}
 	}
 
+	// Build a fresh config for each verifier rather than mutating the shared
+	// base config in place. The previously published verifier keeps a reference
+	// to its own config, which a concurrent Verify may still be reading, so
+	// mutating a shared config here would be a data race.
+	verifierCfg := *pc.verifierCfg
+	verifierCfg.SupportedSigningAlgs = supportedAlgs
+
 	pc.verifierMu.Lock()
-	pc.verifierCfg.SupportedSigningAlgs = supportedAlgs
-	pc.verifier = oidc.NewVerifier(pc.providerCfg.IssuerURL, keySet, pc.verifierCfg)
+	pc.verifier = oidc.NewVerifier(pc.providerCfg.IssuerURL, keySet, &verifierCfg)
 	pc.verifierMu.Unlock()
 
 	return nil
