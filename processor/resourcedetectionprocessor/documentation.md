@@ -26,7 +26,7 @@ Time taken by an individual detector to run, including backoff between retries.
 
 | Name | Description | Values | Semantic Convention |
 | ---- | ----------- | ------ | ------------------- |
-| detector | The resource detector that produced the result. | Str: ``akamai``, ``aks``, ``alibaba_ecs``, ``azure``, ``consul``, ``digitalocean``, ``docker``, ``dynatrace``, ``ec2``, ``ecs``, ``eks``, ``elastic_beanstalk``, ``env``, ``gcp``, ``heroku``, ``hetzner``, ``ibmcloud_classic``, ``ibmcloud_vpc``, ``k8s_api``, ``k8snode``, ``kubeadm``, ``lambda``, ``nova``, ``openshift``, ``oraclecloud``, ``scaleway``, ``system``, ``tencent_cvm``, ``upcloud``, ``vultr`` | - |
+| detector | The resource detector that produced the result. | Str: ``akamai``, ``aks``, ``alibaba_ecs``, ``azure``, ``azureappservice``, ``azurecontainerapps``, ``consul``, ``digitalocean``, ``docker``, ``dynatrace``, ``ec2``, ``ecs``, ``eks``, ``elastic_beanstalk``, ``env``, ``gcp``, ``heroku``, ``hetzner``, ``ibmcloud_classic``, ``ibmcloud_vpc``, ``k8s_api``, ``k8snode``, ``kubeadm``, ``lambda``, ``nova``, ``openshift``, ``oraclecloud``, ``scaleway``, ``system``, ``tencent_cvm``, ``upcloud``, ``vultr`` | - |
 | outcome | Whether the detection operation succeeded or failed. | Str: ``success``, ``failure`` | - |
 
 ### otelcol.resourcedetection.detector.results
@@ -41,6 +41,6 @@ Number of resource detection results, by detector and outcome. On failure, error
 
 | Name | Description | Values | Semantic Convention |
 | ---- | ----------- | ------ | ------------------- |
-| detector | The resource detector that produced the result. | Str: ``akamai``, ``aks``, ``alibaba_ecs``, ``azure``, ``consul``, ``digitalocean``, ``docker``, ``dynatrace``, ``ec2``, ``ecs``, ``eks``, ``elastic_beanstalk``, ``env``, ``gcp``, ``heroku``, ``hetzner``, ``ibmcloud_classic``, ``ibmcloud_vpc``, ``k8s_api``, ``k8snode``, ``kubeadm``, ``lambda``, ``nova``, ``openshift``, ``oraclecloud``, ``scaleway``, ``system``, ``tencent_cvm``, ``upcloud``, ``vultr`` | - |
+| detector | The resource detector that produced the result. | Str: ``akamai``, ``aks``, ``alibaba_ecs``, ``azure``, ``azureappservice``, ``azurecontainerapps``, ``consul``, ``digitalocean``, ``docker``, ``dynatrace``, ``ec2``, ``ecs``, ``eks``, ``elastic_beanstalk``, ``env``, ``gcp``, ``heroku``, ``hetzner``, ``ibmcloud_classic``, ``ibmcloud_vpc``, ``k8s_api``, ``k8snode``, ``kubeadm``, ``lambda``, ``nova``, ``openshift``, ``oraclecloud``, ``scaleway``, ``system``, ``tencent_cvm``, ``upcloud``, ``vultr`` | - |
 | outcome | Whether the detection operation succeeded or failed. | Str: ``success``, ``failure`` | - |
 | error.type | The type of error that caused detection to fail. Absent on success. | Any Str | - |

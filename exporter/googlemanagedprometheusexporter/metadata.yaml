@@ -10,7 +10,6 @@ status:
     active: [aabmass, dashpole, braydonk, jsuereth, psx95, ridwanmsharif]
 
 tests:
-  skip_lifecycle: true
   goleak:
     ignore:
       top:
