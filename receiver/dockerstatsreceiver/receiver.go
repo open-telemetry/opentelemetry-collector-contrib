@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	ctypes "github.com/moby/moby/api/types/container"
@@ -95,7 +94,7 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// holds the value for number of containers in each state
-	containerStatus := make(map[string]*atomic.Uint64)
+	containerStatus := make(map[string]int64)
 
 	if r.config.Config.StreamStats {
 		for _, container := range containers {
@@ -171,7 +170,7 @@ func (r *metricsReceiver) recordContainerStats(
 	now pcommon.Timestamp,
 	containerStats *ctypes.StatsResponse,
 	container *docker.Container,
-	containerStatus map[string]*atomic.Uint64,
+	containerStatus map[string]int64,
 ) error {
 	var errs error
 	r.recordCPUMetrics(now, containerStats)
@@ -212,23 +211,16 @@ func (r *metricsReceiver) recordContainerStats(
 		}
 	}
 
-	// increment counter of container status
-	status := string(container.State.Status)
-	counter, ok := containerStatus[status]
-	if !ok {
-		counter = &atomic.Uint64{}
-		containerStatus[status] = counter
-	}
-	counter.Add(1)
+	containerStatus[string(container.State.Status)]++
 
 	r.mb.EmitForResource(metadata.WithResource(resource))
 	return errs
 }
 
 // recordContainerStatus records number of containers in each state
-func (r *metricsReceiver) recordContainerStatus(now pcommon.Timestamp, containerStatus map[string]*atomic.Uint64) {
+func (r *metricsReceiver) recordContainerStatus(now pcommon.Timestamp, containerStatus map[string]int64) {
 	for status, count := range containerStatus {
-		r.mb.RecordContainerStateStatusDataPoint(now, int64(count.Load()), metadata.MapAttributeContainerStateStatus[status])
+		r.mb.RecordContainerStateStatusDataPoint(now, count, metadata.MapAttributeContainerStateStatus[status])
 	}
 }
 

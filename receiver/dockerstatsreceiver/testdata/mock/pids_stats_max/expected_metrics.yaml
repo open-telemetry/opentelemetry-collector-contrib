@@ -4,13 +4,13 @@ resourceMetrics:
     scopeMetrics:
       - metrics:
           - description: Number of containers in a given state. State is one of - created, running, paused, restarting, removing, exited and dead
-            name: container.status
+            name: container.state.status
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: container.state
+                    - key: container.state.status
                       value:
                         stringValue: running
                   startTimeUnixNano: "1000000"
