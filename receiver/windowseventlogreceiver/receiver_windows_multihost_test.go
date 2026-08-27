@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/featuregate"
@@ -31,14 +32,12 @@ func TestExpandMultipleHosts(t *testing.T) {
 		expected []stanzawindows.RemoteConfig
 	}{
 		{
-			name: "single_group_shared_credentials",
+			name: "multiple_servers_shared_credentials",
 			remote: stanzawindows.RemoteConfig{
+				Servers:  []string{"host1", "host2", "host3"},
 				Username: "admin",
 				Password: "secret",
 				Domain:   "example.com",
-				Hosts: []stanzawindows.HostGroupConfig{
-					{Hosts: []string{"host1", "host2", "host3"}},
-				},
 			},
 			expected: []stanzawindows.RemoteConfig{
 				{Server: "host1", Username: "admin", Password: "secret", Domain: "example.com"},
@@ -47,34 +46,14 @@ func TestExpandMultipleHosts(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple_groups_with_override",
+			name: "single_server",
 			remote: stanzawindows.RemoteConfig{
+				Servers:  []string{"host1"},
 				Username: "admin",
 				Password: "secret",
-				Domain:   "example.com",
-				Hosts: []stanzawindows.HostGroupConfig{
-					{Hosts: []string{"host1", "host3"}},
-					{Hosts: []string{"host2", "host4"}, Username: "root", Password: "rootsecret"},
-				},
 			},
 			expected: []stanzawindows.RemoteConfig{
-				{Server: "host1", Username: "admin", Password: "secret", Domain: "example.com"},
-				{Server: "host3", Username: "admin", Password: "secret", Domain: "example.com"},
-				{Server: "host2", Username: "root", Password: "rootsecret", Domain: "example.com"},
-				{Server: "host4", Username: "root", Password: "rootsecret", Domain: "example.com"},
-			},
-		},
-		{
-			name: "partial_credential_override",
-			remote: stanzawindows.RemoteConfig{
-				Username: "admin",
-				Password: "secret",
-				Hosts: []stanzawindows.HostGroupConfig{
-					{Hosts: []string{"host1"}, Password: "newpass"},
-				},
-			},
-			expected: []stanzawindows.RemoteConfig{
-				{Server: "host1", Username: "admin", Password: "newpass"},
+				{Server: "host1", Username: "admin", Password: "secret"},
 			},
 		},
 	}
@@ -96,11 +75,9 @@ func TestValidate_MutualExclusion(t *testing.T) {
 	cfg := createTestConfig()
 	cfg.InputConfig.Remote = stanzawindows.RemoteConfig{
 		Server:   "host1",
+		Servers:  []string{"host2"},
 		Username: "admin",
 		Password: "secret",
-		Hosts: []stanzawindows.HostGroupConfig{
-			{Hosts: []string{"host2"}},
-		},
 	}
 
 	err := cfg.Validate()
@@ -113,36 +90,14 @@ func TestValidate_FeatureGateRequired(t *testing.T) {
 
 	cfg := createTestConfig()
 	cfg.InputConfig.Remote = stanzawindows.RemoteConfig{
+		Servers:  []string{"host1"},
 		Username: "admin",
 		Password: "secret",
-		Hosts: []stanzawindows.HostGroupConfig{
-			{Hosts: []string{"host1"}},
-		},
 	}
 
 	err := cfg.Validate()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "feature gate")
-}
-
-func TestValidate_EmptyHostGroup(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.ID(), true))
-	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.ID(), false))
-	}()
-
-	cfg := createTestConfig()
-	cfg.InputConfig.Remote = stanzawindows.RemoteConfig{
-		Username: "admin",
-		Password: "secret",
-		Hosts: []stanzawindows.HostGroupConfig{
-			{Hosts: []string{}},
-		},
-	}
-
-	err := cfg.Validate()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "must contain at least one host")
 }
 
 func TestValidate_MissingCredentials(t *testing.T) {
@@ -153,14 +108,12 @@ func TestValidate_MissingCredentials(t *testing.T) {
 
 	cfg := createTestConfig()
 	cfg.InputConfig.Remote = stanzawindows.RemoteConfig{
-		Hosts: []stanzawindows.HostGroupConfig{
-			{Hosts: []string{"host1"}},
-		},
+		Servers: []string{"host1"},
 	}
 
 	err := cfg.Validate()
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "non-empty credentials")
+	assert.Contains(t, err.Error(), "remote.username and remote.password are required")
 }
 
 func TestValidate_ValidMultiHostConfig(t *testing.T) {
@@ -171,12 +124,10 @@ func TestValidate_ValidMultiHostConfig(t *testing.T) {
 
 	cfg := createTestConfig()
 	cfg.InputConfig.Remote = stanzawindows.RemoteConfig{
+		Servers:  []string{"host1", "host2", "host3"},
 		Username: "admin",
 		Password: "secret",
-		Hosts: []stanzawindows.HostGroupConfig{
-			{Hosts: []string{"host1", "host2"}},
-			{Hosts: []string{"host3"}, Username: "other", Password: "pass"},
-		},
+		Domain:   "example.com",
 	}
 
 	err := cfg.Validate()
@@ -191,12 +142,9 @@ func TestCreateLogsReceiver_MultipleHosts(t *testing.T) {
 
 	cfg := createTestConfig()
 	cfg.InputConfig.Remote = stanzawindows.RemoteConfig{
+		Servers:  []string{"host1", "host2", "host3"},
 		Username: "admin",
 		Password: "secret",
-		Hosts: []stanzawindows.HostGroupConfig{
-			{Hosts: []string{"host1", "host2"}},
-			{Hosts: []string{"host3"}, Username: "root", Password: "rootpass"},
-		},
 	}
 	sink := new(consumertest.LogsSink)
 
@@ -238,12 +186,10 @@ func TestLoadConfigMultiHost(t *testing.T) {
 			c.Channel = "security"
 			c.StartAt = "end"
 			c.Remote = stanzawindows.RemoteConfig{
+				Servers:  []string{"host1", "host2", "host3"},
 				Username: "admin",
-				Password: "secret",
-				Hosts: []stanzawindows.HostGroupConfig{
-					{Hosts: []string{"host1", "host3"}},
-					{Hosts: []string{"host2", "host4"}, Username: "root", Password: "rootsecret"},
-				},
+				Password: configopaque.String("secret"),
+				Domain:   "example.com",
 			}
 			return *c
 		}(),

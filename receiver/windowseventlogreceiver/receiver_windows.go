@@ -61,7 +61,7 @@ func createLogsReceiver(
 	stanzaFactory := adapter.NewFactory(receiverType{}, metadata.LogsStability, xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType))
 
 	if metadata.DomainControllersAutodiscoveryFeatureGate.IsEnabled() && receiverCfg.DiscoverDomainControllers {
-		remoteConfigs, err := getDomainControllersRemoteConfig(set.Logger, receiverCfg.InputConfig.Remote.Username, receiverCfg.InputConfig.Remote.Password)
+		remoteConfigs, err := getDomainControllersRemoteConfig(set.Logger, receiverCfg.InputConfig.Remote.Username, string(receiverCfg.InputConfig.Remote.Password))
 		if err != nil {
 			return nil, fmt.Errorf("domain controller discovery failed: %w", err)
 		}
@@ -69,12 +69,7 @@ func createLogsReceiver(
 		receivers := make([]receiver.Logs, 0, len(remoteConfigs))
 		for _, rc := range remoteConfigs {
 			dcCfg := *receiverCfg
-			dcCfg.InputConfig.Remote = windows.RemoteConfig{
-				Server:   rc.Server,
-				Username: rc.Username,
-				Password: rc.Password,
-				Domain:   rc.Domain,
-			}
+			dcCfg.InputConfig.Remote = rc
 			r, err := stanzaFactory.CreateLogs(ctx, set, &dcCfg, enrichedConsumer)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create receiver for domain controller %q: %w", rc.Server, err)
@@ -84,7 +79,7 @@ func createLogsReceiver(
 		return &multiLogsReceiver{receivers: receivers}, nil
 	}
 
-	if metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.IsEnabled() && len(receiverCfg.InputConfig.Remote.Hosts) > 0 {
+	if metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.IsEnabled() && len(receiverCfg.InputConfig.Remote.Servers) > 0 {
 		remoteConfigs := expandMultipleHosts(receiverCfg.InputConfig.Remote)
 		receivers := make([]receiver.Logs, 0, len(remoteConfigs))
 		for _, rc := range remoteConfigs {
@@ -141,27 +136,15 @@ func (m *multiLogsReceiver) Shutdown(ctx context.Context) error {
 	return errors.Join(errs...)
 }
 
-// expandMultipleHosts flattens a RemoteConfig with host groups into individual
-// RemoteConfig entries, one per host, with credential inheritance applied.
 func expandMultipleHosts(remote windows.RemoteConfig) []windows.RemoteConfig {
-	var result []windows.RemoteConfig
-	for _, group := range remote.Hosts {
-		username := remote.Username
-		if group.Username != "" {
-			username = group.Username
-		}
-		password := remote.Password
-		if group.Password != "" {
-			password = group.Password
-		}
-		for _, host := range group.Hosts {
-			result = append(result, windows.RemoteConfig{
-				Server:   host,
-				Username: username,
-				Password: password,
-				Domain:   remote.Domain,
-			})
-		}
+	result := make([]windows.RemoteConfig, 0, len(remote.Servers))
+	for _, host := range remote.Servers {
+		result = append(result, windows.RemoteConfig{
+			Server:   host,
+			Username: remote.Username,
+			Password: remote.Password,
+			Domain:   remote.Domain,
+		})
 	}
 	return result
 }

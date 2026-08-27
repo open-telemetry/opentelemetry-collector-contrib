@@ -48,31 +48,19 @@ $defs:
   event_data_format:
     description: EventDataFormat controls the structure of the event_data field in the log body.
     type: string
-  host_group_config:
-    description: HostGroupConfig defines a group of remote hosts that share the same credentials.
+  remote_config:
+    description: RemoteConfig is the configuration for a remote server or group of servers.
     type: object
     properties:
-      hosts:
+      server:
+        type: string
+      servers:
         type: array
         items:
           type: string
-      password:
-        type: string
       username:
         type: string
-  remote_config:
-    description: RemoteConfig is the configuration for a remote server.
-    type: object
-    properties:
+      password:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       domain:
-        type: string
-      hosts:
-        type: array
-        items:
-          $ref: host_group_config
-      password:
-        type: string
-      server:
-        type: string
-      username:
         type: string

@@ -71,34 +71,20 @@ func (c *WindowsLogConfig) Validate() error {
 		return err
 	}
 
-	hosts := c.InputConfig.Remote.Hosts
-	if len(hosts) == 0 {
+	if len(c.InputConfig.Remote.Servers) == 0 {
 		return nil
 	}
 
 	if !metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.IsEnabled() {
-		return errors.New("remote.hosts requires the receiver.windowseventlog.multipleRemoteHosts feature gate to be enabled")
+		return errors.New("remote.servers requires the receiver.windowseventlog.multipleRemoteHosts feature gate to be enabled")
 	}
 
 	if c.InputConfig.Remote.Server != "" {
-		return errors.New("remote.server and remote.hosts are mutually exclusive; use one or the other")
+		return errors.New("remote.server and remote.servers are mutually exclusive; use one or the other")
 	}
 
-	for i, group := range hosts {
-		if len(group.Hosts) == 0 {
-			return fmt.Errorf("remote.hosts[%d] must contain at least one host", i)
-		}
-		username := c.InputConfig.Remote.Username
-		if group.Username != "" {
-			username = group.Username
-		}
-		password := c.InputConfig.Remote.Password
-		if group.Password != "" {
-			password = group.Password
-		}
-		if username == "" || password == "" {
-			return fmt.Errorf("remote.hosts[%d]: each host group must have non-empty credentials (either shared or per-group override)", i)
-		}
+	if c.InputConfig.Remote.Username == "" || string(c.InputConfig.Remote.Password) == "" {
+		return errors.New("remote.username and remote.password are required when remote.servers is configured")
 	}
 
 	return nil

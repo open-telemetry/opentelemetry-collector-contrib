@@ -33,7 +33,7 @@ feature_gates:
     stage: alpha
     description: >-
       When enabled, allows configuring multiple remote hosts in a single receiver instance
-      via the remote.hosts configuration block.
+      via the remote.servers configuration field.
     from_version: v0.155.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47933
     skip_strict_validation: true

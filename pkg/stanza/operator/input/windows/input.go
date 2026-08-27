@@ -84,7 +84,7 @@ func (i *Input) defaultStartRemoteSession() error {
 	login := EvtRPCLogin{
 		Server:   windows.StringToUTF16Ptr(i.remote.Server),
 		User:     windows.StringToUTF16Ptr(i.remote.Username),
-		Password: windows.StringToUTF16Ptr(i.remote.Password),
+		Password: windows.StringToUTF16Ptr(string(i.remote.Password)),
 	}
 	if i.remote.Domain != "" {
 		login.Domain = windows.StringToUTF16Ptr(i.remote.Domain)
