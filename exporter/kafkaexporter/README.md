@@ -53,6 +53,7 @@ The following settings can be optionally configured:
 - `topic_from_attribute` (default = ""): Specify the resource attribute whose value should be used as the message's topic. See [Destination Topic](#destination-topic) below for more details.
 - `include_metadata_keys` (default = []): Specifies a list of metadata keys to propagate as Kafka message headers. If one or more keys aren't found in the metadata, they are ignored. When `sending_queue::batch` is enabled, `sending_queue::batch::partition::metadata_keys` must be configured and include all values configured in `include_metadata_keys`.
 - `record_headers` (default = {}): Specifies a map of key/value pairs to set as static headers on every outgoing Kafka record.
+- `signal_header` (default = false): Adds an `otelcol.signal` header (`logs`, `metrics`, `traces`, or `profiles`) to every record. See [Shared signal topic](#shared-signal-topic).
 - `partition_traces_by_id` (default = false): configures the exporter to include the trace ID as the message key in trace messages sent to kafka. *Please note:* this setting does not have any effect on Jaeger encoding exporters since Jaeger exporters include trace ID as the message key by default.
 - `partition_metrics_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in metric messages sent to kafka.
 - `partition_logs_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in log messages sent to kafka.
@@ -125,6 +126,37 @@ The following settings can be optionally configured:
   - `flush_max_messages` (default = 10000) The maximum number of messages the producer will send in a single broker request.
   - `allow_auto_topic_creation` (default = true) whether the broker is allowed to automatically create topics when they are referenced but do not already exist.
   - `linger`: (default = `10ms`) How long individual topic partitions will linger waiting for more records before triggering a request to be built.
+
+### Shared signal topic
+
+To send more than one signal to the same topic, set each signal's `topic` to that topic and enable
+`signal_header`:
+
+```yaml
+exporters:
+  kafka:
+    signal_header: true
+    logs:
+      topic: otlp
+    metrics:
+      topic: otlp
+    traces:
+      topic: otlp
+    profiles:
+      topic: otlp
+```
+
+You MUST turn the header on before you share topics. Existing receivers ignore unknown headers, so
+the current per-signal topics keep working. Do not write mixed signals to a receiver that does not
+have `signal_header` enabled.
+
+A shared topic is a good fit when you are partition-constrained or running at low throughput, or
+when you already isolate with templated topics and do not want another topic per signal. Keep
+separate topics when you need independent retention, access control, or failure isolation, or when
+you want to scale consumers per signal.
+
+`otelcol.signal` cannot be set in `record_headers` or `include_metadata_keys` while this option is
+enabled.
 
 ### Supported encodings
 
@@ -216,7 +248,7 @@ The Kafka record key can be set in the following ways, in order of precedence:
 
 ## Partitioning Kafka Records
 
-The exporter supports multiple strategies to control how records are distributed across kafka partitions within a topic. 
+The exporter supports multiple strategies to control how records are distributed across kafka partitions within a topic.
 
 Available strategies for partitioning are `sticky_key`, `sticky`, `round_robin`, `least_backup` and `extension`
 
@@ -231,7 +263,7 @@ exporters:
       - localhost:9092
     record_partitioner:
       extension: my_custom_partitioner
-  
+
 extensions:
   my_custom_partitioner:
     # your extension-specific configuration here
