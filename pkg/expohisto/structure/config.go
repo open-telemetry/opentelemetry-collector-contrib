@@ -46,8 +46,9 @@ const MaximumMaxSize = 16384
 const MaximumMaxScale int32 = logarithm.MaxScale
 
 // MinimumMaxScale is the smallest scale supported by the mapping
-// functions in this package.  Using this scale means only two buckets
-// will be used.
+// functions in this package.  At this scale each bucket spans a factor
+// of 2**1024, so the whole float64 range falls into a handful of
+// buckets.
 const MinimumMaxScale int32 = exponent.MinScale
 
 // DefaultMaxScale is the default scale a histogram starts at.  Since
@@ -121,9 +122,9 @@ func (c Config) Valid() bool {
 	return err == nil
 }
 
-// Validate returns the nearest valid Config object to the input and a
-// boolean indicating whether the the input was a valid
-// configurations.
+// Validate returns the nearest valid Config object to the input and an
+// error describing each invalid field, or nil when the input was
+// valid.
 func (c Config) Validate() (Config, error) {
 	var errs []error
 
