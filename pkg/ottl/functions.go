@@ -467,7 +467,7 @@ func (p *parseContext[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 				fieldAddr, ok = reflect.TypeAssert[reflectTypedArg](field.Addr())
 			}
 			if !ok {
-				return errors.New("slice getter type is not manageable by the OTTL parser. This is a bug in the OTTL")
+				return errors.New("slice getter type is not manageable by the OTTL parser. This is a bug in OTTL")
 			}
 
 			var gv any
