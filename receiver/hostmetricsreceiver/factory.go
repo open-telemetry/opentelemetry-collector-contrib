@@ -95,12 +95,12 @@ func createMetricsReceiver(
 	oCfg := cfg.(*Config)
 
 	if metadata.ReceiverHostmetricsDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
-		if err := featuregate.GlobalRegistry().Set(processscraper.ScraperProcessDontEmitV0SystemConventionsFeatureGate, true); err != nil {
+		if err := featuregate.GlobalRegistry().Set(processscraper.ScraperProcessDontEmitV0SystemConventionsFeatureGate.ID(), true); err != nil {
 			return nil, fmt.Errorf("failed to disable the process scraper v0 conventions: %w", err)
 		}
 	}
 	if metadata.ReceiverHostmetricsEmitV1SystemConventionsFeatureGate.IsEnabled() {
-		if err := featuregate.GlobalRegistry().Set(processscraper.ScraperProcessEmitV1SystemConventionsFeatureGate, true); err != nil {
+		if err := featuregate.GlobalRegistry().Set(processscraper.ScraperProcessEmitV1SystemConventionsFeatureGate.ID(), true); err != nil {
 			return nil, fmt.Errorf("failed to enable the process scraper v1 conventions: %w", err)
 		}
 	}
