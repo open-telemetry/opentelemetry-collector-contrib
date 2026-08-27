@@ -111,36 +111,64 @@ func extractScopeFromLabels(settings receiver.Settings, ls labels.Labels) (strin
 	return name, version
 }
 
-// setTraceAndSpan extracts trace ID and span ID from exemplar labels
-// and sets them on the provided Exemplar.
-//
-// The function expects hexadecimal-encoded IDs using Prometheus
-// exemplar label keys and silently ignores invalid values.
-func setTraceAndSpan(exemplar pmetric.Exemplar, labels labels.Labels) {
-	if tid := labels.Get(prometheus.ExemplarTraceIDKey); tid != "" {
-		var t [16]byte
-		if b, err := hex.DecodeString(tid); err == nil {
-			copy(t[:], b)
-			exemplar.SetTraceID(pcommon.TraceID(t))
+// decodeTraceID decodes a trace ID string and returns a valid pcommon.TraceID
+// if the string is exactly 32 hex characters and not an all-zero ID.
+func decodeTraceID(tid string) (pcommon.TraceID, bool) {
+	if len(tid) != 32 {
+		return pcommon.TraceID{}, false
+	}
+	var t [16]byte
+	if b, err := hex.DecodeString(tid); err == nil {
+		copy(t[:], b)
+		id := pcommon.TraceID(t)
+		if !id.IsEmpty() {
+			return id, true
 		}
 	}
-	if sid := labels.Get(prometheus.ExemplarSpanIDKey); sid != "" {
-		var s [8]byte
-		if b, err := hex.DecodeString(sid); err == nil {
-			copy(s[:], b)
-			exemplar.SetSpanID(pcommon.SpanID(s))
+	return pcommon.TraceID{}, false
+}
+
+// decodeSpanID decodes a span ID string and returns a valid pcommon.SpanID
+// if the string is exactly 16 hex characters and not an all-zero ID.
+func decodeSpanID(sid string) (pcommon.SpanID, bool) {
+	if len(sid) != 16 {
+		return pcommon.SpanID{}, false
+	}
+	var s [8]byte
+	if b, err := hex.DecodeString(sid); err == nil {
+		copy(s[:], b)
+		id := pcommon.SpanID(s)
+		if !id.IsEmpty() {
+			return id, true
 		}
+	}
+	return pcommon.SpanID{}, false
+}
+
+// setTraceAndSpan extracts trace ID and span ID from exemplar labels
+// and sets them on the provided Exemplar if they are valid non-zero hex-encoded IDs.
+func setTraceAndSpan(exemplar pmetric.Exemplar, labels labels.Labels) {
+	if id, ok := decodeTraceID(labels.Get(prometheus.ExemplarTraceIDKey)); ok {
+		exemplar.SetTraceID(id)
+	}
+	if id, ok := decodeSpanID(labels.Get(prometheus.ExemplarSpanIDKey)); ok {
+		exemplar.SetSpanID(id)
 	}
 }
 
-// copyExemplarAttributes copies all labels into the destination attribute map
-// except for trace ID and span ID labels, which are handled separately.
-//
-// The destination map is typically the exemplar's filtered attributes.
+// copyExemplarAttributes copies labels into the destination attribute map.
+// Valid trace_id and span_id labels that were converted to the exemplar's
+// TraceID and SpanID are omitted, while invalid or other labels are preserved.
 func copyExemplarAttributes(dest pcommon.Map, labels labels.Labels) {
 	for k, v := range labels.Map() {
-		if k == prometheus.ExemplarTraceIDKey || k == prometheus.ExemplarSpanIDKey {
-			continue
+		if k == prometheus.ExemplarTraceIDKey {
+			if _, ok := decodeTraceID(v); ok {
+				continue
+			}
+		} else if k == prometheus.ExemplarSpanIDKey {
+			if _, ok := decodeSpanID(v); ok {
+				continue
+			}
 		}
 		dest.PutStr(k, v)
 	}

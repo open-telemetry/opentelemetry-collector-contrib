@@ -3114,9 +3114,9 @@ func TestTranslateV2(t *testing.T) {
 					"instance", "host1", // 3, 4
 					"__name__", "http_requests_total", // 5, 6
 					"status", "200", "500", // 7, 8, 9
-					"trace_id", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", // 10, 11
+					"trace_id", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", // 10, 11
 					"span_id", "aaaaaaaaaaaaaaaa", // 12, 13
-					"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", // 14
+					"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", // 14
 					"bbbbbbbbbbbbbbbb", // 15
 				},
 				Timeseries: []writev2.TimeSeries{
@@ -3180,7 +3180,7 @@ func TestTranslateV2(t *testing.T) {
 				ex200 := dp200.Exemplars().AppendEmpty()
 				ex200.SetDoubleValue(100)
 				ex200.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				traceA, _ := hex.DecodeString("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"[:32])
+				traceA, _ := hex.DecodeString("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 				var tidA [16]byte
 				copy(tidA[:], traceA)
 				ex200.SetTraceID(pcommon.TraceID(tidA))
@@ -3197,7 +3197,7 @@ func TestTranslateV2(t *testing.T) {
 				ex500 := dp500.Exemplars().AppendEmpty()
 				ex500.SetDoubleValue(5)
 				ex500.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				traceB, _ := hex.DecodeString("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"[:32])
+				traceB, _ := hex.DecodeString("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
 				var tidB [16]byte
 				copy(tidB[:], traceB)
 				ex500.SetTraceID(pcommon.TraceID(tidB))

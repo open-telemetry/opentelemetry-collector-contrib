@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: receiver/prometheusremotewrite
+note: Validate exemplar trace and span ID length and preserve invalid IDs as filtered attributes.
+issues: [50547]
+subtext: |
+  trace_id and span_id labels are now validated for exact length (32 hex characters for Trace ID and 16 hex characters for Span ID).
+  Invalid IDs are no longer padded or truncated into synthetic IDs, and are preserved in the exemplar's filtered attributes.
+change_logs: [user]

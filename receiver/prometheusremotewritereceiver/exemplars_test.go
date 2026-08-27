@@ -4,13 +4,16 @@
 package prometheusremotewritereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver"
 
 import (
+	"encoding/hex"
 	"testing"
 
+	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	promremote "github.com/prometheus/prometheus/storage/remote"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -196,6 +199,113 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 
 			for i, msg := range tt.expectedWarnMsgs {
 				assert.Equal(t, msg, warns[i].Message)
+			}
+		})
+	}
+}
+
+func TestSetTraceAndSpan_ValidationAndAttributePreservation(t *testing.T) {
+	tests := []struct {
+		name                 string
+		labels               labels.Labels
+		expectedTraceIDEmpty bool
+		expectedSpanIDEmpty  bool
+		expectedTraceIDHex   string
+		expectedSpanIDHex    string
+		expectedFiltered     map[string]string
+	}{
+		{
+			name: "valid trace_id and span_id are mapped and omitted from filtered attributes",
+			labels: labels.FromStrings(
+				"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736",
+				"span_id", "00f067aa0ba902b7",
+				"custom_label", "value1",
+			),
+			expectedTraceIDHex: "4bf92f3577b34da6a3ce929d0e0e4736",
+			expectedSpanIDHex:  "00f067aa0ba902b7",
+			expectedFiltered: map[string]string{
+				"custom_label": "value1",
+			},
+		},
+		{
+			name: "over-long trace_id (48 chars) is not truncated and kept as filtered attribute",
+			labels: labels.FromStrings(
+				"trace_id", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				"span_id", "00f067aa0ba902b7",
+			),
+			expectedTraceIDEmpty: true,
+			expectedSpanIDHex:    "00f067aa0ba902b7",
+			expectedFiltered: map[string]string{
+				"trace_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			},
+		},
+		{
+			name: "short trace_id (8 chars) is not zero-padded and kept as filtered attribute",
+			labels: labels.FromStrings(
+				"trace_id", "aaaaaaaa",
+				"span_id", "bbbb",
+			),
+			expectedTraceIDEmpty: true,
+			expectedSpanIDEmpty:  true,
+			expectedFiltered: map[string]string{
+				"trace_id": "aaaaaaaa",
+				"span_id":  "bbbb",
+			},
+		},
+		{
+			name: "invalid non-hex trace_id of length 32 is kept as filtered attribute",
+			labels: labels.FromStrings(
+				"trace_id", "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+				"span_id", "xxxxxxxxxxxxxxxx",
+			),
+			expectedTraceIDEmpty: true,
+			expectedSpanIDEmpty:  true,
+			expectedFiltered: map[string]string{
+				"trace_id": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+				"span_id":  "xxxxxxxxxxxxxxxx",
+			},
+		},
+		{
+			name: "all-zero trace_id and span_id are invalid in OTel and kept as filtered attribute",
+			labels: labels.FromStrings(
+				"trace_id", "00000000000000000000000000000000",
+				"span_id", "0000000000000000",
+			),
+			expectedTraceIDEmpty: true,
+			expectedSpanIDEmpty:  true,
+			expectedFiltered: map[string]string{
+				"trace_id": "00000000000000000000000000000000",
+				"span_id":  "0000000000000000",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			slice := pmetric.NewExemplarSlice()
+			ex := slice.AppendEmpty()
+
+			setTraceAndSpan(ex, tt.labels)
+			copyExemplarAttributes(ex.FilteredAttributes(), tt.labels)
+
+			if tt.expectedTraceIDEmpty {
+				assert.True(t, ex.TraceID().IsEmpty())
+			} else {
+				tid := ex.TraceID()
+				assert.Equal(t, tt.expectedTraceIDHex, hex.EncodeToString(tid[:]))
+			}
+
+			if tt.expectedSpanIDEmpty {
+				assert.True(t, ex.SpanID().IsEmpty())
+			} else {
+				sid := ex.SpanID()
+				assert.Equal(t, tt.expectedSpanIDHex, hex.EncodeToString(sid[:]))
+			}
+
+			attrs := ex.FilteredAttributes().AsRaw()
+			assert.Equal(t, len(tt.expectedFiltered), len(attrs))
+			for k, v := range tt.expectedFiltered {
+				assert.Equal(t, v, attrs[k])
 			}
 		})
 	}
