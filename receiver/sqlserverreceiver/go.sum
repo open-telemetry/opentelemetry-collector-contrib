@@ -221,8 +221,8 @@ go.opentelemetry.io/collector/consumer/consumererror v0.159.1-0.20260824174011-6
 go.opentelemetry.io/collector/consumer/consumererror v0.159.1-0.20260824174011-67fef8cb7049/go.mod h1:t/pcnJKY4gj9DFq+jD4Wm1UoS5C7t9B8Jw+SGErmLGE=
 go.opentelemetry.io/collector/consumer/consumertest v0.159.1-0.20260824174011-67fef8cb7049 h1:0CLjUsLe0yGZoaDISY9VFZusJJUbHC4iUKpKBYtU7iA=
 go.opentelemetry.io/collector/consumer/consumertest v0.159.1-0.20260824174011-67fef8cb7049/go.mod h1:LacqKkV0bXLKQ2OvFF/bxH4c+HBs+dhOHZs2K8HBLVI=
-go.opentelemetry.io/collector/consumer/xconsumer v0.159.0 h1:4+SUbQvVtp3620mZJ4Ac4r9fkyqO+h7E7Dq+yKN7Adg=
-go.opentelemetry.io/collector/consumer/xconsumer v0.159.0/go.mod h1:oXLv8xLyVwBhA5nANletvv4NuoC++fNe/LscnEUx9TU=
+go.opentelemetry.io/collector/consumer/xconsumer v0.159.1-0.20260824174011-67fef8cb7049 h1:otpqg0iC9kQqp4HN7Lw1dfDbJaYLFvU+9Nxx3eO9ylI=
+go.opentelemetry.io/collector/consumer/xconsumer v0.159.1-0.20260824174011-67fef8cb7049/go.mod h1:SIyGMN08G1xLQoEhCZudZQl0NT5q2HHvnlOqLv28+dI=
 go.opentelemetry.io/collector/featuregate v1.65.1-0.20260824174011-67fef8cb7049 h1:lqjD0j1aXB1RAgSiOCJtNuiSQZJG1zxhwfvW9A9cR8M=
 go.opentelemetry.io/collector/featuregate v1.65.1-0.20260824174011-67fef8cb7049/go.mod h1:JXbqmLAy2ZxufKP0HDvdUPsLXwuZiCzsF+t9lSgdl/s=
 go.opentelemetry.io/collector/filter v0.159.1-0.20260824174011-67fef8cb7049 h1:p+PBSR4WONYC14wIKVrgUMjDJXVljZQGadQ6MTJO1VQ=
@@ -249,8 +249,8 @@ go.opentelemetry.io/collector/receiver/receiverhelper v0.159.1-0.20260824174011-
 go.opentelemetry.io/collector/receiver/receiverhelper v0.159.1-0.20260824174011-67fef8cb7049/go.mod h1:o97kVFsYVTgtiYXkZJ3moEGWF374/rJbQw40zbgSu3U=
 go.opentelemetry.io/collector/receiver/receivertest v0.159.1-0.20260824174011-67fef8cb7049 h1:41sgqnGEvuZxK/eDX0IwDSJRQtMf+5/F0pe3PT+DtdQ=
 go.opentelemetry.io/collector/receiver/receivertest v0.159.1-0.20260824174011-67fef8cb7049/go.mod h1:CCiUhbzalXionVOMJDTrtILBqX/K6PYNnno9nDNXMUA=
-go.opentelemetry.io/collector/receiver/xreceiver v0.159.0 h1:Lphw7A5JKDRujue9TuqzTSzBr/RKMPMzbzKqhFmHGKw=
-go.opentelemetry.io/collector/receiver/xreceiver v0.159.0/go.mod h1:5y7aMD3J8ItyWmfqTIoo/WYgbFXSnOyRBJfrX4kILgo=
+go.opentelemetry.io/collector/receiver/xreceiver v0.159.1-0.20260824174011-67fef8cb7049 h1:i+zWTJYaR10UwPc18zfetrsG13n0DHsfmwDr/IBc7Nw=
+go.opentelemetry.io/collector/receiver/xreceiver v0.159.1-0.20260824174011-67fef8cb7049/go.mod h1:s3NbBkniAzIzMXv0aXNJ0qvT8MoOqjXnFG42aIxQX50=
 go.opentelemetry.io/collector/scraper v0.159.1-0.20260824174011-67fef8cb7049 h1:e/bewi4H4UHzAw+7WZ6evBuOy734AmKoZCUELTtHSLQ=
 go.opentelemetry.io/collector/scraper v0.159.1-0.20260824174011-67fef8cb7049/go.mod h1:9IS2rfVXlgQAeTM5WK6AJtRrz/FvNhsfu77p3sDepD4=
 go.opentelemetry.io/collector/scraper/scraperhelper v0.159.1-0.20260824174011-67fef8cb7049 h1:+i4SgPNsJ9U8I2b7cC5POUdfVQa5g6odkeVv79z4CYc=
