@@ -3755,7 +3755,7 @@ func TestHistogramBucketBudgetReserve(t *testing.T) {
 	assert.Equal(t, int64(2), budget.remaining)
 	assert.False(t, budget.exhausted)
 
-	// Positive and negative are charged together, so 3 no longer fits in the remaining 2.
+	// Positive and negative are charged together, so 3 does not fit in the remaining 2.
 	tooBig := exponentialHistogramLayout{
 		positive: bucketSpanLayout{numBuckets: 2},
 		negative: bucketSpanLayout{numBuckets: 1},
