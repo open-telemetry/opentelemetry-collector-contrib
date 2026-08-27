@@ -121,22 +121,26 @@ func extractScopeFromLabels(settings receiver.Settings, ls labels.Labels) (strin
 func setTraceAndSpan(exemplar pmetric.Exemplar, labels labels.Labels) (traceIDSet, spanIDSet bool) {
 	if tid := labels.Get(prometheus.ExemplarTraceIDKey); tid != "" {
 		var t [16]byte
-		if b, err := hex.DecodeString(tid); err == nil && len(b) == len(t) {
-			copy(t[:], b)
-			// all-zero is the "unset" sentinel: setting it would drop the label for nothing
-			if traceID := pcommon.TraceID(t); !traceID.IsEmpty() {
-				exemplar.SetTraceID(traceID)
-				traceIDSet = true
+		if len(tid) == hex.EncodedLen(len(t)) {
+			if b, err := hex.DecodeString(tid); err == nil {
+				copy(t[:], b)
+				// all-zero is the "unset" sentinel: setting it would drop the label for nothing
+				if traceID := pcommon.TraceID(t); !traceID.IsEmpty() {
+					exemplar.SetTraceID(traceID)
+					traceIDSet = true
+				}
 			}
 		}
 	}
 	if sid := labels.Get(prometheus.ExemplarSpanIDKey); sid != "" {
 		var s [8]byte
-		if b, err := hex.DecodeString(sid); err == nil && len(b) == len(s) {
-			copy(s[:], b)
-			if spanID := pcommon.SpanID(s); !spanID.IsEmpty() {
-				exemplar.SetSpanID(spanID)
-				spanIDSet = true
+		if len(sid) == hex.EncodedLen(len(s)) {
+			if b, err := hex.DecodeString(sid); err == nil {
+				copy(s[:], b)
+				if spanID := pcommon.SpanID(s); !spanID.IsEmpty() {
+					exemplar.SetSpanID(spanID)
+					spanIDSet = true
+				}
 			}
 		}
 	}
