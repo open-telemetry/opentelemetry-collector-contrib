@@ -15,6 +15,7 @@ import (
 	"math/big"
 	"net"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -780,6 +781,102 @@ func TestOIDCAuthenticationPublicKeysFileHotReload(t *testing.T) {
 			assert.NotNil(t, ctx)
 		})
 	}
+}
+
+// TestOIDCAuthenticationPublicKeysFileSymlinkRotation reproduces the
+// Kubernetes "projected secret" key rotation pattern (advisory
+// GHSA-xpvr-wrwx-rm99): the configured PublicKeysFile is a symlink to
+// "..data/<file>", and "..data" is itself a symlink that is atomically
+// retargeted on rotation. The leaf file path itself is never written or
+// renamed, so a watcher that only matches the exact configured path
+// will miss the rotation and keep accepting tokens signed by revoked
+// keys until the collector restarts.
+func TestOIDCAuthenticationPublicKeysFileSymlinkRotation(t *testing.T) {
+	// prepare two OIDC servers, each with their own signing key
+	oidcServer1, err := newOIDCServer()
+	require.NoError(t, err)
+	oidcServer1.Start()
+	defer oidcServer1.Close()
+
+	oidcServer2, err := newOIDCServer()
+	require.NoError(t, err)
+	oidcServer2.Start()
+	defer oidcServer2.Close()
+
+	// Lay out a projected-secret style directory:
+	//   <root>/..2026_a/jwks.json   (key A)
+	//   <root>/..2026_b/jwks.json   (key B)
+	//   <root>/..data -> ..2026_a
+	//   <root>/jwks.json -> ..data/jwks.json
+	root := t.TempDir()
+	writeJWKS := func(dir string, pubKey crypto.PublicKey) {
+		require.NoError(t, os.MkdirAll(dir, 0o700))
+		jwks := jose.JSONWebKeySet{Keys: []jose.JSONWebKey{{Key: pubKey}}}
+		data, marshalErr := json.Marshal(jwks)
+		require.NoError(t, marshalErr)
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "jwks.json"), data, 0o600))
+	}
+	writeJWKS(filepath.Join(root, "..2026_a"), oidcServer1.privateKey.Public())
+	writeJWKS(filepath.Join(root, "..2026_b"), oidcServer2.privateKey.Public())
+	require.NoError(t, os.Symlink("..2026_a", filepath.Join(root, "..data")))
+	require.NoError(t, os.Symlink("..data/jwks.json", filepath.Join(root, "jwks.json")))
+
+	jwksFile := filepath.Join(root, "jwks.json")
+
+	cfg := &Config{
+		Providers: []ProviderCfg{
+			{
+				IssuerURL:      oidcServer1.URL,
+				Audience:       "unit-test",
+				PublicKeysFile: jwksFile,
+			},
+		},
+	}
+	p := newTestExtension(t, cfg)
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+
+	srvAuth, ok := p.(extensionauth.Server)
+	require.True(t, ok)
+
+	makeToken := func(server *oidcServer) string {
+		payload, marshalErr := json.Marshal(map[string]any{
+			"sub": "jdoe@example.com",
+			"iss": oidcServer1.URL, // single configured issuer
+			"aud": "unit-test",
+			"exp": time.Now().Add(time.Minute).Unix(),
+		})
+		require.NoError(t, marshalErr)
+		token, tokenErr := server.token(payload)
+		require.NoError(t, tokenErr)
+		return token
+	}
+
+	tokenA := makeToken(oidcServer1)
+	tokenB := makeToken(oidcServer2)
+
+	// Before rotation: tokenA (signed by key A) is accepted; tokenB is not.
+	_, err = srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {"Bearer " + tokenA}})
+	require.NoError(t, err)
+	_, err = srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {"Bearer " + tokenB}})
+	require.Error(t, err)
+
+	// Atomically rotate ..data from ..2026_a to ..2026_b, mirroring how
+	// the kubelet rotates a projected secret. The leaf file (jwks.json)
+	// is never touched.
+	tmpLink := filepath.Join(root, "..data_new")
+	require.NoError(t, os.Symlink("..2026_b", tmpLink))
+	require.NoError(t, os.Rename(tmpLink, filepath.Join(root, "..data")))
+
+	// Wait for the file watcher to detect the change.
+	require.Eventually(t, func() bool {
+		_, authErr := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {"Bearer " + tokenB}})
+		return authErr == nil
+	}, 2*time.Second, 25*time.Millisecond, "tokenB (new key) should be accepted after symlink rotation")
+
+	// And tokenA (signed by the revoked key) must now be rejected.
+	_, err = srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {"Bearer " + tokenA}})
+	require.Error(t, err, "tokenA (revoked key) must be rejected after symlink rotation")
 }
 
 func TestOIDCAuthenticationInvalidPublicKeysFile(t *testing.T) {
