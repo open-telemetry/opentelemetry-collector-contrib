@@ -23,6 +23,10 @@ subtext: |
   matches how `service.instance.id` already resolves its host, and both attributes now share one resolution
   path. `host.name` is unchanged.
 
+  The `db.server.top_query` event carries its own `server.address` and `server.port` attributes; these now
+  come from the same resolved endpoint. Previously they were read straight from `server` and `port`, so they
+  were empty when the connection was configured with `datasource` instead.
+
   To stop emitting the server attributes, disable them via `resource_attributes.server.address.enabled: false`
   and `resource_attributes.server.port.enabled: false`. The `receiver.sqlserver.RemoveServerResourceAttribute`
   feature gate has been removed; it duplicated those per-attribute settings.

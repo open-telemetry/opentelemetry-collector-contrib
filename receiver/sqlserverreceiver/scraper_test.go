@@ -1325,6 +1325,19 @@ func TestRecordDatabaseQueryTextAndPlanUsesResourceBuilderForLogs(t *testing.T) 
 	serverPort, exists := resourceAttributes.Get("server.port")
 	assert.True(t, exists)
 	assert.Equal(t, int64(1434), serverPort.Int())
+
+	// The event carries its own server.address/server.port attributes; they must agree with the
+	// resource. `server` is unset in this datasource-only config, so reading it from the config
+	// rather than the resolved endpoint would leave them empty.
+	recordAttributes := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+
+	eventServerAddress, exists := recordAttributes.Get("server.address")
+	assert.True(t, exists)
+	assert.Equal(t, "datasource-host.example.com", eventServerAddress.AsString())
+
+	eventServerPort, exists := recordAttributes.Get("server.port")
+	assert.True(t, exists)
+	assert.Equal(t, int64(1434), eventServerPort.Int())
 }
 
 func TestRecordWorkerThreadMetrics(t *testing.T) {
