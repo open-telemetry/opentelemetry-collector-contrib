@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
@@ -1181,6 +1182,44 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			got := ndpL.At(0)
 			want := tt.want()
 			require.Equal(t, want, got, "Expected the points to be equal")
+		})
+	}
+}
+
+func TestMetricFamilyMultipleScalarSamples(t *testing.T) {
+	for _, metricName := range []string{"counter", "gauge"} {
+		t.Run(metricName, func(t *testing.T) {
+			mf := newMetricFamily(metricName, mc, zap.NewNop(), false, false)
+			ls := labels.FromStrings("a", "A")
+			seriesRef, _ := getSeriesRefWithoutScopeLabels(nil, ls, mf.mtype)
+
+			require.NoError(t, mf.addSeries(seriesRef, metricName, ls, 10, 1))
+			mf.addExemplar(seriesRef, 10, exemplar.Exemplar{Ts: 9, Value: 11})
+			require.NoError(t, mf.addSeries(seriesRef, metricName, ls, 20, 2))
+			mf.addExemplar(seriesRef, 20, exemplar.Exemplar{Ts: 19, Value: 22})
+
+			metrics := pmetric.NewMetricSlice()
+			mf.appendMetric(metrics, false)
+			require.Len(t, mf.groups, 2)
+			require.Equal(t, 1, metrics.Len())
+
+			var points pmetric.NumberDataPointSlice
+			if mf.mtype == pmetric.MetricTypeSum {
+				points = metrics.At(0).Sum().DataPoints()
+			} else {
+				points = metrics.At(0).Gauge().DataPoints()
+			}
+			require.Equal(t, 2, points.Len())
+
+			require.Equal(t, pcommon.Timestamp(10*time.Millisecond), points.At(0).Timestamp())
+			require.Equal(t, 1.0, points.At(0).DoubleValue())
+			require.Equal(t, 1, points.At(0).Exemplars().Len())
+			require.Equal(t, 11.0, points.At(0).Exemplars().At(0).DoubleValue())
+
+			require.Equal(t, pcommon.Timestamp(20*time.Millisecond), points.At(1).Timestamp())
+			require.Equal(t, 2.0, points.At(1).DoubleValue())
+			require.Equal(t, 1, points.At(1).Exemplars().Len())
+			require.Equal(t, 22.0, points.At(1).Exemplars().At(0).DoubleValue())
 		})
 	}
 }

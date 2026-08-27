@@ -411,7 +411,7 @@ func testAppendExemplarWithNoMetricName(t *testing.T) {
 		model.JobLabel, "test",
 	)
 
-	err := tr.appendExemplar(labels, exemplar.Exemplar{Value: 0})
+	err := tr.appendExemplar(labels, 0, exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errMetricNameNotFound, err)
 }
 
@@ -428,7 +428,7 @@ func testAppendExemplarWithEmptyMetricName(t *testing.T) {
 		model.JobLabel, "test",
 		model.MetricNameLabel, "",
 	)
-	err := tr.appendExemplar(labels, exemplar.Exemplar{Value: 0})
+	err := tr.appendExemplar(labels, 0, exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errMetricNameNotFound, err)
 }
 
@@ -447,7 +447,7 @@ func testAppendExemplarWithDuplicateLabels(t *testing.T) {
 		"a", "b",
 		"a", "c",
 	)
-	err := tr.appendExemplar(labels, exemplar.Exemplar{Value: 0})
+	err := tr.appendExemplar(labels, 0, exemplar.Exemplar{Value: 0})
 	assert.ErrorContains(t, err, `invalid sample: non-unique label names: "a"`)
 }
 
@@ -465,7 +465,7 @@ func testAppendExemplarWithoutAddingMetric(t *testing.T) {
 		model.MetricNameLabel, "counter_test",
 		"a", "b",
 	)
-	err := tr.appendExemplar(labels, exemplar.Exemplar{Value: 0})
+	err := tr.appendExemplar(labels, 0, exemplar.Exemplar{Value: 0})
 	assert.NoError(t, err)
 }
 
@@ -477,7 +477,7 @@ func testAppendExemplarWithNoLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	err := tr.appendExemplar(labels.EmptyLabels(), exemplar.Exemplar{Value: 0})
+	err := tr.appendExemplar(labels.EmptyLabels(), 0, exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errNoJobInstance, err)
 }
 
@@ -489,7 +489,7 @@ func testAppendExemplarWithEmptyLabelArray(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	err := tr.appendExemplar(labels.FromStrings(), exemplar.Exemplar{Value: 0})
+	err := tr.appendExemplar(labels.FromStrings(), 0, exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errNoJobInstance, err)
 }
 

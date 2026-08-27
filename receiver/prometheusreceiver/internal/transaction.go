@@ -255,7 +255,7 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 	return curMf
 }
 
-func (t *transaction) appendExemplar(l labels.Labels, e exemplar.Exemplar) error {
+func (t *transaction) appendExemplar(l labels.Labels, sampleTimestamp int64, e exemplar.Exemplar) error {
 	select {
 	case <-t.ctx.Done():
 		return errTransactionAborted
@@ -282,7 +282,7 @@ func (t *transaction) appendExemplar(l labels.Labels, e exemplar.Exemplar) error
 	t.addScopeAttributesFromLabels(*rKey, scope, attrs)
 	mf := t.getOrCreateMetricFamily(*rKey, scope, mn)
 	seriesRef := t.getSeriesRef(l, mf.mtype)
-	mf.addExemplar(seriesRef, e)
+	mf.addExemplar(seriesRef, sampleTimestamp, e)
 
 	return nil
 }
@@ -697,7 +697,7 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, stMs, atMs i
 
 	// Append the exemplars, continuing on error to try all exemplars.
 	for _, exemplar := range opts.Exemplars {
-		if err := t.appendExemplar(originalLS, exemplar); err != nil {
+		if err := t.appendExemplar(originalLS, atMs, exemplar); err != nil {
 			continue
 		}
 	}
