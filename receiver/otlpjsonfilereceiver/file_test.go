@@ -64,20 +64,81 @@ func TestFileProfilesReceiver(t *testing.T) {
 	assert.NoError(t, err)
 
 	// include_file_name is true by default. Profile attributes live in the shared
-	// dictionary, so the expected key and key/value pair are appended to it and the
-	// profile references the new attribute by index.
+	// dictionary, so intern the key and the key/value pair and have the profile
+	// reference the result by index.
 	expectedDic := expected.Dictionary()
-	expectedKvu := expectedDic.AttributeTable().AppendEmpty()
-	expectedKvu.SetKeyStrindex(int32(expectedDic.StringTable().Len()))
-	expectedDic.StringTable().Append("log.file.name")
+	expectedKvu := pprofile.NewKeyValueAndUnit()
+	expectedKeyIdx, err := pprofile.SetString(expectedDic.StringTable(), "log.file.name")
+	require.NoError(t, err)
+	expectedKvu.SetKeyStrindex(expectedKeyIdx)
 	expectedKvu.Value().SetStr("profiles.json")
+	expectedAttrIdx, err := pprofile.SetAttribute(expectedDic.AttributeTable(), expectedKvu)
+	require.NoError(t, err)
 	expected.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).
-		AttributeIndices().Append(int32(expectedDic.AttributeTable().Len() - 1))
+		AttributeIndices().Append(expectedAttrIdx)
 
 	require.Len(t, sink.AllProfiles(), 1)
-	assert.Equal(t, expected, sink.AllProfiles()[0])
+	got := sink.AllProfiles()[0]
+	assert.Equal(t, expected, got)
+
+	// Resolve the indices back into a map as well, so the assertion above cannot
+	// pass just because expected and got were built with the same helpers.
+	gotDic := got.Dictionary()
+	gotAttrs, err := pprofile.FromAttributeIndices(gotDic.AttributeTable(),
+		got.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0), gotDic)
+	require.NoError(t, err)
+	gotFileName, ok := gotAttrs.Get("log.file.name")
+	require.True(t, ok, "log.file.name is missing from the profile attributes")
+	assert.Equal(t, "profiles.json", gotFileName.Str())
+
 	err = receiver.Shutdown(t.Context())
 	assert.NoError(t, err)
+}
+
+func TestAppendToProfile(t *testing.T) {
+	newProfile := func() (pprofile.ProfilesDictionary, pprofile.Profile) {
+		profiles := pprofile.NewProfiles()
+		profile := profiles.ResourceProfiles().AppendEmpty().
+			ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+		return profiles.Dictionary(), profile
+	}
+
+	t.Run("supported types", func(t *testing.T) {
+		dic, profile := newProfile()
+		require.NoError(t, appendToProfile(map[string]any{
+			"str": "a", "int": 1, "float": 2.5, "bool": true,
+			"unsupported": []string{"dropped"},
+		}, dic, profile))
+
+		attrs, err := pprofile.FromAttributeIndices(dic.AttributeTable(), profile, dic)
+		require.NoError(t, err)
+		assert.Equal(t, map[string]any{
+			"str": "a", "int": int64(1), "float": 2.5, "bool": true,
+		}, attrs.AsRaw())
+	})
+
+	t.Run("existing key is replaced, not duplicated", func(t *testing.T) {
+		dic, profile := newProfile()
+		require.NoError(t, appendToProfile(map[string]any{"log.file.name": "old.json"}, dic, profile))
+		require.NoError(t, appendToProfile(map[string]any{"log.file.name": "new.json"}, dic, profile))
+
+		assert.Equal(t, 1, profile.AttributeIndices().Len())
+		attrs, err := pprofile.FromAttributeIndices(dic.AttributeTable(), profile, dic)
+		require.NoError(t, err)
+		assert.Equal(t, map[string]any{"log.file.name": "new.json"}, attrs.AsRaw())
+	})
+
+	t.Run("unrelated attributes are preserved", func(t *testing.T) {
+		dic, profile := newProfile()
+		require.NoError(t, appendToProfile(map[string]any{"keep": "me"}, dic, profile))
+		require.NoError(t, appendToProfile(map[string]any{"log.file.name": "profiles.json"}, dic, profile))
+
+		attrs, err := pprofile.FromAttributeIndices(dic.AttributeTable(), profile, dic)
+		require.NoError(t, err)
+		assert.Equal(t, map[string]any{
+			"keep": "me", "log.file.name": "profiles.json",
+		}, attrs.AsRaw())
+	})
 }
 
 func TestFileTracesReceiver(t *testing.T) {

@@ -285,9 +285,32 @@ func appendToProfile(attributes map[string]any, dic pprofile.ProfilesDictionary,
 		if err != nil {
 			return err
 		}
-		profile.AttributeIndices().Append(attrIdx)
+
+		// Repoint an attribute that already uses this key instead of appending a
+		// second one, so the result matches the upsert semantics appendToMap gets
+		// for free from pcommon.Map.
+		if !replaceAttributeIndex(dic, profile, keyIdx, attrIdx) {
+			profile.AttributeIndices().Append(attrIdx)
+		}
 	}
 	return nil
+}
+
+// replaceAttributeIndex points the profile's first attribute carrying keyIdx at
+// attrIdx, and reports whether such an attribute was found.
+func replaceAttributeIndex(dic pprofile.ProfilesDictionary, profile pprofile.Profile, keyIdx, attrIdx int32) bool {
+	table := dic.AttributeTable()
+	indices := profile.AttributeIndices()
+	for i, idx := range indices.All() {
+		if idx < 0 || int(idx) >= table.Len() {
+			continue
+		}
+		if table.At(int(idx)).KeyStrindex() == keyIdx {
+			indices.SetAt(i, attrIdx)
+			return true
+		}
+	}
+	return false
 }
 
 func appendToMap(attributes map[string]any, attr pcommon.Map) {
