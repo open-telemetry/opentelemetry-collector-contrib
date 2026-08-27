@@ -76,10 +76,11 @@ func (pc *providerContainer) refreshPublicKeysFile() error {
 		}
 	}
 
-	// Build a fresh config for each verifier rather than mutating the shared
-	// base config in place. The previously published verifier keeps a reference
-	// to its own config, which a concurrent Verify may still be reading, so
-	// mutating a shared config here would be a data race.
+	// Build a fresh config and verifier on every reload instead of mutating the
+	// existing one in place. Each published verifier (and the config it holds)
+	// is treated as immutable, so an in-flight Verify running without the lock
+	// can safely keep reading the old snapshot while we swap in the new one.
+	// Only the pc.verifier pointer is mutable, and it is guarded by verifierMu.
 	verifierCfg := *pc.verifierCfg
 	verifierCfg.SupportedSigningAlgs = supportedAlgs
 
