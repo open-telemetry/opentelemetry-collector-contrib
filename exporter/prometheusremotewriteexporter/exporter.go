@@ -172,7 +172,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		return nil, err
 	}
 
-	endpointURL, err := url.ParseRequestURI(cfg.ClientConfig.Endpoint)
+	endpointURL, err := url.ParseRequestURI(cfg.HTTP.Endpoint)
 	if err != nil {
 		return nil, errors.New("invalid endpoint")
 	}
@@ -210,20 +210,22 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		userAgentHeader:     userAgentHeader,
 		maxBatchSizeBytes:   cfg.MaxBatchSizeBytes,
 		concurrency:         concurrency,
-		clientSettings:      &cfg.ClientConfig,
+		clientSettings:      &cfg.HTTP,
 		settings:            set.TelemetrySettings,
 		retrySettings:       cfg.BackOffConfig,
 		retryOnHTTP429:      metadata.ExporterPrometheusremotewritexporterRetryOn429FeatureGate.IsEnabled(),
 		RemoteWriteProtoMsg: cfg.RemoteWriteProtoMsg,
 		includeMetadataKeys: cfg.IncludeMetadataKeys,
 		exporterSettings: prometheusremotewrite.Settings{
-			Namespace:           cfg.Namespace,
-			ExternalLabels:      sanitizedLabels,
-			DisableTargetInfo:   !cfg.TargetInfo.Enabled,
-			DisableScopeInfo:    cfg.DisableScopeInfo,
-			AddMetricSuffixes:   cfg.AddMetricSuffixes,
-			TranslationStrategy: string(cfg.TranslationStrategy),
-			SendMetadata:        cfg.SendMetadata,
+			Namespace:                       cfg.Namespace,
+			ExternalLabels:                  sanitizedLabels,
+			DisableTargetInfo:               !cfg.TargetInfo.Enabled,
+			DisableScopeInfo:                cfg.DisableScopeInfo,
+			AddMetricSuffixes:               cfg.AddMetricSuffixes,
+			TranslationStrategy:             string(cfg.TranslationStrategy),
+			SendMetadata:                    cfg.SendMetadata,
+			ConvertExplicitHistogramsToNHCB: cfg.ConvertExplicitHistogramsToNHCB,
+			KeepClassicHistograms:           cfg.KeepClassicHistograms,
 		},
 		telemetry:      telemetry,
 		batchStatePool: sync.Pool{New: func() any { return newBatchTimeServicesState() }},
@@ -317,7 +319,9 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 
 func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	namer := otlptranslator.LabelNamer{
-		UnderscoreLabelSanitization: !prometheustranslator.DropSanitizationGate.IsEnabled(),
+		// TODO: SA1019: (github.com/prometheus/otlptranslator.LabelNamer).UnderscoreLabelSanitization is deprecated: This will be removed in a future version of otlptranslator.
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50429
+		UnderscoreLabelSanitization: !prometheustranslator.DropSanitizationGate.IsEnabled(), //nolint:staticcheck
 	}
 	sanitizedLabels := make(map[string]string)
 	for key, value := range cfg.ExternalLabels {
@@ -538,7 +542,7 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 	}
 
 	if err != nil {
-		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		if errors.Is(err, context.Canceled) {
 			return consumererror.NewPermanent(err)
 		}
 		return err

@@ -19,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/appservice"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
@@ -54,6 +55,11 @@ func TestLoadConfig(t *testing.T) {
 		ResourceAttributes: system.CreateDefaultConfig().ResourceAttributes,
 	}
 
+	azureAppServiceConfig := detectorCreateDefaultConfig()
+	azureAppServiceResourceAttributes := appservice.CreateDefaultConfig()
+	azureAppServiceResourceAttributes.ResourceAttributes.AzureAppServiceInstanceID.Enabled = false
+	azureAppServiceConfig.AzureAppServiceConfig = azureAppServiceResourceAttributes
+
 	resourceAttributesConfig := detectorCreateDefaultConfig()
 	ec2ResourceAttributesConfig := ec2.CreateDefaultConfig()
 	ec2ResourceAttributesConfig.ResourceAttributes.HostName.Enabled = false
@@ -70,12 +76,33 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
+			id: component.NewID(metadata.Type),
+			expected: &Config{
+				Detectors:      []string{"env"},
+				Override:       true,
+				DetectorConfig: detectorCreateDefaultConfig(),
+				ClientConfig:   defaultClientConfig(),
+				Retry:          defaultRetryConfig(),
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "openshift"),
 			expected: &Config{
 				Detectors:      []string{"openshift"},
 				DetectorConfig: openshiftConfig,
 				ClientConfig:   cfg,
 				Override:       false,
+				Retry:          defaultRetryConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "azureappservice"),
+			expected: &Config{
+				Detectors:      []string{"env", "azureappservice"},
+				DetectorConfig: azureAppServiceConfig,
+				ClientConfig:   cfg,
+				Override:       false,
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -85,6 +112,7 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				DetectorConfig: detectorCreateDefaultConfig(),
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -94,6 +122,7 @@ func TestLoadConfig(t *testing.T) {
 				DetectorConfig: ec2Config,
 				ClientConfig:   cfg,
 				Override:       false,
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -103,6 +132,7 @@ func TestLoadConfig(t *testing.T) {
 				DetectorConfig: systemConfig,
 				ClientConfig:   cfg,
 				Override:       false,
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -112,6 +142,7 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				DetectorConfig: detectorCreateDefaultConfig(),
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -121,6 +152,47 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				DetectorConfig: detectorCreateDefaultConfig(),
+				Retry:          defaultRetryConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "aks"),
+			expected: &Config{
+				Detectors:      []string{"env", "aks"},
+				ClientConfig:   cfg,
+				Override:       false,
+				DetectorConfig: detectorCreateDefaultConfig(),
+				Retry:          defaultRetryConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "ecs"),
+			expected: &Config{
+				Detectors:      []string{"env", "ecs"},
+				ClientConfig:   cfg,
+				Override:       false,
+				DetectorConfig: detectorCreateDefaultConfig(),
+				Retry:          defaultRetryConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "docker"),
+			expected: &Config{
+				Detectors:      []string{"env", "docker"},
+				ClientConfig:   cfg,
+				Override:       false,
+				DetectorConfig: detectorCreateDefaultConfig(),
+				Retry:          defaultRetryConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "azure"),
+			expected: &Config{
+				Detectors:      []string{"env", "azure"},
+				ClientConfig:   cfg,
+				Override:       false,
+				DetectorConfig: detectorCreateDefaultConfig(),
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -130,6 +202,7 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				DetectorConfig: resourceAttributesConfig,
+				Retry:          defaultRetryConfig(),
 			},
 		},
 		{
@@ -140,6 +213,22 @@ func TestLoadConfig(t *testing.T) {
 				Override:        false,
 				DetectorConfig:  detectorCreateDefaultConfig(),
 				RefreshInterval: 5 * time.Second,
+				Retry:           defaultRetryConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "fail_on_missing_metadata"),
+			expected: &Config{
+				Detectors: []string{"gcp", "azure", "ec2"},
+				ClientConfig: func() confighttp.ClientConfig {
+					c := confighttp.NewDefaultClientConfig()
+					c.Timeout = 5 * time.Second
+					return c
+				}(),
+				Override:              false,
+				FailOnMissingMetadata: true,
+				DetectorConfig:        detectorCreateDefaultConfig(),
+				Retry:                 defaultRetryConfig(),
 			},
 		},
 		{
@@ -243,6 +332,8 @@ func TestGetConfigFromType_AllDetectors(t *testing.T) {
 		{"ElasticBeanstalk", "elastic_beanstalk"},
 		{"Azure", "azure"},
 		{"AKS", "aks"},
+		{"AzureAppService", "azureappservice"},
+		{"AzureContainerApps", "azurecontainerapps"},
 		{"Consul", "consul"},
 		{"DigitalOcean", "digitalocean"},
 		{"Docker", "docker"},
@@ -281,6 +372,7 @@ func TestDetectorCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, config.LambdaConfig)
 	assert.NotNil(t, config.AzureConfig)
 	assert.NotNil(t, config.AksConfig)
+	assert.NotNil(t, config.AzureContainerAppsConfig)
 	assert.NotNil(t, config.ConsulConfig)
 	assert.NotNil(t, config.DigitalOceanConfig)
 	assert.NotNil(t, config.DockerConfig)
@@ -298,4 +390,63 @@ func TestDetectorCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, config.UpcloudConfig)
 	assert.NotNil(t, config.VultrConfig)
 	assert.NotNil(t, config.AlibabaECSConfig)
+}
+
+func TestDefaultConfig_RetryDefaults(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	assert.True(t, cfg.Retry.Enabled, "retry must be enabled by default")
+	assert.Equal(t, 1*time.Second, cfg.Retry.InitialInterval)
+	assert.InDelta(t, 0.5, cfg.Retry.RandomizationFactor, 1e-9)
+	assert.InDelta(t, 2.0, cfg.Retry.Multiplier, 1e-9)
+	assert.Equal(t, 30*time.Second, cfg.Retry.MaxInterval)
+	assert.Equal(t, time.Duration(0), cfg.Retry.MaxElapsedTime, "no explicit retry budget by default (session bounded by client.Timeout)")
+}
+
+func TestConfig_Validate(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		mutate  func(*Config)
+		wantErr string
+	}{
+		{
+			name:   "defaults are valid",
+			mutate: func(*Config) {},
+		},
+		{
+			name: "retry enabled with timeout=0 and max_elapsed_time=0 is rejected",
+			mutate: func(c *Config) {
+				c.ClientConfig.Timeout = 0
+				c.Retry.MaxElapsedTime = 0
+			},
+			wantErr: "retry.enabled requires either timeout > 0 or retry.max_elapsed_time > 0",
+		},
+		{
+			name: "retry enabled with timeout=0 but max_elapsed_time>0 is valid",
+			mutate: func(c *Config) {
+				c.ClientConfig.Timeout = 0
+				c.Retry.MaxElapsedTime = 30 * time.Second
+			},
+		},
+		{
+			name: "retry disabled with timeout=0 is valid",
+			mutate: func(c *Config) {
+				c.ClientConfig.Timeout = 0
+				c.Retry.Enabled = false
+				c.Retry.MaxElapsedTime = 0
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := NewFactory().CreateDefaultConfig().(*Config)
+			tc.mutate(cfg)
+			err := cfg.Validate()
+			if tc.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.wantErr)
+		})
+	}
 }

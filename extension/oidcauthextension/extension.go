@@ -300,7 +300,6 @@ func (e *oidcExtension) processProviderConfig(ctx context.Context, p ProviderCfg
 		DialContext: (&net.Dialer{
 			Timeout:   5 * time.Second,
 			KeepAlive: 10 * time.Second,
-			DualStack: true,
 		}).DialContext,
 		ForceAttemptHTTP2:     true,
 		MaxIdleConns:          100,

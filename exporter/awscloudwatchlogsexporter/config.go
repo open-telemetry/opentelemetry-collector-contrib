@@ -48,11 +48,16 @@ type Config struct {
 
 	logger *zap.Logger
 
-	awsutil.AWSSessionSettings `mapstructure:",squash"`
+	AWSSessionSettings awsutil.AWSSessionSettings `mapstructure:",squash"`
 
 	// Export raw log string instead of log wrapper
 	// Required for emf logs
 	RawLog bool `mapstructure:"raw_log,omitempty"`
+
+	// MaxEventPayloadBytes is the per-event payload cap in bytes; oversized log events are truncated.
+	// Defaults to 256 KiB (262144) for backwards compatibility; may be raised up to the
+	// CloudWatch Logs per-event API limit of 1 MiB (1048576).
+	MaxEventPayloadBytes int `mapstructure:"max_event_payload_bytes,omitempty"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -66,10 +71,10 @@ func (config *Config) Validate() error {
 		return errors.New("'log_stream_name' must be set")
 	}
 
-	if isPatternValid, invalidPattern := (isPatternValid(config.LogGroupName)); !isPatternValid {
+	if isPatternValid, invalidPattern := isPatternValid(config.LogGroupName); !isPatternValid {
 		return errors.New("'log_group_name' has an invalid pattern between curly brackets: " + invalidPattern)
 	}
-	if isPatternValid, invalidPattern := (isPatternValid(config.LogStreamName)); !isPatternValid {
+	if isPatternValid, invalidPattern := isPatternValid(config.LogStreamName); !isPatternValid {
 		return errors.New("'log_stream_name'  has an invalid pattern between curly brackets: " + invalidPattern)
 	}
 
@@ -80,6 +85,16 @@ func (config *Config) Validate() error {
 	if retErr := cwlogs.ValidateRetentionValue(config.LogRetention); retErr != nil {
 		return retErr
 	}
+
+	if config.MaxEventPayloadBytes != 0 {
+		if config.MaxEventPayloadBytes < cwlogs.MinAllowedEventPayloadBytes {
+			return errors.New("'max_event_payload_bytes' is too small to fit the per-event header and truncation suffix")
+		}
+		if config.MaxEventPayloadBytes > cwlogs.MaxAllowedEventPayloadBytes {
+			return errors.New("'max_event_payload_bytes' exceeds the CloudWatch Logs per-event API limit (1 MiB)")
+		}
+	}
+
 	return cwlogs.ValidateTagsInput(config.Tags)
 }
 

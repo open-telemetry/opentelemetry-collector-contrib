@@ -127,12 +127,12 @@ body:
       - extension/observer/ecsobserver
       - extension/observer/hostobserver
       - extension/observer/k8sobserver
-      - extension/observer/kafkatopicsobserver
       - extension/oidcauth
       - extension/opamp
       - extension/opampcustommessages
       - extension/pprof
       - extension/remotetap
+      - extension/sdnotify
       - extension/sigv4auth
       - extension/solarwindsapmsettings
       - extension/storage
@@ -179,6 +179,7 @@ body:
       - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/sampling
+      - pkg/semconvtest
       - pkg/stanza
       - pkg/stanza/fileconsumer
       - pkg/stanza/operator/input/journald
@@ -199,6 +200,7 @@ body:
       - pkg/winperfcounters
       - pkg/xk8stest
       - pkg/xstreamencoding
+      - processor/adaptivetailsampling
       - processor/attributes
       - processor/awsecsattributes
       - processor/cardinalityguardian
@@ -207,7 +209,6 @@ body:
       - processor/deltatocumulative
       - processor/deltatorate
       - processor/drain
-      - processor/dynamicsampling
       - processor/filter
       - processor/genainormalizer
       - processor/geoip
@@ -242,6 +243,7 @@ body:
       - processor/resourcedetection/internal/upcloud
       - processor/resourcedetection/internal/vultr
       - processor/schema
+      - processor/signing
       - processor/span
       - processor/spanpruning
       - processor/sumologic

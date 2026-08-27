@@ -129,8 +129,8 @@ func TestLoadConfig(t *testing.T) {
 		expected.AddrConfig.Endpoint = "localhost:5432"
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
-		expected.TopNQuery = 1234
-		expected.QueryPlanCacheTTL = time.Second * 123
+		expected.TopQueryCollection.TopNQuery = 1234
+		expected.TopQueryCollection.QueryPlanCacheTTL = time.Second * 123
 		require.Equal(t, expected, cfg)
 	})
 
@@ -148,7 +148,7 @@ func TestLoadConfig(t *testing.T) {
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.ConnectionPool = ConnectionPool{
 			MaxIdleTime: ptr(30 * time.Second),
-			MaxIdle:     ptr(5),
+			MaxIdle:     new(5),
 		}
 
 		require.Equal(t, expected, cfg)
@@ -181,8 +181,8 @@ func TestLoadConfig(t *testing.T) {
 		expected.ConnectionPool = ConnectionPool{
 			MaxIdleTime: ptr(30 * time.Second),
 			MaxLifetime: ptr(time.Minute),
-			MaxIdle:     ptr(5),
-			MaxOpen:     ptr(10),
+			MaxIdle:     new(5),
+			MaxOpen:     new(10),
 		}
 
 		require.Equal(t, expected, cfg)
@@ -190,5 +190,5 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func ptr[T any](value T) *T {
-	return &value
+	return new(value)
 }

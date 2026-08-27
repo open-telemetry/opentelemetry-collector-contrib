@@ -105,6 +105,38 @@ GRANT SELECT ON DBA_TABLESPACE_USAGE_METRICS TO <username>;
 GRANT SELECT ON V_$SGAINFO TO <username>;
 ```
 
+### ASM metrics
+
+Grants required for ASM metrics.
+
+```sql
+GRANT SELECT ON V_$ASM_DISKGROUP_STAT TO <username>;
+GRANT SELECT ON V_$ASM_DISK_STAT TO <username>;
+```
+
+### Per-PDB metrics (CDB multitenant deployments)
+
+When connected to a CDB root (Oracle 12c+), the receiver can collect per-PDB metrics
+by opting in to the `oracle.db.pdb` attribute. The monitoring user needs SELECT on
+these views (container-wide):
+
+```sql
+GRANT SELECT ON V_$CON_SYSSTAT TO <username> CONTAINER=ALL;
+GRANT SELECT ON V_$CON_SYSMETRIC TO <username> CONTAINER=ALL;
+GRANT SELECT ON V_$CONTAINERS TO <username> CONTAINER=ALL;
+GRANT SELECT ON CDB_TABLESPACE_USAGE_METRICS TO <username> CONTAINER=ALL;
+GRANT SELECT ON CDB_TABLESPACES TO <username> CONTAINER=ALL;
+GRANT SELECT ON CDB_DATA_FILES TO <username> CONTAINER=ALL;  -- only needed for oracledb.tablespace.limit
+```
+
+Users who already hold `SELECT_CATALOG_ROLE` (commonly granted to monitoring
+accounts) inherit SELECT on these views and don't need the explicit grants above.
+
+If the required access isn't present, the receiver detects this at startup and
+falls back to the single-container query set, emitting instance-wide metrics
+just as it did before per-PDB support was added. Existing CDB deployments
+upgrading without adding new grants continue to work unchanged.
+
 ### Events collection
 
 The following grants are required for event collection. All three event types

@@ -23,8 +23,8 @@ func TestMetricBatcher(t *testing.T) {
 				Series: []datadogV1.Series{
 					{
 						Metric: "TestCount1",
-						Host:   strPtr("Host1"),
-						Type:   strPtr(TypeCount),
+						Host:   new("Host1"),
+						Type:   new(TypeCount),
 						Tags:   []string{"env:tag1", "service:test1", "version:tag1"},
 						Points: testPointsToDatadogPoints([]testPoint{
 							{
@@ -34,8 +34,8 @@ func TestMetricBatcher(t *testing.T) {
 					},
 					{
 						Metric: "TestCount1",
-						Host:   strPtr("Host2"),
-						Type:   strPtr(TypeCount),
+						Host:   new("Host2"),
+						Type:   new(TypeCount),
 						Tags:   []string{"env:tag1", "service:test1", "version:tag1"},
 						Points: testPointsToDatadogPoints([]testPoint{
 							{
@@ -74,8 +74,8 @@ func TestMetricBatcher(t *testing.T) {
 				Series: []datadogV1.Series{
 					{
 						Metric: "TestCount1",
-						Host:   strPtr("Host1"),
-						Type:   strPtr(TypeCount),
+						Host:   new("Host1"),
+						Type:   new(TypeCount),
 						Tags:   []string{"env:tag1", "service:test1", "version:tag1"},
 						Points: testPointsToDatadogPoints([]testPoint{
 							{
@@ -85,8 +85,8 @@ func TestMetricBatcher(t *testing.T) {
 					},
 					{
 						Metric: "TestCount2",
-						Host:   strPtr("Host1"),
-						Type:   strPtr(TypeCount),
+						Host:   new("Host1"),
+						Type:   new(TypeCount),
 						Tags:   []string{"env:tag1", "service:test1", "version:tag1"},
 						Points: testPointsToDatadogPoints([]testPoint{
 							{
@@ -120,8 +120,8 @@ func TestMetricBatcher(t *testing.T) {
 				Series: []datadogV1.Series{
 					{
 						Metric: "TestCount1",
-						Host:   strPtr("Host1"),
-						Type:   strPtr(TypeCount),
+						Host:   new("Host1"),
+						Type:   new(TypeCount),
 						Tags:   []string{"env:dev", "version:tag1"},
 						Points: testPointsToDatadogPoints([]testPoint{
 							{
@@ -131,8 +131,8 @@ func TestMetricBatcher(t *testing.T) {
 					},
 					{
 						Metric: "TestCount1",
-						Host:   strPtr("Host1"),
-						Type:   strPtr(TypeCount),
+						Host:   new("Host1"),
+						Type:   new(TypeCount),
 						Tags:   []string{"env:prod", "version:tag1"},
 						Points: testPointsToDatadogPoints([]testPoint{
 							{
@@ -174,8 +174,8 @@ func TestMetricBatcher(t *testing.T) {
 				Series: []datadogV1.Series{
 					{
 						Metric: "TestMetric",
-						Host:   strPtr("Host1"),
-						Type:   strPtr(TypeCount),
+						Host:   new("Host1"),
+						Type:   new(TypeCount),
 						Tags:   []string{"env:dev", "version:tag1"},
 						Points: testPointsToDatadogPoints([]testPoint{
 							{
@@ -185,8 +185,8 @@ func TestMetricBatcher(t *testing.T) {
 					},
 					{
 						Metric: "TestMetric",
-						Host:   strPtr("Host1"),
-						Type:   strPtr(TypeGauge),
+						Host:   new("Host1"),
+						Type:   new(TypeGauge),
 						Tags:   []string{"env:dev", "version:tag1"},
 						Points: testPointsToDatadogPoints([]testPoint{
 							{
@@ -222,8 +222,8 @@ func TestMetricBatcher(t *testing.T) {
 				Series: []datadogV1.Series{
 					{
 						Metric: "TestMetric",
-						Host:   strPtr("Host1"),
-						Type:   strPtr(TypeCount),
+						Host:   new("Host1"),
+						Type:   new(TypeCount),
 						Tags:   []string{"env:dev", "version:tag1"},
 						Points: testPointsToDatadogPoints([]testPoint{
 							{
@@ -233,8 +233,8 @@ func TestMetricBatcher(t *testing.T) {
 					},
 					{
 						Metric: "TestMetric",
-						Host:   strPtr("Host1"),
-						Type:   strPtr(TypeCount),
+						Host:   new("Host1"),
+						Type:   new(TypeCount),
 						Tags:   []string{"env:dev", "version:tag1"},
 						Points: testPointsToDatadogPoints([]testPoint{
 							{

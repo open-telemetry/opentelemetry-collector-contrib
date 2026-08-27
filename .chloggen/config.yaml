@@ -37,8 +37,8 @@ components:
     - exporter/awss3
     - exporter/awsxray
     - exporter/azure_blob
+    - exporter/azure_monitor
     - exporter/azuredataexplorer
-    - exporter/azuremonitor
     - exporter/bmc_helix
     - exporter/cassandra
     - exporter/clickhouse
@@ -108,7 +108,6 @@ components:
     - extension/json_log_encoding
     - extension/k8s_leader_elector
     - extension/k8s_observer
-    - extension/kafkatopics_observer
     - extension/mcp
     - extension/oauth2client
     - extension/observer
@@ -120,6 +119,7 @@ components:
     - extension/pprof
     - extension/redis_storage
     - extension/remotetap
+    - extension/sd_notify
     - extension/sigv4auth
     - extension/skywalking_encoding
     - extension/solarwindsapmsettings
@@ -169,6 +169,7 @@ components:
     - pkg/prometheus
     - pkg/resourcetotelemetry
     - pkg/sampling
+    - pkg/semconvtest
     - pkg/skywalking
     - pkg/stanza
     - pkg/stanza/operator/input/journald
@@ -185,6 +186,7 @@ components:
     - pkg/xk8stest
     - pkg/xstreamencoding
     - pkg/zipkin
+    - processor/adaptive_tail_sampling
     - processor/akamaidetector
     - processor/alibabaecsdetector
     - processor/attributes
@@ -197,7 +199,6 @@ components:
     - processor/delta_to_rate
     - processor/digitaloceandetector
     - processor/drain
-    - processor/dynamic_sampling
     - processor/dynatracedetector
     - processor/filter
     - processor/gen_ai_normalizer
@@ -225,6 +226,7 @@ components:
     - processor/resource_detection
     - processor/scalewaydetector
     - processor/schema
+    - processor/signing
     - processor/span
     - processor/span_pruning
     - processor/sumologic
@@ -283,7 +285,7 @@ components:
     - receiver/host_metrics
     - receiver/http_check
     - receiver/huaweicloudcesreceiver
-    - receiver/icmpcheckreceiver
+    - receiver/icmp_check
     - receiver/iis
     - receiver/influxdb
     - receiver/jaeger
@@ -332,7 +334,7 @@ components:
     - receiver/solace
     - receiver/splunk_enterprise
     - receiver/splunk_hec
-    - receiver/sqlquery
+    - receiver/sql_query
     - receiver/sqlserver
     - receiver/ssh_check
     - receiver/statsd
@@ -348,8 +350,8 @@ components:
     - receiver/wavefront
     - receiver/webhook_event
     - receiver/windows_event_log
+    - receiver/windows_perf_counters
     - receiver/windows_service
-    - receiver/windowsperfcounters
     - receiver/yang_grpc
     - receiver/zipkin
     - receiver/zookeeper
