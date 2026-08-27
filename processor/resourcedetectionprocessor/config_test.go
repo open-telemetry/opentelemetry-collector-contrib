@@ -19,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/appservice"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
@@ -54,6 +55,11 @@ func TestLoadConfig(t *testing.T) {
 		ResourceAttributes: system.CreateDefaultConfig().ResourceAttributes,
 	}
 
+	azureAppServiceConfig := detectorCreateDefaultConfig()
+	azureAppServiceResourceAttributes := appservice.CreateDefaultConfig()
+	azureAppServiceResourceAttributes.ResourceAttributes.AzureAppServiceInstanceID.Enabled = false
+	azureAppServiceConfig.AzureAppServiceConfig = azureAppServiceResourceAttributes
+
 	resourceAttributesConfig := detectorCreateDefaultConfig()
 	ec2ResourceAttributesConfig := ec2.CreateDefaultConfig()
 	ec2ResourceAttributesConfig.ResourceAttributes.HostName.Enabled = false
@@ -84,6 +90,16 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Detectors:      []string{"openshift"},
 				DetectorConfig: openshiftConfig,
+				ClientConfig:   cfg,
+				Override:       false,
+				Retry:          defaultRetryConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "azureappservice"),
+			expected: &Config{
+				Detectors:      []string{"env", "azureappservice"},
+				DetectorConfig: azureAppServiceConfig,
 				ClientConfig:   cfg,
 				Override:       false,
 				Retry:          defaultRetryConfig(),
@@ -316,6 +332,7 @@ func TestGetConfigFromType_AllDetectors(t *testing.T) {
 		{"ElasticBeanstalk", "elastic_beanstalk"},
 		{"Azure", "azure"},
 		{"AKS", "aks"},
+		{"AzureAppService", "azureappservice"},
 		{"AzureContainerApps", "azurecontainerapps"},
 		{"Consul", "consul"},
 		{"DigitalOcean", "digitalocean"},

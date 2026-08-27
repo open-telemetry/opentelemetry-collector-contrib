@@ -301,8 +301,7 @@ func (vc *vcenterClient) VAppInventoryListObjects(
 			continue
 		}
 
-		var notFoundErr *find.NotFoundError
-		if !errors.As(err, &notFoundErr) {
+		if _, ok := errors.AsType[*find.NotFoundError](err); !ok {
 			return nil, fmt.Errorf("unable to retrieve vApps with InventoryLists for datacenter %s: %w", dc.InventoryPath, err)
 		}
 	}
