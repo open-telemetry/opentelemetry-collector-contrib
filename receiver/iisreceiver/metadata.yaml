@@ -15,7 +15,8 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [ishleenk17, Mrod1598, pjanotti]
+    active: [ishleenk17, pjanotti]
+    emeritus: [Mrod1598]
     seeking_new: true
   unsupported_platforms: [linux, darwin, (windows && arm64)]
 
