@@ -229,6 +229,53 @@ func TestNHCBUnrepresentablePopulationIsDropped(t *testing.T) {
 	assert.Equal(t, 0, dps.Len(), "a population that cannot be represented is not published")
 }
 
+func TestNHCBNegativeBucketPopulationIsDropped(t *testing.T) {
+	// Deltas are cumulative, so a run of them can go below zero. A bucket holds a count of
+	// observations, which cannot, and the conversion to uint64 would turn it into a very large
+	// one. This PR derives the data point count from the buckets, so it would land there too.
+	for _, tc := range []struct {
+		name   string
+		deltas []int64
+	}{
+		{name: "first delta below zero", deltas: []int64{-1, 0}},
+		{name: "running count falls below zero", deltas: []int64{1, -5}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Histograms: []writev2.Histogram{{
+							Count:          &writev2.Histogram_CountInt{CountInt: 1},
+							Sum:            1,
+							Timestamp:      1,
+							Schema:         -53,
+							CustomValues:   []float64{1.0},
+							PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+							PositiveDeltas: tc.deltas,
+						}},
+					},
+				},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, 0, stats.Histograms)
+
+			dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+				Histogram().DataPoints()
+			assert.Equal(t, 0, dps.Len(), "a negative bucket population is not published")
+		})
+	}
+}
+
 func TestNHCBWithoutBoundsIsKept(t *testing.T) {
 	// Bounds sit between buckets, so a histogram with none of them still has the bucket above the
 	// last one. Prometheus produces that shape for a classic histogram whose only bucket was +Inf.
