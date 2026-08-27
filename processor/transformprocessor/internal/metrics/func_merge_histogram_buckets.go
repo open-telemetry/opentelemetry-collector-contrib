@@ -47,7 +47,7 @@ func mergeHistogramBuckets(targetValue ottl.FloatLikeGetter[*ottldatapoint.Trans
 
 	var literalTarget *float64
 	var literalMaxBuckets *int64
-	if target, found, isLiteral := ottl.GetLikeLiteralValue(targetValue); isLiteral {
+	if target, found, isLiteral := ottl.TryGetLiteralValue(targetValue); isLiteral {
 		if !found {
 			return nil, errors.New("target_value must not be nil")
 		}

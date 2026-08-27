@@ -35,7 +35,7 @@ func newIDExprFunc[K any, R idByteArray](funcName string, target ottl.ByteSliceL
 	idHexLen := idLen * 2
 
 	// Check if target is a literal getter, just grab the raw bytes if so
-	if b, _, isLiteral := ottl.GetLikeLiteralValue(target); isLiteral {
+	if b, _, isLiteral := ottl.TryGetLiteralValue(target); isLiteral {
 		result, err := bytesToID(funcName, b, idLen, idHexLen, hexDecoder)
 		if err != nil {
 			return nil, err

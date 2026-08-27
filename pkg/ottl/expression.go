@@ -803,7 +803,7 @@ func newStandardStringLikeGetter[K any](getter Getter[K]) (StringLikeGetter[K], 
 		if err != nil {
 			return nil, err
 		}
-		return newLikeLiteral[K, string](val, ok), nil
+		return newOptionalLiteral[K, string](val, ok), nil
 	}
 	return g, nil
 }
@@ -869,7 +869,7 @@ func newStandardFloatLikeGetter[K any](getter Getter[K]) (FloatLikeGetter[K], er
 		if err != nil {
 			return nil, err
 		}
-		return newLikeLiteral[K, float64](val, ok), nil
+		return newOptionalLiteral[K, float64](val, ok), nil
 	}
 	return g, nil
 }
@@ -948,7 +948,7 @@ func newStandardIntLikeGetter[K any](getter Getter[K]) (IntLikeGetter[K], error)
 		if err != nil {
 			return nil, err
 		}
-		return newLikeLiteral[K, int64](val, ok), nil
+		return newOptionalLiteral[K, int64](val, ok), nil
 	}
 	return g, nil
 }
@@ -1027,7 +1027,7 @@ func newStandardByteSliceLikeGetter[K any](getter Getter[K]) (ByteSliceLikeGette
 		if err != nil {
 			return nil, err
 		}
-		return newLikeLiteral[K, []byte](val, ok), nil
+		return newOptionalLiteral[K, []byte](val, ok), nil
 	}
 	return g, nil
 }
@@ -1117,7 +1117,7 @@ func newStandardBoolLikeGetter[K any](getter Getter[K]) (BoolLikeGetter[K], erro
 		if err != nil {
 			return nil, err
 		}
-		return newLikeLiteral[K, bool](val, ok), nil
+		return newOptionalLiteral[K, bool](val, ok), nil
 	}
 	return g, nil
 }
