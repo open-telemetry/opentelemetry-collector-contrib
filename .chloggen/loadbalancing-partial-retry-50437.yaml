@@ -1,0 +1,12 @@
+change_type: enhancement
+component: exporter/load_balancing
+note: Return partial-failure errors so exporter-level retries resend only data for retryably failed endpoints.
+issues: [50437]
+subtext: |
+  Partial retry applies only when every failed child send is retryable. Any permanent child
+  failure preserves the existing whole-request error behaviour. Partial retry requires
+  retry_on_failure at the load-balancing exporter level and
+  protocol.otlp.sending_queue.enabled: false. Child retries run before exporter-level retry.
+  If exporter-level retry exhausts, parent failed-item metrics still count the original
+  request, including telemetry delivered during earlier attempts.
+change_logs: [user]

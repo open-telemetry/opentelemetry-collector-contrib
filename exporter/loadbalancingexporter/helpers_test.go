@@ -4,9 +4,11 @@
 package loadbalancingexporter
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -169,4 +171,20 @@ func BenchmarkMergeLogs_X500(b *testing.B) {
 
 func BenchmarkMergeLogs_X1000(b *testing.B) {
 	benchMergeLogs(b, 1000)
+}
+
+func TestBackendFailures(t *testing.T) {
+	retryableErr := errors.New("retryable")
+	permanentErr := consumererror.NewPermanent(errors.New("permanent"))
+
+	var failures backendFailures
+	require.True(t, failures.add(retryableErr))
+	require.False(t, failures.hasPermanent)
+	require.ErrorIs(t, failures.err, retryableErr)
+
+	require.False(t, failures.add(permanentErr))
+	require.True(t, failures.hasPermanent)
+	require.ErrorIs(t, failures.err, retryableErr)
+	require.ErrorIs(t, failures.err, permanentErr)
+	require.True(t, consumererror.IsPermanent(failures.err))
 }

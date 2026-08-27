@@ -20,7 +20,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -35,6 +37,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestNewLogsExporter(t *testing.T) {
@@ -282,6 +285,300 @@ func TestConsumeLogsEmitsOnlyParentExporterMetrics(t *testing.T) {
 	require.Len(t, childSettings, 1)
 	assert.IsType(t, metricnoop.NewMeterProvider(), childSettings[0].MeterProvider)
 	assert.IsType(t, tracenoop.NewTracerProvider(), childSettings[0].TracerProvider)
+}
+
+// logsRoutedToBothEndpoints finds one service name that the given ring routes to each of
+// endpointA and endpointB, so a test can control which backend a resource lands on.
+func logsRoutedToBothEndpoints(t *testing.T, ring *hashRing, endpointA, endpointB string) (svcA, svcB string) {
+	for i := range 1000 {
+		name := fmt.Sprintf("svc-%d", i)
+		switch ring.endpointFor([]byte(name)) {
+		case endpointA:
+			if svcA == "" {
+				svcA = name
+			}
+		case endpointB:
+			if svcB == "" {
+				svcB = name
+			}
+		}
+		if svcA != "" && svcB != "" {
+			break
+		}
+	}
+	require.NotEmpty(t, svcA, "no service name routes to %q", endpointA)
+	require.NotEmpty(t, svcB, "no service name routes to %q", endpointB)
+	return svcA, svcB
+}
+
+// mutateLogRecordBodies overwrites the body of every log record in ld. Used after
+// extracting data from a consumererror to prove it is a deep copy: mutating it must never
+// be observable through the caller's original input.
+func mutateLogRecordBodies(ld plog.Logs, value string) {
+	rls := ld.ResourceLogs()
+	for i := range rls.Len() {
+		sls := rls.At(i).ScopeLogs()
+		for j := range sls.Len() {
+			records := sls.At(j).LogRecords()
+			for k := range records.Len() {
+				records.At(k).Body().SetStr(value)
+			}
+		}
+	}
+}
+
+// TestConsumeLogs_PartialFailureReturnsFailedSubset verifies that when one of two backends
+// fails, ConsumeLogs returns a consumererror.Logs embedding only the resource logs destined
+// for the failed backend, and leaves the caller's input logs untouched (#50437).
+func TestConsumeLogs_PartialFailureReturnsFailedSubset(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	badErr := errors.New("endpoint-bad: unreachable")
+	var goodCalls, badCalls int
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		bad := endpoint == endpointWithPort("endpoint-bad")
+		return newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
+			if bad {
+				badCalls++
+				return badErr
+			}
+			goodCalls++
+			return nil
+		}), nil
+	}
+
+	endpoints := []string{"endpoint-good", "endpoint-bad"}
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
+		},
+		RoutingKey: "service",
+	}
+
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newLogsExporter(ts, cfg)
+	require.NoError(t, err)
+	require.Equal(t, svcRouting, p.routingKey)
+
+	lb.addMissingExporters(t.Context(), endpoints)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	goodSvc, badSvc := logsRoutedToBothEndpoints(t, lb.ring, "endpoint-good", "endpoint-bad")
+
+	ld := plog.NewLogs()
+	goodRL := ld.ResourceLogs().AppendEmpty()
+	goodRL.Resource().Attributes().PutStr("service.name", goodSvc)
+	goodRL.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("good log")
+	badRL := ld.ResourceLogs().AppendEmpty()
+	badRL.Resource().Attributes().PutStr("service.name", badSvc)
+	badRL.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("bad log")
+
+	originalCopy := plog.NewLogs()
+	ld.CopyTo(originalCopy)
+
+	res := p.ConsumeLogs(t.Context(), ld)
+
+	require.Error(t, res)
+	var partial consumererror.Logs
+	require.True(t, errors.As(res, &partial), "error must be a consumererror.Logs")
+	failed := partial.Data()
+
+	expectedFailed := plog.NewLogs()
+	failedRL := expectedFailed.ResourceLogs().AppendEmpty()
+	failedRL.Resource().Attributes().PutStr("service.name", badSvc)
+	failedRL.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("bad log")
+	require.NoError(t, plogtest.CompareLogs(expectedFailed, failed))
+
+	assert.Equal(t, 1, goodCalls)
+	assert.Equal(t, 1, badCalls)
+
+	// Mutating the extracted failed data must not be observable on the original input:
+	// proves the embedded data is a deep copy, not an alias into ld's buffers.
+	mutateLogRecordBodies(failed, "mutated")
+
+	// The original input must be left untouched.
+	require.NoError(t, plogtest.CompareLogs(originalCopy, ld))
+}
+
+func TestConsumeLogs_MixedFailurePreservesWholeRequestError(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	retryableErr := errors.New("endpoint-retryable: unavailable")
+	permanentErr := consumererror.NewPermanent(errors.New("endpoint-permanent: bad data"))
+	var goodCalls, retryableCalls, permanentCalls int
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
+			switch endpoint {
+			case endpointWithPort("endpoint-retryable"):
+				retryableCalls++
+				return retryableErr
+			case endpointWithPort("endpoint-permanent"):
+				permanentCalls++
+				return permanentErr
+			default:
+				goodCalls++
+				return nil
+			}
+		}), nil
+	}
+
+	endpoints := []string{"endpoint-good", "endpoint-retryable", "endpoint-permanent"}
+	cfg := &Config{
+		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
+		RoutingKey: svcRoutingStr,
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newLogsExporter(ts, cfg)
+	require.NoError(t, err)
+
+	lb.addMissingExporters(t.Context(), endpoints)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	goodSvc, permanentSvc := logsRoutedToBothEndpoints(t, lb.ring, endpoints[0], endpoints[2])
+	retryableSvc, _ := logsRoutedToBothEndpoints(t, lb.ring, endpoints[1], endpoints[2])
+	ld := plog.NewLogs()
+	goodRL := ld.ResourceLogs().AppendEmpty()
+	goodRL.Resource().Attributes().PutStr("service.name", goodSvc)
+	goodRL.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("good log")
+	retryableRL := ld.ResourceLogs().AppendEmpty()
+	retryableRL.Resource().Attributes().PutStr("service.name", retryableSvc)
+	retryableRL.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("retryable log")
+	permanentRL := ld.ResourceLogs().AppendEmpty()
+	permanentRL.Resource().Attributes().PutStr("service.name", permanentSvc)
+	permanentRL.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("permanent log")
+
+	res := p.ConsumeLogs(t.Context(), ld)
+
+	require.Error(t, res)
+	assert.True(t, consumererror.IsPermanent(res))
+	assert.ErrorIs(t, res, retryableErr)
+	assert.ErrorIs(t, res, permanentErr)
+	var partial consumererror.Logs
+	assert.False(t, errors.As(res, &partial))
+	assert.Equal(t, 1, goodCalls)
+	assert.Equal(t, 1, retryableCalls)
+	assert.Equal(t, 1, permanentCalls)
+}
+
+// The retry sender resends only the failed subset. ObsReportSender records an exhausted
+// retry with the original request count, including records delivered by earlier attempts.
+func TestConsumeLogs_RetryRecordsOriginalItemCountNotResidual(t *testing.T) {
+	ctx := t.Context()
+	shutdownCtx := context.Background() //nolint:usetesting // Context must outlive test for cleanup
+	telemetry := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, telemetry.Shutdown(shutdownCtx))
+	})
+
+	parentParams := exportertest.NewNopSettings(metadata.Type)
+	parentParams.TelemetrySettings = telemetry.NewTelemetrySettings()
+
+	endpoints := []string{"endpoint-good", "endpoint-bad"}
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
+		},
+		RoutingKey: "service",
+		BackOffConfig: configretry.BackOffConfig{
+			Enabled:             true,
+			InitialInterval:     time.Millisecond,
+			RandomizationFactor: 0,
+			Multiplier:          1,
+			MaxInterval:         time.Millisecond,
+			MaxElapsedTime:      5 * time.Millisecond,
+		},
+	}
+
+	logsExporter, err := newLogsExporter(parentParams, cfg)
+	require.NoError(t, err)
+	require.Equal(t, svcRouting, logsExporter.routingKey)
+
+	badErr := errors.New("endpoint-bad: unreachable")
+	var goodCalls, badCalls atomic.Int64
+	logsExporter.loadBalancer.componentFactory = func(_ context.Context, endpoint string) (component.Component, error) {
+		bad := endpoint == endpointWithPort("endpoint-bad")
+		return newMockLogsExporter(func(_ context.Context, _ plog.Logs) error {
+			if bad {
+				badCalls.Add(1)
+				return badErr
+			}
+			goodCalls.Add(1)
+			return nil
+		}), nil
+	}
+
+	wrapped, err := exporterhelper.NewLogs(
+		ctx,
+		parentParams,
+		cfg,
+		logsExporter.ConsumeLogs,
+		exporterhelper.WithStart(logsExporter.Start),
+		exporterhelper.WithShutdown(logsExporter.Shutdown),
+		exporterhelper.WithCapabilities(logsExporter.Capabilities()),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, wrapped.Start(ctx, componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, wrapped.Shutdown(ctx))
+	})
+
+	goodSvc, badSvc := logsRoutedToBothEndpoints(t, logsExporter.loadBalancer.ring, "endpoint-good", "endpoint-bad")
+
+	ld := plog.NewLogs()
+	goodRL := ld.ResourceLogs().AppendEmpty()
+	goodRL.Resource().Attributes().PutStr("service.name", goodSvc)
+	goodRL.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("good log")
+	badRL := ld.ResourceLogs().AppendEmpty()
+	badRL.Resource().Attributes().PutStr("service.name", badSvc)
+	badRL.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("bad log")
+
+	require.Error(t, wrapped.ConsumeLogs(ctx, ld))
+
+	// The good record is sent exactly once: the retry loop only ever resends the residual
+	// failed subset, never the record that already succeeded.
+	assert.Equal(t, int64(1), goodCalls.Load())
+	assert.GreaterOrEqual(t, badCalls.Load(), int64(1))
+
+	failedMetric, err := telemetry.GetMetric("otelcol_exporter_send_failed_log_records")
+	require.NoError(t, err)
+	sum, ok := failedMetric.Data.(metricdata.Sum[int64])
+	require.True(t, ok)
+	var totalFailed int64
+	for _, dp := range sum.DataPoints {
+		totalFailed += dp.Value
+	}
+	// Both records are counted as failed, including the one that was actually delivered,
+	// because the metric is recorded against the original 2-record request, not the 1-record
+	// residual that was still failing when retries ran out.
+	assert.Equal(t, int64(2), totalFailed)
 }
 
 func generateSingleLogRecord() plog.Logs {

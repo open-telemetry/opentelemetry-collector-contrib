@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -275,6 +276,285 @@ func TestConsumeTracesByID_MultipleTraceIDs(t *testing.T) {
 		{3}: 1,
 		{4}: 1,
 	}, spansPerTID)
+}
+
+// tracesRoutedToBothEndpoints finds one trace ID that the given ring routes to each of
+// endpointA and endpointB, so a test can control which backend a span lands on.
+func tracesRoutedToBothEndpoints(t *testing.T, ring *hashRing, endpointA, endpointB string) (tidA, tidB pcommon.TraceID) {
+	for i := range 256 {
+		tid := pcommon.TraceID{byte(i + 1)}
+		switch ring.endpointFor(tid[:]) {
+		case endpointA:
+			if tidA == (pcommon.TraceID{}) {
+				tidA = tid
+			}
+		case endpointB:
+			if tidB == (pcommon.TraceID{}) {
+				tidB = tid
+			}
+		}
+	}
+	require.NotEqual(t, pcommon.TraceID{}, tidA, "no trace ID routes to %q", endpointA)
+	require.NotEqual(t, pcommon.TraceID{}, tidB, "no trace ID routes to %q", endpointB)
+	return tidA, tidB
+}
+
+func routingValuesForBothEndpoints(
+	t *testing.T,
+	ring *hashRing,
+	endpointA,
+	endpointB string,
+	encode func(string) []byte,
+) (valueA, valueB string) {
+	for i := range 1000 {
+		value := fmt.Sprintf("route-%d", i)
+		switch ring.endpointFor(encode(value)) {
+		case endpointA:
+			if valueA == "" {
+				valueA = value
+			}
+		case endpointB:
+			if valueB == "" {
+				valueB = value
+			}
+		}
+		if valueA != "" && valueB != "" {
+			break
+		}
+	}
+	require.NotEmpty(t, valueA, "no routing value maps to %q", endpointA)
+	require.NotEmpty(t, valueB, "no routing value maps to %q", endpointB)
+	return valueA, valueB
+}
+
+// spansByTraceID collects every span in td keyed by trace ID, along with its "which"
+// attribute, for content comparisons that don't depend on resource/scope nesting shape.
+func spansByTraceID(td ptrace.Traces) map[pcommon.TraceID]string {
+	result := map[pcommon.TraceID]string{}
+	rss := td.ResourceSpans()
+	for i := range rss.Len() {
+		sss := rss.At(i).ScopeSpans()
+		for j := range sss.Len() {
+			spans := sss.At(j).Spans()
+			for k := range spans.Len() {
+				span := spans.At(k)
+				which, _ := span.Attributes().Get("which")
+				result[span.TraceID()] = which.Str()
+			}
+		}
+	}
+	return result
+}
+
+// mutateSpansWhichAttr overwrites the "which" attribute on every span in td. Used after
+// extracting data from a consumererror to prove it is a deep copy: mutating it must never
+// be observable through the caller's original input.
+func mutateSpansWhichAttr(td ptrace.Traces, value string) {
+	rss := td.ResourceSpans()
+	for i := range rss.Len() {
+		sss := rss.At(i).ScopeSpans()
+		for j := range sss.Len() {
+			spans := sss.At(j).Spans()
+			for k := range spans.Len() {
+				spans.At(k).Attributes().PutStr("which", value)
+			}
+		}
+	}
+}
+
+func TestConsumeTraces_PartialFailureReturnsFailedSubset(t *testing.T) {
+	const (
+		goodEndpoint = "endpoint-good"
+		badEndpoint  = "endpoint-bad"
+	)
+	endpoints := []string{goodEndpoint, badEndpoint}
+
+	makeTraces := func(
+		goodTID,
+		badTID pcommon.TraceID,
+		goodRoute,
+		badRoute string,
+		setRoute func(ptrace.ResourceSpans, string),
+	) ptrace.Traces {
+		td := ptrace.NewTraces()
+		goodRS := td.ResourceSpans().AppendEmpty()
+		goodRS.Resource().Attributes().PutStr("res", "good")
+		setRoute(goodRS, goodRoute)
+		goodSpan := goodRS.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		goodSpan.SetTraceID(goodTID)
+		goodSpan.Attributes().PutStr("which", "good")
+
+		badRS := td.ResourceSpans().AppendEmpty()
+		badRS.Resource().Attributes().PutStr("res", "bad")
+		setRoute(badRS, badRoute)
+		badSpan := badRS.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		badSpan.SetTraceID(badTID)
+		badSpan.Attributes().PutStr("which", "bad")
+		return td
+	}
+
+	tests := []struct {
+		name            string
+		routingKey      string
+		routingAttrs    []string
+		expectedRouting routingKey
+		build           func(*testing.T, *hashRing) (ptrace.Traces, pcommon.TraceID, pcommon.TraceID)
+	}{
+		{
+			name:            "trace ID",
+			expectedRouting: traceIDRouting,
+			build: func(t *testing.T, ring *hashRing) (ptrace.Traces, pcommon.TraceID, pcommon.TraceID) {
+				goodTID, badTID := tracesRoutedToBothEndpoints(t, ring, goodEndpoint, badEndpoint)
+				return makeTraces(goodTID, badTID, "", "", func(ptrace.ResourceSpans, string) {}), goodTID, badTID
+			},
+		},
+		{
+			name:            "service",
+			routingKey:      svcRoutingStr,
+			expectedRouting: svcRouting,
+			build: func(t *testing.T, ring *hashRing) (ptrace.Traces, pcommon.TraceID, pcommon.TraceID) {
+				goodRoute, badRoute := routingValuesForBothEndpoints(t, ring, goodEndpoint, badEndpoint, func(value string) []byte {
+					return fmt.Appendf(nil, "service.name=%s|", value)
+				})
+				goodTID := pcommon.TraceID([16]byte{1})
+				badTID := pcommon.TraceID([16]byte{2})
+				return makeTraces(goodTID, badTID, goodRoute, badRoute, func(rs ptrace.ResourceSpans, route string) {
+					rs.Resource().Attributes().PutStr("service.name", route)
+				}), goodTID, badTID
+			},
+		},
+		{
+			name:            "attributes",
+			routingKey:      attrRoutingStr,
+			routingAttrs:    []string{"route"},
+			expectedRouting: attrRouting,
+			build: func(t *testing.T, ring *hashRing) (ptrace.Traces, pcommon.TraceID, pcommon.TraceID) {
+				goodRoute, badRoute := routingValuesForBothEndpoints(t, ring, goodEndpoint, badEndpoint, func(value string) []byte {
+					return fmt.Appendf(nil, "route=%s|", value)
+				})
+				goodTID := pcommon.TraceID([16]byte{1})
+				badTID := pcommon.TraceID([16]byte{2})
+				return makeTraces(goodTID, badTID, goodRoute, badRoute, func(rs ptrace.ResourceSpans, route string) {
+					rs.Resource().Attributes().PutStr("route", route)
+				}), goodTID, badTID
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ts, tb := getTelemetryAssets(t)
+			badErr := errors.New("endpoint-bad: unreachable")
+			var goodCalls, badCalls int
+			componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+				bad := endpoint == endpointWithPort(badEndpoint)
+				return newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
+					if bad {
+						badCalls++
+						return badErr
+					}
+					goodCalls++
+					return nil
+				}), nil
+			}
+
+			cfg := &Config{
+				Resolver:          ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
+				RoutingKey:        tc.routingKey,
+				RoutingAttributes: tc.routingAttrs,
+			}
+			lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+			require.NoError(t, err)
+
+			p, err := newTracesExporter(ts, cfg)
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedRouting, p.routingKey)
+
+			lb.addMissingExporters(t.Context(), endpoints)
+			lb.res = &mockResolver{
+				triggerCallbacks: true,
+				onResolve: func(context.Context) ([]string, error) {
+					return endpoints, nil
+				},
+			}
+			p.loadBalancer = lb
+
+			require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() {
+				require.NoError(t, p.Shutdown(t.Context()))
+			}()
+
+			td, goodTID, badTID := tc.build(t, lb.ring)
+			res := p.ConsumeTraces(t.Context(), td)
+
+			require.Error(t, res)
+			var partial consumererror.Traces
+			require.True(t, errors.As(res, &partial))
+			failed := partial.Data()
+			assert.Equal(t, 1, failed.SpanCount())
+			assert.Equal(t, map[pcommon.TraceID]string{badTID: "bad"}, spansByTraceID(failed))
+			assert.Equal(t, 1, goodCalls)
+			assert.Equal(t, 1, badCalls)
+
+			mutateSpansWhichAttr(failed, "mutated")
+			assert.Equal(t, 2, td.SpanCount())
+			assert.Equal(t, map[pcommon.TraceID]string{goodTID: "good", badTID: "bad"}, spansByTraceID(td))
+		})
+	}
+}
+
+func TestConsumeTraces_MixedFailurePreservesWholeRequestError(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	retryableErr := errors.New("endpoint-retryable: unavailable")
+	permanentErr := consumererror.NewPermanent(errors.New("endpoint-permanent: bad data"))
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		permanent := endpoint == endpointWithPort("endpoint-permanent")
+		return newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
+			if permanent {
+				return permanentErr
+			}
+			return retryableErr
+		}), nil
+	}
+
+	endpoints := []string{"endpoint-retryable", "endpoint-permanent"}
+	cfg := &Config{Resolver: ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})}}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newTracesExporter(ts, cfg)
+	require.NoError(t, err)
+
+	lb.addMissingExporters(t.Context(), endpoints)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	retryableTID, permanentTID := tracesRoutedToBothEndpoints(t, lb.ring, endpoints[0], endpoints[1])
+	td := ptrace.NewTraces()
+	retryableSpan := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	retryableSpan.SetTraceID(retryableTID)
+	permanentSpan := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	permanentSpan.SetTraceID(permanentTID)
+
+	res := p.ConsumeTraces(t.Context(), td)
+
+	require.Error(t, res)
+	assert.True(t, consumererror.IsPermanent(res))
+	assert.ErrorIs(t, res, retryableErr)
+	assert.ErrorIs(t, res, permanentErr)
+	var partial consumererror.Traces
+	assert.False(t, errors.As(res, &partial))
 }
 
 // This test validates that exporter is can concurrently change the endpoints while consuming traces.

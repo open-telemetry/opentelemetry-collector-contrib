@@ -13,12 +13,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/metric"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -141,11 +141,28 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 		}
 	}
 
-	var errs error
+	var failures backendFailures
+	var retryable []ptrace.Traces
 	for exp, td := range exporterSegregatedTraces {
-		errs = multierr.Append(errs, e.exportToBackend(ctx, exp, td))
+		err := e.exportToBackend(ctx, exp, td)
+		if err == nil {
+			continue
+		}
+		if failures.add(err) {
+			retryable = append(retryable, td)
+		}
 	}
-	return errs
+	if failures.hasPermanent {
+		return failures.err
+	}
+	if len(retryable) == 0 {
+		return nil
+	}
+	failed := ptrace.NewTraces()
+	for _, td := range retryable {
+		copyTracesInto(failed, td)
+	}
+	return consumererror.NewTraces(failures.err, failed)
 }
 
 // consumeTracesByID routes each span to the backend for its trace ID, accumulating spans
@@ -216,11 +233,28 @@ func (e *traceExporterImp) consumeTracesByID(ctx context.Context, td ptrace.Trac
 		}
 	}
 
-	var errs error
+	var failures backendFailures
+	var retryable []ptrace.Traces
 	for exp, d := range dests {
-		errs = multierr.Append(errs, e.exportToBackend(ctx, exp, d.traces))
+		err := e.exportToBackend(ctx, exp, d.traces)
+		if err == nil {
+			continue
+		}
+		if failures.add(err) {
+			retryable = append(retryable, d.traces)
+		}
 	}
-	return errs
+	if failures.hasPermanent {
+		return failures.err
+	}
+	if len(retryable) == 0 {
+		return nil
+	}
+	failed := ptrace.NewTraces()
+	for _, td := range retryable {
+		copyTracesInto(failed, td)
+	}
+	return consumererror.NewTraces(failures.err, failed)
 }
 
 // exportToBackend sends td to one backend, records per-backend telemetry, and signals the

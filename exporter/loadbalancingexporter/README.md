@@ -75,13 +75,15 @@ The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`,
                                         +------------------+          +---------------+
 ```
 
-* For all types of resolvers (`static`, `dns`, `k8s`) - if one of endpoints is unavailable - first works queue, retry and timeout settings defined for sub-exporters (under `otlp` property). Once redelivery is exhausted on sub-exporter level, and resilience options 1 are enabled - telemetry data returns to `loadbalancingexporter` itself and data redelivery happens according to exporter level queue, retry and timeout settings.
-* When using the `static` resolver, there's a risk of data loss if one of the defined endpoint targets becomes unavailable and both resiliency option 2 and resiliency option 1 (if enabled) are exhausted. This limitation stems from the nature of the `static` resolver, where endpoints are configured manually and remain fixed. In contrast, resolvers like `dns` and `k8s` automatically update the list of available endpoints, offering greater flexibility and resilience.
-* When using `k8s`, `dns`, and likely future resolvers, topology changes are eventually reflected in the `loadbalancingexporter`. The `k8s` resolver will update more quickly than `dns`, but a window of time in which the true topology doesn't match the view of the `loadbalancingexporter` remains.
-* Resiliency options 1 (`timeout`, `retry_on_failure` and `sending_queue` settings in `load_balancing` section) - are useful for highly elastic environment (like k8s), where list of resolved endpoints frequently changed due to deployments, scale-up or scale-down events. In case of permanent change of list of resolved exporters this options provide capability to re-route data into new set of healthy backends. Disabled by default.
-* Resiliency options 2 (`timeout`, `retry_on_failure` and `sending_queue` settings in `otlp` section) - are useful for temporary problems with specific backend, like network flukes. Persistent Queue is NOT supported here as all sub-exporter shares the same `sending_queue` configuration, including `storage`. Enabled by default.
+* When `protocol.otlp.sending_queue.enabled` is `false`, child retry and timeout settings handle an unavailable endpoint first. Load-balancing resilience settings handle an error after child retries finish.
+* With the `static` resolver, data can be lost when a configured endpoint remains unavailable after both resilience layers are exhausted. The `dns` and `k8s` resolvers can update their endpoint lists, but topology changes are not immediate.
+* Load-balancing exporter resilience settings (`timeout`, `retry_on_failure`, and `sending_queue` at the `load_balancing` level) support rerouting after endpoint changes. They are disabled by default.
+* Child exporter resilience settings (`timeout`, `retry_on_failure`, and `sending_queue` under `protocol.otlp`) handle temporary backend failures. They are enabled by default. Persistent queues are not supported because all child exporters share the same queue configuration and storage identifier.
+* Partial retry requires load-balancing `retry_on_failure` and `protocol.otlp.sending_queue.enabled: false`. A child queue returns after it enqueues telemetry. The load-balancing exporter cannot receive later backend errors. Without the child queue, the exporter sends to backends synchronously and sequentially. Backend count, child retry, and timeout settings increase request latency. Child retries finish before load-balancing retry can reroute telemetry.
+* When every failed child send is retryable, load-balancing retry resends only telemetry for those failed endpoints. Any permanent child failure preserves whole-request error behaviour and prevents partial retry.
+* If partial retry exhausts, `otelcol_exporter_send_failed_*` metrics count the original request. This count includes telemetry delivered during earlier attempts.
 
-Unfortunately, data loss is still possible for any resolver type if all of the exporter's targets remains unavailable once redelivery is exhausted. Due consideration needs to be given to the exporter queue and retry configuration when running in a highly elastic environment.
+Data loss is possible for any resolver type if all exporter targets remain unavailable after redelivery is exhausted. Configure both resilience layers for the expected endpoint churn and outage duration.
 
 To avoid a single point of failure, requests can be distributed among multiple Collector instances configured with the `loadbalancingexporter`. The consistent hashing mechanism will ensure a deterministic result between instances sharing the same configuration and resolve an exact list of backend endpoints.
 
@@ -207,7 +209,7 @@ exporters:
         # except the endpoint
         timeout: 1s
         sending_queue:
-          enabled: true
+          enabled: false # required for exporter-level partial retry
     resolver:
       static:
         hostnames:
