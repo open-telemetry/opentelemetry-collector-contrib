@@ -25,8 +25,9 @@ type parsedContextStatements struct {
 }
 
 type Processor struct {
-	contexts []parsedContextStatements
-	logger   *zap.Logger
+	contexts     []parsedContextStatements
+	logger       *zap.Logger
+	sharedCaches map[common.ContextID]*pcommon.Map
 }
 
 func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, metricFunctions map[string]ottl.Factory[*ottlmetric.TransformContext], dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext], exemplarFunctions map[string]ottl.Factory[*ottlexemplar.TransformContext]) (*Processor, error) {
@@ -49,16 +50,27 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 		return nil, errors
 	}
 
+	var sharedCaches map[common.ContextID]*pcommon.Map
+	for _, c := range contexts {
+		if c.sharedCache {
+			if sharedCaches == nil {
+				sharedCaches = make(map[common.ContextID]*pcommon.Map)
+			}
+			m := pcommon.NewMap()
+			sharedCaches[c.Context()] = &m
+		}
+	}
+
 	return &Processor{
-		contexts: contexts,
-		logger:   settings.Logger,
+		contexts:     contexts,
+		logger:       settings.Logger,
+		sharedCaches: sharedCaches,
 	}, nil
 }
 
 func (p *Processor) ProcessMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
-	sharedContextCache := make(map[common.ContextID]*pcommon.Map, len(p.contexts))
 	for _, c := range p.contexts {
-		cache := common.LoadContextCache(sharedContextCache, c.Context(), c.sharedCache)
+		cache := common.LoadContextCache(p.sharedCaches, c.Context(), c.sharedCache)
 		err := c.ConsumeMetrics(ctx, md, cache)
 		if err != nil {
 			p.logger.Error("failed processing metrics", zap.Error(err))

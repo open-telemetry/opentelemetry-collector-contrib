@@ -9,16 +9,10 @@ import (
 
 // LoadContextCache retrieves or creates a context cache for the given context ID.
 // If `sharedCache` is true, it returns the cached context map if it exists,
-// or creates and stores a new one if it does not. If `sharedCache` is false, it returns nil.
+// or returns nil if it does not.
 func LoadContextCache(cache map[ContextID]*pcommon.Map, context ContextID, sharedCache bool) *pcommon.Map {
 	if !sharedCache {
 		return nil
 	}
-	v, ok := cache[context]
-	if ok {
-		return v
-	}
-	m := pcommon.NewMap()
-	cache[context] = &m
-	return &m
+	return cache[context]
 }

@@ -54,7 +54,7 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 }
 
 func (p *Processor) ProcessProfiles(ctx context.Context, ld pprofile.Profiles) (pprofile.Profiles, error) {
-	sharedContextCache := make(map[common.ContextID]*pcommon.Map, len(p.contexts))
+	sharedContextCache := map[common.ContextID]*pcommon.Map{}
 	for _, c := range p.contexts {
 		cache := common.LoadContextCache(sharedContextCache, c.Context(), c.sharedCache)
 		err := c.ConsumeProfiles(ctx, ld, cache)

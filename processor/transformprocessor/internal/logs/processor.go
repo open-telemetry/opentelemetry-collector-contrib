@@ -24,9 +24,10 @@ type parsedContextStatements struct {
 }
 
 type Processor struct {
-	contexts []parsedContextStatements
-	logger   *zap.Logger
-	flatMode bool
+	contexts     []parsedContextStatements
+	logger       *zap.Logger
+	flatMode     bool
+	sharedCaches map[common.ContextID]*pcommon.Map
 }
 
 func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, flatMode bool, settings component.TelemetrySettings, logFunctions map[string]ottl.Factory[*ottllog.TransformContext]) (*Processor, error) {
@@ -49,10 +50,22 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 		return nil, errors
 	}
 
+	var sharedCaches map[common.ContextID]*pcommon.Map
+	for _, c := range contexts {
+		if c.sharedCache {
+			if sharedCaches == nil {
+				sharedCaches = make(map[common.ContextID]*pcommon.Map)
+			}
+			m := pcommon.NewMap()
+			sharedCaches[c.Context()] = &m
+		}
+	}
+
 	return &Processor{
-		contexts: contexts,
-		logger:   settings.Logger,
-		flatMode: flatMode,
+		contexts:     contexts,
+		logger:       settings.Logger,
+		flatMode:     flatMode,
+		sharedCaches: sharedCaches,
 	}, nil
 }
 
@@ -62,9 +75,8 @@ func (p *Processor) ProcessLogs(ctx context.Context, ld plog.Logs) (plog.Logs, e
 		defer pdatautil.GroupByResourceLogs(ld.ResourceLogs())
 	}
 
-	sharedContextCache := make(map[common.ContextID]*pcommon.Map, len(p.contexts))
 	for _, c := range p.contexts {
-		cache := common.LoadContextCache(sharedContextCache, c.Context(), c.sharedCache)
+		cache := common.LoadContextCache(p.sharedCaches, c.Context(), c.sharedCache)
 		err := c.ConsumeLogs(ctx, ld, cache)
 		if err != nil {
 			p.logger.Error("failed processing logs", zap.Error(err))
