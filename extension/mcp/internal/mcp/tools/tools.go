@@ -100,8 +100,8 @@ func getCollectorVersionsTool(schemaManager *collectorschema.SchemaManager) Tool
 		Name:        "get-versions",
 		Description: "Get all supported OpenTelemetry collector versions by this tool",
 		Annotations: &mcp.ToolAnnotations{
-			DestructiveHint: boolPtr(false),
-			OpenWorldHint:   boolPtr(false),
+			DestructiveHint: new(false),
+			OpenWorldHint:   new(false),
 		},
 		InputSchema: json.RawMessage(`{"type":"object","properties":{}}`),
 	}
@@ -122,8 +122,8 @@ func getCollectorComponentsTool(schemaManager *collectorschema.SchemaManager, la
 		Name:        "components",
 		Description: "Get all OpenTelemetry collector components",
 		Annotations: &mcp.ToolAnnotations{
-			DestructiveHint: boolPtr(false),
-			OpenWorldHint:   boolPtr(false),
+			DestructiveHint: new(false),
+			OpenWorldHint:   new(false),
 		},
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"kind":{"type":"string","description":"Collector component kind: receiver, exporter, processor, connector, extension"},"version":{"type":"string","description":"The OpenTelemetry Collector version e.g. 0.138.0"}},"required":["kind"]}`),
 	}
@@ -151,8 +151,8 @@ func getCollectorReadmeTool(schemaManager *collectorschema.SchemaManager, latest
 		Name:        "readme",
 		Description: "Explain OpenTelemetry collector processor, receiver, exporter, extension functionality and use-cases",
 		Annotations: &mcp.ToolAnnotations{
-			DestructiveHint: boolPtr(false),
-			OpenWorldHint:   boolPtr(false),
+			DestructiveHint: new(false),
+			OpenWorldHint:   new(false),
 		},
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"kind":{"type":"string","description":"Collector component kind: receiver, exporter, processor, connector, extension"},"name":{"type":"string","description":"Collector component name e.g. otlp"},"version":{"type":"string","description":"The OpenTelemetry Collector version e.g. 0.138.0"}},"required":["kind","name"]}`),
 	}
@@ -184,8 +184,8 @@ func getCollectorChangelogTool(schemaManager *collectorschema.SchemaManager, lat
 		Name:        "changelog",
 		Description: "Returns OpenTelemetry collector changelog",
 		Annotations: &mcp.ToolAnnotations{
-			DestructiveHint: boolPtr(false),
-			OpenWorldHint:   boolPtr(false),
+			DestructiveHint: new(false),
+			OpenWorldHint:   new(false),
 		},
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"version":{"type":"string","description":"The OpenTelemetry Collector version e.g. 0.138.0"}}}`),
 	}
@@ -209,8 +209,8 @@ func getCollectorSchemaGetTool(schemaManager *collectorschema.SchemaManager, lat
 		Name:        "component-schema",
 		Description: "Explain OpenTelemetry collector receiver, exporter, processor, connector and extension configuration schema",
 		Annotations: &mcp.ToolAnnotations{
-			DestructiveHint: boolPtr(false),
-			OpenWorldHint:   boolPtr(false),
+			DestructiveHint: new(false),
+			OpenWorldHint:   new(false),
 		},
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"kind":{"type":"string","description":"Collector component kind: receiver, exporter, processor, connector, extension"},"name":{"type":"string","description":"Collector component name e.g. otlp"},"version":{"type":"string","description":"The OpenTelemetry Collector version e.g. 0.138.0"}},"required":["kind","name"]}`),
 	}
@@ -242,8 +242,8 @@ func getCollectorSchemaValidationTool(schemaManager *collectorschema.SchemaManag
 		Name:        "component-schema-validation",
 		Description: "Validate OpenTelemetry collector processor, receiver, exporter, extension configuration JSON",
 		Annotations: &mcp.ToolAnnotations{
-			DestructiveHint: boolPtr(false),
-			OpenWorldHint:   boolPtr(false),
+			DestructiveHint: new(false),
+			OpenWorldHint:   new(false),
 		},
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"kind":{"type":"string","description":"Collector component kind: receiver, exporter, processor, connector, extension"},"name":{"type":"string","description":"Collector component name e.g. otlp"},"config":{"type":"string","description":"Collector component configuration JSON"},"version":{"type":"string","description":"The OpenTelemetry Collector version e.g. 0.138.0"}},"required":["kind","name","config"]}`),
 	}
@@ -284,8 +284,8 @@ func getCollectorComponentDeprecatedTool(schemaManager *collectorschema.SchemaMa
 		Name:        "component-deprecated-fields",
 		Description: "Return deprecated OpenTelemetry collector receiver, exporter, processor, connector and extension configuration fields",
 		Annotations: &mcp.ToolAnnotations{
-			DestructiveHint: boolPtr(false),
-			OpenWorldHint:   boolPtr(false),
+			DestructiveHint: new(false),
+			OpenWorldHint:   new(false),
 		},
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"kind":{"type":"string","description":"Collector component kind: receiver, exporter, extension"},"names":{"type":"array","items":{"type":"string"},"description":"Collector component names e.g. [\"otlp\",\"jaeger\"]"},"version":{"type":"string","description":"The OpenTelemetry Collector version e.g. 0.138.0"}},"required":["kind","names"]}`),
 	}
@@ -331,8 +331,8 @@ func getCollectorDocumentationRAG(schemaManager *collectorschema.SchemaManager, 
 		Name:        "rag",
 		Description: "Answer questions about OpenTelemetry collector",
 		Annotations: &mcp.ToolAnnotations{
-			DestructiveHint: boolPtr(false),
-			OpenWorldHint:   boolPtr(false),
+			DestructiveHint: new(false),
+			OpenWorldHint:   new(false),
 		},
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"query":{"type":"string","description":"Query about OpenTelemetry collector documentation"},"version":{"type":"string","description":"The OpenTelemetry Collector version e.g. 0.138.0"},"kind":{"type":"string","description":"Collector component kind: receiver, exporter, processor, connector, extension"},"name":{"type":"string","description":"Collector component name e.g. otlp"}},"required":["query","version"]}`),
 	}
@@ -367,5 +367,3 @@ func getCollectorDocumentationRAG(schemaManager *collectorschema.SchemaManager, 
 
 	return Tool{Tool: tool, Handler: handler}
 }
-
-func boolPtr(b bool) *bool { return &b }
