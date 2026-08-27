@@ -198,8 +198,8 @@ func TestSuccessfulScrape(t *testing.T) {
 			cfg.Port = 1433
 			cfg.Server = "0.0.0.0"
 			cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-			cfg.MetricsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
-			cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
+			// server.address and server.port are intentionally not enabled here: the golden
+			// files include them, so this asserts they are emitted by default.
 			cfg.MetricsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
 			cfg.MetricsBuilderConfig.ResourceAttributes.ServiceNamespace.Enabled = true
 			cfg.LogsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
@@ -228,7 +228,6 @@ func TestSuccessfulScrape(t *testing.T) {
 
 				actualMetrics, err := scraper.ScrapeMetrics(t.Context())
 				assert.NoError(t, err)
-				fileSuffix := ".yaml"
 				var expectedFile string
 				switch scraper.sqlQuery {
 				case getSQLServerAvailabilityGroupQuery(scraper.config.InstanceName):
@@ -250,7 +249,7 @@ func TestSuccessfulScrape(t *testing.T) {
 				case getSQLServerDiskIOQuery(scraper.config.InstanceName):
 					expectedFile = filepath.Join("testdata", "expectedDiskIO")
 				}
-				expectedFile += fileSuffix
+				expectedFile += ".yaml"
 
 				// Uncomment line below to re-generate expected metrics.
 				// golden.WriteMetrics(t, expectedFile, actualMetrics)
@@ -258,7 +257,6 @@ func TestSuccessfulScrape(t *testing.T) {
 				assert.NoError(t, err)
 
 				assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-					pmetrictest.IgnoreResourceAttributeValue("host.name"),
 					pmetrictest.IgnoreMetricDataPointsOrder(),
 					pmetrictest.IgnoreStartTimestamp(),
 					pmetrictest.IgnoreTimestamp(),
@@ -689,7 +687,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	// Uncomment line below to re-generate expected logs.
 	// golden.WriteLogs(t, expectedFile, actualLogs)
 	expectedLogs, _ := golden.ReadLogs(expectedFile)
-	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreResourceAttributeValue("host.name"), plogtest.IgnoreTimestamp())
+	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
 	assert.Equal(t, "db.server.top_query", actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
 	assert.NoError(t, errs)
 }
@@ -826,7 +824,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			assert.NoError(t, err)
 			removeAttributeFromAllLogRecords(expectedLogs, "sqlserver.blocking.start_time")
 			removeAttributeFromAllLogRecords(actualLogs, "sqlserver.blocking.start_time")
-			errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreResourceAttributeValue("host.name"), plogtest.IgnoreTimestamp())
+			errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
 			assert.Equal(t, "db.server.query_sample", logRecord.EventName())
 			assert.NoError(t, errs)
 		})
@@ -1115,7 +1113,9 @@ func TestSetupResourceBuilder(t *testing.T) {
 	tests := []struct {
 		name                  string
 		config                *Config
+		expectedHostName      string
 		expectedServerAddress string
+		expectedServerPort    int64
 	}{
 		{
 			name: "with server configuration",
@@ -1126,7 +1126,9 @@ func TestSetupResourceBuilder(t *testing.T) {
 				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
 				return cfg
 			}(),
+			expectedHostName:      "testserver.example.com",
 			expectedServerAddress: "testserver.example.com",
+			expectedServerPort:    1433,
 		},
 		{
 			name: "with datasource configuration",
@@ -1136,7 +1138,9 @@ func TestSetupResourceBuilder(t *testing.T) {
 				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
 				return cfg
 			}(),
+			expectedHostName:      "datasource-host.example.com",
 			expectedServerAddress: "datasource-host.example.com",
+			expectedServerPort:    1434,
 		},
 		{
 			name: "with datasource default port",
@@ -1146,7 +1150,24 @@ func TestSetupResourceBuilder(t *testing.T) {
 				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
 				return cfg
 			}(),
+			expectedHostName:      "datasource-host2.example.com",
 			expectedServerAddress: "datasource-host2.example.com",
+			expectedServerPort:    defaultSQLServerPort,
+		},
+		{
+			// A loopback target is only reachable when the instance is co-located with the
+			// collector, so server.address reports the collector's host name instead.
+			name: "with loopback server configuration",
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Server = "localhost"
+				cfg.Port = 1433
+				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
+				return cfg
+			}(),
+			expectedHostName:      "localhost",
+			expectedServerAddress: getTestHostname(),
+			expectedServerPort:    1433,
 		},
 	}
 
@@ -1175,14 +1196,17 @@ func TestSetupResourceBuilder(t *testing.T) {
 			rb := scraper.setupResourceBuilder(scraper.mb.NewResourceBuilder(), row)
 			resource := rb.Emit()
 
-			expectedHostName, _ := os.Hostname()
 			hostName, exists := resource.Attributes().Get("host.name")
 			assert.True(t, exists)
-			assert.Equal(t, expectedHostName, hostName.AsString())
+			assert.Equal(t, tt.expectedHostName, hostName.AsString())
 
 			serverAddress, exists := resource.Attributes().Get("server.address")
 			assert.True(t, exists)
 			assert.Equal(t, tt.expectedServerAddress, serverAddress.AsString())
+
+			serverPort, exists := resource.Attributes().Get("server.port")
+			assert.True(t, exists)
+			assert.Equal(t, tt.expectedServerPort, serverPort.Int())
 		})
 	}
 }
@@ -1212,10 +1236,9 @@ func TestRecordDatabaseSampleQueryUsesResourceBuilderForLogs(t *testing.T) {
 	assert.Equal(t, 1, actualLogs.ResourceLogs().Len())
 
 	resourceAttributes := actualLogs.ResourceLogs().At(0).Resource().Attributes()
-	expectedHostName, _ := os.Hostname()
 	hostName, exists := resourceAttributes.Get("host.name")
 	assert.True(t, exists)
-	assert.Equal(t, expectedHostName, hostName.AsString())
+	assert.Equal(t, "datasource-host.example.com", hostName.AsString())
 
 	serviceInstanceID, exists := resourceAttributes.Get("service.instance.id")
 	assert.True(t, exists)
@@ -1279,10 +1302,9 @@ func TestRecordDatabaseQueryTextAndPlanUsesResourceBuilderForLogs(t *testing.T) 
 	assert.Equal(t, 1, actualLogs.ResourceLogs().Len())
 
 	resourceAttributes := actualLogs.ResourceLogs().At(0).Resource().Attributes()
-	expectedHostName, _ := os.Hostname()
 	hostName, exists := resourceAttributes.Get("host.name")
 	assert.True(t, exists)
-	assert.Equal(t, expectedHostName, hostName.AsString())
+	assert.Equal(t, "datasource-host.example.com", hostName.AsString())
 
 	serviceInstanceID, exists := resourceAttributes.Get("service.instance.id")
 	assert.True(t, exists)
@@ -1401,10 +1423,9 @@ func TestRecordDatabaseStatusMetricsUsesResourceBuilderForMetrics(t *testing.T) 
 	assert.Equal(t, 1, actualMetrics.ResourceMetrics().Len())
 
 	resourceAttributes := actualMetrics.ResourceMetrics().At(0).Resource().Attributes()
-	expectedHostName, _ := os.Hostname()
 	hostName, exists := resourceAttributes.Get("host.name")
 	assert.True(t, exists)
-	assert.Equal(t, expectedHostName, hostName.AsString())
+	assert.Equal(t, "datasource-host.example.com", hostName.AsString())
 
 	serviceInstanceID, exists := resourceAttributes.Get("service.instance.id")
 	assert.True(t, exists)

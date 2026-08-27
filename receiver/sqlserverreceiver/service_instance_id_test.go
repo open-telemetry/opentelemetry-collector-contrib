@@ -196,6 +196,113 @@ func TestComputeServiceInstanceID(t *testing.T) {
 	}
 }
 
+func TestResolveServerEndpoint(t *testing.T) {
+	hostname := getTestHostname()
+
+	tests := []struct {
+		name         string
+		config       *Config
+		expectedHost string
+		expectedPort int
+		wantErr      bool
+	}{
+		{
+			name: "explicit server and port",
+			config: &Config{
+				Server: "myserver",
+				Port:   5000,
+			},
+			expectedHost: "myserver",
+			expectedPort: 5000,
+		},
+		{
+			name: "explicit server default port",
+			config: &Config{
+				Server: "myserver",
+			},
+			expectedHost: "myserver",
+			expectedPort: defaultSQLServerPort,
+		},
+		{
+			name: "datasource with port",
+			config: &Config{
+				DataSource: "server=datasource-host,5000;user id=sa",
+			},
+			expectedHost: "datasource-host",
+			expectedPort: 5000,
+		},
+		{
+			name: "localhost resolves to the collector host",
+			config: &Config{
+				Server: "localhost",
+				Port:   1433,
+			},
+			expectedHost: hostname,
+			expectedPort: 1433,
+		},
+		{
+			name: "IPv4 loopback resolves to the collector host",
+			config: &Config{
+				Server: "127.0.0.1",
+				Port:   1433,
+			},
+			expectedHost: hostname,
+			expectedPort: 1433,
+		},
+		{
+			name: "IPv6 loopback resolves to the collector host",
+			config: &Config{
+				Server: "::1",
+				Port:   1433,
+			},
+			expectedHost: hostname,
+			expectedPort: 1433,
+		},
+		{
+			name: "loopback in datasource resolves to the collector host",
+			config: &Config{
+				DataSource: "server=localhost;user id=sa",
+			},
+			expectedHost: hostname,
+			expectedPort: defaultSQLServerPort,
+		},
+		{
+			name: "computer name only (Windows PC mode remote)",
+			config: &Config{
+				ComputerName: "db-server",
+			},
+			expectedHost: "db-server",
+			expectedPort: defaultSQLServerPort,
+		},
+		{
+			name:         "no connection information uses the collector host",
+			config:       &Config{},
+			expectedHost: hostname,
+			expectedPort: defaultSQLServerPort,
+		},
+		{
+			name: "unparsable datasource",
+			config: &Config{
+				DataSource: "server = myserver , 5000 ; user id = sa",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			host, port, err := resolveServerEndpoint(tt.config)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedHost, host)
+			assert.Equal(t, tt.expectedPort, port)
+		})
+	}
+}
+
 func TestParseDataSource(t *testing.T) {
 	tests := []struct {
 		name         string

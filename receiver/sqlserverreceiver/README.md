@@ -170,6 +170,25 @@ Top query collection enabled:
           max_rows_per_query: 1450
 ```
 
+## Resource attributes
+
+`server.address` and `server.port` identify the monitored SQL Server instance and are emitted by default.
+When the receiver connects over loopback (for example `server: localhost` or `server: 127.0.0.1`),
+`server.address` reports the host name of the machine running the collector, because the monitored
+instance is co-located with it and `localhost` would otherwise be shared by every monitored host.
+`service.instance.id` uses the same resolution and is reported as `<server.address>:<server.port>`.
+
+To stop emitting the server attributes, disable them individually:
+
+```yaml
+sqlserver:
+  resource_attributes:
+    server.address:
+      enabled: false
+    server.port:
+      enabled: false
+```
+
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [documentation.md](./documentation.md)

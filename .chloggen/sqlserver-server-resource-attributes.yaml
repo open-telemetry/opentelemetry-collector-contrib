@@ -7,7 +7,7 @@ change_type: breaking
 component: receiver/sqlserver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Enable the `server.address` and `server.port` resource attributes by default, and remove the `receiver.sqlserver.RemoveServerResourceAttribute` feature gate.
+note: Enable the `server.address` and `server.port` resource attributes by default, report a loopback target as the collector's host name, and remove the `receiver.sqlserver.RemoveServerResourceAttribute` feature gate.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [49885]
@@ -16,10 +16,16 @@ issues: [49885]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  `server.address` and `server.port` are now emitted by default. To stop emitting the server attributes,
-  disable them via `resource_attributes.server.address.enabled: false` and
-  `resource_attributes.server.port.enabled: false`. The `receiver.sqlserver.RemoveServerResourceAttribute`
-  feature gate has been removed.
+  `server.address` and `server.port` are now emitted by default, so that the monitored instance's network
+  location is available without extra configuration. When the receiver connects over loopback (for example
+  `server: localhost` or `server: 127.0.0.1`), `server.address` reports the host name of the machine running
+  the collector rather than `localhost`, since the monitored instance is co-located with the collector. This
+  matches how `service.instance.id` already resolves its host, and both attributes now share one resolution
+  path. `host.name` is unchanged.
+
+  To stop emitting the server attributes, disable them via `resource_attributes.server.address.enabled: false`
+  and `resource_attributes.server.port.enabled: false`. The `receiver.sqlserver.RemoveServerResourceAttribute`
+  feature gate has been removed; it duplicated those per-attribute settings.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

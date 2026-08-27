@@ -21,15 +21,15 @@ status:
 
 resource_attributes:
   host.name:
-    description: The hostname of the machine running the collector. This identifies the Collector host, not the monitored SQL Server.
+    description: The host name of SQL Server
     enabled: true
     type: string
   server.address:
-    description: The address of the SQL Server host.
+    description: The address of the monitored SQL Server instance. A loopback target (for example localhost or 127.0.0.1) is reported as the host name of the machine running the collector, since the instance is co-located with it.
     enabled: true
     type: string
   server.port:
-    description: The port of the SQL Server host.
+    description: The port of the monitored SQL Server instance, defaulting to 1433 when not configured.
     enabled: true
     type: int
   service.instance.id:
