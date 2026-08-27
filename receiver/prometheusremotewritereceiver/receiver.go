@@ -576,7 +576,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			var err error
 			expLayout, err = validateExponentialHistogram(histogram)
 			if err != nil {
-				prw.settings.Logger.Info(
+				prw.settings.Logger.Error(
 					"Dropping Native Histogram that cannot be converted",
 					zapcore.Field{Key: "metric_name", Type: zapcore.StringType, String: metricName},
 					zapcore.Field{Key: "job", Type: zapcore.StringType, String: ls.Get("job")},
