@@ -159,7 +159,7 @@ transform:
 
 `error_mode`: allows overriding the top-level `error_mode`. See [General Config](#general-config) for details on how to configure `error_mode`.
 
-`shared_cache`: enables sharing per-context caches between all advanced statement groups with the option enabled in this Transform Processor instance. Use this when you want to do hold state across multiple iterations over a set of data.
+`shared_cache` (experimental): enables sharing per-context caches between all advanced statement groups with the option enabled in this Transform Processor instance. Use this when you want to hold state across multiple iterations over a set of data.
 
 `conditions`: a list comprised of multiple where clauses, which will be processed as global conditions for the accompanying set of statements. The conditions are ORed together, which means only one condition needs to evaluate to true in order for the statements (including their individual Where clauses) to be executed.
 
