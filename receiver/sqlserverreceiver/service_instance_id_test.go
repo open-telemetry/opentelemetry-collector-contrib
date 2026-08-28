@@ -63,14 +63,14 @@ func TestComputeServiceInstanceID(t *testing.T) {
 			config: &Config{
 				DataSource: "server=myserver:5000;user id=sa;password=pass",
 			},
-			expected: "myserver:5000", // msdsn treats "myserver:5000" as the host name
+			expected: "myserver:5000:1433", // msdsn treats "myserver:5000" as the host name
 		},
 		{
 			name: "datasource without instance or port",
 			config: &Config{
 				DataSource: "server=myserver;user id=sa;password=pass",
 			},
-			expected: "myserver",
+			expected: "myserver:1433",
 		},
 		{
 			name: "datasource with data source keyword",
@@ -107,14 +107,14 @@ func TestComputeServiceInstanceID(t *testing.T) {
 			config: &Config{
 				DataSource: "server=localhost;user id=sa",
 			},
-			expected: hostname,
+			expected: fmt.Sprintf("%s:1433", hostname),
 		},
 		{
 			name: "empty server in datasource",
 			config: &Config{
 				DataSource: "user id=sa",
 			},
-			expected: hostname,
+			expected: fmt.Sprintf("%s:1433", hostname),
 		},
 		{
 			name:     "no server uses hostname",
@@ -207,7 +207,7 @@ func TestComputeServiceInstanceID(t *testing.T) {
 			config: &Config{
 				DataSource: "user id=sa;password=pass",
 			},
-			expected: hostname, // msdsn defaults to localhost when no server specified
+			expected: fmt.Sprintf("%s:1433", hostname), // msdsn defaults to localhost when no server specified
 		},
 	}
 

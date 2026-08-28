@@ -21,10 +21,10 @@ func isLocalhost(host string) bool {
 }
 
 // computeServiceInstanceID computes the service.instance.id based on the configuration.
-// Datasource format precedence: <host>\<instance>, <host>:<explicit port>, then <host>.
+// Datasource format precedence: <host>\<instance>, then <host>:<port> (default 1433).
 // Special handling:
 // - localhost/127.0.0.1 are replaced with os.Hostname()
-// - Port 0 defaults to 1433 for direct-connect and performance-counter modes
+// - Port 0 defaults to 1433 when no named instance is specified
 func computeServiceInstanceID(cfg *Config) (string, error) {
 	var host string
 	var instance string
@@ -64,14 +64,13 @@ func computeServiceInstanceID(cfg *Config) (string, error) {
 	}
 
 	if cfg.DataSource != "" {
-		switch {
-		case instance != "":
+		if instance != "" {
 			return fmt.Sprintf(`%s\%s`, host, instance), nil
-		case port != 0:
-			return fmt.Sprintf("%s:%d", host, port), nil
-		default:
-			return host, nil
 		}
+		if port == 0 {
+			port = defaultSQLServerPort
+		}
+		return fmt.Sprintf("%s:%d", host, port), nil
 	}
 
 	// Apply default port if not specified
