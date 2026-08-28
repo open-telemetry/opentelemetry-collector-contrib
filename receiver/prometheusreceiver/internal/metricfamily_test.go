@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
@@ -1181,6 +1182,129 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			got := ndpL.At(0)
 			want := tt.want()
 			require.Equal(t, want, got, "Expected the points to be equal")
+		})
+	}
+}
+
+func TestConvertExemplar(t *testing.T) {
+	tests := []struct {
+		name    string
+		traceID string
+		spanID  string
+		want    func() pmetric.Exemplar
+	}{
+		{
+			name:    "valid ids are converted",
+			traceID: "0102030405060708090a0b0c0d0e0f10",
+			spanID:  "0102030405060708",
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10})
+				e.SetSpanID([8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08})
+				return e
+			},
+		},
+		{
+			name:    "oversized valid-hex ids are kept as filtered attributes",
+			traceID: "10a47365b8aa04e08291fab9deca84db6170", // 36 hex chars / 18 bytes
+			spanID:  "719cee4a669fd7d109ff",                 // 20 hex chars / 10 bytes
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("span_id", "719cee4a669fd7d109ff")
+				e.FilteredAttributes().PutStr("trace_id", "10a47365b8aa04e08291fab9deca84db6170")
+				return e
+			},
+		},
+		{
+			name:    "undersized valid-hex ids are kept as filtered attributes",
+			traceID: "174137cab66dc880", // 16 hex chars / 8 bytes
+			spanID:  "dfa4597a9d",       // 10 hex chars / 5 bytes
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("span_id", "dfa4597a9d")
+				e.FilteredAttributes().PutStr("trace_id", "174137cab66dc880")
+				return e
+			},
+		},
+		{
+			name:    "invalid hex (odd length) is kept as filtered attribute",
+			traceID: "174137cab66dc88", // 15 hex chars, odd length
+			spanID:  "dfa4597a9",       // 9 hex chars, odd length
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("span_id", "dfa4597a9")
+				e.FilteredAttributes().PutStr("trace_id", "174137cab66dc88")
+				return e
+			},
+		},
+		{
+			name:    "correct-length but non-hex characters is kept as filtered attribute",
+			traceID: "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz", // 32 chars, not hex
+			spanID:  "zzzzzzzzzzzzzzzz",                 // 16 chars, not hex
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("span_id", "zzzzzzzzzzzzzzzz")
+				e.FilteredAttributes().PutStr("trace_id", "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz")
+				return e
+			},
+		},
+		{
+			name:    "all-zero id of valid length is kept as filtered attribute",
+			traceID: "00000000000000000000000000000000", // 32 hex chars, all zero
+			spanID:  "0000000000000000",                 // 16 hex chars, all zero
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.FilteredAttributes().PutStr("span_id", "0000000000000000")
+				e.FilteredAttributes().PutStr("trace_id", "00000000000000000000000000000000")
+				return e
+			},
+		},
+		{
+			name:    "empty value is dropped entirely, matching absent label",
+			traceID: "",
+			spanID:  "",
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				return e
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pe := exemplar.Exemplar{
+				Value: 1,
+				Ts:    11,
+				Labels: labels.New(
+					labels.Label{Name: "foo", Value: "bar"},
+					labels.Label{Name: "trace_id", Value: tt.traceID},
+					labels.Label{Name: "span_id", Value: tt.spanID},
+				),
+			}
+			got := pmetric.NewExemplar()
+			convertExemplar(pe, got)
+			require.Equal(t, tt.want(), got)
 		})
 	}
 }
