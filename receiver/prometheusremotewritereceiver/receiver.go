@@ -1101,6 +1101,21 @@ func applyScopeInfo(sm pmetric.ScopeMetrics, si scopeInfo) {
 
 // addNHCBDatapoint converts a single Native Histogram Custom Buckets (NHCB) to OpenTelemetry histogram datapoints
 func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *writev2.Histogram, attrs pcommon.Map, ls labels.Labels, stats *promremote.WriteResponseStats) {
+	// A stale marker records that the series stopped. It carries no distribution, so the spans
+	// and deltas that would describe one are left unread and the buckets stay empty, which is
+	// what a count of zero says as well.
+	if value.IsStaleNaN(histogram.Sum) {
+		dp := datapoints.AppendEmpty()
+		dp.SetStartTimestamp(pcommon.Timestamp(histogram.StartTimestamp * int64(time.Millisecond)))
+		dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
+		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+		dp.ExplicitBounds().FromRaw(histogram.CustomValues)
+		dp.BucketCounts().FromRaw(make([]uint64, len(histogram.CustomValues)+1))
+		attrs.CopyTo(dp.Attributes())
+		stats.Histograms++
+		return
+	}
+
 	// Bounds sit between buckets, so a histogram carrying none still has the bucket above the
 	// last one, which is what a classic histogram with only a +Inf bucket becomes.
 	bucketCounts, ok := convertNHCBBuckets(histogram)
@@ -1110,33 +1125,25 @@ func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Hi
 		return
 	}
 
-	// Counted first, so a population that cannot be represented is never half published. A stale
-	// marker has none to count.
-	var count uint64
-	stale := value.IsStaleNaN(histogram.Sum)
-	if !stale {
-		if count, ok = addPopulations(bucketCounts...); !ok {
-			prw.settings.Logger.Info("Dropping Native Histogram whose bucket population is too large to represent",
-				zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
-			return
-		}
+	// Counted first, so a population that cannot be represented is never half published.
+	count, ok := addPopulations(bucketCounts...)
+	if !ok {
+		prw.settings.Logger.Info("Dropping Native Histogram whose bucket population is too large to represent",
+			zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
+		return
 	}
 
 	dp := datapoints.AppendEmpty()
 	dp.SetStartTimestamp(pcommon.Timestamp(histogram.StartTimestamp * int64(time.Millisecond)))
 	dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
 
-	if stale {
-		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
-	} else {
-		// OTLP wants the count to be the sum of the bucket counts. Prometheus counts an
-		// observation of NaN without putting it in any bucket, so the count it sends can be
-		// larger than the buckets account for.
-		dp.SetCount(count)
-		if count > 0 {
-			// OTLP requires the sum to be zero when the count is.
-			dp.SetSum(histogram.Sum)
-		}
+	// OTLP wants the count to be the sum of the bucket counts. Prometheus counts an observation
+	// of NaN without putting it in any bucket, so the count it sends can be larger than the
+	// buckets account for.
+	dp.SetCount(count)
+	if count > 0 {
+		// OTLP requires the sum to be zero when the count is.
+		dp.SetSum(histogram.Sum)
 	}
 
 	dp.ExplicitBounds().FromRaw(histogram.CustomValues)
