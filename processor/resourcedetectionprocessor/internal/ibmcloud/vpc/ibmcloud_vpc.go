@@ -31,6 +31,9 @@ var newResourceDetector = func(protocol string) sdkresource.Detector {
 
 var _ internal.Detector = (*Detector)(nil)
 
+// Detector queries the IBM Cloud VPC Instance Metadata Service and emits resource attributes.
+// Detection is delegated to the upstream SDK detector so that the attributes reported here match
+// the ones the collector's own telemetry reports.
 type Detector struct {
 	detector              sdkresource.Detector
 	logger                *zap.Logger
@@ -38,6 +41,7 @@ type Detector struct {
 	failOnMissingMetadata bool
 }
 
+// NewDetector creates an IBM Cloud VPC detector.
 func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
