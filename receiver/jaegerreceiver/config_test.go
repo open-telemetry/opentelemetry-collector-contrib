@@ -15,8 +15,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/metadata"
 )
@@ -31,8 +31,8 @@ func TestLoadConfig(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	customnameThriftHTTPServerConfig.WriteTimeout = 0
 	customnameThriftHTTPServerConfig.ReadHeaderTimeout = 0
-	customnameThriftHTTPServerConfig.IdleTimeout = 0
-	customnameThriftHTTPServerConfig.KeepAlivesEnabled = false
+	customnameThriftHTTPServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	customnameThriftHTTPServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	customnameThriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  ":3456",
 		Transport: confignet.TransportTypeTCP,
@@ -42,8 +42,8 @@ func TestLoadConfig(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	defaultsThriftHTTPServerConfig.WriteTimeout = 0
 	defaultsThriftHTTPServerConfig.ReadHeaderTimeout = 0
-	defaultsThriftHTTPServerConfig.IdleTimeout = 0
-	defaultsThriftHTTPServerConfig.KeepAlivesEnabled = false
+	defaultsThriftHTTPServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	defaultsThriftHTTPServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	defaultsThriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  "localhost:14268",
 		Transport: confignet.TransportTypeTCP,
@@ -53,8 +53,8 @@ func TestLoadConfig(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	mixedThriftHTTPServerConfig.WriteTimeout = 0
 	mixedThriftHTTPServerConfig.ReadHeaderTimeout = 0
-	mixedThriftHTTPServerConfig.IdleTimeout = 0
-	mixedThriftHTTPServerConfig.KeepAlivesEnabled = false
+	mixedThriftHTTPServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	mixedThriftHTTPServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	mixedThriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  defaultHTTPEndpoint,
 		Transport: confignet.TransportTypeTCP,
@@ -64,8 +64,8 @@ func TestLoadConfig(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	tlsThriftHTTPServerConfig.WriteTimeout = 0
 	tlsThriftHTTPServerConfig.ReadHeaderTimeout = 0
-	tlsThriftHTTPServerConfig.IdleTimeout = 0
-	tlsThriftHTTPServerConfig.KeepAlivesEnabled = false
+	tlsThriftHTTPServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	tlsThriftHTTPServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	tlsThriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  ":3456",
 		Transport: confignet.TransportTypeTCP,
@@ -194,7 +194,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -222,7 +222,7 @@ func TestFailedLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	err = sub.Unmarshal(cfg)
 	require.NoError(t, err)
-	err = xconfmap.Validate(cfg)
+	err = confmap.Validate(cfg)
 	assert.ErrorContains(t, err, "must specify at least one protocol when using the Jaeger receiver")
 }
 
@@ -239,20 +239,20 @@ func TestInvalidConfig(t *testing.T) {
 				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 				thriftHTTPServerConfig.WriteTimeout = 0
 				thriftHTTPServerConfig.ReadHeaderTimeout = 0
-				thriftHTTPServerConfig.IdleTimeout = 0
-				thriftHTTPServerConfig.KeepAlivesEnabled = false
+				thriftHTTPServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+				thriftHTTPServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 				thriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
 					Endpoint:  "localhost:",
 					Transport: confignet.TransportTypeTCP,
 				}
-				cfg.ThriftHTTP = configoptional.Some(thriftHTTPServerConfig)
+				cfg.Protocols.ThriftHTTP = configoptional.Some(thriftHTTPServerConfig)
 			},
 			err: "receiver creation with no port number for Thrift HTTP must fail",
 		},
 		{
 			desc: "thrift-udp-compact-no-port",
 			apply: func(cfg *Config) {
-				cfg.ThriftCompactUDP = configoptional.Some(ProtocolUDP{
+				cfg.Protocols.ThriftCompactUDP = configoptional.Some(ProtocolUDP{
 					Endpoint: "localhost:",
 				})
 			},
@@ -261,7 +261,7 @@ func TestInvalidConfig(t *testing.T) {
 		{
 			desc: "thrift-udp-binary-no-port",
 			apply: func(cfg *Config) {
-				cfg.ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
+				cfg.Protocols.ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
 					Endpoint: "localhost:",
 				})
 			},
@@ -270,7 +270,7 @@ func TestInvalidConfig(t *testing.T) {
 		{
 			desc: "grpc-invalid-host",
 			apply: func(cfg *Config) {
-				cfg.GRPC = configoptional.Some(configgrpc.ServerConfig{
+				cfg.Protocols.GRPC = configoptional.Some(configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "1234",
 						Transport: confignet.TransportTypeTCP,
@@ -289,7 +289,7 @@ func TestInvalidConfig(t *testing.T) {
 		{
 			desc: "port-outside-of-range",
 			apply: func(cfg *Config) {
-				cfg.ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
+				cfg.Protocols.ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
 					Endpoint: "localhost:65536",
 				})
 			},
@@ -303,7 +303,7 @@ func TestInvalidConfig(t *testing.T) {
 
 			tC.apply(cfg)
 
-			err := xconfmap.Validate(cfg)
+			err := confmap.Validate(cfg)
 			assert.Error(t, err, tC.err)
 		})
 	}

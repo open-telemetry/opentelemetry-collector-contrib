@@ -84,7 +84,7 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 		{Key: "attribute1", Action: attraction.DELETE},
 	}
@@ -142,14 +142,14 @@ func TestAttributes_FilterSpans(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Services: []string{"svcA", "svcB.*"},
 		Config:   *createConfig(filterset.Regexp),
 	}
-	oCfg.Exclude = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Exclude = &filterconfig.MatchProperties{
 		Attributes: []filterconfig.Attribute{
 			{Key: "NoModification", Value: true},
 		},
@@ -212,14 +212,14 @@ func TestAttributes_FilterSpansByNameStrict(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		SpanNames: []string{"apply", "dont_apply"},
 		Config:    *createConfig(filterset.Strict),
 	}
-	oCfg.Exclude = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Exclude = &filterconfig.MatchProperties{
 		SpanNames: []string{"dont_apply"},
 		Config:    *createConfig(filterset.Strict),
 	}
@@ -280,14 +280,14 @@ func TestAttributes_FilterSpansByNameRegexp(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		SpanNames: []string{"^apply.*"},
 		Config:    *createConfig(filterset.Regexp),
 	}
-	oCfg.Exclude = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Exclude = &filterconfig.MatchProperties{
 		SpanNames: []string{".*dont_apply$"},
 		Config:    *createConfig(filterset.Regexp),
 	}
@@ -343,7 +343,7 @@ func TestAttributes_Hash(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "user.email", Action: attraction.HASH},
 		{Key: "user.id", Action: attraction.HASH},
 		{Key: "user.balance", Action: attraction.HASH},
@@ -447,7 +447,7 @@ func TestAttributes_Convert(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "to.int", Action: attraction.CONVERT, ConvertedType: "int"},
 		{Key: "to.double", Action: attraction.CONVERT, ConvertedType: "double"},
 		{Key: "to.string", Action: attraction.CONVERT, ConvertedType: "string"},
@@ -640,10 +640,10 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		SpanNames: []string{"^apply.*"},
 	}
 	tp, err := factory.CreateTraces(b.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())

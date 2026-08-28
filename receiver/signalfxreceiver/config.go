@@ -13,16 +13,18 @@ var errEmptyEndpoint = errors.New("empty endpoint")
 
 // Config defines configuration for the SignalFx receiver.
 type Config struct {
-	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate verifies that the endpoint is valid and the configured port is not 0
 func (rCfg *Config) Validate() error {
-	if rCfg.NetAddr.Endpoint == "" {
+	if rCfg.ServerConfig.NetAddr.Endpoint == "" {
 		return errEmptyEndpoint
 	}
 
-	_, err := extractPortFromEndpoint(rCfg.NetAddr.Endpoint)
+	_, err := extractPortFromEndpoint(rCfg.ServerConfig.NetAddr.Endpoint)
 	if err != nil {
 		return err
 	}

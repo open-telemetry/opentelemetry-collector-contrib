@@ -23,7 +23,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:0" // Endpoint is required, not going to be used here.
+	cfg.TCPAddrConfig.Endpoint = "localhost:0" // Endpoint is required, not going to be used here.
 
 	params := receivertest.NewNopSettings(metadata.Type)
 	tReceiver, err := createMetricsReceiver(t.Context(), params, cfg, consumertest.NewNop())

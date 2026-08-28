@@ -16,7 +16,6 @@ feature_gates:
     stage: alpha
     from_version: v0.83.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23997
-    skip_strict_validation: true
 
 tests:
   config:
@@ -24,5 +23,3 @@ tests:
     resource_to_telemetry_conversion:
       enabled: true
   expect_consumer_error: true
-  goleak:
-    skip: true

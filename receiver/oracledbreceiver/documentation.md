@@ -20,6 +20,12 @@ Cumulative CPU time, in seconds
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Double | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.dml_locks.limit
 
 Maximum limit of active DML (Data Manipulation Language) locks, -1 if unlimited.
@@ -43,6 +49,12 @@ Total number of deadlocks between table or row locks in different sessions.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {deadlocks} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.enqueue_locks.limit
 
@@ -84,6 +96,12 @@ Number of times that a process detected a potential deadlock when exchanging two
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {deadlocks} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.executions
 
 Total number of calls (user and recursive) that executed SQL statements
@@ -91,6 +109,12 @@ Total number of calls (user and recursive) that executed SQL statements
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {executions} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.hard_parses
 
@@ -100,6 +124,12 @@ Number of hard parses
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {parses} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.logical_reads
 
 Number of logical reads
@@ -107,6 +137,12 @@ Number of logical reads
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {reads} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.parse_calls
 
@@ -116,6 +152,12 @@ Total number of parse calls.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {parses} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.pga_memory
 
 Session PGA (Program Global Area) memory
@@ -124,6 +166,12 @@ Session PGA (Program Global Area) memory
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.physical_reads
 
 Number of physical reads
@@ -131,6 +179,12 @@ Number of physical reads
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {reads} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.processes.limit
 
@@ -170,6 +224,7 @@ Count of active sessions.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | session_type | Session type | Any Str | Recommended | - |
 | session_status | Session status | Any Str | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.tablespace_size.limit
 
@@ -184,6 +239,7 @@ Maximum size of tablespace in bytes, -1 if unlimited.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | tablespace_name | Tablespace name | Any Str | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.tablespace_size.usage
 
@@ -198,6 +254,7 @@ Used tablespace in bytes.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | tablespace_name | Tablespace name | Any Str | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.transactions.limit
 
@@ -223,6 +280,12 @@ Number of user commits. When a user commits a transaction, the redo generated th
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {commits} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.user_rollbacks
 
 Number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions
@@ -230,6 +293,12 @@ Number of times users manually issue the ROLLBACK statement or an error occurs d
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | 1 | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ## Optional Metrics
 
@@ -240,6 +309,78 @@ metrics:
   <metric_name>:
     enabled: true
 ```
+
+### oracledb.asm.disk.errors
+
+Count of I/O errors on an ASM disk.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {error} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.asm.disk_group.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+| oracledb.asm.disk.name | The name of the ASM disk. | Any Str | Recommended | - |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+
+### oracledb.asm.disk_group.capacity
+
+Total space in an ASM diskgroup.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.asm.disk_group.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+
+### oracledb.asm.disk_group.free
+
+Free space in an ASM diskgroup.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.asm.disk_group.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+
+### oracledb.asm.disk_group.offline_disks
+
+Count of disks currently offline within an ASM diskgroup.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {disk} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.asm.disk_group.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+
+### oracledb.asm.disk_group.usable_free
+
+Free space that can safely be used for files after accounting for ASM redundancy and required mirror recovery capacity.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.asm.disk_group.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
 
 ### oracledb.buffer.inspected
 
@@ -271,6 +412,20 @@ Number of changes that were part of an update or delete operation made to blocks
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {change} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.buffer_cache.block.changes.rate
+
+Rate of changes applied to blocks in the buffer cache.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {change}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.buffer_cache.block.gets
 
 Number of current-mode block gets satisfied from the buffer cache. Distinct from oracledb.db_block_gets, which counts all current-mode block gets requested regardless of where they are satisfied.
@@ -286,6 +441,12 @@ Fraction of logical reads served from the buffer cache without physical I/O, as 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.call.count
 
@@ -333,6 +494,12 @@ Number of times a consistent read was requested for a block from the buffer cach
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {gets} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.cpu.usage.rate
 
 CPU consumption rate, in CPU-seconds used per second.
@@ -340,6 +507,12 @@ CPU consumption rate, in CPU-seconds used per second.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.cursor.cache.hits
 
@@ -365,6 +538,12 @@ Percentage of cursor executions that reused a cursor in the session cursor cache
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.cursor.open
 
 Number of currently open cursors in the Oracle instance.
@@ -372,6 +551,20 @@ Number of currently open cursors in the Oracle instance.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {cursor} | Gauge | Int | Development |
+
+### oracledb.cursor.open.rate
+
+Rate of cursors opened.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {cursor}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.data_dictionary.hit_ratio
 
@@ -389,6 +582,12 @@ Fraction of total database time spent on CPU, as computed by Oracle V$SYSMETRIC 
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.database.wait.utilization
 
 Fraction of total database time spent waiting on I/O, locks, or latches, as computed by Oracle V$SYSMETRIC (% Wait/DB_Time).
@@ -396,6 +595,12 @@ Fraction of total database time spent waiting on I/O, locks, or latches, as comp
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.db.time
 
@@ -419,6 +624,12 @@ Number of times a current block was requested from the buffer cache.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {gets} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.ddl_statements_parallelized
 
 Number of DDL statements that were executed in parallel
@@ -427,6 +638,12 @@ Number of DDL statements that were executed in parallel
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {statements} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.dml_statements_parallelized
 
 Number of DML statements that were executed in parallel
@@ -434,6 +651,26 @@ Number of DML statements that were executed in parallel
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {statements} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
+### oracledb.enqueue.deadlocks.rate
+
+Rate of enqueue deadlocks.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {deadlock}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.enqueue.operations
 
@@ -449,6 +686,20 @@ Total count of enqueue (lock) operations.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.enqueue.type | Type of enqueue (lock) operation reported by Oracle. | Str: ``conversions``, ``releases``, ``requests``, ``timeouts``, ``waits`` | Recommended | - |
 
+### oracledb.enqueue.timeouts.rate
+
+Rate of enqueue timeouts.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {timeout}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.execution.utilization
 
 Fraction of executions that did not require a parse, as computed by Oracle V$SYSMETRIC (% (ExecWOParse/TotalExec)). High values indicate good cursor reuse.
@@ -462,6 +713,21 @@ Fraction of executions that did not require a parse, as computed by Oracle V$SYS
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.parse.type | Type of parse operation (e.g., soft). | Str: ``soft`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
+### oracledb.executions.rate
+
+Rate of SQL statement executions.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {execution}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.gc.current_block.time
 
@@ -476,6 +742,20 @@ Cumulative time spent transferring current blocks between instances over RAC cac
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | network.io.direction | Direction of the network transfer. | Str: ``receive``, ``transmit`` | Recommended | - |
+
+### oracledb.hard_parses.rate
+
+Rate of hard parses.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {parse}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.host.cpu.usage.rate
 
@@ -493,6 +773,20 @@ Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idl
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
+### oracledb.io.requests.rate
+
+Rate of I/O requests issued by the database.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {request}/s | Gauge | Double | Development |
+
 ### oracledb.io.single_block.read.latency
 
 Average latency of a synchronous single-block read.
@@ -500,6 +794,14 @@ Average latency of a synchronous single-block read.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | s | Gauge | Double | Development |
+
+### oracledb.io.throughput.rate
+
+Rate of I/O bytes transferred by the database.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | Development |
 
 ### oracledb.jvm.memory.committed
 
@@ -533,6 +835,12 @@ Fraction of library cache pin requests that found the object already cached, as 
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.lob.operations
 
 Total count of LOB (large object) I/O operations.
@@ -559,7 +867,22 @@ Cumulative time spent on transaction lock activity.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 | oracledb.session.type | Class of session the activity is attributed to. | Str: ``background``, ``foreground`` | Recommended | - |
+
+### oracledb.logical_reads.rate
+
+Rate of logical reads performed by the database.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {read}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.logons
 
@@ -568,6 +891,26 @@ Number of logon operations
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {operation} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
+### oracledb.logons.rate
+
+Rate of logon operations.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {logon}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.os.swaps
 
@@ -585,6 +928,12 @@ Number of times parallel execution was requested and the degree of parallelism w
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {executions} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.parallel_operations_downgraded_25_to_50_pct
 
 Number of times parallel execution was requested and the degree of parallelism was reduced down to 25-50% because of insufficient parallel execution servers
@@ -592,6 +941,12 @@ Number of times parallel execution was requested and the degree of parallelism w
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {executions} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.parallel_operations_downgraded_50_to_75_pct
 
@@ -601,6 +956,12 @@ Number of times parallel execution was requested and the degree of parallelism w
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {executions} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.parallel_operations_downgraded_75_to_99_pct
 
 Number of times parallel execution was requested and the degree of parallelism was reduced down to 75-99% because of insufficient parallel execution servers
@@ -608,6 +969,12 @@ Number of times parallel execution was requested and the degree of parallelism w
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {executions} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.parallel_operations_downgraded_to_serial
 
@@ -617,6 +984,12 @@ Number of times parallel execution was requested but execution was serial becaus
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {executions} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.parallel_operations_not_downgraded
 
 Number of times parallel execution was executed at the requested degree of parallelism
@@ -624,6 +997,12 @@ Number of times parallel execution was executed at the requested degree of paral
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {executions} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.parse.cpu.time
 
@@ -654,6 +1033,7 @@ Rate of parse operations per second broken down by result, as computed by Oracle
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.parse.result | Result of a parse operation (e.g., failure). | Str: ``failure`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.parse.utilization
 
@@ -662,6 +1042,12 @@ Fraction of parse calls that were soft parses, as computed by Oracle V$SYSMETRIC
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.pga.cache.utilization
 
@@ -679,6 +1065,12 @@ Number of physical writes from the buffer cache to disk by DBWR. Sourced from v$
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {writes} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.physical_io.requests
 
 Number of physical I/O requests issued to storage. Sourced from v$sysstat names physical read/write total IO requests (disk.io.block_size=all) and physical read/write total multi block requests (disk.io.block_size=multi).
@@ -693,6 +1085,22 @@ Number of physical I/O requests issued to storage. Sourced from v$sysstat names 
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
 | disk.io.block_size | Multi-block vs single-block (all) I/O request grouping. | Str: ``all``, ``multi`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
+### oracledb.physical_io.requests.rate
+
+Rate of physical I/O requests issued to storage.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {request}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.physical_io.transferred
 
@@ -708,6 +1116,37 @@ Total physical I/O bytes transferred between Oracle and storage. Sums across all
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
 | disk.io.type | Whether the I/O bytes are buffered (cache-mediated) or total (raw transfer count). | Str: ``buffered``, ``total`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
+### oracledb.physical_io.transferred.rate
+
+Rate of physical I/O bytes transferred between Oracle and storage.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
+### oracledb.physical_operations.rate
+
+Rate of physical read and write operations performed by the database.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {operation}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.physical_read_io_requests
 
@@ -717,6 +1156,12 @@ Number of read requests for application activity
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {requests} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.physical_reads_direct
 
 Number of reads directly from disk, bypassing the buffer cache
@@ -724,6 +1169,12 @@ Number of reads directly from disk, bypassing the buffer cache
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {reads} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.physical_write_io_requests
 
@@ -733,6 +1184,12 @@ Number of write requests for application activity
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {requests} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.physical_writes
 
 Number of physical writes
@@ -740,6 +1197,12 @@ Number of physical writes
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {writes} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.physical_writes_direct
 
@@ -749,6 +1212,12 @@ Number of writes directly to disk, bypassing the buffer cache
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {writes} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.queries_parallelized
 
 Number of SELECT statements executed in parallel
@@ -756,6 +1225,12 @@ Number of SELECT statements executed in parallel
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {queries} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.recovery.blocks
 
@@ -837,6 +1312,20 @@ Amount of redo generated.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | true | Development |
 
+### oracledb.redo.size.rate
+
+Rate of redo bytes generated by the database.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.redo.time
 
 Time spent in each phase of the redo pipeline.
@@ -858,6 +1347,12 @@ Fraction of redo allocations that succeeded without space contention, as compute
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.scan.count
 
@@ -895,6 +1390,7 @@ Average number of sessions over the metric interval.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | session_status | Session status | Any Str | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.session.stored_procedure.memory
 
@@ -903,6 +1399,12 @@ Memory currently allocated for stored procedures in the session.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.session.wait.time
 
@@ -917,6 +1419,7 @@ Cumulative time sessions spent in waits.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.session.wait.state | Whether the session wait time/count is for idle or non-idle wait events. | Str: ``non_idle`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.session.waits
 
@@ -931,6 +1434,7 @@ Cumulative number of waits across sessions.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.session.wait.state | Whether the session wait time/count is for idle or non-idle wait events. | Str: ``non_idle`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.sga.limit
 
@@ -961,6 +1465,12 @@ Fraction of the shared pool that is currently free, as computed by Oracle V$SYSM
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.smon.posts
 
@@ -1003,6 +1513,7 @@ Fraction of sorts performed in memory vs disk, as computed by Oracle V$SYSMETRIC
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | oracledb.sort.type | Type of sort operation (e.g., memory, disk). | Str: ``disk``, ``memory`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.sort.rows
 
@@ -1020,6 +1531,12 @@ Average SQL service response time in seconds, converted from centiseconds as rep
 | ---- | ----------- | ---------- | --------- |
 | s | Gauge | Double | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.sqlnet.io.transferred
 
 Bytes transferred via SQL*Net between Oracle and clients/dblinks. Sourced from v$sysstat names bytes received/sent via SQL*Net from/to client/dblink.
@@ -1034,6 +1551,7 @@ Bytes transferred via SQL*Net between Oracle and clients/dblinks. Sourced from v
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | network.io.direction | Direction of the network transfer. | Str: ``receive``, ``transmit`` | Recommended | - |
 | destination.type | Type of the SQL*Net destination endpoint (client application or remote database link). | Str: ``client``, ``dblink`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ### oracledb.storage.usage
 
@@ -1075,6 +1593,52 @@ Current number of processes that are either running or in the ready state, waiti
 | ---- | ----------- | ---------- | --------- |
 | {process} | Gauge | Double | Development |
 
+### oracledb.tablespace.limit
+
+Maximum autoextend size of tablespace in bytes. Returns 0 for temporary tablespaces and tablespaces without autoextend enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| tablespace_name | Tablespace name | Any Str | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
+### oracledb.tablespace.status
+
+Current status of tablespaces, broken down by state. A timeseries is produced for every possible value of oracledb.tablespace.state; the value is 1 for a tablespace's current state, and 0 for all other states.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {tablespace} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| tablespace_name | Tablespace name | Any Str | Recommended | - |
+| oracledb.tablespace.state | Tablespace state as reported by Oracle (e.g. online, offline, read only) | Str: ``online``, ``offline``, ``read only`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
+### oracledb.tablespace.utilization
+
+Fraction of tablespace currently in use, expressed as a value between 0 and 1.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| tablespace_name | Tablespace name | Any Str | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.transaction.response.time
 
 Average response time per transaction.
@@ -1083,6 +1647,12 @@ Average response time per transaction.
 | ---- | ----------- | ---------- | --------- |
 | s | Gauge | Double | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
 ### oracledb.transaction.rollbacks
 
 Total number of transactions rolled back.
@@ -1090,6 +1660,27 @@ Total number of transactions rolled back.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {rollback} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
+
+### oracledb.transactions.rate
+
+Rate of user transactions.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {transaction}/s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.transaction.type | The type of user transaction. | Str: ``commit``, ``rollback`` | Recommended | - |
+| oracle.db.pdb | The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point. | Any Str | Opt-In | - |
 
 ## Default Events
 
@@ -1128,7 +1719,7 @@ sample query
 | client.port | TCP port used by the client. | Any Int | - |
 | network.peer.address | IP address of the peer client. | Any Str | - |
 | network.peer.port | TCP port used by the peer client. | Any Int | - |
-| oracledb.plan_hash_value | Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format. | Any Str | - |
+| oracledb.plan_hash_value | Numeric representation of the execution plan. | Any Str | - |
 | oracledb.sql_id | The SQL ID of the query. | Any Str | - |
 | oracledb.child_number | The child number of the query. | Any Str | - |
 | oracledb.child_address | Address of the child cursor. | Any Str | - |
@@ -1174,7 +1765,8 @@ Per-session wait event statistics from v$session_event.
 | oracledb.serial | Serial number associated with a session. | Any Str | - |
 | oracledb.event | The specific wait event that a query or session is currently experiencing. | Any Str | - |
 | oracledb.wait_class | The category of wait events a query or session is currently experiencing in Oracle Database. | Any Str | - |
-| oracledb.wait.count | Total number of waits for the wait event across all sessions. | Any Int | - |
+| oracledb.wait.count | Number of times the session has waited on the wait event. | Any Int | - |
+| oracledb.wait.timeouts | Number of the session's waits on the wait event that timed out. | Any Int | - |
 | oracledb.wait.duration | Total time waited in seconds for the wait event. | Any Double | - |
 | db.namespace | The database name. | Any Str | - |
 
@@ -1217,7 +1809,7 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | oracledb.procedure_name | Name of the database object that a query is accessing. | Any Str | - |
 | oracledb.procedure_type | Type of the database object that a query is accessing. | Any Str | - |
 | db.query.comment_tags | Filtered SQL query comments extracted from leading block comments. Contains comma-separated key=value pairs for keys specified in allowed_comment_keys configuration. Used for correlation with APM traces. | Any Str | - |
-| oracledb.plan_hash_value | Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format. | Any Str | - |
+| oracledb.plan_hash_value | Numeric representation of the execution plan. | Any Str | - |
 | oracledb.plan.first_load | Time at which the plan was first loaded into the library cache, in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS | Any Str | - |
 | oracledb.plan.last_load | Plan load time in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS | Any Str | - |
 
@@ -1228,7 +1820,6 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | host.name | The host name of Oracle Server | Any Str | true | - | - |
 | oracle.db.hosting_type | The hosting environment of the Oracle instance. One of "self-managed", "rds", or "oci". | Any Str | true | - | - |
 | oracle.db.open_mode | The open mode of the Oracle database (e.g. "READ WRITE", "READ ONLY", "MOUNTED"). | Any Str | true | - | - |
-| oracle.db.pdb | The pluggable database (PDB) name associated with the connection. | Any Str | true | - | - |
 | oracle.db.role | The database role of the Oracle instance (e.g. "PRIMARY", "PHYSICAL STANDBY"). | Any Str | true | - | - |
 | oracle.db.version | The Oracle Database version string. | Any Str | true | - | - |
 | oracledb.instance.name | The name of the instance that data is coming from. | Any Str | true | - | - |

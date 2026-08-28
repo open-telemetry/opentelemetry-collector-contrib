@@ -124,7 +124,8 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 			[]string{stringValue, stringValue},
 			[]byte(stringValue),
 			[]*lockRequest{{}},
-		})
+		},
+	)
 
 	labelValues, _ := metadata.toLabelValues(row)
 
@@ -198,7 +199,8 @@ func TestMetricsMetadata_ToMetricValues_AllPossibleMetadata(t *testing.T) {
 	metadata := MetricsMetadata{QueryMetricValuesMetadata: queryMetricValuesMetadata}
 	row, _ := spanner.NewRow(
 		[]string{int64MetricValueMetadata.ColumnName(), float64MetricValueMetadata.ColumnName()},
-		[]any{int64Value, float64Value})
+		[]any{int64Value, float64Value},
+	)
 
 	metricValues, _ := metadata.toMetricValues(row)
 

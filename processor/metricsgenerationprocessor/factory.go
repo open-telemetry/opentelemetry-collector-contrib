@@ -22,7 +22,8 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability))
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -48,7 +49,8 @@ func createMetricsProcessor(
 		cfg,
 		nextConsumer,
 		metricsProcessor.processMetrics,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }
 
 // buildInternalConfig constructs the internal metric generation rules

@@ -40,6 +40,7 @@ type elasticsearchScraper struct {
 	mb          *metadata.MetricsBuilder
 	version     *version.Version
 	clusterName string
+	clusterUUID string
 }
 
 func newElasticSearchScraper(
@@ -80,6 +81,7 @@ func (r *elasticsearchScraper) getClusterMetadata(ctx context.Context, errs *scr
 	}
 
 	r.clusterName = response.ClusterName
+	r.clusterUUID = response.ClusterUUID
 
 	esVersion, err := version.NewVersion(response.Version.Number)
 	if err != nil {
@@ -265,7 +267,7 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchIndexingPressureMemoryTotalReplicaRejectionsDataPoint(now, info.IndexingPressure.Memory.Total.ReplicaRejections)
 
 		r.mb.RecordElasticsearchClusterStateQueueDataPoint(now, info.Discovery.ClusterStateQueue.Committed, metadata.AttributeClusterStateQueueStateCommitted)
-		r.mb.RecordElasticsearchClusterStateQueueDataPoint(now, info.Discovery.ClusterStateQueue.Committed, metadata.AttributeClusterStateQueueStatePending)
+		r.mb.RecordElasticsearchClusterStateQueueDataPoint(now, info.Discovery.ClusterStateQueue.Pending, metadata.AttributeClusterStateQueueStatePending)
 
 		r.mb.RecordElasticsearchClusterPublishedStatesFullDataPoint(now, info.Discovery.PublishedClusterStates.FullStates)
 		r.mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(now, info.Discovery.PublishedClusterStates.CompatibleDiffs, metadata.AttributeClusterPublishedDifferenceStateCompatible)
@@ -316,6 +318,7 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 
 		rb := r.mb.NewResourceBuilder()
 		rb.SetElasticsearchClusterName(nodeStats.ClusterName)
+		rb.SetElasticsearchClusterUUID(r.clusterUUID)
 		rb.SetElasticsearchNodeName(info.Name)
 
 		if node, ok := nodesInfo.Nodes[id]; ok {
@@ -336,6 +339,7 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 
 	rb := r.mb.NewResourceBuilder()
 	rb.SetElasticsearchClusterName(r.clusterName)
+	rb.SetElasticsearchClusterUUID(r.clusterUUID)
 	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
@@ -671,11 +675,18 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 		now, stats.Primaries.DocumentStats.ActiveCount, metadata.AttributeDocumentStateActive, metadata.AttributeIndexAggregationTypePrimaryShards,
 	)
 	r.mb.RecordElasticsearchIndexDocumentsDataPoint(
+		now, stats.Primaries.DocumentStats.DeletedCount, metadata.AttributeDocumentStateDeleted, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexDocumentsDataPoint(
 		now, stats.Total.DocumentStats.ActiveCount, metadata.AttributeDocumentStateActive, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexDocumentsDataPoint(
+		now, stats.Total.DocumentStats.DeletedCount, metadata.AttributeDocumentStateDeleted, metadata.AttributeIndexAggregationTypeTotal,
 	)
 
 	rb := r.mb.NewResourceBuilder()
 	rb.SetElasticsearchIndexName(name)
 	rb.SetElasticsearchClusterName(r.clusterName)
+	rb.SetElasticsearchClusterUUID(r.clusterUUID)
 	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }

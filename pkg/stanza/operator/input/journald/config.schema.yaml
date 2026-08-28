@@ -22,6 +22,8 @@ $defs:
         type: array
         items:
           type: string
+      include_log_record_original:
+        type: boolean
       journalctl_path:
         type: string
       matches:

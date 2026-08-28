@@ -68,7 +68,7 @@ type nfsdRPCStats struct {
 }
 
 // 6 metrics + 22 NFSv3 procedures + 69 NFSv4 procedures = 97 metrics
-type NfsStats struct {
+type nfsStats struct {
 	nfsNetStats         *nfsNetStats
 	nfsRPCStats         *nfsRPCStats
 	nfsV3ProcedureStats []callStats

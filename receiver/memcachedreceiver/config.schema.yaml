@@ -1,4 +1,8 @@
 type: object
+properties:
+  tls:
+    description: 'TLS controls the TLS settings used to connect to memcached. TLS is disabled by default (Insecure: true), preserving plaintext connections.'
+    $ref: go.opentelemetry.io/collector/config/configtls.client_config
 allOf:
   - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
   - $ref: go.opentelemetry.io/collector/config/confignet.addr_config

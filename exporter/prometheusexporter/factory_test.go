@@ -32,11 +32,12 @@ func TestCreateDefaultConfigServerDefaults(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.NetAddr.Endpoint = ""
+	oCfg.ServerConfig.NetAddr.Endpoint = ""
 	exp, err := createMetricsExporter(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	require.Equal(t, errBlankPrometheusAddress, err)
 	require.Nil(t, exp)
 }
@@ -45,7 +46,7 @@ func TestCreateMetricsExportHelperError(t *testing.T) {
 	cfg, ok := createDefaultConfig().(*Config)
 	require.True(t, ok)
 
-	cfg.NetAddr.Endpoint = "http://localhost:8889"
+	cfg.ServerConfig.NetAddr.Endpoint = "http://localhost:8889"
 
 	set := exportertest.NewNopSettings(metadata.Type)
 	set.Logger = nil

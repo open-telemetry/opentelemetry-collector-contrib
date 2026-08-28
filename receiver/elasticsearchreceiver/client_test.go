@@ -25,8 +25,8 @@ import (
 func TestCreateClientInvalidEndpoint(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = "http://\x00"
 	_, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -46,8 +46,8 @@ func TestNodeStatsNoPassword(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -72,8 +72,8 @@ func TestNodeStatsNilNodes(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -99,8 +99,8 @@ func TestNodeStatsNilIOStats(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -129,8 +129,8 @@ func TestNodeStatsAuthentication(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -153,8 +153,8 @@ func TestNodeStatsNoAuthentication(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -173,8 +173,8 @@ func TestNodeStatsBadAuthentication(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -200,8 +200,8 @@ func TestClusterHealthNoPassword(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -230,8 +230,8 @@ func TestClusterHealthAuthentication(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -254,8 +254,8 @@ func TestClusterHealthNoAuthentication(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -274,8 +274,8 @@ func TestClusterHealthNoAuthorization(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -301,8 +301,8 @@ func TestMetadataNoPassword(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -331,8 +331,8 @@ func TestMetadataAuthentication(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -355,8 +355,8 @@ func TestMetadataNoAuthentication(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -375,8 +375,8 @@ func TestMetadataNoAuthorization(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -394,8 +394,8 @@ func TestMetadataNoAuthorization(t *testing.T) {
 func TestDoRequestBadPath(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = "http://example.localhost:9200"
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -410,8 +410,8 @@ func TestDoRequestBadPath(t *testing.T) {
 func TestDoRequestClientTimeout(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = "http://example.localhost:9200"
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -432,8 +432,8 @@ func TestDoRequest404(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -456,8 +456,8 @@ func TestIndexStatsNoPassword(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -482,8 +482,8 @@ func TestIndexStatsNilNodes(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -512,8 +512,8 @@ func TestIndexStatsAuthentication(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -536,8 +536,8 @@ func TestIndexStatsNoAuthentication(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -556,8 +556,8 @@ func TestIndexStatsBadAuthentication(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -583,8 +583,8 @@ func TestClusterStatsNoPassword(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -609,8 +609,8 @@ func TestClusterStatsNilNodes(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -639,8 +639,8 @@ func TestClusterStatsAuthentication(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -663,8 +663,8 @@ func TestClusterStatsNoAuthentication(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -683,8 +683,8 @@ func TestClusterStatsBadAuthentication(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{

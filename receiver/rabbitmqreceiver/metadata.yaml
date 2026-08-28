@@ -170,6 +170,14 @@ status:
     emeritus: [cpheps]
 
 resource_attributes:
+  rabbitmq.exchange.name:
+    description: The name of the RabbitMQ exchange.
+    enabled: true
+    type: string
+  rabbitmq.exchange.type:
+    description: The type of the RabbitMQ exchange (direct, fanout, topic, or headers).
+    enabled: true
+    type: string
   rabbitmq.node.name:
     description: The name of the RabbitMQ node.
     enabled: true
@@ -203,6 +211,24 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
+  rabbitmq.exchange.messages.published_in:
+    description: The total number of messages published into an exchange from channels.
+    stability: development
+    unit: "{messages}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.exchange.messages.published_out:
+    description: The total number of messages published out of an exchange to bound queues.
+    stability: development
+    unit: "{messages}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
   rabbitmq.message.acknowledged:
     description: The number of messages acknowledged by consumers.
     stability: development

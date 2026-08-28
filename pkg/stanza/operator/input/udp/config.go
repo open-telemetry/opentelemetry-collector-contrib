@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
@@ -121,15 +122,16 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	udpInput := &Input{
-		InputOperator:   inputOperator,
-		address:         address,
-		buffer:          make([]byte, MaxUDPSize),
-		addAttributes:   c.AddAttributes,
-		encoding:        enc,
-		splitFunc:       splitFunc,
-		resolver:        resolver,
-		OneLogPerPacket: c.OneLogPerPacket,
-		AsyncConfig:     c.AsyncConfig,
+		InputOperator:              inputOperator,
+		address:                    address,
+		buffer:                     make([]byte, MaxUDPSize),
+		addAttributes:              c.AddAttributes,
+		useStableNetworkAttributes: metadata.StanzaUDPUseStableNetworkAttributesFeatureGate.IsEnabled(),
+		encoding:                   enc,
+		splitFunc:                  splitFunc,
+		resolver:                   resolver,
+		OneLogPerPacket:            c.OneLogPerPacket,
+		AsyncConfig:                c.AsyncConfig,
 	}
 
 	if c.AsyncConfig != nil {

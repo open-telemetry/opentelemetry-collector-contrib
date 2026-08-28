@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/common"
+	hcconfig "github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
@@ -22,7 +22,7 @@ type Server struct {
 	grpcServer            *grpc.Server
 	aggregator            *status.Aggregator
 	config                *Config
-	componentHealthConfig *common.ComponentHealthConfig
+	componentHealthConfig *hcconfig.ComponentHealthConfig
 	telemetry             component.TelemetrySettings
 	doneCh                chan struct{}
 	doneOnce              sync.Once
@@ -32,7 +32,7 @@ var _ component.Component = (*Server)(nil)
 
 func NewServer(
 	config *Config,
-	componentHealthConfig *common.ComponentHealthConfig,
+	componentHealthConfig *hcconfig.ComponentHealthConfig,
 	telemetry component.TelemetrySettings,
 	aggregator *status.Aggregator,
 ) *Server {
@@ -44,7 +44,7 @@ func NewServer(
 		doneCh:                make(chan struct{}),
 	}
 	if srv.componentHealthConfig == nil {
-		srv.componentHealthConfig = &common.ComponentHealthConfig{}
+		srv.componentHealthConfig = &hcconfig.ComponentHealthConfig{}
 	}
 	return srv
 }
@@ -52,13 +52,13 @@ func NewServer(
 // Start implements the component.Component interface.
 func (s *Server) Start(ctx context.Context, host component.Host) error {
 	var err error
-	s.grpcServer, err = s.config.ToServer(ctx, host.GetExtensions(), s.telemetry)
+	s.grpcServer, err = s.config.ServerConfig.ToServer(ctx, host.GetExtensions(), s.telemetry)
 	if err != nil {
 		return err
 	}
 
 	healthpb.RegisterHealthServer(s.grpcServer, s)
-	ln, err := s.config.NetAddr.Listen(context.Background())
+	ln, err := s.config.ServerConfig.NetAddr.Listen(context.Background())
 	if err != nil {
 		// Server never started, ensure doneCh is closed so shutdown doesn't block
 		s.doneOnce.Do(func() { close(s.doneCh) })
