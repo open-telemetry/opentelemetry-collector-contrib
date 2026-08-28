@@ -18,6 +18,8 @@ This package implements everything necessary to use OTTL in a Collector componen
 
 - [Getting Started](#getting-started)
 - [Where to use OTTL](#where-to-use-ottl)
+- [Benchmarks](#benchmarks)
+- [Observability](#observability)
 - [Troubleshooting](#troubleshooting)
 - [Resources](#resources)
 
@@ -100,6 +102,35 @@ individual functions and value comparisons. Run all benchmarks from the `pkg/ott
 ```sh
 make benchmark-ottl
 ```
+
+## Observability
+
+OTTL's internal telemetry is **Stable** (see [component-stability#stable observability](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#observability-requirements)). It is deliberately limited to structured logs via `component.TelemetrySettings`; metrics and traces are provided by the host pipeline component (transform processor, filter processor, routing connector, tail sampling processor) so that component-instance attributes (`otelcol.component.id`, `otelcol.pipeline.id`, etc.) remain correctly attributed via the collector's auto-instrumentation.
+
+### Self-observability (logs)
+
+| Level | Message | Fields | When | Notes |
+|-------|---------|--------|------|-------|
+| `Debug` (`Detailed` telemetry) | `initial TransformContext before executing StatementSequence` | `TransformContext` (full `resource`/`scope`/signal data, plus `cache`) | Per `StatementSequence.Execute` call, before any statement | Very verbose, gated by `Logger.Core().Enabled(zap.DebugLevel)`. Contains raw signal data including any `otelcol.*` paths when `ottl.contexts.enableOTelColContext` is enabled. Do not enable `service.telemetry.logs.level: debug` in production without considering privacy. Field names and message are Stable. |
+| `Debug` (`Detailed`) | `TransformContext after statement execution` | `statement` (original text), `condition matched` (bool), `TransformContext` (after) | Per `Statement.Execute`, deferred after `condition.Eval` | Same privacy/lifecycle notes as above. `condition matched` is `false` when the condition evaluates to `false` or errors. |
+| `Debug` (`Detailed`) | `condition evaluation result` | `condition` (original text), `match` (bool), `TransformContext` | Per `Condition.Eval` inside `ConditionSequence.Eval` | Used by filter/routing/tail-sampling to show why data was kept/dropped. |
+| `Warn` (`Normal` telemetry) | `failed to execute statement` | `statement`, `error` | Only when `ErrorMode` is `IgnoreError` and `function.Eval` or `condition.Eval` returns an error | Never includes `TransformContext` or signal data; safe for alerting via log scrape. When `ErrorMode` is `PropagateError` the error is returned to the host processor and observed via `otelcol_processor_*` and pipeline `otelcol.*.consumed/produced` metrics with `outcome=failure`. When `Silent`, no log is emitted. |
+| `Warn` (`Normal`) | `failed to eval condition` | `condition`, `error` | Only when `ConditionSequence` `ErrorMode` is `IgnoreError` and `condition.Eval` errors | Same guarantees as above. |
+| `Info` (`Normal`) | `one or more paths were modified to add context` (from `ParserCollection`) | `modifications` | At parse time when `EnableParserCollectionModifiedPathsLogging` is true | Helps diagnose automatic context injection; not per-item. |
+| `Debug` (`Detailed`) | `Inferring OTTL context` / `Inferred ...` / `Validating ...` (from `context_inferrer`) | context names | At parser-collection creation | Diagnostic for context auto-inference; Stable but subject to `DebugLevel` gate. |
+
+All log messages, field keys (`statement`, `condition`, `condition matched`, `match`, `TransformContext`, `error`), and their levels are Stable and will not be renamed or removed in a backward-incompatible way. New logs may be added at `Debug` without breaking stability.
+
+### Host component telemetry
+
+OTTL does not emit its own metrics or spans. Hosts satisfy the remaining Stable observability categories:
+
+- **Received/output/dropped**: pipeline auto-instrumentation (`otelcol_processor_consumed_items`, `otelcol_processor_produced_items` with `otelcol.component.outcome=success|failure|refused`) plus processor-specific counters (e.g., `processor_filter_logs.filtered` at `Development` today; track [filterprocessor#observability] for promotion to `Stable` and unit fix from `1` to `{item}`).
+- **Error details**: OTTL's `Warn` logs plus the host's returned error.
+- **Filtered/created/held & queue depth**: `N/A` for the `pkg/ottl` library itself (stateless, mutates in place); hosts expose it if they queue.
+- **Performance**: host-provided histograms/spans plus the benchmarks above. Per-statement histograms/spans are intentionally not emitted from the library to avoid high cardinality and duplication.
+
+To observe OTTL statement errors as metrics, configure the host processor with `error_mode: ignore` and alert on `Warn` logs, or use `propagate` and alert on the pipeline's `failure` outcome.
 
 ## Troubleshooting
 

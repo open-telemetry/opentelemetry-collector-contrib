@@ -30,6 +30,13 @@ type Statement[K any] struct {
 // Returns true if the function was run, returns false otherwise.
 // If the statement contains no condition, the function will run and true will be returned.
 // In addition, the functions return value is always returned.
+//
+// Observability: when debug logging is enabled this emits a Stable debug log
+// "TransformContext after statement execution" with fields "statement" (string),
+// "condition matched" (bool), and "TransformContext" (marshaled K). The field
+// names and log message are Stable. The TransformContext field contains full
+// signal data and is Detailed telemetry; do not enable debug in production
+// without considering privacy.
 func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 	condition, err := s.condition.Eval(ctx, tCtx)
 	defer func() {
@@ -438,6 +445,11 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 // When the ErrorMode of the StatementSequence is `propagate`, errors cause the execution to halt and the error is returned.
 // When the ErrorMode of the StatementSequence is `ignore`, errors are logged and execution continues to the next statement.
 // When the ErrorMode of the StatementSequence is `silent`, errors are not logged and execution continues to the next statement.
+//
+// Observability (Stable): Debug logs "initial TransformContext before executing StatementSequence"
+// and per-statement "TransformContext after statement execution" are Detailed telemetry
+// and contain full signal data. Warn logs "failed to execute statement" with fields
+// "statement" and "error" are Normal telemetry and never include signal data.
 func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 	if s.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
 		s.telemetrySettings.Logger.Debug("initial TransformContext before executing StatementSequence", zap.Any("TransformContext", tCtx))
@@ -510,6 +522,11 @@ func NewConditionSequence[K any](conditions []*Condition[K], telemetrySettings c
 // When the ErrorMode of the ConditionSequence is `ignore`, errors are logged and cause the evaluation to continue to the next condition.
 // When the ErrorMode of the ConditionSequence is `silent`, errors are not logged and cause the evaluation to continue to the next condition.
 // When using the AND LogicOperation with the `ignore` ErrorMode the sequence will evaluate to false if all conditions error.
+//
+// Observability (Stable): Debug log "condition evaluation result" with fields
+// "condition", "match", and "TransformContext" is Detailed telemetry containing
+// full signal data. Warn log "failed to eval condition" with "condition" and
+// "error" is Normal telemetry and never includes signal data.
 func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	var atLeastOneMatch bool
 	for _, condition := range c.conditions {

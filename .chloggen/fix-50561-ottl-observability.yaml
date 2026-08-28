@@ -1,0 +1,8 @@
+# Use this changelog template to create an entry for release notes.
+change_type: enhancement
+component: pkg/ottl
+note: "Stabilize OTTL internal telemetry and documentation for Stable promotion"
+issues: [50561]
+subtext: |
+  Reviews and stabilizes OTTL's internal telemetry: documents the Stable log contract (Debug Detailed vs Warn Normal), adds privacy guarantees (Warn logs never include signal data), clarifies host pipeline component delegation for metrics/traces, and adds observability tests verifying the contract. No breaking API changes.
+change_logs: [user, api]
