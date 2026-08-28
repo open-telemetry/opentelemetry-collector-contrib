@@ -4,6 +4,7 @@
 package windowseventlogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/metadata"
 )
 
 // createDefaultConfig creates a config with type and version
@@ -60,5 +62,30 @@ func (c *ResolveSIDsConfig) Validate() error {
 	if c.CacheTTL < 0 {
 		return fmt.Errorf("cache_ttl must not be negative, got: %s", c.CacheTTL)
 	}
+	return nil
+}
+
+// Validate checks if the receiver configuration is valid.
+func (c *WindowsLogConfig) Validate() error {
+	if err := c.ResolveSIDs.Validate(); err != nil {
+		return err
+	}
+
+	if len(c.InputConfig.Remote.Servers) == 0 {
+		return nil
+	}
+
+	if !metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.IsEnabled() {
+		return errors.New("remote.servers requires the receiver.windowseventlog.multipleRemoteHosts feature gate to be enabled")
+	}
+
+	if c.InputConfig.Remote.Server != "" {
+		return errors.New("remote.server and remote.servers are mutually exclusive; use one or the other")
+	}
+
+	if c.InputConfig.Remote.Username == "" || string(c.InputConfig.Remote.Password) == "" {
+		return errors.New("remote.username and remote.password are required when remote.servers is configured")
+	}
+
 	return nil
 }

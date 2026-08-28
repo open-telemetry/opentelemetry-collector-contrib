@@ -61,7 +61,7 @@ func createLogsReceiver(
 	stanzaFactory := adapter.NewFactory(receiverType{}, metadata.LogsStability, xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType))
 
 	if metadata.DomainControllersAutodiscoveryFeatureGate.IsEnabled() && receiverCfg.DiscoverDomainControllers {
-		remoteConfigs, err := getDomainControllersRemoteConfig(set.Logger, receiverCfg.InputConfig.Remote.Username, receiverCfg.InputConfig.Remote.Password)
+		remoteConfigs, err := getDomainControllersRemoteConfig(set.Logger, receiverCfg.InputConfig.Remote.Username, string(receiverCfg.InputConfig.Remote.Password))
 		if err != nil {
 			return nil, fmt.Errorf("domain controller discovery failed: %w", err)
 		}
@@ -69,17 +69,33 @@ func createLogsReceiver(
 		receivers := make([]receiver.Logs, 0, len(remoteConfigs))
 		for _, rc := range remoteConfigs {
 			dcCfg := *receiverCfg
-			dcCfg.InputConfig.Remote = windows.RemoteConfig{
-				Server:   rc.Server,
-				Username: rc.Username,
-				Password: rc.Password,
-				Domain:   rc.Domain,
-			}
+			dcCfg.InputConfig.Remote = rc
 			r, err := stanzaFactory.CreateLogs(ctx, set, &dcCfg, enrichedConsumer)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create receiver for domain controller %q: %w", rc.Server, err)
 			}
 			receivers = append(receivers, r)
+		}
+		return &multiLogsReceiver{receivers: receivers}, nil
+	}
+
+	if metadata.ReceiverWindowseventlogMultipleRemoteHostsFeatureGate.IsEnabled() && len(receiverCfg.InputConfig.Remote.Servers) > 0 {
+		remoteConfigs := expandMultipleHosts(receiverCfg.InputConfig.Remote)
+		receivers := make([]receiver.Logs, 0, len(remoteConfigs))
+		for _, rc := range remoteConfigs {
+			hostCfg := *receiverCfg
+			hostCfg.InputConfig.Remote = rc
+			r, err := stanzaFactory.CreateLogs(ctx, set, &hostCfg, enrichedConsumer)
+			if err != nil {
+				set.Logger.Error("failed to create receiver for remote host, skipping",
+					zap.String("host", rc.Server),
+					zap.Error(err))
+				continue
+			}
+			receivers = append(receivers, r)
+		}
+		if len(receivers) == 0 {
+			return nil, errors.New("failed to create receiver for any configured remote host")
 		}
 		return &multiLogsReceiver{receivers: receivers}, nil
 	}
@@ -118,6 +134,19 @@ func (m *multiLogsReceiver) Shutdown(ctx context.Context) error {
 		}
 	}
 	return errors.Join(errs...)
+}
+
+func expandMultipleHosts(remote windows.RemoteConfig) []windows.RemoteConfig {
+	result := make([]windows.RemoteConfig, 0, len(remote.Servers))
+	for _, host := range remote.Servers {
+		result = append(result, windows.RemoteConfig{
+			Server:   host,
+			Username: remote.Username,
+			Password: remote.Password,
+			Domain:   remote.Domain,
+		})
+	}
+	return result
 }
 
 // receiverType implements adapter.LogReceiverType
