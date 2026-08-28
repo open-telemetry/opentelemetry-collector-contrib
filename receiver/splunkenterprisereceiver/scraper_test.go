@@ -189,22 +189,22 @@ func createConfig(ts *httptest.Server, badConfig bool) *Config {
 	metricsCfg.Metrics.SplunkLicenseIndexUsage.Enabled = true
 	idxEndpoint := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	idxEndpoint.MaxIdleConns = 0
-	idxEndpoint.IdleConnTimeout = 0
+	idxEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	idxEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	idxEndpoint.ForceAttemptHTTP2 = false
 	idxEndpoint.Endpoint = endpoint
 	idxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")})
 	shEndpoint := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	shEndpoint.MaxIdleConns = 0
-	shEndpoint.IdleConnTimeout = 0
+	shEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	shEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	shEndpoint.ForceAttemptHTTP2 = false
 	shEndpoint.Endpoint = endpoint
 	shEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")})
 	cmEndpoint := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	cmEndpoint.MaxIdleConns = 0
-	cmEndpoint.IdleConnTimeout = 0
+	cmEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	cmEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	cmEndpoint.ForceAttemptHTTP2 = false
 	cmEndpoint.Endpoint = endpoint
 	cmEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")})
@@ -287,8 +287,8 @@ func TestScrapeCustomSearchesUnconfiguredEndpoint(t *testing.T) {
 	// Only the indexer endpoint is configured; search_head and cluster_master are not.
 	idxEndpoint := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	idxEndpoint.MaxIdleConns = 0
-	idxEndpoint.IdleConnTimeout = 0
+	idxEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	idxEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	idxEndpoint.ForceAttemptHTTP2 = false
 	idxEndpoint.Endpoint = ts.URL
 	idxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")})

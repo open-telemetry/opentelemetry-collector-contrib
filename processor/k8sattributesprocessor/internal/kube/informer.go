@@ -175,6 +175,18 @@ func newJobSharedInformer(client metadata.Interface, namespace string, watchSync
 	)
 }
 
+func newCronJobSharedInformer(client metadata.Interface, namespace string, watchSyncPeriod time.Duration) cache.SharedInformer {
+	gvr := schema.GroupVersionResource{Group: "batch", Version: "v1", Resource: "cronjobs"}
+	return cache.NewSharedInformer(
+		&cache.ListWatch{
+			ListWithContextFunc:  metadataListFunc(client, gvr, namespace),
+			WatchFuncWithContext: metadataWatchFunc(client, gvr, namespace),
+		},
+		&metav1.PartialObjectMetadata{},
+		watchSyncPeriod,
+	)
+}
+
 func newNodeSharedInformer(client metadata.Interface, nodeName string, watchSyncPeriod time.Duration) cache.SharedInformer {
 	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "nodes"}
 	return cache.NewSharedInformer(
