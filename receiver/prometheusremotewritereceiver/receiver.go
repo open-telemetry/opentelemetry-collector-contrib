@@ -361,7 +361,6 @@ func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMe
 // translate is not feature complete.
 func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, map[uint64]stagedResource, error) {
 	var (
-		badRequestErrors error
 		// otelMetrics represents the final metrics, after all the processing, that will be returned by the receiver.
 		otelMetrics   = pmetric.NewMetrics()
 		labelsBuilder = labels.NewScratchBuilder(0)
@@ -393,30 +392,24 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		ts := &req.Timeseries[i]
 		ls, err := ts.ToLabels(&labelsBuilder, req.Symbols)
 		if err != nil {
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("error converting timeseries to labels: %w", err))
-			continue
+			return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil, fmt.Errorf("error converting timeseries to labels: %w", err)
 		}
 		metadata := schema.NewMetadataFromLabels(ls)
 		if metadata.Name == "" {
-			badRequestErrors = errors.Join(badRequestErrors, errors.New("missing metric name in labels"))
-			continue
+			return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil, errors.New("missing metric name in labels")
 		} else if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("duplicate label %q in labels", duplicateLabel))
-			continue
+			return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil, fmt.Errorf("duplicate label %q in labels", duplicateLabel)
 		}
 		if err := validateTimeSeriesPayload(ts, metadata.Name); err != nil {
-			badRequestErrors = errors.Join(badRequestErrors, err)
-			continue
+			return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil, err
 		}
 
 		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) {
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unit ref %d is out of bounds of symbolsTable", ts.Metadata.UnitRef))
-			continue
+			return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil, fmt.Errorf("unit ref %d is out of bounds of symbolsTable", ts.Metadata.UnitRef)
 		}
 
 		if ts.Metadata.HelpRef >= uint32(len(req.Symbols)) {
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("help ref %d is out of bounds of symbolsTable", ts.Metadata.HelpRef))
-			continue
+			return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil, fmt.Errorf("help ref %d is out of bounds of symbolsTable", ts.Metadata.HelpRef)
 		}
 
 		// If the metric name is equal to target_info, we use its labels as attributes of the resource
@@ -515,8 +508,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 				return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil,
 					fmt.Errorf("summary metric %q is not supported by this receiver, its quantile series can arrive in separate requests and cannot be reassembled", metricName)
 			default:
-				badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
-				continue
+				return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName)
 			}
 			metricCache[metricKey] = metric
 		} else if len(metric.Description()) < len(description) {
@@ -552,16 +544,11 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil,
 				fmt.Errorf("summary metric %q is not supported by this receiver, its quantile series can arrive in separate requests and cannot be reassembled", metricName)
 		default:
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
+			return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName)
 		}
 	}
 
-	if badRequestErrors != nil {
-		// Nothing is published when any known data could not be written.
-		return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil, badRequestErrors
-	}
-
-	return otelMetrics, stats, cacheUpdates, badRequestErrors
+	return otelMetrics, stats, cacheUpdates, nil
 }
 
 // validateTimeSeriesPayload checks what a series carries against what the protocol allows it to.
