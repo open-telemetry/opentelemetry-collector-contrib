@@ -43,7 +43,10 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 		if err != nil {
 			errors = multierr.Append(errors, err)
 		}
-		contexts[i] = parsedContextStatements{context, cs.SharedCache}
+		contexts[i] = parsedContextStatements{
+			LogsConsumer: context,
+			sharedCache:  cs.SharedCache,
+		}
 	}
 
 	if errors != nil {

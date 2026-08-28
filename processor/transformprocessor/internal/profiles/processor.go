@@ -41,7 +41,14 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 		if err != nil {
 			errors = multierr.Append(errors, err)
 		}
-		contexts[i] = parsedContextStatements{context, cs.SharedCache}
+		contexts[i] = parsedContextStatements{
+			ProfilesConsumer: context,
+			sharedCache:      cs.SharedCache,
+		}
+	}
+
+	if errors != nil {
+		return nil, errors
 	}
 
 	var sharedCaches map[common.ContextID]*pcommon.Map
@@ -53,10 +60,6 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 			m := pcommon.NewMap()
 			sharedCaches[c.Context()] = &m
 		}
-	}
-
-	if errors != nil {
-		return nil, errors
 	}
 
 	return &Processor{
