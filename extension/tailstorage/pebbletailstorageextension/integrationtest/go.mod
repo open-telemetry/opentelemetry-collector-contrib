@@ -23,7 +23,7 @@ require (
 	go.opentelemetry.io/collector/receiver v1.65.1-0.20260827211935-bdb5c072803c
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.159.1-0.20260827211935-bdb5c072803c
 	go.opentelemetry.io/collector/service v0.159.1-0.20260827211935-bdb5c072803c
-	google.golang.org/grpc v1.83.1
+	google.golang.org/grpc v1.83.2
 )
 
 require (
@@ -177,7 +177,7 @@ require (
 	go.opentelemetry.io/otel/exporters/stdout/stdoutlog v0.21.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.45.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.45.0 // indirect
-	go.opentelemetry.io/otel/log v0.21.0 // indirect
+	go.opentelemetry.io/otel/log v0.22.0 // indirect
 	go.opentelemetry.io/otel/metric v1.46.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
 	go.opentelemetry.io/otel/sdk/log v0.21.0 // indirect
