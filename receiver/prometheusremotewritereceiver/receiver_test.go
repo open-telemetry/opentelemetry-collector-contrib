@@ -4147,6 +4147,50 @@ func invalidHistogramSeries(timestamp int64) writev2.TimeSeries {
 // TestRequestIsAllOrNothing covers the Remote-Write 2.0 rule that a receiver must not answer 2xx
 // when any data it understood was not written, and that the Written headers carry what was
 // actually written.
+func TestTargetInfoIsNotExemptFromRefValidation(t *testing.T) {
+	// A symbol reference is wire data whichever series carries it, so target_info is checked
+	// before it is read for resource attributes rather than after.
+	symbols := []string{
+		"",                        // 0
+		"__name__", "target_info", // 1, 2
+		"job", "service-x/test", // 3, 4
+		"instance", "107cn001", // 5, 6
+	}
+
+	for _, tc := range []struct {
+		name   string
+		unit   uint32
+		help   uint32
+		expect string
+	}{
+		{name: "unit ref past the table", unit: 9999, expect: "unit ref"},
+		{name: "help ref past the table", help: 9999, expect: "help ref"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			sink := &consumertest.MetricsSink{}
+			prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+
+			w := httptest.NewRecorder()
+			prwReceiver.handlePRW(w, writeRequest(t, &writev2.Request{
+				Symbols: symbols,
+				Timeseries: []writev2.TimeSeries{{
+					Metadata: writev2.Metadata{
+						Type:    writev2.Metadata_METRIC_TYPE_GAUGE,
+						UnitRef: tc.unit,
+						HelpRef: tc.help,
+					},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				}},
+			}))
+
+			require.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+			assert.Contains(t, w.Body.String(), tc.expect)
+			assert.Empty(t, sink.AllMetrics())
+		})
+	}
+}
+
 func TestRequestIsAllOrNothing(t *testing.T) {
 	symbols := []string{"", "__name__", "test_hist", "job", "service-x/test", "instance", "107cn001"}
 

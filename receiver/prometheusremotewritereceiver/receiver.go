@@ -409,6 +409,16 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			continue
 		}
 
+		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) {
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unit ref %d is out of bounds of symbolsTable", ts.Metadata.UnitRef))
+			continue
+		}
+
+		if ts.Metadata.HelpRef >= uint32(len(req.Symbols)) {
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("help ref %d is out of bounds of symbolsTable", ts.Metadata.HelpRef))
+			continue
+		}
+
 		// If the metric name is equal to target_info, we use its labels as attributes of the resource
 		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
 		if metadata.Name == "target_info" {
@@ -433,16 +443,6 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		si := prw.extractScopeInfo(ls)
 		metricName := metadata.Name
-		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) {
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unit ref %d is out of bounds of symbolsTable", ts.Metadata.UnitRef))
-			continue
-		}
-
-		if ts.Metadata.HelpRef >= uint32(len(req.Symbols)) {
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("help ref %d is out of bounds of symbolsTable", ts.Metadata.HelpRef))
-			continue
-		}
-
 		unit := req.Symbols[ts.Metadata.UnitRef]
 		description := req.Symbols[ts.Metadata.HelpRef]
 
