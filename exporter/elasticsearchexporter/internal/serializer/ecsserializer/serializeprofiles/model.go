@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package serializeprofiles // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
+package serializeprofiles // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/ecsserializer/serializeprofiles"
 
 import (
 	"encoding/json"
@@ -42,7 +42,7 @@ type StackPayload struct {
 // in the schema mapping.
 type StackTraceEvent struct {
 	EcsVersion
-	TimeStamp    unixTime64 `json:"@timestamp"`
+	TimeStamp    UnixTime64 `json:"@timestamp"`
 	HostID       string     `json:"host.id"`
 	StackTraceID string     `json:"Stacktrace.id"` // 128-bit hash in binary form
 

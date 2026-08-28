@@ -13,7 +13,7 @@ import (
 func TestUnixTime64_MarshalJSON(t *testing.T) {
 	tests := []struct {
 		name string
-		time unixTime64
+		time UnixTime64
 		want string
 	}{
 		{
