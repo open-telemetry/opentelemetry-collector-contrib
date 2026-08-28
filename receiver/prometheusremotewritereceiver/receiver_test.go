@@ -230,6 +230,90 @@ func theExemplar() []writev2.Exemplar {
 	return []writev2.Exemplar{{LabelsRefs: []uint32{10, 11}, Value: 1.5, Timestamp: 1}}
 }
 
+func TestExemplarsStayWithTheirSeries(t *testing.T) {
+	// The key is the whole label set, so anything that tells two series apart keeps their
+	// exemplars apart too. Each case sends one exemplar, on the second series.
+	symbols := []string{
+		"",                       // 0
+		"__name__", "test_total", // 1, 2
+		"job", "service-a", "service-b", // 3, 4, 5
+		"instance", "host-a", "host-b", // 6, 7, 8
+		"otel_scope_name", "scope", // 9, 10
+		"otel_scope_schema_url", "https://example.com/a", "https://example.com/b", // 11, 12, 13
+		"otel_scope_attr_tier", "one", "two", // 14, 15, 16
+		"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 17, 18
+	}
+	theExemplar := []writev2.Exemplar{{LabelsRefs: []uint32{17, 18}, Value: 1.5, Timestamp: 1}}
+
+	for _, tc := range []struct {
+		name       string
+		first      []uint32
+		second     []uint32
+		metricType writev2.Metadata_MetricType
+	}{
+		{
+			name:   "different job",
+			first:  []uint32{1, 2, 3, 4, 6, 7, 9, 10},
+			second: []uint32{1, 2, 3, 5, 6, 7, 9, 10},
+		},
+		{
+			name:   "different instance",
+			first:  []uint32{1, 2, 3, 4, 6, 7, 9, 10},
+			second: []uint32{1, 2, 3, 4, 6, 8, 9, 10},
+		},
+		{
+			name:   "different scope schema URL",
+			first:  []uint32{1, 2, 3, 4, 6, 7, 9, 10, 11, 12},
+			second: []uint32{1, 2, 3, 4, 6, 7, 9, 10, 11, 13},
+		},
+		{
+			name:   "different scope attribute",
+			first:  []uint32{1, 2, 3, 4, 6, 7, 9, 10, 14, 15},
+			second: []uint32{1, 2, 3, 4, 6, 7, 9, 10, 14, 16},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			series := func(refs []uint32, exemplars []writev2.Exemplar, ts int64) writev2.TimeSeries {
+				return writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+					LabelsRefs: refs,
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: ts}},
+					Exemplars:  exemplars,
+				}
+			}
+
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols:    symbols,
+				Timeseries: []writev2.TimeSeries{series(tc.first, nil, 1), series(tc.second, theExemplar, 2)},
+			})
+			require.NoError(t, err)
+
+			dataPoints, carrying := 0, 0
+			rms := metrics.ResourceMetrics()
+			for i := 0; i < rms.Len(); i++ {
+				sms := rms.At(i).ScopeMetrics()
+				for j := 0; j < sms.Len(); j++ {
+					ms := sms.At(j).Metrics()
+					for k := 0; k < ms.Len(); k++ {
+						dps := ms.At(k).Sum().DataPoints()
+						for d := 0; d < dps.Len(); d++ {
+							dataPoints++
+							if dps.At(d).Exemplars().Len() > 0 {
+								carrying++
+							}
+						}
+					}
+				}
+			}
+			require.Equal(t, 2, dataPoints, "the two series stay apart")
+			assert.Equal(t, 1, carrying, "only the series that sent the exemplar carries it")
+			assert.Equal(t, 1, stats.Exemplars)
+		})
+	}
+}
+
 func TestHistogramExemplarsAttachToLabelledSeries(t *testing.T) {
 	// The exemplars are collected under a key that hashes the data labels, so the lookup has to
 	// hash them too. Without that, a histogram carrying any ordinary label never finds its own.
