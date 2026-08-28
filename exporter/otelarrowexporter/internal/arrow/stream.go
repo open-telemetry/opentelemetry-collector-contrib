@@ -101,7 +101,7 @@ type writeItem struct {
 	// caller's goroutine)
 	uncompSize int
 	// producerCtx is used for tracing purposes and to unblock a
-	// stuck send if the producer is
+	// stuck prioritizer.
 	producerCtx context.Context
 }
 
