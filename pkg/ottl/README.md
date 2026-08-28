@@ -18,6 +18,12 @@ This package implements everything necessary to use OTTL in a Collector componen
 
 - [Getting Started](#getting-started)
 - [Where to use OTTL](#where-to-use-ottl)
+- [Feature Gates](#feature-gates)
+- [Benchmarks](#benchmarks)
+- [Observability](#observability)
+- [Compatibility](#compatibility)
+- [Production Guidance](#production-guidance)
+- [Limitations](#limitations)
 - [Troubleshooting](#troubleshooting)
 - [Resources](#resources)
 
@@ -73,13 +79,18 @@ There is a lot more OTTL can do, like nested functions, arithmetic, indexing, an
 - To select spans to be sampled, use the [tail sampling processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/tailsamplingprocessor/README.md).
 - To route data between pipelines, use the [routing connector](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/connector/routingconnector/README.md).
 
-## Feature Gate
+## Feature Gates
 
-### `ottl.set.allowNil`
+OTTL uses the Collector's [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) mechanism to stage breaking or experimental behavior. See [documentation.md](./documentation.md) for the authoritative generated list. All gates are documented with stability, version, and reference.
 
-The `ottl.set.allowNil` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) changes the behavior of the `set` function when a `nil` value is evaluated. This gate is currently in `alpha`. 
+| Gate | Stage | Default | Description | When to use |
+|------|-------|---------|-------------|-------------|
+| `ottl.PanicDuplicateName` | `beta` | disabled | When enabled, `CreateFactoryMap` panics if the same function name is registered twice. | Keep disabled unless you want strict duplicate detection during development; stable promotions keep the non-panic short-name behavior for backwards compatibility. |
+| `ottl.contexts.enableOTelColContext` | `beta` | enabled at `v0.147.0` (`v0.147.0` onward) | Enables the `otelcol.*` context (`otelcol.auth`, `otelcol.client.*`, etc.) for accessing collector client metadata. | Leave enabled for routing/auth use-cases; disable only if you must forbid access to client metadata. When enabled, `Debug` logs redact nothing — see Observability privacy note. |
+| `ottl.functions.enableLambda` | `alpha` | disabled | Allows OTTL functions to take lambda arguments (e.g., `map`, `filter`). When disabled, lambda syntax is rejected at parse time. | Enable only when testing lambdas; not yet Stable. |
+| `ottl.set.allowNil` | `alpha` | disabled | Changes `set` so `nil` is passed to the target setter instead of being a guaranteed no-op. Target handling varies (attribute maps clear, typed fields error). | Enable when you need `set(..., nil)` to clear values; otherwise migrate to `set(...) where field != nil`. |
 
-Prior to this gate, passing `nil` to the `set` function (e.g., `set(attributes["key"], nil)`) was a no-op that preserved the existing target value. When this gate is enabled, `set` passes the `nil` value directly to the target's setter. How the `nil` value is handled depends entirely on the specific target's implementation; for example, it can be used to clear values in attribute maps, result in an error for strictly typed fields, or simply be ignored. Users relying on the old guaranteed no-op behavior should migrate their configurations to use conditional checks (e.g., `set(...) where field != nil`).
+For `beta` gates, configuration is stable across minor versions. `alpha` gates may change with one minor's notice. See [component-stability#beta](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta) and [feature gate docs](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md).
 
 ## Benchmarks
 
@@ -100,6 +111,59 @@ individual functions and value comparisons. Run all benchmarks from the `pkg/ott
 ```sh
 make benchmark-ottl
 ```
+
+## Observability
+
+OTTL's internal telemetry is **Stable** (see [component-stability#stable observability](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#observability-requirements)). It is deliberately limited to structured logs via `component.TelemetrySettings`; metrics and traces are provided by the host pipeline component (transform processor, filter processor, routing connector, tail sampling processor) so that component-instance attributes (`otelcol.component.id`, `otelcol.pipeline.id`, etc.) remain correctly attributed via the collector's auto-instrumentation.
+
+### Self-observability (logs)
+
+| Level | Message | Fields | When | Notes |
+|-------|---------|--------|------|-------|
+| `Debug` (`Detailed` telemetry) | `initial TransformContext before executing StatementSequence` | `TransformContext` (full `resource`/`scope`/signal data, plus `cache`) | Per `StatementSequence.Execute` call, before any statement | Very verbose, gated by `Logger.Core().Enabled(zap.DebugLevel)`. Contains raw signal data including any `otelcol.*` paths when `ottl.contexts.enableOTelColContext` is enabled. Do not enable `service.telemetry.logs.level: debug` in production without considering privacy. Field names and message are Stable. |
+| `Debug` (`Detailed`) | `TransformContext after statement execution` | `statement` (original text), `condition matched` (bool), `TransformContext` (after) | Per `Statement.Execute`, deferred after `condition.Eval` | Same privacy/lifecycle notes as above. `condition matched` is `false` when the condition evaluates to `false` or errors. |
+| `Debug` (`Detailed`) | `condition evaluation result` | `condition` (original text), `match` (bool), `TransformContext` | Per `Condition.Eval` inside `ConditionSequence.Eval` | Used by filter/routing/tail-sampling to show why data was kept/dropped. |
+| `Warn` (`Normal` telemetry) | `failed to execute statement` | `statement`, `error` | Only when `ErrorMode` is `IgnoreError` and `function.Eval` or `condition.Eval` returns an error | Never includes `TransformContext` or signal data; safe for alerting via log scrape. When `ErrorMode` is `PropagateError` the error is returned to the host processor and observed via `otelcol_processor_*` and pipeline `otelcol.*.consumed/produced` metrics with `outcome=failure`. When `Silent`, no log is emitted. |
+| `Warn` (`Normal`) | `failed to eval condition` | `condition`, `error` | Only when `ConditionSequence` `ErrorMode` is `IgnoreError` and `condition.Eval` errors | Same guarantees as above. |
+| `Info` (`Normal`) | `one or more paths were modified to add context` (from `ParserCollection`) | `modifications` | At parse time when `EnableParserCollectionModifiedPathsLogging` is true | Helps diagnose automatic context injection; not per-item. |
+| `Debug` (`Detailed`) | `Inferring OTTL context` / `Inferred ...` / `Validating ...` (from `context_inferrer`) | context names | At parser-collection creation | Diagnostic for context auto-inference; Stable but subject to `DebugLevel` gate. |
+
+All log messages, field keys (`statement`, `condition`, `condition matched`, `match`, `TransformContext`, `error`), and their levels are Stable and will not be renamed or removed in a backward-incompatible way. New logs may be added at `Debug` without breaking stability.
+
+### Host component telemetry
+
+OTTL does not emit its own metrics or spans. Hosts satisfy the remaining Stable observability categories:
+
+- **Received/output/dropped**: pipeline auto-instrumentation (`otelcol_processor_consumed_items`, `otelcol_processor_produced_items` with `otelcol.component.outcome=success|failure|refused`) plus processor-specific counters (e.g., `processor_filter_logs.filtered` at `Development` today).
+- **Error details**: OTTL's `Warn` logs plus the host's returned error.
+- **Filtered/created/held & queue depth**: `N/A` for the `pkg/ottl` library itself (stateless, mutates in place); hosts expose it if they queue.
+- **Performance**: host-provided histograms/spans plus the benchmarks above. Per-statement histograms/spans are intentionally not emitted from the library to avoid high cardinality and duplication.
+
+To observe OTTL statement errors as metrics, configure the host processor with `error_mode: ignore` and alert on `Warn` logs, or use `propagate` and alert on the pipeline's `failure` outcome.
+
+## Compatibility
+
+| Dependency | Version / Guarantee | Notes |
+|------------|---------------------|-------|
+| Go | `go 1.26.0+` (see `pkg/ottl/go.mod`) | Follows Collector's Go support window. |
+| `go.opentelemetry.io/collector/pdata` | `v1.65.1` (via `go.opentelemetry.io/collector/component`) | OTTL works directly with `pdata`; breaking `pdata` changes will be gated by OTTL major version. |
+| `go.opentelemetry.io/collector/component` (TelemetrySettings) | `v1.65.1` | Logger/MeterProvider/TracerProvider injected; log contract above is Stable. |
+| Semantic Conventions | `v1.40.0` `go.opentelemetry.io/otel/semconv/v1.40.0` for `ottlfuncs` | Functions like `user_agent` parse UA and emit semconv attributes. |
+
+OTTL's grammar, path enumeration per signal, and function names (`ottlfuncs`) are Stable for `traces`/`metrics`/`logs` (beta today, Stable after graduation). New functions/paths may be added in minor versions; removals follow `beta`/`stable` configuration-change rules with deprecation + `N+1` window.
+
+## Production Guidance
+
+- **Error mode**: Prefer `error_mode: ignore` (see `processor/transformprocessor` and `processor/filterprocessor` docs; gates `processor.transform.defaultErrorModeIgnore` / `processor.filter.defaultErrorModeIgnore` are `stable` since `v0.150.0->v0.159.0`). With `ignore`, bad data is logged at `Warn` and the pipeline continues; with `propagate`, one bad OTTL statement fails the whole batch and is observed as `outcome=failure`. Use `silent` only when you deliberately want no observability.
+- **Scaling**: OTTL is CPU-bound and stateless. Scale the host processor horizontally (more pipeline workers/`sending_queue` consumers) or shard by `resource.attributes["service.name"]`. See host `Benchmarks` load-test links above for CPU vs statement count; `make benchmark-ottl` reproduces locally.
+- **No state/persistent storage**: OTTL does not hold data between `Execute`/`Eval` calls; no storage extension or graceful-shutdown configuration is required beyond the host processor's queue.
+
+## Limitations
+
+- **No cross-signal access**: `span.attributes["log.body"]` is illegal; each OTTL context is bound to a single signal (`ottlspan`, `ottllog`, `ottlmetric`, etc.).
+- **Type-strict paths**: Setting a strongly-typed field (e.g., `span.trace_id`) with `nil` or the wrong type errors; see `ottl.set.allowNil` above for `nil` handling. Use converters (`IsDouble`, `Double`, `String`, etc.) to coerce types.
+- **Attribute-map quirks**: `pcommon.Map` keys are strings; `append(..., Slice)` can create heterogeneous slices forbidden by OTLP spec — validate with `IsMap`/`IsSlice` if needed.
+- **Debug verbosity**: Enabling `service.telemetry.logs.level: debug` emits the full `TransformContext` per statement/condition (≈KB per record) and will degrade throughput; use only for short-lived debugging.
 
 ## Troubleshooting
 

@@ -1,0 +1,7 @@
+change_type: enhancement
+component: pkg/ottl
+note: "Review and stabilize OTTL documentation for Stable promotion"
+issues: [50560]
+subtext: |
+  Comprehensive review of all pkg/ottl readmes. Updates pkg/ottl/README.md to document all 4 feature gates with stage/when-to-use, adds Stable Observability contract (log levels/fields/privacy, host delegation), adds Compatibility guarantees and Production Guidance (error_mode, scaling, stateless) and Limitations, and fixes TOC. Updates pkg/ottl/doc.go and parser.go with Stable observability comments. Adds observability tests verifying the log contract.
+change_logs: [user, api]
