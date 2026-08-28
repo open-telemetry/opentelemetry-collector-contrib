@@ -118,6 +118,7 @@ The OpenSearch exporter supports several document schemas and preprocessing beha
     - `policy_file`: (optional) Path to a JSON file containing a full ISM policy body. When set, it is used verbatim and the `rollover_*` options are ignored.
     - `rollover_min_size`: (optional, default=`50gb`) Minimum index size before rollover. Used only by the built-in policy.
     - `rollover_min_index_age`: (optional, default=`24h`) Minimum index age before rollover. Used only by the built-in policy.
+    - `rollover_priority`: (optional, default=`100`) ISM template priority used to claim the `<alias>-*` index pattern. Increase it if the cluster already has an ISM policy managing the same pattern — OpenSearch rejects overlapping ISM templates that share a priority. Used only by the built-in policy.
   - `timestamp_field`: (optional) Field to store the timestamp in. If not set, uses the default `@timestamp`.
   - `unix_timestamp`: (optional) Whether to store the timestamp in epoch milliseconds.
   - `dedup`: (optional) removes fields from the document, that have duplicate keys. The filtering only keeps the last value for a key.

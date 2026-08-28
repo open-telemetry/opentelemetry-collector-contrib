@@ -15,6 +15,9 @@ $defs:
       rollover_min_size:
         description: RolloverMinSize is the minimum primary-shard-inclusive index size before rollover (e.g. "50gb"). Used only by the built-in policy. Defaults to "50gb" when empty.
         type: string
+      rollover_priority:
+        description: RolloverPriority is the ISM template priority used by the built-in policy to claim the `<alias>-*` index pattern. Increase it if the cluster already has an ISM policy managing the same pattern (OpenSearch rejects overlapping templates that share a priority). Used only by the built-in policy. Defaults to 100 when zero.
+        type: integer
   mappings_settings:
     type: object
     properties:

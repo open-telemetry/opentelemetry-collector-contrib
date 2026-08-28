@@ -20,6 +20,7 @@ import (
 const (
 	defaultRolloverMinSize     = "50gb"
 	defaultRolloverMinIndexAge = "24h"
+	defaultRolloverPriority    = 100
 )
 
 // ismManager creates the ISM rollover policy and initial write-aliased index for an otel-v1
@@ -90,7 +91,7 @@ func (m *ismManager) ensurePolicy(ctx context.Context, policyName, indexAlias st
 
 func (m *ismManager) buildPolicyBody(indexAlias string) (ism.PoliciesPutBody, error) {
 	if m.cfg.PolicyFile != "" {
-		return m.loadPolicyFile(m.cfg.PolicyFile)
+		return loadPolicyFile(m.cfg.PolicyFile)
 	}
 
 	minSize := m.cfg.RolloverMinSize
@@ -100,6 +101,10 @@ func (m *ismManager) buildPolicyBody(indexAlias string) (ism.PoliciesPutBody, er
 	minAge := m.cfg.RolloverMinIndexAge
 	if minAge == "" {
 		minAge = defaultRolloverMinIndexAge
+	}
+	priority := m.cfg.RolloverPriority
+	if priority == 0 {
+		priority = defaultRolloverPriority
 	}
 
 	return ism.PoliciesPutBody{
@@ -122,14 +127,14 @@ func (m *ismManager) buildPolicyBody(indexAlias string) (ism.PoliciesPutBody, er
 			Template: []ism.Template{
 				{
 					IndexPatterns: []string{indexAlias + "-*"},
-					Priority:      100,
+					Priority:      priority,
 				},
 			},
 		},
 	}, nil
 }
 
-func (m *ismManager) loadPolicyFile(path string) (ism.PoliciesPutBody, error) {
+func loadPolicyFile(path string) (ism.PoliciesPutBody, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return ism.PoliciesPutBody{}, fmt.Errorf("reading ISM policy file: %w", err)
@@ -150,7 +155,7 @@ func (m *ismManager) ensureInitialIndex(ctx context.Context, indexAlias string) 
 	}
 
 	initialIndex := indexAlias + "-000001"
-	body := fmt.Sprintf(`{"aliases":{"%s":{"is_write_index":true}}}`, indexAlias)
+	body := fmt.Sprintf(`{"aliases":{%q:{"is_write_index":true}}}`, indexAlias)
 	createReq := opensearchapi.IndicesCreateReq{
 		Index: initialIndex,
 		Body:  strings.NewReader(body),

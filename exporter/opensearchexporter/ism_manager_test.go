@@ -26,6 +26,15 @@ func TestBuildPolicyBodyDefaults(t *testing.T) {
 
 	require.Len(t, body.Policy.Template, 1)
 	assert.Equal(t, []string{otelV1SpanIndexAlias + "-*"}, body.Policy.Template[0].IndexPatterns)
+	assert.Equal(t, defaultRolloverPriority, body.Policy.Template[0].Priority)
+}
+
+func TestBuildPolicyBodyCustomPriority(t *testing.T) {
+	m := &ismManager{cfg: ISMConfig{RolloverPriority: 200}}
+	body, err := m.buildPolicyBody(otelV1SpanIndexAlias)
+	require.NoError(t, err)
+	require.Len(t, body.Policy.Template, 1)
+	assert.Equal(t, 200, body.Policy.Template[0].Priority)
 }
 
 func TestBuildPolicyBodyCustomRollover(t *testing.T) {

@@ -160,6 +160,12 @@ type ISMConfig struct {
 	// RolloverMinIndexAge is the minimum index age before rollover (e.g. "24h").
 	// Used only by the built-in policy. Defaults to "24h" when empty.
 	RolloverMinIndexAge string `mapstructure:"rollover_min_index_age"`
+
+	// RolloverPriority is the ISM template priority used by the built-in policy to claim the
+	// `<alias>-*` index pattern. Increase it if the cluster already has an ISM policy managing
+	// the same pattern (OpenSearch rejects overlapping templates that share a priority).
+	// Used only by the built-in policy. Defaults to 100 when zero.
+	RolloverPriority int `mapstructure:"rollover_priority"`
 }
 
 type MappingMode int
