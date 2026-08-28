@@ -127,15 +127,13 @@ func TestSerializeProfile(t *testing.T) {
 					"ecs.version":            "1.12.0",
 				},
 				{
-					"@timestamp":                    "1970-01-01T00:00:00Z",
-					"Stacktrace.count":              json.Number("1"),
-					"Stacktrace.sampling_frequency": json.Number("20"),
-					"Stacktrace.id":                 "02VzuClbpt_P3xxwox83Ng",
-					"ecs.version":                   "1.12.0",
-					"host.id":                       "localhost",
-					"process.executable.name":       "libc.so.6",
-					"process.thread.name":           "",
-					"profiling.project.id":          json.Number("2"),
+					"@timestamp":                                    "1970-01-01T00:00:00Z",
+					"count":                                         json.Number("1"),
+					"sampling_frequency":                            json.Number("20"),
+					"stacktrace.id":                                 "02VzuClbpt_P3xxwox83Ng",
+					"resource.attribute.host.id":                    "localhost",
+					"resource.attribute.process.executable.name":    "libc.so.6",
+					"resource.attribute.process.thread.name":        "",
 				},
 				{
 					"script": map[string]any{
