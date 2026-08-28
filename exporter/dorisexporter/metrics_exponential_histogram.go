@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 )
 
 //go:embed sql/metrics_exponential_histogram_ddl.sql
@@ -60,10 +61,18 @@ func (m *metricModelExponentialHistogram) add(pm pmetric.Metric, dm *dMetric, e 
 		for j := 0; j < exemplars.Len(); j++ {
 			exemplar := exemplars.At(j)
 
+			value := e.getExemplarValue(exemplar)
+			if !isFiniteNumber(value) {
+				e.logger.Warn("dropping exemplar with non-finite value",
+					zap.String("metric", pm.Name()),
+					zap.Float64("value", value))
+				continue
+			}
+
 			newExemplar := &dExemplar{
 				FilteredAttributes: exemplar.FilteredAttributes().AsRaw(),
 				Timestamp:          e.formatTime(exemplar.Timestamp().AsTime()),
-				Value:              e.getExemplarValue(exemplar),
+				Value:              value,
 				SpanID:             exemplar.SpanID().String(),
 				TraceID:            exemplar.TraceID().String(),
 			}
@@ -101,6 +110,15 @@ func (m *metricModelExponentialHistogram) add(pm pmetric.Metric, dm *dMetric, e 
 			Max:                    dp.Max(),
 			ZeroThreshold:          dp.ZeroThreshold(),
 			AggregationTemporality: pm.ExponentialHistogram().AggregationTemporality().String(),
+		}
+		if !isFiniteNumber(metric.Sum) || !isFiniteNumber(metric.Min) || !isFiniteNumber(metric.Max) ||
+			!isFiniteNumber(metric.ZeroThreshold) {
+			e.logger.Warn("dropping exponential histogram data point with non-finite value",
+				zap.String("metric", pm.Name()),
+				zap.Float64("sum", metric.Sum),
+				zap.Float64("min", metric.Min),
+				zap.Float64("max", metric.Max))
+			continue
 		}
 		m.data = append(m.data, metric)
 	}

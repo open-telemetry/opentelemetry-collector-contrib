@@ -149,7 +149,12 @@ func toJSONLines[T dLog | dTrace | metric](data []*T) ([]byte, error) {
 	for _, d := range data {
 		err := enc.Encode(d)
 		if err != nil {
-			return nil, err
+			// A single non-serializable entry (e.g. a NaN/±Inf float,
+			// which encoding/json rejects) must not fail the whole batch.
+			// Skip it and keep the remaining valid entries. The add()
+			// methods already drop such data points and log a warning,
+			// so this is a defensive fallback. See #50569.
+			continue
 		}
 	}
 	return buf.Bytes(), nil

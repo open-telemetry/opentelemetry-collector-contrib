@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 )
 
 //go:embed sql/metrics_summary_ddl.sql
@@ -72,6 +73,25 @@ func (m *metricModelSummary) add(pm pmetric.Metric, dm *dMetric, e *metricsExpor
 			Count:          int64(dp.Count()),
 			Sum:            dp.Sum(),
 			QuantileValues: newQuantileValues,
+		}
+		if !isFiniteNumber(metric.Sum) {
+			e.logger.Warn("dropping summary data point with non-finite sum",
+				zap.String("metric", pm.Name()),
+				zap.Float64("sum", metric.Sum))
+			continue
+		}
+		for _, qv := range metric.QuantileValues {
+			if !isFiniteNumber(qv.Quantile) || !isFiniteNumber(qv.Value) {
+				e.logger.Warn("dropping summary data point with non-finite quantile value",
+					zap.String("metric", pm.Name()),
+					zap.Float64("quantile", qv.Quantile),
+					zap.Float64("value", qv.Value))
+				metric = nil
+				break
+			}
+		}
+		if metric == nil {
+			continue
 		}
 		m.data = append(m.data, metric)
 	}

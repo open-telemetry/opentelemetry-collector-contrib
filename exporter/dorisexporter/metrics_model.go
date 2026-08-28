@@ -3,7 +3,19 @@
 
 package dorisexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorisexporter"
 
-import "go.opentelemetry.io/collector/pdata/pmetric"
+import (
+	"math"
+
+	"go.opentelemetry.io/collector/pdata/pmetric"
+)
+
+// isFiniteNumber reports whether v is a normal finite IEEE-754 value.
+// NaN, +Inf and -Inf cannot be serialized by encoding/json and would
+// otherwise fail the whole export batch (see #50569), so data points
+// carrying such values must be dropped before serialization.
+func isFiniteNumber(v float64) bool {
+	return !math.IsNaN(v) && !math.IsInf(v, 0)
+}
 
 type metricModel interface {
 	metricType() pmetric.MetricType

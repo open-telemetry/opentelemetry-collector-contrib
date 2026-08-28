@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 )
 
 //go:embed sql/metrics_gauge_ddl.sql
@@ -49,10 +50,18 @@ func (m *metricModelGauge) add(pm pmetric.Metric, dm *dMetric, e *metricsExporte
 		for j := 0; j < exemplars.Len(); j++ {
 			exemplar := exemplars.At(j)
 
+			value := e.getExemplarValue(exemplar)
+			if !isFiniteNumber(value) {
+				e.logger.Warn("dropping exemplar with non-finite value",
+					zap.String("metric", pm.Name()),
+					zap.Float64("value", value))
+				continue
+			}
+
 			newExemplar := &dExemplar{
 				FilteredAttributes: exemplar.FilteredAttributes().AsRaw(),
 				Timestamp:          e.formatTime(exemplar.Timestamp().AsTime()),
-				Value:              e.getExemplarValue(exemplar),
+				Value:              value,
 				SpanID:             exemplar.SpanID().String(),
 				TraceID:            exemplar.TraceID().String(),
 			}
@@ -67,6 +76,12 @@ func (m *metricModelGauge) add(pm pmetric.Metric, dm *dMetric, e *metricsExporte
 			StartTime:  e.formatTime(dp.StartTimestamp().AsTime()),
 			Value:      e.getNumberDataPointValue(dp),
 			Exemplars:  newExemplars,
+		}
+		if !isFiniteNumber(metric.Value) {
+			e.logger.Warn("dropping gauge data point with non-finite value",
+				zap.String("metric", pm.Name()),
+				zap.Float64("value", metric.Value))
+			continue
 		}
 		m.data = append(m.data, metric)
 	}

@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 )
 
 //go:embed sql/metrics_sum_ddl.sql
@@ -51,10 +52,18 @@ func (m *metricModelSum) add(pm pmetric.Metric, dm *dMetric, e *metricsExporter)
 		for j := 0; j < exemplars.Len(); j++ {
 			exemplar := exemplars.At(j)
 
+			value := e.getExemplarValue(exemplar)
+			if !isFiniteNumber(value) {
+				e.logger.Warn("dropping exemplar with non-finite value",
+					zap.String("metric", pm.Name()),
+					zap.Float64("value", value))
+				continue
+			}
+
 			newExemplar := &dExemplar{
 				FilteredAttributes: exemplar.FilteredAttributes().AsRaw(),
 				Timestamp:          e.formatTime(exemplar.Timestamp().AsTime()),
-				Value:              e.getExemplarValue(exemplar),
+				Value:              value,
 				SpanID:             exemplar.SpanID().String(),
 				TraceID:            exemplar.TraceID().String(),
 			}
@@ -71,6 +80,12 @@ func (m *metricModelSum) add(pm pmetric.Metric, dm *dMetric, e *metricsExporter)
 			Exemplars:              newExemplars,
 			AggregationTemporality: pm.Sum().AggregationTemporality().String(),
 			IsMonotonic:            pm.Sum().IsMonotonic(),
+		}
+		if !isFiniteNumber(metric.Value) {
+			e.logger.Warn("dropping sum data point with non-finite value",
+				zap.String("metric", pm.Name()),
+				zap.Float64("value", metric.Value))
+			continue
 		}
 		m.data = append(m.data, metric)
 	}
