@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 )
@@ -710,8 +711,10 @@ func TestMasterNodeNoPassword(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.Keepalive = configoptional.Some(confighttp.KeepaliveClientConfig{
+		IdleConnTimeout: 0,
+		MaxIdleConns:    0,
+	})
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
@@ -732,8 +735,10 @@ func TestMasterNodeNoAuthentication(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.Keepalive = configoptional.Some(confighttp.KeepaliveClientConfig{
+		IdleConnTimeout: 0,
+		MaxIdleConns:    0,
+	})
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = elasticsearchMock.URL
 	client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
