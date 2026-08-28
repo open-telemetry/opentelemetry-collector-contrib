@@ -477,15 +477,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts, &stats)
 		case writev2.Metadata_METRIC_TYPE_COUNTER, writev2.Metadata_METRIC_TYPE_INFO, writev2.Metadata_METRIC_TYPE_STATESET:
 			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts, &stats)
-			attrsHash := pdatautil.MapHash(extractAttributes(ls))
-			key := exemplarKey{
-				ScopeName:    si.Name,
-				ScopeVersion: si.Version,
-				MetricName:   metricName,
-				MetricType:   ts.Metadata.Type,
-				AttrsHash:    attrsHash,
-			}
-			if ex, ok := exemplarMap[key.hash()]; ok && ex.Len() > 0 {
+			key := makeExemplarKey(ls)
+			if ex, ok := exemplarMap[key]; ok && ex.Len() > 0 {
+				attrsHash := pdatautil.MapHash(extractAttributes(ls))
 				dataPoints := metric.Sum().DataPoints()
 				for i := 0; i < dataPoints.Len(); i++ {
 					if pdatautil.MapHash(dataPoints.At(i).Attributes()) == attrsHash {
@@ -522,7 +516,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	scopeCache map[scopeCacheKey]pmetric.ScopeMetrics,
 	stats *promremote.WriteResponseStats,
 	modifiedRM map[uint64]pmetric.ResourceMetrics,
-	exemplarMap map[uint64]pmetric.ExemplarSlice,
+	exemplarMap map[exemplarKey]pmetric.ExemplarSlice,
 	bucketBudget *histogramBucketBudget,
 ) {
 	// Drop classic histogram series (those with samples)
@@ -534,21 +528,14 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	attrs := extractAttributes(ls)
 
 	// One TimeSeries is one series, so every histogram below shares the key its exemplars were
-	// collected under. A request that carries none never reaches the hashing.
+	// collected under. A request that carries none never reaches the lookup.
 	var (
 		exemplars     pmetric.ExemplarSlice
-		exemplarsKey  uint64
+		exemplarsKey  exemplarKey
 		haveExemplars bool
 	)
 	if len(exemplarMap) > 0 {
-		key := exemplarKey{
-			ScopeName:    si.Name,
-			ScopeVersion: si.Version,
-			MetricName:   metricName,
-			MetricType:   ts.Metadata.Type,
-			AttrsHash:    pdatautil.MapHash(attrs),
-		}
-		exemplarsKey = key.hash()
+		exemplarsKey = makeExemplarKey(ls)
 		if ex, ok := exemplarMap[exemplarsKey]; ok && ex.Len() > 0 {
 			exemplars, haveExemplars = ex, true
 		}
