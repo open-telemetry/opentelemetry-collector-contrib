@@ -118,6 +118,25 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "otel_v1_ism"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.ClientConfig.Endpoint = sampleEndpoint
+				config.BulkAction = defaultBulkAction
+				config.MappingsSettings = MappingsSettings{
+					Mode:                "otel-v1",
+					ManageIndexTemplate: true,
+					IndexTemplateFile:   "/etc/otelcol/otel-v1-overlay.json",
+					ISM: ISMConfig{
+						Enabled:             true,
+						RolloverMinSize:     "25gb",
+						RolloverMinIndexAge: "12h",
+						RolloverPriority:    200,
+					},
+				}
+			}),
+			configValidateAssert: assert.NoError,
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "dynamic_log_indexing"),
 			expected: withDefaultConfig(func(config *Config) {
 				config.ClientConfig.Endpoint = sampleEndpoint
@@ -388,7 +407,7 @@ func TestISMAndCustomMappingValidation(t *testing.T) {
 				c.MappingsSettings.ISM.Enabled = true
 				c.LogsIndex = "otel-logs-%{service.name}"
 			},
-			expectError: errISMDynamicIndex.Error(),
+			expectError: errISMDynamicLogsIndex.Error(),
 		},
 		{
 			name: "ism enabled with dynamic traces_index is invalid",
@@ -397,7 +416,7 @@ func TestISMAndCustomMappingValidation(t *testing.T) {
 				c.MappingsSettings.ISM.Enabled = true
 				c.TracesIndex = "otel-traces-%{service.name}"
 			},
-			expectError: errISMDynamicIndex.Error(),
+			expectError: errISMDynamicTracesIndex.Error(),
 		},
 		{
 			name: "index_template_file with otel-v1 and manage_index_template is valid",

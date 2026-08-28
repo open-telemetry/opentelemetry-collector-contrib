@@ -71,12 +71,18 @@ func (s *ssoTracesExporter) Start(ctx context.Context, host component.Host) erro
 	s.client = client
 
 	if s.config.MappingsSettings.ManageIndexTemplate {
-		tm := newTemplateManager(client, s.telemetry.Logger, s.config.MappingsSettings.IndexTemplateFile)
+		tm, tmErr := newTemplateManager(client, s.telemetry.Logger, s.config.MappingsSettings.IndexTemplateFile)
+		if tmErr != nil {
+			return tmErr
+		}
 		tm.ensureTemplates(ctx)
 	}
 
 	if s.config.MappingsSettings.ISM.Enabled {
-		im := newISMManager(s.httpSettings.Endpoint, httpClient.Transport, client, s.config.MappingsSettings.ISM, s.telemetry.Logger)
+		im, imErr := newISMManager(s.httpSettings.Endpoint, httpClient.Transport, client, s.config.MappingsSettings.ISM, s.telemetry.Logger)
+		if imErr != nil {
+			return imErr
+		}
 		im.setupISM(ctx, otelV1SpanIndexAlias)
 	}
 

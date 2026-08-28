@@ -36,21 +36,22 @@ type templateManager struct {
 	customOverlay string
 }
 
-func newTemplateManager(client *opensearchapi.Client, logger *zap.Logger, customTemplateFile string) *templateManager {
+// newTemplateManager loads the optional custom overlay eagerly. A configured-but-unreadable
+// or non-JSON file is a configuration error and fails startup, rather than silently falling
+// back to the built-in template and indexing with unexpected mappings.
+func newTemplateManager(client *opensearchapi.Client, logger *zap.Logger, customTemplateFile string) (*templateManager, error) {
 	tm := &templateManager{client: client, logger: logger}
 	if customTemplateFile != "" {
 		data, err := os.ReadFile(customTemplateFile)
 		if err != nil {
-			// Best-effort: fall back to the built-in templates so a bad path does not
-			// block startup. Validation only checks that the option is used in a valid
-			// mode, not that the file exists, matching the exporter's other file options.
-			logger.Warn("Failed to read custom index template file; using built-in templates",
-				zap.String("file", customTemplateFile), zap.Error(err))
-		} else {
-			tm.customOverlay = string(data)
+			return nil, fmt.Errorf("reading custom index template file %q: %w", customTemplateFile, err)
 		}
+		if !json.Valid(data) {
+			return nil, fmt.Errorf("custom index template file %q is not valid JSON", customTemplateFile)
+		}
+		tm.customOverlay = string(data)
 	}
-	return tm
+	return tm, nil
 }
 
 // ensureTemplates is best-effort: it logs and returns on transient cluster

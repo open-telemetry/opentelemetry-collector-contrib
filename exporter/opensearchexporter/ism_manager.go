@@ -32,9 +32,29 @@ type ismManager struct {
 	ismClient *ism.Client
 	logger    *zap.Logger
 	cfg       ISMConfig
+
+	// customPolicy is the pre-loaded policy body when PolicyFile is set; nil otherwise.
+	customPolicy *ism.PoliciesPutBody
 }
 
-func newISMManager(endpoint string, transport http.RoundTripper, client *opensearchapi.Client, ismCfg ISMConfig, logger *zap.Logger) *ismManager {
+// newISMManager pre-loads the optional custom policy file eagerly. A configured-but-unreadable
+// or invalid policy file is a configuration error and fails startup. Client construction and the
+// cluster-side policy/index calls remain best-effort (logged, non-fatal).
+func newISMManager(endpoint string, transport http.RoundTripper, client *opensearchapi.Client, ismCfg ISMConfig, logger *zap.Logger) (*ismManager, error) {
+	m := &ismManager{
+		client: client,
+		logger: logger,
+		cfg:    ismCfg,
+	}
+
+	if ismCfg.PolicyFile != "" {
+		body, err := loadPolicyFile(ismCfg.PolicyFile)
+		if err != nil {
+			return nil, err
+		}
+		m.customPolicy = &body
+	}
+
 	ismClient, err := ism.NewClient(ism.Config{
 		Client: opensearch.Config{
 			Addresses:    []string{endpoint},
@@ -46,13 +66,9 @@ func newISMManager(endpoint string, transport http.RoundTripper, client *opensea
 		// Best-effort: leave ismClient nil and skip ISM setup rather than failing Start().
 		logger.Warn("Failed to create ISM client; skipping ISM setup", zap.Error(err))
 	}
+	m.ismClient = ismClient
 
-	return &ismManager{
-		client:    client,
-		ismClient: ismClient,
-		logger:    logger,
-		cfg:       ismCfg,
-	}
+	return m, nil
 }
 
 // setupISM creates the ISM policy and initial index with write alias for the given index alias.
@@ -66,17 +82,11 @@ func (m *ismManager) setupISM(ctx context.Context, indexAlias string) {
 }
 
 func (m *ismManager) ensurePolicy(ctx context.Context, policyName, indexAlias string) {
-	policyBody, err := m.buildPolicyBody(indexAlias)
-	if err != nil {
-		m.logger.Warn("Failed to build ISM policy", zap.String("policy", policyName), zap.Error(err))
-		return
-	}
-
 	req := ism.PoliciesPutReq{
 		Policy: policyName,
-		Body:   policyBody,
+		Body:   m.buildPolicyBody(indexAlias),
 	}
-	_, err = m.ismClient.Policies.Put(ctx, req)
+	_, err := m.ismClient.Policies.Put(ctx, req)
 	if err != nil {
 		if strings.Contains(err.Error(), "version_conflict_engine_exception") ||
 			strings.Contains(err.Error(), "resource_already_exists_exception") {
@@ -89,9 +99,9 @@ func (m *ismManager) ensurePolicy(ctx context.Context, policyName, indexAlias st
 	m.logger.Info("Created ISM policy", zap.String("policy", policyName))
 }
 
-func (m *ismManager) buildPolicyBody(indexAlias string) (ism.PoliciesPutBody, error) {
-	if m.cfg.PolicyFile != "" {
-		return loadPolicyFile(m.cfg.PolicyFile)
+func (m *ismManager) buildPolicyBody(indexAlias string) ism.PoliciesPutBody {
+	if m.customPolicy != nil {
+		return *m.customPolicy
 	}
 
 	minSize := m.cfg.RolloverMinSize
@@ -131,7 +141,7 @@ func (m *ismManager) buildPolicyBody(indexAlias string) (ism.PoliciesPutBody, er
 				},
 			},
 		},
-	}, nil
+	}
 }
 
 func loadPolicyFile(path string) (ism.PoliciesPutBody, error) {

@@ -75,7 +75,8 @@ var (
 	errOTelV1DatasetNamespaceUnused   = errors.New(`dataset and namespace are not used by mapping.mode "otel-v1"; remove them or pick a different mode`)
 	errManageIndexTemplateInvalidMode = errors.New("mapping.manage_index_template is only supported with mapping.mode \"otel-v1\"")
 	errISMInvalidMode                 = errors.New("mapping.ism.enabled is only supported with mapping.mode \"otel-v1\"")
-	errISMDynamicIndex                = errors.New("mapping.ism.enabled is incompatible with dynamic index placeholders (%{...}) in logs_index/traces_index")
+	errISMDynamicLogsIndex            = errors.New("mapping.ism.enabled is incompatible with dynamic index placeholders (%{...}) in logs_index")
+	errISMDynamicTracesIndex          = errors.New("mapping.ism.enabled is incompatible with dynamic index placeholders (%{...}) in traces_index")
 	errIndexTemplateFileInvalidMode   = errors.New("mapping.index_template_file requires mapping.manage_index_template to be true with mapping.mode \"otel-v1\"")
 )
 
@@ -113,10 +114,9 @@ type MappingsSettings struct {
 
 	// IndexTemplateFile is an optional path to a JSON file whose contents are deep-merged
 	// over the built-in otel-v1 index template before it is created. Use it to uplift common
-	// attributes to typed fields or to keep high-cardinality attributes un-indexed, without
-	// forking the exporter. Object values are merged recursively; array and scalar values in
-	// the file replace the built-in ones. Only used when ManageIndexTemplate is true and Mode
-	// is "otel-v1".
+	// attributes to typed fields or to keep high-cardinality attributes un-indexed. Object
+	// values are merged recursively; array and scalar values in the file replace the built-in
+	// ones. Only used when ManageIndexTemplate is true and Mode is "otel-v1".
 	IndexTemplateFile string `mapstructure:"index_template_file"`
 
 	// ISM configures opt-in Index State Management (rollover) policy creation on startup.
@@ -153,8 +153,9 @@ type ISMConfig struct {
 	// RolloverMinSize/RolloverMinIndexAge options are ignored.
 	PolicyFile string `mapstructure:"policy_file"`
 
-	// RolloverMinSize is the minimum primary-shard-inclusive index size before rollover
-	// (e.g. "50gb"). Used only by the built-in policy. Defaults to "50gb" when empty.
+	// RolloverMinSize is the minimum total index size (across primary shards) before rollover
+	// (e.g. "50gb"); maps to the ISM rollover action's min_size. Used only by the built-in
+	// policy. Defaults to "50gb" when empty.
 	RolloverMinSize string `mapstructure:"rollover_min_size"`
 
 	// RolloverMinIndexAge is the minimum index age before rollover (e.g. "24h").
@@ -277,8 +278,11 @@ func (cfg *Config) Validate() error {
 		}
 		// ISM manages a fixed rollover alias for the otel-v1 base index; dynamic per-record
 		// index names (%{...}) would bypass the alias, so the two are mutually exclusive.
-		if strings.Contains(cfg.LogsIndex, "%{") || strings.Contains(cfg.TracesIndex, "%{") {
-			multiErr = append(multiErr, errISMDynamicIndex)
+		if strings.Contains(cfg.LogsIndex, "%{") {
+			multiErr = append(multiErr, errISMDynamicLogsIndex)
+		}
+		if strings.Contains(cfg.TracesIndex, "%{") {
+			multiErr = append(multiErr, errISMDynamicTracesIndex)
 		}
 	}
 

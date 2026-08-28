@@ -80,12 +80,18 @@ func (l *logExporter) Start(ctx context.Context, host component.Host) error {
 	l.client = client
 
 	if l.config.MappingsSettings.ManageIndexTemplate {
-		tm := newTemplateManager(client, l.telemetry.Logger, l.config.MappingsSettings.IndexTemplateFile)
+		tm, tmErr := newTemplateManager(client, l.telemetry.Logger, l.config.MappingsSettings.IndexTemplateFile)
+		if tmErr != nil {
+			return tmErr
+		}
 		tm.ensureTemplates(ctx)
 	}
 
 	if l.config.MappingsSettings.ISM.Enabled {
-		im := newISMManager(l.httpSettings.Endpoint, httpClient.Transport, client, l.config.MappingsSettings.ISM, l.telemetry.Logger)
+		im, imErr := newISMManager(l.httpSettings.Endpoint, httpClient.Transport, client, l.config.MappingsSettings.ISM, l.telemetry.Logger)
+		if imErr != nil {
+			return imErr
+		}
 		im.setupISM(ctx, otelV1LogsIndexAlias)
 	}
 

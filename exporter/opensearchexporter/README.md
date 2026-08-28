@@ -252,8 +252,15 @@ explosion, while uplifting one common attribute to a typed field:
 }
 ```
 
-Merging is best-effort: if the file cannot be read or parsed, the exporter logs a warning and falls
-back to the built-in template.
+> [!NOTE]
+> The overlay is a deep merge: nested objects are merged, but arrays (including `dynamic_templates`)
+> replace the built-in ones wholesale. To adjust dynamic attribute typing, either restate the full
+> `dynamic_templates` array or override specific fields under `properties` as shown above.
+
+A configured-but-unreadable or non-JSON `index_template_file` fails startup (`Start()` returns an
+error) rather than silently falling back to the built-in template — a path you set is honored or
+surfaced, never quietly ignored. The cluster-side template creation itself remains best-effort (see
+above).
 
 ##### Index State Management (ISM) rollover
 
@@ -264,9 +271,20 @@ indices roll over by size/age instead of growing unbounded. The default policy r
 `rollover_min_size` (default `50gb`) or `rollover_min_index_age` (default `24h`), whichever comes
 first. Provide `policy_file` to use a full custom ISM policy instead.
 
+`ism.enabled` works independently of `manage_index_template`. Rollover functions on its own, but
+without a managed (or pre-existing) `otel-v1` index template, rolled-over backing indices
+(`<alias>-000002`, …) fall back to dynamic mapping — timestamps become `date` instead of `date_nanos`
+and typed fields are lost, degrading Data Prepper–compatible dashboards. Enable
+`manage_index_template: true` (or install the template out-of-band) for full mapping fidelity.
+
+The built-in policy claims the `<alias>-*` index pattern at `rollover_priority` (default `100`). If
+the target cluster already manages the same pattern with another ISM policy — for example a Data
+Prepper deployment, whose `raw-span-policy` also owns `otel-v1-apm-span-*` — OpenSearch rejects the
+overlapping template unless the priority differs; set a distinct `rollover_priority` in that case.
+
 ISM is incompatible with dynamic index placeholders (`%{...}`) in `logs_index`/`traces_index`, since
-rollover writes through a fixed alias. Like template management, ISM setup is best-effort and does not
-fail `Start()`.
+rollover writes through a fixed alias. A configured-but-invalid `policy_file` fails startup; the
+cluster-side policy and index calls are best-effort and do not fail `Start()`.
 
 ```yaml
 exporters:
