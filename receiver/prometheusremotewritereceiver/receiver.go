@@ -528,7 +528,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	attrs := extractAttributes(ls)
 
 	// One TimeSeries is one series, so every histogram below shares the key its exemplars were
-	// collected under. A request that carries none never reaches the lookup.
+	// collected under.
 	var (
 		exemplars     pmetric.ExemplarSlice
 		exemplarsKey  exemplarKey
