@@ -755,11 +755,13 @@ func withUserIdentityPrefix(attrs pcommon.Map, record *CloudTrailRecord) {
 
 // fullyQualifiedRPCMethod builds a fully-qualified rpc.method value from the
 // CloudTrail eventSource and eventName. Per the semconv v1.40.0 deprecation of
-// rpc.service, the service (eventSource) is included in rpc.method as a
-// fully-qualified name (e.g. "ec2.amazonaws.com/StartInstances") rather than
-// emitted as a separate attribute. When eventSource is empty the bare eventName
-// is returned, and when eventName is empty an empty string is returned so no
-// rpc.method attribute is emitted.
+// rpc.service, the service (eventSource) is carried in rpc.method as a
+// fully-qualified name (e.g. "ec2.amazonaws.com/StartInstances"). This preserves
+// the service information in rpc.method so it remains available once rpc.service
+// is no longer emitted (i.e. when DontEmitV0RPCConventions is enabled); until
+// then rpc.service may still be emitted separately. When eventSource is empty the
+// bare eventName is returned, and when eventName is empty an empty string is
+// returned so no rpc.method attribute is emitted.
 func fullyQualifiedRPCMethod(eventSource, eventName string) string {
 	if eventName == "" {
 		return ""

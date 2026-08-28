@@ -480,12 +480,54 @@ func TestRPCAttributeFeatureGates(t *testing.T) {
 			_, hasSystem := attrs.Get("rpc.system")
 			_, hasService := attrs.Get("rpc.service")
 			_, hasSystemName := attrs.Get("rpc.system.name")
-			method, _ := attrs.Get("rpc.method")
+			method, hasMethod := attrs.Get("rpc.method")
 
 			require.Equal(t, tt.wantSystem, hasSystem, "rpc.system")
 			require.Equal(t, tt.wantService, hasService, "rpc.service")
 			require.Equal(t, tt.wantSystemName, hasSystemName, "rpc.system.name")
-			require.Equal(t, tt.wantMethod, method.Str(), "rpc.method")
+			require.Equal(t, tt.wantMethod != "", hasMethod, "rpc.method presence")
+			if tt.wantMethod != "" {
+				require.Equal(t, tt.wantMethod, method.Str(), "rpc.method")
+			}
+		})
+	}
+}
+
+func TestFullyQualifiedRPCMethod(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		eventSource string
+		eventName   string
+		want        string
+	}{
+		{
+			name:        "source and name are qualified",
+			eventSource: "ec2.amazonaws.com",
+			eventName:   "StartInstances",
+			want:        "ec2.amazonaws.com/StartInstances",
+		},
+		{
+			name:      "empty source falls back to bare name",
+			eventName: "StartInstances",
+			want:      "StartInstances",
+		},
+		{
+			name:        "empty name omits method",
+			eventSource: "ec2.amazonaws.com",
+			want:        "",
+		},
+		{
+			name: "both empty omits method",
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tt.want, fullyQualifiedRPCMethod(tt.eventSource, tt.eventName))
 		})
 	}
 }
