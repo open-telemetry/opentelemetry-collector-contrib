@@ -92,7 +92,7 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 	}
 
 	for _, sample := range profile.Samples().All() {
-		frames, frameTypes, _, err := stackFrames(dic, sample)
+		frames, frameTypes, err := stackFrames(dic, sample)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create stackframes: %w", err)
 		}
@@ -140,12 +140,7 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 
 	if len(stackPayload) > 0 {
 		if dic.MappingTable().Len() > 0 {
-			exeMetadata, err := executables(dic, dic.MappingTable())
-			if err != nil {
-				return nil, err
-			}
-
-			stackPayload[0].Executables = exeMetadata
+			stackPayload[0].Executables = executables(dic, dic.MappingTable())
 		}
 	}
 
@@ -224,7 +219,7 @@ func stackTrace(stackTraceID string, frames []StackFrame, frameTypes []libpf.Fra
 	}
 }
 
-func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]StackFrame, []libpf.FrameType, *frameID, error) {
+func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]StackFrame, []libpf.FrameType, error) {
 	stack := dic.StackTable().At(int(sample.StackIndex()))
 	frames := make([]StackFrame, 0, stack.LocationIndices().Len())
 
@@ -235,16 +230,14 @@ func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]Sta
 	}
 	frameTypes := make([]libpf.FrameType, 0, totalFrames)
 
-	var leafFrameID *frameID
-
-	for locationIdx, location := range locations {
+	for _, location := range locations {
 		if location.MappingIndex() >= int32(dic.MappingTable().Len()) {
 			continue
 		}
 
 		frameTypeStr, err := getStringFromAttribute(dic, location, string(conventions.ProfileFrameTypeKey))
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
 		frameTypes = append(frameTypes, libpf.FrameTypeFromString(frameTypeStr))
 
@@ -262,10 +255,6 @@ func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]Sta
 
 		frameID := getFrameID(dic, location)
 
-		if locationIdx == 0 {
-			leafFrameID = frameID
-		}
-
 		frames = append([]StackFrame{
 			{
 				DocID:        frameID.String(),
@@ -276,7 +265,7 @@ func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]Sta
 		}, frames...)
 	}
 
-	return frames, frameTypes, leafFrameID, nil
+	return frames, frameTypes, nil
 }
 
 func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) *frameID {
@@ -357,7 +346,7 @@ func getBuildID(dic pprofile.ProfilesDictionary, mapping pprofile.Mapping) (libp
 	}
 }
 
-func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice) ([]ExeMetadata, error) {
+func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice) []ExeMetadata {
 	metadata := make([]ExeMetadata, 0, mappings.Len())
 	lastSeen := GetStartOfWeekFromTime(time.Now())
 
@@ -386,7 +375,7 @@ func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice
 		})
 	}
 
-	return metadata, nil
+	return metadata
 }
 
 // stackTraceID creates a unique trace ID from the stack frames.

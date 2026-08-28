@@ -18,11 +18,11 @@ import (
 var (
 	stacktraceIDBase64 = stacktraceIDFormat(0xcafebeef, 0xd00d1eaf)
 
-	buildID, buildIDEncoded, buildIDBase64 = formatFileIDFormat(0x0011223344556677,
+	buildID, buildIDEncoded = formatFileIDFormat(0x0011223344556677,
 		0x8899aabbccddeeff)
-	buildID2, buildID2Encoded, buildID2Base64 = formatFileIDFormat(0x0112233445566778,
+	buildID2, buildID2Encoded = formatFileIDFormat(0x0112233445566778,
 		0x899aabbccddeeffe)
-	buildID3, buildID3Encoded, _ = formatFileIDFormat(0x1122334455667788,
+	buildID3, buildID3Encoded = formatFileIDFormat(0x1122334455667788,
 		0x99aabbccddeeffee)
 
 	frameIDBase64  = newFrameID(buildID, address).String()
@@ -41,13 +41,9 @@ func stacktraceIDFormat(hi, lo uint64) string {
 	return libpf.NewFileID(hi, lo).Base64()
 }
 
-func formatFileIDFormat(hi, lo uint64) (fileID libpf.FileID, fileIDHex, fileIDBase64 string) {
-	// StringNoQuotes() is used in the host agent to encode stacktraceID and buildID.
-	// We should possibly switch to Base64 encoding.
-	fileID = libpf.NewFileID(hi, lo)
-	fileIDHex = fileID.StringNoQuotes()
-	fileIDBase64 = fileID.Base64()
-	return fileID, fileIDHex, fileIDBase64
+func formatFileIDFormat(hi, lo uint64) (libpf.FileID, string) {
+	fileID := libpf.NewFileID(hi, lo)
+	return fileID, fileID.StringNoQuotes()
 }
 
 func TestTransform(t *testing.T) {
@@ -220,9 +216,9 @@ func TestTransform(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						DocID:    wantedTraceID,
+						DocID:     wantedTraceID,
 						Timestamp: newUnixTime64(42),
-						FrameIDs: frameID2Base64 + frameIDBase64,
+						FrameIDs:  frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.NativeFrame,
 							libpf.NativeFrame,
@@ -339,9 +335,9 @@ func TestStackPayloads(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						DocID:    wantedTraceID,
+						DocID:     wantedTraceID,
 						Timestamp: newUnixTime64(1),
-						FrameIDs: frameID2Base64 + frameIDBase64,
+						FrameIDs:  frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.FrameType(3),
 							libpf.FrameType(3),
@@ -423,9 +419,9 @@ func TestStackPayloads(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						DocID:    wantedTraceID,
+						DocID:     wantedTraceID,
 						Timestamp: newUnixTime64(1),
-						FrameIDs: frameID2Base64 + frameIDBase64,
+						FrameIDs:  frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.FrameType(3),
 							libpf.FrameType(3),
@@ -517,9 +513,9 @@ func TestStackPayloads(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						DocID:    wantedTraceID,
+						DocID:     wantedTraceID,
 						Timestamp: newUnixTime64(1),
-						FrameIDs: frameID2Base64 + frameIDBase64,
+						FrameIDs:  frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.FrameType(3),
 							libpf.FrameType(3),
@@ -820,7 +816,7 @@ func TestStackTrace(t *testing.T) {
 			p := tt.buildProfile()
 			s := p.Samples().At(0)
 
-			frames, frameTypes, _, err := stackFrames(dic, s)
+			frames, frameTypes, err := stackFrames(dic, s)
 			require.NoError(t, err)
 
 			stacktrace := stackTrace("", frames, frameTypes, 0)
@@ -909,7 +905,7 @@ func mkStackTraceID(t *testing.T, frameIDs []frameID) string {
 		stack.LocationIndices().Append(int32(dic.LocationTable().Len() - 1))
 	}
 
-	frames, _, _, err := stackFrames(dic, s)
+	frames, _, err := stackFrames(dic, s)
 	require.NoError(t, err)
 
 	traceID, err := stackTraceID(frames)
@@ -917,8 +913,3 @@ func mkStackTraceID(t *testing.T, frameIDs []frameID) string {
 
 	return traceID
 }
-
-func isWithinLastSecond(t time.Time) bool {
-	return time.Since(t) < time.Second
-}
-

@@ -11,8 +11,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
 )
 
-type unixTime64 = serializer.UnixTime64
-type frameID = serializer.FrameID
+type (
+	unixTime64 = serializer.UnixTime64
+	frameID    = serializer.FrameID
+)
 
 func newUnixTime64(t uint64) unixTime64 { return serializer.NewUnixTime64(t) }
 
