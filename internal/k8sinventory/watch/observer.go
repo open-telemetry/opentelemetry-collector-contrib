@@ -428,6 +428,12 @@ func isExpiredResourceVersionEvent(data apiWatch.Event) bool {
 
 // fetchListResourceVersion performs a List operation and returns the latest resourceVersion.
 // Returns defaultResourceVersion if the API returns an empty or zero version.
+//
+// Limit is set to 1 because only the collection-level resourceVersion from
+// ListMeta is used; the returned items are discarded. ListMeta.resourceVersion
+// is the revision of the read's snapshot rather than a property of the items,
+// so a limited List yields an equally valid watch starting point while avoiding
+// materializing the whole collection into unstructured objects.
 func (o *Observer) fetchListResourceVersion(ctx context.Context, resource dynamic.ResourceInterface) (string, error) {
 	objects, err := resource.List(ctx, metav1.ListOptions{
 		FieldSelector: o.config.FieldSelector,

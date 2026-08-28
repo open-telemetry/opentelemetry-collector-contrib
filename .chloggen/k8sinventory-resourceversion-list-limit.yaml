@@ -1,0 +1,30 @@
+change_type: bug_fix
+
+component: internal/k8sinventory
+
+note: Limit the List used solely to obtain a resourceVersion for the watch, avoiding a full collection fetch
+
+issues: [50600]
+
+subtext: |
+  `watch.Observer.fetchListResourceVersion` performed an unbounded List purely to
+  read the collection-level `resourceVersion` from `ListMeta`, decoding every
+  object into `unstructured` and discarding all of them. Cost therefore scaled
+  with cluster object count.
+
+  On a cluster with ~190k Events this retained 2.3GB of heap (98% of process
+  heap) to produce a 10-character string, and OOM-killed a collector running the
+  k8s_events receiver with a 3GiB limit. `GET /api/v1/events` transfers 223MB
+  where `?limit=1` transfers 1355 bytes.
+
+  `ListMeta.resourceVersion` is the revision of the read's snapshot, not a
+  property of the returned items, so `Limit: 1` yields an identical watch
+  starting point. Affects the k8s_events receiver (which always takes this path,
+  hardcoding `IncludeInitialState: false`) and the k8sobjects receiver in
+  `mode: watch`. Both also take it on every watch re-establishment, since after a
+  410 Gone the observer clears `initialListRV` and falls back to
+  `getResourceVersion`.
+
+  `sendInitialState` is deliberately unchanged — it emits the items it lists.
+
+change_logs: [user]
