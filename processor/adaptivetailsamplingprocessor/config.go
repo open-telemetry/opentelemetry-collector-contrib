@@ -50,6 +50,10 @@ const (
 	AlgorithmWindowed SamplerAlgorithm = "windowed"
 )
 
+// defaultMaxKeys is the max_keys value used when a rule omits it (or sets it
+// to 0). There is no config value that requests an unbounded key set.
+const defaultMaxKeys = 500
+
 // RecordFingerprint controls whether the matched rule's fingerprint value is
 // recorded as an attribute on the spans of kept traces.
 type RecordFingerprint string
@@ -247,7 +251,8 @@ type SamplerConfig struct {
 	FingerprintAttributes []string `mapstructure:"fingerprint_attributes"`
 
 	// MaxKeys caps the number of distinct sampling keys the sampler tracks.
-	// 0 means unlimited.
+	// 0 (or omitting the field) uses the default of defaultMaxKeys; there is
+	// no way to request an unbounded key set.
 	// Used by: adaptive_percentage, adaptive_throughput.
 	MaxKeys int `mapstructure:"max_keys"`
 
@@ -499,6 +504,16 @@ func (s *SamplerConfig) effectiveAlgorithm() SamplerAlgorithm {
 		return AlgorithmEMA
 	}
 	return s.Algorithm
+}
+
+// effectiveMaxKeys returns the max_keys value a sampler should use,
+// defaulting to defaultMaxKeys when unset. Only meaningful for adaptive
+// types; validate rejects the field elsewhere.
+func (s *SamplerConfig) effectiveMaxKeys() int {
+	if s.MaxKeys == 0 {
+		return defaultMaxKeys
+	}
+	return s.MaxKeys
 }
 
 // rejectUnusedFields returns an error if any field is set that does not apply

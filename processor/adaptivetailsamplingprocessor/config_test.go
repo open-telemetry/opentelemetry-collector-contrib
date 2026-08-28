@@ -493,3 +493,21 @@ func TestConfig_Validate(t *testing.T) {
 		})
 	}
 }
+
+func TestSamplerConfig_effectiveMaxKeys(t *testing.T) {
+	tests := []struct {
+		name string
+		set  int
+		want int
+	}{
+		{name: "omitted_defaults_to_500", set: 0, want: defaultMaxKeys},
+		{name: "explicit_default_value_unchanged", set: 500, want: 500},
+		{name: "explicit_non_default_value_unchanged", set: 999, want: 999},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := SamplerConfig{MaxKeys: tt.set}
+			assert.Equal(t, tt.want, s.effectiveMaxKeys())
+		})
+	}
+}

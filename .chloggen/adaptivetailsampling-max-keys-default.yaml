@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: processor/adaptive_tail_sampling
+
+note: Default `max_keys` to 500 when omitted instead of unbounded; there is no longer a way to run a sampler with an unlimited key set.
+
+issues: [49311]
+
+change_logs: [user]
