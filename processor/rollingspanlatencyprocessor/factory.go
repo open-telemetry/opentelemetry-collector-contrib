@@ -12,12 +12,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
-)
 
-// typeStr is the canonical component type identifier for the
-// rolling_span_latency processor. It is used to register the component with
-// the factory and in tests that build mock settings for the component.
-const typeStr = "rolling_span_latency"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/rollingspanlatencyprocessor/internal/metadata"
+)
 
 // NewFactory creates and registers the rolling_span_latency processor
 // factory with the OpenTelemetry Collector.
@@ -27,9 +24,9 @@ const typeStr = "rolling_span_latency"
 // releases.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		component.MustNewType(typeStr),
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, component.StabilityLevelDevelopment),
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
 	)
 }
 
