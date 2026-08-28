@@ -4201,3 +4201,89 @@ func TestSupervisorBinarySize(t *testing.T) {
 		info.Size(), float64(info.Size())/(1024*1024),
 		supervisorBinarySizeLimitBytes, supervisorBinarySizeLimitBytes/(1024*1024))
 }
+
+// TestSupervisorStartsCollectorOverUnixSocket verifies the full
+// supervisor<->collector handshake when the local OpAMP link is a filesystem
+// Unix domain socket instead of a loopback TCP port. The collector bootstrapping
+// and applying remote config proves the UDS link (and the collector's
+// opampextension UDS dialing) works end to end.
+func TestSupervisorStartsCollectorOverUnixSocket(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix domain socket transport is not supported on Windows")
+	}
+
+	storageDir := t.TempDir()
+
+	// macOS limits the socket path to ~104 bytes, which the test temp dir can
+	// exceed, so bind under a short base directory.
+	socketDir, err := os.MkdirTemp("/tmp", "supuds")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.RemoveAll(socketDir) })
+	socketPath := filepath.Join(socketDir, "opamp.sock")
+
+	var agentConfig atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.EffectiveConfig != nil {
+					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+					if config != nil {
+						agentConfig.Store(string(config.Body))
+					}
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s, _ := newSupervisor(t, "unix_socket", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+		"unix_socket": socketPath,
+	})
+
+	require.Nil(t, s.Start(t.Context()))
+	defer s.Shutdown()
+
+	// The collector connects back to the supervisor over the Unix socket during
+	// bootstrap; reaching a healthy upstream connection proves the local UDS link
+	// works.
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	require.FileExists(t, socketPath, "the opamp unix socket should exist while the supervisor is running")
+
+	cfg, hash, inputFile, outputFile := createSimplePipelineCollectorConf(t)
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: cfg.Bytes()},
+				},
+			},
+			ConfigHash: hash,
+		},
+	})
+
+	require.Eventually(t, func() bool {
+		cfg, ok := agentConfig.Load().(string)
+		if ok {
+			return strings.Contains(cfg, "file_log")
+		}
+
+		return false
+	}, 5*time.Second, 500*time.Millisecond, "Collector was not started with remote config over the unix socket")
+
+	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
+	require.NotZero(t, n, "Could not write to input file")
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		logRecord := make([]byte, 1024)
+		n, _ := outputFile.Read(logRecord)
+
+		return n != 0
+	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
+}

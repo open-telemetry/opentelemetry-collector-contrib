@@ -28,6 +28,12 @@ The following settings are optional for the websocket client:
     - `tls`: TLS settings.
     - `headers`: HTTP headers to set.
     - `auth`: The ID of an auth extension to use for authentication.
+    - `unix_socket`: A filesystem path to a Unix domain socket. When set, the
+      extension dials this socket instead of a TCP connection, and `endpoint`
+      only supplies the URL scheme, request path, and `Host` header (its host
+      and port are ignored). Only supported with the websocket transport. This
+      is typically set by the Supervisor for the local supervisor-to-collector
+      link and not configured manually.
 
 The following settings are optional for the HTTP client:
 

@@ -340,6 +340,36 @@ func TestConfig_Validate(t *testing.T) {
 			},
 		},
 		{
+			name: "WS with unix_socket is valid",
+			fields: fields{
+				Server: &OpAMPServer{
+					WS: &commonFields{
+						Endpoint:   "ws://localhost/v1/opamp",
+						UnixSocket: "/run/otelcol/opamp.sock",
+					},
+				},
+				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "HTTP with unix_socket is rejected",
+			fields: fields{
+				Server: &OpAMPServer{
+					HTTP: &httpFields{
+						commonFields: commonFields{
+							Endpoint:   "http://localhost/v1/opamp",
+							UnixSocket: "/run/otelcol/opamp.sock",
+						},
+					},
+				},
+				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			},
+			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.Equal(t, "unix_socket is only supported with the websocket transport", err.Error())
+			},
+		},
+		{
 			name: "accepts_restart_command capability without feature gate",
 			fields: fields{
 				Capabilities: Capabilities{

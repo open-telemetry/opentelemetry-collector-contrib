@@ -4,6 +4,7 @@
 package supervisor
 
 import (
+	"net"
 	"net/http"
 	"testing"
 
@@ -20,7 +21,38 @@ func Test_flattenedSettings_toServerSettings(t *testing.T) {
 	serverSettings := fs.toServerSettings()
 
 	require.Equal(t, "localhost", serverSettings.ListenEndpoint)
+	require.Nil(t, serverSettings.Listener)
 	require.NotNil(t, serverSettings.Callbacks)
+}
+
+func Test_flattenedSettings_toServerSettings_listener(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer ln.Close()
+
+	fs := flattenedSettings{
+		// endpoint is ignored when a listener is provided.
+		endpoint: "localhost:1234",
+		listener: ln,
+	}
+
+	serverSettings := fs.toServerSettings()
+
+	require.Same(t, ln, serverSettings.Listener)
+	require.Empty(t, serverSettings.ListenEndpoint)
+}
+
+func Test_flattenedSettings_OnConnected(t *testing.T) {
+	onConnectedFuncCalled := false
+	fs := flattenedSettings{
+		onConnected: func(serverTypes.Connection) {
+			onConnectedFuncCalled = true
+		},
+	}
+
+	fs.OnConnected(t.Context(), &mockConn{})
+
+	require.True(t, onConnectedFuncCalled)
 }
 
 func Test_flattenedSettings_OnConnecting(t *testing.T) {

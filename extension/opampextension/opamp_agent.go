@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net"
 	"net/http"
 	"os"
 	"runtime"
@@ -151,6 +152,18 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 			OnMessage: o.onMessage,
 			OnCommand: o.onCommand,
 		},
+	}
+
+	// When configured with a Unix domain socket, dial it instead of TCP. Only
+	// the WebSocket transport honors DialContext (the HTTP transport ignores it),
+	// and config validation enforces that unix_socket is set only under ws. The
+	// OpAMPServerURL endpoint then only supplies the URL scheme, request path, and
+	// Host header; its host:port is ignored.
+	if socketPath := o.cfg.Server.GetUnixSocket(); socketPath != "" {
+		settings.DialContext = func(ctx context.Context, _, _ string) (net.Conn, error) {
+			var d net.Dialer
+			return d.DialContext(ctx, "unix", socketPath)
+		}
 	}
 
 	if err := o.createAgentDescription(); err != nil {

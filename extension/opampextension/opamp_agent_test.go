@@ -6,11 +6,14 @@ package opampextension
 import (
 	"context"
 	"errors"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
@@ -18,6 +21,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"github.com/open-telemetry/opamp-go/server"
+	servertypes "github.com/open-telemetry/opamp-go/server/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -65,6 +70,76 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 	assert.Equal(t, "distro.0", o.serviceVersion)
 	assert.Equal(t, "f8999bc1-4c9b-4619-9bae-7f009d2411ec", o.serviceInstanceID)
 	assert.NoError(t, o.Shutdown(t.Context()))
+}
+
+// TestOpampAgentConnectsOverUnixSocket exercises the full WebSocket OpAMP
+// handshake from the extension's client to a server listening on a filesystem
+// Unix domain socket. The endpoint host is cosmetic; the configured unix_socket
+// drives the dial. The server-side connection must be a *net.UnixConn so a
+// consumer (e.g. the supervisor) can authenticate the peer via SO_PEERCRED.
+func TestOpampAgentConnectsOverUnixSocket(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix domain socket peer authentication is not supported on Windows")
+	}
+
+	// macOS limits the socket path to ~104 bytes, which t.TempDir() can exceed,
+	// so bind under a short base directory.
+	dir, err := os.MkdirTemp("/tmp", "opampuds")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	socketPath := filepath.Join(dir, "opamp.sock")
+
+	ln, err := net.Listen("unix", socketPath)
+	require.NoError(t, err)
+
+	var gotUnixConn atomic.Bool
+	connected := make(chan struct{})
+	var once sync.Once
+
+	callbacks := servertypes.Callbacks{
+		OnConnecting: func(_ *http.Request) servertypes.ConnectionResponse {
+			return servertypes.ConnectionResponse{
+				Accept: true,
+				ConnectionCallbacks: servertypes.ConnectionCallbacks{
+					OnConnected: func(_ context.Context, conn servertypes.Connection) {
+						_, ok := conn.Connection().(*net.UnixConn)
+						gotUnixConn.Store(ok)
+						once.Do(func() { close(connected) })
+					},
+				},
+			}
+		},
+	}
+
+	srv := server.New(nil)
+	require.NoError(t, srv.Start(server.StartSettings{
+		Settings:   server.Settings{Callbacks: callbacks},
+		Listener:   ln,
+		ListenPath: "/v1/opamp",
+	}))
+	t.Cleanup(func() { _ = srv.Stop(context.Background()) })
+	require.Equal(t, "unix", srv.Addr().Network())
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Server = &OpAMPServer{
+		WS: &commonFields{
+			// Host is cosmetic; DialContext dials the socket regardless.
+			Endpoint:   "ws://localhost/v1/opamp",
+			UnixSocket: socketPath,
+		},
+	}
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
+	o, err := newOpampAgent(cfg, set)
+	require.NoError(t, err)
+	require.NoError(t, o.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { _ = o.Shutdown(context.Background()) })
+
+	select {
+	case <-connected:
+	case <-time.After(10 * time.Second):
+		t.Fatal("timed out waiting for the opamp client to connect over the unix socket")
+	}
+	assert.True(t, gotUnixConn.Load(), "server-side connection should be a *net.UnixConn")
 }
 
 func TestCreateAgentDescription(t *testing.T) {
@@ -1047,6 +1122,10 @@ func (mockOpAMPClient) SetPackageStatuses(*protobufs.PackageStatuses) error {
 }
 
 func (mockOpAMPClient) RequestConnectionSettings(*protobufs.ConnectionSettingsRequest) error {
+	return nil
+}
+
+func (mockOpAMPClient) SetConnectionSettingsStatus(*protobufs.ConnectionSettingsStatus) error {
 	return nil
 }
 

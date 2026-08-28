@@ -55,6 +55,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/ebitengine/purego v0.10.2 // indirect
+	github.com/elastic/proxy-connect-dialer-go v0.1.1 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20251226215517-609e4778396f // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
@@ -78,7 +79,6 @@ require (
 	github.com/knadh/koanf/providers/confmap v1.0.1 // indirect
 	github.com/knadh/koanf/v2 v2.3.6 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260330125221-c963978e514e // indirect
-	github.com/michel-laterman/proxy-connect-dialer-go v0.1.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -325,3 +325,12 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oaut
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile => ../../extension/internal/credentialsfile
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof => ../../pkg/translator/pprof
+
+// TODO(opamp-uds): temporary replace pointing at the local opamp-go fork that adds
+// server.StartSettings.Listener (Unix domain socket serving) and the matching
+// client DialContext hook. The fork is ahead of v0.23.0, so it also carries
+// unrelated API changes that required adapting this module (PackagesStateProvider
+// UpdateContent gained a downloadURL parameter; OpAMPClient gained
+// SetConnectionSettingsStatus). Remove and bump to the tagged opamp-go release
+// before this PR is merged.
+replace github.com/open-telemetry/opamp-go => github.com/dpaasman00/opamp-go v0.0.0-20260708172145-13df0330339d

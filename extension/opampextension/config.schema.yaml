@@ -47,6 +47,9 @@ $defs:
             format: duration
           tls:
             $ref: go.opentelemetry.io/collector/config/configtls.client_config
+          unix_socket:
+            description: UnixSocket, when set, makes the client dial the OpAMP server over a filesystem-path Unix domain socket instead of TCP. It is only supported with the WebSocket transport (see OpAMPServer.WS); the Endpoint then only supplies the URL scheme, request path, and Host header, and the host:port in the Endpoint is otherwise ignored.
+            type: string
       ws:
         x-pointer: true
         type: object
@@ -62,6 +65,9 @@ $defs:
               $ref: go.opentelemetry.io/collector/config/configopaque.string
           tls:
             $ref: go.opentelemetry.io/collector/config/configtls.client_config
+          unix_socket:
+            description: UnixSocket, when set, makes the client dial the OpAMP server over a filesystem-path Unix domain socket instead of TCP. It is only supported with the WebSocket transport (see OpAMPServer.WS); the Endpoint then only supplies the URL scheme, request path, and Host header, and the host:port in the Endpoint is otherwise ignored.
+            type: string
 description: Config contains the configuration for the opamp extension. Trying to mirror the OpAMP supervisor config for some consistency.
 type: object
 properties:

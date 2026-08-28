@@ -96,6 +96,12 @@ type commonFields struct {
 	TLS      configtls.ClientConfig         `mapstructure:"tls,omitempty"`
 	Headers  map[string]configopaque.String `mapstructure:"headers,omitempty"`
 	Auth     component.ID                   `mapstructure:"auth,omitempty"`
+	// UnixSocket, when set, makes the client dial the OpAMP server over a
+	// filesystem-path Unix domain socket instead of TCP. It is only supported
+	// with the WebSocket transport (see OpAMPServer.WS); the Endpoint then only
+	// supplies the URL scheme, request path, and Host header, and the host:port
+	// in the Endpoint is otherwise ignored.
+	UnixSocket string `mapstructure:"unix_socket,omitempty"`
 }
 
 func (c *commonFields) Scheme() string {
@@ -122,6 +128,10 @@ type httpFields struct {
 func (h *httpFields) Validate() error {
 	if err := h.commonFields.Validate(); err != nil {
 		return err
+	}
+
+	if h.UnixSocket != "" {
+		return errors.New("unix_socket is only supported with the websocket transport")
 	}
 
 	if h.PollingInterval < 0 {
@@ -184,6 +194,17 @@ func (s OpAMPServer) GetEndpoint() string {
 		return s.WS.Endpoint
 	} else if s.HTTP != nil {
 		return s.HTTP.Endpoint
+	}
+	return ""
+}
+
+// GetUnixSocket returns the configured Unix domain socket path for the WebSocket
+// transport, or "" if not configured. Only the WebSocket transport supports
+// dialing the OpAMP server over a Unix domain socket; for the HTTP transport
+// this always returns "".
+func (s OpAMPServer) GetUnixSocket() string {
+	if s.WS != nil {
+		return s.WS.UnixSocket
 	}
 	return ""
 }

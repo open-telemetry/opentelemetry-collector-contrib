@@ -3,7 +3,12 @@ extensions:
     instance_uid: "{{.InstanceUid}}"
     server:
       ws:
+{{- if .UnixSocket }}
+        endpoint: "ws://localhost/v1/opamp"
+        unix_socket: "{{.UnixSocket}}"
+{{- else }}
         endpoint: "ws://127.0.0.1:{{.SupervisorPort}}/v1/opamp"
+{{- end }}
         tls:
           insecure: true
     ppid: {{.PID}}

@@ -220,6 +220,8 @@ type Agent struct {
 	ConfigApplyTimeout          time.Duration     `mapstructure:"config_apply_timeout"`
 	BootstrapTimeout            time.Duration     `mapstructure:"bootstrap_timeout"`
 	OpAMPServerPort             int               `mapstructure:"opamp_server_port"`
+	OpAMPServerUnixSocket       string            `mapstructure:"opamp_server_unix_socket"`
+	OpAMPServerUnixSocketMode   string            `mapstructure:"opamp_server_unix_socket_mode"`
 	PassthroughLogs             bool              `mapstructure:"passthrough_logs"`
 	CollectorCrashLogSnippetKiB int               `mapstructure:"collector_crash_log_snippet_kib"`
 	AutomaticConfigRollback     bool              `mapstructure:"automatic_config_rollback"`
@@ -233,6 +235,21 @@ type Agent struct {
 	StartupFallbackConfigs []string `mapstructure:"startup_fallback_configs"`
 	// Package configures how collector executable updates are formatted and verified.
 	Package AgentPackage `mapstructure:"package"`
+}
+
+// UnixSocketFileMode returns the permission mode the OpAMP Unix domain socket
+// file is created with: OpAMPServerUnixSocketMode if set (already validated as
+// octal by Validate), otherwise 0600.
+func (a Agent) UnixSocketFileMode() os.FileMode {
+	if a.OpAMPServerUnixSocketMode == "" {
+		return 0o600
+	}
+	mode, err := strconv.ParseUint(a.OpAMPServerUnixSocketMode, 8, 32)
+	if err != nil {
+		// Unreachable after Validate; fail closed to owner-only.
+		return 0o600
+	}
+	return os.FileMode(mode)
 }
 
 func (a Agent) Validate() error {
@@ -254,6 +271,37 @@ func (a Agent) Validate() error {
 
 	if a.CollectorCrashLogSnippetKiB > 1024 {
 		return errors.New("agent::collector_crash_log_snippet_kib must be less than or equal to 1024")
+	}
+
+	if a.OpAMPServerUnixSocket != "" {
+		if runtime.GOOS == "windows" {
+			return errors.New("agent::opamp_server_unix_socket is not supported on windows")
+		}
+		if a.OpAMPServerPort != 0 {
+			return errors.New("agent::opamp_server_unix_socket and agent::opamp_server_port are mutually exclusive")
+		}
+		if !filepath.IsAbs(a.OpAMPServerUnixSocket) {
+			return errors.New("agent::opamp_server_unix_socket must be an absolute path")
+		}
+		// The kernel's sun_path limit: 104 bytes on Darwin, 108 on Linux, both
+		// including the trailing NUL. Reject here for a clear error instead of
+		// net.Listen's opaque "bind: invalid argument".
+		maxLen := 107
+		if runtime.GOOS == "darwin" {
+			maxLen = 103
+		}
+		if len(a.OpAMPServerUnixSocket) > maxLen {
+			return fmt.Errorf("agent::opamp_server_unix_socket path exceeds the platform limit of %d bytes", maxLen)
+		}
+	}
+
+	if a.OpAMPServerUnixSocketMode != "" {
+		if a.OpAMPServerUnixSocket == "" {
+			return errors.New("agent::opamp_server_unix_socket_mode requires agent::opamp_server_unix_socket")
+		}
+		if mode, err := strconv.ParseUint(a.OpAMPServerUnixSocketMode, 8, 32); err != nil || mode > 0o777 {
+			return errors.New(`agent::opamp_server_unix_socket_mode must be an octal permission mode between "0" and "0777"`)
+		}
 	}
 
 	if a.InstanceID != "" {

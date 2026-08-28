@@ -190,6 +190,8 @@ agent:
 | Option | Description |
 |--------|-------------|
 | `startup_fallback_configs` | List of paths to startup fallback configuration files to use. If more than one path is specified, they are merged in order. Together, these must form a complete, standalone Collector configuration. |
+| `opamp_server_unix_socket` | Filesystem path to a Unix domain socket. When set, the Supervisor serves its local OpAMP server (the one the managed Collector connects to) on this socket instead of a loopback TCP port, so no TCP port is opened for Supervisor-to-Collector traffic. The Supervisor authenticates the connecting Collector via its kernel-vouched peer credentials (UID on Linux and macOS, plus PID on Linux). Mutually exclusive with `opamp_server_port`. Linux and macOS only; configuring it on Windows is rejected. |
+| `opamp_server_unix_socket_mode` | Octal permission mode, as a string, that the Unix domain socket file is created with, e.g. `"0660"`. Defaults to `"0600"` (owner-only). Requires `opamp_server_unix_socket`. Note: modes granting group/other access also require the socket's parent directory to permit traversal, and peer authentication still rejects peers whose UID differs from the Supervisor's regardless of this mode. |
 
 ### Important Notes
 

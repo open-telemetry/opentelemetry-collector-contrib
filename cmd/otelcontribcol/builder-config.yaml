@@ -291,3 +291,7 @@ providers:
 # file before passing it to OCB, to ensure that local versions are used for all
 # Contrib modules.
 replaces:
+  # TODO(opamp-uds): temporary replace pointing at the local opamp-go fork that
+  # adds the Unix domain socket transport hooks (client DialContext and server
+  # Listener). Remove and bump to the tagged opamp-go release before merge.
+  - github.com/open-telemetry/opamp-go => ../../../../../opamp-go/dpaasman00/main
