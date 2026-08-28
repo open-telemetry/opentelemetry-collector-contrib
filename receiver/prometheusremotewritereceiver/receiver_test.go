@@ -4634,25 +4634,63 @@ func TestUnsupportedShapesAreRejected(t *testing.T) {
 }
 
 func TestRejectionDoesNotInflateTheResponse(t *testing.T) {
-	// The request is rejected as a whole, so translation stops at the first histogram it cannot
-	// convert. Reporting one error per histogram would let a request full of invalid ones turn a
-	// small body into a much larger response.
-	symbols := []string{"", "__name__", "test_hist", "job", "service-x/test", "instance", "107cn001"}
-
-	bodyFor := func(count int) int {
-		series := make([]writev2.TimeSeries, 0, count)
-		for i := range count {
-			series = append(series, invalidHistogramSeries(int64(i+1)))
-		}
-		prwReceiver := setupMetricsReceiverWithConsumer(t, &consumertest.MetricsSink{})
-		w := httptest.NewRecorder()
-		prwReceiver.handlePRW(w, writeRequest(t, &writev2.Request{Symbols: symbols, Timeseries: series}))
-		require.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
-		return w.Body.Len()
+	// The request is rejected as a whole, so translation stops at the first series it cannot
+	// take. Reporting one error per series would let a request full of invalid ones turn a small
+	// body into a much larger response, and joining thousands of errors costs more to render
+	// than to build.
+	symbols := []string{
+		"",
+		"__name__", "test_hist", // 1, 2
+		"job", "service-x/test", // 3, 4
+		"instance", "107cn001", // 5, 6
 	}
 
-	one, many := bodyFor(1), bodyFor(500)
-	assert.Equal(t, one, many, "the response must not grow with the number of invalid histograms")
+	for _, tc := range []struct {
+		name   string
+		series func(int64) writev2.TimeSeries
+	}{
+		{
+			name:   "histogram the converter refuses",
+			series: invalidHistogramSeries,
+		},
+		{
+			name: "series with no metric name",
+			series: func(ts int64) writev2.TimeSeries {
+				return writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: ts}},
+				}
+			},
+		},
+		{
+			name: "reference past the symbol table",
+			series: func(ts int64) writev2.TimeSeries {
+				return writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 9999},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: ts}},
+				}
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			bodyFor := func(count int) int {
+				series := make([]writev2.TimeSeries, 0, count)
+				for i := range count {
+					series = append(series, tc.series(int64(i+1)))
+				}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, &consumertest.MetricsSink{})
+				w := httptest.NewRecorder()
+				prwReceiver.handlePRW(w, writeRequest(t, &writev2.Request{Symbols: symbols, Timeseries: series}))
+				require.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+				return w.Body.Len()
+			}
+
+			one, many := bodyFor(1), bodyFor(500)
+			assert.Equal(t, one, many, "the response must not grow with the number of invalid series")
+		})
+	}
 }
 
 // TestWrittenHeadersFollowTheConsumer covers the rule that the Written headers report what the
