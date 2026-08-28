@@ -1101,9 +1101,8 @@ func applyScopeInfo(sm pmetric.ScopeMetrics, si scopeInfo) {
 
 // addNHCBDatapoint converts a single Native Histogram Custom Buckets (NHCB) to OpenTelemetry histogram datapoints
 func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *writev2.Histogram, attrs pcommon.Map, ls labels.Labels, stats *promremote.WriteResponseStats) {
-	// A stale marker records that the series stopped. It carries no distribution, so the spans
-	// and deltas that would describe one are left unread and the buckets stay empty, which is
-	// what a count of zero says as well.
+	// A stale marker records that the series stopped, so it carries no distribution and the
+	// spans and deltas that would describe one are left unread.
 	if value.IsStaleNaN(histogram.Sum) {
 		dp := datapoints.AppendEmpty()
 		dp.SetStartTimestamp(pcommon.Timestamp(histogram.StartTimestamp * int64(time.Millisecond)))
