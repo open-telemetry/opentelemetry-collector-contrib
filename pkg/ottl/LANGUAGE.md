@@ -66,7 +66,7 @@ Example Converters
 
 ### Function parameters
 
-The following types are supported for single-value parameters in OTTL functions:
+The following types are supported for parameters in OTTL functions:
 
 - `Setter`
 - `GetSetter`
@@ -75,6 +75,7 @@ The following types are supported for single-value parameters in OTTL functions:
 - `PMapGetSetter`
 - `PSliceGetter`
 - `PSliceGetSetter`
+- `SliceGetter`
 - `FloatGetter`
 - `FloatLikeGetter`
 - `StringGetter`
@@ -94,7 +95,7 @@ The following types are supported for single-value parameters in OTTL functions:
 - `int64`
 - `bool`
 
-For slice parameters, the following types are supported:
+Bare slice parameters (`[]T`) accept only literal lists. The following element types are supported:
 
 - `Getter`
 - `PMapGetter`
@@ -111,6 +112,9 @@ For slice parameters, the following types are supported:
 - `float64`
 - `int64`
 - `uint8`. Byte slice literals are parsed as byte slices by OTTL.
+
+To accept lists that are not known until runtime, use a `SliceGetter` parameter. Unlike bare slice
+parameters, it can accept either a literal list or a path or converter that evaluates to a slice.
 
 To make a parameter optional, use the `Optional` type, which takes a type argument for the underlying
 parameter type. For example, an optional string parameter would be specified as `Optional[string]`.
