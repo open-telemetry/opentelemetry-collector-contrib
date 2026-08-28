@@ -5,7 +5,6 @@ package objmodel
 
 import (
 	"math"
-	"math/rand/v2"
 	"strconv"
 	"strings"
 	"testing"
@@ -401,229 +400,55 @@ func TestValue_Serialize(t *testing.T) {
 	}
 }
 
-func TestCloneDocument_NestedValuesAreIndependent(t *testing.T) {
-	cases := []struct {
-		name  string
-		build func() Document
-		key   string
-	}{
-		{
-			name: "nested object",
-			build: func() Document {
-				var nested Document
-				nested.AddInt("a", 1)
-				nested.AddString("a.b", "nested")
-				var src Document
-				src.Add("obj", Value{kind: KindObject, doc: nested})
-				return src
-			},
-			key: "obj",
-		},
-		{
-			name: "array of objects",
-			build: func() Document {
-				var nested Document
-				nested.AddInt("a", 1)
-				nested.AddString("a.b", "nested")
-				var src Document
-				src.Add("arr", ArrValue(Value{kind: KindObject, doc: nested}))
-				return src
-			},
-			key: "arr",
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			src := tc.build()
-			cloned := cloneDocument(src)
-			cloned.Dedup(nil)
-
-			require.Equal(t, "a", nestedFirstKey(t, src, tc.key))
-		})
-	}
-}
-
-func TestAssembleFromSortedBase_MatchesConcatDedup(t *testing.T) {
-	cases := []struct {
-		name      string
-		base      func() Document
-		extra     func() Document
-		protected map[string]struct{}
-	}{
-		{
-			name: "prefix conflict keeps resource and record value",
-			base: func() Document {
-				var doc Document
-				doc.AddString("x", "resource")
-				doc.AddString("x.a", "scope")
-				return doc
-			},
-			extra: func() Document {
-				var doc Document
-				doc.AddString("x", "record")
-				return doc
-			},
-		},
-		{
-			name: "equal key last-wins keeps extra",
-			base: func() Document {
-				var doc Document
-				doc.AddString("service.name", "from-resource")
-				return doc
-			},
-			extra: func() Document {
-				var doc Document
-				doc.AddString("service.name", "from-record")
-				return doc
-			},
-		},
-		{
-			name: "duplicate keys inside extra",
-			base: func() Document {
-				var doc Document
-				doc.AddInt("a", 1)
-				return doc
-			},
-			extra: func() Document {
-				var doc Document
-				doc.AddInt("b", 2)
-				doc.AddInt("b", 3)
-				return doc
-			},
-		},
-		{
-			name: "protected prefix ignores nested extra",
-			base: func() Document {
-				var doc Document
-				doc.AddString("host", "from-resource")
-				return doc
-			},
-			extra: func() Document {
-				var doc Document
-				doc.AddString("host.name", "from-record")
-				return doc
-			},
-			protected: map[string]struct{}{"host": {}},
-		},
-		{
-			name: "empty extra",
-			base: func() Document {
-				var doc Document
-				doc.AddInt("a", 1)
-				doc.AddInt("c", 3)
-				return doc
-			},
-			extra: func() Document {
-				return Document{}
-			},
-		},
-		{
-			name: "empty base",
-			base: func() Document {
-				return Document{}
-			},
-			extra: func() Document {
-				var doc Document
-				doc.AddInt("a", 1)
-				doc.AddInt("c", 3)
-				return doc
-			},
-		},
-		{
-			name: "dynamic templates copy from base",
-			base: func() Document {
-				var doc Document
-				doc.AddInt("a", 1)
-				doc.AddDynamicTemplate("a", "histogram")
-				return doc
-			},
-			extra: func() Document {
-				var doc Document
-				doc.AddInt("b", 2)
-				return doc
-			},
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			assertAssembleMatchesConcat(t, tc.base(), tc.extra(), tc.protected)
-		})
-	}
-}
-
-func TestAssembleFromSortedBase_RandomKeys(t *testing.T) {
-	rng := rand.New(rand.NewPCG(1, 2))
-	for range 50 {
-		assertAssembleMatchesConcat(t, randomDoc(rng, 20), randomDoc(rng, 8), nil)
-	}
-}
-
-func TestAssembleFromSortedBase_DoesNotMutateBase(t *testing.T) {
-	var nested Document
-	nested.AddInt("a", 1)
-	nested.AddString("a.b", "nested")
-	var base Document
-	base.Add("obj", Value{kind: KindObject, doc: nested})
-	base.Sort()
-
-	var extra Document
-	extra.AddInt("n", 1)
-	_ = assembleFromSortedBase(base, extra, nil)
-
-	require.Equal(t, "a", nestedFirstKey(t, base, "obj"))
-}
-
-func assertAssembleMatchesConcat(t *testing.T, base, extra Document, protected map[string]struct{}) {
-	t.Helper()
-
-	concat := cloneDocument(base)
-	concat.fields = append(concat.fields, cloneDocument(extra).fields...)
-	var want strings.Builder
-	require.NoError(t, concat.Serialize(&want, true, protected))
-
-	sorted := cloneDocument(base)
-	sorted.Sort()
-	gotDoc := assembleFromSortedBase(sorted, cloneDocument(extra), protected)
-	var got strings.Builder
-	require.NoError(t, gotDoc.writeJSON(&got, true))
-
-	require.Equal(t, want.String(), got.String())
-	require.Equal(t, concat.fields, gotDoc.fields)
-	require.Equal(t, concat.dynamicTemplates, gotDoc.dynamicTemplates)
-}
-
-func randomDoc(rng *rand.Rand, n int) Document {
+func TestDocument_Reset(t *testing.T) {
 	var doc Document
-	for i := range n {
-		key := "k" + strconv.Itoa(rng.IntN(12))
-		if rng.IntN(4) == 0 {
-			key += ".a"
-		}
-		doc.AddString(key, "v"+strconv.Itoa(i))
-	}
-	return doc
+	doc.Grow(8)
+	doc.AddInt("a", 1)
+	doc.AddDynamicTemplate("a", "histogram")
+	capBefore := cap(doc.fields)
+
+	doc.Reset()
+
+	require.Empty(t, doc.fields)
+	require.Equal(t, capBefore, cap(doc.fields))
+	require.Empty(t, doc.dynamicTemplates)
+
+	doc.AddInt("b", 2)
+	require.Len(t, doc.fields, 1)
+	require.Equal(t, "b", doc.fields[0].key)
+	require.Equal(t, capBefore, cap(doc.fields))
 }
 
-func nestedFirstKey(t *testing.T, doc Document, key string) string {
-	t.Helper()
-	for i := range doc.fields {
-		if doc.fields[i].key != key {
-			continue
-		}
-		v := doc.fields[i].value
-		switch v.kind {
-		case KindObject:
-			require.NotEmpty(t, v.doc.fields)
-			return v.doc.fields[0].key
-		case KindArr:
-			require.NotEmpty(t, v.arr)
-			require.Equal(t, KindObject, v.arr[0].kind)
-			require.NotEmpty(t, v.arr[0].doc.fields)
-			return v.arr[0].doc.fields[0].key
-		}
+func TestDocument_Grow(t *testing.T) {
+	cases := []struct {
+		name string
+		n    int
+		adds int
+	}{
+		{
+			name: "zero",
+			n:    0,
+			adds: 0,
+		},
+		{
+			name: "prealloc then fill",
+			n:    8,
+			adds: 8,
+		},
 	}
-	t.Fatalf("key %q not found", key)
-	return ""
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var doc Document
+			doc.Grow(tc.n)
+			require.GreaterOrEqual(t, cap(doc.fields), tc.n)
+			require.Empty(t, doc.fields)
+
+			for i := range tc.adds {
+				doc.AddInt(strconv.Itoa(i), int64(i))
+			}
+			require.Len(t, doc.fields, tc.adds)
+			require.GreaterOrEqual(t, cap(doc.fields), tc.n)
+		})
+	}
 }

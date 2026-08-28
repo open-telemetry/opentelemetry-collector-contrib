@@ -115,26 +115,10 @@ func DocumentFromAttributesWithPath(path string, am pcommon.Map) Document {
 	return Document{fields: fields}
 }
 
-func cloneDocument(src Document) Document {
-	fields := make([]field, len(src.fields))
-	for i := range src.fields {
-		fields[i] = field{key: src.fields[i].key, value: cloneValue(src.fields[i].value)}
-	}
-	return Document{fields: fields, dynamicTemplates: maps.Clone(src.dynamicTemplates)}
-}
-
-func cloneValue(v Value) Value {
-	switch v.kind {
-	case KindArr:
-		arr := make([]Value, len(v.arr))
-		for i := range v.arr {
-			arr[i] = cloneValue(v.arr[i])
-		}
-		v.arr = arr
-	case KindObject, KindUnflattenableObject:
-		v.doc = cloneDocument(v.doc)
-	}
-	return v
+func (doc *Document) Clone() *Document {
+	fields := make([]field, len(doc.fields))
+	copy(fields, doc.fields)
+	return &Document{fields: fields, dynamicTemplates: maps.Clone(doc.dynamicTemplates)}
 }
 
 func (doc *Document) AddDynamicTemplate(path, template string) {
@@ -146,6 +130,18 @@ func (doc *Document) AddDynamicTemplate(path, template string) {
 
 func (doc *Document) DynamicTemplates() map[string]string {
 	return doc.dynamicTemplates
+}
+
+// Grow increases the field-slice capacity so at least n more fields can be
+// appended without another allocation. It matches slices.Grow.
+func (doc *Document) Grow(n int) {
+	doc.fields = slices.Grow(doc.fields, n)
+}
+
+// Reset truncates fields and drops dynamic templates. Capacity is kept.
+func (doc *Document) Reset() {
+	doc.fields = doc.fields[:0]
+	doc.dynamicTemplates = nil
 }
 
 // AddTimestamp adds a raw timestamp value to the Document.
@@ -235,8 +231,7 @@ func (doc *Document) AddLinks(key string, links ptrace.SpanLinkSlice) {
 	doc.Add(key, ArrValue(linkValues...))
 }
 
-// Sort stably sorts document keys, including nested objects.
-func (doc *Document) Sort() {
+func (doc *Document) sort() {
 	slices.SortStableFunc(doc.fields, func(a, b field) int {
 		return strings.Compare(a.key, b.key)
 	})
@@ -250,67 +245,29 @@ func (doc *Document) Sort() {
 // Dedup removes fields from the document, that have duplicate keys.
 // The filtering only keeps the last value for a key.
 // protectedSet is an optional map of field paths that should never get .value suffix.
-// Dedup ensures that keys are sorted.
+// Dedup ensure that keys are sorted.
 func (doc *Document) Dedup(protectedSet map[string]struct{}) {
-	doc.Sort()
-	doc.dedupSorted(protectedSet)
-}
+	// 1. Always ensure the fields are sorted, Dedup support requires
+	// Fields to be sorted.
+	doc.sort()
 
-// assembleFromSortedBase merges a sorted base with extra, then runs Dedup
-// without sorting the concatenated document. On equal keys the merge emits
-// the base field first so last-wins still keeps extra. extra is sorted in
-// place. Nested object and array values from base are cloned.
-// Dynamic templates are copied from base only. extra.dynamicTemplates are dropped.
-func assembleFromSortedBase(base, extra Document, protectedSet map[string]struct{}) Document {
-	extra.Sort()
-	out := Document{
-		fields:           mergeSortedFields(base.fields, extra.fields),
-		dynamicTemplates: maps.Clone(base.dynamicTemplates),
-	}
-	out.dedupSorted(protectedSet)
-	return out
-}
-
-func mergeSortedFields(base, extra []field) []field {
-	out := make([]field, 0, len(base)+len(extra))
-	i, j := 0, 0
-	for i < len(base) && j < len(extra) {
-		if strings.Compare(base[i].key, extra[j].key) <= 0 {
-			out = append(out, field{key: base[i].key, value: cloneValue(base[i].value)})
-			i++
-			continue
-		}
-		out = append(out, extra[j])
-		j++
-	}
-	for ; i < len(base); i++ {
-		out = append(out, field{key: base[i].key, value: cloneValue(base[i].value)})
-	}
-	return append(out, extra[j:]...)
-}
-
-func (doc *Document) dedupSorted(protectedSet map[string]struct{}) {
-	// 1. Rename fields if a primitive value is overwritten by an object,
+	// 2. rename fields if a primitive value is overwritten by an object,
 	//    EXCEPT for protected fields (well-defined schema fields like ECS).
 	//    For example the pair (path.x=1, path.x.a="test") becomes:
 	//    (path.x.value=1, path.x.a="test").
 	//
-	//    However, if path.x is a protected field, we skip the renaming and
-	//    instead remove the conflicting nested field (path.x.a) to preserve
-	//    the protected field.
+	//    However, if path.x is a protected field, we skip the renaming and instead
+	//    remove the conflicting nested field (path.x.a) to preserve the protected field.
 	//
 	//    NOTE: We do the renaming, in order to preserve the original value
-	//    in case of conflicts after dedotting, which would lead to the
-	//    removal of the field. For example docker/k8s labels tend to use
-	//    `.`, which need to be handled in case the collector does pass us
-	//    these kind of labels as an AttributeMap.
+	//    in case of conflicts after dedotting, which would lead to the removal of the field.
+	//    For example docker/k8s labels tend to use `.`, which need to be handled in case
+	//    The collector does pass us these kind of labels as an AttributeMap.
 	//
-	//    NOTE: If the embedded document already has a field name `value`, we
-	//    will remove the renamed field in favor of the `value` field in the
-	//    document.
+	//    NOTE: If the embedded document already has a field name `value`, we will remove the renamed
+	//    field in favor of the `value` field in the document.
 	//
-	//    This step removes potential conflicts when dedotting and serializing
-	//    fields.
+	//    This step removes potential conflicts when dedotting and serializing fields.
 	var renamed bool
 	for i := 0; i < len(doc.fields)-1; i++ {
 		key, nextKey := doc.fields[i].key, doc.fields[i+1].key
@@ -332,10 +289,10 @@ func (doc *Document) dedupSorted(protectedSet map[string]struct{}) {
 		}
 	}
 	if renamed {
-		doc.Sort()
+		doc.sort()
 	}
 
-	// 2. mark duplicates as 'ignore'
+	// 3. mark duplicates as 'ignore'
 	//
 	//    This step ensures that we do not have duplicate fields names when serializing.
 	//    Elasticsearch JSON parser will fail otherwise.
@@ -345,7 +302,7 @@ func (doc *Document) dedupSorted(protectedSet map[string]struct{}) {
 		}
 	}
 
-	// 3. fix objects that might be stored in arrays
+	// 4. fix objects that might be stored in arrays
 	for i := range doc.fields {
 		doc.fields[i].value.Dedup(protectedSet)
 	}
@@ -364,18 +321,6 @@ func newJSONVisitor(w io.Writer) *json.Visitor {
 // serialization.
 func (doc *Document) Serialize(w io.Writer, dedot bool, protectedSet map[string]struct{}) error {
 	doc.Dedup(protectedSet)
-	return doc.writeJSON(w, dedot)
-}
-
-// SerializeFromSortedBase merges a sorted base with extra, then writes JSON.
-// It does not run Dedup a second time. extra is sorted in place.
-func SerializeFromSortedBase(base, extra Document, protectedSet map[string]struct{}, w io.Writer, dedot bool) error {
-	doc := assembleFromSortedBase(base, extra, protectedSet)
-	return doc.writeJSON(w, dedot)
-}
-
-// writeJSON writes the document without Dedup. Fields must already be prepared.
-func (doc *Document) writeJSON(w io.Writer, dedot bool) error {
 	v := newJSONVisitor(w)
 	return doc.iterJSON(v, dedot)
 }
@@ -565,7 +510,7 @@ func ValueFromAttribute(attr pcommon.Value) Value {
 func (v *Value) sort() {
 	switch v.kind {
 	case KindObject:
-		v.doc.Sort()
+		v.doc.sort()
 	case KindArr:
 		for i := range v.arr {
 			v.arr[i].sort()

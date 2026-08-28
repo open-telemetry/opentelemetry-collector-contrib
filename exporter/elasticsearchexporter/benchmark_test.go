@@ -19,9 +19,9 @@ const benchECSBatch = 32
 
 func BenchmarkEncodeECS(b *testing.B) {
 	// Measures ECS encode time and allocs for logs and spans. Cases cover a
-	// small resource (2 attributes) and a large resource. Resource and scope
-	// are mapped once per batch. The cache is reset every benchECSBatch
-	// records.
+	// small resource (2 attributes) and a large resource. A new encoding
+	// context is created every benchECSBatch records, matching one
+	// Resource+Scope batch in the exporter.
 	encoder, err := newEncoder(MappingECS)
 	require.NoError(b, err)
 	scope := pcommon.NewInstrumentationScope()
@@ -66,13 +66,13 @@ func BenchmarkEncodeECS(b *testing.B) {
 	for _, tc := range encodes {
 		for _, rc := range resources {
 			b.Run(tc.name+"/"+rc.name, func(b *testing.B) {
-				ec := encodingContext{resource: rc.resource, scope: scope}
+				ec := benchECSEncodingContext(rc.resource, scope)
 				var buf bytes.Buffer
 				b.ReportAllocs()
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
 					if i%benchECSBatch == 0 {
-						ec.ecsBase = &ecsAttributeBase{}
+						ec = benchECSEncodingContext(rc.resource, scope)
 					}
 					buf.Reset()
 					if err := tc.encode(ec, i%benchECSBatch, &buf); err != nil {
@@ -81,6 +81,14 @@ func BenchmarkEncodeECS(b *testing.B) {
 				}
 			})
 		}
+	}
+}
+
+func benchECSEncodingContext(resource pcommon.Resource, scope pcommon.InstrumentationScope) encodingContext {
+	return encodingContext{
+		resource: resource,
+		scope:    scope,
+		ecsDoc:   newECSDocument(MappingECS),
 	}
 }
 
