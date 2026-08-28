@@ -53,7 +53,7 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 	for _, c := range contexts {
 		if c.sharedCache {
 			if sharedCaches == nil {
-				sharedCaches = make(map[common.ContextID]*pcommon.Map)
+				sharedCaches = map[common.ContextID]*pcommon.Map{}
 			}
 			m := pcommon.NewMap()
 			sharedCaches[c.Context()] = &m
