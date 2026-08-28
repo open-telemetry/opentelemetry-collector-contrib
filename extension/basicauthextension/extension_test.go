@@ -309,7 +309,7 @@ func TestBasicAuth_ClientInvalid(t *testing.T) {
 
 type mockSecretProvider struct {
 	secret   atomic.Pointer[string]
-	onChange func(string)
+	onChange []func(string)
 }
 
 func (*mockSecretProvider) Start(context.Context, component.Host) error { return nil }
@@ -324,11 +324,18 @@ func (m *mockSecretProvider) GetSecret(_ context.Context) (string, error) {
 }
 
 func (m *mockSecretProvider) OnChange(fn func(string)) {
-	m.onChange = fn
+	m.onChange = append(m.onChange, fn)
 }
 
 func (m *mockSecretProvider) setSecret(s string) {
 	m.secret.Store(&s)
+}
+
+func (m *mockSecretProvider) rotate(s string) {
+	m.setSecret(s)
+	for _, fn := range m.onChange {
+		fn(s)
+	}
 }
 
 // mockHost wraps componenttest.NewNopHost() and adds custom extensions.
@@ -384,6 +391,19 @@ func TestClientAuth_SecretProvider(t *testing.T) {
 	resp, err := rt.RoundTrip(&http.Request{Method: http.MethodGet})
 	require.NoError(t, err)
 	assert.Contains(t, resp.Header.Get("Authorization"), "Basic ")
+
+	rotated, err := json.Marshal(map[string]string{"user": "rotateduser", "pass": "rotatedpass"})
+	require.NoError(t, err)
+	mock.rotate(string(rotated))
+
+	assert.Equal(t, "rotateduser", ext.Username())
+	assert.Equal(t, "rotatedpass", ext.Password())
+
+	resp, err = rt.RoundTrip(&http.Request{Method: http.MethodGet})
+	require.NoError(t, err)
+	assert.Equal(t,
+		"Basic "+base64.StdEncoding.EncodeToString([]byte("rotateduser:rotatedpass")),
+		resp.Header.Get("Authorization"))
 }
 
 func TestServerAuth_SecretProvider(t *testing.T) {
@@ -413,6 +433,15 @@ func TestServerAuth_SecretProvider(t *testing.T) {
 	ctx, err := ext.Authenticate(t.Context(), map[string][]string{"authorization": {"Basic " + auth}})
 	assert.NoError(t, err)
 	assert.NotNil(t, ctx)
+
+	mock.rotate("rotateduser:{SHA}lC8D1OcbC+CLcd7f0EM8KI87HRg=")
+
+	newAuth := "cm90YXRlZHVzZXI6cm90YXRlZHBhc3M=" // rotateduser:rotatedpass
+	_, err = ext.Authenticate(t.Context(), map[string][]string{"authorization": {"Basic " + newAuth}})
+	assert.NoError(t, err)
+
+	_, err = ext.Authenticate(t.Context(), map[string][]string{"authorization": {"Basic " + auth}})
+	assert.Error(t, err)
 }
 
 func TestSecretProvider_ExtensionNotFound(t *testing.T) {

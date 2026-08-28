@@ -18,7 +18,9 @@ type SecretProvider interface {
 	GetSecret(ctx context.Context) (string, error)
 
 	// OnChange registers a callback that the provider calls from its own
-	// refresh goroutine whenever the secret value changes. Only one callback
-	// is supported per provider instance.
+	// refresh goroutine whenever the secret value changes. A provider
+	// extension is a shared singleton that may be referenced by several
+	// consumers, so implementations must retain every registered callback
+	// and invoke all of them on rotation.
 	OnChange(fn func(newValue string))
 }
