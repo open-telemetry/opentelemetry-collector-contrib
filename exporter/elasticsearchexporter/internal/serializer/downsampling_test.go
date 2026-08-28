@@ -1,24 +1,26 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package serializeprofiles
+package serializer
 
 import (
 	"math/rand/v2"
+	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestIndexDownsampledEvent(t *testing.T) {
+func TestDownsampleEvent(t *testing.T) {
 	type result struct {
 		index string
 		count uint16
 	}
 
 	var pushedData []result
-	pushData := func(data any, _, index string) error {
-		pushedData = append(pushedData, result{index, data.(StackTraceEvent).Count})
+	push := func(count uint16, index string) error {
+		pushedData = append(pushedData, result{index, count})
 		return nil
 	}
 
@@ -26,7 +28,7 @@ func TestIndexDownsampledEvent(t *testing.T) {
 	// If the seed changes or the random number generator changes, this test will fail.
 	rnd = rand.New(rand.NewPCG(0, 0))
 
-	err := IndexDownsampledEvent(StackTraceEvent{Count: 1000}, ".otel-default", pushData)
+	err := DownsampleEvent(1000, ".otel-default", push)
 	require.NoError(t, err)
 
 	expectedData := []result{
@@ -39,4 +41,21 @@ func TestIndexDownsampledEvent(t *testing.T) {
 	}
 
 	require.Equal(t, expectedData, pushedData)
+}
+
+func TestDownsampleEventIndexFormat(t *testing.T) {
+	var indices []string
+	push := func(_ uint16, index string) error {
+		indices = append(indices, index)
+		return nil
+	}
+
+	err := DownsampleEvent(1000, "", push)
+	require.NoError(t, err)
+
+	assert.NotEmpty(t, indices)
+	for _, index := range indices {
+		assert.True(t, strings.HasPrefix(index, "profiling-events-5pow"), "unexpected index: %s", index)
+		assert.False(t, strings.HasSuffix(index, ".otel-default"), "ecs mode index should not have .otel-default suffix: %s", index)
+	}
 }
