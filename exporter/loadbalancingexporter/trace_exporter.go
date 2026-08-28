@@ -171,18 +171,21 @@ func (e *traceExporterImp) randomnessIdentifier(ctx context.Context, span ptrace
 	if raw := span.TraceState().AsRaw(); raw != "" {
 		w3c, err := sampling.NewW3CTraceState(raw)
 		if rnd, ok := w3c.OTelValue().RValueRandomness(); ok {
-			// Member- and value-level parse failures (e.g. a malformed th
-			// beside a valid rv) keep the members that did parse, so a
-			// recovered rv still routes the trace.
+			// A value-level error inside a syntactically valid ot section (e.g.
+			// th:notathreshold beside a valid rv) keeps the members that did
+			// parse, so a recovered rv still routes the trace. A syntax error
+			// anywhere in the ot section (an invalid value char such as th:0!,
+			// or bad structure) or a W3C header-level error discards the rv and
+			// falls through to trace ID randomness below.
 			return []byte(rnd.RValue())
 		}
 		if err != nil && rawTraceStateHasRValue(raw) {
-			// Header-level failures (W3C syntax errors such as an uppercase
-			// vendor key, or a header over the 1024-byte size limit) discard
-			// the whole tracestate including any rv. Count only failures that
-			// discarded an rv the header appeared to carry, i.e. traces that
-			// actually fell back to trace ID randomness; a failed header that
-			// never had an rv would have routed by trace ID regardless.
+			// The parse failed and discarded an rv the raw header carried, so the
+			// trace fell back to trace ID randomness. This covers W3C header-level
+			// errors (an uppercase vendor key, or a header over the 1024-byte size
+			// limit) and ot-section syntax errors (such as th:0!). A parse failure
+			// with no rv is not counted; the trace would have routed by trace ID
+			// regardless.
 			e.telemetry.LoadbalancerRandomnessTracestateUnparseable.Add(ctx, 1)
 		}
 	}
@@ -195,8 +198,17 @@ func (e *traceExporterImp) randomnessIdentifier(ctx context.Context, span ptrace
 // validation and so can't be parsed properly.
 func rawTraceStateHasRValue(raw string) bool {
 	for member := range strings.SplitSeq(raw, ",") {
-		if value, ok := strings.CutPrefix(strings.TrimSpace(member), "ot="); ok && strings.Contains(value, "rv:") {
-			return true
+		value, ok := strings.CutPrefix(strings.TrimSpace(member), "ot=")
+		if !ok {
+			continue
+		}
+		// The ot member is a ';'-separated list of "subkey:value" pairs. Match the
+		// rv subkey exactly; a substring test would also match unknown subkeys that
+		// merely end in "rv" (e.g. "srv"), counting traces that never carried an rv.
+		for pair := range strings.SplitSeq(value, ";") {
+			if subkey, _, found := strings.Cut(pair, ":"); found && subkey == "rv" {
+				return true
+			}
 		}
 	}
 	return false

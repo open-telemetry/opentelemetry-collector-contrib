@@ -301,9 +301,12 @@ func TestRandomnessIdentifier(t *testing.T) {
 		{"vendor tracestate without rv", "vendor=value", fallback},
 		{"ot without rv", "ot=th:8", fallback},
 		{"unparseable rv", "ot=rv:zz", fallback},
-		// Value-level parse errors keep the members that did parse, so a
+		// A value-level parse error keeps the members that did parse, so a
 		// valid rv survives a malformed sibling th.
 		{"valid rv beside malformed th", "ot=rv:aabbccddeeff00;th:notathreshold", "aabbccddeeff00"},
+		// An ot-section syntax error (th:0! is legal W3C but ! is not a legal
+		// OTel value char) rejects the whole ot section, discarding the rv.
+		{"valid rv beside ot-section syntax error", "ot=rv:aabbccddeeff00;th:0!", fallback},
 		// Header-level W3C failures discard the whole tracestate up front,
 		// including a valid rv, so these fall back to trace ID randomness.
 		{"valid rv beside uppercase vendor key", "ot=rv:aabbccddeeff00,Vendor=up", fallback},
@@ -346,12 +349,18 @@ func TestRandomnessIdentifierUnparseableMetric(t *testing.T) {
 	// an rv-shaped value in a vendor member is not an ot rv, not counted
 	span.TraceState().FromRaw("vendor=rv:aabbccddeeff00,Bad=up")
 	p.randomnessIdentifier(t.Context(), span)
+	// an ot subkey that merely ends in "rv" (srv) is not an rv, not counted
+	span.TraceState().FromRaw("ot=th:0;srv:x,Bad=up")
+	p.randomnessIdentifier(t.Context(), span)
 	// a header-level failure discards the rv and falls back, counted
 	span.TraceState().FromRaw("ot=rv:aabbccddeeff00,Vendor=up")
 	p.randomnessIdentifier(t.Context(), span)
+	// an ot-section syntax error discards a real rv and falls back, counted
+	span.TraceState().FromRaw("ot=rv:aabbccddeeff00;th:0!")
+	p.randomnessIdentifier(t.Context(), span)
 
 	metadatatest.AssertEqualLoadbalancerRandomnessTracestateUnparseable(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
+		[]metricdata.DataPoint[int64]{{Value: 2}},
 		metricdatatest.IgnoreTimestamp())
 }
 
