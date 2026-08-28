@@ -3228,13 +3228,13 @@ func createSliceGetterFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 		sl := pcommon.NewSlice()
 		sl.EnsureCapacity(len(vals))
 		for _, g := range vals {
-			val, err := g.Get(ctx, tCtx)
+			val, hasValue, err := g.Get(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
 			sv := sl.AppendEmpty()
-			if val != nil {
-				err = sv.FromRaw(*val)
+			if hasValue {
+				err = sv.FromRaw(val)
 				if err != nil {
 					return nil, err
 				}
