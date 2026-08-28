@@ -8,6 +8,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `pkg.translator.prometheus.PermissiveLabelSanitization` | alpha | Controls whether to change labels starting with '_' to 'key_'. | v0.55.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950) |
+| `pkg.translator.prometheus.PermissiveLabelSanitization` | beta | Controls whether to change labels starting with '_' to 'key_'. | v0.55.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
