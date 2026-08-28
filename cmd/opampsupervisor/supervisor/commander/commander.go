@@ -108,10 +108,10 @@ func (c *Commander) ReloadConfigFile() error {
 // ValidateConfig runs the collector's validate command on the specified configuration file
 // to check if the configuration is valid without starting the collector.
 // Returns an error if the configuration is invalid or if the validation process fails.
-func (c *Commander) ValidateConfig(ctx context.Context, configPath string) error {
+func (c *Commander) ValidateConfig(ctx context.Context, configPath string, additionalArgs ...string) error {
 	c.logger.Debug("Validating agent config", zap.String("config", configPath))
 
-	args := slices.Concat([]string{"validate", "--config", configPath}, c.args, c.cfg.Arguments)
+	args := slices.Concat([]string{"validate", "--config", configPath}, additionalArgs, c.cfg.Arguments)
 
 	cmd := exec.CommandContext(ctx, c.cfg.Executable, args...) // #nosec G204
 	cmd.Env = envVarMapToEnvMapSlice(c.cfg.Env)
@@ -393,7 +393,8 @@ func (c *Commander) StartOneShot() ([]byte, []byte, error) {
 			// Time is out. Kill the process.
 			c.logger.Debug(
 				"Agent process is not responding to SIGTERM. Sending SIGKILL to kill forcibly.",
-				zap.Int("pid", pid))
+				zap.Int("pid", pid),
+			)
 			if innerErr = cmd.Process.Signal(os.Kill); innerErr != nil {
 				return
 			}
@@ -463,7 +464,8 @@ func (c *Commander) Stop(ctx context.Context) error {
 		// Time is out. Kill the process.
 		c.logger.Debug(
 			"Agent process is not responding to SIGTERM. Sending SIGKILL to kill forcibly.",
-			zap.Int("pid", pid))
+			zap.Int("pid", pid),
+		)
 		if innerErr = c.cmd.Process.Signal(os.Kill); innerErr != nil {
 			return
 		}

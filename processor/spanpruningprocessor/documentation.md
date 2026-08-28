@@ -77,3 +77,11 @@ Total traces processed
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {traces} | Sum | Int | true | Development |
+
+### otelcol_processor_spanpruning_traces_skipped
+
+Total traces skipped due to conditions not matching
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {traces} | Sum | Int | true | Development |

@@ -33,7 +33,8 @@ var (
 type ErrorProvider string
 
 func (p ErrorProvider) ClusterName(context.Context) (string, error) { return "", errors.New(string(p)) }
-func (p ErrorProvider) NodeName(context.Context) (string, error)    { return "", errors.New(string(p)) }
+
+func (p ErrorProvider) NodeName(context.Context) (string, error) { return "", errors.New(string(p)) }
 
 func TestProvider(t *testing.T) {
 	tests := []struct {

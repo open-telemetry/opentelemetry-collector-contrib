@@ -23,7 +23,8 @@ type spanNode struct {
 	replacementSpanID  pcommon.SpanID // summary span ID that replaced this node's group
 	isLeaf             bool           // true if node has no children
 	markedForRemoval   bool           // true if node will be aggregated
-	isPreservedOutlier bool           // true if preserved as outlier (not aggregated)
+	isPreservedOutlier bool           // true if this node is the root of a preserved outlier subtree
+	protected          bool           // true if this node is within a preserved outlier subtree (never aggregated)
 }
 
 // traceTree holds span nodes indexed by ID plus quick leaf/orphan lists for
@@ -138,21 +139,34 @@ func (n *spanNode) depth() int {
 	return d
 }
 
-// findEligibleParentNodesFromCandidates filters candidate parents to those
-// whose children are all marked for aggregation and that are themselves
-// aggregate-able.
-func (p *spanPruningProcessor) findEligibleParentNodesFromCandidates(candidates []*spanNode) []*spanNode {
-	if len(candidates) == 0 {
-		return nil
+// markOutlierSubtree records root as a preserved-outlier root and marks every
+// node in its subtree (root included) as protected, so the whole subtree is kept
+// (never aggregated). It is outlier-specific (it sets isPreservedOutlier); other
+// preservation features should not reuse it.
+func markOutlierSubtree(root *spanNode) {
+	root.isPreservedOutlier = true
+	for _, n := range subtreeNodes(root) {
+		n.protected = true
 	}
+}
 
-	eligibleParents := make([]*spanNode, 0, len(candidates)/4)
-	for _, node := range candidates {
-		if p.isEligibleForParentAggregation(node) {
-			eligibleParents = append(eligibleParents, node)
-		}
+// subtreeNodes returns root and all of its descendants.
+func subtreeNodes(root *spanNode) []*spanNode {
+	nodes := []*spanNode{root}
+	for i := 0; i < len(nodes); i++ {
+		nodes = append(nodes, nodes[i].children...)
 	}
-	return eligibleParents
+	return nodes
+}
+
+// preservedSpanCount returns the total number of spans across the subtrees
+// rooted at the given preserved-outlier roots.
+func preservedSpanCount(roots []*spanNode) int {
+	total := 0
+	for _, r := range roots {
+		total += len(subtreeNodes(r))
+	}
+	return total
 }
 
 // collectParentCandidates returns unique parents of marked nodes for the
@@ -178,7 +192,11 @@ func collectParentCandidates(markedNodes []*spanNode) []*spanNode {
 }
 
 // isEligibleForParentAggregation verifies that a node meets the criteria for
-// parent aggregation (not root, all children marked or preserved, not already marked).
+// parent aggregation: not a leaf, not a root, not already aggregated, not itself
+// a preserved outlier, and every child either aggregated or part of a preserved
+// outlier subtree. A preserved subtree is reparented onto this node's summary,
+// so it does not block aggregation. The outlier keeps everything beneath it but
+// not its ancestors.
 func (*spanPruningProcessor) isEligibleForParentAggregation(node *spanNode) bool {
 	// Must have children (not a leaf)
 	if node.isLeaf {
@@ -190,14 +208,15 @@ func (*spanPruningProcessor) isEligibleForParentAggregation(node *spanNode) bool
 		return false
 	}
 
-	// Must not already be marked for removal
-	if node.markedForRemoval {
+	// Must not already be marked for removal, and must not itself be a protected
+	// outlier subtree (those are preserved, not aggregated).
+	if node.markedForRemoval || node.protected {
 		return false
 	}
 
-	// All children must be either marked for removal OR preserved as outliers
+	// All children must be aggregated or part of a preserved outlier subtree.
 	for _, child := range node.children {
-		if !child.markedForRemoval && !child.isPreservedOutlier {
+		if !child.markedForRemoval && !child.protected {
 			return false
 		}
 	}

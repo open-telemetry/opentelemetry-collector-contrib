@@ -367,7 +367,8 @@ func (u *CloudTrailLogUnmarshaler) fromCloudWatch(reader *bufio.Reader) (encodin
 				},
 				func() int64 {
 					return 0
-				}),
+				},
+			),
 			nil
 	}
 

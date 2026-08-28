@@ -226,7 +226,8 @@ func (k *K8sAPIServer) init() error {
 		resourcelock.ResourceLockConfig{
 			Identity:      k.nodeName,
 			EventRecorder: k.createRecorder(lockName, lockNamespace),
-		})
+		},
+	)
 	if err != nil {
 		k.logger.Warn("Failed to create resource lock", zap.Error(err))
 		return err

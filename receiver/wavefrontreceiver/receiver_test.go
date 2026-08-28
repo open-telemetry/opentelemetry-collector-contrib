@@ -28,7 +28,7 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 	rCfg.TCPIdleTimeout = time.Second
 
 	addr := testutil.GetAvailableLocalAddress(t)
-	rCfg.Endpoint = addr
+	rCfg.TCPAddrConfig.Endpoint = addr
 	sink := new(consumertest.MetricsSink)
 	params := receivertest.NewNopSettings(metadata.Type)
 	rcvr, err := createMetricsReceiver(t.Context(), params, rCfg, sink)

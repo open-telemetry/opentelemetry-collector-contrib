@@ -201,14 +201,16 @@ func MetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, logger *zap.Log
 	case pmetric.MetricTypeExponentialHistogram:
 		logger.Warn(
 			"Point with unsupported type ExponentialHistogram",
-			zap.Any("metric", m))
+			zap.Any("metric", m),
+		)
 		return nil
 	case pmetric.MetricTypeEmpty:
 		return nil
 	default:
 		logger.Warn(
 			"Point with unsupported type",
-			zap.Any("metric", m))
+			zap.Any("metric", m),
+		)
 		return nil
 	}
 }

@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter/internal/metadata"
@@ -68,8 +68,14 @@ func TestLoadConfig(t *testing.T) {
 					config.TLS = configtls.ClientConfig{
 						InsecureSkipVerify: true,
 					}
-					config.MaxIdleConns = maxIdleConns
-					config.IdleConnTimeout = idleConnTimeout
+					// max_idle_conns and idle_conn_timeout are deprecated keys; unmarshal them
+					// through confmap (rather than setting the fields directly) so that config
+					// picks up the same deprecation-warning bookkeeping that loading
+					// testdata/config.yaml produces below.
+					require.NoError(t, confmap.NewFromStringMap(map[string]any{
+						"max_idle_conns":    maxIdleConns,
+						"idle_conn_timeout": idleConnTimeout,
+					}).Unmarshal(config))
 				}),
 				Format:             "proto",
 				DefaultServiceName: "test_name",
@@ -86,7 +92,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

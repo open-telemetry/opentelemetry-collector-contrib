@@ -401,6 +401,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ElasticsearchClusterName: ResourceAttributeConfig{Enabled: true},
+					ElasticsearchClusterUUID: ResourceAttributeConfig{Enabled: true},
 					ElasticsearchIndexName:   ResourceAttributeConfig{Enabled: true},
 					ElasticsearchNodeName:    ResourceAttributeConfig{Enabled: true},
 					ElasticsearchNodeVersion: ResourceAttributeConfig{Enabled: true},
@@ -786,6 +787,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ElasticsearchClusterName: ResourceAttributeConfig{Enabled: false},
+					ElasticsearchClusterUUID: ResourceAttributeConfig{Enabled: false},
 					ElasticsearchIndexName:   ResourceAttributeConfig{Enabled: false},
 					ElasticsearchNodeName:    ResourceAttributeConfig{Enabled: false},
 					ElasticsearchNodeVersion: ResourceAttributeConfig{Enabled: false},
@@ -1400,6 +1402,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "all_set",
 			want: ResourceAttributesConfig{
 				ElasticsearchClusterName: ResourceAttributeConfig{Enabled: true},
+				ElasticsearchClusterUUID: ResourceAttributeConfig{Enabled: true},
 				ElasticsearchIndexName:   ResourceAttributeConfig{Enabled: true},
 				ElasticsearchNodeName:    ResourceAttributeConfig{Enabled: true},
 				ElasticsearchNodeVersion: ResourceAttributeConfig{Enabled: true},
@@ -1409,6 +1412,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "none_set",
 			want: ResourceAttributesConfig{
 				ElasticsearchClusterName: ResourceAttributeConfig{Enabled: false},
+				ElasticsearchClusterUUID: ResourceAttributeConfig{Enabled: false},
 				ElasticsearchIndexName:   ResourceAttributeConfig{Enabled: false},
 				ElasticsearchNodeName:    ResourceAttributeConfig{Enabled: false},
 				ElasticsearchNodeVersion: ResourceAttributeConfig{Enabled: false},

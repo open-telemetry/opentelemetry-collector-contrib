@@ -75,9 +75,9 @@ func (*jaegerGRPCDataSender) ProtocolName() string {
 
 // Config defines configuration for Jaeger gRPC exporter.
 type jaegerConfig struct {
-	TimeoutSettings           exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	BackOffConfig   configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 
 	ClientConfig configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 }
@@ -155,7 +155,8 @@ func (s *protoGRPCSender) pushTraces(
 	for _, batch := range batches {
 		_, err := s.client.PostSpans(
 			ctx,
-			&jaegerproto.PostSpansRequest{Batch: *batch}, grpc.WaitForReady(s.waitForReady))
+			&jaegerproto.PostSpansRequest{Batch: *batch}, grpc.WaitForReady(s.waitForReady),
+		)
 		if err != nil {
 			s.settings.Logger.Debug("failed to push trace data to Jaeger", zap.Error(err))
 			return fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err)

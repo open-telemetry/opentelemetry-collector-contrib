@@ -64,8 +64,8 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 		return err
 	}
 
-	soapClient := soap.NewClient(sdkURL, vc.cfg.Insecure)
-	tlsCfg, err := vc.cfg.LoadTLSConfig(ctx)
+	soapClient := soap.NewClient(sdkURL, vc.cfg.ClientConfig.Insecure)
+	tlsCfg, err := vc.cfg.ClientConfig.LoadTLSConfig(ctx)
 	if err != nil {
 		return err
 	}
@@ -301,8 +301,7 @@ func (vc *vcenterClient) VAppInventoryListObjects(
 			continue
 		}
 
-		var notFoundErr *find.NotFoundError
-		if !errors.As(err, &notFoundErr) {
+		if _, ok := errors.AsType[*find.NotFoundError](err); !ok {
 			return nil, fmt.Errorf("unable to retrieve vApps with InventoryLists for datacenter %s: %w", dc.InventoryPath, err)
 		}
 	}

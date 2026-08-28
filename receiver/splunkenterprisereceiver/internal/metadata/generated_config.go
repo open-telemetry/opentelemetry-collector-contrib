@@ -1168,9 +1168,10 @@ func (ms *SplunkKvstoreBackupStatusMetricConfig) Validate() error {
 type SplunkKvstoreReplicationStatusMetricAttributeKey string
 
 const (
-	SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue SplunkKvstoreReplicationStatusMetricAttributeKey = "splunk.kvstore.status.value"
-	SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild       SplunkKvstoreReplicationStatusMetricAttributeKey = "splunk.splunkd.build"
-	SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion     SplunkKvstoreReplicationStatusMetricAttributeKey = "splunk.splunkd.version"
+	SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue   SplunkKvstoreReplicationStatusMetricAttributeKey = "splunk.kvstore.status.value"
+	SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStorageEngine SplunkKvstoreReplicationStatusMetricAttributeKey = "splunk.kvstore.storage_engine"
+	SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild         SplunkKvstoreReplicationStatusMetricAttributeKey = "splunk.splunkd.build"
+	SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion       SplunkKvstoreReplicationStatusMetricAttributeKey = "splunk.splunkd.version"
 )
 
 // SplunkKvstoreReplicationStatusMetricConfig provides config for the splunk.kvstore.replication.status metric.
@@ -1199,9 +1200,9 @@ func (ms *SplunkKvstoreReplicationStatusMetricConfig) Unmarshal(parser *confmap.
 func (ms *SplunkKvstoreReplicationStatusMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion:
+		case SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStorageEngine, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion:
 		default:
-			return fmt.Errorf("metric splunk.kvstore.replication.status doesn't have an attribute %v, valid attributes: [splunk.kvstore.status.value, splunk.splunkd.build, splunk.splunkd.version]", val)
+			return fmt.Errorf("metric splunk.kvstore.replication.status doesn't have an attribute %v, valid attributes: [splunk.kvstore.status.value, splunk.kvstore.storage_engine, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
 	}
 
@@ -1218,7 +1219,7 @@ func (ms *SplunkKvstoreReplicationStatusMetricConfig) Validate() error {
 type SplunkKvstoreStatusMetricAttributeKey string
 
 const (
-	SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStorageEngine SplunkKvstoreStatusMetricAttributeKey = "splunk.kvstore.storage.engine"
+	SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStorageEngine SplunkKvstoreStatusMetricAttributeKey = "splunk.kvstore.storage_engine"
 	SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreExternal      SplunkKvstoreStatusMetricAttributeKey = "splunk.kvstore.external"
 	SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStatusValue   SplunkKvstoreStatusMetricAttributeKey = "splunk.kvstore.status.value"
 	SplunkKvstoreStatusMetricAttributeKeySplunkSplunkdBuild         SplunkKvstoreStatusMetricAttributeKey = "splunk.splunkd.build"
@@ -1253,7 +1254,7 @@ func (ms *SplunkKvstoreStatusMetricConfig) Validate() error {
 		switch val {
 		case SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStorageEngine, SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreExternal, SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreStatusMetricAttributeKeySplunkSplunkdVersion:
 		default:
-			return fmt.Errorf("metric splunk.kvstore.status doesn't have an attribute %v, valid attributes: [splunk.kvstore.storage.engine, splunk.kvstore.external, splunk.kvstore.status.value, splunk.splunkd.build, splunk.splunkd.version]", val)
+			return fmt.Errorf("metric splunk.kvstore.status doesn't have an attribute %v, valid attributes: [splunk.kvstore.storage_engine, splunk.kvstore.external, splunk.kvstore.status.value, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
 	}
 
@@ -2741,7 +2742,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SplunkKvstoreReplicationStatus: SplunkKvstoreReplicationStatusMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkKvstoreReplicationStatusMetricAttributeKey{SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion},
+			EnabledAttributes:   []SplunkKvstoreReplicationStatusMetricAttributeKey{SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStorageEngine, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion},
 		},
 		SplunkKvstoreStatus: SplunkKvstoreStatusMetricConfig{
 			Enabled:             false,
