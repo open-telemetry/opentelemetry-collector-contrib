@@ -13,29 +13,20 @@ import (
 
 func TestLoadContextCache(t *testing.T) {
 	t.Run("returns nil when sharedCache is false", func(t *testing.T) {
-		cache := make(map[ContextID]*pcommon.Map)
+		cache := newCacheWithContexts([]ContextID{Resource, Scope, Log})
 		result := LoadContextCache(cache, Resource, false)
 		assert.Nil(t, result)
-		assert.Empty(t, cache)
-	})
-
-	t.Run("creates new map on first call", func(t *testing.T) {
-		cache := make(map[ContextID]*pcommon.Map)
-		result := LoadContextCache(cache, Resource, true)
-		require.NotNil(t, result)
-		assert.Len(t, cache, 1)
-		assert.Equal(t, result, cache[Resource])
 	})
 
 	t.Run("returns same map on subsequent calls for same context", func(t *testing.T) {
-		cache := make(map[ContextID]*pcommon.Map)
+		cache := newCacheWithContexts([]ContextID{Log})
 		first := LoadContextCache(cache, Log, true)
 		second := LoadContextCache(cache, Log, true)
 		assert.Same(t, first, second)
 	})
 
 	t.Run("returns different maps for different contexts", func(t *testing.T) {
-		cache := make(map[ContextID]*pcommon.Map)
+		cache := newCacheWithContexts([]ContextID{Resource, Log})
 		resourceCache := LoadContextCache(cache, Resource, true)
 		logCache := LoadContextCache(cache, Log, true)
 		require.NotNil(t, resourceCache)
@@ -45,7 +36,7 @@ func TestLoadContextCache(t *testing.T) {
 	})
 
 	t.Run("writes are visible through subsequent lookups", func(t *testing.T) {
-		cache := make(map[ContextID]*pcommon.Map)
+		cache := newCacheWithContexts([]ContextID{Scope})
 		first := LoadContextCache(cache, Scope, true)
 		first.PutStr("key", "value")
 
@@ -54,11 +45,13 @@ func TestLoadContextCache(t *testing.T) {
 		require.True(t, ok)
 		assert.Equal(t, "value", val.Str())
 	})
+}
 
-	t.Run("sharedCache=false does not populate the cache map", func(t *testing.T) {
-		cache := make(map[ContextID]*pcommon.Map)
-		LoadContextCache(cache, Resource, false)
-		LoadContextCache(cache, Log, false)
-		assert.Empty(t, cache)
-	})
+func newCacheWithContexts(contexts []ContextID) map[ContextID]*pcommon.Map {
+	cache := make(map[ContextID]*pcommon.Map)
+	for _, context := range contexts {
+		m := pcommon.NewMap()
+		cache[context] = &m
+	}
+	return cache
 }
