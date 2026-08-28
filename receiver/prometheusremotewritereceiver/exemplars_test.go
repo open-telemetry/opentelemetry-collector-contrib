@@ -274,6 +274,13 @@ func TestSetTraceAndSpan(t *testing.T) {
 			wantFilteredAttrs: map[string]any{"span_id": "00f0"},
 		},
 		{
+			name:              "non hex span id is kept as an attribute",
+			labels:            labels.FromStrings("span_id", strings.Repeat("z", 16)),
+			wantTraceID:       "",
+			wantSpanID:        "",
+			wantFilteredAttrs: map[string]any{"span_id": strings.Repeat("z", 16)},
+		},
+		{
 			name:              "long span id is not truncated and is kept as an attribute",
 			labels:            labels.FromStrings("span_id", strings.Repeat("b", 32)),
 			wantTraceID:       "",
