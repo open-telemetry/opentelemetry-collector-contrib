@@ -7,12 +7,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension/internal/clientauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension/internal/metadata"
 )
 
@@ -33,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.Equal(t, &Config{
-		Config: googleclientauthextension.Config{
+		Config: clientauth.Config{
 			Project:      "my-project",
 			Scopes:       []string{"https://www.something.com/hello", "https://www.something.com/world"},
 			QuotaProject: "other-project",

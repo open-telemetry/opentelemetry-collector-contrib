@@ -1,6 +1,6 @@
 name: "First time contributor"
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] - no PR code is checked out or executed
     types:
       - opened
       - ready_for_review
