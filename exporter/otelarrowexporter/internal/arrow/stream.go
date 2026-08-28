@@ -172,7 +172,6 @@ func (s *Stream) logStreamError(where string, err error) {
 func (s *Stream) run(ctx context.Context, dc doneCancel, streamClient StreamClientFunc, grpcOptions []grpc.CallOption) {
 	sc, method, err := streamClient(ctx, grpcOptions...)
 	if err != nil {
-
 		// Unsupported errors will cause a downgrade to standard OTLP.
 		//
 		// Note: These cannot be simulated by connecting to a gRPC
