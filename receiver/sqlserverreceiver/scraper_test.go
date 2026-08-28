@@ -25,7 +25,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -172,19 +171,13 @@ func TestEmptyScrape(t *testing.T) {
 
 func TestSuccessfulScrape(t *testing.T) {
 	tests := []struct {
-		removeServerResourceAttributeFeatureGate bool
-		name                                     string
+		name string
 		// propertiesFixtureFile overrides the fixture returned for the server properties
 		// query. Empty means the default on-prem fixture (propertyQueryData.txt).
 		propertiesFixtureFile string
 	}{
 		{
-			name:                                     "TestSuccessfulScrape with removing server resource attribute feature gate on",
-			removeServerResourceAttributeFeatureGate: true,
-		},
-		{
-			name:                                     "TestSuccessfulScrape with removing server resource attribute feature gate off",
-			removeServerResourceAttributeFeatureGate: false,
+			name: "TestSuccessfulScrape",
 		},
 		{
 			// Azure SQL Managed Instance (EngineEdition 8) returns a reduced property column
@@ -199,15 +192,14 @@ func TestSuccessfulScrape(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			testutil.SetFeatureGateForTest(t, metadata.ReceiverSqlserverRemoveServerResourceAttributeFeatureGate, test.removeServerResourceAttributeFeatureGate)
 			cfg := createDefaultConfig().(*Config)
 			cfg.Username = "sa"
 			cfg.Password = "password"
 			cfg.Port = 1433
 			cfg.Server = "0.0.0.0"
 			cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-			cfg.MetricsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
-			cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
+			// server.address and server.port are intentionally not enabled here: the golden
+			// files include them, so this asserts they are emitted by default.
 			cfg.MetricsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
 			cfg.MetricsBuilderConfig.ResourceAttributes.ServiceNamespace.Enabled = true
 			cfg.LogsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
@@ -236,10 +228,6 @@ func TestSuccessfulScrape(t *testing.T) {
 
 				actualMetrics, err := scraper.ScrapeMetrics(t.Context())
 				assert.NoError(t, err)
-				fileSuffix := ".yaml"
-				if test.removeServerResourceAttributeFeatureGate {
-					fileSuffix = "RemoveServerResourceAttributes.yaml"
-				}
 				var expectedFile string
 				switch scraper.sqlQuery {
 				case getSQLServerAvailabilityGroupQuery(scraper.config.InstanceName):
@@ -261,7 +249,7 @@ func TestSuccessfulScrape(t *testing.T) {
 				case getSQLServerDiskIOQuery(scraper.config.InstanceName):
 					expectedFile = filepath.Join("testdata", "expectedDiskIO")
 				}
-				expectedFile += fileSuffix
+				expectedFile += ".yaml"
 
 				// Uncomment line below to re-generate expected metrics.
 				// golden.WriteMetrics(t, expectedFile, actualMetrics)
@@ -1123,9 +1111,11 @@ func TestMultiStatementProcNoDuplicateRows(t *testing.T) {
 
 func TestSetupResourceBuilder(t *testing.T) {
 	tests := []struct {
-		name             string
-		config           *Config
-		expectedHostName string
+		name                  string
+		config                *Config
+		expectedHostName      string
+		expectedServerAddress string
+		expectedServerPort    int64
 	}{
 		{
 			name: "with server configuration",
@@ -1136,7 +1126,9 @@ func TestSetupResourceBuilder(t *testing.T) {
 				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
 				return cfg
 			}(),
-			expectedHostName: "testserver.example.com",
+			expectedHostName:      "testserver.example.com",
+			expectedServerAddress: "testserver.example.com",
+			expectedServerPort:    1433,
 		},
 		{
 			name: "with datasource configuration",
@@ -1146,7 +1138,9 @@ func TestSetupResourceBuilder(t *testing.T) {
 				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
 				return cfg
 			}(),
-			expectedHostName: "datasource-host.example.com",
+			expectedHostName:      "datasource-host.example.com",
+			expectedServerAddress: "datasource-host.example.com",
+			expectedServerPort:    1434,
 		},
 		{
 			name: "with datasource default port",
@@ -1156,7 +1150,24 @@ func TestSetupResourceBuilder(t *testing.T) {
 				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
 				return cfg
 			}(),
-			expectedHostName: "datasource-host2.example.com",
+			expectedHostName:      "datasource-host2.example.com",
+			expectedServerAddress: "datasource-host2.example.com",
+			expectedServerPort:    defaultSQLServerPort,
+		},
+		{
+			// A loopback target is only reachable when the instance is co-located with the
+			// collector, so server.address reports the collector's host name instead.
+			name: "with loopback server configuration",
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Server = "localhost"
+				cfg.Port = 1433
+				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
+				return cfg
+			}(),
+			expectedHostName:      "localhost",
+			expectedServerAddress: getTestHostname(),
+			expectedServerPort:    1433,
 		},
 	}
 
@@ -1188,6 +1199,14 @@ func TestSetupResourceBuilder(t *testing.T) {
 			hostName, exists := resource.Attributes().Get("host.name")
 			assert.True(t, exists)
 			assert.Equal(t, tt.expectedHostName, hostName.AsString())
+
+			serverAddress, exists := resource.Attributes().Get("server.address")
+			assert.True(t, exists)
+			assert.Equal(t, tt.expectedServerAddress, serverAddress.AsString())
+
+			serverPort, exists := resource.Attributes().Get("server.port")
+			assert.True(t, exists)
+			assert.Equal(t, tt.expectedServerPort, serverPort.Int())
 		})
 	}
 }
@@ -1306,6 +1325,19 @@ func TestRecordDatabaseQueryTextAndPlanUsesResourceBuilderForLogs(t *testing.T) 
 	serverPort, exists := resourceAttributes.Get("server.port")
 	assert.True(t, exists)
 	assert.Equal(t, int64(1434), serverPort.Int())
+
+	// The event carries its own server.address/server.port attributes; they must agree with the
+	// resource. `server` is unset in this datasource-only config, so reading it from the config
+	// rather than the resolved endpoint would leave them empty.
+	recordAttributes := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+
+	eventServerAddress, exists := recordAttributes.Get("server.address")
+	assert.True(t, exists)
+	assert.Equal(t, "datasource-host.example.com", eventServerAddress.AsString())
+
+	eventServerPort, exists := recordAttributes.Get("server.port")
+	assert.True(t, exists)
+	assert.Equal(t, int64(1434), eventServerPort.Int())
 }
 
 func TestRecordWorkerThreadMetrics(t *testing.T) {

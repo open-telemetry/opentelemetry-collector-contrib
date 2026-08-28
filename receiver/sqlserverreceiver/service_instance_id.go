@@ -20,12 +20,17 @@ func isLocalhost(host string) bool {
 	return strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback()
 }
 
-// computeServiceInstanceID computes the service.instance.id based on the configuration
-// Format: <host>:<port>
+// resolveServerEndpoint determines the network location of the monitored SQL Server
+// instance, reported as the server.address and server.port resource attributes.
 // Special handling:
-// - localhost/127.0.0.1 are replaced with os.Hostname()
+// - localhost/127.0.0.1/::1 are replaced with os.Hostname()
 // - Port 0 defaults to 1433
-func computeServiceInstanceID(cfg *Config) (string, error) {
+//
+// A loopback target is only reachable when the server is co-located with the collector,
+// so the collector host's name is a more useful server identity than "localhost", which
+// would be shared by every monitored host.
+// See https://github.com/open-telemetry/semantic-conventions/issues/4026.
+func resolveServerEndpoint(cfg *Config) (string, int, error) {
 	var host string
 	var port int
 
@@ -34,7 +39,7 @@ func computeServiceInstanceID(cfg *Config) (string, error) {
 	case cfg.DataSource != "":
 		h, p, err := parseDataSource(cfg.DataSource)
 		if err != nil {
-			return "", fmt.Errorf("failed to parse datasource: %w", err)
+			return "", 0, fmt.Errorf("failed to parse datasource: %w", err)
 		}
 		host, port = h, p
 	case cfg.Server != "":
@@ -46,7 +51,7 @@ func computeServiceInstanceID(cfg *Config) (string, error) {
 		// No server specified, use hostname with default port
 		hostname, err := os.Hostname()
 		if err != nil {
-			return "", err
+			return "", 0, err
 		}
 		host, port = hostname, defaultSQLServerPort
 	}
@@ -55,7 +60,7 @@ func computeServiceInstanceID(cfg *Config) (string, error) {
 	if isLocalhost(host) || host == "" {
 		hostname, err := os.Hostname()
 		if err != nil {
-			return "", err
+			return "", 0, err
 		}
 		host = hostname
 	}
@@ -63,6 +68,17 @@ func computeServiceInstanceID(cfg *Config) (string, error) {
 	// Apply default port if not specified
 	if port == 0 {
 		port = defaultSQLServerPort
+	}
+
+	return host, port, nil
+}
+
+// computeServiceInstanceID computes the service.instance.id based on the configuration
+// Format: <host>:<port>, using the same endpoint resolution as server.address/server.port.
+func computeServiceInstanceID(cfg *Config) (string, error) {
+	host, port, err := resolveServerEndpoint(cfg)
+	if err != nil {
+		return "", err
 	}
 
 	return fmt.Sprintf("%s:%d", host, port), nil

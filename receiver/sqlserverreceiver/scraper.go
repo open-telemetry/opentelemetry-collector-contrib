@@ -57,6 +57,8 @@ type sqlServerScraperHelper struct {
 	lastExecutionTimestamp time.Time
 	obfuscator             *obfuscator
 	serviceInstanceID      string
+	serverAddress          string
+	serverPort             int64
 }
 
 var (
@@ -80,6 +82,13 @@ func newSQLServerScraper(id component.ID,
 		serviceInstanceID = "unknown:1433"
 	}
 
+	// Resolve the network location of the monitored instance for server.address and server.port.
+	serverAddress, serverPort, err := resolveServerEndpoint(cfg)
+	if err != nil {
+		params.Logger.Warn("Failed to resolve server.address and server.port, using the configured values", zap.Error(err))
+		serverAddress, serverPort = cfg.Server, int(cfg.Port)
+	}
+
 	return &sqlServerScraperHelper{
 		id:                     id,
 		config:                 cfg,
@@ -94,6 +103,8 @@ func newSQLServerScraper(id component.ID,
 		lastExecutionTimestamp: time.Unix(0, 0),
 		obfuscator:             newObfuscator(params.Logger),
 		serviceInstanceID:      serviceInstanceID,
+		serverAddress:          serverAddress,
+		serverPort:             int64(serverPort),
 	}
 }
 
@@ -334,17 +345,13 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetSqlserverInstanceName(row[instanceNameKey])
 
 	hostName := s.config.Server
-	serverAddress := s.config.Server
-	serverPort := int64(s.config.Port)
 
 	if s.config.DataSource != "" {
-		host, port, err := parseDataSource(s.config.DataSource)
+		host, _, err := parseDataSource(s.config.DataSource)
 		if err != nil {
 			s.logger.Warn("Failed to parse datasource for host.name attribute, using fallback", zap.Error(err))
 		} else {
 			hostName = host
-			serverAddress = host
-			serverPort = int64(port)
 		}
 	}
 
@@ -352,11 +359,8 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetServiceInstanceID(s.serviceInstanceID)
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
-
-	if !metadata.ReceiverSqlserverRemoveServerResourceAttributeFeatureGate.IsEnabled() {
-		rb.SetServerAddress(serverAddress)
-		rb.SetServerPort(serverPort)
-	}
+	rb.SetServerAddress(s.serverAddress)
+	rb.SetServerPort(s.serverPort)
 
 	return rb
 }
@@ -1761,8 +1765,8 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			rowsReturnedVal.(int64),
 			totalElapsedTimeVal,
 			totalGrantVal.(int64),
-			s.config.Server,
-			int64(s.config.Port),
+			s.serverAddress,
+			s.serverPort,
 			dbSystemNameVal,
 			procExecCountVal.(int64),
 			row[storedProcedureID],
