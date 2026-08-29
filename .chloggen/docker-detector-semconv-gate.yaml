@@ -1,0 +1,20 @@
+change_type: enhancement
+
+component: processor/resource_detection
+
+note: "`docker` detector: add the `processor.resourcedetection.docker.EmitSemconvContainerAttributes` feature gate"
+
+issues: []
+
+subtext: |
+  The detector reports two attribute values that do not follow the semantic conventions:
+  `container.name` includes the leading slash returned by the Docker API (`/my-container`), and
+  `container.image.name` reports the image ID (`sha256:<hex>`) rather than the image name.
+
+  When the gate is enabled, `container.name` is reported without the slash and
+  `container.image.name` reports the image name, with the image ID available from the new
+  `container.image.id` attribute.
+
+  The gate is alpha and disabled by default, so the detector's output is unchanged.
+
+change_logs: [user]

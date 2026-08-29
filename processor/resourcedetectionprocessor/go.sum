@@ -74,8 +74,8 @@ github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b h1:2EkxDI
 github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b/go.mod h1:lNrzMwI4fx6xfzieyLEpYIJPLWjT/Sak4G/hIzGTEL4=
 github.com/distribution/reference v0.6.0 h1:0IXCQ5g4/QMHHkarYzh5l+u8T3t73zM5QvfrDyIgxBk=
 github.com/distribution/reference v0.6.0/go.mod h1:BbU0aIcezP1/5jX/8MP0YiH4SdvB5Y4f/wlDRiLyi3E=
-github.com/docker/go-connections v0.7.0 h1:6SsRfJddP22WMrCkj19x9WKjEDTB+ahsdiGYf0mN39c=
-github.com/docker/go-connections v0.7.0/go.mod h1:no1qkHdjq7kLMGUXYAduOhYPSJxxvgWBh7ogVvptn3Q=
+github.com/docker/go-connections v0.8.1 h1:JibmG5hULs5qXSr/cp/w3Pw5fZuStt4MOHMUExb29/M=
+github.com/docker/go-connections v0.8.1/go.mod h1:no1qkHdjq7kLMGUXYAduOhYPSJxxvgWBh7ogVvptn3Q=
 github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4=
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
 github.com/ebitengine/purego v0.10.2 h1:W809HbnvzAxgdm+aOvlSekrM16wGCdT/e76+9tS7gzE=
@@ -457,6 +457,8 @@ go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.17.0 h1:sSDJeWCxp
 go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.17.0/go.mod h1:gjTLF6FGtedGD3c70yX5h+RLztW2aa+XbvpiGhvfK9g=
 go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0 h1:6TvMbWB8r3b3bDnmEOINXY4LGDkS5Tb/KdMIRk1b8gQ=
 go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0/go.mod h1:l5PtALrPd1LdGoCatPskfemVbh1KupYQ6GyWX+JiyRY=
+go.opentelemetry.io/contrib/detectors/docker v0.18.0 h1:bCKBKMcmnkcHDLBkbswYtFbJiRQtQevkIkNA3MB0gAk=
+go.opentelemetry.io/contrib/detectors/docker v0.18.0/go.mod h1:LNWZjKiE3c876vr/kJovbzFRcBAd4LC9Yll8yVgoF4k=
 go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.17.0 h1:zhELKuXxvdj0t3hWImgDdSm8Aaujhf8RjFBhIGe1yY4=
 go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.17.0/go.mod h1:oZWjl1Hfwo7Z6ip5onlP4v9F9KpNAyTUR5oJt8CkgJw=
 go.opentelemetry.io/contrib/detectors/vultr v0.17.0 h1:4Jq5L/3oxU8SvzcQAq739a9SiA6HhZdfVJro1hWpnXU=

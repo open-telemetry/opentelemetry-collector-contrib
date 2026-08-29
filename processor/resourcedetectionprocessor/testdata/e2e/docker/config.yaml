@@ -15,7 +15,11 @@ processors:
       resource_attributes:
         container.name:
           enabled: true
+        container.image.id:
+          enabled: true
         container.image.name:
+          enabled: true
+        container.image.tags:
           enabled: true
 receivers:
   hostmetrics:
