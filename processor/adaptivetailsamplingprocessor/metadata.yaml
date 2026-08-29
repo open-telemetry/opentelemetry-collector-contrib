@@ -27,7 +27,7 @@ telemetry:
       stability: development
     processor_adaptive_tail_sampling_decision_triggers:
       enabled: true
-      description: Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction, shutdown).
+      description: Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction, shutdown, span_limit).
       unit: "{decisions}"
       sum:
         value_type: int
@@ -55,6 +55,13 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+      stability: development
+    processor_adaptive_tail_sampling_trace_span_count:
+      enabled: true
+      description: Distribution of buffered span counts per trace at decision time, labelled by rule. Useful for sizing span_limit against the real trace-size distribution.
+      unit: "{spans}"
+      histogram:
+        value_type: int
       stability: development
     processor_adaptive_tail_sampling_traces_active:
       enabled: true

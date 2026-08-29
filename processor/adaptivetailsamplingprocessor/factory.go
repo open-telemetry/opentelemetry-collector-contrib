@@ -28,6 +28,7 @@ func createDefaultConfig() component.Config {
 		TraceTimeout:  30 * time.Second,
 		DecisionDelay: 2 * time.Second,
 		NumTraces:     50_000,
+		SpanLimit:     10_000,
 		DecisionCache: DecisionCacheConfig{
 			SampledCacheSize:    10_000,
 			NonSampledCacheSize: 10_000,

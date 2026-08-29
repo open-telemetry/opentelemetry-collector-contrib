@@ -80,6 +80,15 @@ type Config struct {
 	// NumTraces is the maximum number of traces held in the in-memory buffer at
 	// any time. Older traces are evicted when this limit is exceeded.
 	NumTraces int `mapstructure:"num_traces"`
+	// SpanLimit caps how many spans a single trace may accumulate in the
+	// buffer. A trace reaching the limit is scheduled for an immediate
+	// decision (no decision_delay), evaluated over the spans buffered so
+	// far; spans arriving after the decision follow the late-span path
+	// (stamped from the decision cache) instead of being buffered. This
+	// bounds the memory a single giant trace can hold, which num_traces and
+	// eviction cannot (they bound trace count, not spans per trace).
+	// Defaults to 10000. 0 disables the cap.
+	SpanLimit int `mapstructure:"span_limit"`
 	// DecisionCache configures the LRU caches that record decisions for already
 	// decided traces, so late-arriving spans receive the same treatment as the
 	// original trace.
@@ -279,6 +288,9 @@ func (c *Config) Validate() error {
 	}
 	if c.NumTraces <= 0 {
 		return errors.New("num_traces must be greater than zero")
+	}
+	if c.SpanLimit < 0 {
+		return errors.New("span_limit must be non-negative")
 	}
 	if c.DecisionCache.SampledCacheSize < 0 {
 		return errors.New("decision_cache.sampled_cache_size must be non-negative")

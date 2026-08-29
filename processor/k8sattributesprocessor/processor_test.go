@@ -2399,6 +2399,35 @@ func TestGetAttributesForPodsJob(t *testing.T) {
 	assert.Nil(t, attrs)
 }
 
+func TestGetAttributesForPodsCronJob(t *testing.T) {
+	kc := &fakeClient{
+		CronJobs: map[string]*kube.CronJob{
+			"cronjob-abc": {
+				Name: "test-cronjob",
+				UID:  "cronjob-abc",
+				Attributes: map[string]string{
+					"k8s.cronjob.name": "test-cronjob",
+					"k8s.cronjob.uid":  "cronjob-abc",
+				},
+			},
+		},
+	}
+
+	p := &kubernetesprocessor{
+		kc: kc,
+	}
+
+	// Test getting attributes for existing cronjob
+	attrs := p.getAttributesForPodsCronJob("cronjob-abc")
+	assert.NotNil(t, attrs)
+	assert.Equal(t, "test-cronjob", attrs["k8s.cronjob.name"])
+	assert.Equal(t, "cronjob-abc", attrs["k8s.cronjob.uid"])
+
+	// Test getting attributes for non-existent cronjob
+	attrs = p.getAttributesForPodsCronJob("non-existent")
+	assert.Nil(t, attrs)
+}
+
 // newTracesProcessorWithSettings is like newTracesProcessor but uses caller-supplied settings,
 // allowing tests to inject a telemetry-capturing componenttest.Telemetry.
 func newTracesProcessorWithSettings(set processor.Settings, cfg component.Config, next consumer.Traces, options ...option) (processor.Traces, error) {

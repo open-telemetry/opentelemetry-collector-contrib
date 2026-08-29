@@ -25,6 +25,7 @@ func TestFactory_DefaultConfig(t *testing.T) {
 	assert.Equal(t, 30*time.Second, cfg.TraceTimeout)
 	assert.Equal(t, 2*time.Second, cfg.DecisionDelay)
 	assert.Equal(t, 50_000, cfg.NumTraces)
+	assert.Equal(t, 10_000, cfg.SpanLimit)
 	assert.Equal(t, 10_000, cfg.DecisionCache.SampledCacheSize)
 	assert.Equal(t, 10_000, cfg.DecisionCache.NonSampledCacheSize)
 	assert.Empty(t, cfg.Rules)
