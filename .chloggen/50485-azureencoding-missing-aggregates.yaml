@@ -1,0 +1,14 @@
+change_type: bug_fix
+
+component: extension/encoding/azureencoding
+
+note: Do not emit 0-valued timeseries for aggregates (total, count, minimum, maximum, average) that are missing from the source Azure record
+
+issues: [50485]
+
+subtext: |
+  Diagnostic settings only export the aggregates a resource supports. A configured
+  aggregation whose aggregate is absent from the record is now skipped instead of
+  being coerced to 0.
+
+change_logs: [user]

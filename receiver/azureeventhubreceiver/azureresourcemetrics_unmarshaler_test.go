@@ -8,6 +8,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )
@@ -143,4 +144,95 @@ func TestAzureResourceMetricsUnmarshaler_UnmarshalAggregatedAppMetrics(t *testin
 	appMetric := metrics.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, "metric.name", appMetric.Name())
 	assert.Equal(t, 8.0, appMetric.Gauge().DataPoints().At(0).DoubleValue())
+}
+
+func TestAzureResourceMetricsUnmarshaler_SkipsMissingAggregates(t *testing.T) {
+	// Standard Load Balancer diagnostic settings export total and count but no
+	// minimum/maximum aggregates; the unmarshaler must not fabricate 0-valued
+	// series for them, while an aggregate explicitly present as 0 is kept.
+	eventPayload := `{"records":[
+	{
+	  "count":23,
+	  "total":12292.1382,
+	  "resourceId":"/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/RG/PROVIDERS/MICROSOFT.NETWORK/LOADBALANCERS/LB",
+	  "time":"2025-07-14T12:45:00.0000000Z",
+	  "metricName":"bytecount",
+	  "timeGrain":"PT1M"
+	},
+	{
+	  "count":2,
+	  "total":10,
+	  "minimum":0,
+	  "maximum":8,
+	  "average":5,
+	  "resourceId":"/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/RG/PROVIDERS/MICROSOFT.NETWORK/LOADBALANCERS/LB",
+	  "time":"2025-07-14T12:45:00.0000000Z",
+	  "metricName":"withzeros",
+	  "timeGrain":"PT1M"
+	}
+	]}`
+	event := azureEvent{AzEventData: &azeventhubs.ReceivedEventData{EventData: azeventhubs.EventData{Body: []byte(eventPayload)}}}
+	unmarshaler := newAzureResourceMetricsUnmarshaler(
+		component.BuildInfo{
+			Command:     "Test",
+			Description: "Test",
+			Version:     "Test",
+		},
+		zap.NewNop(),
+		&Config{},
+	)
+	metrics, err := unmarshaler.UnmarshalMetrics(&event)
+
+	assert.NoError(t, err)
+	require.Equal(t, 7, metrics.MetricCount())
+
+	// Each Event Hub record becomes its own ResourceMetrics entry.
+	names := map[string]bool{}
+	values := map[string]float64{}
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		ms := metrics.ResourceMetrics().At(i).ScopeMetrics().At(0).Metrics()
+		for j := 0; j < ms.Len(); j++ {
+			names[ms.At(j).Name()] = true
+			values[ms.At(j).Name()] = ms.At(j).Gauge().DataPoints().At(0).DoubleValue()
+		}
+	}
+
+	assert.Equal(t, map[string]bool{
+		"bytecount_total":   true,
+		"bytecount_count":   true,
+		"withzeros_total":   true,
+		"withzeros_count":   true,
+		"withzeros_minimum": true,
+		"withzeros_maximum": true,
+		"withzeros_average": true,
+	}, names)
+	assert.Equal(t, 0.0, values["withzeros_minimum"])
+}
+
+func TestAzureResourceMetricsUnmarshaler_AverageAggregationSkipsRecordWithoutTotalOrCount(t *testing.T) {
+	eventPayload := `{"records":[
+	{
+	  "average":5,
+	  "resourceId":"/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/RG/PROVIDERS/MICROSOFT.NETWORK/LOADBALANCERS/LB",
+	  "time":"2025-07-14T12:45:00.0000000Z",
+	  "metricName":"bytecount",
+	  "timeGrain":"PT1M"
+	}
+	]}`
+	event := azureEvent{AzEventData: &azeventhubs.ReceivedEventData{EventData: azeventhubs.EventData{Body: []byte(eventPayload)}}}
+	unmarshaler := newAzureResourceMetricsUnmarshaler(
+		component.BuildInfo{
+			Command:     "Test",
+			Description: "Test",
+			Version:     "Test",
+		},
+		zap.NewNop(),
+		&Config{
+			MetricAggregation: "average",
+		},
+	)
+	metrics, err := unmarshaler.UnmarshalMetrics(&event)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 0, metrics.MetricCount())
 }
