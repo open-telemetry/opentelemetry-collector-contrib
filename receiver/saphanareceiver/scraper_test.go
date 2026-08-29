@@ -133,7 +133,7 @@ func initializeWrapper(t *testing.T, w *testDBWrapper, filename string) {
 				if val == "nil" {
 					row = append(row, nil)
 				} else {
-					row = append(row, str(val))
+					row = append(row, new(val))
 				}
 			}
 			result = append(result, row)
