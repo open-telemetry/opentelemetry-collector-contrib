@@ -76,9 +76,15 @@ func (pc *providerContainer) refreshPublicKeysFile() error {
 		}
 	}
 
+	// Build the new verifier from a copy of the stored config: the
+	// verifier being replaced retains a pointer to the config it was
+	// created with, and concurrent Verify calls read from it, so
+	// mutating the stored config in place is a data race.
+	verifierCfg := *pc.verifierCfg
+	verifierCfg.SupportedSigningAlgs = supportedAlgs
+
 	pc.verifierMu.Lock()
-	pc.verifierCfg.SupportedSigningAlgs = supportedAlgs
-	pc.verifier = oidc.NewVerifier(pc.providerCfg.IssuerURL, keySet, pc.verifierCfg)
+	pc.verifier = oidc.NewVerifier(pc.providerCfg.IssuerURL, keySet, &verifierCfg)
 	pc.verifierMu.Unlock()
 
 	return nil
@@ -405,7 +411,14 @@ func getIssuerCACertFromPath(path string) (*x509.Certificate, error) {
 }
 
 func (e *oidcExtension) startFileWatchers(ctx context.Context) error {
-	filesToWatch := make(map[string][]*providerContainer)
+	// Group provider containers by the parent directory of their
+	// configured JWKS file. We react to any event in that directory
+	// rather than matching the exact configured leaf path, because
+	// projected-secret style rotations (notably Kubernetes) do not
+	// rewrite the leaf file in place: they atomically swap a
+	// "..data" symlink target, and the configured leaf path is a
+	// symlink whose name never appears in any fsnotify event.
+	dirsToWatch := make(map[string][]*providerContainer)
 
 	for _, pc := range e.providerContainers {
 		if pc.providerCfg.PublicKeysFile == "" {
@@ -417,15 +430,11 @@ func (e *oidcExtension) startFileWatchers(ctx context.Context) error {
 			return fmt.Errorf("failed to get absolute path for %q: %w", pc.providerCfg.PublicKeysFile, err)
 		}
 
-		if pcs, ok := filesToWatch[absPath]; ok {
-			pcs = append(pcs, pc)
-			filesToWatch[absPath] = pcs
-		} else {
-			filesToWatch[absPath] = []*providerContainer{pc}
-		}
+		dir := filepath.Dir(absPath)
+		dirsToWatch[dir] = append(dirsToWatch[dir], pc)
 	}
 
-	if len(filesToWatch) == 0 {
+	if len(dirsToWatch) == 0 {
 		return nil
 	}
 
@@ -434,8 +443,7 @@ func (e *oidcExtension) startFileWatchers(ctx context.Context) error {
 		return fmt.Errorf("failed to create file watcher: %w", err)
 	}
 
-	for absPath := range filesToWatch {
-		dir := filepath.Dir(absPath)
+	for dir := range dirsToWatch {
 		if err := watcher.Add(dir); err != nil {
 			watcher.Close()
 			return fmt.Errorf("failed to watch directory %q: %w", dir, err)
@@ -443,12 +451,12 @@ func (e *oidcExtension) startFileWatchers(ctx context.Context) error {
 	}
 
 	e.shutdownCH = make(chan struct{})
-	go e.watchFiles(ctx, watcher, filesToWatch)
+	go e.watchFiles(ctx, watcher, dirsToWatch)
 
 	return nil
 }
 
-func (e *oidcExtension) watchFiles(ctx context.Context, watcher *fsnotify.Watcher, filesToWatch map[string][]*providerContainer) {
+func (e *oidcExtension) watchFiles(ctx context.Context, watcher *fsnotify.Watcher, dirsToWatch map[string][]*providerContainer) {
 	defer watcher.Close()
 
 	for {
@@ -462,26 +470,24 @@ func (e *oidcExtension) watchFiles(ctx context.Context, watcher *fsnotify.Watche
 				return
 			}
 
+			if event.Op&(fsnotify.Write|fsnotify.Create|fsnotify.Remove|fsnotify.Chmod|fsnotify.Rename) == 0 {
+				continue
+			}
+
 			absPath, err := filepath.Abs(event.Name)
 			if err != nil {
 				e.logger.Error("failed to get absolute path", zap.String("file", event.Name), zap.Error(err))
 				continue
 			}
 
-			pcs, found := filesToWatch[absPath]
+			pcs, found := dirsToWatch[filepath.Dir(absPath)]
 			if !found {
 				continue
 			}
 
-			if event.Op&fsnotify.Write == fsnotify.Write ||
-				event.Op&fsnotify.Create == fsnotify.Create ||
-				event.Op&fsnotify.Remove == fsnotify.Remove ||
-				event.Op&fsnotify.Chmod == fsnotify.Chmod ||
-				event.Op&fsnotify.Rename == fsnotify.Rename {
-				for _, pc := range pcs {
-					if err := pc.refreshPublicKeysFile(); err != nil {
-						e.logger.Error("failed to reload JWKS file", zap.String("file", absPath), zap.Error(err))
-					}
+			for _, pc := range pcs {
+				if err := pc.refreshPublicKeysFile(); err != nil {
+					e.logger.Error("failed to reload JWKS file", zap.String("file", pc.providerCfg.PublicKeysFile), zap.Error(err))
 				}
 			}
 		case err, ok := <-watcher.Errors:
