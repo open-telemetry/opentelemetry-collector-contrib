@@ -4,9 +4,14 @@
 package ottlfuncs
 
 import (
+	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func Test_spanID(t *testing.T) {
@@ -46,5 +51,41 @@ func Test_spanID_validation(t *testing.T) {
 			value: []byte("ZZ02030405060708"),
 			err:   errIDHexDecode,
 		},
+	})
+}
+
+func Test_SpanIDFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewSpanIDFactory[any]()
+		assert.Equal(t, "SpanID", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewSpanIDFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &SpanIDArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewSpanIDFactory[any]()
+		args := factory.CreateDefaultArguments()
+		spanIDArgs, ok := args.(*SpanIDArguments[any])
+		require.True(t, ok)
+		spanIDArgs.Target = &ottl.StandardByteSliceLikeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return []byte{1, 2, 3, 4, 5, 6, 7, 8}, nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createSpanIDFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "SpanIDFactory args must be of type *SpanIDArguments[K]")
 	})
 }

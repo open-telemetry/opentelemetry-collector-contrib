@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
@@ -34,12 +35,13 @@ func NewFactory() exporter.Factory {
 	f := &factory{
 		loggerInitOnce: sync.Once{},
 	}
-	return exporter.NewFactory(
+	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(f.createTracesExporter, metadata.TracesStability),
-		exporter.WithLogs(f.createLogsExporter, metadata.LogsStability),
-		exporter.WithMetrics(f.createMetricsExporter, metadata.MetricsStability),
+		xexporter.WithTraces(f.createTracesExporter, metadata.TracesStability),
+		xexporter.WithLogs(f.createLogsExporter, metadata.LogsStability),
+		xexporter.WithMetrics(f.createMetricsExporter, metadata.MetricsStability),
+		xexporter.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 
@@ -51,8 +53,8 @@ type factory struct {
 func createDefaultConfig() component.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	return &Config{
 		ClientConfig:        clientConfig,

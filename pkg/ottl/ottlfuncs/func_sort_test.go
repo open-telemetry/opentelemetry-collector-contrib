@@ -278,3 +278,39 @@ func Test_Sort(t *testing.T) {
 		})
 	}
 }
+
+func Test_SortFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewSortFactory[any]()
+		assert.Equal(t, "Sort", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewSortFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &SortArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Order"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewSortFactory[any]()
+		args := factory.CreateDefaultArguments()
+		sortArgs, ok := args.(*SortArguments[any])
+		require.True(t, ok)
+		sortArgs.Target = &ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return []any{3, 1, 2}, nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createSortFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "SortFactory args must be of type *SortArguments[K]")
+	})
+}
