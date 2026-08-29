@@ -335,6 +335,35 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "shared_cache"),
+			expected: &Config{
+				ErrorMode: ottl.IgnoreError,
+				TraceStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["copy"], resource.attributes["name"])`},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+				ProfileStatements: []common.ContextStatements{},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.Name(), func(t *testing.T) {
