@@ -1101,6 +1101,168 @@ func TestProcessor_ShutdownDrain_TriggeredTraceNotDoubleCounted(t *testing.T) {
 	)
 }
 
+// newNonRootSpans builds a batch of n non-root spans for one trace, with
+// span IDs offset by base so batches don't collide.
+func newNonRootSpans(traceID pcommon.TraceID, n int, base byte) ptrace.Traces {
+	td := ptrace.NewTraces()
+	ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+	for i := range n {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID([8]byte{base, byte(i + 1), 3, 4, 5, 6, 7, 8})
+		span.SetParentSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9})
+		span.SetName("op")
+	}
+	return td
+}
+
+func TestProcessor_SpanLimit_TriggersImmediateDecision(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	sink := &consumertest.TracesSink{}
+	// TraceTimeout and DecisionDelay are both far beyond the test window, so a
+	// decision can only come from the span-limit trigger's immediate path.
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Hour,
+		NumTraces:     10,
+		SpanLimit:     3,
+		DecisionCache: DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
+
+	id := pcommon.TraceID([16]byte{0xC1})
+
+	// Two spans stay below the limit: no decision.
+	require.NoError(t, p.ConsumeTraces(t.Context(), newNonRootSpans(id, 2, 0xA)))
+	require.Equal(t, 0, sink.SpanCount(), "below the limit the trace keeps buffering")
+
+	// Two more cross the limit (4 >= 3): the decision fires immediately and
+	// covers every span buffered so far, including this batch.
+	require.NoError(t, p.ConsumeTraces(t.Context(), newNonRootSpans(id, 2, 0xB)))
+	assert.Eventually(t, func() bool { return sink.SpanCount() == 4 }, time.Second, 10*time.Millisecond,
+		"decision must not wait for decision_delay or trace_timeout")
+
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingDecisionTriggers(t, tt,
+		[]metricdata.DataPoint[int64]{{
+			Value:      1,
+			Attributes: attribute.NewSet(attribute.String("trigger", "span_limit")),
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
+	// The span-count histogram records the buffered count at decision time.
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingTraceSpanCount(t, tt,
+		[]metricdata.HistogramDataPoint[int64]{{
+			Attributes: attribute.NewSet(attribute.String("rule", "default")),
+			Count:      1,
+			Sum:        4,
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+		metricdatatest.IgnoreValue(),
+	)
+
+	// Every span of the decided trace carries the trigger attribution.
+	first := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	v, ok := first.Attributes().Get(triggerAttributeKey)
+	require.True(t, ok, "spans of a span-limited trace must carry the trigger attribute")
+	assert.Equal(t, "span_limit", v.Str())
+
+	// Spans arriving after the decision follow the late-span path: stamped
+	// from the decision cache and forwarded without buffering a new trace.
+	require.NoError(t, p.ConsumeTraces(t.Context(), newNonRootSpans(id, 1, 0xC)))
+	assert.Eventually(t, func() bool { return sink.SpanCount() == 5 }, time.Second, 10*time.Millisecond)
+	late := sink.AllTraces()[len(sink.AllTraces())-1].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	_, ok = late.Attributes().Get(ruleAttributeKey)
+	assert.True(t, ok, "late span must carry the original decision's rule attribution")
+	lv, ok := late.Attributes().Get(triggerAttributeKey)
+	require.True(t, ok, "late spans must carry the same trigger attribution")
+	assert.Equal(t, "span_limit", lv.Str())
+}
+
+// The trigger attribute is stamped on every kept trace, not just span-limited
+// ones, and the span-count histogram records every decision.
+func TestProcessor_TriggerAttribution(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Millisecond,
+		NumTraces:     1,
+		DecisionCache: DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
+
+	// A root-triggered trace carries trigger=root_span.
+	require.NoError(t, p.ConsumeTraces(t.Context(), newRootTrace(pcommon.TraceID([16]byte{0xD1}))))
+	assert.Eventually(t, func() bool { return sink.SpanCount() == 1 }, time.Second, 10*time.Millisecond)
+	span := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	v, ok := span.Attributes().Get(triggerAttributeKey)
+	require.True(t, ok, "every kept span must carry the trigger attribute")
+	assert.Equal(t, "root_span", v.Str())
+
+	// An untriggered trace displaced by buffer overflow carries trigger=eviction:
+	// two non-root traces with NumTraces=1 evict the first.
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(pcommon.TraceID([16]byte{0xD2}), ptrace.StatusCodeUnset)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), newTrace(pcommon.TraceID([16]byte{0xD3}), ptrace.StatusCodeUnset)))
+	assert.Eventually(t, func() bool { return sink.SpanCount() >= 2 }, time.Second, 10*time.Millisecond)
+	evicted := sink.AllTraces()[1].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	require.Equal(t, pcommon.TraceID([16]byte{0xD2}), evicted.TraceID())
+	ev, ok := evicted.Attributes().Get(triggerAttributeKey)
+	require.True(t, ok)
+	assert.Equal(t, "eviction", ev.Str())
+
+	// The span-count histogram records every decision, not just span-limited ones.
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingTraceSpanCount(t, tt,
+		[]metricdata.HistogramDataPoint[int64]{{
+			Attributes: attribute.NewSet(attribute.String("rule", "default")),
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+		metricdatatest.IgnoreValue(),
+	)
+}
+
+// span_limit: 0 disables the cap: a trace may buffer past any small count
+// without being decided.
+func TestProcessor_SpanLimitDisabled(t *testing.T) {
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Hour,
+		NumTraces:     10,
+		SpanLimit:     0,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	p := newTestProcessor(t, cfg, sink)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), newNonRootSpans(pcommon.TraceID([16]byte{0xD4}), 50, 0xA)))
+	assert.Never(t, func() bool { return sink.SpanCount() > 0 }, 200*time.Millisecond, 20*time.Millisecond,
+		"with span_limit disabled the trace must keep buffering")
+}
+
 func TestProcessor_Eviction_TriggeredTraceNotDoubleCounted(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() {
@@ -1136,6 +1298,12 @@ func TestProcessor_Eviction_TriggeredTraceNotDoubleCounted(t *testing.T) {
 		metricdatatest.IgnoreTimestamp(),
 		metricdatatest.IgnoreExemplars(),
 	)
+	// The metric keeps the original trigger (no double count), but the span
+	// attribute reports what actually caused the decision: the eviction.
+	span := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	v, ok := span.Attributes().Get(triggerAttributeKey)
+	require.True(t, ok)
+	assert.Equal(t, "eviction", v.Str(), "mid-delay eviction must override the trigger attribute")
 	metadatatest.AssertEqualProcessorAdaptiveTailSamplingTracesEvicted(t, tt,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp(),

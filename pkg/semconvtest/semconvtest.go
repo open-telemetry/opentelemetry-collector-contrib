@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -218,12 +217,12 @@ func startWeaver(ctx context.Context, opts *weaverOptions) (*weaverSession, erro
 		cleanup()
 		return nil, err
 	}
-	mappedOTLPPort, err := container.MappedPort(ctx, nat.Port(weaverOTLPListenerPort))
+	mappedOTLPPort, err := container.MappedPort(ctx, weaverOTLPListenerPort)
 	if err != nil {
 		cleanup()
 		return nil, err
 	}
-	mappedStopPort, err := container.MappedPort(ctx, nat.Port(weaverStopPort))
+	mappedStopPort, err := container.MappedPort(ctx, weaverStopPort)
 	if err != nil {
 		cleanup()
 		return nil, err
@@ -291,7 +290,7 @@ func (opts *weaverOptions) testContainerOptions() []testcontainers.ContainerCust
 		// Expose the required ports on the container and wait for the OTLP
 		// listener to be ready before returning.
 		testcontainers.WithExposedPorts(weaverOTLPListenerPort, weaverStopPort),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort(nat.Port(weaverOTLPListenerPort))),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(weaverOTLPListenerPort)),
 	}
 	return containerOpts
 }

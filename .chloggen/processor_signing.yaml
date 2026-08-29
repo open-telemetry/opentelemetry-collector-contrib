@@ -1,0 +1,28 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: new_component
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: processor/signing
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add `signingprocessor`, a new processor that computes a RFC 8785 (JCS) canonical hash and signs each log record, storing the base64-encoded signature as `audit.integrity.value` and setting `audit.integrity.algorithm` and `audit.integrity.certificate` as resource attributes. Supports RS256, RS512, ES256, EdDSA, and HMAC-SHA256. Designed for use with the OpenTelemetry Audit Logging signal to provide tamper-evident audit trails.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [ 50079, 50080 ]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Key material can be loaded from a file, environment variables, a Kubernetes Secret, or an OpenBao (Vault-compatible) secret engine.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [ user ]

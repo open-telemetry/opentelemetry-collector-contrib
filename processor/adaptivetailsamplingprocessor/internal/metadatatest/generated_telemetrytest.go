@@ -39,7 +39,7 @@ func AssertEqualProcessorAdaptiveTailSamplingDecisionSampleRate(t *testing.T, tt
 func AssertEqualProcessorAdaptiveTailSamplingDecisionTriggers(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_adaptive_tail_sampling_decision_triggers",
-		Description: "Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction, shutdown). [Development]",
+		Description: "Number of trace decisions made, labelled by which event triggered the decision (root_span, trace_timeout, eviction, shutdown, span_limit). [Development]",
 		Unit:        "{decisions}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -95,6 +95,21 @@ func AssertEqualProcessorAdaptiveTailSamplingOttlEvalErrors(t *testing.T, tt *co
 		},
 	}
 	got, err := tt.GetMetric("otelcol_processor_adaptive_tail_sampling_ottl_eval_errors")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorAdaptiveTailSamplingTraceSpanCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_adaptive_tail_sampling_trace_span_count",
+		Description: "Distribution of buffered span counts per trace at decision time, labelled by rule. Useful for sizing span_limit against the real trace-size distribution. [Development]",
+		Unit:        "{spans}",
+		Data: metricdata.Histogram[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_adaptive_tail_sampling_trace_span_count")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
