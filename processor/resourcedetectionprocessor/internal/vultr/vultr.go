@@ -28,8 +28,12 @@ var newResourceDetector = func() sdkresource.Detector {
 	return vultrdetector.NewResourceDetector()
 }
 
+// Ensure Detector implements internal.Detector.
 var _ internal.Detector = (*Detector)(nil)
 
+// Detector is a Vultr metadata detector. Detection is delegated to the upstream
+// SDK detector so that the attributes reported here match the ones the
+// collector's own telemetry reports.
 type Detector struct {
 	detector              sdkresource.Detector
 	logger                *zap.Logger
@@ -37,6 +41,7 @@ type Detector struct {
 	failOnMissingMetadata bool
 }
 
+// NewDetector creates a new Vultr metadata detector.
 func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
