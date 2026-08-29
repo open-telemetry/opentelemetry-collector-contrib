@@ -229,7 +229,7 @@ func Test_serviceStrategyCache_WritesUpdateTimestamp(t *testing.T) {
 }
 
 func Test_serviceStrategyCache_Concurrency(t *testing.T) {
-	defer leaktest.CheckTimeout(t, time.Minute*3)
+	defer leaktest.CheckTimeout(t, time.Minute*3)()
 
 	cache := newServiceStrategyCache(cacheTestItemTTL).(*serviceStrategyTTLCache)
 	defer func() {

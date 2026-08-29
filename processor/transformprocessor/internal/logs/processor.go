@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -17,10 +18,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
+type parsedContextStatements struct {
+	common.LogsConsumer
+	sharedCache bool
+}
+
 type Processor struct {
-	contexts []common.LogsConsumer
-	logger   *zap.Logger
-	flatMode bool
+	contexts     []parsedContextStatements
+	logger       *zap.Logger
+	flatMode     bool
+	sharedCaches map[common.ContextID]*pcommon.Map
 }
 
 func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, flatMode bool, settings component.TelemetrySettings, logFunctions map[string]ottl.Factory[*ottllog.TransformContext]) (*Processor, error) {
@@ -29,24 +36,39 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 		return nil, err
 	}
 
-	contexts := make([]common.LogsConsumer, len(contextStatements))
+	contexts := make([]parsedContextStatements, len(contextStatements))
 	var errors error
 	for i, cs := range contextStatements {
 		context, err := pc.ParseContextStatements(cs)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 		}
-		contexts[i] = context
+		contexts[i] = parsedContextStatements{
+			LogsConsumer: context,
+			sharedCache:  cs.SharedCache,
+		}
 	}
 
 	if errors != nil {
 		return nil, errors
 	}
 
+	var sharedCaches map[common.ContextID]*pcommon.Map
+	for _, c := range contexts {
+		if c.sharedCache {
+			if sharedCaches == nil {
+				sharedCaches = map[common.ContextID]*pcommon.Map{}
+			}
+			m := pcommon.NewMap()
+			sharedCaches[c.Context()] = &m
+		}
+	}
+
 	return &Processor{
-		contexts: contexts,
-		logger:   settings.Logger,
-		flatMode: flatMode,
+		contexts:     contexts,
+		logger:       settings.Logger,
+		flatMode:     flatMode,
+		sharedCaches: sharedCaches,
 	}, nil
 }
 
@@ -57,7 +79,8 @@ func (p *Processor) ProcessLogs(ctx context.Context, ld plog.Logs) (plog.Logs, e
 	}
 
 	for _, c := range p.contexts {
-		err := c.ConsumeLogs(ctx, ld)
+		cache := common.LoadContextCache(p.sharedCaches, c.Context(), c.sharedCache)
+		err := c.ConsumeLogs(ctx, ld, cache)
 		if err != nil {
 			p.logger.Error("failed processing logs", zap.Error(err))
 			return ld, err

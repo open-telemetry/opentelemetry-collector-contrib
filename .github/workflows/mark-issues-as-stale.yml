@@ -10,10 +10,12 @@ jobs:
   mark-issues-as-stale:
     permissions:
       issues: write # required for marking issues as stale
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     if: ${{ github.repository_owner == 'open-telemetry' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Run mark-issues-as-stale.sh
         run: ./.github/workflows/scripts/mark-issues-as-stale.sh
