@@ -83,6 +83,8 @@ func TestTopicConfigValidation(t *testing.T) {
 	assert.Error(t, c.Validate())
 	c.Topic = "projects/my-project/topics/my-topic"
 	assert.NoError(t, c.Validate())
+	c.Topic = "projects/prefix:my-project/topics/my-topic"
+	assert.NoError(t, c.Validate())
 }
 
 func TestCompressionConfigValidation(t *testing.T) {
