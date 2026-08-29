@@ -17,10 +17,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
-// testSchemaURL stands in for whichever semantic conventions version the SDK
-// detector is built against; the adapter passes it through verbatim.
-const testSchemaURL = "https://opentelemetry.io/schemas/1.41.0"
-
 // fakeDetector stands in for the upstream SDK detector. The SDK's hcloud
 // metadata client is not injectable, so the adapter is exercised against canned
 // SDK results instead of a fake metadata server.
@@ -44,8 +40,7 @@ func withFakeDetector(t *testing.T, res *sdkresource.Resource, err error) {
 }
 
 func fullResource() *sdkresource.Resource {
-	return sdkresource.NewWithAttributes(
-		testSchemaURL,
+	return sdkresource.NewSchemaless(
 		attribute.String("cloud.provider", "hetzner"),
 		attribute.String("cloud.platform", "hetzner.cloud_server"),
 		attribute.String("host.id", "987654321"),
@@ -70,9 +65,8 @@ func TestHetznerDetector_Detect_OK(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, testSchemaURL, schemaURL)
 
 	want := map[string]any{
 		"cloud.provider":          TypeStr,
@@ -93,9 +87,8 @@ func TestHetznerDetector_Detect_DefaultConfig(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, testSchemaURL, schemaURL)
 
 	want := map[string]any{
 		"cloud.provider":          TypeStr,
@@ -122,8 +115,7 @@ func TestHetznerDetector_NotOnHetzner(t *testing.T) {
 // A partial result is kept as-is when fail_on_missing_metadata is false: the
 // attributes that could not be read are omitted rather than emitted empty.
 func TestHetznerDetector_PartialMetadata(t *testing.T) {
-	partial := sdkresource.NewWithAttributes(
-		testSchemaURL,
+	partial := sdkresource.NewSchemaless(
 		attribute.String("cloud.provider", "hetzner"),
 		attribute.String("cloud.platform", "hetzner.cloud_server"),
 		attribute.String("host.name", "srv-123"),
@@ -134,9 +126,8 @@ func TestHetznerDetector_PartialMetadata(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, testSchemaURL, schemaURL)
 
 	want := map[string]any{
 		"cloud.provider": TypeStr,
@@ -149,8 +140,7 @@ func TestHetznerDetector_PartialMetadata(t *testing.T) {
 // fail_on_missing_metadata covers an unusable metadata service, not a field
 // absent from an otherwise good response, so a partial result still succeeds.
 func TestHetznerDetector_PartialMetadata_FailOnMissingMetadata(t *testing.T) {
-	partial := sdkresource.NewWithAttributes(
-		testSchemaURL,
+	partial := sdkresource.NewSchemaless(
 		attribute.String("cloud.provider", "hetzner"),
 		attribute.String("cloud.platform", "hetzner.cloud_server"),
 		attribute.String("host.name", "srv-123"),
@@ -160,9 +150,8 @@ func TestHetznerDetector_PartialMetadata_FailOnMissingMetadata(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), true)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, testSchemaURL, schemaURL)
 
 	want := map[string]any{
 		"cloud.provider": TypeStr,
