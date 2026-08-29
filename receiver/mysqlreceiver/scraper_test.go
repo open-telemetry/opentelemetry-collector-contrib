@@ -67,6 +67,9 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbOperationPending.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableOpen.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlThreadSlowLaunch.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRowLockWaitCount.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRowLockWaitDurationAvg.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRowLockWaitDurationMax.Enabled = true
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaSQLDelay.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTimeBehindSource.Enabled = true
@@ -249,6 +252,35 @@ func TestScrapeGlobalStatsRecordsReplicaOpenTempTablesFromLegacyGlobalStatusName
 	assert.Equal(t, []int64{7}, replicaOpenTempTablesDataPoints(scraper.mb.Emit()))
 }
 
+func TestScrapeGlobalStatsRecordsMyisamKeyCacheMetricsWhenEnabled(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MysqlMyisamKeyCacheBlockUsedMax.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlMyisamKeyCacheBlockUnused.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlMyisamKeyCacheDiskOperation.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlMyisamKeyCacheRequest.Enabled = true
+
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	scraper.sqlclient = &mockClient{
+		globalStatsFile: "global_stats",
+	}
+
+	errs := &scrapererror.ScrapeErrors{}
+	scraper.scrapeGlobalStats(pcommon.NewTimestampFromTime(time.Unix(0, 0)), errs)
+
+	require.NoError(t, errs.Combine())
+	metrics := scraper.mb.Emit()
+	assert.Equal(t, []intMetricDataPoint{{value: 288}}, intMetricDataPointsByName(t, metrics, "mysql.myisam.key_cache.block.used.max"))
+	assert.Equal(t, []intMetricDataPoint{{value: 287}}, intMetricDataPointsByName(t, metrics, "mysql.myisam.key_cache.block.unused"))
+	assert.ElementsMatch(t, []intMetricDataPoint{
+		{attributes: map[string]string{"operation": "read"}, value: 290},
+		{attributes: map[string]string{"operation": "write"}, value: 292},
+	}, intMetricDataPointsByName(t, metrics, "mysql.myisam.key_cache.disk.operation"))
+	assert.ElementsMatch(t, []intMetricDataPoint{
+		{attributes: map[string]string{"operation": "read"}, value: 289},
+		{attributes: map[string]string{"operation": "write"}, value: 291},
+	}, intMetricDataPointsByName(t, metrics, "mysql.myisam.key_cache.request"))
+}
+
 func TestScrapeReplicaStatusDoesNotRecordReplicaOpenTempTables(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTableOpen.Enabled = true
@@ -303,6 +335,65 @@ func replicaThreadRunningDataPoints(t *testing.T, metrics pmetric.Metrics) []rep
 
 	require.Fail(t, "mysql.replica.thread.running metric not found")
 	return nil
+}
+
+type intMetricDataPoint struct {
+	attributes map[string]string
+	value      int64
+}
+
+func intMetricDataPointsByName(t *testing.T, metrics pmetric.Metrics, name string) []intMetricDataPoint {
+	t.Helper()
+
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		resourceMetrics := metrics.ResourceMetrics().At(i)
+		for j := 0; j < resourceMetrics.ScopeMetrics().Len(); j++ {
+			scopeMetrics := resourceMetrics.ScopeMetrics().At(j)
+			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
+				metric := scopeMetrics.Metrics().At(k)
+				if metric.Name() != name {
+					continue
+				}
+
+				switch metric.Type() {
+				case pmetric.MetricTypeGauge:
+					return intMetricDataPoints(metric.Gauge().DataPoints())
+				case pmetric.MetricTypeSum:
+					return intMetricDataPoints(metric.Sum().DataPoints())
+				default:
+					require.Failf(t, "unsupported metric type", "metric %q has type %s", name, metric.Type())
+				}
+			}
+		}
+	}
+
+	require.Failf(t, "metric not found", "metric %q not found", name)
+	return nil
+}
+
+func intMetricDataPoints(dataPoints pmetric.NumberDataPointSlice) []intMetricDataPoint {
+	got := make([]intMetricDataPoint, 0, dataPoints.Len())
+	for i := 0; i < dataPoints.Len(); i++ {
+		dp := dataPoints.At(i)
+		got = append(got, intMetricDataPoint{
+			attributes: stringAttributes(dp.Attributes()),
+			value:      dp.IntValue(),
+		})
+	}
+	return got
+}
+
+func stringAttributes(attributes pcommon.Map) map[string]string {
+	if attributes.Len() == 0 {
+		return nil
+	}
+
+	got := make(map[string]string, attributes.Len())
+	attributes.Range(func(k string, v pcommon.Value) bool {
+		got[k] = v.AsString()
+		return true
+	})
+	return got
 }
 
 func replicaOpenTempTablesDataPoints(metrics pmetric.Metrics) []int64 {

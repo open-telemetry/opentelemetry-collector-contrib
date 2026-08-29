@@ -281,13 +281,13 @@ func TestMetricQueries(t *testing.T) {
 			returnVal := clientObj.MethodByName(test.desc).Call([]reflect.Value{reflect.ValueOf(ctx)})
 
 			// Check for errors first
-			if err, ok := returnVal[1].Interface().(error); ok && err != nil {
+			if err, ok := reflect.TypeAssert[error](returnVal[1]); ok && err != nil {
 				t.Errorf("DB error %v", err)
 				return
 			}
 
 			actualSliceVal := returnVal[0]
-			if actualSliceVal.Kind() == reflect.Ptr {
+			if actualSliceVal.Kind() == reflect.Pointer {
 				actualSliceVal = actualSliceVal.Elem()
 			}
 

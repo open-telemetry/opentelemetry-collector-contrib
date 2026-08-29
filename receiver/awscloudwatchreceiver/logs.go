@@ -311,8 +311,7 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 			input := pc.request(l.maxEventsPerRequest, *nextToken, &startTime, &endTime)
 			resp, err := l.client.FilterLogEvents(ctx, input)
 			if err != nil {
-				var resourceNotFoundException *types.ResourceNotFoundException
-				if errors.As(err, &resourceNotFoundException) {
+				if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
 					l.settings.Logger.Warn("log group no longer exists, skipping",
 						zap.String("logGroup", logGroup),
 						zap.Error(err))
