@@ -4,7 +4,7 @@ component: processor/resource_detection
 
 note: "`docker` detector: add the `processor.resourcedetection.docker.EmitSemconvContainerAttributes` feature gate"
 
-issues: []
+issues: [48159]
 
 subtext: |
   The detector reports two attribute values that do not follow the semantic conventions:

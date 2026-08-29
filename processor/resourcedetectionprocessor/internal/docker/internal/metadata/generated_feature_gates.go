@@ -10,6 +10,6 @@ var ProcessorResourcedetectionDockerEmitSemconvContainerAttributesFeatureGate = 
 	"processor.resourcedetection.docker.EmitSemconvContainerAttributes",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, container.name is reported without the leading slash the Docker API returns, and container.image.name reports the image name rather than the image ID. The image ID remains available as container.image.id."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/0"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48159"),
 	featuregate.WithRegisterFromVersion("v0.160.0"),
 )

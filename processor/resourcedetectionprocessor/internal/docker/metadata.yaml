@@ -11,7 +11,7 @@ feature_gates:
       and container.image.name reports the image name rather than the image ID. The image ID
       remains available as container.image.id.
     from_version: v0.160.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48159
 
 resource_attributes:
   container.image.id:

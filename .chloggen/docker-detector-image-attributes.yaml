@@ -4,7 +4,7 @@ component: processor/resource_detection
 
 note: "`docker` detector: add `container.image.id` and `container.image.tags` resource attributes"
 
-issues: []
+issues: [48159]
 
 subtext: |
   Both are disabled by default. An image run as `otelcontribcol:latest` reports
