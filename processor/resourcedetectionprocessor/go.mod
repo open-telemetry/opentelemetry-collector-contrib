@@ -15,7 +15,6 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/consul/api v1.33.4
-	github.com/hetznercloud/hcloud-go/v2 v2.44.0
 	github.com/linode/go-metadata v0.3.0
 	github.com/moby/moby/api v1.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.159.0
@@ -51,6 +50,7 @@ require (
 	go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.17.0
 	go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.17.0
 	go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0
+	go.opentelemetry.io/contrib/detectors/hetzner v0.17.0
 	go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.17.0
 	go.opentelemetry.io/contrib/detectors/vultr v0.17.0
 	go.opentelemetry.io/otel v1.46.0
@@ -132,6 +132,7 @@ require (
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/serf v0.10.4 // indirect
+	github.com/hetznercloud/hcloud-go/v2 v2.47.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.19.2 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect

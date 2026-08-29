@@ -146,6 +146,8 @@ func TestHetznerDetector_PartialMetadata(t *testing.T) {
 	require.Equal(t, want, res.Attributes().AsRaw())
 }
 
+// fail_on_missing_metadata covers an unusable metadata service, not a field
+// absent from an otherwise good response, so a partial result still succeeds.
 func TestHetznerDetector_PartialMetadata_FailOnMissingMetadata(t *testing.T) {
 	partial := sdkresource.NewWithAttributes(
 		testSchemaURL,
@@ -159,9 +161,14 @@ func TestHetznerDetector_PartialMetadata_FailOnMissingMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())
-	require.ErrorIs(t, err, sdkresource.ErrPartialResource)
-	require.True(t, internal.IsEmptyResource(res))
-	require.Empty(t, schemaURL)
+	require.NoError(t, err)
+	require.Equal(t, testSchemaURL, schemaURL)
+
+	want := map[string]any{
+		"cloud.provider": TypeStr,
+		"host.name":      "srv-123",
+	}
+	require.Equal(t, want, res.Attributes().AsRaw())
 }
 
 func TestHetznerDetector_Error(t *testing.T) {

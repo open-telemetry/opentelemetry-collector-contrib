@@ -11,11 +11,11 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	hetznerdetector "go.opentelemetry.io/contrib/detectors/hetzner"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
-	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/hetzner/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
 )
 
 const (
@@ -36,7 +36,7 @@ var newResourceDetector = func() sdkresource.Detector {
 type Detector struct {
 	detector              sdkresource.Detector
 	logger                *zap.Logger
-	rb                    *metadata.ResourceBuilder
+	resourceAttributes    metadata.ResourceAttributesConfig
 	failOnMissingMetadata bool
 }
 
@@ -47,49 +47,34 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissi
 	return &Detector{
 		detector:              newResourceDetector(),
 		logger:                p.Logger,
-		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		resourceAttributes:    cfg.ResourceAttributes,
 		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones.
 func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
-	res, err := d.detector.Detect(ctx)
+	// Detection runs unfiltered so that an empty result answers "is this process on a Hetzner
+	// Cloud server?"; the configured attributes are applied afterwards. A partial result still
+	// came from a reachable metadata service, so the bridge keeps what it did return.
+	// fail_on_missing_metadata covers an unusable metadata service, not individual fields
+	// absent from its response.
+	res, schemaURL, err := sdkbridge.Detect(ctx, d.detector)
 	if err != nil {
-		if !errors.Is(err, sdkresource.ErrPartialResource) {
-			return pcommon.NewResource(), "", err
-		}
-
-		d.logger.Debug("Hetzner detector: some metadata could not be retrieved", zap.Error(err))
-		if d.failOnMissingMetadata {
-			return pcommon.NewResource(), "", err
-		}
+		d.logger.Debug("Hetzner metadata unavailable", zap.Error(err))
+		return pcommon.NewResource(), "", err
 	}
 
 	// The SDK detector returns an empty resource when not running on a Hetzner
 	// Cloud server.
-	if res == nil || len(res.Attributes()) == 0 {
+	if res.Attributes().Len() == 0 {
 		d.logger.Debug("Hetzner detector: not running on a Hetzner Cloud server")
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errors.New("hetzner metadata unavailable")
+		}
 		return pcommon.NewResource(), "", nil
 	}
 
-	for _, attr := range res.Attributes() {
-		val := attr.Value.AsString()
-		switch attr.Key {
-		case conventions.CloudProviderKey:
-			d.rb.SetCloudProvider(val)
-		case conventions.CloudPlatformKey:
-			d.rb.SetCloudPlatform(val)
-		case conventions.CloudRegionKey:
-			d.rb.SetCloudRegion(val)
-		case conventions.CloudAvailabilityZoneKey:
-			d.rb.SetCloudAvailabilityZone(val)
-		case conventions.HostIDKey:
-			d.rb.SetHostID(val)
-		case conventions.HostNameKey:
-			d.rb.SetHostName(val)
-		}
-	}
-
-	return d.rb.Emit(), res.SchemaURL(), nil
+	sdkbridge.RemoveDisabledAttributes(res, d.resourceAttributes)
+	return res, schemaURL, nil
 }
