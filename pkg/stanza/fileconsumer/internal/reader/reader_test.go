@@ -358,7 +358,7 @@ func TestFileCacheAdvise(t *testing.T) {
 	r.ReadToEnd(t.Context())
 
 	for i := range numLines {
-		sink.ExpectToken(t, []byte(fmt.Sprintf("log line %d", i)))
+		sink.ExpectToken(t, fmt.Appendf(nil, "log line %d", i))
 	}
 	sink.ExpectNoCalls(t)
 }

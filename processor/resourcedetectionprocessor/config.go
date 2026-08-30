@@ -4,9 +4,11 @@
 package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 
 import (
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai"
@@ -18,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/appservice"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/containerapps"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean"
@@ -63,6 +66,19 @@ type Config struct {
 	// Supersedes the per-detector fail_on_missing_metadata fields (now deprecated).
 	// Default: false (backward compatible).
 	FailOnMissingMetadata bool `mapstructure:"fail_on_missing_metadata"`
+	// Retry controls retry/backoff for each detection attempt. Set Enabled=false
+	// to perform a single attempt per detector with no retries.
+	Retry configretry.BackOffConfig `mapstructure:"retry"`
+}
+
+// Validate rejects configurations that would let a hung detector block the
+// pipeline forever: with retry enabled, at least one of the HTTP client timeout
+// or the retry budget must be finite so detection always terminates.
+func (cfg *Config) Validate() error {
+	if cfg.Retry.Enabled && cfg.ClientConfig.Timeout == 0 && cfg.Retry.MaxElapsedTime == 0 {
+		return errors.New("retry.enabled requires either timeout > 0 or retry.max_elapsed_time > 0 to bound detection")
+	}
+	return nil
 }
 
 // DetectorConfig contains user-specified configurations unique to all individual detectors
@@ -90,6 +106,9 @@ type DetectorConfig struct {
 
 	// Aks contains user-specified configurations for the aks detector
 	AksConfig aks.Config `mapstructure:"aks"`
+
+	// AzureAppServiceConfig contains user-specified configurations for the Azure App Service detector
+	AzureAppServiceConfig appservice.Config `mapstructure:"azureappservice"`
 
 	// AzureContainerAppsConfig contains user-specified configurations for the Azure Container Apps detector
 	AzureContainerAppsConfig containerapps.Config `mapstructure:"azurecontainerapps"`
@@ -165,6 +184,7 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		LambdaConfig:             lambda.CreateDefaultConfig(),
 		AzureConfig:              azure.CreateDefaultConfig(),
 		AksConfig:                aks.CreateDefaultConfig(),
+		AzureAppServiceConfig:    appservice.CreateDefaultConfig(),
 		AzureContainerAppsConfig: containerapps.CreateDefaultConfig(),
 		ConsulConfig:             consul.CreateDefaultConfig(),
 		DigitalOceanConfig:       digitalocean.CreateDefaultConfig(),
@@ -207,6 +227,8 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.AzureConfig
 	case aks.TypeStr:
 		return d.AksConfig
+	case appservice.TypeStr:
+		return d.AzureAppServiceConfig
 	case containerapps.TypeStr:
 		return d.AzureContainerAppsConfig
 	case consul.TypeStr:

@@ -337,7 +337,7 @@ func TestValidateDimensions(t *testing.T) {
 		{
 			name: "default on glob",
 			dimensions: []Dimension{
-				{Glob: "db.*", Default: stringp("x")},
+				{Glob: "db.*", Default: new("x")},
 			},
 			expectedErr: "`default` is not supported on `glob` dimension \"db.*\"",
 		},

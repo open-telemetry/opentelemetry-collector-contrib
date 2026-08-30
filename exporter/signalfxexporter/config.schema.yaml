@@ -36,9 +36,10 @@ properties:
     description: APIURL is the destination to where SignalFx metadata will be sent. This value takes precedence over the value of Realm
     type: string
   correlation:
-    description: Correlation configuration for syncing traces service and environment to metrics.
-    x-pointer: true
-    $ref: ./internal/correlation.config
+    description: 'Correlation configuration for syncing traces service and environment to metrics. Deprecated: this configuration section is ignored'
+    type: object
+    additionalProperties:
+      type: string
   default_properties:
     description: DefaultProperties defines a set of properties to be added to any dimension updates to the Splunk Observability backend. Any explicit property value takes precedence over those defaults.
     type: object

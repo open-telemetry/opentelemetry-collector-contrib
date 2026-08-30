@@ -421,7 +421,9 @@ func Test_createLabelSet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			labelNamer := otlptranslator.LabelNamer{
-				UnderscoreLabelSanitization: tt.underscoreLabelSanitization,
+				// TODO: SA1019: (github.com/prometheus/otlptranslator.LabelNamer).UnderscoreLabelSanitization is deprecated: This will be removed in a future version of otlptranslator.
+				// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50429
+				UnderscoreLabelSanitization: tt.underscoreLabelSanitization, //nolint:staticcheck
 			}
 			got, err := createAttributes(tt.resource, tt.orig, pcommon.NewInstrumentationScope(), tt.externalLabels, nil, true, labelNamer, false, tt.extras...)
 			if tt.expectErr {

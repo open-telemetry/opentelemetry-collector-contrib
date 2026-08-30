@@ -27,20 +27,23 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					DnscheckDuration: DnscheckDurationMetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []DnscheckDurationMetricAttributeKey{DnscheckDurationMetricAttributeKeyDNSDomain, DnscheckDurationMetricAttributeKeyDNSRecordType, DnscheckDurationMetricAttributeKeyDNSServer},
+						Enabled: true,
 					},
 					DnscheckError: DnscheckErrorMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []DnscheckErrorMetricAttributeKey{DnscheckErrorMetricAttributeKeyDNSDomain, DnscheckErrorMetricAttributeKeyDNSRecordType, DnscheckErrorMetricAttributeKeyDNSServer, DnscheckErrorMetricAttributeKeyErrorMessage},
+						EnabledAttributes:   []DnscheckErrorMetricAttributeKey{DnscheckErrorMetricAttributeKeyErrorMessage},
 					},
 					DnscheckStatus: DnscheckStatusMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []DnscheckStatusMetricAttributeKey{DnscheckStatusMetricAttributeKeyDNSDomain, DnscheckStatusMetricAttributeKeyDNSRcode, DnscheckStatusMetricAttributeKeyDNSRecordType, DnscheckStatusMetricAttributeKeyDNSResolvedAllIps, DnscheckStatusMetricAttributeKeyDNSResolvedIP, DnscheckStatusMetricAttributeKeyDNSServer},
+						EnabledAttributes:   []DnscheckStatusMetricAttributeKey{DnscheckStatusMetricAttributeKeyDNSRcode, DnscheckStatusMetricAttributeKeyDNSResolvedAllIps, DnscheckStatusMetricAttributeKeyDNSResolvedIP},
 					},
+				},
+				ResourceAttributes: ResourceAttributesConfig{
+					DNSDomain:     ResourceAttributeConfig{Enabled: true},
+					DNSRecordType: ResourceAttributeConfig{Enabled: true},
+					DNSServer:     ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -49,20 +52,23 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					DnscheckDuration: DnscheckDurationMetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []DnscheckDurationMetricAttributeKey{DnscheckDurationMetricAttributeKeyDNSDomain, DnscheckDurationMetricAttributeKeyDNSRecordType, DnscheckDurationMetricAttributeKeyDNSServer},
+						Enabled: false,
 					},
 					DnscheckError: DnscheckErrorMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []DnscheckErrorMetricAttributeKey{DnscheckErrorMetricAttributeKeyDNSDomain, DnscheckErrorMetricAttributeKeyDNSRecordType, DnscheckErrorMetricAttributeKeyDNSServer, DnscheckErrorMetricAttributeKeyErrorMessage},
+						EnabledAttributes:   []DnscheckErrorMetricAttributeKey{DnscheckErrorMetricAttributeKeyErrorMessage},
 					},
 					DnscheckStatus: DnscheckStatusMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []DnscheckStatusMetricAttributeKey{DnscheckStatusMetricAttributeKeyDNSDomain, DnscheckStatusMetricAttributeKeyDNSRcode, DnscheckStatusMetricAttributeKeyDNSRecordType, DnscheckStatusMetricAttributeKeyDNSResolvedAllIps, DnscheckStatusMetricAttributeKeyDNSResolvedIP, DnscheckStatusMetricAttributeKeyDNSServer},
+						EnabledAttributes:   []DnscheckStatusMetricAttributeKey{DnscheckStatusMetricAttributeKeyDNSRcode, DnscheckStatusMetricAttributeKeyDNSResolvedAllIps, DnscheckStatusMetricAttributeKeyDNSResolvedIP},
 					},
+				},
+				ResourceAttributes: ResourceAttributesConfig{
+					DNSDomain:     ResourceAttributeConfig{Enabled: false},
+					DNSRecordType: ResourceAttributeConfig{Enabled: false},
+					DNSServer:     ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -70,21 +76,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(DnscheckDurationMetricConfig{}, DnscheckErrorMetricConfig{}, DnscheckStatusMetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(DnscheckDurationMetricConfig{}, DnscheckErrorMetricConfig{}, DnscheckStatusMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
-}
-func TestDnscheckDurationMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().DnscheckDuration
-	require.NoError(t, cfg.Validate())
-
-	cfg.EnabledAttributes = []DnscheckDurationMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric dnscheck.duration doesn't have an attribute invalid, valid attributes: [dns.domain, dns.record.type, dns.server]")
-
-	cfg = DefaultMetricsConfig().DnscheckDuration
-	cfg.AggregationStrategy = "invalid"
-	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func TestDnscheckErrorMetricsConfig_Validate(t *testing.T) {
@@ -92,7 +87,7 @@ func TestDnscheckErrorMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []DnscheckErrorMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric dnscheck.error doesn't have an attribute invalid, valid attributes: [dns.domain, dns.record.type, dns.server, error.message]")
+	require.ErrorContains(t, cfg.Validate(), "metric dnscheck.error doesn't have an attribute invalid, valid attributes: [error.message]")
 
 	cfg = DefaultMetricsConfig().DnscheckError
 	cfg.AggregationStrategy = "invalid"
@@ -104,7 +99,7 @@ func TestDnscheckStatusMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []DnscheckStatusMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric dnscheck.status doesn't have an attribute invalid, valid attributes: [dns.domain, dns.rcode, dns.record.type, dns.resolved.all.ips, dns.resolved.ip, dns.server]")
+	require.ErrorContains(t, cfg.Validate(), "metric dnscheck.status doesn't have an attribute invalid, valid attributes: [dns.rcode, dns.resolved.all.ips, dns.resolved.ip]")
 
 	cfg = DefaultMetricsConfig().DnscheckStatus
 	cfg.AggregationStrategy = "invalid"
@@ -118,5 +113,52 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
+	return cfg
+}
+
+func TestResourceAttributesConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		want ResourceAttributesConfig
+	}{
+		{
+			name: "default",
+			want: DefaultResourceAttributesConfig(),
+		},
+		{
+			name: "all_set",
+			want: ResourceAttributesConfig{
+				DNSDomain:     ResourceAttributeConfig{Enabled: true},
+				DNSRecordType: ResourceAttributeConfig{Enabled: true},
+				DNSServer:     ResourceAttributeConfig{Enabled: true},
+			},
+		},
+		{
+			name: "none_set",
+			want: ResourceAttributesConfig{
+				DNSDomain:     ResourceAttributeConfig{Enabled: false},
+				DNSRecordType: ResourceAttributeConfig{Enabled: false},
+				DNSServer:     ResourceAttributeConfig{Enabled: false},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := loadResourceAttributesConfig(t, tt.name)
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
+		})
+	}
+}
+
+func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	sub, err = sub.Sub("resource_attributes")
+	require.NoError(t, err)
+	cfg := DefaultResourceAttributesConfig()
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }
