@@ -1,6 +1,6 @@
 change_type: bug_fix
 
-component: receiver/azureeventhub
+component: receiver/azure_event_hub
 
 note: Do not emit 0-valued timeseries for aggregates (total, count, minimum, maximum, average) that are missing from the source Azure record
 
