@@ -201,7 +201,7 @@ func TestDetect(t *testing.T) {
 				cloudPlatform:          gcp.GCE,
 				gceHostID:              "1472385723456792345",
 				gceHostName:            "my-gke-node-1234",
-				gceHostType:            "n1-standard1",
+				gceHostType:            "projects/123456789/machineTypes/n1-standard1",
 				gceAvailabilityZone:    "us-central1-c",
 				gceRegion:              "us-central1",
 				gcpGceInstanceHostname: "custom.dns.example.com",
