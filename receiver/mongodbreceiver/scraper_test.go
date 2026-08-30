@@ -1032,6 +1032,79 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 	}
 }
 
+func TestFindSecondaryHosts(t *testing.T) {
+	// The driver decodes an embedded document held in a bson.M as a bson.D, so this is the
+	// shape replSetGetStatus members actually arrive in.
+	bsonDMembers := bson.A{
+		bson.D{bson.E{Key: "name", Value: "mongo-0:27017"}, bson.E{Key: "stateStr", Value: "PRIMARY"}},
+		bson.D{bson.E{Key: "name", Value: "mongo-1:27017"}, bson.E{Key: "stateStr", Value: "SECONDARY"}},
+		bson.D{bson.E{Key: "name", Value: "mongo-2:27017"}, bson.E{Key: "stateStr", Value: "ARBITER"}},
+		bson.D{bson.E{Key: "name", Value: "mongo-3:27017"}, bson.E{Key: "stateStr", Value: "SECONDARY"}},
+	}
+
+	testCases := []struct {
+		desc          string
+		result        bson.M
+		resultErr     error
+		expectedHosts []string
+		expectedErr   string
+	}{
+		{
+			desc:          "members decoded as bson.D",
+			result:        bson.M{"members": bsonDMembers},
+			expectedHosts: []string{"mongo-1:27017", "mongo-3:27017"},
+		},
+		{
+			desc: "members decoded as bson.M",
+			result: bson.M{"members": bson.A{
+				bson.M{"name": "mongo-0:27017", "stateStr": "PRIMARY"},
+				bson.M{"name": "mongo-1:27017", "stateStr": "SECONDARY"},
+			}},
+			expectedHosts: []string{"mongo-1:27017"},
+		},
+		{
+			desc: "member without a name",
+			result: bson.M{"members": bson.A{
+				bson.D{bson.E{Key: "stateStr", Value: "SECONDARY"}},
+			}},
+			expectedHosts: nil,
+		},
+		{
+			desc:        "members missing",
+			result:      bson.M{"set": "rs0"},
+			expectedErr: "invalid members format",
+		},
+		{
+			desc:        "command failed",
+			resultErr:   errors.New("not authorized"),
+			expectedErr: "failed to get replica set status",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			fc := &fakeClient{}
+			if tc.resultErr != nil {
+				fc.On("RunCommand", mock.Anything, "admin", bson.M{"replSetGetStatus": 1}).Return(nil, tc.resultErr)
+			} else {
+				fc.On("RunCommand", mock.Anything, "admin", bson.M{"replSetGetStatus": 1}).Return(tc.result, nil)
+			}
+
+			scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), createDefaultConfig().(*Config))
+			scraper.client = fc
+
+			hosts, err := scraper.findSecondaryHosts(t.Context())
+			if tc.expectedErr != "" {
+				require.ErrorContains(t, err, tc.expectedErr)
+				require.Nil(t, hosts)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedHosts, hosts)
+		})
+	}
+}
+
 func TestShouldIncludeOperation(t *testing.T) {
 	// Internal databases, handshake commands, and missing/empty namespace
 	// records are pruned server-side by the $currentOp pipeline (see
