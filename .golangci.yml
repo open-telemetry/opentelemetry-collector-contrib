@@ -14,8 +14,12 @@ formatters:
         - default
         - prefix(github.com/open-telemetry/opentelemetry-collector-contrib)
     gofumpt:
-      # Choose whether to use the extra rules.
-      extra-rules: true
+      # `extra-rules: true` is deprecated in favor of enabling each extra rule
+      # individually; these three together are equivalent to the old setting.
+      extra:
+        group-params: true
+        clothe-returns: true
+        balance-calls: true
 
 issues:
   # Maximum issues count per one linter.

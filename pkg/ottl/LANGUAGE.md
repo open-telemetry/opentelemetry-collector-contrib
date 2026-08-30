@@ -66,7 +66,7 @@ Example Converters
 
 ### Function parameters
 
-The following types are supported for single-value parameters in OTTL functions:
+The following types are supported for parameters in OTTL functions:
 
 - `Setter`
 - `GetSetter`
@@ -75,6 +75,7 @@ The following types are supported for single-value parameters in OTTL functions:
 - `PMapGetSetter`
 - `PSliceGetter`
 - `PSliceGetSetter`
+- `SliceGetter`
 - `FloatGetter`
 - `FloatLikeGetter`
 - `StringGetter`
@@ -87,13 +88,14 @@ The following types are supported for single-value parameters in OTTL functions:
 - `DurationGetter`
 - `TimeGetter`
 - `FunctionGetter`
+- `LambdaExpression`
 - `Enum`
 - `string`
 - `float64`
 - `int64`
 - `bool`
 
-For slice parameters, the following types are supported:
+Bare slice parameters (`[]T`) accept only literal lists. The following element types are supported:
 
 - `Getter`
 - `PMapGetter`
@@ -110,6 +112,9 @@ For slice parameters, the following types are supported:
 - `float64`
 - `int64`
 - `uint8`. Byte slice literals are parsed as byte slices by OTTL.
+
+To accept lists that are not known until runtime, use a `SliceGetter` parameter. Unlike bare slice
+parameters, it can accept either a literal list or a path or converter that evaluates to a slice.
 
 To make a parameter optional, use the `Optional` type, which takes a type argument for the underlying
 parameter type. For example, an optional string parameter would be specified as `Optional[string]`.
@@ -135,6 +140,7 @@ Values are passed as function parameters or are used in a Boolean Expression. Va
 - [Enums](#enums)
 - [Converters](#converters)
 - [Math Expressions](#math-expressions)
+- [Lambda Expressions](#lambda-expressions)
 - [Maps](#maps)
 
 ### Paths
@@ -262,6 +268,41 @@ Example Math Expressions
 - `span.end_time_unix_nano - span.start_time_unix_nano`
 - `sum([1, 2, 3, 4]) + (10 / 1) - 1`
 
+### Lambda Expressions
+
+> [!IMPORTANT]
+> Lambda expressions are currently in alpha and may change or be removed in future releases.
+> To use them, enable the [`ottl.functions.enableLambda`](documentation.md#feature-gates) feature gate.
+
+Lambda Expressions are anonymous/inline functions that can be passed to OTTL functions whose arguments
+accept `LambdaExpression`. Their syntax is a parenthesized list of parameters, followed by the
+lambda arrow (`=>`) and a single Value or OTTL expression.
+
+```
+(parameter1, parameter2) => body
+```
+
+Parameter names must be lowercase identifiers and must be unique within the Lambda Expression.
+The blank identifier (`_`) can be used more than once to discard parameters that the body does not
+need. The function receiving the Lambda Expression defines the required number, position, and meaning 
+of its parameters.
+
+Named parameters are read-only local identifiers. They can be used anywhere a Path can be read in
+the body, including as function arguments and in Math or Boolean Expressions. Map and slice values
+held by a parameter can be indexed with square brackets. A Lambda Expression body can also read
+regular OTTL Paths from the surrounding context.
+
+Lambda Expressions may be nested. An inner Lambda Expression can read named parameters from an
+outer Lambda Expression, while a parameter declared by the inner Lambda Expression shadows an outer
+parameter with the same name.
+
+Examples:
+
+- `(_, value) => value`
+- `(key, _) => IsMatch(key, "^http")`
+- `(index, value) => Concat([String(index), String(value)], ":")`
+- `(value) => value["nested"][0]`
+- `(_, outerVal) => Filter((_, innerVal) => outerVal == innerVal)`
 
 ### Boolean Expressions
 
