@@ -645,3 +645,22 @@ func (h *statusRecordingHost) lastEvent() *componentstatus.Event {
 	}
 	return h.events[len(h.events)-1]
 }
+
+func TestBearerTokenAuth_Token(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.BearerToken = "my-secret-token"
+
+	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+	require.NotNil(t, bauth)
+	require.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, bauth.Shutdown(t.Context()))
+	}()
+
+	tok, err := bauth.Token(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, tok)
+	assert.Equal(t, "my-secret-token", tok.AccessToken)
+	assert.Equal(t, "Bearer", tok.TokenType)
+}
+
