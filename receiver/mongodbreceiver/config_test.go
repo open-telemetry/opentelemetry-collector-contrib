@@ -340,6 +340,28 @@ func TestOptionsTLS(t *testing.T) {
 	}
 	opts := cfg.ClientOptions(false)
 	require.NotNil(t, opts.TLSConfig)
+
+	// Secondaries belong to the same deployment, so they need the same transport security.
+	secondaryOpts := cfg.ClientOptions(true)
+	require.NotNil(t, secondaryOpts.TLSConfig)
+}
+
+func TestOptionsSecondaryOperationTimeout(t *testing.T) {
+	cfg := &Config{
+		Hosts: []confignet.TCPAddrConfig{
+			{
+				Endpoint: defaultEndpoint,
+			},
+		},
+		Timeout: createDefaultConfig().(*Config).Timeout,
+	}
+
+	// A secondary that connects but stops responding must not hold a collection open.
+	opts := cfg.ClientOptions(true)
+	require.NotNil(t, opts.Timeout)
+	require.Equal(t, cfg.Timeout, *opts.Timeout)
+	require.NotNil(t, opts.ConnectTimeout)
+	require.Equal(t, cfg.Timeout, *opts.ConnectTimeout)
 }
 
 func TestLoadConfig(t *testing.T) {
