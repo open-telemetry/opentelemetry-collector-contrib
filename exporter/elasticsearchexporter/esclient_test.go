@@ -14,8 +14,54 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.uber.org/zap"
 )
+
+func TestTimeoutInterceptor(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		timeout     time.Duration
+		bodyLatency time.Duration
+	}{
+		{
+			name:    "zero",
+			timeout: 30 * time.Second,
+		},
+		{
+			name:        "fast",
+			timeout:     30 * time.Second,
+			bodyLatency: time.Millisecond,
+		},
+		{
+			name:        "slow",
+			timeout:     30 * time.Second,
+			bodyLatency: time.Second,
+		},
+		{
+			name:    "zero_timeout",
+			timeout: 0,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				if f, ok := w.(http.Flusher); ok {
+					f.Flush()
+				}
+				if tc.bodyLatency > 0 {
+					time.Sleep(tc.bodyLatency)
+				}
+				_, _ = w.Write([]byte(`{"took":1,"errors":false,"items":[{"create":{"_index":"logs-generic-default","status":201}}]}`))
+			})
+			exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+				cfg.ClientConfig.Timeout = tc.timeout
+				cfg.QueueBatchConfig.Get().WaitForResult = true
+			})
+			mustSendLogs(t, exporter, testdata.GenerateLogs(10))
+		})
+	}
+}
 
 func TestComponentStatus(t *testing.T) {
 	statusChan := make(chan *componentstatus.Event, 1)

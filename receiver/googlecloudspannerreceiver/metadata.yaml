@@ -12,5 +12,3 @@ status:
     emeritus: [architjugran, varunraiko, harishbohara11, dsimil]
 tests:
   config:
-  goleak:
-    skip: true
