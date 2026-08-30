@@ -7,14 +7,22 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
+)
+
+const (
+	oplogOldestSecond = 1756425600
+	oplogNewestSecond = 1756512000
+	oplogWindow       = float64(oplogNewestSecond - oplogOldestSecond)
 )
 
 // findMetric returns the emitted metric with the given name, failing the test if absent.
@@ -251,4 +259,339 @@ func TestRecordWTMetricsNonWiredTiger(t *testing.T) {
 
 	md := s.mb.Emit()
 	require.Equal(t, 0, md.ResourceMetrics().Len())
+}
+
+// metricNames returns the names of every emitted metric.
+func metricNames(md pmetric.Metrics) []string {
+	var names []string
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		sms := md.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			ms := sms.At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				names = append(names, ms.At(k).Name())
+			}
+		}
+	}
+	return names
+}
+
+// newReplicaSetScraper builds a scraper with every replica set and oplog metric enabled.
+func newReplicaSetScraper(t *testing.T) *mongodbScraper {
+	t.Helper()
+	cfg := createDefaultConfig().(*Config)
+	metrics := &cfg.MetricsBuilderConfig.Metrics
+	metrics.MongodbOplogUsage.Enabled = true
+	metrics.MongodbOplogLimit.Enabled = true
+	metrics.MongodbOplogWindow.Enabled = true
+	metrics.MongodbReplicaSetHeadroom.Enabled = true
+	metrics.MongodbReplicaSetLag.Enabled = true
+	metrics.MongodbReplicaSetMemberCount.Enabled = true
+	metrics.MongodbReplicaSetMemberStatus.Enabled = true
+	return newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+}
+
+func loadReplicaSetMembers(t *testing.T) bson.A {
+	t.Helper()
+	status, err := loadTestFileAsMap("./testdata/replSetGetStatus.json")
+	require.NoError(t, err)
+	members, ok := status[replicaSetMembersKey].(bson.A)
+	require.True(t, ok)
+	return members
+}
+
+func TestRecordOplogUsage(t *testing.T) {
+	s := newReplicaSetScraper(t)
+	doc, err := loadTestFileAsMap("./testdata/oplogStats.json")
+	require.NoError(t, err)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordOplogUsage(now, doc, errs)
+	s.recordOplogLimit(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	emitted := s.mb.Emit()
+	usage := findMetric(t, emitted, "mongodb.oplog.usage")
+	require.Equal(t, pmetric.MetricTypeSum, usage.Type())
+	require.False(t, usage.Sum().IsMonotonic())
+	require.Equal(t, 1, usage.Sum().DataPoints().Len())
+	require.Equal(t, int64(1073741824), usage.Sum().DataPoints().At(0).IntValue())
+
+	limit := findMetric(t, emitted, "mongodb.oplog.limit")
+	require.Equal(t, 1, limit.Sum().DataPoints().Len())
+	require.Equal(t, int64(2147483648), limit.Sum().DataPoints().At(0).IntValue())
+}
+
+func TestRecordOplogWindow(t *testing.T) {
+	s := newReplicaSetScraper(t)
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordOplogWindow(now, bson.Timestamp{T: oplogOldestSecond, I: 1}, bson.Timestamp{T: oplogNewestSecond, I: 4})
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.oplog.window")
+	require.Equal(t, pmetric.MetricTypeGauge, m.Type())
+	require.Equal(t, 1, m.Gauge().DataPoints().Len())
+	require.InDelta(t, oplogWindow, m.Gauge().DataPoints().At(0).DoubleValue(), 0)
+}
+
+func TestRecordReplicaSetMemberCount(t *testing.T) {
+	s := newReplicaSetScraper(t)
+	members := loadReplicaSetMembers(t)
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordReplicaSetMemberCount(now, members)
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.replica_set.member.count")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	require.False(t, m.Sum().IsMonotonic())
+
+	dps := m.Sum().DataPoints()
+	// Every known state is reported, so a state no member is in reads as zero.
+	require.Equal(t, len(replicaSetMemberStates), dps.Len())
+	counts := map[string]int64{}
+	for i := 0; i < dps.Len(); i++ {
+		state, ok := dps.At(i).Attributes().Get("mongodb.replica_set.member.state")
+		require.True(t, ok)
+		counts[state.Str()] = dps.At(i).IntValue()
+	}
+	require.Equal(t, int64(1), counts[metadata.AttributeMongodbReplicaSetMemberStatePrimary.String()])
+	require.Equal(t, int64(1), counts[metadata.AttributeMongodbReplicaSetMemberStateSecondary.String()])
+	require.Equal(t, int64(1), counts[metadata.AttributeMongodbReplicaSetMemberStateArbiter.String()])
+	require.Equal(t, int64(0), counts[metadata.AttributeMongodbReplicaSetMemberStateDown.String()])
+}
+
+func TestRecordReplicaSetMemberCountUnreachableMember(t *testing.T) {
+	// MongoDB renders the state of a member it cannot reach as "(not reachable/healthy)" rather
+	// than "DOWN", so the member state must be read from the numeric field.
+	s := newReplicaSetScraper(t)
+	members := bson.A{
+		bson.D{
+			bson.E{Key: replicaSetMemberNameKey, Value: "mongo-0:27017"},
+			bson.E{Key: replicaSetMemberStateKey, Value: int32(1)},
+			bson.E{Key: "stateStr", Value: "PRIMARY"},
+		},
+		bson.D{
+			bson.E{Key: replicaSetMemberNameKey, Value: "mongo-1:27017"},
+			bson.E{Key: replicaSetMemberStateKey, Value: int32(8)},
+			bson.E{Key: "stateStr", Value: "(not reachable/healthy)"},
+		},
+	}
+
+	s.recordReplicaSetMemberCount(pcommon.NewTimestampFromTime(time.Now()), members)
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.replica_set.member.count")
+	dps := m.Sum().DataPoints()
+	counts := map[string]int64{}
+	total := int64(0)
+	for i := 0; i < dps.Len(); i++ {
+		state, ok := dps.At(i).Attributes().Get("mongodb.replica_set.member.state")
+		require.True(t, ok)
+		counts[state.Str()] = dps.At(i).IntValue()
+		total += dps.At(i).IntValue()
+	}
+	require.Equal(t, int64(1), counts[metadata.AttributeMongodbReplicaSetMemberStateDown.String()])
+	require.Equal(t, int64(1), counts[metadata.AttributeMongodbReplicaSetMemberStatePrimary.String()])
+	// Every member is accounted for; none is dropped by an unrecognized state rendering.
+	require.Equal(t, int64(len(members)), total)
+}
+
+func TestRecordReplicaSetMemberStatus(t *testing.T) {
+	s := newReplicaSetScraper(t)
+	members := loadReplicaSetMembers(t)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordReplicaSetMemberStatus(now, members, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.replica_set.member.status")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	require.False(t, m.Sum().IsMonotonic())
+
+	// A timeseries is produced for every state: 1 for the instance's current state, 0 for the rest.
+	dps := m.Sum().DataPoints()
+	require.Equal(t, len(replicaSetMemberStates), dps.Len())
+	values := map[string]int64{}
+	for i := 0; i < dps.Len(); i++ {
+		state, ok := dps.At(i).Attributes().Get("mongodb.replica_set.member.state")
+		require.True(t, ok)
+		values[state.Str()] = dps.At(i).IntValue()
+	}
+	require.Equal(t, int64(1), values[metadata.AttributeMongodbReplicaSetMemberStatePrimary.String()])
+	require.Equal(t, int64(0), values[metadata.AttributeMongodbReplicaSetMemberStateSecondary.String()])
+	require.Equal(t, int64(0), values[metadata.AttributeMongodbReplicaSetMemberStateDown.String()])
+	var total int64
+	for _, v := range values {
+		total += v
+	}
+	require.Equal(t, int64(1), total, "exactly one state may be set to 1")
+}
+
+func TestRecordReplicaSetMemberStatusWithoutSelf(t *testing.T) {
+	s := newReplicaSetScraper(t)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordReplicaSetMemberStatus(now, bson.A{bson.D{bson.E{Key: replicaSetMemberStateKey, Value: int32(1)}}}, errs)
+
+	require.Error(t, errs.Combine())
+	require.Empty(t, metricNames(s.mb.Emit()))
+}
+
+func TestRecordReplicaSetLag(t *testing.T) {
+	s := newReplicaSetScraper(t)
+	members := loadReplicaSetMembers(t)
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordReplicaSetLag(now, replicaSetLags(members))
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.replica_set.lag")
+	require.Equal(t, pmetric.MetricTypeGauge, m.Type())
+	dps := m.Gauge().DataPoints()
+	require.Equal(t, 2, dps.Len())
+
+	lags := map[string]float64{}
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		member, ok := dp.Attributes().Get("mongodb.replica_set.member.name")
+		require.True(t, ok)
+		lagType, ok := dp.Attributes().Get("mongodb.replica_set.lag.type")
+		require.True(t, ok)
+		lags[member.Str()+"/"+lagType.Str()] = dp.DoubleValue()
+	}
+	require.Equal(t, map[string]float64{
+		"mongo-1:27017/" + metadata.AttributeMongodbReplicaSetLagTypeApplied.String(): 1.5,
+		"mongo-1:27017/" + metadata.AttributeMongodbReplicaSetLagTypeDurable.String(): 3,
+	}, lags)
+}
+
+func TestRecordReplicaSetLagWithoutDurableTime(t *testing.T) {
+	s := newReplicaSetScraper(t)
+	members := bson.A{
+		bson.D{
+			bson.E{Key: replicaSetMemberNameKey, Value: "mongo-0:27017"},
+			bson.E{Key: replicaSetMemberStateKey, Value: int32(1)},
+			bson.E{Key: replicaSetMemberOptimeKey, Value: bson.DateTime(1756512000000)},
+		},
+		bson.D{
+			bson.E{Key: replicaSetMemberNameKey, Value: "mongo-1:27017"},
+			bson.E{Key: replicaSetMemberStateKey, Value: int32(2)},
+			bson.E{Key: replicaSetMemberOptimeKey, Value: bson.DateTime(1756511998500)},
+		},
+	}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordReplicaSetLag(now, replicaSetLags(members))
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.replica_set.lag")
+	require.Equal(t, 1, m.Gauge().DataPoints().Len())
+	lagType, ok := m.Gauge().DataPoints().At(0).Attributes().Get("mongodb.replica_set.lag.type")
+	require.True(t, ok)
+	require.Equal(t, metadata.AttributeMongodbReplicaSetLagTypeApplied.String(), lagType.Str())
+}
+
+func TestRecordReplicaSetHeadroom(t *testing.T) {
+	s := newReplicaSetScraper(t)
+	members := loadReplicaSetMembers(t)
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordReplicaSetHeadroom(now, replicaSetLags(members), oplogWindow)
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.replica_set.headroom")
+	require.Equal(t, pmetric.MetricTypeGauge, m.Type())
+	require.Equal(t, 1, m.Gauge().DataPoints().Len())
+	dp := m.Gauge().DataPoints().At(0)
+	require.InDelta(t, oplogWindow-1.5, dp.DoubleValue(), 0)
+	member, ok := dp.Attributes().Get("mongodb.replica_set.member.name")
+	require.True(t, ok)
+	require.Equal(t, "mongo-1:27017", member.Str())
+}
+
+func TestCollectReplicaSetMetrics(t *testing.T) {
+	s := newReplicaSetScraper(t)
+	status, err := loadTestFileAsMap("./testdata/replSetGetStatus.json")
+	require.NoError(t, err)
+	oplogStats, err := loadTestFileAsMap("./testdata/oplogStats.json")
+	require.NoError(t, err)
+
+	fc := &fakeClient{}
+	fc.On("OplogStats", mock.Anything).Return(oplogStats, nil)
+	fc.On("OplogBounds", mock.Anything).
+		Return(bson.Timestamp{T: oplogOldestSecond}, bson.Timestamp{T: oplogNewestSecond}, nil)
+	fc.On("RunCommand", mock.Anything, adminDatabase, bson.M{replSetGetStatusCommand: 1}).Return(status, nil)
+	s.client = fc
+
+	errs := &scrapererror.ScrapeErrors{}
+	s.collectReplicaSetMetrics(t.Context(), pcommon.NewTimestampFromTime(time.Now()), errs)
+	require.NoError(t, errs.Combine())
+
+	require.ElementsMatch(t, []string{
+		"mongodb.oplog.limit",
+		"mongodb.oplog.usage",
+		"mongodb.oplog.window",
+		"mongodb.replica_set.headroom",
+		"mongodb.replica_set.lag",
+		"mongodb.replica_set.member.count",
+		"mongodb.replica_set.member.status",
+	}, metricNames(s.mb.Emit()))
+}
+
+func TestCollectReplicaSetMetricsOnSecondary(t *testing.T) {
+	s := newReplicaSetScraper(t)
+	status, err := loadTestFileAsMap("./testdata/replSetGetStatusSecondary.json")
+	require.NoError(t, err)
+	oplogStats, err := loadTestFileAsMap("./testdata/oplogStats.json")
+	require.NoError(t, err)
+
+	fc := &fakeClient{}
+	fc.On("OplogStats", mock.Anything).Return(oplogStats, nil)
+	fc.On("OplogBounds", mock.Anything).
+		Return(bson.Timestamp{T: oplogOldestSecond}, bson.Timestamp{T: oplogNewestSecond}, nil)
+	fc.On("RunCommand", mock.Anything, adminDatabase, bson.M{replSetGetStatusCommand: 1}).Return(status, nil)
+	s.client = fc
+
+	errs := &scrapererror.ScrapeErrors{}
+	s.collectReplicaSetMetrics(t.Context(), pcommon.NewTimestampFromTime(time.Now()), errs)
+	require.NoError(t, errs.Combine())
+
+	// Lag and headroom are only reported by the primary.
+	require.ElementsMatch(t, []string{
+		"mongodb.oplog.limit",
+		"mongodb.oplog.usage",
+		"mongodb.oplog.window",
+		"mongodb.replica_set.member.count",
+		"mongodb.replica_set.member.status",
+	}, metricNames(s.mb.Emit()))
+}
+
+func TestCollectReplicaSetMetricsWithoutReplication(t *testing.T) {
+	s := newReplicaSetScraper(t)
+	noReplication := mongo.CommandError{Code: 76, Name: "NoReplicationEnabled", Message: "not running with --replSet"}
+
+	fc := &fakeClient{}
+	fc.On("OplogStats", mock.Anything).Return(nil, noReplication)
+	fc.On("OplogBounds", mock.Anything).Return(bson.Timestamp{}, bson.Timestamp{}, mongo.ErrNoDocuments)
+	fc.On("RunCommand", mock.Anything, adminDatabase, bson.M{replSetGetStatusCommand: 1}).Return(nil, noReplication)
+	s.client = fc
+
+	errs := &scrapererror.ScrapeErrors{}
+	s.collectReplicaSetMetrics(t.Context(), pcommon.NewTimestampFromTime(time.Now()), errs)
+
+	// A standalone or a mongos exposes no replica set state; the scrape must not fail over it.
+	require.NoError(t, errs.Combine())
+	require.Empty(t, metricNames(s.mb.Emit()))
+}
+
+func TestCollectReplicaSetMetricsDisabled(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	s := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+	// The mock has no expectations, so it fails the test if any command is issued.
+	s.client = &fakeClient{}
+
+	errs := &scrapererror.ScrapeErrors{}
+	s.collectReplicaSetMetrics(t.Context(), pcommon.NewTimestampFromTime(time.Now()), errs)
+
+	require.NoError(t, errs.Combine())
+	require.Empty(t, metricNames(s.mb.Emit()))
 }

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -37,6 +38,8 @@ var (
 )
 
 const (
+	adminDatabase               = "admin"
+	replSetGetStatusCommand     = "replSetGetStatus"
 	defaultServiceName          = "unknown_service:mongodb"
 	namespaceKey                = "ns"
 	commandKey                  = "command"
@@ -566,6 +569,7 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 	s.mb.RecordMongodbDatabaseCountDataPoint(now, int64(len(dbNames)))
 	s.recordAdminStats(now, serverStatus, errs)
 	s.collectTopStats(ctx, now, errs)
+	s.collectReplicaSetMetrics(ctx, now, errs)
 
 	// Collect metrics for each database
 	for _, dbName := range dbNames {
@@ -610,6 +614,127 @@ func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timest
 		return
 	}
 	s.recordOperationTime(now, topStats, errs)
+}
+
+// replicationUnavailableCodes are the server error codes returned when the deployment does not
+// expose replica set state: a standalone mongod, a mongos router, a member whose replica set has
+// not been initiated, or a deployment such as MongoDB Atlas that restricts access to the local
+// database.
+var replicationUnavailableCodes = []int{
+	13, // Unauthorized
+	26, // NamespaceNotFound
+	59, // CommandNotFound
+	76, // NoReplicationEnabled
+	94, // NotYetInitialized
+}
+
+func isReplicationUnavailable(err error) bool {
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return true
+	}
+	var srvErr mongo.ServerError
+	if !errors.As(err, &srvErr) {
+		return false
+	}
+	return slices.ContainsFunc(replicationUnavailableCodes, srvErr.HasErrorCode)
+}
+
+// reportReplicationError records err as a partial scrape failure, unless it only means the
+// deployment does not expose replica set state, in which case the metrics are skipped.
+func (s *mongodbScraper) reportReplicationError(err error, message string, failed int, errs *scrapererror.ScrapeErrors) {
+	if isReplicationUnavailable(err) {
+		s.logger.Debug(message, zap.Error(err))
+		return
+	}
+	errs.AddPartial(failed, fmt.Errorf("%s: %w", message, err))
+}
+
+func (s *mongodbScraper) collectReplicaSetMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	metrics := s.config.MetricsBuilderConfig.Metrics
+
+	if metrics.MongodbOplogUsage.Enabled || metrics.MongodbOplogLimit.Enabled {
+		s.collectOplogStats(ctx, now, errs)
+	}
+
+	var oplogWindow float64
+	var hasOplogWindow bool
+	if metrics.MongodbOplogWindow.Enabled || metrics.MongodbReplicaSetHeadroom.Enabled {
+		oplogWindow, hasOplogWindow = s.collectOplogWindow(ctx, now, errs)
+	}
+
+	if metrics.MongodbReplicaSetHeadroom.Enabled || metrics.MongodbReplicaSetLag.Enabled ||
+		metrics.MongodbReplicaSetMemberCount.Enabled || metrics.MongodbReplicaSetMemberStatus.Enabled {
+		s.collectReplicaSetStatus(ctx, now, oplogWindow, hasOplogWindow, errs)
+	}
+}
+
+func (s *mongodbScraper) collectOplogStats(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	oplogStats, err := s.client.OplogStats(ctx)
+	if err != nil {
+		s.reportReplicationError(err, "failed to fetch oplog stats metrics", 2, errs)
+		return
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbOplogUsage.Enabled {
+		s.recordOplogUsage(now, oplogStats, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbOplogLimit.Enabled {
+		s.recordOplogLimit(now, oplogStats, errs)
+	}
+}
+
+// collectOplogWindow returns the time span the oplog covers, which mongodb.replica_set.headroom
+// is measured against.
+func (s *mongodbScraper) collectOplogWindow(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) (float64, bool) {
+	oldest, newest, err := s.client.OplogBounds(ctx)
+	if err != nil {
+		s.reportReplicationError(err, "failed to fetch oplog window metrics", 1, errs)
+		return 0, false
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbOplogWindow.Enabled {
+		s.recordOplogWindow(now, oldest, newest)
+	}
+	return oplogWindowSeconds(oldest, newest), true
+}
+
+func (s *mongodbScraper) collectReplicaSetStatus(ctx context.Context, now pcommon.Timestamp, oplogWindow float64, hasOplogWindow bool, errs *scrapererror.ScrapeErrors) {
+	status, err := s.client.RunCommand(ctx, adminDatabase, bson.M{replSetGetStatusCommand: 1})
+	if err != nil {
+		s.reportReplicationError(err, "failed to fetch replica set status metrics", 4, errs)
+		return
+	}
+
+	members, ok := status[replicaSetMembersKey].(bson.A)
+	if !ok {
+		errs.AddPartial(4, fmt.Errorf("failed to fetch replica set members: expected %T, got %T", bson.A{}, status[replicaSetMembersKey]))
+		return
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbReplicaSetMemberCount.Enabled {
+		s.recordReplicaSetMemberCount(now, members)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbReplicaSetMemberStatus.Enabled {
+		s.recordReplicaSetMemberStatus(now, members, errs)
+	}
+
+	// Lag and headroom are only reported by the primary. A secondary sees the other members
+	// through heartbeats, so its view of their progress trails the primary's.
+	self, ok := replicaSetSelf(members)
+	if !ok || replicaSetMemberStates[getInt64Value(self, replicaSetMemberStateKey)] != metadata.AttributeMongodbReplicaSetMemberStatePrimary {
+		return
+	}
+	lags := replicaSetLags(members)
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbReplicaSetLag.Enabled {
+		s.recordReplicaSetLag(now, lags)
+	}
+
+	if hasOplogWindow && s.config.MetricsBuilderConfig.Metrics.MongodbReplicaSetHeadroom.Enabled {
+		s.recordReplicaSetHeadroom(now, lags, oplogWindow)
+	}
 }
 
 func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Timestamp, databaseName, collectionName string, errs *scrapererror.ScrapeErrors) {
@@ -798,13 +923,13 @@ func serverAddressAndPort(serverStatus bson.M) (string, int64, error) {
 }
 
 func (s *mongodbScraper) findSecondaryHosts(ctx context.Context) ([]string, error) {
-	result, err := s.client.RunCommand(ctx, "admin", bson.M{"replSetGetStatus": 1})
+	result, err := s.client.RunCommand(ctx, adminDatabase, bson.M{replSetGetStatusCommand: 1})
 	if err != nil {
 		s.logger.Error("Failed to get replica set status", zap.Error(err))
 		return nil, fmt.Errorf("failed to get replica set status: %w", err)
 	}
 
-	members, ok := result["members"].(bson.A)
+	members, ok := result[replicaSetMembersKey].(bson.A)
 	if !ok {
 		return nil, fmt.Errorf("invalid members format: expected type primitive.A but got %T, value: %v", result["members"], result["members"])
 	}

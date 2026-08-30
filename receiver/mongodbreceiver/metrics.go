@@ -764,6 +764,191 @@ func (s *mongodbScraper) recordLockDeadlockCount(now pcommon.Timestamp, doc bson
 	}
 }
 
+// Replica Set and Oplog Stats
+const (
+	replicaSetMembersKey       = "members"
+	replicaSetMemberDurableKey = "lastDurableWallTime"
+	replicaSetMemberNameKey    = "name"
+	replicaSetMemberOptimeKey  = "optimeDate"
+	replicaSetMemberSelfKey    = "self"
+	replicaSetMemberStateKey   = "state"
+)
+
+// replicaSetMemberStates maps every member state MongoDB reports to its attribute value. The
+// numeric state is used rather than its string rendering, which MongoDB decorates for a member
+// it cannot reach ("(not reachable/healthy)" rather than "DOWN").
+var replicaSetMemberStates = map[int64]metadata.AttributeMongodbReplicaSetMemberState{
+	0:  metadata.AttributeMongodbReplicaSetMemberStateStartup,
+	1:  metadata.AttributeMongodbReplicaSetMemberStatePrimary,
+	2:  metadata.AttributeMongodbReplicaSetMemberStateSecondary,
+	3:  metadata.AttributeMongodbReplicaSetMemberStateRecovering,
+	5:  metadata.AttributeMongodbReplicaSetMemberStateStartup2,
+	6:  metadata.AttributeMongodbReplicaSetMemberStateUnknown,
+	7:  metadata.AttributeMongodbReplicaSetMemberStateArbiter,
+	8:  metadata.AttributeMongodbReplicaSetMemberStateDown,
+	9:  metadata.AttributeMongodbReplicaSetMemberStateRollback,
+	10: metadata.AttributeMongodbReplicaSetMemberStateRemoved,
+}
+
+// replicaSetLag holds the replication lag of a single secondary, in seconds.
+type replicaSetLag struct {
+	member     string
+	applied    float64
+	durable    float64
+	hasDurable bool
+}
+
+func (s *mongodbScraper) recordOplogUsage(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"storageStats", "size"}
+	metricName := "mongodb.oplog.usage"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbOplogUsageDataPoint(now, val)
+}
+
+func (s *mongodbScraper) recordOplogLimit(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"storageStats", "maxSize"}
+	metricName := "mongodb.oplog.limit"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbOplogLimitDataPoint(now, val)
+}
+
+// oplogWindowSeconds returns the time span the oplog covers. Only the seconds component of a
+// BSON timestamp carries wall-clock meaning; the ordinal disambiguates entries within a second.
+func oplogWindowSeconds(oldest, newest bson.Timestamp) float64 {
+	return float64(newest.T) - float64(oldest.T)
+}
+
+func (s *mongodbScraper) recordOplogWindow(now pcommon.Timestamp, oldest, newest bson.Timestamp) {
+	s.mb.RecordMongodbOplogWindowDataPoint(now, oplogWindowSeconds(oldest, newest))
+}
+
+// recordReplicaSetMemberCount emits a data point for every known state, so that a state no
+// member is in is reported as zero rather than as a missing series.
+func (s *mongodbScraper) recordReplicaSetMemberCount(now pcommon.Timestamp, members bson.A) {
+	counts := make(map[metadata.AttributeMongodbReplicaSetMemberState]int64, len(replicaSetMemberStates))
+	for _, state := range replicaSetMemberStates {
+		counts[state] = 0
+	}
+	for _, member := range members {
+		if state, ok := replicaSetMemberStates[getInt64Value(member, replicaSetMemberStateKey)]; ok {
+			counts[state]++
+		}
+	}
+	for state, count := range counts {
+		s.mb.RecordMongodbReplicaSetMemberCountDataPoint(now, count, state)
+	}
+}
+
+// recordReplicaSetMemberStatus emits a data point for every known state, valued 1 for the state
+// the scraped instance is currently in and 0 for the rest, so each state is its own timeseries.
+func (s *mongodbScraper) recordReplicaSetMemberStatus(now pcommon.Timestamp, members bson.A, errs *scrapererror.ScrapeErrors) {
+	metricName := "mongodb.replica_set.member.status"
+	member, ok := replicaSetSelf(members)
+	if !ok {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, errKeyNotFound))
+		return
+	}
+	current, ok := replicaSetMemberStates[getInt64Value(member, replicaSetMemberStateKey)]
+	if !ok {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, errKeyNotFound))
+		return
+	}
+	for _, state := range replicaSetMemberStates {
+		var value int64
+		if state == current {
+			value = 1
+		}
+		s.mb.RecordMongodbReplicaSetMemberStatusDataPoint(now, value, state)
+	}
+}
+
+func (s *mongodbScraper) recordReplicaSetLag(now pcommon.Timestamp, lags []replicaSetLag) {
+	for _, lag := range lags {
+		s.mb.RecordMongodbReplicaSetLagDataPoint(now, lag.applied, lag.member, metadata.AttributeMongodbReplicaSetLagTypeApplied)
+		if lag.hasDurable {
+			s.mb.RecordMongodbReplicaSetLagDataPoint(now, lag.durable, lag.member, metadata.AttributeMongodbReplicaSetLagTypeDurable)
+		}
+	}
+}
+
+func (s *mongodbScraper) recordReplicaSetHeadroom(now pcommon.Timestamp, lags []replicaSetLag, oplogWindow float64) {
+	for _, lag := range lags {
+		s.mb.RecordMongodbReplicaSetHeadroomDataPoint(now, oplogWindow-lag.applied, lag.member)
+	}
+}
+
+// replicaSetSelf returns the member the replica set status was read from.
+func replicaSetSelf(members bson.A) (any, bool) {
+	for _, member := range members {
+		if getValue[bool](member, replicaSetMemberSelfKey) {
+			return member, true
+		}
+	}
+	return nil, false
+}
+
+// replicaSetLags returns how far behind the primary every secondary is. It is only meaningful
+// on the primary, which is the only member holding an up-to-date view of the others' progress.
+func replicaSetLags(members bson.A) []replicaSetLag {
+	primary, ok := replicaSetMemberInState(members, metadata.AttributeMongodbReplicaSetMemberStatePrimary)
+	if !ok {
+		return nil
+	}
+	primaryOptime, ok := replicaSetTimeMillis(primary, replicaSetMemberOptimeKey)
+	if !ok {
+		return nil
+	}
+	primaryDurable, primaryHasDurable := replicaSetTimeMillis(primary, replicaSetMemberDurableKey)
+
+	var lags []replicaSetLag
+	for _, member := range members {
+		if replicaSetMemberStates[getInt64Value(member, replicaSetMemberStateKey)] != metadata.AttributeMongodbReplicaSetMemberStateSecondary {
+			continue
+		}
+		optime, ok := replicaSetTimeMillis(member, replicaSetMemberOptimeKey)
+		if !ok {
+			continue
+		}
+		lag := replicaSetLag{
+			member:  getValue[string](member, replicaSetMemberNameKey),
+			applied: float64(primaryOptime-optime) / 1000.0,
+		}
+		if durable, ok := replicaSetTimeMillis(member, replicaSetMemberDurableKey); ok && primaryHasDurable {
+			lag.durable = float64(primaryDurable-durable) / 1000.0
+			lag.hasDurable = true
+		}
+		lags = append(lags, lag)
+	}
+	return lags
+}
+
+func replicaSetMemberInState(members bson.A, state metadata.AttributeMongodbReplicaSetMemberState) (any, bool) {
+	for _, member := range members {
+		if replicaSetMemberStates[getInt64Value(member, replicaSetMemberStateKey)] == state {
+			return member, true
+		}
+	}
+	return nil, false
+}
+
+// replicaSetTimeMillis returns the value of a BSON date field as milliseconds since the epoch.
+func replicaSetTimeMillis(member any, key string) (int64, bool) {
+	value, ok := lookup(member, key)
+	if !ok {
+		return 0, false
+	}
+	date, ok := value.(bson.DateTime)
+	return int64(date), ok
+}
+
 // Index Stats
 func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bson.M, dbName, collectionName string, errs *scrapererror.ScrapeErrors) {
 	metricName := "mongodb.index.access.count"

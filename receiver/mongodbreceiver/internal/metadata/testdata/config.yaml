@@ -88,6 +88,12 @@ all_set:
     mongodb.operation.time:
       enabled: true
       attributes: ["operation"]
+    mongodb.oplog.limit:
+      enabled: true
+    mongodb.oplog.usage:
+      enabled: true
+    mongodb.oplog.window:
+      enabled: true
     mongodb.page_faults:
       enabled: true
     mongodb.queries.rate:
@@ -104,6 +110,18 @@ all_set:
       enabled: true
     mongodb.repl_updates_per_sec:
       enabled: true
+    mongodb.replica_set.headroom:
+      enabled: true
+      attributes: ["mongodb.replica_set.member.name"]
+    mongodb.replica_set.lag:
+      enabled: true
+      attributes: ["mongodb.replica_set.member.name","mongodb.replica_set.lag.type"]
+    mongodb.replica_set.member.count:
+      enabled: true
+      attributes: ["mongodb.replica_set.member.state"]
+    mongodb.replica_set.member.status:
+      enabled: true
+      attributes: ["mongodb.replica_set.member.state"]
     mongodb.session.count:
       enabled: true
     mongodb.storage.size:
@@ -232,6 +250,12 @@ reaggregate_set:
     mongodb.operation.time:
       enabled: true
       attributes: []
+    mongodb.oplog.limit:
+      enabled: true
+    mongodb.oplog.usage:
+      enabled: true
+    mongodb.oplog.window:
+      enabled: true
     mongodb.page_faults:
       enabled: true
     mongodb.queries.rate:
@@ -248,6 +272,18 @@ reaggregate_set:
       enabled: true
     mongodb.repl_updates_per_sec:
       enabled: true
+    mongodb.replica_set.headroom:
+      enabled: true
+      attributes: []
+    mongodb.replica_set.lag:
+      enabled: true
+      attributes: []
+    mongodb.replica_set.member.count:
+      enabled: true
+      attributes: []
+    mongodb.replica_set.member.status:
+      enabled: true
+      attributes: []
     mongodb.session.count:
       enabled: true
     mongodb.storage.size:
@@ -376,6 +412,12 @@ none_set:
     mongodb.operation.time:
       enabled: false
       attributes: ["operation"]
+    mongodb.oplog.limit:
+      enabled: false
+    mongodb.oplog.usage:
+      enabled: false
+    mongodb.oplog.window:
+      enabled: false
     mongodb.page_faults:
       enabled: false
     mongodb.queries.rate:
@@ -392,6 +434,18 @@ none_set:
       enabled: false
     mongodb.repl_updates_per_sec:
       enabled: false
+    mongodb.replica_set.headroom:
+      enabled: false
+      attributes: ["mongodb.replica_set.member.name"]
+    mongodb.replica_set.lag:
+      enabled: false
+      attributes: ["mongodb.replica_set.member.name","mongodb.replica_set.lag.type"]
+    mongodb.replica_set.member.count:
+      enabled: false
+      attributes: ["mongodb.replica_set.member.state"]
+    mongodb.replica_set.member.status:
+      enabled: false
+      attributes: ["mongodb.replica_set.member.state"]
     mongodb.session.count:
       enabled: false
     mongodb.storage.size:
