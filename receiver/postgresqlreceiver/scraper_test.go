@@ -1260,7 +1260,8 @@ func TestScrapeTopQueriesHonorsExcludeDatabases(t *testing.T) {
 			require.NoError(t, err)
 			settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
 
-			scraper, err := newPostgreSQLScraper(settings, cfg, mockSimpleClientFactory{db: db}, newCache(30), newTTLCache[string](1, time.Second))
+			factory := &recordingClientFactory{mockSimpleClientFactory: mockSimpleClientFactory{db: db}}
+			scraper, err := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
 			require.NoError(t, err)
 
 			// The template filters this row out server side; returning it anyway exercises the
@@ -1287,6 +1288,8 @@ func TestScrapeTopQueriesHonorsExcludeDatabases(t *testing.T) {
 			require.NoError(t, err)
 
 			require.NoError(t, mock.ExpectationsWereMet())
+			// No EXPLAIN connection to rdsadmin (excluded database)
+			require.Equal(t, []string{defaultPostgreSQLDatabase}, factory.requestedDatabases)
 			assert.Equal(t, 0, actualLogs.LogRecordCount())
 		})
 	}
@@ -1745,6 +1748,19 @@ func (m mockSimpleClientFactory) getClient(context.Context, string) (client, err
 		client:  m.db,
 		closeFn: m.close,
 	}, nil
+}
+
+// recordingClientFactory records the databases passed to getClient.
+type recordingClientFactory struct {
+	mockSimpleClientFactory
+	requestedDatabases []string
+}
+
+var _ postgreSQLClientFactory = (*recordingClientFactory)(nil)
+
+func (m *recordingClientFactory) getClient(ctx context.Context, database string) (client, error) {
+	m.requestedDatabases = append(m.requestedDatabases, database)
+	return m.mockSimpleClientFactory.getClient(ctx, database)
 }
 
 // getQuerySamples implements client.
