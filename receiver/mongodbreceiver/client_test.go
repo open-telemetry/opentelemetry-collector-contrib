@@ -71,6 +71,19 @@ func (fc *fakeClient) IndexStats(ctx context.Context, dbName, collectionName str
 	return args.Get(0).([]bson.M), args.Error(1)
 }
 
+func (fc *fakeClient) OplogStats(ctx context.Context) (bson.M, error) {
+	args := fc.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(bson.M), args.Error(1)
+}
+
+func (fc *fakeClient) OplogBounds(ctx context.Context) (bson.Timestamp, bson.Timestamp, error) {
+	args := fc.Called(ctx)
+	return args.Get(0).(bson.Timestamp), args.Get(1).(bson.Timestamp), args.Error(2)
+}
+
 func (fc *fakeClient) RunCommand(ctx context.Context, db string, command any) (bson.M, error) {
 	args := fc.Called(ctx, db, command)
 	if args.Get(0) == nil {
