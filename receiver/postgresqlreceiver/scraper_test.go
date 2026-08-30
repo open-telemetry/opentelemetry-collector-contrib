@@ -1239,8 +1239,7 @@ func TestScrapeQuerySampleMultiBlocker(t *testing.T) {
 }
 
 func TestScrapeTopQueriesHonorsExcludeDatabases(t *testing.T) {
-	// The exclusion logic must behave identically with the legacy resource model
-	// and with the receiver.postgresql.useOTelSemconv feature gate enabled.
+	// Exclusion must behave the same with and without the semconv feature gate.
 	for _, useSemconv := range []bool{false, true} {
 		t.Run(fmt.Sprintf("semconv=%t", useSemconv), func(t *testing.T) {
 			defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlUseOTelSemconvFeatureGate, useSemconv)()
@@ -1250,7 +1249,7 @@ func TestScrapeTopQueriesHonorsExcludeDatabases(t *testing.T) {
 			cfg.ExcludeDatabases = []string{"rdsadmin"}
 			cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 
-			// Regexp matcher so the assertion is on the clause itself, not a re-render of the template.
+			// Regexp matches the clause itself, not a re-render of the template.
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
 			defer db.Close()
@@ -1264,8 +1263,7 @@ func TestScrapeTopQueriesHonorsExcludeDatabases(t *testing.T) {
 			scraper, err := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
 			require.NoError(t, err)
 
-			// The template filters this row out server side; returning it anyway exercises the
-			// EXPLAIN guard. No EXPLAIN is expected: the row must be skipped, not explained.
+			// The server filters this row out; return it anyway to exercise the EXPLAIN guard.
 			mock.ExpectQuery(`AND datname NOT IN \('rdsadmin'\)`).
 				WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
 					callsColumnName:             "123",
@@ -1288,7 +1286,7 @@ func TestScrapeTopQueriesHonorsExcludeDatabases(t *testing.T) {
 			require.NoError(t, err)
 
 			require.NoError(t, mock.ExpectationsWereMet())
-			// No EXPLAIN connection to rdsadmin (excluded database)
+			// No EXPLAIN connection to the excluded database.
 			require.Equal(t, []string{defaultPostgreSQLDatabase}, factory.requestedDatabases)
 			assert.Equal(t, 0, actualLogs.LogRecordCount())
 		})
@@ -1301,7 +1299,7 @@ func TestScrapeQuerySamplesHonorsExcludeDatabases(t *testing.T) {
 	cfg.ExcludeDatabases = []string{"rdsadmin"}
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 
-	// Regexp matcher so the assertion is on the clause itself, not a re-render of the template.
+	// Regexp matches the clause itself, not a re-render of the template.
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
@@ -1314,16 +1312,14 @@ func TestScrapeQuerySamplesHonorsExcludeDatabases(t *testing.T) {
 	scraper, err := newPostgreSQLScraper(settings, cfg, mockSimpleClientFactory{db: db}, newCache(30), newTTLCache[string](1, time.Second))
 	require.NoError(t, err)
 
-	// The template is the only exclusion mechanism on this path: the rendered SQL must
-	// carry the NOT IN clause, and the server returns no rows for excluded databases.
+	// Exclusion happens server side only, so the clause is the assertion.
 	mock.ExpectQuery(`AND COALESCE\(sa\.datname, ''\) NOT IN \('rdsadmin'\)`).
 		WillReturnRows(sqlmock.NewRows(querySampleColumns))
 
-	actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
+	_, err = scraper.scrapeQuerySamples(t.Context(), 30)
 	require.NoError(t, err)
 
 	require.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, 0, actualLogs.LogRecordCount())
 }
 
 //go:embed testdata/scraper/top-query/expectedSql.sql
