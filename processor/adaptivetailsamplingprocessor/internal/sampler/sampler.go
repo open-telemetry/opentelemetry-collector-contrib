@@ -67,11 +67,20 @@ func (*Deterministic) Stop() error { return nil }
 
 // dynsamplerImpl is the subset of dynsampler-go's Sampler interface used by
 // this package. Declared locally so test doubles do not need to satisfy the
-// full upstream interface (SaveState, LoadState, GetMetrics).
+// full upstream interface (SaveState, LoadState).
 type dynsamplerImpl interface {
 	Start() error
 	Stop() error
 	GetSampleRateMulti(key string, count int) int
+	GetMetrics(prefix string) map[string]int64
+}
+
+// MetricsProvider returns a set of metric values that expose sampler's internal performance
+// counters (request/event counts, keyspace size, burst/interval counts) via GetMetrics.
+type MetricsProvider interface {
+	// GetMetrics returns metric values with keys prefixed by the passed-in prefix.
+	// Must use the same prefix value for every call for a given sampler instance.
+	GetMetrics(prefix string) map[string]int64
 }
 
 // dynsamplerWrapper adapts any dynsampler-go sampler into our Sampler
@@ -103,6 +112,11 @@ func (w *dynsamplerWrapper) Start() error {
 func (w *dynsamplerWrapper) Stop() error {
 	w.stopOnce.Do(func() { w.stopErr = w.inner.Stop() })
 	return w.stopErr
+}
+
+// GetMetrics implements MetricsProvider.
+func (w *dynsamplerWrapper) GetMetrics(prefix string) map[string]int64 {
+	return w.inner.GetMetrics(prefix)
 }
 
 // EMAPercentageConfig configures the EMA percentage (per-key) sampler.

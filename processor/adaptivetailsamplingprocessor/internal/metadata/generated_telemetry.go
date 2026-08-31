@@ -3,11 +3,13 @@
 package metadata
 
 import (
+	"context"
 	"errors"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/embedded"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -30,6 +32,11 @@ type TelemetryBuilder struct {
 	ProcessorAdaptiveTailSamplingFingerprintDuration           metric.Int64Histogram
 	ProcessorAdaptiveTailSamplingIncomingTracestateUnparseable metric.Int64Counter
 	ProcessorAdaptiveTailSamplingOttlEvalErrors                metric.Int64Counter
+	ProcessorAdaptiveTailSamplingSamplerBurstCount             metric.Int64ObservableCounter
+	ProcessorAdaptiveTailSamplingSamplerIntervalCount          metric.Int64ObservableCounter
+	ProcessorAdaptiveTailSamplingSamplerKeyspaceSize           metric.Int64ObservableGauge
+	ProcessorAdaptiveTailSamplingSamplerRequestCount           metric.Int64ObservableCounter
+	ProcessorAdaptiveTailSamplingSamplerSpanCount              metric.Int64ObservableCounter
 	ProcessorAdaptiveTailSamplingTraceSpanCount                metric.Int64Histogram
 	ProcessorAdaptiveTailSamplingTracesActive                  metric.Int64Gauge
 	ProcessorAdaptiveTailSamplingTracesDropped                 metric.Int64Counter
@@ -46,6 +53,91 @@ type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
 
 func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
+}
+
+// RegisterProcessorAdaptiveTailSamplingSamplerBurstCountCallback sets callback for observable ProcessorAdaptiveTailSamplingSamplerBurstCount metric.
+func (builder *TelemetryBuilder) RegisterProcessorAdaptiveTailSamplingSamplerBurstCountCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ProcessorAdaptiveTailSamplingSamplerBurstCount, obs: o})
+		return nil
+	}, builder.ProcessorAdaptiveTailSamplingSamplerBurstCount)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
+}
+
+// RegisterProcessorAdaptiveTailSamplingSamplerIntervalCountCallback sets callback for observable ProcessorAdaptiveTailSamplingSamplerIntervalCount metric.
+func (builder *TelemetryBuilder) RegisterProcessorAdaptiveTailSamplingSamplerIntervalCountCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ProcessorAdaptiveTailSamplingSamplerIntervalCount, obs: o})
+		return nil
+	}, builder.ProcessorAdaptiveTailSamplingSamplerIntervalCount)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
+}
+
+// RegisterProcessorAdaptiveTailSamplingSamplerKeyspaceSizeCallback sets callback for observable ProcessorAdaptiveTailSamplingSamplerKeyspaceSize metric.
+func (builder *TelemetryBuilder) RegisterProcessorAdaptiveTailSamplingSamplerKeyspaceSizeCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ProcessorAdaptiveTailSamplingSamplerKeyspaceSize, obs: o})
+		return nil
+	}, builder.ProcessorAdaptiveTailSamplingSamplerKeyspaceSize)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
+}
+
+// RegisterProcessorAdaptiveTailSamplingSamplerRequestCountCallback sets callback for observable ProcessorAdaptiveTailSamplingSamplerRequestCount metric.
+func (builder *TelemetryBuilder) RegisterProcessorAdaptiveTailSamplingSamplerRequestCountCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ProcessorAdaptiveTailSamplingSamplerRequestCount, obs: o})
+		return nil
+	}, builder.ProcessorAdaptiveTailSamplingSamplerRequestCount)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
+}
+
+// RegisterProcessorAdaptiveTailSamplingSamplerSpanCountCallback sets callback for observable ProcessorAdaptiveTailSamplingSamplerSpanCount metric.
+func (builder *TelemetryBuilder) RegisterProcessorAdaptiveTailSamplingSamplerSpanCountCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ProcessorAdaptiveTailSamplingSamplerSpanCount, obs: o})
+		return nil
+	}, builder.ProcessorAdaptiveTailSamplingSamplerSpanCount)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
+}
+
+type observerInt64 struct {
+	embedded.Int64Observer
+	inst metric.Int64Observable
+	obs  metric.Observer
+}
+
+func (oi *observerInt64) Observe(value int64, opts ...metric.ObserveOption) {
+	oi.obs.ObserveInt64(oi.inst, value, opts...)
 }
 
 // Shutdown unregister all registered callbacks for async instruments.
@@ -94,6 +186,36 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_processor_adaptive_tail_sampling_ottl_eval_errors",
 		metric.WithDescription("Number of OTTL condition evaluation errors, labelled by the rule the condition belongs to (_root_span_condition for the root-span condition). [Development]"),
 		metric.WithUnit("{errors}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorAdaptiveTailSamplingSamplerBurstCount, err = builder.meter.Int64ObservableCounter(
+		"otelcol_processor_adaptive_tail_sampling_sampler_burst_count",
+		metric.WithDescription("Cumulative number of intervals in which an adaptive sampler (adaptive_percentage or adaptive_throughput) detected a burst of traffic, labelled by rule, sampler_type, and sampler_algorithm. Not emitted for adaptive_throughput rules using the windowed algorithm, which do not track this counter. [Development]"),
+		metric.WithUnit("{bursts}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorAdaptiveTailSamplingSamplerIntervalCount, err = builder.meter.Int64ObservableCounter(
+		"otelcol_processor_adaptive_tail_sampling_sampler_interval_count",
+		metric.WithDescription("Cumulative number of rate-adjustment intervals an adaptive sampler (adaptive_percentage or adaptive_throughput) has completed, labelled by rule, sampler_type, and sampler_algorithm. Not emitted for adaptive_throughput rules using the windowed algorithm, which do not track this counter. [Development]"),
+		metric.WithUnit("{intervals}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorAdaptiveTailSamplingSamplerKeyspaceSize, err = builder.meter.Int64ObservableGauge(
+		"otelcol_processor_adaptive_tail_sampling_sampler_keyspace_size",
+		metric.WithDescription("Current number of distinct sampling keys tracked by an adaptive sampler (adaptive_percentage or adaptive_throughput), labelled by rule, sampler_type, and sampler_algorithm. A rising value indicates growing key cardinality, which can degrade sampler accuracy and memory use. [Development]"),
+		metric.WithUnit("{keys}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorAdaptiveTailSamplingSamplerRequestCount, err = builder.meter.Int64ObservableCounter(
+		"otelcol_processor_adaptive_tail_sampling_sampler_request_count",
+		metric.WithDescription("Cumulative number of sample-rate requests made to an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule, sampler_type, and sampler_algorithm. [Development]"),
+		metric.WithUnit("{requests}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorAdaptiveTailSamplingSamplerSpanCount, err = builder.meter.Int64ObservableCounter(
+		"otelcol_processor_adaptive_tail_sampling_sampler_span_count",
+		metric.WithDescription("Cumulative number of spans observed by an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule, sampler_type, and sampler_algorithm. [Development]"),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorAdaptiveTailSamplingTraceSpanCount, err = builder.meter.Int64Histogram(

@@ -34,6 +34,10 @@ type rule struct {
 	logger      *zap.Logger
 	evalErrs    metric.Int64Counter
 	ruleAttrSet metric.MeasurementOption
+
+	// dynsamplerAttrSet carries the rule and sampler_type attributes for
+	// metrics derived from the sampler's GetMetrics output.
+	dynsamplerAttrSet metric.MeasurementOption
 }
 
 // matches returns true when the rule's conditions are satisfied by the
@@ -147,6 +151,11 @@ func compileRule(cfg *RuleConfig, s sampler.Sampler, fingerprint []sampler.Selec
 		logger:           settings.Logger,
 		evalErrs:         evalErrs,
 		ruleAttrSet:      metric.WithAttributes(attribute.String("rule", cfg.Name)),
+		dynsamplerAttrSet: metric.WithAttributes(
+			attribute.String("rule", cfg.Name),
+			attribute.String("sampler_type", string(cfg.Sampler.Type)),
+			attribute.String("sampler_algorithm", string(cfg.Sampler.effectiveAlgorithm())),
+		),
 	}
 	if len(cfg.Conditions) == 0 {
 		return r, nil
