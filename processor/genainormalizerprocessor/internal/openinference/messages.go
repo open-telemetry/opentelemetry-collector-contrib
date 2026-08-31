@@ -99,6 +99,7 @@ func reconstructPrefix(attrs pcommon.Map, prefix, target string, isOutput, remov
 
 	messages := make(map[int]*messageFields)
 	var keysToRemove []string
+	contentKeys := make(map[int]map[int][]string)
 
 	attrs.Range(func(k string, v pcommon.Value) bool {
 		if !strings.HasPrefix(k, prefix) {
@@ -121,6 +122,18 @@ func reconstructPrefix(attrs pcommon.Map, prefix, target string, isOutput, remov
 
 		applyField(mf, fieldPath, v)
 		if removeOriginals {
+			if strings.HasPrefix(fieldPath, "contents.") {
+				contentRest := fieldPath[len("contents."):]
+				if dotIdx := strings.IndexByte(contentRest, '.'); dotIdx >= 0 {
+					if contentIdx, err := strconv.Atoi(contentRest[:dotIdx]); err == nil {
+						if contentKeys[idx] == nil {
+							contentKeys[idx] = make(map[int][]string)
+						}
+						contentKeys[idx][contentIdx] = append(contentKeys[idx][contentIdx], k)
+						return true
+					}
+				}
+			}
 			keysToRemove = append(keysToRemove, k)
 		}
 		return true
@@ -128,6 +141,17 @@ func reconstructPrefix(attrs pcommon.Map, prefix, target string, isOutput, remov
 
 	if len(messages) == 0 {
 		return false
+	}
+
+	// Preserves Non-text entries (image, audio, reasoning)
+	for msgIdx, byContent := range contentKeys {
+		mf := messages[msgIdx]
+		for contentIdx, keys := range byContent {
+			cf, exists := mf.contents[contentIdx]
+			if exists && cf.text != "" && (cf.typ == "" || cf.typ == "text") {
+				keysToRemove = append(keysToRemove, keys...)
+			}
+		}
 	}
 
 	result := buildMessages(messages, isOutput)
