@@ -196,11 +196,6 @@ func (r ResourceMetricsUnmarshaler) unmarshalRecord(allResourceScopeMetrics map[
 			value = azureMetric.Average
 		}
 		if value == nil {
-			r.logger.Debug(
-				"Azure Metric record is missing the requested aggregation",
-				zap.String("metricName", azureMetric.MetricName),
-				zap.String("aggregation", string(agg)),
-			)
 			continue
 		}
 

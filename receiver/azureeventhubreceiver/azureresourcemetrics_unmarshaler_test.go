@@ -147,10 +147,17 @@ func TestAzureResourceMetricsUnmarshaler_UnmarshalAggregatedAppMetrics(t *testin
 }
 
 func TestAzureResourceMetricsUnmarshaler_SkipsMissingAggregates(t *testing.T) {
-	// Standard Load Balancer diagnostic settings export total and count but no
-	// minimum/maximum aggregates; the unmarshaler must not fabricate 0-valued
-	// series for them, while an aggregate explicitly present as 0 is kept.
-	eventPayload := `{"records":[
+	tests := []struct {
+		name              string
+		metricAggregation string
+		eventPayload      string
+		wantMetricCount   int
+		wantMetricNames   map[string]bool
+		wantValues        map[string]float64
+	}{
+		{
+			name: "does not fabricate absent aggregates",
+			eventPayload: `{"records":[
 	{
 	  "count":23,
 	  "total":12292.1382,
@@ -170,47 +177,25 @@ func TestAzureResourceMetricsUnmarshaler_SkipsMissingAggregates(t *testing.T) {
 	  "metricName":"withzeros",
 	  "timeGrain":"PT1M"
 	}
-	]}`
-	event := azureEvent{AzEventData: &azeventhubs.ReceivedEventData{EventData: azeventhubs.EventData{Body: []byte(eventPayload)}}}
-	unmarshaler := newAzureResourceMetricsUnmarshaler(
-		component.BuildInfo{
-			Command:     "Test",
-			Description: "Test",
-			Version:     "Test",
+	]}`,
+			wantMetricCount: 7,
+			wantMetricNames: map[string]bool{
+				"bytecount_total":   true,
+				"bytecount_count":   true,
+				"withzeros_total":   true,
+				"withzeros_count":   true,
+				"withzeros_minimum": true,
+				"withzeros_maximum": true,
+				"withzeros_average": true,
+			},
+			wantValues: map[string]float64{
+				"withzeros_minimum": 0,
+			},
 		},
-		zap.NewNop(),
-		&Config{},
-	)
-	metrics, err := unmarshaler.UnmarshalMetrics(&event)
-
-	assert.NoError(t, err)
-	require.Equal(t, 7, metrics.MetricCount())
-
-	// Each Event Hub record becomes its own ResourceMetrics entry.
-	names := map[string]bool{}
-	values := map[string]float64{}
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
-		ms := metrics.ResourceMetrics().At(i).ScopeMetrics().At(0).Metrics()
-		for j := 0; j < ms.Len(); j++ {
-			names[ms.At(j).Name()] = true
-			values[ms.At(j).Name()] = ms.At(j).Gauge().DataPoints().At(0).DoubleValue()
-		}
-	}
-
-	assert.Equal(t, map[string]bool{
-		"bytecount_total":   true,
-		"bytecount_count":   true,
-		"withzeros_total":   true,
-		"withzeros_count":   true,
-		"withzeros_minimum": true,
-		"withzeros_maximum": true,
-		"withzeros_average": true,
-	}, names)
-	assert.Equal(t, 0.0, values["withzeros_minimum"])
-}
-
-func TestAzureResourceMetricsUnmarshaler_AverageAggregationSkipsRecordWithoutTotalOrCount(t *testing.T) {
-	eventPayload := `{"records":[
+		{
+			name:              "skips average without total or count",
+			metricAggregation: "average",
+			eventPayload: `{"records":[
 	{
 	  "average":5,
 	  "resourceId":"/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/RG/PROVIDERS/MICROSOFT.NETWORK/LOADBALANCERS/LB",
@@ -218,21 +203,47 @@ func TestAzureResourceMetricsUnmarshaler_AverageAggregationSkipsRecordWithoutTot
 	  "metricName":"bytecount",
 	  "timeGrain":"PT1M"
 	}
-	]}`
-	event := azureEvent{AzEventData: &azeventhubs.ReceivedEventData{EventData: azeventhubs.EventData{Body: []byte(eventPayload)}}}
-	unmarshaler := newAzureResourceMetricsUnmarshaler(
-		component.BuildInfo{
-			Command:     "Test",
-			Description: "Test",
-			Version:     "Test",
+	]}`,
 		},
-		zap.NewNop(),
-		&Config{
-			MetricAggregation: "average",
-		},
-	)
-	metrics, err := unmarshaler.UnmarshalMetrics(&event)
+	}
 
-	assert.NoError(t, err)
-	assert.Equal(t, 0, metrics.MetricCount())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			event := azureEvent{AzEventData: &azeventhubs.ReceivedEventData{EventData: azeventhubs.EventData{Body: []byte(tt.eventPayload)}}}
+			unmarshaler := newAzureResourceMetricsUnmarshaler(
+				component.BuildInfo{
+					Command:     "Test",
+					Description: "Test",
+					Version:     "Test",
+				},
+				zap.NewNop(),
+				&Config{MetricAggregation: tt.metricAggregation},
+			)
+			metrics, err := unmarshaler.UnmarshalMetrics(&event)
+
+			require.NoError(t, err)
+			require.Equal(t, tt.wantMetricCount, metrics.MetricCount())
+
+			if tt.wantMetricNames == nil {
+				return
+			}
+
+			// Each Event Hub record becomes its own ResourceMetrics entry.
+			names := map[string]bool{}
+			values := map[string]float64{}
+			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+				ms := metrics.ResourceMetrics().At(i).ScopeMetrics().At(0).Metrics()
+				for j := 0; j < ms.Len(); j++ {
+					names[ms.At(j).Name()] = true
+					values[ms.At(j).Name()] = ms.At(j).Gauge().DataPoints().At(0).DoubleValue()
+				}
+			}
+
+			assert.Equal(t, tt.wantMetricNames, names)
+			for name, want := range tt.wantValues {
+				assert.Equal(t, want, values[name])
+			}
+		},
+		)
+	}
 }
