@@ -16,6 +16,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -793,6 +794,15 @@ func TestOIDCAuthenticationPublicKeysFileHotReload(t *testing.T) {
 // will miss the rotation and keep accepting tokens signed by revoked
 // keys until the collector restarts.
 func TestOIDCAuthenticationPublicKeysFileSymlinkRotation(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// This test models the Kubernetes/kubelet projected-secret rotation,
+		// which atomically retargets the "..data" directory symlink via
+		// rename(2). Windows cannot rename over an existing directory symlink
+		// (os.Rename fails with "Access is denied"), so the atomic-rotation
+		// scenario this test exercises does not apply on Windows.
+		t.Skip("projected-secret symlink rotation is a POSIX-only scenario")
+	}
+
 	// prepare two OIDC servers, each with their own signing key
 	oidcServer1, err := newOIDCServer()
 	require.NoError(t, err)
