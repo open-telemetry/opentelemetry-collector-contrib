@@ -4,6 +4,7 @@
 package pmetricassert // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetricassert"
 
 import (
+	"maps"
 	"testing"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -12,6 +13,8 @@ import (
 type writeOptions struct {
 	includeValues                  bool
 	includeHistogramExplicitBounds bool
+	attributeExists                map[string]struct{}
+	attributeRegex                 map[string]string
 }
 
 // WriteOption configures the snapshot generation.
@@ -42,6 +45,39 @@ func IncludeHistogramExplicitBounds() WriteOption {
 	return includeHistogramExplicitBoundsOption{}
 }
 
+type attributeExistsOption []string
+
+func (o attributeExistsOption) apply(opts *writeOptions) {
+	if opts.attributeExists == nil {
+		opts.attributeExists = make(map[string]struct{}, len(o))
+	}
+	for _, key := range o {
+		opts.attributeExists[key] = struct{}{}
+	}
+}
+
+// WithAttributeExists generates /exists matchers for the selected resource and
+// datapoint attribute keys.
+func WithAttributeExists(keys ...string) WriteOption {
+	return attributeExistsOption(append([]string(nil), keys...))
+}
+
+type attributeRegexOption map[string]string
+
+func (o attributeRegexOption) apply(opts *writeOptions) {
+	if opts.attributeRegex == nil {
+		opts.attributeRegex = make(map[string]string, len(o))
+	}
+	maps.Copy(opts.attributeRegex, o)
+}
+
+// WithAttributeRegex generates /regex matchers for the selected resource and
+// datapoint attribute keys. Each encountered value must be a string that fully
+// matches its pattern.
+func WithAttributeRegex(patterns map[string]string) WriteOption {
+	return attributeRegexOption(maps.Clone(patterns))
+}
+
 // WriteAssertionFile regenerates the default-strict assertion snapshot at path
 // from actual. It is intended to be called manually during test authoring,
 // analogous to golden.WriteMetrics, and removed before committing.
@@ -61,5 +97,8 @@ func WriteAssertionFile(tb testing.TB, path string, actual pmetric.Metrics, opts
 		opt.apply(&o)
 	}
 	doc := normalize(actual, o)
+	if err := applyWriteAttributeMatchers(doc, o); err != nil {
+		return err
+	}
 	return writeDocument(path, doc)
 }
