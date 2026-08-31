@@ -1,0 +1,41 @@
+default:
+all_set:
+  resource_attributes:
+    azure.app_service.instance.id:
+      enabled: true
+    azure.resource_group.name:
+      enabled: true
+    cloud.account.id:
+      enabled: true
+    cloud.platform:
+      enabled: true
+    cloud.provider:
+      enabled: true
+    cloud.region:
+      enabled: true
+    cloud.resource_id:
+      enabled: true
+    deployment.environment.name:
+      enabled: true
+    service.name:
+      enabled: true
+none_set:
+  resource_attributes:
+    azure.app_service.instance.id:
+      enabled: false
+    azure.resource_group.name:
+      enabled: false
+    cloud.account.id:
+      enabled: false
+    cloud.platform:
+      enabled: false
+    cloud.provider:
+      enabled: false
+    cloud.region:
+      enabled: false
+    cloud.resource_id:
+      enabled: false
+    deployment.environment.name:
+      enabled: false
+    service.name:
+      enabled: false

@@ -55,13 +55,13 @@ func TestExpoAdd(t *testing.T) {
 	}, {
 		name: "optional/missing", flip: true,
 		dp:   expdp{PosNeg: obs0(0.6, 2.4) /*                                                 */, Count: 2},
-		in:   expdp{PosNeg: obs0(1.5, 3.2, 6.3), Min: some(1.5), Max: some(6.3), Sum: some(11.0), Count: 3},
+		in:   expdp{PosNeg: obs0(1.5, 3.2, 6.3), Min: new(1.5), Max: new(6.3), Sum: new(11.0), Count: 3},
 		want: expdp{PosNeg: obs0(0.6, 2.4, 1.5, 3.2, 6.3) /*                                  */, Count: 5},
 	}, {
 		name: "optional/min-max-sum",
-		dp:   expdp{PosNeg: obs0(1.5, 5.3, 11.6) /*          */, Min: some(1.5), Max: some(11.6), Sum: some(18.4), Count: 3},
-		in:   expdp{PosNeg: obs0(0.6, 3.3, 7.9) /*           */, Min: some(0.6), Max: some(07.9), Sum: some(11.8), Count: 3},
-		want: expdp{PosNeg: obs0(1.5, 5.3, 11.6, 0.6, 3.3, 7.9), Min: some(0.6), Max: some(11.6), Sum: some(30.2), Count: 6},
+		dp:   expdp{PosNeg: obs0(1.5, 5.3, 11.6) /*          */, Min: new(1.5), Max: new(11.6), Sum: new(18.4), Count: 3},
+		in:   expdp{PosNeg: obs0(0.6, 3.3, 7.9) /*           */, Min: new(0.6), Max: new(07.9), Sum: new(11.8), Count: 3},
+		want: expdp{PosNeg: obs0(1.5, 5.3, 11.6, 0.6, 3.3, 7.9), Min: new(0.6), Max: new(11.6), Sum: new(30.2), Count: 6},
 	}, {
 		name: "zero/count",
 		dp:   expdp{PosNeg: bins{0, 1, 2}.Into(), Zt: 0, Zc: 3, Count: 5},
@@ -312,8 +312,4 @@ func rawbs(data []uint64, offset int32) expo.Buckets {
 	bs.BucketCounts().FromRaw(data)
 	bs.SetOffset(offset)
 	return bs
-}
-
-func some[T any](v T) *T {
-	return &v
 }
