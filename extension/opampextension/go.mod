@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/google/uuid v1.6.0
 	github.com/oklog/ulid/v2 v2.1.2
-	github.com/open-telemetry/opamp-go v0.24.0
+	github.com/open-telemetry/opamp-go v0.25.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.162.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.162.0
 	github.com/shirou/gopsutil/v4 v4.26.8
@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/component v1.68.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/component/componentstatus v0.162.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/component/componenttest v0.162.1-0.20261002061526-adaf75eebce7
+	go.opentelemetry.io/collector/config/confignet v1.68.0
 	go.opentelemetry.io/collector/config/configopaque v1.68.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/config/configtls v1.68.1-0.20261002061526-adaf75eebce7
 	go.opentelemetry.io/collector/confmap v1.68.1-0.20261002061526-adaf75eebce7
@@ -30,6 +31,7 @@ require (
 )
 
 require (
+	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
