@@ -19,6 +19,9 @@ $defs:
         description: The maximum duration the acknowledgement loop waits before sending the acknowledgements.
         type: string
         format: duration
+      trigger_ack_batch_size:
+        description: The number of pending acknowledgements (acks and nacks combined) that triggers an immediate flush, without waiting for trigger_ack_batch_duration. 0 (the default) disables the size trigger.
+        type: integer
 type: object
 properties:
   client_id:
@@ -36,11 +39,17 @@ properties:
   flow_control:
     $ref: flow_control_config
   ignore_encoding_error:
-    description: Ignore errors when the configured encoder fails to decoding a PubSub messages
+    description: 'Ignore errors when the configured encoder fails to decoding a PubSub messages. This asks for the behavior of on_decode_error set to "ignore", which is also the default, so setting it changes nothing on its own; setting it together with a conflicting on_decode_error fails validation. Deprecated: use on_decode_error set to "ignore" instead.'
     type: boolean
   insecure:
     description: Only has effect if Endpoint is not ""
     type: boolean
+  on_decode_error:
+    description: on_decode_error sets how a message that the configured encoding fails to decode is handled. "ignore" (the default) acknowledges and drops the message, counting it in the encoding error metric. "propagate" leaves the message unacknowledged, so it is redelivered after the ack deadline expires; this was the previous default and it makes an undecodable message redeliver forever. "nack" negatively acknowledges the message (a modify ack deadline of 0), so the subscription retry policy or dead letter policy applies.
+    type: string
+  on_pipeline_error:
+    description: on_pipeline_error sets how a message that the downstream pipeline rejects with a permanent error is handled. "ack" (the default) acknowledges and drops the message. "nack" negatively acknowledges the message, so the subscription retry policy or dead letter policy applies. Transient rejections (a full sending queue, memory limiter refusal) are never acknowledged nor negatively acknowledged, so the message is redelivered after the ack deadline expires regardless of this setting.
+    type: string
   project:
     description: Google Cloud Project ID where the Pubsub client will connect to
     type: string
