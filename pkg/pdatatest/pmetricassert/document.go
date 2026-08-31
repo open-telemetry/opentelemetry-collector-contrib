@@ -24,14 +24,14 @@ const documentVersion = 1
 // identity fields only. Operator-suffix extensions (/include, /count, ...)
 // are tracked as follow-ups.
 type document struct {
-	Version   int                 `yaml:"version"`
-	Signal    string              `yaml:"signal"`
-	Resources []resourceAssertion `yaml:"resources"`
+	Version   int                `yaml:"version"`
+	Signal    string             `yaml:"signal"`
+	Resources ResourcesAssertion `yaml:",inline"`
 }
 
 type resourceAssertion struct {
-	Attributes map[string]any   `yaml:"attributes,omitempty"`
-	Scopes     []scopeAssertion `yaml:"scopes"`
+	Attributes map[string]any  `yaml:"attributes,omitempty"`
+	Scopes     ScopesAssertion `yaml:",inline"`
 }
 
 type scopeAssertion struct {
@@ -39,7 +39,7 @@ type scopeAssertion struct {
 	// identity, so it has no /exists or /regex operator (unlike Version).
 	Name    string
 	Version versionMatcher
-	Metrics []metricAssertion
+	Metrics MetricsAssertion
 }
 
 type matcherOp int
@@ -66,7 +66,7 @@ type scopeAssertionYAML struct {
 	VersionExists *bool   `yaml:"version/exists,omitempty"`
 	VersionRegex  *string `yaml:"version/regex,omitempty"`
 
-	Metrics []metricAssertion `yaml:"metrics"`
+	Metrics MetricsAssertion `yaml:",inline"`
 }
 
 // UnmarshalYAML decodes a scope, resolving the version operator keys into a versionMatcher.
@@ -143,12 +143,12 @@ func (s scopeAssertion) MarshalYAML() (any, error) {
 }
 
 type metricAssertion struct {
-	Name        string               `yaml:"name"`
-	Type        string               `yaml:"type"`
-	Unit        string               `yaml:"unit,omitempty"`
-	Temporality string               `yaml:"temporality,omitempty"`
-	Monotonic   *bool                `yaml:"monotonic,omitempty"`
-	Datapoints  []datapointAssertion `yaml:"datapoints,omitempty"`
+	Name        string              `yaml:"name"`
+	Type        string              `yaml:"type"`
+	Unit        string              `yaml:"unit,omitempty"`
+	Temporality string              `yaml:"temporality,omitempty"`
+	Monotonic   *bool               `yaml:"monotonic,omitempty"`
+	Datapoints  DatapointsAssertion `yaml:",inline"`
 }
 
 type datapointAssertion struct {
@@ -193,15 +193,51 @@ func readDocument(path string) (*document, error) {
 // before comparison, so pmetricassert does not accept the empty-metric
 // encoding as a valid assertion either.
 func expandShorthand(doc *document) {
-	for i := range doc.Resources {
-		for j := range doc.Resources[i].Scopes {
-			for k := range doc.Resources[i].Scopes[j].Metrics {
-				m := &doc.Resources[i].Scopes[j].Metrics[k]
-				if len(m.Datapoints) == 0 {
-					m.Datapoints = []datapointAssertion{{}}
-				}
-			}
-		}
+	if len(doc.Resources.Exact) > 0 {
+		doc.Resources.Values = doc.Resources.Exact
+		doc.Resources.Exact = nil
+	}
+	for i := range doc.Resources.Values {
+		expandResourceShorthand(&doc.Resources.Values[i])
+	}
+	for i := range doc.Resources.Includes {
+		expandResourceShorthand(&doc.Resources.Includes[i])
+	}
+}
+
+func expandResourceShorthand(r *resourceAssertion) {
+	if len(r.Scopes.Exact) > 0 {
+		r.Scopes.Values = r.Scopes.Exact
+		r.Scopes.Exact = nil
+	}
+	for i := range r.Scopes.Values {
+		expandScopeShorthand(&r.Scopes.Values[i])
+	}
+	for i := range r.Scopes.Includes {
+		expandScopeShorthand(&r.Scopes.Includes[i])
+	}
+}
+
+func expandScopeShorthand(s *scopeAssertion) {
+	if len(s.Metrics.Exact) > 0 {
+		s.Metrics.Values = s.Metrics.Exact
+		s.Metrics.Exact = nil
+	}
+	for i := range s.Metrics.Values {
+		expandMetricShorthand(&s.Metrics.Values[i])
+	}
+	for i := range s.Metrics.Includes {
+		expandMetricShorthand(&s.Metrics.Includes[i])
+	}
+}
+
+func expandMetricShorthand(m *metricAssertion) {
+	if len(m.Datapoints.Exact) > 0 {
+		m.Datapoints.Values = m.Datapoints.Exact
+		m.Datapoints.Exact = nil
+	}
+	if len(m.Datapoints.Values) == 0 && len(m.Datapoints.Includes) == 0 {
+		m.Datapoints.Values = []datapointAssertion{{}}
 	}
 }
 
@@ -218,15 +254,44 @@ func writeDocument(path string, doc *document) error {
 // single empty-attribute datapoint so the emitted YAML reads as "metric with
 // no dimensioning attributes" rather than "metric with one empty datapoint".
 func compactShorthand(doc *document) {
-	for i := range doc.Resources {
-		for j := range doc.Resources[i].Scopes {
-			for k := range doc.Resources[i].Scopes[j].Metrics {
-				m := &doc.Resources[i].Scopes[j].Metrics[k]
-				if len(m.Datapoints) == 1 && isEmptyDatapointAssertion(m.Datapoints[0]) {
-					m.Datapoints = nil
-				}
-			}
-		}
+	for i := range doc.Resources.Values {
+		compactResourceShorthand(&doc.Resources.Values[i])
+	}
+	for i := range doc.Resources.Includes {
+		compactResourceShorthand(&doc.Resources.Includes[i])
+	}
+	if len(doc.Resources.Includes) == 0 {
+		doc.Resources = ResourcesAssertion{Values: doc.Resources.Values}
+	}
+}
+
+func compactResourceShorthand(r *resourceAssertion) {
+	for i := range r.Scopes.Values {
+		compactScopeShorthand(&r.Scopes.Values[i])
+	}
+	for i := range r.Scopes.Includes {
+		compactScopeShorthand(&r.Scopes.Includes[i])
+	}
+	if len(r.Scopes.Includes) == 0 {
+		r.Scopes = ScopesAssertion{Values: r.Scopes.Values}
+	}
+}
+
+func compactScopeShorthand(s *scopeAssertion) {
+	for i := range s.Metrics.Values {
+		compactMetricShorthand(&s.Metrics.Values[i])
+	}
+	for i := range s.Metrics.Includes {
+		compactMetricShorthand(&s.Metrics.Includes[i])
+	}
+	if len(s.Metrics.Includes) == 0 {
+		s.Metrics = MetricsAssertion{Values: s.Metrics.Values}
+	}
+}
+
+func compactMetricShorthand(m *metricAssertion) {
+	if len(m.Datapoints.Values) == 1 && isEmptyDatapointAssertion(m.Datapoints.Values[0]) && len(m.Datapoints.Includes) == 0 {
+		m.Datapoints = DatapointsAssertion{}
 	}
 }
 
