@@ -21,7 +21,7 @@ resourceLogs:
                   stringValue: e755e09c-42f9-4c5c-9064-EXAMPLE228c7
               - key: rpc.method
                 value:
-                  stringValue: StartInstances
+                  stringValue: ec2.amazonaws.com/StartInstances
               - key: rpc.system
                 value:
                   stringValue: AwsApiCall
@@ -186,7 +186,7 @@ resourceLogs:
                   stringValue: ba0801a1-87ec-4d26-be87-EXAMPLE75bbb
               - key: rpc.method
                 value:
-                  stringValue: CreateUser
+                  stringValue: iam.amazonaws.com/CreateUser
               - key: rpc.system
                 value:
                   stringValue: AwsApiCall
@@ -291,7 +291,7 @@ resourceLogs:
                   stringValue: bb3496d4-5252-4660-9c28-3c6aebdb21c0
               - key: rpc.method
                 value:
-                  stringValue: Publish
+                  stringValue: sns.amazonaws.com/Publish
               - key: rpc.system
                 value:
                   stringValue: AwsApiCall
@@ -475,7 +475,7 @@ resourceLogs:
                   stringValue: 694d604a-d190-4470-8dd1-EXAMPLEe20c1
               - key: rpc.method
                 value:
-                  stringValue: UpdateTrail
+                  stringValue: cloudtrail.amazonaws.com/UpdateTrail
               - key: rpc.system
                 value:
                   stringValue: AwsApiCall
@@ -566,7 +566,7 @@ resourceLogs:
                   stringValue: a1b2c3d4-5678-90ab-cdef-EXAMPLE22222
               - key: rpc.method
                 value:
-                  stringValue: ConsoleLogin
+                  stringValue: signin.amazonaws.com/ConsoleLogin
               - key: rpc.system
                 value:
                   stringValue: AwsConsoleSignIn
@@ -649,7 +649,7 @@ resourceLogs:
                   stringValue: a24b3967-ddad-417f-9b22-2332b918db06
               - key: rpc.method
                 value:
-                  stringValue: RotateKey
+                  stringValue: kms.amazonaws.com/RotateKey
               - key: rpc.system
                 value:
                   stringValue: AwsServiceEvent
