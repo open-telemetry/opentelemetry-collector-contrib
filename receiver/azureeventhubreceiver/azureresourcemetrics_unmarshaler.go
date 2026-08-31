@@ -85,10 +85,7 @@ type azureResourceMetricRecord struct {
 	MetricName string `json:"metricName"`
 	TimeGrain  string `json:"timeGrain"`
 
-	// Aggregates are pointers so an aggregate absent from the source record can
-	// be distinguished from a genuine 0 value: diagnostic settings only export
-	// the aggregates a resource supports, and coercing missing ones to 0
-	// fabricated 0-valued timeseries downstream.
+	// nil means the aggregate was omitted from the source record.
 	Total   *float64 `json:"total"`
 	Count   *float64 `json:"count"`
 	Minimum *float64 `json:"minimum"`

@@ -178,10 +178,6 @@ func (r ResourceMetricsUnmarshaler) unmarshalRecord(allResourceScopeMetrics map[
 
 	metrics := scopeMetrics.Metrics()
 	for _, agg := range r.aggregations {
-		// Aggregates are pointers so an aggregate absent from the source record can be
-		// distinguished from a genuine 0 value; diagnostic settings only export the
-		// aggregates a resource supports, and coercing missing ones to 0 fabricated
-		// 0-valued timeseries downstream.
 		var value *float64
 		switch agg {
 		case AggregationTotal:
