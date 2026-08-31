@@ -53,13 +53,9 @@ type policy struct {
 // needed by any sampler implementations.
 type TraceData struct {
 	samplingpolicy.TraceData
-	FinalDecision samplingpolicy.Decision
-	PolicyName    string
-	// EffectiveThreshold is the sampling threshold associated with a Sampled
-	// decision, kept so that late-arriving spans for this trace can have the
-	// same threshold written into their tracestate as the spans evaluated at
-	// decision time.
-	EffectiveThreshold pkgsampling.Threshold
+	FinalDecision  samplingpolicy.Decision
+	FinalThreshold pkgsampling.Threshold
+	PolicyName     string
 
 	arrivalTime   time.Time
 	decisionTime  time.Time
@@ -834,8 +830,8 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 		// retrieved batches back to trace state for this decision.
 		c.trace.ReceivedBatches = c.data.ReceivedBatches
 		c.trace.FinalDecision = decision
+		c.trace.FinalThreshold = threshold
 		c.trace.PolicyName = policyName
-		c.trace.EffectiveThreshold = threshold
 
 		if decision == samplingpolicy.Sampled {
 			tsp.releaseSampledTrace(ctx, c.id, c.trace)
@@ -898,7 +894,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, numDropP
 		samplingpolicy.Dropped:          nil,
 	}
 
-	effectiveThreshold := pkgsampling.NeverSampleThreshold
+	threshold := pkgsampling.Threshold{}
 	haveThreshold := false
 
 	for i := numDropPolicies; i < len(tsp.policies); i++ {
@@ -918,15 +914,18 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, numDropP
 
 		metrics.addDecision(i, decision, traceData.SpanCount, int64(traceData.SizeBytes))
 
-		// We associate the first policy with the sampling decision to understand what policy sampled a span
+		// Keep track of which policy was used so that we can understand which
+		// policy sampled/dropped a span.
 		if samplingDecisions[decision] == nil {
 			samplingDecisions[decision] = p
 		}
 
 		if decision == samplingpolicy.Sampled {
-			if !haveThreshold || pkgsampling.ThresholdLessThan(th, effectiveThreshold) {
-				effectiveThreshold = th
+			if !haveThreshold || pkgsampling.ThresholdLessThan(th, threshold) {
+				threshold = th
 				haveThreshold = true
+				// Ensure we record the policy that will match the span's threshold.
+				samplingDecisions[samplingpolicy.Sampled] = p
 			}
 		}
 
@@ -963,8 +962,8 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, numDropP
 		sampling.SetAttrOnScopeSpans(traceData.ReceivedBatches, "tailsampling.policy", sampledPolicy.name)
 	}
 
-	if finalDecision == samplingpolicy.Sampled && haveThreshold && tsp.useTracestate {
-		sampling.WriteEffectiveThreshold(ctx, traceData.ReceivedBatches, effectiveThreshold, tsp.telemetry.ProcessorTailSamplingCountSpansWithUnparseableTracestate)
+	if finalDecision == samplingpolicy.Sampled && tsp.useTracestate {
+		sampling.WriteEffectiveThreshold(ctx, traceData.ReceivedBatches, threshold, tsp.telemetry.ProcessorTailSamplingCountSpansWithUnparseableTracestate)
 	}
 
 	switch finalDecision {
@@ -976,16 +975,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, numDropP
 		metrics.decisionDropped++
 	}
 
-	if !haveThreshold {
-		// No policy reported a threshold for this decision (e.g. a Sampled
-		// decision reached only through the deprecated invert-match
-		// combinators). Report the same AlwaysSampleThreshold that a
-		// non-probabilistic (filter-style) policy would, rather than
-		// leaking effectiveThreshold's internal "nothing accumulated yet"
-		// value.
-		effectiveThreshold = pkgsampling.AlwaysSampleThreshold
-	}
-	return finalDecision, getPolicyName(sampledPolicy), effectiveThreshold
+	return finalDecision, getPolicyName(sampledPolicy), threshold
 }
 
 // makeDecisionOnSpanIngest is used by span-ingest mode. It only returns
@@ -1146,7 +1136,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 				actualData.FinalDecision = decision
 				actualData.PolicyName = policyName
 				if decision == samplingpolicy.Sampled {
-					actualData.EffectiveThreshold = threshold
+					actualData.FinalThreshold = threshold
 					tsp.releaseSampledTrace(tsp.ctx, id, actualData)
 				} else {
 					tsp.releaseNotSampledTrace(id, actualData)
@@ -1175,7 +1165,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		traceTd := ptrace.NewTraces()
 		appendToTraces(traceTd, rss)
 		if tsp.useTracestate {
-			sampling.WriteEffectiveThreshold(tsp.ctx, traceTd, actualData.EffectiveThreshold, tsp.telemetry.ProcessorTailSamplingCountSpansWithUnparseableTracestate)
+			sampling.WriteEffectiveThreshold(tsp.ctx, traceTd, actualData.FinalThreshold, tsp.telemetry.ProcessorTailSamplingCountSpansWithUnparseableTracestate)
 		}
 		tsp.forwardSpans(tsp.ctx, traceTd)
 	case samplingpolicy.NotSampled:
@@ -1274,7 +1264,7 @@ func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, i
 	}
 	tsp.sampledIDCache.Put(id, cache.DecisionMetadata{
 		PolicyName: td.PolicyName,
-		Threshold:  td.EffectiveThreshold,
+		Threshold:  td.FinalThreshold,
 	})
 	tsp.forwardSpans(ctx, td.ReceivedBatches)
 	_, ok := tsp.sampledIDCache.Get(id)

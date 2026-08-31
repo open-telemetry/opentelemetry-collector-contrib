@@ -24,10 +24,8 @@ type Cache interface {
 type DecisionMetadata struct {
 	PolicyName string
 	// Threshold is the effective sampling threshold that was used for the
-	// trace's decision, if any policy reported one. Its zero value is
-	// sampling.AlwaysSampleThreshold, which is also what non-probabilistic
-	// (filter-style) policies report for a Sampled decision, so an absent
-	// value is indistinguishable from -- and treated the same as -- an
-	// explicit always-sample report.
+	// trace's decision. The zero value is sampling.AlwaysSampleThreshold,
+	// which is what non-probabilistic (filter-style) policies report for a
+	// Sampled decision.
 	Threshold sampling.Threshold
 }

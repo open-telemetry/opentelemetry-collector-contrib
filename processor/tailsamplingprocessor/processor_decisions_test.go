@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
@@ -263,6 +264,76 @@ func TestSamplingMultiplePolicies_WithRecordPolicy(t *testing.T) {
 		assert.FailNow(t, "Did not find expected attribute")
 	}
 	require.Equal(t, "mock-policy-1", policy.AsString())
+}
+
+// TestSamplingMultiplePoliciesWithDifferentThresholds_WithRecordPolicy verifies
+// that when multiple policies vote Sampled at different rates, the recorded
+// tailsampling.policy attribute names the policy whose threshold is actually
+// reported (the least-strict one), not simply whichever policy was evaluated
+// first.
+func TestSamplingMultiplePoliciesWithDifferentThresholds_WithRecordPolicy(t *testing.T) {
+	gate := metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate
+	prev := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
+	})
+
+	controller := newTestTSPController()
+	nextConsumer := new(consumertest.TracesSink)
+
+	mpe1 := &mockPolicyEvaluator{}
+	mpe2 := &mockPolicyEvaluator{}
+
+	policies := []*policy{
+		{name: "mock-policy-1", evaluator: mpe1, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
+		{name: "mock-policy-2", evaluator: mpe2, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-2"))},
+	}
+
+	cfg := Config{
+		SamplingStrategy: samplingStrategyTraceComplete,
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
+		Options:          []Option{withTestController(controller), withPolicies(policies), withRecordPolicy(), withUseTracestate()},
+	}
+
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// mock-policy-1 is evaluated first but samples at a stricter rate (25%);
+	// mock-policy-2 samples at a less strict rate (50%). The effective
+	// threshold is the least-strict of the two, so mock-policy-2 -- not the
+	// first-evaluated mock-policy-1 -- should be the one attributed.
+	thc, err := pkgsampling.TValueToThreshold("c")
+	require.NoError(t, err)
+	th8, err := pkgsampling.TValueToThreshold("8")
+	require.NoError(t, err)
+	mpe1.SetDecision(samplingpolicy.Sampled)
+	mpe1.SetThreshold(thc)
+	mpe2.SetDecision(samplingpolicy.Sampled)
+	mpe2.SetThreshold(th8)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
+
+	controller.waitForTick()
+	controller.waitForTick()
+
+	require.Equal(t, 1, nextConsumer.SpanCount())
+
+	span := nextConsumer.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	scope := nextConsumer.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Scope()
+
+	policyAttr, ok := scope.Attributes().Get("tailsampling.policy")
+	if !ok {
+		assert.FailNow(t, "Did not find expected attribute")
+	}
+	require.Equal(t, "mock-policy-2", policyAttr.AsString(), "attribution should follow the threshold-owning policy, not evaluation order")
+	require.Contains(t, span.TraceState().AsRaw(), "th:8", "tracestate should carry mock-policy-2's less-strict threshold")
 }
 
 func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
