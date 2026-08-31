@@ -15,8 +15,8 @@ import (
 
 // Config represents user settings for kafkametrics receiver
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	configkafka.ClientConfig       `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ClientConfig     configkafka.ClientConfig       `mapstructure:",squash"`
 
 	// Alias name of the kafka cluster
 	ClusterAlias string `mapstructure:"cluster_alias"`
@@ -39,7 +39,7 @@ type Config struct {
 	Scrapers []string `mapstructure:"scrapers"`
 
 	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {

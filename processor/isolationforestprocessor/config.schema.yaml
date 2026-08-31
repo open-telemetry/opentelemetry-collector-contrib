@@ -84,6 +84,8 @@ properties:
     $ref: feature_config
   forest_size:
     type: integer
+  min_node_samples:
+    type: integer
   min_samples:
     type: integer
   mode:

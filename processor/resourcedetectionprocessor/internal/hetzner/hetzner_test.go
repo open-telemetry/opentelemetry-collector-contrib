@@ -30,7 +30,7 @@ func withFakeMetaServer(t *testing.T, mux http.Handler) {
 
 func TestNewDetector(t *testing.T) {
 	dcfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), dcfg)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), dcfg, false)
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }
@@ -45,7 +45,7 @@ func TestHetznerDetector_Detect_OK(t *testing.T) {
 
 	cfg := CreateDefaultConfig()
 	cfg.ResourceAttributes.CloudPlatform.Enabled = true
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())
@@ -80,7 +80,7 @@ func TestHetznerDetector_NotOnHetzner(t *testing.T) {
 	t.Cleanup(func() { newHcloudClient = orig })
 
 	cfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())
@@ -97,7 +97,7 @@ func TestHetznerDetector_HostnameError(t *testing.T) {
 	withFakeMetaServer(t, mux)
 
 	cfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())

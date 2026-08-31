@@ -1,5 +1,6 @@
 display_name: Delta to Rate Processor
-type: deltatorate
+type: delta_to_rate
+deprecated_type: deltatorate
 
 description: |
   The Delta to Rate Processor (`deltatorateprocessor`) converts delta sum metrics to rate metrics. This rate is a gauge. 

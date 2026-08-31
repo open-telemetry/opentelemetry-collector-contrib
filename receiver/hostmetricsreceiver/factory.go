@@ -72,7 +72,7 @@ func NewFactory() receiver.Factory {
 		createDefaultConfig,
 		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 		xreceiver.WithLogs(createLogsReceiver, metadata.LogsStability),
-		xreceiver.WithDeprecatedTypeAlias((metadata.DeprecatedType)),
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 

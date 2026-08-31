@@ -8,7 +8,8 @@ status:
     development: [profiles]
   distributions: [core, contrib]
   codeowners:
-    active: [pavolloffay, MovieStoreGuy, axw, paulojmdias]
+    active: [pavolloffay, MovieStoreGuy, paulojmdias]
+    emeritus: [axw]
 
 feature_gates:
   - id: exporter.kafka.useRequestType
@@ -22,8 +23,6 @@ feature_gates:
 
 tests:
   config: {}
-  skip_lifecycle: true
-  skip_shutdown: true
   goleak:
     ignore:
       top:

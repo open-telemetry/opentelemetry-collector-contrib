@@ -1,0 +1,16 @@
+change_type: bug_fix
+
+component: receiver/cloudflare
+
+note: Apply `max_request_body_size` to the decompressed size of gzip-encoded request bodies
+
+issues: [49232]
+
+subtext: |
+  `max_request_body_size` was enforced with `http.MaxBytesReader`, which bounds the
+  compressed bytes only. A small gzip-encoded request could therefore still expand
+  without limit while being buffered in memory. The decompressed stream is now bounded
+  by the same setting, and a request whose decompressed body exceeds it is rejected with
+  422 rather than read in full.
+
+change_logs: [user]

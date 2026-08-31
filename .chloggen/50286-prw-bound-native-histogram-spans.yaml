@@ -1,0 +1,16 @@
+change_type: bug_fix
+
+component: receiver/prometheus_remote_write
+
+note: Stop native histogram bucket spans from driving unbounded memory and CPU use.
+
+issues: [50286]
+
+subtext: |
+  A remote write request could describe a gap of billions of histogram buckets in
+  a few bytes, and the receiver reserved memory and iterated in proportion to that
+  gap. Bucket spans are now validated before conversion, and a native histogram is
+  dropped when its spans are invalid, when it would expand to more than 16384
+  buckets, or when a request has already used its budget of 4194304 buckets.
+
+change_logs: [user]

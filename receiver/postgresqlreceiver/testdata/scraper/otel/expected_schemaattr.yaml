@@ -123,7 +123,7 @@ resourceMetrics:
           - description: The number of database locks.
             gauge:
               dataPoints:
-                - asInt: "5600"
+                - asInt: "2"
                   attributes:
                     - key: lock_type
                       value:
@@ -133,20 +133,7 @@ resourceMetrics:
                         stringValue: AccessShareLock
                     - key: relation
                       value:
-                        stringValue: pg_class
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "3600"
-                  attributes:
-                    - key: lock_type
-                      value:
-                        stringValue: relation
-                    - key: mode
-                      value:
-                        stringValue: AccessShareLock
-                    - key: relation
-                      value:
-                        stringValue: pg_locks
+                        stringValue: pg_database
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: postgresql.database.locks
@@ -219,7 +206,7 @@ resourceMetrics:
             stringValue: SAMBALAM-M-P4X5:5432
     scopeMetrics:
       - metrics:
-          - description: The number of backends.
+          - description: The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.
             name: postgresql.backends
             sum:
               aggregationTemporality: 2
@@ -258,6 +245,37 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
+          - description: The number of database locks.
+            gauge:
+              dataPoints:
+                - asInt: "5600"
+                  attributes:
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_class
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "3600"
+                  attributes:
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_locks
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.database.locks
+            unit: '{lock}'
           - description: The database disk usage.
             name: postgresql.db_size
             sum:

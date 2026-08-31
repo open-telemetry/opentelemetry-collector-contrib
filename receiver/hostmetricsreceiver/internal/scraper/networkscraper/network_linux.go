@@ -33,7 +33,7 @@ var allTCPStates = []string{
 }
 
 func (s *networkScraper) recordNetworkConntrackMetrics(ctx context.Context) error {
-	if !s.config.Metrics.SystemNetworkConntrackCount.Enabled && !s.config.Metrics.SystemNetworkConntrackMax.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.SystemNetworkConntrackCount.Enabled && !s.config.MetricsBuilderConfig.Metrics.SystemNetworkConntrackMax.Enabled {
 		return nil
 	}
 	now := pcommon.NewTimestampFromTime(time.Now())

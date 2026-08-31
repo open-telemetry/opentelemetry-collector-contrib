@@ -104,7 +104,9 @@ func NewDimensionClient(options DimensionClientOptions) *DimensionClient {
 			DialContext: (&net.Dialer{
 				Timeout:   5 * time.Second,
 				KeepAlive: 30 * time.Second,
-				DualStack: true,
+				// TODO: SA1019: (net.Dialer).DualStack has been deprecated since Go 1.12: Fast Fallback is enabled by default. To disable, set FallbackDelay to a negative value.
+				// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50430
+				DualStack: true, //nolint:staticcheck
 			}).DialContext,
 			MaxConnsPerHost:     options.MaxConnsPerHost,
 			MaxIdleConns:        options.MaxIdleConns,
@@ -274,7 +276,8 @@ func (dc *DimensionClient) handleDimensionUpdate(ctx context.Context, dimUpdate 
 					zap.Int("statusCode", statusCode),
 				)
 			}
-		})))
+		})),
+	)
 
 	req = req.WithContext(
 		context.WithValue(req.Context(), RequestSuccessCallbackKey, RequestSuccessCallback(func([]byte) {
@@ -284,7 +287,8 @@ func (dc *DimensionClient) handleDimensionUpdate(ctx context.Context, dimUpdate 
 					zap.String("dimensionUpdate", dimUpdate.String()),
 				)
 			}
-		})))
+		})),
+	)
 
 	dc.requestSender.Send(ctx, req)
 
@@ -361,7 +365,8 @@ func (dc *DimensionClient) makePatchRequest(ctx context.Context, dim *DimensionU
 		ctx,
 		http.MethodPatch,
 		strings.TrimRight(url.String(), "/")+"/_/sfxagent",
-		bytes.NewReader(json))
+		bytes.NewReader(json),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -404,7 +409,8 @@ func (dc *DimensionClient) makePutRequest(ctx context.Context, dim *DimensionUpd
 		ctx,
 		http.MethodPut,
 		strings.TrimRight(url.String(), "/"),
-		bytes.NewReader(json))
+		bytes.NewReader(json),
+	)
 	if err != nil {
 		return nil, err
 	}

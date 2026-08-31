@@ -12,7 +12,8 @@ headers to the downstream pipeline, giving access to the rest of the pipeline to
 | Distributions | [core], [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fkafka%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fkafka) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fkafka%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fkafka) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_kafka)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_kafka&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@pavolloffay](https://www.github.com/pavolloffay), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy), [@axw](https://www.github.com/axw), [@paulojmdias](https://www.github.com/paulojmdias) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@pavolloffay](https://www.github.com/pavolloffay), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy), [@paulojmdias](https://www.github.com/paulojmdias) |
+| Emeritus      | [@axw](https://www.github.com/axw) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -134,6 +135,9 @@ The following settings can be optionally configured:
     **Note: when `error_backoff` is enabled, the failed record is automatically retried on the next poll cycle once all retries are exhausted. Without `error_backoff`, the partition remains paused until a rebalance occurs.**
   - `on_permanent_error`: (default = value of `on_error`) If false, messages that generate permanent errors are not marked. If true, messages that generate permanent errors are marked.
     **Note: this can block the entire partition in case a message processing returns a permanent error. Permanent errors are not retried via `error_backoff`, but the uncommitted message will be reprocessed after a rebalance.**
+- `partition_processing`:
+  - `independent` (default = false): Process each assigned topic partition sequentially in its own worker so a blocked partition does not block polling healthy partitions. Requires `autocommit.enable` to be true.
+  - `max_buffered_batches` (default = 1): Maximum number of fetched batches waiting for each partition worker. Must be greater than zero when independent processing is enabled.
 - `header_extraction`:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel pipeline
   - `headers` (default = []): List of headers they'd like to extract from kafka record.
@@ -307,3 +311,23 @@ In the example above:
   but will exclude `logs-test` and `logs-dev`
 - For metrics: the receiver will consume from topics like `metrics-app`, `metrics-infra`
   but will exclude any topics starting with `metrics-internal-`
+
+#### Independent partition processing
+
+> **NOTE**: Independent partition processing requires `autocommit.enable: true`. The receiver rejects configurations that combine independent processing with manual commits.
+
+Independent partition processing keeps records ordered within each partition while allowing other assigned partitions to continue when one downstream consumer is blocked. Each partition has a bounded mailbox. A full mailbox pauses only that partition and resumes it when capacity becomes available.
+
+The receiver creates one worker and mailbox per assigned partition. `max_buffered_batches` limits the number of fetched batches waiting in each mailbox, not the number of records or workers.
+
+Resource usage grows with the number of assigned partitions and `max_buffered_batches`. Increasing mailbox capacity allows more fetched data to remain in memory while waiting for processing.
+
+When a partition is revoked, its worker is cancelled and queued batches are discarded. The next owner fetches those records again from the committed offset, so standard Kafka at-least-once delivery and possible duplication still apply.
+
+```yaml
+receivers:
+  kafka:
+    partition_processing:
+      independent: true
+      max_buffered_batches: 1
+```

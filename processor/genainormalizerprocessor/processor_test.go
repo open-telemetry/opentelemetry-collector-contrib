@@ -433,6 +433,25 @@ func TestProcessTraces_LeavesSchemaURLWhenNoMappingFires(t *testing.T) {
 	assert.Empty(t, ss.SchemaUrl(), "schema_url must not be set when no mapping fires")
 }
 
+func TestProcessTraces_LeavesExistingSchemaURLWhenOverwriteEnabledButNoMappingFires(t *testing.T) {
+	p := &genaiNormalizerProcessor{
+		overwriteSchemaURL: true,
+		sources: []sourceNormalizer{
+			newNormalizer(map[string]string{"src.model": "dst.model"}, true, false),
+		},
+	}
+
+	td, span := newSpan()
+	td.ResourceSpans().At(0).ScopeSpans().At(0).SetSchemaUrl("https://opentelemetry.io/schemas/1.38.0")
+	span.Attributes().PutStr("http.method", "GET")
+
+	_, err := p.processTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	ss := td.ResourceSpans().At(0).ScopeSpans().At(0)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.38.0", ss.SchemaUrl())
+}
+
 func TestProcessTraces_PreservesExistingSchemaURL(t *testing.T) {
 	// Existing schema_url must not be overridden. Other attributes on the
 	// scope may still follow the original semantic conventions, and
@@ -455,8 +474,30 @@ func TestProcessTraces_PreservesExistingSchemaURL(t *testing.T) {
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.38.0", ss.SchemaUrl())
 }
 
+func TestProcessTraces_OverwritesExistingSchemaURLWhenEnabled(t *testing.T) {
+	p := newGenaiNormalizerProcessor(&Config{
+		OverwriteSchemaURL: true,
+		Sources: []Source{{
+			Name:            "test",
+			RemoveOriginals: true,
+			Mappings:        map[string]string{"src.model": "dst.model"},
+		}},
+	})
+
+	td, span := newSpan()
+	td.ResourceSpans().At(0).ScopeSpans().At(0).SetSchemaUrl("https://opentelemetry.io/schemas/1.38.0")
+	span.Attributes().PutStr("src.model", "m")
+
+	_, err := p.processTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	ss := td.ResourceSpans().At(0).ScopeSpans().At(0)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.40.0", ss.SchemaUrl())
+}
+
 func TestProcessTraces_DoesNotModifyResourceSchemaURL(t *testing.T) {
 	p := &genaiNormalizerProcessor{
+		overwriteSchemaURL: true,
 		sources: []sourceNormalizer{
 			newNormalizer(map[string]string{"src.model": "dst.model"}, true, false),
 		},

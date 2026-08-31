@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"google.golang.org/grpc"
 
@@ -33,7 +33,7 @@ type Config struct {
 
 	RetryConfig configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
-	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	ClientConfig configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// Arrow includes settings specific to OTel Arrow.
 	Arrow ArrowConfig `mapstructure:"arrow"`
@@ -103,7 +103,7 @@ type ArrowConfig struct {
 
 var _ component.Config = (*Config)(nil)
 
-var _ xconfmap.Validator = (*ArrowConfig)(nil)
+var _ confmap.Validator = (*ArrowConfig)(nil)
 
 func (cfg *Config) Validate() error {
 	err := cfg.Arrow.Validate()

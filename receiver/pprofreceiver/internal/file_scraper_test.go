@@ -9,7 +9,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver/internal/metadata"
 )
 
 func TestScrapeFile(t *testing.T) {
@@ -47,4 +50,29 @@ func TestScrapeMultipleFilesMergesDictionaries(t *testing.T) {
 	assert.True(t, strings["betaFunction"], "merged dictionary missing string from second file")
 	assert.True(t, strings["beta.go"], "merged dictionary missing string from second file")
 	assert.True(t, strings["inuse_objects"], "merged dictionary missing string from first file")
+}
+
+func TestScrapeFile_SetsScopeName(t *testing.T) {
+	s := FileScraper{
+		Logger: zap.NewNop(),
+		Include: filepath.Join(
+			"testdata",
+			"pprof.otelcol.alloc_objects.alloc_space.inuse_objects.inuse_space.001.pb.gz",
+		),
+		BuildInfo: component.BuildInfo{Version: "1.2.3"},
+	}
+
+	p, err := s.Scrape(t.Context())
+	require.NoError(t, err)
+	require.Positive(t, p.ProfileCount())
+
+	rp := p.ResourceProfiles().At(0)
+	sp := rp.ScopeProfiles().At(0)
+
+	assert.Equal(
+		t,
+		metadata.ScopeName+"/filescraper",
+		sp.Scope().Name(),
+	)
+	require.Equal(t, "1.2.3", sp.Scope().Version())
 }

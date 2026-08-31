@@ -38,8 +38,7 @@ type Config struct {
 	// condition has an error then the payload will be routed to the default exporter. `propagate`
 	// means the processor returns the error up the pipeline.  This will result in the payload being
 	// dropped from the collector.
-	// The default value is `propagate`, but when the `connector.routing.defaultErrorModeIgnore`
-	// feature gate is enabled, the default changes to `ignore`.
+	// The default value is `ignore` when the `connector.routing.defaultErrorModeIgnore` feature gate is enabled (default), and `propagate` when disabled.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 	// DefaultPipelines contains the list of pipelines to use when a more specific record can't be
 	// found in the routing table.

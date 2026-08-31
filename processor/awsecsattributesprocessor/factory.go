@@ -22,7 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/awsecsattributesprocessor/internal/metadata"
 )
 
-// NewFactory creates a factory for the awsecsattributes processor.
+// NewFactory creates a factory for the aws_ecs_attributes processor.
 func NewFactory() processor.Factory {
 	return xprocessor.NewFactory(
 		metadata.Type,

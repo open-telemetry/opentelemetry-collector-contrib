@@ -46,7 +46,8 @@ func TestObserver(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 
 	mockClient.createPods(
 		generatePod("pod2", "default", map[string]any{
@@ -92,7 +93,8 @@ func TestObserverEmptyNamespaces(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 
 	mockClient.createPods(
 		generatePod("pod1", "default", map[string]any{"env": "test"}, "1"),
@@ -130,7 +132,8 @@ func TestObserverMultipleNamespaces(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 
 	mockClient.createPods(
 		generatePod("pod1", "default", map[string]any{"env": "test"}, "1"),
@@ -172,7 +175,8 @@ func TestObserverWithSelectors(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 
 	mockClient.createPods(
 		generatePod("pod1", "default", map[string]any{"environment": "test"}, "1"),
@@ -210,7 +214,8 @@ func TestObserverStop(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 
 	// Stop immediately
 	close(stopChan)
@@ -246,7 +251,8 @@ func TestObserverContextCancel(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	_ = obs.Start(ctx, &wg)
+	_, err = obs.Start(ctx, &wg)
+	require.NoError(t, err)
 
 	cancel()
 
@@ -278,7 +284,8 @@ func TestObserverNoObjects(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 
 	// Wait for a tick
 	time.Sleep(100 * time.Millisecond)
@@ -319,7 +326,8 @@ func TestObserverListError(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 
 	// Wait for a tick
 	time.Sleep(100 * time.Millisecond)

@@ -1,0 +1,56 @@
+
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+DECLARE
+	 @SqlStatement AS nvarchar(max)
+	,@EngineEdition AS INT = CAST(SERVERPROPERTY('EngineEdition') AS INT)
+	,@JoinClause AS nvarchar(max) = ''
+
+IF @EngineEdition = 5
+BEGIN
+	SET @JoinClause = N'
+INNER JOIN sys.database_files AS mf WITH (NOLOCK)
+	ON vfs.[database_id] = DB_ID() AND vfs.[file_id] = mf.[file_id]'
+END
+ELSE
+BEGIN
+	SET @JoinClause = N'
+INNER JOIN sys.master_files AS mf WITH (NOLOCK)
+	ON vfs.[database_id] = mf.[database_id] AND vfs.[file_id] = mf.[file_id]'
+END
+
+SET @SqlStatement = N'
+SELECT
+	 ''sqlserver_disk_io'' AS [measurement]
+	,REPLACE(@@SERVERNAME,''\'','':'') AS [sql_instance]
+	,HOST_NAME() AS [computer_name]
+	,CASE
+		WHEN mf.physical_name LIKE ''[A-Z]:\%'' THEN LEFT(mf.physical_name, 3)
+		WHEN mf.physical_name LIKE ''\\_%\_%\%'' THEN LEFT(mf.physical_name,
+			CHARINDEX(''\'', mf.physical_name,
+				CHARINDEX(''\'', mf.physical_name, 3) + 1) - 1)
+		ELSE ''/''
+	END AS [disk_drive]
+	,SUM(vfs.num_of_reads) AS [read_ops]
+	,SUM(vfs.num_of_writes) AS [write_ops]
+	,SUM(vfs.num_of_bytes_read) AS [read_bytes]
+	,SUM(vfs.num_of_bytes_written) AS [write_bytes]
+FROM sys.dm_io_virtual_file_stats(NULL, NULL) vfs'
++ @JoinClause + N'
+WHERE 1=1
+
+GROUP BY CASE
+		WHEN mf.physical_name LIKE ''[A-Z]:\%'' THEN LEFT(mf.physical_name, 3)
+		WHEN mf.physical_name LIKE ''\\_%\_%\%'' THEN LEFT(mf.physical_name,
+			CHARINDEX(''\'', mf.physical_name,
+				CHARINDEX(''\'', mf.physical_name, 3) + 1) - 1)
+		ELSE ''/''
+	END
+OPTION(RECOMPILE)'
+
+EXEC sp_executesql @SqlStatement

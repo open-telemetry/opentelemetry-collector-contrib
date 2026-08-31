@@ -36,8 +36,8 @@ func TestCreateNewLogReceiver(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	userDefinedServerConfig.WriteTimeout = 0
 	userDefinedServerConfig.ReadHeaderTimeout = 0
-	userDefinedServerConfig.IdleTimeout = 0
-	userDefinedServerConfig.KeepAlivesEnabled = false
+	userDefinedServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	userDefinedServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	userDefinedServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:8080",
@@ -47,8 +47,8 @@ func TestCreateNewLogReceiver(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	headerRegexServerConfig.WriteTimeout = 0
 	headerRegexServerConfig.ReadHeaderTimeout = 0
-	headerRegexServerConfig.IdleTimeout = 0
-	headerRegexServerConfig.KeepAlivesEnabled = false
+	headerRegexServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	headerRegexServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	headerRegexServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:8080",
@@ -58,8 +58,8 @@ func TestCreateNewLogReceiver(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	readTimeoutServerConfig.WriteTimeout = 0
 	readTimeoutServerConfig.ReadHeaderTimeout = 0
-	readTimeoutServerConfig.IdleTimeout = 0
-	readTimeoutServerConfig.KeepAlivesEnabled = false
+	readTimeoutServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	readTimeoutServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	readTimeoutServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:8080",
@@ -69,8 +69,8 @@ func TestCreateNewLogReceiver(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	writeTimeoutServerConfig.WriteTimeout = 0
 	writeTimeoutServerConfig.ReadHeaderTimeout = 0
-	writeTimeoutServerConfig.IdleTimeout = 0
-	writeTimeoutServerConfig.KeepAlivesEnabled = false
+	writeTimeoutServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	writeTimeoutServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	writeTimeoutServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:8080",
@@ -80,8 +80,8 @@ func TestCreateNewLogReceiver(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	regexCompileServerConfig.WriteTimeout = 0
 	regexCompileServerConfig.ReadHeaderTimeout = 0
-	regexCompileServerConfig.IdleTimeout = 0
-	regexCompileServerConfig.KeepAlivesEnabled = false
+	regexCompileServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	regexCompileServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	regexCompileServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:8080",
@@ -197,7 +197,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 // these requests should all succeed
 func TestHandleReq(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:0"
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
 
 	tests := []struct {
 		desc string
@@ -272,9 +272,9 @@ func TestHandleReq(t *testing.T) {
 // failure in its many forms
 func TestFailedReq(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:0"
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	headerCfg := createDefaultConfig().(*Config)
-	headerCfg.NetAddr.Endpoint = "localhost:0"
+	headerCfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	headerCfg.RequiredHeader.Key = "key-present"
 	headerCfg.RequiredHeader.Value = "value-present"
 
@@ -330,8 +330,8 @@ func TestFailedReq(t *testing.T) {
 			desc: "Request body exceeds max size",
 			cfg: func() Config {
 				c := createDefaultConfig().(*Config)
-				c.NetAddr.Endpoint = "localhost:0"
-				c.MaxRequestBodySize = 70 * 1024 // Set to 70KB limit
+				c.ServerConfig.NetAddr.Endpoint = "localhost:0"
+				c.ServerConfig.MaxRequestBodySize = 70 * 1024 // Set to 70KB limit
 				c.SplitLogsAtNewLine = true
 				return *c
 			}(),
@@ -377,7 +377,7 @@ func TestHMACSignatureSuccess(t *testing.T) {
 	signature := "sha256=" + computeHMACSHA256(secret, body)
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:0"
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	cfg.HMACSignature = HMACSignature{
 		Secret: "webhook-secret",
 		Header: "X-Hub-Signature-256",
@@ -408,7 +408,7 @@ func TestHMACSignatureWithFingerprintPrefix(t *testing.T) {
 	signature := "v1=" + computeHMACSHA256(secret, body)
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:0"
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	cfg.HMACSignature = HMACSignature{
 		Secret: "fp-secret",
 		Header: "fpjs-event-signature",
@@ -461,7 +461,7 @@ func TestHMACSignatureWithGzipBody(t *testing.T) {
 	signature := "sha256=" + computeHMACSHA256(secret, string(compressed))
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "localhost:0"
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	cfg.HMACSignature = HMACSignature{
 		Secret: configopaque.String(secret),
 		Header: "X-Hub-Signature-256",
@@ -494,7 +494,7 @@ func TestHMACSignatureFailures(t *testing.T) {
 
 	hmacCfg := func() Config {
 		cfg := createDefaultConfig().(*Config)
-		cfg.NetAddr.Endpoint = "localhost:0"
+		cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
 		cfg.HMACSignature = HMACSignature{
 			Secret: "webhook-secret",
 			Header: "X-Hub-Signature-256",
@@ -585,7 +585,7 @@ func TestHMACSignatureFailures(t *testing.T) {
 
 func TestHealthCheck(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 	receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), *defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")

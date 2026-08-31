@@ -2,6 +2,7 @@ description: Config defines user-specified configurations unique to the EC2 dete
 type: object
 properties:
   fail_on_missing_metadata:
+    description: 'Deprecated: Use the top-level fail_on_missing_metadata in the processor config instead. This field will be removed in a future release.'
     type: boolean
   max_attempts:
     type: integer

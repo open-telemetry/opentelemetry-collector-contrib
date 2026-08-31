@@ -152,28 +152,41 @@ func Test_allMatch_eval_error(t *testing.T) {
 	})
 }
 
-func Test_createAllFunction(t *testing.T) {
-	fCtx := ottl.FunctionContext{}
-	predicated := ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
-		return true, nil
+func Test_AllFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewAllFactory[any]()
+		assert.Equal(t, "All", factory.Name())
 	})
-	source := ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
-			return pcommon.NewMap(), nil
-		},
-	}
 
-	t.Run("valid args", func(t *testing.T) {
-		fn, err := createAllFunction[any](fCtx, &AllArguments[any]{
-			Source:    source,
-			Predicate: predicated,
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewAllFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &AllArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Source", "Predicate"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewAllFactory[any]()
+		args := factory.CreateDefaultArguments()
+		allArgs, ok := args.(*AllArguments[any])
+		require.True(t, ok)
+		allArgs.Source = ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return pcommon.NewMap(), nil
+			},
+		}
+		allArgs.Predicate = ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			return true, nil
 		})
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
 		require.NoError(t, err)
-		require.NotNil(t, fn)
+		assert.NotNil(t, fn)
 	})
 
-	t.Run("invalid args type", func(t *testing.T) {
-		_, err := createAllFunction[any](fCtx, &struct{}{})
-		assert.EqualError(t, err, "AllFactory args must be of type *AllArguments[K]")
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createAllFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "AllFactory args must be of type *AllArguments[K]")
 	})
 }
