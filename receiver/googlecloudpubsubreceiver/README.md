@@ -31,9 +31,20 @@ The following configuration options are supported:
   or switching between [global and regional service endpoints](https://cloud.google.com/pubsub/docs/reference/service_apis_overview#service_endpoints).
 * `insecure` (Optional): allows performing “insecure” SSL connections and transfers, useful when connecting to a local
    emulator instance. Only has effect if Endpoint is not ""
-* `ignore_encoding_error` (Optional): Ignore errors when the configured encoder fails to decoding a PubSub messages.
-  It's advised to set this to `true` when using a custom encoder, and use `receiver.googlecloudpubsub.encoding_error`
-  metric to monitor the number of errors. Ignoring the error will cause the receiver to drop the message.
+* `on_decode_error` (Optional): What to do with a message that the configured encoding fails to decode. See
+  [Error handling](#error-handling) for more details. One of:
+  * `ignore` (default): acknowledge and drop the message, counting it in the encoding error metric.
+  * `propagate`: do not acknowledge the message; it is redelivered after the ack deadline expires. This was the previous default and makes an undecodable message redeliver forever — prefer `ignore` or `nack`.
+  * `nack`: negatively acknowledge the message, so the subscription retry policy or dead-letter policy applies.
+* `on_pipeline_error` (Optional): What to do with a message that the downstream pipeline rejects with a permanent
+  error. Transient rejections (a full sending queue, memory limiter refusal) are never acknowledged nor negatively
+  acknowledged, so the message is redelivered after the ack deadline regardless of this setting. See
+  [Error handling](#error-handling) for more details. One of:
+  * `ack` (default): acknowledge and drop the message.
+  * `nack`: negatively acknowledge the message, so the subscription retry policy or dead-letter policy applies.
+* `ignore_encoding_error` (Deprecated): Use `on_decode_error: ignore` instead. Ignore errors when the configured
+  encoder fails to decoding a PubSub messages. Setting this to `true` behaves as `on_decode_error: ignore`;
+  setting both to conflicting values is a configuration error.
 * `flow_control` (Optional): Allows to fine tune the flow control settings for the subscription stream. See
   [Flow control](#flow-control) for more details.
 
@@ -100,12 +111,36 @@ service account and give the subscription `Pub/Sub Subscriber` permission.
 
 The subscription should also be of delivery type `Pull`.
 
+### Error handling
+
+The receiver acknowledges a message once it is decoded and handed to the pipeline. Two options control what
+happens on failure:
+
+* `on_decode_error` applies when the configured encoding fails to decode a message. The default `ignore`
+  acknowledges and drops the message so one undecodable message cannot occupy redelivery capacity forever;
+  with `propagate` the message is not acknowledged and is redelivered after the ack deadline expires; monitor the
+  `receiver.googlecloudpubsub.encoding_error` metric to detect this. Note that ack deadline expiry does *not*
+  count toward a subscription dead-letter policy's delivery attempts, so an undecodable message is redelivered
+  forever. Use `ignore` to acknowledge and drop such messages, or `nack` to negatively acknowledge them.
+* `on_pipeline_error` applies when the downstream pipeline returns an error for a decoded message. The default
+  `ack` acknowledges and drops the message, `nack` negatively acknowledges it.
+
+A `nack` (a modify-ack-deadline of 0) makes Pub/Sub redeliver the message immediately, and it counts toward
+the `maxDeliveryAttempts` of a subscription [dead-letter policy](https://cloud.google.com/pubsub/docs/handling-failures).
+**Only use `nack` with a subscription retry policy (exponential backoff) and/or a dead-letter topic
+configured**: on a subscription with the default immediate-retry policy and no dead-letter topic, a message
+that keeps failing is redelivered in a hot loop.
+
 ### Flow control
 
 The flow control allows to fine tune the flow control settings for the subscription stream.
 
 * `trigger_ack_batch_duration` (Optional): Part of the control loop, the time between each message
   acknowledge batch.
+* `trigger_ack_batch_size` (Optional): The number of pending acknowledgements (acks and nacks combined) that
+  triggers an immediate acknowledge batch, without waiting for `trigger_ack_batch_duration`. This limits how
+  many already-processed messages are redelivered when a stream breaks. `0` (the default) disables the size
+  trigger.
 * `stream_ack_deadline` (Optional): The ack deadline to use for the stream. The minimum deadline you can specify
   is 10 seconds. The maximum deadline you can specify is 600 seconds (10 minutes).
 * `max_outstanding_messages` (Optional): Flow control settings for the maximum number of outstanding messages. When
@@ -121,6 +156,7 @@ The flow control allows to fine tune the flow control settings for the subscript
 ```yaml
 flow_control:
   trigger_ack_batch_duration: 1s
+  trigger_ack_batch_size: 1000
   stream_ack_deadline: 60s
   max_outstanding_messages: 1000000
   max_outstanding_bytes: 1000000
