@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"hash"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/gowebpki/jcs"
 	"go.opentelemetry.io/collector/component"
@@ -212,7 +213,11 @@ func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error)
 	}
 
 	if lr.Body().Type() == pcommon.ValueTypeStr {
-		data["body"] = lr.Body().Str()
+		body := lr.Body().Str()
+		if !utf8.ValidString(body) {
+			return nil, errors.New("log record body contains invalid UTF-8")
+		}
+		data["body"] = body
 	}
 
 	if lr.Timestamp() != 0 {
@@ -283,7 +288,11 @@ func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, er
 	}
 	switch v.Type() {
 	case pcommon.ValueTypeStr:
-		return v.Str(), nil
+		s := v.Str()
+		if !utf8.ValidString(s) {
+			return nil, errors.New("attribute string value contains invalid UTF-8")
+		}
+		return s, nil
 	case pcommon.ValueTypeInt:
 		return v.Int(), nil
 	case pcommon.ValueTypeDouble:
