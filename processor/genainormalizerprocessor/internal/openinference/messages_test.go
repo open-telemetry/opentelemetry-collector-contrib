@@ -470,6 +470,31 @@ func TestReconstructMessages_ContentsArrayNonTextSkipped(t *testing.T) {
 	msgs := parseJSON(t, val.AsString())
 	assert.Equal(t, []any{map[string]any{"type": "text", "content": "describe this"}},
 		msgs[0].(map[string]any)["parts"])
+
+	_, ok := attrs.Get("llm.input_messages.0.message.contents.1.message_content.text")
+	assert.False(t, ok, "reconstructed text attr should be removed")
+	_, ok = attrs.Get("llm.input_messages.0.message.contents.0.message_content.image")
+	assert.True(t, ok, "skipped image attr must survive")
+}
+
+func TestReconstructMessages_ContentsArrayNonTextOnly(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":                             "user",
+		"llm.input_messages.0.message.contents.0.message_content.type":  "image",
+		"llm.input_messages.0.message.contents.0.message_content.image": "http://example.com/a.png",
+	})
+
+	require.True(t, ReconstructMessages(attrs, true, false))
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	assert.Equal(t, []any{}, msgs[0].(map[string]any)["parts"],
+		"non-text-only message must produce empty parts")
+
+	_, imageAttrOk := attrs.Get("llm.input_messages.0.message.contents.0.message_content.image")
+	assert.True(t, imageAttrOk, "image attr must not be removed when content was not reconstructed")
+	_, typeAttrOk := attrs.Get("llm.input_messages.0.message.contents.0.message_content.type")
+	assert.True(t, typeAttrOk, "type attr must not be removed when content was not reconstructed")
 }
 
 func TestReconstructMessages_FlatContentTakesPrecedence(t *testing.T) {
