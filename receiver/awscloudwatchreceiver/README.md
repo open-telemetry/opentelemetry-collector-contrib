@@ -59,11 +59,32 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
   - `streams`: (optional) If `streams` is omitted, then all streams will be attempted to retrieve events from.
     - `names`: A list of full log stream names to filter the discovered log groups to collect from.
     - `prefixes`: A list of prefixes to filter the discovered log groups to collect from.
+  - `include_tags`, `tag_names`, `tag_prefix`, `tag_attribute_prefix`: (optional) Enrich emitted log records with the source log group's CloudWatch tags. See [Log Group Tag Enrichment](#log-group-tag-enrichment).
 - `named`
   - This is a map of log group name to stream filtering options
     - `streams`: (optional)
       - `names`: A list of full log stream names to filter the discovered log groups to collect from.
       - `prefixes`: A list of prefixes to filter the discovered log groups to collect from.
+    - `include_tags`, `tag_names`, `tag_prefix`, `tag_attribute_prefix`: (optional) Enrich emitted log records with the source log group's CloudWatch tags. See [Log Group Tag Enrichment](#log-group-tag-enrichment).
+
+### Log Group Tag Enrichment
+
+Each log group can optionally have its [CloudWatch tags](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/Working-with-log-groups-and-streams.html#log-group-tagging) attached as resource attributes on the log records it produces. This is useful for tenant identification, retention policy, PII classification, and routing decisions in multi-tenant/cross-account (OAM) pipelines. It is disabled by default; when disabled the receiver makes no tag API calls and behaves exactly as before.
+
+| Parameter              | Type       | Default                     | Description                                                                                                                                                                       |
+|------------------------|------------|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `include_tags`         | bool       | `false`                     | Enables tag enrichment. When enabled, the receiver calls `ListTagsForResource` for each log group and caches the tags, refreshing them each discovery/poll cycle.                |
+| `tag_names`            | []string   | `[]` (all tags)             | Explicit allowlist of tag keys to include. Mutually exclusive with `tag_prefix`.                                                                                                 |
+| `tag_prefix`           | string     | `""` (all tags)             | Only include tags whose key starts with this prefix. Mutually exclusive with `tag_names`.                                                                                        |
+| `tag_attribute_prefix` | string     | `cloudwatch.log.group.tag.` | Prefix prepended to tag keys when creating resource attributes. Set to `""` to pass tags through as-is (as semantic attributes usable directly by downstream routing).           |
+
+If neither `tag_names` nor `tag_prefix` is set, all tags are included. Filtering keeps attribute cardinality under control and avoids propagating AWS-managed tags (e.g. `aws:cloudformation:*`).
+
+For example, a log group `/aws/lambda/my-service` tagged `team=messaging` with `tag_names: ["team"]` and the default `tag_attribute_prefix` yields the resource attribute `cloudwatch.log.group.tag.team=messaging`, in addition to the base attributes (`aws.region`, `cloudwatch.log.group.name`, `cloudwatch.log.stream`).
+
+#### Required IAM permissions
+
+Tag enrichment requires the [`logs:ListTagsForResource`](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_ListTagsForResource.html) permission in addition to the permissions the receiver already needs (`logs:DescribeLogGroups`, `logs:FilterLogEvents`). For `named` groups, `logs:DescribeLogGroups` is also used to resolve each group's ARN.
 
 ### Metrics collection
 
@@ -206,6 +227,23 @@ awscloudwatch:
         include_linked_accounts: true
         prefix: /aws/lambda/
 ```
+
+#### Logs Autodiscovery with Tag Enrichment Example
+
+```yaml
+awscloudwatch:
+  region: eu-west-1
+  logs:
+    poll_interval: 1m
+    groups:
+      autodiscover:
+        limit: 100
+        prefix: /aws/lambda/
+        include_tags: true
+        tag_names: ["team", "environment"]
+```
+
+Emitted log records gain the resource attributes `cloudwatch.log.group.tag.team` and `cloudwatch.log.group.tag.environment`. Set `tag_attribute_prefix: ""` to pass the tags through as `team` and `environment` directly.
 
 #### Logs Named Groups Example
 
