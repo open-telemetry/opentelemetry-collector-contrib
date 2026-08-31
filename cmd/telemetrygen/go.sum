@@ -46,12 +46,12 @@ github.com/stretchr/testify v1.12.1 h1:EuwCh5fleGS7H32xRwO3wRGT7DxrDhLAT6FF8MpWD
 github.com/stretchr/testify v1.12.1/go.mod h1:MDEgiDPPsNp5cuIrHPPCyornHKgEVbtFUmoNlxoYthg=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
-go.opentelemetry.io/collector/featuregate v1.65.1-0.20260824174011-67fef8cb7049 h1:lqjD0j1aXB1RAgSiOCJtNuiSQZJG1zxhwfvW9A9cR8M=
-go.opentelemetry.io/collector/featuregate v1.65.1-0.20260824174011-67fef8cb7049/go.mod h1:JXbqmLAy2ZxufKP0HDvdUPsLXwuZiCzsF+t9lSgdl/s=
+go.opentelemetry.io/collector/featuregate v1.65.1-0.20260827211935-bdb5c072803c h1:CBHu2vjOClCqPQlMkXIN1hpzicZaaMlZAuQVo2ignu8=
+go.opentelemetry.io/collector/featuregate v1.65.1-0.20260827211935-bdb5c072803c/go.mod h1:dRYifiJa2vQ6LWpPwHny4mL82mnGWsWEVeVWw+DhYJw=
 go.opentelemetry.io/collector/internal/testutil v0.159.0 h1:/OfAv3ZRIc3eVFFq4bFc+Ju5HQBebiWywgvAcysIX4M=
 go.opentelemetry.io/collector/internal/testutil v0.159.0/go.mod h1:Jkjs6rkqs973LqgZ0Fe3zrokQRKULYXPIf4HuqStiEE=
-go.opentelemetry.io/collector/pdata v1.65.1-0.20260824174011-67fef8cb7049 h1:ftUKEHDnr8AyUpOX5su+1i7d552Izg0Dcwr9gtDtRoc=
-go.opentelemetry.io/collector/pdata v1.65.1-0.20260824174011-67fef8cb7049/go.mod h1:4BSY6rqBOtNlrxxOqNZZuzvtNR2UuvYRcHJz4ZyWspU=
+go.opentelemetry.io/collector/pdata v1.65.1-0.20260827211935-bdb5c072803c h1:qdn7qWDJ6Iq/DenkxbjLr6TuNPmHicwPmtpeReRKlZ0=
+go.opentelemetry.io/collector/pdata v1.65.1-0.20260827211935-bdb5c072803c/go.mod h1:1c0ZkGdPO1T673i3O999jAQ8v6lhKYXg4th2l8dRpwA=
 go.opentelemetry.io/otel v1.46.0 h1:FHt5/CDyVxi/8IM1CH7VE/rRgq3kLHa2mSTVMO8AWyc=
 go.opentelemetry.io/otel v1.46.0/go.mod h1:Gj3SEScelsNC45tp4nSxRYlS+f5iez7W8XPMCt905kE=
 go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.22.0 h1:Bu39F5tzJct+f2IZbB8989fwyTps3c8e7EsUQsz+vs8=
@@ -115,8 +115,8 @@ google.golang.org/genproto/googleapis/api v0.0.0-20260819154853-08b0e4226688 h1:
 google.golang.org/genproto/googleapis/api v0.0.0-20260819154853-08b0e4226688/go.mod h1:1RJ9BQGyNdZwkGc1eTqkErfRZ6RJyYPHZo73BZ1vQqI=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20260819154853-08b0e4226688 h1:cYNAzI2sUwhmCcoj9TxvihSrqsxt6uIkj3rDRhSDmW4=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20260819154853-08b0e4226688/go.mod h1:DjtHYE8FKJLivXcBEjGwndXfIC23G0VpXiXKqG179uA=
-google.golang.org/grpc v1.83.1 h1:HIO0+BEtBP6soyqvqC8sNUjZ7bTs+0hFQuFF+RAy++Y=
-google.golang.org/grpc v1.83.1/go.mod h1:kDyl6SKsiHKt0uylY5gtn5cEjkrIOhQOGDgIc4JGwzQ=
+google.golang.org/grpc v1.83.2 h1:EManeRomTObA0BU7I8vXgg/78uE5MJ9M8B39EX2WscU=
+google.golang.org/grpc v1.83.2/go.mod h1:YPI1hK3kDked6iHvgX3tR0y+nX/qpMFKhPgFsokw1S8=
 google.golang.org/protobuf v1.36.12 h1:pJOKDDOyeXErUroCihFAd5LQuwXBSpVnKGrj5o/fwxc=
 google.golang.org/protobuf v1.36.12/go.mod h1:HTf+CrKn2C3g5S8VImy6tdcUvCska2kB7j23XfzDpco=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
