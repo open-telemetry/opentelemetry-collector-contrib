@@ -302,7 +302,7 @@ sampler:
     - span.attributes["http.status_code"]
   adjustment_interval: 15s                # how often the ema recalculates
   weight: 0.5                             # ema weighting factor in [0, 1); 0 or omitted = 0.5
-  max_keys: 500                           # 0 or omitted = 500 (default); no unlimited option
+  max_keys: 500                           # omit for the default of 500; 0 = unlimited
 ```
 
 #### `adaptive_throughput`
@@ -345,7 +345,7 @@ sampler:
 
 The `fingerprint_attributes` field names the attributes that identify what kind of trace this is for sampling purposes. Each distinct fingerprint value gets its own adaptive sample rate, so choose attributes that classify traffic (route, status code, method, service) rather than identify individual requests (user IDs, request IDs, raw URLs), which would give every trace its own key and defeat the adaptation.
 
-High cardinality doesn't just risk unbounded memory — it degrades goal accuracy directly, independent of `max_keys`. An adaptive sampler can never drop a key's rate below 1 (it must always keep at least one instance of any key it's tracking), so as the number of distinct keys grows, more of them sit at that rate-1 floor with only a handful of events each, and the sampler can't discard enough traffic across the keyspace to hit the configured `goal_percentage`/`goal_throughput`. Keeping the key space small is what makes the adaptive samplers effective, not just memory-safe.
+High cardinality doesn't just risk unbounded memory — it degrades goal accuracy directly, independent of `max_keys`. An adaptive sampler can never drop a key's rate below 1 (it must always keep at least one instance of any key it's tracking), so as the number of distinct keys grows, more of them sit at that rate-1 floor with only a handful of events each, and the sampler can't discard enough traffic across the keyspace to hit the configured `goal_percentage`/`goal_throughput`. Keeping the key space small is what makes the adaptive samplers effective, not just memory-safe — setting `max_keys: 0` explicitly opts back into unbounded cardinality and this risk.
 
 Each entry is a scoped attribute selector of the form `<scope>.attributes["<name>"]`:
 

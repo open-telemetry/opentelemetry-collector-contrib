@@ -50,8 +50,9 @@ const (
 	AlgorithmWindowed SamplerAlgorithm = "windowed"
 )
 
-// defaultMaxKeys is the max_keys value used when a rule omits it (or sets it
-// to 0). There is no config value that requests an unbounded key set.
+// defaultMaxKeys is the max_keys value used when a rule omits it. Explicitly
+// setting max_keys to 0 means unlimited instead, matching the underlying
+// sampler library's semantics.
 const defaultMaxKeys = 500
 
 // RecordFingerprint controls whether the matched rule's fingerprint value is
@@ -251,10 +252,10 @@ type SamplerConfig struct {
 	FingerprintAttributes []string `mapstructure:"fingerprint_attributes"`
 
 	// MaxKeys caps the number of distinct sampling keys the sampler tracks.
-	// 0 (or omitting the field) uses the default of defaultMaxKeys; there is
-	// no way to request an unbounded key set.
+	// Omitting the field defaults to defaultMaxKeys; explicitly setting it
+	// to 0 means unlimited.
 	// Used by: adaptive_percentage, adaptive_throughput.
-	MaxKeys int `mapstructure:"max_keys"`
+	MaxKeys *int `mapstructure:"max_keys"`
 
 	// AdjustmentInterval is how often the ema algorithm recalculates rates
 	// from recent observations.
@@ -436,7 +437,7 @@ func (s *SamplerConfig) validate(ruleName string) error {
 		if s.Weight < 0 || s.Weight >= 1 {
 			return fmt.Errorf("rule %q: weight must be in [0, 1)", ruleName)
 		}
-		if s.MaxKeys < 0 {
+		if s.MaxKeys != nil && *s.MaxKeys < 0 {
 			return fmt.Errorf("rule %q: max_keys must be non-negative", ruleName)
 		}
 		return s.rejectUnusedFields(ruleName, "adaptive_percentage", map[string]bool{
@@ -457,7 +458,7 @@ func (s *SamplerConfig) validate(ruleName string) error {
 		if _, err := sampler.ParseSelectors(s.FingerprintAttributes); err != nil {
 			return fmt.Errorf("rule %q: %w", ruleName, err)
 		}
-		if s.MaxKeys < 0 {
+		if s.MaxKeys != nil && *s.MaxKeys < 0 {
 			return fmt.Errorf("rule %q: max_keys must be non-negative", ruleName)
 		}
 		switch s.effectiveAlgorithm() {
@@ -507,13 +508,13 @@ func (s *SamplerConfig) effectiveAlgorithm() SamplerAlgorithm {
 }
 
 // effectiveMaxKeys returns the max_keys value a sampler should use,
-// defaulting to defaultMaxKeys when unset. Only meaningful for adaptive
-// types; validate rejects the field elsewhere.
+// defaulting to defaultMaxKeys when unset (explicit 0 means unlimited).
+// Only meaningful for adaptive types; validate rejects the field elsewhere.
 func (s *SamplerConfig) effectiveMaxKeys() int {
-	if s.MaxKeys == 0 {
+	if s.MaxKeys == nil {
 		return defaultMaxKeys
 	}
-	return s.MaxKeys
+	return *s.MaxKeys
 }
 
 // rejectUnusedFields returns an error if any field is set that does not apply
@@ -541,7 +542,7 @@ func (s *SamplerConfig) rejectUnusedFields(ruleName, typeName string, allowed ma
 	if err := set("fingerprint_attributes", len(s.FingerprintAttributes) > 0); err != nil {
 		return err
 	}
-	if err := set("max_keys", s.MaxKeys != 0); err != nil {
+	if err := set("max_keys", s.MaxKeys != nil); err != nil {
 		return err
 	}
 	if err := set("adjustment_interval", s.AdjustmentInterval != 0); err != nil {
