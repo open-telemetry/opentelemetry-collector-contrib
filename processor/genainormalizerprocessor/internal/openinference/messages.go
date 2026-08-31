@@ -249,15 +249,14 @@ func applyField(mf *messageFields, fieldPath string, v pcommon.Value) (kind fiel
 // was recognized. Unrecognized fields (image, audio, data, signature) are left
 // untouched so their source attributes survive.
 func parseContentField(mf *messageFields, s string, v pcommon.Value) (int, bool) {
-	dotIdx := strings.IndexByte(s, '.')
-	if dotIdx < 0 {
+	before, rest, ok := strings.Cut(s, ".")
+	if !ok {
 		return 0, false
 	}
-	idx, err := strconv.Atoi(s[:dotIdx])
+	idx, err := strconv.Atoi(before)
 	if err != nil {
 		return 0, false
 	}
-	rest := s[dotIdx+1:]
 	const mcPrefix = "message_content."
 	if !strings.HasPrefix(rest, mcPrefix) {
 		return 0, false
