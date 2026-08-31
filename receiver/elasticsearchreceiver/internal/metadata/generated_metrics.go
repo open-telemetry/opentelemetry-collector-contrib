@@ -7844,6 +7844,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.ElasticsearchClusterName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["elasticsearch.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchClusterName.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.ElasticsearchClusterUUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["elasticsearch.cluster.uuid"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchClusterUUID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ElasticsearchClusterUUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["elasticsearch.cluster.uuid"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchClusterUUID.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.ElasticsearchIndexName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["elasticsearch.index.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchIndexName.MetricsInclude)
 	}

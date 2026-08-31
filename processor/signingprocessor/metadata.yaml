@@ -1,0 +1,18 @@
+type: signing
+
+status:
+  class: processor
+  stability:
+    development: [ logs ]
+  distributions: []
+  warnings: []
+  codeowners:
+    active: [hilmarf, jmacd]
+
+tests:
+  config:
+    key_source:
+      type: file
+      file:
+        cert_file: testdata/test-cert.pem
+        key_file:  testdata/test-key.pem
