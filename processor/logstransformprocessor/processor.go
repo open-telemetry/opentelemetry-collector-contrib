@@ -35,7 +35,6 @@ type logsTransformProcessor struct {
 	emitter       helper.LogEmitter
 	fromConverter *adapter.FromPdataConverter
 	shutdownFns   []component.ShutdownFunc
-	wg            sync.WaitGroup
 }
 
 func newProcessor(config *Config, nextConsumer consumer.Logs, set component.TelemetrySettings) (*logsTransformProcessor, error) {
@@ -99,7 +98,8 @@ func (ltp *logsTransformProcessor) Start(_ context.Context, _ component.Host) er
 	// since the collector cancels it shortly after Start returns. The converter loop is exactly such a
 	// long-running goroutine, so derive a dedicated context that is cancelled by the shutdown path instead (#31140).
 	loopCtx, loopCancel := context.WithCancel(context.Background())
-	ltp.startConverterLoop(loopCtx)
+	var wg sync.WaitGroup
+	ltp.startConverterLoop(loopCtx, &wg)
 	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
 		loopCancel()
 		return nil
@@ -120,11 +120,15 @@ func (ltp *logsTransformProcessor) startFromConverter() {
 
 // startConverterLoop starts the converter loop, which reads all the logs translated by the fromConverter and then forwards
 // them to pipeline
-func (ltp *logsTransformProcessor) startConverterLoop(ctx context.Context) {
-	ltp.wg.Go(func() { ltp.converterLoop(ctx) })
+func (ltp *logsTransformProcessor) startConverterLoop(ctx context.Context, wg *sync.WaitGroup) {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ltp.converterLoop(ctx)
+	}()
 
 	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
-		ltp.wg.Wait()
+		wg.Wait()
 		return nil
 	})
 }
