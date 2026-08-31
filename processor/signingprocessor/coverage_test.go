@@ -537,7 +537,10 @@ func TestValueToInterface(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			v := pcommon.NewValueEmpty()
 			tt.setup(v)
-			result := p.valueToInterface(v)
+			result, err := p.valueToInterface(v, 0)
+			if err != nil {
+				t.Fatalf("valueToInterface returned unexpected error: %v", err)
+			}
 			if result == nil {
 				t.Error("valueToInterface returned nil for non-empty value")
 			}
@@ -962,4 +965,25 @@ func TestNewProcessorMissingKeyFiles(t *testing.T) {
 	if err == nil {
 		t.Error("expected error when key files do not exist")
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Depth-guard tests: valueToInterface and marshalJCS
+// ---------------------------------------------------------------------------
+
+// TestValueToInterfaceDepthLimit verifies that deeply nested OTLP map/slice
+// values are rejected before any recursive Go call stack overflow can occur.
+func TestValueToInterfaceDepthLimit(t *testing.T) {
+	p := &signingProcessor{}
+
+	// Build a pcommon.Value chain: map → map → … (valueToInterfaceMaxDepth+2 levels)
+	root := pcommon.NewValueEmpty()
+	cur := root.SetEmptyMap()
+	for range jsonMaxDepth + 2 {
+		child := cur.PutEmptyMap("k")
+		cur = child
+	}
+
+	_, err := p.valueToInterface(root, 0)
+	require.Error(t, err, "expected depth error for deeply nested map")
 }
