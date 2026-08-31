@@ -21,6 +21,6 @@ func TestNewExtension(t *testing.T) {
 
 func testConfig() *Config {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = "127.0.0.1:5778"
+	cfg.ServerConfig.NetAddr.Endpoint = "127.0.0.1:5778"
 	return cfg
 }

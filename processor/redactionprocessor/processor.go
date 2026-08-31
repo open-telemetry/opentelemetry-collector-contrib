@@ -32,19 +32,22 @@ import (
 
 const attrValuesSeparator = ","
 
+// maskAllValuesRegex masks a whole value, for keys matching the blocked key patterns.
+var maskAllValuesRegex = regexp.MustCompile(".*")
+
 type redaction struct {
 	// Attribute keys allowed in a span
 	allowList map[string]string
 	// Attribute keys ignored in a span
 	ignoreList map[string]string
 	// Attribute key patterns ignored in a span
-	ignoreKeyRegexList map[string]*regexp.Regexp
+	ignoreKeyRegexList []*regexp.Regexp
 	// Attribute values blocked in a span
-	blockRegexList map[string]*regexp.Regexp
+	blockRegexList []*regexp.Regexp
 	// Attribute values allowed in a span
-	allowRegexList map[string]*regexp.Regexp
+	allowRegexList []*regexp.Regexp
 	// Attribute keys blocked in a span
-	blockKeyRegexList map[string]*regexp.Regexp
+	blockKeyRegexList []*regexp.Regexp
 	// Hash function to hash blocked values
 	hashFunction HashFunction
 	// Redaction processor configuration
@@ -202,7 +205,7 @@ func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attr
 			}
 			if s.shouldMaskKey(k) {
 				maskedKeys = append(maskedKeys, k)
-				v.SetStr(s.maskValue(v.Str(), regexp.MustCompile(".*")))
+				v.SetStr(s.maskValue(v.Str(), maskAllValuesRegex))
 				return true
 			}
 			s.redactLogBodyRecursive(ctx, k, v, &redactedKeys, &maskedKeys, &allowedKeys, &ignoredKeys)
@@ -219,7 +222,10 @@ func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attr
 	default:
 		strVal := body.AsString()
 		if s.shouldAllowValue(strVal) {
-			allowedKeys = append(allowedKeys, "body")
+			// TODO: this is assigned here, but return makes the assignment useless. Open an issue
+			// to investigate the correct behavior
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50417
+			allowedKeys = append(allowedKeys, "body") //nolint:staticcheck
 			return
 		}
 		processedValue := s.processStringValueForLogBody(strVal)
@@ -251,7 +257,7 @@ func (s *redaction) redactLogBodyRecursive(ctx context.Context, key string, valu
 			}
 			if s.shouldMaskKey(k) {
 				*maskedKeys = append(*maskedKeys, keyWithPath)
-				v.SetStr(s.maskValue(v.Str(), regexp.MustCompile(".*")))
+				v.SetStr(s.maskValue(v.Str(), maskAllValuesRegex))
 				return true
 			}
 			s.redactLogBodyRecursive(ctx, keyWithPath, v, redactedKeys, maskedKeys, allowedKeys, ignoredKeys)
@@ -359,7 +365,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 		}
 		if s.shouldMaskKey(k) {
 			maskedKeys = append(maskedKeys, k)
-			maskedValue := s.maskValue(strVal, regexp.MustCompile(".*"))
+			maskedValue := s.maskValue(strVal, maskAllValuesRegex)
 			value.SetStr(maskedValue)
 			continue
 		}
@@ -631,16 +637,17 @@ func makeIgnoreList(c *Config) map[string]string {
 	return ignoreList
 }
 
-// makeRegexList precompiles all the regex patterns in the defined list
-func makeRegexList(_ context.Context, valuesList []string) (map[string]*regexp.Regexp, error) {
-	regexList := make(map[string]*regexp.Regexp, len(valuesList))
+// makeRegexList precompiles all the regex patterns in the defined list,
+// preserving the order in which they are listed in the configuration
+func makeRegexList(_ context.Context, valuesList []string) ([]*regexp.Regexp, error) {
+	regexList := make([]*regexp.Regexp, 0, len(valuesList))
 	for _, pattern := range valuesList {
 		re, err := regexp.Compile(pattern)
 		if err != nil {
 			// TODO: Placeholder for an error metric in the next PR
 			return nil, fmt.Errorf("error compiling regex in list: %w", err)
 		}
-		regexList[pattern] = re
+		regexList = append(regexList, re)
 	}
 	return regexList, nil
 }

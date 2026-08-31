@@ -122,7 +122,8 @@ func compileRegexRules(rules []*RegexRule) error {
 				i,
 				r.MetricType,
 				GaugeMetricType,
-				CumulativeMetricType)
+				CumulativeMetricType,
+			)
 		}
 
 		rules[i].compRegexp = regex
@@ -137,7 +138,8 @@ func compileRegexRules(rules []*RegexRule) error {
 				// Correctly prefixed, nothing else to do.
 			default:
 				return fmt.Errorf(
-					"capture %q on %d-th rule has an unknown prefix", n, i)
+					"capture %q on %d-th rule has an unknown prefix", n, i,
+				)
 			}
 		}
 		sort.Strings(metricNameParts)

@@ -93,7 +93,7 @@ func TestTracesExporter_Start(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, exp.clientConn)
 	assert.NotNil(t, exp.grpcTracesExporter)
-	_, ok := exp.config.Traces.Headers.Get("Authorization")
+	_, ok := exp.config.Traces.ClientConfig.Headers.Get("Authorization")
 	assert.True(t, ok)
 
 	err = exp.shutdown(t.Context())

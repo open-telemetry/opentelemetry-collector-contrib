@@ -135,11 +135,11 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 
 	addr := testutil.GetAvailableLocalAddress(t)
 
-	receiverCfg.GRPC.NetAddr.Endpoint = addr
+	receiverCfg.Protocols.GRPC.NetAddr.Endpoint = addr
 
-	exporterCfg.Endpoint = addr
-	exporterCfg.WaitForReady = true
-	exporterCfg.TLS.Insecure = true
+	exporterCfg.ClientConfig.Endpoint = addr
+	exporterCfg.ClientConfig.WaitForReady = true
+	exporterCfg.ClientConfig.TLS.Insecure = true
 	exporterCfg.TimeoutSettings.Timeout = time.Minute
 	exporterCfg.QueueSettings = configoptional.None[exporterhelper.QueueBatchConfig]()
 	exporterCfg.RetryConfig.Enabled = true
@@ -535,7 +535,7 @@ func TestIntegrationMemoryLimited(t *testing.T) {
 	}
 
 	testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, rcfg *RecvConfig) {
-		rcfg.Arrow.MemoryLimitMiB = 1
+		rcfg.Protocols.Arrow.MemoryLimitMiB = 1
 		ecfg.Arrow.NumStreams = 10
 		// Shorten timeouts for this test, because we intend
 		// for it to fail and don't want to wait for retries.

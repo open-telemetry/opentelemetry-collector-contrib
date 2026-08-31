@@ -246,13 +246,15 @@ func validateTranslationRules(rules []Rule) error {
 			if tr.DimensionKey != "" && len(tr.DimensionValues) == 0 {
 				return fmt.Errorf(
 					"\"dimension_values_filer\" has to be provided if \"dimension_key\" is set for %q translation rule",
-					tr.Action)
+					tr.Action,
+				)
 			}
 		case ActionSplitMetric:
 			if tr.MetricName == "" || tr.DimensionKey == "" || tr.Mapping == nil {
 				return fmt.Errorf(
 					"fields \"metric_name\", \"dimension_key\", and \"mapping\" are required for %q translation rule",
-					tr.Action)
+					tr.Action,
+				)
 			}
 		case ActionConvertValues:
 			if tr.TypesMapping == nil {

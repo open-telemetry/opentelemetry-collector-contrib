@@ -52,7 +52,7 @@ func createTraces(ctx context.Context, set exporter.Settings, cfg component.Conf
 		oce.ConsumeTraces,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(oce.Capabilities()),
-		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: oCfg.Timeout}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: oCfg.ClientConfig.Timeout}),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 	)
@@ -69,7 +69,7 @@ func createLogs(ctx context.Context, set exporter.Settings, cfg component.Config
 		oce.ConsumeLogs,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(oce.Capabilities()),
-		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: oCfg.Timeout}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: oCfg.ClientConfig.Timeout}),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
 	)

@@ -56,10 +56,6 @@ func TestDecodeMetrics(t *testing.T) {
 	assertMetricsEqual(t, metrics)
 }
 
-func createPtrFloat64(v float64) *float64 {
-	return &v
-}
-
 func TestStartTimestamp(t *testing.T) {
 	tests := []struct {
 		name                 string
@@ -70,8 +66,8 @@ func TestStartTimestamp(t *testing.T) {
 		{
 			name: "metric type cumulative distribution",
 			record: collectDRecord{
-				Time:     createPtrFloat64(10),
-				Interval: createPtrFloat64(5),
+				Time:     new(float64(10)),
+				Interval: new(float64(5)),
 			},
 			metricDescriptorType: "cumulative",
 			wantStartTimestamp:   pcommon.NewTimestampFromTime(time.Unix(5, 0)),
@@ -79,8 +75,8 @@ func TestStartTimestamp(t *testing.T) {
 		{
 			name: "metric type cumulative double",
 			record: collectDRecord{
-				Time:     createPtrFloat64(10),
-				Interval: createPtrFloat64(5),
+				Time:     new(float64(10)),
+				Interval: new(float64(5)),
 			},
 			metricDescriptorType: "cumulative",
 			wantStartTimestamp:   pcommon.NewTimestampFromTime(time.Unix(5, 0)),
@@ -88,8 +84,8 @@ func TestStartTimestamp(t *testing.T) {
 		{
 			name: "metric type cumulative int64",
 			record: collectDRecord{
-				Time:     createPtrFloat64(10),
-				Interval: createPtrFloat64(5),
+				Time:     new(float64(10)),
+				Interval: new(float64(5)),
 			},
 			metricDescriptorType: "cumulative",
 			wantStartTimestamp:   pcommon.NewTimestampFromTime(time.Unix(5, 0)),
@@ -97,8 +93,8 @@ func TestStartTimestamp(t *testing.T) {
 		{
 			name: "metric type non-cumulative gauge distribution",
 			record: collectDRecord{
-				Time:     createPtrFloat64(0),
-				Interval: createPtrFloat64(0),
+				Time:     new(float64(0)),
+				Interval: new(float64(0)),
 			},
 			metricDescriptorType: "gauge",
 			wantStartTimestamp:   pcommon.NewTimestampFromTime(time.Unix(0, 0)),
@@ -106,8 +102,8 @@ func TestStartTimestamp(t *testing.T) {
 		{
 			name: "metric type non-cumulative gauge int64",
 			record: collectDRecord{
-				Time:     createPtrFloat64(0),
-				Interval: createPtrFloat64(0),
+				Time:     new(float64(0)),
+				Interval: new(float64(0)),
 			},
 			metricDescriptorType: "gauge",
 			wantStartTimestamp:   pcommon.NewTimestampFromTime(time.Unix(0, 0)),
@@ -115,8 +111,8 @@ func TestStartTimestamp(t *testing.T) {
 		{
 			name: "metric type non-cumulativegauge double",
 			record: collectDRecord{
-				Time:     createPtrFloat64(0),
-				Interval: createPtrFloat64(0),
+				Time:     new(float64(0)),
+				Interval: new(float64(0)),
 			},
 			metricDescriptorType: "gauge",
 			wantStartTimestamp:   pcommon.NewTimestampFromTime(time.Unix(0, 0)),

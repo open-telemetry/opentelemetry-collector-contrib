@@ -27,6 +27,10 @@ type Settings struct {
 	AddMetricSuffixes   bool
 	TranslationStrategy string
 	SendMetadata        bool
+	// ConvertExplicitHistogramsToNHCB converts explicit-bucket histograms to NHCB (schema -53) instead of classic series.
+	ConvertExplicitHistogramsToNHCB bool
+	// KeepClassicHistograms also emits the classic series alongside NHCB; no effect unless ConvertExplicitHistogramsToNHCB is set.
+	KeepClassicHistograms bool
 }
 
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.
@@ -76,13 +80,16 @@ func getTranslationConfiguration(settings Settings) (withSuffixes, utf8Allowed b
 
 func newPrometheusConverter(settings Settings) *prometheusConverter {
 	withSuffixes, utf8Allowed := getTranslationConfiguration(settings)
+	permissiveSanitization := prometheus.DropSanitizationGate.IsEnabled()
 
 	return &prometheusConverter{
 		unique:      map[uint64]*prompb.TimeSeries{},
 		conflicts:   map[uint64][]*prompb.TimeSeries{},
 		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: withSuffixes, Namespace: settings.Namespace, UTF8Allowed: utf8Allowed},
-		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !prometheus.DropSanitizationGate.IsEnabled(), UTF8Allowed: utf8Allowed},
-		unitNamer:   otlptranslator.UnitNamer{UTF8Allowed: utf8Allowed},
+		// TODO: SA1019: (github.com/prometheus/otlptranslator.LabelNamer).UnderscoreLabelSanitization is deprecated: This will be removed in a future version of otlptranslator.
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50429
+		labelNamer: otlptranslator.LabelNamer{UnderscoreLabelSanitization: !permissiveSanitization, PreserveMultipleUnderscores: permissiveSanitization, UTF8Allowed: utf8Allowed}, //nolint:staticcheck
+		unitNamer:  otlptranslator.UnitNamer{UTF8Allowed: utf8Allowed},
 	}
 }
 

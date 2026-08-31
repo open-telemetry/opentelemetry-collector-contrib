@@ -55,7 +55,7 @@ func TestDetect(t *testing.T) {
 		}
 		cfg := CreateDefaultConfig()
 
-		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg)
+		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg, false)
 		require.NoError(t, err)
 		det.(*Detector).provider = md
 
@@ -76,6 +76,7 @@ func TestDetect(t *testing.T) {
 			"host.type":               "VM.Standard.E4.Flex",
 			"k8s.cluster.name":        "my-oke-cluster",
 			"oracle_cloud.realm":      "oc1",
+			// cloud.resource_id omitted as it is disabled by default
 		}
 		assert.Equal(t, expected, res.Attributes().AsRaw())
 	})
@@ -86,7 +87,7 @@ func TestDetect(t *testing.T) {
 func TestDetect_ProbeFails_ReturnsEmptyResourceNoError(t *testing.T) {
 	withOracleCloudProbe(t, false, func() {
 		cfg := CreateDefaultConfig()
-		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg)
+		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg, false)
 		require.NoError(t, err)
 
 		res, schemaURL, err := det.Detect(t.Context())
@@ -96,22 +97,41 @@ func TestDetect_ProbeFails_ReturnsEmptyResourceNoError(t *testing.T) {
 	})
 }
 
-// Verifies that if the probe is positive, but metadata fetch fails,
+// Verifies that if the probe is positive, metadata fetch fails, and fail_on_missing_metadata=true,
 // the detector returns an error and no resource attributes.
 func TestDetect_ProbeSucceeds_MetadataFails_ReturnsError(t *testing.T) {
 	withOracleCloudProbe(t, true, func() {
-		// Set up mock provider returning failure
 		md := &mockMetadata{
 			out: nil,
 			err: assert.AnError,
 		}
 		cfg := CreateDefaultConfig()
-		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg)
+		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg, true)
 		require.NoError(t, err)
 		det.(*Detector).provider = md
 
 		res, schemaURL, err := det.Detect(t.Context())
 		require.Error(t, err)
+		assert.Empty(t, res.Attributes().AsRaw())
+		assert.Empty(t, schemaURL)
+	})
+}
+
+// Verifies that if the probe is positive, metadata fetch fails, and fail_on_missing_metadata=false (default),
+// the detector returns an empty resource and no error.
+func TestDetect_ProbeSucceeds_MetadataFails_FlagFalse_ReturnsEmpty(t *testing.T) {
+	withOracleCloudProbe(t, true, func() {
+		md := &mockMetadata{
+			out: nil,
+			err: assert.AnError,
+		}
+		cfg := CreateDefaultConfig()
+		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg, false)
+		require.NoError(t, err)
+		det.(*Detector).provider = md
+
+		res, schemaURL, err := det.Detect(t.Context())
+		require.NoError(t, err)
 		assert.Empty(t, res.Attributes().AsRaw())
 		assert.Empty(t, schemaURL)
 	})
@@ -136,7 +156,7 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 		cfg := CreateDefaultConfig()
 		cfg.ResourceAttributes.K8sClusterName.Enabled = false
 
-		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg)
+		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg, false)
 		require.NoError(t, err)
 		det.(*Detector).provider = md
 
@@ -154,6 +174,97 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 			"host.type":               "VM.Standard.E4.Flex",
 			"oracle_cloud.realm":      "oc1",
 			// K8S attributes omitted as they are disabled
+			// cloud.resource_id omitted as it is disabled by default
+		}
+		assert.Equal(t, expected, res.Attributes().AsRaw())
+	})
+}
+
+// Demonstrates that host.id and cloud.resource_id can be toggled independently:
+// users can opt into cloud.resource_id while opting out of host.id to get only the
+// semconv-native representation of the instance identifier.
+func TestDetectCloudResourceIDEnabledHostIDDisabled(t *testing.T) {
+	withOracleCloudProbe(t, true, func() {
+		md := &mockMetadata{
+			out: &oraclecloud.ComputeMetadata{
+				HostID:             "ocid1.instance.oc1..aaaaaaa",
+				HostDisplayName:    "my-instance",
+				HostType:           "VM.Standard.E4.Flex",
+				RegionID:           "us-ashburn-1",
+				AvailabilityDomain: "AD-1",
+				Metadata: oraclecloud.InstanceMetadata{
+					OKEClusterDisplayName: "my-oke-cluster",
+					Realm:                 "oc1",
+				},
+			},
+		}
+		cfg := CreateDefaultConfig()
+		cfg.ResourceAttributes.CloudResourceID.Enabled = true
+		cfg.ResourceAttributes.HostID.Enabled = false
+
+		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg, false)
+		require.NoError(t, err)
+		det.(*Detector).provider = md
+
+		res, schemaURL, err := det.Detect(t.Context())
+		require.NoError(t, err)
+		assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
+
+		expected := map[string]any{
+			"cloud.provider":          "oracle_cloud",
+			"cloud.platform":          "oracle_cloud_oke",
+			"cloud.region":            "us-ashburn-1",
+			"cloud.resource_id":       "ocid1.instance.oc1..aaaaaaa",
+			"cloud.availability_zone": "AD-1",
+			"host.name":               "my-instance",
+			"host.type":               "VM.Standard.E4.Flex",
+			"k8s.cluster.name":        "my-oke-cluster",
+			"oracle_cloud.realm":      "oc1",
+			// host.id omitted as it is disabled
+		}
+		assert.Equal(t, expected, res.Attributes().AsRaw())
+	})
+}
+
+// Verifies that host.id and cloud.resource_id can both be enabled at once, each carrying
+// the same OCID value under its own attribute key.
+func TestDetectCloudResourceIDAndHostIDBothEnabled(t *testing.T) {
+	withOracleCloudProbe(t, true, func() {
+		md := &mockMetadata{
+			out: &oraclecloud.ComputeMetadata{
+				HostID:             "ocid1.instance.oc1..aaaaaaa",
+				HostDisplayName:    "my-instance",
+				HostType:           "VM.Standard.E4.Flex",
+				RegionID:           "us-ashburn-1",
+				AvailabilityDomain: "AD-1",
+				Metadata: oraclecloud.InstanceMetadata{
+					OKEClusterDisplayName: "my-oke-cluster",
+					Realm:                 "oc1",
+				},
+			},
+		}
+		cfg := CreateDefaultConfig()
+		cfg.ResourceAttributes.CloudResourceID.Enabled = true
+
+		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg, false)
+		require.NoError(t, err)
+		det.(*Detector).provider = md
+
+		res, schemaURL, err := det.Detect(t.Context())
+		require.NoError(t, err)
+		assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
+
+		expected := map[string]any{
+			"cloud.provider":          "oracle_cloud",
+			"cloud.platform":          "oracle_cloud_oke",
+			"cloud.region":            "us-ashburn-1",
+			"cloud.resource_id":       "ocid1.instance.oc1..aaaaaaa",
+			"cloud.availability_zone": "AD-1",
+			"host.id":                 "ocid1.instance.oc1..aaaaaaa",
+			"host.name":               "my-instance",
+			"host.type":               "VM.Standard.E4.Flex",
+			"k8s.cluster.name":        "my-oke-cluster",
+			"oracle_cloud.realm":      "oc1",
 		}
 		assert.Equal(t, expected, res.Attributes().AsRaw())
 	})

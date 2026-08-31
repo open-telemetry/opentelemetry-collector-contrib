@@ -36,11 +36,11 @@ func NewOtelarrowDataSender(host string, port int) testbed.MetricDataSender {
 func (ds *otelarrowDataSender) Start() error {
 	factory := otelarrowexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*otelarrowexporter.Config)
-	cfg.Endpoint = ds.GetEndpoint().String()
-	cfg.TLS = configtls.ClientConfig{
+	cfg.ClientConfig.Endpoint = ds.GetEndpoint().String()
+	cfg.ClientConfig.TLS = configtls.ClientConfig{
 		Insecure: true,
 	}
-	cfg.Compression = "none"
+	cfg.ClientConfig.Compression = "none"
 	params := exportertest.NewNopSettings(factory.Type())
 	params.Logger = zap.L()
 

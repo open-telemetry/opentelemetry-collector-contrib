@@ -258,7 +258,8 @@ func (mcfg MetricsConfig) ToTranslatorOpts() []otlpmetrics.TranslatorOption {
 	options = append(options,
 		otlpmetrics.WithNumberMode(numberMode),
 		otlpmetrics.WithInitialCumulMonoValueMode(
-			otlpmetrics.InitialCumulMonoValueMode(mcfg.SumConfig.InitialCumulativeMonotonicMode)))
+			otlpmetrics.InitialCumulMonoValueMode(mcfg.SumConfig.InitialCumulativeMonotonicMode),
+		))
 
 	return options
 }

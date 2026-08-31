@@ -40,25 +40,25 @@ func (r *purefbMetricsReceiver) Start(ctx context.Context, compHost component.Ho
 
 	commonLabel := model.LabelSet{
 		"env":           model.LabelValue(r.cfg.Env),
-		"fb_array_name": model.LabelValue(r.cfg.Endpoint),
-		"host":          model.LabelValue(r.cfg.Endpoint),
+		"fb_array_name": model.LabelValue(r.cfg.ClientConfig.Endpoint),
+		"host":          model.LabelValue(r.cfg.ClientConfig.Endpoint),
 	}
 
-	arrScraper := internal.NewScraper(ctx, internal.ScraperTypeArray, r.cfg.Endpoint, r.cfg.Arrays, r.cfg.Settings.ReloadIntervals.Array, commonLabel)
+	arrScraper := internal.NewScraper(ctx, internal.ScraperTypeArray, r.cfg.ClientConfig.Endpoint, r.cfg.Arrays, r.cfg.Settings.ReloadIntervals.Array, commonLabel)
 	if scCfgs, err := arrScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
 		return err
 	}
 
-	clientsScraper := internal.NewScraper(ctx, internal.ScraperTypeClients, r.cfg.Endpoint, r.cfg.Clients, r.cfg.Settings.ReloadIntervals.Clients, commonLabel)
+	clientsScraper := internal.NewScraper(ctx, internal.ScraperTypeClients, r.cfg.ClientConfig.Endpoint, r.cfg.Clients, r.cfg.Settings.ReloadIntervals.Clients, commonLabel)
 	if scCfgs, err := clientsScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
 		return err
 	}
 
-	usageScraper := internal.NewScraper(ctx, internal.ScraperTypeUsage, r.cfg.Endpoint, r.cfg.Usage, r.cfg.Settings.ReloadIntervals.Usage, commonLabel)
+	usageScraper := internal.NewScraper(ctx, internal.ScraperTypeUsage, r.cfg.ClientConfig.Endpoint, r.cfg.Usage, r.cfg.Settings.ReloadIntervals.Usage, commonLabel)
 	if scCfgs, err := usageScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
