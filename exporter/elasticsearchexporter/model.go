@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/ecsserializer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -190,9 +191,11 @@ func newEncoder(mode MappingMode) (documentEncoder, error) {
 			attributesPrefix: "",
 		}, nil
 	case MappingECS:
-		return ecsModeEncoder{
-			profilesUnsupportedEncoder: profilesUnsupportedEncoder{mode: mode},
-		}, nil
+		ecsSer, err := ecsserializer.New()
+		if err != nil {
+			return nil, err
+		}
+		return ecsModeEncoder{serializer: ecsSer}, nil
 	case MappingBodyMap:
 		return bodymapModeEncoder{
 			metricsUnsupportedEncoder:  metricsUnsupportedEncoder{mode: mode},
@@ -203,7 +206,7 @@ func newEncoder(mode MappingMode) (documentEncoder, error) {
 		if err != nil {
 			return nil, err
 		}
-		return otelModeEncoder{serializer: ser}, nil
+		return otelModeEncoder{serializer: ser, profilesUnsupportedEncoder: profilesUnsupportedEncoder{mode: mode}}, nil
 	}
 	return nil, fmt.Errorf("unknown mapping mode %q (%d)", mode, int(mode))
 }
@@ -217,7 +220,7 @@ type legacyModeEncoder struct {
 
 type ecsModeEncoder struct {
 	ecsDataPointsEncoder
-	profilesUnsupportedEncoder
+	serializer *ecsserializer.Serializer
 }
 
 type bodymapModeEncoder struct {
@@ -227,6 +230,7 @@ type bodymapModeEncoder struct {
 
 type otelModeEncoder struct {
 	serializer *otelserializer.Serializer
+	profilesUnsupportedEncoder
 }
 
 const (
@@ -395,15 +399,6 @@ func (e otelModeEncoder) encodeMetrics(
 		ec.scope, ec.scopeSchemaURL,
 		dataPoints, validationErrors, idx, buf,
 	)
-}
-
-func (e otelModeEncoder) encodeProfile(
-	ec encodingContext,
-	dic pprofile.ProfilesDictionary,
-	profile pprofile.Profile,
-	pushData func(*bytes.Buffer, string, string) error,
-) error {
-	return e.serializer.SerializeProfile(dic, ec.resource, ec.scope, profile, pushData)
 }
 
 func (bodymapModeEncoder) encodeLog(
@@ -586,6 +581,15 @@ func (ecsModeEncoder) encodeSpanEvent(
 	}
 
 	return idx, document.Serialize(buf, true, spanEventProtectedFields)
+}
+
+func (e ecsModeEncoder) encodeProfile(
+	ec encodingContext,
+	dic pprofile.ProfilesDictionary,
+	profile pprofile.Profile,
+	pushData func(*bytes.Buffer, string, string) error,
+) error {
+	return e.serializer.SerializeProfile(dic, ec.resource, ec.scope, profile, pushData)
 }
 
 func isExceptionSpanEvent(event ptrace.SpanEvent) bool {
