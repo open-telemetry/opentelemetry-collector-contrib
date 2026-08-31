@@ -30,13 +30,14 @@ import (
 )
 
 const (
-	// jcsMaxDepth caps nesting depth before calling jcs.Transform.
-	// gowebpki/jcs has no depth limit: beyond ~1M levels the Go runtime kills
-	// the process with a fatal stack overflow that recover() cannot catch, and
-	// shallower depths cause quadratic CPU cost via string concatenation.
-	jcsMaxDepth = 128
-	// jcsMaxInputBytes caps the serialized JSON size before JCS canonicalization.
-	jcsMaxInputBytes = 1 << 20 // 1 MiB
+	// jsonMaxDepth caps recursion in valueToInterface, which walks OTLP
+	// Slice/Map values onto the Go call stack. A fatal stack overflow from
+	// deep nesting cannot be caught by recover(); the Go runtime kills the
+	// collector at roughly 700k–800k levels for json.Marshal and somewhat
+	// higher for valueToInterface itself.
+	jsonMaxDepth = 128
+	// jsonMaxInputBytes caps the serialized JSON size before JCS canonicalization.
+	jsonMaxInputBytes = 1 << 21 // 2 MiB
 )
 
 type signingProcessor struct {
@@ -239,12 +240,22 @@ func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error)
 	}
 
 	attrs := make(map[string]any)
+	var attrErr error
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
-		if !strings.HasPrefix(k, "audit.integrity.") {
-			attrs[k] = p.valueToInterface(v)
+		if strings.HasPrefix(k, "audit.integrity.") {
+			return true
 		}
+		val, err := p.valueToInterface(v, 0)
+		if err != nil {
+			attrErr = err
+			return false
+		}
+		attrs[k] = val
 		return true
 	})
+	if attrErr != nil {
+		return nil, attrErr
+	}
 	if len(attrs) > 0 {
 		data["attributes"] = attrs
 	}
@@ -255,60 +266,60 @@ func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error)
 // marshalJCS produces a RFC 8785 (JCS) canonical JSON byte slice.
 // json.Marshal sorts map keys (Go ≥ 1.12), then jcs.Transform normalises
 // number representation and validates the result per the JCS spec.
-//
-// Guards against gowebpki/jcs having no depth or size cap: deep nesting
-// causes quadratic runtime and eventually a fatal stack overflow that
-// recover() cannot catch.
 func (*signingProcessor) marshalJCS(v any) ([]byte, error) {
 	raw, err := json.Marshal(v)
 	if err != nil {
 		return nil, err
 	}
-	if len(raw) > jcsMaxInputBytes {
-		return nil, fmt.Errorf("serialized log record exceeds size limit (%d > %d bytes)", len(raw), jcsMaxInputBytes)
-	}
-	depth := 0
-	for _, b := range raw {
-		switch b {
-		case '{', '[':
-			depth++
-			if depth > jcsMaxDepth {
-				return nil, fmt.Errorf("serialized log record exceeds nesting depth limit (%d)", jcsMaxDepth)
-			}
-		case '}', ']':
-			depth--
-		}
+	if len(raw) > jsonMaxInputBytes {
+		return nil, fmt.Errorf("serialized log record exceeds size limit (%d > %d bytes)", len(raw), jsonMaxInputBytes)
 	}
 	return jcs.Transform(raw)
 }
 
-func (p *signingProcessor) valueToInterface(v pcommon.Value) any {
+func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, error) {
+	if depth > jsonMaxDepth {
+		return nil, fmt.Errorf("attribute value exceeds nesting depth limit (%d)", jsonMaxDepth)
+	}
 	switch v.Type() {
 	case pcommon.ValueTypeStr:
-		return v.Str()
+		return v.Str(), nil
 	case pcommon.ValueTypeInt:
-		return v.Int()
+		return v.Int(), nil
 	case pcommon.ValueTypeDouble:
-		return v.Double()
+		return v.Double(), nil
 	case pcommon.ValueTypeBool:
-		return v.Bool()
+		return v.Bool(), nil
 	case pcommon.ValueTypeBytes:
-		return base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())
+		return base64.StdEncoding.EncodeToString(v.Bytes().AsRaw()), nil
 	case pcommon.ValueTypeSlice:
 		slice := make([]any, v.Slice().Len())
 		for i := 0; i < v.Slice().Len(); i++ {
-			slice[i] = p.valueToInterface(v.Slice().At(i))
+			val, err := p.valueToInterface(v.Slice().At(i), depth+1) // recursive call!
+			if err != nil {
+				return nil, err
+			}
+			slice[i] = val
 		}
-		return slice
+		return slice, nil
 	case pcommon.ValueTypeMap:
 		m := make(map[string]any)
+		var mapErr error
 		v.Map().Range(func(k string, val pcommon.Value) bool {
-			m[k] = p.valueToInterface(val)
+			converted, err := p.valueToInterface(val, depth+1) // recursive call!
+			if err != nil {
+				mapErr = err
+				return false
+			}
+			m[k] = converted
 			return true
 		})
-		return m
+		if mapErr != nil {
+			return nil, mapErr
+		}
+		return m, nil
 	default:
-		return nil
+		return nil, nil
 	}
 }
 
