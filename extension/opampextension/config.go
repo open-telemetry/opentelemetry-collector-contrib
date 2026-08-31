@@ -15,6 +15,7 @@ import (
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
@@ -96,6 +97,12 @@ type commonFields struct {
 	TLS      configtls.ClientConfig         `mapstructure:"tls,omitempty"`
 	Headers  map[string]configopaque.String `mapstructure:"headers,omitempty"`
 	Auth     component.ID                   `mapstructure:"auth,omitempty"`
+	// Socket, when set, makes the client dial the OpAMP server over a local IPC
+	// socket instead of TCP: a Unix domain socket (transport "unix") or a
+	// Windows named pipe (transport "npipe"). The Endpoint above then only
+	// supplies the URL scheme, request path, and Host header, and its host:port
+	// is otherwise ignored.
+	Socket *confignet.AddrConfig `mapstructure:"socket,omitempty"`
 }
 
 func (c *commonFields) Scheme() string {
@@ -109,6 +116,16 @@ func (c *commonFields) Scheme() string {
 func (c *commonFields) Validate() error {
 	if c.Endpoint == "" {
 		return errors.New("opamp server endpoint must be provided")
+	}
+	if c.Socket != nil {
+		switch c.Socket.Transport {
+		case confignet.TransportTypeUnix, confignet.TransportTypeNpipe:
+		default:
+			return fmt.Errorf("socket::transport must be %q or %q", confignet.TransportTypeUnix, confignet.TransportTypeNpipe)
+		}
+		if c.Socket.Endpoint == "" {
+			return errors.New("socket::endpoint must be provided")
+		}
 	}
 	return nil
 }
@@ -186,6 +203,17 @@ func (s OpAMPServer) GetEndpoint() string {
 		return s.HTTP.Endpoint
 	}
 	return ""
+}
+
+// GetSocket returns the configured local IPC socket address, or nil if not
+// configured.
+func (s OpAMPServer) GetSocket() *confignet.AddrConfig {
+	if s.WS != nil {
+		return s.WS.Socket
+	} else if s.HTTP != nil {
+		return s.HTTP.Socket
+	}
+	return nil
 }
 
 func (s OpAMPServer) GetAuthExtensionID() component.ID {
