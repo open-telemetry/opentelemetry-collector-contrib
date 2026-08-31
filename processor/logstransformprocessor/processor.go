@@ -122,7 +122,7 @@ func (ltp *logsTransformProcessor) startFromConverter() {
 // them to pipeline
 func (ltp *logsTransformProcessor) startConverterLoop(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Go(func() {
-	ltp.converterLoop(ctx)
+	    ltp.converterLoop(ctx)
     })
 
 	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
