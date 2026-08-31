@@ -2884,6 +2884,41 @@ func DefaultEventsConfig() EventsConfig {
 	}
 }
 
+// HostAddressResourceAttributeConfig provides config for the host.address resource attribute.
+type HostAddressResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *HostAddressResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // HostNameResourceAttributeConfig provides config for the host.name resource attribute.
 type HostNameResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -2908,6 +2943,41 @@ type HostNameResourceAttributeConfig struct {
 }
 
 func (rac *HostNameResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// HostPortResourceAttributeConfig provides config for the host.port resource attribute.
+type HostPortResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *int64 `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *HostPortResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -3236,7 +3306,9 @@ func (rac *ServiceNamespaceResourceAttributeConfig) Unmarshal(parser *confmap.Co
 
 // ResourceAttributesConfig provides config for oracledb resource attributes.
 type ResourceAttributesConfig struct {
+	HostAddress          HostAddressResourceAttributeConfig          `mapstructure:"host.address"`
 	HostName             HostNameResourceAttributeConfig             `mapstructure:"host.name"`
+	HostPort             HostPortResourceAttributeConfig             `mapstructure:"host.port"`
 	OracleDbHostingType  OracleDbHostingTypeResourceAttributeConfig  `mapstructure:"oracle.db.hosting_type"`
 	OracleDbOpenMode     OracleDbOpenModeResourceAttributeConfig     `mapstructure:"oracle.db.open_mode"`
 	OracleDbPdb          OracleDbPdbResourceAttributeConfig          `mapstructure:"oracle.db.pdb"`
@@ -3250,7 +3322,13 @@ type ResourceAttributesConfig struct {
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		HostAddress: HostAddressResourceAttributeConfig{
+			Enabled: true,
+		},
 		HostName: HostNameResourceAttributeConfig{
+			Enabled: true,
+		},
+		HostPort: HostPortResourceAttributeConfig{
 			Enabled: true,
 		},
 		OracleDbHostingType: OracleDbHostingTypeResourceAttributeConfig{
@@ -3287,8 +3365,14 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 // For each enabled resource attribute with a non-nil OverrideValue,
 // the override replaces any existing value in the resource.
 func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
+	if rac.HostAddress.Enabled && rac.HostAddress.OverrideValue != nil {
+		res.Attributes().PutStr("host.address", *rac.HostAddress.OverrideValue)
+	}
 	if rac.HostName.Enabled && rac.HostName.OverrideValue != nil {
 		res.Attributes().PutStr("host.name", *rac.HostName.OverrideValue)
+	}
+	if rac.HostPort.Enabled && rac.HostPort.OverrideValue != nil {
+		res.Attributes().PutInt("host.port", *rac.HostPort.OverrideValue)
 	}
 	if rac.OracleDbHostingType.Enabled && rac.OracleDbHostingType.OverrideValue != nil {
 		res.Attributes().PutStr("oracle.db.hosting_type", *rac.OracleDbHostingType.OverrideValue)

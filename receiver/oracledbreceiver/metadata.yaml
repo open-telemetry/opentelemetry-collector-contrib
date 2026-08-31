@@ -16,10 +16,18 @@ status:
     active: [dmitryax, crobert-1, atoulme, ebrdarSplunk, XSAM, akshays-19, sv-splunk, splunk-shanu]
 
 resource_attributes:
+  host.address:
+    description: The host name or IP address of the Oracle Server.
+    enabled: true
+    type: string
   host.name:
     description: The host name of Oracle Server
     enabled: true
     type: string
+  host.port:
+    description: The port number of the Oracle Server.
+    enabled: true
+    type: int
   oracle.db.hosting_type:
     description: The hosting environment of the Oracle instance. One of "self-managed", "rds", or "oci".
     enabled: true

@@ -211,7 +211,11 @@ all_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
+    host.address:
+      enabled: true
     host.name:
+      enabled: true
+    host.port:
       enabled: true
     oracle.db.hosting_type:
       enabled: true
@@ -443,7 +447,11 @@ reaggregate_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
+    host.address:
+      enabled: true
     host.name:
+      enabled: true
+    host.port:
       enabled: true
     oracle.db.hosting_type:
       enabled: true
@@ -675,7 +683,11 @@ none_set:
     db.server.top_query:
       enabled: false
   resource_attributes:
+    host.address:
+      enabled: false
     host.name:
+      enabled: false
+    host.port:
       enabled: false
     oracle.db.hosting_type:
       enabled: false
@@ -697,9 +709,15 @@ none_set:
       enabled: false
 override_set:
   resource_attributes:
+    host.address:
+      enabled: true
+      override_value: "override-host.address"
     host.name:
       enabled: true
       override_value: "override-host.name"
+    host.port:
+      enabled: true
+      override_value: 123
     oracle.db.hosting_type:
       enabled: true
       override_value: "override-oracle.db.hosting_type"
@@ -729,7 +747,19 @@ override_set:
       override_value: "override-service.namespace"
 filter_set_include:
   resource_attributes:
+    host.address:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     host.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    host.port:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -791,12 +821,24 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    host.address:
+      enabled: true
+      metrics_exclude:
+        - strict: "host.address-val"
+      events_exclude:
+        - strict: "host.address-val"
     host.name:
       enabled: true
       metrics_exclude:
         - strict: "host.name-val"
       events_exclude:
         - strict: "host.name-val"
+    host.port:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+      events_exclude:
+        - regexp: ".*"
     oracle.db.hosting_type:
       enabled: true
       metrics_exclude:

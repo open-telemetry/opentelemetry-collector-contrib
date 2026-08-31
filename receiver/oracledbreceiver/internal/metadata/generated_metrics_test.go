@@ -435,7 +435,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbUserRollbacksDataPoint(ts, "1")
 
 			rb := mb.NewResourceBuilder()
+			rb.SetHostAddress("host.address-val")
 			rb.SetHostName("host.name-val")
+			rb.SetHostPort(9)
 			rb.SetOracleDbHostingType("oracle.db.hosting_type-val")
 			rb.SetOracleDbOpenMode("oracle.db.open_mode-val")
 			rb.SetOracleDbPdb("oracle.db.pdb-val")

@@ -31,7 +31,9 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	lb := NewLogsBuilder(loadLogsBuilderConfig(t, "all_set"), settings)
 
 	rb := lb.NewResourceBuilder()
+	rb.SetHostAddress("host.address-val")
 	rb.SetHostName("host.name-val")
+	rb.SetHostPort(9)
 	rb.SetOracleDbHostingType("oracle.db.hosting_type-val")
 	rb.SetOracleDbOpenMode("oracle.db.open_mode-val")
 	rb.SetOracleDbPdb("oracle.db.pdb-val")
@@ -147,7 +149,9 @@ func TestLogsBuilder(t *testing.T) {
 			lb.RecordDbServerTopQueryEvent(ctx, timestamp, "db.system.name-val", "db.server.name-val", "db.namespace-val", "oracle.db.service-val", "db.query.text-val", "oracledb.query_plan-val", "oracledb.sql_id-val", "oracledb.child_number-val", "oracledb.child_address-val", 30.100000, 20, 26.100000, 21, 30.100000, 17.100000, 21, 22, 19, 21.100000, 19, 28, 31, 29, 32, 23, 26.100000, 34, 21, "oracledb.procedure_name-val", "oracledb.procedure_type-val", "db.query.comment_tags-val", "oracledb.plan_hash_value-val", "oracledb.plan.first_load-val", "oracledb.plan.last_load-val")
 
 			rb := lb.NewResourceBuilder()
+			rb.SetHostAddress("host.address-val")
 			rb.SetHostName("host.name-val")
+			rb.SetHostPort(9)
 			rb.SetOracleDbHostingType("oracle.db.hosting_type-val")
 			rb.SetOracleDbOpenMode("oracle.db.open_mode-val")
 			rb.SetOracleDbPdb("oracle.db.pdb-val")
