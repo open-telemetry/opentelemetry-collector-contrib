@@ -43,8 +43,7 @@ func (u *packetServer) ListenAndServe(
 				u.transport,
 				u.packetConn.LocalAddr(),
 				err)
-			var netErr net.Error
-			if errors.As(err, &netErr) {
+			if netErr, ok := errors.AsType[net.Error](err); ok {
 				if netErr.Timeout() {
 					continue
 				}

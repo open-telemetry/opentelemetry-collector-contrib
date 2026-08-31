@@ -283,7 +283,7 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 		readers = []telemetryconfig.MetricReader{}
 	}
 
-	resourceCfg, err := buildSupervisorResourceConfig(&cfg.Resource)
+	resourceCfg, err := buildSupervisorResourceConfig(ctx, logger, &cfg.Resource)
 	if err != nil {
 		return telemetrySettings{}, err
 	}
