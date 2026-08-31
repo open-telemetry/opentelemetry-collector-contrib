@@ -2792,6 +2792,10 @@ func (mockOpAMPClient) RequestConnectionSettings(*protobufs.ConnectionSettingsRe
 	return nil
 }
 
+func (mockOpAMPClient) SetConnectionSettingsStatus(*protobufs.ConnectionSettingsStatus) error {
+	return nil
+}
+
 func (m mockOpAMPClient) SetCustomCapabilities(customCapabilities *protobufs.CustomCapabilities) error {
 	if m.setCustomCapabilitiesFunc != nil {
 		return m.setCustomCapabilitiesFunc(customCapabilities)

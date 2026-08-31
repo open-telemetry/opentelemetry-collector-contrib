@@ -4201,3 +4201,102 @@ func TestSupervisorBinarySize(t *testing.T) {
 		info.Size(), float64(info.Size())/(1024*1024),
 		supervisorBinarySizeLimitBytes, supervisorBinarySizeLimitBytes/(1024*1024))
 }
+
+// testSupervisorStartsCollectorOverLocalSocket drives the shared body of the
+// local socket e2e tests: start a supervisor from configType/extraConfig, wait
+// for the upstream connection (the collector connects back to the supervisor
+// over the local socket during bootstrap, so a healthy upstream connection
+// proves the local link and the collector's opampextension socket dialing
+// work), then push a remote config and verify logs flow through the collector.
+func testSupervisorStartsCollectorOverLocalSocket(t *testing.T, configType string, extraConfig map[string]string) {
+	var agentConfig atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.EffectiveConfig != nil {
+					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+					if config != nil {
+						agentConfig.Store(string(config.Body))
+					}
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	extraConfig["url"] = server.addr
+	extraConfig["storage_dir"] = t.TempDir()
+	s, _ := newSupervisor(t, configType, extraConfig)
+
+	require.Nil(t, s.Start(t.Context()))
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	cfg, hash, inputFile, outputFile := createSimplePipelineCollectorConf(t)
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: cfg.Bytes()},
+				},
+			},
+			ConfigHash: hash,
+		},
+	})
+
+	require.Eventually(t, func() bool {
+		cfg, ok := agentConfig.Load().(string)
+		if ok {
+			return strings.Contains(cfg, "file_log")
+		}
+
+		return false
+	}, 5*time.Second, 500*time.Millisecond, "Collector was not started with remote config over the local socket")
+
+	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
+	require.NotZero(t, n, "Could not write to input file")
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		logRecord := make([]byte, 1024)
+		n, _ := outputFile.Read(logRecord)
+
+		return n != 0
+	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
+}
+
+// TestSupervisorStartsCollectorOverUnixSocket verifies the full
+// supervisor<->collector handshake when the local OpAMP link is a filesystem
+// Unix domain socket instead of a loopback TCP port.
+func TestSupervisorStartsCollectorOverUnixSocket(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix domain socket transport is not supported on Windows")
+	}
+
+	// macOS limits the socket path to ~104 bytes, which the test temp dir can
+	// exceed, so bind under a short base directory.
+	socketDir, err := os.MkdirTemp("/tmp", "supuds")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.RemoveAll(socketDir) })
+
+	testSupervisorStartsCollectorOverLocalSocket(t, "unix_socket", map[string]string{
+		"unix_socket": filepath.Join(socketDir, "opamp.sock"),
+	})
+}
+
+// TestSupervisorStartsCollectorOverNamedPipe verifies the full
+// supervisor<->collector handshake when the local OpAMP link is a Windows named
+// pipe instead of a loopback TCP port.
+func TestSupervisorStartsCollectorOverNamedPipe(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Named pipe transport is only supported on Windows")
+	}
+
+	testSupervisorStartsCollectorOverLocalSocket(t, "named_pipe", map[string]string{
+		"named_pipe": fmt.Sprintf(`\\.\pipe\opamp-e2e-%d`, os.Getpid()),
+	})
+}

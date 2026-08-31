@@ -423,6 +423,335 @@ func TestValidate(t *testing.T) {
 			expectedErrorFunc: simpleError("agent::opamp_server_port must be a valid port number"),
 		},
 		{
+			name: "Unix socket and TCP port both set",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					OpAMPServerPort:         8090,
+					OpAMPServerSocket: &confignet.AddrConfig{
+						Transport: confignet.TransportTypeUnix,
+						Endpoint:  "/tmp/opamp.sock",
+					},
+					BootstrapTimeout: 5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+				HealthCheck: defaultHealthCheck,
+			},
+			expectedErrorFunc: simpleError("agent::opamp_server_socket and agent::opamp_server_port are mutually exclusive"),
+		},
+		{
+			name: "Unix socket configured",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					OpAMPServerSocket: &confignet.AddrConfig{
+						Transport: confignet.TransportTypeUnix,
+						Endpoint:  "/tmp/opamp.sock",
+					},
+					BootstrapTimeout: 5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+				HealthCheck: defaultHealthCheck,
+			},
+			// Valid on Linux and macOS; rejected on Windows.
+			expectedErrorFunc: func() string {
+				if runtime.GOOS == "windows" {
+					return `agent::opamp_server_socket transport "unix" is not supported on windows`
+				}
+				return ""
+			},
+		},
+		{
+			name: "Unix socket relative path",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					OpAMPServerSocket: &confignet.AddrConfig{
+						Transport: confignet.TransportTypeUnix,
+						Endpoint:  "relative/opamp.sock",
+					},
+					BootstrapTimeout: 5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+				HealthCheck: defaultHealthCheck,
+			},
+			// On Windows the platform check fires first.
+			expectedErrorFunc: func() string {
+				if runtime.GOOS == "windows" {
+					return `agent::opamp_server_socket transport "unix" is not supported on windows`
+				}
+				return "agent::opamp_server_socket::endpoint must be an absolute path"
+			},
+		},
+		{
+			name: "Unix socket path too long",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					OpAMPServerSocket: &confignet.AddrConfig{
+						Transport: confignet.TransportTypeUnix,
+						Endpoint:  "/tmp/" + strings.Repeat("a", 150) + ".sock",
+					},
+					BootstrapTimeout: 5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+				HealthCheck: defaultHealthCheck,
+			},
+			expectedErrorFunc: func() string {
+				switch runtime.GOOS {
+				case "windows":
+					return `agent::opamp_server_socket transport "unix" is not supported on windows`
+				case "darwin":
+					return "agent::opamp_server_socket::endpoint path exceeds the platform limit of 103 bytes"
+				default:
+					return "agent::opamp_server_socket::endpoint path exceeds the platform limit of 107 bytes"
+				}
+			},
+		},
+		{
+			name: "Unix socket mode configured",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					OpAMPServerSocket: &confignet.AddrConfig{
+						Transport: confignet.TransportTypeUnix,
+						Endpoint:  "/tmp/opamp.sock",
+					},
+					OpAMPServerSocketMode: "0660",
+					BootstrapTimeout:      5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+				HealthCheck: defaultHealthCheck,
+			},
+			expectedErrorFunc: func() string {
+				if runtime.GOOS == "windows" {
+					return `agent::opamp_server_socket transport "unix" is not supported on windows`
+				}
+				return ""
+			},
+		},
+		{
+			name: "Unix socket mode invalid",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					OpAMPServerSocket: &confignet.AddrConfig{
+						Transport: confignet.TransportTypeUnix,
+						Endpoint:  "/tmp/opamp.sock",
+					},
+					OpAMPServerSocketMode: "rw-rw----",
+					BootstrapTimeout:      5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+				HealthCheck: defaultHealthCheck,
+			},
+			expectedErrorFunc: func() string {
+				if runtime.GOOS == "windows" {
+					return `agent::opamp_server_socket transport "unix" is not supported on windows`
+				}
+				return `agent::opamp_server_socket_mode must be an octal permission mode between "0" and "0777"`
+			},
+		},
+		{
+			name: "Unix socket mode without socket",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					OpAMPServerSocketMode:   "0660",
+					BootstrapTimeout:        5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+				HealthCheck: defaultHealthCheck,
+			},
+			expectedErrorFunc: simpleError(`agent::opamp_server_socket_mode requires agent::opamp_server_socket with transport "unix"`),
+		},
+		{
+			name: "Named pipe configured",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					OpAMPServerSocket: &confignet.AddrConfig{
+						Transport: confignet.TransportTypeNpipe,
+						Endpoint:  `\\.\pipe\opamp-supervisor`,
+					},
+					BootstrapTimeout: 5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+				HealthCheck: defaultHealthCheck,
+			},
+			// Valid on Windows; rejected elsewhere.
+			expectedErrorFunc: func() string {
+				if runtime.GOOS != "windows" {
+					return `agent::opamp_server_socket transport "npipe" is only supported on windows`
+				}
+				return ""
+			},
+		},
+		{
+			name: "Socket with unsupported transport",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					OpAMPServerSocket: &confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:4320",
+					},
+					BootstrapTimeout: 5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+				HealthCheck: defaultHealthCheck,
+			},
+			expectedErrorFunc: simpleError(`agent::opamp_server_socket::transport must be "unix" or "npipe"`),
+		},
+		{
+			name: "Socket without endpoint",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					OpAMPServerSocket: &confignet.AddrConfig{
+						Transport: confignet.TransportTypeUnix,
+					},
+					BootstrapTimeout: 5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+				HealthCheck: defaultHealthCheck,
+			},
+			expectedErrorFunc: simpleError("agent::opamp_server_socket::endpoint must be provided"),
+		},
+		{
+			name: "Socket mode with named pipe",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					OpAMPServerSocket: &confignet.AddrConfig{
+						Transport: confignet.TransportTypeNpipe,
+						Endpoint:  `\\.\pipe\opamp-supervisor`,
+					},
+					OpAMPServerSocketMode: "0660",
+					BootstrapTimeout:      5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+				HealthCheck: defaultHealthCheck,
+			},
+			// On non-Windows the npipe platform check fires first.
+			expectedErrorFunc: func() string {
+				if runtime.GOOS != "windows" {
+					return `agent::opamp_server_socket transport "npipe" is only supported on windows`
+				}
+				return `agent::opamp_server_socket_mode requires agent::opamp_server_socket with transport "unix"`
+			},
+		},
+		{
 			name: "Zero value opamp server port number",
 			config: Supervisor{
 				Server: OpAMPServer{

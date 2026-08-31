@@ -32,6 +32,7 @@ import (
 	"github.com/open-telemetry/opamp-go/server"
 	serverTypes "github.com/open-telemetry/opamp-go/server/types"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -190,6 +191,18 @@ type Supervisor struct {
 	// The OpAMP server to communicate with the Collector's OpAMP extension
 	opampServer     server.OpAMPServer
 	opampServerPort int
+	// opampServerListener is the local IPC socket listener (Unix domain socket
+	// or Windows named pipe) backing the local OpAMP server when
+	// agent::opamp_server_socket is configured. It is nil in the default TCP
+	// mode. The supervisor owns its lifecycle and closes it on shutdown, which
+	// unlinks a Unix socket file.
+	opampServerListener net.Listener
+	// agentPID is the PID of the managed collector process, updated whenever it
+	// is (re)started. It is read by the Unix domain socket peer-credential check
+	// from the OpAMP server goroutine, so it is stored atomically rather than
+	// reading s.commander (which is mutated on the agent goroutine). 0 means the
+	// collector is not running, in which case connections are rejected.
+	agentPID atomic.Int64
 
 	// The HTTP server for health check endpoint
 	healthCheckServer   *http.Server
@@ -495,10 +508,14 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	_, span := s.getTracer().Start(s.runCtx, "GetBootstrapInfo")
 	defer span.End()
 
-	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
-	if err != nil {
-		span.SetStatus(codes.Error, fmt.Sprintf("Could not get supervisor opamp service port: %v", err))
-		return err
+	// In local socket mode no TCP port is used; the socket address comes from
+	// config and is read by composeOpAMPExtensionConfig.
+	if !s.usingLocalSocket() {
+		s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
+		if err != nil {
+			span.SetStatus(codes.Error, fmt.Sprintf("Could not get supervisor opamp service port: %v", err))
+			return err
+		}
 	}
 
 	bootstrapConfig, err := s.composeNoopConfig()
@@ -518,14 +535,23 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	done := make(chan error, 1)
 	var connected atomic.Bool
 	var doneReported atomic.Bool
+	// bootstrapAgentPID holds the PID of the short-lived bootstrap collector once
+	// started, for peer authentication over the Unix domain socket. It is 0 until
+	// the collector is started, and connections are rejected while it is 0.
+	var bootstrapAgentPID atomic.Int64
 
 	// Start a one-shot server to get the Collector's agent description
 	// and available components using the Collector's OpAMP extension.
-	err = srv.Start(flattenedSettings{
-		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
+	bootstrapSettings := flattenedSettings{
 		onConnecting: func(*http.Request) (bool, int) {
 			connected.Store(true)
 			return true, http.StatusOK
+		},
+		onConnectionClose: func(serverTypes.Connection) {
+			// Keep the flag accurate if a peer is rejected by peer-credential
+			// authentication (disconnected during onConnected) so a subsequent
+			// bootstrap timeout reports the right reason.
+			connected.Store(false)
 		},
 		onMessage: func(_ serverTypes.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 			response := &protobufs.ServerToAgent{}
@@ -578,7 +604,28 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 			return response
 		},
-	}.toServerSettings())
+	}
+
+	if s.usingLocalSocket() {
+		ln, lerr := s.createOpAMPServerListener()
+		if lerr != nil {
+			span.SetStatus(codes.Error, fmt.Sprintf("Could not create OpAMP server listener: %v", lerr))
+			return lerr
+		}
+		// The bootstrap server is short-lived; close (and unlink) the socket when
+		// done so the long-lived server can bind the same path.
+		defer func() { _ = ln.Close() }()
+		bootstrapSettings.listener = ln
+		expectedPID := func() int { return int(bootstrapAgentPID.Load()) }
+		bootstrapSettings.onConnected = s.authenticateAgentPeer(expectedPID)
+		// Also gate message handling: the plain-HTTP OpAMP transport is served on
+		// the same listener and is not stopped by a Disconnect in OnConnected.
+		bootstrapSettings.onMessage = s.requirePeerAuth(expectedPID, bootstrapSettings.onMessage)
+	} else {
+		bootstrapSettings.endpoint = fmt.Sprintf("localhost:%d", s.opampServerPort)
+	}
+
+	err = srv.Start(bootstrapSettings.toServerSettings())
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not start OpAMP server: %v", err))
 		return err
@@ -612,6 +659,9 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not start Agent: %v", err))
 		return err
 	}
+	// Record the bootstrap collector PID so the peer-credential check can validate
+	// the connecting peer when serving over a Unix domain socket.
+	bootstrapAgentPID.Store(int64(cmd.Pid()))
 
 	defer func() {
 		if stopErr := cmd.Stop(s.runCtx); stopErr != nil {
@@ -848,18 +898,14 @@ func (nopHost) GetExtensions() map[component.ID]component.Component {
 func (s *Supervisor) startOpAMPServer() error {
 	s.opampServer = server.New(newLoggerFromZap(s.telemetrySettings.Logger, "opamp-server"))
 
-	var err error
-	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
-	if err != nil {
-		return err
-	}
-
 	s.telemetrySettings.Logger.Debug("Starting OpAMP server...")
 
+	// serverStarted gates the deferred Unix-socket cleanup below: the listener is
+	// only retained if the server actually starts.
+	var serverStarted bool
 	connected := &atomic.Bool{}
 
-	err = s.opampServer.Start(flattenedSettings{
-		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
+	fs := flattenedSettings{
 		onConnecting: func(*http.Request) (bool, int) {
 			// Only allow one agent to be connected the this server at a time.
 			alreadyConnected := connected.Swap(true)
@@ -869,14 +915,53 @@ func (s *Supervisor) startOpAMPServer() error {
 		onConnectionClose: func(serverTypes.Connection) {
 			connected.Store(false)
 		},
-	}.toServerSettings())
-	if err != nil {
+	}
+
+	if s.usingLocalSocket() {
+		ln, err := s.createOpAMPServerListener()
+		if err != nil {
+			return err
+		}
+		s.opampServerListener = ln
+		fs.listener = ln
+		// Authenticate the connecting collector against the process we spawned.
+		fs.onConnected = s.authenticateAgentPeer(s.expectedAgentPID)
+		// Also gate message handling: the plain-HTTP OpAMP transport is served on
+		// the same listener and is not stopped by a Disconnect in OnConnected.
+		fs.onMessage = s.requirePeerAuth(s.expectedAgentPID, fs.onMessage)
+		// If the server fails to start, close (and unlink) the socket we just
+		// created so it does not leak; Shutdown is not called when Start fails.
+		defer func() {
+			if !serverStarted && s.opampServerListener != nil {
+				_ = s.opampServerListener.Close()
+				s.opampServerListener = nil
+			}
+		}()
+	} else {
+		port, err := s.getSupervisorOpAMPServerPort()
+		if err != nil {
+			return err
+		}
+		s.opampServerPort = port
+		fs.endpoint = fmt.Sprintf("localhost:%d", s.opampServerPort)
+	}
+
+	if err := s.opampServer.Start(fs.toServerSettings()); err != nil {
 		return err
 	}
+	serverStarted = true
 
 	s.telemetrySettings.Logger.Debug("OpAMP server started.")
 
 	return nil
+}
+
+// expectedAgentPID returns the PID of the managed collector process, or 0 if it
+// is not currently running. It reads an atomic snapshot updated at each agent
+// (re)start so the peer-credential check (which runs on the OpAMP server
+// goroutine) never races with s.commander mutations on the agent goroutine.
+func (s *Supervisor) expectedAgentPID() int {
+	return int(s.agentPID.Load())
 }
 
 func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
@@ -1342,6 +1427,7 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 	tplVars := map[string]any{
 		"InstanceUid":                s.persistentState.InstanceID.String(),
 		"SupervisorPort":             s.opampServerPort,
+		"Socket":                     s.config.Agent.OpAMPServerSocket,
 		"PID":                        s.pidProvider.PID(),
 		"PPIDPollInterval":           orphanPollInterval,
 		"ReportsAvailableComponents": s.config.Capabilities.ReportsAvailableComponents,
@@ -1933,6 +2019,10 @@ func (s *Supervisor) handleRestartCommand() error {
 	}
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Could not restart agent process", zap.Error(err))
+	} else {
+		// Pid() is safe to read here (same goroutine as Restart); publish it for
+		// the Unix domain socket peer-credential check.
+		s.agentPID.Store(int64(s.commander.Pid()))
 	}
 	s.resetAgentReady()
 	return err
@@ -1960,6 +2050,9 @@ func (s *Supervisor) startAgent() (agentStartStatus, error) {
 		}
 		return "", startErr
 	}
+	// Pid() is safe to read here (same goroutine as Start); publish it for the
+	// Unix domain socket peer-credential check.
+	s.agentPID.Store(int64(s.commander.Pid()))
 
 	return agentStarting, nil
 }
@@ -2123,6 +2216,9 @@ func (s *Supervisor) runAgentProcess() {
 			if err != nil {
 				s.telemetrySettings.Logger.Error("Could not stop agent process", zap.Error(err))
 			}
+			// The collector is gone; clear the expected PID so the Unix domain
+			// socket peer check cannot match a recycled PID.
+			s.agentPID.Store(0)
 			return
 		}
 	}
@@ -2283,6 +2379,9 @@ func (s *Supervisor) stopAgentApplyConfig() {
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Could not stop agent process", zap.Error(err))
 	}
+	// The collector is stopped; clear the expected PID so the Unix domain socket
+	// peer check cannot match a recycled PID.
+	s.agentPID.Store(0)
 
 	if err := s.writeAgentConfig(); err != nil {
 		s.telemetrySettings.Logger.Error("Failed to write agent config", zap.Error(err))
@@ -2311,6 +2410,17 @@ func (s *Supervisor) Shutdown() {
 		} else {
 			s.telemetrySettings.Logger.Debug("OpAMP server stopped.")
 		}
+	}
+
+	// Close the Unix domain socket listener (if any) after the server has stopped
+	// using it. Closing the listener unlinks the socket file from the filesystem.
+	// opampServer.Stop above may already have closed it (http.Server.Shutdown
+	// closes the listeners it serves on), so tolerate net.ErrClosed.
+	if s.opampServerListener != nil {
+		if err := s.opampServerListener.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
+			s.telemetrySettings.Logger.Error("Could not close the OpAMP server unix socket listener", zap.Error(err))
+		}
+		s.opampServerListener = nil
 	}
 
 	if s.healthCheckServer != nil {
@@ -2658,6 +2768,78 @@ func (s *Supervisor) getSupervisorOpAMPServerPort() (int, error) {
 		return s.config.Agent.OpAMPServerPort, nil
 	}
 	return s.findRandomPort()
+}
+
+// usingLocalSocket reports whether the local OpAMP server should be served over
+// a local IPC socket (Unix domain socket or Windows named pipe) instead of a
+// loopback TCP port.
+func (s *Supervisor) usingLocalSocket() bool {
+	return s.config.Agent.OpAMPServerSocket != nil
+}
+
+// createOpAMPServerListener opens the local IPC socket listener for the local
+// OpAMP server. For a Unix domain socket it removes any stale socket left by a
+// previous run and sets the socket file to the configured permission mode
+// (default 0600, owner-only); the returned listener unlinks the socket file
+// when closed. For a Windows named pipe none of that filesystem housekeeping
+// applies: the pipe namespace is ephemeral and access is limited by the
+// process-default DACL, with the peer-PID check authenticating each connection.
+func (s *Supervisor) createOpAMPServerListener() (net.Listener, error) {
+	if s.config.Agent.OpAMPServerSocket.Transport == confignet.TransportTypeNpipe {
+		return s.config.Agent.OpAMPServerSocket.Listen(context.Background())
+	}
+
+	socketPath := s.config.Agent.OpAMPServerSocket.Endpoint
+
+	// Ensure the parent directory exists and is private to the owning user, so
+	// the socket is created in a location only this user can reach (defense in
+	// depth alongside the peer-credential check). This also turns an otherwise
+	// cryptic "no such file or directory" from net.Listen into a clear error.
+	if err := os.MkdirAll(filepath.Dir(socketPath), 0o700); err != nil {
+		return nil, fmt.Errorf("create parent directory for opamp socket %q: %w", socketPath, err)
+	}
+
+	// net.Listen fails if the path already exists, so remove a stale socket left
+	// by a previous run. This is the most common Unix domain socket footgun.
+	if err := removeStaleUnixSocket(socketPath); err != nil {
+		return nil, fmt.Errorf("remove stale opamp socket %q: %w", socketPath, err)
+	}
+
+	ln, err := net.Listen("unix", socketPath)
+	if err != nil {
+		return nil, fmt.Errorf("listen on opamp unix socket %q: %w", socketPath, err)
+	}
+
+	// Set the socket to the configured mode (default 0600, owner-only) so the
+	// filesystem limits who can connect, as defense in depth alongside the
+	// peer-credential check performed on each connection.
+	if err := os.Chmod(socketPath, s.config.Agent.UnixSocketFileMode()); err != nil {
+		_ = ln.Close()
+		return nil, fmt.Errorf("chmod opamp unix socket %q: %w", socketPath, err)
+	}
+
+	return ln, nil
+}
+
+// removeStaleUnixSocket removes path if it exists and is a socket. It refuses to
+// remove a symlink or a non-socket file so a misconfigured (or maliciously
+// pre-created) path cannot delete or be redirected to arbitrary data. os.Lstat
+// is used so a symlink is detected rather than followed.
+func removeStaleUnixSocket(path string) error {
+	info, err := os.Lstat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("refusing to remove %q: is a symlink", path)
+	}
+	if info.Mode().Type()&os.ModeSocket == 0 {
+		return fmt.Errorf("refusing to remove %q: not a socket", path)
+	}
+	return os.Remove(path)
 }
 
 func (s *Supervisor) getFeatureGateFlag() []string {
