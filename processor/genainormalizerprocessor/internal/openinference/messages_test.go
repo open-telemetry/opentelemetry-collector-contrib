@@ -5,6 +5,7 @@ package openinference
 
 import (
 	"encoding/json"
+	"maps"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -495,6 +496,218 @@ func TestReconstructMessages_ContentsArrayNonTextOnly(t *testing.T) {
 	assert.True(t, imageAttrOk, "image attr must not be removed when content was not reconstructed")
 	_, typeAttrOk := attrs.Get("llm.input_messages.0.message.contents.0.message_content.type")
 	assert.True(t, typeAttrOk, "type attr must not be removed when content was not reconstructed")
+}
+
+// Attributes this processor does not map into the reconstructed message must
+// survive remove_originals, otherwise the payload is lost with nothing emitted
+// in its place. These are all fields defined by the OpenInference semantic
+// conventions that the reconstruction does not yet understand.
+func TestReconstructMessages_UnmappedFieldsSurvive(t *testing.T) {
+	tests := []struct {
+		name string
+		key  string
+		with map[string]string
+	}{
+		{
+			name: "legacy function_call_name",
+			key:  "llm.output_messages.0.message.function_call_name",
+			with: map[string]string{"llm.output_messages.0.message.function_call_name": "get_weather"},
+		},
+		{
+			name: "legacy function_call_arguments_json",
+			key:  "llm.output_messages.0.message.function_call_arguments_json",
+			with: map[string]string{"llm.output_messages.0.message.function_call_arguments_json": `{"city":"Berlin"}`},
+		},
+		{
+			name: "tool_call reasoning_signature",
+			key:  "llm.output_messages.0.message.tool_calls.0.tool_call.reasoning_signature",
+			with: map[string]string{
+				"llm.output_messages.0.message.tool_calls.0.tool_call.id":                  "c1",
+				"llm.output_messages.0.message.tool_calls.0.tool_call.function.name":       "fn",
+				"llm.output_messages.0.message.tool_calls.0.tool_call.reasoning_signature": "sig123",
+			},
+		},
+		{
+			name: "unknown future message field",
+			key:  "llm.output_messages.0.message.some_future_field",
+			with: map[string]string{"llm.output_messages.0.message.some_future_field": "payload"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kvs := map[string]string{"llm.output_messages.0.message.role": "assistant"}
+			maps.Copy(kvs, tt.with)
+			attrs := newAttrs(kvs)
+
+			require.True(t, ReconstructMessages(attrs, true, false))
+
+			_, ok := attrs.Get(tt.key)
+			assert.True(t, ok, "unmapped attr %q must survive remove_originals", tt.key)
+
+			// Recognized siblings are still consumed and removed.
+			_, roleOK := attrs.Get("llm.output_messages.0.message.role")
+			assert.False(t, roleOK, "mapped role attr should still be removed")
+		})
+	}
+}
+
+// Removal is per content entry, not per message: an entry that is reconstructed
+// loses its source attrs while an entry that is skipped keeps them, even when
+// both live under the same prefix.
+func TestReconstructMessages_ContentsRemovalIsPerMessage(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":                             "user",
+		"llm.input_messages.0.message.contents.0.message_content.type":  "text",
+		"llm.input_messages.0.message.contents.0.message_content.text":  "hello",
+		"llm.input_messages.1.message.role":                             "user",
+		"llm.input_messages.1.message.contents.0.message_content.type":  "image",
+		"llm.input_messages.1.message.contents.0.message_content.image": "http://example.com/a.png",
+	})
+
+	require.True(t, ReconstructMessages(attrs, true, false))
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 2)
+	assert.Equal(t, []any{map[string]any{"type": "text", "content": "hello"}},
+		msgs[0].(map[string]any)["parts"])
+	assert.Equal(t, []any{}, msgs[1].(map[string]any)["parts"])
+
+	_, ok := attrs.Get("llm.input_messages.0.message.contents.0.message_content.text")
+	assert.False(t, ok, "reconstructed message 0 should lose its content attrs")
+	_, ok = attrs.Get("llm.input_messages.1.message.contents.0.message_content.image")
+	assert.True(t, ok, "skipped message 1 must keep its content attrs")
+}
+
+// A reconstructed text entry may still carry fields the processor does not map.
+// Only the mapped ones are removed.
+func TestReconstructMessages_UnmappedSiblingOnTextEntrySurvives(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":                            "user",
+		"llm.input_messages.0.message.contents.0.message_content.type": "text",
+		"llm.input_messages.0.message.contents.0.message_content.text": "hello",
+		"llm.input_messages.0.message.contents.0.message_content.id":   "content-123",
+	})
+
+	require.True(t, ReconstructMessages(attrs, true, false))
+
+	_, ok := attrs.Get("llm.input_messages.0.message.contents.0.message_content.text")
+	assert.False(t, ok, "mapped text attr should be removed")
+	_, ok = attrs.Get("llm.input_messages.0.message.contents.0.message_content.id")
+	assert.True(t, ok, "unmapped id attr on a text entry must survive")
+}
+
+// type=text with an empty text value yields no part, so nothing was consumed and
+// the source attrs must stay.
+func TestReconstructMessages_ContentsEmptyTextNotConsumed(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":                            "user",
+		"llm.input_messages.0.message.contents.0.message_content.type": "text",
+		"llm.input_messages.0.message.contents.0.message_content.text": "",
+	})
+
+	require.True(t, ReconstructMessages(attrs, true, false))
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	assert.Equal(t, []any{}, msgs[0].(map[string]any)["parts"])
+
+	_, ok := attrs.Get("llm.input_messages.0.message.contents.0.message_content.type")
+	assert.True(t, ok, "empty text entry was not reconstructed, attrs must survive")
+}
+
+func TestReconstructMessages_ContentsArrayOutputMessages(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.output_messages.0.message.role":                             "assistant",
+		"llm.output_messages.0.message.contents.0.message_content.type":  "text",
+		"llm.output_messages.0.message.contents.0.message_content.text":  "the answer",
+		"llm.output_messages.0.message.contents.1.message_content.type":  "image",
+		"llm.output_messages.0.message.contents.1.message_content.image": "http://example.com/b.png",
+	})
+
+	require.True(t, ReconstructMessages(attrs, true, false))
+
+	val, ok := attrs.Get(otelsemconv.GenAIOutputMessages)
+	require.True(t, ok)
+	msgs := parseJSON(t, val.AsString())
+	msg := msgs[0].(map[string]any)
+	assert.Equal(t, []any{map[string]any{"type": "text", "content": "the answer"}}, msg["parts"])
+	assert.Empty(t, msg["finish_reason"])
+
+	_, ok = attrs.Get("llm.output_messages.0.message.contents.1.message_content.image")
+	assert.True(t, ok, "skipped image attr must survive on output messages too")
+}
+
+func TestReconstructMessages_ContentsKeepOriginals(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":                            "user",
+		"llm.input_messages.0.message.contents.0.message_content.type": "text",
+		"llm.input_messages.0.message.contents.0.message_content.text": "hello",
+	})
+
+	require.True(t, ReconstructMessages(attrs, false, false))
+
+	_, ok := attrs.Get("llm.input_messages.0.message.contents.0.message_content.text")
+	assert.True(t, ok, "contents attrs must be kept when removeOriginals=false")
+}
+
+// buildParts emits exactly one part source per message. Fields belonging to a
+// source that lost the precedence chain are not represented in the output, so
+// their source attributes must survive.
+func TestReconstructMessages_LosingPartSourceSurvives(t *testing.T) {
+	tests := []struct {
+		name    string
+		attrs   map[string]string
+		kept    string
+		removed string
+	}{
+		{
+			name: "flat content wins over indexed contents",
+			attrs: map[string]string{
+				"llm.input_messages.0.message.role":                            "user",
+				"llm.input_messages.0.message.content":                         "flat",
+				"llm.input_messages.0.message.contents.0.message_content.type": "text",
+				"llm.input_messages.0.message.contents.0.message_content.text": "indexed",
+			},
+			kept:    "llm.input_messages.0.message.contents.0.message_content.text",
+			removed: "llm.input_messages.0.message.content",
+		},
+		{
+			name: "tool_calls win over flat content",
+			attrs: map[string]string{
+				"llm.output_messages.0.message.role":                                 "assistant",
+				"llm.output_messages.0.message.content":                              "let me check the weather",
+				"llm.output_messages.0.message.tool_calls.0.tool_call.id":            "c1",
+				"llm.output_messages.0.message.tool_calls.0.tool_call.function.name": "get_weather",
+			},
+			kept:    "llm.output_messages.0.message.content",
+			removed: "llm.output_messages.0.message.tool_calls.0.tool_call.id",
+		},
+		{
+			name: "tool_call_id wins over indexed contents",
+			attrs: map[string]string{
+				"llm.input_messages.0.message.role":                            "tool",
+				"llm.input_messages.0.message.tool_call_id":                    "c1",
+				"llm.input_messages.0.message.contents.0.message_content.type": "text",
+				"llm.input_messages.0.message.contents.0.message_content.text": "tool result",
+			},
+			kept:    "llm.input_messages.0.message.contents.0.message_content.text",
+			removed: "llm.input_messages.0.message.tool_call_id",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			attrs := newAttrs(tt.attrs)
+			require.True(t, ReconstructMessages(attrs, true, false))
+
+			_, ok := attrs.Get(tt.kept)
+			assert.True(t, ok, "%q was not emitted, so it must survive", tt.kept)
+			_, ok = attrs.Get(tt.removed)
+			assert.False(t, ok, "%q was emitted, so it should be removed", tt.removed)
+		})
+	}
 }
 
 func TestReconstructMessages_FlatContentTakesPrecedence(t *testing.T) {
