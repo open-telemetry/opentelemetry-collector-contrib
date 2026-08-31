@@ -897,8 +897,7 @@ func (se *SumologicExtension) updateMetadataAsync() {
 
 		se.logger.Warn("Async metadata update failed, will retry", zap.Error(err))
 
-		var backOffErr *backoff.PermanentError
-		if errors.As(err, &backOffErr) {
+		if _, ok := errors.AsType[*backoff.PermanentError](err); ok {
 			se.logger.Error("Async metadata update encountered a permanent error, stopping retries", zap.Error(err))
 			return
 		}
