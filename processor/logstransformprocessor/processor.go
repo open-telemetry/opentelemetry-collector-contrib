@@ -121,11 +121,9 @@ func (ltp *logsTransformProcessor) startFromConverter() {
 // startConverterLoop starts the converter loop, which reads all the logs translated by the fromConverter and then forwards
 // them to pipeline
 func (ltp *logsTransformProcessor) startConverterLoop(ctx context.Context, wg *sync.WaitGroup) {
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		ltp.converterLoop(ctx)
-	}()
+	wg.Go(func() {
+	ltp.converterLoop(ctx)
+    })
 
 	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
 		wg.Wait()
