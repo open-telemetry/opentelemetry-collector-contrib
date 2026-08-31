@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
@@ -41,6 +42,25 @@ func TestCreateMetrics(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotNil(t, metricsReceiver)
+}
+
+func TestCreateMetricsRejectsDisableOldWithoutEnableNew(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverApacheDisableOldFormatMetricsFeatureGate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverApacheDisableOldFormatMetricsFeatureGate.ID(), false))
+	}()
+
+	_, err := NewFactory().CreateMetrics(
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
+		&Config{
+			ControllerConfig: scraperhelper.ControllerConfig{
+				CollectionInterval: 10 * time.Second,
+			},
+		},
+		consumertest.NewNop(),
+	)
+	require.ErrorContains(t, err, "receiver.apache.disableOldFormatMetrics feature gate requires receiver.apache.enableNewFormatMetrics")
 }
 
 func TestPortValidate(t *testing.T) {

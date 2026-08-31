@@ -13,7 +13,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [justinianvoss22, dyl10s, ishleenk17]
+    active: [justinianvoss22, dyl10s, ishleenk17, shrenikjain38]
     seeking_new: true
 
 override_value_enabled: true

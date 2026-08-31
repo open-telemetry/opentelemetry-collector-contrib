@@ -107,7 +107,7 @@ func (ms *PingRttStddevMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for icmpcheckreceiver metrics.
+// MetricsConfig provides config for icmp_check metrics.
 type MetricsConfig struct {
 	PingLossRatio PingLossRatioMetricConfig `mapstructure:"ping.loss.ratio"`
 	PingRttAvg    PingRttAvgMetricConfig    `mapstructure:"ping.rtt.avg"`
@@ -162,7 +162,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for icmpcheckreceiver resource attributes.
+// ResourceAttributesConfig provides config for icmp_check resource attributes.
 type ResourceAttributesConfig struct {
 	NetPeerIP   ResourceAttributeConfig `mapstructure:"net.peer.ip"`
 	NetPeerName ResourceAttributeConfig `mapstructure:"net.peer.name"`
@@ -179,7 +179,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for icmpcheckreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for icmp_check metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
