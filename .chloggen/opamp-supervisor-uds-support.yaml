@@ -1,0 +1,33 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: cmd/opampsupervisor
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: "Add an `agent.opamp_server_socket` option to serve the local Supervisor-to-Collector OpAMP link over a Unix domain socket (`transport: unix`) or Windows named pipe (`transport: npipe`) with peer authentication."
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [50603]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  When set, the Supervisor serves its local OpAMP server on the configured local IPC socket
+  instead of a TCP port and authenticates the connecting Collector via its kernel-vouched peer
+  credentials (UID and PID on Linux, UID on macOS, PID on Windows). It is mutually exclusive
+  with `opamp_server_port`. `transport: unix` is supported on Linux and macOS, `transport: npipe`
+  on Windows. The Unix socket file's permission mode can be set with
+  `agent.opamp_server_socket_mode` (octal string, default `"0600"`).
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
