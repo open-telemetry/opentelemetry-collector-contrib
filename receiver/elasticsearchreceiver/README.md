@@ -34,8 +34,16 @@ See the [Elasticsearch docs](https://www.elastic.co/guide/en/elasticsearch/refer
 The following settings are optional:
 
 - `nodes` (default: `["_all"]`): Allows specifying node filters that define which nodes are scraped for node-level and cluster-level metrics. See [the Elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster.html#cluster-nodes) for allowed filters. If this option is left explicitly empty, then no node-level metrics will be scraped and cluster-level metrics will scrape only metrics related to cluster's health.
+
+  NOTE: If running one receiver instance per node, set this option to `["_local"]`.
 - `skip_cluster_metrics` (default: `false`): If true, cluster-level metrics will not be scraped.
+- `cluster_stats_master_only` (default: `false`): If true, cluster stats (from `/_cluster/stats`) will only be scraped when this receiver's endpoint is the cluster's current elected master node. This is useful when running one receiver instance per node against the same cluster, to avoid every instance issuing the same cluster-wide call on every collection interval. Has no effect if `skip_cluster_metrics` is true.
+
+  NOTE: When `cluster_stats_master_only` is enabled, the `/_cluster/stats` call always targets `_all` nodes, regardless of the `nodes` setting. This is intentional: `nodes` controls which node(s) the *per-node* `NodeStats` call reports on (e.g. `_local`, so each instance is attributed to its own node), but `/_cluster/stats` is a cluster-wide aggregate. If it inherited a `nodes: ["_local"]` filter, the elected master would report stats for only itself instead of the whole cluster, silently changing the meaning of these metrics.
 - `indices` (default: `["_all"]`): Allows specifying index filters that define which indices are scraped for index-level metrics. See [the Elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-stats.html#index-stats-api-path-params) for allowed filters. If this option is left explicitly empty, then no index-level metrics will be scraped.
+- `index_stats_master_only` (default: `false`): If true, index stats (from `/_stats`) will only be scraped when this receiver's endpoint is the cluster's current elected master node. Same rationale as `cluster_stats_master_only`.
+
+  NOTE: While the cluster is in the middle of a master election (e.g. the previous master node was restarted or the cluster lost quorum), Elasticsearch's `/_cluster/state/master_node` endpoint reports no elected master. During that window, every receiver instance evaluates as "not master," so with `cluster_stats_master_only` and/or `index_stats_master_only` enabled, the corresponding stats will not be scraped from any instance until a new master is elected.
 - `endpoint` (default = `http://localhost:9200`): The base URL of the Elasticsearch API for the cluster to monitor.
 - `username` (no default): Specifies the username used to authenticate with Elasticsearch using basic auth. Must be specified if password is specified.
 - `password` (no default): Specifies the password used to authenticate with Elasticsearch using basic auth. Must be specified if username is specified.

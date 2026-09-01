@@ -297,9 +297,11 @@ The default Kerberos service name is `mongodb`. Users can authenticate with an e
 
 ## Metrics
 
-The following metric are available with versions:
+The following metrics are version-gated:
 
-- `mongodb.extent.count` < 4.4 with mmapv1 storage engine
+- `mongodb.extent.count` — MongoDB `< 4.4` with the MMAPv1 storage engine only.
+- `mongodb.wt.log.write`, `mongodb.wt.log.operation.count`, `mongodb.wt.log.sync.time`, `mongodb.wt.fsync.count`, and `mongodb.wt.concurrent_transaction.ticket.in_use` — require the WiredTiger storage engine (the default since MongoDB 3.2; MMAPv1, the previous default, was removed in 4.2). No data points are emitted on other storage engines, such as the Enterprise-only inMemory engine.
+- `mongodb.wt.concurrent_transaction.ticket.in_use` is additionally read from `serverStatus.wiredTiger.concurrentTransactions.{read,write}.out` on MongoDB `< 8.0`, and from `serverStatus.queues.execution.{read,write}.out` on MongoDB `8.0+` (the field was renamed in 8.0). The receiver probes both paths and uses whichever is present, so the same metric emits across all supported versions.
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 

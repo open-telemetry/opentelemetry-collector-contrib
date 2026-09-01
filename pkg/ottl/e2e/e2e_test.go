@@ -2128,6 +2128,49 @@ func Test_e2e_ottl_features(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
 		},
+		{
+			statement: `set(attributes["test"], SliceGetter([1,"two"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				sl := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				sl.AppendEmpty().SetStr("1")
+				sl.AppendEmpty().SetStr("two")
+			},
+		},
+		{
+			statement: `set(attributes["test"], SliceGetter([], ["scalar","values"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				sl := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				sl.AppendEmpty().SetStr("scalar")
+				sl.AppendEmpty().SetStr("values")
+			},
+		},
+		{
+			statement: `set(attributes["test"], SliceGetter([attributes["int_value"], 1, "two"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				sl := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				sl.AppendEmpty().SetStr("0")
+				sl.AppendEmpty().SetStr("1")
+				sl.AppendEmpty().SetStr("two")
+			},
+		},
+		{
+			statement: `set(attributes["test"], SliceGetter(attributes["primitiveValuesSlice"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				sl := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				sl.AppendEmpty().SetStr("value1")
+				sl.AppendEmpty().SetStr("42")
+				sl.AppendEmpty().SetStr("true")
+			},
+		},
+		{
+			statement: `set(attributes["test"], SliceGetter(Split("A|B|C", "|")))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				sl := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				sl.AppendEmpty().SetStr("A")
+				sl.AppendEmpty().SetStr("B")
+				sl.AppendEmpty().SetStr("C")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -2792,7 +2835,9 @@ func Test_ProcessSpanEvents(t *testing.T) {
 
 func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statement[*ottllog.TransformContext], error) {
 	settings := componenttest.NewNopTelemetrySettings()
-	parserWithoutPathCtx, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings)
+	functions := ottlfuncs.StandardFuncs[*ottllog.TransformContext]()
+	functions["SliceGetter"] = newSliceGetterFactory[*ottllog.TransformContext]()
+	parserWithoutPathCtx, err := ottllog.NewParser(functions, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -2802,7 +2847,7 @@ func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statemen
 		return nil, err
 	}
 
-	parserWithPathCtx, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
+	parserWithPathCtx, err := ottllog.NewParser(functions, settings, ottllog.EnablePathContextNames())
 	if err != nil {
 		return nil, err
 	}
@@ -3158,4 +3203,57 @@ func Test_e2e_clear_bytes_value(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, pcommon.ValueTypeBytes, val.Type())
 	assert.Empty(t, val.Bytes().AsRaw(), "byte array should be cleared to empty")
+}
+
+type sliceGetterArguments[K any] struct {
+	Values       ottl.SliceGetter[K, ottl.StringLikeGetter[K]]
+	ScalarValues ottl.Optional[ottl.SliceGetter[K, string]]
+}
+
+func newSliceGetterFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("SliceGetter", &sliceGetterArguments[K]{}, createSliceGetterFunction[K])
+}
+
+func createSliceGetterFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*sliceGetterArguments[K])
+	if !ok {
+		return nil, errors.New("sliceGetterArguments args must be of type *sliceGetterArguments[K]")
+	}
+	return func(ctx context.Context, tCtx K) (any, error) {
+		vals, err := args.Values.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+
+		sl := pcommon.NewSlice()
+		sl.EnsureCapacity(len(vals))
+		for _, g := range vals {
+			val, hasValue, err := g.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+			sv := sl.AppendEmpty()
+			if hasValue {
+				err = sv.FromRaw(val)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+
+		if !args.ScalarValues.IsEmpty() {
+			s := args.ScalarValues.Get()
+			scalars, err := s.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+			for _, v := range scalars {
+				err := sl.AppendEmpty().FromRaw(v)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+		return sl, nil
+	}, nil
 }

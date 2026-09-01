@@ -69,6 +69,9 @@ var (
 	//go:embed templates/owntelemetry.yaml
 	ownTelemetryTpl string
 
+	//go:embed templates/nooptelemetry.yaml
+	noopTelemetry string
+
 	lastRecvRemoteConfigFile       = "last_recv_remote_config.dat"
 	lastWorkingRemoteConfigFile    = "last_working_remote_config.dat"
 	lastRecvOwnTelemetryConfigFile = "last_recv_own_telemetry_config.dat"
@@ -283,7 +286,7 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 		readers = []telemetryconfig.MetricReader{}
 	}
 
-	resourceCfg, err := buildSupervisorResourceConfig(&cfg.Resource)
+	resourceCfg, err := buildSupervisorResourceConfig(ctx, logger, &cfg.Resource)
 	if err != nil {
 		return telemetrySettings{}, err
 	}
@@ -1244,6 +1247,13 @@ func (s *Supervisor) composeNoopConfig() ([]byte, error) {
 		return nil, err
 	}
 	if err := config.MergeConfFromYAML(conf, s.composeOpAMPExtensionConfig()); err != nil {
+		return nil, err
+	}
+	// The bootstrap Collector is stopped as soon as it has reported its
+	// AgentDescription, so its internal metrics are never collected. Disabling
+	// them keeps the Collector's default reader from binding localhost:8888,
+	// which fails the bootstrap when that port is already in use.
+	if err := config.MergeConfFromYAML(conf, []byte(noopTelemetry)); err != nil {
 		return nil, err
 	}
 

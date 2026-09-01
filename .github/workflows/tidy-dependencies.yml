@@ -1,6 +1,6 @@
 name: "Project: Tidy"
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, ready_for_review, synchronize, reopened, labeled, unlabeled]
     branches:
       - main
@@ -20,7 +20,7 @@ jobs:
       pull-requests: write # for gh pr edit --remove-label
     timeout-minutes: 30
     runs-on: ubuntu-24.04
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependency-major-update') && (github.actor == 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, 'renovatebot')) && github.event.pull_request.head.repo.fork == false }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependency-major-update') && (github.event.pull_request.user.login == 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, 'renovatebot')) && github.event.pull_request.head.repo.fork == false }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -30,11 +30,6 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
-        id: otelbot-token
-        with:
-          client-id: ${{ vars.OTELBOT_CLIENT_ID }}
-          private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
       - name: go mod tidy, make genotelcontribcol and make genoteltestbedcol
         run: |
           make gotidy && make genotelcontribcol && make genoteltestbedcol
@@ -42,8 +37,6 @@ jobs:
           git config user.email 197425009+otelbot@users.noreply.github.com
           echo "git diff --exit-code || (git add . && git commit -m \"go mod tidy, make genotelcontribcol and make genoteltestbedcol\" && git push)"
           git diff --exit-code || (git add . && git commit -m "go mod tidy, make genotelcontribcol and make genoteltestbedcol" && git push)
-        env:
-          GITHUB_TOKEN: ${{ steps.otelbot-token.outputs.token }}
       - name: Remove renovatebot label
         env:
           GH_TOKEN: ${{ github.token }}

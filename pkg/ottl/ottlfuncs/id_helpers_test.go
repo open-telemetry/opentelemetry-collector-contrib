@@ -18,7 +18,7 @@ import (
 const fakeFuncName = "funkyfake"
 
 func Test_newIDExprFunc_rawBytes(t *testing.T) {
-	target, err := ottl.NewTestingLiteralGetter(true, makeIDGetter([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	target, err := ottl.NewTestingOptionalLiteralGetter(true, makeIDGetter([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	require.NoError(t, err)
 	expr, err := newIDExprFunc(fakeFuncName, target, decodeHexToSpanID)
 	require.NoError(t, err, "initialization should succeed for literal getters with valid data")
@@ -29,7 +29,7 @@ func Test_newIDExprFunc_rawBytes(t *testing.T) {
 }
 
 func Test_newIDExprFunc_hexBytes(t *testing.T) {
-	target, err := ottl.NewTestingLiteralGetter(true, makeIDGetter([]byte("0102030405060708090a0b0c0d0e0f10")))
+	target, err := ottl.NewTestingOptionalLiteralGetter(true, makeIDGetter([]byte("0102030405060708090a0b0c0d0e0f10")))
 	require.NoError(t, err)
 	expr, err := newIDExprFunc(fakeFuncName, target, decodeHexToProfileID)
 	require.NoError(t, err, "initialization should succeed for literal getters with valid data")
@@ -40,7 +40,7 @@ func Test_newIDExprFunc_hexBytes(t *testing.T) {
 }
 
 func Test_newIDExprFunc_literalSuccess(t *testing.T) {
-	target, err := ottl.NewTestingLiteralGetter(true, makeIDGetter([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	target, err := ottl.NewTestingOptionalLiteralGetter(true, makeIDGetter([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	require.NoError(t, err)
 	expr, err := spanID[any](target)
 	require.NoError(t, err, "initialization should succeed for literal getters with valid data")
@@ -69,7 +69,7 @@ func Test_newIDExprFunc_literalInitErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			target, err := ottl.NewTestingLiteralGetter(true, makeIDGetter(tt.value))
+			target, err := ottl.NewTestingOptionalLiteralGetter(true, makeIDGetter(tt.value))
 			require.NoError(t, err)
 
 			expr, err := newIDExprFunc(fakeFuncName, target, decodeHexToSpanID)
@@ -102,7 +102,7 @@ func Test_newIDExprFunc_literalStringInitErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			target, err := ottl.NewTestingLiteralGetter(true, makeIDGetter([]byte(tt.value)))
+			target, err := ottl.NewTestingOptionalLiteralGetter(true, makeIDGetter([]byte(tt.value)))
 			require.NoError(t, err)
 			expr, err := newIDExprFunc(fakeFuncName, target, decodeHexToTraceID)
 
@@ -119,8 +119,8 @@ type nonLiteralByteGetter[R idByteArray] struct {
 	value []byte
 }
 
-func (g *nonLiteralByteGetter[R]) Get(context.Context, any) ([]byte, error) {
-	return g.value, nil
+func (g *nonLiteralByteGetter[R]) Get(context.Context, any) ([]byte, bool, error) {
+	return g.value, g.value != nil, nil
 }
 
 func Test_newIDExprFunc_dynamicSuccess(t *testing.T) {

@@ -12,8 +12,6 @@ status:
     emeritus: [jackgopack4, ankitpatel96]
 
 tests:
-  goleak:
-    skip: true
   config:
     api:
       key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"

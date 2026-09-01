@@ -82,8 +82,8 @@ type ecsInfoOption func(*EcsInfo)
 func NewECSInfo(refreshInterval time.Duration, hostIPProvider hostIPProvider, host component.Host, settings component.TelemetrySettings, options ...ecsInfoOption) (*EcsInfo, error) {
 	setting := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	setting.MaxIdleConns = 0
-	setting.IdleConnTimeout = 0
+	setting.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	setting.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	setting.ForceAttemptHTTP2 = false
 	setting.Timeout = defaultTimeout
 	ctx, cancel := context.WithCancel(context.Background())

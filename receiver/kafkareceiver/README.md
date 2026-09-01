@@ -135,6 +135,9 @@ The following settings can be optionally configured:
     **Note: when `error_backoff` is enabled, the failed record is automatically retried on the next poll cycle once all retries are exhausted. Without `error_backoff`, the partition remains paused until a rebalance occurs.**
   - `on_permanent_error`: (default = value of `on_error`) If false, messages that generate permanent errors are not marked. If true, messages that generate permanent errors are marked.
     **Note: this can block the entire partition in case a message processing returns a permanent error. Permanent errors are not retried via `error_backoff`, but the uncommitted message will be reprocessed after a rebalance.**
+- `partition_processing`:
+  - `independent` (default = false): Process each assigned topic partition sequentially in its own worker so a blocked partition does not block polling healthy partitions. Requires `autocommit.enable` to be true.
+  - `max_buffered_batches` (default = 1): Maximum number of fetched batches waiting for each partition worker. Must be greater than zero when independent processing is enabled.
 - `header_extraction`:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel pipeline
   - `headers` (default = []): List of headers they'd like to extract from kafka record.
@@ -308,3 +311,23 @@ In the example above:
   but will exclude `logs-test` and `logs-dev`
 - For metrics: the receiver will consume from topics like `metrics-app`, `metrics-infra`
   but will exclude any topics starting with `metrics-internal-`
+
+#### Independent partition processing
+
+> **NOTE**: Independent partition processing requires `autocommit.enable: true`. The receiver rejects configurations that combine independent processing with manual commits.
+
+Independent partition processing keeps records ordered within each partition while allowing other assigned partitions to continue when one downstream consumer is blocked. Each partition has a bounded mailbox. A full mailbox pauses only that partition and resumes it when capacity becomes available.
+
+The receiver creates one worker and mailbox per assigned partition. `max_buffered_batches` limits the number of fetched batches waiting in each mailbox, not the number of records or workers.
+
+Resource usage grows with the number of assigned partitions and `max_buffered_batches`. Increasing mailbox capacity allows more fetched data to remain in memory while waiting for processing.
+
+When a partition is revoked, its worker is cancelled and queued batches are discarded. The next owner fetches those records again from the committed offset, so standard Kafka at-least-once delivery and possible duplication still apply.
+
+```yaml
+receivers:
+  kafka:
+    partition_processing:
+      independent: true
+      max_buffered_batches: 1
+```

@@ -28,16 +28,16 @@ func TestLoadConfig(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	defaultServerConfig.WriteTimeout = 0
 	defaultServerConfig.ReadHeaderTimeout = 0
-	defaultServerConfig.IdleTimeout = 0
-	defaultServerConfig.KeepAlivesEnabled = false
+	defaultServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	defaultServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	defaultServerConfig.NetAddr = confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}
 
 	noAuthServerConfig := confighttp.NewDefaultServerConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	noAuthServerConfig.WriteTimeout = 0
 	noAuthServerConfig.ReadHeaderTimeout = 0
-	noAuthServerConfig.IdleTimeout = 0
-	noAuthServerConfig.KeepAlivesEnabled = false
+	noAuthServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	noAuthServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	noAuthServerConfig.NetAddr = confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}
 
 	tests := []struct {

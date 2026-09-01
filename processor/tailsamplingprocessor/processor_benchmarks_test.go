@@ -48,7 +48,7 @@ func BenchmarkSampling(b *testing.B) {
 	ctx := b.Context()
 	for b.Loop() {
 		for i, id := range traceIDs {
-			_, _ = tsp.makeDecision(ctx, id, sampleBatches[i], metrics)
+			_, _ = tsp.makeDecision(ctx, 0, id, sampleBatches[i], metrics)
 		}
 	}
 }

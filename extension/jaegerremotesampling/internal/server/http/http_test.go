@@ -29,8 +29,8 @@ func TestMissingClientConfigManagerHTTP(t *testing.T) {
 	serverConfig.NetAddr = confignet.AddrConfig{}
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), serverConfig, nil)
 	assert.Equal(t, errMissingStrategyStore, err)
 	assert.Nil(t, s)
@@ -42,8 +42,8 @@ func TestStartAndStopHTTP(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	srvSettings.WriteTimeout = 0
 	srvSettings.ReadHeaderTimeout = 0
-	srvSettings.IdleTimeout = 0
-	srvSettings.KeepAlivesEnabled = false
+	srvSettings.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	srvSettings.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	srvSettings.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "127.0.0.1:0",
@@ -75,8 +75,8 @@ func TestEndpointsAreWired(t *testing.T) {
 			serverConfig.NetAddr = confignet.AddrConfig{}
 			serverConfig.WriteTimeout = 0
 			serverConfig.ReadHeaderTimeout = 0
-			serverConfig.IdleTimeout = 0
-			serverConfig.KeepAlivesEnabled = false
+			serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+			serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 			s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), serverConfig, &mocks.MockCfgMgr{
 				GetSamplingStrategyFunc: func(_ context.Context, _ string) (*api_v2.SamplingStrategyResponse, error) {
 					return &api_v2.SamplingStrategyResponse{
@@ -116,8 +116,8 @@ func TestServiceNameIsRequired(t *testing.T) {
 	serverConfig.NetAddr = confignet.AddrConfig{}
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), serverConfig, &mocks.MockCfgMgr{})
 	require.NoError(t, err)
 	require.NotNil(t, s)
@@ -141,8 +141,8 @@ func TestErrorFromClientConfigManager(t *testing.T) {
 	serverConfig.NetAddr = confignet.AddrConfig{}
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), serverConfig, &mocks.MockCfgMgr{})
 	require.NoError(t, err)
 	require.NotNil(t, s)

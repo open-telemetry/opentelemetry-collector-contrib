@@ -48,7 +48,6 @@ func TestNewFranzSyncProducer_SASL(t *testing.T) {
 			Mechanism: mechanism,
 			Username:  username,
 			Password:  password,
-			Version:   1, // kfake only supports version 1
 		}
 		tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 		client, err := NewFranzSyncProducer(
@@ -404,36 +403,13 @@ func TestNewFranzKafkaConsumer_InitialOffset(t *testing.T) {
 }
 
 func TestBalancerOptFromStrategies(t *testing.T) {
-	balancerExtID := component.MustNewID("my_balancer")
 	type testcase struct {
-		strategy   configkafka.GroupRebalanceStrategy
 		strategies []configkafka.GroupRebalanceStrategy
 		host       component.Host
 		wantNil    bool
 		wantErr    string
 	}
 	for name, tc := range map[string]testcase{
-		"empty": {
-			strategy: "",
-			host:     componenttest.NewNopHost(),
-			wantNil:  true,
-		},
-		"range": {
-			strategy: configkafka.RangeBalanceStrategy,
-			host:     componenttest.NewNopHost(),
-		},
-		"roundrobin": {
-			strategy: configkafka.RoundRobinBalanceStrategy,
-			host:     componenttest.NewNopHost(),
-		},
-		"sticky": {
-			strategy: configkafka.StickyBalanceStrategy,
-			host:     componenttest.NewNopHost(),
-		},
-		"cooperative-sticky": {
-			strategy: configkafka.CooperativeStickyBalanceStrategy,
-			host:     componenttest.NewNopHost(),
-		},
 		"strategies_only": {
 			strategies: []configkafka.GroupRebalanceStrategy{
 				configkafka.CooperativeStickyBalanceStrategy,
@@ -453,33 +429,10 @@ func TestBalancerOptFromStrategies(t *testing.T) {
 			host:    componenttest.NewNopHost(),
 			wantErr: `group_rebalance_strategies[1] extension "my_balancer" not found`,
 		},
-		"extension_not_found": {
-			strategy: "my_balancer",
-			host:     componenttest.NewNopHost(),
-			wantErr:  `group_rebalance_strategy extension "my_balancer" not found`,
-		},
-		"extension_wrong_type": {
-			strategy: "my_balancer",
-			host: &mockHost{extensions: map[component.ID]component.Component{
-				balancerExtID: &nopComponent{},
-			}},
-			wantErr: `group_rebalance_strategy extension "my_balancer" does not implement kgo.GroupBalancer`,
-		},
-		"extension_ok": {
-			strategy: "my_balancer",
-			host: &mockHost{extensions: map[component.ID]component.Component{
-				balancerExtID: &mockGroupBalancer{},
-			}},
-		},
-		"invalid_id": {
-			strategy: "!!!invalid!!!",
-			host:     componenttest.NewNopHost(),
-			wantErr:  `group_rebalance_strategy "!!!invalid!!!" is not a built-in strategy or a valid extension ID`,
-		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			opt, err := balancerOptFromStrategies(tc.strategy, tc.strategies, tc.host)
+			opt, err := balancerOptFromStrategies(tc.strategies, tc.host)
 			if tc.wantErr != "" {
 				require.ErrorContains(t, err, tc.wantErr)
 				return
@@ -797,11 +750,6 @@ type mockHost struct {
 
 func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 	return m.extensions
-}
-
-// nopComponent is a component.Component that does not implement GroupBalancer.
-type nopComponent struct {
-	extension.Extension
 }
 
 // mockTokenSource is a contextTokenSource extension used to test OAUTHBEARER.

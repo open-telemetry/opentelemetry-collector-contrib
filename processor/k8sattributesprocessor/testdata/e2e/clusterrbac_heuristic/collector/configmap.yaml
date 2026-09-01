@@ -16,7 +16,6 @@ data:
     processors:
       k8s_attributes:
         extract:
-          deployment_name_from_replicaset: true
           annotations:
           - from: pod
             key: workload

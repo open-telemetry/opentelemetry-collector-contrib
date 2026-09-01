@@ -243,6 +243,198 @@ func TestScraperNoNodesMetrics(t *testing.T) {
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
+func TestScraperClusterStatsMasterOnly(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		desc          string
+		localNodeID   string
+		masterNodeID  string
+		expectFetched bool
+		expectPartial bool
+	}{
+		{
+			desc:          "local node is master",
+			localNodeID:   "szaFXm55RIeu8X-PTv5unQ",
+			masterNodeID:  "szaFXm55RIeu8X-PTv5unQ",
+			expectFetched: true,
+		},
+		{
+			desc:          "local node is not master",
+			localNodeID:   "szaFXm55RIeu8X-PTv5unQ",
+			masterNodeID:  "someOtherNodeId",
+			expectFetched: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			conf := createDefaultConfig().(*Config)
+			conf.ClusterStatsMasterOnly = true
+
+			sc := newElasticSearchScraper(receivertest.NewNopSettings(metadata.Type), conf)
+			err := sc.start(t.Context(), componenttest.NewNopHost())
+			require.NoError(t, err)
+
+			localNode := nodes(t)
+			localNode.Nodes = map[string]model.NodeInfo{tc.localNodeID: localNode.Nodes["szaFXm55RIeu8X-PTv5unQ"]}
+
+			mockClient := mocks.MockElasticsearchClient{}
+			mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
+			mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
+			mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
+			mockClient.On("Nodes", mock.Anything, []string{"_local"}).Return(localNode, nil)
+			mockClient.On("MasterNode", mock.Anything).Return(&model.MasterNodeResponse{MasterNode: tc.masterNodeID}, nil)
+			mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStatsLinux(t), nil)
+			mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
+			if tc.expectFetched {
+				mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
+			}
+
+			sc.client = &mockClient
+
+			_, err = sc.scrape(t.Context())
+			require.NoError(t, err)
+
+			if tc.expectFetched {
+				mockClient.AssertCalled(t, "ClusterStats", mock.Anything, []string{"_all"})
+			} else {
+				mockClient.AssertNotCalled(t, "ClusterStats", mock.Anything, mock.Anything)
+			}
+		})
+	}
+}
+
+func TestScraperClusterStatsMasterOnlyDetectionError(t *testing.T) {
+	t.Parallel()
+
+	errBoom := errors.New("boom")
+
+	conf := createDefaultConfig().(*Config)
+	conf.ClusterStatsMasterOnly = true
+
+	sc := newElasticSearchScraper(receivertest.NewNopSettings(metadata.Type), conf)
+	err := sc.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	mockClient := mocks.MockElasticsearchClient{}
+	mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
+	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
+	mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
+	mockClient.On("Nodes", mock.Anything, []string{"_local"}).Return(nil, errBoom)
+	mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStatsLinux(t), nil)
+	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
+
+	sc.client = &mockClient
+
+	_, err = sc.scrape(t.Context())
+	require.True(t, scrapererror.IsPartialScrapeError(err))
+	require.ErrorContains(t, err, errBoom.Error())
+
+	mockClient.AssertNotCalled(t, "ClusterStats", mock.Anything, mock.Anything)
+}
+
+func TestScraperClusterStatsMasterOnlyIgnoresNodeFilter(t *testing.T) {
+	t.Parallel()
+
+	conf := createDefaultConfig().(*Config)
+	conf.Nodes = []string{"_local"}
+	conf.ClusterStatsMasterOnly = true
+
+	sc := newElasticSearchScraper(receivertest.NewNopSettings(metadata.Type), conf)
+	err := sc.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	localNodeID := "szaFXm55RIeu8X-PTv5unQ"
+	localNode := nodes(t)
+	localNode.Nodes = map[string]model.NodeInfo{localNodeID: localNode.Nodes[localNodeID]}
+
+	mockClient := mocks.MockElasticsearchClient{}
+	mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
+	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
+	mockClient.On("Nodes", mock.Anything, []string{"_local"}).Return(localNode, nil)
+	mockClient.On("MasterNode", mock.Anything).Return(&model.MasterNodeResponse{MasterNode: localNodeID}, nil)
+	mockClient.On("NodeStats", mock.Anything, []string{"_local"}).Return(nodeStatsLinux(t), nil)
+	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
+	mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
+
+	sc.client = &mockClient
+
+	_, err = sc.scrape(t.Context())
+	require.NoError(t, err)
+
+	// Even though the receiver is configured with nodes: ["_local"] (as recommended for
+	// per-node NodeStats attribution), ClusterStats must still be fetched with "_all" so the
+	// elected master reports true cluster-wide aggregates rather than narrowing to itself.
+	mockClient.AssertCalled(t, "ClusterStats", mock.Anything, []string{"_all"})
+	mockClient.AssertNotCalled(t, "ClusterStats", mock.Anything, []string{"_local"})
+}
+
+func TestScraperIndexStatsMasterOnly(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		desc          string
+		localNodeID   string
+		masterNodeID  string
+		expectFetched bool
+	}{
+		{
+			desc:          "local node is master",
+			localNodeID:   "szaFXm55RIeu8X-PTv5unQ",
+			masterNodeID:  "szaFXm55RIeu8X-PTv5unQ",
+			expectFetched: true,
+		},
+		{
+			desc:          "local node is not master",
+			localNodeID:   "szaFXm55RIeu8X-PTv5unQ",
+			masterNodeID:  "someOtherNodeId",
+			expectFetched: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+
+			conf := createDefaultConfig().(*Config)
+			conf.IndexStatsMasterOnly = true
+
+			sc := newElasticSearchScraper(receivertest.NewNopSettings(metadata.Type), conf)
+			err := sc.start(t.Context(), componenttest.NewNopHost())
+			require.NoError(t, err)
+
+			localNode := nodes(t)
+			localNode.Nodes = map[string]model.NodeInfo{tc.localNodeID: localNode.Nodes["szaFXm55RIeu8X-PTv5unQ"]}
+
+			mockClient := mocks.MockElasticsearchClient{}
+			mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
+			mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
+			mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
+			mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
+			mockClient.On("Nodes", mock.Anything, []string{"_local"}).Return(localNode, nil)
+			mockClient.On("MasterNode", mock.Anything).Return(&model.MasterNodeResponse{MasterNode: tc.masterNodeID}, nil)
+			mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStatsLinux(t), nil)
+			if tc.expectFetched {
+				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
+			}
+
+			sc.client = &mockClient
+
+			_, err = sc.scrape(t.Context())
+			require.NoError(t, err)
+
+			if tc.expectFetched {
+				mockClient.AssertCalled(t, "IndexStats", mock.Anything, []string{"_all"})
+			} else {
+				mockClient.AssertNotCalled(t, "IndexStats", mock.Anything, mock.Anything)
+			}
+		})
+	}
+}
+
 func TestScraperFailedStart(t *testing.T) {
 	t.Parallel()
 
@@ -250,8 +442,8 @@ func TestScraperFailedStart(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = "localhost:9200"
 	clientConfig.TLS = configtls.ClientConfig{

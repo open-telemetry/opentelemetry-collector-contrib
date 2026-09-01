@@ -16,97 +16,97 @@ import (
 func TestValidate(t *testing.T) {
 	clientConfigMissingEndpoint := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigMissingEndpoint.MaxIdleConns = 0
-	clientConfigMissingEndpoint.IdleConnTimeout = 0
+	clientConfigMissingEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfigMissingEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfigMissingEndpoint.ForceAttemptHTTP2 = false
 
 	clientConfigInvalidEndpoint := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigInvalidEndpoint.MaxIdleConns = 0
-	clientConfigInvalidEndpoint.IdleConnTimeout = 0
+	clientConfigInvalidEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfigInvalidEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfigInvalidEndpoint.ForceAttemptHTTP2 = false
 	clientConfigInvalidEndpoint.Endpoint = "invalid://endpoint:  12efg"
 
 	clientConfigMultiValid := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigMultiValid.MaxIdleConns = 0
-	clientConfigMultiValid.IdleConnTimeout = 0
+	clientConfigMultiValid.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfigMultiValid.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfigMultiValid.ForceAttemptHTTP2 = false
 	clientConfigMultiValid.Endpoint = "https://localhost:80"
 
 	clientConfigMultiInvalid := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigMultiInvalid.MaxIdleConns = 0
-	clientConfigMultiInvalid.IdleConnTimeout = 0
+	clientConfigMultiInvalid.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfigMultiInvalid.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfigMultiInvalid.ForceAttemptHTTP2 = false
 	clientConfigMultiInvalid.Endpoint = "invalid://endpoint:  12efg"
 
 	clientConfigMissingScheme := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigMissingScheme.MaxIdleConns = 0
-	clientConfigMissingScheme.IdleConnTimeout = 0
+	clientConfigMissingScheme.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfigMissingScheme.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfigMissingScheme.ForceAttemptHTTP2 = false
 	clientConfigMissingScheme.Endpoint = "www.opentelemetry.io/docs"
 
 	clientConfigValid1 := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigValid1.MaxIdleConns = 0
-	clientConfigValid1.IdleConnTimeout = 0
+	clientConfigValid1.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfigValid1.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfigValid1.ForceAttemptHTTP2 = false
 	clientConfigValid1.Endpoint = "https://opentelemetry.io"
 
 	clientConfigValid2 := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigValid2.MaxIdleConns = 0
-	clientConfigValid2.IdleConnTimeout = 0
+	clientConfigValid2.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfigValid2.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfigValid2.ForceAttemptHTTP2 = false
 	clientConfigValid2.Endpoint = "https://opentelemetry.io:80/docs"
 
 	clientConfigMissingBoth := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigMissingBoth.MaxIdleConns = 0
-	clientConfigMissingBoth.IdleConnTimeout = 0
+	clientConfigMissingBoth.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfigMissingBoth.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfigMissingBoth.ForceAttemptHTTP2 = false
 
 	clientConfigInvalidSingle := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigInvalidSingle.MaxIdleConns = 0
-	clientConfigInvalidSingle.IdleConnTimeout = 0
+	clientConfigInvalidSingle.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfigInvalidSingle.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfigInvalidSingle.ForceAttemptHTTP2 = false
 	clientConfigInvalidSingle.Endpoint = "invalid://endpoint:  12efg"
 
 	clientConfigMissingSchemeSingle := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigMissingSchemeSingle.MaxIdleConns = 0
-	clientConfigMissingSchemeSingle.IdleConnTimeout = 0
+	clientConfigMissingSchemeSingle.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfigMissingSchemeSingle.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfigMissingSchemeSingle.ForceAttemptHTTP2 = false
 	clientConfigMissingSchemeSingle.Endpoint = "www.opentelemetry.io/docs"
 
 	clientConfigValidSingle := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigValidSingle.MaxIdleConns = 0
-	clientConfigValidSingle.IdleConnTimeout = 0
+	clientConfigValidSingle.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfigValidSingle.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfigValidSingle.ForceAttemptHTTP2 = false
 	clientConfigValidSingle.Endpoint = "https://opentelemetry.io"
 
 	clientConfigAutoContentTypeEnabled := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigAutoContentTypeEnabled.MaxIdleConns = 0
-	clientConfigAutoContentTypeEnabled.IdleConnTimeout = 0
+	clientConfigAutoContentTypeEnabled.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfigAutoContentTypeEnabled.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfigAutoContentTypeEnabled.ForceAttemptHTTP2 = false
 	clientConfigAutoContentTypeEnabled.Endpoint = "https://opentelemetry.io"
 
 	clientConfigAutoContentTypeDisabled := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigAutoContentTypeDisabled.MaxIdleConns = 0
-	clientConfigAutoContentTypeDisabled.IdleConnTimeout = 0
+	clientConfigAutoContentTypeDisabled.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfigAutoContentTypeDisabled.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfigAutoContentTypeDisabled.ForceAttemptHTTP2 = false
 	clientConfigAutoContentTypeDisabled.Endpoint = "https://opentelemetry.io"
 
 	clientConfigAutoContentTypeDefault := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigAutoContentTypeDefault.MaxIdleConns = 0
-	clientConfigAutoContentTypeDefault.IdleConnTimeout = 0
+	clientConfigAutoContentTypeDefault.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfigAutoContentTypeDefault.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfigAutoContentTypeDefault.ForceAttemptHTTP2 = false
 	clientConfigAutoContentTypeDefault.Endpoint = "https://opentelemetry.io"
 

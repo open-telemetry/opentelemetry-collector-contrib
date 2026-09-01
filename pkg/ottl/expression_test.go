@@ -148,7 +148,7 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "string literal",
 			val: value{
-				String: ottltest.Strp("str"),
+				String: new("str"),
 			},
 			want:        "str",
 			wantLiteral: true,
@@ -157,7 +157,7 @@ func Test_newGetter(t *testing.T) {
 			name: "float literal",
 			val: value{
 				Literal: &mathExprLiteral{
-					Float: ottltest.Floatp(1.2),
+					Float: new(1.2),
 				},
 			},
 			want:        1.2,
@@ -167,7 +167,7 @@ func Test_newGetter(t *testing.T) {
 			name: "int literal",
 			val: value{
 				Literal: &mathExprLiteral{
-					Int: ottltest.Intp(12),
+					Int: new(int64(12)),
 				},
 			},
 			want:        int64(12),
@@ -184,7 +184,7 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "nil literal",
 			val: value{
-				IsNil: (*isNil)(ottltest.Boolp(true)),
+				IsNil: (*isNil)(new(true)),
 			},
 			want:        nil,
 			wantLiteral: true,
@@ -192,7 +192,7 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "bool literal",
 			val: value{
-				Bool: (*boolean)(ottltest.Boolp(true)),
+				Bool: (*boolean)(new(true)),
 			},
 			want:        true,
 			wantLiteral: true,
@@ -222,10 +222,10 @@ func Test_newGetter(t *testing.T) {
 								Name: "attributes",
 								Keys: []key{
 									{
-										String: ottltest.Strp("foo"),
+										String: new("foo"),
 									},
 									{
-										String: ottltest.Strp("bar"),
+										String: new("bar"),
 									},
 								},
 							},
@@ -254,10 +254,10 @@ func Test_newGetter(t *testing.T) {
 						Function: "PMap",
 						Keys: []key{
 							{
-								String: ottltest.Strp("foo"),
+								String: new("foo"),
 							},
 							{
-								String: ottltest.Strp("bar"),
+								String: new("bar"),
 							},
 						},
 					},
@@ -273,10 +273,10 @@ func Test_newGetter(t *testing.T) {
 						Function: "Map",
 						Keys: []key{
 							{
-								String: ottltest.Strp("foo"),
+								String: new("foo"),
 							},
 							{
-								String: ottltest.Strp("bar"),
+								String: new("bar"),
 							},
 						},
 					},
@@ -292,10 +292,10 @@ func Test_newGetter(t *testing.T) {
 						Function: "PSlice",
 						Keys: []key{
 							{
-								Int: ottltest.Intp(0),
+								Int: new(int64(0)),
 							},
 							{
-								Int: ottltest.Intp(0),
+								Int: new(int64(0)),
 							},
 						},
 					},
@@ -311,10 +311,10 @@ func Test_newGetter(t *testing.T) {
 						Function: "Slice",
 						Keys: []key{
 							{
-								Int: ottltest.Intp(0),
+								Int: new(int64(0)),
 							},
 							{
-								Int: ottltest.Intp(0),
+								Int: new(int64(0)),
 							},
 						},
 					},
@@ -330,10 +330,10 @@ func Test_newGetter(t *testing.T) {
 						Function: "SliceString",
 						Keys: []key{
 							{
-								Int: ottltest.Intp(0),
+								Int: new(int64(0)),
 							},
 							{
-								Int: ottltest.Intp(0),
+								Int: new(int64(0)),
 							},
 						},
 					},
@@ -349,10 +349,10 @@ func Test_newGetter(t *testing.T) {
 						Function: "SliceBool",
 						Keys: []key{
 							{
-								Int: ottltest.Intp(0),
+								Int: new(int64(0)),
 							},
 							{
-								Int: ottltest.Intp(0),
+								Int: new(int64(0)),
 							},
 						},
 					},
@@ -368,10 +368,10 @@ func Test_newGetter(t *testing.T) {
 						Function: "SliceInteger",
 						Keys: []key{
 							{
-								Int: ottltest.Intp(0),
+								Int: new(int64(0)),
 							},
 							{
-								Int: ottltest.Intp(0),
+								Int: new(int64(0)),
 							},
 						},
 					},
@@ -387,10 +387,10 @@ func Test_newGetter(t *testing.T) {
 						Function: "SliceFloat",
 						Keys: []key{
 							{
-								Int: ottltest.Intp(0),
+								Int: new(int64(0)),
 							},
 							{
-								Int: ottltest.Intp(0),
+								Int: new(int64(0)),
 							},
 						},
 					},
@@ -406,10 +406,10 @@ func Test_newGetter(t *testing.T) {
 						Function: "SliceByte",
 						Keys: []key{
 							{
-								Int: ottltest.Intp(0),
+								Int: new(int64(0)),
 							},
 							{
-								Int: ottltest.Intp(0),
+								Int: new(int64(0)),
 							},
 						},
 					},
@@ -432,7 +432,7 @@ func Test_newGetter(t *testing.T) {
 								},
 							},
 							{
-								String: ottltest.Strp("bar"),
+								String: new("bar"),
 							},
 						},
 					},
@@ -455,7 +455,7 @@ func Test_newGetter(t *testing.T) {
 								},
 							},
 							{
-								String: ottltest.Strp("bar"),
+								String: new("bar"),
 							},
 						},
 					},
@@ -475,7 +475,7 @@ func Test_newGetter(t *testing.T) {
 									Left: &addSubTerm{
 										Left: &mathValue{
 											Literal: &mathExprLiteral{
-												Int: ottltest.Intp(0),
+												Int: new(int64(0)),
 											},
 										},
 									},
@@ -486,7 +486,7 @@ func Test_newGetter(t *testing.T) {
 									Left: &addSubTerm{
 										Left: &mathValue{
 											Literal: &mathExprLiteral{
-												Int: ottltest.Intp(0),
+												Int: new(int64(0)),
 											},
 										},
 									},
@@ -537,7 +537,7 @@ func Test_newGetter(t *testing.T) {
 									Left: &addSubTerm{
 										Left: &mathValue{
 											Literal: &mathExprLiteral{
-												Int: ottltest.Intp(0),
+												Int: new(int64(0)),
 											},
 										},
 									},
@@ -559,7 +559,7 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "enum",
 			val: value{
-				Enum: (*enumSymbol)(ottltest.Strp("TEST_ENUM_ONE")),
+				Enum: (*enumSymbol)(new("TEST_ENUM_ONE")),
 			},
 			want:        int64(1),
 			wantLiteral: true,
@@ -580,10 +580,10 @@ func Test_newGetter(t *testing.T) {
 				List: &list{
 					Values: []value{
 						{
-							String: ottltest.Strp("test0"),
+							String: new("test0"),
 						},
 						{
-							String: ottltest.Strp("test1"),
+							String: new("test1"),
 						},
 					},
 				},
@@ -598,12 +598,12 @@ func Test_newGetter(t *testing.T) {
 					Values: []value{
 						{
 							Literal: &mathExprLiteral{
-								Int: ottltest.Intp(1),
+								Int: new(int64(1)),
 							},
 						},
 						{
 							Literal: &mathExprLiteral{
-								Int: ottltest.Intp(2),
+								Int: new(int64(2)),
 							},
 						},
 					},
@@ -619,12 +619,12 @@ func Test_newGetter(t *testing.T) {
 					Values: []value{
 						{
 							Literal: &mathExprLiteral{
-								Float: ottltest.Floatp(1.2),
+								Float: new(1.2),
 							},
 						},
 						{
 							Literal: &mathExprLiteral{
-								Float: ottltest.Floatp(2.4),
+								Float: new(2.4),
 							},
 						},
 					},
@@ -639,10 +639,10 @@ func Test_newGetter(t *testing.T) {
 				List: &list{
 					Values: []value{
 						{
-							Bool: (*boolean)(ottltest.Boolp(true)),
+							Bool: (*boolean)(new(true)),
 						},
 						{
-							Bool: (*boolean)(ottltest.Boolp(false)),
+							Bool: (*boolean)(new(false)),
 						},
 					},
 				},
@@ -712,10 +712,10 @@ func Test_newGetter(t *testing.T) {
 				List: &list{
 					Values: []value{
 						{
-							IsNil: (*isNil)(ottltest.Boolp(true)),
+							IsNil: (*isNil)(new(true)),
 						},
 						{
-							IsNil: (*isNil)(ottltest.Boolp(true)),
+							IsNil: (*isNil)(new(true)),
 						},
 					},
 				},
@@ -729,11 +729,11 @@ func Test_newGetter(t *testing.T) {
 				List: &list{
 					Values: []value{
 						{
-							String: ottltest.Strp("test0"),
+							String: new("test0"),
 						},
 						{
 							Literal: &mathExprLiteral{
-								Int: ottltest.Intp(1),
+								Int: new(int64(1)),
 							},
 						},
 					},
@@ -758,39 +758,39 @@ func Test_newGetter(t *testing.T) {
 				Map: &mapValue{
 					Values: []mapItem{
 						{
-							Key:   ottltest.Strp("stringAttr"),
-							Value: &value{String: ottltest.Strp("value")},
+							Key:   new("stringAttr"),
+							Value: &value{String: new("value")},
 						},
 						{
-							Key: ottltest.Strp("intAttr"),
+							Key: new("intAttr"),
 							Value: &value{
 								Literal: &mathExprLiteral{
-									Int: ottltest.Intp(3),
+									Int: new(int64(3)),
 								},
 							},
 						},
 						{
-							Key: ottltest.Strp("floatAttr"),
+							Key: new("floatAttr"),
 							Value: &value{
 								Literal: &mathExprLiteral{
-									Float: ottltest.Floatp(2.5),
+									Float: new(2.5),
 								},
 							},
 						},
 						{
-							Key:   ottltest.Strp("boolAttr"),
-							Value: &value{Bool: (*boolean)(ottltest.Boolp(true))},
+							Key:   new("boolAttr"),
+							Value: &value{Bool: (*boolean)(new(true))},
 						},
 						{
-							Key:   ottltest.Strp("byteAttr"),
+							Key:   new("byteAttr"),
 							Value: &value{Bytes: (*byteSlice)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8})},
 						},
 						{
-							Key:   ottltest.Strp("enumAttr"),
-							Value: &value{Enum: (*enumSymbol)(ottltest.Strp("TEST_ENUM_ONE"))},
+							Key:   new("enumAttr"),
+							Value: &value{Enum: (*enumSymbol)(new("TEST_ENUM_ONE"))},
 						},
 						{
-							Key: ottltest.Strp("pathAttr"),
+							Key: new("pathAttr"),
 							Value: &value{
 								Literal: &mathExprLiteral{
 									Path: &path{
@@ -804,42 +804,42 @@ func Test_newGetter(t *testing.T) {
 							},
 						},
 						{
-							Key: ottltest.Strp("mapAttr"),
+							Key: new("mapAttr"),
 							Value: &value{
 								Map: &mapValue{
 									Values: []mapItem{
 										{
-											Key: ottltest.Strp("foo"),
+											Key: new("foo"),
 											Value: &value{
 												Map: &mapValue{
 													Values: []mapItem{
 														{
-															Key:   ottltest.Strp("test"),
-															Value: &value{String: ottltest.Strp("value")},
+															Key:   new("test"),
+															Value: &value{String: new("value")},
 														},
 													},
 												},
 											},
 										},
 										{
-											Key: ottltest.Strp("listAttr"),
+											Key: new("listAttr"),
 											Value: &value{
 												List: &list{
 													Values: []value{
 														{
-															String: ottltest.Strp("test0"),
+															String: new("test0"),
 														},
 														{
 															Literal: &mathExprLiteral{
-																Int: ottltest.Intp(1),
+																Int: new(int64(1)),
 															},
 														},
 														{
 															Map: &mapValue{
 																Values: []mapItem{
 																	{
-																		Key:   ottltest.Strp("stringAttr"),
-																		Value: &value{String: ottltest.Strp("value")},
+																		Key:   new("stringAttr"),
+																		Value: &value{String: new("value")},
 																	},
 																},
 															},
@@ -993,7 +993,7 @@ func Test_newGetter_dynamic_path_key(t *testing.T) {
 						},
 					},
 					{
-						String: ottltest.Strp("bar"),
+						String: new("bar"),
 					},
 				},
 			},
@@ -1022,7 +1022,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 						Function: "PMap",
 						Keys: []key{
 							{
-								String: ottltest.Strp("unknown key"),
+								String: new("unknown key"),
 							},
 						},
 					},
@@ -1038,7 +1038,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 						Function: "Map",
 						Keys: []key{
 							{
-								String: ottltest.Strp("unknown key"),
+								String: new("unknown key"),
 							},
 						},
 					},
@@ -1054,7 +1054,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 						Function: "PSlice",
 						Keys: []key{
 							{
-								Int: ottltest.Intp(100),
+								Int: new(int64(100)),
 							},
 						},
 					},
@@ -1070,7 +1070,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 						Function: "PSlice",
 						Keys: []key{
 							{
-								Int: ottltest.Intp(-1),
+								Int: new(int64(-1)),
 							},
 						},
 					},
@@ -1086,7 +1086,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 						Function: "Slice",
 						Keys: []key{
 							{
-								Int: ottltest.Intp(100),
+								Int: new(int64(100)),
 							},
 						},
 					},
@@ -1102,7 +1102,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 						Function: "Slice",
 						Keys: []key{
 							{
-								Int: ottltest.Intp(-1),
+								Int: new(int64(-1)),
 							},
 						},
 					},
@@ -1118,7 +1118,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 						Function: "Hello",
 						Keys: []key{
 							{
-								Int: ottltest.Intp(-1),
+								Int: new(int64(-1)),
 							},
 						},
 					},
@@ -1134,7 +1134,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 						Function: "Hello",
 						Keys: []key{
 							{
-								String: ottltest.Strp("test"),
+								String: new("test"),
 							},
 						},
 					},
@@ -1238,7 +1238,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 								},
 							},
 							{
-								String: ottltest.Strp("bar"),
+								String: new("bar"),
 							},
 						},
 					},
@@ -1261,7 +1261,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 								},
 							},
 							{
-								String: ottltest.Strp("bar"),
+								String: new("bar"),
 							},
 						},
 					},
@@ -1599,13 +1599,14 @@ func Test_StandardStringLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(t.Context(), nil)
+			val, ok, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				require.NoError(t, err)
 				if tt.want == nil {
-					assert.Nil(t, val)
+					assert.False(t, ok)
 				} else {
-					assert.Equal(t, tt.want, *val)
+					assert.True(t, ok)
+					assert.Equal(t, tt.want, val)
 				}
 			} else {
 				var typeErr TypeError
@@ -1623,7 +1624,7 @@ func Test_StandardStringLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(t.Context(), nil)
+	_, _, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -1855,13 +1856,14 @@ func Test_StandardFloatLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(t.Context(), nil)
+			val, ok, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				require.NoError(t, err)
 				if tt.want == nil {
-					assert.Nil(t, val)
+					assert.False(t, ok)
 				} else {
-					assert.Equal(t, tt.want, *val)
+					assert.True(t, ok)
+					assert.Equal(t, tt.want, val)
 				}
 			} else {
 				var typeErr TypeError
@@ -1879,7 +1881,7 @@ func Test_StandardFloatLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(t.Context(), nil)
+	_, _, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -2111,13 +2113,14 @@ func Test_StandardIntLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(t.Context(), nil)
+			val, ok, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				require.NoError(t, err)
 				if tt.want == nil {
-					assert.Nil(t, val)
+					assert.False(t, ok)
 				} else {
-					assert.Equal(t, tt.want, *val)
+					assert.True(t, ok)
+					assert.Equal(t, tt.want, val)
 				}
 			} else {
 				var typeErr TypeError
@@ -2135,10 +2138,43 @@ func Test_StandardIntLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(t.Context(), nil)
+	_, _, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
+}
+
+func Test_StandardIntLikeGetter_UnparsableString(t *testing.T) {
+	tests := []struct {
+		name   string
+		getter IntLikeGetter[any]
+	}{
+		{
+			name: "string type",
+			getter: StandardIntLikeGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return "not an int", nil
+				},
+			},
+		},
+		{
+			name: "pcommon.value type string",
+			getter: StandardIntLikeGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return pcommon.NewValueStr("not an int"), nil
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, ok, err := tt.getter.Get(t.Context(), nil)
+			require.Error(t, err)
+			assert.False(t, ok)
+			assert.Zero(t, val)
+		})
+	}
 }
 
 func Test_StandardByteSliceLikeGetter(t *testing.T) {
@@ -2311,12 +2347,14 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(t.Context(), nil)
+			val, ok, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				require.NoError(t, err)
 				if tt.want == nil {
+					assert.False(t, ok)
 					assert.Nil(t, val)
 				} else {
+					assert.True(t, ok)
 					assert.Equal(t, tt.want, val)
 				}
 			} else {
@@ -2335,7 +2373,7 @@ func Test_StandardByteSliceLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(t.Context(), nil)
+	_, _, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -2546,13 +2584,14 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(t.Context(), nil)
+			val, ok, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				require.NoError(t, err)
 				if tt.want == nil {
-					assert.Nil(t, val)
+					assert.False(t, ok)
 				} else {
-					assert.Equal(t, tt.want, *val)
+					assert.True(t, ok)
+					assert.Equal(t, tt.want, val)
 				}
 			} else {
 				var typeErr TypeError
@@ -2570,7 +2609,7 @@ func Test_StandardBoolLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(t.Context(), nil)
+	_, _, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -3161,9 +3200,10 @@ func Test_newStandardStringLikeGetter(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
 
-			val, err := g.Get(t.Context(), nil)
+			val, ok, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
-			assert.Equal(t, "foo", *val)
+			assert.True(t, ok)
+			assert.Equal(t, "foo", val)
 		})
 	}
 }
@@ -3265,9 +3305,10 @@ func Test_newStandardIntLikeGetter(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
 
-			val, err := g.Get(t.Context(), nil)
+			val, ok, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
-			assert.Equal(t, int64(1), *val)
+			assert.True(t, ok)
+			assert.Equal(t, int64(1), val)
 		})
 	}
 }
@@ -3369,9 +3410,10 @@ func Test_newStandardFloatLikeGetter(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
 
-			val, err := g.Get(t.Context(), nil)
+			val, ok, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
-			assert.Equal(t, float64(1), *val)
+			assert.True(t, ok)
+			assert.Equal(t, float64(1), val)
 		})
 	}
 }
@@ -3473,9 +3515,10 @@ func Test_newStandardBoolLikeGetter(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
 
-			val, err := g.Get(t.Context(), nil)
+			val, ok, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
-			assert.True(t, *val)
+			assert.True(t, ok)
+			assert.True(t, val)
 		})
 	}
 }
@@ -3630,8 +3673,9 @@ func Test_newStandardByteSliceLikeGetterGetter(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
 
-			val, err := g.Get(t.Context(), nil)
+			val, ok, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
+			assert.True(t, ok)
 			assert.Equal(t, []byte{0, 1}, val)
 		})
 	}

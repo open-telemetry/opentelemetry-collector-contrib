@@ -47,6 +47,13 @@ properties:
     type: string
   mapping:
     $ref: mappings_settings
+  metrics_index:
+    description: MetricsIndex configures the index, index alias, or data stream name metrics should be indexed in. https://opensearch.org/docs/latest/im-plugin/index/ https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
+    type: string
+  metrics_index_fallback:
+    type: string
+  metrics_index_time_format:
+    type: string
   namespace:
     type: string
   pipeline:

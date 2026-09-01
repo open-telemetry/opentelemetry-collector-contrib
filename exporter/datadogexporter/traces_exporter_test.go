@@ -8,7 +8,6 @@ package datadogexporter
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -163,7 +162,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	assert := assert.New(t)
 	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
-	ctx := context.Background() //nolint:usetesting
+	ctx := t.Context()
 	exporter, err := f.CreateTraces(ctx, params, &cfg)
 	assert.NoError(err)
 
@@ -558,8 +557,9 @@ func genTraces(traceID pcommon.TraceID, rattrs, sattrs map[string]any, kind ptra
 	if rattrs == nil {
 		return traces
 	}
-	//nolint:errcheck
-	rspans.Resource().Attributes().FromRaw(rattrs)
+	if err := rspans.Resource().Attributes().FromRaw(rattrs); err != nil {
+		return traces
+	}
 	if sattrs != nil {
 		err := span.Attributes().FromRaw(sattrs)
 		if err != nil {

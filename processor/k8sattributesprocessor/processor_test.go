@@ -2341,6 +2341,35 @@ func TestGetAttributesForPodsDaemonSet(t *testing.T) {
 	assert.Nil(t, attrs)
 }
 
+func TestGetAttributesForPodsReplicaSet(t *testing.T) {
+	kc := &fakeClient{
+		ReplicaSets: map[string]*kube.ReplicaSet{
+			"replicaset-789": {
+				Name: "test-replicaset",
+				UID:  "replicaset-789",
+				Attributes: map[string]string{
+					"k8s.replicaset.name": "test-replicaset",
+					"k8s.replicaset.uid":  "replicaset-789",
+				},
+			},
+		},
+	}
+
+	p := &kubernetesprocessor{
+		kc: kc,
+	}
+
+	// Test getting attributes for existing replicaset
+	attrs := p.getAttributesForPodsReplicaSet("replicaset-789")
+	assert.NotNil(t, attrs)
+	assert.Equal(t, "test-replicaset", attrs["k8s.replicaset.name"])
+	assert.Equal(t, "replicaset-789", attrs["k8s.replicaset.uid"])
+
+	// Test getting attributes for non-existent replicaset
+	attrs = p.getAttributesForPodsReplicaSet("non-existent")
+	assert.Nil(t, attrs)
+}
+
 func TestGetAttributesForPodsJob(t *testing.T) {
 	kc := &fakeClient{
 		Jobs: map[string]*kube.Job{
@@ -2367,6 +2396,35 @@ func TestGetAttributesForPodsJob(t *testing.T) {
 
 	// Test getting attributes for non-existent job
 	attrs = p.getAttributesForPodsJob("non-existent")
+	assert.Nil(t, attrs)
+}
+
+func TestGetAttributesForPodsCronJob(t *testing.T) {
+	kc := &fakeClient{
+		CronJobs: map[string]*kube.CronJob{
+			"cronjob-abc": {
+				Name: "test-cronjob",
+				UID:  "cronjob-abc",
+				Attributes: map[string]string{
+					"k8s.cronjob.name": "test-cronjob",
+					"k8s.cronjob.uid":  "cronjob-abc",
+				},
+			},
+		},
+	}
+
+	p := &kubernetesprocessor{
+		kc: kc,
+	}
+
+	// Test getting attributes for existing cronjob
+	attrs := p.getAttributesForPodsCronJob("cronjob-abc")
+	assert.NotNil(t, attrs)
+	assert.Equal(t, "test-cronjob", attrs["k8s.cronjob.name"])
+	assert.Equal(t, "cronjob-abc", attrs["k8s.cronjob.uid"])
+
+	// Test getting attributes for non-existent cronjob
+	attrs = p.getAttributesForPodsCronJob("non-existent")
 	assert.Nil(t, attrs)
 }
 

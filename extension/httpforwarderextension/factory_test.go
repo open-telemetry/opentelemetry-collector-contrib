@@ -26,8 +26,8 @@ func TestFactory(t *testing.T) {
 
 	invalidEgressConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	invalidEgressConfig.MaxIdleConns = 0
-	invalidEgressConfig.IdleConnTimeout = 0
+	invalidEgressConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	invalidEgressConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	invalidEgressConfig.ForceAttemptHTTP2 = false
 	invalidEgressConfig.Endpoint = "123.456.7.89:9090"
 
@@ -35,8 +35,8 @@ func TestFactory(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	validIngressConfig.WriteTimeout = 0
 	validIngressConfig.ReadHeaderTimeout = 0
-	validIngressConfig.IdleTimeout = 0
-	validIngressConfig.KeepAlivesEnabled = false
+	validIngressConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	validIngressConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	validIngressConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  ":0",
@@ -44,8 +44,8 @@ func TestFactory(t *testing.T) {
 
 	validEgressConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	validEgressConfig.MaxIdleConns = 0
-	validEgressConfig.IdleConnTimeout = 0
+	validEgressConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	validEgressConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	validEgressConfig.ForceAttemptHTTP2 = false
 	validEgressConfig.Endpoint = "localhost:9090"
 

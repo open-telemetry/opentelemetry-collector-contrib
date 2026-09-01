@@ -74,15 +74,6 @@ func TestLoadConfig(t *testing.T) {
 			}(),
 		},
 		{
-			name: "kafka/rebalance_strategy",
-			expected: func() *Config {
-				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.ConsumerConfig.GroupRebalanceStrategy = configkafka.StickyBalanceStrategy
-				cfg.ConsumerConfig.GroupInstanceID = "test-instance"
-				return cfg
-			}(),
-		},
-		{
 			name: "kafka/rebalance_strategies",
 			expected: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
@@ -175,6 +166,17 @@ func TestLoadConfig(t *testing.T) {
 			}(),
 		},
 		{
+			name: "kafka/partition_processing",
+			expected: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.PartitionProcessing = PartitionProcessing{
+					Independent:        true,
+					MaxBufferedBatches: 2,
+				}
+				return cfg
+			}(),
+		},
+		{
 			name:        "kafka/invalid_exclude_topics_logs_non_regex",
 			expectedErr: "logs.exclude_topics is configured but none of the configured logs.topics use regex pattern (must start with '^')",
 		},
@@ -209,6 +211,14 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name:        "kafka/invalid_exclude_topics_profiles_empty",
 			expectedErr: "profiles.exclude_topics contains empty string",
+		},
+		{
+			name:        "kafka/invalid_partition_processing_zero_buffered_batches",
+			expectedErr: "partition_processing.max_buffered_batches must be greater than zero",
+		},
+		{
+			name:        "kafka/invalid_partition_processing_manual_commit",
+			expectedErr: "partition_processing.independent requires autocommit.enable",
 		},
 	}
 

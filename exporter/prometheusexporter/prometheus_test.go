@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -43,8 +42,8 @@ func TestPrometheusExporter(t *testing.T) {
 				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 				serverConfig.WriteTimeout = 0
 				serverConfig.ReadHeaderTimeout = 0
-				serverConfig.IdleTimeout = 0
-				serverConfig.KeepAlivesEnabled = false
+				serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+				serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 				serverConfig.NetAddr = confignet.AddrConfig{
 					Transport: "tcp",
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
@@ -67,8 +66,8 @@ func TestPrometheusExporter(t *testing.T) {
 				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 				serverConfig.WriteTimeout = 0
 				serverConfig.ReadHeaderTimeout = 0
-				serverConfig.IdleTimeout = 0
-				serverConfig.KeepAlivesEnabled = false
+				serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+				serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 				serverConfig.NetAddr = confignet.AddrConfig{
 					Transport: "tcp",
 					Endpoint:  "localhost:88999",
@@ -121,8 +120,8 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  addr,
@@ -208,8 +207,8 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  addr,
@@ -290,8 +289,8 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  addr,
@@ -366,8 +365,8 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  addr,
@@ -443,8 +442,8 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  addr,
@@ -711,9 +710,7 @@ this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os=
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set feature gate state for this test
-			originalState := metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate.IsEnabled()
-			testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate, tt.featureGateEnabled)
-			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate, originalState)
+			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate, tt.featureGateEnabled)()
 
 			// Configure the exporter
 			addr := testutil.GetAvailableLocalAddress(t)
@@ -722,8 +719,8 @@ this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os=
 			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 			serverConfig.WriteTimeout = 0
 			serverConfig.ReadHeaderTimeout = 0
-			serverConfig.IdleTimeout = 0
-			serverConfig.KeepAlivesEnabled = false
+			serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+			serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 			serverConfig.NetAddr = confignet.AddrConfig{
 				Transport: "tcp",
 				Endpoint:  addr,
@@ -792,16 +789,16 @@ func TestPrometheusExporter_BackgroundCleanup(t *testing.T) {
 		c.metricFamilies.Store("stale_metric", metricFamily{
 			lastSeen: time.Now().Add(-10 * time.Minute),
 			mf: &io_prometheus_client.MetricFamily{
-				Name: proto.String("stale_metric"),
-				Help: proto.String("should be cleaned up"),
+				Name: new("stale_metric"),
+				Help: new("should be cleaned up"),
 				Type: &gaugeType,
 			},
 		})
 		c.metricFamilies.Store("fresh_metric", metricFamily{
 			lastSeen: time.Now().Add(time.Hour),
 			mf: &io_prometheus_client.MetricFamily{
-				Name: proto.String("fresh_metric"),
-				Help: proto.String("should remain"),
+				Name: new("fresh_metric"),
+				Help: new("should remain"),
 				Type: &gaugeType,
 			},
 		})

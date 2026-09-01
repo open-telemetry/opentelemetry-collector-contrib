@@ -146,6 +146,8 @@ var queryResponses = map[string][]metricRow{
 	},
 	tablespaceUsageSQL:        {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192", "STATUS": "ONLINE"}},
 	tablespaceUsageWithMaxSQL: {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192", "STATUS": "ONLINE", "MAX_BYTES": "1073741824"}},
+	asmDiskgroupSQL:           {{"NAME": "DATA", "TOTAL_MB": "102400", "FREE_MB": "40960", "USABLE_FILE_MB": "20480", "OFFLINE_DISKS": "0"}},
+	asmDiskSQL:                {{"DISKGROUP_NAME": "DATA", "DISK_NAME": "DATA_0000", "READ_ERRS": "0", "WRITE_ERRS": "0"}},
 	dataDictHitRatioSQL:       {{"DATA_DICTIONARY_HIT_RATIO": "98.75"}},
 	osStatSQL: {
 		{"STAT_NAME": "NUM_CPUS", "VALUE": "8"},
@@ -493,6 +495,150 @@ func TestScraper_ScrapeTablespaceHealthMetrics_BadMaxBytes(t *testing.T) {
 	_, err = scrpr.scrape(t.Context())
 	require.True(t, scrapererror.IsPartialScrapeError(err))
 	require.EqualError(t, err, `failed to parse int64 for OracledbTablespaceLimit, value was not-a-number: strconv.ParseInt: parsing "not-a-number": invalid syntax`)
+}
+
+// TestScraper_ScrapeASMMetrics covers the 5 new opt-in ASM diskgroup/disk metrics.
+func TestScraper_ScrapeASMMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbAsmDiskGroupFree.Enabled = true
+	cfg.Metrics.OracledbAsmDiskGroupCapacity.Enabled = true
+	cfg.Metrics.OracledbAsmDiskGroupUsableFree.Enabled = true
+	cfg.Metrics.OracledbAsmDiskGroupOfflineDisks.Enabled = true
+	cfg.Metrics.OracledbAsmDiskErrors.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+
+	found := map[string]bool{}
+	for i := 0; i < metrics.Len(); i++ {
+		metric := metrics.At(i)
+		switch metric.Name() {
+		case "oracledb.asm.disk_group.free":
+			found["free"] = true
+			dp := metric.Gauge().DataPoints().At(0)
+			assert.Equal(t, int64(40960*1024*1024), dp.IntValue())
+			name, ok := dp.Attributes().Get("oracledb.asm.disk_group.name")
+			require.True(t, ok)
+			assert.Equal(t, "DATA", name.Str())
+		case "oracledb.asm.disk_group.capacity":
+			found["capacity"] = true
+			assert.Equal(t, int64(102400*1024*1024), metric.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.asm.disk_group.usable_free":
+			found["usable_free"] = true
+			assert.Equal(t, int64(20480*1024*1024), metric.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.asm.disk_group.offline_disks":
+			found["offline_disks"] = true
+			assert.Equal(t, int64(0), metric.Gauge().DataPoints().At(0).IntValue())
+		case "oracledb.asm.disk.errors":
+			found["disk_errors"] = true
+			assert.True(t, metric.Sum().IsMonotonic(), "oracledb.asm.disk.errors must be a monotonic sum")
+			assert.Equal(t, 2, metric.Sum().DataPoints().Len(), "expected one data point per direction (read, write)")
+		}
+	}
+	assert.True(t,
+		found["free"] && found["capacity"] && found["usable_free"] && found["offline_disks"] && found["disk_errors"],
+		"expected all 5 ASM metrics to be present, got: %v", found)
+}
+
+// TestScraper_ScrapeASMMetrics_NonASMInstance verifies that when the ASM views return zero rows
+// (a non-ASM instance), the scraper no-ops cleanly instead of erroring.
+func TestScraper_ScrapeASMMetrics_NonASMInstance(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbAsmDiskGroupFree.Enabled = true
+	cfg.Metrics.OracledbAsmDiskErrors.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			if s == asmDiskgroupSQL || s == asmDiskSQL {
+				return &fakeDbClient{Responses: [][]metricRow{{}}}
+			}
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	m, err := scrpr.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < metrics.Len(); i++ {
+		name := metrics.At(i).Name()
+		assert.NotEqual(t, "oracledb.asm.disk_group.free", name)
+		assert.NotEqual(t, "oracledb.asm.disk.errors", name)
+	}
+}
+
+// TestScraper_ScrapeASMMetrics_ErrorDoesNotBlockOtherMetrics verifies that an ASM query error
+// surfaces as a partial scrape error, without preventing an unrelated metric collected earlier
+// or later in the same scrape from being emitted.
+func TestScraper_ScrapeASMMetrics_ErrorDoesNotBlockOtherMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.OracledbAsmDiskGroupFree.Enabled = true
+	cfg.Metrics.OracledbConsistentGets.Enabled = true
+
+	scrpr := oracleScraper{
+		logger: zap.NewNop(),
+		mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		dbProviderFunc: func() (*sql.DB, error) {
+			return nil, nil
+		},
+		clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+			if s == asmDiskgroupSQL {
+				return &fakeDbClient{Err: errors.New("connection reset by peer")}
+			}
+			return &fakeDbClient{Responses: [][]metricRow{queryResponses[s]}}
+		},
+		id:                   component.ID{},
+		metricsBuilderConfig: cfg,
+	}
+
+	err := scrpr.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	m, err := scrpr.scrape(t.Context())
+	require.Error(t, err)
+	assert.True(t, scrapererror.IsPartialScrapeError(err), "an ASM error must be a partial scrape error, not a total failure")
+
+	metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	found := false
+	for i := 0; i < metrics.Len(); i++ {
+		if metrics.At(i).Name() == "oracledb.consistent_gets" {
+			found = true
+		}
+		assert.NotEqual(t, "oracledb.asm.disk_group.free", metrics.At(i).Name(),
+			"the failed ASM metric itself must not appear")
+	}
+	assert.True(t, found, "oracledb.consistent_gets must still be emitted despite the ASM error")
 }
 
 // TestScraper_ScrapeCDBRoot verifies that when the scraper is in CDB-root mode (isCDBRoot=true)

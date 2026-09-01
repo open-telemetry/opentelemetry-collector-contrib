@@ -79,6 +79,7 @@ func TestLoadConfig(t *testing.T) {
 					Topic:    "spans",
 					Encoding: "otlp_proto",
 				},
+				SignalHeader:                         true,
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
 				PartitionLogsByResourceAttributes:    true,
@@ -405,4 +406,29 @@ func TestLoadConfigFailed(t *testing.T) {
 			assert.ErrorContains(t, err, tt.errorContains)
 		})
 	}
+}
+
+func TestSignalHeaderValidation(t *testing.T) {
+	t.Run("metadata header collision", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.SignalHeader = true
+		cfg.IncludeMetadataKeys = []string{"otelcol.signal"}
+
+		assert.ErrorContains(t, cfg.Validate(), `"otelcol.signal" is reserved when signal_header is enabled`)
+	})
+
+	t.Run("record header collision", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.SignalHeader = true
+		cfg.RecordHeaders = []kafkaclient.RecordHeader{{Name: "otelcol.signal"}}
+
+		assert.ErrorContains(t, cfg.Validate(), `"otelcol.signal" is reserved when signal_header is enabled`)
+	})
+
+	t.Run("disabled", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.RecordHeaders = []kafkaclient.RecordHeader{{Name: "otelcol.signal"}}
+
+		assert.NoError(t, cfg.Validate())
+	})
 }

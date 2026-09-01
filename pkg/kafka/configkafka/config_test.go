@@ -28,10 +28,9 @@ func TestClientConfig(t *testing.T) {
 		},
 		"full": {
 			expected: ClientConfig{
-				Brokers:                              []string{"foo:123", "bar:456"},
-				ResolveCanonicalBootstrapServersOnly: true,
-				ClientID:                             "vip",
-				ProtocolVersion:                      "3.1.2",
+				Brokers:         []string{"foo:123", "bar:456"},
+				ClientID:        "vip",
+				ProtocolVersion: "3.1.2",
 				TLS: &configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile:   "ca.pem",
@@ -87,7 +86,6 @@ func TestClientConfig(t *testing.T) {
 					Mechanism: "PLAIN",
 					Username:  "abc",
 					Password:  "def",
-					Version:   1,
 				}
 				return cfg
 			}(),
@@ -117,9 +115,6 @@ func TestClientConfig(t *testing.T) {
 		"sasl_invalid_mechanism": {
 			expectedErr: "auth::sasl: mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FANCY",
 		},
-		"sasl_invalid_version": {
-			expectedErr: "auth::sasl: version has to be either 0 or 1. configured value -1",
-		},
 		"sasl_plain_username_required": {
 			expectedErr: "auth::sasl: username is required",
 		},
@@ -139,11 +134,10 @@ func TestConsumerConfig(t *testing.T) {
 		},
 		"full": {
 			expected: ConsumerConfig{
-				SessionTimeout:         5 * time.Second,
-				HeartbeatInterval:      2 * time.Second,
-				GroupID:                "throng",
-				GroupRebalanceStrategy: "cooperative-sticky",
-				InitialOffset:          "earliest",
+				SessionTimeout:    5 * time.Second,
+				HeartbeatInterval: 2 * time.Second,
+				GroupID:           "throng",
+				InitialOffset:     "earliest",
 				AutoCommit: AutoCommitConfig{
 					Enable:   false,
 					Interval: 10 * time.Minute,
@@ -190,9 +184,6 @@ func TestConsumerConfig(t *testing.T) {
 		},
 		"negative_min_fetch_size": {
 			expectedErr: "min_fetch_size (-100) must be non-negative",
-		},
-		"conflicting_group_rebalance_strategies": {
-			expectedErr: "group_rebalance_strategy and group_rebalance_strategies are mutually exclusive; group_rebalance_strategy is deprecated, prefer group_rebalance_strategies",
 		},
 		"empty_group_rebalance_strategies_entry": {
 			expectedErr: "group_rebalance_strategies entries cannot be empty",

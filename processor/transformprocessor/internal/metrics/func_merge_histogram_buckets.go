@@ -47,14 +47,14 @@ func mergeHistogramBuckets(targetValue ottl.FloatLikeGetter[*ottldatapoint.Trans
 
 	var literalTarget *float64
 	var literalMaxBuckets *int64
-	if target, ok := ottl.GetLiteralValue(targetValue); ok {
-		if target == nil {
+	if target, found, isLiteral := ottl.TryGetLiteralValue(targetValue); isLiteral {
+		if !found {
 			return nil, errors.New("target_value must not be nil")
 		}
-		literalTarget = target
+		literalTarget = &target
 
 		if methodValue == mergeHistogramBucketsMethodLimitBuckets {
-			maxBuckets, err := maxBucketsFromTargetValue(*target)
+			maxBuckets, err := maxBucketsFromTargetValue(target)
 			if err != nil {
 				return nil, err
 			}
@@ -70,14 +70,14 @@ func mergeHistogramBuckets(targetValue ottl.FloatLikeGetter[*ottldatapoint.Trans
 
 		target := literalTarget
 		if target == nil {
-			var err error
-			target, err = targetValue.Get(ctx, tCtx)
+			value, found, err := targetValue.Get(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
-			if target == nil {
+			if !found {
 				return nil, errors.New("target_value must not be nil")
 			}
+			target = &value
 		}
 
 		switch methodValue {

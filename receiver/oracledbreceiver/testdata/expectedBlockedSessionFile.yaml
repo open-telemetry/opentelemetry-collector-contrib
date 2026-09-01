@@ -42,7 +42,7 @@ resourceLogs:
                   intValue: "54441"
               - key: oracledb.plan_hash_value
                 value:
-                  stringValue: "31323334353637383930"
+                  stringValue: "1234567890"
               - key: oracledb.sql_id
                 value:
                   stringValue: 9fkq2mxyzabc1

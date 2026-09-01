@@ -111,6 +111,12 @@ attributes:
   oracledb.application_wait_time:
     description: The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta).
     type: double
+  oracledb.asm.disk.name:
+    description: The name of the ASM disk.
+    type: string
+  oracledb.asm.disk_group.name:
+    description: The name of the ASM diskgroup.
+    type: string
   oracledb.blocking.blocker.root_sid:
     description: The session ID (SID) of the root/head blocker at the top of the blocking chain. Empty string when there is no blocking.
     type: string
@@ -226,7 +232,7 @@ attributes:
     description: "Plan load time in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS"
     type: string
   oracledb.plan_hash_value:
-    description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
+    description: Numeric representation of the execution plan.
     type: string
   oracledb.procedure_execution_count:
     description: The number of times the stored procedure has been executed, derived from the minimum statement execution count across all statements in the procedure (reporting delta). Please note, this is best effort and may not be accurate in some scenarios. Use with caution.
@@ -473,6 +479,49 @@ events:
       - oracledb.plan.first_load
       - oracledb.plan.last_load
 metrics:
+  oracledb.asm.disk.errors:
+    attributes: [oracledb.asm.disk_group.name, oracledb.asm.disk.name, disk.io.direction]
+    description: Count of I/O errors on an ASM disk.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{error}"
+  oracledb.asm.disk_group.capacity:
+    attributes: [oracledb.asm.disk_group.name]
+    description: Total space in an ASM diskgroup.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: By
+  oracledb.asm.disk_group.free:
+    attributes: [oracledb.asm.disk_group.name]
+    description: Free space in an ASM diskgroup.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: By
+  oracledb.asm.disk_group.offline_disks:
+    attributes: [oracledb.asm.disk_group.name]
+    description: Count of disks currently offline within an ASM diskgroup.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: "{disk}"
+  oracledb.asm.disk_group.usable_free:
+    attributes: [oracledb.asm.disk_group.name]
+    description: Free space that can safely be used for files after accounting for ASM redundancy and required mirror recovery capacity.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: By
   oracledb.buffer.inspected:
     description: Number of buffers inspected from the end of the LRU queue while a process searched for a reusable buffer, grouped by buffer state.
     enabled: false

@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
@@ -18,7 +19,7 @@ import (
 
 type TracesConsumer interface {
 	Context() ContextID
-	ConsumeTraces(ctx context.Context, td ptrace.Traces) error
+	ConsumeTraces(ctx context.Context, td ptrace.Traces, cache *pcommon.Map) error
 }
 
 type traceStatements struct {
@@ -30,14 +31,14 @@ func (traceStatements) Context() ContextID {
 	return Span
 }
 
-func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces, cache *pcommon.Map) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			sspans := rspans.ScopeSpans().At(j)
 			spans := sspans.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				tCtx := ottlspan.NewTransformContextPtr(rspans, sspans, spans.At(k))
+				tCtx := ottlspan.NewTransformContextPtr(rspans, sspans, spans.At(k), ottlspan.WithCache(cache))
 				condition, err := t.Eval(ctx, tCtx)
 				if err != nil {
 					tCtx.Close()
@@ -66,7 +67,7 @@ func (spanEventStatements) Context() ContextID {
 	return SpanEvent
 }
 
-func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces, cache *pcommon.Map) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
@@ -76,7 +77,7 @@ func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces
 				span := spans.At(k)
 				spanEvents := span.Events()
 				for n := 0; n < spanEvents.Len(); n++ {
-					tCtx := ottlspanevent.NewTransformContextPtr(rspans, sspans, span, spanEvents.At(n))
+					tCtx := ottlspanevent.NewTransformContextPtr(rspans, sspans, span, spanEvents.At(n), ottlspanevent.WithCache(cache))
 					condition, err := s.Eval(ctx, tCtx)
 					if err != nil {
 						tCtx.Close()

@@ -34,9 +34,6 @@ func TestValidate(t *testing.T) {
 	someAuth := configoptional.Some(configauth.Config{AuthenticatorID: component.NewID(ty)})
 
 	tlsClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	tlsClientConfig.MaxIdleConns = 0
-	tlsClientConfig.IdleConnTimeout = 0
 	tlsClientConfig.ForceAttemptHTTP2 = false
 	tlsClientConfig.TLS = configtls.ClientConfig{
 		InsecureSkipVerify: true,
@@ -48,17 +45,14 @@ func TestValidate(t *testing.T) {
 	httpClientConfig.ReadBufferSize = 100
 	httpClientConfig.WriteBufferSize = 200
 	httpClientConfig.Timeout = 10 * time.Second
-	httpClientConfig.IdleConnTimeout = idleConnTimeout
-	httpClientConfig.MaxIdleConns = maxIdleConn
-	httpClientConfig.MaxIdleConnsPerHost = maxIdleConnPerHost
+	httpClientConfig.IdleConnTimeout = idleConnTimeout        //nolint:staticcheck // SA1019: IdleConnTimeout is deprecated in favor of Keepalive.IdleConnTimeout.
+	httpClientConfig.MaxIdleConns = maxIdleConn               //nolint:staticcheck // SA1019: MaxIdleConns is deprecated in favor of Keepalive.MaxIdleConns.
+	httpClientConfig.MaxIdleConnsPerHost = maxIdleConnPerHost //nolint:staticcheck // SA1019: MaxIdleConnsPerHost is deprecated in favor of Keepalive.MaxIdleConnsPerHost.
 	httpClientConfig.MaxConnsPerHost = maxConnPerHost
-	httpClientConfig.DisableKeepAlives = true
+	httpClientConfig.DisableKeepAlives = true //nolint:staticcheck // SA1019: DisableKeepAlives is deprecated, set Keepalive.Enabled to false instead.
 	httpClientConfig.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
 
 	unsupportedClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	unsupportedClientConfig.MaxIdleConns = 0
-	unsupportedClientConfig.IdleConnTimeout = 0
 	unsupportedClientConfig.ForceAttemptHTTP2 = false
 	unsupportedClientConfig.Endpoint = "endpoint"
 	unsupportedClientConfig.Compression = "gzip"

@@ -38,6 +38,10 @@ func TestTimeoutInterceptor(t *testing.T) {
 			timeout:     30 * time.Second,
 			bodyLatency: time.Second,
 		},
+		{
+			name:    "zero_timeout",
+			timeout: 0,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, _ *http.Request) {

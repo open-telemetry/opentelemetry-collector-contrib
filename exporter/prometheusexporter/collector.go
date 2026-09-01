@@ -21,7 +21,6 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
@@ -660,8 +659,8 @@ func (c *collector) validateMetrics(name, description string, metricType *dto.Me
 		c.metricFamilies.Store(name, metricFamily{
 			lastSeen: now,
 			mf: &dto.MetricFamily{
-				Name: proto.String(name),
-				Help: proto.String(description),
+				Name: new(name),
+				Help: new(description),
 				Type: metricType,
 			},
 		})

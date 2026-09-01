@@ -49,7 +49,7 @@ func isEmpty[K any](target ottl.Getter[K]) ottl.ExprFunc[K] {
 			return v.Len() == 0, nil
 		default:
 			rv := reflect.ValueOf(v)
-			if rv.Kind() == reflect.Ptr {
+			if rv.Kind() == reflect.Pointer {
 				if rv.IsNil() {
 					return true, nil
 				}

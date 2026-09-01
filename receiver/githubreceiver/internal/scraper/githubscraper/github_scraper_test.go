@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v89/github"
+	"github.com/google/go-github/v90/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -161,7 +161,7 @@ func TestScrape(t *testing.T) {
 					contribs: [][]*github.Contributor{
 						{
 							{
-								ID: github.Ptr(int64(1)),
+								ID: new(int64(1)),
 							},
 						},
 					},
@@ -269,7 +269,7 @@ func TestScrapeCapturesTimestampPerRepository(t *testing.T) {
 		},
 		contribResponse: contribResponse{
 			contribs: [][]*github.Contributor{
-				{{ID: github.Ptr(int64(1))}},
+				{{ID: new(int64(1))}},
 			},
 			responseCode: http.StatusOK,
 		},

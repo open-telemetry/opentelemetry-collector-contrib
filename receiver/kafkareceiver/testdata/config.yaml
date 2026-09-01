@@ -45,10 +45,6 @@ kafka/logs:
     max_elapsed_time: 1m
     multiplier: 1.5
 
-kafka/rebalance_strategy:
-  group_rebalance_strategy: sticky
-  group_instance_id: test-instance
-
 kafka/rebalance_strategies:
   group_rebalance_strategies:
     - cooperative-sticky
@@ -103,6 +99,11 @@ kafka/valid_logs_without_exclude:
     topics:
     - logs
     encoding: otlp_proto
+
+kafka/partition_processing:
+  partition_processing:
+    independent: true
+    max_buffered_batches: 2
 
 kafka/invalid_exclude_topics_logs_non_regex:
   logs:
@@ -177,3 +178,14 @@ kafka/invalid_exclude_topics_profiles_empty:
     exclude_topics:
     - ""
     encoding: otlp_proto
+
+kafka/invalid_partition_processing_zero_buffered_batches:
+  partition_processing:
+    independent: true
+    max_buffered_batches: 0
+
+kafka/invalid_partition_processing_manual_commit:
+  autocommit:
+    enable: false
+  partition_processing:
+    independent: true

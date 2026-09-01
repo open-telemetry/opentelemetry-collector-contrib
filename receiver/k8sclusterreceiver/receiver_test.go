@@ -244,8 +244,10 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	}()
 	client := newFakeClientWithAllResources()
 
-	// Mock initial cache sync timing out, using a small timeout.
-	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 1*time.Millisecond, tt, nil, component.MustNewID("foo"))
+	// Mock initial cache sync timing out. A zero timeout guarantees the
+	// deadline is already past before the informers can sync, regardless of
+	// how fast the fake client's initial sync happens to be.
+	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 0, tt, nil, component.MustNewID("foo"))
 
 	createPods(t, client, 1, false)
 

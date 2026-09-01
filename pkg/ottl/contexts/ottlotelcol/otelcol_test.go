@@ -12,7 +12,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_newPathGetSetter(t *testing.T) {
@@ -41,7 +40,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				N: "cache",
 				KeySlice: []ottl.Key[*TransformContext]{
 					&pathtest.Key[*TransformContext]{
-						S: ottltest.Strp("temp"),
+						S: new("temp"),
 					},
 				},
 			},
@@ -81,7 +80,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					N: "metadata",
 					KeySlice: []ottl.Key[*TransformContext]{
 						&pathtest.Key[*TransformContext]{
-							S: ottltest.Strp("key"),
+							S: new("key"),
 						},
 					},
 				},
@@ -115,7 +114,7 @@ func Test_newPathGetSetter(t *testing.T) {
 						N: "attributes",
 						KeySlice: []ottl.Key[*TransformContext]{
 							&pathtest.Key[*TransformContext]{
-								S: ottltest.Strp("key"),
+								S: new("key"),
 							},
 						},
 					},
@@ -145,7 +144,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					N: "metadata",
 					KeySlice: []ottl.Key[*TransformContext]{
 						&pathtest.Key[*TransformContext]{
-							S: ottltest.Strp("key"),
+							S: new("key"),
 						},
 					},
 				},
