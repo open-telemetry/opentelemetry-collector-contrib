@@ -4,6 +4,6 @@ component: receiver/mysql
 
 note: Add InnoDB redo log lsn and checkpoint-age metrics to the mysqlreceiver.
 
-issues: []
+issues: [50650]
 
 change_logs: [user]
