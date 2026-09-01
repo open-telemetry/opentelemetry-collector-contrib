@@ -1,0 +1,13 @@
+change_type: bug_fix
+
+component: exporter/elasticsearch
+
+note: Fix `timeoutInterceptor` immediately cancelling all requests when `timeout=0`
+
+issues: [50469]
+
+subtext: |
+  Added a `perRequestTimeout <= 0` guard to skip the timeout wrapping when no timeout
+  is configured.
+
+change_logs: [user]

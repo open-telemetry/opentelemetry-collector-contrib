@@ -1698,6 +1698,48 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 	}
 }
 
+func TestSupervisorBootstrapsCollectorWithInternalTelemetryPortInUse(t *testing.T) {
+	// The Collector's default internal telemetry configuration is a Prometheus
+	// reader on localhost:8888. The bootstrap Collector must not bind it: before
+	// its internal metrics were disabled it failed to create a meter provider,
+	// exited before connecting back, and Start returned "could not get bootstrap
+	// info from the Collector".
+	listener, err := net.Listen("tcp", "localhost:8888")
+	if err != nil {
+		t.Skipf("could not claim the Collector's default internal telemetry port: %v", err)
+	}
+	defer listener.Close()
+
+	agentDescription := atomic.Value{}
+
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.AgentDescription != nil {
+					agentDescription.Store(message.AgentDescription)
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		},
+	)
+
+	s, _ := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
+
+	require.NoError(t, s.Start(t.Context()))
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	require.Eventually(t, func() bool {
+		_, ok := agentDescription.Load().(*protobufs.AgentDescription)
+		return ok
+	}, 5*time.Second, 250*time.Millisecond,
+		"Supervisor did not bootstrap the Collector while localhost:8888 was in use")
+}
+
 func TestSupervisorBootstrapsCollectorAvailableComponents(t *testing.T) {
 	agentDescription := atomic.Value{}
 	availableComponents := atomic.Value{}
