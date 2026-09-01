@@ -288,14 +288,14 @@ func (p *Parser) detectFormat(e *entry.Entry) (string, error) {
 		return dockerFormat, nil
 	}
 
-	timePart, rest, ok := splitFirstOnInterval(raw)
+	timePart, rest, ok := strings.Cut(raw, " ")
 	if !ok {
-		return "", errors.New("could not detect format")
+		return "", errors.New("could not split timestamp from log to detect format")
 	}
 
-	stream, _, ok := splitFirstOnInterval(rest)
+	stream, _, ok := strings.Cut(rest, " ")
 	if !ok || (stream != "stdout" && stream != "stderr") {
-		return "", errors.New("could not detect format")
+		return "", errors.New("could not split stream from log to detect format")
 	}
 
 	if strings.HasSuffix(timePart, "Z") {
@@ -305,13 +305,17 @@ func (p *Parser) detectFormat(e *entry.Entry) (string, error) {
 	return crioFormat, nil
 }
 
+// parseContainerd parses containerd-format Kubernetes log fields without regex.
+// The expected format is: <time> <stream> <logtag> <log>
+//
+// Mirrors ^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$
 func parseContainerd(value any) (any, error) {
 	raw, ok := value.(string)
 	if !ok {
 		return "", fmt.Errorf("type '%T' cannot be parsed as container logs", value)
 	}
 
-	timePart, rest, ok := splitFirstOnInterval(raw)
+	timePart, rest, ok := strings.Cut(raw, " ")
 	if !ok || !strings.HasSuffix(timePart, "Z") {
 		return nil, errors.New("could not parse containerd fields")
 	}
@@ -320,12 +324,12 @@ func parseContainerd(value any) (any, error) {
 		return nil, errors.New("could not parse containerd fields")
 	}
 
-	stream, rest, ok := splitFirstOnInterval(rest)
+	stream, rest, ok := strings.Cut(rest, " ")
 	if !ok || (stream != "stdout" && stream != "stderr") {
 		return nil, errors.New("could not parse containerd fields")
 	}
 
-	logtag, logPart, ok := splitFirstOnInterval(rest)
+	logtag, logPart, ok := strings.Cut(rest, " ")
 	if !ok {
 		logtag = rest
 		logPart = ""
@@ -342,31 +346,33 @@ func parseContainerd(value any) (any, error) {
 	return m, nil
 }
 
+// parseCRIO parses CRIO-format Kubernetes log fields without regex.
+// The expected format is: <time> <stream> <logtag> <log>
+//
+// Mirrors ^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)
 func parseCRIO(value any) (any, error) {
 	raw, ok := value.(string)
 	if !ok {
 		return "", fmt.Errorf("type '%T' cannot be parsed as container logs", value)
 	}
 
-	timePart, rest, ok := splitFirstOnInterval(raw)
+	timePart, rest, ok := strings.Cut(raw, " ")
 	if !ok {
 		return nil, errors.New("could not parse CRIO fields")
 	}
 
-	stream, rest, ok := splitFirstOnInterval(rest)
+	stream, rest, ok := strings.Cut(rest, " ")
 	if !ok || (stream != "stdout" && stream != "stderr") {
 		return nil, errors.New("could not parse CRIO fields")
 	}
 
-	logtag, logPart, ok := splitFirstOnInterval(rest)
+	logtag, logPart, ok := strings.Cut(rest, " ")
 	if !ok {
 		logtag = rest
 		logPart = ""
 	}
 
-	// Use pool to reduce allocations
 	m := mapPool.Get().(map[string]any)
-	// Clear the map in case it was reused
 	for k := range m {
 		delete(m, k)
 	}
@@ -565,12 +571,7 @@ func stripLogSuffix(raw string) (string, bool) {
 // The expected format is: .../<namespace>_<pod_name>_<uid>/<container_name>/<restart_count>.log[.<rotation>]
 // It returns the parsed fields keyed by OTel resource attribute names, and whether parsing succeeded.
 //
-// Validation rules (mirrors the previous regex):
-//   - namespace/pod_name: any non-empty string not containing '_' (triplet is split by '_')
-//   - uid: lowercase hex and '-' (no length enforcement)
-//   - container_name: any non-empty string not containing '\\', '.', or '_'
-//   - restart_count: digits only
-//   - suffix: exactly ".log" or ".log." followed by 8 digits, a hyphen, and 6 digits
+// Validation rules (mirrors ^.*(\\/|\\\\)(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\\-]+)(\\/|\\\\)(?P<container_name>[^\\._]+)(\\/|\\\\)(?P<restart_count>\\d+)\\.log(\\.\\d{8}-\\d{6})?$):
 func parseLogPath(raw string) (map[string]any, bool) {
 	// Validate and strip the suffix before touching any other path components.
 	base, ok := stripLogSuffix(raw)
@@ -593,7 +594,7 @@ func parseLogPath(raw string) (map[string]any, bool) {
 		return nil, false
 	}
 	containerName := base[sep1+1:]
-	if !isContainerName(containerName) {
+	if !isValidContainerName(containerName) {
 		return nil, false
 	}
 	base = base[:sep1]
@@ -612,7 +613,7 @@ func parseLogPath(raw string) (map[string]any, bool) {
 		return nil, false
 	}
 	uid := triplet[lastUnd+1:]
-	if !isUID(uid) {
+	if !isValidUID(uid) {
 		return nil, false
 	}
 	triplet = triplet[:lastUnd]
@@ -624,10 +625,10 @@ func parseLogPath(raw string) (map[string]any, bool) {
 	ns := triplet[:lastUnd]
 	pod := triplet[lastUnd+1:]
 
-	if !isNamespace(ns) {
+	if !isValidPodOrNamespace(ns) {
 		return nil, false
 	}
-	if !isPodName(pod) {
+	if !isValidPodOrNamespace(pod) {
 		return nil, false
 	}
 
@@ -644,48 +645,33 @@ func parseLogPath(raw string) (map[string]any, bool) {
 	return m, true
 }
 
-// splitFirstOn splits s on the first occurrence of sep.
-func splitFirstOnInterval(s string) (head, tail string, ok bool) {
-	before, after, ok := strings.Cut(s, " ")
-	if !ok {
-		return "", "", false
-	}
-	return before, after, true
-}
-
-// isNamespace matches [^_]+ from the regex — any char except underscore, one or more.
-func isNamespace(s string) bool {
+// isValidPodOrNamespace matches [^_]+ from the regex — any char except underscore, one or more.
+func isValidPodOrNamespace(s string) bool {
 	if s == "" {
 		return false
 	}
-	for _, c := range s {
-		if c == '_' {
-			return false
-		}
+
+	if strings.Contains(s, "_") {
+		return false
+	}
+
+	return true
+}
+
+// isValidContainerName matches [^\._]+ from the regex — any char except backslash, dot, and underscore.
+func isValidContainerName(s string) bool {
+	if s == "" {
+		return false
+	}
+
+	if strings.ContainsAny(s, "\\._") {
+		return false
 	}
 	return true
 }
 
-// isPodName matches [^_]+ from the regex — any char except underscore, one or more.
-func isPodName(s string) bool {
-	return isNamespace(s)
-}
-
-// isContainerName matches [^\._]+ from the regex — any char except backslash, dot, and underscore.
-func isContainerName(s string) bool {
-	if s == "" {
-		return false
-	}
-	for _, c := range s {
-		if c == '\\' || c == '.' || c == '_' {
-			return false
-		}
-	}
-	return true
-}
-
-// isUID matches [a-f0-9\-]+ from the regex — lowercase hex and hyphens, one or more chars.
-func isUID(s string) bool {
+// isValidUID matches [a-f0-9\-]+ from the regex — lowercase hex and hyphens, one or more chars.
+func isValidUID(s string) bool {
 	if s == "" {
 		return false
 	}
