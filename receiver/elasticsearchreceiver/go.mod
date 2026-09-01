@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.159.1-0.20260827211935-bdb5c072803c
 	go.opentelemetry.io/collector/config/confighttp v0.159.1-0.20260827211935-bdb5c072803c
 	go.opentelemetry.io/collector/config/configopaque v1.65.1-0.20260827211935-bdb5c072803c
+	go.opentelemetry.io/collector/config/configoptional v1.65.1-0.20260827211935-bdb5c072803c
 	go.opentelemetry.io/collector/config/configtls v1.65.1-0.20260827211935-bdb5c072803c
 	go.opentelemetry.io/collector/confmap v1.65.1-0.20260827211935-bdb5c072803c
 	go.opentelemetry.io/collector/consumer v1.65.1-0.20260827211935-bdb5c072803c
@@ -91,7 +92,6 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.65.1-0.20260827211935-bdb5c072803c // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.65.1-0.20260827211935-bdb5c072803c // indirect
 	go.opentelemetry.io/collector/config/confignet v1.65.1-0.20260827211935-bdb5c072803c // indirect
-	go.opentelemetry.io/collector/config/configoptional v1.65.1-0.20260827211935-bdb5c072803c // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.159.1-0.20260827211935-bdb5c072803c // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.159.1-0.20260827211935-bdb5c072803c // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.65.1-0.20260827211935-bdb5c072803c // indirect

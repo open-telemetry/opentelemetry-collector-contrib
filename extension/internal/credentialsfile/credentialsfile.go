@@ -8,11 +8,16 @@ package credentialsfile // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.uber.org/zap"
 )
 
-var errNoValueProvided = errors.New("no value or file path provided")
+var (
+	errNoValueProvided                 = errors.New("no value or file path provided")
+	errRetryOnFailureInvalidMaxRetries = errors.New("retry_on_failure.max_retries must be greater or equal to 0 when retry_on_failure.enabled is true")
+	errRetryOnFailureInvalidInterval   = errors.New("retry_on_failure.interval must be greater than 0 when retry_on_failure.enabled is true")
+)
 
 // ValueResolver provides access to a secret value that may come from
 // an inline config string or a watched file.
@@ -25,17 +30,53 @@ type ValueResolver interface {
 	Shutdown() error
 }
 
+// RetryOnFailureConfig configures retry on missing credentials file.
+type RetryOnFailureConfig struct {
+	// Enabled defines if any retry logic should be done on a missing file.
+	// Defaults to false.
+	Enabled bool `mapstructure:"enabled,omitempty"`
+
+	// MaxRetries is the maximum number of times to retry reading the file.
+	// If it's value is set to 0, it means that the retry will continue infinity.
+	// Defaults to 0.
+	MaxRetries int `mapstructure:"max_retries,omitempty"`
+
+	// Interval is the interval between retries.
+	// Defaults to 0 seconds.
+	Interval time.Duration `mapstructure:"interval,omitempty"`
+}
+
+func (rfg *RetryOnFailureConfig) Validate() error {
+	if rfg.Enabled {
+		if rfg.MaxRetries < 0 {
+			return errRetryOnFailureInvalidMaxRetries
+		}
+		if rfg.Interval <= 0 {
+			return errRetryOnFailureInvalidInterval
+		}
+	}
+	return nil
+}
+
 // Option configures a ValueResolver.
 type Option func(*options)
 
 type options struct {
 	onChange func(string)
+	retryCfg RetryOnFailureConfig
 }
 
 // WithOnChange registers a callback invoked with the new value after each
 // successful file reload. Not called for static values.
 func WithOnChange(fn func(string)) Option {
 	return func(o *options) { o.onChange = fn }
+}
+
+// WithRetry enables retrying to read a credentials file.
+func WithRetry(rfc RetryOnFailureConfig) Option {
+	return func(o *options) {
+		o.retryCfg = rfc
+	}
 }
 
 // NewValueResolver returns a ValueResolver appropriate for the given inputs.
@@ -48,7 +89,7 @@ func NewValueResolver(inlineValue, filePath string, logger *zap.Logger, opts ...
 		opt(&o)
 	}
 	if filePath != "" {
-		return newFileWatcher(filePath, logger, o.onChange), nil
+		return newFileWatcher(filePath, logger, o.onChange, o.retryCfg), nil
 	}
 	if inlineValue == "" {
 		return nil, errNoValueProvided
