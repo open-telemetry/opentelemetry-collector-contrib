@@ -365,11 +365,11 @@ func Test_getKeyValue(t *testing.T) {
 			name: "gets nested value",
 			valueMap: func() pcommon.Map {
 				m := pcommon.NewMap()
-				nested := m.PutEmptyMap("user")
-				nested.PutStr("name", "Chethan")
+				nested := m.PutEmptyMap("parent")
+				nested.PutStr("child", "value")
 				return m
 			}(),
-			keyParts: []string{"user", "name"},
+			keyParts: []string{"parent", "child"},
 			expected: "Chethan",
 			ok:       true,
 		},
@@ -377,21 +377,21 @@ func Test_getKeyValue(t *testing.T) {
 			name: "returns false when nested key does not exist",
 			valueMap: func() pcommon.Map {
 				m := pcommon.NewMap()
-				nested := m.PutEmptyMap("user")
-				nested.PutStr("name", "Chethan")
+				nested := m.PutEmptyMap("parent")
+				nested.PutStr("child", "value")
 				return m
 			}(),
-			keyParts: []string{"user", "age"},
+			keyParts: []string{"parent", "missing"},
 			ok:       false,
 		},
 		{
 			name: "returns false when intermediate value is not a map",
 			valueMap: func() pcommon.Map {
 				m := pcommon.NewMap()
-				m.PutStr("user", "Chethan")
+				m.PutStr("parent", "value")
 				return m
 			}(),
-			keyParts: []string{"user", "name"},
+			keyParts: []string{"parent", "child"},
 			ok:       false,
 		},
 	}
