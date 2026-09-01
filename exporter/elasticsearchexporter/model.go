@@ -184,7 +184,8 @@ func startECSDocument(ec encodingContext, recordAttrs pcommon.Map) *objmodel.Doc
 	} else {
 		document = new(objmodel.Document)
 	}
-	document.Grow(ec.resource.Attributes().Len() + ec.scope.Attributes().Len() + recordAttrs.Len())
+	// +10 covers fixed ECS fields (@timestamp, data_stream.*, trace.id, ...).
+	document.Grow(ec.resource.Attributes().Len() + ec.scope.Attributes().Len() + recordAttrs.Len() + 10)
 	// First, try to map resource-level attributes to ECS fields.
 	encodeAttributesECSMode(document, ec.resource.Attributes(), resourceAttrsConversionMap)
 	// Then, try to map scope-level attributes to ECS fields.
