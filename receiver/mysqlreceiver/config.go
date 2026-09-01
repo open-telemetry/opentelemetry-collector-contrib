@@ -31,7 +31,8 @@ const (
 const (
 	ErrNoUsername          = "invalid config: missing username"
 	ErrTransportsSupported = "invalid config: 'transport' must be 'tcp' or 'unix'"
-	ErrHostPort            = "invalid config: 'endpoint' must be in the form <host>:<port> no matter what 'transport' is configured"
+	ErrHostPort            = "invalid config: 'endpoint' must be in the form <host>:<port> when 'transport' is 'tcp'"
+	ErrNoEndpoint          = "invalid config: missing endpoint"
 	// #nosec G101 - not hardcoded credentials
 	ErrPasswordAndDBAuth = "invalid config: set either 'password' or 'db_auth', not both"
 	// #nosec G101 - not hardcoded credentials
@@ -107,10 +108,14 @@ func (cfg *Config) Validate() error {
 	}
 
 	switch cfg.AddrConfig.Transport {
-	case confignet.TransportTypeTCP, confignet.TransportTypeUnix:
+	case confignet.TransportTypeTCP:
 		_, _, endpointErr := net.SplitHostPort(cfg.AddrConfig.Endpoint)
 		if endpointErr != nil {
 			err = multierr.Append(err, errors.New(ErrHostPort))
+		}
+	case confignet.TransportTypeUnix:
+		if cfg.AddrConfig.Endpoint == "" {
+			err = multierr.Append(err, errors.New(ErrNoEndpoint))
 		}
 	default:
 		err = multierr.Append(err, errors.New(ErrTransportsSupported))
