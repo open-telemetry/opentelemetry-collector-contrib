@@ -50,7 +50,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 		labelKeyRegexes:       labelKeyRegexes,
 		gceClientBuilder:      &instancesRESTBuilder{},
 		failOnMissingMetadata: failOnMissingMetadata,
-		gkeHostType:           cfg.GKEHostType,
+		hostTypeEnabled:       cfg.ResourceAttributes.HostType.Enabled,
 	}, nil
 }
 
@@ -61,7 +61,7 @@ type detector struct {
 	labelKeyRegexes       []*regexp.Regexp
 	gceClientBuilder      instancesBuilder
 	failOnMissingMetadata bool
-	gkeHostType           bool
+	hostTypeEnabled       bool
 }
 
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
@@ -103,11 +103,16 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 				zap.String("key", string(conventions.HostNameKey)), zap.Error(err))
 		}
 		// The machine type is not available from the metadata server on GKE. Fetching it
-		// requires a Compute API call, so it is opt-in via the gke_host_type option.
-		if d.gkeHostType {
-			errs = multierr.Combine(errs,
-				d.rb.SetFromCallable(d.rb.SetHostType, d.detector.GKEHostType),
-			)
+		// requires a Compute API call and the compute.instances.get permission, so it is
+		// only attempted when the host.type resource attribute is enabled, and treated as
+		// fallible since the identity running the collector may lack the permission.
+		if d.hostTypeEnabled {
+			if v, err := d.detector.GKEHostType(); err == nil {
+				d.rb.SetHostType(v)
+			} else {
+				d.logger.Info("Fallible detector failed. This attribute will not be available.",
+					zap.String("key", string(conventions.HostTypeKey)), zap.Error(err))
+			}
 		}
 	case gcp.CloudRun, gcp.CloudRunWorkerPool:
 		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPCloudRun.Value.AsString())

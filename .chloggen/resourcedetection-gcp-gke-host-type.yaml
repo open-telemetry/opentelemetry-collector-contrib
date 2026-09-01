@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/resource_detection
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add opt-in `gke_host_type` option to the `gcp` detector to populate `host.type` on GKE via the Compute API.
+note: Populate `host.type` on GKE in the `gcp` detector via the Compute API when the `host.type` resource attribute is enabled.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50662]
@@ -18,7 +18,8 @@ issues: [50662]
 subtext: |
   The machine type is not available from the GKE metadata server, so fetching it requires
   a Compute API call and the `compute.instances.get` permission (covered by `roles/compute.viewer`).
-  It is disabled by default.
+  If the permission is missing, the attribute is skipped and the failure is logged. Disable the
+  `host.type` resource attribute to avoid the API call.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
