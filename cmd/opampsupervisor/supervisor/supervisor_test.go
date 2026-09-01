@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
@@ -3415,6 +3416,8 @@ service:
             receivers:
                 - nop
     telemetry:
+        metrics:
+            level: none
         resource:
             attributes:
                 - name: service.instance.id
@@ -3463,6 +3466,8 @@ service:
             receivers:
                 - nop
     telemetry:
+        metrics:
+            level: none
         resource:
             attributes:
                 - name: service.instance.id
@@ -3518,6 +3523,8 @@ service:
             receivers:
                 - nop
     telemetry:
+        metrics:
+            level: none
         resource:
             attributes:
                 - name: service.instance.id
@@ -3643,6 +3650,38 @@ telemetry:
 	})
 
 	supervisor.Shutdown()
+}
+
+func TestSupervisor_composeNoopConfigDisablesInternalMetrics(t *testing.T) {
+	// The bootstrap Collector's internal metrics must stay disabled, otherwise its
+	// default reader binds localhost:8888 and the bootstrap fails when that port
+	// is already in use.
+	s := Supervisor{
+		persistentState: &persistentState{
+			InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb"),
+		},
+		pidProvider: staticPIDProvider(1234),
+	}
+
+	require.NoError(t, s.createTemplates())
+
+	noopConfigBytes, err := s.composeNoopConfig()
+	require.NoError(t, err)
+
+	conf, err := config.NewConfFromYAML(noopConfigBytes)
+	require.NoError(t, err)
+
+	telemetryConf, err := conf.Sub("service::telemetry")
+	require.NoError(t, err)
+
+	telemetryCfg, ok := otelconftelemetry.NewFactory().CreateDefaultConfig().(*otelconftelemetry.Config)
+	require.True(t, ok)
+	require.NoError(t, telemetryConf.Unmarshal(telemetryCfg))
+
+	// Metrics must be disabled with `level: none` rather than an empty readers
+	// list: validation rejects an empty list while the level is not none.
+	require.NoError(t, telemetryCfg.Validate())
+	require.Equal(t, configtelemetry.LevelNone, telemetryCfg.Metrics.Level)
 }
 
 func TestSupervisor_addSpecialConfigFiles(t *testing.T) {

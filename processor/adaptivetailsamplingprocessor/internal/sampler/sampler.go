@@ -78,11 +78,18 @@ type dynsamplerImpl interface {
 // interface. Start/Stop are guarded by sync.Once so they are safe to call
 // multiple times.
 type dynsamplerWrapper struct {
-	inner     dynsamplerImpl
-	startOnce sync.Once
-	startErr  error
-	stopOnce  sync.Once
-	stopErr   error
+	inner dynsamplerImpl
+	// fallbackRate is applied when the inner sampler has no rate for a key
+	// and signals it by returning a non-positive rate. The windowed
+	// throughput sampler does this during cold start and for keys it is not
+	// tracking (including max_keys overflow); without the fallback those
+	// traces would all be kept. The EMA samplers return their own bootstrap
+	// rates instead, so the fallback never fires for them.
+	fallbackRate int
+	startOnce    sync.Once
+	startErr     error
+	stopOnce     sync.Once
+	stopErr      error
 }
 
 // GetSampleRate implements Sampler.
@@ -90,7 +97,11 @@ func (w *dynsamplerWrapper) GetSampleRate(key string, spanCount int) int {
 	if spanCount <= 0 {
 		spanCount = 1
 	}
-	return max(w.inner.GetSampleRateMulti(key, spanCount), 1)
+	rate := w.inner.GetSampleRateMulti(key, spanCount)
+	if rate <= 0 {
+		return max(w.fallbackRate, 1)
+	}
+	return rate
 }
 
 // Start implements Sampler.
@@ -126,6 +137,7 @@ func NewEMAPercentage(cfg EMAPercentageConfig) (Sampler, error) {
 			Weight:                     cfg.Weight,
 			MaxKeys:                    cfg.MaxKeys,
 		},
+		fallbackRate: goalRate,
 	}, nil
 }
 
@@ -152,6 +164,7 @@ func NewEMAThroughput(cfg EMAThroughputConfig) (Sampler, error) {
 			Weight:               cfg.Weight,
 			MaxKeys:              cfg.MaxKeys,
 		},
+		fallbackRate: cfg.InitialSamplingRate,
 	}, nil
 }
 
@@ -160,6 +173,7 @@ func NewEMAThroughput(cfg EMAThroughputConfig) (Sampler, error) {
 // lookback window.
 type WindowedThroughputConfig struct {
 	GoalThroughputPerSec float64
+	InitialSamplingRate  int
 	UpdateFrequency      time.Duration
 	LookbackFrequency    time.Duration
 	MaxKeys              int
@@ -170,6 +184,9 @@ func NewWindowedThroughput(cfg WindowedThroughputConfig) (Sampler, error) {
 	if cfg.GoalThroughputPerSec <= 0 {
 		return nil, errors.New("adaptive_throughput (windowed) sampler: goal_throughput must be greater than zero")
 	}
+	// The windowed sampler has no bootstrap rate of its own: it returns 0 for
+	// any key it has no computed rate for, which the wrapper's fallback maps
+	// to InitialSamplingRate.
 	return &dynsamplerWrapper{
 		inner: &dynsampler.WindowedThroughput{
 			GoalThroughputPerSec:      cfg.GoalThroughputPerSec,
@@ -177,5 +194,6 @@ func NewWindowedThroughput(cfg WindowedThroughputConfig) (Sampler, error) {
 			LookbackFrequencyDuration: cfg.LookbackFrequency,
 			MaxKeys:                   cfg.MaxKeys,
 		},
+		fallbackRate: cfg.InitialSamplingRate,
 	}, nil
 }

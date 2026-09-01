@@ -12,10 +12,12 @@ import (
 	"github.com/shirou/gopsutil/v4/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -92,6 +94,31 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	oCfg := cfg.(*Config)
+
+	if metadata.ReceiverHostmetricsDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+		set.Logger.Warn(
+			"receiver-level gate enabled, enabling process scraper gate for the entire collector process."+
+				" This affects all process scrapers running in this process, not just this receiver instance",
+			zap.String("receiver-gate", metadata.ReceiverHostmetricsDontEmitV0SystemConventionsFeatureGate.ID()),
+			zap.String("scraper-gate", processscraper.ScraperProcessDontEmitV0SystemConventionsFeatureGate.ID()),
+		)
+
+		if err := featuregate.GlobalRegistry().Set(processscraper.ScraperProcessDontEmitV0SystemConventionsFeatureGate.ID(), true); err != nil {
+			return nil, fmt.Errorf("failed to disable the process scraper v0 conventions: %w", err)
+		}
+	}
+	if metadata.ReceiverHostmetricsEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		set.Logger.Warn(
+			"receiver-level gate enabled, enabling process scraper gate for the entire collector process."+
+				" This affects all process scrapers running in this process, not just this receiver instance",
+			zap.String("receiver-gate", metadata.ReceiverHostmetricsEmitV1SystemConventionsFeatureGate.ID()),
+			zap.String("scraper-gate", processscraper.ScraperProcessEmitV1SystemConventionsFeatureGate.ID()),
+		)
+
+		if err := featuregate.GlobalRegistry().Set(processscraper.ScraperProcessEmitV1SystemConventionsFeatureGate.ID(), true); err != nil {
+			return nil, fmt.Errorf("failed to enable the process scraper v1 conventions: %w", err)
+		}
+	}
 
 	addScraperOptions, err := createAddScraperOptions(ctx, oCfg, scraperFactories)
 	if err != nil {
