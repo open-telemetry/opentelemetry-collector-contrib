@@ -34,7 +34,7 @@ func compareDocuments(expected, actual *document) error {
 	matched := make([]bool, len(actual.Resources))
 
 	for _, er := range expected.Resources {
-		idx := findMatchingAttributes(er.Attributes, matched, len(actual.Resources), func(i int) map[string]any {
+		idx := findMatchingAttributes(er.Attributes, er.AttributeMode, matched, len(actual.Resources), func(i int) map[string]any {
 			return actual.Resources[i].Attributes
 		})
 		if idx < 0 {
@@ -56,33 +56,80 @@ func compareDocuments(expected, actual *document) error {
 
 func compareResource(expected, actual resourceAssertion) error {
 	var errs []error
-	expScopes := indexScopes(expected.Scopes)
-	actScopes := indexScopes(actual.Scopes)
+	matched := make([]bool, len(actual.Scopes))
 
-	for key, es := range expScopes {
-		as, ok := actScopes[key]
-		if !ok {
-			errs = append(errs, fmt.Errorf("missing expected scope name=%q version=%q", es.Name, es.Version))
+	for _, es := range expected.Scopes {
+		idx := findMatchingScope(es, matched, actual.Scopes)
+		if idx < 0 {
+			errs = append(errs, fmt.Errorf("missing expected scope %s", scopeIdentityString(es)))
 			continue
 		}
-		if err := compareScope(es, as); err != nil {
-			errs = append(errs, fmt.Errorf("scope name=%q: %w", es.Name, err))
+		matched[idx] = true
+		if err := compareScope(es, actual.Scopes[idx]); err != nil {
+			errs = append(errs, fmt.Errorf("scope %s: %w", scopeIdentityString(es), err))
 		}
 	}
-	for key, as := range actScopes {
-		if _, ok := expScopes[key]; !ok {
-			errs = append(errs, fmt.Errorf("unexpected scope name=%q version=%q", as.Name, as.Version))
+	for i, as := range actual.Scopes {
+		if !matched[i] {
+			errs = append(errs, fmt.Errorf("unexpected scope name=%q version=%q", as.Name, as.Version.value))
 		}
 	}
 	return errors.Join(errs...)
 }
 
-func indexScopes(ss []scopeAssertion) map[string]scopeAssertion {
-	out := make(map[string]scopeAssertion, len(ss))
-	for _, s := range ss {
-		out[s.Name+"|"+s.Version] = s
+// findMatchingScope returns the first unmatched index whose scope satisfies the
+// expected name and version matcher, or -1 if none do.
+func findMatchingScope(expected scopeAssertion, matched []bool, actual []scopeAssertion) int {
+	for i := range actual {
+		if matched[i] {
+			continue
+		}
+
+		if expected.Name == actual[i].Name &&
+			matchVersion(expected.Version, actual[i].Version.value) == nil {
+			return i
+		}
 	}
-	return out
+	return -1
+}
+
+func matchVersion(m versionMatcher, actual string) error {
+	switch m.op {
+	case matchExists:
+		if actual == "" {
+			return errors.New("required by /exists but not present")
+		}
+		return nil
+	case matchRegex:
+		re, err := regexp.Compile("^(?:" + m.value + ")$")
+		if err != nil {
+			return fmt.Errorf("/regex has invalid pattern %q: %w", m.value, err)
+		}
+		if !re.MatchString(actual) {
+			return fmt.Errorf("value %q does not match regex %q", actual, m.value)
+		}
+		return nil
+	default: // matchExact
+		if actual != m.value {
+			return fmt.Errorf("expected %q, got %q", m.value, actual)
+		}
+		return nil
+	}
+}
+
+func scopeIdentityString(s scopeAssertion) string {
+	return fmt.Sprintf("name=%q version=%s", s.Name, versionMatcherString(s.Version))
+}
+
+func versionMatcherString(m versionMatcher) string {
+	switch m.op {
+	case matchExists:
+		return "<exists>"
+	case matchRegex:
+		return fmt.Sprintf("/regex %q", m.value)
+	default:
+		return fmt.Sprintf("%q", m.value)
+	}
 }
 
 func compareScope(expected, actual scopeAssertion) error {
@@ -143,7 +190,7 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 	var valErrs []error
 
 	for _, edp := range expected {
-		idx := findMatchingAttributes(edp.Attributes, matched, len(actual), func(i int) map[string]any {
+		idx := findMatchingAttributes(edp.Attributes, edp.AttributeMode, matched, len(actual), func(i int) map[string]any {
 			return actual[i].Attributes
 		})
 		if idx < 0 {
@@ -152,32 +199,8 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 		}
 		matched[idx] = true
 
-		var dpValErrs []error
-		if edp.Value != nil {
-			if err := compareValue(edp.Value, actual[idx].Value); err != nil {
-				dpValErrs = append(dpValErrs, err)
-			}
-		}
-		restKeys := make([]string, 0, len(edp.Rest))
-		for k := range edp.Rest {
-			restKeys = append(restKeys, k)
-		}
-		sort.Strings(restKeys)
-		for _, k := range restKeys {
-			// Keys not of the form value/<numeric operator> are rejected by
-			// validateDocument at read time.
-			_, op := parseKeyAndOperator(k)
-			if err := compareNumericOp("value", op, edp.Rest[k], actual[idx].Value); err != nil {
-				dpValErrs = append(dpValErrs, err)
-			}
-		}
-
 		if err := compareDatapointValues(edp, actual[idx]); err != nil {
-			dpValErrs = append(dpValErrs, err)
-		}
-
-		if len(dpValErrs) > 0 {
-			valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), errors.Join(dpValErrs...)))
+			valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), err))
 		}
 	}
 	for i, adp := range actual {
@@ -203,6 +226,23 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 
 func compareDatapointValues(expected, actual datapointAssertion) error {
 	var errs []error
+	if expected.IntValue != nil {
+		if actual.IntValue == nil {
+			errs = append(errs, errors.New("missing expected int_value"))
+		} else if *expected.IntValue != *actual.IntValue {
+			errs = append(errs, fmt.Errorf("int_value mismatch: expected %v, got %v", *expected.IntValue, *actual.IntValue))
+		}
+	}
+	if expected.DoubleValue != nil {
+		if actual.DoubleValue == nil {
+			errs = append(errs, errors.New("missing expected double_value"))
+		} else if *expected.DoubleValue != *actual.DoubleValue {
+			errs = append(errs, fmt.Errorf("double_value mismatch: expected %v, got %v", *expected.DoubleValue, *actual.DoubleValue))
+		}
+	}
+	if err := compareValueConstraints(expected.valueConstraints, actual); err != nil {
+		errs = append(errs, err)
+	}
 	if expected.Count != nil {
 		if actual.Count == nil {
 			errs = append(errs, errors.New("missing expected count"))
@@ -248,26 +288,215 @@ func compareDatapointValues(expected, actual datapointAssertion) error {
 	return errors.Join(errs...)
 }
 
-func compareValue(expected, actual any) error {
-	if expected == actual {
-		return nil
+// compareValueConstraints evaluates the /gt, /gte, /lt, /lte assertions parsed
+// from int_value/<op> and double_value/<op> keys against the actual datapoint
+// value.
+func compareValueConstraints(constraints []numericValueConstraint, actual datapointAssertion) error {
+	var errs []error
+	for _, c := range constraints {
+		switch c.field {
+		case "int_value":
+			if actual.IntValue == nil {
+				errs = append(errs, fmt.Errorf("missing int_value required by /%s", c.op))
+				continue
+			}
+			if err := compareNumericOp("int_value", c.op, c.operand, *actual.IntValue); err != nil {
+				errs = append(errs, err)
+			}
+		case "double_value":
+			if actual.DoubleValue == nil {
+				errs = append(errs, fmt.Errorf("missing double_value required by /%s", c.op))
+				continue
+			}
+			if err := compareNumericOp("double_value", c.op, c.operand, *actual.DoubleValue); err != nil {
+				errs = append(errs, err)
+			}
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// findMatchingAttributes returns the first unmatched index whose attributes
+// satisfy the expected attribute map, or -1 if none do.
+func findMatchingAttributes(expected map[string]any, mode attributeMode, matched []bool, n int, attrsAt func(int) map[string]any) int {
+	for i := range n {
+		if matched[i] {
+			continue
+		}
+		if compareAttributes(expected, attrsAt(i), mode) == nil {
+			return i
+		}
+	}
+	return -1
+}
+
+func compareAttributes(expected, actual map[string]any, mode attributeMode) error {
+	var errs []error
+	seen := make(map[string]struct{}, len(expected))
+	for rawKey, expectedValue := range expected {
+		if key, ok := strings.CutSuffix(rawKey, "/exists"); ok {
+			seen[key] = struct{}{}
+			if expectedValue != true {
+				errs = append(errs, fmt.Errorf("attribute %q/exists must be true (the only supported value)", key))
+				continue
+			}
+			if _, exists := actual[key]; !exists {
+				errs = append(errs, fmt.Errorf("missing attribute %q required by /exists", key))
+			}
+			continue
+		}
+		if key, ok := strings.CutSuffix(rawKey, "/regex"); ok {
+			seen[key] = struct{}{}
+			actualValue, exists := actual[key]
+			if !exists {
+				errs = append(errs, fmt.Errorf("missing attribute %q required by /regex", key))
+				continue
+			}
+			if err := compareRegexAttribute(key, expectedValue, actualValue); err != nil {
+				errs = append(errs, err)
+			}
+			continue
+		}
+		if key, op, ok := cutNumericAttributeKey(rawKey); ok {
+			seen[key] = struct{}{}
+			actualValue, exists := actual[key]
+			if !exists {
+				errs = append(errs, fmt.Errorf("missing attribute %q required by /%s", key, op))
+				continue
+			}
+			if err := compareNumericOp(fmt.Sprintf("attribute %q", key), op, expectedValue, actualValue); err != nil {
+				errs = append(errs, err)
+			}
+			continue
+		}
+		// An unrecognized operator suffix falls through to exact matching on
+		// the literal key: attribute keys may legitimately contain '/' (e.g.
+		// app.kubernetes.io/name), and a mistyped operator still fails loudly
+		// via the resulting missing/unexpected attribute mismatch.
+		seen[rawKey] = struct{}{}
+		actualValue, ok := actual[rawKey]
+		if !ok {
+			errs = append(errs, fmt.Errorf("missing attribute %q", rawKey))
+			continue
+		}
+		if canonKey(expectedValue) != canonKey(actualValue) {
+			errs = append(errs, fmt.Errorf("attribute %q mismatch: expected %v, got %v", rawKey, expectedValue, actualValue))
+		}
+	}
+	// In include mode, extra actual attributes are allowed.
+	if mode != attributeModeInclude {
+		for key := range actual {
+			if _, ok := seen[key]; !ok {
+				errs = append(errs, fmt.Errorf("unexpected attribute %q", key))
+			}
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// cutNumericAttributeKey splits an attribute key of the form `<key>/<op>`
+// where <op> is a numeric comparison operator, returning the bare key and the
+// operator. It reports ok=false for keys without a recognized numeric suffix.
+func cutNumericAttributeKey(rawKey string) (key, op string, ok bool) {
+	idx := strings.LastIndexByte(rawKey, '/')
+	if idx < 0 {
+		return "", "", false
+	}
+	suffix := rawKey[idx+1:]
+	if !isNumericOperator(suffix) {
+		return "", "", false
+	}
+	return rawKey[:idx], suffix, true
+}
+
+func compareRegexAttribute(key string, expectedValue, actualValue any) error {
+	pattern, ok := expectedValue.(string)
+	if !ok {
+		return fmt.Errorf("attribute %q/regex must be a string pattern", key)
+	}
+	actualStr, ok := actualValue.(string)
+	if !ok {
+		return fmt.Errorf("attribute %q must be a string to match /regex (got %T)", key, actualValue)
+	}
+	re, err := regexp.Compile("^(?:" + pattern + ")$")
+	if err != nil {
+		return fmt.Errorf("attribute %q/regex has invalid pattern %q: %w", key, pattern, err)
+	}
+	if !re.MatchString(actualStr) {
+		return fmt.Errorf("attribute %q value %q does not match regex %q", key, actualStr, pattern)
+	}
+	return nil
+}
+
+func isNumericOperator(op string) bool {
+	switch op {
+	case "gt", "gte", "lt", "lte":
+		return true
+	}
+	return false
+}
+
+// compareNumericOp evaluates a /gt, /gte, /lt, or /lte comparison of the actual
+// value against the expected operand. Both values must be numeric. Integers are
+// compared exactly; otherwise the comparison falls back to float64.
+func compareNumericOp(keyStr, op string, expectedValue, actualValue any) error {
+	expInt, expIsInt := toInt64(expectedValue)
+	actInt, actIsInt := toInt64(actualValue)
+
+	if expIsInt && actIsInt {
+		if numericOpHolds(op, actInt > expInt, actInt >= expInt, actInt < expInt, actInt <= expInt) {
+			return nil
+		}
+		if !isNumericOperator(op) {
+			return fmt.Errorf("unsupported operator /%s for %s", op, keyStr)
+		}
+		return fmt.Errorf("%s %v is not %s %v", keyStr, actualValue, opToSymbol(op), expectedValue)
 	}
 
-	expFloat, expIsFloat := toFloat64(expected)
-	actFloat, actIsFloat := toFloat64(actual)
+	expFloat, expIsFloat := toFloat64(expectedValue)
+	actFloat, actIsFloat := toFloat64(actualValue)
 
-	expInt, expIsInt := toInt64(expected)
-	actInt, actIsInt := toInt64(actual)
-
-	if expIsInt && actIsInt && expInt == actInt {
+	if !expIsFloat {
+		return fmt.Errorf("%s/%s must be a numeric value", keyStr, op)
+	}
+	if !actIsFloat {
+		return fmt.Errorf("%s must be a numeric value to match /%s (got %T)", keyStr, op, actualValue)
+	}
+	if !isNumericOperator(op) {
+		return fmt.Errorf("unsupported operator /%s for %s", op, keyStr)
+	}
+	if numericOpHolds(op, actFloat > expFloat, actFloat >= expFloat, actFloat < expFloat, actFloat <= expFloat) {
 		return nil
 	}
+	return fmt.Errorf("%s %v is not %s %v", keyStr, actualValue, opToSymbol(op), expectedValue)
+}
 
-	if expIsFloat && actIsFloat && expFloat == actFloat {
-		return nil
+func numericOpHolds(op string, gt, gte, lt, lte bool) bool {
+	switch op {
+	case "gt":
+		return gt
+	case "gte":
+		return gte
+	case "lt":
+		return lt
+	case "lte":
+		return lte
 	}
+	return false
+}
 
-	return fmt.Errorf("value mismatch: expected %v, got %v", expected, actual)
+func opToSymbol(op string) string {
+	switch op {
+	case "gt":
+		return ">"
+	case "gte":
+		return ">="
+	case "lt":
+		return "<"
+	case "lte":
+		return "<="
+	}
+	return op
 }
 
 func toFloat64(v any) (float64, bool) {
@@ -301,197 +530,6 @@ func toInt64(v any) (int64, bool) {
 		}
 	}
 	return 0, false
-}
-
-func compareNumericOp(keyStr, op string, expectedValue, actualValue any) error {
-	expInt, expIsInt := toInt64(expectedValue)
-	actInt, actIsInt := toInt64(actualValue)
-
-	if expIsInt && actIsInt {
-		switch op {
-		case "gt":
-			if actInt > expInt {
-				return nil
-			}
-		case "gte":
-			if actInt >= expInt {
-				return nil
-			}
-		case "lt":
-			if actInt < expInt {
-				return nil
-			}
-		case "lte":
-			if actInt <= expInt {
-				return nil
-			}
-		default:
-			return fmt.Errorf("unsupported operator /%s for %s", op, keyStr)
-		}
-		return fmt.Errorf("%s %v is not %s %v", keyStr, actualValue, opToSymbol(op), expectedValue)
-	}
-
-	expFloat, expIsFloat := toFloat64(expectedValue)
-	actFloat, actIsFloat := toFloat64(actualValue)
-
-	if !expIsFloat {
-		return fmt.Errorf("%s/%s must be a numeric value", keyStr, op)
-	}
-	if !actIsFloat {
-		return fmt.Errorf("%s must be a numeric value to match /%s (got %T)", keyStr, op, actualValue)
-	}
-
-	switch op {
-	case "gt":
-		if actFloat > expFloat {
-			return nil
-		}
-	case "gte":
-		if actFloat >= expFloat {
-			return nil
-		}
-	case "lt":
-		if actFloat < expFloat {
-			return nil
-		}
-	case "lte":
-		if actFloat <= expFloat {
-			return nil
-		}
-	default:
-		return fmt.Errorf("unsupported operator /%s for %s", op, keyStr)
-	}
-	return fmt.Errorf("%s %v is not %s %v", keyStr, actualValue, opToSymbol(op), expectedValue)
-}
-
-func opToSymbol(op string) string {
-	switch op {
-	case "gt":
-		return ">"
-	case "gte":
-		return ">="
-	case "lt":
-		return "<"
-	case "lte":
-		return "<="
-	}
-	return op
-}
-
-// parseKeyAndOperator splits a raw map key into key and operator, defaulting
-// to "exact" when no operator suffix is present.
-//
-// An unrecognized suffix falls back to treating the whole raw key as a literal
-// exact-match key rather than erroring, because attribute keys may legitimately
-// contain '/' (e.g. app.kubernetes.io/name). A mistyped operator on an
-// attribute key still fails the assertion loudly via the resulting
-// missing/unexpected attribute mismatch. Datapoint field keys never contain
-// '/', so unrecognized operator suffixes there are rejected up front by
-// validateDocument.
-func parseKeyAndOperator(rawKey string) (string, string) {
-	idx := strings.LastIndexByte(rawKey, '/')
-	if idx < 0 {
-		return rawKey, "exact"
-	}
-	op := rawKey[idx+1:]
-	switch op {
-	case "exists", "regex", "gt", "gte", "lt", "lte":
-		return rawKey[:idx], op
-	default:
-		return rawKey, "exact"
-	}
-}
-
-func isNumericOperator(op string) bool {
-	switch op {
-	case "gt", "gte", "lt", "lte":
-		return true
-	}
-	return false
-}
-
-// findMatchingAttributes returns the first unmatched index whose attributes
-// satisfy the expected attribute map, or -1 if none do.
-func findMatchingAttributes(expected map[string]any, matched []bool, n int, attrsAt func(int) map[string]any) int {
-	for i := range n {
-		if matched[i] {
-			continue
-		}
-		if compareAttributes(expected, attrsAt(i)) == nil {
-			return i
-		}
-	}
-	return -1
-}
-
-func compareAttributes(expected, actual map[string]any) error {
-	var errs []error
-	seen := make(map[string]struct{}, len(expected))
-	for rawKey, expectedValue := range expected {
-		key, op := parseKeyAndOperator(rawKey)
-		seen[key] = struct{}{}
-
-		switch op {
-		case "exists":
-			if expectedValue != true {
-				errs = append(errs, fmt.Errorf("attribute %q/exists must be true (the only supported value)", key))
-				continue
-			}
-			if _, exists := actual[key]; !exists {
-				errs = append(errs, fmt.Errorf("missing attribute %q required by /exists", key))
-			}
-		case "regex":
-			actualValue, exists := actual[key]
-			if !exists {
-				errs = append(errs, fmt.Errorf("missing attribute %q required by /regex", key))
-				continue
-			}
-			if err := compareRegexAttribute(key, expectedValue, actualValue); err != nil {
-				errs = append(errs, err)
-			}
-		case "gt", "gte", "lt", "lte":
-			actualValue, exists := actual[key]
-			if !exists {
-				errs = append(errs, fmt.Errorf("missing attribute %q required by /%s", key, op))
-			} else if err := compareNumericOp(fmt.Sprintf("attribute %q", key), op, expectedValue, actualValue); err != nil {
-				errs = append(errs, err)
-			}
-		case "exact":
-			actualValue, ok := actual[key]
-			if !ok {
-				errs = append(errs, fmt.Errorf("missing attribute %q", rawKey))
-				continue
-			}
-			if canonKey(expectedValue) != canonKey(actualValue) {
-				errs = append(errs, fmt.Errorf("attribute %q mismatch: expected %v, got %v", rawKey, expectedValue, actualValue))
-			}
-		}
-	}
-	for key := range actual {
-		if _, ok := seen[key]; !ok {
-			errs = append(errs, fmt.Errorf("unexpected attribute %q", key))
-		}
-	}
-	return errors.Join(errs...)
-}
-
-func compareRegexAttribute(key string, expectedValue, actualValue any) error {
-	pattern, ok := expectedValue.(string)
-	if !ok {
-		return fmt.Errorf("attribute %q/regex must be a string pattern", key)
-	}
-	actualStr, ok := actualValue.(string)
-	if !ok {
-		return fmt.Errorf("attribute %q must be a string to match /regex (got %T)", key, actualValue)
-	}
-	re, err := regexp.Compile("^(?:" + pattern + ")$")
-	if err != nil {
-		return fmt.Errorf("attribute %q/regex has invalid pattern %q: %w", key, pattern, err)
-	}
-	if !re.MatchString(actualStr) {
-		return fmt.Errorf("attribute %q value %q does not match regex %q", key, actualStr, pattern)
-	}
-	return nil
 }
 
 func boolPtrEqual(a, b *bool) bool {

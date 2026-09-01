@@ -137,6 +137,9 @@ If the `receiver.datadogreceiver.EnableMultiTagParsing` feature gate is enabled,
 ### Default Attributes
 
 - `dd.span.Resource`: The datadog resource name (as distinct from the span name)
+- `datadog.metric.as_type`: Set to `rate` on data points from a Datadog `rate` series, which is otherwise
+indistinguishable from a `count` series once translated to a delta Sum. The Datadog exporter reads it to map such a
+Sum back to a Datadog rate.
 
 ### Optional Attributes
 

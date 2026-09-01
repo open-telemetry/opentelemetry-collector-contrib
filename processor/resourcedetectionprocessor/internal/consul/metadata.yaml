@@ -1,4 +1,5 @@
 type: resourcedetectionprocessor/consul
+sem_conv_version: 1.40.0
 
 parent: resourcedetection
 
@@ -11,14 +12,20 @@ feature_gates:
 
 resource_attributes:
   cloud.region:
+    semantic_convention:
+      ref: cloud.md#cloud-region
     description: The cloud.region
     type: string
     enabled: true
   host.id:
+    semantic_convention:
+      ref: host.md#host-id
     description: The host.id
     type: string
     enabled: true
   host.name:
+    semantic_convention:
+      ref: host.md#host-name
     description: The hostname
     type: string
     enabled: true

@@ -12,7 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
 	"os"
@@ -648,14 +647,14 @@ func TestNewExporterWithProxy(t *testing.T) {
 	wg.Add(expectedRequests)
 
 	proxyServer := httptest.NewServer(&httputil.ReverseProxy{
-		Director: func(req *http.Request) {
-			req.Header.Set("X-Proxy-Test", "test-proxy-123")
-			req.URL.Scheme = "http"
-			req.URL.Host = server.Listener.Addr().String()
+		Rewrite: func(req *httputil.ProxyRequest) {
+			req.Out.Header.Set("X-Proxy-Test", "test-proxy-123")
+			req.Out.URL.Scheme = "http"
+			req.Out.URL.Host = server.Listener.Addr().String()
 
 			// Copy request data to avoid race conditions
 			headers := make(map[string]string)
-			for key, values := range req.Header {
+			for key, values := range req.Out.Header {
 				if len(values) > 0 {
 					headers[key] = values[0]
 				}
@@ -663,7 +662,7 @@ func TestNewExporterWithProxy(t *testing.T) {
 
 			mu.Lock()
 			proxyRequests = append(proxyRequests, requestInfo{
-				Path:    req.URL.Path,
+				Path:    req.Out.URL.Path,
 				Headers: headers,
 			})
 			mu.Unlock()
@@ -674,9 +673,6 @@ func TestNewExporterWithProxy(t *testing.T) {
 	defer proxyServer.Close()
 
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.ProxyURL = proxyServer.URL
 

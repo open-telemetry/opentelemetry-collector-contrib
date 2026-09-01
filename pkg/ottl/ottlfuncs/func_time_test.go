@@ -533,3 +533,40 @@ func Benchmark_Time(t *testing.B) {
 		})
 	}
 }
+
+func Test_TimeFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewTimeFactory[any]()
+		assert.Equal(t, "Time", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewTimeFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &TimeArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Time", "Format", "Location", "Locale"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewTimeFactory[any]()
+		args := factory.CreateDefaultArguments()
+		timeArgs, ok := args.(*TimeArguments[any])
+		require.True(t, ok)
+		timeArgs.Time = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "2023-01-01", nil
+			},
+		}
+		timeArgs.Format = "%Y-%m-%d"
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createTimeFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "TimeFactory args must be of type *TimeArguments[K]")
+	})
+}

@@ -38,18 +38,30 @@ var (
 type TransformContext struct {
 	resource      pcommon.Resource
 	cache         pcommon.Map
+	externalCache *pcommon.Map
 	schemaURLItem ctxcommon.SchemaURLItem
 }
 
 // MarshalLogObject serializes the TransformContext into a zapcore.ObjectEncoder for logging.
 func (tCtx *TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	err := encoder.AddObject("resource", logging.Resource(tCtx.resource))
-	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
+	err = errors.Join(err, encoder.AddObject("cache", logging.Map(getCache(tCtx))))
 	return err
 }
 
 // TransformContextOption represents an option for configuring a TransformContext.
 type TransformContextOption func(*TransformContext)
+
+// WithCache sets an external shared cache on the TransformContext.
+// When set, the cache is shared across multiple TransformContext instances.
+// Experimental: *NOTE* this option is subject to change or removal in the future.
+func WithCache(cache *pcommon.Map) TransformContextOption {
+	return func(tCtx *TransformContext) {
+		if cache != nil {
+			tCtx.externalCache = cache
+		}
+	}
+}
 
 // NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
@@ -69,6 +81,7 @@ func (tCtx *TransformContext) Close() {
 	tCtx.resource = pcommon.Resource{}
 	tCtx.cache.Clear()
 	tCtx.schemaURLItem = nil
+	tCtx.externalCache = nil
 	tcPool.Put(tCtx)
 }
 
@@ -155,6 +168,9 @@ func parseEnum(_ *ottl.EnumSymbol) (*ottl.Enum, error) {
 }
 
 func getCache(tCtx *TransformContext) pcommon.Map {
+	if tCtx.externalCache != nil {
+		return *tCtx.externalCache
+	}
 	return tCtx.cache
 }
 

@@ -100,6 +100,26 @@ assertion, so omitting a key is the way to assert that it must not appear.
 `/exists: true` is the only supported value; any other value is a schema
 error.
 
+### Attribute include matcher
+
+Use `attributes/include` instead of `attributes` when you want to assert a
+subset of the attribute map. Every expected key must be present and match, but
+additional actual keys are allowed:
+
+```yaml
+attributes/include:
+  service.name: app
+  service.instance.id/exists: true
+```
+
+This is useful when the environment or component configuration adds extra
+attributes that the test does not care about. `/exists` can be combined with
+`/include`.
+
+`attributes/include` may be applied to both resource attributes and datapoint
+attributes. Specifying both `attributes` and `attributes/include` on the same
+element is an error.
+
 ### Attribute regex matcher
 
 Attribute keys can use the `/regex` suffix when the attribute value is a
@@ -115,32 +135,58 @@ Regex matchers are supported for resource attributes and datapoint attributes.
 The attribute map remains exact: unexpected attributes still fail the
 assertion.
 
+### Scope version matchers
+
+The scope `version` field accepts the same `/exists` and `/regex` operators as
+attributes, the assertion-file equivalent of `pmetrictest.IgnoreScopeVersion`.
+The scope `name` is always matched exactly.
+
+```yaml
+scopes:
+  - name: github.com/example/receiver
+    version/exists: true               # present, any value
+  - name: github.com/example/other
+    version/regex: 'v[0-9]+\.[0-9]+\.[0-9]+'  # full-string match
+```
+
+Use at most one of `version:`, `version/exists:`, or `version/regex:` per
+scope. `version/exists` accepts only `true`; any other value is a schema
+error.
+
 ### Numeric comparison matchers
 
-Datapoint `value` keys and attribute keys can use the `/gt`, `/gte`, `/lt`,
-and `/lte` suffixes when a numeric value is meaningful but not exact, such as
+Datapoint value keys and attribute keys can use the `/gt`, `/gte`, `/lt`, and
+`/lte` suffixes when a numeric value is meaningful but not exact, such as
 durations and other runtime-dependent measurements. Operators can be combined
-on the same key to assert a range:
+on the same key to assert a range.
+
+Datapoint value operators attach to the typed value fields — `int_value/<op>`
+for integer datapoints and `double_value/<op>` for double datapoints, matching
+the `int_value:`/`double_value:` keys used for exact assertions:
 
 ```yaml
 datapoints:
   - attributes:
       method: GET
-    value/gte: 0
-    value/lt: 1000
+    int_value/gte: 0
+    int_value/lt: 1000
+  - attributes:
+      operation: flush
+    double_value/gt: 0
 ```
+
+Attribute operators apply to resource attributes and datapoint attributes:
 
 ```yaml
 attributes:
   queue.depth/gte: 1
 ```
 
-Value matchers apply to number datapoints (gauge and sum metrics); attribute
-matchers apply to resource attributes and datapoint attributes. The expected
-and actual values must both be numeric.
+The expected and actual values must both be numeric. Integers are compared
+exactly; other numeric values fall back to a float64 comparison.
 
-An unrecognized operator suffix on a datapoint `value` key is rejected when
-the assertion file is read. On attribute keys, a key with an unrecognized
+An unrecognized operator suffix on a `int_value`/`double_value` key is rejected
+when the assertion file is read. On attribute keys, a key with an unrecognized
 suffix is matched exactly as a literal key, because attribute keys may
 legitimately contain `/` (e.g. `app.kubernetes.io/name`); a mistyped operator
 therefore fails the assertion as a missing attribute.
@@ -173,7 +219,8 @@ must contain at least one datapoint; see
 ## Roadmap
 
 This is the identity-only subset of the grammar in #48079. Operator-suffix
-extensions beyond `/exists`, `/regex`, and the numeric comparison matchers
-(`/include`, `/exclude`, `/all`, `/count`, `/approx`) and further opt-in
-fields (`IncludeTimestamps()`, `IncludeExemplars()`, type-specific histogram
-fields) are tracked as follow-ups under that issue.
+extensions beyond attribute `/exists`/`/regex`, `attributes/include`, scope
+`version` `/exists`/`/regex`, and the numeric comparison matchers
+(`/exclude`, `/all`, `/count`, `/approx`) and opt-in fields
+(`IncludeValues()`, `IncludeTimestamps()`, `IncludeExemplars()`, type-specific
+histogram fields) are tracked as follow-ups under that issue.

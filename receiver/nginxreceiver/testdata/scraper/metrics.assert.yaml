@@ -11,7 +11,7 @@ resources:
               temporality: cumulative
               monotonic: true
               datapoints:
-                - value/gte: 1
+                - value: 16630948
             - name: nginx.connections_current
               type: sum
               unit: '{connections}'
@@ -36,11 +36,11 @@ resources:
               temporality: cumulative
               monotonic: true
               datapoints:
-                - value/gte: 1
+                - value: 16630946
             - name: nginx.requests
               type: sum
               unit: '{requests}'
               temporality: cumulative
               monotonic: true
               datapoints:
-                - value/gt: 0
+                - value: 31070465

@@ -32,6 +32,9 @@ import (
 
 const attrValuesSeparator = ","
 
+// maskAllValuesRegex masks a whole value, for keys matching the blocked key patterns.
+var maskAllValuesRegex = regexp.MustCompile(".*")
+
 type redaction struct {
 	// Attribute keys allowed in a span
 	allowList map[string]string
@@ -202,7 +205,7 @@ func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attr
 			}
 			if s.shouldMaskKey(k) {
 				maskedKeys = append(maskedKeys, k)
-				v.SetStr(s.maskValue(v.Str(), regexp.MustCompile(".*")))
+				v.SetStr(s.maskValue(v.Str(), maskAllValuesRegex))
 				return true
 			}
 			s.redactLogBodyRecursive(ctx, k, v, &redactedKeys, &maskedKeys, &allowedKeys, &ignoredKeys)
@@ -219,7 +222,10 @@ func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attr
 	default:
 		strVal := body.AsString()
 		if s.shouldAllowValue(strVal) {
-			allowedKeys = append(allowedKeys, "body")
+			// TODO: this is assigned here, but return makes the assignment useless. Open an issue
+			// to investigate the correct behavior
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50417
+			allowedKeys = append(allowedKeys, "body") //nolint:staticcheck
 			return
 		}
 		processedValue := s.processStringValueForLogBody(strVal)
@@ -251,7 +257,7 @@ func (s *redaction) redactLogBodyRecursive(ctx context.Context, key string, valu
 			}
 			if s.shouldMaskKey(k) {
 				*maskedKeys = append(*maskedKeys, keyWithPath)
-				v.SetStr(s.maskValue(v.Str(), regexp.MustCompile(".*")))
+				v.SetStr(s.maskValue(v.Str(), maskAllValuesRegex))
 				return true
 			}
 			s.redactLogBodyRecursive(ctx, keyWithPath, v, redactedKeys, maskedKeys, allowedKeys, ignoredKeys)
@@ -359,7 +365,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 		}
 		if s.shouldMaskKey(k) {
 			maskedKeys = append(maskedKeys, k)
-			maskedValue := s.maskValue(strVal, regexp.MustCompile(".*"))
+			maskedValue := s.maskValue(strVal, maskAllValuesRegex)
 			value.SetStr(maskedValue)
 			continue
 		}
