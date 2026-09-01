@@ -40,8 +40,11 @@ type groupByTraceProcessor struct {
 	// the event machine handling all operations for this processor
 	eventMachine *eventMachine
 
-	// the trace storage
-	st storage
+	// trace storage (used when EmitStrategy == EmitStrategyTrace)
+	st traceStorage
+
+	// subtrace storage (used when EmitStrategy == EmitStrategyService)
+	subSt subtraceStorage
 }
 
 var _ processor.Traces = (*groupByTraceProcessor)(nil)
@@ -94,16 +97,39 @@ func (sp *groupByTraceProcessor) Start(context.Context, component.Host) error {
 	sp.telemetryBuilder.ProcessorGroupbytraceIncompleteReleases.Add(context.Background(), 0)
 	sp.telemetryBuilder.ProcessorGroupbytraceConfNumTraces.Record(context.Background(), int64(sp.config.NumTraces))
 	sp.eventMachine.startInBackground()
+	if sp.subSt != nil {
+		return sp.subSt.start()
+	}
 	return sp.st.start()
 }
 
 // Shutdown is invoked during service shutdown.
-func (sp *groupByTraceProcessor) Shutdown(_ context.Context) error {
+func (sp *groupByTraceProcessor) Shutdown(ctx context.Context) error {
 	sp.eventMachine.shutdown()
+
+	if sp.subSt != nil {
+		// Flush remaining orphan spans that were never claimed by a subtrace timer.
+		tids := sp.subSt.traceIDs()
+		for _, tid := range tids {
+			members, _ := sp.subSt.getRemainder(tid)
+			_ = sp.subSt.deleteTrace(tid)
+			if len(members) > 0 {
+				if err := sp.nextConsumer.ConsumeTraces(ctx, assemble(members)); err != nil {
+					sp.logger.Error("shutdown drain consume failed", zap.Error(err))
+				}
+			}
+		}
+		return sp.subSt.shutdown()
+	}
+
 	return sp.st.shutdown()
 }
 
 func (sp *groupByTraceProcessor) onTraceReceived(trace tracesWithID, worker *eventMachineWorker) error {
+	if sp.config.EmitStrategy == EmitStrategyService {
+		return sp.onTraceReceivedSubtrace(trace, worker)
+	}
+
 	traceID := trace.id
 	if worker.buffer.contains(traceID) {
 		sp.logger.Debug("trace is already in memory storage")
@@ -148,6 +174,47 @@ func (sp *groupByTraceProcessor) onTraceReceived(trace tracesWithID, worker *eve
 			payload: traceID,
 		})
 	})
+	return nil
+}
+
+func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, worker *eventMachineWorker) error {
+	traceID := trace.id
+
+	// Insert all spans from this batch into the span-level index.
+	rss := trace.td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		rs := rss.At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				if err := sp.subSt.insertSpan(traceID, rs.Resource(), ss.Scope(), ss.Spans().At(k)); err != nil {
+					return fmt.Errorf("couldn't insert span: %w", err)
+				}
+			}
+		}
+	}
+
+	// Discover local roots in the now-updated index.
+	// No trace-level timer is started; orphan spans are handled by ring-buffer
+	// overflow (dropped) and shutdown drain.
+	roots := sp.subSt.localRoots(traceID)
+	for _, rootSpanID := range roots {
+		id := subtraceID{traceID: traceID, spanID: rootSpanID}
+		if worker.subtraceBuffer.contains(id) {
+			continue // already tracking this subtrace
+		}
+		// Register in ring buffer; handle eviction.
+		if evicted, ok := worker.subtraceBuffer.put(id); ok {
+			sp.telemetryBuilder.ProcessorGroupbytraceTracesEvicted.Add(context.Background(), 1)
+			worker.fire(event{typ: subtraceRemoved, payload: evicted})
+		}
+		// Start the per-subtrace wait timer.
+		capturedID := id
+		sp.logger.Debug("scheduled to release subtrace", zap.Duration("duration", sp.config.WaitDuration))
+		time.AfterFunc(sp.config.WaitDuration, func() {
+			worker.fire(event{typ: subtraceExpired, payload: capturedID})
+		})
+	}
 	return nil
 }
 
@@ -235,4 +302,48 @@ func (sp *groupByTraceProcessor) onTraceRemoved(traceID pcommon.TraceID) error {
 func (sp *groupByTraceProcessor) addSpans(traceID pcommon.TraceID, trace ptrace.Traces) error {
 	sp.logger.Debug("creating trace at the storage", zap.Stringer("traceID", traceID))
 	return sp.st.createOrAppend(traceID, trace)
+}
+
+func (sp *groupByTraceProcessor) onSubtraceExpired(id subtraceID, worker *eventMachineWorker) error {
+	if !worker.subtraceBuffer.contains(id) {
+		sp.telemetryBuilder.ProcessorGroupbytraceIncompleteReleases.Add(context.Background(), 1)
+		return nil
+	}
+	worker.subtraceBuffer.delete(id)
+	go func() {
+		_ = sp.markSubtraceAsReleased(id, worker.fire)
+	}()
+	return nil
+}
+
+func (sp *groupByTraceProcessor) markSubtraceAsReleased(id subtraceID, fire func(...event)) error {
+	members, err := sp.subSt.getSubtrace(id.traceID, id.spanID)
+	if err != nil {
+		return fmt.Errorf("couldn't retrieve subtrace: %w", err)
+	}
+	if len(members) == 0 {
+		return nil
+	}
+	assembled := assemble(members)
+	fire(
+		event{typ: subtraceReleased, payload: assembled},
+		event{typ: subtraceRemoved, payload: id},
+	)
+	return nil
+}
+
+func (sp *groupByTraceProcessor) onSubtraceReleased(td ptrace.Traces) error {
+	sp.telemetryBuilder.ProcessorGroupbytraceSpansReleased.Add(context.Background(), int64(td.SpanCount()))
+	sp.telemetryBuilder.ProcessorGroupbytraceTracesReleased.Add(context.Background(), 1)
+	go func() {
+		if err := sp.nextConsumer.ConsumeTraces(context.Background(), td); err != nil {
+			sp.logger.Error("consume failed", zap.Error(err))
+		}
+	}()
+	return nil
+}
+
+func (sp *groupByTraceProcessor) onSubtraceRemoved(id subtraceID) error {
+	_, err := sp.subSt.deleteSubtrace(id.traceID, id.spanID)
+	return err
 }

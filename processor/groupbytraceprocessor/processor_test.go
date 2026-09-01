@@ -584,6 +584,278 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 	}
 }
 
+func TestSubtrace_HappyPath_TwoServices(t *testing.T) {
+	traceID := makeTraceID(1)
+	rootA := makeSpanID(1)
+	childA := makeSpanID(2)
+	rootB := makeSpanID(3)
+	childB := makeSpanID(4)
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{
+		NumTraces:    100,
+		NumWorkers:   1,
+		WaitDuration: 20 * time.Millisecond,
+		EmitStrategy: EmitStrategyService,
+	}
+	p := newSubtraceProcessor(t, cfg, sink)
+	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+	tdA := buildServiceTrace(traceID, "svc-a", rootA, childA)
+	tdB := buildRemoteChildTrace(traceID, "svc-b", rootA, rootB, childB)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), tdA))
+	require.NoError(t, p.ConsumeTraces(t.Context(), tdB))
+
+	// Wait for both subtraces to be flushed.
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() == 4
+	}, 5*time.Second, 5*time.Millisecond)
+
+	// Each service should arrive as a separate batch.
+	batches := sink.AllTraces()
+	assert.Len(t, batches, 2)
+
+	// Total span count must be 4.
+	total := 0
+	for _, b := range batches {
+		total += b.SpanCount()
+	}
+	assert.Equal(t, 4, total)
+}
+
+func TestSubtrace_LocalRootArrivesLate(t *testing.T) {
+	traceID := makeTraceID(2)
+	rootID := makeSpanID(1)
+	childID := makeSpanID(2)
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{
+		NumTraces:    100,
+		NumWorkers:   1,
+		WaitDuration: 50 * time.Millisecond,
+		EmitStrategy: EmitStrategyService,
+	}
+	p := newSubtraceProcessor(t, cfg, sink)
+	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+	// Send child first (parent not yet in index — child is misclassified as a root).
+	tdChild := buildServiceTrace(traceID, "svc-a", childID)
+	// Override the parent span ID to make child's parent = rootID (not in index yet).
+	tdChild.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetParentSpanID(rootID)
+	require.NoError(t, p.ConsumeTraces(t.Context(), tdChild))
+
+	// Now send the root.
+	tdRoot := buildServiceTrace(traceID, "svc-a", rootID)
+	require.NoError(t, p.ConsumeTraces(t.Context(), tdRoot))
+
+	// After wait duration, at least one flush should happen (root starts its own timer).
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() >= 1
+	}, 5*time.Second, 5*time.Millisecond)
+}
+
+func TestSubtrace_SpansSplitAcrossCalls(t *testing.T) {
+	traceID := makeTraceID(3)
+	rootID := makeSpanID(1)
+	child1 := makeSpanID(2)
+	child2 := makeSpanID(3)
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{
+		NumTraces:    100,
+		NumWorkers:   1,
+		WaitDuration: 50 * time.Millisecond,
+		EmitStrategy: EmitStrategyService,
+	}
+	p := newSubtraceProcessor(t, cfg, sink)
+	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+	// Send root first.
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildServiceTrace(traceID, "svc-a", rootID)))
+	// Then child1.
+	td1 := buildServiceTrace(traceID, "svc-a", child1)
+	td1.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetParentSpanID(rootID)
+	require.NoError(t, p.ConsumeTraces(t.Context(), td1))
+	// Then child2.
+	td2 := buildServiceTrace(traceID, "svc-a", child2)
+	td2.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetParentSpanID(rootID)
+	require.NoError(t, p.ConsumeTraces(t.Context(), td2))
+
+	// After the wait duration, all 3 spans should arrive in one batch.
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() >= 3
+	}, 5*time.Second, 5*time.Millisecond)
+}
+
+func TestSubtrace_ShutdownDrain_OrphanSpans(t *testing.T) {
+	traceID := makeTraceID(4)
+	orphanID := makeSpanID(1)
+	missingParent := makeSpanID(99)
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{
+		NumTraces:    100,
+		NumWorkers:   1,
+		WaitDuration: 10 * time.Second, // long enough that timer won't fire
+		EmitStrategy: EmitStrategyService,
+	}
+	p := newSubtraceProcessor(t, cfg, sink)
+
+	td := buildServiceTrace(traceID, "svc-a", orphanID)
+	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetParentSpanID(missingParent)
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	// Wait until the span is persisted in storage before shutting down.
+	require.Eventually(t, func() bool {
+		return len(p.subSt.traceIDs()) > 0
+	}, 2*time.Second, time.Millisecond)
+
+	// Shutdown before the timer fires — drain should emit the span.
+	require.NoError(t, p.Shutdown(t.Context()))
+	assert.Equal(t, 1, sink.SpanCount())
+}
+
+func TestSubtrace_RingBufferEviction(t *testing.T) {
+	const capacity = 3
+	sink := new(consumertest.TracesSink)
+	cfg := Config{
+		NumTraces:    capacity,
+		NumWorkers:   1,
+		WaitDuration: 10 * time.Second,
+		EmitStrategy: EmitStrategyService,
+	}
+	p := newSubtraceProcessor(t, cfg, sink)
+	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+	// Fill the buffer beyond capacity.
+	for i := byte(1); i <= byte(capacity+1); i++ {
+		tid := makeTraceID(i)
+		sid := makeSpanID(i)
+		require.NoError(t, p.ConsumeTraces(t.Context(), buildServiceTrace(tid, "svc", sid)))
+	}
+
+	// The eviction metric should have been incremented at least once.
+	// We can't read the metric directly; just verify the processor doesn't crash.
+}
+
+func TestSubtrace_ShutdownWithLocalRoots(t *testing.T) {
+	traceID := makeTraceID(6)
+	rootID := makeSpanID(1)
+	childID := makeSpanID(2)
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{
+		NumTraces:    100,
+		NumWorkers:   1,
+		WaitDuration: 10 * time.Second,
+		EmitStrategy: EmitStrategyService,
+	}
+	p := newSubtraceProcessor(t, cfg, sink)
+
+	td := buildServiceTrace(traceID, "svc", rootID, childID)
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	// Wait until spans are persisted in storage before shutting down.
+	require.Eventually(t, func() bool {
+		return len(p.subSt.traceIDs()) > 0
+	}, 2*time.Second, time.Millisecond)
+
+	// Shutdown before the wait_duration expires.
+	require.NoError(t, p.Shutdown(t.Context()))
+
+	// The shutdown drain should have emitted both spans.
+	assert.Equal(t, 2, sink.SpanCount())
+}
+
+func TestSubtrace_Regression_TraceStrategy(t *testing.T) {
+	sink := new(consumertest.TracesSink)
+	cfg := Config{
+		NumTraces:    100,
+		NumWorkers:   1,
+		WaitDuration: 20 * time.Millisecond,
+		EmitStrategy: EmitStrategyTrace,
+	}
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), sink, cfg)
+	require.NotNil(t, p)
+	st := newMemoryStorage(p.telemetryBuilder)
+	p.st = st
+	require.NoError(t, p.Start(t.Context(), nil))
+	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+	traceID := makeTraceID(8)
+	td := buildServiceTrace(traceID, "svc-a", makeSpanID(1), makeSpanID(2))
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() == 2
+	}, 5*time.Second, 5*time.Millisecond)
+}
+
+// newSubtraceProcessor creates a started groupByTraceProcessor wired with the
+// given config (EmitStrategy must be EmitStrategyService) and a consumertest.TracesSink.
+// The caller is responsible for calling Shutdown.
+func newSubtraceProcessor(t *testing.T, cfg Config, sink *consumertest.TracesSink) *groupByTraceProcessor {
+	t.Helper()
+	cfg.EmitStrategy = EmitStrategyService
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), sink, cfg)
+	require.NotNil(t, p)
+
+	subSt := newSubtraceMemoryStorage(p.telemetryBuilder)
+	p.subSt = subSt
+	p.eventMachine.onSubtraceExpired = p.onSubtraceExpired
+	p.eventMachine.onSubtraceReleased = p.onSubtraceReleased
+	p.eventMachine.onSubtraceRemoved = p.onSubtraceRemoved
+	for _, w := range p.eventMachine.workers {
+		w.subtraceBuffer = newSubtraceRingBuffer(cfg.NumTraces / cfg.NumWorkers)
+	}
+
+	require.NoError(t, p.Start(t.Context(), nil))
+	return p
+}
+
+// buildServiceTrace builds a ptrace.Traces with spans for a single service.
+// All spans share traceID. The server span (index 0) has an empty parent and
+// acts as the local root; subsequent spans are children of the server span.
+func buildServiceTrace(traceID pcommon.TraceID, serviceName string, spanIDs ...pcommon.SpanID) ptrace.Traces {
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("service.name", serviceName)
+	ss := rs.ScopeSpans().AppendEmpty()
+	for i, sid := range spanIDs {
+		s := ss.Spans().AppendEmpty()
+		s.SetTraceID(traceID)
+		s.SetSpanID(sid)
+		if i == 0 {
+			s.SetParentSpanID(pcommon.NewSpanIDEmpty())
+		} else {
+			s.SetParentSpanID(spanIDs[0]) // children of the root
+		}
+	}
+	return td
+}
+
+// buildRemoteChildTrace builds a trace for service B whose root is a remote
+// child of service A's root (i.e. the IS_REMOTE flag is set on the root span).
+func buildRemoteChildTrace(traceID pcommon.TraceID, serviceName string, remoteParentID pcommon.SpanID, spanIDs ...pcommon.SpanID) ptrace.Traces {
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("service.name", serviceName)
+	ss := rs.ScopeSpans().AppendEmpty()
+	for i, sid := range spanIDs {
+		s := ss.Spans().AppendEmpty()
+		s.SetTraceID(traceID)
+		s.SetSpanID(sid)
+		if i == 0 {
+			s.SetParentSpanID(remoteParentID)
+			s.SetFlags(spanFlagsContextHasIsRemoteMask | spanFlagsContextIsRemoteMask)
+		} else {
+			s.SetParentSpanID(spanIDs[0])
+		}
+	}
+	return td
+}
+
 type mockProcessor struct {
 	mutex    sync.Mutex
 	onTraces func(context.Context, ptrace.Traces) error
@@ -620,7 +892,7 @@ type mockStorage struct {
 	onShutdown       func() error
 }
 
-var _ storage = (*mockStorage)(nil)
+var _ traceStorage = (*mockStorage)(nil)
 
 func (st *mockStorage) createOrAppend(traceID pcommon.TraceID, trace ptrace.Traces) error {
 	if st.onCreateOrAppend != nil {

@@ -6,6 +6,7 @@ package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -47,6 +48,8 @@ func createDefaultConfig() component.Config {
 		// not supported for now
 		DiscardOrphans: defaultDiscardOrphans,
 		StoreOnDisk:    defaultStoreOnDisk,
+
+		EmitStrategy: EmitStrategyTrace,
 	}
 }
 
@@ -59,17 +62,38 @@ func createTracesProcessor(
 ) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
 
-	var st storage
+	var st traceStorage
 	if oCfg.StoreOnDisk {
 		return nil, errDiskStorageNotSupported
 	}
 	if oCfg.DiscardOrphans {
 		return nil, errDiscardOrphansNotSupported
 	}
+	switch oCfg.EmitStrategy {
+	case EmitStrategyTrace, EmitStrategyService:
+		// valid
+	default:
+		return nil, fmt.Errorf("unknown emit_strategy %q: valid values are %q and %q",
+			oCfg.EmitStrategy, EmitStrategyTrace, EmitStrategyService)
+	}
 
 	processor := newGroupByTraceProcessor(params, nextConsumer, *oCfg)
 	// the only supported storage for now
 	st = newMemoryStorage(processor.telemetryBuilder)
 	processor.st = st
+
+	if oCfg.EmitStrategy == EmitStrategyService {
+		subSt := newSubtraceMemoryStorage(processor.telemetryBuilder)
+		processor.subSt = subSt
+		processor.eventMachine.onSubtraceExpired = processor.onSubtraceExpired
+		processor.eventMachine.onSubtraceReleased = processor.onSubtraceReleased
+		processor.eventMachine.onSubtraceRemoved = processor.onSubtraceRemoved
+
+		// Allocate per-worker subtrace ring buffers.
+		for _, w := range processor.eventMachine.workers {
+			w.subtraceBuffer = newSubtraceRingBuffer(max(1, oCfg.NumTraces/oCfg.NumWorkers))
+		}
+	}
+
 	return processor, nil
 }
