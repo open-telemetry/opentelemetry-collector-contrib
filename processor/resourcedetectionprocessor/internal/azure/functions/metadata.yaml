@@ -43,9 +43,9 @@ resource_attributes:
   deployment.environment.name:
     semantic_convention:
       ref: deployment.md#deployment-environment-name
-    description: The name of the function app deployment slot
+    description: The name of the function app deployment slot. Disabled to avoid incorrect default "Production" labels when deployment slots are not in use.
     type: string
-    enabled: true
+    enabled: false
   faas.instance:
     semantic_convention:
       ref: faas.md#faas-instance
@@ -55,6 +55,6 @@ resource_attributes:
   service.name:
     semantic_convention:
       ref: service.md#service-name
-    description: The name of the Azure Functions site
+    description: The name of the Azure Functions site hosting the collector. If running the collector as a sidecar, overwriting this may provide more accurate metadata.
     type: string
     enabled: true

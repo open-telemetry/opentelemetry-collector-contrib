@@ -59,7 +59,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		DeploymentEnvironmentName: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		FaasInstance: ResourceAttributeConfig{
 			Enabled: true,

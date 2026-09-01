@@ -630,7 +630,11 @@ processors:
     override: false
 ```
 
-Azure Functions Flex Consumption does not expose `WEBSITE_RESOURCE_GROUP`, so `azure.resource_group.name` and `cloud.resource_id` can be absent.
+Azure Functions Flex Consumption plans do not expose `WEBSITE_RESOURCE_GROUP`, so `azure.resource_group.name` and `cloud.resource_id` will be absent.
+
+`deployment.environment.name` is disabled by default. Azure sets `WEBSITE_SLOT_NAME` to `Production` on apps without deployment slots regardless of the actual user's intent. Users should enable this attribute if they are using deployment slots, want the Production label, or are setting their own value for the environment. 
+
+If this detector is deployed as a sidecar, consider setting `override` to `false` to prevent overwriting values such as `service.name`. 
 
 > **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if neither `FUNCTIONS_WORKER_RUNTIME` nor `FUNCTIONS_EXTENSION_VERSION` is set (not running on Azure Functions), instead of silently returning an empty resource.
 

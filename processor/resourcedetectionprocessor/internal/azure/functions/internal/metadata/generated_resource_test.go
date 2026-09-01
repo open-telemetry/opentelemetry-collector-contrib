@@ -28,7 +28,7 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 9, res.Attributes().Len())
+				assert.Equal(t, 8, res.Attributes().Len())
 			case "all_set":
 				assert.Equal(t, 9, res.Attributes().Len())
 			case "none_set":
@@ -68,7 +68,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Equal(t, "cloud.resource_id-val", cloudResourceIDAttrVal.Str())
 			}
 			deploymentEnvironmentNameAttrVal, ok := res.Attributes().Get("deployment.environment.name")
-			assert.True(t, ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.Equal(t, "deployment.environment.name-val", deploymentEnvironmentNameAttrVal.Str())
 			}
