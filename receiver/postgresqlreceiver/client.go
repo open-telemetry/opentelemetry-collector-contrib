@@ -62,7 +62,7 @@ type client interface {
 	getDatabaseLocks(ctx context.Context) ([]databaseLocks, error)
 	getSharedRelationLocks(ctx context.Context) ([]databaseLocks, error)
 	getBGWriterStats(ctx context.Context) (*bgStat, error)
-	getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error)
+	getBackends(ctx context.Context, databases []string) (map[databaseName][]backendStateCount, error)
 	getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error)
 	getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error)
@@ -370,7 +370,6 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 	query := filterQueryByDatabases(
 		"SELECT datname, xact_commit, xact_rollback, deadlocks, temp_files, temp_bytes, tup_updated, tup_returned, tup_fetched, tup_inserted, tup_deleted, blks_hit, blks_read FROM pg_stat_database",
 		databases,
-		false,
 	)
 
 	rows, err := c.client.QueryContext(ctx, query)
@@ -417,7 +416,7 @@ func (c *postgreSQLClient) getExecutionTimeStats(ctx context.Context, databases 
 	query := filterQueryByDatabases(
 		"SELECT pd.datname AS datname, SUM(pss.total_exec_time) / 1000.0 AS execution_time_seconds FROM pg_stat_statements pss JOIN pg_database pd ON pss.dbid = pd.oid",
 		databases,
-		true,
+		"datname",
 	)
 
 	rows, err := c.client.QueryContext(ctx, query)
@@ -459,7 +458,6 @@ func (c *postgreSQLClient) getDatabaseConflicts(ctx context.Context, databases [
 	query := filterQueryByDatabases(
 		"SELECT datname, confl_tablespace, confl_lock, confl_snapshot, confl_bufferpin, confl_deadlock FROM pg_stat_database_conflicts",
 		databases,
-		false,
 	)
 
 	rows, err := c.client.QueryContext(ctx, query)
@@ -546,36 +544,57 @@ func (c *postgreSQLClient) queryDatabaseLocks(ctx context.Context, query string)
 	return dl, multierr.Combine(errs...)
 }
 
+// backendStateCount is the number of backends within a single database that share the same
+// backend type, connection state and wait event type.
+type backendStateCount struct {
+	backendType   string
+	state         string
+	waitEventType string
+	count         int64
+}
+
 // getBackends returns the number of backend processes for each database, counted from pg_stat_activity
-// across all connection states (active, idle, idle-in-transaction) and all backend types, including
-// non-client backends such as autovacuum and parallel workers. Backends with no associated database
-// (NULL datname, e.g. the background writer and WAL writer) are not attributed to any database.
-func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error) {
-	query := filterQueryByDatabases("SELECT datname, count(*) as count from pg_stat_activity", databases, true)
+// and broken down by backend type (e.g. client backend, autovacuum worker), connection state (e.g.
+// active, idle, idle in transaction) and wait event type (e.g. Lock, IO). All backend types are counted,
+// including non-client backends such as autovacuum and parallel workers. Backends with no associated
+// database (NULL datname, e.g. the background writer and WAL writer) are not attributed to any database.
+//
+// All three grouping columns are nullable in pg_stat_activity. state is NULL for non-client backends,
+// wait_event_type is NULL whenever a backend is not waiting, and both are NULL along with backend_type
+// for backends the monitoring user cannot inspect, which is every backend but its own unless the user
+// has been granted pg_monitor. They are coalesced so that those backends are still counted rather than
+// dropped by GROUP BY.
+func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) (map[databaseName][]backendStateCount, error) {
+	query := filterQueryByDatabases(
+		"SELECT datname, coalesce(backend_type, 'unknown') as backend_type, coalesce(state, 'unknown') as state, coalesce(wait_event_type, 'none') as wait_event_type, count(*) as count from pg_stat_activity",
+		databases,
+		"datname", "backend_type", "state", "wait_event_type",
+	)
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	ars := map[databaseName]int64{}
+	ars := map[databaseName][]backendStateCount{}
 	var errors error
 	for rows.Next() {
 		var datname string
-		var count int64
-		err = rows.Scan(&datname, &count)
+		var bsc backendStateCount
+		err = rows.Scan(&datname, &bsc.backendType, &bsc.state, &bsc.waitEventType, &bsc.count)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
 		}
 		if datname != "" {
-			ars[databaseName(datname)] = count
+			db := databaseName(datname)
+			ars[db] = append(ars[db], bsc)
 		}
 	}
 	return ars, errors
 }
 
 func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error) {
-	query := filterQueryByDatabases("SELECT datname, pg_database_size(datname) FROM pg_catalog.pg_database WHERE datistemplate = false", databases, false)
+	query := filterQueryByDatabases("SELECT datname, pg_database_size(datname) FROM pg_catalog.pg_database WHERE datistemplate = false", databases)
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
@@ -1195,7 +1214,9 @@ func parseMajorVersion(ver string) (int, error) {
 	return strconv.Atoi(parts[0])
 }
 
-func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) string {
+// filterQueryByDatabases appends a "WHERE datname IN (...)" clause when databases is non-empty, and a
+// "GROUP BY" clause over groupByColumns when any are given.
+func filterQueryByDatabases(baseQuery string, databases []string, groupByColumns ...string) string {
 	if len(databases) > 0 {
 		var queryDatabases []string
 		for _, db := range databases {
@@ -1207,8 +1228,8 @@ func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) 
 			baseQuery += fmt.Sprintf(" WHERE datname IN (%s)", strings.Join(queryDatabases, ","))
 		}
 	}
-	if groupBy {
-		baseQuery += " GROUP BY datname"
+	if len(groupByColumns) > 0 {
+		baseQuery += " GROUP BY " + strings.Join(groupByColumns, ", ")
 	}
 
 	return baseQuery + ";"

@@ -14,7 +14,7 @@ metrics:
 
 ### postgresql.backends
 
-The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.
+The number of backend processes associated with each database, broken down by backend type, connection state and wait event type. Counts all backend types, including non-client backends such as autovacuum and parallel workers.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -25,6 +25,9 @@ The number of backend processes associated with each database. Counts backends a
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+| postgresql.backend_type | The type of backend process, e.g. client backend, autovacuum worker, or checkpointer. Reports "unknown" when the type is not available, which happens when the monitoring user lacks the pg_monitor role. | Any Str | Recommended | - |
+| postgresql.state | Current overall state of this backend, as reported by pg_stat_activity.state. On the postgresql.backends metric, reports "unknown" when the state is not available, e.g. for non-client backends or when the monitoring user lacks the pg_monitor role. | Any Str | Recommended | - |
+| postgresql.wait_event_type | The type of event for which the backend is waiting, if any; otherwise NULL. On the postgresql.backends metric, reports "none" instead when the backend is not waiting. | Any Str | Recommended | - |
 
 ### postgresql.bgwriter.buffers.allocated
 
@@ -673,7 +676,7 @@ query sample
 | db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | - |
 | db.query.text | The text of the database query being executed. | Any Str | - |
 | user.name | Name of the user logged into this backend. | Any Str | - |
-| postgresql.state | Current overall state of this backend | Any Str | - |
+| postgresql.state | Current overall state of this backend, as reported by pg_stat_activity.state. On the postgresql.backends metric, reports "unknown" when the state is not available, e.g. for non-client backends or when the monitoring user lacks the pg_monitor role. | Any Str | - |
 | postgresql.pid | Process ID of this backend. | Any Int | - |
 | postgresql.application_name | Name of the application that is connected to this backend. | Any Str | - |
 | network.peer.address | IP address of the client connected to this backend. | Any Str | - |
@@ -681,7 +684,7 @@ query sample
 | postgresql.client_hostname | Host name of the connected client, as reported by a reverse DNS lookup of client_addr. | Any Str | - |
 | postgresql.query_start | Time when the currently active query was started, or if state is not active, when the last query was started. | Any Str | - |
 | postgresql.wait_event | Wait event name if backend is currently waiting, otherwise NULL. | Any Str | - |
-| postgresql.wait_event_type | The type of event for which the backend is waiting, if any; otherwise NULL. | Any Str | - |
+| postgresql.wait_event_type | The type of event for which the backend is waiting, if any; otherwise NULL. On the postgresql.backends metric, reports "none" instead when the backend is not waiting. | Any Str | - |
 | postgresql.query_id | Identifier of this backend's most recent query. If state is active this field shows the identifier of the currently executing query. In all other states, it shows the identifier of last query that was executed. | Any Str | - |
 | postgresql.total_exec_time | Total time spent executing the statement, in delta seconds. | Any Double | - |
 | postgresql.blocking.pids | Array of PIDs of sessions blocking this session (from pg_blocking_pids). Empty array when not blocked. | Any Str | - |
