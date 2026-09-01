@@ -471,6 +471,14 @@ attributes:
   # attributes for events
   ## common
 events:
+  db.server.query_plan:
+    enabled: false
+    description: query execution plan, decoupled from db.server.top_query to avoid oversized plan payloads dropping lightweight query statistics
+    attributes:
+      - sqlserver.query_hash
+      - sqlserver.query_plan
+      - sqlserver.query_plan_hash
+
   db.server.query_sample:
     enabled: false
     description: query sample
@@ -529,7 +537,6 @@ events:
       - sqlserver.total_logical_writes
       - sqlserver.total_physical_reads
       - sqlserver.query_hash
-      - sqlserver.query_plan
       - sqlserver.query_plan_hash
       - sqlserver.total_rows
       - sqlserver.total_elapsed_time

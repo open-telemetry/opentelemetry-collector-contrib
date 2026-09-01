@@ -137,6 +137,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueRate.Enabled = enabled
 	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = enabled
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = enabled
+	cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverCPUCount.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverComputerUptime.Enabled = enabled
 	// cfg.TopQueryCollection.Enabled = enabled
@@ -702,6 +703,90 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
 	assert.Equal(t, "db.server.top_query", actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
 	assert.NoError(t, errs)
+}
+
+func TestQueryTextAndPlanQueryDbServerQueryPlanEvent(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	assert.NoError(t, cfg.Validate())
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = true
+	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
+
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotNil(t, scrapers)
+
+	scraper := scrapers[0]
+	assert.NotNil(t, scraper.cache)
+
+	const totalElapsedTime = "total_elapsed_time"
+	const rowsReturned = "total_rows"
+	const totalWorkerTime = "total_worker_time"
+	const logicalReads = "total_logical_reads"
+	const logicalWrites = "total_logical_writes"
+	const physicalReads = "total_physical_reads"
+	const executionCount = "execution_count"
+	const totalGrant = "total_grant_kb"
+	const procedureExecutionCount = "procedure_execution_count"
+
+	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
+	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
+	procedureID := "0"
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalElapsedTime, 846)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, rowsReturned, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalWrites, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, physicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, executionCount, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalWorkerTime, 845)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalGrant, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, procedureExecutionCount, 0)
+
+	scraper.client = mockClient{
+		instanceName:        scraper.config.InstanceName,
+		SQL:                 scraper.sqlQuery,
+		maxQuerySampleCount: 1000,
+		lookbackTime:        20,
+		topQueryCount:       200,
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+
+	logRecords := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	assert.Equal(t, 2, logRecords.Len())
+
+	var topQueryRecord, queryPlanRecord plog.LogRecord
+	for i := 0; i < logRecords.Len(); i++ {
+		switch logRecords.At(i).EventName() {
+		case "db.server.top_query":
+			topQueryRecord = logRecords.At(i)
+		case "db.server.query_plan":
+			queryPlanRecord = logRecords.At(i)
+		}
+	}
+
+	_, hasQueryPlanOnTopQuery := topQueryRecord.Attributes().Get("sqlserver.query_plan")
+	assert.False(t, hasQueryPlanOnTopQuery, "sqlserver.query_plan is never carried on db.server.top_query; it only lives on the dedicated db.server.query_plan event")
+
+	queryHashAttr, ok := queryPlanRecord.Attributes().Get("sqlserver.query_hash")
+	assert.True(t, ok)
+	assert.Equal(t, queryHash, queryHashAttr.Str())
+
+	queryPlanHashAttr, ok := queryPlanRecord.Attributes().Get("sqlserver.query_plan_hash")
+	assert.True(t, ok)
+	assert.Equal(t, queryPlanHash, queryPlanHashAttr.Str())
+
+	queryPlanAttr, ok := queryPlanRecord.Attributes().Get("sqlserver.query_plan")
+	assert.True(t, ok)
+	assert.NotEmpty(t, queryPlanAttr.Str())
 }
 
 func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
