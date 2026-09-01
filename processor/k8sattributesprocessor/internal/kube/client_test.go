@@ -2160,11 +2160,10 @@ func TestDeploymentExtractionRules(t *testing.T) {
 	}
 }
 
-func TestDeploymentNameFromReplicaSet(t *testing.T) {
+func TestClientDeploymentNameFromReplicaSet(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 	c.Rules = ExtractionRules{
-		DeploymentName:               true,
-		DeploymentNameFromReplicaSet: true,
+		DeploymentName: true,
 	}
 
 	pod := &api_v1.Pod{
@@ -2636,6 +2635,117 @@ func TestJobExtractionRules(t *testing.T) {
 			c.Rules = tc.rules
 			c.handleJobAdd(job)
 			n, ok := c.GetJob(string(job.UID))
+			require.True(t, ok)
+
+			assert.Len(t, tc.attributes, len(n.Attributes))
+			for k, v := range tc.attributes {
+				got, ok := n.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
+func TestCronJobExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	cronJob := &meta_v1.PartialObjectMetadata{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "k8s-cronjob-example",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			CreationTimestamp: meta_v1.Now(),
+			Labels: map[string]string{
+				"label1": "lv1",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+		},
+	}
+
+	testCases := []struct {
+		name       string
+		rules      ExtractionRules
+		attributes map[string]string
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels and annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromCronJob,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromCronJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
+			},
+		},
+		{
+			name: "all-labels",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromCronJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.cronjob.label.label1": "lv1",
+			},
+		},
+		{
+			name: "all-annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromCronJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.cronjob.annotation.annotation1": "av1",
+			},
+		},
+		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromCronJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.cronjob.label.label1": "lv1",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			c.handleCronJobAdd(cronJob)
+			n, ok := c.GetCronJob(string(cronJob.UID))
 			require.True(t, ok)
 
 			assert.Len(t, tc.attributes, len(n.Attributes))
@@ -4013,6 +4123,70 @@ func TestExtractJobLabelsAnnotations(t *testing.T) {
 	}
 }
 
+func TestExtractCronJobLabelsAnnotations(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	testCases := []struct {
+		name                 string
+		shouldExtractCronJob bool
+		rules                ExtractionRules
+	}{
+		{
+			name:                 "empty-rules",
+			shouldExtractCronJob: false,
+			rules:                ExtractionRules{},
+		}, {
+			name:                 "pod-rules",
+			shouldExtractCronJob: false,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					},
+				},
+			},
+		}, {
+			name:                 "cronjob-rules-only-annotations",
+			shouldExtractCronJob: true,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromCronJob,
+					},
+				},
+			},
+		}, {
+			name:                 "cronjob-rules-only-labels",
+			shouldExtractCronJob: true,
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromCronJob,
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			assert.Equal(t, tc.shouldExtractCronJob, c.extractCronJobLabelsAnnotations())
+		})
+	}
+}
+
 func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *observer.ObservedLogs) {
 	set := componenttest.NewNopTelemetrySettings()
 	observedLogger, logs := observer.New(zapcore.WarnLevel)
@@ -4669,23 +4843,13 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 			expectRun: true,
 		},
 		{
-			name:      "start informer if deployment name is requested without heuristic",
-			rules:     ExtractionRules{DeploymentName: true, DeploymentNameFromReplicaSet: false},
-			expectRun: true,
-		},
-		{
-			name:      "don't start informer if deployment name from replicaset is requested",
-			rules:     ExtractionRules{DeploymentName: true, DeploymentNameFromReplicaSet: true},
+			name:      "don't start informer if only deployment name is requested",
+			rules:     ExtractionRules{DeploymentName: true},
 			expectRun: false,
 		},
 		{
 			name:      "start informer if deployment UID and name are requested",
 			rules:     ExtractionRules{DeploymentName: true, DeploymentUID: true},
-			expectRun: true,
-		},
-		{
-			name:      "start informer if deployment UID and name from replicaset are requested",
-			rules:     ExtractionRules{DeploymentName: true, DeploymentUID: true, DeploymentNameFromReplicaSet: true},
 			expectRun: true,
 		},
 		{
@@ -4729,56 +4893,43 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 	}
 }
 
-func TestDeploymentNameFromReplicaSetFeature(t *testing.T) {
-	// Test the DeploymentNameFromReplicaSet flag functionality with extractPodAttributes
+func TestDeploymentNameFromReplicaSetHeuristic(t *testing.T) {
+	// Test deployment name extraction heuristic with extractPodAttributes
 
 	tests := []struct {
-		name                                string
-		deploymentNameFromReplicaSetEnabled bool
-		replicaSetInCache                   bool
-		deploymentInRS                      bool
-		replicaSetName                      string
-		expectedDeploymentName              string
+		name                   string
+		replicaSetInCache      bool
+		deploymentInRS         bool
+		replicaSetName         string
+		expectedDeploymentName string
 	}{
 		{
-			name:                                "flag disabled - no deployment name extraction from replicaset name",
-			deploymentNameFromReplicaSetEnabled: false,
-			replicaSetInCache:                   false,
-			deploymentInRS:                      false,
-			replicaSetName:                      "my-deployment-7b9f4c8d5e",
-			expectedDeploymentName:              "",
+			name:                   "replicaset not in cache",
+			replicaSetInCache:      false,
+			deploymentInRS:         true,
+			replicaSetName:         "my-deployment-7b9f4c8d5e",
+			expectedDeploymentName: "my-deployment",
 		},
 		{
-			name:                                "flag enabled - replicaset not in cache",
-			deploymentNameFromReplicaSetEnabled: true,
-			replicaSetInCache:                   false,
-			deploymentInRS:                      true,
-			replicaSetName:                      "my-deployment-7b9f4c8d5e",
-			expectedDeploymentName:              "my-deployment",
+			name:                   "replicaset in cache but no deployment",
+			replicaSetInCache:      true,
+			deploymentInRS:         false,
+			replicaSetName:         "my-deployment-7b9f4c8d5e",
+			expectedDeploymentName: "",
 		},
 		{
-			name:                                "flag enabled - replicaset in cache but no deployment",
-			deploymentNameFromReplicaSetEnabled: true,
-			replicaSetInCache:                   true,
-			deploymentInRS:                      false,
-			replicaSetName:                      "my-deployment-7b9f4c8d5e",
-			expectedDeploymentName:              "",
+			name:                   "replicaset in cache with deployment (should prefer informer)",
+			replicaSetInCache:      true,
+			deploymentInRS:         true,
+			replicaSetName:         "my-deployment-7b9f4c8d5e",
+			expectedDeploymentName: "real-deployment-name",
 		},
 		{
-			name:                                "flag enabled - replicaset in cache with deployment (should prefer informer)",
-			deploymentNameFromReplicaSetEnabled: true,
-			replicaSetInCache:                   true,
-			deploymentInRS:                      true,
-			replicaSetName:                      "my-deployment-7b9f4c8d5e",
-			expectedDeploymentName:              "real-deployment-name",
-		},
-		{
-			name:                                "flag enabled - invalid replicaset name",
-			deploymentNameFromReplicaSetEnabled: true,
-			replicaSetInCache:                   false,
-			deploymentInRS:                      false,
-			replicaSetName:                      "invalid-name",
-			expectedDeploymentName:              "",
+			name:                   "invalid replicaset name",
+			replicaSetInCache:      false,
+			deploymentInRS:         false,
+			replicaSetName:         "invalid-name",
+			expectedDeploymentName: "",
 		},
 	}
 
@@ -4786,9 +4937,6 @@ func TestDeploymentNameFromReplicaSetFeature(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 			c.Rules.DeploymentName = true
-			if tt.deploymentNameFromReplicaSetEnabled {
-				c.Rules.DeploymentNameFromReplicaSet = true
-			}
 
 			// Create a replicaset if needed
 			if tt.replicaSetInCache {
@@ -5086,6 +5234,64 @@ func TestHandleJobDelete(t *testing.T) {
 	assert.Empty(t, c.Jobs)
 }
 
+func TestHandleCronJobUpdate(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{
+		CronJobName: true,
+	}
+
+	cronJob := &meta_v1.PartialObjectMetadata{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-cronjob",
+			Namespace: "default",
+			UID:       "cronjob-uid-123",
+		},
+	}
+
+	// Add initial cronjob
+	c.handleCronJobAdd(cronJob)
+	assert.Len(t, c.CronJobs, 1)
+
+	// Update cronjob
+	updatedCronJob := &meta_v1.PartialObjectMetadata{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-cronjob-updated",
+			Namespace: "default",
+			UID:       "cronjob-uid-123",
+		},
+	}
+	c.handleCronJobUpdate(cronJob, updatedCronJob)
+
+	// Verify update
+	j, ok := c.GetCronJob(string(updatedCronJob.UID))
+	require.True(t, ok)
+	assert.Equal(t, "test-cronjob-updated", j.Name)
+}
+
+func TestHandleCronJobDelete(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	cronJob := &meta_v1.PartialObjectMetadata{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-cronjob",
+			Namespace: "default",
+			UID:       "cronjob-uid-123",
+		},
+	}
+
+	// Add cronjob
+	c.handleCronJobAdd(cronJob)
+	assert.Len(t, c.CronJobs, 1)
+
+	// Delete cronjob
+	c.handleCronJobDelete(cronJob)
+
+	// Verify deletion
+	_, ok := c.GetCronJob(string(cronJob.UID))
+	assert.False(t, ok)
+	assert.Empty(t, c.CronJobs)
+}
+
 func TestCreateRestConfigFailure(t *testing.T) {
 	// Simulate a failure in CreateRestConfig by returning nil for the informer
 	factory := InformersFactoryList{
@@ -5094,10 +5300,9 @@ func TestCreateRestConfigFailure(t *testing.T) {
 		},
 	}
 
-	// Set a rule to enable deployment monitoring
+	// Set a rule that triggers the ReplicaSet informer (DeploymentUID requires it)
 	rules := ExtractionRules{
-		DeploymentName:               true,
-		DeploymentNameFromReplicaSet: false,
+		DeploymentUID: true,
 	}
 
 	c, err := New(

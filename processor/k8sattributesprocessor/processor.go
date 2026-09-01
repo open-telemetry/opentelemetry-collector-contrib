@@ -290,6 +290,14 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			setResourceAttribute(resource.Attributes(), key, val)
 		}
 	}
+
+	cronJob := getCronJobUID(pod, resource.Attributes())
+	if cronJob != "" {
+		attrsToAdd := kp.getAttributesForPodsCronJob(cronJob)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+	}
 }
 
 func setResourceAttribute(attributes pcommon.Map, key, val string) {
@@ -346,6 +354,13 @@ func getJobUID(pod *kube.Pod, resAttrs pcommon.Map) string {
 		return pod.JobUID
 	}
 	return stringAttributeFromMap(resAttrs, string(conventions.K8SJobUIDKey))
+}
+
+func getCronJobUID(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.CronJobUID != "" {
+		return pod.CronJobUID
+	}
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SCronJobUIDKey))
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
@@ -484,6 +499,14 @@ func (kp *kubernetesprocessor) getAttributesForPodsDaemonSet(daemonsetUID string
 
 func (kp *kubernetesprocessor) getAttributesForPodsJob(jobUID string) map[string]string {
 	j, ok := kp.kc.GetJob(jobUID)
+	if !ok {
+		return nil
+	}
+	return j.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForPodsCronJob(cronJobUID string) map[string]string {
+	j, ok := kp.kc.GetCronJob(cronJobUID)
 	if !ok {
 		return nil
 	}
