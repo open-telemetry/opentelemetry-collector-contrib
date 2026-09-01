@@ -370,7 +370,7 @@ func Test_getKeyValue(t *testing.T) {
 				return m
 			}(),
 			keyParts: []string{"parent", "child"},
-			expected: "Chethan",
+			expected: "value",
 			ok:       true,
 		},
 		{
