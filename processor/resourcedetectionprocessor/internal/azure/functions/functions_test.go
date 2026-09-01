@@ -41,7 +41,11 @@ func TestNewDetector(t *testing.T) {
 
 func TestDetector_Detect_AzureFunctions(t *testing.T) {
 	setFunctionsEnv(t)
-	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	// deployment.environment.name is opt-in; enable it here to exercise the full attribute
+	// mapping.
+	cfg := CreateDefaultConfig()
+	cfg.ResourceAttributes.DeploymentEnvironmentName.Enabled = true
+	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := detector.Detect(t.Context())
@@ -150,5 +154,5 @@ func TestDetect_ResourceAttributesDisabled(t *testing.T) {
 	require.NoError(t, err)
 	_, hasServiceName := res.Attributes().Get("service.name")
 	assert.False(t, hasServiceName)
-	assert.Equal(t, 8, res.Attributes().Len())
+	assert.Equal(t, 7, res.Attributes().Len())
 }

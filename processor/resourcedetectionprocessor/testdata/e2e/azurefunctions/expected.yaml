@@ -19,9 +19,6 @@ resourceMetrics:
         - key: cloud.resource_id
           value:
             stringValue: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-resource-group/providers/Microsoft.Web/sites/test-function-app
-        - key: deployment.environment.name
-          value:
-            stringValue: staging
         - key: faas.instance
           value:
             stringValue: test-instance-id-12345
