@@ -66,6 +66,7 @@ type client interface {
 	getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error)
 	getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error)
+	getTableCount(ctx context.Context) (int64, error)
 	getReplicationStats(ctx context.Context) ([]replicationStats, error)
 	getLatestWalAgeSeconds(ctx context.Context) (int64, error)
 	getMaxConnections(ctx context.Context) (int64, error)
@@ -726,6 +727,42 @@ func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context, db string) 
 		}
 	}
 	return tios, errors
+}
+
+// getTableCount is a cheap COUNT(*) alternative to getDatabaseTableMetrics;
+// must return the same count as len(getDatabaseTableMetrics).
+func (c *postgreSQLClient) getTableCount(ctx context.Context) (int64, error) {
+	version, err := c.getVersion(ctx)
+	if err != nil {
+		return 0, err
+	}
+	major, err := parseMajorVersion(version)
+	if err != nil {
+		return 0, err
+	}
+
+	// Partitioned parents ('p') only count as user tables from PG 14 on.
+	query := `SELECT count(*) FROM pg_class
+WHERE relkind IN ('r', 'm')
+AND relnamespace NOT IN (
+    SELECT oid FROM pg_namespace
+    WHERE nspname = 'pg_catalog' OR nspname = 'information_schema' OR nspname ~ '^pg_toast'
+);`
+	if major >= 14 {
+		query = `SELECT count(*) FROM pg_class
+WHERE relkind IN ('r', 'm', 'p')
+AND relnamespace NOT IN (
+    SELECT oid FROM pg_namespace
+    WHERE nspname = 'pg_catalog' OR nspname = 'information_schema' OR nspname ~ '^pg_toast'
+);`
+	}
+
+	row := c.client.QueryRowContext(ctx, query)
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 type indexStat struct {
