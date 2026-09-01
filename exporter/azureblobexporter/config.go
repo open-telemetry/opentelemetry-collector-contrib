@@ -142,7 +142,8 @@ func (c *Config) Validate() error {
 			return fmt.Errorf(
 				"%w %q, valid values are %q and %q",
 				errUnknownCompression, c.Compression,
-				configcompression.TypeGzip, configcompression.TypeZstd)
+				configcompression.TypeGzip, configcompression.TypeZstd,
+			)
 		}
 	}
 

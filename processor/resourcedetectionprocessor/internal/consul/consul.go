@@ -21,6 +21,10 @@ import (
 const (
 	// TypeStr is type of detector.
 	TypeStr = "consul"
+
+	// metaAttributePrefix namespaces consul node metadata keys when the
+	// processor.resourcedetection.consul.prefixMetaAttributes feature gate is enabled.
+	metaAttributePrefix = "consul.meta."
 )
 
 var _ internal.Detector = (*Detector)(nil)
@@ -86,8 +90,12 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	res := d.rb.Emit()
 
+	prefix := ""
+	if metadata.ProcessorResourcedetectionConsulPrefixMetaAttributesFeatureGate.IsEnabled() {
+		prefix = metaAttributePrefix
+	}
 	for key, element := range md.HostMetadata {
-		res.Attributes().PutStr(key, element)
+		res.Attributes().PutStr(prefix+key, element)
 	}
 
 	return res, conventions.SchemaURL, nil

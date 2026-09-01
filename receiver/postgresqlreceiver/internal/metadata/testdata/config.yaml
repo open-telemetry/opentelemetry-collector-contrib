@@ -35,7 +35,7 @@ all_set:
       enabled: true
     postgresql.database.locks:
       enabled: true
-      attributes: ["relation","mode","lock_type"]
+      attributes: ["relation","mode","lock_type","db.namespace"]
     postgresql.db_size:
       enabled: true
       attributes: ["db.namespace"]
@@ -335,7 +335,7 @@ none_set:
       enabled: false
     postgresql.database.locks:
       enabled: false
-      attributes: ["relation","mode","lock_type"]
+      attributes: ["relation","mode","lock_type","db.namespace"]
     postgresql.db_size:
       enabled: false
       attributes: ["db.namespace"]

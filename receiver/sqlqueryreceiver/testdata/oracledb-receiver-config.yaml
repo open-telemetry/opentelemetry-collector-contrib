@@ -1,4 +1,4 @@
-sqlquery:
+sql_query:
   # driver name: oracle
   # username: otel
   # password: password

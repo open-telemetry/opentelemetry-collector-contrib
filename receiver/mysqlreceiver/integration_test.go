@@ -105,7 +105,8 @@ func TestIntegration(t *testing.T) {
 								FileMode:          700,
 							},
 						},
-					}),
+					},
+				),
 				scraperinttest.WithCustomConfig(
 					func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 						rCfg := cfg.(*Config)
@@ -118,7 +119,8 @@ func TestIntegration(t *testing.T) {
 						} else {
 							rCfg.TLS.Insecure = true
 						}
-					}),
+					},
+				),
 				scraperinttest.WithExpectedFile(
 					filepath.Join("testdata", "integration", tc.expectedFile),
 				),

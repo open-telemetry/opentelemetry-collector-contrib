@@ -575,7 +575,8 @@ func TestPostgresqlIntegrationMetrics(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
-			Postgres.ContainerRequest),
+			Postgres.ContainerRequest,
+		),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
@@ -656,7 +657,8 @@ func TestPostgresqlIntegrationMetrics(t *testing.T) {
 						},
 					},
 				}
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(
 			filepath.Join("testdata", "integration", "postgresql", "expected.yaml"),
 		),
@@ -673,7 +675,8 @@ func TestOracleDBIntegrationMetrics(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
-			Oracle.ContainerRequest),
+			Oracle.ContainerRequest,
+		),
 		scraperinttest.WithCreateContainerTimeout(30*time.Minute),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
@@ -701,7 +704,8 @@ func TestOracleDBIntegrationMetrics(t *testing.T) {
 						},
 					},
 				}
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(
 			filepath.Join("testdata", "integration", "oracle", "expected.yaml"),
 		),
@@ -791,7 +795,8 @@ func TestMysqlIntegrationMetrics(t *testing.T) {
 						},
 					},
 				}
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(filepath.Join("testdata", "integration", "mysql", "expected.yaml")),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreTimestamp(),
@@ -830,7 +835,8 @@ func TestSQLServerIntegrationMetrics(t *testing.T) {
 						},
 					},
 				}
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(
 			filepath.Join("testdata", "integration", "sqlserver", "expected.yaml"),
 		),
@@ -872,7 +878,8 @@ func TestSapASEIntegrationMetrics(t *testing.T) {
 						},
 					},
 				}
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(
 			filepath.Join("testdata", "integration", "sybase", "expected.yaml"),
 		),
@@ -888,7 +895,8 @@ func TestPostgresqlDataSourceFieldsIntegrationMetrics(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
-			Postgres.ContainerRequest),
+			Postgres.ContainerRequest,
+		),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				p, err := strconv.Atoi(ci.MappedPort(t, Postgres.Port))
@@ -978,7 +986,8 @@ func TestPostgresqlDataSourceFieldsIntegrationMetrics(t *testing.T) {
 						},
 					},
 				}
-			}),
+			},
+		),
 		scraperinttest.WithExpectedFile(
 			filepath.Join("testdata", "integration", "postgresql", "expected.yaml"),
 		),

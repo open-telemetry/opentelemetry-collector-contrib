@@ -14,7 +14,7 @@ metrics:
 
 ### postgresql.backends
 
-The number of backends.
+The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -360,6 +360,7 @@ The number of database locks.
 | relation | OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation. | Any Str | Recommended | - |
 | mode | Name of the lock mode held or desired by the process. | Any Str | Recommended | - |
 | lock_type | Type of the lockable object. | Any Str | Recommended | - |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
 ### postgresql.deadlocks
 
@@ -682,7 +683,7 @@ query sample
 | postgresql.wait_event | Wait event name if backend is currently waiting, otherwise NULL. | Any Str | - |
 | postgresql.wait_event_type | The type of event for which the backend is waiting, if any; otherwise NULL. | Any Str | - |
 | postgresql.query_id | Identifier of this backend's most recent query. If state is active this field shows the identifier of the currently executing query. In all other states, it shows the identifier of last query that was executed. | Any Str | - |
-| postgresql.total_exec_time | Total time spent executing the statement, in delta milliseconds. | Any Double | - |
+| postgresql.total_exec_time | Total time spent executing the statement, in delta seconds. | Any Double | - |
 | postgresql.blocking.pids | Array of PIDs of sessions blocking this session (from pg_blocking_pids). Empty array when not blocked. | Any Str | - |
 | postgresql.blocking.start_time | UTC timestamp (RFC3339) when the current lock wait began, derived from pg_locks.waitstart. Empty string when not blocked. | Any Str | - |
 | postgresql.blocking.wait_duration | Whole seconds this session has been waiting for a lock, measured from pg_locks.waitstart. 0 when not blocked. | Any Int | - |
@@ -712,8 +713,8 @@ top query
 | postgresql.temp_blks_written | Total number of temp blocks written by the statement, reported in delta value. | Any Int | - |
 | postgresql.queryid | Hash code to identify identical normalized queries. | Any Str | - |
 | postgresql.rolname | The name of the PostgreSQL role that executed the query. | Any Str | - |
-| postgresql.total_exec_time | Total time spent executing the statement, in delta milliseconds. | Any Double | - |
-| postgresql.total_plan_time | Total time spent planning the statement, in delta milliseconds. | Any Double | - |
+| postgresql.total_exec_time | Total time spent executing the statement, in delta seconds. | Any Double | - |
+| postgresql.total_plan_time | Total time spent planning the statement, in delta seconds. | Any Double | - |
 | postgresql.query_plan | The execution plan used by PostgreSQL for the query. | Any Str | - |
 
 ## Resource Attributes

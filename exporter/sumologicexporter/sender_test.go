@@ -927,7 +927,8 @@ func TestLogsHandlesReceiverResponses(t *testing.T) {
 					"_sourceName":     "test_source_name",
 					"_sourceHost":     "test_source_host",
 					"_sourceCategory": "test_source_category",
-				}),
+				},
+			),
 		)
 		assert.NoError(t, writer.Flush())
 		assert.NoError(t, err)

@@ -82,7 +82,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlDatabaseLocks: PostgresqlDatabaseLocksMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []PostgresqlDatabaseLocksMetricAttributeKey{PostgresqlDatabaseLocksMetricAttributeKeyRelation, PostgresqlDatabaseLocksMetricAttributeKeyMode, PostgresqlDatabaseLocksMetricAttributeKeyLockType},
+						EnabledAttributes:   []PostgresqlDatabaseLocksMetricAttributeKey{PostgresqlDatabaseLocksMetricAttributeKeyRelation, PostgresqlDatabaseLocksMetricAttributeKeyMode, PostgresqlDatabaseLocksMetricAttributeKeyLockType, PostgresqlDatabaseLocksMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlDbSize: PostgresqlDbSizeMetricConfig{
 						Enabled:             true,
@@ -305,7 +305,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlDatabaseLocks: PostgresqlDatabaseLocksMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []PostgresqlDatabaseLocksMetricAttributeKey{PostgresqlDatabaseLocksMetricAttributeKeyRelation, PostgresqlDatabaseLocksMetricAttributeKeyMode, PostgresqlDatabaseLocksMetricAttributeKeyLockType},
+						EnabledAttributes:   []PostgresqlDatabaseLocksMetricAttributeKey{PostgresqlDatabaseLocksMetricAttributeKeyRelation, PostgresqlDatabaseLocksMetricAttributeKeyMode, PostgresqlDatabaseLocksMetricAttributeKeyLockType, PostgresqlDatabaseLocksMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlDbSize: PostgresqlDbSizeMetricConfig{
 						Enabled:             false,
@@ -579,7 +579,7 @@ func TestPostgresqlDatabaseLocksMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []PostgresqlDatabaseLocksMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric postgresql.database.locks doesn't have an attribute invalid, valid attributes: [relation, mode, lock_type]")
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.database.locks doesn't have an attribute invalid, valid attributes: [relation, mode, lock_type, db.namespace]")
 
 	cfg = DefaultMetricsConfig().PostgresqlDatabaseLocks
 	cfg.AggregationStrategy = "invalid"

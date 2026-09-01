@@ -24,8 +24,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
-func ptr[T any](v T) *T { return &v }
-
 func genTypedRS(n int) []*apps_v1.ReplicaSet {
 	out := make([]*apps_v1.ReplicaSet, n)
 	for i := range out {
@@ -37,7 +35,7 @@ func genTypedRS(n int) []*apps_v1.ReplicaSet {
 				Namespace: "default",
 				UID:       types.UID(fmt.Sprintf("uid-%d", i)),
 				OwnerReferences: []meta_v1.OwnerReference{
-					{APIVersion: "apps/v1", Kind: "Deployment", Name: fmt.Sprintf("deploy-%d", i), UID: types.UID(fmt.Sprintf("depuid-%d", i)), Controller: ptr(true)},
+					{APIVersion: "apps/v1", Kind: "Deployment", Name: fmt.Sprintf("deploy-%d", i), UID: types.UID(fmt.Sprintf("depuid-%d", i)), Controller: new(true)},
 				},
 			},
 		}

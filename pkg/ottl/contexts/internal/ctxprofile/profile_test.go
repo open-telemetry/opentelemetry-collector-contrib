@@ -16,7 +16,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func TestPathGetSetter(t *testing.T) {
@@ -128,7 +127,7 @@ func TestPathGetSetter(t *testing.T) {
 			path: "attributes",
 			keys: []ottl.Key[*profileContext]{
 				&pathtest.Key[*profileContext]{
-					S: ottltest.Strp("akey"),
+					S: new("akey"),
 				},
 			},
 			val:        "val",
@@ -138,10 +137,10 @@ func TestPathGetSetter(t *testing.T) {
 			path: "attributes",
 			keys: []ottl.Key[*profileContext]{
 				&pathtest.Key[*profileContext]{
-					S: ottltest.Strp("akey"),
+					S: new("akey"),
 				},
 				&pathtest.Key[*profileContext]{
-					S: ottltest.Strp("bkey"),
+					S: new("bkey"),
 				},
 			},
 			val:        "val",

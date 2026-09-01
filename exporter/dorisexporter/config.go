@@ -23,7 +23,7 @@ type Config struct {
 	QueueSettings configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// TableNames is the table name for logs, traces and metrics.
-	Table `mapstructure:"table"`
+	Table Table `mapstructure:"table"`
 
 	// Database is the database name.
 	Database string `mapstructure:"database"`
@@ -95,13 +95,13 @@ func (cfg *Config) Validate() (err error) {
 	if !re.MatchString(cfg.Database) {
 		err = errors.Join(err, errors.New("database name must be alphanumeric and underscore"))
 	}
-	if !re.MatchString(cfg.Logs) {
+	if !re.MatchString(cfg.Table.Logs) {
 		err = errors.Join(err, errors.New("logs table name must be alphanumeric and underscore"))
 	}
-	if !re.MatchString(cfg.Traces) {
+	if !re.MatchString(cfg.Table.Traces) {
 		err = errors.Join(err, errors.New("traces table name must be alphanumeric and underscore"))
 	}
-	if !re.MatchString(cfg.Metrics) {
+	if !re.MatchString(cfg.Table.Metrics) {
 		err = errors.Join(err, errors.New("metrics table name must be alphanumeric and underscore"))
 	}
 

@@ -355,3 +355,44 @@ func getTestSeverityMapping() pcommon.Map {
 
 	return m
 }
+
+func Test_ParseSeverityFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewParseSeverityFactory[any]()
+		assert.Equal(t, "ParseSeverity", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewParseSeverityFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ParseSeverityArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Mapping"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewParseSeverityFactory[any]()
+		args := factory.CreateDefaultArguments()
+		severityArgs, ok := args.(*ParseSeverityArguments[any])
+		require.True(t, ok)
+		severityArgs.Target = ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "info", nil
+			},
+		}
+		severityArgs.Mapping = ottl.StandardPMapGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return pcommon.NewMap(), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createParseSeverityFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ParseSeverityFactory args must be of type *ParseSeverityArguments[K")
+	})
+}
