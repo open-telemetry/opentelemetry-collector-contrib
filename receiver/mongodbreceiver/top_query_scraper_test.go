@@ -22,7 +22,7 @@ import (
 func newTestScraper(t *testing.T, fc *fakeClient) *mongodbScraper {
 	t.Helper()
 	cfg := createDefaultConfig().(*Config)
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.QueryPlanCacheTTL = 0
 	s := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 	s.planCache = buildPlanCache(cfg, zap.NewNop())
@@ -720,7 +720,7 @@ func TestScrapeTopQueryLogsResourceAttributes(t *testing.T) {
 	fc.On("GetLog", mock.Anything).Return(bson.A{string(logEntry)}, nil)
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.MaxExplainEachInterval = 0
 	cfg.LogsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
 	cfg.LogsBuilderConfig.ResourceAttributes.ServiceNamespace.Enabled = true

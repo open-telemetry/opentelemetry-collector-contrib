@@ -176,6 +176,12 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeFilesystemCapacityDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodeFilesystemInodeCountDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodeFilesystemInodeFreeDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeFilesystemUsageDataPoint(ts, 1)
@@ -671,6 +677,34 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "Node filesystem capacity", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.filesystem.inode.count":
+					assert.False(t, validatedMetrics["k8s.node.filesystem.inode.count"], "Found a duplicate in the metrics slice: k8s.node.filesystem.inode.count")
+					validatedMetrics["k8s.node.filesystem.inode.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of inodes in the node's root filesystem.", mi.Description())
+					assert.Equal(t, "{inode}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.filesystem.inode.free":
+					assert.False(t, validatedMetrics["k8s.node.filesystem.inode.free"], "Found a duplicate in the metrics slice: k8s.node.filesystem.inode.free")
+					validatedMetrics["k8s.node.filesystem.inode.free"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of free inodes in the node's root filesystem.", mi.Description())
+					assert.Equal(t, "{inode}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

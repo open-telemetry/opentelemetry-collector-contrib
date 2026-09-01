@@ -44,7 +44,8 @@ func newLogsConnector(
 		cfg.Table,
 		cfg.DefaultPipelines,
 		lr.Consumer,
-		set.TelemetrySettings)
+		set.TelemetrySettings,
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -66,5 +66,6 @@ func createMetricsProcessor(
 		cfg,
 		nextConsumer,
 		adjustMetrics,
-		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+	)
 }

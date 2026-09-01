@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: exporter/prometheus_remote_write
+note: Preserve UTF-8 characters in `external_labels` names when using `NoTranslation` or `NoUTF8EscapingWithSuffixes`.
+issues: [50435]
+subtext:
+change_logs: [user]

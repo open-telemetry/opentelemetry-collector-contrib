@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: exporter/prometheus
+note: Preserve leading and consecutive underscores in metric and target_info label names when `PermissiveLabelSanitization` feature gate is enabled.
+issues: [50435]
+subtext:
+change_logs: [user]

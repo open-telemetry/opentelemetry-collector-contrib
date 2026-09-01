@@ -51,8 +51,8 @@ func Test_signalfxreceiver_New(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	happyPathServerConfig.WriteTimeout = 0
 	happyPathServerConfig.ReadHeaderTimeout = 0
-	happyPathServerConfig.IdleTimeout = 0
-	happyPathServerConfig.KeepAlivesEnabled = false
+	happyPathServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	happyPathServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	happyPathServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:1234",
@@ -163,7 +163,8 @@ func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 	exp, err := signalfxexporter.NewFactory().CreateMetrics(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		expCfg)
+		expCfg,
+	)
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
 	assert.Eventually(t, func() bool {
@@ -457,7 +458,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 }
 
 func Test_sfxReceiver_handleEventReq(t *testing.T) {
-	config := (NewFactory()).CreateDefaultConfig().(*Config)
+	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 
 	currentTime := time.Now().Unix() * 1e3
@@ -718,9 +719,9 @@ func buildSFxDatapointMsg(time, value int64, dimensions uint) *sfxpb.DataPointUp
 				Metric:    "single",
 				Timestamp: time,
 				Value: sfxpb.Datum{
-					IntValue: int64Ptr(value),
+					IntValue: new(value),
 				},
-				MetricType: sfxTypePtr(sfxpb.MetricType_GAUGE),
+				MetricType: new(sfxpb.MetricType_GAUGE),
 				Dimensions: buildNDimensions(dimensions),
 			},
 		},
@@ -737,11 +738,11 @@ func buildSFxEventMsg(time int64, dimensions uint) *sfxpb.EventUploadMessage {
 					{
 						Key: "a",
 						Value: &sfxpb.PropertyValue{
-							StrValue: strPtr("b"),
+							StrValue: new("b"),
 						},
 					},
 				},
-				Category:   sfxCategoryPtr(sfxpb.EventCategory_USER_DEFINED),
+				Category:   new(sfxpb.EventCategory_USER_DEFINED),
 				Dimensions: buildNDimensions(dimensions),
 			},
 		},
@@ -758,22 +759,6 @@ func (badReqBody) Read([]byte) (n int, err error) {
 
 func (badReqBody) Close() error {
 	return nil
-}
-
-func strPtr(s string) *string {
-	return &s
-}
-
-func int64Ptr(i int64) *int64 {
-	return &i
-}
-
-func sfxTypePtr(t sfxpb.MetricType) *sfxpb.MetricType {
-	return &t
-}
-
-func sfxCategoryPtr(t sfxpb.EventCategory) *sfxpb.EventCategory {
-	return &t
 }
 
 func buildNDimensions(n uint) []*sfxpb.Dimension {

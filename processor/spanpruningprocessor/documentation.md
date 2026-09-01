@@ -22,6 +22,14 @@ Total aggregation summary spans created
 | ---- | ----------- | ---------- | --------- | --------- |
 | {spans} | Sum | Int | true | Development |
 
+### otelcol_processor_spanpruning_exemplars_sampled
+
+Spans randomly sampled as exemplars (excluded from aggregation)
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {spans} | Sum | Int | true | Development |
+
 ### otelcol_processor_spanpruning_outliers_correlations_detected
 
 Groups where outliers had correlated attributes
@@ -73,6 +81,14 @@ Total spans received by the processor
 ### otelcol_processor_spanpruning_traces_processed
 
 Total traces processed
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {traces} | Sum | Int | true | Development |
+
+### otelcol_processor_spanpruning_traces_skipped
+
+Total traces skipped due to conditions not matching
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

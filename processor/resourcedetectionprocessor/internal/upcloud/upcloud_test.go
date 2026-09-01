@@ -49,7 +49,7 @@ func TestNewDetector(t *testing.T) {
 		},
 	})
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }
@@ -71,7 +71,7 @@ func TestUpcloudDetector_Detect_OK(t *testing.T) {
 		},
 	})
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())
@@ -91,7 +91,7 @@ func TestUpcloudDetector_Detect_OK(t *testing.T) {
 func TestUpcloudDetector_NotOnUpcloud(t *testing.T) {
 	withFakeProvider(t, &fakeProvider{err: errors.New("no metadata")})
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())
@@ -106,7 +106,9 @@ func TestUpcloudDetector_FailOnMissingMetadata(t *testing.T) {
 	cfg := CreateDefaultConfig()
 	cfg.FailOnMissingMetadata = true
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	// Inject top-level false: the deprecated per-detector flag alone must still
+	// trigger fail-on-missing for this detector (backward compatibility).
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())

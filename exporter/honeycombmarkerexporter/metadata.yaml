@@ -8,8 +8,8 @@ status:
     alpha: [logs]
   distributions: [contrib]
   codeowners:
-    active: [VinozzZ, codeboten]
-    emeritus: [TylerHelmuth, fchikwekwe]
+    active: [VinozzZ]
+    emeritus: [TylerHelmuth, fchikwekwe, codeboten]
 
 tests:
   expect_consumer_error: true

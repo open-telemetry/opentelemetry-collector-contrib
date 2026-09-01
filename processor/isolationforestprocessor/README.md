@@ -57,8 +57,9 @@ Performance is linear in `forest_size` and logarithmic in `window_size`; a defau
 | `forest_size`         | int         | `100`     | Number of trees in the ensemble. Higher → smoother scores, more CPU.           |
 | `subsample_size`      | int         | `256`     | Rows sampled to build **each** tree. Must be ≤ `window_size`.                  |
 | `window_size`         | int         | `1000`    | Sliding window of recent data maintained per feature‑group.                    |
-| `contamination_rate`  | float (0–1) | `0.10`    | Fraction of points expected to be outliers; used to auto‑tune threshold.       |
+| `contamination_rate`  | float (0–1) | `0.10`    | Fraction of points expected to be outliers; drives the dynamic threshold as the `(1 − contamination_rate)` quantile of recent scores. |
 | `anomaly_threshold`   | float (0–1) | *derived* | Manual override – score ≥ this ⇒ anomaly. Ignored if `contamination_rate` set. |
+| `min_node_samples`    | int         | `10`      | Minimum samples a leaf must accumulate before it splits during online tree growth. Must be > 0. |
 | `training_interval`   | duration    | `5m`      | Model is retrained no sooner than this interval.                               |
 | `features`            | \[]string   | `[]`      | Resource/attribute keys that define **grouping**. Blank ⇒ single global model. |
 | `metrics_to_analyze`  | \[]string   | `[]`      | Only these metric names are scored (metrics pipeline only). Blank ⇒ all.       |

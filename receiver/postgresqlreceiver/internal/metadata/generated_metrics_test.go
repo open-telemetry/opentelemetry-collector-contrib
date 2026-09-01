@@ -83,6 +83,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["postgresql.index.size"] = mb.metricPostgresqlIndexSize.config.AggregationStrategy
 			aggMap["postgresql.operations"] = mb.metricPostgresqlOperations.config.AggregationStrategy
 			aggMap["postgresql.query.conflicts"] = mb.metricPostgresqlQueryConflicts.config.AggregationStrategy
+			aggMap["postgresql.query.execution.time"] = mb.metricPostgresqlQueryExecutionTime.config.AggregationStrategy
 			aggMap["postgresql.replication.data_delay"] = mb.metricPostgresqlReplicationDataDelay.config.AggregationStrategy
 			aggMap["postgresql.rollbacks"] = mb.metricPostgresqlRollbacks.config.AggregationStrategy
 			aggMap["postgresql.rows"] = mb.metricPostgresqlRows.config.AggregationStrategy
@@ -174,9 +175,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordPostgresqlDatabaseCountDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordPostgresqlDatabaseLocksDataPoint(ts, 1, "relation-val", "mode-val", "lock_type-val")
+			mb.RecordPostgresqlDatabaseLocksDataPoint(ts, 1, "relation-val", "mode-val", "lock_type-val", "db.namespace-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlDatabaseLocksDataPoint(ts, 3, "relation-val-2", "mode-val-2", "lock_type-val-2")
+				mb.RecordPostgresqlDatabaseLocksDataPoint(ts, 3, "relation-val-2", "mode-val-2", "lock_type-val-2", "db.namespace-val-2")
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -219,6 +220,12 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordPostgresqlQueryConflictsDataPoint(ts, 1, AttributePostgresqlConflictTypeTablespace, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlQueryConflictsDataPoint(ts, 3, AttributePostgresqlConflictTypeLock, "db.namespace-val-2")
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlQueryExecutionTimeDataPoint(ts, 1, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlQueryExecutionTimeDataPoint(ts, 3, "db.namespace-val-2")
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -379,6 +386,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricPostgresqlIndexSize.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlOperations.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlQueryConflicts.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlQueryExecutionTime.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlReplicationDataDelay.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlRollbacks.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlRows.aggDataPoints)
@@ -433,7 +441,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["postgresql.backends"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of backends.", mi.Description())
+						assert.Equal(t, "The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -450,7 +458,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["postgresql.backends"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of backends.", mi.Description())
+						assert.Equal(t, "The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -865,6 +873,9 @@ func TestMetricsBuilder(t *testing.T) {
 						lockTypeAttrVal, ok := dp.Attributes().Get("lock_type")
 						assert.True(t, ok)
 						assert.Equal(t, "lock_type-val", lockTypeAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.database.locks"], "Found a duplicate in the metrics slice: postgresql.database.locks")
 						validatedMetrics["postgresql.database.locks"] = true
@@ -891,6 +902,8 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("mode")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("lock_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
 					}
 				case "postgresql.db_size":
@@ -1235,6 +1248,50 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("postgresql.conflict.type")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
+				case "postgresql.query.execution.time":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.query.execution.time"], "Found a duplicate in the metrics slice: postgresql.query.execution.time")
+						validatedMetrics["postgresql.query.execution.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The total execution time of SQL statements currently tracked by pg_stat_statements for the database.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.query.execution.time"], "Found a duplicate in the metrics slice: postgresql.query.execution.time")
+						validatedMetrics["postgresql.query.execution.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The total execution time of SQL statements currently tracked by pg_stat_statements for the database.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["postgresql.query.execution.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
 					}
 				case "postgresql.replication.data_delay":

@@ -252,7 +252,8 @@ func TestJsonInvalidHeader(t *testing.T) {
 			// in previously as the invalid header.
 			errors.As(lastEntry.Context[0].Interface.(error), &errRecv) &&
 			errors.Unwrap(
-				lastEntry.Context[0].Interface.(error)).Error() == fmt.Sprintf(
+				lastEntry.Context[0].Interface.(error),
+			).Error() == fmt.Sprintf(
 				"invalid header %+v", tracesegment.Header{
 					Format:  randString.String(),
 					Version: 1,
@@ -497,7 +498,8 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", Transport)),
+							attribute.String("transport", Transport),
+						),
 						Value: accepted,
 					},
 				},
@@ -520,7 +522,8 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", Transport)),
+							attribute.String("transport", Transport),
+						),
 						Value: refused,
 					},
 				},

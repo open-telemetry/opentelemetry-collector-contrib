@@ -161,8 +161,8 @@ func generateConfig(tb testing.TB) *Config {
 	tb.Setenv("AWS_REGION", "us-east-1")
 	factory := NewFactory()
 	exporterConfig := factory.CreateDefaultConfig().(*Config)
-	exporterConfig.Region = "us-east-1"
-	exporterConfig.LocalMode = true
+	exporterConfig.AWSSessionSettings.Region = "us-east-1"
+	exporterConfig.AWSSessionSettings.LocalMode = true
 	return exporterConfig
 }
 
