@@ -944,6 +944,142 @@ func (ms *MysqlMaxUsedConnectionsMetricConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
+// MysqlMyisamKeyCacheBlockUnusedMetricConfig provides config for the mysql.myisam.key_cache.block.unused metric.
+type MysqlMyisamKeyCacheBlockUnusedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlMyisamKeyCacheBlockUnusedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlMyisamKeyCacheBlockUsedMaxMetricConfig provides config for the mysql.myisam.key_cache.block.used.max metric.
+type MysqlMyisamKeyCacheBlockUsedMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlMyisamKeyCacheBlockUsedMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlMyisamKeyCacheDiskOperationMetricAttributeKey specifies the key of an attribute for the mysql.myisam.key_cache.disk.operation metric.
+type MysqlMyisamKeyCacheDiskOperationMetricAttributeKey string
+
+const (
+	MysqlMyisamKeyCacheDiskOperationMetricAttributeKeyMysqlMyisamKeyCacheOperationType MysqlMyisamKeyCacheDiskOperationMetricAttributeKey = "operation"
+)
+
+// MysqlMyisamKeyCacheDiskOperationMetricConfig provides config for the mysql.myisam.key_cache.disk.operation metric.
+type MysqlMyisamKeyCacheDiskOperationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlMyisamKeyCacheDiskOperationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlMyisamKeyCacheDiskOperationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlMyisamKeyCacheDiskOperationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlMyisamKeyCacheDiskOperationMetricAttributeKeyMysqlMyisamKeyCacheOperationType:
+		default:
+			return fmt.Errorf("metric mysql.myisam.key_cache.disk.operation doesn't have an attribute %v, valid attributes: [operation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlMyisamKeyCacheRequestMetricAttributeKey specifies the key of an attribute for the mysql.myisam.key_cache.request metric.
+type MysqlMyisamKeyCacheRequestMetricAttributeKey string
+
+const (
+	MysqlMyisamKeyCacheRequestMetricAttributeKeyMysqlMyisamKeyCacheOperationType MysqlMyisamKeyCacheRequestMetricAttributeKey = "operation"
+)
+
+// MysqlMyisamKeyCacheRequestMetricConfig provides config for the mysql.myisam.key_cache.request metric.
+type MysqlMyisamKeyCacheRequestMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlMyisamKeyCacheRequestMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlMyisamKeyCacheRequestMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlMyisamKeyCacheRequestMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlMyisamKeyCacheRequestMetricAttributeKeyMysqlMyisamKeyCacheOperationType:
+		default:
+			return fmt.Errorf("metric mysql.myisam.key_cache.request doesn't have an attribute %v, valid attributes: [operation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MysqlMysqlxConnectionsMetricAttributeKey specifies the key of an attribute for the mysql.mysqlx_connections metric.
 type MysqlMysqlxConnectionsMetricAttributeKey string
 
@@ -2344,6 +2480,10 @@ type MetricsConfig struct {
 	MysqlLocks                        MysqlLocksMetricConfig                        `mapstructure:"mysql.locks"`
 	MysqlLogOperations                MysqlLogOperationsMetricConfig                `mapstructure:"mysql.log_operations"`
 	MysqlMaxUsedConnections           MysqlMaxUsedConnectionsMetricConfig           `mapstructure:"mysql.max_used_connections"`
+	MysqlMyisamKeyCacheBlockUnused    MysqlMyisamKeyCacheBlockUnusedMetricConfig    `mapstructure:"mysql.myisam.key_cache.block.unused"`
+	MysqlMyisamKeyCacheBlockUsedMax   MysqlMyisamKeyCacheBlockUsedMaxMetricConfig   `mapstructure:"mysql.myisam.key_cache.block.used.max"`
+	MysqlMyisamKeyCacheDiskOperation  MysqlMyisamKeyCacheDiskOperationMetricConfig  `mapstructure:"mysql.myisam.key_cache.disk.operation"`
+	MysqlMyisamKeyCacheRequest        MysqlMyisamKeyCacheRequestMetricConfig        `mapstructure:"mysql.myisam.key_cache.request"`
 	MysqlMysqlxConnections            MysqlMysqlxConnectionsMetricConfig            `mapstructure:"mysql.mysqlx_connections"`
 	MysqlMysqlxWorkerThreads          MysqlMysqlxWorkerThreadsMetricConfig          `mapstructure:"mysql.mysqlx_worker_threads"`
 	MysqlOpenedResources              MysqlOpenedResourcesMetricConfig              `mapstructure:"mysql.opened_resources"`
@@ -2485,6 +2625,22 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		MysqlMaxUsedConnections: MysqlMaxUsedConnectionsMetricConfig{
 			Enabled: false,
+		},
+		MysqlMyisamKeyCacheBlockUnused: MysqlMyisamKeyCacheBlockUnusedMetricConfig{
+			Enabled: false,
+		},
+		MysqlMyisamKeyCacheBlockUsedMax: MysqlMyisamKeyCacheBlockUsedMaxMetricConfig{
+			Enabled: false,
+		},
+		MysqlMyisamKeyCacheDiskOperation: MysqlMyisamKeyCacheDiskOperationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlMyisamKeyCacheDiskOperationMetricAttributeKey{MysqlMyisamKeyCacheDiskOperationMetricAttributeKeyMysqlMyisamKeyCacheOperationType},
+		},
+		MysqlMyisamKeyCacheRequest: MysqlMyisamKeyCacheRequestMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlMyisamKeyCacheRequestMetricAttributeKey{MysqlMyisamKeyCacheRequestMetricAttributeKeyMysqlMyisamKeyCacheOperationType},
 		},
 		MysqlMysqlxConnections: MysqlMysqlxConnectionsMetricConfig{
 			Enabled:             true,

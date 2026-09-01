@@ -87,6 +87,8 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["mongodb.operation.repl.count"] = mb.metricMongodbOperationReplCount.config.AggregationStrategy
 			aggMap["mongodb.operation.time"] = mb.metricMongodbOperationTime.config.AggregationStrategy
 			aggMap["mongodb.storage.size"] = mb.metricMongodbStorageSize.config.AggregationStrategy
+			aggMap["mongodb.wt.concurrent_transaction.ticket.in_use"] = mb.metricMongodbWtConcurrentTransactionTicketInUse.config.AggregationStrategy
+			aggMap["mongodb.wt.log.operation.count"] = mb.metricMongodbWtLogOperationCount.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -295,6 +297,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbUptimeDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordMongodbWtConcurrentTransactionTicketInUseDataPoint(ts, 1, AttributeMongodbWtConcurrentTransactionTicketTypeRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbWtConcurrentTransactionTicketInUseDataPoint(ts, 3, AttributeMongodbWtConcurrentTransactionTicketTypeWrite)
+			}
+
+			allMetricsCount++
+			mb.RecordMongodbWtFsyncCountDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordMongodbWtLogOperationCountDataPoint(ts, 1, AttributeMongodbWtLogOperationTypeWrite)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbWtLogOperationCountDataPoint(ts, 3, AttributeMongodbWtLogOperationTypeSync)
+			}
+
+			allMetricsCount++
+			mb.RecordMongodbWtLogSyncTimeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordMongodbWtLogWriteDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordMongodbWtcacheBytesReadDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
@@ -326,6 +349,8 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricMongodbOperationReplCount.aggDataPoints)
 				assert.Empty(t, mb.metricMongodbOperationTime.aggDataPoints)
 				assert.Empty(t, mb.metricMongodbStorageSize.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbWtConcurrentTransactionTicketInUse.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbWtLogOperationCount.aggDataPoints)
 			}
 
 			if tt.expectEmpty {
@@ -1618,6 +1643,136 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of time that the server has been running.", mi.Description())
 					assert.Equal(t, "ms", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mongodb.wt.concurrent_transaction.ticket.in_use":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.wt.concurrent_transaction.ticket.in_use"], "Found a duplicate in the metrics slice: mongodb.wt.concurrent_transaction.ticket.in_use")
+						validatedMetrics["mongodb.wt.concurrent_transaction.ticket.in_use"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of in-flight WiredTiger read/write concurrent-transaction tickets.", mi.Description())
+						assert.Equal(t, "{ticket}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						mongodbWtConcurrentTransactionTicketTypeAttrVal, ok := dp.Attributes().Get("mongodb.wt.concurrent_transaction.ticket.type")
+						assert.True(t, ok)
+						assert.Equal(t, "read", mongodbWtConcurrentTransactionTicketTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.wt.concurrent_transaction.ticket.in_use"], "Found a duplicate in the metrics slice: mongodb.wt.concurrent_transaction.ticket.in_use")
+						validatedMetrics["mongodb.wt.concurrent_transaction.ticket.in_use"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of in-flight WiredTiger read/write concurrent-transaction tickets.", mi.Description())
+						assert.Equal(t, "{ticket}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.wt.concurrent_transaction.ticket.in_use"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("mongodb.wt.concurrent_transaction.ticket.type")
+						assert.False(t, ok)
+					}
+				case "mongodb.wt.fsync.count":
+					assert.False(t, validatedMetrics["mongodb.wt.fsync.count"], "Found a duplicate in the metrics slice: mongodb.wt.fsync.count")
+					validatedMetrics["mongodb.wt.fsync.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The total number of fsync I/Os issued by the WiredTiger storage engine.", mi.Description())
+					assert.Equal(t, "{fsync}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mongodb.wt.log.operation.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.wt.log.operation.count"], "Found a duplicate in the metrics slice: mongodb.wt.log.operation.count")
+						validatedMetrics["mongodb.wt.log.operation.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The total number of WiredTiger journal operations.", mi.Description())
+						assert.Equal(t, "{operation}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						mongodbWtLogOperationTypeAttrVal, ok := dp.Attributes().Get("mongodb.wt.log.operation.type")
+						assert.True(t, ok)
+						assert.Equal(t, "write", mongodbWtLogOperationTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.wt.log.operation.count"], "Found a duplicate in the metrics slice: mongodb.wt.log.operation.count")
+						validatedMetrics["mongodb.wt.log.operation.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The total number of WiredTiger journal operations.", mi.Description())
+						assert.Equal(t, "{operation}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.wt.log.operation.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("mongodb.wt.log.operation.type")
+						assert.False(t, ok)
+					}
+				case "mongodb.wt.log.sync.time":
+					assert.False(t, validatedMetrics["mongodb.wt.log.sync.time"], "Found a duplicate in the metrics slice: mongodb.wt.log.sync.time")
+					validatedMetrics["mongodb.wt.log.sync.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The cumulative time spent syncing the WiredTiger journal.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "mongodb.wt.log.write":
+					assert.False(t, validatedMetrics["mongodb.wt.log.write"], "Found a duplicate in the metrics slice: mongodb.wt.log.write")
+					validatedMetrics["mongodb.wt.log.write"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The total number of bytes written to the WiredTiger journal.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
