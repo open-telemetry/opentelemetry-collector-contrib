@@ -6,6 +6,7 @@ package mysqlreceiver
 import (
 	"bufio"
 	"database/sql"
+	"errors"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -295,6 +296,145 @@ func TestScrapeReplicaStatusDoesNotRecordReplicaOpenTempTables(t *testing.T) {
 	assert.Empty(t, replicaOpenTempTablesDataPoints(scraper.mb.Emit()))
 }
 
+func TestScrapeInnodbRedoLogStatsDisabledDoesNotQuery(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	client := &mockClient{
+		innodbRedoLogStats: innodbRedoLogStats{
+			currentLSN:    25012145208,
+			checkpointLSN: 25012145199,
+			checkpointAge: 9,
+		},
+	}
+	scraper.sqlclient = client
+	scraper.detectedVersion = dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.11")}
+
+	errs := &scrapererror.ScrapeErrors{}
+	scraper.scrapeInnodbRedoLogStats(pcommon.NewTimestampFromTime(time.Unix(0, 0)), errs)
+
+	require.NoError(t, errs.Combine())
+	assert.Equal(t, 0, client.innodbRedoLogStatsCalls)
+	assert.Empty(t, emittedMetricNames(scraper.mb.Emit()))
+}
+
+func TestScrapeInnodbRedoLogStatsUnsupportedVersionDoesNotQuery(t *testing.T) {
+	tests := []struct {
+		name string
+		dbv  dbVersion
+	}{
+		{
+			name: "MySQL below log_status minimum",
+			dbv:  dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.10")},
+		},
+		{
+			name: "MariaDB",
+			dbv:  dbVersion{product: dbProductMariaDB, version: mustParseVersion(t, "11.4.2")},
+		},
+		{
+			name: "unknown version",
+			dbv:  dbVersion{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRedoLogLsnCurrent.Enabled = true
+			scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+			client := &mockClient{
+				innodbRedoLogStats: innodbRedoLogStats{
+					currentLSN:    25012145208,
+					checkpointLSN: 25012145199,
+					checkpointAge: 9,
+				},
+			}
+			scraper.sqlclient = client
+			scraper.detectedVersion = tt.dbv
+
+			errs := &scrapererror.ScrapeErrors{}
+			scraper.scrapeInnodbRedoLogStats(pcommon.NewTimestampFromTime(time.Unix(0, 0)), errs)
+
+			require.NoError(t, errs.Combine())
+			assert.Equal(t, 0, client.innodbRedoLogStatsCalls)
+			assert.Empty(t, emittedMetricNames(scraper.mb.Emit()))
+		})
+	}
+}
+
+func TestScrapeInnodbRedoLogStatsRecordsOnlyEnabledMetric(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRedoLogCheckpointAge.Enabled = true
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	client := &mockClient{
+		innodbRedoLogStats: innodbRedoLogStats{
+			currentLSN:    25012145208,
+			checkpointLSN: 25012145199,
+			checkpointAge: 9,
+		},
+	}
+	scraper.sqlclient = client
+	scraper.detectedVersion = dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.11")}
+
+	errs := &scrapererror.ScrapeErrors{}
+	scraper.scrapeInnodbRedoLogStats(pcommon.NewTimestampFromTime(time.Unix(0, 0)), errs)
+
+	require.NoError(t, errs.Combine())
+	assert.Equal(t, 1, client.innodbRedoLogStatsCalls)
+	md := scraper.mb.Emit()
+	assert.Equal(t, []string{"mysql.innodb.redo_log.checkpoint.age"}, emittedMetricNames(md))
+	assert.Equal(t, int64(9), intGaugeValueByMetricName(t, md, "mysql.innodb.redo_log.checkpoint.age"))
+}
+
+func TestScrapeInnodbRedoLogStatsRecordsAllEnabledMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRedoLogLsnCurrent.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRedoLogLsnCheckpoint.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRedoLogCheckpointAge.Enabled = true
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	client := &mockClient{
+		innodbRedoLogStats: innodbRedoLogStats{
+			currentLSN:    25012145208,
+			checkpointLSN: 25012145199,
+			checkpointAge: 9,
+		},
+	}
+	scraper.sqlclient = client
+	scraper.detectedVersion = dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.11")}
+
+	errs := &scrapererror.ScrapeErrors{}
+	scraper.scrapeInnodbRedoLogStats(pcommon.NewTimestampFromTime(time.Unix(0, 0)), errs)
+
+	require.NoError(t, errs.Combine())
+	assert.Equal(t, 1, client.innodbRedoLogStatsCalls)
+	md := scraper.mb.Emit()
+	assert.ElementsMatch(t, []string{
+		"mysql.innodb.redo_log.lsn.current",
+		"mysql.innodb.redo_log.lsn.checkpoint",
+		"mysql.innodb.redo_log.checkpoint.age",
+	}, emittedMetricNames(md))
+	assert.Equal(t, int64(25012145208), intGaugeValueByMetricName(t, md, "mysql.innodb.redo_log.lsn.current"))
+	assert.Equal(t, int64(25012145199), intGaugeValueByMetricName(t, md, "mysql.innodb.redo_log.lsn.checkpoint"))
+	assert.Equal(t, int64(9), intGaugeValueByMetricName(t, md, "mysql.innodb.redo_log.checkpoint.age"))
+}
+
+func TestScrapeInnodbRedoLogStatsQueryError(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRedoLogLsnCurrent.Enabled = true
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	client := &mockClient{
+		innodbRedoLogStatsErr: errors.New("query failed"),
+	}
+	scraper.sqlclient = client
+	scraper.detectedVersion = dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.11")}
+
+	errs := &scrapererror.ScrapeErrors{}
+	scraper.scrapeInnodbRedoLogStats(pcommon.NewTimestampFromTime(time.Unix(0, 0)), errs)
+
+	require.Error(t, errs.Combine())
+	assert.Equal(t, 1, client.innodbRedoLogStatsCalls)
+	assert.Empty(t, emittedMetricNames(scraper.mb.Emit()))
+}
+
 type replicaThreadRunningDataPoint struct {
 	threadType string
 	channel    string
@@ -418,6 +558,39 @@ func replicaOpenTempTablesDataPoints(metrics pmetric.Metrics) []int64 {
 	}
 
 	return nil
+}
+
+func emittedMetricNames(md pmetric.Metrics) []string {
+	var names []string
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		scopeMetrics := md.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			metrics := scopeMetrics.At(j).Metrics()
+			for k := 0; k < metrics.Len(); k++ {
+				names = append(names, metrics.At(k).Name())
+			}
+		}
+	}
+	return names
+}
+
+func intGaugeValueByMetricName(t *testing.T, md pmetric.Metrics, name string) int64 {
+	t.Helper()
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		scopeMetrics := md.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			metrics := scopeMetrics.At(j).Metrics()
+			for k := 0; k < metrics.Len(); k++ {
+				metric := metrics.At(k)
+				if metric.Name() == name {
+					require.Equal(t, 1, metric.Gauge().DataPoints().Len())
+					return metric.Gauge().DataPoints().At(0).IntValue()
+				}
+			}
+		}
+	}
+	t.Fatalf("metric %q not found", name)
+	return 0
 }
 
 func TestScrapeBufferPoolPagesMiscOutOfBounds(t *testing.T) {
@@ -718,6 +891,9 @@ type mockClient struct {
 	globalStats                 map[string]string
 	globalStatsFile             string
 	innodbStatsFile             string
+	innodbRedoLogStats          innodbRedoLogStats
+	innodbRedoLogStatsErr       error
+	innodbRedoLogStatsCalls     int
 	tableIoWaitsFile            string
 	indexIoWaitsFile            string
 	tableStatsFile              string
@@ -795,6 +971,14 @@ func (c *mockClient) getGlobalStats() (map[string]string, error) {
 
 func (c *mockClient) getInnodbStats() (map[string]string, error) {
 	return readFile(c.innodbStatsFile)
+}
+
+func (c *mockClient) getInnodbRedoLogStats() (innodbRedoLogStats, error) {
+	c.innodbRedoLogStatsCalls++
+	if c.innodbRedoLogStatsErr != nil {
+		return innodbRedoLogStats{}, c.innodbRedoLogStatsErr
+	}
+	return c.innodbRedoLogStats, nil
 }
 
 func (c *mockClient) getTableStats() ([]tableStats, error) {

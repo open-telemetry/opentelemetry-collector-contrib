@@ -46,6 +46,9 @@ Collecting query samples requires the `performance_schema` to be enabled:
 GRANT SELECT ON performance_schema.* TO <your-user>@'%';
 ```
 
+Collecting disabled-by-default InnoDB redo-log metrics requires MySQL 8.0.11 or later
+and the `BACKUP_ADMIN` privilege. These metrics are not emitted on MariaDB.
+
 ## Configuration
 
 

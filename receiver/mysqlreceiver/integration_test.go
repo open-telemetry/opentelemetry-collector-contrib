@@ -513,6 +513,7 @@ func TestVersionCompatibility(t *testing.T) {
 		wantProduct       dbProduct
 		wantSampleTextCol bool // true ↔ 6-column top-query template used
 		wantReplicaStatus bool // true ↔ SHOW REPLICA STATUS used instead of SHOW SLAVE STATUS
+		wantLogStatus     bool // true ↔ performance_schema.log_status is available
 	}{
 		{
 			name:              "MySQL 8.0.33",
@@ -520,6 +521,7 @@ func TestVersionCompatibility(t *testing.T) {
 			wantProduct:       dbProductMySQL,
 			wantSampleTextCol: true,
 			wantReplicaStatus: true,
+			wantLogStatus:     true,
 		},
 		{
 			// mysql:5.7 has no official ARM64 image; this case is skipped on
@@ -529,6 +531,7 @@ func TestVersionCompatibility(t *testing.T) {
 			wantProduct:       dbProductMySQL,
 			wantSampleTextCol: false,
 			wantReplicaStatus: false,
+			wantLogStatus:     false,
 		},
 		{
 			name:              "MariaDB 10.11",
@@ -536,6 +539,7 @@ func TestVersionCompatibility(t *testing.T) {
 			wantProduct:       dbProductMariaDB,
 			wantSampleTextCol: false,
 			wantReplicaStatus: false,
+			wantLogStatus:     false,
 		},
 		{
 			name:              "MariaDB 11.4",
@@ -543,6 +547,7 @@ func TestVersionCompatibility(t *testing.T) {
 			wantProduct:       dbProductMariaDB,
 			wantSampleTextCol: false,
 			wantReplicaStatus: false,
+			wantLogStatus:     false,
 		},
 	}
 
@@ -604,6 +609,7 @@ func TestVersionCompatibility(t *testing.T) {
 			assert.Equal(t, tc.wantProduct, dv.product, "product mismatch")
 			assert.Equal(t, tc.wantSampleTextCol, dv.supportsQuerySampleText(), "supportsQuerySampleText mismatch")
 			assert.Equal(t, tc.wantReplicaStatus, dv.supportsReplicaStatus(), "supportsReplicaStatus mismatch")
+			assert.Equal(t, tc.wantLogStatus, dv.supportsPerfSchemaLogStatus(), "supportsPerfSchemaLogStatus mismatch")
 
 			// --- getTopQueries: must succeed without error ---
 			// No workload is running, so the result may be empty, but the query
@@ -638,6 +644,13 @@ func TestVersionCompatibility(t *testing.T) {
 			// empty, but the query itself must execute without error.
 			_, err = c.getReplicaStatusStats(dv.supportsReplicaStatus())
 			require.NoError(t, err, "getReplicaStatusStats should not fail (wrong command would cause syntax error)")
+
+			if dv.supportsPerfSchemaLogStatus() {
+				stats, err := c.getInnodbRedoLogStats()
+				require.NoError(t, err, "getInnodbRedoLogStats should not fail on supported MySQL versions")
+				assert.GreaterOrEqual(t, stats.currentLSN, stats.checkpointLSN)
+				assert.Equal(t, stats.currentLSN-stats.checkpointLSN, stats.checkpointAge)
+			}
 		})
 	}
 }

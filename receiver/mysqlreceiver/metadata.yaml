@@ -542,6 +542,30 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [operations]
+  mysql.innodb.redo_log.checkpoint.age:
+    enabled: false
+    description: The difference, in bytes, between the current InnoDB redo log sequence number and the most recent checkpoint log sequence number.
+    extended_documentation: Only emitted for MySQL 8.0.11 and later. MariaDB is not supported for this metric.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+  mysql.innodb.redo_log.lsn.checkpoint:
+    enabled: false
+    description: The InnoDB redo log sequence number of the most recent checkpoint.
+    extended_documentation: Only emitted for MySQL 8.0.11 and later. MariaDB is not supported for this metric.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+  mysql.innodb.redo_log.lsn.current:
+    enabled: false
+    description: The current InnoDB redo log sequence number.
+    extended_documentation: Only emitted for MySQL 8.0.11 and later. MariaDB is not supported for this metric.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
   mysql.innodb.row_lock.wait.count:
     enabled: false
     description: The number of InnoDB row lock waits currently pending.

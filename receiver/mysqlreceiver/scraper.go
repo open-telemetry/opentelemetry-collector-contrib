@@ -177,6 +177,7 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 		addPartialIfError(errs, m.mb.RecordMysqlBufferPoolLimitDataPoint(now, v))
 	}
+	m.scrapeInnodbRedoLogStats(now, errs)
 
 	// collect io_waits metrics.
 	m.scrapeTableIoWaitsStats(now, errs)
@@ -640,6 +641,35 @@ func (m *mySQLScraper) scrapeTableStats(now pcommon.Timestamp, errs *scrapererro
 		m.mb.RecordMysqlTableAverageRowLengthDataPoint(now, s.averageRowLength, s.name, s.schema)
 		m.mb.RecordMysqlTableSizeDataPoint(now, s.dataLength, s.name, s.schema, metadata.AttributeTableSizeTypeData)
 		m.mb.RecordMysqlTableSizeDataPoint(now, s.indexLength, s.name, s.schema, metadata.AttributeTableSizeTypeIndex)
+	}
+}
+
+func (m *mySQLScraper) scrapeInnodbRedoLogStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	metrics := m.config.MetricsBuilderConfig.Metrics
+	if !metrics.MysqlInnodbRedoLogLsnCurrent.Enabled &&
+		!metrics.MysqlInnodbRedoLogLsnCheckpoint.Enabled &&
+		!metrics.MysqlInnodbRedoLogCheckpointAge.Enabled {
+		return
+	}
+	if !m.detectedVersion.supportsPerfSchemaLogStatus() {
+		return
+	}
+
+	stats, err := m.sqlclient.getInnodbRedoLogStats()
+	if err != nil {
+		m.logger.Error("Failed to fetch InnoDB redo log stats", zap.Error(err))
+		errs.AddPartial(1, err)
+		return
+	}
+
+	if metrics.MysqlInnodbRedoLogLsnCurrent.Enabled {
+		m.mb.RecordMysqlInnodbRedoLogLsnCurrentDataPoint(now, stats.currentLSN)
+	}
+	if metrics.MysqlInnodbRedoLogLsnCheckpoint.Enabled {
+		m.mb.RecordMysqlInnodbRedoLogLsnCheckpointDataPoint(now, stats.checkpointLSN)
+	}
+	if metrics.MysqlInnodbRedoLogCheckpointAge.Enabled {
+		m.mb.RecordMysqlInnodbRedoLogCheckpointAgeDataPoint(now, stats.checkpointAge)
 	}
 }
 
