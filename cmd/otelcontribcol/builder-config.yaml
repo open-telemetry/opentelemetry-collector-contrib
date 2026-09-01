@@ -291,3 +291,8 @@ providers:
 # file before passing it to OCB, to ensure that local versions are used for all
 # Contrib modules.
 replaces:
+  # TODO(opamp-uds): temporary replace pointing at the opamp-go PR that adds
+  # StartSettings.DialContext (Unix domain socket dialing). Remove and bump to the
+  # tagged opamp-go release before this PR is merged.
+  # https://github.com/open-telemetry/opamp-go/pull/642
+  - github.com/open-telemetry/opamp-go => github.com/dpaasman00/opamp-go v0.0.0-20260831135248-e1c0a80f8377
