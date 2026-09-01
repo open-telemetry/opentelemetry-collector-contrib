@@ -20,7 +20,7 @@ jobs:
         - Raise technical or Collector-specific questions in [#otel-collector-dev](https://cloud-native.slack.com/archives/C07CCCMRXBK) or a [Collector SIG meeting](https://github.com/open-telemetry/community?tab=readme-ov-file#sig-collector).
 
   draft_if_multiple_prs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       pull-requests: write
       contents: write
