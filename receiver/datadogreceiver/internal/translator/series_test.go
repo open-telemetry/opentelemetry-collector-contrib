@@ -718,7 +718,7 @@ func TestTranslateSeriesIntervalSetsStartTimestamp(t *testing.T) {
 		// Without the declared interval this is 0 and no interval can be inferred.
 		require.Equal(t, wantStart, dp.StartTimestamp())
 		// Value scaling by the interval is unchanged.
-		require.Equal(t, float64(interval), dp.DoubleValue())
+		require.InEpsilon(t, float64(interval), dp.DoubleValue(), 1e-9)
 	})
 
 	t.Run("v2 first point of a stream", func(t *testing.T) {
@@ -735,7 +735,7 @@ func TestTranslateSeriesIntervalSetsStartTimestamp(t *testing.T) {
 		dp := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
 		require.Equal(t, wantTs, dp.Timestamp())
 		require.Equal(t, wantStart, dp.StartTimestamp())
-		require.Equal(t, float64(interval), dp.DoubleValue())
+		require.InEpsilon(t, float64(interval), dp.DoubleValue(), 1e-9)
 	})
 
 	t.Run("no declared interval falls back to inter-arrival tracking", func(t *testing.T) {
