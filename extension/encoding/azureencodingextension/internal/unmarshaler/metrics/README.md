@@ -4,7 +4,7 @@ Supported Time Grains: PT1M, PT5M, PT15M, PT30M, PT1H, PT6H, PT12H, P1D
 
 ## General transformation rules
 
-By default, 1 incoming metric point (with specific `metricName`) from Azure will be transformed into 5 OpenTelemetry metrics:
+By default, 1 incoming metric point (with specific `metricName`) from Azure will be transformed into up to 5 OpenTelemetry metrics, one for each aggregation present in the incoming record:
 
 * `metricName_total` (type - Gauge)
 * `metricName_count` (type - Gauge)

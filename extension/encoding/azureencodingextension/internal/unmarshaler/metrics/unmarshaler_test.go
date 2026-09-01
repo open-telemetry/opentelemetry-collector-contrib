@@ -68,6 +68,73 @@ func TestResourceMetricsUnmarshaler_UnmarshalMetrics_Golden(t *testing.T) {
 	}
 }
 
+func TestResourceMetricsUnmarshaler_AggregatePresence(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name                 string
+		aggregations         []MetricAggregation
+		aggregateFields      string
+		expectedMetricValues map[string]float64
+	}{
+		{
+			name:            "omitted and null aggregates",
+			aggregateFields: `"count": 1, "total": 2, "minimum": null, "average": 2`,
+			expectedMetricValues: map[string]float64{
+				"requests_count":   1,
+				"requests_total":   2,
+				"requests_average": 2,
+			},
+		},
+		{
+			name:                 "explicit zero aggregates",
+			aggregations:         []MetricAggregation{AggregationMinimum, AggregationMaximum},
+			aggregateFields:      `"minimum": 0, "maximum": 0`,
+			expectedMetricValues: map[string]float64{"requests_minimum": 0, "requests_maximum": 0},
+		},
+		{
+			name:                 "configured missing aggregate",
+			aggregations:         []MetricAggregation{AggregationMinimum, AggregationTotal},
+			aggregateFields:      `"total": 0`,
+			expectedMetricValues: map[string]float64{"requests_total": 0},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			unmarshaler := NewAzureResourceMetricsUnmarshaler(
+				testBuildInfo,
+				zap.NewNop(),
+				MetricsConfig{Aggregations: tt.aggregations},
+			)
+			data := []byte(fmt.Sprintf(`{
+				"records": [{
+					%s,
+					"resourceId": "/subscriptions/000/resourceGroups/rg/providers/Microsoft.Network/loadBalancers/lb",
+					"time": "2026-08-25T00:00:00Z",
+					"metricName": "Requests",
+					"timeGrain": "PT1M"
+				}]
+			}`, tt.aggregateFields))
+
+			got, err := unmarshaler.UnmarshalMetrics(data)
+			require.NoError(t, err)
+			require.Equal(t, 1, got.ResourceMetrics().Len())
+
+			gotMetrics := got.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+			require.Equal(t, len(tt.expectedMetricValues), gotMetrics.Len())
+			for i := 0; i < gotMetrics.Len(); i++ {
+				metric := gotMetrics.At(i)
+				expectedValue, ok := tt.expectedMetricValues[metric.Name()]
+				require.True(t, ok, "unexpected metric %q", metric.Name())
+				require.Equal(t, expectedValue, metric.Gauge().DataPoints().At(0).DoubleValue())
+			}
+		})
+	}
+}
+
 func TestResourceMetricsUnmarshaler_UnmarshalMetrics(t *testing.T) {
 	t.Parallel()
 
