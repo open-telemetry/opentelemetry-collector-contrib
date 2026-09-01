@@ -82,6 +82,59 @@ func TestDetect(t *testing.T) {
 			},
 		},
 		{
+			desc: "zonal GKE cluster with host type",
+			detector: func() internal.Detector {
+				d := newTestDetector(&fakeGCPDetector{
+					projectID:           "my-project",
+					cloudPlatform:       gcp.GKE,
+					gceHostName:         "my-gke-node-1234",
+					gkeHostID:           "1472385723456792345",
+					gkeHostType:         "e2-standard-4",
+					gkeClusterName:      "my-cluster",
+					gkeAvailabilityZone: "us-central1-c",
+				})
+				d.gkeHostType = true
+				return d
+			}(),
+			expectedResource: map[string]any{
+				"cloud.provider":          "gcp",
+				"cloud.account.id":        "my-project",
+				"cloud.platform":          "gcp_kubernetes_engine",
+				"k8s.cluster.name":        "my-cluster",
+				"cloud.availability_zone": "us-central1-c",
+				"cloud.region":            "us-central1",
+				"host.id":                 "1472385723456792345",
+				"host.name":               "my-gke-node-1234",
+				"host.type":               "e2-standard-4",
+			},
+		},
+		{
+			desc: "zonal GKE cluster with host type fetch error",
+			detector: func() internal.Detector {
+				d := newTestDetector(&fakeGCPDetector{
+					projectID:           "my-project",
+					cloudPlatform:       gcp.GKE,
+					gceHostName:         "my-gke-node-1234",
+					gkeHostID:           "1472385723456792345",
+					gkeHostTypeErr:      errors.New("compute instances.get returned 403 Forbidden"),
+					gkeClusterName:      "my-cluster",
+					gkeAvailabilityZone: "us-central1-c",
+				})
+				d.gkeHostType = true
+				return d
+			}(),
+			expectedResource: map[string]any{
+				"cloud.provider":          "gcp",
+				"cloud.account.id":        "my-project",
+				"cloud.platform":          "gcp_kubernetes_engine",
+				"k8s.cluster.name":        "my-cluster",
+				"cloud.availability_zone": "us-central1-c",
+				"cloud.region":            "us-central1",
+				"host.id":                 "1472385723456792345",
+				"host.name":               "my-gke-node-1234",
+			},
+		},
+		{
 			desc: "regional GKE cluster",
 			detector: newTestDetector(&fakeGCPDetector{
 				projectID:      "my-project",
@@ -417,6 +470,8 @@ type fakeGCPDetector struct {
 	gkeRegion                       string
 	gkeClusterName                  string
 	gkeHostID                       string
+	gkeHostType                     string
+	gkeHostTypeErr                  error
 	faaSName                        string
 	faaSVersion                     string
 	faaSID                          string
@@ -581,6 +636,16 @@ func (f *fakeGCPDetector) GKEHostID() (string, error) {
 		return "", f.err
 	}
 	return f.gkeHostID, nil
+}
+
+func (f *fakeGCPDetector) GKEHostType() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	if f.gkeHostTypeErr != nil {
+		return "", f.gkeHostTypeErr
+	}
+	return f.gkeHostType, nil
 }
 
 func (f *fakeGCPDetector) FaaSName() (string, error) {

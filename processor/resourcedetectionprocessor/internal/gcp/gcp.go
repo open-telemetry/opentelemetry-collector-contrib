@@ -50,6 +50,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 		labelKeyRegexes:       labelKeyRegexes,
 		gceClientBuilder:      &instancesRESTBuilder{},
 		failOnMissingMetadata: failOnMissingMetadata,
+		gkeHostType:           cfg.GKEHostType,
 	}, nil
 }
 
@@ -60,6 +61,7 @@ type detector struct {
 	labelKeyRegexes       []*regexp.Regexp
 	gceClientBuilder      instancesBuilder
 	failOnMissingMetadata bool
+	gkeHostType           bool
 }
 
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
@@ -99,6 +101,13 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		} else {
 			d.logger.Info("Fallible detector failed. This attribute will not be available.",
 				zap.String("key", string(conventions.HostNameKey)), zap.Error(err))
+		}
+		// The machine type is not available from the metadata server on GKE. Fetching it
+		// requires a Compute API call, so it is opt-in via the gke_host_type option.
+		if d.gkeHostType {
+			errs = multierr.Combine(errs,
+				d.rb.SetFromCallable(d.rb.SetHostType, d.detector.GKEHostType),
+			)
 		}
 	case gcp.CloudRun, gcp.CloudRunWorkerPool:
 		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPCloudRun.Value.AsString())

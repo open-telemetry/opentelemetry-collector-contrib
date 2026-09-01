@@ -1,5 +1,8 @@
 type: object
 properties:
+  gke_host_type:
+    description: GKEHostType enables detecting host.type (the node's machine type) on GKE. It requires a call to the Compute API, so the runtime identity needs the compute.instances.get permission (covered by roles/compute.viewer).
+    type: boolean
   labels:
     description: Labels is a list of regex's to match gce instance label keys that users want to add as resource attributes to processed data
     type: array
