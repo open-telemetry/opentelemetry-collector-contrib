@@ -968,6 +968,18 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses,
 		},
 		{
+			name:         "AcceptsRemoteConfig enables ReportsRemoteConfig",
+			capabilities: Capabilities{AcceptsRemoteConfig: true},
+			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
+				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig,
+		},
+		{
+			name:                      "Deprecated ReportsRemoteConfig has no effect",
+			capabilities:              Capabilities{ReportsRemoteConfig: true},
+			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
+		},
+		{
 			name: "Many capabilities",
 			capabilities: Capabilities{
 				AcceptsRemoteConfig:            true,

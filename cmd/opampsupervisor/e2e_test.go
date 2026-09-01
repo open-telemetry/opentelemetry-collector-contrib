@@ -1166,7 +1166,6 @@ capabilities:
   reports_effective_config: true
   reports_health: true
   accepts_remote_config: true
-  reports_remote_config: true
 
 storage:
   directory: %q
