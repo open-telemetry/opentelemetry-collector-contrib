@@ -6,13 +6,13 @@ require (
 	github.com/axiomhq/hyperloglog v0.2.6
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.65.1-0.20260827211935-bdb5c072803c
+	go.opentelemetry.io/collector/component v1.65.1-0.20260901210140-566f9531b8c8
 	go.opentelemetry.io/collector/component/componenttest v0.159.1-0.20260827211935-bdb5c072803c
-	go.opentelemetry.io/collector/confmap v1.65.1-0.20260827211935-bdb5c072803c
-	go.opentelemetry.io/collector/consumer v1.65.1-0.20260827211935-bdb5c072803c
+	go.opentelemetry.io/collector/confmap v1.65.1-0.20260901210140-566f9531b8c8
+	go.opentelemetry.io/collector/consumer v1.65.1-0.20260901210140-566f9531b8c8
 	go.opentelemetry.io/collector/consumer/consumertest v0.159.1-0.20260827211935-bdb5c072803c
-	go.opentelemetry.io/collector/pdata v1.65.1-0.20260827211935-bdb5c072803c
-	go.opentelemetry.io/collector/processor v1.65.1-0.20260827211935-bdb5c072803c
+	go.opentelemetry.io/collector/pdata v1.65.1-0.20260901210140-566f9531b8c8
+	go.opentelemetry.io/collector/processor v1.65.1-0.20260901210140-566f9531b8c8
 	go.opentelemetry.io/collector/processor/processortest v0.159.1-0.20260827211935-bdb5c072803c
 	go.opentelemetry.io/otel v1.46.0
 	go.opentelemetry.io/otel/metric v1.46.0
@@ -43,11 +43,11 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.159.1-0.20260827211935-bdb5c072803c // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.159.1-0.20260827211935-bdb5c072803c // indirect
-	go.opentelemetry.io/collector/featuregate v1.65.1-0.20260827211935-bdb5c072803c // indirect
+	go.opentelemetry.io/collector/featuregate v1.65.1-0.20260901210140-566f9531b8c8 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.159.1-0.20260827211935-bdb5c072803c // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.159.1-0.20260827211935-bdb5c072803c // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.159.1-0.20260827211935-bdb5c072803c // indirect
-	go.opentelemetry.io/collector/pipeline v1.65.1-0.20260827211935-bdb5c072803c // indirect
+	go.opentelemetry.io/collector/pipeline v1.65.1-0.20260901210140-566f9531b8c8 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.159.1-0.20260827211935-bdb5c072803c // indirect
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
