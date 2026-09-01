@@ -166,3 +166,78 @@ func TestGetExecutionTimeStats(t *testing.T) {
 		})
 	}
 }
+
+func TestRepairNormalizedQuery(t *testing.T) {
+	tests := []struct {
+		name     string
+		query    string
+		expected string
+	}{
+		{
+			name:     "extract with parameter is rewritten to date_part",
+			query:    "SELECT * FROM orders WHERE EXTRACT($1 FROM order_date) = $2",
+			expected: "SELECT * FROM orders WHERE date_part($1, order_date) = $2",
+		},
+		{
+			name:     "extract rewrite preserves surrounding parameter numbering",
+			query:    "SELECT CAST($1 AS varchar(50)) FROM orders WHERE EXTRACT($2 FROM order_date) BETWEEN $3 AND $4",
+			expected: "SELECT CAST($1 AS varchar(50)) FROM orders WHERE date_part($2, order_date) BETWEEN $3 AND $4",
+		},
+		{
+			name:     "extract rewrite is balanced when the source is a nested call",
+			query:    "SELECT EXTRACT($1 FROM greatest(a, b))",
+			expected: "SELECT date_part($1, greatest(a, b))",
+		},
+		{
+			name:     "extract rewrite tolerates extra whitespace",
+			query:    "SELECT extract(  $1   FROM   order_date )",
+			expected: "SELECT date_part($1, order_date )",
+		},
+		{
+			name:     "extract rewrite is case insensitive",
+			query:    "SELECT Extract($1 From order_date)",
+			expected: "SELECT date_part($1, order_date)",
+		},
+		{
+			name:     "multiple extracts are all rewritten",
+			query:    "SELECT EXTRACT($1 FROM a), EXTRACT($2 FROM b)",
+			expected: "SELECT date_part($1, a), date_part($2, b)",
+		},
+		{
+			name:     "extract with a literal field is already valid and left alone",
+			query:    "SELECT EXTRACT(YEAR FROM order_date)",
+			expected: "SELECT EXTRACT(YEAR FROM order_date)",
+		},
+		{
+			name:     "typed interval literal is rewritten to a cast",
+			query:    "SELECT now() - interval $1",
+			expected: "SELECT now() - $1::interval",
+		},
+		{
+			name:     "typed timestamp literal is rewritten to a cast",
+			query:    "SELECT * FROM events WHERE created_at > timestamp $1",
+			expected: "SELECT * FROM events WHERE created_at > $1::timestamp",
+		},
+		{
+			name:     "identifier prefixed with a type name is not rewritten",
+			query:    "SELECT * FROM t WHERE interval_col = $1",
+			expected: "SELECT * FROM t WHERE interval_col = $1",
+		},
+		{
+			name:     "already valid query is returned unchanged",
+			query:    "SELECT a, b FROM t WHERE id = $1 ORDER BY b DESC",
+			expected: "SELECT a, b FROM t WHERE id = $1 ORDER BY b DESC",
+		},
+		{
+			name:     "date_part with a parameter is already valid and left alone",
+			query:    "SELECT date_part($1, order_date)",
+			expected: "SELECT date_part($1, order_date)",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, repairNormalizedQuery(tc.query))
+		})
+	}
+}

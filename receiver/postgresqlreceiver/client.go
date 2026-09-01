@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -137,6 +138,41 @@ func isExplainableQuery(query string) bool {
 	return ok
 }
 
+// pg_stat_statements builds its normalized query text by substituting "$N" over the byte ranges of
+// the constants it recorded while jumbling, then never re-parses the result. Nothing constrains
+// those ranges to positions where the grammar actually accepts a parameter, so the text it hands
+// back is not guaranteed to be valid SQL. Two constructs are known to come back unparseable, and
+// both make PREPARE fail with 42601 (syntax_error), which leaves the query permanently
+// unexplainable. Rewriting them into equivalent forms that do accept a parameter is what keeps
+// those plans collectable.
+var (
+	// EXTRACT(field FROM x) is parsed into a call carrying the field as a string Const that has a
+	// source location, so pg_stat_statements rewrites it to EXTRACT($1 FROM x). That is invalid:
+	// extract_arg accepts an identifier, a date-part keyword or Sconst, never a ParamRef.
+	// date_part($1, x) is the equivalent function-call spelling and takes a parameter. Only the
+	// text up to and including FROM is replaced, so the original closing paren still terminates
+	// the call and the rewrite stays balanced regardless of what the source expression contains.
+	extractParamPattern = regexp.MustCompile(`(?i)\bEXTRACT\s*\(\s*(\$\d+)\s+FROM\s+`)
+
+	// The typed-literal form TYPENAME 'value' requires a literal, so normalization turns
+	// "interval '1 day'" into the invalid "interval $1". A cast expresses the same thing and does
+	// accept a parameter. Requiring whitespace between the type name and the parameter keeps this
+	// from matching identifiers that merely start with a type name, e.g. "interval_col = $1".
+	typedLiteralParamPattern = regexp.MustCompile(`(?i)\b(interval|date|time|timestamp|timestamptz|timetz)\s+(\$\d+)\b`)
+)
+
+// repairNormalizedQuery rewrites the parameter placements that pg_stat_statements can emit but
+// PostgreSQL cannot parse. Queries that do not contain them are returned unchanged.
+//
+// date_part returns double precision where EXTRACT returns numeric on PostgreSQL 14+. The
+// difference does not matter here: the rewritten text is only ever prepared and explained with
+// null arguments to obtain a plan, never executed for its result.
+func repairNormalizedQuery(query string) string {
+	query = extractParamPattern.ReplaceAllString(query, "date_part(${1}, ")
+	query = typedLiteralParamPattern.ReplaceAllString(query, "${2}::${1}")
+	return query
+}
+
 // explainQuery implements client.
 //
 // The real parameter count comes from pg_prepared_statements, not from counting "$N"
@@ -154,6 +190,8 @@ func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID stri
 		logger.Debug("skipping EXPLAIN for non-explainable query", zap.String("queryID", queryID))
 		return "", nil
 	}
+
+	query = repairNormalizedQuery(query)
 
 	normalizedQueryID := strings.ReplaceAll(queryID, "-", "_")
 
