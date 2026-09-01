@@ -1,0 +1,5 @@
+change_type: deprecation
+component: exporter/prometheus_remote_write
+note: "Deprecate `resource_to_telemetry_conversion` in favor of `resource_constant_labels` and add feature gate `exporter.prometheusremotewrite.DisableResourceToTelemetryConversion`."
+issues: [48862]
+change_logs: [user]

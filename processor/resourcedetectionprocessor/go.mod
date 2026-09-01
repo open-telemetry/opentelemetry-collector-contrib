@@ -15,7 +15,6 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/consul/api v1.33.4
-	github.com/hetznercloud/hcloud-go/v2 v2.44.0
 	github.com/linode/go-metadata v0.3.0
 	github.com/moby/moby/api v1.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.159.0
@@ -51,6 +50,7 @@ require (
 	go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.17.0
 	go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.17.0
 	go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0
+	go.opentelemetry.io/contrib/detectors/hetzner v0.17.0
 	go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.17.0
 	go.opentelemetry.io/contrib/detectors/vultr v0.17.0
 	go.opentelemetry.io/otel v1.46.0
@@ -132,6 +132,7 @@ require (
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/serf v0.10.4 // indirect
+	github.com/hetznercloud/hcloud-go/v2 v2.47.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.19.2 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect
@@ -157,10 +158,10 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.29 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
-	github.com/prometheus/client_golang v1.23.2 // indirect
+	github.com/prometheus/client_golang v1.24.1 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.69.0 // indirect
-	github.com/prometheus/procfs v0.16.1 // indirect
+	github.com/prometheus/common v0.70.1 // indirect
+	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
