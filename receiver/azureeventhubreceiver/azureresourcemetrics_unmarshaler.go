@@ -85,7 +85,6 @@ type azureResourceMetricRecord struct {
 	MetricName string `json:"metricName"`
 	TimeGrain  string `json:"timeGrain"`
 
-	// nil means the aggregate was omitted from the source record.
 	Total   *float64 `json:"total"`
 	Count   *float64 `json:"count"`
 	Minimum *float64 `json:"minimum"`
