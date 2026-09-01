@@ -117,15 +117,23 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	var bucketCounts []uint64
 
 	if mg.isNHCB {
+		var validBuckets bool
 		switch {
 		case mg.hValue != nil:
 			bounds = make([]float64, len(mg.hValue.CustomValues))
 			copy(bounds, mg.hValue.CustomValues)
-			bucketCounts = convertNHCBBDeltBuckets(mg.hValue)
+			bucketCounts, validBuckets = convertNHCBBDeltBuckets(mg.hValue)
 		case mg.fhValue != nil:
 			bounds = make([]float64, len(mg.fhValue.CustomValues))
 			copy(bounds, mg.fhValue.CustomValues)
-			bucketCounts = convertNHCBAbsoluteBuckets(mg.fhValue)
+			bucketCounts, validBuckets = convertNHCBAbsoluteBuckets(mg.fhValue)
+		default:
+			validBuckets = true
+		}
+		// A malformed classic histogram converted to NHCB carries negative
+		// bucket counts; drop it instead of emitting invalid OTLP data.
+		if !validBuckets && !pointIsStale {
+			return
 		}
 	} else {
 		bucketCount := len(mg.complexValue) + 1
@@ -136,12 +144,12 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 		if !pointIsStale {
 			var previousCount float64
 			for i := 0; i < bucketCount-1; i++ {
-				if mg.complexValue[i].value < previousCount {
+				if math.IsNaN(mg.complexValue[i].value) || mg.complexValue[i].value < previousCount {
 					return
 				}
 				previousCount = mg.complexValue[i].value
 			}
-			if mg.count < previousCount {
+			if math.IsNaN(mg.count) || mg.count < previousCount {
 				return
 			}
 		}
@@ -310,11 +318,14 @@ func convertAbsoluteBuckets(spans []histogram.Span, counts []float64, buckets pc
 }
 
 // convertNHCBBDeltBuckets converts NHCB delta buckets to otel bucket counts.
-func convertNHCBBDeltBuckets(histogram *histogram.Histogram) []uint64 {
+// The returned bool is false if any bucket count is negative, which cannot be
+// represented in OTLP.
+func convertNHCBBDeltBuckets(histogram *histogram.Histogram) ([]uint64, bool) {
 	bucketCounts := make([]uint64, len(histogram.CustomValues)+1)
 	if len(histogram.PositiveSpans) == 0 {
-		return bucketCounts
+		return bucketCounts, true
 	}
+	valid := true
 	bucketIdx := 0
 	bucketCount := int64(0)
 	deltaIdx := 0
@@ -325,6 +336,9 @@ func convertNHCBBDeltBuckets(histogram *histogram.Histogram) []uint64 {
 		for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && deltaIdx < len(histogram.PositiveBuckets); i++ {
 			bucketCount += histogram.PositiveBuckets[deltaIdx]
 			deltaIdx++
+			if bucketCount < 0 {
+				valid = false
+			}
 
 			if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
 				bucketCounts[bucketIdx] = uint64(bucketCount)
@@ -332,28 +346,34 @@ func convertNHCBBDeltBuckets(histogram *histogram.Histogram) []uint64 {
 			bucketIdx++
 		}
 	}
-	return bucketCounts
+	return bucketCounts, valid
 }
 
 // convertNHCBAbsoluteBuckets converts NHCB absolute buckets to otel bucket counts.
-func convertNHCBAbsoluteBuckets(histogram *histogram.FloatHistogram) []uint64 {
+// The returned bool is false if any bucket count is negative or NaN, which
+// cannot be represented in OTLP.
+func convertNHCBAbsoluteBuckets(histogram *histogram.FloatHistogram) ([]uint64, bool) {
 	bucketCounts := make([]uint64, len(histogram.CustomValues)+1)
 	if len(histogram.PositiveSpans) == 0 {
-		return bucketCounts
+		return bucketCounts, true
 	}
+	valid := true
 	bucketIdx := 0
 	for _, span := range histogram.PositiveSpans {
 		bucketIdx += int(span.Offset)
 
 		for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && i < uint32(len(histogram.PositiveBuckets)); i++ {
 			if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
+				if math.IsNaN(histogram.PositiveBuckets[i]) || histogram.PositiveBuckets[i] < 0 {
+					valid = false
+				}
 				// This intentionally truncates the float value to an integer (e.g. 5.7 becomes 5).
 				bucketCounts[bucketIdx] = uint64(histogram.PositiveBuckets[i])
 			}
 			bucketIdx++
 		}
 	}
-	return bucketCounts
+	return bucketCounts, valid
 }
 
 func (mg *metricGroup) setExemplars(exemplars pmetric.ExemplarSlice) {

@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/prometheus
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Drop malformed classic histograms with decreasing bucket counts instead of emitting invalid OTLP data
+note: Drop malformed classic histograms with decreasing bucket counts or overall count below largest bucket count instead of emitting invalid OTLP data.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50348]
@@ -15,7 +15,7 @@ issues: [50348]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: Also applies when classic histograms are converted to NHCB via the `convert_classic_histograms_to_nhcb` scrape option.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
