@@ -8,26 +8,31 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
-type metricsProcessor struct {
-	*ecsCore
-	next consumer.Metrics
-}
-
-func newMetricsProcessor(logger *zap.Logger, cfg *Config, next consumer.Metrics, endpoints endpointsFn) (*metricsProcessor, error) {
-	core, err := newCore(logger, cfg, endpoints)
+// newMetricsProcessor builds a metrics processor that enriches each resource with
+// ECS metadata. processorhelper wraps the enrichment function with the standard
+// capabilities and Start/Shutdown lifecycle used across the collector.
+func newMetricsProcessor(ctx context.Context, set processor.Settings, cfg *Config, next consumer.Metrics, endpoints endpointsFn) (processor.Metrics, error) {
+	core, err := newCore(set.Logger, cfg, endpoints)
 	if err != nil {
 		return nil, err
 	}
-	return &metricsProcessor{ecsCore: core, next: next}, nil
+	return processorhelper.NewMetrics(
+		ctx, set, cfg, next,
+		core.processMetrics,
+		processorhelper.WithCapabilities(core.Capabilities()),
+		processorhelper.WithStart(core.Start),
+		processorhelper.WithShutdown(core.Shutdown),
+	)
 }
 
-func (p *metricsProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (e *ecsCore) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	rms := md.ResourceMetrics()
 	for i := range rms.Len() {
-		p.enrichResource(ctx, rms.At(i).Resource())
+		e.enrichResource(ctx, rms.At(i).Resource())
 	}
-	return p.next.ConsumeMetrics(ctx, md)
+	return md, nil
 }

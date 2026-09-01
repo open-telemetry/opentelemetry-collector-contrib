@@ -16,8 +16,12 @@ import (
 	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/awsecsattributesprocessor/internal/metadata"
 )
 
 // testContainerID is a full-length (64 hex char) Docker container ID.
@@ -199,6 +203,14 @@ func nonRecoverableDockerClient() (*client.Client, error) {
 func zaptestLogger(t *testing.T) *zap.Logger {
 	t.Helper()
 	return zaptest.NewLogger(t)
+}
+
+// newTestSettings returns processor.Settings carrying a test-scoped logger, used
+// to construct the signal processors through processorhelper in tests.
+func newTestSettings(t *testing.T) processor.Settings {
+	set := processortest.NewNopSettings(metadata.Type)
+	set.Logger = zaptestLogger(t)
+	return set
 }
 
 // newTestCore builds an ecsCore wired to the metadata server and a stubbed Docker

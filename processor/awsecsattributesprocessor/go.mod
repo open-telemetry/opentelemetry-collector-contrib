@@ -15,6 +15,8 @@ require (
 	go.opentelemetry.io/collector/pdata v1.65.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/pdata/pprofile v0.159.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/processor v1.65.1-0.20260824174011-67fef8cb7049
+	go.opentelemetry.io/collector/processor/processorhelper v0.159.1-0.20260824174011-67fef8cb7049
+	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.159.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/processor/processortest v0.159.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/collector/processor/xprocessor v0.159.1-0.20260824174011-67fef8cb7049
 	go.opentelemetry.io/otel v1.45.0

@@ -61,7 +61,7 @@ func TestConsumeLogs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require.NoError(t, tt.cfg.Validate())
-			p, err := newLogsProcessor(zaptestLogger(t), tt.cfg, consumertest.NewNop(), staticEndpoints(srv.URL))
+			p, err := newLogsProcessor(t.Context(), newTestSettings(t), tt.cfg, consumertest.NewNop(), staticEndpoints(srv.URL))
 			require.NoError(t, err)
 
 			require.NoError(t, p.ConsumeLogs(t.Context(), tt.record))
@@ -79,7 +79,7 @@ func TestConsumeLogsNoContainerID(t *testing.T) {
 	srv := newMetadataServer(t)
 	cfg := defaultTestConfig()
 	require.NoError(t, cfg.Validate())
-	p, err := newLogsProcessor(zaptestLogger(t), cfg, consumertest.NewNop(), staticEndpoints(srv.URL))
+	p, err := newLogsProcessor(t.Context(), newTestSettings(t), cfg, consumertest.NewNop(), staticEndpoints(srv.URL))
 	require.NoError(t, err)
 
 	// No container.id attribute: nothing to enrich, no error.

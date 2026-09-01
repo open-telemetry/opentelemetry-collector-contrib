@@ -15,7 +15,7 @@ func TestConsumeTraces(t *testing.T) {
 	srv := newMetadataServer(t)
 	cfg := defaultTestConfig()
 	require.NoError(t, cfg.Validate())
-	p, err := newTracesProcessor(zaptestLogger(t), cfg, consumertest.NewNop(), staticEndpoints(srv.URL))
+	p, err := newTracesProcessor(t.Context(), newTestSettings(t), cfg, consumertest.NewNop(), staticEndpoints(srv.URL))
 	require.NoError(t, err)
 
 	td := ptrace.NewTraces()

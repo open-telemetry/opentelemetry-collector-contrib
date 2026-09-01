@@ -40,7 +40,7 @@ func createDefaultConfig() component.Config {
 }
 
 func createLogsProcessor(
-	_ context.Context,
+	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
@@ -49,11 +49,11 @@ func createLogsProcessor(
 	if !ok {
 		return nil, fmt.Errorf("invalid config for processor %s", metadata.Type.String())
 	}
-	return newLogsProcessor(set.Logger, config, nextConsumer, getEndpoints)
+	return newLogsProcessor(ctx, set, config, nextConsumer, getEndpoints)
 }
 
 func createMetricsProcessor(
-	_ context.Context,
+	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
@@ -62,11 +62,11 @@ func createMetricsProcessor(
 	if !ok {
 		return nil, fmt.Errorf("invalid config for processor %s", metadata.Type.String())
 	}
-	return newMetricsProcessor(set.Logger, config, nextConsumer, getEndpoints)
+	return newMetricsProcessor(ctx, set, config, nextConsumer, getEndpoints)
 }
 
 func createTracesProcessor(
-	_ context.Context,
+	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
@@ -75,11 +75,11 @@ func createTracesProcessor(
 	if !ok {
 		return nil, fmt.Errorf("invalid config for processor %s", metadata.Type.String())
 	}
-	return newTracesProcessor(set.Logger, config, nextConsumer, getEndpoints)
+	return newTracesProcessor(ctx, set, config, nextConsumer, getEndpoints)
 }
 
 func createProfilesProcessor(
-	_ context.Context,
+	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
 	nextConsumer xconsumer.Profiles,
@@ -88,5 +88,5 @@ func createProfilesProcessor(
 	if !ok {
 		return nil, fmt.Errorf("invalid config for processor %s", metadata.Type.String())
 	}
-	return newProfilesProcessor(set.Logger, config, nextConsumer, getEndpoints)
+	return newProfilesProcessor(ctx, set, config, nextConsumer, getEndpoints)
 }

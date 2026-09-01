@@ -8,26 +8,31 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
-type logsProcessor struct {
-	*ecsCore
-	next consumer.Logs
-}
-
-func newLogsProcessor(logger *zap.Logger, cfg *Config, next consumer.Logs, endpoints endpointsFn) (*logsProcessor, error) {
-	core, err := newCore(logger, cfg, endpoints)
+// newLogsProcessor builds a logs processor that enriches each resource with ECS
+// metadata. processorhelper wraps the enrichment function with the standard
+// capabilities and Start/Shutdown lifecycle used across the collector.
+func newLogsProcessor(ctx context.Context, set processor.Settings, cfg *Config, next consumer.Logs, endpoints endpointsFn) (processor.Logs, error) {
+	core, err := newCore(set.Logger, cfg, endpoints)
 	if err != nil {
 		return nil, err
 	}
-	return &logsProcessor{ecsCore: core, next: next}, nil
+	return processorhelper.NewLogs(
+		ctx, set, cfg, next,
+		core.processLogs,
+		processorhelper.WithCapabilities(core.Capabilities()),
+		processorhelper.WithStart(core.Start),
+		processorhelper.WithShutdown(core.Shutdown),
+	)
 }
 
-func (p *logsProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+func (e *ecsCore) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	rls := ld.ResourceLogs()
 	for i := range rls.Len() {
-		p.enrichResource(ctx, rls.At(i).Resource())
+		e.enrichResource(ctx, rls.At(i).Resource())
 	}
-	return p.next.ConsumeLogs(ctx, ld)
+	return ld, nil
 }

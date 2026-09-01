@@ -8,26 +8,32 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
-type profilesProcessor struct {
-	*ecsCore
-	next xconsumer.Profiles
-}
-
-func newProfilesProcessor(logger *zap.Logger, cfg *Config, next xconsumer.Profiles, endpoints endpointsFn) (*profilesProcessor, error) {
-	core, err := newCore(logger, cfg, endpoints)
+// newProfilesProcessor builds a profiles processor that enriches each resource
+// with ECS metadata. xprocessorhelper wraps the enrichment function with the
+// standard capabilities and Start/Shutdown lifecycle used across the collector.
+func newProfilesProcessor(ctx context.Context, set processor.Settings, cfg *Config, next xconsumer.Profiles, endpoints endpointsFn) (xprocessor.Profiles, error) {
+	core, err := newCore(set.Logger, cfg, endpoints)
 	if err != nil {
 		return nil, err
 	}
-	return &profilesProcessor{ecsCore: core, next: next}, nil
+	return xprocessorhelper.NewProfiles(
+		ctx, set, cfg, next,
+		core.processProfiles,
+		xprocessorhelper.WithCapabilities(core.Capabilities()),
+		xprocessorhelper.WithStart(core.Start),
+		xprocessorhelper.WithShutdown(core.Shutdown),
+	)
 }
 
-func (p *profilesProcessor) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
+func (e *ecsCore) processProfiles(ctx context.Context, pd pprofile.Profiles) (pprofile.Profiles, error) {
 	rps := pd.ResourceProfiles()
 	for i := range rps.Len() {
-		p.enrichResource(ctx, rps.At(i).Resource())
+		e.enrichResource(ctx, rps.At(i).Resource())
 	}
-	return p.next.ConsumeProfiles(ctx, pd)
+	return pd, nil
 }
