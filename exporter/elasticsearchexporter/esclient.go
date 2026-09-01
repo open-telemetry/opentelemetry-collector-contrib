@@ -60,6 +60,9 @@ func countRetriesInterceptor() elastictransport.InterceptorFunc {
 func timeoutInterceptor(perRequestTimeout time.Duration) elastictransport.InterceptorFunc {
 	return func(next elastictransport.RoundTripFunc) elastictransport.RoundTripFunc {
 		return func(req *http.Request) (*http.Response, error) {
+			if perRequestTimeout <= 0 {
+				return next(req)
+			}
 			// ctx is not reused across retries
 			// Therefore, timeoutInterceptor would not result in nesting of WithTimeout
 			ctx, cancel := context.WithTimeout(req.Context(), perRequestTimeout)
