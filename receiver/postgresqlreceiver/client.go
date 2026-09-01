@@ -158,7 +158,7 @@ var (
 	// "interval '1 day'" into the invalid "interval $1". A cast expresses the same thing and does
 	// accept a parameter. Requiring whitespace between the type name and the parameter keeps this
 	// from matching identifiers that merely start with a type name, e.g. "interval_col = $1".
-	typedLiteralParamPattern = regexp.MustCompile(`(?i)\b(interval|date|time|timestamp|timestamptz|timetz)\s+(\$\d+)\b`)
+	typedLiteralParamPattern = regexp.MustCompile(`(?i)\b(timestamptz|timestamp|timetz|interval|date|time)\s+(\$\d+)\b`)
 )
 
 // repairNormalizedQuery rewrites the parameter placements that pg_stat_statements can emit but

@@ -1382,6 +1382,7 @@ func TestExplainQuery(t *testing.T) {
 	testCases := []struct {
 		name              string
 		query             string
+		preparedQuery     string // SQL sent to PREPARE; empty means query is already valid
 		queryID           string
 		normalizedQueryID string
 		paramCount        int
@@ -1451,6 +1452,27 @@ func TestExplainQuery(t *testing.T) {
 			paramCount:        1,
 			mockPlanResult:    `[{"Plan":{"Node Type":"Seq Scan","Relation Name":"orders"}}]`,
 		},
+		{
+			// pg_stat_statements emits EXTRACT($n FROM ...), which is not valid SQL.
+			// explainQuery must rewrite it before PREPARE; the mock fails if the
+			// unrepaired text is sent.
+			name:              "extract with parameter is repaired before PREPARE",
+			query:             "SELECT * FROM orders WHERE EXTRACT($1 FROM order_date) = $2",
+			preparedQuery:     "SELECT * FROM orders WHERE date_part($1, order_date) = $2",
+			queryID:           "30001",
+			normalizedQueryID: "30001",
+			paramCount:        2,
+			mockPlanResult:    `[{"Plan":{"Node Type":"Seq Scan","Relation Name":"orders"}}]`,
+		},
+		{
+			name:              "typed interval literal is repaired before PREPARE",
+			query:             "SELECT now() - interval $1",
+			preparedQuery:     "SELECT now() - $1::interval",
+			queryID:           "30002",
+			normalizedQueryID: "30002",
+			paramCount:        1,
+			mockPlanResult:    `[{"Plan":{"Node Type":"Result"}}]`,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -1467,9 +1489,13 @@ func TestExplainQuery(t *testing.T) {
 				closeFn: func() error { return nil },
 			}
 
+			prepareBody := tc.query
+			if tc.preparedQuery != "" {
+				prepareBody = tc.preparedQuery
+			}
 			expectedPrepareSQL := fmt.Sprintf(
 				"/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_%s AS %s;",
-				tc.normalizedQueryID, tc.query,
+				tc.normalizedQueryID, prepareBody,
 			)
 			mock.ExpectQuery(expectedPrepareSQL).WillReturnRows(sqlmock.NewRows([]string{"result"}))
 

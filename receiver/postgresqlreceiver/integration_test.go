@@ -349,9 +349,10 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 	require.Contains(t, indexStats, indexKey("otel", "public", "table2", "table2_pkey"))
 }
 
-// TestExplainQueryParamCount verifies pg_prepared_statements reports the correct parameter
-// count for the two shapes that broke text-based $N counting: a placeholder repeated in the
-// query text, and a string literal that merely looks like one.
+// TestExplainQueryParamCount verifies explainQuery against a live PostgreSQL.
+// It covers the two shapes that broke text-based $N counting, and the two
+// pg_stat_statements forms that are not valid SQL until repairNormalizedQuery
+// rewrites them.
 func TestExplainQueryParamCount(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
@@ -417,6 +418,14 @@ func TestExplainQueryParamCount(t *testing.T) {
 		{
 			name:  "dollar-sign inside a string literal is not a parameter",
 			query: "SELECT * FROM table1 WHERE id::text = '$123'",
+		},
+		{
+			name:  "extract with a parameter is repaired and explained",
+			query: "SELECT id FROM table1 WHERE EXTRACT($1 FROM now()) = $2",
+		},
+		{
+			name:  "typed interval literal is repaired and explained",
+			query: "SELECT now() - interval $1",
 		},
 	}
 

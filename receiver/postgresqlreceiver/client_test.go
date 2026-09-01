@@ -219,6 +219,31 @@ func TestRepairNormalizedQuery(t *testing.T) {
 			expected: "SELECT * FROM events WHERE created_at > $1::timestamp",
 		},
 		{
+			name:     "typed timestamptz literal is rewritten to a cast",
+			query:    "SELECT * FROM events WHERE created_at > timestamptz $1",
+			expected: "SELECT * FROM events WHERE created_at > $1::timestamptz",
+		},
+		{
+			name:     "typed date literal is rewritten to a cast",
+			query:    "SELECT * FROM events WHERE created_at > date $1",
+			expected: "SELECT * FROM events WHERE created_at > $1::date",
+		},
+		{
+			name:     "typed time literal is rewritten to a cast",
+			query:    "SELECT * FROM events WHERE created_at > time $1",
+			expected: "SELECT * FROM events WHERE created_at > $1::time",
+		},
+		{
+			name:     "timestamp is not truncated to time when both appear",
+			query:    "SELECT * FROM t WHERE ts > timestamp $1 AND t > time $2",
+			expected: "SELECT * FROM t WHERE ts > $1::timestamp AND t > $2::time",
+		},
+		{
+			name:     "AT TIME ZONE is already valid and left alone",
+			query:    "SELECT now() AT TIME ZONE $1",
+			expected: "SELECT now() AT TIME ZONE $1",
+		},
+		{
 			name:     "identifier prefixed with a type name is not rewritten",
 			query:    "SELECT * FROM t WHERE interval_col = $1",
 			expected: "SELECT * FROM t WHERE interval_col = $1",
