@@ -50,9 +50,8 @@ const (
 	AlgorithmWindowed SamplerAlgorithm = "windowed"
 )
 
-// defaultMaxKeys is the max_keys value used when a rule omits it. Explicitly
-// setting max_keys to 0 means unlimited instead, matching the underlying
-// sampler library's semantics.
+// defaultMaxKeys is the max_keys value used when a rule omits it.
+// 0 value means unlimited.
 const defaultMaxKeys = 500
 
 // RecordFingerprint controls whether the matched rule's fingerprint value is
