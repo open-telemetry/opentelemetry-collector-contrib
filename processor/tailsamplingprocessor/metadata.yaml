@@ -14,6 +14,12 @@ status:
 
 feature_gates:
 
+  - id: "processor.tailsamplingprocessor.defaultErrorModeIgnore"
+    description: "When enabled, the default error_mode for ottl_condition is 'ignore' instead of 'propagate'."
+    stage: alpha
+    from_version: v0.160.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48420
+
   - id: "processor.tailsamplingprocessor.metricstatcountbytessampled"
     description: "When enabled, a new metric stat_count_bytes_sampled will be available in the tail sampling processor. Differently from stat_count_traces_sampled, this metric will count the number of bytes sampled or not per sampling policy, where the original counts traces."
     stage: alpha

@@ -7,11 +7,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"go.opentelemetry.io/collector/featuregate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
@@ -264,5 +267,113 @@ func newTraceWithResourceAndScope(resourceAttrs map[string]string, scopeName str
 
 	return &samplingpolicy.TraceData{
 		ReceivedBatches: traces,
+	}
+}
+
+
+func TestEvaluate_OTTL_DefaultErrorModeWithFeatureGate(t *testing.T) {
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	gate := metadata.ProcessorTailsamplingprocessorDefaultErrorModeIgnoreFeatureGate
+
+	errorCondition := `Int(attributes["not_int"]) == 1`
+	matchCondition := `attributes["match"] == "true"`
+
+	errorEventCondition := `Int(attributes["not_int"]) == 1`
+	matchEventCondition := `attributes["match"] == "true"`
+
+	tests := []struct {
+		name                string
+		gateEnabled         bool
+		errorMode           ottl.ErrorMode
+		spanConditions      []string
+		spanEventConditions []string
+		spans               []spanWithAttributes
+		expectedDecision    samplingpolicy.Decision
+		expectEvalError     bool
+	}{
+		{
+			name:             "default error_mode without feature gate propagates error",
+			gateEnabled:      false,
+			errorMode:        "",
+			spanConditions:   []string{errorCondition},
+			spans:            []spanWithAttributes{{SpanAttributes: map[string]string{"not_int": "abc"}}},
+			expectedDecision: samplingpolicy.Error,
+			expectEvalError:  true,
+		},
+		{
+			name:             "default error_mode with feature gate ignores error and does not sample",
+			gateEnabled:      true,
+			errorMode:        "",
+			spanConditions:   []string{errorCondition},
+			spans:            []spanWithAttributes{{SpanAttributes: map[string]string{"not_int": "abc"}}},
+			expectedDecision: samplingpolicy.NotSampled,
+			expectEvalError:  false,
+		},
+		{
+			name:             "default error_mode with feature gate ignores error and samples matching condition",
+			gateEnabled:      true,
+			errorMode:        "",
+			spanConditions:   []string{errorCondition, matchCondition},
+			spans:            []spanWithAttributes{{SpanAttributes: map[string]string{"not_int": "abc", "match": "true"}}},
+			expectedDecision: samplingpolicy.Sampled,
+			expectEvalError:  false,
+		},
+		{
+			name:             "explicit propagate error mode overrides enabled feature gate",
+			gateEnabled:      true,
+			errorMode:        ottl.PropagateError,
+			spanConditions:   []string{errorCondition, matchCondition},
+			spans:            []spanWithAttributes{{SpanAttributes: map[string]string{"not_int": "abc", "match": "true"}}},
+			expectedDecision: samplingpolicy.Error,
+			expectEvalError:  true,
+		},
+		{
+			name:             "explicit ignore error mode overrides disabled feature gate",
+			gateEnabled:      false,
+			errorMode:        ottl.IgnoreError,
+			spanConditions:   []string{errorCondition, matchCondition},
+			spans:            []spanWithAttributes{{SpanAttributes: map[string]string{"not_int": "abc", "match": "true"}}},
+			expectedDecision: samplingpolicy.Sampled,
+			expectEvalError:  false,
+		},
+		{
+			name:                "span event default error_mode without feature gate propagates error",
+			gateEnabled:         false,
+			errorMode:           "",
+			spanEventConditions: []string{errorEventCondition},
+			spans:               []spanWithAttributes{{SpanEventAttributes: map[string]string{"not_int": "abc"}}},
+			expectedDecision:    samplingpolicy.Error,
+			expectEvalError:     true,
+		},
+		{
+			name:                "span event default error_mode with feature gate ignores error and samples matching",
+			gateEnabled:         true,
+			errorMode:           "",
+			spanEventConditions: []string{errorEventCondition, matchEventCondition},
+			spans:               []spanWithAttributes{{SpanEventAttributes: map[string]string{"not_int": "abc", "match": "true"}}},
+			expectedDecision:    samplingpolicy.Sampled,
+			expectEvalError:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			prev := gate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), tt.gateEnabled))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
+			})
+
+			filter, err := NewOTTLConditionFilter(componenttest.NewNopTelemetrySettings(), tt.spanConditions, tt.spanEventConditions, tt.errorMode)
+			require.NoError(t, err)
+
+			decision, evalErr := filter.Evaluate(t.Context(), traceID, newTraceWithSpansAttributes(tt.spans))
+			if tt.expectEvalError {
+				require.Error(t, evalErr)
+			} else {
+				require.NoError(t, evalErr)
+			}
+			assert.Equal(t, tt.expectedDecision, decision)
+		})
 	}
 }

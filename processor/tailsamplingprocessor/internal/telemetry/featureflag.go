@@ -7,6 +7,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 )
 
+func IsDefaultErrorModeIgnoreEnabled() bool {
+	return metadata.ProcessorTailsamplingprocessorDefaultErrorModeIgnoreFeatureGate.IsEnabled()
+}
+
 func IsMetricStatCountSpansSampledEnabled() bool {
 	return metadata.ProcessorTailsamplingprocessorMetricstatcountspanssampledFeatureGate.IsEnabled()
 }
