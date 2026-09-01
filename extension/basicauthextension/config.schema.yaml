@@ -8,6 +8,10 @@ $defs:
       password_file:
         description: PasswordFile points to a file that contains the password. If set, takes precedence over Password. The file is watched for changes.
         type: string
+      secret_provider:
+        description: SecretProvider references an external extension that supplies credentials as a JSON secret.
+        x-pointer: true
+        $ref: secret_provider_config
       username:
         description: Username holds the username to use for client authentication.
         type: string
@@ -22,6 +26,24 @@ $defs:
         type: string
       inline:
         description: Inline contents of the htpasswd file.
+        type: string
+      secret_provider:
+        description: SecretProvider references an external extension that supplies the htpasswd content.
+        x-pointer: true
+        $ref: secret_provider_config
+  secret_provider_config:
+    description: SecretProviderConfig references an external secret-providing extension by component ID. The referenced extension must implement the SecretProvider interface.
+    type: object
+    properties:
+      id:
+        description: ID is the component ID of the secret provider extension.
+        type: string
+        x-customType: go.opentelemetry.io/collector/component.ID
+      password_key:
+        description: PasswordKey is the JSON key for the password in the secret value (client_auth only).
+        type: string
+      username_key:
+        description: UsernameKey is the JSON key for the username in the secret value (client_auth only).
         type: string
 type: object
 properties:

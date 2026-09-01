@@ -5,6 +5,7 @@ pkg/pdatatest
 cmd/golden
 extension/internal/basicauth
 extension/internal/credentialsfile
+extension/internal/secretprovider
 extension/basicauthextension
 extension/bearertokenauthextension
 extension/oauth2clientauthextension
