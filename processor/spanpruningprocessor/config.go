@@ -6,6 +6,7 @@ package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -95,6 +96,22 @@ type OutlierAnalysisConfig struct {
 	MinOutlierThresholdPercent float64 `mapstructure:"min_outlier_threshold_percent"`
 }
 
+// ExemplarSamplingConfig controls random exemplar selection. Sampling runs once
+// per aggregation tree, on its top-level group of N spans, drawing D =
+// ceil(PrecisionMultiplier * sqrt(N)) spans without replacement and keeping each
+// as a whole subtree.
+type ExemplarSamplingConfig struct {
+	// PrecisionMultiplier scales the top-level sample count.
+	// Samples per top-level group = ceil(PrecisionMultiplier * sqrt(N)). Standard
+	// error of cross-trace estimators built from exemplars scales as
+	// 1/sqrt(PrecisionMultiplier). This is a precision knob, not a
+	// confidence-interval level.
+	// Default: 1.0
+	PrecisionMultiplier float64 `mapstructure:"precision_multiplier"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
 // Config defines the configuration options for the span pruning processor
 // and the rules used to identify and aggregate similar spans.
 type Config struct {
@@ -163,6 +180,17 @@ type Config struct {
 	// OutlierAnalysis configures IQR-based outlier detection and
 	// attribute correlation for aggregation groups.
 	OutlierAnalysis OutlierAnalysisConfig `mapstructure:"outlier_analysis"`
+
+	// EnableExemplarSampling toggles preservation of randomly sampled spans
+	// from each aggregation group as exemplars. Exemplars are kept as siblings
+	// of the summary span and have their TraceState threshold updated so
+	// downstream consumers can extrapolate via CPS adjusted-count semantics.
+	// Default: false
+	EnableExemplarSampling bool `mapstructure:"enable_exemplar_sampling"`
+
+	// ExemplarSampling configures random exemplar selection per aggregation
+	// group.
+	ExemplarSampling ExemplarSamplingConfig `mapstructure:"exemplar_sampling"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -224,6 +252,21 @@ func (cfg *Config) Validate() error {
 		return err
 	}
 
+	if err := cfg.ExemplarSampling.Validate(cfg.EnableExemplarSampling); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Validate checks ExemplarSamplingConfig for invalid values.
+func (cfg *ExemplarSamplingConfig) Validate(enabled bool) error {
+	if !enabled {
+		return nil
+	}
+	if math.IsNaN(cfg.PrecisionMultiplier) || math.IsInf(cfg.PrecisionMultiplier, 0) || cfg.PrecisionMultiplier <= 0 {
+		return errors.New("exemplar_sampling.precision_multiplier must be a positive, finite number")
+	}
 	return nil
 }
 

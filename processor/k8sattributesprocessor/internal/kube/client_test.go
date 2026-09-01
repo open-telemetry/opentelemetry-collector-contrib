@@ -2160,11 +2160,10 @@ func TestDeploymentExtractionRules(t *testing.T) {
 	}
 }
 
-func TestDeploymentNameFromReplicaSet(t *testing.T) {
+func TestClientDeploymentNameFromReplicaSet(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 	c.Rules = ExtractionRules{
-		DeploymentName:               true,
-		DeploymentNameFromReplicaSet: true,
+		DeploymentName: true,
 	}
 
 	pod := &api_v1.Pod{
@@ -4844,23 +4843,13 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 			expectRun: true,
 		},
 		{
-			name:      "start informer if deployment name is requested without heuristic",
-			rules:     ExtractionRules{DeploymentName: true, DeploymentNameFromReplicaSet: false},
-			expectRun: true,
-		},
-		{
-			name:      "don't start informer if deployment name from replicaset is requested",
-			rules:     ExtractionRules{DeploymentName: true, DeploymentNameFromReplicaSet: true},
+			name:      "don't start informer if only deployment name is requested",
+			rules:     ExtractionRules{DeploymentName: true},
 			expectRun: false,
 		},
 		{
 			name:      "start informer if deployment UID and name are requested",
 			rules:     ExtractionRules{DeploymentName: true, DeploymentUID: true},
-			expectRun: true,
-		},
-		{
-			name:      "start informer if deployment UID and name from replicaset are requested",
-			rules:     ExtractionRules{DeploymentName: true, DeploymentUID: true, DeploymentNameFromReplicaSet: true},
 			expectRun: true,
 		},
 		{
@@ -4904,56 +4893,43 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 	}
 }
 
-func TestDeploymentNameFromReplicaSetFeature(t *testing.T) {
-	// Test the DeploymentNameFromReplicaSet flag functionality with extractPodAttributes
+func TestDeploymentNameFromReplicaSetHeuristic(t *testing.T) {
+	// Test deployment name extraction heuristic with extractPodAttributes
 
 	tests := []struct {
-		name                                string
-		deploymentNameFromReplicaSetEnabled bool
-		replicaSetInCache                   bool
-		deploymentInRS                      bool
-		replicaSetName                      string
-		expectedDeploymentName              string
+		name                   string
+		replicaSetInCache      bool
+		deploymentInRS         bool
+		replicaSetName         string
+		expectedDeploymentName string
 	}{
 		{
-			name:                                "flag disabled - no deployment name extraction from replicaset name",
-			deploymentNameFromReplicaSetEnabled: false,
-			replicaSetInCache:                   false,
-			deploymentInRS:                      false,
-			replicaSetName:                      "my-deployment-7b9f4c8d5e",
-			expectedDeploymentName:              "",
+			name:                   "replicaset not in cache",
+			replicaSetInCache:      false,
+			deploymentInRS:         true,
+			replicaSetName:         "my-deployment-7b9f4c8d5e",
+			expectedDeploymentName: "my-deployment",
 		},
 		{
-			name:                                "flag enabled - replicaset not in cache",
-			deploymentNameFromReplicaSetEnabled: true,
-			replicaSetInCache:                   false,
-			deploymentInRS:                      true,
-			replicaSetName:                      "my-deployment-7b9f4c8d5e",
-			expectedDeploymentName:              "my-deployment",
+			name:                   "replicaset in cache but no deployment",
+			replicaSetInCache:      true,
+			deploymentInRS:         false,
+			replicaSetName:         "my-deployment-7b9f4c8d5e",
+			expectedDeploymentName: "",
 		},
 		{
-			name:                                "flag enabled - replicaset in cache but no deployment",
-			deploymentNameFromReplicaSetEnabled: true,
-			replicaSetInCache:                   true,
-			deploymentInRS:                      false,
-			replicaSetName:                      "my-deployment-7b9f4c8d5e",
-			expectedDeploymentName:              "",
+			name:                   "replicaset in cache with deployment (should prefer informer)",
+			replicaSetInCache:      true,
+			deploymentInRS:         true,
+			replicaSetName:         "my-deployment-7b9f4c8d5e",
+			expectedDeploymentName: "real-deployment-name",
 		},
 		{
-			name:                                "flag enabled - replicaset in cache with deployment (should prefer informer)",
-			deploymentNameFromReplicaSetEnabled: true,
-			replicaSetInCache:                   true,
-			deploymentInRS:                      true,
-			replicaSetName:                      "my-deployment-7b9f4c8d5e",
-			expectedDeploymentName:              "real-deployment-name",
-		},
-		{
-			name:                                "flag enabled - invalid replicaset name",
-			deploymentNameFromReplicaSetEnabled: true,
-			replicaSetInCache:                   false,
-			deploymentInRS:                      false,
-			replicaSetName:                      "invalid-name",
-			expectedDeploymentName:              "",
+			name:                   "invalid replicaset name",
+			replicaSetInCache:      false,
+			deploymentInRS:         false,
+			replicaSetName:         "invalid-name",
+			expectedDeploymentName: "",
 		},
 	}
 
@@ -4961,9 +4937,6 @@ func TestDeploymentNameFromReplicaSetFeature(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 			c.Rules.DeploymentName = true
-			if tt.deploymentNameFromReplicaSetEnabled {
-				c.Rules.DeploymentNameFromReplicaSet = true
-			}
 
 			// Create a replicaset if needed
 			if tt.replicaSetInCache {
@@ -5327,10 +5300,9 @@ func TestCreateRestConfigFailure(t *testing.T) {
 		},
 	}
 
-	// Set a rule to enable deployment monitoring
+	// Set a rule that triggers the ReplicaSet informer (DeploymentUID requires it)
 	rules := ExtractionRules{
-		DeploymentName:               true,
-		DeploymentNameFromReplicaSet: false,
+		DeploymentUID: true,
 	}
 
 	c, err := New(
