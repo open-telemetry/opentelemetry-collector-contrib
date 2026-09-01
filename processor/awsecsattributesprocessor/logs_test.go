@@ -39,10 +39,12 @@ func TestConsumeLogs(t *testing.T) {
 			wantVal:  "cds-305",
 		},
 		{
-			name:     "filter to aws attributes",
-			cfg:      &Config{CacheTTL: 60, Attributes: []string{"^aws.*"}, ContainerID: ContainerID{Sources: []string{"container.id"}}},
-			record:   logsWith("container.id", testContainerID),
-			wantLen:  8 + 1, // 8 aws.* keys + container.id
+			name:   "filter to aws attributes",
+			cfg:    &Config{CacheTTL: 60, Attributes: []string{"^aws.*"}, ContainerID: ContainerID{Sources: []string{"container.id"}}},
+			record: logsWith("container.id", testContainerID),
+			// enriched aws.* keys, plus the original container.id source, which the
+			// filter excludes so it is neither enriched nor overwritten.
+			wantLen:  expectedAWSKeyCount() + 1,
 			wantAttr: "aws.ecs.task.arn",
 			wantVal:  "arn:aws:ecs:eu-west-1:035955823396:task/cds-305/ec7ff82b7a3a44a5bbbe9bcf11daee33",
 		},

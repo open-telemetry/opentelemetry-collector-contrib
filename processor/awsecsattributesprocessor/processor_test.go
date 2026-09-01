@@ -62,14 +62,14 @@ func TestSyncMetadataAndGet(t *testing.T) {
 	srv := newMetadataServer(t)
 	c := newTestCore(t, defaultTestConfig(), staticEndpoints(srv.URL))
 
-	md, err := c.get(t.Context(), testContainerID)
+	attrs, err := c.get(t.Context(), testContainerID)
 	require.NoError(t, err)
-	require.Equal(t, expectedFlattenedMetadata, md.flat())
+	require.Equal(t, expectedAttributeStrings(), attrsToStringMap(attrs))
 
 	// A second get is served from cache.
-	md2, err := c.get(t.Context(), testContainerID)
+	attrs2, err := c.get(t.Context(), testContainerID)
 	require.NoError(t, err)
-	require.Equal(t, md.DockerID, md2.DockerID)
+	require.Equal(t, attrsToStringMap(attrs), attrsToStringMap(attrs2))
 }
 
 func TestGetNotFoundAfterSync(t *testing.T) {
@@ -86,7 +86,7 @@ func TestRunsyncPreservesCacheOnEcsUnavailable(t *testing.T) {
 	c := newTestCore(t, defaultTestConfig(), func(context.Context, *zap.Logger) (map[string][]string, []containerMetadata, error) {
 		return nil, nil, errECSTaskMetadataUnavailable
 	})
-	c.metadata[testContainerID] = containerMetadata{DockerID: testContainerID}
+	c.metadata[testContainerID] = pcommon.NewMap()
 
 	require.NoError(t, c.runsync(t.Context()))
 	require.Len(t, c.metadata, 1)
@@ -105,7 +105,9 @@ func TestRunsyncPreload(t *testing.T) {
 		return map[string][]string{testContainerID: {}}, []containerMetadata{{DockerID: testContainerID, Image: "img:preload"}}, nil
 	})
 	require.NoError(t, c.runsync(t.Context()))
-	require.Equal(t, "img:preload", c.metadata[testContainerID].Image)
+	preloaded, ok := c.metadata[testContainerID].Get("container.image.name")
+	require.True(t, ok)
+	require.Equal(t, "img:preload", preloaded.AsString())
 }
 
 func TestSyncMetadataEvictsStale(t *testing.T) {
@@ -113,7 +115,7 @@ func TestSyncMetadataEvictsStale(t *testing.T) {
 	c := newTestCore(t, defaultTestConfig(), staticEndpoints(srv.URL))
 
 	// Seed a stale entry and push the eviction clock past the TTL.
-	c.metadata["stale"] = containerMetadata{DockerID: "stale"}
+	c.metadata["stale"] = pcommon.NewMap()
 	c.metadataAge = time.Now().Add(-2 * time.Minute)
 
 	require.NoError(t, c.syncMetadata(t.Context(), map[string][]string{testContainerID: {srv.URL}}))
@@ -165,7 +167,7 @@ func TestEnrichResourceSkipsNilMetadata(t *testing.T) {
 	c := newTestCore(t, defaultTestConfig(), staticEndpoints("http://unused"))
 	// Metadata that lacks the ECS managed labels: the aws.ecs.* label-derived
 	// values are nil and must not be written as the literal "<nil>".
-	c.metadata[testContainerID] = containerMetadata{DockerID: "abc", Image: "img:1"}
+	c.metadata[testContainerID] = c.cacheAttrs(containerMetadata{DockerID: "abc", Image: "img:1"})
 
 	res := pcommon.NewResource()
 	res.Attributes().PutStr("container.id", testContainerID)
@@ -199,7 +201,9 @@ func TestStartShutdownLifecycle(t *testing.T) {
 	c := newTestCore(t, defaultTestConfig(), staticEndpoints(srv.URL))
 
 	require.NoError(t, c.Start(t.Context(), nil))
-	require.Equal(t, "196a0e6abfce1e33ee24b65e97875f089878dd7d1d7e9f15155d6094c8b908f5", c.metadata[testContainerID].DockerID)
+	containerID, ok := c.metadata[testContainerID].Get("container.id")
+	require.True(t, ok)
+	require.Equal(t, "196a0e6abfce1e33ee24b65e97875f089878dd7d1d7e9f15155d6094c8b908f5", containerID.AsString())
 	require.NoError(t, c.Shutdown(t.Context()))
 }
 

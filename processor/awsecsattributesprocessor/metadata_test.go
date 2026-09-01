@@ -27,6 +27,6 @@ func TestMetadataFlattenEmptyLabels(t *testing.T) {
 		require.NotContains(t, k, "container.label.")
 	}
 	// Zero timestamps are omitted rather than emitted as "0001-01-01...".
-	require.NotContains(t, flat, "created.at")
-	require.NotContains(t, flat, "started.at")
+	require.NotContains(t, flat, "aws.ecs.container.created_at")
+	require.NotContains(t, flat, "aws.ecs.container.started_at")
 }

@@ -93,16 +93,15 @@ keep an `aws.ecs.*` (or legacy) key.
 | `aws.ecs.task.revision`        | The ECS task definition revision (version)                              |
 | `aws.ecs.cluster`              | The ECS cluster name                                                     |
 | `aws.ecs.container.name`       | The container name assigned by the ECS Agent                            |
-| `aws.ecs.task.known.status`    | The lifecycle state of the container                                    |
-| `docker.name`                  | The runtime Docker container name the ECS Agent assigns (e.g. `ecs-cadvisor-task-definition-7-cadvisor-bae592b5e4c1a3bb3800`), as shown by `docker ps` — distinct from `container.name` above |
-| `container.cpu.limit` / `container.memory.limit` | The CPU and memory limits of the container             |
-| `created.at` / `started.at`    | Container creation and start timestamps                                 |
-| `desired.status`               | The desired status of the container                                     |
+| `aws.ecs.task.known_status`    | The lifecycle state of the container                                    |
+| `aws.ecs.task.desired_status` | The desired status of the container                                     |
+| `aws.ecs.container.docker_name` | The runtime Docker container name the ECS Agent assigns (e.g. `ecs-cadvisor-task-definition-7-cadvisor-bae592b5e4c1a3bb3800`), as shown by `docker ps` — distinct from `container.name` above |
+| `aws.ecs.container.cpu_limit` / `aws.ecs.container.memory_limit` | The CPU and memory limits of the container |
+| `aws.ecs.container.created_at` / `aws.ecs.container.started_at` | Container creation and start timestamps    |
 | `aws.ecs.container.type`       | The ECS container type (e.g. `NORMAL`, `CNI_PAUSE`)                     |
-| `networks.*`                   | The network mode(s) and IPv4 address(es) of the container              |
-| `ports.*`                      | The published container ports                                           |
-| `volumes.*`                       | The container volume mounts                                             |
-| `labels.*`                        | User-defined (non-ECS) Docker labels                                    |
+| `aws.ecs.container.network.*`  | The network mode(s) and IPv4 address(es) of the container              |
+| `aws.ecs.container.port.*`     | The published container ports                                           |
+| `aws.ecs.container.volume.*`   | The container volume mounts                                             |
 
 Only containers with a valid ECS metadata endpoint are enriched; all others are
 ignored. A container has a valid endpoint when either `ECS_CONTAINER_METADATA_URI`

@@ -7,12 +7,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
@@ -82,39 +85,76 @@ const payload = `{
 
 // expectedFlattenedMetadata is the result of Flat() applied to payload.
 var expectedFlattenedMetadata = map[string]any{
-	"aws.ecs.container.arn":          "arn:aws:ecs:eu-west-1:035955823396:container/cds-305/ec7ff82b7a3a44a5bbbe9bcf11daee33/cc1c133f-bd1f-4006-8dae-4cd8a3f54f19",
-	"aws.ecs.task.arn":               "arn:aws:ecs:eu-west-1:035955823396:task/cds-305/ec7ff82b7a3a44a5bbbe9bcf11daee33",
-	"aws.ecs.task.family":            "cadvisor-task-definition",
-	"aws.ecs.task.revision":          "7",
-	"container.id":                   "196a0e6abfce1e33ee24b65e97875f089878dd7d1d7e9f15155d6094c8b908f5",
-	"container.name":                 "cadvisor",
-	"container.image.name":           "gcr.io/cadvisor/cadvisor:latest",
-	"container.image.id":             "sha256:68c29634fe49724f94ed34f18224336f776392f7a5a4014969ac5798a2ec96dc",
-	"aws.ecs.cluster":                "cds-305",
-	"aws.ecs.container.name":         "cadvisor",
-	"aws.ecs.task.known.status":      "RUNNING",
-	"aws.ecs.container.type":         "NORMAL",
-	"created.at":                     "2023-06-22T12:41:18.335883278Z",
-	"desired.status":                 "RUNNING",
-	"docker.name":                    "ecs-cadvisor-task-definition-7-cadvisor-bae592b5e4c1a3bb3800",
-	"container.cpu.limit":            10,
-	"container.memory.limit":         300,
-	"started.at":                     "2023-06-22T12:41:18.713571182Z",
-	"networks.0.ipv4.addresses.0":    "172.17.0.2",
-	"networks.0.network.mode":        "bridge",
-	"ports.0.container.port":         8080,
-	"ports.0.host.ip":                "0.0.0.0",
-	"ports.0.host.port":              32911,
-	"ports.0.protocol":               "tcp",
-	"ports.1.container.port":         8080,
-	"ports.1.host.ip":                "::",
-	"ports.1.host.port":              32911,
-	"ports.1.protocol":               "tcp",
-	"volumes.0.destination":          "/var",
-	"volumes.0.source":               "/var",
-	"volumes.1.destination":          "/etc",
-	"volumes.1.source":               "/etc",
-	"container.label.com.custom.app": "go-test-app",
+	"aws.ecs.container.arn":                      "arn:aws:ecs:eu-west-1:035955823396:container/cds-305/ec7ff82b7a3a44a5bbbe9bcf11daee33/cc1c133f-bd1f-4006-8dae-4cd8a3f54f19",
+	"aws.ecs.task.arn":                           "arn:aws:ecs:eu-west-1:035955823396:task/cds-305/ec7ff82b7a3a44a5bbbe9bcf11daee33",
+	"aws.ecs.task.family":                        "cadvisor-task-definition",
+	"aws.ecs.task.revision":                      "7",
+	"container.id":                               "196a0e6abfce1e33ee24b65e97875f089878dd7d1d7e9f15155d6094c8b908f5",
+	"container.name":                             "cadvisor",
+	"container.image.name":                       "gcr.io/cadvisor/cadvisor:latest",
+	"container.image.id":                         "sha256:68c29634fe49724f94ed34f18224336f776392f7a5a4014969ac5798a2ec96dc",
+	"aws.ecs.cluster":                            "cds-305",
+	"aws.ecs.container.name":                     "cadvisor",
+	"aws.ecs.task.known_status":                  "RUNNING",
+	"aws.ecs.container.type":                     "NORMAL",
+	"aws.ecs.container.created_at":               "2023-06-22T12:41:18.335883278Z",
+	"aws.ecs.task.desired_status":                "RUNNING",
+	"aws.ecs.container.docker_name":              "ecs-cadvisor-task-definition-7-cadvisor-bae592b5e4c1a3bb3800",
+	"aws.ecs.container.cpu_limit":                10,
+	"aws.ecs.container.memory_limit":             300,
+	"aws.ecs.container.started_at":               "2023-06-22T12:41:18.713571182Z",
+	"aws.ecs.container.network.0.ipv4_address.0": "172.17.0.2",
+	"aws.ecs.container.network.0.mode":           "bridge",
+	"aws.ecs.container.port.0.container_port":    8080,
+	"aws.ecs.container.port.0.host_ip":           "0.0.0.0",
+	"aws.ecs.container.port.0.host_port":         32911,
+	"aws.ecs.container.port.0.protocol":          "tcp",
+	"aws.ecs.container.port.1.container_port":    8080,
+	"aws.ecs.container.port.1.host_ip":           "::",
+	"aws.ecs.container.port.1.host_port":         32911,
+	"aws.ecs.container.port.1.protocol":          "tcp",
+	"aws.ecs.container.volume.0.destination":     "/var",
+	"aws.ecs.container.volume.0.source":          "/var",
+	"aws.ecs.container.volume.1.destination":     "/etc",
+	"aws.ecs.container.volume.1.source":          "/etc",
+	"container.label.com.custom.app":             "go-test-app",
+}
+
+// expectedAttributeStrings renders expectedFlattenedMetadata the way
+// buildAttributes stores it: values stringified, nil/empty dropped.
+func expectedAttributeStrings() map[string]string {
+	out := make(map[string]string, len(expectedFlattenedMetadata))
+	for k, v := range expectedFlattenedMetadata {
+		if v == nil {
+			continue
+		}
+		s := fmt.Sprintf("%v", v)
+		if s == "" {
+			continue
+		}
+		out[k] = s
+	}
+	return out
+}
+
+// expectedAWSKeyCount counts the enriched attributes namespaced under aws.*.
+func expectedAWSKeyCount() int {
+	n := 0
+	for k := range expectedFlattenedMetadata {
+		if strings.HasPrefix(k, "aws.") {
+			n++
+		}
+	}
+	return n
+}
+
+// attrsToStringMap collects a pcommon.Map into a plain map for comparison.
+func attrsToStringMap(m pcommon.Map) map[string]string {
+	out := make(map[string]string, m.Len())
+	for k, v := range m.All() {
+		out[k] = v.AsString()
+	}
+	return out
 }
 
 // newMetadataServer returns an httptest server that serves the metadata payload,

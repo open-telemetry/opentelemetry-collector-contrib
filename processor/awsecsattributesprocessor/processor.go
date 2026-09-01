@@ -45,8 +45,11 @@ type ecsCore struct {
 	// event subscription. It is a field so tests can substitute a fake.
 	newDockerClient func() (*client.Client, error)
 
-	// metadata is the container-ID keyed metadata cache.
-	metadata map[string]containerMetadata
+	// metadata is the container-ID keyed cache of pre-built enrichment
+	// attributes. Storing pcommon.Map (already filtered by allowAttr) lets the
+	// enrichment hot path copy values directly instead of re-flattening and
+	// stringifying the metadata on every telemetry item.
+	metadata map[string]pcommon.Map
 	// metadataAge tracks when the cache was last evicted of stale entries.
 	metadataAge time.Time
 
@@ -75,7 +78,7 @@ func newCore(logger *zap.Logger, cfg *Config, endpoints endpointsFn) (*ecsCore, 
 		newDockerClient: func() (*client.Client, error) {
 			return client.New(client.WithHostFromEnv())
 		},
-		metadata:    make(map[string]containerMetadata),
+		metadata:    make(map[string]pcommon.Map),
 		metadataAge: time.Now(),
 		stop:        make(chan struct{}),
 	}, nil
@@ -143,8 +146,9 @@ func (e *ecsCore) Shutdown(context.Context) error {
 	return nil
 }
 
-// get returns the cached metadata for key, triggering a sync if the key is absent.
-func (e *ecsCore) get(ctx context.Context, key string) (containerMetadata, error) {
+// get returns the cached enrichment attributes for key, triggering a sync if the
+// key is absent.
+func (e *ecsCore) get(ctx context.Context, key string) (pcommon.Map, error) {
 	e.RLock()
 	val, ok := e.metadata[key]
 	e.RUnlock()
@@ -153,16 +157,35 @@ func (e *ecsCore) get(ctx context.Context, key string) (containerMetadata, error
 	}
 
 	if err := e.runsync(ctx); err != nil {
-		return containerMetadata{}, fmt.Errorf("failed to sync metadata: %w", err)
+		return pcommon.Map{}, fmt.Errorf("failed to sync metadata: %w", err)
 	}
 
 	e.RLock()
 	val, ok = e.metadata[key]
 	e.RUnlock()
 	if !ok {
-		return val, fmt.Errorf("metadata not found for container id after sync: %s", key)
+		return pcommon.Map{}, fmt.Errorf("metadata not found for container id after sync: %s", key)
 	}
 	return val, nil
+}
+
+// cacheAttrs builds the enrichment attributes for md, keeping only the keys
+// permitted by the configured attributes patterns. The result is stored in the
+// cache so enrichment only copies pcommon values on the hot path.
+func (e *ecsCore) cacheAttrs(md containerMetadata) pcommon.Map {
+	attrs := md.buildAttributes()
+	if len(e.attrExpressions) == 0 {
+		return attrs
+	}
+
+	filtered := pcommon.NewMap()
+	filtered.EnsureCapacity(attrs.Len())
+	for k, v := range attrs.All() {
+		if e.allowAttr(k) {
+			v.CopyTo(filtered.PutEmpty(k))
+		}
+	}
+	return filtered
 }
 
 // runsync refreshes the metadata cache from the discovered endpoints. Transient
@@ -178,7 +201,7 @@ func (e *ecsCore) runsync(ctx context.Context) error {
 
 	if len(preload) > 0 {
 		e.Lock()
-		mergeIntoMetadataCache(e.metadata, preload)
+		e.mergeIntoMetadataCache(preload)
 		e.Unlock()
 	}
 
@@ -211,7 +234,7 @@ func (e *ecsCore) syncMetadata(ctx context.Context, endpoints map[string][]strin
 			e.logger.Error("failed to fetch container metadata", zap.String("container_id", k), zap.Error(err))
 			continue
 		}
-		e.metadata[k] = md
+		e.metadata[k] = e.cacheAttrs(md)
 	}
 
 	// remove keys no longer present in the current endpoint view, once per TTL.
@@ -238,7 +261,7 @@ func (e *ecsCore) enrichResource(ctx context.Context, res pcommon.Resource) {
 		return
 	}
 
-	md, err := e.get(ctx, containerID)
+	attrs, err := e.get(ctx, containerID)
 	if err != nil {
 		e.logger.Debug("unable to retrieve metadata",
 			zap.String("container.id", containerID),
@@ -247,17 +270,11 @@ func (e *ecsCore) enrichResource(ctx context.Context, res pcommon.Resource) {
 		return
 	}
 
-	for k, v := range md.flat() {
-		// Skip metadata that ECS did not provide (e.g. a missing managed label),
-		// which would otherwise be stringified to the literal "<nil>".
-		if v == nil {
-			continue
-		}
-		val := fmt.Sprintf("%v", v)
-		if !e.allowAttr(k) || val == "" {
-			continue
-		}
-		res.Attributes().PutStr(k, val)
+	// attrs is pre-built and already filtered by allowAttr, so the hot path only
+	// copies the cached values onto the resource.
+	dst := res.Attributes()
+	for k, v := range attrs.All() {
+		v.CopyTo(dst.PutEmpty(k))
 	}
 }
 

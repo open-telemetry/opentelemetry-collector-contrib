@@ -58,13 +58,15 @@ func TestParseMetadataEndpoints(t *testing.T) {
 }
 
 func TestMergeIntoMetadataCache(t *testing.T) {
-	dst := make(map[string]containerMetadata)
-	mergeIntoMetadataCache(dst, []containerMetadata{
+	c := newTestCore(t, defaultTestConfig(), staticEndpoints("http://unused"))
+	c.mergeIntoMetadataCache([]containerMetadata{
 		{DockerID: testContainerID, Image: "img:1"},
 		{DockerID: ""}, // skipped: no ID
 	})
-	require.Len(t, dst, 1)
-	require.Equal(t, "img:1", dst[testContainerID].Image)
+	require.Len(t, c.metadata, 1)
+	img, ok := c.metadata[testContainerID].Get("container.image.name")
+	require.True(t, ok)
+	require.Equal(t, "img:1", img.AsString())
 }
 
 func TestEcsMetadataEndpointsFromTask(t *testing.T) {

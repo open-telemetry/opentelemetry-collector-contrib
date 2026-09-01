@@ -139,14 +139,14 @@ func containerMetadataCacheKey(dockerID string) string {
 // We use this instead of GET-per-container URLs: on some platforms (e.g. Windows
 // ECS) those URLs return a body that does not decode as containerMetadata (e.g. a JSON
 // string), while the task response Containers[] matches our struct.
-func mergeIntoMetadataCache(dst map[string]containerMetadata, preload []containerMetadata) {
+func (e *ecsCore) mergeIntoMetadataCache(preload []containerMetadata) {
 	for i := range preload {
 		did := strings.TrimSpace(preload[i].DockerID)
 		if did == "" {
 			continue
 		}
 		key := containerMetadataCacheKey(did)
-		dst[key] = preload[i]
+		e.metadata[key] = e.cacheAttrs(preload[i])
 	}
 }
 
