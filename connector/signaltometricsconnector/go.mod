@@ -13,19 +13,19 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.159.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.159.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/client v1.65.1-0.20260901210140-566f9531b8c8
-	go.opentelemetry.io/collector/component v1.65.1-0.20260901210140-566f9531b8c8
+	go.opentelemetry.io/collector/client v1.66.0
+	go.opentelemetry.io/collector/component v1.66.0
 	go.opentelemetry.io/collector/component/componenttest v0.159.1-0.20260901210140-566f9531b8c8
-	go.opentelemetry.io/collector/config/configoptional v1.65.1-0.20260901210140-566f9531b8c8
-	go.opentelemetry.io/collector/confmap v1.65.1-0.20260901210140-566f9531b8c8
+	go.opentelemetry.io/collector/config/configoptional v1.66.0
+	go.opentelemetry.io/collector/confmap v1.66.0
 	go.opentelemetry.io/collector/connector v0.159.1-0.20260901210140-566f9531b8c8
 	go.opentelemetry.io/collector/connector/connectortest v0.159.1-0.20260901210140-566f9531b8c8
 	go.opentelemetry.io/collector/connector/xconnector v0.159.1-0.20260901210140-566f9531b8c8
-	go.opentelemetry.io/collector/consumer v1.65.1-0.20260901210140-566f9531b8c8
+	go.opentelemetry.io/collector/consumer v1.66.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.159.1-0.20260901210140-566f9531b8c8
-	go.opentelemetry.io/collector/pdata v1.65.1-0.20260901210140-566f9531b8c8
+	go.opentelemetry.io/collector/pdata v1.66.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.159.1-0.20260901210140-566f9531b8c8
-	go.opentelemetry.io/collector/pipeline v1.65.1-0.20260901210140-566f9531b8c8
+	go.opentelemetry.io/collector/pipeline v1.66.0
 	go.opentelemetry.io/otel v1.46.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
@@ -64,7 +64,7 @@ require (
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.159.1-0.20260901210140-566f9531b8c8 // indirect
-	go.opentelemetry.io/collector/featuregate v1.65.1-0.20260901210140-566f9531b8c8 // indirect
+	go.opentelemetry.io/collector/featuregate v1.66.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.159.1-0.20260901210140-566f9531b8c8 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.159.1-0.20260901210140-566f9531b8c8 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.159.1-0.20260901210140-566f9531b8c8 // indirect
