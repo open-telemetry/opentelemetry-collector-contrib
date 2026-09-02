@@ -27,10 +27,15 @@ type metricFamily struct {
 	mtype pmetric.MetricType
 	// isMonotonic only applies to sums
 	isMonotonic bool
-	groups      map[uint64]*metricGroup
+	groups      map[metricGroupKey]*metricGroup
 	name        string
 	metadata    *scrape.MetricMetadata
 	groupOrders []*metricGroup
+}
+
+type metricGroupKey struct {
+	seriesRef uint64
+	timestamp int64
 }
 
 // metricGroup, represents a single metric of a metric family. for example a histogram metric is usually represent by
@@ -73,7 +78,7 @@ func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *z
 	return &metricFamily{
 		mtype:       mtype,
 		isMonotonic: isMonotonic,
-		groups:      make(map[uint64]*metricGroup),
+		groups:      make(map[metricGroupKey]*metricGroup),
 		name:        familyName,
 		metadata:    metadata,
 	}
@@ -443,7 +448,16 @@ func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon
 	})
 }
 
-func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Labels, ts int64) *metricGroup {
+func (mf *metricFamily) groupKey(seriesRef uint64, ts int64) metricGroupKey {
+	key := metricGroupKey{seriesRef: seriesRef}
+	if mf.mtype == pmetric.MetricTypeGauge || mf.mtype == pmetric.MetricTypeSum {
+		key.timestamp = ts
+	}
+	return key
+}
+
+func (mf *metricFamily) loadMetricGroupOrCreate(seriesRef uint64, ls labels.Labels, ts int64) *metricGroup {
+	groupKey := mf.groupKey(seriesRef, ts)
 	mg, ok := mf.groups[groupKey]
 	if !ok {
 		mg = &metricGroup{
@@ -640,8 +654,8 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 	metric.MoveTo(metrics.AppendEmpty())
 }
 
-func (mf *metricFamily) addExemplar(seriesRef uint64, e exemplar.Exemplar) {
-	mg := mf.groups[seriesRef]
+func (mf *metricFamily) addExemplar(seriesRef uint64, ts int64, e exemplar.Exemplar) {
+	mg := mf.groups[mf.groupKey(seriesRef, ts)]
 	if mg == nil {
 		return
 	}
