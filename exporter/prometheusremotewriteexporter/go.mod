@@ -6,11 +6,11 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.159.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.159.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.159.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.159.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.159.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.160.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.160.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.160.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.160.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.160.0
 	github.com/prometheus/client_golang/exp v0.0.0-20260724065723-ecdb8254ba61
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/prometheus/prometheus v0.314.0

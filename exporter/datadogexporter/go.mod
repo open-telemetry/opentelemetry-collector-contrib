@@ -25,10 +25,10 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.82.0
 	github.com/DataDog/datadog-api-client-go/v2 v2.64.0
 	github.com/DataDog/datadog-go/v5 v5.9.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.159.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.159.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.159.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.159.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.160.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.160.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.160.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.160.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.66.0
 	go.opentelemetry.io/collector/component/componenttest v0.160.0
@@ -215,11 +215,11 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.159.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.159.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.159.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.159.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.159.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.160.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.160.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.160.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.160.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.160.0 // indirect
 	github.com/openshift/api v0.0.0-20251015095338-264e80a2b6e7 // indirect
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235 // indirect
 	github.com/outcaste-io/ristretto v0.2.3 // indirect

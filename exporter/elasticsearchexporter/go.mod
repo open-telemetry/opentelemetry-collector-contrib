@@ -10,9 +10,9 @@ require (
 	github.com/elastic/go-structform v0.0.12
 	github.com/klauspost/compress v1.19.2
 	github.com/lestrrat-go/strftime v1.2.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.159.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.159.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.159.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.160.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.160.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.160.0
 	github.com/stretchr/testify v1.12.1
 	github.com/tidwall/gjson v1.19.0
 	go.opentelemetry.io/collector/client v1.66.0
@@ -72,7 +72,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.159.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.160.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.29 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect

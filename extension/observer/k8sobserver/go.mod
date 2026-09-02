@@ -4,9 +4,9 @@ go 1.26.0
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.159.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.159.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.159.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.160.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.160.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.160.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.66.0
 	go.opentelemetry.io/collector/component/componenttest v0.160.0
