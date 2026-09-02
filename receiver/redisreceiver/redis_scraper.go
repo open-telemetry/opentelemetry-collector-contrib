@@ -143,21 +143,17 @@ func (rs *redisScraper) recordCommonMetrics(ts pcommon.Timestamp, inf info, reco
 			recordDataPoint(ts, val)
 
 		case func(pcommon.Timestamp, int64, metadata.AttributeClusterState):
-			val, err := strconv.ParseInt(infoVal, 10, 64)
-			if err != nil {
-				rs.settings.Logger.Warn("failed to parse info int val", zap.String("key", infoKey),
-					zap.String("val", infoVal), zap.Error(err))
-				continue
-			}
+			// cluster_state is a string ("ok"/"fail"), not a number, so unlike the other
+			// cases it can't go through strconv.ParseInt. The state is conveyed via the
+			// AttributeClusterState attribute, so the gauge value is always 1, mirroring how
+			// the redis.mode metric records its own enum-like attribute.
 			var state metadata.AttributeClusterState
-			if infoKey == "cluster_state" {
-				if infoVal == "ok" {
-					state = metadata.AttributeClusterStateOk
-				} else {
-					state = metadata.AttributeClusterStateFail
-				}
+			if infoVal == "ok" {
+				state = metadata.AttributeClusterStateOk
+			} else {
+				state = metadata.AttributeClusterStateFail
 			}
-			recordDataPoint(ts, val, state)
+			recordDataPoint(ts, 1, state)
 		}
 	}
 }

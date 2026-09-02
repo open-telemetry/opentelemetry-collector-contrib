@@ -22,12 +22,28 @@ func newRedisSvc(client client) *redisSvc {
 	}
 }
 
-// Calls the Redis INFO and CLUSTER INFO command on the client and returns an `info` map.
+// Calls the Redis INFO and CLUSTER INFO commands on the client and returns a merged `info` map.
+// CLUSTER INFO is fetched best-effort: if it fails (e.g. the command is restricted), the
+// metrics derived from INFO are still returned rather than failing the whole scrape.
 func (p *redisSvc) info() (info, error) {
 	str, err := p.client.retrieveInfo()
 	if err != nil {
 		return nil, err
 	}
+	attrs := p.parseAttrs(str)
+
+	if clusterStr, clusterErr := p.client.retrieveClusterInfo(); clusterErr == nil {
+		for k, v := range p.parseAttrs(clusterStr) {
+			attrs[k] = v
+		}
+	}
+
+	return attrs, nil
+}
+
+// parseAttrs turns delimited "key:value" lines, as returned by INFO and CLUSTER INFO,
+// into a string-string map.
+func (p *redisSvc) parseAttrs(str string) map[string]string {
 	lines := strings.Split(str, p.delimiter)
 	attrs := make(map[string]string)
 	for _, line := range lines {
@@ -39,5 +55,5 @@ func (p *redisSvc) info() (info, error) {
 			attrs[pair[0]] = pair[1]
 		}
 	}
-	return attrs, nil
+	return attrs
 }

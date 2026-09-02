@@ -4,6 +4,7 @@
 package redisreceiver
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -39,6 +40,26 @@ func (fakeClient) retrieveClusterInfo() (string, error) {
 
 func (fakeClient) close() error {
 	return nil
+}
+
+// erroringClusterInfoClient wraps fakeClient but fails CLUSTER INFO, to test that the
+// receiver still returns the metrics derived from INFO when CLUSTER INFO is unavailable.
+type erroringClusterInfoClient struct {
+	fakeClient
+}
+
+func (erroringClusterInfoClient) retrieveClusterInfo() (string, error) {
+	return "", errors.New("cluster info unavailable")
+}
+
+// erroringInfoClient wraps fakeClient but fails INFO, to test that the receiver surfaces
+// that error rather than attempting to fall back to CLUSTER INFO alone.
+type erroringInfoClient struct {
+	fakeClient
+}
+
+func (erroringInfoClient) retrieveInfo() (string, error) {
+	return "", errors.New("info unavailable")
 }
 
 func readFile(fname string) (string, error) {
