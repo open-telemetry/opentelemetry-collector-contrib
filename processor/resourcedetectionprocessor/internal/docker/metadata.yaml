@@ -10,7 +10,7 @@ feature_gates:
       When enabled, container.name is reported without the leading slash the Docker API returns,
       and container.image.name reports the image name rather than the image ID. The image ID
       remains available as container.image.id.
-    from_version: v0.160.0
+    from_version: v0.161.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48159
 
 resource_attributes:

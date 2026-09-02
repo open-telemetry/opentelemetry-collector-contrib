@@ -21,6 +21,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `processor.resourcedetection.docker.EmitSemconvContainerAttributes` | alpha | When enabled, container.name is reported without the leading slash the Docker API returns, and container.image.name reports the image name rather than the image ID. The image ID remains available as container.image.id. | v0.160.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48159) |
+| `processor.resourcedetection.docker.EmitSemconvContainerAttributes` | alpha | When enabled, container.name is reported without the leading slash the Docker API returns, and container.image.name reports the image name rather than the image ID. The image ID remains available as container.image.id. | v0.161.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48159) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

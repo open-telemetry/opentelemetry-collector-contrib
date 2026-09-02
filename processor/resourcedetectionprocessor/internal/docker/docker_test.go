@@ -191,11 +191,24 @@ func TestDetectNotInContainer_FailOnMissingMetadata(t *testing.T) {
 	require.Empty(t, schemaURL)
 }
 
+// A daemon that could not be reached is only a hard failure when the operator asked for one.
 func TestDetectError(t *testing.T) {
+	withFakeDetector(t, nil, errors.New("boom"))
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	require.NoError(t, err)
+
+	res, schemaURL, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 0, res.Attributes().Len())
+	require.Empty(t, schemaURL)
+}
+
+func TestDetectError_FailOnMissingMetadata(t *testing.T) {
 	errBoom := errors.New("boom")
 	withFakeDetector(t, nil, errBoom)
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), true)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())

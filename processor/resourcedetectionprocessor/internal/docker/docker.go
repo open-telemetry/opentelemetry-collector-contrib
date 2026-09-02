@@ -59,7 +59,10 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 	res, schemaURL, err := sdkbridge.Detect(ctx, d.detector)
 	if err != nil {
 		d.logger.Debug("docker metadata unavailable", zap.Error(err))
-		return pcommon.NewResource(), "", err
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", err
+		}
+		return pcommon.NewResource(), "", nil
 	}
 
 	// The SDK detector returns an empty resource both when the daemon is unreachable and when
