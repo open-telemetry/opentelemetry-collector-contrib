@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/proto"
 
@@ -50,7 +51,8 @@ func TestSampleTelemetryData(t *testing.T) {
 
 	// Create receiver configuration
 	config := createDefaultConfig().(*Config)
-	config.ServerConfig.NetAddr.Endpoint = "localhost:57404"
+	endpoint := getFreeEndpoint(t)
+	config.ServerConfig.NetAddr.Endpoint = endpoint
 	config.ServerConfig.NetAddr.Transport = "tcp"
 
 	settings := receiver.Settings{
@@ -70,23 +72,19 @@ func TestSampleTelemetryData(t *testing.T) {
 		assert.NoError(t, rcvr.Shutdown(ctx))
 	}()
 
-	// Wait until the gRPC server is ready to accept connections instead of using
-	// a fixed sleep, which is unreliable on slow or loaded CI machines.
-	require.Eventually(t, func() bool {
-		conn, err := net.DialTimeout(string(config.ServerConfig.NetAddr.Transport), config.ServerConfig.NetAddr.Endpoint, 100*time.Millisecond)
-		if err != nil {
-			return false
-		}
-		conn.Close()
-		return true
-	}, 5*time.Second, 10*time.Millisecond, "receiver did not start accepting connections in time")
+	// Wait until the gRPC server is ready to accept streams. A raw TCP dial is not
+	// sufficient because the listener accepts connections before the gRPC server
+	// starts serving; establishing a real gRPC connection and reusing it for all
+	// sends avoids the "failed to create stream: context deadline exceeded" flake.
+	conn := newReadyClientConn(t, endpoint)
+	defer conn.Close()
 
 	// Load sample data (either from file or use built-in sample)
 	sampleData := getSampleTelemetryData(t)
 
 	// Send each interface's telemetry data
 	for _, interfaceData := range sampleData.Interfaces {
-		err := sendInterfaceTelemetryData("localhost:57404", sampleData.NodeID, sampleData.Subscription, sampleData.EncodingPath, interfaceData)
+		err := sendInterfaceTelemetryData(conn, sampleData.NodeID, sampleData.Subscription, sampleData.EncodingPath, interfaceData)
 		if err != nil {
 			t.Fatalf("Failed to send telemetry for interface %s: %v", interfaceData.Name, err)
 		}
@@ -207,18 +205,12 @@ func loadSampleFromFile(filename string) (SampleTelemetryData, error) {
 }
 
 // sendInterfaceTelemetryData sends telemetry data for a specific interface
-func sendInterfaceTelemetryData(endpoint, nodeID, subscription, encodingPath string, interfaceData InterfaceTelemetry) error {
-	conn, err := grpc.NewClient(endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return fmt.Errorf("failed to connect to receiver: %w", err)
-	}
-	defer conn.Close()
-
+func sendInterfaceTelemetryData(conn *grpc.ClientConn, nodeID, subscription, encodingPath string, interfaceData InterfaceTelemetry) error {
 	client := pb.NewGRPCMdtDialoutClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	stream, err := client.MdtDialout(ctx)
+	stream, err := client.MdtDialout(ctx, grpc.WaitForReady(true))
 	if err != nil {
 		return fmt.Errorf("failed to create stream: %w", err)
 	}
@@ -414,6 +406,44 @@ func analyzeResults(t *testing.T, consumer *metricsCapture, sampleData SampleTel
 		} else {
 			t.Errorf("   FAIL %s: Missing telemetry data", expectedInterface.Name)
 		}
+	}
+}
+
+// getFreeEndpoint returns a currently-unused local TCP endpoint. Using a
+// dynamically allocated port instead of a hard-coded one prevents flaky failures
+// caused by the port already being in use.
+func getFreeEndpoint(t *testing.T) string {
+	t.Helper()
+	listener, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	defer listener.Close()
+	return listener.Addr().String()
+}
+
+// newReadyClientConn dials the receiver and blocks until the gRPC connection is
+// actually ready to serve requests. Waiting for the READY state (rather than a
+// raw TCP dial or a fixed sleep) ensures the gRPC server has finished starting,
+// and reusing the returned connection for every send avoids per-send connection
+// setup racing the send deadline. Both previously surfaced as
+// "failed to create stream: context deadline exceeded" flakes on loaded CI.
+func newReadyClientConn(t *testing.T, endpoint string) *grpc.ClientConn {
+	t.Helper()
+	conn, err := grpc.NewClient(endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	for {
+		state := conn.GetState()
+		if state == connectivity.Ready {
+			return conn
+		}
+		if state == connectivity.Idle {
+			conn.Connect()
+		}
+		require.True(t, conn.WaitForStateChange(ctx, state),
+			"gRPC server did not become ready in time (last state: %s)", state)
 	}
 }
 
