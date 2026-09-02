@@ -19,12 +19,12 @@ require (
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.159.0
-	go.opentelemetry.io/collector/component/componenttest v0.159.1-0.20260901210140-566f9531b8c8
-	go.opentelemetry.io/collector/consumer/consumertest v0.159.1-0.20260901210140-566f9531b8c8
+	go.opentelemetry.io/collector/component/componenttest v0.160.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.160.0
 	go.opentelemetry.io/collector/featuregate v1.66.0
 	go.opentelemetry.io/collector/pipeline v1.66.0
-	go.opentelemetry.io/collector/receiver/receivertest v0.159.1-0.20260901210140-566f9531b8c8
-	go.opentelemetry.io/collector/receiver/xreceiver v0.159.1-0.20260901210140-566f9531b8c8
+	go.opentelemetry.io/collector/receiver/receivertest v0.160.0
+	go.opentelemetry.io/collector/receiver/xreceiver v0.160.0
 	go.uber.org/zap v1.28.0
 	golang.org/x/text v0.41.0
 )
@@ -57,15 +57,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.159.0 // indirect
 	github.com/valyala/fastjson v1.6.10 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.159.1-0.20260901210140-566f9531b8c8 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.159.1-0.20260901210140-566f9531b8c8 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.160.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.160.0 // indirect
 	go.opentelemetry.io/collector/extension v1.66.0 // indirect
-	go.opentelemetry.io/collector/extension/xextension v0.159.1-0.20260901210140-566f9531b8c8 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.159.1-0.20260901210140-566f9531b8c8 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.159.1-0.20260901210140-566f9531b8c8 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.159.1-0.20260901210140-566f9531b8c8 // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.159.1-0.20260901210140-566f9531b8c8 // indirect
-	go.opentelemetry.io/collector/receiver/receiverhelper v0.159.1-0.20260901210140-566f9531b8c8 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.160.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.160.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.160.0 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.160.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.160.0 // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.160.0 // indirect
 	go.opentelemetry.io/otel v1.46.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.46.0 // indirect
