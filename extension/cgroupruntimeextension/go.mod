@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgrou
 go 1.26.0
 
 require (
-	github.com/KimMachineGun/automemlimit v0.7.5
+	github.com/KimMachineGun/automemlimit v1.0.0
 	github.com/containerd/cgroups/v3 v3.1.3
 	github.com/rdforte/gomaxecs v1.1.2
 	github.com/stretchr/testify v1.12.1
