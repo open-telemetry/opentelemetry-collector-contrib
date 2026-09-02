@@ -895,17 +895,21 @@ func TestScrape_DiscoveryPerEntryStats(t *testing.T) {
 	require.Equal(t, 1, md.ResourceMetrics().Len())
 	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	require.Equal(t, 2, metrics.Len())
+	byName := make(map[string]pmetric.Metric, metrics.Len())
+	for i := 0; i < metrics.Len(); i++ {
+		byName[metrics.At(i).Name()] = metrics.At(i)
+	}
 
-	gauge := metrics.At(0)
-	require.Equal(t, "amazonaws.com/AWS/EC2/CPUUtilization", gauge.Name())
+	gauge, ok := byName["amazonaws.com/AWS/EC2/CPUUtilization"]
+	require.True(t, ok)
 	require.Equal(t, pmetric.MetricTypeGauge, gauge.Type())
 	require.Equal(t, 1, gauge.Gauge().DataPoints().Len())
 	stat, ok := gauge.Gauge().DataPoints().At(0).Attributes().Get("stat")
 	require.True(t, ok)
 	require.Equal(t, "Average", stat.Str())
 
-	summary := metrics.At(1)
-	require.Equal(t, "amazonaws.com/AWS/RDS/DatabaseConnections", summary.Name())
+	summary, ok := byName["amazonaws.com/AWS/RDS/DatabaseConnections"]
+	require.True(t, ok)
 	require.Equal(t, pmetric.MetricTypeSummary, summary.Type())
 	require.Equal(t, 1, summary.Summary().DataPoints().Len())
 	require.Equal(t, uint64(4), summary.Summary().DataPoints().At(0).Count())
