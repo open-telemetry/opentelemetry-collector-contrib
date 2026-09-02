@@ -526,6 +526,58 @@ The amount of time that the server has been running.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | ms | Sum | Int | Cumulative | true | Development |
 
+### mongodb.wt.concurrent_transaction.ticket.in_use
+
+The number of in-flight WiredTiger read/write concurrent-transaction tickets.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {ticket} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.wt.concurrent_transaction.ticket.type | The WiredTiger concurrent-transaction ticket type. | Str: ``read``, ``write`` | Recommended | - |
+
+### mongodb.wt.fsync.count
+
+The total number of fsync I/Os issued by the WiredTiger storage engine.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {fsync} | Sum | Int | Cumulative | true | Development |
+
+### mongodb.wt.log.operation.count
+
+The total number of WiredTiger journal operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operation} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.wt.log.operation.type | The WiredTiger journal operation type. | Str: ``write``, ``sync``, ``flush`` | Recommended | - |
+
+### mongodb.wt.log.sync.time
+
+The cumulative time spent syncing the WiredTiger journal.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+### mongodb.wt.log.write
+
+The total number of bytes written to the WiredTiger journal.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
+
 ### mongodb.wtcache.bytes.read
 
 The number of bytes read into the WiredTiger cache.
