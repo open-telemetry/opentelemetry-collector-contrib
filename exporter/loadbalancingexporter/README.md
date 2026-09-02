@@ -21,7 +21,7 @@ This is an exporter that will consistently export spans, logs, and metrics depen
 > [!NOTE]
 > The exporter type has been renamed from `loadbalancing` to `load_balancing` to follow the lower_snake_case naming convention. The old name `loadbalancing` is preserved as a deprecated alias, but users should migrate configuration to use `load_balancing:`.
 
-The options for `routing_key` are: `service`, `traceID`, `metric` (metric name), `resource`, `streamID`, `attributes`.
+The options for `routing_key` are: `service`, `traceID`, `metric` (metric name), `resource`, `streamID`, `attributes`, `randomness`.
 
 | routing_key | can be used for            |
 | ----------- | -------------------------- |
@@ -31,6 +31,7 @@ The options for `routing_key` are: `service`, `traceID`, `metric` (metric name),
 | metric      | metrics                    |
 | streamID    | metrics                    |
 | attributes  | spans, logs, metrics       |
+| randomness  | spans                      |
 
 If no `routing_key` is configured, the default routing mechanism is `traceID` for traces, `service` for logs, and `service` for metrics. This means that spans belonging to the same `traceID` (or `service.name`, when `service` is used as the `routing_key`) will be sent to the same backend. For logs, this ensures all logs from the same service are consistently routed to the same backend.
 
@@ -127,6 +128,20 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `resource`: Routes based on a hash of all resource attributes. Works for traces, logs, and metrics. All resources sharing the exact same set of resource attributes will be routed to the same backend. This is more granular than `service`, which only considers `service.name`, but less granular than `streamID`, which also considers scope and datapoint attributes.
   * `metric`: Routes metrics based on their metric name. Invalid for spans and logs.
   * `streamID`: Routes metrics based on their datapoint streamID. That's the unique hash of all its attributes, plus the attributes and identifying information of its resource, scope, and metric data.
+  * `randomness`: Routes spans based on their [OpenTelemetry randomness value](https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/).
+    The identifier is the explicit randomness value (`rv`) from the span's W3C tracestate when present, otherwise randomness derived from the trace ID, per the sampling specification.
+    Traces that share an explicit randomness value (for example the traces of one session, conversation, or workflow, stamped with a common `rv` at their roots) are routed to the same backend, so group-level tail decisions see the whole group.
+    Traffic without an explicit randomness value keeps per-trace locality at the same grouping granularity as `traceID` routing, but with a different distribution.
+    The hash input is the trace ID's low 56 bits (the W3C randomness portion) rather than all 16 bytes, so it assumes trace IDs carry a conformant random suffix.
+    Trace ID generators that don't randomize the low bytes will distribute unevenly across backends, and should use `traceID` routing instead.
+    Because the randomness value is chosen by the producer, the traffic behind a single routing key is unbounded, unlike `traceID` routing where a key covers at most one trace.
+    A long-running session or a workflow that fans out into many traces sends all of those traces to one backend, and that backend has no way to shed the load, so size backends for the largest group you expect.
+    The sampling specification requires the randomness value to be constant across all spans of a trace, and this exporter relies on that contract rather than enforcing it (the backend is resolved from the first span seen for each trace ID in a batch).
+    Producers that emit inconsistent tracestate within a trace, or drop it on some spans, can cause that trace to route to different backends across batches.
+    A value-level error inside a syntactically valid `ot` section (such as a malformed `th:notathreshold` beside a valid `rv`) keeps the members that did parse, so a recovered `rv` still routes the trace.
+    A syntax error anywhere in the `ot` section (an invalid value character such as `th:0!`, where `!` is a legal W3C value char but not a legal OTel value char), or a W3C header-level error (an uppercase vendor key, or a header over the 1024-byte size limit), discards the whole `ot` section including any `rv`, and the trace falls back to trace ID randomness.
+    Traces whose tracestate carried an `rv` that was lost to a parse error are counted in `otelcol_loadbalancer_randomness_tracestate_unparseable` (once per trace per batch).
+    Unparseable tracestates that never carried an `rv` are not counted, as those traces would have routed by trace ID regardless.
 * The `load_balancing` exporter supports a set of standard [queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), but they are disabled by default to maintain compatibility
 * The `routing_attributes` property is used to list the attributes that should be used if the `routing_key` is `attributes`. For both traces and metrics, keys are encoded in configured order as `name=value|name=value|`, and missing attributes are encoded as `name=|`. Non-string values are deterministically stringified.
 
