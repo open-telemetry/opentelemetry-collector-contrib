@@ -649,22 +649,11 @@ func TestValidateMetricsConfig(t *testing.T) {
 			}),
 		},
 		{
-			name: "discovery filter missing namespace",
+			name: "discovery filter without namespace is valid (account-wide scan)",
 			config: withMetrics(MetricsConfig{
 				Discovery: &MetricsDiscoveryConfig{
 					Limit:   100,
 					Filters: []MetricsDiscoveryFilter{{MetricNames: []string{"CPUUtilization"}}},
-				},
-			}),
-			expectedErr: errDiscoveryFilterMissingNamespace,
-		},
-		{
-			name: "discovery filter missing namespace allowed in legacy form",
-			config: withMetrics(MetricsConfig{
-				Discovery: &MetricsDiscoveryConfig{
-					Limit:             100,
-					Filters:           []MetricsDiscoveryFilter{{MetricNames: []string{"CPUUtilization"}}},
-					legacyFiltersForm: true,
 				},
 			}),
 		},

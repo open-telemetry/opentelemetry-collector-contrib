@@ -152,7 +152,6 @@ var (
 	errMetricMissingName                = errors.New("metric must have metric_name")
 	errMetricsAndDiscoveryConfigured    = errors.New("metrics and discovery are mutually exclusive; set one or the other")
 	errInvalidDiscoveryLimit            = errors.New("metrics discovery limit must be greater than 0")
-	errDiscoveryFilterMissingNamespace  = errors.New("discovery filter must have namespace")
 	errEmptyMetricName                  = errors.New("metric name must not be empty")
 	errEmptyStatName                    = errors.New("stat name must not be empty")
 	errCollectionIntervalLessThanPeriod = errors.New("metrics collection_interval must be greater than or equal to period")
@@ -215,10 +214,6 @@ func (c *Config) validateMetricsConfig() error {
 			return errInvalidDiscoveryLimit
 		}
 		for i, f := range discovery.Filters {
-			// The deprecated single-object form allowed a missing namespace.
-			if f.Namespace == "" && !discovery.legacyFiltersForm {
-				return fmt.Errorf("metrics.discovery.filters[%d]: %w", i, errDiscoveryFilterMissingNamespace)
-			}
 			for j, name := range f.MetricNames {
 				if name == "" {
 					return fmt.Errorf("metrics.discovery.filters[%d].metric_names[%d]: %w", i, j, errEmptyMetricName)
