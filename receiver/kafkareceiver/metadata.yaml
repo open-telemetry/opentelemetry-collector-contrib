@@ -35,6 +35,10 @@ attributes:
   partition:
     description: The Kafka topic partition.
     type: int
+  reason:
+    description: The reason a Kafka record could not be routed.
+    type: string
+    enum: [missing_header, duplicate_header, unknown_signal, unconfigured_signal]
   topic:
     description: The Kafka topic.
     type: string
@@ -195,6 +199,15 @@ telemetry:
         value_type: double
         bucket_boundaries: [0, 0.005, 0.010, 0.025, 0.050, 0.075, 0.100, 0.250, 0.500, 0.750, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000]
       attributes: [topic, partition]
+    kafka_receiver_records_routing_failed:
+      enabled: true
+      description: Number of records that could not be routed using the otelcol.signal header.
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [topic, partition, reason]
     kafka_receiver_unmarshal_failed_log_records:
       enabled: true
       description: Number of log records failed to be unmarshaled

@@ -13,6 +13,7 @@ kafka/legacy_topic:
     encoding: otlp_proto
     
 kafka/logs:
+  signal_header: true
   logs:
     topics: 
     - logs

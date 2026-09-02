@@ -34,6 +34,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.KafkaReceiverReadLatency.Record(context.Background(), 1)
 	tb.KafkaReceiverRecords.Add(context.Background(), 1)
 	tb.KafkaReceiverRecordsDelay.Record(context.Background(), 1)
+	tb.KafkaReceiverRecordsRoutingFailed.Add(context.Background(), 1)
 	tb.KafkaReceiverUnmarshalFailedLogRecords.Add(context.Background(), 1)
 	tb.KafkaReceiverUnmarshalFailedMetricPoints.Add(context.Background(), 1)
 	tb.KafkaReceiverUnmarshalFailedProfiles.Add(context.Background(), 1)
@@ -82,6 +83,9 @@ func TestSetupTelemetry(t *testing.T) {
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualKafkaReceiverRecordsDelay(t, testTel,
 		[]metricdata.HistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaReceiverRecordsRoutingFailed(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualKafkaReceiverUnmarshalFailedLogRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},

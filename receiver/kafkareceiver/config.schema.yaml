@@ -89,6 +89,9 @@ properties:
   profiles:
     description: Profiles holds configuration about how profiles should be consumed.
     $ref: topic_encoding_config
+  signal_header:
+    description: SignalHeader routes records using the "otelcol.signal" Kafka header and shares one consumer across the signal pipelines that use this receiver.
+    type: boolean
   telemetry:
     description: Telemetry controls optional telemetry configuration.
     $ref: telemetry_config

@@ -32,8 +32,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
@@ -41,6 +44,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
@@ -76,6 +80,234 @@ func TestReceiver(t *testing.T) {
 		args := <-received
 		assert.NoError(t, ptracetest.CompareTraces(traces, args.data))
 	})
+}
+
+func TestSignalFromHeaders(t *testing.T) {
+	tests := []struct {
+		name    string
+		headers []kgo.RecordHeader
+		want    pipeline.Signal
+		wantErr string
+	}{
+		{
+			name: "traces",
+			headers: []kgo.RecordHeader{{
+				Key:   kafka.SignalHeaderKey,
+				Value: []byte(pipeline.SignalTraces.String()),
+			}},
+			want: pipeline.SignalTraces,
+		},
+		{
+			name:    "missing",
+			wantErr: "missing",
+		},
+		{
+			name: "duplicate",
+			headers: []kgo.RecordHeader{
+				{Key: kafka.SignalHeaderKey, Value: []byte(pipeline.SignalTraces.String())},
+				{Key: kafka.SignalHeaderKey, Value: []byte(pipeline.SignalMetrics.String())},
+			},
+			wantErr: "multiple",
+		},
+		{
+			name: "unknown",
+			headers: []kgo.RecordHeader{{
+				Key:   kafka.SignalHeaderKey,
+				Value: []byte("unknown"),
+			}},
+			wantErr: `unknown signal "unknown"`,
+		},
+		{
+			name: "empty",
+			headers: []kgo.RecordHeader{{
+				Key: kafka.SignalHeaderKey,
+			}},
+			wantErr: `unknown signal ""`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := signalFromHeaders(tt.headers)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestReceiver_SignalHeaderRouting(t *testing.T) {
+	kafkaClient, cfg := mustNewSignalHeaderCluster(t)
+	topic := []string{"otlp"}
+	cfg.Logs.Topics, cfg.Logs.Encoding = topic, "otlp_json"
+	cfg.Metrics.Topics, cfg.Traces.Topics, cfg.Profiles.Topics = topic, topic, topic
+	cfg.HeaderExtraction.ExtractHeaders = true
+	cfg.HeaderExtraction.Headers = []string{"tenant"}
+
+	logsSink := new(consumertest.LogsSink)
+	metricsSink := new(consumertest.MetricsSink)
+	tracesSink := new(consumertest.TracesSink)
+	profilesSink := new(consumertest.ProfilesSink)
+	factory := NewFactory()
+	settings := receivertest.NewNopSettings(metadata.Type)
+	r, err := factory.CreateLogs(t.Context(), settings, cfg, logsSink)
+	require.NoError(t, err)
+	_, err = factory.CreateMetrics(t.Context(), settings, cfg, metricsSink)
+	require.NoError(t, err)
+	_, err = factory.CreateTraces(t.Context(), settings, cfg, tracesSink)
+	require.NoError(t, err)
+	_, err = factory.(xreceiver.Factory).CreateProfiles(t.Context(), settings, cfg, profilesSink)
+	require.NoError(t, err)
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
+	})
+
+	logsData, err := (&plog.JSONMarshaler{}).MarshalLogs(testdata.GenerateLogs(1))
+	require.NoError(t, err)
+	metricsData, err := (&pmetric.ProtoMarshaler{}).MarshalMetrics(testdata.GenerateMetrics(1))
+	require.NoError(t, err)
+	tracesData, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(testdata.GenerateTraces(1))
+	require.NoError(t, err)
+	profilesData, err := (&pprofile.ProtoMarshaler{}).MarshalProfiles(testdata.GenerateProfiles(1))
+	require.NoError(t, err)
+
+	tracesRecord := signalRecord(pipeline.SignalTraces.String(), tracesData)
+	tracesRecord.Headers = append(tracesRecord.Headers, kgo.RecordHeader{
+		Key:   "tenant",
+		Value: []byte("acme"),
+	})
+	results := kafkaClient.ProduceSync(t.Context(),
+		signalRecord(pipeline.SignalLogs.String(), logsData),
+		tracesRecord,
+		signalRecord(pipeline.SignalMetrics.String(), metricsData),
+		signalRecord(xpipeline.SignalProfiles.String(), profilesData),
+	)
+	require.NoError(t, results.FirstErr())
+
+	require.Eventually(t, func() bool {
+		return len(logsSink.AllLogs()) == 1 &&
+			len(metricsSink.AllMetrics()) == 1 &&
+			len(tracesSink.AllTraces()) == 1 &&
+			len(profilesSink.AllProfiles()) == 1
+	}, 10*time.Second, 10*time.Millisecond)
+	tenant, ok := tracesSink.AllTraces()[0].ResourceSpans().At(0).Resource().Attributes().Get("kafka.header.tenant")
+	require.True(t, ok)
+	assert.Equal(t, "acme", tenant.Str())
+	assert.Equal(t, []string{pipeline.SignalTraces.String()}, client.FromContext(tracesSink.Contexts()[0]).Metadata.Get(kafka.SignalHeaderKey))
+}
+
+func TestReceiver_SignalHeaderUsesSignalTelemetry(t *testing.T) {
+	kafkaClient, cfg := mustNewSignalHeaderCluster(t)
+	cfg.Traces.Topics = []string{"otlp"}
+	cfg.Logs.Topics = []string{"otlp"}
+
+	tracesSettings, tracesTracer, tracesLogs := trackingSettings()
+	logsSettings, logsTracer, logsLogs := trackingSettings()
+	factory := NewFactory()
+	r, err := factory.CreateTraces(t.Context(), tracesSettings, cfg, new(consumertest.TracesSink))
+	require.NoError(t, err)
+	_, err = factory.CreateLogs(t.Context(), logsSettings, cfg, new(consumertest.LogsSink))
+	require.NoError(t, err)
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	assert.Equal(t, 1, tracesTracer.tracerCalls)
+	assert.Equal(t, 1, logsTracer.tracerCalls)
+	t.Cleanup(func() {
+		require.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
+	})
+
+	results := kafkaClient.ProduceSync(t.Context(), signalRecord(pipeline.SignalLogs.String(), []byte("junk")))
+	require.NoError(t, results.FirstErr())
+	const unmarshalMsg = "failed to unmarshal message"
+	require.Eventually(t, func() bool {
+		return logsLogs.FilterMessage(unmarshalMsg).Len()+tracesLogs.FilterMessage(unmarshalMsg).Len() > 0
+	}, 10*time.Second, 10*time.Millisecond)
+	assert.Equal(t, 1, logsLogs.FilterMessage(unmarshalMsg).Len())
+	assert.Empty(t, tracesLogs.FilterMessage(unmarshalMsg).All())
+}
+
+func TestReceiver_SignalHeaderRoutingErrors(t *testing.T) {
+	kafkaClient, cfg := mustNewSignalHeaderCluster(t)
+	cfg.Traces.Topics = []string{"otlp"}
+
+	received := make(chan consumerArgs[ptrace.Traces], 1)
+	settings, tel, _ := mustNewSettings(t)
+	r, err := NewFactory().CreateTraces(t.Context(), settings, cfg, newChannelTracesConsumer(received))
+	require.NoError(t, err)
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, r.Shutdown(context.Background())) //nolint:usetesting
+	})
+
+	data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(testdata.GenerateTraces(1))
+	require.NoError(t, err)
+	results := kafkaClient.ProduceSync(t.Context(),
+		&kgo.Record{Topic: "otlp", Value: data},
+		&kgo.Record{
+			Topic: "otlp",
+			Value: data,
+			Headers: []kgo.RecordHeader{
+				{Key: kafka.SignalHeaderKey, Value: []byte(pipeline.SignalTraces.String())},
+				{Key: kafka.SignalHeaderKey, Value: []byte(pipeline.SignalMetrics.String())},
+			},
+		},
+		signalRecord("unknown", data),
+		signalRecord(pipeline.SignalLogs.String(), data),
+		signalRecord(pipeline.SignalTraces.String(), data),
+	)
+	require.NoError(t, results.FirstErr())
+	<-received
+
+	require.Eventually(t, func() bool {
+		_, getMetricErr := tel.GetMetric("otelcol_kafka_receiver_records_routing_failed")
+		return getMetricErr == nil
+	}, 10*time.Second, 10*time.Millisecond)
+	point := func(reason string) metricdata.DataPoint[int64] {
+		return metricdata.DataPoint[int64]{
+			Value: 1,
+			Attributes: attribute.NewSet(
+				attribute.String("topic", "otlp"),
+				attribute.Int64("partition", 0),
+				attribute.String("reason", reason),
+			),
+		}
+	}
+	metadatatest.AssertEqualKafkaReceiverRecordsRoutingFailed(t, tel, []metricdata.DataPoint[int64]{
+		point("missing_header"),
+		point("duplicate_header"),
+		point("unknown_signal"),
+		point("unconfigured_signal"),
+	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+func signalRecord(signal string, value []byte) *kgo.Record {
+	return &kgo.Record{
+		Topic: "otlp",
+		Value: value,
+		Headers: []kgo.RecordHeader{{
+			Key:   kafka.SignalHeaderKey,
+			Value: []byte(signal),
+		}},
+	}
+}
+
+func mustNewSignalHeaderCluster(tb testing.TB) (*kgo.Client, *Config) {
+	tb.Helper()
+	client, cfg := mustNewFakeCluster(tb, kfake.SeedTopics(1, "otlp"))
+	cfg.SignalHeader = true
+	return client, cfg
+}
+
+func trackingSettings() (receiver.Settings, *trackingTracerProvider, *observer.ObservedLogs) {
+	core, logs := observer.New(zapcore.DebugLevel)
+	set := receivertest.NewNopSettings(metadata.Type)
+	tp := &trackingTracerProvider{TracerProvider: set.TracerProvider}
+	set.Logger = zap.New(core)
+	set.TracerProvider = tp
+	return set, tp, logs
 }
 
 func TestReceiver_Headers_Metadata(t *testing.T) {

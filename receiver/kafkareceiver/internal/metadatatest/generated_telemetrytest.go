@@ -252,6 +252,22 @@ func AssertEqualKafkaReceiverRecordsDelay(t *testing.T, tt *componenttest.Teleme
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualKafkaReceiverRecordsRoutingFailed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_kafka_receiver_records_routing_failed",
+		Description: "Number of records that could not be routed using the otelcol.signal header. [Development]",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_kafka_receiver_records_routing_failed")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualKafkaReceiverUnmarshalFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_receiver_unmarshal_failed_log_records",
