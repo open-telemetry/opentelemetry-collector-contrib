@@ -345,7 +345,14 @@ sampler:
 
 The `fingerprint_attributes` field names the attributes that identify what kind of trace this is for sampling purposes. Each distinct fingerprint value gets its own adaptive sample rate, so choose attributes that classify traffic (route, status code, method, service) rather than identify individual requests (user IDs, request IDs, raw URLs), which would give every trace its own key and defeat the adaptation.
 
-High-cardinality fingerprint attributes can produce unexpected sampling results: an adaptive sampler can never drop a key's rate below 1 (it must always keep at least one instance of any key it's tracking), so as distinct keys multiply, more of them sit at that rate-1 floor with only a handful of events each, and the sampler can't discard enough traffic to hit the configured `goal_percentage`/`goal_throughput`.
+> [!WARNING]
+> High-cardinality fingerprint attributes degrade sampling accuracy by construction, not just by adding noise:
+>
+> - **`ema` algorithm** (the default): the sampler splits its overall budget across keys using a logarithmic weighting, so a rare key is never pushed down to a zero share — it always keeps a floor of "sample everything" for that key. As distinct keys multiply, more of them land on that floor, each still spending part of the shared budget. Once the number of active keys grows large enough, there's no longer enough budget to go around, and the sampler is structurally unable to hit the configured `goal_percentage` / `goal_throughput`.
+> - **`windowed` algorithm** (`adaptive_throughput` only): there's no logarithmic smoothing — each key's share of the budget is a straight, linear split across however many keys are currently active. Doubling the number of distinct keys immediately halves every key's share, so cardinality growth translates directly into more keys landing on the "keep everything" floor. This makes `windowed` more sensitive to cardinality spikes than `ema`.
+> - **`max_keys`** (default 500) only limits the damage: once the cap is reached, brand-new keys aren't tracked at all and default to keeping everything, rather than competing for the remaining budget.
+>
+> To get the sampling result you actually want, choose classifying attributes (route, status code, method, service) over identifying ones (user ID, request ID, session ID, raw URL), as described above.
 
 Each entry is a scoped attribute selector of the form `<scope>.attributes["<name>"]`:
 
