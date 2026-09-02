@@ -15,6 +15,9 @@
     "config:best-practices",
     "helpers:pinGitHubActionDigestsToSemver"
   ],
+  "gitIgnoredAuthors": [
+    "197425009+otelbot@users.noreply.github.com"
+  ],
   "ignorePaths": [
     "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",
     "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_16_3",
