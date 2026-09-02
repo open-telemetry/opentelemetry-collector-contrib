@@ -183,6 +183,14 @@ func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	// Lock the recombine operator because process can't run concurrently
 	t.Lock()
 	defer t.Unlock()
+	// Short circuit if the "if" condition does not match
+	skip, err := t.Skip(ctx, e)
+	if err != nil {
+		return t.HandleEntryError(ctx, e, err)
+	}
+	if skip {
+		return t.Write(ctx, e)
+	}
 
 	// Get the environment for executing the expression.
 	// In the future, we may want to provide access to the currently

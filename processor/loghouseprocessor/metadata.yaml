@@ -1,0 +1,13 @@
+type: loghouse
+scope_name: otelcol/loghouse
+
+status:
+  class: processor
+  stability:
+    alpha: [logs]
+  distributions: [core, contrib]
+  warnings: [Orphaned Telemetry, Other]
+  codeowners:
+    active: [RoryCrispin]
+tests:
+  config:

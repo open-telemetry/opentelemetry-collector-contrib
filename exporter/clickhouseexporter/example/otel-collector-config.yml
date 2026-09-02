@@ -1,10 +1,68 @@
 receivers:
-  fluentforward:
-    endpoint: 0.0.0.0:24224
-  otlp:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
+  filelog:
+    start_at: beginning
+#    storage: file_storage
+    include:
+      - /tmp/clickhouse-server.log.short
+#    operators:
+#      - id: get-format
+#        routes:
+#          - expr: body matches "^\\{"
+#            output: parser-docker
+#          - expr: body matches "^[^ Z]+ "
+#            output: parser-crio
+#          - expr: body matches "^[^ Z]+Z"
+#            output: parser-containerd
+#        type: router
+#      - id: parser-crio
+#        output: extract_metadata_from_filepath
+#        regex: ^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$
+#        timestamp:
+#          layout: "2006-01-02T15:04:05.000000000-07:00"
+#          layout_type: gotime
+#          parse_from: attributes.time
+#        type: regex_parser
+#      - id: parser-containerd
+#        output: extract_metadata_from_filepath
+#        regex: ^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$
+#        timestamp:
+#          layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+#          parse_from: attributes.time
+#        type: regex_parser
+#      - id: parser-docker
+#        output: extract_metadata_from_filepath
+#        timestamp:
+#          layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+#          parse_from: attributes.time
+#        type: json_parser
+#      - id: extract_metadata_from_filepath
+#        parse_from: attributes["log.file.path"]
+#        regex: ^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]+)\/(?P<container_name>[^\._]+)\/(?P<restart_count>\d+)\.log$
+#        type: regex_parser
+#      - from: attributes.stream
+#        to: attributes["log.iostream"]
+#        type: move
+#      - from: attributes.container_name
+#        to: resource["k8s.container.name"]
+#        type: move
+#      - from: attributes.namespace
+#        to: resource["k8s.namespace.name"]
+#        type: move
+#      - from: attributes.pod_name
+#        to: resource["k8s.pod.name"]
+#        type: move
+#      - from: attributes.restart_count
+#        to: resource["k8s.container.restart_count"]
+#        type: move
+#      - from: attributes.uid
+#        to: resource["k8s.pod.uid"]
+#        type: move
+#      - from: attributes.log
+#        to: body
+#        type: move
+
+
+# Error code regex: [A-Z][A-Z0-9]+_[A-Z0-9_]+
 processors:
   memory_limiter:
     check_interval: 2s
@@ -21,11 +79,15 @@ processors:
         action: upsert
 exporters:
   clickhouse:
-    endpoint: tcp://clickhouse:9000
+    create_db_and_tables: true
+    endpoint: http://clickhouse:8123
     database: otel
-    logs_table_name: otel_logs
+    logs_table_name: otel_logs_1
     traces_table_name: otel_traces
-    ttl: 12h
+    connection_params:
+      async_insert: 1
+      wait_for_async_insert: 0
+    ttl_days: 1
     timeout: 10s
     sending_queue:
       queue_size: 1000
@@ -43,12 +105,18 @@ exporters:
     username: default
     password: default
 extensions:
+#  file_storage:
+#    directory: /var/lib/otelcol
   health_check:
   pprof:
   zpages:
 
 service:
-  extensions: [ pprof, zpages, health_check ]
+  extensions:
+    - pprof
+    - zpages
+    - health_check
+#    - file_storage
   pipelines:
     logs:
       receivers: [ fluentforward, otlp ]

@@ -1,0 +1,132 @@
+receivers:
+  filelog:
+    start_at: beginning
+    include:
+      - /tmp/clickhouse-server.log.short
+#      - /Users/rory/var/log/pods/*/*/*.log
+processors:
+  transform:
+    log_statements:
+
+      - context: log
+        statements:
+          # clickhouse server/keeper:
+
+          # extract clickhouse/keeper log level
+#          - set(severity_text, "TRACE") where IsMatch(body, "[<]Trace[>]") == true
+#          - set(severity_text, "DEBUG") where IsMatch(body, "[<]Debug[>]") == true
+#          - set(severity_text, "INFO") where IsMatch(body, "[<]Info(rmation(al)?)?[>]") == true
+#          - set(severity_xt, "WARN") where IsMatch(body, "[<]Warn(ing)?[>]") == true
+#          - set(severity_text, "ERROR") where IsMatch(body, "[<]Error[>]") == true
+#          - set(severity_text, "FATAL") where IsMatch(body, "[<]Fatal[>]") == true
+
+
+          # clickpipes/other apps:
+
+          # parse json logs
+          - merge_maps(attributes, ParseJSON(body), "insert") where IsMatch(body, "^\\s*[{].+?[}]\\s*$") == true
+          - set(body, attributes["msg"]) where attributes["msg"] != nil
+          - set(body, attributes["message"]) where attributes["message"] != nil
+          - delete_key(attributes, "msg") where body == attributes["msg"]
+          - delete_key(attributes, "message") where body == attributes["message"]
+
+          # parse severity text
+          - set(severity_text, ConvertCase(attributes["level"], "upper")) where IsMatch(attributes["level"], "(?i)^(trace|debug|info|warn|error|fatal)$") == true
+
+          # Extract error code
+          - merge_maps(attributes, ExtractPatterns(body, "(?P<exception>[A-Z][A-Z0-9]+_[A-Z0-9_]+)"), "insert")
+          - delete_key(attributes, "level") where attributes["level"] != nil and severity_text == ConvertCase(attributes["level"], "upper")
+
+          # Parse ClickHouse JSON log levels
+          - set(severity_text, "FATAL") where attributes["level"] == "0"
+          - set(severity_text, "FATAL") where attributes["level"] == "1"
+          - set(severity_text, "FATAL") where attributes["level"] == "2"
+          - set(severity_text, "ERROR") where attributes["level"] == "3"
+          - set(severity_text, "WARN") where attributes["level"] == "4"
+          - set(severity_text, "INFO") where attributes["level"] == "5"
+          - set(severity_text, "INFO") where attributes["level"] == "6"
+          - set(severity_text, "DEBUG") where attributes["level"] == "7"
+          - set(severity_text, "TRACE") where attributes["level"] == "8"
+  logstransform:
+    operators:
+      - type: add
+        field: resource.app
+        value: ""
+        if: resource.app == nil
+
+#      - type: add
+#        field: resource.app
+#        value: clickhouse-server
+#        if: resource["k8s.container.name"] matches "^c-.+-server$"
+#
+#      - type: add
+#        field: resource.app
+#        value: clickhouse-keeper
+#        if: resource["k8s.container.name"] matches "^c-.+-keeper$"
+#
+#      # recombine stack trace logs to single log entry
+#      - type: recombine
+#        is_first_entry: body matches "^\\s*\\d{4}[.]\\d{2}[.]\\d{2}"
+#        combine_field: body
+#        combine_with: "\n"
+#        source_identifier: attributes["log.file.path"]
+#        if: resource.app matches "^clickhouse-"
+#
+#      # parse timestamp from log
+#      - type: regex_parser
+#        regex: ^\\s*(?P<ts>\\d{4}[.]\\d{2}[.]\\d{2}\\s+\\d{2}:\\d{2}:\\d{2}\\.\\d+)
+#        timestamp:
+#          parse_from: attributes.ts
+#          layout_type: strptime
+#          layout: "%Y.%m.%d %H:%M:%S.%L"
+#        if: resource.app matches "^clickhouse-"
+
+      # remove tmp fields
+      - type: remove
+        field: resource.app
+
+      # Parse timestamp from ClickHouse structured logs
+      - type: time_parser
+        parse_from: attributes.date_time
+        layout_type: epoch
+        layout: 's.us'
+
+exporters:
+  clickhouse:
+    create_db_and_tables: true
+    endpoint: http://localhost:8123
+    database: otel
+    logs_table_name: otel_logs_2
+    traces_table_name: otel_traces
+    connection_params:
+      async_insert: 1
+      wait_for_async_insert: 0
+    ttl_days: 1
+    timeout: 10s
+    sending_queue:
+      queue_size: 100
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+extensions:
+#  file_storage:
+#    directory: /var/lib/otelcol
+  health_check:
+  pprof:
+  zpages:
+  memory_ballast:
+    size_mib: 1000
+
+service:
+  extensions:
+    - pprof
+    - zpages
+    - health_check
+#    - file_storage
+  pipelines:
+    logs:
+      receivers: [  filelog ]
+      processors: [  transform, logstransform ]
+      exporters: [ clickhouse ]
