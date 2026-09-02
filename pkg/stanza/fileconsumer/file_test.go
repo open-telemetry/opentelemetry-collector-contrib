@@ -1224,9 +1224,6 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	cfg.DeleteAfterRead = true
-	sink := emittest.NewSink(emittest.WithCallBuffer(0))
-	operator := testManagerWithSink(t, cfg, sink)
-	operator.persister = testutil.NewUnscopedMockPersister()
 
 	shortFile := filetest.OpenTemp(t, tempDir)
 	_, err := shortFile.WriteString(shortFileLine + "\n")
@@ -1240,39 +1237,62 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	}
 	require.NoError(t, longFile.Close())
 
+	// Route emits per file so the assertions do not depend on Go's scheduling.
+	// The short file emits its single line and its reader reaches EOF, which
+	// deletes the file. The long file's reader signals once and then blocks on
+	// ctx.Done(), so it can never reach EOF and its file is never deleted, no
+	// matter how the reader goroutines are scheduled (e.g. on a single CPU).
+	shortEmitted := make(chan struct{})
+	longEmitted := make(chan struct{})
+	ctx, cancel := context.WithCancel(t.Context())
+	callback := func(ctx context.Context, tokens [][]byte, attributes map[string]any, _ int64, _ []int64) error {
+		switch attributes[attrs.LogFileName] {
+		case filepath.Base(shortFile.Name()):
+			assert.Len(t, tokens, 1)
+			assert.Equal(t, shortFileLine, string(tokens[0]))
+			close(shortEmitted)
+		case filepath.Base(longFile.Name()):
+			// Signal once, then block until the test cancels so the long file's
+			// reader never reaches EOF and the file is never deleted.
+			select {
+			case longEmitted <- struct{}{}:
+			case <-ctx.Done():
+			}
+			<-ctx.Done()
+		}
+		return ctx.Err()
+	}
+
+	operator := testManagerWithEmit(t, cfg, callback)
+	operator.persister = testutil.NewUnscopedMockPersister()
+
 	// Verify we have no checkpointed files
 	require.Equal(t, 0, operator.tracker.TotalReaders())
-
-	// Consume tokens until both the short file's only line and at least one
-	// long-file line have been observed.
-	ctx, cancel := context.WithCancel(t.Context())
 
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		operator.poll(ctx)
 	})
 
-	var shortConsumed, longConsumed bool
-	for !shortConsumed || !longConsumed {
-		if string(sink.NextToken(t)) == shortFileLine {
-			shortConsumed = true
-		} else {
-			longConsumed = true
+	// Wait until both files have been read. A file is deleted synchronously
+	// before its tokens are emitted (see Reader.readContents), so once the short
+	// file's line is emitted the short file has already been deleted.
+	for _, ch := range []chan struct{}{shortEmitted, longEmitted} {
+		select {
+		case <-ch:
+		case <-time.After(5 * time.Second):
+			t.Fatal("timed out waiting for emit")
 		}
 	}
 
-	// A reader deletes its file synchronously before emitting the file's final
-	// batch of tokens (see Reader.readContents), so observing the short file's
-	// line guarantees the short file has already been deleted. Observing a
-	// long-file line guarantees the long file's reader is still mid-read
-	// (blocked on the unbuffered sink), so the long file has not been deleted.
+	// Short file was fully consumed and should already be deleted.
 	require.NoFileExists(t, shortFile.Name())
 
 	// Stop consuming before long file has been fully consumed
 	cancel()
 	wg.Wait()
 
-	// Long file was partially consumed and should NOT have been deleted.
+	// Long file was only partially consumed and should NOT have been deleted.
 	require.FileExists(t, longFile.Name())
 }
 
