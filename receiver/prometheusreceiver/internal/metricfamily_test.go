@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 type testMetadataStore map[string]scrape.MetricMetadata
@@ -301,10 +302,12 @@ func TestMetricGroupData_toDistributionDropsNegativeOverflow(t *testing.T) {
 		},
 	}
 
+	core, observed := observer.New(zap.DebugLevel)
 	dest := pmetric.NewHistogramDataPointSlice()
-	mg.toDistributionPoint(dest)
+	mg.toDistributionPoint(dest, zap.New(core))
 
 	require.Zero(t, dest.Len())
+	require.Equal(t, 1, observed.Len(), "expected a debug log for the dropped point")
 }
 
 func TestMetricGroupData_toDistributionDropsNegativeBucketDelta(t *testing.T) {
@@ -318,7 +321,7 @@ func TestMetricGroupData_toDistributionDropsNegativeBucketDelta(t *testing.T) {
 	}
 
 	dest := pmetric.NewHistogramDataPointSlice()
-	mg.toDistributionPoint(dest)
+	mg.toDistributionPoint(dest, zap.NewNop())
 
 	require.Zero(t, dest.Len())
 }
@@ -334,7 +337,7 @@ func TestMetricGroupData_toDistributionDropsNaNBucketValue(t *testing.T) {
 	}
 
 	dest := pmetric.NewHistogramDataPointSlice()
-	mg.toDistributionPoint(dest)
+	mg.toDistributionPoint(dest, zap.NewNop())
 
 	require.Zero(t, dest.Len())
 }
@@ -350,7 +353,7 @@ func TestMetricGroupData_toDistributionDropsNaNCount(t *testing.T) {
 	}
 
 	dest := pmetric.NewHistogramDataPointSlice()
-	mg.toDistributionPoint(dest)
+	mg.toDistributionPoint(dest, zap.NewNop())
 
 	require.Zero(t, dest.Len())
 }

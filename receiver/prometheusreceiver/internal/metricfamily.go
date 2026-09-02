@@ -31,6 +31,7 @@ type metricFamily struct {
 	name        string
 	metadata    *scrape.MetricMetadata
 	groupOrders []*metricGroup
+	logger      *zap.Logger
 }
 
 // metricGroup, represents a single metric of a metric family. for example a histogram metric is usually represent by
@@ -76,6 +77,7 @@ func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *z
 		groups:      make(map[uint64]*metricGroup),
 		name:        familyName,
 		metadata:    metadata,
+		logger:      logger,
 	}
 }
 
@@ -99,7 +101,7 @@ func (mg *metricGroup) sortPoints() {
 	})
 }
 
-func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice) {
+func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice, logger *zap.Logger) {
 	if !mg.hasCount {
 		return
 	}
@@ -133,6 +135,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 		// A malformed classic histogram converted to NHCB carries negative
 		// bucket counts; drop it instead of emitting invalid OTLP data.
 		if !validBuckets && !pointIsStale {
+			logger.Debug("dropping NHCB datapoint with negative or NaN bucket counts", zap.Any("labels", mg.ls))
 			return
 		}
 	} else {
@@ -145,11 +148,13 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 			var previousCount float64
 			for i := 0; i < bucketCount-1; i++ {
 				if math.IsNaN(mg.complexValue[i].value) || mg.complexValue[i].value < previousCount {
+					logger.Debug("dropping histogram datapoint with NaN or decreasing bucket counts", zap.Any("labels", mg.ls))
 					return
 				}
 				previousCount = mg.complexValue[i].value
 			}
 			if math.IsNaN(mg.count) || mg.count < previousCount {
+				logger.Debug("dropping histogram datapoint with count that is NaN or below the largest bucket count", zap.Any("labels", mg.ls))
 				return
 			}
 		}
@@ -625,7 +630,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
 		for _, mg := range mf.groupOrders {
-			mg.toDistributionPoint(hdpL)
+			mg.toDistributionPoint(hdpL, mf.logger)
 		}
 		pointCount = hdpL.Len()
 
