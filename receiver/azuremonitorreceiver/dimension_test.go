@@ -6,13 +6,12 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/stretchr/testify/require"
 )
 
 func newDimension(value string) *armmonitor.LocalizableString {
-	return to.Ptr(armmonitor.LocalizableString{Value: to.Ptr(value)})
+	return new(armmonitor.LocalizableString{Value: new(value)})
 }
 
 func TestFilterDimensions(t *testing.T) {
@@ -36,7 +35,7 @@ func TestFilterDimensions(t *testing.T) {
 					newDimension("bar"),
 				},
 				cfg: DimensionsConfig{
-					Enabled: to.Ptr(false),
+					Enabled: new(false),
 				},
 				resourceType: "rt1",
 				metricName:   "m1",
@@ -64,7 +63,7 @@ func TestFilterDimensions(t *testing.T) {
 					newDimension("bar"),
 				},
 				cfg: DimensionsConfig{
-					Enabled: to.Ptr(true),
+					Enabled: new(true),
 					Overrides: NestedListAlias{
 						"rt1": {
 							"m1": {
@@ -110,7 +109,7 @@ func TestBuildDimensionsFilter(t *testing.T) {
 			args: args{
 				dimensionsStr: "bar,foo",
 			},
-			expected: to.Ptr("bar eq '*' and foo eq '*'"),
+			expected: new("bar eq '*' and foo eq '*'"),
 		},
 	}
 

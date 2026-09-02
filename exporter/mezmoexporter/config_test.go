@@ -35,10 +35,10 @@ func TestLoadConfig(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	clientConfig.Timeout = 5 * time.Second
-	clientConfig.MaxIdleConns = defaultMaxIdleConns
-	clientConfig.MaxIdleConnsPerHost = defaultMaxIdleConnsPerHost
+	clientConfig.MaxIdleConns = defaultMaxIdleConns               //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.MaxIdleConnsPerHost = defaultMaxIdleConnsPerHost //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
-	clientConfig.IdleConnTimeout = defaultIdleConnTimeout
+	clientConfig.IdleConnTimeout = defaultIdleConnTimeout //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = true
 
 	tests := []struct {

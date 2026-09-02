@@ -335,28 +335,41 @@ func Test_mapEach_errors(t *testing.T) {
 	}
 }
 
-func Test_createMapEachFunction(t *testing.T) {
-	fCtx := ottl.FunctionContext{}
-	mapper := ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
-		return "ok", nil
+func Test_MapEachFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewMapEachFactory[any]()
+		assert.Equal(t, "MapEach", factory.Name())
 	})
-	source := ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
-			return pcommon.NewMap(), nil
-		},
-	}
 
-	t.Run("creates function with valid args", func(t *testing.T) {
-		fn, err := createMapEachFunction[any](fCtx, &MapEachArguments[any]{
-			Source: source,
-			Mapper: mapper,
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewMapEachFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &MapEachArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Source", "Mapper"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewMapEachFactory[any]()
+		args := factory.CreateDefaultArguments()
+		mapEachArgs, ok := args.(*MapEachArguments[any])
+		require.True(t, ok)
+		mapEachArgs.Source = ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return pcommon.NewMap(), nil
+			},
+		}
+		mapEachArgs.Mapper = ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			return "ok", nil
 		})
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
 		require.NoError(t, err)
-		require.NotNil(t, fn)
+		assert.NotNil(t, fn)
 	})
 
-	t.Run("error on invalid args type", func(t *testing.T) {
-		_, err := createMapEachFunction[any](fCtx, &struct{}{})
-		assert.EqualError(t, err, "MapEachFactory args must be of type *MapEachArguments[K]")
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createMapEachFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "MapEachFactory args must be of type *MapEachArguments[K]")
 	})
 }

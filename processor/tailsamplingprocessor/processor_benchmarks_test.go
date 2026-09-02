@@ -30,7 +30,7 @@ func BenchmarkSampling(b *testing.B) {
 		PolicyCfgs:              testPolicy,
 	}
 	sp, _ := newTracesProcessor(b.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
-	tsp := sp.(*tailSamplingSpanProcessor)
+	tsp := shard0(sp)
 	require.NoError(b, tsp.Start(b.Context(), componenttest.NewNopHost()))
 	defer func() {
 		require.NoError(b, tsp.Shutdown(b.Context()))
@@ -48,7 +48,7 @@ func BenchmarkSampling(b *testing.B) {
 	ctx := b.Context()
 	for b.Loop() {
 		for i, id := range traceIDs {
-			_, _ = tsp.makeDecision(ctx, id, sampleBatches[i], metrics)
+			_, _ = tsp.makeDecision(ctx, 0, id, sampleBatches[i], metrics)
 		}
 	}
 }

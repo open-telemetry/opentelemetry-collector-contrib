@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/processor"
@@ -29,6 +30,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/appservice"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/containerapps"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
@@ -70,6 +73,8 @@ func NewFactory() processor.Factory {
 		alibabaecs.TypeStr:       alibabaecs.NewDetector,
 		aks.TypeStr:              aks.NewDetector,
 		azure.TypeStr:            azure.NewDetector,
+		appservice.TypeStr:       appservice.NewDetector,
+		containerapps.TypeStr:    containerapps.NewDetector,
 		consul.TypeStr:           consul.NewDetector,
 		digitalocean.TypeStr:     digitalocean.NewDetector,
 		docker.TypeStr:           docker.NewDetector,
@@ -126,8 +131,20 @@ func createDefaultConfig() component.Config {
 		Override:        true,
 		DetectorConfig:  detectorCreateDefaultConfig(),
 		RefreshInterval: 0,
+		Retry:           defaultRetryConfig(),
 		// TODO: Once issue(https://github.com/open-telemetry/opentelemetry-collector/issues/4001) gets resolved,
 		//		 Set the default value of 'hostname_source' here instead of 'system' detector
+	}
+}
+
+func defaultRetryConfig() configretry.BackOffConfig {
+	return configretry.BackOffConfig{
+		Enabled:             true,
+		InitialInterval:     1 * time.Second,
+		RandomizationFactor: 0.5,
+		Multiplier:          2,
+		MaxInterval:         30 * time.Second,
+		MaxElapsedTime:      0,
 	}
 }
 
@@ -239,7 +256,7 @@ func (f *factory) getResourceDetectionProcessor(
 
 	// The deprecated per-detector fail_on_missing_metadata fields are OR'd with this
 	// top-level flag inside each affected detector, preserving per-detector scope.
-	provider, err := f.getResourceProvider(params, oCfg.ClientConfig.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.FailOnMissingMetadata)
+	provider, err := f.getResourceProvider(params, oCfg.Retry, oCfg.Detectors, oCfg.DetectorConfig, oCfg.FailOnMissingMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +302,7 @@ func warnDeprecatedPerDetectorFlags(logger *zap.Logger, oCfg *Config) {
 
 func (f *factory) getResourceProvider(
 	params processor.Settings,
-	timeout time.Duration,
+	backoffConfig configretry.BackOffConfig,
 	configuredDetectors []string,
 	detectorConfigs DetectorConfig,
 	failOnMissingMetadata bool,
@@ -302,7 +319,7 @@ func (f *factory) getResourceProvider(
 		detectorTypes = append(detectorTypes, internal.DetectorType(strings.TrimSpace(key)))
 	}
 
-	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, failOnMissingMetadata, &detectorConfigs, detectorTypes...)
+	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, backoffConfig, failOnMissingMetadata, &detectorConfigs, detectorTypes...)
 	if err != nil {
 		return nil, err
 	}

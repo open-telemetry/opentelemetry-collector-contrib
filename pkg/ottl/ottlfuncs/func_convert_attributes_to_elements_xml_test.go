@@ -127,3 +127,39 @@ func TestCreateConvertAttributesToElementsXMLFunc(t *testing.T) {
 	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
+
+func Test_ConvertAttributesToElementsXMLFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewConvertAttributesToElementsXMLFactory[any]()
+		assert.Equal(t, "ConvertAttributesToElementsXML", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewConvertAttributesToElementsXMLFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ConvertAttributesToElementsXMLArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "XPath"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewConvertAttributesToElementsXMLFactory[any]()
+		args := factory.CreateDefaultArguments()
+		convertArgs, ok := args.(*ConvertAttributesToElementsXMLArguments[any])
+		require.True(t, ok)
+		convertArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return `<a foo="bar"></a>`, nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createConvertAttributesToElementsXMLFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ConvertAttributesToElementsXML args must be of type *ConvertAttributesToElementsXMLAguments[K]")
+	})
+}

@@ -12,12 +12,12 @@ import (
 	"fmt"
 	"math"
 	"net"
-	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
 	"time"
 
+	"github.com/lib/pq"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/otel/propagation"
@@ -76,8 +76,8 @@ type client interface {
 	getVectorInsertStats(ctx context.Context) ([]vectorInsertStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
 	getVersion(ctx context.Context) (string, error)
-	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error)
-	getTopQuery(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
+	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, float64, error)
+	getTopQuery(ctx context.Context, limit int64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, error)
 	explainQuery(ctx context.Context, query, queryID string, logger *zap.Logger) (string, error)
 }
 
@@ -139,6 +139,16 @@ func isExplainableQuery(query string) bool {
 }
 
 // explainQuery implements client.
+//
+// The real parameter count comes from pg_prepared_statements, not from counting "$N"
+// occurrences in the query text: a placeholder can repeat (e.g. "$1" used twice for one
+// real parameter) or appear inside a string literal ("$1" is not a placeholder there), and
+// either case makes a text-based count wrong. Once PREPARE succeeds, PostgreSQL has already
+// parsed and deduplicated the real list, so pg_prepared_statements.parameter_types is
+// authoritative. Reading it back requires a second round trip after PREPARE, and since
+// PREPARE is session-scoped, every step (PREPARE, the count lookup, EXPLAIN EXECUTE,
+// DEALLOCATE) has to run on the one connection that ran PREPARE, not just whatever the pool
+// hands out for each call.
 func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID string, logger *zap.Logger) (string, error) {
 	// Check if the query is explainable before attempting EXPLAIN
 	if !isExplainableQuery(query) {
@@ -148,40 +158,72 @@ func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID stri
 
 	normalizedQueryID := strings.ReplaceAll(queryID, "-", "_")
 
-	// PostgreSQL's pg_stat_statements returns queries with $1, $2 placeholders
-	paramRegex := regexp.MustCompile(`\$\d+`)
-	matches := paramRegex.FindAllString(query, -1)
-
-	// Build nulls array for placeholders
-	nulls := make([]string, len(matches))
-	for i := range nulls {
-		nulls[i] = "null"
+	conn, err := c.client.Conn(ctx)
+	if err != nil {
+		logger.Error("failed to obtain a dedicated connection for EXPLAIN", zap.Error(err), zap.String("queryID", queryID))
+		return "", err
 	}
+	defer conn.Close()
 
 	// Deallocate the prepared statement on a context detached from ctx so the
-	// cleanup still runs even if ctx was already canceled or timed out.
+	// cleanup still runs even if ctx was already canceled or timed out. Runs on the
+	// same dedicated connection that ran PREPARE, since DEALLOCATE on any other
+	// connection wouldn't find it.
 	defer func() {
 		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), detachedCleanupTimeout)
 		defer cancel()
-		_, _ = c.client.ExecContext(cleanupCtx, fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
+		_, _ = conn.ExecContext(cleanupCtx, fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
 	}()
 
-	// if there is no parameter needed, we can not put an empty bracket
-
-	nullsString := ""
-	if len(nulls) > 0 {
-		nullsString = "(" + strings.Join(nulls, ", ") + ")"
-	}
 	setPlanCacheMode := "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;"
 	prepareStatement := fmt.Sprintf("PREPARE otel_%s AS %s;", normalizedQueryID, query)
+
+	prepareDb := sqlquery.NewDbClient(sqlquery.ConnWrapper{Conn: conn}, setPlanCacheMode+prepareStatement, logger, sqlquery.TelemetryConfig{})
+	if _, err = prepareDb.QueryRows(ctx); err != nil {
+		logger.Error("failed to prepare statement for EXPLAIN", zap.Error(err), zap.String("queryID", queryID))
+		return "", err
+	}
+
+	paramCountSQL := fmt.Sprintf(
+		"/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_%s';",
+		normalizedQueryID,
+	)
+	paramCountDb := sqlquery.NewDbClient(sqlquery.ConnWrapper{Conn: conn}, paramCountSQL, logger, sqlquery.TelemetryConfig{})
+	paramCountResult, err := paramCountDb.QueryRows(ctx)
+	if err != nil {
+		logger.Error("failed to look up prepared statement parameter count", zap.Error(err), zap.String("queryID", queryID))
+		return "", err
+	}
+	if len(paramCountResult) == 0 {
+		logger.Error("prepared statement not found in pg_prepared_statements after PREPARE succeeded", zap.String("queryID", queryID))
+		return "", fmt.Errorf("prepared statement otel_%s not found in pg_prepared_statements", normalizedQueryID)
+	}
+
+	paramCount, err := strconv.Atoi(paramCountResult[0]["param_count"])
+	if err != nil {
+		logger.Error("failed to parse prepared statement parameter count", zap.Error(err), zap.String("queryID", queryID))
+		return "", err
+	}
+
+	nullsString := ""
+	if paramCount > 0 {
+		nulls := make([]string, paramCount)
+		for i := range nulls {
+			nulls[i] = "null"
+		}
+		nullsString = "(" + strings.Join(nulls, ", ") + ")"
+	}
 	explainStatement := fmt.Sprintf("EXPLAIN(FORMAT JSON) EXECUTE otel_%s%s;", normalizedQueryID, nullsString)
 
-	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, setPlanCacheMode+prepareStatement+explainStatement, logger, sqlquery.TelemetryConfig{})
-
-	result, err := wrappedDb.QueryRows(ctx)
+	explainDb := sqlquery.NewDbClient(sqlquery.ConnWrapper{Conn: conn}, explainStatement, logger, sqlquery.TelemetryConfig{})
+	result, err := explainDb.QueryRows(ctx)
 	if err != nil {
 		logger.Error("failed to explain statement", zap.Error(err))
 		return "", err
+	}
+
+	if len(result) == 0 {
+		return "", nil
 	}
 
 	plan, err := obfuscateSQLExecPlan(result[0]["QUERY PLAN"])
@@ -1154,17 +1196,22 @@ func parseMajorVersion(ver string) (int, error) {
 	return strconv.Atoi(parts[0])
 }
 
+// quoteDatabaseList renders databases as SQL string literals for an IN/NOT IN clause.
+func quoteDatabaseList(databases []string) string {
+	quoted := make([]string, len(databases))
+	for i, db := range databases {
+		quoted[i] = pq.QuoteLiteral(db)
+	}
+	return strings.Join(quoted, ",")
+}
+
 func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) string {
 	if len(databases) > 0 {
-		var queryDatabases []string
-		for _, db := range databases {
-			queryDatabases = append(queryDatabases, fmt.Sprintf("'%s'", db))
-		}
+		keyword := " WHERE"
 		if strings.Contains(baseQuery, "WHERE") {
-			baseQuery += fmt.Sprintf(" AND datname IN (%s)", strings.Join(queryDatabases, ","))
-		} else {
-			baseQuery += fmt.Sprintf(" WHERE datname IN (%s)", strings.Join(queryDatabases, ","))
+			keyword = " AND"
 		}
+		baseQuery += keyword + " datname IN (" + quoteDatabaseList(databases) + ")"
 	}
 	if groupBy {
 		baseQuery += " GROUP BY datname"
@@ -1188,13 +1235,15 @@ func functionKey(database, schema, function string) functionIdentifer {
 //go:embed templates/querySampleTemplate.tmpl
 var querySampleTemplate string
 
-func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, logger *zap.Logger) ([]map[string]any, float64, error) {
-	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
+var querySampleTmpl = template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
+
+func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, float64, error) {
 	buf := bytes.Buffer{}
 
-	if tmplErr := tmpl.Execute(&buf, map[string]any{
+	if tmplErr := querySampleTmpl.Execute(&buf, map[string]any{
 		"limit":                limit,
 		"newestQueryTimestamp": newestQueryTimestamp,
+		"excludedDatabases":    quoteDatabaseList(excludedDatabases),
 	}); tmplErr != nil {
 		logger.Error("failed to execute template", zap.Error(tmplErr))
 		return []map[string]any{}, newestQueryTimestamp, fmt.Errorf("failed executing template: %w", tmplErr)
@@ -1349,16 +1398,18 @@ func convertToInt(column, value string, logger *zap.Logger) (any, error) {
 //go:embed templates/topQueryTemplate.tmpl
 var topQueryTemplate string
 
+var topQueryTmpl = template.Must(template.New("topQuery").Option("missingkey=error").Parse(topQueryTemplate))
+
 // getTopQuery implements client.
-func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error) {
-	tmpl := template.Must(template.New("topQuery").Option("missingkey=error").Parse(topQueryTemplate))
+func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, error) {
 	buf := bytes.Buffer{}
 
 	// TODO: Only get query after the oldest query we got from the previous sample query colelction.
 	// For instance, if from the last sample query we got queries executed between 8:00 ~ 8:15,
 	// in this query, we should only gather query after 8:15
-	if err := tmpl.Execute(&buf, map[string]any{
-		"limit": limit,
+	if err := topQueryTmpl.Execute(&buf, map[string]any{
+		"limit":             limit,
+		"excludedDatabases": quoteDatabaseList(excludedDatabases),
 	}); err != nil {
 		logger.Error("failed to execute template", zap.Error(err))
 		return []map[string]any{}, fmt.Errorf("failed executing template: %w", err)
