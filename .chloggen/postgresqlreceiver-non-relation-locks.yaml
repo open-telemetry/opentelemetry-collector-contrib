@@ -1,28 +1,27 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: bug_fix
+change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/sqlserver
+component: receiver/postgresql
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Skip emitting query sample and top query events whose text is empty or a comment-only placeholder, except idle blocker query samples which are still emitted.
+note: Report non-relation locks in the `postgresql.database.locks` metric
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [50219]
+issues: [49733]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  SQL Server returns a placeholder line comment (e.g. `--*UPDATE----`) in place of
-  data-modifying OPENROWSET statements that carry inline credentials. The obfuscator
-  strips line comments, leaving an empty query text, so these rows previously emitted
-  empty query sample and top query events. Such rows are now skipped, with one
-  exception: idle blocker query samples (command = IDLE_BLOCKER) are still emitted even
-  when their query text is empty, so the blocking-session information they carry is
-  preserved.
+  Locks with a `lock_type` of `transactionid`, `virtualxid`, `object` or `advisory` were dropped and are
+  now reported with an empty `relation`. Those on a transaction ID belong to no database, so they carry
+  an empty `db.namespace`.
+  This adds data points to a metric that is disabled by default. Every backend holds one `virtualxid`
+  lock, so a sum over this metric grows by about the number of open connections. Check any dashboard or
+  alert that totals this metric.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

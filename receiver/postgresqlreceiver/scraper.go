@@ -53,8 +53,12 @@ type postgreSQLScraper struct {
 	clientFactory postgreSQLClientFactory
 	mb            *metadata.MetricsBuilder
 	lb            *metadata.LogsBuilder
-	excludes      map[string]struct{}
-	cache         *lru.Cache[string, float64]
+	// excludedDatabases and excludes are the canonical exclusion config, built
+	// together at construction: the slice feeds the collection-query templates,
+	// the map answers membership checks. Read these, not config.ExcludeDatabases.
+	excludedDatabases []string
+	excludes          map[string]struct{}
+	cache             *lru.Cache[string, float64]
 	// if enabled, uses a separated attribute for the schema
 	separateSchemaAttr     bool
 	useOTelSemconv         bool
@@ -94,8 +98,9 @@ func newPostgreSQLScraper(
 	cache *lru.Cache[string, float64],
 	queryPlanCache *expirable.LRU[string, string],
 ) (*postgreSQLScraper, error) {
-	excludes := make(map[string]struct{})
-	for _, db := range config.ExcludeDatabases {
+	excludedDatabases := config.ExcludeDatabases
+	excludes := make(map[string]struct{}, len(excludedDatabases))
+	for _, db := range excludedDatabases {
 		excludes[db] = struct{}{}
 	}
 	separateSchemaAttr := metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate.IsEnabled()
@@ -125,6 +130,7 @@ func newPostgreSQLScraper(
 		clientFactory:      clientFactory,
 		mb:                 metadata.NewMetricsBuilder(mbConfig, settings),
 		lb:                 metadata.NewLogsBuilder(config.LogsBuilderConfig, settings),
+		excludedDatabases:  excludedDatabases,
 		excludes:           excludes,
 		cache:              cache,
 		queryPlanCache:     queryPlanCache,
@@ -138,6 +144,12 @@ var semconvModeMetricAttributeNames = [...]string{
 	string(semconv.DBNamespaceKey),
 	string(semconv.DBCollectionNameKey),
 	string(metadata.PostgresqlIndexScansMetricAttributeKeyPostgresqlIndexName),
+}
+
+// isExcluded reports whether the database is listed in exclude_databases.
+func (p *postgreSQLScraper) isExcluded(database string) bool {
+	_, excluded := p.excludes[database]
+	return excluded
 }
 
 func metricsBuilderConfigForFeatureGate(config metadata.MetricsBuilderConfig, useOTelSemconv bool) metadata.MetricsBuilderConfig {
@@ -215,7 +227,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	}
 	var filteredDatabases []string
 	for _, db := range databases {
-		if _, ok := p.excludes[db]; !ok {
+		if !p.isExcluded(db) {
 			filteredDatabases = append(filteredDatabases, db)
 		}
 	}
@@ -257,7 +269,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectWalAge(ctx, now, listClient, &errs)
 	p.collectReplicationStats(ctx, now, listClient, &errs)
 	p.collectMaxConnections(ctx, now, listClient, &errs)
-	p.collectSharedRelationLocks(ctx, now, listClient, &errs)
+	p.collectServerScopedLocks(ctx, now, listClient, &errs)
 
 	if p.useOTelSemconv {
 		rb := p.setupSemconvResourceBuilder(p.mb.NewResourceBuilder())
@@ -343,7 +355,7 @@ func attrFloat64(atts map[string]any, key string) float64 {
 func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, limit int64, mux *errsMux, logger *zap.Logger) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
-	attributes, newestQueryTimestamp, err := dbClient.getQuerySamples(ctx, limit, p.newestQueryTimestamp, logger)
+	attributes, newestQueryTimestamp, err := dbClient.getQuerySamples(ctx, limit, p.newestQueryTimestamp, p.excludedDatabases, logger)
 	p.newestQueryTimestamp = newestQueryTimestamp
 	if err != nil {
 		mux.addPartial(err)
@@ -397,7 +409,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 
 	defer defaultDbClient.Close()
 
-	rows, err := defaultDbClient.getTopQuery(ctx, limit, logger)
+	rows, err := defaultDbClient.getTopQuery(ctx, limit, p.excludedDatabases, logger)
 	if err != nil {
 		logger.Error("failed to get top query", zap.Error(err))
 		mux.addPartial(err)
@@ -428,6 +440,12 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 	pq := make(priorityqueue.PriorityQueue[map[string]any, float64], 0)
 
 	for i, row := range rows {
+		// The template filters excluded databases server side; this guards the EXPLAIN
+		// connection below in case a row slips through, before the row touches the cache.
+		if database, _ := row[string(semconv.DBNamespaceKey)].(string); p.isExcluded(database) {
+			continue
+		}
+
 		queryID := row[dbAttributePrefix+queryidColumnName]
 
 		if queryID == nil {
@@ -479,11 +497,11 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		item := heap.Pop(&pq).(*priorityqueue.QueueItem[map[string]any, float64])
 		query := item.Value[string(semconv.DBQueryTextKey)].(string)
 		queryID := item.Value[dbAttributePrefix+queryidColumnName].(string)
+		database := item.Value[string(semconv.DBNamespaceKey)].(string)
 		// Use raw query (with $1, $2 placeholders) for EXPLAIN, not the obfuscated one (with ?)
 		rawQuery, _ := item.Value[dbAttributePrefix+"raw_query"].(string)
 		plan, ok := p.queryPlanCache.Get(queryID + "-plan")
 		if !ok && explained < maxExplainEachInterval {
-			database := item.Value[string(semconv.DBNamespaceKey)].(string)
 			dbClient, err := clientFactory.getClient(ctx, database)
 			if err == nil {
 				plan, err = dbClient.explainQuery(ctx, rawQuery, queryID, logger)
@@ -505,7 +523,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			context.Background(),
 			timestamp,
 			metadata.AttributeDbSystemNamePostgresql,
-			item.Value[string(semconv.DBNamespaceKey)].(string),
+			database,
 			query,
 			item.Value[dbAttributePrefix+callsColumnName].(int64),
 			item.Value[dbAttributePrefix+rowsColumnName].(int64),
@@ -867,7 +885,7 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	p.mb.RecordPostgresqlBgwriterMaxwrittenDataPoint(now, bgStats.maxWritten)
 }
 
-// collectDatabaseLocks collects the locks on relations local to the connected database
+// collectDatabaseLocks collects the locks whose target belongs to the connected database
 func (p *postgreSQLScraper) collectDatabaseLocks(
 	ctx context.Context,
 	now pcommon.Timestamp,
@@ -886,20 +904,22 @@ func (p *postgreSQLScraper) collectDatabaseLocks(
 	}
 }
 
-func (p *postgreSQLScraper) collectSharedRelationLocks(
+// collectServerScopedLocks collects the locks that belong to no single database:
+// locks on shared catalogs and locks whose target is a transaction ID.
+func (p *postgreSQLScraper) collectServerScopedLocks(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	client client,
 	errs *errsMux,
 ) {
-	sharedLocks, err := client.getSharedRelationLocks(ctx)
+	serverLocks, err := client.getServerScopedLocks(ctx)
 	if err != nil {
-		p.logger.Error("Errors encountered while fetching shared relation locks", zap.Error(err))
+		p.logger.Error("Errors encountered while fetching server-scoped locks", zap.Error(err))
 		errs.addPartial(err)
 		return
 	}
-	// Shared relations (pg_locks.database = 0) are server-scoped, so db.namespace is empty.
-	for _, dbLock := range sharedLocks {
+	// These locks are not attributable to a database, so db.namespace is empty.
+	for _, dbLock := range serverLocks {
 		p.mb.RecordPostgresqlDatabaseLocksDataPoint(now, dbLock.locks, dbLock.relation, dbLock.mode, dbLock.lockType, "")
 	}
 }
