@@ -1,0 +1,24 @@
+nats:
+  endpoint: nats://localhost:4222
+
+nats/full:
+  endpoint: nats://nats.example.com:4222
+  pedantic: false
+  tls:
+    insecure: false
+    ca_file: /etc/otel/certs/ca.crt
+  user:
+    username: otel
+    password: s3cret
+  jetstream:
+    domain: hub
+    publish_timeout: 5s
+  logs:
+    subject: '"otel.logs"'
+    marshaler: otlp_proto
+  metrics:
+    subject: '"otel.metrics"'
+    marshaler: otlp_json
+  traces:
+    subject: '"otel.spans"'
+    encoding_extension: otlp_encoding/nats

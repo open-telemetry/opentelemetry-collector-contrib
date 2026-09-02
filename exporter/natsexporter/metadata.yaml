@@ -1,0 +1,13 @@
+type: nats
+display_name: NATS Exporter
+
+status:
+  class: exporter
+  stability:
+    development: [traces, metrics, logs]
+  distributions: []
+  codeowners:
+    active: [suckatrash, kalebpace]
+
+tests:
+  skip_lifecycle: true
