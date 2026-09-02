@@ -149,27 +149,34 @@ var (
 	// EXTRACT(field FROM x) is parsed into a call carrying the field as a string Const that has a
 	// source location, so pg_stat_statements rewrites it to EXTRACT($1 FROM x). That is invalid:
 	// extract_arg accepts an identifier, a date-part keyword or Sconst, never a ParamRef.
-	// date_part($1, x) is the equivalent function-call spelling and takes a parameter. Only the
-	// text up to and including FROM is replaced, so the original closing paren still terminates
-	// the call and the rewrite stays balanced regardless of what the source expression contains.
-	extractParamPattern = regexp.MustCompile(`(?i)\bEXTRACT\s*\(\s*(\$\d+)\s+FROM\s+`)
+	// pg_catalog.date_part($1, x) is the equivalent function-call spelling, takes a parameter, and
+	// exists on every PostgreSQL version the top-query EXPLAIN path can run against (13+). Only
+	// the text up to and including FROM is replaced, so the original closing paren still
+	// terminates the call. The leading (^|[^"']) group is restored in the replacement so a quoted
+	// identifier or ordinary string literal that merely looks like EXTRACT($n FROM ...) is left
+	// alone.
+	extractParamPattern = regexp.MustCompile(`(?i)(^|[^"'])\bEXTRACT\s*\(\s*(\$\d+)\s+FROM\s+`)
 
 	// The typed-literal form TYPENAME 'value' requires a literal, so normalization turns
 	// "interval '1 day'" into the invalid "interval $1". A cast expresses the same thing and does
 	// accept a parameter. Requiring whitespace between the type name and the parameter keeps this
 	// from matching identifiers that merely start with a type name, e.g. "interval_col = $1".
-	typedLiteralParamPattern = regexp.MustCompile(`(?i)\b(timestamptz|timestamp|timetz|interval|date|time)\s+(\$\d+)\b`)
+	// The leading (^|[^"']) group is restored in the replacement so a quoted identifier or
+	// ordinary string literal that merely looks like "interval $1" is left alone.
+	typedLiteralParamPattern = regexp.MustCompile(`(?i)(^|[^"'])\b(timestamptz|timestamp|timetz|interval|date|time)\s+(\$\d+)\b`)
 )
 
 // repairNormalizedQuery rewrites the parameter placements that pg_stat_statements can emit but
 // PostgreSQL cannot parse. Queries that do not contain them are returned unchanged.
 //
-// date_part returns double precision where EXTRACT returns numeric on PostgreSQL 14+. The
-// difference does not matter here: the rewritten text is only ever prepared and explained with
-// null arguments to obtain a plan, never executed for its result.
+// On PostgreSQL 14+, EXTRACT returns numeric and date_part returns double precision, so a
+// generic-null plan of the rewritten text may differ from a native EXTRACT plan. date_part is
+// still used because EXTRACT($n FROM ...) cannot be prepared at all, and because
+// pg_catalog.extract($n, x) is not a two-argument function on PostgreSQL 13. This repair does
+// not version-gate and does not rewrite statements that already prepare successfully.
 func repairNormalizedQuery(query string) string {
-	query = extractParamPattern.ReplaceAllString(query, "date_part(${1}, ")
-	query = typedLiteralParamPattern.ReplaceAllString(query, "${2}::${1}")
+	query = extractParamPattern.ReplaceAllString(query, "${1}pg_catalog.date_part(${2}, ")
+	query = typedLiteralParamPattern.ReplaceAllString(query, "${1}${3}::${2}")
 	return query
 }
 

@@ -176,32 +176,32 @@ func TestRepairNormalizedQuery(t *testing.T) {
 		{
 			name:     "extract with parameter is rewritten to date_part",
 			query:    "SELECT * FROM orders WHERE EXTRACT($1 FROM order_date) = $2",
-			expected: "SELECT * FROM orders WHERE date_part($1, order_date) = $2",
+			expected: "SELECT * FROM orders WHERE pg_catalog.date_part($1, order_date) = $2",
 		},
 		{
 			name:     "extract rewrite preserves surrounding parameter numbering",
 			query:    "SELECT CAST($1 AS varchar(50)) FROM orders WHERE EXTRACT($2 FROM order_date) BETWEEN $3 AND $4",
-			expected: "SELECT CAST($1 AS varchar(50)) FROM orders WHERE date_part($2, order_date) BETWEEN $3 AND $4",
+			expected: "SELECT CAST($1 AS varchar(50)) FROM orders WHERE pg_catalog.date_part($2, order_date) BETWEEN $3 AND $4",
 		},
 		{
 			name:     "extract rewrite is balanced when the source is a nested call",
 			query:    "SELECT EXTRACT($1 FROM greatest(a, b))",
-			expected: "SELECT date_part($1, greatest(a, b))",
+			expected: "SELECT pg_catalog.date_part($1, greatest(a, b))",
 		},
 		{
 			name:     "extract rewrite tolerates extra whitespace",
 			query:    "SELECT extract(  $1   FROM   order_date )",
-			expected: "SELECT date_part($1, order_date )",
+			expected: "SELECT pg_catalog.date_part($1, order_date )",
 		},
 		{
 			name:     "extract rewrite is case insensitive",
 			query:    "SELECT Extract($1 From order_date)",
-			expected: "SELECT date_part($1, order_date)",
+			expected: "SELECT pg_catalog.date_part($1, order_date)",
 		},
 		{
 			name:     "multiple extracts are all rewritten",
 			query:    "SELECT EXTRACT($1 FROM a), EXTRACT($2 FROM b)",
-			expected: "SELECT date_part($1, a), date_part($2, b)",
+			expected: "SELECT pg_catalog.date_part($1, a), pg_catalog.date_part($2, b)",
 		},
 		{
 			name:     "extract with a literal field is already valid and left alone",
@@ -242,6 +242,26 @@ func TestRepairNormalizedQuery(t *testing.T) {
 			name:     "AT TIME ZONE is already valid and left alone",
 			query:    "SELECT now() AT TIME ZONE $1",
 			expected: "SELECT now() AT TIME ZONE $1",
+		},
+		{
+			name:     "quoted identifier that looks like extract is left alone",
+			query:    `SELECT * FROM t WHERE "EXTRACT($1 FROM x)" = $2`,
+			expected: `SELECT * FROM t WHERE "EXTRACT($1 FROM x)" = $2`,
+		},
+		{
+			name:     "string literal that looks like extract is left alone",
+			query:    "SELECT * FROM t WHERE msg = 'EXTRACT($1 FROM x)'",
+			expected: "SELECT * FROM t WHERE msg = 'EXTRACT($1 FROM x)'",
+		},
+		{
+			name:     "quoted identifier that looks like a typed literal is left alone",
+			query:    `SELECT * FROM t WHERE "interval $1" = $2`,
+			expected: `SELECT * FROM t WHERE "interval $1" = $2`,
+		},
+		{
+			name:     "string literal that looks like a typed literal is left alone",
+			query:    "SELECT * FROM t WHERE msg = 'interval $1'",
+			expected: "SELECT * FROM t WHERE msg = 'interval $1'",
 		},
 		{
 			name:     "identifier prefixed with a type name is not rewritten",
