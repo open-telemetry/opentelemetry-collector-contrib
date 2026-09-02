@@ -84,13 +84,22 @@ func TestConfigValidate_UnixSocketMissingEndpoint(t *testing.T) {
 	assert.Contains(t, err.Error(), ErrNoEndpoint)
 }
 
-func TestConfigValidate_TCPEndpointRequiresHostPort(t *testing.T) {
+func TestConfigValidate_TCPEndpointWithoutPort(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Username = "otel"
 	cfg.AddrConfig.Transport = confignet.TransportTypeTCP
 	cfg.AddrConfig.Endpoint = "localhost"
 
+	require.NoError(t, cfg.Validate())
+}
+
+func TestConfigValidate_TCPMissingEndpoint(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.AddrConfig.Transport = confignet.TransportTypeTCP
+	cfg.AddrConfig.Endpoint = ""
+
 	err := cfg.Validate()
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), ErrHostPort)
+	assert.Contains(t, err.Error(), ErrNoEndpoint)
 }

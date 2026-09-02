@@ -5,7 +5,6 @@ package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
-	"net"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -31,7 +30,6 @@ const (
 const (
 	ErrNoUsername          = "invalid config: missing username"
 	ErrTransportsSupported = "invalid config: 'transport' must be 'tcp' or 'unix'"
-	ErrHostPort            = "invalid config: 'endpoint' must be in the form <host>:<port> when 'transport' is 'tcp'"
 	ErrNoEndpoint          = "invalid config: missing endpoint"
 	// #nosec G101 - not hardcoded credentials
 	ErrPasswordAndDBAuth = "invalid config: set either 'password' or 'db_auth', not both"
@@ -108,12 +106,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	switch cfg.AddrConfig.Transport {
-	case confignet.TransportTypeTCP:
-		_, _, endpointErr := net.SplitHostPort(cfg.AddrConfig.Endpoint)
-		if endpointErr != nil {
-			err = multierr.Append(err, errors.New(ErrHostPort))
-		}
-	case confignet.TransportTypeUnix:
+	case confignet.TransportTypeTCP, confignet.TransportTypeUnix:
 		if cfg.AddrConfig.Endpoint == "" {
 			err = multierr.Append(err, errors.New(ErrNoEndpoint))
 		}
