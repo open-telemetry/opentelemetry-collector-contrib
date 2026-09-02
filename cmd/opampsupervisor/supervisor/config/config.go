@@ -480,7 +480,16 @@ func DefaultSupervisor() Supervisor {
 			ValidateConfig:              false,
 			Package: AgentPackage{
 				AgentBinary: defaultAgentBinary,
-				Verifier:    Verifier{Type: VerifierTypeNone},
+				Verifier: Verifier{
+					Type: VerifierTypeCosign,
+					Cosign: CosignSignatureVerifier{
+						CertGithubWorkflowRepository: defaultCosignRepository,
+						Identities: []AgentSignatureIdentity{{
+							Issuer:        defaultCosignIssuer,
+							SubjectRegExp: defaultCosignSubjectRegExp,
+						}},
+					},
+				},
 			},
 		},
 		Telemetry: Telemetry{
