@@ -212,16 +212,8 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *PromConfig, error)
 		job := make(map[string]any)
 		job["job_name"] = tds[i].name
 		job["metrics_path"] = metricPaths[i]
-		// The end-to-end tests validate each scrape against a specific mock page by
-		// position (Nth successful scrape == Nth page). When a scrape's request
-		// reaches the mock (advancing its page counter) but the receiver fails to
-		// read the response within the scrape timeout, that page is dropped and the
-		// page-to-scrape mapping shifts, causing spurious value mismatches. Prometheus
-		// caps scrape_timeout at scrape_interval, and it defaults to the interval when
-		// unset, so a 100ms interval leaves only a 100ms timeout. That is not enough
-		// headroom on loaded CI runners and made these tests flaky. Use a larger
-		// interval so scrapes have ample time to complete before timing out. See
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50434
+		// Give scrapes timeout headroom; a short interval caps scrape_timeout and
+		// desyncs the page/scrape mapping under load (#50434).
 		job["scrape_interval"] = "500ms"
 		job["static_configs"] = []map[string]any{{"targets": []string{u.Host}}}
 		jobs = append(jobs, job)

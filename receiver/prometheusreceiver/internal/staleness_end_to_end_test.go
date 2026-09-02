@@ -222,16 +222,7 @@ service:
 	}
 
 	require.Positive(t, totalSamples, "Expected at least 1 sample")
-	// The mock target alternates between two series on every scrape, so after the
-	// first scrape each scrape reports the series that just disappeared as stale.
-	// This test verifies that staleness markers are emitted end-to-end, so assert
-	// that we observed at least one stale marker.
-	//
-	// We intentionally do not assert on the ratio of stale markers to total
-	// samples. The remote write exporter batches samples across scrapes, so the
-	// fraction of stale markers within the first few collected write requests
-	// varies with timing (fewer scrapes are captured under load), which made a
-	// ratio threshold sitting at the ~0.47 steady-state mean flaky. See
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50434
+	// Assert staleness markers are emitted end-to-end. A ratio threshold near the
+	// ~0.47 steady-state mean was flaky as sample counts vary under load (#50434).
 	require.Positivef(t, staleMarkerCount, "Expected at least one stale marker out of %d samples", totalSamples)
 }
