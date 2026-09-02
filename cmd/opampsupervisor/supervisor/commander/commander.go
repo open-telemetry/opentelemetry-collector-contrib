@@ -27,9 +27,11 @@ import (
 // after the graceful shutdown signal before killing it forcibly.
 const defaultStopGracePeriod = 10 * time.Second
 
-// AgentStartedLogMsg is logged every time an Agent process is started. Tests
-// count occurrences of it to observe how often the Agent was (re)started, so
-// keep the message and the log sites in sync.
+// AgentStartedLogMsg is logged every time an Agent process is started. Each site
+// tags a "start_mode" field naming the code path (normal, passthrough, one_shot)
+// so the entries are self-describing. Tests count occurrences of the message to
+// observe how often the Agent was (re)started, so keep the message and the log
+// sites in sync.
 const AgentStartedLogMsg = "Agent process started"
 
 // Commander can start/stop/restart the Agent executable and also watch for a signal
@@ -161,7 +163,7 @@ func (c *Commander) startNormal() error {
 		return fmt.Errorf("startNormal: %w", err)
 	}
 
-	c.logger.Debug(AgentStartedLogMsg, zap.Int("pid", c.cmd.Process.Pid))
+	c.logger.Debug(AgentStartedLogMsg, zap.Int("pid", c.cmd.Process.Pid), zap.String("start_mode", "normal"))
 	c.running.Store(1)
 	close(c.outputDoneCh)
 
@@ -237,7 +239,7 @@ func (c *Commander) startWithPassthroughLogging() error {
 		}
 	})
 
-	c.logger.Debug(AgentStartedLogMsg, zap.Int("pid", c.cmd.Process.Pid))
+	c.logger.Debug(AgentStartedLogMsg, zap.Int("pid", c.cmd.Process.Pid), zap.String("start_mode", "passthrough"))
 
 	go func() {
 		outputWG.Wait()
@@ -367,7 +369,7 @@ func (c *Commander) StartOneShot() ([]byte, []byte, error) {
 		}
 	}()
 
-	c.logger.Debug(AgentStartedLogMsg, zap.Int("pid", cmd.Process.Pid))
+	c.logger.Debug(AgentStartedLogMsg, zap.Int("pid", cmd.Process.Pid), zap.String("start_mode", "one_shot"))
 
 	doneCh := make(chan struct{}, 1)
 
