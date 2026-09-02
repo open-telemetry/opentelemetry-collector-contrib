@@ -247,6 +247,22 @@ This metric is reported with an assumption that the exporter and the receiver cl
 | topic | The Kafka topic. | Any Str | - |
 | partition | The Kafka topic partition. | Any Int | - |
 
+### otelcol_kafka_receiver_records_routing_failed
+
+Number of records that could not be routed using the otelcol.signal header.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
+| reason | The reason a Kafka record could not be routed. | Str: ``missing_header``, ``duplicate_header``, ``unknown_signal``, ``unconfigured_signal`` | - |
+
 ### otelcol_kafka_receiver_unmarshal_failed_log_records
 
 Number of log records failed to be unmarshaled

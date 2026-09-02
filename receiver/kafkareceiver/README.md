@@ -73,6 +73,7 @@ The following settings can be optionally configured:
   - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
      (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
   - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
+- `signal_header` (default = false): Routes records using the `otelcol.signal` header (`logs`, `metrics`, `traces`, or `profiles`). When this receiver is attached to more than one signal pipeline, they share a single Kafka consumer. See [Shared signal topic](#shared-signal-topic).
 - `group_id` (default = otel-collector): The consumer group that receiver will be consuming messages from
 - `client_id` (default = otel-collector): The consumer client ID that receiver will use
 - `rack_id` (default = ""): The rack identifier for this client. When set and brokers are configured with a rack-aware replica selector, the client will prefer fetching from the closest replica.
@@ -153,6 +154,69 @@ The following settings can be optionally configured:
   - `metrics`
     - `kafka_receiver_records_delay`:
       - `enabled` (default = false) Whether the metric kafka_receiver_records_delay will be reported or not.
+
+### Shared signal topic
+
+To consume more than one signal from the same topic, enable `signal_header` and point each signal's
+`topics` at that topic. Attach this receiver to every pipeline that should read it:
+
+```yaml
+receivers:
+  kafka/shared:
+    signal_header: true
+    group_id: otel-shared
+    logs:
+      topics: [otlp]
+    metrics:
+      topics: [otlp]
+    traces:
+      topics: [otlp]
+    profiles:
+      topics: [otlp]
+
+service:
+  pipelines:
+    logs:
+      receivers: [kafka/shared]
+    metrics:
+      receivers: [kafka/shared]
+    traces:
+      receivers: [kafka/shared]
+    profiles:
+      receivers: [kafka/shared]
+```
+
+The receiver starts one Kafka consumer for the component and subscribes to the union of those
+topics. Each signal still uses its own `encoding`. That consumer commits one offset per partition,
+so if one signal's pipeline blocks, later records of the other signals on that partition wait. You
+also cannot add consumers for only one signal. A shared topic is a good fit when you are
+partition-constrained or running at low throughput. Keep separate topics when you need independent
+retention or to scale consumers per signal.
+
+`exclude_topics` applies to that shared consumer, so every attached signal must set the same
+exclusions or component creation fails. Each of those signals must still include a `^` regex topic,
+a literal-only signal cannot set exclusions even if another attached signal uses regex.
+
+If any topic uses a `^` regex prefix, the whole subscription switches to regex matching and literal
+names are converted to anchored patterns. That makes each metadata refresh list every topic in the
+cluster.
+
+Records with a missing, duplicate, or unknown `otelcol.signal` header, or a signal that has no
+pipeline, are permanent errors. They increment `otelcol_kafka_receiver_records_routing_failed`.
+Whether the record is committed or the partition blocks is controlled by `message_marking`.
+
+To migrate:
+
+1. Upgrade the exporter and receiver with no config change.
+2. Enable `signal_header` on the exporter. Leave the per-signal topics as they are. Existing
+   receivers ignore the extra header.
+3. Add a new receiver with `signal_header: true` and a new `group_id`, attached to every signal
+   pipeline on the shared topic.
+4. Move the exporter topics onto the shared topic.
+5. Drain the old topics, then remove the old receivers.
+
+To roll back, move the exporters back to the old topics first. Do not turn `signal_header` off, or
+run a receiver without it, while mixed records are still in the topic.
 
 ### Supported encodings
 

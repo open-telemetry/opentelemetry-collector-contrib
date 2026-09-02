@@ -9,6 +9,7 @@ require (
 	github.com/jaegertracing/jaeger-idl v0.11.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.159.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.159.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.159.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.159.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.159.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.159.0
@@ -33,6 +34,8 @@ require (
 	go.opentelemetry.io/collector/pdata v1.65.1-0.20260901210140-566f9531b8c8
 	go.opentelemetry.io/collector/pdata/pprofile v0.159.1-0.20260901210140-566f9531b8c8
 	go.opentelemetry.io/collector/pdata/testdata v0.159.1-0.20260901210140-566f9531b8c8
+	go.opentelemetry.io/collector/pipeline v1.65.1-0.20260901210140-566f9531b8c8
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.159.1-0.20260901210140-566f9531b8c8
 	go.opentelemetry.io/collector/receiver v1.65.1-0.20260901210140-566f9531b8c8
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.159.1-0.20260901210140-566f9531b8c8
 	go.opentelemetry.io/collector/receiver/receivertest v0.159.1-0.20260901210140-566f9531b8c8
@@ -107,8 +110,6 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.65.1-0.20260901210140-566f9531b8c8 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.159.1-0.20260901210140-566f9531b8c8 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.159.1-0.20260901210140-566f9531b8c8 // indirect
-	go.opentelemetry.io/collector/pipeline v1.65.1-0.20260901210140-566f9531b8c8 // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.159.1-0.20260901210140-566f9531b8c8 // indirect
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
@@ -122,6 +123,8 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils => ../../pkg/core/xidutils
 

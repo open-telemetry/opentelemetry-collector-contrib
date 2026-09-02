@@ -63,6 +63,7 @@ func TestLoadConfig(t *testing.T) {
 					Topics:   []string{"logs"},
 					Encoding: "direct",
 				}
+				cfg.SignalHeader = true
 				cfg.ErrorBackOff = configretry.BackOffConfig{
 					Enabled:         true,
 					InitialInterval: 1 * time.Second,

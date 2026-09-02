@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
@@ -32,14 +33,19 @@ const (
 
 // NewFactory creates Kafka receiver factory.
 func NewFactory() receiver.Factory {
+	f := kafkaReceiverFactory{receivers: sharedcomponent.NewSharedComponents()}
 	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		xreceiver.WithTraces(createTracesReceiver, metadata.TracesStability),
-		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		xreceiver.WithLogs(createLogsReceiver, metadata.LogsStability),
-		xreceiver.WithProfiles(createProfilesReceiver, metadata.ProfilesStability),
+		xreceiver.WithTraces(f.createTraces, metadata.TracesStability),
+		xreceiver.WithMetrics(f.createMetrics, metadata.MetricsStability),
+		xreceiver.WithLogs(f.createLogs, metadata.LogsStability),
+		xreceiver.WithProfiles(f.createProfiles, metadata.ProfilesStability),
 	)
+}
+
+type kafkaReceiverFactory struct {
+	receivers *sharedcomponent.SharedComponents
 }
 
 func createDefaultConfig() component.Config {
@@ -74,6 +80,75 @@ func createDefaultConfig() component.Config {
 			ExtractHeaders: false,
 		},
 	}
+}
+
+// createShared reuses a muxReceiver per config when signal_header is
+// enabled. Each Create* call registers that signal so all attached pipelines
+// share one Kafka consumer.
+func (f *kafkaReceiverFactory) createShared(cfg *Config,
+	set receiver.Settings, register func(*muxReceiver) error,
+) (*sharedcomponent.SharedComponent, error) {
+	var err error
+	shared := f.receivers.GetOrAdd(cfg, func() component.Component {
+		var receiver *muxReceiver
+		receiver, err = newMuxReceiver(cfg, set)
+		return receiver
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err := register(shared.Unwrap().(*muxReceiver)); err != nil {
+		return nil, err
+	}
+	return shared, nil
+}
+
+func (f *kafkaReceiverFactory) createTraces(ctx context.Context,
+	set receiver.Settings, cfg component.Config, nextConsumer consumer.Traces,
+) (receiver.Traces, error) {
+	config := cfg.(*Config)
+	if !config.SignalHeader {
+		return createTracesReceiver(ctx, set, cfg, nextConsumer)
+	}
+	return f.createShared(config, set, func(mux *muxReceiver) error {
+		return mux.registerTraces(set, nextConsumer)
+	})
+}
+
+func (f *kafkaReceiverFactory) createMetrics(ctx context.Context,
+	set receiver.Settings, cfg component.Config, nextConsumer consumer.Metrics,
+) (receiver.Metrics, error) {
+	config := cfg.(*Config)
+	if !config.SignalHeader {
+		return createMetricsReceiver(ctx, set, cfg, nextConsumer)
+	}
+	return f.createShared(config, set, func(mux *muxReceiver) error {
+		return mux.registerMetrics(set, nextConsumer)
+	})
+}
+
+func (f *kafkaReceiverFactory) createLogs(ctx context.Context,
+	set receiver.Settings, cfg component.Config, nextConsumer consumer.Logs,
+) (receiver.Logs, error) {
+	config := cfg.(*Config)
+	if !config.SignalHeader {
+		return createLogsReceiver(ctx, set, cfg, nextConsumer)
+	}
+	return f.createShared(config, set, func(mux *muxReceiver) error {
+		return mux.registerLogs(set, nextConsumer)
+	})
+}
+
+func (f *kafkaReceiverFactory) createProfiles(ctx context.Context,
+	set receiver.Settings, cfg component.Config, nextConsumer xconsumer.Profiles,
+) (xreceiver.Profiles, error) {
+	config := cfg.(*Config)
+	if !config.SignalHeader {
+		return createProfilesReceiver(ctx, set, cfg, nextConsumer)
+	}
+	return f.createShared(config, set, func(mux *muxReceiver) error {
+		return mux.registerProfiles(set, nextConsumer)
+	})
 }
 
 func createTracesReceiver(

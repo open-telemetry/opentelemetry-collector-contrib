@@ -45,6 +45,10 @@ type Config struct {
 	// HeaderExtraction controls extraction of headers from Kafka records.
 	HeaderExtraction HeaderExtraction `mapstructure:"header_extraction"`
 
+	// SignalHeader routes records using the "otelcol.signal" Kafka header and
+	// shares one consumer across the signal pipelines that use this receiver.
+	SignalHeader bool `mapstructure:"signal_header"`
+
 	// ErrorBackoff controls backoff/retry behavior when the next consumer
 	// returns an error.
 	ErrorBackOff configretry.BackOffConfig `mapstructure:"error_backoff"`

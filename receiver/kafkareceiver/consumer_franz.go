@@ -145,11 +145,7 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 	c.host = host
 	c.reportStatus(componentstatus.StatusStarting)
 
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverID:             c.settings.ID,
-		Transport:              transport,
-		ReceiverCreateSettings: c.settings,
-	})
+	obsrecv, err := newObsReport(c.settings)
 	if err != nil {
 		return err
 	}
@@ -209,6 +205,14 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 
 	go c.consumeLoop(context.Background())
 	return nil
+}
+
+func newObsReport(set receiver.Settings) (*receiverhelper.ObsReport, error) {
+	return receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             set.ID,
+		Transport:              transport,
+		ReceiverCreateSettings: set,
+	})
 }
 
 func (c *franzConsumer) consumeLoop(ctx context.Context) {

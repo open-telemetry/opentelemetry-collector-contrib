@@ -9,12 +9,57 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
+	"go.opentelemetry.io/otel/metric"
+	metricnoop "go.opentelemetry.io/otel/metric/noop"
+	"go.opentelemetry.io/otel/trace"
+	tracenoop "go.opentelemetry.io/otel/trace/noop"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
+
+type trackingMeterProvider struct {
+	metric.MeterProvider
+	dropped []string
+}
+
+func (p *trackingMeterProvider) DropInjectedAttributes(attrs ...string) metric.MeterProvider {
+	p.dropped = append(p.dropped, attrs...)
+	return p.MeterProvider
+}
+
+type trackingTracerProvider struct {
+	trace.TracerProvider
+	dropped     []string
+	tracerCalls int
+}
+
+func (p *trackingTracerProvider) DropInjectedAttributes(attrs ...string) trace.TracerProvider {
+	p.dropped = append(p.dropped, attrs...)
+	return p.TracerProvider
+}
+
+func (p *trackingTracerProvider) Tracer(name string, options ...trace.TracerOption) trace.Tracer {
+	p.tracerCalls++
+	return p.TracerProvider.Tracer(name, options...)
+}
+
+type trackingCore struct {
+	zapcore.Core
+	dropped []string
+}
+
+func (c *trackingCore) DropInjectedAttributes(attrs ...string) zapcore.Core {
+	c.dropped = append(c.dropped, attrs...)
+	return c.Core
+}
 
 func encodingFromReceiver(tb testing.TB, r any, section string) string {
 	tb.Helper()
@@ -36,12 +81,103 @@ func encodingFromReceiver(tb testing.TB, r any, section string) string {
 	return ""
 }
 
+func signalHeaderConfig() *Config {
+	cfg := createDefaultConfig().(*Config)
+	cfg.SignalHeader = true
+	return cfg
+}
+
+func createAllSignals(t *testing.T, cfg *Config) (traces, metrics, logs, profiles any) {
+	t.Helper()
+	factory := NewFactory()
+	settings := receivertest.NewNopSettings(metadata.Type)
+	var err error
+	traces, err = factory.CreateTraces(t.Context(), settings, cfg, new(consumertest.TracesSink))
+	require.NoError(t, err)
+	metrics, err = factory.CreateMetrics(t.Context(), settings, cfg, new(consumertest.MetricsSink))
+	require.NoError(t, err)
+	logs, err = factory.CreateLogs(t.Context(), settings, cfg, new(consumertest.LogsSink))
+	require.NoError(t, err)
+	profiles, err = factory.(xreceiver.Factory).CreateProfiles(t.Context(), settings, cfg, new(consumertest.ProfilesSink))
+	require.NoError(t, err)
+	return traces, metrics, logs, profiles
+}
+
+func unwrapMux(r any) *muxReceiver {
+	return r.(*sharedcomponent.SharedComponent).Unwrap().(*muxReceiver)
+}
+
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	assert.Equal(t, configkafka.NewDefaultClientConfig(), cfg.ClientConfig)
 	assert.Equal(t, configkafka.NewDefaultConsumerConfig(), cfg.ConsumerConfig)
+}
+
+func TestSignalHeaderReceiverIsShared(t *testing.T) {
+	cfg := signalHeaderConfig()
+	cfg.Traces.Topics = []string{"^shared$"}
+	cfg.Metrics.Topics = []string{"^shared$"}
+	cfg.Logs.Topics = []string{"^logs$"}
+	cfg.Profiles.Topics = []string{"^shared$"}
+	cfg.Traces.ExcludeTopics = []string{"^debug$"}
+	cfg.Metrics.ExcludeTopics = []string{"^debug$"}
+	cfg.Logs.ExcludeTopics = []string{"^debug$"}
+	cfg.Profiles.ExcludeTopics = []string{"^debug$"}
+
+	traces, metrics, logs, profiles := createAllSignals(t, cfg)
+	assert.Same(t, traces, metrics)
+	assert.Same(t, traces, logs)
+	assert.Same(t, traces, profiles)
+	mux := unwrapMux(traces)
+	assert.Equal(t, []string{"^shared$", "^logs$"}, mux.topics)
+	assert.Equal(t, []string{"^debug$"}, mux.excludeTopics)
+}
+
+func TestSignalHeaderReceiverRejectsDifferentExclusions(t *testing.T) {
+	cfg := signalHeaderConfig()
+	cfg.Traces.Topics = []string{"^otel-.*"}
+	cfg.Traces.ExcludeTopics = []string{"^otel-metrics$"}
+	cfg.Metrics.Topics = []string{"otel-metrics"}
+	factory := NewFactory()
+	settings := receivertest.NewNopSettings(metadata.Type)
+
+	_, err := factory.CreateTraces(t.Context(), settings, cfg, new(consumertest.TracesSink))
+	require.NoError(t, err)
+	_, err = factory.CreateMetrics(t.Context(), settings, cfg, new(consumertest.MetricsSink))
+	assert.ErrorContains(t, err, "signal_header requires identical exclude_topics")
+}
+
+func TestSignalHeaderReceiverPreservesLiteralTopicsWithRegex(t *testing.T) {
+	cfg := signalHeaderConfig()
+	cfg.Traces.Topics = []string{"^traces-.*"}
+	cfg.Logs.Topics = []string{"otlp.logs"}
+	factory := NewFactory()
+	settings := receivertest.NewNopSettings(metadata.Type)
+
+	traces, err := factory.CreateTraces(t.Context(), settings, cfg, new(consumertest.TracesSink))
+	require.NoError(t, err)
+	_, err = factory.CreateLogs(t.Context(), settings, cfg, new(consumertest.LogsSink))
+	require.NoError(t, err)
+	assert.Equal(t, []string{"^traces-.*", `^otlp\.logs$`}, unwrapMux(traces).topics)
+}
+
+func TestSignalHeaderReceiverDropsSignalFromSharedTelemetry(t *testing.T) {
+	meter := &trackingMeterProvider{MeterProvider: metricnoop.NewMeterProvider()}
+	tracer := &trackingTracerProvider{TracerProvider: tracenoop.NewTracerProvider()}
+	core := &trackingCore{Core: zap.NewNop().Core()}
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.MeterProvider = meter
+	settings.TracerProvider = tracer
+	settings.Logger = zap.New(core)
+
+	_, err := newMuxReceiver(signalHeaderConfig(), settings)
+	require.NoError(t, err)
+	want := []string{kafka.SignalHeaderKey}
+	assert.Equal(t, want, meter.dropped)
+	assert.Equal(t, want, tracer.dropped)
+	assert.Equal(t, want, core.dropped)
 }
 
 func TestCreateTraces(t *testing.T) {
