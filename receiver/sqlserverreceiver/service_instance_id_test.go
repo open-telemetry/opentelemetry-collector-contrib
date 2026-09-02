@@ -66,7 +66,7 @@ func TestComputeServiceInstanceID(t *testing.T) {
 			expected: "myserver:5000:1433", // msdsn treats "myserver:5000" as the host name
 		},
 		{
-			name: "datasource without port",
+			name: "datasource without instance or port",
 			config: &Config{
 				DataSource: "server=myserver;user id=sa;password=pass",
 			},
@@ -158,7 +158,35 @@ func TestComputeServiceInstanceID(t *testing.T) {
 			config: &Config{
 				DataSource: "server=myserver\\SQLEXPRESS,5000;user id=sa",
 			},
-			expected: "myserver:5000", // Instance name not included in service.instance.id
+			expected: "myserver\\SQLEXPRESS",
+		},
+		{
+			name: "datasource with named instance and no port",
+			config: &Config{
+				DataSource: "server=myserver\\InstanceA;user id=sa",
+			},
+			expected: "myserver\\InstanceA",
+		},
+		{
+			name: "datasource with second named instance on same host",
+			config: &Config{
+				DataSource: "server=myserver\\InstanceB;user id=sa",
+			},
+			expected: "myserver\\InstanceB",
+		},
+		{
+			name: "URL datasource with named instance",
+			config: &Config{
+				DataSource: "sqlserver://myserver/SQLEXPRESS",
+			},
+			expected: "myserver\\SQLEXPRESS",
+		},
+		{
+			name: "loopback datasource with named instance",
+			config: &Config{
+				DataSource: "server=127.0.0.1\\SQLEXPRESS;user id=sa",
+			},
+			expected: fmt.Sprintf("%s\\SQLEXPRESS", hostname),
 		},
 		{
 			name: "datasource with spaces around equals",
@@ -196,13 +224,24 @@ func TestComputeServiceInstanceID(t *testing.T) {
 	}
 }
 
+func TestComputeServiceInstanceIDDistinguishesNamedInstances(t *testing.T) {
+	instanceA, err := computeServiceInstanceID(&Config{DataSource: "server=myserver\\InstanceA"})
+	require.NoError(t, err)
+
+	instanceB, err := computeServiceInstanceID(&Config{DataSource: "server=myserver\\InstanceB"})
+	require.NoError(t, err)
+
+	assert.NotEqual(t, instanceA, instanceB)
+}
+
 func TestParseDataSource(t *testing.T) {
 	tests := []struct {
-		name         string
-		dataSource   string
-		expectedHost string
-		expectedPort int
-		wantErr      bool
+		name             string
+		dataSource       string
+		expectedHost     string
+		expectedInstance string
+		expectedPort     uint64
+		wantErr          bool
 	}{
 		{
 			name:         "standard comma separator",
@@ -214,13 +253,13 @@ func TestParseDataSource(t *testing.T) {
 			name:         "colon separator treated as host",
 			dataSource:   "server=myserver:5000;user id=sa",
 			expectedHost: "myserver:5000", // msdsn treats this as host
-			expectedPort: 1433,
+			expectedPort: 0,
 		},
 		{
 			name:         "no port specified",
 			dataSource:   "server=myserver;user id=sa",
 			expectedHost: "myserver",
-			expectedPort: 1433,
+			expectedPort: 0,
 		},
 		{
 			name:         "separate port parameter",
@@ -235,10 +274,25 @@ func TestParseDataSource(t *testing.T) {
 			expectedPort: 5000,
 		},
 		{
-			name:         "named instance",
-			dataSource:   "server=myserver\\SQLEXPRESS,5000",
-			expectedHost: "myserver", // Instance name not included
-			expectedPort: 5000,
+			name:             "named instance with explicit port",
+			dataSource:       "server=myserver\\SQLEXPRESS,5000",
+			expectedHost:     "myserver",
+			expectedInstance: "SQLEXPRESS",
+			expectedPort:     5000,
+		},
+		{
+			name:             "named instance without port",
+			dataSource:       "server=myserver\\SQLEXPRESS",
+			expectedHost:     "myserver",
+			expectedInstance: "SQLEXPRESS",
+			expectedPort:     0,
+		},
+		{
+			name:             "URL named instance without port",
+			dataSource:       "sqlserver://myserver/SQLEXPRESS",
+			expectedHost:     "myserver",
+			expectedInstance: "SQLEXPRESS",
+			expectedPort:     0,
 		},
 		{
 			name:       "spaces in connection string",
@@ -255,7 +309,7 @@ func TestParseDataSource(t *testing.T) {
 			name:         "no server in datasource defaults to localhost",
 			dataSource:   "user id=sa;password=pass",
 			expectedHost: "localhost", // msdsn defaults to localhost
-			expectedPort: 1433,
+			expectedPort: 0,
 		},
 		{
 			name:       "empty datasource",
@@ -266,13 +320,14 @@ func TestParseDataSource(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			host, port, err := parseDataSource(tt.dataSource)
+			config, err := parseDataSource(tt.dataSource)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, tt.expectedHost, host)
-				assert.Equal(t, tt.expectedPort, port)
+				assert.Equal(t, tt.expectedHost, config.Host)
+				assert.Equal(t, tt.expectedInstance, config.Instance)
+				assert.Equal(t, tt.expectedPort, config.Port)
 			}
 		})
 	}
