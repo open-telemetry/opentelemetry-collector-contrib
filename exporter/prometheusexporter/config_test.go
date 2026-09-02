@@ -18,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -60,6 +62,16 @@ func TestLoadConfig(t *testing.T) {
 				}
 			}(),
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "3"),
+			expected: func() component.Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.ResourceConstantLabels = resourcetotelemetry.Settings{
+					Included: []string{"service.name", "k8s.pod.name"},
+				}
+				return cfg
+			}(),
+		},
 	}
 
 	for _, tt := range tests {
@@ -75,4 +87,23 @@ func TestLoadConfig(t *testing.T) {
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+func TestConfigValidate(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ResourceConstantLabels = resourcetotelemetry.Settings{Included: []string{"foo"}}
+	assert.NoError(t, cfg.Validate())
+
+	invalidCfg := createDefaultConfig().(*Config)
+	invalidCfg.ResourceConstantLabels.Enabled = true //nolint:staticcheck // testing deprecated field rejection
+	assert.Error(t, invalidCfg.Validate())
+
+	cfg.ResourceToTelemetrySettings.Enabled = true //nolint:staticcheck // ignore deprecated field
+	assert.Error(t, cfg.Validate())
+
+	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate, true)()
+	assert.Error(t, cfg.Validate())
+
+	cfg.ResourceToTelemetrySettings = resourcetotelemetry.Settings{}
+	assert.NoError(t, cfg.Validate())
 }
