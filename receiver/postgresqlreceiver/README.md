@@ -95,9 +95,21 @@ The following settings are optional:
 - `endpoint` (default = `localhost:5432`): The endpoint of the PostgreSQL server. Whether using TCP or Unix sockets, this value should be `host:port`. If `transport` is set to `unix`, the endpoint will internally be translated from `host:port` to `/host.s.PGSQL.port`
 - `transport` (default = `tcp`): The transport protocol being used to connect to PostgreSQL. Available options are `tcp` and `unix`.
 
-- `databases` (default = `[]`): The list of databases for which the receiver will attempt to collect statistics. If an empty list is provided, the receiver will attempt to collect statistics for all non-template databases.
+- `databases` (default = `[]`): The list of databases for which the receiver will attempt to collect statistics. If an empty list is provided, the receiver will attempt to collect statistics for all non-template databases. This list applies to metrics only; the query sample and top query collectors ignore it and are filtered solely by `exclude_databases`.
 
-- `exclude_databases` (default = `[]`): List of databases which will be excluded when collecting statistics.
+- `exclude_databases` (default = `[]`): List of databases excluded from statistics, query samples, and top queries. Excluded databases are filtered out of every collection query and the receiver opens no per-database connection to them. Exception: the receiver always connects to the default `postgres` database for discovery and server-level queries, even if it is listed here.
+
+> [!NOTE]
+> Managed PostgreSQL services create internal databases that no customer credential can connect to. The receiver discovers them like any other database and logs a connection error on every scrape. If you use one of these services, add its internal databases to `exclude_databases`:
+>
+> | Service | Databases to exclude |
+> |---|---|
+> | Amazon RDS / Aurora PostgreSQL | `rdsadmin` |
+> | Azure Database for PostgreSQL | `azure_maintenance` |
+> | Google Cloud SQL | `cloudsqladmin` |
+> | Google AlloyDB | `alloydbadmin`, `alloydbmetadata` |
+>
+> Example: `exclude_databases: [rdsadmin]`
 
 The following settings are also optional and nested under `tls` to help configure client transport security
 
