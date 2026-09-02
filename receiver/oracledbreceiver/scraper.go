@@ -1623,13 +1623,13 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
 
-	hostAddress, hostPort, err := net.SplitHostPort(s.hostName)
+	serverAddress, serverPort, err := net.SplitHostPort(s.hostName)
 	if err != nil {
-		hostAddress = s.hostName
-	} else if port, err := strconv.ParseInt(hostPort, 10, 32); err == nil {
-		rb.SetHostPort(port)
+		serverAddress = s.hostName
+	} else if port, err := strconv.ParseInt(serverPort, 10, 32); err == nil {
+		rb.SetServerPort(port)
 	}
-	rb.SetHostAddress(hostAddress)
+	rb.SetServerAddress(serverAddress)
 
 	if s.instanceInfo.dbVersion != "" {
 		rb.SetOracleDbVersion(s.instanceInfo.dbVersion)

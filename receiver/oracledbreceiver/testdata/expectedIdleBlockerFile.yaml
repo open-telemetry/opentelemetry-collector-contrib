@@ -7,7 +7,7 @@ resourceLogs:
         - key: host.name
           value:
             stringValue: ""
-        - key: host.address
+        - key: server.address
           value:
             stringValue: ""
         - key: service.instance.id

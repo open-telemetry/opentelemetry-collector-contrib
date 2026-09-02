@@ -343,15 +343,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					HostAddress:          HostAddressResourceAttributeConfig{Enabled: true},
 					HostName:             HostNameResourceAttributeConfig{Enabled: true},
-					HostPort:             HostPortResourceAttributeConfig{Enabled: true},
 					OracleDbHostingType:  OracleDbHostingTypeResourceAttributeConfig{Enabled: true},
 					OracleDbOpenMode:     OracleDbOpenModeResourceAttributeConfig{Enabled: true},
 					OracleDbPdb:          OracleDbPdbResourceAttributeConfig{Enabled: true},
 					OracleDbRole:         OracleDbRoleResourceAttributeConfig{Enabled: true},
 					OracleDbVersion:      OracleDbVersionResourceAttributeConfig{Enabled: true},
 					OracledbInstanceName: OracledbInstanceNameResourceAttributeConfig{Enabled: true},
+					ServerAddress:        ServerAddressResourceAttributeConfig{Enabled: true},
+					ServerPort:           ServerPortResourceAttributeConfig{Enabled: true},
 					ServiceInstanceID:    ServiceInstanceIDResourceAttributeConfig{Enabled: true},
 					ServiceName:          ServiceNameResourceAttributeConfig{Enabled: true},
 					ServiceNamespace:     ServiceNamespaceResourceAttributeConfig{Enabled: true},
@@ -678,15 +678,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					HostAddress:          HostAddressResourceAttributeConfig{Enabled: false},
 					HostName:             HostNameResourceAttributeConfig{Enabled: false},
-					HostPort:             HostPortResourceAttributeConfig{Enabled: false},
 					OracleDbHostingType:  OracleDbHostingTypeResourceAttributeConfig{Enabled: false},
 					OracleDbOpenMode:     OracleDbOpenModeResourceAttributeConfig{Enabled: false},
 					OracleDbPdb:          OracleDbPdbResourceAttributeConfig{Enabled: false},
 					OracleDbRole:         OracleDbRoleResourceAttributeConfig{Enabled: false},
 					OracleDbVersion:      OracleDbVersionResourceAttributeConfig{Enabled: false},
 					OracledbInstanceName: OracledbInstanceNameResourceAttributeConfig{Enabled: false},
+					ServerAddress:        ServerAddressResourceAttributeConfig{Enabled: false},
+					ServerPort:           ServerPortResourceAttributeConfig{Enabled: false},
 					ServiceInstanceID:    ServiceInstanceIDResourceAttributeConfig{Enabled: false},
 					ServiceName:          ServiceNameResourceAttributeConfig{Enabled: false},
 					ServiceNamespace:     ServiceNamespaceResourceAttributeConfig{Enabled: false},
@@ -697,7 +697,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(OracledbBufferInspectedMetricConfig{}, OracledbBufferRequestsMetricConfig{}, OracledbBufferCacheBlockChangesMetricConfig{}, OracledbBufferCacheBlockGetsMetricConfig{}, OracledbBufferCacheUtilizationMetricConfig{}, OracledbCallCountMetricConfig{}, OracledbCallRecursiveCPUTimeMetricConfig{}, OracledbCheckpointBuffersMetricConfig{}, OracledbCheckpointCompletedMetricConfig{}, OracledbConsistentGetsMetricConfig{}, OracledbCPUTimeMetricConfig{}, OracledbCursorCacheHitsMetricConfig{}, OracledbCursorCacheSizeMetricConfig{}, OracledbCursorOpenMetricConfig{}, OracledbDataDictionaryHitRatioMetricConfig{}, OracledbDatabaseCPUUtilizationMetricConfig{}, OracledbDatabaseWaitUtilizationMetricConfig{}, OracledbDbTimeMetricConfig{}, OracledbDbBlockGetsMetricConfig{}, OracledbDdlStatementsParallelizedMetricConfig{}, OracledbDmlLocksLimitMetricConfig{}, OracledbDmlLocksUsageMetricConfig{}, OracledbDmlStatementsParallelizedMetricConfig{}, OracledbEnqueueOperationsMetricConfig{}, OracledbEnqueueDeadlocksMetricConfig{}, OracledbEnqueueLocksLimitMetricConfig{}, OracledbEnqueueLocksUsageMetricConfig{}, OracledbEnqueueResourcesLimitMetricConfig{}, OracledbEnqueueResourcesUsageMetricConfig{}, OracledbExchangeDeadlocksMetricConfig{}, OracledbExecutionUtilizationMetricConfig{}, OracledbExecutionsMetricConfig{}, OracledbHardParsesMetricConfig{}, OracledbHostCPUUtilizationMetricConfig{}, OracledbLibraryCacheUtilizationMetricConfig{}, OracledbLobOperationsMetricConfig{}, OracledbLogicalReadsMetricConfig{}, OracledbLogonsMetricConfig{}, OracledbParallelOperationsDowngraded1To25PctMetricConfig{}, OracledbParallelOperationsDowngraded25To50PctMetricConfig{}, OracledbParallelOperationsDowngraded50To75PctMetricConfig{}, OracledbParallelOperationsDowngraded75To99PctMetricConfig{}, OracledbParallelOperationsDowngradedToSerialMetricConfig{}, OracledbParallelOperationsNotDowngradedMetricConfig{}, OracledbParseCPUTimeMetricConfig{}, OracledbParseElapsedTimeMetricConfig{}, OracledbParseRateMetricConfig{}, OracledbParseUtilizationMetricConfig{}, OracledbParseCallsMetricConfig{}, OracledbPgaMemoryMetricConfig{}, OracledbPhysicalIoCacheWritesMetricConfig{}, OracledbPhysicalIoRequestsMetricConfig{}, OracledbPhysicalIoTransferredMetricConfig{}, OracledbPhysicalReadIoRequestsMetricConfig{}, OracledbPhysicalReadsMetricConfig{}, OracledbPhysicalReadsDirectMetricConfig{}, OracledbPhysicalWriteIoRequestsMetricConfig{}, OracledbPhysicalWritesMetricConfig{}, OracledbPhysicalWritesDirectMetricConfig{}, OracledbProcessesLimitMetricConfig{}, OracledbProcessesUsageMetricConfig{}, OracledbQueriesParallelizedMetricConfig{}, OracledbRecycleBinLimitMetricConfig{}, OracledbRedoBlocksMetricConfig{}, OracledbRedoOperationsMetricConfig{}, OracledbRedoRequestsMetricConfig{}, OracledbRedoRetriesMetricConfig{}, OracledbRedoSizeMetricConfig{}, OracledbRedoTimeMetricConfig{}, OracledbRedoAllocationUtilizationMetricConfig{}, OracledbScanCountMetricConfig{}, OracledbScanTableRowsMetricConfig{}, OracledbSessionsLimitMetricConfig{}, OracledbSessionsUsageMetricConfig{}, OracledbSgaLimitMetricConfig{}, OracledbSgaUsageMetricConfig{}, OracledbSharedPoolUtilizationMetricConfig{}, OracledbSortOperationsMetricConfig{}, OracledbSortRatioMetricConfig{}, OracledbSortRowsMetricConfig{}, OracledbSQLServiceResponseDurationMetricConfig{}, OracledbSqlnetIoTransferredMetricConfig{}, OracledbStorageUsageMetricConfig{}, OracledbStorageUtilizationMetricConfig{}, OracledbTablespaceSizeLimitMetricConfig{}, OracledbTablespaceSizeUsageMetricConfig{}, OracledbTransactionsLimitMetricConfig{}, OracledbTransactionsUsageMetricConfig{}, OracledbUserCommitsMetricConfig{}, OracledbUserRollbacksMetricConfig{}, HostAddressResourceAttributeConfig{}, HostNameResourceAttributeConfig{}, HostPortResourceAttributeConfig{}, OracleDbHostingTypeResourceAttributeConfig{}, OracleDbOpenModeResourceAttributeConfig{}, OracleDbPdbResourceAttributeConfig{}, OracleDbRoleResourceAttributeConfig{}, OracleDbVersionResourceAttributeConfig{}, OracledbInstanceNameResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(OracledbBufferInspectedMetricConfig{}, OracledbBufferRequestsMetricConfig{}, OracledbBufferCacheBlockChangesMetricConfig{}, OracledbBufferCacheBlockGetsMetricConfig{}, OracledbBufferCacheUtilizationMetricConfig{}, OracledbCallCountMetricConfig{}, OracledbCallRecursiveCPUTimeMetricConfig{}, OracledbCheckpointBuffersMetricConfig{}, OracledbCheckpointCompletedMetricConfig{}, OracledbConsistentGetsMetricConfig{}, OracledbCPUTimeMetricConfig{}, OracledbCursorCacheHitsMetricConfig{}, OracledbCursorCacheSizeMetricConfig{}, OracledbCursorOpenMetricConfig{}, OracledbDataDictionaryHitRatioMetricConfig{}, OracledbDatabaseCPUUtilizationMetricConfig{}, OracledbDatabaseWaitUtilizationMetricConfig{}, OracledbDbTimeMetricConfig{}, OracledbDbBlockGetsMetricConfig{}, OracledbDdlStatementsParallelizedMetricConfig{}, OracledbDmlLocksLimitMetricConfig{}, OracledbDmlLocksUsageMetricConfig{}, OracledbDmlStatementsParallelizedMetricConfig{}, OracledbEnqueueOperationsMetricConfig{}, OracledbEnqueueDeadlocksMetricConfig{}, OracledbEnqueueLocksLimitMetricConfig{}, OracledbEnqueueLocksUsageMetricConfig{}, OracledbEnqueueResourcesLimitMetricConfig{}, OracledbEnqueueResourcesUsageMetricConfig{}, OracledbExchangeDeadlocksMetricConfig{}, OracledbExecutionUtilizationMetricConfig{}, OracledbExecutionsMetricConfig{}, OracledbHardParsesMetricConfig{}, OracledbHostCPUUtilizationMetricConfig{}, OracledbLibraryCacheUtilizationMetricConfig{}, OracledbLobOperationsMetricConfig{}, OracledbLogicalReadsMetricConfig{}, OracledbLogonsMetricConfig{}, OracledbParallelOperationsDowngraded1To25PctMetricConfig{}, OracledbParallelOperationsDowngraded25To50PctMetricConfig{}, OracledbParallelOperationsDowngraded50To75PctMetricConfig{}, OracledbParallelOperationsDowngraded75To99PctMetricConfig{}, OracledbParallelOperationsDowngradedToSerialMetricConfig{}, OracledbParallelOperationsNotDowngradedMetricConfig{}, OracledbParseCPUTimeMetricConfig{}, OracledbParseElapsedTimeMetricConfig{}, OracledbParseRateMetricConfig{}, OracledbParseUtilizationMetricConfig{}, OracledbParseCallsMetricConfig{}, OracledbPgaMemoryMetricConfig{}, OracledbPhysicalIoCacheWritesMetricConfig{}, OracledbPhysicalIoRequestsMetricConfig{}, OracledbPhysicalIoTransferredMetricConfig{}, OracledbPhysicalReadIoRequestsMetricConfig{}, OracledbPhysicalReadsMetricConfig{}, OracledbPhysicalReadsDirectMetricConfig{}, OracledbPhysicalWriteIoRequestsMetricConfig{}, OracledbPhysicalWritesMetricConfig{}, OracledbPhysicalWritesDirectMetricConfig{}, OracledbProcessesLimitMetricConfig{}, OracledbProcessesUsageMetricConfig{}, OracledbQueriesParallelizedMetricConfig{}, OracledbRecycleBinLimitMetricConfig{}, OracledbRedoBlocksMetricConfig{}, OracledbRedoOperationsMetricConfig{}, OracledbRedoRequestsMetricConfig{}, OracledbRedoRetriesMetricConfig{}, OracledbRedoSizeMetricConfig{}, OracledbRedoTimeMetricConfig{}, OracledbRedoAllocationUtilizationMetricConfig{}, OracledbScanCountMetricConfig{}, OracledbScanTableRowsMetricConfig{}, OracledbSessionsLimitMetricConfig{}, OracledbSessionsUsageMetricConfig{}, OracledbSgaLimitMetricConfig{}, OracledbSgaUsageMetricConfig{}, OracledbSharedPoolUtilizationMetricConfig{}, OracledbSortOperationsMetricConfig{}, OracledbSortRatioMetricConfig{}, OracledbSortRowsMetricConfig{}, OracledbSQLServiceResponseDurationMetricConfig{}, OracledbSqlnetIoTransferredMetricConfig{}, OracledbStorageUsageMetricConfig{}, OracledbStorageUtilizationMetricConfig{}, OracledbTablespaceSizeLimitMetricConfig{}, OracledbTablespaceSizeUsageMetricConfig{}, OracledbTransactionsLimitMetricConfig{}, OracledbTransactionsUsageMetricConfig{}, OracledbUserCommitsMetricConfig{}, OracledbUserRollbacksMetricConfig{}, HostNameResourceAttributeConfig{}, OracleDbHostingTypeResourceAttributeConfig{}, OracleDbOpenModeResourceAttributeConfig{}, OracleDbPdbResourceAttributeConfig{}, OracleDbRoleResourceAttributeConfig{}, OracleDbVersionResourceAttributeConfig{}, OracledbInstanceNameResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -998,15 +998,15 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				HostAddress:          HostAddressResourceAttributeConfig{Enabled: true},
 				HostName:             HostNameResourceAttributeConfig{Enabled: true},
-				HostPort:             HostPortResourceAttributeConfig{Enabled: true},
 				OracleDbHostingType:  OracleDbHostingTypeResourceAttributeConfig{Enabled: true},
 				OracleDbOpenMode:     OracleDbOpenModeResourceAttributeConfig{Enabled: true},
 				OracleDbPdb:          OracleDbPdbResourceAttributeConfig{Enabled: true},
 				OracleDbRole:         OracleDbRoleResourceAttributeConfig{Enabled: true},
 				OracleDbVersion:      OracleDbVersionResourceAttributeConfig{Enabled: true},
 				OracledbInstanceName: OracledbInstanceNameResourceAttributeConfig{Enabled: true},
+				ServerAddress:        ServerAddressResourceAttributeConfig{Enabled: true},
+				ServerPort:           ServerPortResourceAttributeConfig{Enabled: true},
 				ServiceInstanceID:    ServiceInstanceIDResourceAttributeConfig{Enabled: true},
 				ServiceName:          ServiceNameResourceAttributeConfig{Enabled: true},
 				ServiceNamespace:     ServiceNamespaceResourceAttributeConfig{Enabled: true},
@@ -1015,15 +1015,15 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				HostAddress:          HostAddressResourceAttributeConfig{Enabled: false},
 				HostName:             HostNameResourceAttributeConfig{Enabled: false},
-				HostPort:             HostPortResourceAttributeConfig{Enabled: false},
 				OracleDbHostingType:  OracleDbHostingTypeResourceAttributeConfig{Enabled: false},
 				OracleDbOpenMode:     OracleDbOpenModeResourceAttributeConfig{Enabled: false},
 				OracleDbPdb:          OracleDbPdbResourceAttributeConfig{Enabled: false},
 				OracleDbRole:         OracleDbRoleResourceAttributeConfig{Enabled: false},
 				OracleDbVersion:      OracleDbVersionResourceAttributeConfig{Enabled: false},
 				OracledbInstanceName: OracledbInstanceNameResourceAttributeConfig{Enabled: false},
+				ServerAddress:        ServerAddressResourceAttributeConfig{Enabled: false},
+				ServerPort:           ServerPortResourceAttributeConfig{Enabled: false},
 				ServiceInstanceID:    ServiceInstanceIDResourceAttributeConfig{Enabled: false},
 				ServiceName:          ServiceNameResourceAttributeConfig{Enabled: false},
 				ServiceNamespace:     ServiceNamespaceResourceAttributeConfig{Enabled: false},
@@ -1033,7 +1033,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(HostAddressResourceAttributeConfig{}, HostNameResourceAttributeConfig{}, HostPortResourceAttributeConfig{}, OracleDbHostingTypeResourceAttributeConfig{}, OracleDbOpenModeResourceAttributeConfig{}, OracleDbPdbResourceAttributeConfig{}, OracleDbRoleResourceAttributeConfig{}, OracleDbVersionResourceAttributeConfig{}, OracledbInstanceNameResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(HostNameResourceAttributeConfig{}, OracleDbHostingTypeResourceAttributeConfig{}, OracleDbOpenModeResourceAttributeConfig{}, OracleDbPdbResourceAttributeConfig{}, OracleDbRoleResourceAttributeConfig{}, OracleDbVersionResourceAttributeConfig{}, OracledbInstanceNameResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -1041,15 +1041,15 @@ func TestResourceAttributesConfig(t *testing.T) {
 
 func TestResourceAttributesOverrideConfig(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	assert.NotNil(t, cfg.HostAddress.OverrideValue, "override_value should be set for host.address")
 	assert.NotNil(t, cfg.HostName.OverrideValue, "override_value should be set for host.name")
-	assert.NotNil(t, cfg.HostPort.OverrideValue, "override_value should be set for host.port")
 	assert.NotNil(t, cfg.OracleDbHostingType.OverrideValue, "override_value should be set for oracle.db.hosting_type")
 	assert.NotNil(t, cfg.OracleDbOpenMode.OverrideValue, "override_value should be set for oracle.db.open_mode")
 	assert.NotNil(t, cfg.OracleDbPdb.OverrideValue, "override_value should be set for oracle.db.pdb")
 	assert.NotNil(t, cfg.OracleDbRole.OverrideValue, "override_value should be set for oracle.db.role")
 	assert.NotNil(t, cfg.OracleDbVersion.OverrideValue, "override_value should be set for oracle.db.version")
 	assert.NotNil(t, cfg.OracledbInstanceName.OverrideValue, "override_value should be set for oracledb.instance.name")
+	assert.NotNil(t, cfg.ServerAddress.OverrideValue, "override_value should be set for server.address")
+	assert.NotNil(t, cfg.ServerPort.OverrideValue, "override_value should be set for server.port")
 	assert.NotNil(t, cfg.ServiceInstanceID.OverrideValue, "override_value should be set for service.instance.id")
 	assert.NotNil(t, cfg.ServiceName.OverrideValue, "override_value should be set for service.name")
 	assert.NotNil(t, cfg.ServiceNamespace.OverrideValue, "override_value should be set for service.namespace")

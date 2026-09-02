@@ -6622,23 +6622,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		resourceAttributeIncludeFilter:                      make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                      make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.HostAddress.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["host.address"] = filter.CreateFilter(mbc.ResourceAttributes.HostAddress.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.HostAddress.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["host.address"] = filter.CreateFilter(mbc.ResourceAttributes.HostAddress.MetricsExclude)
-	}
 	if mbc.ResourceAttributes.HostName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.HostName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsExclude)
-	}
-	if mbc.ResourceAttributes.HostPort.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["host.port"] = filter.CreateFilter(mbc.ResourceAttributes.HostPort.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.HostPort.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["host.port"] = filter.CreateFilter(mbc.ResourceAttributes.HostPort.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.OracleDbHostingType.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["oracle.db.hosting_type"] = filter.CreateFilter(mbc.ResourceAttributes.OracleDbHostingType.MetricsInclude)
@@ -6675,6 +6663,18 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.OracledbInstanceName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["oracledb.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.OracledbInstanceName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServerAddress.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServerAddress.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServerPort.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServerPort.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ServiceInstanceID.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["service.instance.id"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceInstanceID.MetricsInclude)

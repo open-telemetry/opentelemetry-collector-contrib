@@ -231,23 +231,11 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
-	if lbc.ResourceAttributes.HostAddress.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["host.address"] = filter.CreateFilter(lbc.ResourceAttributes.HostAddress.EventsInclude)
-	}
-	if lbc.ResourceAttributes.HostAddress.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["host.address"] = filter.CreateFilter(lbc.ResourceAttributes.HostAddress.EventsExclude)
-	}
 	if lbc.ResourceAttributes.HostName.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["host.name"] = filter.CreateFilter(lbc.ResourceAttributes.HostName.EventsInclude)
 	}
 	if lbc.ResourceAttributes.HostName.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(lbc.ResourceAttributes.HostName.EventsExclude)
-	}
-	if lbc.ResourceAttributes.HostPort.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["host.port"] = filter.CreateFilter(lbc.ResourceAttributes.HostPort.EventsInclude)
-	}
-	if lbc.ResourceAttributes.HostPort.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["host.port"] = filter.CreateFilter(lbc.ResourceAttributes.HostPort.EventsExclude)
 	}
 	if lbc.ResourceAttributes.OracleDbHostingType.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["oracle.db.hosting_type"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbHostingType.EventsInclude)
@@ -284,6 +272,18 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	}
 	if lbc.ResourceAttributes.OracledbInstanceName.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["oracledb.instance.name"] = filter.CreateFilter(lbc.ResourceAttributes.OracledbInstanceName.EventsExclude)
+	}
+	if lbc.ResourceAttributes.ServerAddress.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(lbc.ResourceAttributes.ServerAddress.EventsInclude)
+	}
+	if lbc.ResourceAttributes.ServerAddress.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["server.address"] = filter.CreateFilter(lbc.ResourceAttributes.ServerAddress.EventsExclude)
+	}
+	if lbc.ResourceAttributes.ServerPort.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["server.port"] = filter.CreateFilter(lbc.ResourceAttributes.ServerPort.EventsInclude)
+	}
+	if lbc.ResourceAttributes.ServerPort.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(lbc.ResourceAttributes.ServerPort.EventsExclude)
 	}
 	if lbc.ResourceAttributes.ServiceInstanceID.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["service.instance.id"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceInstanceID.EventsInclude)

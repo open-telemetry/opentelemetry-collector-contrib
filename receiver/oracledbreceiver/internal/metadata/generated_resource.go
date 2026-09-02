@@ -21,24 +21,10 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
-// SetHostAddress sets provided value as "host.address" attribute.
-func (rb *ResourceBuilder) SetHostAddress(val string) {
-	if rb.config.HostAddress.Enabled {
-		rb.res.Attributes().PutStr("host.address", val)
-	}
-}
-
 // SetHostName sets provided value as "host.name" attribute.
 func (rb *ResourceBuilder) SetHostName(val string) {
 	if rb.config.HostName.Enabled {
 		rb.res.Attributes().PutStr("host.name", val)
-	}
-}
-
-// SetHostPort sets provided value as "host.port" attribute.
-func (rb *ResourceBuilder) SetHostPort(val int64) {
-	if rb.config.HostPort.Enabled {
-		rb.res.Attributes().PutInt("host.port", val)
 	}
 }
 
@@ -81,6 +67,20 @@ func (rb *ResourceBuilder) SetOracleDbVersion(val string) {
 func (rb *ResourceBuilder) SetOracledbInstanceName(val string) {
 	if rb.config.OracledbInstanceName.Enabled {
 		rb.res.Attributes().PutStr("oracledb.instance.name", val)
+	}
+}
+
+// SetServerAddress sets provided value as "server.address" attribute.
+func (rb *ResourceBuilder) SetServerAddress(val string) {
+	if rb.config.ServerAddress.Enabled {
+		rb.res.Attributes().PutStr("server.address", val)
+	}
+}
+
+// SetServerPort sets provided value as "server.port" attribute.
+func (rb *ResourceBuilder) SetServerPort(val int64) {
+	if rb.config.ServerPort.Enabled {
+		rb.res.Attributes().PutInt("server.port", val)
 	}
 }
 
