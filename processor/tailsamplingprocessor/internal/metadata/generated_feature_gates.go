@@ -11,7 +11,7 @@ var ProcessorTailsamplingprocessorDefaultErrorModeIgnoreFeatureGate = featuregat
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the default error_mode for ottl_condition is 'ignore' instead of 'propagate'."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48420"),
-	featuregate.WithRegisterFromVersion("v0.160.0"),
+	featuregate.WithRegisterFromVersion("v0.161.0"),
 )
 
 var ProcessorTailsamplingprocessorMetricstatcountbytessampledFeatureGate = featuregate.GlobalRegistry().MustRegister(

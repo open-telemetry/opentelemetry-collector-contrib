@@ -17,7 +17,7 @@ feature_gates:
   - id: "processor.tailsamplingprocessor.defaultErrorModeIgnore"
     description: "When enabled, the default error_mode for ottl_condition is 'ignore' instead of 'propagate'."
     stage: alpha
-    from_version: v0.160.0
+    from_version: v0.161.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48420
 
   - id: "processor.tailsamplingprocessor.metricstatcountbytessampled"

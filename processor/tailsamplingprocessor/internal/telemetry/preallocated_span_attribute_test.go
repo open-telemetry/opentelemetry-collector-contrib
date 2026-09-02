@@ -193,7 +193,6 @@ func TestDecisionAttributes_ImmutabilityAfterConstruction(t *testing.T) {
 	assert.Equal(t, "sampled", attr1.Value.AsString())
 }
 
-
 func TestIsDefaultErrorModeIgnoreEnabled(t *testing.T) {
 	gate := metadata.ProcessorTailsamplingprocessorDefaultErrorModeIgnoreFeatureGate
 	prev := gate.IsEnabled()
