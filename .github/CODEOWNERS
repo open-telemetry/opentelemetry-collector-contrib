@@ -242,6 +242,7 @@ processor/resourcedetectionprocessor/internal/tencent/cvm/       @open-telemetry
 processor/resourcedetectionprocessor/internal/upcloud/           @open-telemetry/collector-contrib-approvers @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/vultr/             @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
 processor/resourceprocessor/                                     @open-telemetry/collector-contrib-approvers @dmitryax
+processor/rollingspanlatencyprocessor/                           @open-telemetry/collector-contrib-approvers @atoulme @rnterbush @pavankrish123
 processor/schemaprocessor/                                       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @ankitpatel96 @dineshg13 @MikeGoldsmith
 processor/signingprocessor/                                      @open-telemetry/collector-contrib-approvers @hilmarf @jmacd
 processor/spanprocessor/                                         @open-telemetry/collector-contrib-approvers @boostchicken
