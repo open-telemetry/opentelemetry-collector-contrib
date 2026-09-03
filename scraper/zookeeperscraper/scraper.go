@@ -46,7 +46,7 @@ func newZookeeperMetricsScraper(settings scraper.Settings, config *Config) *zook
 	return &zookeeperMetricsScraper{
 		logger:                settings.Logger,
 		config:                config,
-		rb:                    metadata.NewResourceBuilder(config.ResourceAttributes),
+		rb:                    metadata.NewResourceBuilder(config.MetricsBuilderConfig.ResourceAttributes),
 		mb:                    metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 		closeConnection:       closeConnection,
 		setConnectionDeadline: setConnectionDeadline,

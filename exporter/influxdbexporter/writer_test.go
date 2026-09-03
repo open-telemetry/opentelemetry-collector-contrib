@@ -165,7 +165,8 @@ func Test_influxHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 		&Config{
 			ClientConfig: clientConfig,
 		},
-		componenttest.NewNopTelemetrySettings())
+		componenttest.NewNopTelemetrySettings(),
+	)
 	require.NoError(t, err)
 	influxWriter.httpClient = noopHTTPServer.Client()
 	influxWriterBatch := influxWriter.NewBatch()
@@ -176,7 +177,8 @@ func Test_influxHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 		map[string]string{"k": "v", "empty": ""},
 		map[string]any{"f": int64(1)},
 		nowTime,
-		common.InfluxMetricValueTypeUntyped)
+		common.InfluxMetricValueTypeUntyped,
+	)
 	require.NoError(t, err)
 	err = influxWriterBatch.WriteBatch(t.Context())
 	require.NoError(t, err)

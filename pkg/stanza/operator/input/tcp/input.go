@@ -178,7 +178,7 @@ func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 		scanner := bufio.NewScanner(conn)
 		scanner.Buffer(buf, i.MaxLogSize)
 
-		scanner.Split(i.splitFunc)
+		scanner.Split(i.shutdownAwareSplitFunc(ctx))
 
 		for scanner.Scan() {
 			if i.connectionIdleTimeout > 0 {
@@ -195,6 +195,26 @@ func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 			i.Logger().Error("Scanner error", zap.Error(err))
 		}
 	})
+}
+
+// shutdownAwareSplitFunc wraps the configured split function so that a partial
+// (non-delimited) log line is not flushed as if it were a complete entry when
+// the connection is force-closed during a graceful shutdown.
+//
+// The operator cancels ctx before closing in-flight connections on Stop, so
+// when the scanner reaches EOF while ctx is done we know the close was caused
+// by shutdown rather than by the sender finishing its stream. In that case we
+// invoke the underlying split function with atEOF=false, which still yields any
+// complete tokens already buffered but never flushes trailing partial data. On
+// a normal client close ctx is not done, so the usual flush-at-EOF behavior is
+// preserved and a final line without a trailing delimiter is still emitted.
+func (i *Input) shutdownAwareSplitFunc(ctx context.Context) bufio.SplitFunc {
+	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		if atEOF && ctx.Err() != nil {
+			return i.splitFunc(data, false)
+		}
+		return i.splitFunc(data, atEOF)
+	}
 }
 
 func (i *Input) handleMessage(ctx context.Context, conn net.Conn, dec *encoding.Decoder, log []byte) {

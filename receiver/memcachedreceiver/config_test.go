@@ -17,8 +17,8 @@ import (
 func TestDefaultConfig(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	require.Equal(t, defaultEndpoint, cfg.AddrConfig.Endpoint)
-	require.Equal(t, defaultTimeout, cfg.Timeout)
-	require.Equal(t, defaultCollectionInterval, cfg.CollectionInterval)
+	require.Equal(t, defaultTimeout, cfg.ControllerConfig.Timeout)
+	require.Equal(t, defaultCollectionInterval, cfg.ControllerConfig.CollectionInterval)
 	// TLS is disabled by default to preserve plaintext connections.
 	require.True(t, cfg.TLS.Insecure)
 }

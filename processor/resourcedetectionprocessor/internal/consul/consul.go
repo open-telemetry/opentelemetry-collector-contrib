@@ -21,15 +21,20 @@ import (
 const (
 	// TypeStr is type of detector.
 	TypeStr = "consul"
+
+	// metaAttributePrefix namespaces consul node metadata keys when the
+	// processor.resourcedetection.consul.prefixMetaAttributes feature gate is enabled.
+	metaAttributePrefix = "consul.meta."
 )
 
 var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider consul.Provider
-	logger   *zap.Logger
-	rb       *metadata.ResourceBuilder
+	provider              consul.Provider
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
 // buildConsulAPIConfig translates the detector Config into a hashicorp consul api.Config.
@@ -55,7 +60,7 @@ func buildConsulAPIConfig(userCfg Config) *api.Config {
 	return cfg
 }
 
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	userCfg := dcfg.(Config)
 	cfg := buildConsulAPIConfig(userCfg)
 
@@ -65,14 +70,18 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.D
 	}
 
 	provider := consul.NewProvider(client, userCfg.MetaLabels)
-	return &Detector{provider: provider, logger: p.Logger, rb: metadata.NewResourceBuilder(userCfg.ResourceAttributes)}, nil
+	return &Detector{provider: provider, logger: p.Logger, rb: metadata.NewResourceBuilder(userCfg.ResourceAttributes), failOnMissingMetadata: failOnMissingMetadata}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	md, err := d.provider.Metadata(ctx)
 	if err != nil {
-		return pcommon.NewResource(), "", fmt.Errorf("failed to get consul metadata: %w", err)
+		d.logger.Debug("consul metadata unavailable", zap.Error(err))
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", fmt.Errorf("failed to get consul metadata: %w", err)
+		}
+		return pcommon.NewResource(), "", nil
 	}
 
 	d.rb.SetHostName(md.Hostname)
@@ -81,8 +90,12 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	res := d.rb.Emit()
 
+	prefix := ""
+	if metadata.ProcessorResourcedetectionConsulPrefixMetaAttributesFeatureGate.IsEnabled() {
+		prefix = metaAttributePrefix
+	}
 	for key, element := range md.HostMetadata {
-		res.Attributes().PutStr(key, element)
+		res.Attributes().PutStr(prefix+key, element)
 	}
 
 	return res, conventions.SchemaURL, nil

@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	// register db driver
-	_ "github.com/sijms/go-ora/v3"
+	_ "github.com/sijms/go-ora/v2"
 	"go.uber.org/zap"
 )
 

@@ -12,7 +12,7 @@ import (
 type Config struct {
 	// AWSSessionSettings contains the common configuration options
 	// for creating AWS session to communicate with backend
-	awsutil.AWSSessionSettings `mapstructure:",squash"`
+	AWSSessionSettings awsutil.AWSSessionSettings `mapstructure:",squash"`
 	// By default, OpenTelemetry attributes are converted to X-Ray metadata, which are not indexed.
 	// Specify a list of attribute names to be converted to X-Ray annotations instead, which will be indexed.
 	// See annotation vs. metadata: https://docs.aws.amazon.com/xray/latest/devguide/xray-concepts.html#xray-concepts-annotations

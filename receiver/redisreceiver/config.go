@@ -16,7 +16,7 @@ import (
 )
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 	// TODO: Use one of the configs from core.
 	// The target endpoint.
 	AddrConfig confignet.AddrConfig `mapstructure:",squash"`

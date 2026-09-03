@@ -28,8 +28,8 @@ var (
 
 // Config represent a configuration for the CloudWatch logs exporter.
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	ClientConfig                   confighttp.ClientConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ClientConfig     confighttp.ClientConfig        `mapstructure:",squash"`
 	// Nodes defines the nodes to scrape.
 	// See https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster.html#cluster-nodes for which selectors may be used here.
 	// If Nodes is empty, no nodes will be scraped.
@@ -121,7 +121,7 @@ func (config *Config) Validate() error {
 		}
 		err = multierr.Append(err, fmt.Errorf("invalid filter: got %s; must be one of %v", config.Filter, validFiltersSlice))
 	}
-	if config.Period >= int32(config.CollectionInterval.Seconds()) {
+	if config.Period >= int32(config.ControllerConfig.CollectionInterval.Seconds()) {
 		err = multierr.Append(err, errInvalidCollectionInterval)
 	}
 

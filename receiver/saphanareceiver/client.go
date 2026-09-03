@@ -80,7 +80,7 @@ type sapHanaConnectionFactory interface {
 type defaultConnectionFactory struct{}
 
 func (*defaultConnectionFactory) getConnection(c driver.Connector) dbWrapper {
-	wrapper := standardDBWrapper{db: sql.OpenDB((c))}
+	wrapper := standardDBWrapper{db: sql.OpenDB(c)}
 	return &wrapper
 }
 
@@ -107,7 +107,7 @@ func (c *sapHanaClient) Connect(ctx context.Context) error {
 		return fmt.Errorf("error generating DSN for SAP HANA connection: %w", err)
 	}
 
-	tls, err := c.receiverConfig.LoadTLSConfig(ctx)
+	tls, err := c.receiverConfig.ClientConfig.LoadTLSConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("error generating TLS config for SAP HANA connection: %w", err)
 	}

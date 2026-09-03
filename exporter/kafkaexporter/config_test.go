@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
@@ -79,6 +79,7 @@ func TestLoadConfig(t *testing.T) {
 					Topic:    "spans",
 					Encoding: "otlp_proto",
 				},
+				SignalHeader:                         true,
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
 				PartitionLogsByResourceAttributes:    true,
@@ -319,7 +320,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -401,8 +402,33 @@ func TestLoadConfigFailed(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			err = xconfmap.Validate(cfg)
+			err = confmap.Validate(cfg)
 			assert.ErrorContains(t, err, tt.errorContains)
 		})
 	}
+}
+
+func TestSignalHeaderValidation(t *testing.T) {
+	t.Run("metadata header collision", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.SignalHeader = true
+		cfg.IncludeMetadataKeys = []string{"otelcol.signal"}
+
+		assert.ErrorContains(t, cfg.Validate(), `"otelcol.signal" is reserved when signal_header is enabled`)
+	})
+
+	t.Run("record header collision", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.SignalHeader = true
+		cfg.RecordHeaders = []kafkaclient.RecordHeader{{Name: "otelcol.signal"}}
+
+		assert.ErrorContains(t, cfg.Validate(), `"otelcol.signal" is reserved when signal_header is enabled`)
+	})
+
+	t.Run("disabled", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.RecordHeaders = []kafkaclient.RecordHeader{{Name: "otelcol.signal"}}
+
+		assert.NoError(t, cfg.Validate())
+	})
 }

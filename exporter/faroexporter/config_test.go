@@ -35,10 +35,6 @@ func TestLoadConfig(t *testing.T) {
 
 func TestValidateConfig(t *testing.T) {
 	emptyEndpointClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	emptyEndpointClientConfig.MaxIdleConns = 0
-	emptyEndpointClientConfig.IdleConnTimeout = 0
-	emptyEndpointClientConfig.ForceAttemptHTTP2 = false
 	emptyEndpointClientConfig.Endpoint = ""
 	cfg := &Config{
 		ClientConfig: emptyEndpointClientConfig,
@@ -46,10 +42,6 @@ func TestValidateConfig(t *testing.T) {
 	assert.Error(t, cfg.Validate())
 
 	validEndpointClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	validEndpointClientConfig.MaxIdleConns = 0
-	validEndpointClientConfig.IdleConnTimeout = 0
-	validEndpointClientConfig.ForceAttemptHTTP2 = false
 	validEndpointClientConfig.Endpoint = "https://faro.example.com/collect"
 	cfg = &Config{
 		ClientConfig: validEndpointClientConfig,

@@ -1,0 +1,10 @@
+display_name: sd_notify Extension
+type: sd_notify
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: [VihasMakwana, iypetrov]
