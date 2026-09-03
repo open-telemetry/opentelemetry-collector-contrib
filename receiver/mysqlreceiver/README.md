@@ -56,7 +56,26 @@ The following settings are optional:
   - `insecure_skip_verify`: (default = `false`) Set this to `true` to enable TLS but not verify the certificate.
   - `server_name_override`: This sets the ServerName in the TLSConfig.  
 - `username`: (default = `root`)
-- `password`: The password to the username.
+- `password`: A static MySQL password.
+- `db_auth`: Component ID of a `dbauth` provider extension (for example `aws_iam_db_auth`). Mutually exclusive with `password`. Requires TLS (`tls.insecure: false`). RDS MySQL/Aurora MySQL only. Cleartext password auth (`mysql_clear_password`) is enabled automatically for IAM tokens over TLS.
+
+```yaml
+extensions:
+  aws_iam_db_auth:
+    region: us-east-2
+
+receivers:
+  mysql:
+    endpoint: my-database.example.com:3306
+    username: monitor
+    db_auth: aws_iam_db_auth
+    tls:
+      insecure: false
+
+service:
+  extensions: [aws_iam_db_auth]
+```
+
 - `allow_native_passwords`: (default = `true`)
 - `database`: The database name. If not specified, metrics will be collected for all databases.
 
