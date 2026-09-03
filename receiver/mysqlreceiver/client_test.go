@@ -402,6 +402,99 @@ func TestGetReplicaStatusStatsNormalizesColumnSpellings(t *testing.T) {
 	}
 }
 
+func TestCheckDBAvailability(t *testing.T) {
+	tests := []struct {
+		name     string
+		result   int
+		queryErr error
+		wantErr  string
+	}{
+		{
+			name:   "available",
+			result: 1,
+		},
+		{
+			name:    "unexpected result",
+			result:  0,
+			wantErr: "unexpected database availability query result: 0",
+		},
+		{
+			name:     "query error",
+			queryErr: assert.AnError,
+			wantErr:  assert.AnError.Error(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+
+			query := "/* otel-collector-ignore */ SELECT 1 FROM DUAL"
+			expectation := mock.ExpectQuery(regexp.QuoteMeta(query))
+			if tt.queryErr != nil {
+				expectation.WillReturnError(tt.queryErr)
+			} else {
+				expectation.WillReturnRows(sqlmock.NewRows([]string{"availability"}).AddRow(tt.result))
+			}
+
+			c := &mySQLClient{client: db}
+			err = c.checkDBAvailability()
+			if tt.wantErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, err, tt.wantErr)
+			}
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestGetQueryExecutionTime(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	query := "/* otel-collector-ignore */ SELECT COALESCE(SUM(SUM_TIMER_WAIT), 0) / 1000000000000.0 " +
+		"FROM performance_schema.events_statements_summary_by_digest " +
+		"WHERE ((DIGEST_TEXT NOT LIKE 'EXPLAIN %' AND DIGEST_TEXT NOT LIKE '/* otel-collector-ignore */%') " +
+		"OR DIGEST_TEXT IS NULL)"
+	mock.ExpectQuery(regexp.QuoteMeta(query)).
+		WillReturnRows(sqlmock.NewRows([]string{"execution_time"}).AddRow(12.345))
+
+	c := &mySQLClient{client: db}
+	got, err := c.getQueryExecutionTime()
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+
+	assert.Equal(t, 12.345, got)
+}
+
+func TestGetActiveSessionCount(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	query := "/* otel-collector-ignore */ SELECT COUNT(*) " +
+		"FROM performance_schema.threads " +
+		"WHERE PROCESSLIST_STATE IS NOT NULL " +
+		"AND TRIM(PROCESSLIST_STATE) != '' " +
+		"AND PROCESSLIST_COMMAND NOT IN ('Sleep', 'Daemon') " +
+		"AND PROCESSLIST_ID != CONNECTION_ID() " +
+		"AND COALESCE(PROCESSLIST_INFO, '') != '' " +
+		"AND COALESCE(PROCESSLIST_INFO, '') NOT LIKE '/* otel-collector-ignore */%'"
+	mock.ExpectQuery(regexp.QuoteMeta(query)).
+		WillReturnRows(sqlmock.NewRows([]string{"active_session_count"}).AddRow(7))
+
+	c := &mySQLClient{client: db}
+	got, err := c.getActiveSessionCount()
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+
+	assert.Equal(t, int64(7), got)
+}
+
 // TestGetDBVersionCaching verifies that a cached version is returned on subsequent
 // calls and that no additional query is made.
 func TestParseDBVersion(t *testing.T) {

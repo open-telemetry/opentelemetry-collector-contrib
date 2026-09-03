@@ -232,6 +232,13 @@ $defs:
                 - "kind"
             default:
               - "kind"
+      mysql.health:
+        description: "MysqlHealthMetricConfig provides config for the mysql.health metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       mysql.index.io.wait.count:
         description: "MysqlIndexIoWaitCountMetricConfig provides config for the mysql.index.io.wait.count metric."
         type: object
@@ -652,6 +659,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      mysql.query.execution.time:
+        description: "MysqlQueryExecutionTimeMetricConfig provides config for the mysql.query.execution.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       mysql.query.slow.count:
         description: "MysqlQuerySlowCountMetricConfig provides config for the mysql.query.slow.count metric."
         type: object
@@ -751,6 +765,13 @@ $defs:
                 - "operation"
             default:
               - "operation"
+      mysql.session.active.count:
+        description: "MysqlSessionActiveCountMetricConfig provides config for the mysql.session.active.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       mysql.sorts:
         description: "MysqlSortsMetricConfig provides config for the mysql.sorts metric."
         type: object

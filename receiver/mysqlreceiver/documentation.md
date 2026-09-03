@@ -424,6 +424,16 @@ The number of currently open files.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Int | Development |
 
+### mysql.health
+
+The health status of the MySQL server.
+
+A value of '1' indicates that the receiver can execute the availability check query against the server. A value of '0' indicates that the receiver cannot execute the availability check query during the scrape.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
 ### mysql.innodb.data_file.io
 
 The total bytes read from and written to InnoDB data files.
@@ -582,6 +592,16 @@ The number of statements executed by the server.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | 1 | Sum | Int | Cumulative | true | Development |
 
+### mysql.query.execution.time
+
+The total execution time of SQL statements currently tracked by the server.
+
+This metric reports cumulative statement execution time in seconds. Values reset when statement summary state is reset or the server restarts.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
 ### mysql.query.slow.count
 
 The number of slow queries.
@@ -630,6 +650,16 @@ This field is an indication of how “late” the replica is.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | false | Development |
+
+### mysql.session.active.count
+
+The number of active MySQL sessions currently executing statements.
+
+Idle sessions and the receiver's own query are excluded.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {session} | Gauge | Int | Development |
 
 ### mysql.statement_event.count
 

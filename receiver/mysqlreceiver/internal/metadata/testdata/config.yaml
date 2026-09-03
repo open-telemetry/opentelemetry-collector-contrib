@@ -36,6 +36,8 @@ all_set:
     mysql.handlers:
       enabled: true
       attributes: ["kind"]
+    mysql.health:
+      enabled: true
     mysql.index.io.wait.count:
       enabled: true
       attributes: ["operation","table","schema","index"]
@@ -99,6 +101,8 @@ all_set:
       enabled: true
     mysql.query.count:
       enabled: true
+    mysql.query.execution.time:
+      enabled: true
     mysql.query.slow.count:
       enabled: true
     mysql.replica.sql_delay:
@@ -116,6 +120,8 @@ all_set:
     mysql.row_operations:
       enabled: true
       attributes: ["operation"]
+    mysql.session.active.count:
+      enabled: true
     mysql.sorts:
       enabled: true
       attributes: ["kind"]
@@ -222,6 +228,8 @@ reaggregate_set:
     mysql.handlers:
       enabled: true
       attributes: []
+    mysql.health:
+      enabled: true
     mysql.index.io.wait.count:
       enabled: true
       attributes: []
@@ -285,6 +293,8 @@ reaggregate_set:
       enabled: true
     mysql.query.count:
       enabled: true
+    mysql.query.execution.time:
+      enabled: true
     mysql.query.slow.count:
       enabled: true
     mysql.replica.sql_delay:
@@ -302,6 +312,8 @@ reaggregate_set:
     mysql.row_operations:
       enabled: true
       attributes: []
+    mysql.session.active.count:
+      enabled: true
     mysql.sorts:
       enabled: true
       attributes: []
@@ -408,6 +420,8 @@ none_set:
     mysql.handlers:
       enabled: false
       attributes: ["kind"]
+    mysql.health:
+      enabled: false
     mysql.index.io.wait.count:
       enabled: false
       attributes: ["operation","table","schema","index"]
@@ -471,6 +485,8 @@ none_set:
       enabled: false
     mysql.query.count:
       enabled: false
+    mysql.query.execution.time:
+      enabled: false
     mysql.query.slow.count:
       enabled: false
     mysql.replica.sql_delay:
@@ -488,6 +504,8 @@ none_set:
     mysql.row_operations:
       enabled: false
       attributes: ["operation"]
+    mysql.session.active.count:
+      enabled: false
     mysql.sorts:
       enabled: false
       attributes: ["kind"]

@@ -522,6 +522,26 @@ func (ms *MysqlHandlersMetricConfig) Validate() error {
 	return nil
 }
 
+// MysqlHealthMetricConfig provides config for the mysql.health metric.
+type MysqlHealthMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlHealthMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MysqlIndexIoWaitCountMetricAttributeKey specifies the key of an attribute for the mysql.index.io.wait.count metric.
 type MysqlIndexIoWaitCountMetricAttributeKey string
 
@@ -1428,6 +1448,26 @@ func (ms *MysqlQueryCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+// MysqlQueryExecutionTimeMetricConfig provides config for the mysql.query.execution.time metric.
+type MysqlQueryExecutionTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlQueryExecutionTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MysqlQuerySlowCountMetricConfig provides config for the mysql.query.slow.count metric.
 type MysqlQuerySlowCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1650,6 +1690,26 @@ func (ms *MysqlRowOperationsMetricConfig) Validate() error {
 		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
 	}
 
+	return nil
+}
+
+// MysqlSessionActiveCountMetricConfig provides config for the mysql.session.active.count metric.
+type MysqlSessionActiveCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlSessionActiveCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -2469,6 +2529,7 @@ type MetricsConfig struct {
 	MysqlDoubleWrites                 MysqlDoubleWritesMetricConfig                 `mapstructure:"mysql.double_writes"`
 	MysqlFileOpen                     MysqlFileOpenMetricConfig                     `mapstructure:"mysql.file.open"`
 	MysqlHandlers                     MysqlHandlersMetricConfig                     `mapstructure:"mysql.handlers"`
+	MysqlHealth                       MysqlHealthMetricConfig                       `mapstructure:"mysql.health"`
 	MysqlIndexIoWaitCount             MysqlIndexIoWaitCountMetricConfig             `mapstructure:"mysql.index.io.wait.count"`
 	MysqlIndexIoWaitTime              MysqlIndexIoWaitTimeMetricConfig              `mapstructure:"mysql.index.io.wait.time"`
 	MysqlInnodbDataFileIo             MysqlInnodbDataFileIoMetricConfig             `mapstructure:"mysql.innodb.data_file.io"`
@@ -2493,6 +2554,7 @@ type MetricsConfig struct {
 	MysqlPreparedStatements           MysqlPreparedStatementsMetricConfig           `mapstructure:"mysql.prepared_statements"`
 	MysqlQueryClientCount             MysqlQueryClientCountMetricConfig             `mapstructure:"mysql.query.client.count"`
 	MysqlQueryCount                   MysqlQueryCountMetricConfig                   `mapstructure:"mysql.query.count"`
+	MysqlQueryExecutionTime           MysqlQueryExecutionTimeMetricConfig           `mapstructure:"mysql.query.execution.time"`
 	MysqlQuerySlowCount               MysqlQuerySlowCountMetricConfig               `mapstructure:"mysql.query.slow.count"`
 	MysqlReplicaSQLDelay              MysqlReplicaSQLDelayMetricConfig              `mapstructure:"mysql.replica.sql_delay"`
 	MysqlReplicaTempTableOpen         MysqlReplicaTempTableOpenMetricConfig         `mapstructure:"mysql.replica.temp_table.open"`
@@ -2500,6 +2562,7 @@ type MetricsConfig struct {
 	MysqlReplicaTimeBehindSource      MysqlReplicaTimeBehindSourceMetricConfig      `mapstructure:"mysql.replica.time_behind_source"`
 	MysqlRowLocks                     MysqlRowLocksMetricConfig                     `mapstructure:"mysql.row_locks"`
 	MysqlRowOperations                MysqlRowOperationsMetricConfig                `mapstructure:"mysql.row_operations"`
+	MysqlSessionActiveCount           MysqlSessionActiveCountMetricConfig           `mapstructure:"mysql.session.active.count"`
 	MysqlSorts                        MysqlSortsMetricConfig                        `mapstructure:"mysql.sorts"`
 	MysqlStatementEventCount          MysqlStatementEventCountMetricConfig          `mapstructure:"mysql.statement_event.count"`
 	MysqlStatementEventWaitTime       MysqlStatementEventWaitTimeMetricConfig       `mapstructure:"mysql.statement_event.wait.time"`
@@ -2578,6 +2641,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlHandlersMetricAttributeKey{MysqlHandlersMetricAttributeKeyHandler},
+		},
+		MysqlHealth: MysqlHealthMetricConfig{
+			Enabled: false,
 		},
 		MysqlIndexIoWaitCount: MysqlIndexIoWaitCountMetricConfig{
 			Enabled:             true,
@@ -2681,6 +2747,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		MysqlQueryCount: MysqlQueryCountMetricConfig{
 			Enabled: false,
 		},
+		MysqlQueryExecutionTime: MysqlQueryExecutionTimeMetricConfig{
+			Enabled: false,
+		},
 		MysqlQuerySlowCount: MysqlQuerySlowCountMetricConfig{
 			Enabled: false,
 		},
@@ -2707,6 +2776,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlRowOperationsMetricAttributeKey{MysqlRowOperationsMetricAttributeKeyRowOperations},
+		},
+		MysqlSessionActiveCount: MysqlSessionActiveCountMetricConfig{
+			Enabled: false,
 		},
 		MysqlSorts: MysqlSortsMetricConfig{
 			Enabled:             true,
