@@ -205,6 +205,22 @@ func TestConfigValidate(t *testing.T) {
 			},
 			expectedErr: "predicate must contain at least one valid signpost type",
 		},
+		{
+			desc: "valid predicate with messageType field",
+			makeCfg: func(_ *testing.T) *Config {
+				return &Config{
+					Predicate: "messageType == 'Error'",
+				}
+			},
+		},
+		{
+			desc: "valid predicate with OR and messageType",
+			makeCfg: func(_ *testing.T) *Config {
+				return &Config{
+					Predicate: "messageType == 'Error' OR messageType == 'Fault'",
+				}
+			},
+		},
 	}
 
 	for _, tc := range testCases {
