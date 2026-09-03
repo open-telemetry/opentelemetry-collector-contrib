@@ -21,8 +21,11 @@ resourceLogs:
                   stringValue: bb3496d4-5252-4660-9c28-3c6aebdb21c0
               - key: rpc.method
                 value:
-                  stringValue: Publish
+                  stringValue: sns.amazonaws.com/Publish
               - key: rpc.system
+                value:
+                  stringValue: AwsApiCall
+              - key: rpc.system.name
                 value:
                   stringValue: AwsApiCall
               - key: rpc.service

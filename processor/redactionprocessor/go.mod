@@ -1,22 +1,22 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.77.0-devel.0.20260213154712-e02b9359151a
 	github.com/grafana/clusterurl v0.2.1
-	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.65.0
-	go.opentelemetry.io/collector/component/componenttest v0.159.0
-	go.opentelemetry.io/collector/config/configopaque v1.65.0
-	go.opentelemetry.io/collector/confmap v1.65.0
-	go.opentelemetry.io/collector/consumer v1.65.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.159.0
-	go.opentelemetry.io/collector/pdata v1.65.0
-	go.opentelemetry.io/collector/processor v1.65.0
-	go.opentelemetry.io/collector/processor/processorhelper v0.159.0
-	go.opentelemetry.io/collector/processor/processortest v0.159.0
-	go.opentelemetry.io/otel v1.45.0
+	github.com/stretchr/testify v1.12.1
+	go.opentelemetry.io/collector/component v1.66.0
+	go.opentelemetry.io/collector/component/componenttest v0.160.0
+	go.opentelemetry.io/collector/config/configopaque v1.66.0
+	go.opentelemetry.io/collector/confmap v1.66.0
+	go.opentelemetry.io/collector/consumer v1.66.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.160.0
+	go.opentelemetry.io/collector/pdata v1.66.0
+	go.opentelemetry.io/collector/processor v1.66.0
+	go.opentelemetry.io/collector/processor/processorhelper v0.160.0
+	go.opentelemetry.io/collector/processor/processortest v0.160.0
+	go.opentelemetry.io/otel v1.46.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 )
@@ -26,7 +26,6 @@ require (
 	github.com/DataDog/go-sqllexer v0.1.12 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -45,25 +44,23 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/outcaste-io/ristretto v0.2.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.159.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.159.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.65.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.159.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.159.0 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.159.0 // indirect
-	go.opentelemetry.io/collector/pipeline v1.65.0 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.159.0 // indirect
-	go.opentelemetry.io/otel/metric v1.45.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.45.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.45.0 // indirect
-	go.opentelemetry.io/otel/trace v1.45.0 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.160.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.160.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.66.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.160.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.160.0 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.160.0 // indirect
+	go.opentelemetry.io/collector/pipeline v1.66.0 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.160.0 // indirect
+	go.opentelemetry.io/otel/metric v1.46.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.46.0 // indirect
+	go.opentelemetry.io/otel/trace v1.46.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 retract (

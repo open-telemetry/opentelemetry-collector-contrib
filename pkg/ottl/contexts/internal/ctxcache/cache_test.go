@@ -12,7 +12,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_PathExpressionParser(t *testing.T) {
@@ -55,7 +54,7 @@ func Test_PathExpressionParser(t *testing.T) {
 			N: "cache",
 			KeySlice: []ottl.Key[testContext]{
 				&pathtest.Key[testContext]{
-					S: ottltest.Strp("key1"),
+					S: new("key1"),
 				},
 			},
 		}
@@ -126,7 +125,7 @@ func Test_PathExpressionParser(t *testing.T) {
 			N: "cache",
 			KeySlice: []ottl.Key[testContext]{
 				&pathtest.Key[testContext]{
-					S: ottltest.Strp("key1"),
+					S: new("key1"),
 				},
 			},
 		}
@@ -147,7 +146,7 @@ func Test_PathExpressionParser(t *testing.T) {
 			N: "cache",
 			KeySlice: []ottl.Key[testContext]{
 				&pathtest.Key[testContext]{
-					S: ottltest.Strp("key3"),
+					S: new("key3"),
 				},
 			},
 		}
@@ -168,7 +167,7 @@ func Test_PathExpressionParser(t *testing.T) {
 			N: "cache",
 			KeySlice: []ottl.Key[testContext]{
 				&pathtest.Key[testContext]{
-					S: ottltest.Strp("key1"),
+					S: new("key1"),
 				},
 			},
 		}
@@ -194,10 +193,10 @@ func Test_PathExpressionParser(t *testing.T) {
 			N: "cache",
 			KeySlice: []ottl.Key[testContext]{
 				&pathtest.Key[testContext]{
-					S: ottltest.Strp("parent"),
+					S: new("parent"),
 				},
 				&pathtest.Key[testContext]{
-					S: ottltest.Strp("nested_key"),
+					S: new("nested_key"),
 				},
 			},
 		}

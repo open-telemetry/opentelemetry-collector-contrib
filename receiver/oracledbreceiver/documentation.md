@@ -310,6 +310,78 @@ metrics:
     enabled: true
 ```
 
+### oracledb.asm.disk.errors
+
+Count of I/O errors on an ASM disk.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {error} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.asm.disk_group.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+| oracledb.asm.disk.name | The name of the ASM disk. | Any Str | Recommended | - |
+| disk.io.direction | Direction of the storage I/O operation. | Str: ``read``, ``write`` | Recommended | - |
+
+### oracledb.asm.disk_group.capacity
+
+Total space in an ASM diskgroup.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.asm.disk_group.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+
+### oracledb.asm.disk_group.free
+
+Free space in an ASM diskgroup.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.asm.disk_group.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+
+### oracledb.asm.disk_group.offline_disks
+
+Count of disks currently offline within an ASM diskgroup.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {disk} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.asm.disk_group.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+
+### oracledb.asm.disk_group.usable_free
+
+Free space that can safely be used for files after accounting for ASM redundancy and required mirror recovery capacity.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| oracledb.asm.disk_group.name | The name of the ASM diskgroup. | Any Str | Recommended | - |
+
 ### oracledb.buffer.inspected
 
 Number of buffers inspected from the end of the LRU queue while a process searched for a reusable buffer, grouped by buffer state.
@@ -1647,7 +1719,7 @@ sample query
 | client.port | TCP port used by the client. | Any Int | - |
 | network.peer.address | IP address of the peer client. | Any Str | - |
 | network.peer.port | TCP port used by the peer client. | Any Int | - |
-| oracledb.plan_hash_value | Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format. | Any Str | - |
+| oracledb.plan_hash_value | Numeric representation of the execution plan. | Any Str | - |
 | oracledb.sql_id | The SQL ID of the query. | Any Str | - |
 | oracledb.child_number | The child number of the query. | Any Str | - |
 | oracledb.child_address | Address of the child cursor. | Any Str | - |
@@ -1737,7 +1809,7 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | oracledb.procedure_name | Name of the database object that a query is accessing. | Any Str | - |
 | oracledb.procedure_type | Type of the database object that a query is accessing. | Any Str | - |
 | db.query.comment_tags | Filtered SQL query comments extracted from leading block comments. Contains comma-separated key=value pairs for keys specified in allowed_comment_keys configuration. Used for correlation with APM traces. | Any Str | - |
-| oracledb.plan_hash_value | Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format. | Any Str | - |
+| oracledb.plan_hash_value | Numeric representation of the execution plan. | Any Str | - |
 | oracledb.plan.first_load | Time at which the plan was first loaded into the library cache, in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS | Any Str | - |
 | oracledb.plan.last_load | Plan load time in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS | Any Str | - |
 
