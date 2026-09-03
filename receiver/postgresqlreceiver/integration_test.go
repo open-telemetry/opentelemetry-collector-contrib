@@ -83,7 +83,8 @@ func integrationTest(
 	for _, attribute := range additionalIgnoredResourceAttributeValues {
 		compareOptions = append(compareOptions, pmetrictest.IgnoreResourceAttributeValue(attribute))
 	}
-	compareOptions = append(compareOptions,
+	compareOptions = append(
+		compareOptions,
 		pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreMetricValues(
 			"postgresql.backends",
@@ -944,4 +945,79 @@ func TestVectorInsertStatsIntegration(t *testing.T) {
 	// vector table are counted.
 	assert.Equal(t, int64(6), stats[0].rows)
 	assert.True(t, stats[0].totalExecTime > 0, "expected positive cumulative insert duration")
+}
+
+// pre17TestVersion/post17TestVersion also straddle the PG14 boundary this test
+// cares about (partitioned tables only appear in pg_stat_user_tables from PG14 on).
+func TestTableCountMatchesTableMetrics(t *testing.T) {
+	t.Run("pre14", tableCountEquivalenceTest(pre17TestVersion))
+	t.Run("post14", tableCountEquivalenceTest(post17TestVersion))
+}
+
+func tableCountEquivalenceTest(pgVersion string) func(*testing.T) {
+	return func(t *testing.T) {
+		ci, err := testcontainers.GenericContainer(
+			t.Context(),
+			testcontainers.GenericContainerRequest{
+				ContainerRequest: testcontainers.ContainerRequest{
+					Image: fmt.Sprintf("postgres:%s", pgVersion),
+					Env: map[string]string{
+						"POSTGRES_USER":     "root",
+						"POSTGRES_PASSWORD": "otel",
+						"POSTGRES_DB":       "otel",
+					},
+					Files: []testcontainers.ContainerFile{{
+						HostFilePath:      filepath.Join("testdata", "integration", "03-table-count-init.sql"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+						FileMode:          700,
+					}},
+					ExposedPorts: []string{postgresqlPort},
+					// A listening port is not enough: the postgres image runs a temporary
+					// server for its init scripts, so the port accepts connections while the
+					// real server is still "starting up" (57P03). The readiness log line is
+					// emitted twice -- once for the init server, once for the real one -- so
+					// waiting for the second occurrence guarantees the DB is ready to query.
+					WaitingFor: wait.ForLog("database system is ready to accept connections").
+						WithOccurrence(2).
+						WithStartupTimeout(2 * time.Minute),
+				},
+			},
+		)
+		require.NoError(t, err)
+		defer testcontainers.CleanupContainer(t, ci)
+
+		err = ci.Start(t.Context())
+		require.NoError(t, err)
+
+		p, err := ci.MappedPort(t.Context(), postgresqlPort)
+		require.NoError(t, err)
+
+		clientDB, err := getDB(t.Context(), postgreSQLConfig{
+			username: "otelu",
+			password: "otelp",
+			address: confignet.AddrConfig{
+				Endpoint: net.JoinHostPort("localhost", p.Port()),
+			},
+			tls: configtls.ClientConfig{
+				Insecure: true,
+			},
+		}, "otel")
+		require.NoError(t, err)
+
+		client := postgreSQLClient{client: clientDB, closeFn: clientDB.Close}
+		defer func() {
+			require.NoError(t, client.Close())
+		}()
+
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+
+		tableMetrics, err := client.getDatabaseTableMetrics(ctx, "otel")
+		require.NoError(t, err)
+		count, err := client.getTableCount(ctx)
+		require.NoError(t, err)
+
+		assert.Greater(t, len(tableMetrics), 2, "fixture should include partitions and materialized views, not just plain tables")
+		assert.Equal(t, int64(len(tableMetrics)), count, "cheap table count must equal the full per-table query's row count")
+	}
 }
