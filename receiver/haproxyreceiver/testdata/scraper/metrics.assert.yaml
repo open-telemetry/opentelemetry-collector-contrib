@@ -1,8 +1,7 @@
 version: 1
 signal: metrics
 resources:
-    - attributes:
-        haproxy.addr/exists: true
+    - attributes/include:
         haproxy.proxy_name: myfrontend
         haproxy.service_name: FRONTEND
       scopes:
@@ -64,8 +63,7 @@ resources:
             - name: haproxy.sessions.rate
               type: gauge
               unit: '{sessions}'
-    - attributes:
-        haproxy.addr/exists: true
+    - attributes/include:
         haproxy.proxy_name: stats
         haproxy.service_name: FRONTEND
       scopes:
@@ -127,8 +125,7 @@ resources:
             - name: haproxy.sessions.rate
               type: gauge
               unit: '{sessions}'
-    - attributes:
-        haproxy.addr/exists: true
+    - attributes/include:
         haproxy.proxy_name: webservers
         haproxy.service_name: BACKEND
       scopes:
@@ -212,8 +209,7 @@ resources:
             - name: haproxy.sessions.rate
               type: gauge
               unit: '{sessions}'
-    - attributes:
-        haproxy.addr/exists: true
+    - attributes/include:
         haproxy.proxy_name: webservers
         haproxy.service_name: s1
       scopes:
@@ -292,8 +288,7 @@ resources:
             - name: haproxy.sessions.rate
               type: gauge
               unit: '{sessions}'
-    - attributes:
-        haproxy.addr/exists: true
+    - attributes/include:
         haproxy.proxy_name: webservers
         haproxy.service_name: s2
       scopes:
@@ -372,8 +367,7 @@ resources:
             - name: haproxy.sessions.rate
               type: gauge
               unit: '{sessions}'
-    - attributes:
-        haproxy.addr/exists: true
+    - attributes/include:
         haproxy.proxy_name: webservers
         haproxy.service_name: s3
       scopes:

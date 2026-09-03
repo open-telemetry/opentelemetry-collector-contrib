@@ -649,6 +649,10 @@ func (mf *metricFamily) addExemplar(seriesRef uint64, e exemplar.Exemplar) {
 	convertExemplar(e, es.AppendEmpty())
 }
 
+// convertExemplar converts a Prometheus exemplar's labels to an OTel exemplar.
+// A trace_id/span_id label converts only when it's exactly OTel width and
+// non-zero; anything else becomes a filtered attribute instead of being zero
+// padded or truncated. An empty value is dropped, same as an absent label.
 func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 	e.SetTimestamp(timestampFromMs(pe.Ts))
 	e.SetDoubleValue(pe.Value)
@@ -656,41 +660,39 @@ func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 	pe.Labels.Range(func(lb labels.Label) {
 		switch strings.ToLower(lb.Name) {
 		case prometheus.ExemplarTraceIDKey:
+			if lb.Value == "" {
+				return
+			}
 			var tid [16]byte
-			err := decodeAndCopyToLowerBytes(tid[:], []byte(lb.Value))
-			if err == nil {
-				e.SetTraceID(tid)
-			} else {
-				e.FilteredAttributes().PutStr(lb.Name, lb.Value)
+			if len(lb.Value) == hex.EncodedLen(len(tid)) {
+				if b, err := hex.DecodeString(lb.Value); err == nil {
+					copy(tid[:], b)
+					// all-zero looks unset already, so keep the original value instead of setting it
+					if traceID := pcommon.TraceID(tid); !traceID.IsEmpty() {
+						e.SetTraceID(traceID)
+						return
+					}
+				}
 			}
+			e.FilteredAttributes().PutStr(lb.Name, lb.Value)
 		case prometheus.ExemplarSpanIDKey:
-			var sid [8]byte
-			err := decodeAndCopyToLowerBytes(sid[:], []byte(lb.Value))
-			if err == nil {
-				e.SetSpanID(sid)
-			} else {
-				e.FilteredAttributes().PutStr(lb.Name, lb.Value)
+			if lb.Value == "" {
+				return
 			}
+			var sid [8]byte
+			if len(lb.Value) == hex.EncodedLen(len(sid)) {
+				if b, err := hex.DecodeString(lb.Value); err == nil {
+					copy(sid[:], b)
+					// all-zero looks unset already, so keep the original value instead of setting it
+					if spanID := pcommon.SpanID(sid); !spanID.IsEmpty() {
+						e.SetSpanID(spanID)
+						return
+					}
+				}
+			}
+			e.FilteredAttributes().PutStr(lb.Name, lb.Value)
 		default:
 			e.FilteredAttributes().PutStr(lb.Name, lb.Value)
 		}
 	})
-}
-
-/*
-	decodeAndCopyToLowerBytes copies src to dst on lower bytes instead of higher
-
-1. If len(src) > len(dst) -> copy first len(dst) bytes as it is. Example -> src = []byte{0xab,0xcd,0xef,0xgh,0xij}, dst = [2]byte, result dst = [2]byte{0xab, 0xcd}
-2. If len(src) = len(dst) -> copy src to dst as it is
-3. If len(src) < len(dst) -> prepend required 0s and then add src to dst. Example -> src = []byte{0xab, 0xcd}, dst = [8]byte, result dst = [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xab, 0xcd}
-*/
-func decodeAndCopyToLowerBytes(dst, src []byte) error {
-	var err error
-	decodedLen := hex.DecodedLen(len(src))
-	if decodedLen >= len(dst) {
-		_, err = hex.Decode(dst, src[:hex.EncodedLen(len(dst))])
-	} else {
-		_, err = hex.Decode(dst[len(dst)-decodedLen:], src)
-	}
-	return err
 }

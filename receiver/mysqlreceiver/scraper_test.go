@@ -65,7 +65,10 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlCommands.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlFileOpen.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbDataFileIo.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbHistoryListLength.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbOperationPending.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbTransactionActiveCount.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbTransactionActiveDurationMax.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableOpen.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlThreadSlowLaunch.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRowLockWaitCount.Enabled = true
@@ -84,8 +87,13 @@ func TestScrape(t *testing.T) {
 
 		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
 		scraper.sqlclient = &mockClient{
-			globalStatsFile:             "global_stats",
-			innodbStatsFile:             "innodb_stats",
+			globalStatsFile: "global_stats",
+			innodbStatsFile: "innodb_stats",
+			innodbTransactionStats: innodbTransactionStats{
+				historyListLength:            251,
+				activeTransactions:           3,
+				maxActiveTransactionDuration: 17,
+			},
 			tableIoWaitsFile:            "table_io_waits_stats",
 			indexIoWaitsFile:            "index_io_waits_stats",
 			tableStatsFile:              "table_stats",
@@ -180,6 +188,130 @@ func TestScrape(t *testing.T) {
 		// and the other failure comes from a row that fails to parse as a number
 		require.Equal(t, 5, partialError.Failed, "Expected partial error count to be 5")
 	})
+}
+
+func TestScrapeInnodbTransactionStatsDisabledDoesNotQuery(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
+	client := &mockClient{
+		innodbTransactionStats: innodbTransactionStats{
+			historyListLength:            251,
+			activeTransactions:           3,
+			maxActiveTransactionDuration: 17,
+		},
+	}
+	scraper.sqlclient = client
+
+	errs := &scrapererror.ScrapeErrors{}
+	scraper.scrapeInnodbTransactionStats(pcommon.NewTimestampFromTime(time.Now()), errs)
+
+	require.NoError(t, errs.Combine())
+	assert.Equal(t, 0, client.innodbTransactionStatsCalls)
+	assert.Empty(t, emittedMetricNames(scraper.mb.Emit()))
+}
+
+func TestScrapeInnodbTransactionStatsRecordsOnlyEnabledMetric(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbTransactionActiveCount.Enabled = true
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
+	client := &mockClient{
+		innodbTransactionStats: innodbTransactionStats{
+			historyListLength:            251,
+			activeTransactions:           3,
+			maxActiveTransactionDuration: 17,
+		},
+	}
+	scraper.sqlclient = client
+
+	errs := &scrapererror.ScrapeErrors{}
+	scraper.scrapeInnodbTransactionStats(pcommon.NewTimestampFromTime(time.Now()), errs)
+
+	require.NoError(t, errs.Combine())
+	assert.Equal(t, 1, client.innodbTransactionStatsCalls)
+	md := scraper.mb.Emit()
+	assert.Equal(t, []string{"mysql.innodb.transaction.active.count"}, emittedMetricNames(md))
+	assert.Equal(t, int64(3), intGaugeValueByMetricName(t, md, "mysql.innodb.transaction.active.count"))
+}
+
+func TestScrapeInnodbTransactionStatsRecordsAllEnabledMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbHistoryListLength.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbTransactionActiveCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbTransactionActiveDurationMax.Enabled = true
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
+	client := &mockClient{
+		innodbTransactionStats: innodbTransactionStats{
+			historyListLength:            251,
+			activeTransactions:           3,
+			maxActiveTransactionDuration: 17,
+		},
+	}
+	scraper.sqlclient = client
+
+	errs := &scrapererror.ScrapeErrors{}
+	scraper.scrapeInnodbTransactionStats(pcommon.NewTimestampFromTime(time.Now()), errs)
+
+	require.NoError(t, errs.Combine())
+	assert.Equal(t, 1, client.innodbTransactionStatsCalls)
+	md := scraper.mb.Emit()
+	assert.ElementsMatch(t, []string{
+		"mysql.innodb.history_list.length",
+		"mysql.innodb.transaction.active.count",
+		"mysql.innodb.transaction.active.duration.max",
+	}, emittedMetricNames(md))
+	assert.Equal(t, int64(251), intGaugeValueByMetricName(t, md, "mysql.innodb.history_list.length"))
+	assert.Equal(t, int64(3), intGaugeValueByMetricName(t, md, "mysql.innodb.transaction.active.count"))
+	assert.Equal(t, int64(17), intGaugeValueByMetricName(t, md, "mysql.innodb.transaction.active.duration.max"))
+}
+
+func TestScrapeInnodbTransactionStatsQueryError(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbHistoryListLength.Enabled = true
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
+	client := &mockClient{
+		innodbTransactionStatsErr: errors.New("query failed"),
+	}
+	scraper.sqlclient = client
+
+	errs := &scrapererror.ScrapeErrors{}
+	scraper.scrapeInnodbTransactionStats(pcommon.NewTimestampFromTime(time.Now()), errs)
+
+	require.Error(t, errs.Combine())
+	assert.Equal(t, 1, client.innodbTransactionStatsCalls)
+	assert.Empty(t, emittedMetricNames(scraper.mb.Emit()))
+}
+
+func emittedMetricNames(md pmetric.Metrics) []string {
+	var names []string
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		scopeMetrics := md.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			metrics := scopeMetrics.At(j).Metrics()
+			for k := 0; k < metrics.Len(); k++ {
+				names = append(names, metrics.At(k).Name())
+			}
+		}
+	}
+	return names
+}
+
+func intGaugeValueByMetricName(t *testing.T, md pmetric.Metrics, name string) int64 {
+	t.Helper()
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		scopeMetrics := md.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			metrics := scopeMetrics.At(j).Metrics()
+			for k := 0; k < metrics.Len(); k++ {
+				metric := metrics.At(k)
+				if metric.Name() == name {
+					require.Equal(t, 1, metric.Gauge().DataPoints().Len())
+					return metric.Gauge().DataPoints().At(0).IntValue()
+				}
+			}
+		}
+	}
+	t.Fatalf("metric %q not found", name)
+	return 0
 }
 
 func TestReplicaThreadRunningValue(t *testing.T) {
@@ -938,6 +1070,9 @@ type mockClient struct {
 	globalStats                 map[string]string
 	globalStatsFile             string
 	innodbStatsFile             string
+	innodbTransactionStats      innodbTransactionStats
+	innodbTransactionStatsErr   error
+	innodbTransactionStatsCalls int
 	innodbRedoLogStats          innodbRedoLogStats
 	innodbRedoLogStatsErr       error
 	innodbRedoLogStatsCalls     int
@@ -1018,6 +1153,14 @@ func (c *mockClient) getGlobalStats() (map[string]string, error) {
 
 func (c *mockClient) getInnodbStats() (map[string]string, error) {
 	return readFile(c.innodbStatsFile)
+}
+
+func (c *mockClient) getInnodbTransactionStats() (innodbTransactionStats, error) {
+	c.innodbTransactionStatsCalls++
+	if c.innodbTransactionStatsErr != nil {
+		return innodbTransactionStats{}, c.innodbTransactionStatsErr
+	}
+	return c.innodbTransactionStats, nil
 }
 
 func (c *mockClient) getInnodbRedoLogStatsFromLogStatus() (innodbRedoLogStats, error) {
