@@ -503,7 +503,7 @@ metrics:
   mysql.health:
     enabled: false
     description: The health status of the MySQL server.
-    extended_documentation: A value of '1' indicates that the receiver can execute the availability check query against the server. A value of '0' indicates that the receiver cannot execute the availability check query during the scrape.
+    extended_documentation: A value of '1' indicates healthy and '0' indicates unhealthy.
     stability: development
     unit: "1"
     gauge:
