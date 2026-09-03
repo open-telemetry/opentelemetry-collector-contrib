@@ -402,6 +402,33 @@ func TestGetReplicaStatusStatsNormalizesColumnSpellings(t *testing.T) {
 	}
 }
 
+func TestGetInnodbTransactionStats(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	query := "SELECT " +
+		"COALESCE((SELECT count FROM information_schema.innodb_metrics WHERE name = 'trx_rseg_history_len'), 0), " +
+		"COUNT(*), " +
+		"COALESCE(MAX(TIMESTAMPDIFF(SECOND, trx_started, NOW())), 0) " +
+		"FROM information_schema.innodb_trx"
+	mock.ExpectQuery(regexp.QuoteMeta(query)).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"history_list_length",
+			"active_transactions",
+			"max_active_transaction_duration",
+		}).AddRow(251, 3, 17))
+
+	c := &mySQLClient{client: db}
+	got, err := c.getInnodbTransactionStats()
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+
+	assert.Equal(t, int64(251), got.historyListLength)
+	assert.Equal(t, int64(3), got.activeTransactions)
+	assert.Equal(t, int64(17), got.maxActiveTransactionDuration)
+}
+
 // TestGetDBVersionCaching verifies that a cached version is returned on subsequent
 // calls and that no additional query is made.
 func TestParseDBVersion(t *testing.T) {
