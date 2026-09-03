@@ -28,6 +28,14 @@ The following settings are optional for the websocket client:
     - `tls`: TLS settings.
     - `headers`: HTTP headers to set.
     - `auth`: The ID of an auth extension to use for authentication.
+    - `socket`: A local IPC socket to dial instead of a TCP connection. When
+      set, `endpoint` only supplies the URL scheme, request path, and `Host`
+      header (its host and port are ignored). This is typically set by the
+      Supervisor for the local supervisor-to-collector link and not configured
+      manually.
+      - `transport`: `unix` (Unix domain socket) or `npipe` (Windows named pipe).
+      - `endpoint`: The socket path (e.g. `/var/run/otelcol/opamp.sock`) or
+        named pipe path (e.g. `\\.\pipe\opamp`).
 
 The following settings are optional for the HTTP client:
 
@@ -37,6 +45,8 @@ The following settings are optional for the HTTP client:
     - `headers`: HTTP headers to set.
     - `polling_interval`: The interval at which the extension will poll the server. Defaults to 30s.
     - `auth`: The ID of an auth extension to use for authentication.
+    - `socket`: A local IPC socket to dial instead of a TCP connection, as
+      described for the websocket transport above.
 
 The following settings are optional for both transports:
 

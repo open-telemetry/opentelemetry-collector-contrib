@@ -11,6 +11,7 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -337,6 +338,91 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
 				return assert.Equal(t, "opamp server must have only ws or http set", err.Error())
+			},
+		},
+		{
+			name: "WS with unix socket is valid",
+			fields: fields{
+				Server: &OpAMPServer{
+					WS: &commonFields{
+						Endpoint: "ws://localhost/v1/opamp",
+						Socket: &confignet.AddrConfig{
+							Transport: confignet.TransportTypeUnix,
+							Endpoint:  "/run/otelcol/opamp.sock",
+						},
+					},
+				},
+				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "HTTP with unix socket is valid",
+			fields: fields{
+				Server: &OpAMPServer{
+					HTTP: &httpFields{
+						commonFields: commonFields{
+							Endpoint: "http://localhost/v1/opamp",
+							Socket: &confignet.AddrConfig{
+								Transport: confignet.TransportTypeUnix,
+								Endpoint:  "/run/otelcol/opamp.sock",
+							},
+						},
+					},
+				},
+				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "socket with npipe transport is valid",
+			fields: fields{
+				Server: &OpAMPServer{
+					WS: &commonFields{
+						Endpoint: "ws://localhost/v1/opamp",
+						Socket: &confignet.AddrConfig{
+							Transport: confignet.TransportTypeNpipe,
+							Endpoint:  `\\.\pipe\opamp`,
+						},
+					},
+				},
+				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "socket with tcp transport is rejected",
+			fields: fields{
+				Server: &OpAMPServer{
+					WS: &commonFields{
+						Endpoint: "ws://localhost/v1/opamp",
+						Socket: &confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  "localhost:4320",
+						},
+					},
+				},
+				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			},
+			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.Equal(t, `socket::transport must be "unix" or "npipe"`, err.Error())
+			},
+		},
+		{
+			name: "socket without endpoint is rejected",
+			fields: fields{
+				Server: &OpAMPServer{
+					WS: &commonFields{
+						Endpoint: "ws://localhost/v1/opamp",
+						Socket: &confignet.AddrConfig{
+							Transport: confignet.TransportTypeUnix,
+						},
+					},
+				},
+				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			},
+			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.Equal(t, "socket::endpoint must be provided", err.Error())
 			},
 		},
 		{

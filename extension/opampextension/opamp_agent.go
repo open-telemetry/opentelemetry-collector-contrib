@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net"
 	"net/http"
 	"os"
 	"runtime"
@@ -151,6 +152,16 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 			OnMessage: o.onMessage,
 			OnCommand: o.onCommand,
 		},
+	}
+
+	// When configured with a local IPC socket (Unix domain socket or Windows
+	// named pipe), dial it instead of TCP. Both OpAMP transports honor
+	// DialContext. The OpAMPServerURL endpoint then only supplies the URL
+	// scheme, request path, and Host header; its host:port is ignored.
+	if socket := o.cfg.Server.GetSocket(); socket != nil {
+		settings.DialContext = func(ctx context.Context, _, _ string) (net.Conn, error) {
+			return socket.Dial(ctx)
+		}
 	}
 
 	if err := o.createAgentDescription(); err != nil {
