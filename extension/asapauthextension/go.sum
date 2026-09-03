@@ -1,5 +1,5 @@
-bitbucket.org/atlassian/go-asap/v2 v2.24.3 h1:iGmTYg6GFotCJOWs2+MyANbuXZMpA9Op2LXz9OpYpTk=
-bitbucket.org/atlassian/go-asap/v2 v2.24.3/go.mod h1:8E9ZNUjqV439yxLRht9jRpeSjoJ8J9skh4Sj78SMeRA=
+bitbucket.org/atlassian/go-asap/v2 v2.25.3 h1:OeHaNZ4RVop9kJKvMPGPkVgPSDpFTPd+keeSnrJNT7I=
+bitbucket.org/atlassian/go-asap/v2 v2.25.3/go.mod h1:8E9ZNUjqV439yxLRht9jRpeSjoJ8J9skh4Sj78SMeRA=
 github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc h1:MhBvG7RLaLqlyjxMR6of35vt6MVQ+eXMcgn9X/sy0FE=
 github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc/go.mod h1:ARgCUhI1MHQH+ONky/PAtmVHQrP5JlGY0F3poXOp/fA=
 github.com/aws/aws-sdk-go v1.55.8 h1:JRmEUbU52aJQZ2AjX4q4Wu7t4uZjOu71uyNmaWlUkJQ=
