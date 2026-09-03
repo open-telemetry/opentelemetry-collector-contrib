@@ -115,6 +115,7 @@ type client interface {
 	getDBVersion() dbVersion
 	getGlobalStats() (map[string]string, error)
 	getInnodbStats() (map[string]string, error)
+	getInnodbTransactionStats() (innodbTransactionStats, error)
 	getQueryExecutionTime() (float64, error)
 	getActiveSessionCount() (int64, error)
 	getTableStats() ([]tableStats, error)
@@ -172,6 +173,12 @@ type tableStats struct {
 	averageRowLength int64
 	dataLength       int64
 	indexLength      int64
+}
+
+type innodbTransactionStats struct {
+	historyListLength            int64
+	activeTransactions           int64
+	maxActiveTransactionDuration int64
 }
 
 type statementEventStats struct {
@@ -502,6 +509,22 @@ func (c *mySQLClient) getActiveSessionCount() (int64, error) {
 	var activeSessionCount int64
 	err := c.client.QueryRow(q).Scan(&activeSessionCount)
 	return activeSessionCount, err
+}
+
+// getInnodbTransactionStats queries the db for InnoDB transaction metrics.
+func (c *mySQLClient) getInnodbTransactionStats() (innodbTransactionStats, error) {
+	q := "SELECT " +
+		"COALESCE((SELECT count FROM information_schema.innodb_metrics WHERE name = 'trx_rseg_history_len'), 0), " +
+		"COUNT(*), " +
+		"COALESCE(MAX(TIMESTAMPDIFF(SECOND, trx_started, NOW())), 0) " +
+		"FROM information_schema.innodb_trx"
+	var stats innodbTransactionStats
+	err := c.client.QueryRow(q).Scan(
+		&stats.historyListLength,
+		&stats.activeTransactions,
+		&stats.maxActiveTransactionDuration,
+	)
+	return stats, err
 }
 
 // getTableStats queries the db for information_schema table size metrics.
