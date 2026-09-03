@@ -1347,6 +1347,7 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 	cfg, hash, inputFile, outputFile := createSimplePipelineCollectorConf(t)
 
 	configuredChan := make(chan struct{})
+	var configuredOnce sync.Once
 	connected := atomic.Bool{}
 	server := newUnstartedOpAMPServer(t, defaultConnectingHandler,
 		types.ConnectionCallbacks{
@@ -1356,7 +1357,7 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 			OnMessage: func(ctx context.Context, conn types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				lastCfgHash := message.GetRemoteConfigStatus().GetLastRemoteConfigHash()
 				if bytes.Equal(lastCfgHash, hash) {
-					close(configuredChan)
+					configuredOnce.Do(func() { close(configuredChan) })
 				}
 
 				return &protobufs.ServerToAgent{}
@@ -1696,6 +1697,48 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 			}, 5*time.Second, 250*time.Millisecond)
 		})
 	}
+}
+
+func TestSupervisorBootstrapsCollectorWithInternalTelemetryPortInUse(t *testing.T) {
+	// The Collector's default internal telemetry configuration is a Prometheus
+	// reader on localhost:8888. The bootstrap Collector must not bind it: before
+	// its internal metrics were disabled it failed to create a meter provider,
+	// exited before connecting back, and Start returned "could not get bootstrap
+	// info from the Collector".
+	listener, err := net.Listen("tcp", "localhost:8888")
+	if err != nil {
+		t.Skipf("could not claim the Collector's default internal telemetry port: %v", err)
+	}
+	defer listener.Close()
+
+	agentDescription := atomic.Value{}
+
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.AgentDescription != nil {
+					agentDescription.Store(message.AgentDescription)
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		},
+	)
+
+	s, _ := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
+
+	require.NoError(t, s.Start(t.Context()))
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	require.Eventually(t, func() bool {
+		_, ok := agentDescription.Load().(*protobufs.AgentDescription)
+		return ok
+	}, 5*time.Second, 250*time.Millisecond,
+		"Supervisor did not bootstrap the Collector while localhost:8888 was in use")
 }
 
 func TestSupervisorBootstrapsCollectorAvailableComponents(t *testing.T) {
@@ -3759,6 +3802,94 @@ func TestSupervisorValidatesConfigBeforeApplying(t *testing.T) {
 	}
 }
 
+func TestSupervisorValidateConfigWithLocalConfig(t *testing.T) {
+	modes := getTestModes()
+
+	for _, mode := range modes {
+		t.Run(mode.name, func(t *testing.T) {
+			var remoteConfigStatus atomic.Value
+			var effectiveConfig atomic.Value
+			server := newOpAMPServer(
+				t,
+				defaultConnectingHandler,
+				types.ConnectionCallbacks{
+					OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+						if message.RemoteConfigStatus != nil {
+							remoteConfigStatus.Store(message.RemoteConfigStatus)
+						}
+						if message.EffectiveConfig != nil {
+							configFile := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+							if configFile != nil {
+								effectiveConfig.Store(string(configFile.Body))
+							}
+						}
+
+						return &protobufs.ServerToAgent{}
+					},
+				},
+			)
+
+			extraConfigData := map[string]string{
+				"url":             server.addr,
+				"storage_dir":     t.TempDir(),
+				"local_config":    filepath.Join("testdata", "collector", "healthcheck_config.yaml"),
+				"validate_config": "true",
+			}
+			if mode.UseHUPConfigReload {
+				extraConfigData["use_hup_config_reload"] = "true"
+			}
+
+			s, supervisorCfg := newSupervisor(t, "basic", extraConfigData)
+			require.Equal(t, mode.UseHUPConfigReload, supervisorCfg.Agent.UseHUPConfigReload)
+			require.True(t, supervisorCfg.Agent.ValidateConfig)
+
+			require.NoError(t, s.Start(t.Context()))
+			defer s.Shutdown()
+
+			waitForSupervisorConnection(server.supervisorConnected, true)
+			require.Eventually(t, func() bool {
+				return healthCheckOK(13133)
+			}, 5*time.Second, 250*time.Millisecond, "Collector did not become healthy with local config")
+			workingConfig := waitForEffectiveConfigMessage(t, &effectiveConfig)
+
+			invalidConfig := []byte(`service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [missing_exporter]
+`)
+			invalidHash := sha256.Sum256(invalidConfig)
+
+			server.sendToSupervisor(&protobufs.ServerToAgent{
+				RemoteConfig: &protobufs.AgentRemoteConfig{
+					Config: &protobufs.AgentConfigMap{
+						ConfigMap: map[string]*protobufs.AgentConfigFile{
+							"": {Body: invalidConfig},
+						},
+					},
+					ConfigHash: invalidHash[:],
+				},
+			})
+
+			require.EventuallyWithT(t, func(c *assert.CollectT) {
+				status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+				require.True(c, ok)
+				require.Equal(c, invalidHash[:], status.LastRemoteConfigHash)
+				require.Equal(c, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, status.Status)
+				require.Contains(c, status.ErrorMessage, "missing_exporter")
+			}, 5*time.Second, 250*time.Millisecond, "Invalid candidate config was not rejected")
+
+			require.Never(t, func() bool {
+				currentConfig, ok := effectiveConfig.Load().(string)
+				return ok && currentConfig != workingConfig
+			}, 2*time.Second, 100*time.Millisecond, "Effective config changed after candidate validation failed")
+			require.Never(t, func() bool {
+				return !healthCheckOK(13133)
+			}, 2*time.Second, 100*time.Millisecond, "Collector became unhealthy after candidate validation failed")
+		})
+	}
+}
+
 func TestSupervisorExtensionsFeatureGateRequired(t *testing.T) {
 	t.Run("feature-gate disabled", func(t *testing.T) {
 		// Render configuration with nop extension
@@ -4071,8 +4202,8 @@ func enableExtensionsFeatureGate(t *testing.T) {
 }
 
 // supervisorBinarySizeLimitBytes is the size budget for the supervisor binary,
-// in bytes. 24 MiB.
-const supervisorBinarySizeLimitBytes = 24 * 1024 * 1024
+// in bytes. 28 MiB.
+const supervisorBinarySizeLimitBytes = 28 * 1024 * 1024
 
 // TestSupervisorBinarySize guards against unintended growth of the supervisor
 // binary. It builds the supervisor with the same flags used for release

@@ -76,8 +76,7 @@ func (t *tcpServer) ListenAndServe(
 			continue
 		}
 
-		var netErr net.Error
-		if errors.As(acceptErr, &netErr) {
+		if netErr, ok := errors.AsType[net.Error](acceptErr); ok {
 			t.reporter.OnDebugf(
 				"TCP Transport (%s) - Accept (temporary=%v) net.Error: %v",
 				t.ln.Addr().String(),

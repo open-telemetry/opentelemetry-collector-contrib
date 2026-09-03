@@ -446,14 +446,47 @@ func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 		{
 			Healthy:            false,
 			Status:             "StatusPermanentError",
-			StatusTimeUnixNano: uint64(now.UnixNano()),
-			LastError:          "unexpected error",
+			StatusTimeUnixNano: uint64(now.Add(1 * time.Second).UnixNano()),
+			LastError:          "error A",
 			ComponentHealthMap: map[string]*protobufs.ComponentHealth{
 				"test-receiver": {
 					Healthy:            false,
 					Status:             "StatusPermanentError",
-					StatusTimeUnixNano: uint64(now.UnixNano()),
-					LastError:          "unexpected error",
+					StatusTimeUnixNano: uint64(now.Add(1 * time.Second).UnixNano()),
+					LastError:          "error A",
+				},
+			},
+		},
+		{
+			Healthy:            false,
+			Status:             "StatusPermanentError",
+			StatusTimeUnixNano: uint64(now.Add(2 * time.Second).UnixNano()),
+			LastError:          "error B",
+			ComponentHealthMap: map[string]*protobufs.ComponentHealth{
+				"test-receiver": {
+					Healthy:            false,
+					Status:             "StatusPermanentError",
+					StatusTimeUnixNano: uint64(now.Add(2 * time.Second).UnixNano()),
+					LastError:          "error B",
+				},
+			},
+		},
+		{
+			Healthy:            false,
+			Status:             "StatusPermanentError",
+			StatusTimeUnixNano: uint64(now.Add(4 * time.Second).UnixNano()),
+			LastError:          "exporter error",
+			ComponentHealthMap: map[string]*protobufs.ComponentHealth{
+				"test-receiver": {
+					Healthy:            true,
+					Status:             "StatusOK",
+					StatusTimeUnixNano: uint64(now.Add(4 * time.Second).UnixNano()),
+				},
+				"test-exporter": {
+					Healthy:            false,
+					Status:             "StatusPermanentError",
+					StatusTimeUnixNano: uint64(now.Add(4 * time.Second).UnixNano()),
+					LastError:          "exporter error",
 				},
 			},
 		},
@@ -500,15 +533,77 @@ func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 	statusUpdateChannel <- &status.AggregateStatus{
 		Event: &mockStatusEvent{
 			status:    componentstatus.StatusPermanentError,
-			err:       errors.New("unexpected error"),
-			timestamp: now,
+			err:       errors.New("error A"),
+			timestamp: now.Add(1 * time.Second),
 		},
 		ComponentStatusMap: map[string]*status.AggregateStatus{
 			"test-receiver": {
 				Event: &mockStatusEvent{
 					status:    componentstatus.StatusPermanentError,
-					err:       errors.New("unexpected error"),
-					timestamp: now,
+					err:       errors.New("error A"),
+					timestamp: now.Add(1 * time.Second),
+				},
+			},
+		},
+	}
+	statusUpdateChannel <- &status.AggregateStatus{
+		Event: &mockStatusEvent{
+			status:    componentstatus.StatusPermanentError,
+			err:       errors.New("error B"),
+			timestamp: now.Add(2 * time.Second),
+		},
+		ComponentStatusMap: map[string]*status.AggregateStatus{
+			"test-receiver": {
+				Event: &mockStatusEvent{
+					status:    componentstatus.StatusPermanentError,
+					err:       errors.New("error B"),
+					timestamp: now.Add(2 * time.Second),
+				},
+			},
+		},
+	}
+	statusUpdateChannel <- &status.AggregateStatus{
+		Event: &mockStatusEvent{
+			status:    componentstatus.StatusPermanentError,
+			err:       errors.New("error B"),
+			timestamp: now.Add(3 * time.Second),
+		},
+		ComponentStatusMap: map[string]*status.AggregateStatus{
+			"test-receiver": {
+				Event: &mockStatusEvent{
+					status:    componentstatus.StatusPermanentError,
+					err:       errors.New("error B"),
+					timestamp: now.Add(3 * time.Second),
+				},
+			},
+			"test-exporter": {
+				Event: &mockStatusEvent{
+					status:    componentstatus.StatusPermanentError,
+					err:       errors.New("exporter error"),
+					timestamp: now.Add(3 * time.Second),
+				},
+			},
+		},
+	}
+	statusUpdateChannel <- &status.AggregateStatus{
+		Event: &mockStatusEvent{
+			status:    componentstatus.StatusPermanentError,
+			err:       errors.New("exporter error"),
+			timestamp: now.Add(4 * time.Second),
+		},
+		ComponentStatusMap: map[string]*status.AggregateStatus{
+			"test-receiver": {
+				Event: &mockStatusEvent{
+					status:    componentstatus.StatusOK,
+					err:       nil,
+					timestamp: now.Add(4 * time.Second),
+				},
+			},
+			"test-exporter": {
+				Event: &mockStatusEvent{
+					status:    componentstatus.StatusPermanentError,
+					err:       errors.New("exporter error"),
+					timestamp: now.Add(4 * time.Second),
 				},
 			},
 		},

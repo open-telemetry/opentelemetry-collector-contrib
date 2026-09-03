@@ -5,15 +5,16 @@ package vultr // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
-	"strings"
+	"errors"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	vultrdetector "go.opentelemetry.io/contrib/detectors/vultr"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/vultr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/vultr/internal/metadata"
 )
 
@@ -22,17 +23,21 @@ const (
 	TypeStr = "vultr"
 )
 
-// newVultrProvider is overridden in tests to point the provider at a fake server.
-var newVultrProvider = vultr.NewProvider
+// newResourceDetector is overridden in tests to substitute a fake SDK detector.
+var newResourceDetector = func() sdkresource.Detector {
+	return vultrdetector.NewResourceDetector()
+}
 
 // Ensure Detector implements internal.Detector.
 var _ internal.Detector = (*Detector)(nil)
 
-// Detector is a Vultr metadata detector.
+// Detector is a Vultr metadata detector. Detection is delegated to the upstream
+// SDK detector so that the attributes reported here match the ones the
+// collector's own telemetry reports.
 type Detector struct {
-	provider              vultr.Provider
+	detector              sdkresource.Detector
 	logger                *zap.Logger
-	rb                    *metadata.ResourceBuilder
+	resourceAttributes    metadata.ResourceAttributesConfig
 	failOnMissingMetadata bool
 }
 
@@ -41,16 +46,21 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissi
 	cfg := dcfg.(Config)
 
 	return &Detector{
-		provider:              newVultrProvider(),
+		detector:              newResourceDetector(),
 		logger:                p.Logger,
-		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		resourceAttributes:    cfg.ResourceAttributes,
 		failOnMissingMetadata: failOnMissingMetadata || cfg.FailOnMissingMetadata,
 	}, nil
 }
 
 // Detect queries the Vultr metadata service and returns a populated resource.
 func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
-	md, err := d.provider.Metadata(ctx)
+	// Detection runs unfiltered so that an empty result answers "is this process on a Vultr
+	// instance?"; the configured attributes are applied afterwards. A partial result still
+	// came from a reachable metadata service, so the bridge keeps what it did return.
+	// fail_on_missing_metadata covers an unusable metadata service, not individual fields
+	// absent from its response.
+	res, schemaURL, err := sdkbridge.Detect(ctx, d.detector)
 	if err != nil {
 		d.logger.Debug("Vultr metadata unavailable", zap.Error(err))
 		if d.failOnMissingMetadata {
@@ -59,17 +69,16 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 		return pcommon.NewResource(), "", nil
 	}
 
-	// Prefer the v2 UUID if present; fall back to the legacy instance ID.
-	hostID := md.InstanceV2ID
-	if hostID == "" {
-		hostID = md.InstanceID
+	// The SDK detector reports an empty resource and no error both when the
+	// metadata service is unreachable and when running outside Vultr.
+	if res.Attributes().Len() == 0 {
+		d.logger.Debug("Vultr detector: metadata unavailable or not running on a Vultr instance")
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errors.New("vultr metadata unavailable")
+		}
+		return pcommon.NewResource(), "", nil
 	}
 
-	d.rb.SetCloudProvider(conventions.CloudProviderVultr.Value.AsString())
-	d.rb.SetCloudPlatform(conventions.CloudPlatformVultrCloudCompute.Value.AsString())
-	d.rb.SetCloudRegion(strings.ToLower(md.Region.RegionCode))
-	d.rb.SetHostID(hostID)
-	d.rb.SetHostName(md.Hostname)
-
-	return d.rb.Emit(), conventions.SchemaURL, nil
+	sdkbridge.RemoveDisabledAttributes(res, d.resourceAttributes)
+	return res, schemaURL, nil
 }

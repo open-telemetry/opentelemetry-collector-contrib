@@ -47,28 +47,31 @@ func (sp *coralogixProcessor) processTraces(_ context.Context, td ptrace.Traces)
 		return td, nil
 	}
 
-	spansByTraceID := traceutil.GroupSpansByTraceID(td)
 	if sp.config.TransactionsConfig.Enabled && sp.config.CriticalPathConfig.Enabled {
+		spansByTraceID, serviceNames := traceutil.GroupSpansByTraceIDWithServiceNames(td)
 		transactionLogger := sp.logger.With(zap.String("feature", "transactions"))
 		criticalPathLogger := sp.logger.With(zap.String("feature", "critical_path"))
 		for traceID, spans := range spansByTraceID {
 			tree := traceutil.BuildTraceTree(spans)
-			transactions.ApplyTransactionAttributesToTree(tree, transactionLogger)
+			transactions.ApplyTransactionAttributesToTree(tree, serviceNames, transactionLogger)
 			criticalpath.ApplyCriticalPathAttributesToTree(traceID, tree, criticalPathLogger)
 		}
 		return td, nil
 	}
 
 	if sp.config.TransactionsConfig.Enabled {
+		spansByTraceID, serviceNames := traceutil.GroupSpansByTraceIDWithServiceNames(td)
 		transactions.ApplyTransactionsAttributesByTraceID(
 			spansByTraceID,
+			serviceNames,
 			sp.logger.With(zap.String("feature", "transactions")),
 		)
+		return td, nil
 	}
 
 	if sp.config.CriticalPathConfig.Enabled {
 		criticalpath.ApplyCriticalPathAttributesByTraceID(
-			spansByTraceID,
+			traceutil.GroupSpansByTraceID(td),
 			sp.logger.With(zap.String("feature", "critical_path")),
 		)
 	}

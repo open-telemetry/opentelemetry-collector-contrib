@@ -89,6 +89,19 @@ Direct connection options (optional, but all must be specified to enable):
 For finer control over the direct connection use the `datasource`, a.k.a. the "connection string", instead.
 Note: it can't be used in conjunction with the `username`, `password`, `server` and `port` options.
 
+When a direct connection is used, all scrapers created for a signal share a single database connection pool
+instead of each opening its own. The pool is scoped per receiver instance: if this receiver is used in both a
+metrics and a logs pipeline, the metrics and logs receivers each own a separate pool. The pool can be tuned
+with the `connection_pool` options (all optional):
+- `max_open` (default = number of scrapers): The maximum number of open connections to the database. `0` means unlimited.
+- `max_idle` (default = number of scrapers): The maximum number of idle connections kept in the pool.
+- `max_lifetime` (optional, example = `5m`, default = unset): The maximum amount of time a connection may be reused. `0` means connections are reused forever.
+- `max_idle_time` (optional, example = `1m`, default = unset): The maximum amount of time a connection may be idle before being closed. `0` means idle connections are not closed due to idle time.
+
+The defaults are derived from the number of enabled scrapers so that every scraper can query concurrently
+while keeping the total number of connections bounded. Most deployments do not need to set these; tune them
+only when connecting to an instance with strict connection limits or a large number of enabled scrapers.
+
 Windows-specific options:
 - `computer_name` (optional): The computer name identifies the SQL Server name or IP address of the computer being monitored.
   If specified, `instance_name` is also required to be defined. This option is ignored in non-Windows environments.

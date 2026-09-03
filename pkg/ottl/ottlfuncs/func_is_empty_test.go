@@ -271,3 +271,39 @@ func BenchmarkIsEmpty(b *testing.B) {
 		})
 	}
 }
+
+func Test_IsEmptyFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewIsEmptyFactory[any]()
+		assert.Equal(t, "IsEmpty", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewIsEmptyFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &IsEmptyArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewIsEmptyFactory[any]()
+		args := factory.CreateDefaultArguments()
+		isEmptyArgs, ok := args.(*IsEmptyArguments[any])
+		require.True(t, ok)
+		isEmptyArgs.Target = &ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "value", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createIsEmptyFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "IsEmptyFactory args must be of type *IsEmptyArguments[K]")
+	})
+}

@@ -5,9 +5,12 @@ package mysqlreceiver
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"regexp"
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	// registers the mysql driver for TestFetchDBVersionTimeout
 	_ "github.com/go-sql-driver/mysql"
 	version "github.com/hashicorp/go-version"
@@ -342,6 +345,88 @@ func TestReplicaStatusQuery(t *testing.T) {
 			assert.Equal(t, tt.wantQuery, q)
 		})
 	}
+}
+
+func TestGetReplicaStatusStatsNormalizesColumnSpellings(t *testing.T) {
+	tests := []struct {
+		name                  string
+		supportsReplicaStatus bool
+		query                 string
+		columns               []string
+		values                []driver.Value
+		wantReplicaIORunning  string
+		wantReplicaSQLRunning string
+		wantChannelName       string
+	}{
+		{
+			name:                  "replica column spellings",
+			supportsReplicaStatus: true,
+			query:                 "SHOW REPLICA STATUS",
+			columns:               []string{"Replica_IO_Running", "Replica_SQL_Running", "Channel_Name"},
+			values:                []driver.Value{"Yes", "No", "source_a"},
+			wantReplicaIORunning:  "Yes",
+			wantReplicaSQLRunning: "No",
+			wantChannelName:       "source_a",
+		},
+		{
+			name:                  "slave column spellings",
+			supportsReplicaStatus: false,
+			query:                 "SHOW SLAVE STATUS",
+			columns:               []string{"Slave_IO_Running", "Slave_SQL_Running", "Channel_Name"},
+			values:                []driver.Value{"Connecting", "Yes", "source_b"},
+			wantReplicaIORunning:  "Connecting",
+			wantReplicaSQLRunning: "Yes",
+			wantChannelName:       "source_b",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+
+			mock.ExpectQuery(regexp.QuoteMeta(tt.query)).
+				WillReturnRows(sqlmock.NewRows(tt.columns).AddRow(tt.values...))
+
+			c := &mySQLClient{client: db}
+			got, err := c.getReplicaStatusStats(tt.supportsReplicaStatus)
+			require.NoError(t, err)
+			require.NoError(t, mock.ExpectationsWereMet())
+			require.Len(t, got, 1)
+
+			assert.Equal(t, tt.wantReplicaIORunning, got[0].replicaIORunning)
+			assert.Equal(t, tt.wantReplicaSQLRunning, got[0].replicaSQLRunning)
+			assert.Equal(t, tt.wantChannelName, got[0].channelName)
+		})
+	}
+}
+
+func TestGetInnodbTransactionStats(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	query := "SELECT " +
+		"COALESCE((SELECT count FROM information_schema.innodb_metrics WHERE name = 'trx_rseg_history_len'), 0), " +
+		"COUNT(*), " +
+		"COALESCE(MAX(TIMESTAMPDIFF(SECOND, trx_started, NOW())), 0) " +
+		"FROM information_schema.innodb_trx"
+	mock.ExpectQuery(regexp.QuoteMeta(query)).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"history_list_length",
+			"active_transactions",
+			"max_active_transaction_duration",
+		}).AddRow(251, 3, 17))
+
+	c := &mySQLClient{client: db}
+	got, err := c.getInnodbTransactionStats()
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+
+	assert.Equal(t, int64(251), got.historyListLength)
+	assert.Equal(t, int64(3), got.activeTransactions)
+	assert.Equal(t, int64(17), got.maxActiveTransactionDuration)
 }
 
 // TestGetDBVersionCaching verifies that a cached version is returned on subsequent
