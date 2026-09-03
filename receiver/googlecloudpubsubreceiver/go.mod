@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/google
 go 1.26.0
 
 require (
-	cloud.google.com/go/pubsub/v2 v2.6.2
+	cloud.google.com/go/pubsub/v2 v2.7.0
 	github.com/googleapis/gax-go/v2 v2.24.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.160.0
 	github.com/stretchr/testify v1.12.1
