@@ -51,8 +51,8 @@ func (c *TransportConfig) ToHTTPClient(ctx context.Context, host component.Host,
 
 	httpClientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	httpClientConfig.MaxIdleConns = 0
-	httpClientConfig.IdleConnTimeout = 0
+	httpClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	httpClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	httpClientConfig.ForceAttemptHTTP2 = false
 	httpClientConfig.ProxyURL = c.ProxyURL
 	httpClientConfig.TLS = c.ClientConfig.TLS
