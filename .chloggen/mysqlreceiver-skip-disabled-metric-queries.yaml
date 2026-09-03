@@ -1,0 +1,16 @@
+change_type: bug_fix
+component: receiver/mysql
+note: Skip metric queries when all their fed metrics are disabled
+issues: [50702]
+subtext: |-
+  The mysqlreceiver now checks if any metrics fed by a query are enabled before executing that query.
+  This prevents unnecessary database load when metrics are disabled by default.
+  Affected queries:
+  - scrapeTableStats (mysql.table.rows, mysql.table.average_row_length, mysql.table.size)
+  - scrapeStatementEventsStats (mysql.statement_event.count, mysql.statement_event.wait.time)
+  - scrapeTableLockWaitEventStats (mysql.table.lock_wait.*)
+  - scrapeReplicaStatusStats (mysql.replica.*)
+  - scrapeTableIoWaitsStats (mysql.table.io.wait.*)
+  - scrapeIndexIoWaitsStats (mysql.index.io.wait.*)
+  - InnoDB stats queries (mysql.buffer_pool.limit, mysql.innodb.*)
+change_logs: [user]
