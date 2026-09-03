@@ -1621,7 +1621,7 @@ func TestExplainQuery(t *testing.T) {
 		{
 			name:              "typed interval literal is repaired before PREPARE",
 			query:             "SELECT now() - interval $1",
-			preparedQuery:     "SELECT now() - $1::interval",
+			preparedQuery:     "SELECT now() - CAST($1 AS interval)",
 			queryID:           "30002",
 			normalizedQueryID: "30002",
 			paramCount:        1,

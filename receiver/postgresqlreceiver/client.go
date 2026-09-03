@@ -140,13 +140,26 @@ func isExplainableQuery(query string) bool {
 	return ok
 }
 
+// typedLiteralTypeNames lists the type names repaired in the "TYPENAME $N" position, longest
+// spelling first so a multi-word name wins over the prefix it starts with.
+const typedLiteralTypeNames = `timestamptz|timestamp\s+with\s+time\s+zone|timestamp\s+without\s+time\s+zone|timestamp|` +
+	`timetz|time\s+with\s+time\s+zone|time\s+without\s+time\s+zone|time|interval|date|` +
+	`double\s+precision|numeric|decimal|real|smallint|integer|bigint|boolean|` +
+	`uuid|jsonb|json|xml|bytea|inet|cidr|macaddr|money|bit\s+varying|bit|` +
+	`character\s+varying|character|varchar|text`
+
 // pg_stat_statements builds its normalized query text by substituting "$N" over the byte ranges of
 // the constants it recorded while jumbling, then never re-parses the result. Nothing constrains
 // those ranges to positions where the grammar actually accepts a parameter, so the text it hands
-// back is not guaranteed to be valid SQL. Two constructs are known to come back unparseable, and
-// both make PREPARE fail with 42601 (syntax_error), which leaves the query permanently
-// unexplainable. Rewriting them into equivalent forms that do accept a parameter is what keeps
-// those plans collectable.
+// back is not guaranteed to be valid SQL. The two constructs below come back unparseable and make
+// PREPARE fail with 42601 (syntax_error), which leaves the query permanently unexplainable.
+// Rewriting them into equivalent forms that do accept a parameter is what keeps those plans
+// collectable.
+//
+// Both rewrites are applied only outside the ranges protectedSpans reports, so a "$N" that is
+// really just text is never touched. That is what keeps a query which already prepares
+// successfully unchanged: nothing else in either pattern can tell a placeholder apart from the
+// same characters inside a string literal, a quoted identifier, a dollar-quoted body or a comment.
 var (
 	// EXTRACT(field FROM x) is parsed into a call carrying the field as a string Const that has a
 	// source location, so pg_stat_statements rewrites it to EXTRACT($1 FROM x). That is invalid:
@@ -154,18 +167,31 @@ var (
 	// pg_catalog.date_part($1, x) is the equivalent function-call spelling, takes a parameter, and
 	// exists on every PostgreSQL version the top-query EXPLAIN path can run against (13+). Only
 	// the text up to and including FROM is replaced, so the original closing paren still
-	// terminates the call. The leading (^|[^"']) group is restored in the replacement so a quoted
-	// identifier or ordinary string literal that merely looks like EXTRACT($n FROM ...) is left
-	// alone.
-	extractParamPattern = regexp.MustCompile(`(?i)(^|[^"'])\bEXTRACT\s*\(\s*(\$\d+)\s+FROM\s+`)
+	// terminates the call.
+	//
+	// Not repaired in effect: EXTRACT($2 FROM $1), which pg_stat_statements emits when the
+	// application binds the source as well. The rewrite is applied and is textually correct, but
+	// with both arguments untyped PREPARE cannot pick among the date_part overloads and fails
+	// with 42725, "function pg_catalog.date_part(unknown, unknown) is not unique". That leaves
+	// the same empty plan as before the repair rather than introducing a new failure.
+	extractParamPattern = regexp.MustCompile(`(?i)\bEXTRACT\s*\(\s*(\$\d+)\s+FROM\s+`)
 
 	// The typed-literal form TYPENAME 'value' requires a literal, so normalization turns
 	// "interval '1 day'" into the invalid "interval $1". A cast expresses the same thing and does
-	// accept a parameter. Requiring whitespace between the type name and the parameter keeps this
-	// from matching identifiers that merely start with a type name, e.g. "interval_col = $1".
-	// The leading (^|[^"']) group is restored in the replacement so a quoted identifier or
-	// ordinary string literal that merely looks like "interval $1" is left alone.
-	typedLiteralParamPattern = regexp.MustCompile(`(?i)(^|[^"'])\b(timestamptz|timestamp|timetz|interval|date|time)\s+(\$\d+)\b`)
+	// accept a parameter. The CAST(...) spelling is used rather than "::" because it is the only
+	// one that accepts a multi-word type name or an interval field qualifier. Requiring
+	// whitespace between the type name and the parameter keeps this from matching identifiers
+	// that merely start with a type name, e.g. "interval_col = $1".
+	//
+	// The trailing group accepts only interval field keywords, since an open "one more word"
+	// group would swallow an AND, an OR or a column alias that follows the parameter.
+	//
+	// typedLiteralTypeNames is an allowlist, so a typed literal of a type not named there stays
+	// unrepaired, as does the typmod form "timestamp(3) $1", where the parenthesis breaks the
+	// required whitespace. Both keep the pre-fix behaviour for those queries rather than emitting
+	// SQL that is wrong in a new way.
+	typedLiteralParamPattern = regexp.MustCompile(`(?i)\b(` + typedLiteralTypeNames + `)\s+(\$\d+)\b` +
+		`((?:\s+(?:YEAR|MONTH|DAY|HOUR|MINUTE|SECOND)(?:\s+TO\s+(?:MONTH|DAY|HOUR|MINUTE|SECOND))?)?)`)
 )
 
 // repairNormalizedQuery rewrites the parameter placements that pg_stat_statements can emit but
@@ -177,9 +203,183 @@ var (
 // pg_catalog.extract($n, x) is not a two-argument function on PostgreSQL 13. This repair does
 // not version-gate and does not rewrite statements that already prepare successfully.
 func repairNormalizedQuery(query string) string {
-	query = extractParamPattern.ReplaceAllString(query, "${1}pg_catalog.date_part(${2}, ")
-	query = typedLiteralParamPattern.ReplaceAllString(query, "${1}${3}::${2}")
+	query = replaceOutsideProtected(query, extractParamPattern, "pg_catalog.date_part(${1}, ")
+	query = replaceOutsideProtected(query, typedLiteralParamPattern, "CAST(${2} AS ${1}${3})")
 	return query
+}
+
+// replaceOutsideProtected applies re to query the way ReplaceAllString would, except that a match
+// beginning inside a protectedSpans range is left alone. Spans are recomputed per call, so
+// running one pass over another's output stays correct.
+func replaceOutsideProtected(query string, re *regexp.Regexp, repl string) string {
+	matches := re.FindAllStringSubmatchIndex(query, -1)
+	if len(matches) == 0 {
+		return query
+	}
+
+	spans := protectedSpans(query)
+	var out []byte
+	last := 0
+	for _, m := range matches {
+		if isProtectedOffset(spans, m[0]) {
+			continue
+		}
+		out = append(out, query[last:m[0]]...)
+		out = re.ExpandString(out, repl, query, m)
+		last = m[1]
+	}
+	if out == nil {
+		return query
+	}
+	return string(append(out, query[last:]...))
+}
+
+// isProtectedOffset reports whether offset falls inside one of the spans, which protectedSpans
+// returns ordered and non-overlapping.
+func isProtectedOffset(spans [][2]int, offset int) bool {
+	for _, s := range spans {
+		if offset < s[0] {
+			return false
+		}
+		if offset < s[1] {
+			return true
+		}
+	}
+	return false
+}
+
+// protectedSpans reports the byte ranges of query that a repair must not rewrite: string
+// literals, quoted identifiers, dollar-quoted strings and comments. pg_stat_statements
+// substitutes "$N" over the byte ranges of the constants it recognises, but it preserves these
+// regions verbatim, so a "$1" that survives inside one is text rather than a placeholder and
+// rewriting around it corrupts SQL that PREPARE accepts today.
+//
+// An unterminated construct protects to the end of the string. Over-protecting only skips a
+// repair, which leaves the pre-fix behaviour in place; under-protecting rewrites text that was
+// already valid.
+func protectedSpans(query string) [][2]int {
+	var spans [][2]int
+	for i := 0; i < len(query); {
+		end, ok := protectedSpanAt(query, i)
+		if !ok {
+			i++
+			continue
+		}
+		spans = append(spans, [2]int{i, end})
+		i = end
+	}
+	return spans
+}
+
+// protectedSpanAt reports the end of the protected region starting at i, or false when nothing
+// protected starts there.
+func protectedSpanAt(query string, i int) (int, bool) {
+	switch {
+	case query[i] == '\'':
+		return endOfQuoted(query, i, escapesWithBackslash(query, i)), true
+	case query[i] == '"':
+		return endOfQuoted(query, i, false), true
+	case strings.HasPrefix(query[i:], "--"):
+		if nl := strings.IndexByte(query[i:], '\n'); nl != -1 {
+			return i + nl, true
+		}
+		return len(query), true
+	case strings.HasPrefix(query[i:], "/*"):
+		return endOfBlockComment(query, i), true
+	case query[i] == '$':
+		tag, ok := dollarQuoteTag(query, i)
+		if !ok {
+			return 0, false
+		}
+		return endOfDollarQuoted(query, i, tag), true
+	default:
+		return 0, false
+	}
+}
+
+// endOfQuoted returns the index just past the quote that closes the run opening at start, or
+// len(query) when it is unterminated.
+func endOfQuoted(query string, start int, backslashEscapes bool) int {
+	quote := query[start]
+	for i := start + 1; i < len(query); {
+		switch {
+		case backslashEscapes && query[i] == '\\':
+			i += 2
+		case query[i] != quote:
+			i++
+		// A doubled quote is an escaped quote in both string literals and quoted identifiers,
+		// so it continues the run rather than closing it.
+		case i+1 < len(query) && query[i+1] == quote:
+			i += 2
+		default:
+			return i + 1
+		}
+	}
+	return len(query)
+}
+
+// escapesWithBackslash reports whether the string literal opening at start is an E'...' string,
+// the only form where a backslash escapes the next byte. In a plain '...' literal a backslash is an
+// ordinary character, since standard_conforming_strings has defaulted to on since PostgreSQL
+// 9.1. The E must not itself be part of a longer identifier, so "table $1" style text where a
+// word merely ends in e is not mistaken for an introducer.
+func escapesWithBackslash(query string, start int) bool {
+	if start == 0 || (query[start-1] != 'E' && query[start-1] != 'e') {
+		return false
+	}
+	return start < 2 || !isIdentifierByte(query[start-2])
+}
+
+// endOfBlockComment returns the index just past the "*/" that closes the comment opening at
+// start, or len(query) when it is unterminated. PostgreSQL nests block comments, so the depth is
+// tracked rather than stopping at the first "*/".
+func endOfBlockComment(query string, start int) int {
+	depth := 0
+	for i := start; i+1 < len(query); {
+		switch query[i : i+2] {
+		case "/*":
+			depth++
+			i += 2
+		case "*/":
+			depth--
+			if depth == 0 {
+				return i + 2
+			}
+			i += 2
+		default:
+			i++
+		}
+	}
+	return len(query)
+}
+
+// dollarQuoteTag returns the full delimiter, including both dollar signs, of the dollar-quoted
+// string opening at start. A tag is either empty or an identifier that does not begin with a
+// digit, so "$1" is a parameter placeholder rather than an opening delimiter.
+func dollarQuoteTag(query string, start int) (string, bool) {
+	for i := start + 1; i < len(query); i++ {
+		if query[i] == '$' {
+			return query[start : i+1], true
+		}
+		if !isIdentifierByte(query[i]) || (i == start+1 && query[i] >= '0' && query[i] <= '9') {
+			return "", false
+		}
+	}
+	return "", false
+}
+
+// endOfDollarQuoted returns the index just past the closing tag of the dollar-quoted string
+// opening at start, or len(query) when it is unterminated.
+func endOfDollarQuoted(query string, start int, tag string) int {
+	body := start + len(tag)
+	if offset := strings.Index(query[body:], tag); offset != -1 {
+		return body + offset + len(tag)
+	}
+	return len(query)
+}
+
+func isIdentifierByte(b byte) bool {
+	return b == '_' || b >= '0' && b <= '9' || b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z'
 }
 
 // explainQuery implements client.
@@ -226,7 +426,10 @@ func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID stri
 
 	prepareDb := sqlquery.NewDbClient(sqlquery.ConnWrapper{Conn: conn}, setPlanCacheMode+prepareStatement, logger, sqlquery.TelemetryConfig{})
 	if _, err = prepareDb.QueryRows(ctx); err != nil {
-		logger.Error("failed to prepare statement for EXPLAIN", zap.Error(err), zap.String("queryID", queryID))
+		// The repaired text, not the caller's, is what PREPARE saw: a syntax error reports a
+		// character position into this string, and the caller logs the pre-repair text. It is
+		// normalized, so it holds only "$N" placeholders where the constants were.
+		logger.Error("failed to prepare statement for EXPLAIN", zap.Error(err), zap.String("queryID", queryID), zap.String("preparedQuery", query))
 		return "", err
 	}
 

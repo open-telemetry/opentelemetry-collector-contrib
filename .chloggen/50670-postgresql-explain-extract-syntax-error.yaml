@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/postgresql
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Collect query plans for top queries that use `EXTRACT(field FROM ...)` or a typed literal such as `interval '1 day'`
+note: Collect query plans for top queries that use `EXTRACT(field FROM ...)` or a typed literal such as `interval '1 day'` or `timestamp with time zone '2024-01-01'`
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50670]
@@ -22,8 +22,12 @@ subtext: |
   and `interval '1 day'` becomes `interval $1`, both of which fail to `PREPARE` with a syntax
   error. Affected queries were emitted with an empty `postgresql.query_plan`, and because the
   empty result was cached the query stayed unexplainable for the lifetime of the cache entry.
-  These two forms are now rewritten to `date_part($1, col)` and `$1::interval` before the plan is
-  requested. Queries that already explained successfully are unaffected.
+  These forms are now rewritten to `date_part($1, col)` and `CAST($1 AS interval)` before the plan
+  is requested. The typed-literal rewrite covers the built-in type names, including multi-word
+  spellings such as `timestamp with time zone` and interval field qualifiers such as
+  `interval $1 day`. Both rewrites are skipped inside string literals, quoted identifiers,
+  dollar-quoted strings and comments, so queries that already explained successfully are
+  unaffected.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
