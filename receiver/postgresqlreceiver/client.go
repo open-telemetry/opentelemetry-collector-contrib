@@ -360,7 +360,13 @@ func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID stri
 		return "", nil
 	}
 
-	query = repairNormalizedQuery(query)
+	if repaired := repairNormalizedQuery(query); repaired != query {
+		logger.Debug("repaired normalized query before EXPLAIN",
+			zap.String("queryID", queryID),
+			zap.String("normalizedQuery", query),
+			zap.String("preparedQuery", repaired))
+		query = repaired
+	}
 
 	normalizedQueryID := strings.ReplaceAll(queryID, "-", "_")
 
