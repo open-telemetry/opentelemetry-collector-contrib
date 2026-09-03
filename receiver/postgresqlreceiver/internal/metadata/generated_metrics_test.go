@@ -857,7 +857,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["postgresql.database.locks"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "The number of database locks.", mi.Description())
+						assert.Equal(t, "The number of database locks, including those held by the receiver's own connections.", mi.Description())
 						assert.Equal(t, "{lock}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
@@ -881,7 +881,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["postgresql.database.locks"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "The number of database locks.", mi.Description())
+						assert.Equal(t, "The number of database locks, including those held by the receiver's own connections.", mi.Description())
 						assert.Equal(t, "{lock}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())

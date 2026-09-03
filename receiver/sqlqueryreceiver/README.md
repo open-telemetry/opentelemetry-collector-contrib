@@ -92,7 +92,7 @@ Additionally, each `query` section supports the following properties:
 
 ```yaml
 receivers:
-  sqlquery:
+  sql_query:
     driver: postgres
     datasource: "host=localhost port=5432 user=postgres password=s3cr3t sslmode=disable"
     queries:
@@ -111,7 +111,7 @@ receivers:
 
 ```yaml
 receivers:
-  sqlquery:
+  sql_query:
     driver: postgres
     host: localhost
     port: 5432
@@ -135,7 +135,7 @@ receivers:
 
 ```yaml
 receivers:
-  sqlquery:
+  sql_query:
     driver: sqlserver
     host: localhost/instance
     user: sql_server
@@ -208,7 +208,7 @@ Each _metric_ in the configuration will produce one OTel metric per row returned
 
 ```yaml
 receivers:
-  sqlquery:
+  sql_query:
     driver: postgres
     datasource: "host=localhost port=5432 user=postgres password=s3cr3t sslmode=disable"
     storage: file_storage
@@ -286,7 +286,7 @@ Use `row_condition` to extract a single row as a dedicated metric:
 
 ```yaml
 receivers:
-  sqlquery:
+  sql_query:
     driver: postgres
     datasource: "host=pgbouncer port=5432 user=pgbouncer dbname=pgbouncer sslmode=disable"
     queries:
