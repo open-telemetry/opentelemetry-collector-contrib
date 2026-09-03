@@ -868,7 +868,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{databases}'
-          - description: The number of database locks.
+          - description: The number of database locks, including those held by the receiver's own connections.
             gauge:
               dataPoints:
                 - asInt: "2"
@@ -885,6 +885,54 @@ resourceMetrics:
                     - key: relation
                       value:
                         stringValue: pg_database
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "3"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: ""
+                    - key: lock_type
+                      value:
+                        stringValue: transactionid
+                    - key: mode
+                      value:
+                        stringValue: ExclusiveLock
+                    - key: relation
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "4"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: ""
+                    - key: lock_type
+                      value:
+                        stringValue: virtualxid
+                    - key: mode
+                      value:
+                        stringValue: ExclusiveLock
+                    - key: relation
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "7601"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: open
+                    - key: lock_type
+                      value:
+                        stringValue: advisory
+                    - key: mode
+                      value:
+                        stringValue: ExclusiveLock
+                    - key: relation
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "5601"
@@ -919,6 +967,22 @@ resourceMetrics:
                         stringValue: pg_locks
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
+                - asInt: "7600"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: otel
+                    - key: lock_type
+                      value:
+                        stringValue: advisory
+                    - key: mode
+                      value:
+                        stringValue: ExclusiveLock
+                    - key: relation
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "5600"
                   attributes:
                     - key: db.namespace
@@ -949,6 +1013,22 @@ resourceMetrics:
                     - key: relation
                       value:
                         stringValue: pg_locks
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "7602"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: telemetry
+                    - key: lock_type
+                      value:
+                        stringValue: advisory
+                    - key: mode
+                      value:
+                        stringValue: ExclusiveLock
+                    - key: relation
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "5602"

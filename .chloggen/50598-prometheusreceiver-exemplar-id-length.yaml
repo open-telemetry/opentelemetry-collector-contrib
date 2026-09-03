@@ -1,10 +1,10 @@
 change_type: bug_fix
 
-component: receiver/prometheus_remote_write
+component: receiver/prometheus
 
 note: Only convert exemplar `trace_id` and `span_id` labels that are valid IDs, and keep the rest as filtered attributes
 
-issues: [50547]
+issues: [50598]
 
 subtext: |
   A `trace_id` or `span_id` label with an invalid length was previously zero padded
