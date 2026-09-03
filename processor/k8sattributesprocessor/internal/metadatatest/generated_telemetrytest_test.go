@@ -20,6 +20,9 @@ func TestSetupTelemetry(t *testing.T) {
 	require.NoError(t, err)
 	defer tb.Shutdown()
 	tb.K8sPodAssociation.Add(context.Background(), 1)
+	tb.K8sWatcherCronjobAdded.Add(context.Background(), 1)
+	tb.K8sWatcherCronjobDeleted.Add(context.Background(), 1)
+	tb.K8sWatcherCronjobUpdated.Add(context.Background(), 1)
 	tb.K8sWatcherDaemonsetAdded.Add(context.Background(), 1)
 	tb.K8sWatcherDaemonsetDeleted.Add(context.Background(), 1)
 	tb.K8sWatcherDaemonsetUpdated.Add(context.Background(), 1)
@@ -72,6 +75,15 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.OtelsvcK8sStatefulsetDeleted.Add(context.Background(), 1)
 	tb.OtelsvcK8sStatefulsetUpdated.Add(context.Background(), 1)
 	AssertEqualK8sPodAssociation(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherCronjobAdded(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherCronjobDeleted(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherCronjobUpdated(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualK8sWatcherDaemonsetAdded(t, testTel,

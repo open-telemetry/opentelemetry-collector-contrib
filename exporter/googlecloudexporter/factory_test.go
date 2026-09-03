@@ -32,7 +32,7 @@ func TestCreateExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
-	eCfg.ProjectID = "test"
+	eCfg.Config.ProjectID = "test"
 
 	te, err := factory.CreateTraces(ctx, exportertest.NewNopSettings(metadata.Type), eCfg)
 	assert.NoError(t, err)
@@ -51,7 +51,7 @@ func TestCreateLegacyExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
-	eCfg.ProjectID = "test"
+	eCfg.Config.ProjectID = "test"
 
 	te, err := factory.CreateTraces(ctx, exportertest.NewNopSettings(metadata.Type), eCfg)
 	assert.NoError(t, err)
@@ -68,13 +68,13 @@ func TestCustomMonitoredResourceMapping(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
-	eCfg.ProjectID = "test"
+	eCfg.Config.ProjectID = "test"
 
 	te, err := factory.CreateLogs(ctx, exportertest.NewNopSettings(metadata.Type), eCfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create logs exporter")
 
-	actualLogFuncPointer := reflect.ValueOf(eCfg.LogConfig.MapMonitoredResource).Pointer()
+	actualLogFuncPointer := reflect.ValueOf(eCfg.Config.LogConfig.MapMonitoredResource).Pointer()
 	expectedLogFuncPointer := reflect.ValueOf(resourcemapping.CustomLoggingMonitoredResourceMapping).Pointer()
 	assert.Equal(t, expectedLogFuncPointer, actualLogFuncPointer)
 
@@ -82,7 +82,7 @@ func TestCustomMonitoredResourceMapping(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
 
-	actualMetricsFuncPointer := reflect.ValueOf(eCfg.LogConfig.MapMonitoredResource).Pointer()
+	actualMetricsFuncPointer := reflect.ValueOf(eCfg.Config.LogConfig.MapMonitoredResource).Pointer()
 	expectedMetricsFuncPointer := reflect.ValueOf(resourcemapping.CustomLoggingMonitoredResourceMapping).Pointer()
 	assert.Equal(t, expectedMetricsFuncPointer, actualMetricsFuncPointer)
 }

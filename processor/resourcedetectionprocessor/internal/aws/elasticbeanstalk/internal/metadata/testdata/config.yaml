@@ -7,6 +7,10 @@ all_set:
       enabled: true
     deployment.environment:
       enabled: true
+    deployment.environment.name:
+      enabled: true
+    deployment.id:
+      enabled: true
     service.instance.id:
       enabled: true
     service.version:
@@ -18,6 +22,10 @@ none_set:
     cloud.provider:
       enabled: false
     deployment.environment:
+      enabled: false
+    deployment.environment.name:
+      enabled: false
+    deployment.id:
       enabled: false
     service.instance.id:
       enabled: false

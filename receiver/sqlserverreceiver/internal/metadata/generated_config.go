@@ -339,6 +339,26 @@ func (ms *SqlserverCPUCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+// SqlserverCPUUtilizationMetricConfig provides config for the sqlserver.cpu.utilization metric.
+type SqlserverCPUUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SqlserverCursorCountMetricAttributeKey specifies the key of an attribute for the sqlserver.cursor.count metric.
 type SqlserverCursorCountMetricAttributeKey string
 
@@ -796,6 +816,104 @@ func (ms *SqlserverDeadlockRateMetricConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
+// SqlserverDiskIoMetricAttributeKey specifies the key of an attribute for the sqlserver.disk.io metric.
+type SqlserverDiskIoMetricAttributeKey string
+
+const (
+	SqlserverDiskIoMetricAttributeKeyDiskIoDirection         SqlserverDiskIoMetricAttributeKey = "disk.io.direction"
+	SqlserverDiskIoMetricAttributeKeySqlserverFilePathPrefix SqlserverDiskIoMetricAttributeKey = "sqlserver.file.path.prefix"
+)
+
+// SqlserverDiskIoMetricConfig provides config for the sqlserver.disk.io metric.
+type SqlserverDiskIoMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverDiskIoMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverDiskIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverDiskIoMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverDiskIoMetricAttributeKeyDiskIoDirection, SqlserverDiskIoMetricAttributeKeySqlserverFilePathPrefix:
+		default:
+			return fmt.Errorf("metric sqlserver.disk.io doesn't have an attribute %v, valid attributes: [disk.io.direction, sqlserver.file.path.prefix]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverDiskOperationsMetricAttributeKey specifies the key of an attribute for the sqlserver.disk.operations metric.
+type SqlserverDiskOperationsMetricAttributeKey string
+
+const (
+	SqlserverDiskOperationsMetricAttributeKeyDiskIoDirection         SqlserverDiskOperationsMetricAttributeKey = "disk.io.direction"
+	SqlserverDiskOperationsMetricAttributeKeySqlserverFilePathPrefix SqlserverDiskOperationsMetricAttributeKey = "sqlserver.file.path.prefix"
+)
+
+// SqlserverDiskOperationsMetricConfig provides config for the sqlserver.disk.operations metric.
+type SqlserverDiskOperationsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverDiskOperationsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverDiskOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverDiskOperationsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverDiskOperationsMetricAttributeKeyDiskIoDirection, SqlserverDiskOperationsMetricAttributeKeySqlserverFilePathPrefix:
+		default:
+			return fmt.Errorf("metric sqlserver.disk.operations doesn't have an attribute %v, valid attributes: [disk.io.direction, sqlserver.file.path.prefix]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // SqlserverErrorRateMetricConfig provides config for the sqlserver.error.rate metric.
 type SqlserverErrorRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -853,6 +971,74 @@ func (ms *SqlserverGhostRecordSkippedRateMetricConfig) Unmarshal(parser *confmap
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverHostMemoryLimitMetricConfig provides config for the sqlserver.host.memory.limit metric.
+type SqlserverHostMemoryLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverHostMemoryLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverHostMemoryUsageMetricAttributeKey specifies the key of an attribute for the sqlserver.host.memory.usage metric.
+type SqlserverHostMemoryUsageMetricAttributeKey string
+
+const (
+	SqlserverHostMemoryUsageMetricAttributeKeySystemMemoryState SqlserverHostMemoryUsageMetricAttributeKey = "system.memory.state"
+)
+
+// SqlserverHostMemoryUsageMetricConfig provides config for the sqlserver.host.memory.usage metric.
+type SqlserverHostMemoryUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverHostMemoryUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverHostMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverHostMemoryUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverHostMemoryUsageMetricAttributeKeySystemMemoryState:
+		default:
+			return fmt.Errorf("metric sqlserver.host.memory.usage doesn't have an attribute %v, valid attributes: [system.memory.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -2795,6 +2981,7 @@ type MetricsConfig struct {
 	SqlserverComputerUptime                               SqlserverComputerUptimeMetricConfig                               `mapstructure:"sqlserver.computer.uptime"`
 	SqlserverConnectionResetRate                          SqlserverConnectionResetRateMetricConfig                          `mapstructure:"sqlserver.connection.reset.rate"`
 	SqlserverCPUCount                                     SqlserverCPUCountMetricConfig                                     `mapstructure:"sqlserver.cpu.count"`
+	SqlserverCPUUtilization                               SqlserverCPUUtilizationMetricConfig                               `mapstructure:"sqlserver.cpu.utilization"`
 	SqlserverCursorCount                                  SqlserverCursorCountMetricConfig                                  `mapstructure:"sqlserver.cursor.count"`
 	SqlserverCursorMemoryUsage                            SqlserverCursorMemoryUsageMetricConfig                            `mapstructure:"sqlserver.cursor.memory.usage"`
 	SqlserverCursorPlanCount                              SqlserverCursorPlanCountMetricConfig                              `mapstructure:"sqlserver.cursor.plan.count"`
@@ -2809,9 +2996,13 @@ type MetricsConfig struct {
 	SqlserverDatabaseTempdbSpace                          SqlserverDatabaseTempdbSpaceMetricConfig                          `mapstructure:"sqlserver.database.tempdb.space"`
 	SqlserverDatabaseTempdbVersionStoreSize               SqlserverDatabaseTempdbVersionStoreSizeMetricConfig               `mapstructure:"sqlserver.database.tempdb.version_store.size"`
 	SqlserverDeadlockRate                                 SqlserverDeadlockRateMetricConfig                                 `mapstructure:"sqlserver.deadlock.rate"`
+	SqlserverDiskIo                                       SqlserverDiskIoMetricConfig                                       `mapstructure:"sqlserver.disk.io"`
+	SqlserverDiskOperations                               SqlserverDiskOperationsMetricConfig                               `mapstructure:"sqlserver.disk.operations"`
 	SqlserverErrorRate                                    SqlserverErrorRateMetricConfig                                    `mapstructure:"sqlserver.error.rate"`
 	SqlserverExtentOperationRate                          SqlserverExtentOperationRateMetricConfig                          `mapstructure:"sqlserver.extent.operation.rate"`
 	SqlserverGhostRecordSkippedRate                       SqlserverGhostRecordSkippedRateMetricConfig                       `mapstructure:"sqlserver.ghost_record.skipped.rate"`
+	SqlserverHostMemoryLimit                              SqlserverHostMemoryLimitMetricConfig                              `mapstructure:"sqlserver.host.memory.limit"`
+	SqlserverHostMemoryUsage                              SqlserverHostMemoryUsageMetricConfig                              `mapstructure:"sqlserver.host.memory.usage"`
 	SqlserverIndexFragmentation                           SqlserverIndexFragmentationMetricConfig                           `mapstructure:"sqlserver.index.fragmentation"`
 	SqlserverIndexPageCount                               SqlserverIndexPageCountMetricConfig                               `mapstructure:"sqlserver.index.page.count"`
 	SqlserverIndexPageUtilization                         SqlserverIndexPageUtilizationMetricConfig                         `mapstructure:"sqlserver.index.page.utilization"`
@@ -2924,6 +3115,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverCPUCount: SqlserverCPUCountMetricConfig{
 			Enabled: false,
 		},
+		SqlserverCPUUtilization: SqlserverCPUUtilizationMetricConfig{
+			Enabled: false,
+		},
 		SqlserverCursorCount: SqlserverCursorCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
@@ -2978,6 +3172,16 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverDeadlockRate: SqlserverDeadlockRateMetricConfig{
 			Enabled: false,
 		},
+		SqlserverDiskIo: SqlserverDiskIoMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SqlserverDiskIoMetricAttributeKey{SqlserverDiskIoMetricAttributeKeyDiskIoDirection, SqlserverDiskIoMetricAttributeKeySqlserverFilePathPrefix},
+		},
+		SqlserverDiskOperations: SqlserverDiskOperationsMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SqlserverDiskOperationsMetricAttributeKey{SqlserverDiskOperationsMetricAttributeKeyDiskIoDirection, SqlserverDiskOperationsMetricAttributeKeySqlserverFilePathPrefix},
+		},
 		SqlserverErrorRate: SqlserverErrorRateMetricConfig{
 			Enabled: false,
 		},
@@ -2986,6 +3190,14 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SqlserverGhostRecordSkippedRate: SqlserverGhostRecordSkippedRateMetricConfig{
 			Enabled: false,
+		},
+		SqlserverHostMemoryLimit: SqlserverHostMemoryLimitMetricConfig{
+			Enabled: false,
+		},
+		SqlserverHostMemoryUsage: SqlserverHostMemoryUsageMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverHostMemoryUsageMetricAttributeKey{SqlserverHostMemoryUsageMetricAttributeKeySystemMemoryState},
 		},
 		SqlserverIndexFragmentation: SqlserverIndexFragmentationMetricConfig{
 			Enabled:             false,

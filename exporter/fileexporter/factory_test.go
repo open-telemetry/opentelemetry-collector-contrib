@@ -30,7 +30,8 @@ func TestCreateMetricsError(t *testing.T) {
 	e, err := createMetricsExporter(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	require.NoError(t, err)
 	err = e.Start(t.Context(), componenttest.NewNopHost())
 	assert.Error(t, err)
@@ -44,7 +45,8 @@ func TestCreateMetrics(t *testing.T) {
 	exp, err := createMetricsExporter(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 	assert.NoError(t, exp.Shutdown(t.Context()))
@@ -58,7 +60,8 @@ func TestCreateTraces(t *testing.T) {
 	exp, err := createTracesExporter(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 	assert.NoError(t, exp.Shutdown(t.Context()))
@@ -71,7 +74,8 @@ func TestCreateTracesError(t *testing.T) {
 	e, err := createTracesExporter(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	require.NoError(t, err)
 	err = e.Start(t.Context(), componenttest.NewNopHost())
 	assert.Error(t, err)
@@ -85,7 +89,8 @@ func TestCreateLogs(t *testing.T) {
 	exp, err := createLogsExporter(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 	assert.NoError(t, exp.Shutdown(t.Context()))
@@ -98,7 +103,8 @@ func TestCreateLogsError(t *testing.T) {
 	e, err := createLogsExporter(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	require.NoError(t, err)
 	err = e.Start(t.Context(), componenttest.NewNopHost())
 	assert.Error(t, err)
@@ -112,7 +118,8 @@ func TestCreateProfiles(t *testing.T) {
 	exp, err := createProfilesExporter(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 	assert.NoError(t, exp.Shutdown(t.Context()))
@@ -125,7 +132,8 @@ func TestCreateProfilesError(t *testing.T) {
 	e, err := createProfilesExporter(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	require.NoError(t, err)
 	err = e.Start(t.Context(), componenttest.NewNopHost())
 	assert.Error(t, err)

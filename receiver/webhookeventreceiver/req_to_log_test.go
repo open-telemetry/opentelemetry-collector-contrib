@@ -32,8 +32,8 @@ func TestReqToLog(t *testing.T) {
 	newlineSplittingServerConfig.NetAddr = confignet.AddrConfig{}
 	newlineSplittingServerConfig.WriteTimeout = 0
 	newlineSplittingServerConfig.ReadHeaderTimeout = 0
-	newlineSplittingServerConfig.IdleTimeout = 0
-	newlineSplittingServerConfig.KeepAlivesEnabled = false
+	newlineSplittingServerConfig.IdleTimeout = 0                 //nolint:staticcheck // SA1019: see TODO above
+	newlineSplittingServerConfig.KeepAlivesEnabled = false       //nolint:staticcheck // SA1019: see TODO above
 	newlineSplittingServerConfig.MaxRequestBodySize = 150 * 1024 // Set to 150KB to handle the 100KB test payload
 
 	jsonBoundarySplittingServerConfig := confighttp.NewDefaultServerConfig()
@@ -41,8 +41,8 @@ func TestReqToLog(t *testing.T) {
 	jsonBoundarySplittingServerConfig.NetAddr = confignet.AddrConfig{}
 	jsonBoundarySplittingServerConfig.WriteTimeout = 0
 	jsonBoundarySplittingServerConfig.ReadHeaderTimeout = 0
-	jsonBoundarySplittingServerConfig.IdleTimeout = 0
-	jsonBoundarySplittingServerConfig.KeepAlivesEnabled = false
+	jsonBoundarySplittingServerConfig.IdleTimeout = 0                 //nolint:staticcheck // SA1019: see TODO above
+	jsonBoundarySplittingServerConfig.KeepAlivesEnabled = false       //nolint:staticcheck // SA1019: see TODO above
 	jsonBoundarySplittingServerConfig.MaxRequestBodySize = 100 * 1024 // 100KB to handle the ~80KB test payload
 
 	exceedsMaxSizeServerConfig := confighttp.NewDefaultServerConfig()
@@ -50,8 +50,8 @@ func TestReqToLog(t *testing.T) {
 	exceedsMaxSizeServerConfig.NetAddr = confignet.AddrConfig{}
 	exceedsMaxSizeServerConfig.WriteTimeout = 0
 	exceedsMaxSizeServerConfig.ReadHeaderTimeout = 0
-	exceedsMaxSizeServerConfig.IdleTimeout = 0
-	exceedsMaxSizeServerConfig.KeepAlivesEnabled = false
+	exceedsMaxSizeServerConfig.IdleTimeout = 0                 //nolint:staticcheck // SA1019: see TODO above
+	exceedsMaxSizeServerConfig.KeepAlivesEnabled = false       //nolint:staticcheck // SA1019: see TODO above
 	exceedsMaxSizeServerConfig.MaxRequestBodySize = 100 * 1024 // Set to 100KB, smaller than payload
 
 	tinyMaxSizeServerConfig := confighttp.NewDefaultServerConfig()
@@ -59,9 +59,9 @@ func TestReqToLog(t *testing.T) {
 	tinyMaxSizeServerConfig.NetAddr = confignet.AddrConfig{}
 	tinyMaxSizeServerConfig.WriteTimeout = 0
 	tinyMaxSizeServerConfig.ReadHeaderTimeout = 0
-	tinyMaxSizeServerConfig.IdleTimeout = 0
-	tinyMaxSizeServerConfig.KeepAlivesEnabled = false
-	tinyMaxSizeServerConfig.MaxRequestBodySize = 64 // Set smaller than allowed
+	tinyMaxSizeServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	tinyMaxSizeServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	tinyMaxSizeServerConfig.MaxRequestBodySize = 64   // Set smaller than allowed
 
 	tests := []struct {
 		desc        string

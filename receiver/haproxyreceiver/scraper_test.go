@@ -48,6 +48,9 @@ func Test_scraper_readStats(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, m)
 
+	// The assertion file uses attributes/include on the resource attributes to
+	// assert only the stable haproxy.proxy_name and haproxy.service_name keys
+	// while allowing the volatile haproxy.addr key as an extra attribute.
 	expectedFile := filepath.Join("testdata", "scraper", "metrics.assert.yaml")
 	// To regenerate: uncomment, run the test once, re-comment.
 	// require.NoError(t, pmetricassert.WriteAssertionFile(t, expectedFile, m))

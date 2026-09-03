@@ -105,12 +105,13 @@ func TestIntegration(t *testing.T) {
 								FileMode:          700,
 							},
 						},
-					}),
+					},
+				),
 				scraperinttest.WithCustomConfig(
 					func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 						rCfg := cfg.(*Config)
-						rCfg.CollectionInterval = time.Second
-						rCfg.Endpoint = net.JoinHostPort(ci.Host(t), ci.MappedPort(t, mysqlPort))
+						rCfg.ControllerConfig.CollectionInterval = time.Second
+						rCfg.AddrConfig.Endpoint = net.JoinHostPort(ci.Host(t), ci.MappedPort(t, mysqlPort))
 						rCfg.Username = "otel"
 						rCfg.Password = "otel"
 						if tc.tlsEnabled {
@@ -118,7 +119,8 @@ func TestIntegration(t *testing.T) {
 						} else {
 							rCfg.TLS.Insecure = true
 						}
-					}),
+					},
+				),
 				scraperinttest.WithExpectedFile(
 					filepath.Join("testdata", "integration", tc.expectedFile),
 				),
@@ -334,12 +336,14 @@ func TestIntegrationLogScraper(t *testing.T) {
 			// Use an observer logger so we can assert logDetectedVersion output.
 			observerCore, loggedEntries := observer.New(zapcore.WarnLevel)
 			settings := receivertest.NewNopSettings(metadata.Type)
-			scraper := newMySQLScraper(
+			scraper, err := newMySQLScraper(
 				settings,
 				cfg,
+				nil,
 				newCache[int64](int(cfg.TopQueryCollection.MaxQuerySampleCount*2*2)),
 				sharedPlanCache,
 			)
+			require.NoError(t, err)
 			scraper.logger = zap.New(observerCore)
 			require.NoError(t, scraper.start(ctx, nil))
 			defer func() { assert.NoError(t, scraper.shutdown(ctx)) }()
@@ -454,12 +458,14 @@ func TestIntegrationLogScraper(t *testing.T) {
 
 			// --- scrapeQuerySampleFunc ---
 			// Use a separate scraper sharing the same plan cache to prove reuse.
-			sampleScraper := newMySQLScraper(
+			sampleScraper, err := newMySQLScraper(
 				settings,
 				cfg,
+				nil,
 				newCache[int64](1),
 				sharedPlanCache,
 			)
+			require.NoError(t, err)
 			require.NoError(t, sampleScraper.start(ctx, nil))
 			defer func() { assert.NoError(t, sampleScraper.shutdown(ctx)) }()
 
@@ -813,12 +819,14 @@ func TestIntegrationQuerySampleAttributes(t *testing.T) {
 
 			sharedPlanCache := newTTLCache[string](cfg.TopQueryCollection.QueryPlanCacheSize, 0)
 			settings := receivertest.NewNopSettings(metadata.Type)
-			scraper := newMySQLScraper(
+			scraper, err := newMySQLScraper(
 				settings,
 				cfg,
+				nil,
 				newCache[int64](int(cfg.TopQueryCollection.MaxQuerySampleCount*2*2)),
 				sharedPlanCache,
 			)
+			require.NoError(t, err)
 			require.NoError(t, scraper.start(ctx, nil))
 			defer func() { assert.NoError(t, scraper.shutdown(ctx)) }()
 

@@ -27,7 +27,7 @@ type textLogCodec struct {
 
 func (r *textLogCodec) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	// Decode as a stream but flush all at once using flush options
-	decoder, err := r.NewLogsDecoder(bytes.NewReader(buf), encoding.WithOffset(0), encoding.WithFlushBytes(0))
+	decoder, err := r.NewLogsDecoder(bytes.NewReader(buf), encoding.WithOffset(0), encoding.WithFlushBytes(0), encoding.WithFlushItems(0))
 	if err != nil {
 		return plog.Logs{}, err
 	}

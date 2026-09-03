@@ -19,7 +19,11 @@ func MetricsData(
 	metricGroupsToCollect map[MetricGroup]bool,
 	allNetworkInterfaces map[MetricGroup]bool,
 	mbs *metadata.MetricsBuilders,
+	cpuUsageCalculator *CPUUsageCalculator,
 ) []pmetric.Metrics {
+	cpuUsageCalculator.startScrape()
+	defer cpuUsageCalculator.endScrape()
+
 	acc := &metricDataAccumulator{
 		metadata:              metadata,
 		logger:                logger,
@@ -27,6 +31,7 @@ func MetricsData(
 		allNetworkInterfaces:  allNetworkInterfaces,
 		time:                  time.Now(),
 		mbs:                   mbs,
+		cpuUsageCalculator:    cpuUsageCalculator,
 	}
 	acc.nodeStats(summary.Node)
 	for i := range summary.Pods {

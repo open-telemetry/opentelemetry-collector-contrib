@@ -7,6 +7,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -126,4 +127,40 @@ func TestBase64Encode(t *testing.T) {
 			require.Equal(t, tt.want, result)
 		})
 	}
+}
+
+func Test_Base64EncodeFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewBase64EncodeFactory[any]()
+		assert.Equal(t, "Base64Encode", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewBase64EncodeFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &Base64EncodeArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Variant"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewBase64EncodeFactory[any]()
+		args := factory.CreateDefaultArguments()
+		encodeArgs, ok := args.(*Base64EncodeArguments[any])
+		require.True(t, ok)
+		encodeArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "hello world", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createBase64EncodeFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "Base64EncodeFactory args must be of type *Base64EncodeArguments[K]")
+	})
 }

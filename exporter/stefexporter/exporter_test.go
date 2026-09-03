@@ -214,7 +214,7 @@ func TestReconnect(t *testing.T) {
 	// Shorten max ack waiting time so that the attempt to send on a failed
 	// connection times out quickly and attempt to send again is tried
 	// until the broken connection is detected and reconnection happens.
-	cfg.Timeout = 300 * time.Millisecond
+	cfg.TimeoutConfig.Timeout = 300 * time.Millisecond
 
 	runTest(
 		t,
@@ -263,7 +263,7 @@ func TestAckTimeout(t *testing.T) {
 
 	// Shorten max ack waiting time so that tests run fast.
 	// Increase this if the second eventually() below fails sporadically.
-	cfg.Timeout = 300 * time.Millisecond
+	cfg.TimeoutConfig.Timeout = 300 * time.Millisecond
 
 	runTest(
 		t,

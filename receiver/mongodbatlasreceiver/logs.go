@@ -51,7 +51,7 @@ func newMongoDBAtlasLogsReceiver(settings rcvr.Settings, cfg *Config, consumer c
 	}
 
 	for _, p := range cfg.Logs.Projects {
-		p.populateIncludesAndExcludes()
+		p.ProjectConfig.populateIncludesAndExcludes()
 	}
 
 	return &logsReceiver{
@@ -115,9 +115,9 @@ func parseHostNames(s string, logger *zap.Logger) []string {
 // collect spins off functionality of the receiver from the Start function
 func (s *logsReceiver) collect(ctx context.Context) {
 	for _, projectCfg := range s.cfg.Logs.Projects {
-		project, err := s.client.GetProject(ctx, projectCfg.Name)
+		project, err := s.client.GetProject(ctx, projectCfg.ProjectConfig.Name)
 		if err != nil {
-			s.log.Error("Error retrieving project "+projectCfg.Name+":", zap.Error(err))
+			s.log.Error("Error retrieving project "+projectCfg.ProjectConfig.Name+":", zap.Error(err))
 			continue
 		}
 		pc := projectContext{Project: *project}

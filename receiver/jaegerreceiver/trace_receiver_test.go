@@ -82,8 +82,8 @@ func TestReception(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	thriftHTTPServerConfig.WriteTimeout = 0
 	thriftHTTPServerConfig.ReadHeaderTimeout = 0
-	thriftHTTPServerConfig.IdleTimeout = 0
-	thriftHTTPServerConfig.KeepAlivesEnabled = false
+	thriftHTTPServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	thriftHTTPServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	thriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  addr,
 		Transport: confignet.TransportTypeTCP,
@@ -260,7 +260,8 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 
 func expectedTraceData(t1, t2, t3 time.Time) ptrace.Traces {
 	traceID := pcommon.TraceID(
-		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
+		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+	)
 	parentSpanID := pcommon.SpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
 	childSpanID := pcommon.SpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
 
