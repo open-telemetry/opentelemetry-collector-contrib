@@ -338,7 +338,7 @@ func TestScrapeReplicaThreadRunningRecordsRowsByChannel(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaThreadRunning.Enabled = true
 
-	scraper := newUnitTestMySQLScraper(cfg)
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
 	scraper.sqlclient = &mockClient{
 		replicaStatusStats: []replicaStatusStats{
 			{replicaIORunning: "Yes", replicaSQLRunning: "Yes", channelName: "source_a"},
@@ -361,7 +361,7 @@ func TestScrapeGlobalStatsRecordsReplicaOpenTempTablesFromGlobalStatus(t *testin
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTableOpen.Enabled = true
 
-	scraper := newUnitTestMySQLScraper(cfg)
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
 	scraper.sqlclient = &mockClient{
 		globalStats: map[string]string{"Replica_open_temp_tables": "9"},
 	}
@@ -375,7 +375,7 @@ func TestScrapeGlobalStatsRecordsReplicaOpenTempTablesFromLegacyGlobalStatusName
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTableOpen.Enabled = true
 
-	scraper := newUnitTestMySQLScraper(cfg)
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
 	scraper.sqlclient = &mockClient{
 		globalStats: map[string]string{"Slave_open_temp_tables": "7"},
 	}
@@ -408,7 +408,7 @@ func TestScrapeHealthRecordsConnectionStatus(t *testing.T) {
 			cfg.MetricsBuilderConfig.Metrics.MysqlHealth.Enabled = true
 			mock := &mockClient{checkDBAvailabilityErr: tt.checkDBAvailabilityErr}
 
-			scraper := newUnitTestMySQLScraper(cfg)
+			scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
 			scraper.sqlclient = mock
 
 			scraper.scrapeHealth(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
@@ -458,7 +458,7 @@ func TestScrapeQueryExecutionTime(t *testing.T) {
 				queryExecutionTimeErr: tt.executionTimeErr,
 			}
 
-			scraper := newUnitTestMySQLScraper(cfg)
+			scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
 			scraper.sqlclient = mock
 			errs := &scrapererror.ScrapeErrors{}
 
@@ -514,7 +514,7 @@ func TestScrapeActiveSessionCount(t *testing.T) {
 				activeSessionErr:   tt.activeSessionErr,
 			}
 
-			scraper := newUnitTestMySQLScraper(cfg)
+			scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
 			scraper.sqlclient = mock
 			errs := &scrapererror.ScrapeErrors{}
 
@@ -531,15 +531,6 @@ func TestScrapeActiveSessionCount(t *testing.T) {
 	}
 }
 
-func newUnitTestMySQLScraper(cfg *Config) *mySQLScraper {
-	return newMySQLScraper(
-		receivertest.NewNopSettings(metadata.Type),
-		cfg,
-		newCache[int64](1),
-		newTTLCache[string](0, time.Hour*24*365*10),
-	)
-}
-
 func TestScrapeGlobalStatsRecordsMyisamKeyCacheMetricsWhenEnabled(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.Metrics.MysqlMyisamKeyCacheBlockUsedMax.Enabled = true
@@ -547,7 +538,7 @@ func TestScrapeGlobalStatsRecordsMyisamKeyCacheMetricsWhenEnabled(t *testing.T) 
 	cfg.MetricsBuilderConfig.Metrics.MysqlMyisamKeyCacheDiskOperation.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.MysqlMyisamKeyCacheRequest.Enabled = true
 
-	scraper := newUnitTestMySQLScraper(cfg)
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
 	scraper.sqlclient = &mockClient{
 		globalStatsFile: "global_stats",
 	}
@@ -573,7 +564,7 @@ func TestScrapeReplicaStatusDoesNotRecordReplicaOpenTempTables(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTableOpen.Enabled = true
 
-	scraper := newUnitTestMySQLScraper(cfg)
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
 	scraper.sqlclient = &mockClient{
 		replicaStatusStats: []replicaStatusStats{{replicaIORunning: "Yes", replicaSQLRunning: "Yes"}},
 	}
