@@ -485,10 +485,8 @@ func (c *mySQLClient) getInnodbStats() (map[string]string, error) {
 
 // getQueryExecutionTime queries the db for cumulative SQL statement execution time in seconds.
 func (c *mySQLClient) getQueryExecutionTime() (float64, error) {
-	q := "/* otel-collector-ignore */ SELECT COALESCE(SUM(SUM_TIMER_WAIT), 0) / 1000000000000.0 " +
-		"FROM performance_schema.events_statements_summary_by_digest " +
-		"WHERE ((DIGEST_TEXT NOT LIKE 'EXPLAIN %' AND DIGEST_TEXT NOT LIKE '/* otel-collector-ignore */%') " +
-		"OR DIGEST_TEXT IS NULL)"
+	q := "SELECT COALESCE(SUM(SUM_TIMER_WAIT), 0) / 1000000000000.0 " +
+		"FROM performance_schema.events_statements_summary_by_digest"
 
 	var executionTime float64
 	err := c.client.QueryRow(q).Scan(&executionTime)

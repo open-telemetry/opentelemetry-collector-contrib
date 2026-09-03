@@ -618,9 +618,9 @@ The number of statements executed by the server.
 
 ### mysql.query.execution.time
 
-The total execution time of SQL statements currently tracked by the server.
+The total execution time of SQL statements tracked by the server.
 
-This metric reports cumulative statement execution time in seconds. Values reset when statement summary state is reset or the server restarts.
+This metric reports cumulative statement execution time in seconds, including statements issued by the receiver. Values reset when statement summary state is reset or the server restarts.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -677,7 +677,7 @@ This field is an indication of how “late” the replica is.
 
 ### mysql.session.active.count
 
-The number of active MySQL sessions currently executing statements.
+The number of active MySQL sessions with query text and state.
 
 Idle sessions and the receiver's own query are excluded.
 

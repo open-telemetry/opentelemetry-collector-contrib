@@ -4550,7 +4550,7 @@ type metricMysqlQueryExecutionTime struct {
 // init fills mysql.query.execution.time metric with initial data.
 func (m *metricMysqlQueryExecutionTime) init() {
 	m.data.SetName("mysql.query.execution.time")
-	m.data.SetDescription("The total execution time of SQL statements currently tracked by the server.")
+	m.data.SetDescription("The total execution time of SQL statements tracked by the server.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -5082,7 +5082,7 @@ type metricMysqlSessionActiveCount struct {
 // init fills mysql.session.active.count metric with initial data.
 func (m *metricMysqlSessionActiveCount) init() {
 	m.data.SetName("mysql.session.active.count")
-	m.data.SetDescription("The number of active MySQL sessions currently executing statements.")
+	m.data.SetDescription("The number of active MySQL sessions with query text and state.")
 	m.data.SetUnit("{session}")
 	m.data.SetEmptyGauge()
 }

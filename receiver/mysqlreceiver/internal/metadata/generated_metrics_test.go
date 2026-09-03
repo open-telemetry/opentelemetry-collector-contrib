@@ -1836,7 +1836,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["mysql.query.execution.time"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "The total execution time of SQL statements currently tracked by the server.", mi.Description())
+					assert.Equal(t, "The total execution time of SQL statements tracked by the server.", mi.Description())
 					assert.Equal(t, "s", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -2037,7 +2037,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["mysql.session.active.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of active MySQL sessions currently executing statements.", mi.Description())
+					assert.Equal(t, "The number of active MySQL sessions with query text and state.", mi.Description())
 					assert.Equal(t, "{session}", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

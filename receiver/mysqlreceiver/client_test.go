@@ -483,10 +483,8 @@ func TestGetQueryExecutionTime(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	query := "/* otel-collector-ignore */ SELECT COALESCE(SUM(SUM_TIMER_WAIT), 0) / 1000000000000.0 " +
-		"FROM performance_schema.events_statements_summary_by_digest " +
-		"WHERE ((DIGEST_TEXT NOT LIKE 'EXPLAIN %' AND DIGEST_TEXT NOT LIKE '/* otel-collector-ignore */%') " +
-		"OR DIGEST_TEXT IS NULL)"
+	query := "SELECT COALESCE(SUM(SUM_TIMER_WAIT), 0) / 1000000000000.0 " +
+		"FROM performance_schema.events_statements_summary_by_digest"
 	mock.ExpectQuery(regexp.QuoteMeta(query)).
 		WillReturnRows(sqlmock.NewRows([]string{"execution_time"}).AddRow(12.345))
 

@@ -776,8 +776,8 @@ metrics:
       aggregation_temporality: cumulative
   mysql.query.execution.time:
     enabled: false
-    description: The total execution time of SQL statements currently tracked by the server.
-    extended_documentation: This metric reports cumulative statement execution time in seconds. Values reset when statement summary state is reset or the server restarts.
+    description: The total execution time of SQL statements tracked by the server.
+    extended_documentation: This metric reports cumulative statement execution time in seconds, including statements issued by the receiver. Values reset when statement summary state is reset or the server restarts.
     stability: development
     unit: s
     sum:
@@ -854,7 +854,7 @@ metrics:
     attributes: [row_operations]
   mysql.session.active.count:
     enabled: false
-    description: The number of active MySQL sessions currently executing statements.
+    description: The number of active MySQL sessions with query text and state.
     extended_documentation: Idle sessions and the receiver's own query are excluded.
     stability: development
     unit: "{session}"
