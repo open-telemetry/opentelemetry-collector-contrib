@@ -188,6 +188,104 @@ func TestGetExecutionTimeStats(t *testing.T) {
 	}
 }
 
+func TestGetTableCount(t *testing.T) {
+	const countSQLPre14 = `SELECT count(*) FROM pg_class
+WHERE relkind IN ('r', 'm')
+AND relnamespace NOT IN (
+    SELECT oid FROM pg_namespace
+    WHERE nspname = 'pg_catalog' OR nspname = 'information_schema' OR nspname ~ '^pg_toast'
+);`
+	const countSQLPost14 = `SELECT count(*) FROM pg_class
+WHERE relkind IN ('r', 'm', 'p')
+AND relnamespace NOT IN (
+    SELECT oid FROM pg_namespace
+    WHERE nspname = 'pg_catalog' OR nspname = 'information_schema' OR nspname ~ '^pg_toast'
+);`
+
+	tests := []struct {
+		name          string
+		serverVersion string
+		expectedSQL   string
+		count         int64
+		versionErr    error
+		queryErr      error
+		wantErr       bool
+	}{
+		{
+			name:          "PostgreSQL 13 excludes partitioned parents",
+			serverVersion: "13.4",
+			expectedSQL:   countSQLPre14,
+			count:         5,
+		},
+		{
+			name:          "PostgreSQL 14 includes partitioned parents",
+			serverVersion: "14.0",
+			expectedSQL:   countSQLPost14,
+			count:         6,
+		},
+		{
+			name:          "PostgreSQL 17 includes partitioned parents",
+			serverVersion: "17.2",
+			expectedSQL:   countSQLPost14,
+			count:         6,
+		},
+		{
+			name:          "error resolving server version",
+			serverVersion: "",
+			versionErr:    errors.New("connection reset"),
+			wantErr:       true,
+		},
+		{
+			name:          "unparsable server version",
+			serverVersion: "not-a-version",
+			wantErr:       true,
+		},
+		{
+			name:          "count query fails",
+			serverVersion: "16.0",
+			expectedSQL:   countSQLPost14,
+			queryErr:      errors.New("statement timeout"),
+			wantErr:       true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+			require.NoError(t, err)
+			defer db.Close()
+
+			client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+
+			if tc.versionErr != nil {
+				mock.ExpectQuery("SHOW server_version;").WillReturnError(tc.versionErr)
+			} else {
+				mock.ExpectQuery("SHOW server_version;").
+					WillReturnRows(sqlmock.NewRows([]string{"server_version"}).AddRow(tc.serverVersion))
+			}
+
+			// No count query when the version fails to resolve or parse.
+			if tc.versionErr == nil && tc.serverVersion != "not-a-version" {
+				if tc.queryErr != nil {
+					mock.ExpectQuery(tc.expectedSQL).WillReturnError(tc.queryErr)
+				} else {
+					mock.ExpectQuery(tc.expectedSQL).
+						WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(tc.count))
+				}
+			}
+
+			count, err := client.getTableCount(t.Context())
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tc.count, count)
+			}
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
 func TestLockQueries(t *testing.T) {
 	// Both queries outer-join pg_class to keep non-relation targets, and split on
 	// pg_locks.database so a lock is reported exactly once.
