@@ -428,7 +428,7 @@ The number of currently open files.
 
 The health status of the MySQL server.
 
-A value of '1' indicates that the receiver can execute the availability check query against the server. A value of '0' indicates that the receiver cannot execute the availability check query during the scrape.
+A value of '1' indicates healthy and '0' indicates unhealthy.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

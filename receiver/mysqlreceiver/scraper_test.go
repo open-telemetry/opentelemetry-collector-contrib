@@ -1043,21 +1043,21 @@ type explainQueryCall struct {
 }
 
 type mockClient struct {
-	globalStats                 map[string]string
-	globalStatsFile             string
-	innodbStatsFile             string
-	innodbTransactionStats      innodbTransactionStats
-	innodbTransactionStatsErr   error
-	innodbTransactionStatsCalls int
-	tableIoWaitsFile            string
-	indexIoWaitsFile            string
-	tableStatsFile              string
-	statementEventsFile         string
-	tableLockWaitEventStatsFile string
-	replicaStatusFile           string
-	replicaStatusStats          []replicaStatusStats
-	querySamplesFile            string
-	topQueriesFile              string
+	globalStats                  map[string]string
+	globalStatsFile              string
+	innodbStatsFile              string
+	innodbTransactionStats       innodbTransactionStats
+	innodbTransactionStatsErr    error
+	innodbTransactionStatsCalls  int
+	tableIoWaitsFile             string
+	indexIoWaitsFile             string
+	tableStatsFile               string
+	statementEventsFile          string
+	tableLockWaitEventStatsFile  string
+	replicaStatusFile            string
+	replicaStatusStats           []replicaStatusStats
+	querySamplesFile             string
+	topQueriesFile               string
 	checkDBAvailabilityErr       error
 	checkDBAvailabilityCallCount int
 	queryExecutionTime           float64
