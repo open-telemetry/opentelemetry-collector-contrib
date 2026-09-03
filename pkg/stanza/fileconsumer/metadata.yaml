@@ -25,7 +25,7 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198
     skip_strict_validation: true
   - id: filelog.mtimeSortType
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, allows usage of `ordering_criteria.mode` = `mtime`.
     from_version: v0.89.0
