@@ -1986,8 +1986,9 @@ func newQueryGuardMockClient() *mockClient {
 // newQueryGuardScraper builds a scraper backed by a fresh mockClient for the
 // given config, returning both so the test can inspect call counts after
 // scraping.
-func newQueryGuardScraper(cfg *Config) (*mySQLScraper, *mockClient) {
-	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+func newQueryGuardScraper(t *testing.T, cfg *Config) (*mySQLScraper, *mockClient) {
+	scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+	require.NoError(t, err)
 	mc := newQueryGuardMockClient()
 	scraper.sqlclient = mc
 	return scraper, mc
@@ -2004,7 +2005,7 @@ func TestScraperSkipsQueriesForDisabledMetrics(t *testing.T) {
 				setMetricEnabled(t, cfg, field, false)
 			}
 
-			scraper, mc := newQueryGuardScraper(cfg)
+			scraper, mc := newQueryGuardScraper(t, cfg)
 			_, err := scraper.scrape(t.Context())
 			require.NoError(t, err)
 
@@ -2026,7 +2027,7 @@ func TestScraperRunsQueryWhenAnyFedMetricEnabled(t *testing.T) {
 			}
 			setMetricEnabled(t, cfg, group.fields[0], true)
 
-			scraper, mc := newQueryGuardScraper(cfg)
+			scraper, mc := newQueryGuardScraper(t, cfg)
 			_, err := scraper.scrape(t.Context())
 			require.NoError(t, err)
 
@@ -2138,7 +2139,8 @@ func TestQueryGuardsCoverEveryMetric(t *testing.T) {
 		}
 		setMetricEnabled(t, cfg, fieldName, true)
 
-		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+		require.NoError(t, err)
 		assert.True(t, guard(scraper), "guard for field %q did not report enabled when only that field was turned on", fieldName)
 	}
 
