@@ -527,9 +527,9 @@ func findLock(locks []databaseLocks, lockType, mode string) (databaseLocks, bool
 // pg_stat_statements forms that are not valid SQL until repairNormalizedQuery
 // rewrites them.
 //
-// Both sides of the PG14 boundary are exercised because that is where EXTRACT
-// changed return type from double precision to numeric, so the date_part rewrite
-// has to keep preparing on either side of it.
+// Both sides of the PG14 boundary are exercised because pg_catalog.extract, the
+// target of the EXTRACT repair, was added in 14. Cases carrying minMajor skip
+// below that; the typed-literal repairs have to prepare on either side.
 func TestExplainQueryParamCount(t *testing.T) {
 	t.Run("pre14", explainQueryParamCountTest(pre17TestVersion))
 	t.Run("post14", explainQueryParamCountTest(post17TestVersion))
@@ -597,6 +597,8 @@ func explainQueryParamCountTest(pgVersion string) func(*testing.T) {
 			// that the plan describes the query rather than only that some plan came back.
 			// The obfuscator re-marshals the plan compactly, hence no space after the colon.
 			wantPlanContains string
+			// minMajor skips the case below that server major version.
+			minMajor int
 		}{
 			{
 				name:             "repeated placeholder counts as one parameter",
@@ -612,6 +614,16 @@ func explainQueryParamCountTest(pgVersion string) func(*testing.T) {
 				name:             "extract with a parameter is repaired and explained",
 				query:            "SELECT id FROM table1 WHERE EXTRACT($1 FROM now()) = $2",
 				wantPlanContains: `"Relation Name":"table1"`,
+				minMajor:         14,
+			},
+			{
+				// Why the repair targets extract and not date_part: EXTRACT returns numeric
+				// from 14 on, and round(double precision, integer) does not exist, so a
+				// date_part rewrite would fail to prepare here for a new reason.
+				name:             "extract feeding a numeric-only function is repaired and explained",
+				query:            "SELECT round(EXTRACT($1 FROM now()), $2)",
+				wantPlanContains: `"Node Type":"Result"`,
+				minMajor:         14,
 			},
 			{
 				name:             "typed interval literal is repaired and explained",
@@ -630,12 +642,19 @@ func explainQueryParamCountTest(pgVersion string) func(*testing.T) {
 			},
 		}
 
+		major, err := parseMajorVersion(pgVersion)
+		require.NoError(t, err)
+
 		// A text-based $N count gets the first two cases wrong: 2 instead of 1 for the repeated
 		// placeholder (which PostgreSQL rejects outright -- "wrong number of parameters"), and
 		// 1 instead of 0 for the string literal (which happens to still run, just with an unused
 		// bound null). pg_prepared_statements reports the correct count either way.
 		for i, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
+				if major < tc.minMajor {
+					t.Skipf("requires PostgreSQL %d or later", tc.minMajor)
+				}
+
 				plan, err := client.explainQuery(t.Context(), tc.query, fmt.Sprintf("paramcount%d", i), logger)
 				require.NoError(t, err)
 				require.NotEmpty(t, plan)

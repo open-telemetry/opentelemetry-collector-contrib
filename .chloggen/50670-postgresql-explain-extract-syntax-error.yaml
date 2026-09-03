@@ -22,12 +22,13 @@ subtext: |
   and `interval '1 day'` becomes `interval $1`, both of which fail to `PREPARE` with a syntax
   error. Affected queries were emitted with an empty `postgresql.query_plan`, and because the
   empty result was cached the query stayed unexplainable for the lifetime of the cache entry.
-  These forms are now rewritten to `date_part($1, col)` and `CAST($1 AS interval)` before the plan
-  is requested. The typed-literal rewrite covers the built-in type names, including multi-word
-  spellings such as `timestamp with time zone` and interval field qualifiers such as
+  These forms are now rewritten to `pg_catalog.extract($1, col)` and `CAST($1 AS interval)` before
+  the plan is requested. The typed-literal rewrite covers the built-in type names, including
+  multi-word spellings such as `timestamp with time zone` and interval field qualifiers such as
   `interval $1 day`. Both rewrites are skipped inside string literals, quoted identifiers,
   dollar-quoted strings and comments, so queries that already explained successfully are
-  unaffected.
+  unaffected. The `EXTRACT` rewrite requires PostgreSQL 14 or later, which is where
+  `pg_catalog.extract` was added.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

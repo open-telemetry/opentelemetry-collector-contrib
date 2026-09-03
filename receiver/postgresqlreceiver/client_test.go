@@ -408,34 +408,34 @@ func TestRepairNormalizedQuery(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "extract with parameter is rewritten to date_part",
+			name:     "extract with parameter is rewritten to a function call",
 			query:    "SELECT * FROM orders WHERE EXTRACT($1 FROM order_date) = $2",
-			expected: "SELECT * FROM orders WHERE pg_catalog.date_part($1, order_date) = $2",
+			expected: "SELECT * FROM orders WHERE pg_catalog.extract($1, order_date) = $2",
 		},
 		{
 			name:     "extract rewrite preserves surrounding parameter numbering",
 			query:    "SELECT CAST($1 AS varchar(50)) FROM orders WHERE EXTRACT($2 FROM order_date) BETWEEN $3 AND $4",
-			expected: "SELECT CAST($1 AS varchar(50)) FROM orders WHERE pg_catalog.date_part($2, order_date) BETWEEN $3 AND $4",
+			expected: "SELECT CAST($1 AS varchar(50)) FROM orders WHERE pg_catalog.extract($2, order_date) BETWEEN $3 AND $4",
 		},
 		{
 			name:     "extract rewrite is balanced when the source is a nested call",
 			query:    "SELECT EXTRACT($1 FROM greatest(a, b))",
-			expected: "SELECT pg_catalog.date_part($1, greatest(a, b))",
+			expected: "SELECT pg_catalog.extract($1, greatest(a, b))",
 		},
 		{
 			name:     "extract rewrite tolerates extra whitespace",
 			query:    "SELECT extract(  $1   FROM   order_date )",
-			expected: "SELECT pg_catalog.date_part($1, order_date )",
+			expected: "SELECT pg_catalog.extract($1, order_date )",
 		},
 		{
 			name:     "extract rewrite is case insensitive",
 			query:    "SELECT Extract($1 From order_date)",
-			expected: "SELECT pg_catalog.date_part($1, order_date)",
+			expected: "SELECT pg_catalog.extract($1, order_date)",
 		},
 		{
 			name:     "multiple extracts are all rewritten",
 			query:    "SELECT EXTRACT($1 FROM a), EXTRACT($2 FROM b)",
-			expected: "SELECT pg_catalog.date_part($1, a), pg_catalog.date_part($2, b)",
+			expected: "SELECT pg_catalog.extract($1, a), pg_catalog.extract($2, b)",
 		},
 		{
 			name:     "extract with a literal field is already valid and left alone",
@@ -445,7 +445,7 @@ func TestRepairNormalizedQuery(t *testing.T) {
 		{
 			name:     "extract rewrite reaches a nested extract",
 			query:    "SELECT EXTRACT($1 FROM EXTRACT($2 FROM x))",
-			expected: "SELECT pg_catalog.date_part($1, pg_catalog.date_part($2, x))",
+			expected: "SELECT pg_catalog.extract($1, pg_catalog.extract($2, x))",
 		},
 		{
 			name:     "typed interval literal is rewritten to a cast",
@@ -530,7 +530,7 @@ func TestRepairNormalizedQuery(t *testing.T) {
 		{
 			name:     "both repairs apply to the same expression",
 			query:    "SELECT EXTRACT($1 FROM timestamp $2)",
-			expected: "SELECT pg_catalog.date_part($1, CAST($2 AS timestamp))",
+			expected: "SELECT pg_catalog.extract($1, CAST($2 AS timestamp))",
 		},
 		{
 			name:     "AT TIME ZONE is already valid and left alone",

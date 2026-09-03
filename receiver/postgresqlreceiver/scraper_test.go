@@ -1612,7 +1612,7 @@ func TestExplainQuery(t *testing.T) {
 			// unrepaired text is sent.
 			name:              "extract with parameter is repaired before PREPARE",
 			query:             "SELECT * FROM orders WHERE EXTRACT($1 FROM order_date) = $2",
-			preparedQuery:     "SELECT * FROM orders WHERE pg_catalog.date_part($1, order_date) = $2",
+			preparedQuery:     "SELECT * FROM orders WHERE pg_catalog.extract($1, order_date) = $2",
 			queryID:           "30001",
 			normalizedQueryID: "30001",
 			paramCount:        2,
