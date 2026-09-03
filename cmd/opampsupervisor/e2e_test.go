@@ -1347,6 +1347,7 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 	cfg, hash, inputFile, outputFile := createSimplePipelineCollectorConf(t)
 
 	configuredChan := make(chan struct{})
+	var configuredOnce sync.Once
 	connected := atomic.Bool{}
 	server := newUnstartedOpAMPServer(t, defaultConnectingHandler,
 		types.ConnectionCallbacks{
@@ -1356,7 +1357,7 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 			OnMessage: func(ctx context.Context, conn types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				lastCfgHash := message.GetRemoteConfigStatus().GetLastRemoteConfigHash()
 				if bytes.Equal(lastCfgHash, hash) {
-					close(configuredChan)
+					configuredOnce.Do(func() { close(configuredChan) })
 				}
 
 				return &protobufs.ServerToAgent{}
