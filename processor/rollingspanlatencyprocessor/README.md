@@ -21,12 +21,6 @@ exponentially-weighted moving average (EWMA) of that key's duration. Once a key 
 enough observations to warm up, spans whose duration deviates from the rolling mean by more than a
 configured number of standard deviations are labeled accordingly.
 
-> [!NOTE]
-> This component currently only establishes its configuration and component structure. The
-> rolling-baseline tracking and attribute-labeling logic will be added in a follow-up PR, per the
-> [donation process](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/docs/new-components.md).
-> Until then, this processor passes traces through unchanged.
-
 ## Configuration
 
 ```yaml
