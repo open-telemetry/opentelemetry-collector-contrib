@@ -513,7 +513,8 @@ func TestVersionCompatibility(t *testing.T) {
 		wantProduct       dbProduct
 		wantSampleTextCol bool // true ↔ 6-column top-query template used
 		wantReplicaStatus bool // true ↔ SHOW REPLICA STATUS used instead of SHOW SLAVE STATUS
-		wantLogStatus     bool // true ↔ performance_schema.log_status is available
+		wantRedoLogStats  bool // true ↔ InnoDB redo-log LSN metrics are supported
+		wantBackupAdmin   bool // true ↔ redo-log metrics require BACKUP_ADMIN
 	}{
 		{
 			name:              "MySQL 8.0.33",
@@ -521,7 +522,8 @@ func TestVersionCompatibility(t *testing.T) {
 			wantProduct:       dbProductMySQL,
 			wantSampleTextCol: true,
 			wantReplicaStatus: true,
-			wantLogStatus:     true,
+			wantRedoLogStats:  true,
+			wantBackupAdmin:   false,
 		},
 		{
 			// mysql:5.7 has no official ARM64 image; this case is skipped on
@@ -531,7 +533,8 @@ func TestVersionCompatibility(t *testing.T) {
 			wantProduct:       dbProductMySQL,
 			wantSampleTextCol: false,
 			wantReplicaStatus: false,
-			wantLogStatus:     false,
+			wantRedoLogStats:  false,
+			wantBackupAdmin:   false,
 		},
 		{
 			name:              "MariaDB 10.11",
@@ -539,7 +542,8 @@ func TestVersionCompatibility(t *testing.T) {
 			wantProduct:       dbProductMariaDB,
 			wantSampleTextCol: false,
 			wantReplicaStatus: false,
-			wantLogStatus:     false,
+			wantRedoLogStats:  false,
+			wantBackupAdmin:   false,
 		},
 		{
 			name:              "MariaDB 11.4",
@@ -547,7 +551,8 @@ func TestVersionCompatibility(t *testing.T) {
 			wantProduct:       dbProductMariaDB,
 			wantSampleTextCol: false,
 			wantReplicaStatus: false,
-			wantLogStatus:     false,
+			wantRedoLogStats:  false,
+			wantBackupAdmin:   false,
 		},
 	}
 
@@ -609,7 +614,8 @@ func TestVersionCompatibility(t *testing.T) {
 			assert.Equal(t, tc.wantProduct, dv.product, "product mismatch")
 			assert.Equal(t, tc.wantSampleTextCol, dv.supportsQuerySampleText(), "supportsQuerySampleText mismatch")
 			assert.Equal(t, tc.wantReplicaStatus, dv.supportsReplicaStatus(), "supportsReplicaStatus mismatch")
-			assert.Equal(t, tc.wantLogStatus, dv.supportsPerfSchemaLogStatus(), "supportsPerfSchemaLogStatus mismatch")
+			assert.Equal(t, tc.wantRedoLogStats, dv.supportsInnodbRedoLogStats(), "supportsInnodbRedoLogStats mismatch")
+			assert.Equal(t, tc.wantBackupAdmin, dv.requiresBackupAdminForInnodbRedoLogStats(), "requiresBackupAdminForInnodbRedoLogStats mismatch")
 
 			// --- getTopQueries: must succeed without error ---
 			// No workload is running, so the result may be empty, but the query
@@ -645,9 +651,18 @@ func TestVersionCompatibility(t *testing.T) {
 			_, err = c.getReplicaStatusStats(dv.supportsReplicaStatus())
 			require.NoError(t, err, "getReplicaStatusStats should not fail (wrong command would cause syntax error)")
 
-			if dv.supportsPerfSchemaLogStatus() {
-				stats, err := c.getInnodbRedoLogStats()
-				require.NoError(t, err, "getInnodbRedoLogStats should not fail on supported MySQL versions")
+			switch dv.innodbRedoLogStatsSource() {
+			case innodbRedoLogStatsSourceGlobalStatus:
+				globalStats, err := c.getGlobalStats()
+				require.NoError(t, err, "getGlobalStats should not fail on supported MySQL versions")
+
+				stats, err := innodbRedoLogStatsFromGlobalStatus(globalStats)
+				require.NoError(t, err, "InnoDB redo-log global status variables should be available on supported MySQL versions")
+				assert.GreaterOrEqual(t, stats.currentLSN, stats.checkpointLSN)
+				assert.Equal(t, stats.currentLSN-stats.checkpointLSN, stats.checkpointAge)
+			case innodbRedoLogStatsSourceLogStatus:
+				stats, err := c.getInnodbRedoLogStatsFromLogStatus()
+				require.NoError(t, err, "getInnodbRedoLogStatsFromLogStatus should not fail on supported MySQL versions")
 				assert.GreaterOrEqual(t, stats.currentLSN, stats.checkpointLSN)
 				assert.Equal(t, stats.currentLSN-stats.checkpointLSN, stats.checkpointAge)
 			}

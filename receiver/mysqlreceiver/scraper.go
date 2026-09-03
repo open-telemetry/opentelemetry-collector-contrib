@@ -35,7 +35,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
 
-const defaultServiceName = "unknown_service:mysql"
+const (
+	defaultServiceName                  = "unknown_service:mysql"
+	innodbRedoLogCurrentLSNStatusKey    = "Innodb_redo_log_current_lsn"
+	innodbRedoLogCheckpointLSNStatusKey = "Innodb_redo_log_checkpoint_lsn"
+)
 
 // otelUUIDv5Namespace is the UUID v5 namespace for deriving service.instance.id,
 // as defined by the OpenTelemetry specification.
@@ -133,6 +137,8 @@ func (m *mySQLScraper) logDetectedVersion(dbVer dbVersion) {
 	if dbVer.version == nil {
 		m.logger.Warn("database version could not be detected at startup; receiver will use MySQL <8/MariaDB fallback behavior for its entire lifetime",
 			zap.Bool("supports_query_sample_text", false),
+			zap.Bool("supports_innodb_redo_log_stats", false),
+			zap.Bool("requires_backup_admin_for_innodb_redo_log_stats", false),
 		)
 		return
 	}
@@ -140,6 +146,8 @@ func (m *mySQLScraper) logDetectedVersion(dbVer dbVersion) {
 		zap.String("product", dbVer.productString()),
 		zap.String("version", dbVer.version.String()),
 		zap.Bool("supports_query_sample_text", dbVer.supportsQuerySampleText()),
+		zap.Bool("supports_innodb_redo_log_stats", dbVer.supportsInnodbRedoLogStats()),
+		zap.Bool("requires_backup_admin_for_innodb_redo_log_stats", dbVer.requiresBackupAdminForInnodbRedoLogStats()),
 	)
 	if dbVer.product == dbProductMySQL && dbVer.version.Segments()[0] < 8 {
 		m.logger.Warn("detected MySQL version is past end-of-life and may not be supported by this receiver in a future release",
@@ -177,8 +185,6 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 		addPartialIfError(errs, m.mb.RecordMysqlBufferPoolLimitDataPoint(now, v))
 	}
-	m.scrapeInnodbRedoLogStats(now, errs)
-
 	// collect io_waits metrics.
 	m.scrapeTableIoWaitsStats(now, errs)
 	m.scrapeIndexIoWaitsStats(now, errs)
@@ -260,9 +266,11 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 	if err != nil {
 		m.logger.Error("Failed to fetch global stats", zap.Error(err))
 		errs.AddPartial(66, err)
+		m.scrapeInnodbRedoLogStats(now, nil, errs)
 		return
 	}
 
+	m.scrapeInnodbRedoLogStats(now, globalStats, errs)
 	m.recordDataPages(now, globalStats, errs)
 	m.recordDataUsage(now, globalStats, errs)
 	m.recordReplicaOpenTempTables(now, globalStats, errs)
@@ -644,24 +652,51 @@ func (m *mySQLScraper) scrapeTableStats(now pcommon.Timestamp, errs *scrapererro
 	}
 }
 
-func (m *mySQLScraper) scrapeInnodbRedoLogStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	metrics := m.config.MetricsBuilderConfig.Metrics
-	if !metrics.MysqlInnodbRedoLogLsnCurrent.Enabled &&
-		!metrics.MysqlInnodbRedoLogLsnCheckpoint.Enabled &&
-		!metrics.MysqlInnodbRedoLogCheckpointAge.Enabled {
-		return
-	}
-	if !m.detectedVersion.supportsPerfSchemaLogStatus() {
+func (m *mySQLScraper) scrapeInnodbRedoLogStats(now pcommon.Timestamp, globalStats map[string]string, errs *scrapererror.ScrapeErrors) {
+	if !m.hasEnabledInnodbRedoLogMetric() {
 		return
 	}
 
-	stats, err := m.sqlclient.getInnodbRedoLogStats()
+	stats, ok, err := m.fetchInnodbRedoLogStats(globalStats)
 	if err != nil {
 		m.logger.Error("Failed to fetch InnoDB redo log stats", zap.Error(err))
 		errs.AddPartial(1, err)
 		return
 	}
+	if !ok {
+		return
+	}
 
+	m.recordInnodbRedoLogStats(now, stats)
+}
+
+func (m *mySQLScraper) hasEnabledInnodbRedoLogMetric() bool {
+	metrics := m.config.MetricsBuilderConfig.Metrics
+	return metrics.MysqlInnodbRedoLogLsnCurrent.Enabled ||
+		metrics.MysqlInnodbRedoLogLsnCheckpoint.Enabled ||
+		metrics.MysqlInnodbRedoLogCheckpointAge.Enabled
+}
+
+func (m *mySQLScraper) fetchInnodbRedoLogStats(globalStats map[string]string) (innodbRedoLogStats, bool, error) {
+	switch m.detectedVersion.innodbRedoLogStatsSource() {
+	case innodbRedoLogStatsSourceGlobalStatus:
+		if globalStats == nil {
+			// The global status query failed earlier in the scrape and already
+			// contributed the relevant partial error.
+			return innodbRedoLogStats{}, false, nil
+		}
+		stats, err := innodbRedoLogStatsFromGlobalStatus(globalStats)
+		return stats, err == nil, err
+	case innodbRedoLogStatsSourceLogStatus:
+		stats, err := m.sqlclient.getInnodbRedoLogStatsFromLogStatus()
+		return stats, err == nil, err
+	default:
+		return innodbRedoLogStats{}, false, nil
+	}
+}
+
+func (m *mySQLScraper) recordInnodbRedoLogStats(now pcommon.Timestamp, stats innodbRedoLogStats) {
+	metrics := m.config.MetricsBuilderConfig.Metrics
 	if metrics.MysqlInnodbRedoLogLsnCurrent.Enabled {
 		m.mb.RecordMysqlInnodbRedoLogLsnCurrentDataPoint(now, stats.currentLSN)
 	}
@@ -671,6 +706,34 @@ func (m *mySQLScraper) scrapeInnodbRedoLogStats(now pcommon.Timestamp, errs *scr
 	if metrics.MysqlInnodbRedoLogCheckpointAge.Enabled {
 		m.mb.RecordMysqlInnodbRedoLogCheckpointAgeDataPoint(now, stats.checkpointAge)
 	}
+}
+
+func innodbRedoLogStatsFromGlobalStatus(globalStats map[string]string) (innodbRedoLogStats, error) {
+	currentLSN, err := globalStatusInt(globalStats, innodbRedoLogCurrentLSNStatusKey)
+	if err != nil {
+		return innodbRedoLogStats{}, err
+	}
+	checkpointLSN, err := globalStatusInt(globalStats, innodbRedoLogCheckpointLSNStatusKey)
+	if err != nil {
+		return innodbRedoLogStats{}, err
+	}
+	return innodbRedoLogStats{
+		currentLSN:    currentLSN,
+		checkpointLSN: checkpointLSN,
+		checkpointAge: currentLSN - checkpointLSN,
+	}, nil
+}
+
+func globalStatusInt(globalStats map[string]string, key string) (int64, error) {
+	value, ok := globalStats[key]
+	if !ok {
+		return 0, fmt.Errorf("missing global status variable %q", key)
+	}
+	parsed, err := parseInt(value)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse global status variable %q value %q: %w", key, value, err)
+	}
+	return parsed, nil
 }
 
 func (m *mySQLScraper) scrapeTableIoWaitsStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {

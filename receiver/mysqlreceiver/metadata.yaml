@@ -545,7 +545,7 @@ metrics:
   mysql.innodb.redo_log.checkpoint.age:
     enabled: false
     description: The difference, in bytes, between the current InnoDB redo log sequence number and the most recent checkpoint log sequence number.
-    extended_documentation: Only emitted for MySQL 8.0.11 and later. MariaDB is not supported for this metric.
+    extended_documentation: Only emitted for MySQL 8.0.11 and later. MySQL 8.0.11 through 8.0.29 requires SELECT and BACKUP_ADMIN. MySQL 8.0.30 and later versions do not require BACKUP_ADMIN. MariaDB is not supported for this metric.
     stability: development
     unit: By
     gauge:
@@ -553,7 +553,7 @@ metrics:
   mysql.innodb.redo_log.lsn.checkpoint:
     enabled: false
     description: The InnoDB redo log sequence number of the most recent checkpoint.
-    extended_documentation: Only emitted for MySQL 8.0.11 and later. MariaDB is not supported for this metric.
+    extended_documentation: Only emitted for MySQL 8.0.11 and later. MySQL 8.0.11 through 8.0.29 requires SELECT and BACKUP_ADMIN. MySQL 8.0.30 and later versions do not require BACKUP_ADMIN. MariaDB is not supported for this metric.
     stability: development
     unit: By
     gauge:
@@ -561,7 +561,7 @@ metrics:
   mysql.innodb.redo_log.lsn.current:
     enabled: false
     description: The current InnoDB redo log sequence number.
-    extended_documentation: Only emitted for MySQL 8.0.11 and later. MariaDB is not supported for this metric.
+    extended_documentation: Only emitted for MySQL 8.0.11 and later. MySQL 8.0.11 through 8.0.29 requires SELECT and BACKUP_ADMIN. MySQL 8.0.30 and later versions do not require BACKUP_ADMIN. MariaDB is not supported for this metric.
     stability: development
     unit: By
     gauge:

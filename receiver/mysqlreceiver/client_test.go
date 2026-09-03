@@ -209,7 +209,9 @@ func TestDBVersionCapabilities(t *testing.T) {
 		wantSupportsQuerySampleText bool
 		wantSupportsReplicaStatus   bool
 		wantSupportsProcesslist     bool
-		wantSupportsLogStatus       bool
+		wantSupportsRedoLogStats    bool
+		wantRequiresBackupAdmin     bool
+		wantRedoLogStatsSource      innodbRedoLogStatsSource
 	}{
 		{
 			name:                        "MySQL 8.0.27",
@@ -217,7 +219,19 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   true,
 			wantSupportsProcesslist:     true,
-			wantSupportsLogStatus:       true,
+			wantSupportsRedoLogStats:    true,
+			wantRequiresBackupAdmin:     true,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceLogStatus,
+		},
+		{
+			name:                        "MySQL 8.0.30 (minimum for redo-log global status variables)",
+			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.30")},
+			wantSupportsQuerySampleText: true,
+			wantSupportsReplicaStatus:   true,
+			wantSupportsProcesslist:     true,
+			wantSupportsRedoLogStats:    true,
+			wantRequiresBackupAdmin:     false,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceGlobalStatus,
 		},
 		{
 			name:                        "MySQL 8.0.3 (minimum for query_sample_text)",
@@ -225,7 +239,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
-			wantSupportsLogStatus:       false,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
 		},
 		{
 			name:                        "MySQL 8.0.11 (minimum for log_status)",
@@ -233,7 +247,9 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
-			wantSupportsLogStatus:       true,
+			wantSupportsRedoLogStats:    true,
+			wantRequiresBackupAdmin:     true,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceLogStatus,
 		},
 		{
 			name:                        "MySQL 8.0.10 (below log_status minimum)",
@@ -241,7 +257,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
-			wantSupportsLogStatus:       false,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
 		},
 		{
 			name:                        "MySQL 8.0.2 (below query_sample_text minimum)",
@@ -249,7 +265,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
-			wantSupportsLogStatus:       false,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
 		},
 		{
 			name:                        "MySQL 8.0.0 (below query_sample_text minimum)",
@@ -257,7 +273,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
-			wantSupportsLogStatus:       false,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
 		},
 		{
 			name:                        "MySQL 8.0.22 (minimum for SHOW REPLICA STATUS and processlist)",
@@ -265,7 +281,9 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   true,
 			wantSupportsProcesslist:     true,
-			wantSupportsLogStatus:       true,
+			wantSupportsRedoLogStats:    true,
+			wantRequiresBackupAdmin:     true,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceLogStatus,
 		},
 		{
 			name:                        "MySQL 8.0.21 (below SHOW REPLICA STATUS minimum)",
@@ -273,7 +291,9 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
-			wantSupportsLogStatus:       true,
+			wantSupportsRedoLogStats:    true,
+			wantRequiresBackupAdmin:     true,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceLogStatus,
 		},
 		{
 			name:                        "MySQL 5.7.44",
@@ -281,7 +301,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
-			wantSupportsLogStatus:       false,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
 		},
 		{
 			name:                        "MariaDB 10.11.6",
@@ -289,7 +309,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
-			wantSupportsLogStatus:       false,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
 		},
 		{
 			name:                        "MariaDB 11.4.2",
@@ -297,7 +317,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
-			wantSupportsLogStatus:       false,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
 		},
 		{
 			name:                        "zero value (version unknown)",
@@ -305,7 +325,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
-			wantSupportsLogStatus:       false,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
 		},
 	}
 
@@ -314,7 +334,9 @@ func TestDBVersionCapabilities(t *testing.T) {
 			assert.Equal(t, tt.wantSupportsQuerySampleText, tt.dv.supportsQuerySampleText(), "supportsQuerySampleText()")
 			assert.Equal(t, tt.wantSupportsReplicaStatus, tt.dv.supportsReplicaStatus(), "supportsReplicaStatus()")
 			assert.Equal(t, tt.wantSupportsProcesslist, tt.dv.supportsProcesslist(), "supportsProcesslist()")
-			assert.Equal(t, tt.wantSupportsLogStatus, tt.dv.supportsPerfSchemaLogStatus(), "supportsPerfSchemaLogStatus()")
+			assert.Equal(t, tt.wantSupportsRedoLogStats, tt.dv.supportsInnodbRedoLogStats(), "supportsInnodbRedoLogStats()")
+			assert.Equal(t, tt.wantRequiresBackupAdmin, tt.dv.requiresBackupAdminForInnodbRedoLogStats(), "requiresBackupAdminForInnodbRedoLogStats()")
+			assert.Equal(t, tt.wantRedoLogStatsSource, tt.dv.innodbRedoLogStatsSource(), "innodbRedoLogStatsSource()")
 		})
 	}
 }
@@ -430,7 +452,7 @@ func TestGetReplicaStatusStatsNormalizesColumnSpellings(t *testing.T) {
 	}
 }
 
-func TestGetInnodbRedoLogStats(t *testing.T) {
+func TestGetInnodbRedoLogStatsFromLogStatus(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
@@ -450,7 +472,7 @@ func TestGetInnodbRedoLogStats(t *testing.T) {
 		}).AddRow(25012145208, 25012145199, 9))
 
 	c := &mySQLClient{client: db}
-	got, err := c.getInnodbRedoLogStats()
+	got, err := c.getInnodbRedoLogStatsFromLogStatus()
 	require.NoError(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
 

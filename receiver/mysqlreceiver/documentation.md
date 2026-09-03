@@ -456,7 +456,7 @@ The number of pending InnoDB data file operations.
 
 The difference, in bytes, between the current InnoDB redo log sequence number and the most recent checkpoint log sequence number.
 
-Only emitted for MySQL 8.0.11 and later. MariaDB is not supported for this metric.
+Only emitted for MySQL 8.0.11 and later. MySQL 8.0.11 through 8.0.29 requires SELECT and BACKUP_ADMIN. MySQL 8.0.30 and later versions do not require BACKUP_ADMIN. MariaDB is not supported for this metric.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -466,7 +466,7 @@ Only emitted for MySQL 8.0.11 and later. MariaDB is not supported for this metri
 
 The InnoDB redo log sequence number of the most recent checkpoint.
 
-Only emitted for MySQL 8.0.11 and later. MariaDB is not supported for this metric.
+Only emitted for MySQL 8.0.11 and later. MySQL 8.0.11 through 8.0.29 requires SELECT and BACKUP_ADMIN. MySQL 8.0.30 and later versions do not require BACKUP_ADMIN. MariaDB is not supported for this metric.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -476,7 +476,7 @@ Only emitted for MySQL 8.0.11 and later. MariaDB is not supported for this metri
 
 The current InnoDB redo log sequence number.
 
-Only emitted for MySQL 8.0.11 and later. MariaDB is not supported for this metric.
+Only emitted for MySQL 8.0.11 and later. MySQL 8.0.11 through 8.0.29 requires SELECT and BACKUP_ADMIN. MySQL 8.0.30 and later versions do not require BACKUP_ADMIN. MariaDB is not supported for this metric.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
