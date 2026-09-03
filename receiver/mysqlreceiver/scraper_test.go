@@ -15,15 +15,12 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/golang-lru/v2"
-	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/otel/trace"
@@ -88,7 +85,7 @@ func TestScrape(t *testing.T) {
 		cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 		cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 
-		scraper := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
 		scraper.sqlclient = &mockClient{
 			globalStatsFile: "global_stats",
 			innodbStatsFile: "innodb_stats",
@@ -163,7 +160,7 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitWriteCount.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitWriteTime.Enabled = true
 
-		scraper := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats_partial",
 			innodbStatsFile:             "innodb_stats_empty",
@@ -195,7 +192,7 @@ func TestScrape(t *testing.T) {
 
 func TestScrapeInnodbTransactionStatsDisabledDoesNotQuery(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	scraper := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
 	client := &mockClient{
 		innodbTransactionStats: innodbTransactionStats{
 			historyListLength:            251,
@@ -216,7 +213,7 @@ func TestScrapeInnodbTransactionStatsDisabledDoesNotQuery(t *testing.T) {
 func TestScrapeInnodbTransactionStatsRecordsOnlyEnabledMetric(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbTransactionActiveCount.Enabled = true
-	scraper := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
 	client := &mockClient{
 		innodbTransactionStats: innodbTransactionStats{
 			historyListLength:            251,
@@ -241,7 +238,7 @@ func TestScrapeInnodbTransactionStatsRecordsAllEnabledMetrics(t *testing.T) {
 	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbHistoryListLength.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbTransactionActiveCount.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbTransactionActiveDurationMax.Enabled = true
-	scraper := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
 	client := &mockClient{
 		innodbTransactionStats: innodbTransactionStats{
 			historyListLength:            251,
@@ -270,7 +267,7 @@ func TestScrapeInnodbTransactionStatsRecordsAllEnabledMetrics(t *testing.T) {
 func TestScrapeInnodbTransactionStatsQueryError(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbHistoryListLength.Enabled = true
-	scraper := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
 	client := &mockClient{
 		innodbTransactionStatsErr: errors.New("query failed"),
 	}
@@ -535,31 +532,12 @@ func TestScrapeActiveSessionCount(t *testing.T) {
 }
 
 func newUnitTestMySQLScraper(cfg *Config) *mySQLScraper {
-	return newTestMySQLScraper(
+	return newMySQLScraper(
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		newCache[int64](1),
 		newTTLCache[string](0, time.Hour*24*365*10),
 	)
-}
-
-func newTestMySQLScraper(
-	settings receiver.Settings,
-	cfg *Config,
-	cache *lru.Cache[string, int64],
-	queryPlanCache *expirable.LRU[string, string],
-) *mySQLScraper {
-	return &mySQLScraper{
-		logger:                 settings.Logger,
-		config:                 cfg,
-		mb:                     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
-		lb:                     metadata.NewLogsBuilder(cfg.LogsBuilderConfig, settings),
-		cache:                  cache,
-		queryPlanCache:         queryPlanCache,
-		obfuscator:             newObfuscator(),
-		lastExecutionTimestamp: time.Unix(0, 0),
-		serviceInstanceID:      "test-service-instance-id",
-	}
 }
 
 func TestScrapeGlobalStatsRecordsMyisamKeyCacheMetricsWhenEnabled(t *testing.T) {
@@ -789,7 +767,7 @@ func TestScrapeBufferPoolPagesMiscOutOfBounds(t *testing.T) {
 	cfg.Password = "otel"
 	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 
-	scraper := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
 	scraper.sqlclient = &mockClient{
 		globalStatsFile:             "global_stats_oob",
 		innodbStatsFile:             "innodb_stats_empty",
@@ -875,7 +853,7 @@ func TestScrapeQuerySamplesTraceparent(t *testing.T) {
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 
 	t.Run("empty traceparent produces zero TraceID and SpanID", func(t *testing.T) {
-		scraper := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
 		scraper.sqlclient = &mockClient{querySamplesFile: "query_samples_no_traceparent"}
 
 		logs, err := scraper.scrapeQuerySampleFunc(t.Context())
@@ -888,7 +866,7 @@ func TestScrapeQuerySamplesTraceparent(t *testing.T) {
 
 	t.Run("invalid traceparent logs warning and produces zero TraceID and SpanID", func(t *testing.T) {
 		core, logs := observer.New(zapcore.WarnLevel)
-		scraper := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
 		scraper.logger = zap.New(core)
 		scraper.sqlclient = &mockClient{querySamplesFile: "query_samples_invalid_traceparent"}
 
@@ -903,7 +881,7 @@ func TestScrapeQuerySamplesTraceparent(t *testing.T) {
 
 	t.Run("bare IP processlistHost uses IP as address without logging an error", func(t *testing.T) {
 		core, observed := observer.New(zapcore.ErrorLevel)
-		scraper := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
 		scraper.logger = zap.New(core)
 		scraper.sqlclient = &mockClient{querySamplesFile: "query_samples_bare_host"}
 
@@ -931,7 +909,7 @@ func TestScrapeQuerySamplesTraceparent(t *testing.T) {
 	})
 
 	t.Run("empty processlistHost produces empty address and zero port", func(t *testing.T) {
-		scraper := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
 		scraper.sqlclient = &mockClient{querySamplesFile: "query_samples_empty_host"}
 
 		result, err := scraper.scrapeQuerySampleFunc(t.Context())
@@ -967,7 +945,7 @@ func TestScrapeTopQueryInterval(t *testing.T) {
 	mc := &mockClient{topQueriesFile: "top_queries"}
 
 	newScraper := func() *mySQLScraper {
-		s := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
 		s.sqlclient = mc
 		return s
 	}
@@ -1019,7 +997,7 @@ func TestScrapeTopQueryInterval(t *testing.T) {
 func TestCacheAndDiff(t *testing.T) {
 	newScraper := func() *mySQLScraper {
 		cfg := createDefaultConfig().(*Config)
-		return newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		return newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
 	}
 
 	t.Run("first call returns not-cached and the value itself", func(t *testing.T) {
@@ -1528,7 +1506,7 @@ func TestQueryPlanCacheReuse(t *testing.T) {
 
 	makeScraper := func(t *testing.T, cfg *Config, spy *queryPlanSpyClient) *mySQLScraper {
 		t.Helper()
-		scraper := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
 		scraper.sqlclient = spy
 		return scraper
 	}
@@ -1709,7 +1687,7 @@ func newTopQueryScraper(t *testing.T, mc *mockClient) *mySQLScraper {
 	cfg.LogsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
 	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemName.Enabled = true
 	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
-	s := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
+	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
 	s.sqlclient = mc
 	s.detectedVersion = mc.getDBVersion()
 	return s
@@ -1788,7 +1766,7 @@ func TestScrapeQuerySamplesExplainPlan(t *testing.T) {
 	cfg.Password = "otel"
 	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
-	s := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
+	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
 	s.sqlclient = mc
 	s.detectedVersion = mc.getDBVersion()
 
@@ -1825,7 +1803,7 @@ func TestScrapeQuerySamplesCallsExplain(t *testing.T) {
 
 	v8 := mustDBVersion(t, "8.0.27")
 	mc := &mockClient{querySamplesFile: "query_samples", dbVersionOverride: &v8}
-	s := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), sharedCache)
+	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), sharedCache)
 	s.sqlclient = mc
 	s.detectedVersion = mc.getDBVersion()
 
@@ -1848,7 +1826,7 @@ func TestScrapeQuerySamplesExplainMySQL57(t *testing.T) {
 	cfg.Password = "otel"
 	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
-	s := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
+	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
 	s.sqlclient = mc
 	s.detectedVersion = mc.getDBVersion()
 
@@ -1873,7 +1851,7 @@ func TestScrapeQuerySamplesExplainMariaDB(t *testing.T) {
 	cfg.Password = "otel"
 	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
-	s := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
+	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
 	s.sqlclient = mc
 	s.detectedVersion = mc.getDBVersion()
 
@@ -1943,7 +1921,7 @@ func TestLogDetectedVersion(t *testing.T) {
 			logger := zap.New(core)
 
 			cfg := createDefaultConfig().(*Config)
-			s := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
+			s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
 			s.logger = logger
 
 			var dbVer dbVersion
@@ -1991,7 +1969,7 @@ func TestScrapeQuerySampleFuncResourceAttributes(t *testing.T) {
 	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
 	cfg.LogsBuilderConfig.ResourceAttributes.DbSystemName.Enabled = true
 	cfg.LogsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
-	s := newTestMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
+	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
 	s.sqlclient = mc
 	s.detectedVersion = mc.getDBVersion()
 
