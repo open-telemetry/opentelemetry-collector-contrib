@@ -242,8 +242,8 @@ func TestFactory(t *testing.T) {
 				cfg.Password = "password"
 				cfg.Server = "0.0.0.0"
 				cfg.Port = 1433
-				cfg.InstanceName = "instanceName"
 				require.NoError(t, cfg.Validate())
+				cfg.InstanceName = "instanceName"
 
 				cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = true
 
