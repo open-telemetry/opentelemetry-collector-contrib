@@ -417,7 +417,8 @@ func TestScrapeHealthRecordsConnectionStatus(t *testing.T) {
 			cfg.MetricsBuilderConfig.Metrics.MysqlHealth.Enabled = true
 			mock := &mockClient{checkDBAvailabilityErr: tt.checkDBAvailabilityErr}
 
-			scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+			scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+			require.NoError(t, err)
 			scraper.sqlclient = mock
 
 			scraper.scrapeHealth(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
@@ -467,7 +468,8 @@ func TestScrapeQueryExecutionTime(t *testing.T) {
 				queryExecutionTimeErr: tt.executionTimeErr,
 			}
 
-			scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+			scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+			require.NoError(t, err)
 			scraper.sqlclient = mock
 			errs := &scrapererror.ScrapeErrors{}
 
@@ -523,7 +525,8 @@ func TestScrapeActiveSessionCount(t *testing.T) {
 				activeSessionErr:   tt.activeSessionErr,
 			}
 
-			scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+			scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+			require.NoError(t, err)
 			scraper.sqlclient = mock
 			errs := &scrapererror.ScrapeErrors{}
 
