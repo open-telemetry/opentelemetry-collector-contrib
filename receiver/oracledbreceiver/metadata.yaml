@@ -45,11 +45,11 @@ resource_attributes:
     enabled: true
     type: string
   server.address:
-    description: The host name or IP address of the Oracle Server.
+    description: Server domain name if available without reverse DNS lookup; otherwise, IP address or UNIX domain socket name.
     enabled: true
     type: string
   server.port:
-    description: The port number of the Oracle Server.
+    description: Server port number.
     enabled: true
     type: int
   service.instance.id:
