@@ -1,0 +1,9 @@
+change_type: bug_fix
+
+component: exporter/load_balancing
+
+note: Remove stale Kubernetes endpoints when a relist recovers a missed watch deletion.
+
+issues: [50741]
+
+change_logs: [user]
