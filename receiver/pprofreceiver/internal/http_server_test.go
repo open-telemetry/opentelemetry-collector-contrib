@@ -76,6 +76,10 @@ func TestHTTPServerPush(t *testing.T) {
 	resp.Body.Close()
 	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 	assert.NotEmpty(t, sink.AllProfiles(), "expected profiles to be consumed")
+	profiles := sink.AllProfiles()
+	sp := profiles[0].ResourceProfiles().At(0).ScopeProfiles().At(0)
+	assert.Equal(t, metadata.ScopeName+"/httpserver", sp.Scope().Name())
+	assert.Equal(t, "latest", sp.Scope().Version())
 
 	// invalid body returns 400
 	resp = doRequest(http.MethodPost, []byte("not pprof"))

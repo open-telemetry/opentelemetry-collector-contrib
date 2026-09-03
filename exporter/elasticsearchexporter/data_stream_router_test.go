@@ -4,6 +4,7 @@
 package elasticsearchexporter
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,6 +21,7 @@ type routeTestCase struct {
 	scopeAttrs  map[string]any
 	recordAttrs map[string]any
 	want        elasticsearch.Index
+	wantErr     string
 }
 
 func createRouteTests(dsType string) []routeTestCase {
@@ -50,6 +52,59 @@ func createRouteTests(dsType string) []routeTestCase {
 			},
 			want: elasticsearch.Index{
 				Index: "my-index",
+			},
+		},
+		{
+			name:      "otel with elasticsearch.index containing uppercase and disallowed chars",
+			mode:      MappingOTel,
+			scopeName: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/should/be/ignored",
+			recordAttrs: map[string]any{
+				"elasticsearch.index": "My/Index:Name",
+			},
+			want: elasticsearch.Index{
+				Index: "my_index_name",
+			},
+		},
+		{
+			name:      "otel with elasticsearch.index starting with disallowed chars",
+			mode:      MappingOTel,
+			scopeName: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/should/be/ignored",
+			recordAttrs: map[string]any{
+				"elasticsearch.index": "-+__my-index",
+			},
+			want: elasticsearch.Index{
+				Index: "my-index",
+			},
+		},
+		{
+			name:      "otel with elasticsearch.index starting with a dot (hidden index)",
+			mode:      MappingOTel,
+			scopeName: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/should/be/ignored",
+			recordAttrs: map[string]any{
+				"elasticsearch.index": ".my-index",
+			},
+			want: elasticsearch.Index{
+				Index: ".my-index",
+			},
+		},
+		{
+			name:      "otel with elasticsearch.index as dot or dot dot",
+			mode:      MappingOTel,
+			scopeName: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/should/be/ignored",
+			recordAttrs: map[string]any{
+				"elasticsearch.index": "..",
+			},
+			wantErr: `invalid index name: ".."`,
+		},
+		{
+			name:      "otel with elasticsearch.index exceeding 255 bytes limit",
+			mode:      MappingOTel,
+			scopeName: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/should/be/ignored",
+			recordAttrs: map[string]any{
+				"elasticsearch.index": strings.Repeat("a", 300),
+			},
+			want: elasticsearch.Index{
+				Index: strings.Repeat("a", 255),
 			},
 		},
 		{
@@ -100,6 +155,10 @@ func TestRouteLogRecord(t *testing.T) {
 			fillAttributeMap(recordAttrMap, tc.recordAttrs)
 
 			ds, err := router.routeLogRecord(pcommon.NewResource(), scope, recordAttrMap)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
 			require.NoError(t, err)
 			assert.Equal(t, tc.want, ds)
 		})
@@ -124,13 +183,24 @@ func TestRouteLogRecord(t *testing.T) {
 		assert.Equal(t, "logs", ds.Type) // should equal to logs
 	})
 
-	t.Run("test data_stream.type does not accept values other than logs/metrics", func(t *testing.T) {
+	t.Run("test data_stream.type accepts traces/profiles/synthetics for bodymap mode", func(t *testing.T) {
+		for _, dsType := range []string{"traces", "profiles", "synthetics"} {
+			router := dynamicDocumentRouter{mode: MappingBodyMap}
+			attrs := pcommon.NewMap()
+			attrs.PutStr("data_stream.type", dsType)
+			ds, err := router.routeLogRecord(pcommon.NewResource(), pcommon.NewInstrumentationScope(), attrs)
+			require.NoError(t, err)
+			assert.Equal(t, dsType, ds.Type)
+		}
+	})
+
+	t.Run("test data_stream.type does not accept arbitrary values", func(t *testing.T) {
 		dsType := "random"
 		router := dynamicDocumentRouter{mode: MappingBodyMap}
 		attrs := pcommon.NewMap()
 		attrs.PutStr("data_stream.type", dsType)
 		_, err := router.routeLogRecord(pcommon.NewResource(), pcommon.NewInstrumentationScope(), attrs)
-		require.Error(t, err, "data_stream.type cannot be other than logs or metrics")
+		require.EqualError(t, err, `data_stream.type "random" is not allowed for 'bodymap' mapping mode`)
 	})
 }
 
@@ -148,6 +218,10 @@ func TestRouteDataPoint(t *testing.T) {
 			fillAttributeMap(recordAttrMap, tc.recordAttrs)
 
 			ds, err := router.routeDataPoint(pcommon.NewResource(), scope, recordAttrMap)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
 			require.NoError(t, err)
 			assert.Equal(t, tc.want, ds)
 		})
@@ -168,6 +242,10 @@ func TestRouteSpan(t *testing.T) {
 			fillAttributeMap(recordAttrMap, tc.recordAttrs)
 
 			ds, err := router.routeSpan(pcommon.NewResource(), scope, recordAttrMap)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
 			require.NoError(t, err)
 			assert.Equal(t, tc.want, ds)
 		})

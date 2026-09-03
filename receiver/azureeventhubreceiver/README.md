@@ -211,25 +211,25 @@ attributes. The table below summarizes the mapping between the
 and the OpenTelemetry attributes.
 
 
-| Azure                            | OpenTelemetry                          |
-|----------------------------------|----------------------------------------|
-| callerIpAddress (optional)       | network.peer.address (attribute)       |
-| correlationId (optional)         | azure.correlation.id (attribute)       |
-| category (optional)              | azure.category (attribute)             |
-| durationMs (optional)            | azure.duration (attribute)             |
-| Level (optional)                 | severity_number, severity_text (field) |
-| location (optional)              | cloud.region (attribute)               |
-| —                                | cloud.provider (attribute)             |
-| operationName (required)         | azure.operation.name (attribute)       |
-| operationVersion (optional)      | azure.operation.version (attribute)    |
-| properties (optional)            | azure.properties (attribute, nested)   |
-| resourceId (required)            | azure.resource.id (resource attribute) |
-| resultDescription (optional)     | azure.result.description (attribute)   |
-| resultSignature (optional)       | azure.result.signature (attribute)     |
-| resultType (optional)            | azure.result.type (attribute)          |
-| tenantId (required, tenant logs) | azure.tenant.id (attribute)            |
-| time or timeStamp (required)     | time_unix_nano (time takes precedence) |
-| identity (optional)              | azure.identity (attribute, nested)     |
+| Azure                                                                  | OpenTelemetry                                                                                    |
+|------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| callerIpAddress (optional)                                             | network.peer.address (attribute)                                                                 |
+| correlationId (optional)                                               | azure.correlation.id (attribute)                                                                 |
+| category (optional)                                                    | azure.category (attribute)                                                                       |
+| durationMs (optional)                                                  | azure.duration (attribute)                                                                       |
+| Level (optional)                                                       | severity_number, severity_text (field)                                                           |
+| location (optional)                                                    | cloud.region (attribute)                                                                         |
+| —                                                                      | cloud.provider (attribute)                                                                       |
+| operationName (required)                                               | azure.operation.name (attribute)                                                                 |
+| operationVersion (optional)                                            | azure.operation.version (attribute)                                                              |
+| properties or EventProperties (optional)                               | azure.properties (attribute, nested, `properties` takes precedence)                              |
+| resourceId (required)                                                  | azure.resource.id (resource attribute)                                                           |
+| resultDescription (optional)                                           | azure.result.description (attribute)                                                             |
+| resultSignature (optional)                                             | azure.result.signature (attribute)                                                               |
+| resultType (optional)                                                  | azure.result.type (attribute)                                                                    |
+| tenantId (required, tenant logs)                                       | azure.tenant.id (attribute)                                                                      |
+| time, timeStamp, EventTimeString, EventTimestamp, startTime (required) | time_unix_nano (fields listed in order of precedence, with `time` having the highest precedence) |
+| identity (optional)                                                    | azure.identity (attribute, nested)                                                               |
 
 Notes:
 * JSON does not distinguish between fixed and floating point numbers. All

@@ -21,7 +21,8 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithLogs(createLogsProcessor, metadata.LogsStability))
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
+	)
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
@@ -44,7 +45,7 @@ func createLogsProcessor(
 		return nil, errors.New("could not initialize logs transform processor")
 	}
 
-	if len(pCfg.Operators) == 0 {
+	if len(pCfg.BaseConfig.Operators) == 0 {
 		return nil, errors.New("no operators were configured for this logs transform processor")
 	}
 

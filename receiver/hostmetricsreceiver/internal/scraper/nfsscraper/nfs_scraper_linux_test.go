@@ -34,7 +34,7 @@ wdeleg_getattr 901
 `
 )
 
-func mockGetOSNfsStats() (*NfsStats, error) {
+func mockGetOSNfsStats() (*nfsStats, error) {
 	data := strings.NewReader(nfsProcFileOut)
 
 	return parseNfsStats(data)
@@ -46,7 +46,7 @@ func mockGetOSnfsdStats() (*nfsdStats, error) {
 	return parseNfsdStats(data)
 }
 
-func getExpectedOSNfsStats() *NfsStats {
+func getExpectedOSNfsStats() *nfsStats {
 	nfsNetStats := &nfsNetStats{
 		netCount:           8,
 		udpCount:           843,
@@ -157,7 +157,7 @@ func getExpectedOSNfsStats() *NfsStats {
 		{nfsVersion: 4, nfsCallName: "READ_PLUS", nfsCallCount: 7210},
 	}
 
-	return &NfsStats{
+	return &nfsStats{
 		nfsNetStats:         nfsNetStats,
 		nfsRPCStats:         nfsRPCStats,
 		nfsV3ProcedureStats: nfsV3ProcedureStats,

@@ -101,7 +101,8 @@ func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontain
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
 			Started:          true,
-		})
+		},
+	)
 	require.NoError(t, err)
 	return container
 }

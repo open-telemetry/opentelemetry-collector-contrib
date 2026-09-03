@@ -24,6 +24,9 @@ agent:
   {{- if .use_hup_config_reload }}
   use_hup_config_reload: {{ .use_hup_config_reload }}
   {{- end }}
+  {{- if .automatic_config_rollback }}
+  automatic_config_rollback: {{ .automatic_config_rollback }}
+  {{- end }}
   {{- if .validate_config }}
   validate_config: {{ .validate_config }}
   {{- end }}

@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 				DefaultPipelines: []pipeline.ID{
 					pipeline.NewIDWithName(pipeline.SignalTraces, "otlp-all"),
 				},
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				Table: []RoutingTableItem{
 					{
 						Statement: `route() where attributes["X-Tenant"] == "acme"`,
@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 				DefaultPipelines: []pipeline.ID{
 					pipeline.NewIDWithName(pipeline.SignalMetrics, "otlp-all"),
 				},
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				Table: []RoutingTableItem{
 					{
 						Statement: `route() where attributes["X-Tenant"] == "acme"`,
@@ -81,7 +81,7 @@ func TestLoadConfig(t *testing.T) {
 				DefaultPipelines: []pipeline.ID{
 					pipeline.NewIDWithName(pipeline.SignalLogs, "otlp-all"),
 				},
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				Table: []RoutingTableItem{
 					{
 						Statement: `route() where attributes["X-Tenant"] == "acme"`,
@@ -113,7 +113,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -451,9 +451,9 @@ func TestValidateConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.error == "" {
-				assert.NoError(t, xconfmap.Validate(tt.config))
+				assert.NoError(t, confmap.Validate(tt.config))
 			} else {
-				assert.EqualError(t, xconfmap.Validate(tt.config), tt.error)
+				assert.EqualError(t, confmap.Validate(tt.config), tt.error)
 			}
 		})
 	}

@@ -23,9 +23,10 @@ const (
 	sortTypeMtime        = "mtime"
 )
 
-const (
-	defaultOrderingCriteriaTopN = 1
-)
+// legacyDefaultTopN is the historical default applied to top_n when sort_by is
+// configured but top_n is unset (or zero) and the filelog.requireExplicitTopN
+// feature gate is disabled.
+const legacyDefaultTopN = 1
 
 type Criteria struct {
 	Include []string `mapstructure:"include,omitempty"`
@@ -38,8 +39,12 @@ type Criteria struct {
 }
 
 type OrderingCriteria struct {
-	Regex   string `mapstructure:"regex,omitempty"`
-	TopN    int    `mapstructure:"top_n,omitempty"`
+	Regex string `mapstructure:"regex,omitempty"`
+	// TopN uses a pointer so the matcher can distinguish between "unset" and
+	// "explicitly zero". When sort_by is configured, top_n must be set
+	// explicitly: zero means "match all files" and a positive value caps the
+	// match count.
+	TopN    *int   `mapstructure:"top_n,omitempty"`
 	SortBy  []Sort `mapstructure:"sort_by,omitempty"`
 	GroupBy string `mapstructure:"group_by,omitempty"`
 }
@@ -87,12 +92,8 @@ func New(c Criteria) (*Matcher, error) {
 		return m, nil
 	}
 
-	if c.OrderingCriteria.TopN < 0 {
-		return nil, errors.New("'top_n' must be a positive integer")
-	}
-
-	if c.OrderingCriteria.TopN == 0 {
-		c.OrderingCriteria.TopN = defaultOrderingCriteriaTopN
+	if err := resolveTopN(&c.OrderingCriteria); err != nil {
+		return nil, err
 	}
 
 	if orderingCriteriaNeedsRegex(c.OrderingCriteria.SortBy) {
@@ -139,9 +140,36 @@ func New(c Criteria) (*Matcher, error) {
 		}
 	}
 
-	m.filterOpts = append(m.filterOpts, filter.TopNOption(c.OrderingCriteria.TopN))
+	if c.OrderingCriteria.TopN != nil && *c.OrderingCriteria.TopN > 0 {
+		m.filterOpts = append(m.filterOpts, filter.TopNOption(*c.OrderingCriteria.TopN))
+	}
 
 	return m, nil
+}
+
+// resolveTopN validates and normalizes the top_n setting. Callers must only
+// invoke this when len(c.SortBy) > 0.
+//
+// A negative top_n is always rejected, and zero always means "match all files"
+// (a positive value caps the match count). These apply regardless of any
+// feature gate.
+//
+// The one gated behavior is how an unset top_n is treated. With the
+// filelog.requireExplicitTopN gate enabled, an unset top_n is a config error,
+// forcing the choice to be explicit. With the gate disabled (the default), an
+// unset top_n falls back to the legacy default of 1.
+func resolveTopN(c *OrderingCriteria) error {
+	if c.TopN != nil && *c.TopN < 0 {
+		return errors.New("'top_n' must not be negative")
+	}
+	if c.TopN == nil {
+		if metadata.FilelogRequireExplicitTopNFeatureGate.IsEnabled() {
+			return errors.New("'top_n' must be set explicitly when 'ordering_criteria.sort_by' is configured (use 0 to match all files)")
+		}
+		legacy := legacyDefaultTopN
+		c.TopN = &legacy
+	}
+	return nil
 }
 
 // orderingCriteriaNeedsRegex returns true if any of the sort options require a regex to be set.

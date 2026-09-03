@@ -99,7 +99,7 @@ func newBuf(nRecords int) []byte {
 		"operationName": "AppLog"
 	}`)
 
-	buf := bytes.NewBuffer(make([]byte, 0, nRecords*(len(data))))
+	buf := bytes.NewBuffer(make([]byte, 0, nRecords*len(data)))
 	buf.WriteString(`{"records": [`)
 	for i := range nRecords {
 		if i > 0 {

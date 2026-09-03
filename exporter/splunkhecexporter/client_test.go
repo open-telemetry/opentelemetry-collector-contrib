@@ -197,6 +197,13 @@ type receivedRequest struct {
 	headers http.Header
 }
 
+// receivedRequestChanBuffer is the capacity given to receivedRequest channels.
+// The ServeHTTP handler records requests synchronously to preserve their order,
+// so the channel must be buffered enough that the send never blocks the exporter
+// before the test's collecting loop starts reading. It comfortably exceeds the
+// number of batches any test in this package produces.
+const receivedRequestChanBuffer = 1024
+
 type capturingData struct {
 	testing          *testing.T
 	receivedRequest  chan receivedRequest
@@ -214,11 +221,14 @@ func (c *capturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	go func() {
-		if c.receivedRequest != nil {
-			c.receivedRequest <- receivedRequest{body, r.Header}
-		}
-	}()
+	// Record the request synchronously so that batches are captured in the exact
+	// order the client sent them. Spawning a goroutine per request here would let
+	// requests race onto the channel and be collected out of order, causing flaky
+	// assertions on per-batch contents. The channel is buffered by the callers so
+	// this send never blocks the exporter.
+	if c.receivedRequest != nil {
+		c.receivedRequest <- receivedRequest{body, r.Header}
+	}
 	w.WriteHeader(c.statusCode)
 }
 
@@ -229,11 +239,11 @@ func runMetricsExport(t *testing.T, cfg *Config, metrics pmetric.Metrics, expect
 	}
 
 	factory := NewFactory()
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 	cfg.UseMultiMetricFormat = useMultiMetricsFormat
 
-	rr := make(chan receivedRequest)
+	rr := make(chan receivedRequest, receivedRequestChanBuffer)
 	capture := capturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler:           &capture,
@@ -281,12 +291,12 @@ func runTraceExport(t *testing.T, testConfig *Config, traces ptrace.Traces, expe
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.DisableCompression = testConfig.DisableCompression
 	cfg.MaxContentLengthTraces = testConfig.MaxContentLengthTraces
 	cfg.Token = "1234-1234"
 
-	rr := make(chan receivedRequest)
+	rr := make(chan receivedRequest, receivedRequestChanBuffer)
 	capture := capturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler:           &capture,
@@ -343,10 +353,10 @@ func runLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatchesNum in
 		panic(err)
 	}
 
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 
-	rr := make(chan receivedRequest)
+	rr := make(chan receivedRequest, receivedRequestChanBuffer)
 	capture := capturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler:           &capture,
@@ -1302,7 +1312,7 @@ func TestReceiveMetricsWithCompression(t *testing.T) {
 }
 
 func TestErrorReceived(t *testing.T) {
-	rr := make(chan receivedRequest)
+	rr := make(chan receivedRequest, receivedRequestChanBuffer)
 	capture := capturingData{receivedRequest: rr, statusCode: 500}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -1321,12 +1331,12 @@ func TestErrorReceived(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
-	cfg.Enabled = false
+	cfg.BackOffConfig.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 
@@ -1354,7 +1364,7 @@ func TestErrorReceived(t *testing.T) {
 }
 
 func TestErrorReceivedForbidden(t *testing.T) {
-	rr := make(chan receivedRequest)
+	rr := make(chan receivedRequest, receivedRequestChanBuffer)
 	capture := capturingData{receivedRequest: rr, statusCode: 403}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -1373,12 +1383,12 @@ func TestErrorReceivedForbidden(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
-	cfg.Enabled = false
+	cfg.BackOffConfig.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 
@@ -1432,8 +1442,8 @@ func TestInvalidURL(t *testing.T) {
 	// otherwise we will not see the error.
 	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
-	cfg.Enabled = false
-	cfg.Endpoint = "ftp://example.com:134"
+	cfg.BackOffConfig.Enabled = false
+	cfg.ClientConfig.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(t.Context(), params, cfg)
@@ -1466,12 +1476,12 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	}()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
-	cfg.Enabled = false
+	cfg.BackOffConfig.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 	cfg.Heartbeat.Startup = true
@@ -1489,7 +1499,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 }
 
 func TestHeartbeatStartupPass_Disabled(t *testing.T) {
-	rr := make(chan receivedRequest)
+	rr := make(chan receivedRequest, receivedRequestChanBuffer)
 	capture := capturingData{receivedRequest: rr, statusCode: 403}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -1507,12 +1517,12 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	}()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
-	cfg.Enabled = false
+	cfg.BackOffConfig.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 	cfg.Heartbeat.Startup = false
@@ -1542,12 +1552,12 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	}()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	// Disable retries to not wait too much time for the return error.
-	cfg.Enabled = false
+	cfg.BackOffConfig.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 	cfg.Heartbeat.Startup = true
@@ -2547,10 +2557,10 @@ func runBatchedLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatche
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 
-	// Buffered channel so the async handler goroutines never block.
+	// Buffered channel so the handler's synchronous send never blocks the exporter.
 	rr := make(chan receivedRequest, 64)
 	capture := capturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
@@ -2575,7 +2585,7 @@ func runBatchedLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatche
 	require.NoError(t, exp.Shutdown(t.Context()))
 
 	// Collect exactly expectedBatchesNum requests, with a generous timeout to
-	// account for the async handler goroutine scheduling.
+	// account for batcher flush scheduling.
 	var requests []receivedRequest
 	deadline := time.After(10 * time.Second)
 	for len(requests) < expectedBatchesNum {

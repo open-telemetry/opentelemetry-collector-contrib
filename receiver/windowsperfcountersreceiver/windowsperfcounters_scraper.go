@@ -24,11 +24,11 @@ const instanceLabelName = "instance"
 
 type perfCounterMetricWatcher struct {
 	winperfcounters.PerfCounterWatcher
-	MetricRep
-	recreate bool
+	MetricRep MetricRep
+	recreate  bool
 }
 
-type newWatcherFunc func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
+type newWatcherFunc func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error)
 
 // windowsPerfCountersScraper is the type that scrapes various host metrics.
 type windowsPerfCountersScraper struct {
@@ -58,9 +58,14 @@ func (s *windowsPerfCountersScraper) initWatchers() ([]perfCounterMetricWatcher,
 	var watchers []perfCounterMetricWatcher
 
 	for _, objCfg := range s.cfg.PerfCounters {
+		aggregationName, includeAggregationInstance := objCfg.aggregationSettings()
+		options := []winperfcounters.WatcherOption{winperfcounters.WithLogger(s.settings.Logger), winperfcounters.WithAggregationName(aggregationName)}
+		if includeAggregationInstance {
+			options = append(options, winperfcounters.WithIncludeAggregationInstance())
+		}
 		for _, instance := range instancesFromConfig(objCfg) {
 			for _, counterCfg := range objCfg.Counters {
-				pcw, err := s.newWatcher(objCfg.Object, instance, counterCfg.Name)
+				pcw, err := s.newWatcher(objCfg.Object, instance, counterCfg.Name, options...)
 				if err != nil {
 					errs = multierr.Append(errs, err)
 					continue
@@ -72,9 +77,9 @@ func (s *windowsPerfCountersScraper) initWatchers() ([]perfCounterMetricWatcher,
 					recreate:           counterCfg.RecreateQuery,
 				}
 				if counterCfg.MetricRep.Name != "" {
-					watcher.Name = counterCfg.MetricRep.Name
-					if counterCfg.Attributes != nil {
-						watcher.Attributes = counterCfg.Attributes
+					watcher.MetricRep.Name = counterCfg.MetricRep.Name
+					if counterCfg.MetricRep.Attributes != nil {
+						watcher.MetricRep.Attributes = counterCfg.MetricRep.Attributes
 					}
 				}
 
@@ -132,8 +137,10 @@ func (s *windowsPerfCountersScraper) scrape(context.Context) (pmetric.Metrics, e
 	for _, watcher := range s.watchers {
 		counterVals, err := watcher.ScrapeData()
 		if err != nil {
-			errs = multierr.Append(errs, err)
-			scrapeFailures++
+			if !winperfcounters.IsIgnorableError(err) {
+				errs = multierr.Append(errs, err)
+				scrapeFailures++
+			}
 			continue
 		}
 
@@ -146,16 +153,16 @@ func (s *windowsPerfCountersScraper) scrape(context.Context) (pmetric.Metrics, e
 
 		for _, val := range counterVals {
 			var metric pmetric.Metric
-			if builtmetric, ok := metrics[watcher.Name]; ok {
+			if builtmetric, ok := metrics[watcher.MetricRep.Name]; ok {
 				metric = builtmetric
 			} else {
 				metric = metricSlice.AppendEmpty()
-				metric.SetName(watcher.Name)
+				metric.SetName(watcher.MetricRep.Name)
 				metric.SetUnit("1")
 				metric.SetEmptyGauge()
 			}
 
-			initializeMetricDps(metric, now, val, watcher.Attributes)
+			initializeMetricDps(metric, now, val, watcher.MetricRep.Attributes)
 		}
 	}
 

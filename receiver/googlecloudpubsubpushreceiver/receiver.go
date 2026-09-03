@@ -95,7 +95,8 @@ func addHandlerFunc[T any](
 			tb.HTTPServerRequestActiveCount.Add(handlerCtx, -1)
 			elapsed := time.Since(start)
 			tb.HTTPServerRequestDuration.Record(handlerCtx, elapsed.Seconds(), metric.WithAttributeSet(
-				attribute.NewSet(attribute.Int(string(conventions.HTTPResponseStatusCodeKey), code))),
+				attribute.NewSet(attribute.Int(string(conventions.HTTPResponseStatusCodeKey), code)),
+			),
 			)
 		}()
 
@@ -155,18 +156,18 @@ func (p *pubSubPushReceiver) Start(ctx context.Context, host component.Host) err
 		logsUnmarshaler.UnmarshalLogs,
 		p.nextLogs.ConsumeLogs,
 		p.storageClient,
-		p.cfg.IncludeMetadata,
+		p.cfg.ServerConfig.IncludeMetadata,
 		p.settings.Logger,
 	)
 
-	server, err := p.cfg.ToServer(ctx, host.GetExtensions(), p.settings.TelemetrySettings, mux)
+	server, err := p.cfg.ServerConfig.ToServer(ctx, host.GetExtensions(), p.settings.TelemetrySettings, mux)
 	if err != nil {
 		return err
 	}
 	p.server = server
 
-	p.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", p.cfg.NetAddr.Endpoint))
-	lis, err := p.cfg.ToListener(ctx)
+	p.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", p.cfg.ServerConfig.NetAddr.Endpoint))
+	lis, err := p.cfg.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}
@@ -307,7 +308,8 @@ func handlePubSubPushRequest[T any](
 			metricAttr = attribute.NewSet(attribute.String(bucketNameAttr, bucketName))
 		}
 		tb.GcpPubsubInputUncompressedSize.Record(ctx, float64(incomingSize), metric.WithAttributeSet(
-			metricAttr),
+			metricAttr,
+		),
 		)
 	}
 	unmarshalled, err := unmarshal(unmarshalData)

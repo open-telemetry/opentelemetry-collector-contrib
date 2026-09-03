@@ -36,7 +36,7 @@ type Config struct {
 	Routing RoutingConfig `mapstructure:"routing"`
 
 	// ClientConfig holds HTTP client options for communicating with Sentry.
-	confighttp.ClientConfig `mapstructure:"http"`
+	ClientConfig confighttp.ClientConfig `mapstructure:"http"`
 	// TimeoutConfig sets the exporter timeout.
 	TimeoutConfig exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	// QueueConfig configures the sending queue.
@@ -75,7 +75,7 @@ func (cfg *Config) Validate() error {
 	if cfg.AuthToken == "" {
 		return errors.New("'auth_token' is required")
 	}
-	if cfg.Timeout < 0 {
+	if cfg.ClientConfig.Timeout < 0 {
 		return errors.New("'timeout' must be non-negative")
 	}
 

@@ -23,7 +23,7 @@ import (
 func TestGrpcService_ProcessTelemetryData(t *testing.T) {
 	// Create a test receiver
 	config := createValidTestConfig()
-	config.NetAddr.Endpoint = "localhost:0" // Use a random port
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Use a random port
 
 	mockConsumer := &consumertest.MetricsSink{}
 	settings := createTestSettings()

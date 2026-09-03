@@ -34,7 +34,7 @@ func compareDocuments(expected, actual *document) error {
 	matched := make([]bool, len(actual.Resources))
 
 	for _, er := range expected.Resources {
-		idx := findMatchingAttributes(er.Attributes, matched, len(actual.Resources), func(i int) map[string]any {
+		idx := findMatchingAttributes(er.Attributes, er.AttributeMode, matched, len(actual.Resources), func(i int) map[string]any {
 			return actual.Resources[i].Attributes
 		})
 		if idx < 0 {
@@ -56,33 +56,80 @@ func compareDocuments(expected, actual *document) error {
 
 func compareResource(expected, actual resourceAssertion) error {
 	var errs []error
-	expScopes := indexScopes(expected.Scopes)
-	actScopes := indexScopes(actual.Scopes)
+	matched := make([]bool, len(actual.Scopes))
 
-	for key, es := range expScopes {
-		as, ok := actScopes[key]
-		if !ok {
-			errs = append(errs, fmt.Errorf("missing expected scope name=%q version=%q", es.Name, es.Version))
+	for _, es := range expected.Scopes {
+		idx := findMatchingScope(es, matched, actual.Scopes)
+		if idx < 0 {
+			errs = append(errs, fmt.Errorf("missing expected scope %s", scopeIdentityString(es)))
 			continue
 		}
-		if err := compareScope(es, as); err != nil {
-			errs = append(errs, fmt.Errorf("scope name=%q: %w", es.Name, err))
+		matched[idx] = true
+		if err := compareScope(es, actual.Scopes[idx]); err != nil {
+			errs = append(errs, fmt.Errorf("scope %s: %w", scopeIdentityString(es), err))
 		}
 	}
-	for key, as := range actScopes {
-		if _, ok := expScopes[key]; !ok {
-			errs = append(errs, fmt.Errorf("unexpected scope name=%q version=%q", as.Name, as.Version))
+	for i, as := range actual.Scopes {
+		if !matched[i] {
+			errs = append(errs, fmt.Errorf("unexpected scope name=%q version=%q", as.Name, as.Version.value))
 		}
 	}
 	return errors.Join(errs...)
 }
 
-func indexScopes(ss []scopeAssertion) map[string]scopeAssertion {
-	out := make(map[string]scopeAssertion, len(ss))
-	for _, s := range ss {
-		out[s.Name+"|"+s.Version] = s
+// findMatchingScope returns the first unmatched index whose scope satisfies the
+// expected name and version matcher, or -1 if none do.
+func findMatchingScope(expected scopeAssertion, matched []bool, actual []scopeAssertion) int {
+	for i := range actual {
+		if matched[i] {
+			continue
+		}
+
+		if expected.Name == actual[i].Name &&
+			matchVersion(expected.Version, actual[i].Version.value) == nil {
+			return i
+		}
 	}
-	return out
+	return -1
+}
+
+func matchVersion(m versionMatcher, actual string) error {
+	switch m.op {
+	case matchExists:
+		if actual == "" {
+			return errors.New("required by /exists but not present")
+		}
+		return nil
+	case matchRegex:
+		re, err := regexp.Compile("^(?:" + m.value + ")$")
+		if err != nil {
+			return fmt.Errorf("/regex has invalid pattern %q: %w", m.value, err)
+		}
+		if !re.MatchString(actual) {
+			return fmt.Errorf("value %q does not match regex %q", actual, m.value)
+		}
+		return nil
+	default: // matchExact
+		if actual != m.value {
+			return fmt.Errorf("expected %q, got %q", m.value, actual)
+		}
+		return nil
+	}
+}
+
+func scopeIdentityString(s scopeAssertion) string {
+	return fmt.Sprintf("name=%q version=%s", s.Name, versionMatcherString(s.Version))
+}
+
+func versionMatcherString(m versionMatcher) string {
+	switch m.op {
+	case matchExists:
+		return "<exists>"
+	case matchRegex:
+		return fmt.Sprintf("/regex %q", m.value)
+	default:
+		return fmt.Sprintf("%q", m.value)
+	}
 }
 
 func compareScope(expected, actual scopeAssertion) error {
@@ -143,7 +190,7 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 	var valErrs []error
 
 	for _, edp := range expected {
-		idx := findMatchingAttributes(edp.Attributes, matched, len(actual), func(i int) map[string]any {
+		idx := findMatchingAttributes(edp.Attributes, edp.AttributeMode, matched, len(actual), func(i int) map[string]any {
 			return actual[i].Attributes
 		})
 		if idx < 0 {
@@ -151,12 +198,6 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 			continue
 		}
 		matched[idx] = true
-
-		if edp.Value != nil {
-			if err := compareValue(edp.Value, actual[idx].Value); err != nil {
-				valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), err))
-			}
-		}
 
 		if err := compareDatapointValues(edp, actual[idx]); err != nil {
 			valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), err))
@@ -185,6 +226,20 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 
 func compareDatapointValues(expected, actual datapointAssertion) error {
 	var errs []error
+	if expected.IntValue != nil {
+		if actual.IntValue == nil {
+			errs = append(errs, errors.New("missing expected int_value"))
+		} else if *expected.IntValue != *actual.IntValue {
+			errs = append(errs, fmt.Errorf("int_value mismatch: expected %v, got %v", *expected.IntValue, *actual.IntValue))
+		}
+	}
+	if expected.DoubleValue != nil {
+		if actual.DoubleValue == nil {
+			errs = append(errs, errors.New("missing expected double_value"))
+		} else if *expected.DoubleValue != *actual.DoubleValue {
+			errs = append(errs, fmt.Errorf("double_value mismatch: expected %v, got %v", *expected.DoubleValue, *actual.DoubleValue))
+		}
+	}
 	if expected.Count != nil {
 		if actual.Count == nil {
 			errs = append(errs, errors.New("missing expected count"))
@@ -216,8 +271,8 @@ func compareDatapointValues(expected, actual datapointAssertion) error {
 	if expected.ExplicitBounds != nil {
 		if actual.ExplicitBounds == nil {
 			errs = append(errs, errors.New("missing expected explicit_bounds"))
-		} else if !slices.Equal(expected.ExplicitBounds, actual.ExplicitBounds) {
-			errs = append(errs, fmt.Errorf("explicit_bounds mismatch: expected %v, got %v", expected.ExplicitBounds, actual.ExplicitBounds))
+		} else if !slices.Equal(*expected.ExplicitBounds, *actual.ExplicitBounds) {
+			errs = append(errs, fmt.Errorf("explicit_bounds mismatch: expected %v, got %v", *expected.ExplicitBounds, *actual.ExplicitBounds))
 		}
 	}
 	if expected.BucketCounts != nil {
@@ -230,76 +285,21 @@ func compareDatapointValues(expected, actual datapointAssertion) error {
 	return errors.Join(errs...)
 }
 
-func compareValue(expected, actual any) error {
-	if expected == actual {
-		return nil
-	}
-
-	expFloat, expIsFloat := toFloat64(expected)
-	actFloat, actIsFloat := toFloat64(actual)
-
-	expInt, expIsInt := toInt64(expected)
-	actInt, actIsInt := toInt64(actual)
-
-	if expIsInt && actIsInt && expInt == actInt {
-		return nil
-	}
-
-	if expIsFloat && actIsFloat && expFloat == actFloat {
-		return nil
-	}
-
-	return fmt.Errorf("value mismatch: expected %v, got %v", expected, actual)
-}
-
-func toFloat64(v any) (float64, bool) {
-	switch x := v.(type) {
-	case float64:
-		return x, true
-	case float32:
-		return float64(x), true
-	case int:
-		return float64(x), true
-	case int64:
-		return float64(x), true
-	case uint64:
-		return float64(x), true
-	default:
-		return 0, false
-	}
-}
-
-func toInt64(v any) (int64, bool) {
-	switch x := v.(type) {
-	case int:
-		return int64(x), true
-	case int64:
-		return x, true
-	case uint64:
-		return int64(x), true
-	case float64:
-		if float64(int64(x)) == x {
-			return int64(x), true
-		}
-	}
-	return 0, false
-}
-
 // findMatchingAttributes returns the first unmatched index whose attributes
 // satisfy the expected attribute map, or -1 if none do.
-func findMatchingAttributes(expected map[string]any, matched []bool, n int, attrsAt func(int) map[string]any) int {
+func findMatchingAttributes(expected map[string]any, mode attributeMode, matched []bool, n int, attrsAt func(int) map[string]any) int {
 	for i := range n {
 		if matched[i] {
 			continue
 		}
-		if compareAttributes(expected, attrsAt(i)) == nil {
+		if compareAttributes(expected, attrsAt(i), mode) == nil {
 			return i
 		}
 	}
 	return -1
 }
 
-func compareAttributes(expected, actual map[string]any) error {
+func compareAttributes(expected, actual map[string]any, mode attributeMode) error {
 	var errs []error
 	seen := make(map[string]struct{}, len(expected))
 	for rawKey, expectedValue := range expected {
@@ -336,9 +336,12 @@ func compareAttributes(expected, actual map[string]any) error {
 			errs = append(errs, fmt.Errorf("attribute %q mismatch: expected %v, got %v", rawKey, expectedValue, actualValue))
 		}
 	}
-	for key := range actual {
-		if _, ok := seen[key]; !ok {
-			errs = append(errs, fmt.Errorf("unexpected attribute %q", key))
+	// In include mode, extra actual attributes are allowed.
+	if mode != attributeModeInclude {
+		for key := range actual {
+			if _, ok := seen[key]; !ok {
+				errs = append(errs, fmt.Errorf("unexpected attribute %q", key))
+			}
 		}
 	}
 	return errors.Join(errs...)

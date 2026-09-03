@@ -330,6 +330,87 @@ func TestToTraces64to128bits(t *testing.T) {
 	}
 }
 
+// TestToTraces128BitTraceIDSpanOrdering verifies that the 128-bit TraceID is reconstructed for
+// every span of a trace regardless of the order spans appear in a chunk or how they are split
+// across chunks. Only the chunk-local root span carries _dd.p.tid, and Datadog does not order
+// spans root-first, so reconstructing per span in iteration order leaves spans that precede the
+// root with a 64-bit (zero-padded) TraceID that no longer correlates with the rest of the trace.
+func TestToTraces128BitTraceIDSpanOrdering(t *testing.T) {
+	const (
+		traceIDLower    = uint64(2133000431340558749)
+		tidHex          = "f233b7e1421e8bde"
+		expectedTraceID = "f233b7e1421e8bde1d99f09757cf199d"
+	)
+
+	rootSpan := func() *pb.Span {
+		return &pb.Span{TraceID: traceIDLower, SpanID: 1, ParentID: 0, Meta: map[string]string{"_dd.p.tid": tidHex}}
+	}
+	childSpan := func() *pb.Span {
+		return &pb.Span{TraceID: traceIDLower, SpanID: 2, ParentID: 1}
+	}
+
+	tests := []struct {
+		name   string
+		chunks []*pb.TraceChunk
+	}{
+		{
+			name:   "child before root in same chunk",
+			chunks: []*pb.TraceChunk{{Spans: []*pb.Span{childSpan(), rootSpan()}}},
+		},
+		{
+			name: "child and root in separate chunks, root last",
+			chunks: []*pb.TraceChunk{
+				{Spans: []*pb.Span{childSpan()}},
+				{Spans: []*pb.Span{rootSpan()}},
+			},
+		},
+	}
+
+	req := &http.Request{Header: http.Header{}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cache, _ := lru.New[uint64, pcommon.TraceID](100)
+			traces, err := ToTraces(zap.NewNop(), &pb.TracerPayload{Chunks: tt.chunks}, req, cache)
+			require.NoError(t, err)
+
+			var count int
+			for _, rs := range traces.ResourceSpans().All() {
+				for _, ss := range rs.ScopeSpans().All() {
+					for _, span := range ss.Spans().All() {
+						count++
+						assert.Equal(t, expectedTraceID, span.TraceID().String(),
+							"span %s should carry the reconstructed 128-bit trace ID", span.SpanID().String())
+					}
+				}
+			}
+			assert.Equal(t, 2, count, "expected 2 spans")
+		})
+	}
+}
+
+// TestToTraces128BitTraceIDMatchesLogs guards trace<->log correlation: a span's reconstructed
+// 128-bit TraceID must be byte-identical to the one the logs translator derives from the same
+// dd.trace_id + _dd.p.tid, otherwise logs and spans of the same trace would not join.
+func TestToTraces128BitTraceIDMatchesLogs(t *testing.T) {
+	const (
+		traceIDLower = uint64(2133000431340558749)
+		tidHex       = "f233b7e1421e8bde"
+	)
+
+	cache, _ := lru.New[uint64, pcommon.TraceID](100)
+	payload := &pb.TracerPayload{Chunks: []*pb.TraceChunk{
+		{Spans: []*pb.Span{{TraceID: traceIDLower, SpanID: 1, Meta: map[string]string{"_dd.p.tid": tidHex}}}},
+	}}
+	traces, err := ToTraces(zap.NewNop(), payload, &http.Request{Header: http.Header{}}, cache)
+	require.NoError(t, err)
+
+	logTraceID, ok := parseDatadogTraceID(strconv.FormatUint(traceIDLower, 10), tidHex)
+	require.True(t, ok)
+
+	spanTraceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
+	assert.Equal(t, logTraceID, spanTraceID)
+}
+
 func TestToTracesSamplingPriority(t *testing.T) {
 	newPayload := func(priority ddsampler.SamplingPriority, rootMetrics map[string]float64) *pb.TracerPayload {
 		return &pb.TracerPayload{

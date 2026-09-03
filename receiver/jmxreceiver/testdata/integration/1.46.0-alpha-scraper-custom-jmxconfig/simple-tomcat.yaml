@@ -1,9 +1,0 @@
-rules:
-  # Tomcat thread pool metrics
-  - bean: Catalina:type=ThreadPool,name=*
-    mapping:
-      currentThreadCount:
-        metric: tomcat.threads.count
-        type: gauge
-        unit: "{thread}"
-        desc: Number of threads in the thread pool

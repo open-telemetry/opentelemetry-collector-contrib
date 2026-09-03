@@ -30,10 +30,11 @@ func Test_Integration(t *testing.T) {
 		scraperinttest.WithCustomConfig(
 			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
-				rCfg.CollectionInterval = time.Second
+				rCfg.ControllerConfig.CollectionInterval = time.Second
 				rCfg.Include = filepath.Join(tempDir, "foo*")
-				rCfg.ResourceAttributes.FilePath.Enabled = true
-			}),
+				rCfg.MetricsBuilderConfig.ResourceAttributes.FilePath.Enabled = true
+			},
+		),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.ChangeResourceAttributeValue("file.path", func(s string) string {

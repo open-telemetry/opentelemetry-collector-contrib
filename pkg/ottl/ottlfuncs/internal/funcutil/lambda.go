@@ -20,15 +20,7 @@ func EvaluateBiFunction[K, R any](
 	v1 any,
 	v2 any,
 ) (R, error) {
-	err := lambda.SetArg(0, ottlcommon.NormalizeValue(v1))
-	if err != nil {
-		return *new(R), err
-	}
-	err = lambda.SetArg(1, ottlcommon.NormalizeValue(v2))
-	if err != nil {
-		return *new(R), err
-	}
-	return EvaluateLambdaActivation[K, R](tCtx, lambda)
+	return EvaluateFunction[K, R](tCtx, lambda, v1, v2)
 }
 
 // EvaluateBiPredicate evaluates a lambda bi-predicate with two arguments and returns the result.
@@ -38,7 +30,37 @@ func EvaluateBiPredicate[K any](
 	v1 any,
 	v2 any,
 ) (bool, error) {
-	return EvaluateBiFunction[K, bool](tCtx, lambda, v1, v2)
+	return EvaluateFunction[K, bool](tCtx, lambda, v1, v2)
+}
+
+// EvaluateFunction evaluates a lambda with the given arguments and returns the result.
+// Arguments are set via [SetLambdaArgs]. If the number of arguments exceeds the number of
+// formals, the function panics.
+func EvaluateFunction[K, R any](tCtx K, lambda *ottl.LambdaActivation[K], args ...any) (R, error) {
+	err := SetLambdaArgs[K](lambda, args...)
+	if err != nil {
+		return *new(R), err
+	}
+	return EvaluateLambdaActivation[K, R](tCtx, lambda)
+}
+
+// SetLambdaArgs sets all positional arguments for a [ottl.LambdaActivation] in a single call.
+// Bound arguments (those whose formal is not a blank identifier "_") are normalized via
+// [ottlcommon.NormalizeValue] before passing to [ottl.LambdaActivation.SetArg]; unbound
+// arguments are set to nil since the lambda body discards them. Panics if the number of
+// arguments exceeds the number of formals.
+func SetLambdaArgs[K any](lambda *ottl.LambdaActivation[K], args ...any) error {
+	for i, v := range args {
+		var normalizedValue any
+		if lambda.IsArgBound(i) {
+			normalizedValue = ottlcommon.NormalizeValue(v)
+		}
+		err := lambda.SetArg(i, normalizedValue)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // EvaluateLambdaActivation evaluates a lambda activation with the given context and returns the result.

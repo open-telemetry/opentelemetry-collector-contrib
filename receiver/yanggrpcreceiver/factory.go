@@ -46,12 +46,12 @@ func createDefaultConfig() component.Config {
 			MaxModules:      1000,
 		},
 	}
-	config.NetAddr.Transport = "tcp"
-	config.NetAddr.Endpoint = "localhost:57500"
-	config.MaxRecvMsgSizeMiB = 4
-	config.MaxConcurrentStreams = 100
-	config.Keepalive.GetOrInsertDefault().ServerParameters.GetOrInsertDefault().Time = 30 * time.Second
-	config.Keepalive.GetOrInsertDefault().ServerParameters.GetOrInsertDefault().Timeout = 10 * time.Second
+	config.ServerConfig.NetAddr.Transport = "tcp"
+	config.ServerConfig.NetAddr.Endpoint = "localhost:57500"
+	config.ServerConfig.MaxRecvMsgSizeMiB = 4
+	config.ServerConfig.MaxConcurrentStreams = 100
+	config.ServerConfig.Keepalive.GetOrInsertDefault().ServerParameters.GetOrInsertDefault().Time = 30 * time.Second
+	config.ServerConfig.Keepalive.GetOrInsertDefault().ServerParameters.GetOrInsertDefault().Timeout = 10 * time.Second
 
 	return config
 }

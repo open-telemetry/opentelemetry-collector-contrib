@@ -7,12 +7,14 @@ import (
 	"context"
 	"net"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
+	"golang.org/x/net/netutil"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/internal/metadata"
 )
@@ -21,13 +23,24 @@ import (
 // FluentBit and increase throughput.
 const eventChannelLength = 100
 
+const (
+	defaultACKWaitTimeout = 30 * time.Second
+	// defaultMaxConnections bounds the number of simultaneously accepted
+	// connections. Each connection acknowledges its chunks serially (it blocks
+	// until the pipeline responds before reading the next event), so limiting
+	// connections also bounds the number of in-flight chunk acknowledgments and
+	// keeps memory use bounded when clients delay behind pipeline backpressure.
+	defaultMaxConnections = 100
+)
+
 type fluentReceiver struct {
-	collector *collector
-	listener  net.Listener
-	conf      *Config
-	logger    *zap.Logger
-	server    *server
-	cancel    context.CancelFunc
+	collector      *collector
+	listener       net.Listener
+	conf           *Config
+	logger         *zap.Logger
+	server         *server
+	cancel         context.CancelFunc
+	maxConnections int
 }
 
 func newFluentReceiver(set receiver.Settings, conf *Config, next consumer.Logs) (receiver.Logs, error) {
@@ -45,16 +58,17 @@ func newFluentReceiver(set receiver.Settings, conf *Config, next consumer.Logs) 
 		return nil, err
 	}
 
-	eventCh := make(chan event, eventChannelLength)
-	collector := newCollector(eventCh, next, set.Logger, obsrecv, telemetryBuilder)
+	eventCh := make(chan eventWithACK, eventChannelLength)
+	collector := newCollector(eventCh, next, defaultACKWaitTimeout, set.Logger, obsrecv, telemetryBuilder)
 
-	server := newServer(eventCh, set.Logger, telemetryBuilder)
+	server := newServer(eventCh, defaultACKWaitTimeout, set.Logger, telemetryBuilder)
 
 	return &fluentReceiver{
-		collector: collector,
-		server:    server,
-		conf:      conf,
-		logger:    set.Logger,
+		collector:      collector,
+		server:         server,
+		conf:           conf,
+		logger:         set.Logger,
+		maxConnections: defaultMaxConnections,
 	}, nil
 }
 
@@ -80,6 +94,13 @@ func (r *fluentReceiver) Start(ctx context.Context, _ component.Host) error {
 
 	if err != nil {
 		return err
+	}
+
+	// Bound the number of simultaneously accepted connections. Excess
+	// connections wait in the accept backlog until a slot frees, which keeps
+	// the number of in-flight chunk acknowledgments bounded under load.
+	if r.maxConnections > 0 {
+		listener = netutil.LimitListener(listener, r.maxConnections)
 	}
 
 	r.listener = listener

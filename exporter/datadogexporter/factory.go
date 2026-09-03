@@ -278,7 +278,8 @@ func (f *factory) createMetricsExporter(
 		apiClient := clientutil.CreateAPIClient(
 			set.BuildInfo,
 			cfg.Metrics.Endpoint,
-			cfg.ClientConfig)
+			cfg.ClientConfig,
+		)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), set.Logger, apiClient) }()
 		if cfg.API.FailOnInvalidKey {
 			err = <-errchan
@@ -306,9 +307,9 @@ func (f *factory) createMetricsExporter(
 				Metrics: cfg.Metrics,
 			},
 			TimeoutConfig: exporterhelper.TimeoutConfig{
-				Timeout: cfg.Timeout,
+				Timeout: cfg.ClientConfig.Timeout,
 			},
-			ClientConfig:     cfg.TLS,
+			ClientConfig:     cfg.ClientConfig.TLS,
 			QueueBatchConfig: cfg.QueueSettings,
 			RetryConfig:      cfg.BackOffConfig,
 			API:              cfg.API,
@@ -368,8 +369,11 @@ func (f *factory) createMetricsExporter(
 	if err != nil {
 		return nil, err
 	}
-	return resourcetotelemetry.WrapMetricsExporter(
-		resourcetotelemetry.Settings{Enabled: cfg.Metrics.ExporterConfig.ResourceAttributesAsTags}, exporter), nil
+	var rttSettings resourcetotelemetry.Settings
+	if cfg.Metrics.ExporterConfig.ResourceAttributesAsTags {
+		rttSettings.Included = []string{"*"}
+	}
+	return resourcetotelemetry.WrapMetricsExporter(rttSettings, exporter), nil
 }
 
 // createTracesExporter creates a trace exporter based on this config.

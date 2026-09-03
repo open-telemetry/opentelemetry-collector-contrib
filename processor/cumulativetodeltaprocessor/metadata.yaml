@@ -1,5 +1,6 @@
 display_name: Cumulative to Delta Processor
-type: cumulativetodelta
+type: cumulative_to_delta
+deprecated_type: cumulativetodelta
 
 description: |
   The cumulative to delta processor (`cumulativetodeltaprocessor`) converts monotonic sum, histogram, and exponential

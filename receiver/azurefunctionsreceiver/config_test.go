@@ -12,8 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azurefunctionsreceiver/internal/metadata"
 )
@@ -28,16 +28,16 @@ func TestLoadConfig(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	defaultServerConfig.WriteTimeout = 0
 	defaultServerConfig.ReadHeaderTimeout = 0
-	defaultServerConfig.IdleTimeout = 0
-	defaultServerConfig.KeepAlivesEnabled = false
+	defaultServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	defaultServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	defaultServerConfig.NetAddr = confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}
 
 	noAuthServerConfig := confighttp.NewDefaultServerConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	noAuthServerConfig.WriteTimeout = 0
 	noAuthServerConfig.ReadHeaderTimeout = 0
-	noAuthServerConfig.IdleTimeout = 0
-	noAuthServerConfig.KeepAlivesEnabled = false
+	noAuthServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	noAuthServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	noAuthServerConfig.NetAddr = confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}
 
 	tests := []struct {
@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 				Auth: component.MustNewID("azureauth"),
 				Triggers: &TriggersConfig{
 					EventHub: &EventHubTriggerConfig{
-						Logs: []LogsEncodingConfig{
+						Logs: []EncodingConfig{
 							{Name: "logs", Encoding: component.MustNewID("azure_encoding")},
 							{Name: "raw_logs", Encoding: component.MustNewID("azureresourcelogs_encoding")},
 						},
@@ -67,8 +67,39 @@ func TestLoadConfig(t *testing.T) {
 				HTTP: &noAuthServerConfig,
 				Triggers: &TriggersConfig{
 					EventHub: &EventHubTriggerConfig{
-						Logs: []LogsEncodingConfig{
+						Logs: []EncodingConfig{
 							{Name: "logs", Encoding: component.MustNewID("azure_encoding")},
+						},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "metrics_only"),
+			expected: &Config{
+				HTTP: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}},
+				Auth: component.MustNewID("azureauth"),
+				Triggers: &TriggersConfig{
+					EventHub: &EventHubTriggerConfig{
+						Metrics: []EncodingConfig{
+							{Name: "metrics", Encoding: component.MustNewID("azure_encoding")},
+						},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "logs_and_metrics"),
+			expected: &Config{
+				HTTP: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}},
+				Auth: component.MustNewID("azureauth"),
+				Triggers: &TriggersConfig{
+					EventHub: &EventHubTriggerConfig{
+						Logs: []EncodingConfig{
+							{Name: "logs", Encoding: component.MustNewID("azure_encoding")},
+						},
+						Metrics: []EncodingConfig{
+							{Name: "metrics", Encoding: component.MustNewID("azure_encoding")},
 						},
 					},
 				},
@@ -102,6 +133,26 @@ func TestLoadConfig(t *testing.T) {
 			id:                 component.NewIDWithName(metadata.Type, "duplicate_binding_name"),
 			expectedErrMessage: `triggers.event_hub.logs: duplicate binding name "logs"`,
 		},
+		{
+			id:                 component.NewIDWithName(metadata.Type, "empty_event_hub_logs_and_metrics"),
+			expectedErrMessage: "at least one configured trigger with at least one binding is required",
+		},
+		{
+			id:                 component.NewIDWithName(metadata.Type, "missing_metrics_binding_name"),
+			expectedErrMessage: "triggers.event_hub.metrics[0].name must be set",
+		},
+		{
+			id:                 component.NewIDWithName(metadata.Type, "missing_metrics_binding_encoding"),
+			expectedErrMessage: "triggers.event_hub.metrics[0].encoding must be set",
+		},
+		{
+			id:                 component.NewIDWithName(metadata.Type, "duplicate_metrics_binding_name"),
+			expectedErrMessage: `triggers.event_hub.metrics: duplicate binding name "m"`,
+		},
+		{
+			id:                 component.NewIDWithName(metadata.Type, "duplicate_binding_name_logs_and_metrics"),
+			expectedErrMessage: `triggers.event_hub: binding name "logs" is used in both logs and metrics`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
@@ -112,7 +163,7 @@ func TestLoadConfig(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NoError(t, sub.Unmarshal(cfg))
 
-			err = xconfmap.Validate(cfg)
+			err = confmap.Validate(cfg)
 			if tt.expectedErrMessage != "" {
 				assert.Error(t, err)
 				assert.EqualError(t, err, tt.expectedErrMessage)

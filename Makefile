@@ -296,6 +296,7 @@ exporter/datadogexporter/integrationtest: exporter/datadogexporter
 pkg/datadog: exporter/datadogexporter/integrationtest
 extension/datadogextension: pkg/datadog
 connector/datadogconnector: extension/datadogextension
+exporter/datadogexporter: internal/datadog
 
 # Trigger each module's delegation target
 .PHONY: for-all-target
@@ -700,6 +701,7 @@ multimod-verify:
 .PHONY: multimod-prerelease
 multimod-prerelease:
 	$(MULTIMOD) prerelease -s=true -b=false -v ./versions.yaml -m contrib-base
+	$(MULTIMOD) prerelease -s=true -b=false -v ./versions.yaml -m stable-base
 	$(MAKE) gotidy
 
 .PHONY: multimod-sync

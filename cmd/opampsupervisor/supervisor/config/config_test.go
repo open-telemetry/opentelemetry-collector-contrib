@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -44,8 +45,8 @@ func TestValidate(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	defaultHealthCheckServerConfig.WriteTimeout = 0
 	defaultHealthCheckServerConfig.ReadHeaderTimeout = 0
-	defaultHealthCheckServerConfig.IdleTimeout = 0
-	defaultHealthCheckServerConfig.KeepAlivesEnabled = false
+	defaultHealthCheckServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	defaultHealthCheckServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	defaultHealthCheckServerConfig.NetAddr = confignet.AddrConfig{Transport: confignet.TransportTypeTCP}
 	defaultHealthCheck := HealthCheck{
 		ServerConfig: defaultHealthCheckServerConfig,
@@ -55,8 +56,8 @@ func TestValidate(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	invalidPortServerConfig.WriteTimeout = 0
 	invalidPortServerConfig.ReadHeaderTimeout = 0
-	invalidPortServerConfig.IdleTimeout = 0
-	invalidPortServerConfig.KeepAlivesEnabled = false
+	invalidPortServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	invalidPortServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	invalidPortServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:-1",
@@ -612,6 +613,28 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErrorFunc: simpleError("healthcheck::endpoint must contain a valid port number, got -1"),
 		},
+		{
+			name: "Package with unsupported verifier type (cosign not yet supported)",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					TLS:      tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					Package: AgentPackage{
+						Verifier: Verifier{Type: "cosign"},
+					},
+				},
+				Capabilities: Capabilities{AcceptsRemoteConfig: true},
+				Storage:      Storage{Directory: "/etc/opamp-supervisor/storage"},
+				HealthCheck:  defaultHealthCheck,
+			},
+			expectedErrorFunc: simpleError("unsupported verifier type"),
+		},
 	}
 
 	// create some fake files for validating agent config
@@ -742,8 +765,8 @@ func TestSupervisor_TopLevelValidate(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{Endpoint: "localhost:99999"}
 	cfg.HealthCheck = HealthCheck{
 		ServerConfig: serverConfig,
@@ -858,6 +881,63 @@ func TestOpAMPServer_OpaqueHeaders(t *testing.T) {
 	}
 }
 
+func TestAgent_validateFallbackConfigsWithColBinUsesAgentArguments(t *testing.T) {
+	validateStub := writeFeatureGateValidateStub(t)
+	profilesConfigPath := filepath.Join("..", "..", "testdata", "collector", "profiles_pipeline.yaml")
+	agent := Agent{
+		Executable:             validateStub,
+		Arguments:              []string{"--feature-gates=+service.profilesSupport"},
+		StartupFallbackConfigs: []string{profilesConfigPath},
+	}
+
+	require.NoError(t, agent.validateFallbackConfigsWithColBin())
+}
+
+func writeFeatureGateValidateStub(t *testing.T) string {
+	t.Helper()
+
+	const (
+		featureGateName  = "--feature-gates"
+		featureGateValue = "+service.profilesSupport"
+		featureGateArg   = featureGateName + "=" + featureGateValue
+	)
+
+	tempDir := t.TempDir()
+	if runtime.GOOS == "windows" {
+		path := filepath.Join(tempDir, "validate-stub.bat")
+		script := []string{
+			"@echo off",
+			"if not \"%1\"==\"validate\" exit /b 11",
+			"if not \"%2\"==\"--config\" exit /b 12",
+			// cmd.exe uses "=" as a delimiter when assigning batch parameters.
+			"if not \"%4\"==\"" + featureGateName + "\" exit /b 13",
+			"if not \"%5\"==\"" + featureGateValue + "\" exit /b 14",
+			"findstr /C:\"profiles:\" \"%3\" >nul",
+			"if errorlevel 1 exit /b 15",
+			"findstr /C:\"processors:\" \"%3\" >nul",
+			"if not errorlevel 1 exit /b 16",
+			"exit /b 0",
+		}
+		require.NoError(t, os.WriteFile(path, []byte(strings.Join(script, "\r\n")+"\r\n"), 0o600))
+		return path
+	}
+
+	path := filepath.Join(tempDir, "validate-stub.sh")
+	script := []string{
+		"#!/bin/sh",
+		"[ \"$1\" = 'validate' ] || exit 1",
+		"[ \"$2\" = '--config' ] || exit 1",
+		"[ \"$4\" = '" + featureGateArg + "' ] || exit 1",
+		"grep -q 'profiles:' \"$3\" || exit 1",
+		"grep -q 'processors:' \"$3\" && exit 1",
+		"exit 0",
+	}
+	require.NoError(t, os.WriteFile(path, []byte(strings.Join(script, "\n")+"\n"), 0o600))
+	require.NoError(t, os.Chmod(path, 0o700))
+
+	return path
+}
+
 func TestCapabilities_SupportedCapabilities(t *testing.T) {
 	testCases := []struct {
 		name                      string
@@ -879,10 +959,9 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
 		},
 		{
-			name: "Package capabilities are reported",
+			name: "AcceptsPackages enables both package capabilities",
 			capabilities: Capabilities{
-				AcceptsPackages:        true,
-				ReportsPackageStatuses: true,
+				AcceptsPackages: true,
 			},
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages |
@@ -903,7 +982,6 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				ReportsAvailableComponents:     true,
 				ReportsHeartbeat:               true,
 				AcceptsPackages:                true,
-				ReportsPackageStatuses:         true,
 			},
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
@@ -970,6 +1048,7 @@ agent:
 						BootstrapTimeout:            DefaultSupervisor().Agent.BootstrapTimeout,
 						CollectorCrashLogSnippetKiB: DefaultSupervisor().Agent.CollectorCrashLogSnippetKiB,
 						ValidateConfig:              DefaultSupervisor().Agent.ValidateConfig,
+						Package:                     DefaultSupervisor().Agent.Package,
 					},
 					Telemetry:   DefaultSupervisor().Telemetry,
 					HealthCheck: DefaultSupervisor().HealthCheck,
@@ -1014,7 +1093,10 @@ agent:
   bootstrap_timeout: 8s
   opamp_server_port: 8090
   passthrough_logs: true
+  automatic_config_rollback: true
   collector_crash_log_snippet_kib: 100
+  package:
+    agent_binary: custom-otelcol
 
 telemetry:
   logs:
@@ -1064,7 +1146,12 @@ telemetry:
 						OpAMPServerPort:             8090,
 						PassthroughLogs:             true,
 						CollectorCrashLogSnippetKiB: 100,
+						AutomaticConfigRollback:     true,
 						ValidateConfig:              DefaultSupervisor().Agent.ValidateConfig,
+						Package: AgentPackage{
+							AgentBinary: "custom-otelcol",
+							Verifier:    DefaultSupervisor().Agent.Package.Verifier,
+						},
 					},
 					Telemetry: Telemetry{
 						Logs: Logs{
@@ -1104,6 +1191,7 @@ agent:
 						BootstrapTimeout:            DefaultSupervisor().Agent.BootstrapTimeout,
 						CollectorCrashLogSnippetKiB: DefaultSupervisor().Agent.CollectorCrashLogSnippetKiB,
 						ValidateConfig:              DefaultSupervisor().Agent.ValidateConfig,
+						Package:                     DefaultSupervisor().Agent.Package,
 					},
 					Telemetry:   DefaultSupervisor().Telemetry,
 					HealthCheck: DefaultSupervisor().HealthCheck,

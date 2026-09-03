@@ -4,8 +4,10 @@
 package pmetricassert // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetricassert"
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"regexp"
 
 	"gopkg.in/yaml.v3"
 )
@@ -15,12 +17,25 @@ import (
 // accompanied by a migration.
 const documentVersion = 1
 
+// attributeMode controls how an attribute map assertion is evaluated.
+type attributeMode int
+
+const (
+	// attributeModeExact requires actual attributes to match expected
+	// attributes exactly — no missing and no extra keys.
+	attributeModeExact attributeMode = iota
+	// attributeModeInclude requires every expected key/value to be present
+	// in the actual attributes but allows additional keys.
+	attributeModeInclude
+)
+
 // document is the YAML-serializable form of a metrics assertion snapshot.
 //
 // The schema implements the identity-only subset of the grammar proposed in
 // issue #48079: default-exact matching, order-insensitive collections,
-// identity fields only. Operator-suffix extensions (/include, /count, ...)
-// are tracked as follow-ups.
+// identity fields only. Attribute maps support /include mode.
+// Operator-suffix extensions (/exclude, /count, /approx, ...) are tracked
+// as follow-ups.
 type document struct {
 	Version   int                 `yaml:"version"`
 	Signal    string              `yaml:"signal"`
@@ -28,14 +43,152 @@ type document struct {
 }
 
 type resourceAssertion struct {
-	Attributes map[string]any   `yaml:"attributes,omitempty"`
-	Scopes     []scopeAssertion `yaml:"scopes"`
+	Attributes    map[string]any   `yaml:"attributes,omitempty"`
+	AttributeMode attributeMode    `yaml:"-"`
+	Scopes        []scopeAssertion `yaml:"scopes"`
+}
+
+// UnmarshalYAML implements custom unmarshaling to support `attributes/include`
+// as an alternative to `attributes`. When `attributes/include` is used the
+// AttributeMode is set to attributeModeInclude; specifying both keys is an error.
+func (r *resourceAssertion) UnmarshalYAML(node *yaml.Node) error {
+	// Decode into a raw map to detect operator-suffixed keys.
+	var raw map[string]yaml.Node
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	if inc, ok := raw["attributes/include"]; ok {
+		if _, dup := raw["attributes"]; dup {
+			return errors.New("resource assertion: cannot specify both 'attributes' and 'attributes/include'")
+		}
+		var attrs map[string]any
+		if err := inc.Decode(&attrs); err != nil {
+			return fmt.Errorf("resource assertion: decode attributes/include: %w", err)
+		}
+		r.Attributes = attrs
+		r.AttributeMode = attributeModeInclude
+	} else if exact, ok := raw["attributes"]; ok {
+		var attrs map[string]any
+		if err := exact.Decode(&attrs); err != nil {
+			return fmt.Errorf("resource assertion: decode attributes: %w", err)
+		}
+		r.Attributes = attrs
+		r.AttributeMode = attributeModeExact
+	}
+	if scopesNode, ok := raw["scopes"]; ok {
+		if err := scopesNode.Decode(&r.Scopes); err != nil {
+			return fmt.Errorf("resource assertion: decode scopes: %w", err)
+		}
+	}
+	return nil
 }
 
 type scopeAssertion struct {
-	Name    string            `yaml:"name,omitempty"`
-	Version string            `yaml:"version,omitempty"`
+	// Name is always matched exactly: it is the stable instrumentation library
+	// identity, so it has no /exists or /regex operator (unlike Version).
+	Name    string
+	Version versionMatcher
+	Metrics []metricAssertion
+}
+
+type matcherOp int
+
+const (
+	matchExact  matcherOp = iota // `version:` — the only form WriteAssertionFile emits
+	matchExists                  // `version/exists: true` — present, any value
+	matchRegex                   // `version/regex: <pattern>` — full-string match
+)
+
+// versionMatcher matches a scope version. Its zero value is an exact match
+// against "", so an omitted `version:` key still pins the empty scope version.
+type versionMatcher struct {
+	op    matcherOp
+	value string
+}
+
+// scopeAssertionYAML is the on-disk shape of scopeAssertion: the operator keys
+// must be distinct YAML fields because yaml.v3 cannot decode a `version/regex`
+// suffix into the versionMatcher struct directly.
+type scopeAssertionYAML struct {
+	Name          string  `yaml:"name,omitempty"`
+	Version       *string `yaml:"version,omitempty"`
+	VersionExists *bool   `yaml:"version/exists,omitempty"`
+	VersionRegex  *string `yaml:"version/regex,omitempty"`
+
 	Metrics []metricAssertion `yaml:"metrics"`
+}
+
+// UnmarshalYAML decodes a scope, resolving the version operator keys into a versionMatcher.
+func (s *scopeAssertion) UnmarshalYAML(value *yaml.Node) error {
+	var raw scopeAssertionYAML
+	if err := value.Decode(&raw); err != nil {
+		return err
+	}
+
+	version, err := buildVersionMatcher(raw.Version, raw.VersionExists, raw.VersionRegex)
+	if err != nil {
+		return err
+	}
+
+	s.Name = raw.Name
+	s.Version = version
+	s.Metrics = raw.Metrics
+	return nil
+}
+
+func buildVersionMatcher(exact *string, exists *bool, regex *string) (versionMatcher, error) {
+	set := 0
+	if exact != nil {
+		set++
+	}
+	if exists != nil {
+		set++
+	}
+	if regex != nil {
+		set++
+	}
+	if set > 1 {
+		return versionMatcher{}, errors.New(`scope must use at most one of "version", "version/exists", "version/regex"`)
+	}
+
+	switch {
+	case exists != nil:
+		if !*exists {
+			return versionMatcher{}, errors.New("scope version/exists must be true (the only supported value)")
+		}
+		return versionMatcher{op: matchExists}, nil
+	case regex != nil:
+		if _, err := regexp.Compile("^(?:" + *regex + ")$"); err != nil {
+			return versionMatcher{}, fmt.Errorf("scope version/regex has invalid pattern %q: %w", *regex, err)
+		}
+		return versionMatcher{op: matchRegex, value: *regex}, nil
+	case exact != nil:
+		return versionMatcher{op: matchExact, value: *exact}, nil
+	default:
+		return versionMatcher{op: matchExact}, nil
+	}
+}
+
+// MarshalYAML encodes a scope, rendering an exact version as a plain `version:`
+// scalar (not a suffixed key) so WriteAssertionFile output matches the pre-operator layout.
+func (s scopeAssertion) MarshalYAML() (any, error) {
+	out := scopeAssertionYAML{Name: s.Name, Metrics: s.Metrics}
+
+	switch s.Version.op {
+	case matchExists:
+		t := true
+		out.VersionExists = &t
+	case matchRegex:
+		v := s.Version.value
+		out.VersionRegex = &v
+	case matchExact:
+		if s.Version.value != "" {
+			v := s.Version.value
+			out.Version = &v
+		}
+	}
+
+	return out, nil
 }
 
 type metricAssertion struct {
@@ -49,13 +202,100 @@ type metricAssertion struct {
 
 type datapointAssertion struct {
 	Attributes     map[string]any `yaml:"attributes,omitempty"`
-	Value          any            `yaml:"value,omitempty"`
+	AttributeMode  attributeMode  `yaml:"-"`
+	IntValue       *int64         `yaml:"int_value,omitempty"`
+	DoubleValue    *float64       `yaml:"double_value,omitempty"`
 	Count          *uint64        `yaml:"count,omitempty"`
 	Sum            *float64       `yaml:"sum,omitempty"`
-	ExplicitBounds []float64      `yaml:"explicit_bounds,omitempty"`
+	ExplicitBounds *[]float64     `yaml:"explicit_bounds,omitempty"`
 	BucketCounts   []uint64       `yaml:"bucket_counts,omitempty"`
 	Min            *float64       `yaml:"min,omitempty"`
 	Max            *float64       `yaml:"max,omitempty"`
+}
+
+// UnmarshalYAML implements custom unmarshaling to support `attributes/include`
+// as an alternative to `attributes` on datapoint assertions.
+func (d *datapointAssertion) UnmarshalYAML(node *yaml.Node) error {
+	var raw map[string]yaml.Node
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	if inc, ok := raw["attributes/include"]; ok {
+		if _, dup := raw["attributes"]; dup {
+			return errors.New("datapoint assertion: cannot specify both 'attributes' and 'attributes/include'")
+		}
+		var attrs map[string]any
+		if err := inc.Decode(&attrs); err != nil {
+			return fmt.Errorf("datapoint assertion: decode attributes/include: %w", err)
+		}
+		d.Attributes = attrs
+		d.AttributeMode = attributeModeInclude
+	} else if exact, ok := raw["attributes"]; ok {
+		var attrs map[string]any
+		if err := exact.Decode(&attrs); err != nil {
+			return fmt.Errorf("datapoint assertion: decode attributes: %w", err)
+		}
+		d.Attributes = attrs
+		d.AttributeMode = attributeModeExact
+	}
+	// Decode optional value fields.
+	if v, ok := raw["int_value"]; ok {
+		var iv int64
+		if err := v.Decode(&iv); err != nil {
+			return fmt.Errorf("datapoint assertion: decode int_value: %w", err)
+		}
+		d.IntValue = &iv
+	}
+	if v, ok := raw["double_value"]; ok {
+		var dv float64
+		if err := v.Decode(&dv); err != nil {
+			return fmt.Errorf("datapoint assertion: decode double_value: %w", err)
+		}
+		d.DoubleValue = &dv
+	}
+	if v, ok := raw["count"]; ok {
+		var c uint64
+		if err := v.Decode(&c); err != nil {
+			return fmt.Errorf("datapoint assertion: decode count: %w", err)
+		}
+		d.Count = &c
+	}
+	if v, ok := raw["sum"]; ok {
+		var s float64
+		if err := v.Decode(&s); err != nil {
+			return fmt.Errorf("datapoint assertion: decode sum: %w", err)
+		}
+		d.Sum = &s
+	}
+	if v, ok := raw["explicit_bounds"]; ok {
+		var eb []float64
+		if err := v.Decode(&eb); err != nil {
+			return fmt.Errorf("datapoint assertion: decode explicit_bounds: %w", err)
+		}
+		d.ExplicitBounds = &eb
+	}
+	if v, ok := raw["bucket_counts"]; ok {
+		var bc []uint64
+		if err := v.Decode(&bc); err != nil {
+			return fmt.Errorf("datapoint assertion: decode bucket_counts: %w", err)
+		}
+		d.BucketCounts = bc
+	}
+	if v, ok := raw["min"]; ok {
+		var minVal float64
+		if err := v.Decode(&minVal); err != nil {
+			return fmt.Errorf("datapoint assertion: decode min: %w", err)
+		}
+		d.Min = &minVal
+	}
+	if v, ok := raw["max"]; ok {
+		var maxVal float64
+		if err := v.Decode(&maxVal); err != nil {
+			return fmt.Errorf("datapoint assertion: decode max: %w", err)
+		}
+		d.Max = &maxVal
+	}
+	return nil
 }
 
 func readDocument(path string) (*document, error) {
@@ -117,10 +357,22 @@ func compactShorthand(doc *document) {
 		for j := range doc.Resources[i].Scopes {
 			for k := range doc.Resources[i].Scopes[j].Metrics {
 				m := &doc.Resources[i].Scopes[j].Metrics[k]
-				if len(m.Datapoints) == 1 && len(m.Datapoints[0].Attributes) == 0 && m.Datapoints[0].Value == nil {
+				if len(m.Datapoints) == 1 && isEmptyDatapointAssertion(m.Datapoints[0]) {
 					m.Datapoints = nil
 				}
 			}
 		}
 	}
+}
+
+func isEmptyDatapointAssertion(dp datapointAssertion) bool {
+	return len(dp.Attributes) == 0 &&
+		dp.IntValue == nil &&
+		dp.DoubleValue == nil &&
+		dp.Count == nil &&
+		dp.Sum == nil &&
+		dp.ExplicitBounds == nil &&
+		len(dp.BucketCounts) == 0 &&
+		dp.Min == nil &&
+		dp.Max == nil
 }

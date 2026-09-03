@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestResourceBuilder(t *testing.T) {
@@ -19,7 +19,6 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetHostName("host.name-val")
 			rb.SetOracleDbHostingType("oracle.db.hosting_type-val")
 			rb.SetOracleDbOpenMode("oracle.db.open_mode-val")
-			rb.SetOracleDbPdb("oracle.db.pdb-val")
 			rb.SetOracleDbRole("oracle.db.role-val")
 			rb.SetOracleDbVersion("oracle.db.version-val")
 			rb.SetOracledbInstanceName("oracledb.instance.name-val")
@@ -34,9 +33,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 10, res.Attributes().Len())
+				assert.Equal(t, 9, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 12, res.Attributes().Len())
+				assert.Equal(t, 11, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -57,11 +56,6 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "oracle.db.open_mode-val", oracleDbOpenModeAttrVal.Str())
-			}
-			oracleDbPdbAttrVal, ok := res.Attributes().Get("oracle.db.pdb")
-			assert.True(t, ok)
-			if ok {
-				assert.Equal(t, "oracle.db.pdb-val", oracleDbPdbAttrVal.Str())
 			}
 			oracleDbRoleAttrVal, ok := res.Attributes().Get("oracle.db.role")
 			assert.True(t, ok)
@@ -109,12 +103,11 @@ func TestResourceBuilder(t *testing.T) {
 
 func TestResourceBuilderOverrideValue(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 	rb.SetHostName("host.name-val")
 	rb.SetOracleDbHostingType("oracle.db.hosting_type-val")
 	rb.SetOracleDbOpenMode("oracle.db.open_mode-val")
-	rb.SetOracleDbPdb("oracle.db.pdb-val")
 	rb.SetOracleDbRole("oracle.db.role-val")
 	rb.SetOracleDbVersion("oracle.db.version-val")
 	rb.SetOracledbInstanceName("oracledb.instance.name-val")
@@ -144,13 +137,6 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 		assert.True(t, ok, "oracle.db.open_mode should be present")
 		if ok {
 			assert.Equal(t, "override-oracle.db.open_mode", val.Str())
-		}
-	}
-	{
-		val, ok := res.Attributes().Get("oracle.db.pdb")
-		assert.True(t, ok, "oracle.db.pdb should be present")
-		if ok {
-			assert.Equal(t, "override-oracle.db.pdb", val.Str())
 		}
 	}
 	{
@@ -214,7 +200,7 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 // TestResourceBuilderOverrideWithoutSet does not call any Set* methods, but override should still apply via Emit().
 func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 
 	res := rb.Emit()
@@ -237,13 +223,6 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 		assert.True(t, ok, "oracle.db.open_mode should be present even without calling Set")
 		if ok {
 			assert.Equal(t, "override-oracle.db.open_mode", val.Str())
-		}
-	}
-	{
-		val, ok := res.Attributes().Get("oracle.db.pdb")
-		assert.True(t, ok, "oracle.db.pdb should be present even without calling Set")
-		if ok {
-			assert.Equal(t, "override-oracle.db.pdb", val.Str())
 		}
 	}
 	{
@@ -310,7 +289,6 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg.HostName.Enabled = false
 	cfg.OracleDbHostingType.Enabled = false
 	cfg.OracleDbOpenMode.Enabled = false
-	cfg.OracleDbPdb.Enabled = false
 	cfg.OracleDbRole.Enabled = false
 	cfg.OracleDbVersion.Enabled = false
 	cfg.OracledbInstanceName.Enabled = false
@@ -319,7 +297,7 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg.ServiceInstanceID.Enabled = false
 	cfg.ServiceName.Enabled = false
 	cfg.ServiceNamespace.Enabled = false
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 
 	res := rb.Emit()
@@ -329,11 +307,10 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 // TestResourceBuilderNoOverride has no override_value set, Validate should still succeed.
 func TestResourceBuilderNoOverride(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "all_set")
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	assert.Nil(t, cfg.HostName.OverrideValue, "OverrideValue should be nil for host.name")
 	assert.Nil(t, cfg.OracleDbHostingType.OverrideValue, "OverrideValue should be nil for oracle.db.hosting_type")
 	assert.Nil(t, cfg.OracleDbOpenMode.OverrideValue, "OverrideValue should be nil for oracle.db.open_mode")
-	assert.Nil(t, cfg.OracleDbPdb.OverrideValue, "OverrideValue should be nil for oracle.db.pdb")
 	assert.Nil(t, cfg.OracleDbRole.OverrideValue, "OverrideValue should be nil for oracle.db.role")
 	assert.Nil(t, cfg.OracleDbVersion.OverrideValue, "OverrideValue should be nil for oracle.db.version")
 	assert.Nil(t, cfg.OracledbInstanceName.OverrideValue, "OverrideValue should be nil for oracledb.instance.name")
@@ -346,7 +323,6 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	rb.SetHostName("host.name-val")
 	rb.SetOracleDbHostingType("oracle.db.hosting_type-val")
 	rb.SetOracleDbOpenMode("oracle.db.open_mode-val")
-	rb.SetOracleDbPdb("oracle.db.pdb-val")
 	rb.SetOracleDbRole("oracle.db.role-val")
 	rb.SetOracleDbVersion("oracle.db.version-val")
 	rb.SetOracledbInstanceName("oracledb.instance.name-val")
@@ -357,7 +333,7 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	rb.SetServiceNamespace("service.namespace-val")
 
 	res := rb.Emit()
-	assert.Equal(t, 12, res.Attributes().Len())
+	assert.Equal(t, 11, res.Attributes().Len())
 	hostNameAttrVal, ok := res.Attributes().Get("host.name")
 	assert.True(t, ok)
 	if ok {
@@ -372,11 +348,6 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	assert.True(t, ok)
 	if ok {
 		assert.Equal(t, "oracle.db.open_mode-val", oracleDbOpenModeAttrVal.Str())
-	}
-	oracleDbPdbAttrVal, ok := res.Attributes().Get("oracle.db.pdb")
-	assert.True(t, ok)
-	if ok {
-		assert.Equal(t, "oracle.db.pdb-val", oracleDbPdbAttrVal.Str())
 	}
 	oracleDbRoleAttrVal, ok := res.Attributes().Get("oracle.db.role")
 	assert.True(t, ok)

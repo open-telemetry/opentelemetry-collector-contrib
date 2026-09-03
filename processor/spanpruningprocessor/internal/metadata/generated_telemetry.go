@@ -27,6 +27,11 @@ type TelemetryBuilder struct {
 	registrations                                    []metric.Registration
 	ProcessorSpanpruningAggregationGroupSize         metric.Int64Histogram
 	ProcessorSpanpruningAggregationsCreated          metric.Int64Counter
+	ProcessorSpanpruningBytesEmitted                 metric.Int64Counter
+	ProcessorSpanpruningBytesProcessedInput          metric.Int64Counter
+	ProcessorSpanpruningBytesProcessedOutput         metric.Int64Counter
+	ProcessorSpanpruningBytesReceived                metric.Int64Counter
+	ProcessorSpanpruningExemplarsSampled             metric.Int64Counter
 	ProcessorSpanpruningLeafAttributeDiversityLoss   metric.Int64Histogram
 	ProcessorSpanpruningLeafAttributeLoss            metric.Int64Histogram
 	ProcessorSpanpruningOutliersCorrelationsDetected metric.Int64Counter
@@ -38,6 +43,7 @@ type TelemetryBuilder struct {
 	ProcessorSpanpruningSpansPruned                  metric.Int64Counter
 	ProcessorSpanpruningSpansReceived                metric.Int64Counter
 	ProcessorSpanpruningTracesProcessed              metric.Int64Counter
+	ProcessorSpanpruningTracesSkipped                metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -78,6 +84,36 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ProcessorSpanpruningAggregationsCreated, err = builder.meter.Int64Counter(
 		"otelcol_processor_spanpruning_aggregations_created",
 		metric.WithDescription("Total aggregation summary spans created [Development]"),
+		metric.WithUnit("{spans}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningBytesEmitted, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_bytes_emitted",
+		metric.WithDescription("Total bytes of serialized traces emitted after pruning [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningBytesProcessedInput, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_bytes_processed_input",
+		metric.WithDescription("Total bytes of traces that matched pruning conditions (entire trace when any span matches), measured before pruning [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningBytesProcessedOutput, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_bytes_processed_output",
+		metric.WithDescription("Total bytes of traces that matched pruning conditions (entire trace when any span matches), measured after pruning [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningBytesReceived, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_bytes_received",
+		metric.WithDescription("Total bytes of serialized traces received before pruning [Development]"),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningExemplarsSampled, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_exemplars_sampled",
+		metric.WithDescription("Spans randomly sampled as exemplars (excluded from aggregation) [Development]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
@@ -148,6 +184,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ProcessorSpanpruningTracesProcessed, err = builder.meter.Int64Counter(
 		"otelcol_processor_spanpruning_traces_processed",
 		metric.WithDescription("Total traces processed [Development]"),
+		metric.WithUnit("{traces}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningTracesSkipped, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_traces_skipped",
+		metric.WithDescription("Total traces skipped due to conditions not matching [Development]"),
 		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)

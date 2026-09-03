@@ -15,9 +15,15 @@ import (
 	"time"
 
 	backoff "github.com/cenkalti/backoff/v5"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
 type DetectorType string
@@ -32,7 +38,14 @@ type ResourceDetectorConfig interface {
 	GetConfigFromType(DetectorType) DetectorConfig
 }
 
-type DetectorFactory func(processor.Settings, DetectorConfig) (Detector, error)
+type DetectorFactory func(processor.Settings, DetectorConfig, bool) (Detector, error)
+
+// detectorEntry pairs a detector with its type so detection telemetry can be
+// attributed to the specific detector.
+type detectorEntry struct {
+	detectorType DetectorType
+	detector     Detector
+}
 
 type ResourceProviderFactory struct {
 	// detectors holds all possible detector types.
@@ -45,33 +58,51 @@ func NewProviderFactory(detectors map[DetectorType]DetectorFactory) *ResourcePro
 
 func (f *ResourceProviderFactory) CreateResourceProvider(
 	params processor.Settings,
-	timeout time.Duration,
+	backoffConfig configretry.BackOffConfig,
+	failOnMissingMetadata bool,
 	detectorConfigs ResourceDetectorConfig,
 	detectorTypes ...DetectorType,
 ) (*ResourceProvider, error) {
-	detectors, err := f.getDetectors(params, detectorConfigs, detectorTypes)
+	detectors, err := f.getDetectors(params, detectorConfigs, detectorTypes, failOnMissingMetadata)
 	if err != nil {
 		return nil, err
 	}
 
-	provider := NewResourceProvider(params.Logger, timeout, detectors...)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+
+	provider := NewResourceProvider(params.Logger, telemetryBuilder, backoffConfig, detectors...)
+
+	// Register observer for the detected-attribute count.
+	if err := telemetryBuilder.RegisterResourcedetectionAttributesDetectedCallback(func(_ context.Context, o metric.Int64Observer) error {
+		if r := provider.detectedResource.Load(); r != nil {
+			o.Observe(int64(r.resource.Attributes().Len()))
+		}
+		return nil
+	}); err != nil {
+		telemetryBuilder.Shutdown()
+		return nil, err
+	}
+
 	return provider, nil
 }
 
-func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detectorConfigs ResourceDetectorConfig, detectorTypes []DetectorType) ([]Detector, error) {
-	detectors := make([]Detector, 0, len(detectorTypes))
+func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detectorConfigs ResourceDetectorConfig, detectorTypes []DetectorType, failOnMissingMetadata bool) ([]detectorEntry, error) {
+	detectors := make([]detectorEntry, 0, len(detectorTypes))
 	for _, detectorType := range detectorTypes {
 		detectorFactory, ok := f.detectors[detectorType]
 		if !ok {
 			return nil, fmt.Errorf("invalid detector key: %v", detectorType)
 		}
 
-		detector, err := detectorFactory(params, detectorConfigs.GetConfigFromType(detectorType))
+		detector, err := detectorFactory(params, detectorConfigs.GetConfigFromType(detectorType), failOnMissingMetadata)
 		if err != nil {
 			return nil, fmt.Errorf("failed creating detector type %q: %w", detectorType, err)
 		}
 
-		detectors = append(detectors, detector)
+		detectors = append(detectors, detectorEntry{detectorType: detectorType, detector: detector})
 	}
 
 	return detectors, nil
@@ -79,8 +110,9 @@ func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detect
 
 type ResourceProvider struct {
 	logger           *zap.Logger
-	timeout          time.Duration
-	detectors        []Detector
+	telemetry        *metadata.TelemetryBuilder
+	backoffConfig    configretry.BackOffConfig
+	detectors        []detectorEntry
 	detectedResource atomic.Pointer[resourceResult]
 
 	// Refresh loop control
@@ -98,10 +130,11 @@ type resourceResult struct {
 	err       error
 }
 
-func NewResourceProvider(logger *zap.Logger, timeout time.Duration, detectors ...Detector) *ResourceProvider {
+func NewResourceProvider(logger *zap.Logger, telemetry *metadata.TelemetryBuilder, backoffConfig configretry.BackOffConfig, detectors ...detectorEntry) *ResourceProvider {
 	return &ResourceProvider{
 		logger:          logger,
-		timeout:         timeout,
+		telemetry:       telemetry,
+		backoffConfig:   backoffConfig,
 		detectors:       detectors,
 		refreshInterval: 0, // No periodic refresh by default
 	}
@@ -117,10 +150,24 @@ func (p *ResourceProvider) Get(_ context.Context, _ *http.Client) (pcommon.Resou
 
 // Refresh recomputes the resource, replacing any previous result.
 func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) error {
-	ctx, cancel := context.WithTimeout(ctx, client.Timeout)
-	defer cancel()
+	// MaxElapsedTime, when set, is the definitive bound on the whole retry
+	// session: apply it regardless of client.Timeout, since backoff.Retry only
+	// checks elapsed time between attempts, not during one — a per-attempt cap
+	// larger than MaxElapsedTime would otherwise let a single attempt overrun
+	// the budget. Otherwise fall back to client.Timeout so a single-shot or
+	// unbounded-retry session still can't hang forever.
+	switch {
+	case p.backoffConfig.MaxElapsedTime > 0:
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, p.backoffConfig.MaxElapsedTime)
+		defer cancel()
+	case client.Timeout > 0:
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, client.Timeout)
+		defer cancel()
+	}
 
-	res, schemaURL, err := p.detectResource(ctx)
+	res, schemaURL, err := p.detectResource(ctx, client)
 	prev := p.detectedResource.Load()
 
 	// Check if we have a previous successful snapshot
@@ -145,7 +192,7 @@ func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) err
 	return err
 }
 
-func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource, string, error) {
+func (p *ResourceProvider) detectResource(ctx context.Context, client *http.Client) (pcommon.Resource, string, error) {
 	res := pcommon.NewResource()
 	mergedSchemaURL := ""
 	var joinedErr error
@@ -154,45 +201,13 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 	p.logger.Info("began detecting resource information")
 
 	resultsChan := make([]chan resourceResult, len(p.detectors))
-	for i, detector := range p.detectors {
+	for i, entry := range p.detectors {
 		ch := make(chan resourceResult, 1)
 		resultsChan[i] = ch
 
-		go func(detector Detector, ch chan resourceResult) {
-			sleep := backoff.ExponentialBackOff{
-				InitialInterval:     1 * time.Second,
-				RandomizationFactor: 1.5,
-				Multiplier:          2,
-			}
-			sleep.Reset()
-
-			for {
-				r, schemaURL, err := detector.Detect(ctx)
-				if err == nil {
-					ch <- resourceResult{resource: r, schemaURL: schemaURL}
-					return
-				}
-
-				p.logger.Warn("failed to detect resource", zap.Error(err))
-
-				next := sleep.NextBackOff()
-				if next == backoff.Stop {
-					ch <- resourceResult{err: err}
-					return
-				}
-
-				timer := time.NewTimer(next)
-				select {
-				case <-ctx.Done():
-					p.logger.Warn("context was cancelled", zap.Error(ctx.Err()))
-					timer.Stop()
-					ch <- resourceResult{err: err}
-					return
-				case <-timer.C:
-					// retry
-				}
-			}
-		}(detector, ch)
+		go func(entry detectorEntry, ch chan resourceResult) {
+			p.detectWithRetry(ctx, client, entry, ch)
+		}(entry, ch)
 	}
 
 	for _, ch := range resultsChan {
@@ -222,6 +237,109 @@ func (p *ResourceProvider) detectResource(ctx context.Context) (pcommon.Resource
 
 	// Partial or full success: return merged resources.
 	return res, mergedSchemaURL, returnErr
+}
+
+func attemptContext(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	if timeout > 0 {
+		return context.WithTimeout(ctx, timeout)
+	}
+	return ctx, func() {}
+}
+
+// detectWithRetry runs a detector with backoff. With Enabled=false it makes one
+// attempt. With MaxElapsedTime > 0 each attempt is capped at client.Timeout so
+// one hanging attempt can't eat the whole retry budget. Every attempt records
+// per-detector result and duration telemetry.
+func (p *ResourceProvider) detectWithRetry(ctx context.Context, client *http.Client, entry detectorEntry, ch chan resourceResult) {
+	startTime := time.Now()
+	detectorAttr := attribute.String("detector", string(entry.detectorType))
+
+	// record emits the per-detector result and duration. On failure, failErr
+	// classifies the error.type on the results counter.
+	record := func(outcome string, failErr error) {
+		base := []attribute.KeyValue{detectorAttr, attribute.String("outcome", outcome)}
+		p.telemetry.ResourcedetectionDetectorDuration.Record(ctx, time.Since(startTime).Seconds(), metric.WithAttributes(base...))
+		if failErr != nil {
+			base = append(base, semconv.ErrorType(failErr))
+		}
+		p.telemetry.ResourcedetectionDetectorResults.Add(ctx, 1, metric.WithAttributes(base...))
+	}
+
+	if !p.backoffConfig.Enabled {
+		attemptCtx, cancel := attemptContext(ctx, client.Timeout)
+		defer cancel()
+		r, schemaURL, err := entry.detector.Detect(attemptCtx)
+		if err != nil {
+			p.logger.Warn("failed to detect resource", zap.String("detector", string(entry.detectorType)), zap.Error(err))
+			record("failure", err)
+			ch <- resourceResult{err: err}
+			return
+		}
+		record("success", nil)
+		ch <- resourceResult{resource: r, schemaURL: schemaURL}
+		return
+	}
+
+	sleep := &backoff.ExponentialBackOff{
+		InitialInterval:     p.backoffConfig.InitialInterval,
+		RandomizationFactor: p.backoffConfig.RandomizationFactor,
+		Multiplier:          p.backoffConfig.Multiplier,
+		MaxInterval:         p.backoffConfig.MaxInterval,
+	}
+
+	opts := []backoff.RetryOption{
+		backoff.WithBackOff(sleep),
+	}
+	// MaxElapsedTime == 0 disables the default 15-minute cap, enabling "retry forever".
+	opts = append(opts, backoff.WithMaxElapsedTime(p.backoffConfig.MaxElapsedTime))
+
+	type detectResult struct {
+		resource  pcommon.Resource
+		schemaURL string
+	}
+
+	perAttemptTimeout := time.Duration(0)
+	if p.backoffConfig.MaxElapsedTime > 0 {
+		perAttemptTimeout = client.Timeout
+	}
+
+	// Classify error.type from the first attempt's error: it's the deterministic
+	// root cause, whereas the last attempt's error often just reflects the context
+	// deadline firing rather than why the detector actually failed.
+	var firstErr, lastDetErr error
+	result, err := backoff.Retry(ctx, func() (detectResult, error) {
+		attemptCtx, cancel := attemptContext(ctx, perAttemptTimeout)
+		defer cancel()
+
+		r, schemaURL, detErr := entry.detector.Detect(attemptCtx)
+		if detErr != nil {
+			lastDetErr = detErr
+			if firstErr == nil {
+				firstErr = detErr
+			}
+			p.logger.Warn("failed to detect resource, will retry", zap.String("detector", string(entry.detectorType)), zap.Error(detErr))
+			return detectResult{}, detErr
+		}
+		return detectResult{resource: r, schemaURL: schemaURL}, nil
+	}, opts...)
+	if err != nil {
+		// Preserve the underlying detector error so callers see the real cause,
+		// not just bare context.DeadlineExceeded / backoff.PermanentError wrappers.
+		if lastDetErr != nil && !errors.Is(err, lastDetErr) {
+			err = errors.Join(lastDetErr, err)
+		}
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			p.logger.Warn("resource detection cancelled", zap.String("detector", string(entry.detectorType)), zap.Error(err))
+		} else {
+			p.logger.Error("resource detection retry budget exhausted", zap.String("detector", string(entry.detectorType)), zap.Error(err))
+		}
+		record("failure", firstErr)
+		ch <- resourceResult{err: err}
+		return
+	}
+
+	record("success", nil)
+	ch <- resourceResult{resource: result.resource, schemaURL: result.schemaURL}
 }
 
 func MergeSchemaURL(currentSchemaURL, newSchemaURL string) string {
@@ -298,6 +416,7 @@ func (p *ResourceProvider) StopRefreshing() {
 			close(p.stopCh)
 			p.wg.Wait()
 		}
+		p.telemetry.Shutdown()
 	})
 }
 

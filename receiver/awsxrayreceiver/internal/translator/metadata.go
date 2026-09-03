@@ -18,7 +18,8 @@ func addMetadata(meta map[string]map[string]any, attrs pcommon.Map) error {
 			return err
 		}
 		attrs.PutStr(
-			awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(val))
+			awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(val),
+		)
 	}
 	return nil
 }
