@@ -61,7 +61,6 @@ capabilities:
   reports_own_traces: true
   reports_health: true
   accepts_remote_config: true
-  reports_remote_config: true
   accepts_restart_command: true
 
 storage:
@@ -82,7 +81,6 @@ capabilities:
   reports_own_metrics: true
   reports_health: true
   accepts_remote_config: true
-  reports_remote_config: true
   accepts_restart_command: true
 
 storage:
@@ -1366,7 +1364,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
-				Capabilities: config.Capabilities{AcceptsRemoteConfig: true, ReportsRemoteConfig: true},
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -1470,7 +1468,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
-				Capabilities: config.Capabilities{AcceptsRemoteConfig: true, ReportsRemoteConfig: true},
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -1545,7 +1543,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       defaultPIDProvider{},
 			config: config.Supervisor{
-				Capabilities: config.Capabilities{AcceptsRemoteConfig: true, ReportsRemoteConfig: true},
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -1668,7 +1666,7 @@ service:
 			telemetrySettings: newNopTelemetrySettings(),
 			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
-				Capabilities: config.Capabilities{AcceptsRemoteConfig: true, ReportsRemoteConfig: true},
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Storage: config.Storage{
 					Directory: configStorageDir,
 				},
@@ -2506,7 +2504,7 @@ func TestSupervisor_saveAndReportConfigStatus(t *testing.T) {
 				AutomaticConfigRollback: true,
 			},
 			Capabilities: config.Capabilities{
-				ReportsRemoteConfig: true,
+				AcceptsRemoteConfig: true,
 			},
 			Storage: config.Storage{
 				Directory: filepath.Dir(persistentState.configPath),
@@ -2573,7 +2571,7 @@ func TestSupervisor_reportLastWorkingRemoteConfigStatus(t *testing.T) {
 		telemetrySettings: newNopTelemetrySettings(),
 		config: config.Supervisor{
 			Capabilities: config.Capabilities{
-				ReportsRemoteConfig: true,
+				AcceptsRemoteConfig: true,
 			},
 		},
 		persistentState: persistentState,
@@ -3593,7 +3591,6 @@ capabilities:
   reports_own_metrics: true
   reports_health: true
   accepts_remote_config: true
-  reports_remote_config: true
   accepts_restart_command: true
 
 storage:

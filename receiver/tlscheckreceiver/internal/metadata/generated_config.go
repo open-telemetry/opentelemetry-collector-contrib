@@ -13,9 +13,10 @@ import (
 type TlscheckTimeLeftMetricAttributeKey string
 
 const (
-	TlscheckTimeLeftMetricAttributeKeyTlscheckX509Issuer TlscheckTimeLeftMetricAttributeKey = "tlscheck.x509.issuer"
-	TlscheckTimeLeftMetricAttributeKeyTlscheckX509Cn     TlscheckTimeLeftMetricAttributeKey = "tlscheck.x509.cn"
-	TlscheckTimeLeftMetricAttributeKeyTlscheckX509San    TlscheckTimeLeftMetricAttributeKey = "tlscheck.x509.san"
+	TlscheckTimeLeftMetricAttributeKeyTlscheckX509Issuer      TlscheckTimeLeftMetricAttributeKey = "tlscheck.x509.issuer"
+	TlscheckTimeLeftMetricAttributeKeyTlscheckX509Cn          TlscheckTimeLeftMetricAttributeKey = "tlscheck.x509.cn"
+	TlscheckTimeLeftMetricAttributeKeyTlscheckX509San         TlscheckTimeLeftMetricAttributeKey = "tlscheck.x509.san"
+	TlscheckTimeLeftMetricAttributeKeyTlscheckX509Fingerprint TlscheckTimeLeftMetricAttributeKey = "tlscheck.x509.fingerprint"
 )
 
 // TlscheckTimeLeftMetricConfig provides config for the tlscheck.time_left metric.
@@ -44,9 +45,9 @@ func (ms *TlscheckTimeLeftMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *TlscheckTimeLeftMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case TlscheckTimeLeftMetricAttributeKeyTlscheckX509Issuer, TlscheckTimeLeftMetricAttributeKeyTlscheckX509Cn, TlscheckTimeLeftMetricAttributeKeyTlscheckX509San:
+		case TlscheckTimeLeftMetricAttributeKeyTlscheckX509Issuer, TlscheckTimeLeftMetricAttributeKeyTlscheckX509Cn, TlscheckTimeLeftMetricAttributeKeyTlscheckX509San, TlscheckTimeLeftMetricAttributeKeyTlscheckX509Fingerprint:
 		default:
-			return fmt.Errorf("metric tlscheck.time_left doesn't have an attribute %v, valid attributes: [tlscheck.x509.issuer, tlscheck.x509.cn, tlscheck.x509.san]", val)
+			return fmt.Errorf("metric tlscheck.time_left doesn't have an attribute %v, valid attributes: [tlscheck.x509.issuer, tlscheck.x509.cn, tlscheck.x509.san, tlscheck.x509.fingerprint]", val)
 		}
 	}
 
