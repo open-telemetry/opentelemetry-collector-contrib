@@ -99,6 +99,8 @@ The same applies once the data reaches the rest of the collector: the counts are
 
 The counts are reported on every response once the request has been recognised as Remote-Write 2.0, including the ones that could not be decoded. A sender reading no header at all cannot tell that apart from a receiver that does not report them.
 
+The body of a rejection describes the first series the receiver could not take, not every one of them. The whole request goes back either way, so the rest would tell a sender nothing it can act on separately, and a request made of thousands of invalid series would otherwise answer with an error larger than itself.
+
 ### What a series is allowed to carry
 
 Remote-Write 2.0 lets a series hold samples or histograms and never both, and the metric type decides which of the two the receiver goes looking for. A series that breaks either rule carries data the receiver would walk past without translating, so the request is rejected rather than half written.

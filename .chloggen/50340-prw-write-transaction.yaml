@@ -23,7 +23,13 @@ subtext: |
   written counts too, and a request only replaces the cached resource attributes
   of a target when it actually learned something from target_info. A native
   histogram whose zero bucket carries a float count while the histogram itself
-  is integer flavored, or whose zero threshold is negative, is rejected rather
-  than losing those fields on the way through.
+  is integer flavored, or whose zero threshold is negative or not a number, is
+  rejected rather than losing those fields on the way through. A symbol
+  reference past the end of the table is refused whichever series carries it,
+  where target_info used to be handed on before the check. A request that
+  translates to no data point at all stops before the consumer rather than
+  handing it an empty batch, and translation stops at the first series it
+  cannot take, so a request full of invalid ones no longer answers with an
+  error larger than itself.
 
 change_logs: [user]
