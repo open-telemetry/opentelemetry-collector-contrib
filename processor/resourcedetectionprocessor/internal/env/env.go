@@ -57,18 +57,17 @@ func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig, _ bool) (in
 }
 
 // compilePatterns turns each entry into an anchored regexp where `*` matches any
-// run of characters. Other regexp metacharacters in the input are escaped.
+// run of characters and `?` matches any single character. Other regexp
+// metacharacters in the input are escaped.
 func compilePatterns(patterns []string) ([]*regexp.Regexp, error) {
 	if len(patterns) == 0 {
 		return nil, nil
 	}
 	out := make([]*regexp.Regexp, 0, len(patterns))
 	for _, p := range patterns {
-		parts := strings.Split(p, "*")
-		for i, part := range parts {
-			parts[i] = regexp.QuoteMeta(part)
-		}
-		re, err := regexp.Compile("^" + strings.Join(parts, ".*") + "$")
+		quoted := regexp.QuoteMeta(p)
+		expr := "(?s)^" + strings.ReplaceAll(strings.ReplaceAll(quoted, `\*`, `.*`), `\?`, `.`) + "$"
+		re, err := regexp.Compile(expr)
 		if err != nil {
 			return nil, fmt.Errorf("%q: %w", p, err)
 		}

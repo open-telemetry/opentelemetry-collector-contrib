@@ -172,6 +172,29 @@ func TestCompilePatterns(t *testing.T) {
 			},
 		},
 		{
+			name:     "question mark matches single char",
+			patterns: []string{"host?name", "k8s.pod.uid.?"},
+			matches: map[string]bool{
+				"host.name":       true,
+				"host_name":       true,
+				"hostname":        false,
+				"host--name":      false,
+				"k8s.pod.uid.a":   true,
+				"k8s.pod.uid.":    false,
+				"k8s.pod.uid.abc": false,
+			},
+		},
+		{
+			name:     "mixed wildcards",
+			patterns: []string{"k8s.*.uid.?"},
+			matches: map[string]bool{
+				"k8s.pod.uid.a":     true,
+				"k8s.cluster.uid.x": true,
+				"k8s.pod.uid.":      false,
+				"k8s.pod.uid.abc":   false,
+			},
+		},
+		{
 			name:     "regex metacharacters are escaped",
 			patterns: []string{"a.b"},
 			matches: map[string]bool{

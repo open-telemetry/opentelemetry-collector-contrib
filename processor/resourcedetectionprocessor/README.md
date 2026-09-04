@@ -80,10 +80,10 @@ processors:
 ```
 
 Use `attributes.included` and `attributes.excluded` to filter which keys from
-`OTEL_RESOURCE_ATTRIBUTES` are emitted. Both lists support `*` as a wildcard
-matching any run of characters. When `included` is empty every key is included
-by default. `excluded` is applied after `included`, so a key matched by both is
-dropped.
+`OTEL_RESOURCE_ATTRIBUTES` are emitted. Both lists support `*` (matches any run
+of characters, including none) and `?` (matches any single character) as
+wildcards. When `included` is empty every key is included by default.
+`excluded` is applied after `included`, so a key matched by both is dropped.
 
 For example, inject `deployment.environment.name` and every `k8s.*` key via
 `OTEL_RESOURCE_ATTRIBUTES` while dropping `k8s.pod.name`, so other env vars on
