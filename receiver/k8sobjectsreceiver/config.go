@@ -88,6 +88,12 @@ func (c *Config) Validate() error {
 		return errors.New("interval must not be negative")
 	}
 
+	if c.CacheSyncTimeout == 0 {
+		c.CacheSyncTimeout = defaultCacheSyncTimeout
+	} else if c.CacheSyncTimeout < 0 {
+		return errors.New("cache_sync_timeout must be positive")
+	}
+
 	for _, object := range c.Objects {
 		if object.Mode == "" {
 			object.Mode = defaultMode
