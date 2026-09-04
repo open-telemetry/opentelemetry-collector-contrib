@@ -20,7 +20,6 @@ import (
 )
 
 const (
-	formatAuto    = "auto"
 	formatJSON    = "json"
 	formatConsole = "console"
 )
@@ -37,8 +36,6 @@ var consoleLinePrefixRegex = regexp.MustCompile(`^(\S+)\s+(\S+)\s+(?:(\S+:\d+)\s
 // Parser is an operator that parses otelcol self-logs and promotes the resource field onto the entry's Resource.
 type Parser struct {
 	helper.ParserOperator
-
-	format string
 }
 
 // ProcessBatch will process a batch of log entries.
@@ -68,19 +65,10 @@ func (p *Parser) parse(value any) (any, error) {
 		return nil, errors.New("empty line cannot be parsed as an otelcol self-log")
 	}
 
-	format := p.format
-	if format == formatAuto {
-		format = detectFormat(line)
-	}
-
-	switch format {
-	case formatJSON:
+	if detectFormat(line) == formatJSON {
 		return parseJSONLine(line)
-	case formatConsole:
-		return parseConsoleLine(line)
-	default:
-		return nil, fmt.Errorf("unknown otelcol self-log format %q", format)
 	}
+	return parseConsoleLine(line)
 }
 
 // detectFormat determines whether a line is json- or console-encoded.
@@ -175,18 +163,18 @@ func (p *Parser) postProcess(e *entry.Entry) error {
 		return nil
 	}
 
-	setTimestamp(e, m)
+	tsErr := setTimestamp(e, m)
 	setSeverity(e, m)
 	setBody(e, m)
 	setResource(e, m)
 
-	return nil
+	return tsErr
 }
 
-func setTimestamp(e *entry.Entry, m map[string]any) {
+func setTimestamp(e *entry.Entry, m map[string]any) error {
 	tsVal, ok := m["ts"]
 	if !ok {
-		return
+		return nil
 	}
 	defer delete(m, "ts")
 
@@ -200,14 +188,16 @@ func setTimestamp(e *entry.Entry, m map[string]any) {
 		} {
 			if t, err := time.Parse(layout, v); err == nil {
 				e.Timestamp = t
-				return
+				return nil
 			}
 		}
+		return fmt.Errorf("timestamp parser: value %q did not match any known layout", v)
 	case float64:
 		sec, dec := math.Modf(v)
 		e.Timestamp = time.Unix(int64(sec), int64(math.Round(dec*1e6))*1e3)
-	case int64:
-		e.Timestamp = time.Unix(v, 0)
+		return nil
+	default:
+		return fmt.Errorf("timestamp parser: unsupported type %T for \"ts\" field", tsVal)
 	}
 }
 

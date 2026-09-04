@@ -3,12 +3,3 @@ default:
 on_error_drop:
   type: otelcol
   on_error: drop
-format_json:
-  type: otelcol
-  format: json
-format_console:
-  type: otelcol
-  format: console
-format_auto:
-  type: otelcol
-  format: auto

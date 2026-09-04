@@ -27,30 +27,6 @@ func TestConfig(t *testing.T) {
 					return cfg
 				}(),
 			},
-			{
-				Name: "format_json",
-				Expect: func() *Config {
-					cfg := NewConfig()
-					cfg.Format = formatJSON
-					return cfg
-				}(),
-			},
-			{
-				Name: "format_console",
-				Expect: func() *Config {
-					cfg := NewConfig()
-					cfg.Format = formatConsole
-					return cfg
-				}(),
-			},
-			{
-				Name: "format_auto",
-				Expect: func() *Config {
-					cfg := NewConfig()
-					cfg.Format = formatAuto
-					return cfg
-				}(),
-			},
 		},
 	}.Run(t)
 }

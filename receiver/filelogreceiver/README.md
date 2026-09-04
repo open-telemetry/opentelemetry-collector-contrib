@@ -257,12 +257,17 @@ Receiver Configuration
 ```yaml
 receivers:
   file_log:
-    include: [ /var/log/otelcol/collector.log ]
+    include:
+    - /var/log/otelcol/collector.log
     operators:
       - type: otelcol
 ```
-
-The above configuration will read the collector's own self-log file and promote the nested `resource` field (pod name, node name, service name, etc.) onto each log record, so the logs can be correlated with the collector's own metrics and traces. It works whether the collector wrote its self-logs in `json` or `console` encoding — the operator detects which one automatically.
+ 
+The above configuration will tail the collector's own self-log file and promote the nested `resource` field (pod name, node name, service name, etc.) onto each log record, so the logs can be correlated with the collector's own metrics and traces. It works whether the collector wrote its self-logs in `json` or `console` encoding - the [`otelcol` operator](../../pkg/stanza/docs/operators/otelcol.md) detects which one automatically.
+ 
+```
+{"ts":"2026-07-06T22:56:21.989Z","level":"warn","msg":"Failed to scrape Prometheus endpoint","resource":{"k8s.pod.name":"otel-agent-qkvqj","service.name":"otel-agent"},"otelcol.component.id":"receiver_creator"}
+```
 
 ## Offset tracking
 

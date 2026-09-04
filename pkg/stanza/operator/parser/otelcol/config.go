@@ -4,8 +4,6 @@
 package otelcol // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/otelcol"
 
 import (
-	"fmt"
-
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -28,16 +26,12 @@ func NewConfig() *Config {
 func NewConfigWithID(operatorID string) *Config {
 	return &Config{
 		ParserConfig: helper.NewParserConfig(operatorID, operatorType),
-		Format:       formatAuto,
 	}
 }
 
 // Config is the configuration of an otelcol parser operator.
 type Config struct {
 	helper.ParserConfig `mapstructure:",squash"`
-
-	// Format is one of "auto", "json", "console". Defaults to "auto".
-	Format string `mapstructure:"format"`
 }
 
 // Build will build an otelcol parser operator.
@@ -56,22 +50,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, err
 	}
 
-	format := c.Format
-	if format == "" {
-		format = formatAuto
-	}
-
-	switch format {
-	case formatAuto, formatJSON, formatConsole:
-	default:
-		return nil, fmt.Errorf(
-			"operator config has an invalid `format` field %q, must be one of `auto`, `json`, `console`",
-			c.Format,
-		)
-	}
-
 	return &Parser{
 		ParserOperator: parserOperator,
-		format:         format,
 	}, nil
 }

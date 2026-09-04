@@ -24,34 +24,12 @@ func newTestParser(t *testing.T) *Parser {
 	return op.(*Parser)
 }
 
-func newTestParserWithFormat(t *testing.T, format string) *Parser {
-	config := NewConfigWithID("test")
-	config.Format = format
-	set := componenttest.NewNopTelemetrySettings()
-	op, err := config.Build(set)
-	require.NoError(t, err)
-	return op.(*Parser)
-}
-
 func TestConfigBuild(t *testing.T) {
 	config := NewConfigWithID("test")
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := config.Build(set)
 	require.NoError(t, err)
 	require.IsType(t, &Parser{}, op)
-}
-
-func TestConfigBuildDefaultFormat(t *testing.T) {
-	parser := newTestParser(t)
-	require.Equal(t, formatAuto, parser.format)
-}
-
-func TestConfigBuildInvalidFormat(t *testing.T) {
-	config := NewConfigWithID("test")
-	config.Format = "yaml"
-	set := componenttest.NewNopTelemetrySettings()
-	_, err := config.Build(set)
-	require.ErrorContains(t, err, "invalid `format` field")
 }
 
 // TestConfigBuildIgnoresParseFromParseTo asserts that parse_from/parse_to
@@ -121,13 +99,6 @@ func TestParseEmptyLine(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("   ")
 	require.ErrorContains(t, err, "empty line")
-}
-
-func TestParseUnknownFormat(t *testing.T) {
-	parser := newTestParser(t)
-	parser.format = "bogus"
-	_, err := parser.parse(`{"ts":"2026-01-01T00:00:00Z"}`)
-	require.ErrorContains(t, err, "unknown otelcol self-log format")
 }
 
 func TestDetectFormat(t *testing.T) {
@@ -239,14 +210,12 @@ func TestProcess(t *testing.T) {
 
 	cases := []struct {
 		name   string
-		format string
 		input  *entry.Entry
 		expect *entry.Entry
 	}{
 		{
-			name:   "json_forced",
-			format: formatJSON,
-			input:  &entry.Entry{Body: jsonLine},
+			name:  "json",
+			input: &entry.Entry{Body: jsonLine},
 			expect: &entry.Entry{
 				Timestamp:    wantTimestamp,
 				Severity:     entry.Warn,
@@ -257,22 +226,8 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			name:   "json_auto_detected",
-			format: formatAuto,
-			input:  &entry.Entry{Body: jsonLine},
-			expect: &entry.Entry{
-				Timestamp:    wantTimestamp,
-				Severity:     entry.Warn,
-				SeverityText: "warn",
-				Body:         "Failed to scrape Prometheus endpoint",
-				Resource:     map[string]any{"k8s.pod.name": "otel-agent-qkvqj"},
-				Attributes:   map[string]any{"otelcol.component.id": "receiver_creator"},
-			},
-		},
-		{
-			name:   "console_forced",
-			format: formatConsole,
-			input:  &entry.Entry{Body: consoleLine},
+			name:  "console",
+			input: &entry.Entry{Body: consoleLine},
 			expect: &entry.Entry{
 				Timestamp:    wantTimestamp,
 				Severity:     entry.Warn,
@@ -286,25 +241,8 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			name:   "console_auto_detected",
-			format: formatAuto,
-			input:  &entry.Entry{Body: consoleLine},
-			expect: &entry.Entry{
-				Timestamp:    wantTimestamp,
-				Severity:     entry.Warn,
-				SeverityText: "warn",
-				Body:         "Failed to scrape Prometheus endpoint",
-				Resource:     map[string]any{"k8s.pod.name": "otel-agent-qkvqj"},
-				Attributes: map[string]any{
-					"caller":               "internal/transaction.go:127",
-					"otelcol.component.id": "receiver_creator",
-				},
-			},
-		},
-		{
-			name:   "console_no_structured_fields",
-			format: formatConsole,
-			input:  &entry.Entry{Body: consoleLineNoFields},
+			name:  "console_no_structured_fields",
+			input: &entry.Entry{Body: consoleLineNoFields},
 			expect: &entry.Entry{
 				Timestamp:    wantTimestamp,
 				Severity:     entry.Info,
@@ -314,9 +252,8 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			name:   "console_brace_in_message",
-			format: formatConsole,
-			input:  &entry.Entry{Body: consoleLineBraceInMessage},
+			name:  "console_brace_in_message",
+			input: &entry.Entry{Body: consoleLineBraceInMessage},
 			expect: &entry.Entry{
 				Timestamp:    wantTimestamp,
 				Severity:     entry.Warn,
@@ -327,9 +264,8 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			name:   "console_malformed_fields_degrades_gracefully",
-			format: formatConsole,
-			input:  &entry.Entry{Body: consoleLineMalformedFields},
+			name:  "console_malformed_fields_degrades_gracefully",
+			input: &entry.Entry{Body: consoleLineMalformedFields},
 			expect: &entry.Entry{
 				Timestamp:    wantTimestamp,
 				Severity:     entry.Warn,
@@ -342,7 +278,7 @@ func TestProcess(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			parser := newTestParserWithFormat(t, tc.format)
+			parser := newTestParser(t)
 			err := parser.Process(t.Context(), tc.input)
 			require.NoError(t, err)
 			require.Equal(t, tc.expect, tc.input)
@@ -353,42 +289,65 @@ func TestProcess(t *testing.T) {
 func TestProcessFailure(t *testing.T) {
 	cases := []struct {
 		name           string
-		format         string
 		input          *entry.Entry
 		expectedErrMsg string
 	}{
 		{
 			name:           "malformed_json",
-			format:         formatJSON,
 			input:          &entry.Entry{Body: `{"ts":`},
 			expectedErrMsg: "cannot be parsed as a json-encoded otelcol self-log",
 		},
 		{
 			name:           "malformed_console",
-			format:         formatConsole,
 			input:          &entry.Entry{Body: "singleword"},
 			expectedErrMsg: "cannot be parsed as a console-encoded otelcol self-log",
 		},
 		{
 			name:           "empty_body",
-			format:         formatAuto,
 			input:          &entry.Entry{Body: ""},
 			expectedErrMsg: "empty line",
+		},
+		{
+			name:           "unparseable_timestamp_value",
+			input:          &entry.Entry{Body: `{"ts":"not-a-timestamp","level":"info","msg":"hello"}`},
+			expectedErrMsg: `value "not-a-timestamp" did not match any known layout`,
+		},
+		{
+			name:           "unsupported_timestamp_type",
+			input:          &entry.Entry{Body: `{"ts":true,"level":"info","msg":"hello"}`},
+			expectedErrMsg: `unsupported type bool for "ts" field`,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			parser := newTestParserWithFormat(t, tc.format)
+			parser := newTestParser(t)
 			err := parser.Process(t.Context(), tc.input)
 			require.ErrorContains(t, err, tc.expectedErrMsg)
 		})
 	}
 }
 
+func TestProcessTimestampErrorStillSetsOtherFields(t *testing.T) {
+	parser := newTestParser(t)
+	e := &entry.Entry{
+		Body: `{"ts":"not-a-timestamp","level":"warn","msg":"Failed to scrape endpoint",` +
+			`"resource":{"k8s.pod.name":"otel-agent-qkvqj"}}`,
+	}
+
+	err := parser.Process(t.Context(), e)
+	require.ErrorContains(t, err, `value "not-a-timestamp" did not match any known layout`)
+
+	require.True(t, e.Timestamp.IsZero())
+	require.Equal(t, entry.Warn, e.Severity)
+	require.Equal(t, "warn", e.SeverityText)
+	require.Equal(t, "Failed to scrape endpoint", e.Body)
+	require.Equal(t, map[string]any{"k8s.pod.name": "otel-agent-qkvqj"}, e.Resource)
+}
+
 func TestProcessBatch(t *testing.T) {
 	ctx := t.Context()
-	parser := newTestParserWithFormat(t, formatJSON)
+	parser := newTestParser(t)
 	fake := testutil.NewFakeOutput(t)
 	parser.OutputOperators = []operator.Operator{fake}
 

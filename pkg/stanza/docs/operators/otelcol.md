@@ -10,7 +10,6 @@ The `otelcol` operator parses the entry body as a collector self-log (a log line
 | `output`     | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
 | `on_error`   | `send`           | The behavior of the operator if it encounters an error. See [on_error](../types/on_error.md). |
 | `if`         |                  | An [expression](../types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
-| `format`     | `auto`           | One of `auto`, `json`, `console`. Forces a specific zap encoding instead of detecting it per line. |
 
 The schema is fixed - `ts`, `level`, `msg`, and `resource` always come from the same known shape zap's own encoders produce, so there is no field to configure it against. A log line either matches this shape or it isn't a collector self-log.
 
@@ -90,16 +89,6 @@ Configuration:
 </td>
 </tr>
 </table>
-
-#### Force a specific encoding, skipping auto-detection
-
-Configuration:
-```yaml
-- type: otelcol
-  format: json
-```
-
-Use this when every line in the file is known to use one encoding, since `format: auto` (the default) inspects each line individually to decide which parser to apply.
 
 #### Only parse lines from the collector's own log file
 
