@@ -1314,3 +1314,84 @@ func TestSetSpanEvents(t *testing.T) {
 		assert.Equal(t, "b", arr.Slice().At(1).Str())
 	})
 }
+
+func TestAddExceptionSpanEvent(t *testing.T) {
+	assertExceptionAttr := func(t *testing.T, event ptrace.SpanEvent, key, want string) {
+		v, ok := event.Attributes().Get(key)
+		require.True(t, ok, "missing %s", key)
+		assert.Equal(t, want, v.Str())
+	}
+
+	t.Run("synthesized from error tags", func(t *testing.T) {
+		span := translateSingleSpan(t, &pb.Span{
+			TraceID: 1, SpanID: 1, Error: 1,
+			Meta: map[string]string{
+				"error.message": "connection refused",
+				"error.type":    "ConnectionError",
+				"error.stack":   "at main.go:42",
+			},
+		})
+		require.Equal(t, 1, span.Events().Len())
+		event := span.Events().At(0)
+		assert.Equal(t, "exception", event.Name())
+		assertExceptionAttr(t, event, "exception.message", "connection refused")
+		assertExceptionAttr(t, event, "exception.type", "ConnectionError")
+		assertExceptionAttr(t, event, "exception.stacktrace", "at main.go:42")
+
+		for _, k := range []string{"error.message", "error.type", "error.stack"} {
+			_, ok := span.Attributes().Get(k)
+			assert.False(t, ok, "%s leaked as a span attribute", k)
+		}
+
+		assert.Equal(t, ptrace.StatusCodeError, span.Status().Code())
+	})
+
+	t.Run("error.msg and error.kind variants", func(t *testing.T) {
+		span := translateSingleSpan(t, &pb.Span{
+			TraceID: 1, SpanID: 1, Error: 1,
+			Meta: map[string]string{"error.msg": "boom", "error.kind": "RuntimeError"},
+		})
+		require.Equal(t, 1, span.Events().Len())
+		assertExceptionAttr(t, span.Events().At(0), "exception.message", "boom")
+		assertExceptionAttr(t, span.Events().At(0), "exception.type", "RuntimeError")
+	})
+
+	t.Run("error.stacktrace alias", func(t *testing.T) {
+		span := translateSingleSpan(t, &pb.Span{
+			TraceID: 1, SpanID: 1, Error: 1,
+			Meta: map[string]string{"error.msg": "boom", "error.stacktrace": "at main.go:7"},
+		})
+		require.Equal(t, 1, span.Events().Len())
+		assertExceptionAttr(t, span.Events().At(0), "exception.stacktrace", "at main.go:7")
+
+		_, ok := span.Attributes().Get("exception.stacktrace")
+		assert.False(t, ok, "error.stacktrace leaked as a span attribute")
+	})
+
+	t.Run("no duplicate when exception event already present", func(t *testing.T) {
+		span := translateSingleSpan(t, &pb.Span{
+			TraceID: 1, SpanID: 1, Error: 1,
+			SpanEvents: []*pb.SpanEvent{{Name: "exception", TimeUnixNano: 5, Attributes: map[string]*pb.AttributeAnyValue{
+				"exception.message": {Type: pb.AttributeAnyValue_STRING_VALUE, StringValue: "from event"},
+			}}},
+			Meta: map[string]string{"error.message": "from tag"},
+		})
+		require.Equal(t, 1, span.Events().Len())
+		assertExceptionAttr(t, span.Events().At(0), "exception.message", "from event")
+		_, ok := span.Attributes().Get("error.message")
+		assert.False(t, ok, "error.message leaked as a span attribute")
+	})
+
+	t.Run("no event without error tags", func(t *testing.T) {
+		span := translateSingleSpan(t, &pb.Span{TraceID: 1, SpanID: 1})
+		assert.Equal(t, 0, span.Events().Len())
+	})
+}
+
+func TestSpanStatus(t *testing.T) {
+	nonError := translateSingleSpan(t, &pb.Span{TraceID: 1, SpanID: 1})
+	assert.Equal(t, ptrace.StatusCodeUnset, nonError.Status().Code())
+
+	errored := translateSingleSpan(t, &pb.Span{TraceID: 2, SpanID: 2, Error: 1})
+	assert.Equal(t, ptrace.StatusCodeError, errored.Status().Code())
+}
