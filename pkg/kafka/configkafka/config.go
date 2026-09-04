@@ -470,6 +470,14 @@ type AuthenticationConfig struct {
 	Kerberos *KerberosConfig `mapstructure:"kerberos"`
 }
 
+func (a AuthenticationConfig) Validate() error {
+	if a.SASL != nil && a.Kerberos != nil {
+		return errors.New("only one of sasl or kerberos authentication can be configured")
+	}
+
+	return nil
+}
+
 // PlainTextConfig defines plaintext authentication.
 type PlainTextConfig struct {
 	Username string `mapstructure:"username"`
