@@ -1,0 +1,27 @@
+{
+    "ts": "2026-07-06T22:56:21.989Z",
+    "level": "warn",
+    "msg": "Failed to scrape Prometheus endpoint",
+    "caller": "internal/transaction.go:127",
+    "resource": {
+        "k8s.cluster.name": "mykind-hec",
+        "k8s.namespace.name": "default",
+        "k8s.node.name": "hec-test-control-plane",
+        "k8s.pod.name": "otel-collector-agent-qkvqj",
+        "k8s.pod.uid": "19537280-06d3-45bc-998a-a1a924d51e04",
+        "otelcol.service.mode": "agent",
+        "service.instance.id": "335323f7-5d6f-4ae9-b118-18c31cd99d3b",
+        "service.name": "otel-agent",
+        "service.version": "v0.155.0"
+    },
+    "otelcol.component.id": "receiver_creator",
+    "otelcol.component.kind": "receiver",
+    "otelcol.signal": "metrics",
+    "target_endpoints": [
+        "http://10.244.0.12:9090/metrics",
+        "http://10.244.0.13:9090/metrics"
+    ],
+    "scrape_duration_ms": 5231,
+    "retryable": true,
+    "error": "context deadline exceeded"
+}
