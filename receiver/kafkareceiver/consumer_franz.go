@@ -138,7 +138,6 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 	case <-c.started:
 		return errors.New("franz kafka consumer already started")
 	default:
-		close(c.started)
 	}
 
 	// Report "Starting" as soon as Start() is called.
@@ -206,6 +205,9 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 	c.consumeMessage = cm
+
+	// Signal that Start was successful only after all setup is complete.
+	close(c.started)
 
 	go c.consumeLoop(context.Background())
 	return nil
