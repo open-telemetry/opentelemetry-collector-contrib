@@ -491,6 +491,28 @@ exporters:
 > See [the Universal Profiling getting started documentation](https://www.elastic.co/guide/en/observability/current/profiling-get-started.html)
 > You will need to use the Elasticsearch endpoint, with an [Elasticsearch API key](https://www.elastic.co/guide/en/kibana/current/api-keys.html).
 
+### OTel profiling datastreams
+
+In `otel` mapping mode, profiling signals are ingested into OTel-native Elasticsearch datastreams.
+Each profiling signal type is written to a dedicated backing index:
+
+| Signal type    | Index pattern                           |
+| -------------- | --------------------------------------- |
+| Stack traces   | `profiling-stacktraces`                 |
+| Stack frames   | `profiling-stackframes`                 |
+| Executables    | `profiling-executables`                 |
+| Trace events   | `profiling-events`                      |
+
+Trace events also produce downsampled copies written to `profiling-events-5powNN` indices (where NN ranges from 01 to 11), with an `.otel-<namespace>` suffix appended to each index name. The downsampling follows powers of 5, storing progressively smaller fractions of the events to support efficient range queries over varying time windows.
+
+> [!NOTE]
+> Symbolization (resolving unsymbolized stack frames to human-readable function names and file locations) is not yet supported in OTel profiling datastream mode.
+
+> [!WARNING]
+> Starting from Elasticsearch 9.6, OTel profiling signals are ingested into the OTel-native datastream indices listed above.
+> This is a breaking change from prior behaviour: **the backing indices are different** from those used by earlier versions.
+> Existing profiling data in the old indices is not migrated automatically.
+
 [confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp/README.md#http-configuration-settings
 [configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings
 [configauth]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configauth/README.md#authentication-configuration

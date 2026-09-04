@@ -11,26 +11,22 @@ import (
 )
 
 const (
-	knownExecutablesCacheSize             = 16 * 1024
-	knownFramesCacheSize                  = 128 * 1024
-	knownTracesCacheSize                  = 128 * 1024
-	knownUnsymbolizedFramesCacheSize      = 128 * 1024
-	knownUnsymbolizedExecutablesCacheSize = 16 * 1024
-	knownHostsCacheSize                   = 1024 * 1024
+	knownExecutablesCacheSize = 16 * 1024
+	knownFramesCacheSize      = 128 * 1024
+	knownTracesCacheSize      = 128 * 1024
+	knownHostsCacheSize       = 1024 * 1024
 
 	minILMRolloverTime = 3 * time.Hour
 )
 
 type Serializer struct {
 	// Data cache for profiles
-	loadLRUsOnce                 sync.Once
-	lruErr                       error
-	knownTraces                  *lru.LRUSet
-	knownFrames                  *lru.LRUSet
-	knownExecutables             *lru.LRUSet
-	knownUnsymbolizedFrames      *lru.LRUSet
-	knownUnsymbolizedExecutables *lru.LRUSet
-	knownHosts                   *lru.LRUSet
+	loadLRUsOnce     sync.Once
+	lruErr           error
+	knownTraces      *lru.LRUSet
+	knownFrames      *lru.LRUSet
+	knownExecutables *lru.LRUSet
+	knownHosts       *lru.LRUSet
 }
 
 // New builds a new Serializer

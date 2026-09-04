@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/ecsserializer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -190,8 +191,12 @@ func newEncoder(mode MappingMode) (documentEncoder, error) {
 			attributesPrefix: "",
 		}, nil
 	case MappingECS:
+		ser, err := ecsserializer.New()
+		if err != nil {
+			return nil, err
+		}
 		return ecsModeEncoder{
-			profilesUnsupportedEncoder: profilesUnsupportedEncoder{mode: mode},
+			profilesSerializer: ser,
 		}, nil
 	case MappingBodyMap:
 		return bodymapModeEncoder{
@@ -217,7 +222,8 @@ type legacyModeEncoder struct {
 
 type ecsModeEncoder struct {
 	ecsDataPointsEncoder
-	profilesUnsupportedEncoder
+
+	profilesSerializer *ecsserializer.Serializer
 }
 
 type bodymapModeEncoder struct {
@@ -586,6 +592,15 @@ func (ecsModeEncoder) encodeSpanEvent(
 	}
 
 	return idx, document.Serialize(buf, true, spanEventProtectedFields)
+}
+
+func (e ecsModeEncoder) encodeProfile(
+	ec encodingContext,
+	dic pprofile.ProfilesDictionary,
+	profile pprofile.Profile,
+	pushData func(*bytes.Buffer, string, string) error,
+) error {
+	return e.profilesSerializer.SerializeProfile(dic, ec.resource, ec.scope, profile, pushData)
 }
 
 func isExceptionSpanEvent(event ptrace.SpanEvent) bool {
