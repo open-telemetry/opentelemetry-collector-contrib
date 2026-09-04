@@ -6,6 +6,7 @@ package groupbytraceprocessor
 import (
 	"context"
 	"errors"
+	"maps"
 	"sync"
 	"testing"
 	"time"
@@ -622,6 +623,23 @@ func TestSubtrace_HappyPath_TwoServices(t *testing.T) {
 		total += b.SpanCount()
 	}
 	assert.Equal(t, 4, total)
+
+	svcA := map[pcommon.SpanID]bool{rootA: true, childA: true}
+	svcB := map[pcommon.SpanID]bool{rootB: true, childB: true}
+	for _, b := range batches {
+		ids := map[pcommon.SpanID]bool{}
+		for i := 0; i < b.ResourceSpans().Len(); i++ {
+			rs := b.ResourceSpans().At(i)
+			for j := 0; j < rs.ScopeSpans().Len(); j++ {
+				ss := rs.ScopeSpans().At(j)
+				for k := 0; k < ss.Spans().Len(); k++ {
+					ids[ss.Spans().At(k).SpanID()] = true
+				}
+			}
+		}
+		assert.True(t, maps.Equal(ids, svcA) || maps.Equal(ids, svcB),
+			"batch span IDs %v matched neither svc-a %v nor svc-b %v", ids, svcA, svcB)
+	}
 }
 
 func TestSubtrace_LocalRootArrivesLate(t *testing.T) {
