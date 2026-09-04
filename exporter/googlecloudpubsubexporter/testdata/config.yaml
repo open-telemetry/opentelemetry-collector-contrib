@@ -13,6 +13,10 @@ googlecloudpubsub/customname:
     from_resource_attribute: ordering_key
     remove_resource_attribute: true
 googlecloudpubsub/sovereign:
-  project: my-sovereign-project
-  topic: projects/my-sovereign-project/topics/otlp-topic
+  project: prefix:my-sovereign-project
+  topic: projects/prefix:my-sovereign-project/topics/otlp-topic
   universe_domain: apis.example.com
+googlecloudpubsub/vanilla:
+  project: my-vanilla-project
+  topic: projects/my-vanilla-project/topics/otlp-topic
+  universe_domain: googleapis.com
