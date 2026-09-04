@@ -6,17 +6,22 @@ package fileexporter
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
@@ -289,4 +294,125 @@ func TestNativeZstdCompression_WithRotation(t *testing.T) {
 	}
 
 	require.Equal(t, 100, totalTraces, "expected all 100 traces to be recoverable across all files")
+}
+
+// textLogsEncoding marshals log bodies as text, standing in for encodings such as
+// textencodingextension whose output is meant to be read as plain text.
+type textLogsEncoding struct{}
+
+func (textLogsEncoding) Start(context.Context, component.Host) error { return nil }
+func (textLogsEncoding) Shutdown(context.Context) error              { return nil }
+
+func (textLogsEncoding) MarshalLogs(ld plog.Logs) ([]byte, error) {
+	var buf bytes.Buffer
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		sls := rls.At(i).ScopeLogs()
+		for j := 0; j < sls.Len(); j++ {
+			lrs := sls.At(j).LogRecords()
+			for k := 0; k < lrs.Len(); k++ {
+				buf.WriteString(lrs.At(k).Body().AsString())
+			}
+		}
+	}
+	return buf.Bytes(), nil
+}
+
+func logsWithBody(body string) plog.Logs {
+	ld := plog.NewLogs()
+	lr := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	lr.Body().SetStr(body)
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return ld
+}
+
+// An encoding written to a natively compressed file is framed by `format`, so the default
+// `json` yields clean text that survives zstdcat and grep. See #49328.
+func TestNativeCompression_EncodingFramedByFormat(t *testing.T) {
+	tests := []struct {
+		name       string
+		formatType string
+		expected   string
+	}{
+		{
+			name:       "json writes newline delimited",
+			formatType: formatTypeJSON,
+			expected:   "line-one\nline-two\n",
+		},
+		{
+			name:       "proto keeps length prefixes",
+			formatType: formatTypeProto,
+			expected:   "\x00\x00\x00\x08line-one\x00\x00\x00\x08line-two",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			setNativeCompressionFeatureGate(t, true)
+
+			encID := component.MustNewID("testencoding")
+			path := filepath.Join(t.TempDir(), "app.log.zst")
+			conf := &Config{
+				Path:              path,
+				FormatType:        test.formatType,
+				Encoding:          &encID,
+				Compression:       compressionZSTD,
+				CompressionParams: configcompression.CompressionParams{Level: 3},
+			}
+
+			host := hostWithEncoding{map[component.ID]component.Component{encID: textLogsEncoding{}}}
+			fe := &fileExporter{conf: conf}
+			require.NoError(t, fe.Start(t.Context(), host))
+			require.NoError(t, fe.consumeLogs(t.Context(), logsWithBody("line-one")))
+			require.NoError(t, fe.consumeLogs(t.Context(), logsWithBody("line-two")))
+			require.NoError(t, fe.Shutdown(t.Context()))
+
+			require.Equal(t, test.expected, string(decompressZstd(t, path)))
+		})
+	}
+}
+
+// Native compression must frame an encoding the same way the uncompressed path already
+// does, which is what #49328 reported as broken.
+func TestBuildExportFunc_EncodingFramingMatchesUncompressed(t *testing.T) {
+	encID := component.MustNewID("enc")
+	line := []byte("hello\n")
+	prefixed := []byte{0, 0, 0, 5, 'h', 'e', 'l', 'l', 'o'}
+
+	for _, formatType := range []string{formatTypeJSON, formatTypeProto} {
+		t.Run(formatType, func(t *testing.T) {
+			expected := line
+			if formatType == formatTypeProto {
+				expected = prefixed
+			}
+
+			setNativeCompressionFeatureGate(t, false)
+			uncompressed := &Config{FormatType: formatType, Encoding: &encID}
+			require.Equal(t, expected, runExport(t, buildExportFunc(uncompressed), []byte("hello")))
+
+			setNativeCompressionFeatureGate(t, true)
+			compressed := &Config{FormatType: formatType, Encoding: &encID, Compression: compressionZSTD}
+			require.Equal(t, expected, runExport(t, buildExportFunc(compressed), []byte("hello")))
+		})
+	}
+}
+
+func runExport(t *testing.T, export exportFunc, buf []byte) []byte {
+	t.Helper()
+	out := &bytes.Buffer{}
+	w := &fileWriter{file: &nopWriteCloser{out}}
+	require.NoError(t, export(w, buf))
+	return out.Bytes()
+}
+
+func decompressZstd(t *testing.T, path string) []byte {
+	t.Helper()
+	compressed, err := os.ReadFile(path)
+	require.NoError(t, err)
+	reader, err := zstd.NewReader(bytes.NewReader(compressed))
+	require.NoError(t, err)
+	defer reader.Close()
+	decompressed, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	return decompressed
 }
