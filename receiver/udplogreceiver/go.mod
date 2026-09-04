@@ -15,11 +15,11 @@ require (
 )
 
 require (
-	go.opentelemetry.io/collector/component/componenttest v0.160.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.160.0
+	go.opentelemetry.io/collector/component/componenttest v0.160.1-0.20260903163450-cc4b33fc673f
+	go.opentelemetry.io/collector/consumer/consumertest v0.160.1-0.20260903163450-cc4b33fc673f
 	go.opentelemetry.io/collector/pdata v1.66.1-0.20260903163450-cc4b33fc673f
-	go.opentelemetry.io/collector/receiver/receivertest v0.160.0
-	go.opentelemetry.io/collector/receiver/xreceiver v0.160.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.160.1-0.20260903163450-cc4b33fc673f
+	go.opentelemetry.io/collector/receiver/xreceiver v0.160.1-0.20260903163450-cc4b33fc673f
 	go.uber.org/zap v1.28.0
 )
 
@@ -49,16 +49,16 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.160.0 // indirect
 	github.com/valyala/fastjson v1.6.10 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.160.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.160.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.160.1-0.20260903163450-cc4b33fc673f // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.160.1-0.20260903163450-cc4b33fc673f // indirect
 	go.opentelemetry.io/collector/extension v1.66.1-0.20260903163450-cc4b33fc673f // indirect
-	go.opentelemetry.io/collector/extension/xextension v0.160.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.160.1-0.20260903163450-cc4b33fc673f // indirect
 	go.opentelemetry.io/collector/featuregate v1.66.1-0.20260903163450-cc4b33fc673f // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.160.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.160.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.160.1-0.20260903163450-cc4b33fc673f // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.160.1-0.20260903163450-cc4b33fc673f // indirect
 	go.opentelemetry.io/collector/pipeline v1.66.1-0.20260903163450-cc4b33fc673f // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.160.0 // indirect
-	go.opentelemetry.io/collector/receiver/receiverhelper v0.160.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.160.1-0.20260903163450-cc4b33fc673f // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.160.1-0.20260903163450-cc4b33fc673f // indirect
 	go.opentelemetry.io/otel v1.46.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.46.0 // indirect
