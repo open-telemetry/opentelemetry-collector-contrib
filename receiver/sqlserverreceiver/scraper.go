@@ -338,13 +338,16 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	serverPort := int64(s.config.Port)
 
 	if s.config.DataSource != "" {
-		host, port, err := parseDataSource(s.config.DataSource)
+		config, err := parseDataSource(s.config.DataSource)
 		if err != nil {
 			s.logger.Warn("Failed to parse datasource for host.name attribute, using fallback", zap.Error(err))
 		} else {
-			hostName = host
-			serverAddress = host
-			serverPort = int64(port)
+			hostName = config.Host
+			serverAddress = config.Host
+			serverPort = int64(config.Port)
+			if serverPort == 0 {
+				serverPort = defaultSQLServerPort
+			}
 		}
 	}
 
@@ -352,11 +355,8 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetServiceInstanceID(s.serviceInstanceID)
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
-
-	if !metadata.ReceiverSqlserverRemoveServerResourceAttributeFeatureGate.IsEnabled() {
-		rb.SetServerAddress(serverAddress)
-		rb.SetServerPort(serverPort)
-	}
+	rb.SetServerAddress(serverAddress)
+	rb.SetServerPort(serverPort)
 
 	return rb
 }
@@ -1761,8 +1761,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			rowsReturnedVal.(int64),
 			totalElapsedTimeVal,
 			totalGrantVal.(int64),
-			s.config.Server,
-			int64(s.config.Port),
 			dbSystemNameVal,
 			procExecCountVal.(int64),
 			row[storedProcedureID],
