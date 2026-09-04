@@ -50,6 +50,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 		labelKeyRegexes:       labelKeyRegexes,
 		gceClientBuilder:      &instancesRESTBuilder{},
 		failOnMissingMetadata: failOnMissingMetadata,
+		onGCE:                 metadata.OnGCEWithContext,
 	}, nil
 }
 
@@ -60,6 +61,7 @@ type detector struct {
 	labelKeyRegexes       []*regexp.Regexp
 	gceClientBuilder      instancesBuilder
 	failOnMissingMetadata bool
+	onGCE                 func(ctx context.Context) bool
 }
 
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
@@ -78,7 +80,11 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return d.rb.Emit(), conventions.SchemaURL, nil
 	}
 
-	if !metadata.OnGCE() {
+	onGCE := d.onGCE
+	if onGCE == nil {
+		onGCE = metadata.OnGCEWithContext
+	}
+	if !onGCE(ctx) {
 		return pcommon.NewResource(), "", nil
 	}
 

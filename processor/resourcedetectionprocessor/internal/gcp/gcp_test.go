@@ -779,3 +779,43 @@ func TestCompileLabelRegexes(t *testing.T) {
 		})
 	}
 }
+
+func TestDetect_PropagatesContextToOnGCE(t *testing.T) {
+	d := newTestDetector(&fakeGCPDetector{
+		projectID:     "my-project",
+		cloudPlatform: gcp.GCE,
+	})
+
+	var receivedCtx context.Context
+	d.onGCE = func(ctx context.Context) bool {
+		receivedCtx = ctx
+		return false
+	}
+
+	type ctxKey struct{}
+	expectedCtx := context.WithValue(t.Context(), ctxKey{}, "test-val")
+
+	res, schema, err := d.Detect(expectedCtx)
+	require.NoError(t, err)
+	assert.Empty(t, schema)
+	assert.Equal(t, 0, res.Attributes().Len())
+	assert.Equal(t, expectedCtx, receivedCtx, "expected caller context to be passed directly to onGCE check")
+}
+
+func TestDetect_ContextCancellation(t *testing.T) {
+	d := newTestDetector(&fakeGCPDetector{
+		projectID:     "my-project",
+		cloudPlatform: gcp.GCE,
+	})
+	d.onGCE = func(ctx context.Context) bool {
+		return ctx.Err() == nil
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	res, schema, err := d.Detect(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, schema)
+	assert.Equal(t, 0, res.Attributes().Len())
+}
