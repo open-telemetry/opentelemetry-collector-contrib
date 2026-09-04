@@ -56,20 +56,38 @@ type K8sObjectsConfig struct {
 	gvr               *schema.GroupVersionResource
 }
 
+type CustomResourceSelector struct {
+	Group     string   `mapstructure:"group"`
+	Resources []string `mapstructure:"resources"`
+}
+
+type CustomResourcesConfig struct {
+	Interval          time.Duration            `mapstructure:"interval"`
+	InitialDelay      time.Duration            `mapstructure:"initial_delay"`
+	Namespaces        []string                 `mapstructure:"namespaces"`
+	ExcludeNamespaces []filter.Config          `mapstructure:"exclude_namespaces"`
+	LabelSelector     string                   `mapstructure:"label_selector"`
+	FieldSelector     string                   `mapstructure:"field_selector"`
+	Include           []CustomResourceSelector `mapstructure:"include"`
+	Exclude           []CustomResourceSelector `mapstructure:"exclude"`
+}
+
 type Config struct {
 	APIConfig k8sconfig.APIConfig `mapstructure:",squash"`
 
-	Interval            time.Duration       `mapstructure:"interval"`
-	Objects             []*K8sObjectsConfig `mapstructure:"objects"`
-	Storage             *component.ID       `mapstructure:"storage"`
-	ErrorMode           ErrorMode           `mapstructure:"error_mode"`
-	IncludeInitialState bool                `mapstructure:"include_initial_state"`
+	Interval            time.Duration          `mapstructure:"interval"`
+	Objects             []*K8sObjectsConfig    `mapstructure:"objects"`
+	CustomResources     *CustomResourcesConfig `mapstructure:"custom_resources"`
+	Storage             *component.ID          `mapstructure:"storage"`
+	ErrorMode           ErrorMode              `mapstructure:"error_mode"`
+	IncludeInitialState bool                   `mapstructure:"include_initial_state"`
 
 	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 
 	// For mocking purposes only.
-	makeDiscoveryClient func() (discovery.ServerResourcesInterface, error)
-	makeDynamicClient   func() (dynamic.Interface, error)
+	makeDiscoveryClient   func() (discovery.ServerResourcesInterface, error)
+	makeDynamicClient     func() (dynamic.Interface, error)
+	makeKubernetesClients func() (kubernetesClients, error)
 }
 
 func (c *Config) Validate() error {
@@ -130,6 +148,59 @@ func (c *Config) Validate() error {
 			return errors.New("namespaces and exclude_namespaces cannot both be set at the same time")
 		}
 	}
+
+	if c.CustomResources == nil {
+		return nil
+	}
+
+	if c.CustomResources.Interval < 0 {
+		return errors.New("custom_resources.interval must not be negative")
+	}
+	if c.CustomResources.Interval == 0 {
+		if c.Interval != 0 {
+			c.CustomResources.Interval = c.Interval
+		} else {
+			c.CustomResources.Interval = defaultPullInterval
+		}
+	}
+	if c.CustomResources.InitialDelay > 0 && c.CustomResources.InitialDelay >= c.CustomResources.Interval {
+		return errors.New("custom_resources.initial_delay must be less than interval")
+	}
+	if len(c.CustomResources.ExcludeNamespaces) != 0 && len(c.CustomResources.Namespaces) != 0 {
+		return errors.New("custom_resources.namespaces and custom_resources.exclude_namespaces cannot both be set at the same time")
+	}
+	for i, namespaceFilter := range c.CustomResources.ExcludeNamespaces {
+		if err := namespaceFilter.Validate(); err != nil {
+			return fmt.Errorf("custom_resources.exclude_namespaces[%d]: %w", i, err)
+		}
+	}
+	if err := validateCustomResourceSelectors("include", c.CustomResources.Include); err != nil {
+		return err
+	}
+	if err := validateCustomResourceSelectors("exclude", c.CustomResources.Exclude); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateCustomResourceSelectors(name string, selectors []CustomResourceSelector) error {
+	if name == "include" && len(selectors) == 0 {
+		return errors.New("custom_resources.include must not be empty")
+	}
+	for i, selector := range selectors {
+		if selector.Group == "" {
+			return fmt.Errorf("custom_resources.%s[%d].group must not be empty", name, i)
+		}
+		if len(selector.Resources) == 0 {
+			return fmt.Errorf("custom_resources.%s[%d].resources must not be empty", name, i)
+		}
+
+		for j, resource := range selector.Resources {
+			if resource == "" {
+				return fmt.Errorf("custom_resources.%s[%d].resources[%d] must not be empty", name, i, j)
+			}
+		}
+	}
 	return nil
 }
 
@@ -154,12 +225,27 @@ func (c *Config) getDynamicClient() (dynamic.Interface, error) {
 	return k8sconfig.MakeDynamicClient(c.APIConfig)
 }
 
+func (c *Config) getCustomResourceClients() (kubernetesClients, error) {
+	if c.makeKubernetesClients != nil {
+		return c.makeKubernetesClients()
+	}
+
+	restConfig, err := k8sconfig.CreateRestConfig(c.APIConfig)
+	if err != nil {
+		return kubernetesClients{}, err
+	}
+	return newKubernetesClients(restConfig)
+}
+
 func (c *Config) getValidObjects() (map[string][]*schema.GroupVersionResource, error) {
 	dc, err := c.getDiscoveryClient()
 	if err != nil {
 		return nil, err
 	}
+	return getValidObjects(dc)
+}
 
+func getValidObjects(dc discovery.ServerResourcesInterface) (map[string][]*schema.GroupVersionResource, error) {
 	res, err := dc.ServerPreferredResources()
 	if err != nil {
 		// Check if Partial result is returned from discovery client, that means some API servers have issues,

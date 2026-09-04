@@ -1,0 +1,7 @@
+apiVersion: e2e.opentelemetry.io/v1
+kind: Widget
+metadata:
+  name: test-k8sobjects-receiver-unlabeled-widget
+  namespace: default
+spec:
+  message: not collected

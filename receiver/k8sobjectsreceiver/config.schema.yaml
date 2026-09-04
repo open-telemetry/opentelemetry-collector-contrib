@@ -1,4 +1,42 @@
 $defs:
+  custom_resource_selector:
+    type: object
+    properties:
+      group:
+        type: string
+      resources:
+        type: array
+        items:
+          type: string
+  custom_resources_config:
+    type: object
+    properties:
+      exclude:
+        type: array
+        items:
+          $ref: custom_resource_selector
+      exclude_namespaces:
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      field_selector:
+        type: string
+      include:
+        type: array
+        items:
+          $ref: custom_resource_selector
+      initial_delay:
+        type: string
+        format: duration
+      interval:
+        type: string
+        format: duration
+      label_selector:
+        type: string
+      namespaces:
+        type: array
+        items:
+          type: string
   error_mode:
     type: string
   k_8_s_objects_config:
@@ -37,6 +75,9 @@ $defs:
         type: string
 type: object
 properties:
+  custom_resources:
+    x-pointer: true
+    $ref: custom_resources_config
   error_mode:
     $ref: error_mode
   include_initial_state:
