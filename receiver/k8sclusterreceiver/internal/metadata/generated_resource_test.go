@@ -18,6 +18,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetContainerImageTag("container.image.tag-val")
 			rb.SetContainerRuntime("container.runtime-val")
 			rb.SetContainerRuntimeVersion("container.runtime.version-val")
+			rb.SetK8sClusterUID("k8s.cluster.uid-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sContainerStatusLastTerminatedReason("k8s.container.status.last_terminated_reason-val")
 			rb.SetK8sCronjobName("k8s.cronjob.name-val")
@@ -72,7 +73,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 38, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 51, res.Attributes().Len())
+				assert.Equal(t, 52, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -103,6 +104,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.Equal(t, "container.runtime.version-val", containerRuntimeVersionAttrVal.Str())
+			}
+			k8sClusterUIDAttrVal, ok := res.Attributes().Get("k8s.cluster.uid")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "k8s.cluster.uid-val", k8sClusterUIDAttrVal.Str())
 			}
 			k8sContainerNameAttrVal, ok := res.Attributes().Get("k8s.container.name")
 			assert.True(t, ok)
