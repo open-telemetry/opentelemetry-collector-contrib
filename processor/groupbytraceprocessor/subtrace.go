@@ -43,8 +43,11 @@ func isLocalRoot(bs bufferedSpan, index map[pcommon.SpanID]bufferedSpan) bool {
 		return true
 	}
 	flags := bs.span.Flags()
-	if flags&spanFlagsContextHasIsRemoteMask != 0 {
-		return flags&spanFlagsContextIsRemoteMask != 0
+	// If IS_REMOTE is set, consider it authoritative.
+	// If it is not set, default to treating this span as a local root if any of the
+	// remaining checks are met.
+	if flags&spanFlagsContextHasIsRemoteMask != 0 && flags&spanFlagsContextIsRemoteMask != 0 {
+		return true
 	}
 	parent, ok := index[bs.span.ParentSpanID()]
 	if !ok {

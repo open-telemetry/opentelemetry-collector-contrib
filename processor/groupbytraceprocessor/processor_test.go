@@ -675,8 +675,33 @@ func TestSubtrace_IsRemoteCleared_TwoServices(t *testing.T) {
 		return sink.SpanCount() == 4
 	}, 5*time.Second, 5*time.Millisecond)
 
-	// One batch: all four spans belong to rootA's subtrace.
-	assert.Len(t, sink.AllTraces(), 1)
+	// Each service should arrive as a separate batch.
+	batches := sink.AllTraces()
+	assert.Len(t, batches, 2)
+
+	// Total span count must be 4.
+	total := 0
+	for _, b := range batches {
+		total += b.SpanCount()
+	}
+	assert.Equal(t, 4, total)
+
+	svcA := map[pcommon.SpanID]bool{rootA: true, childA: true}
+	svcB := map[pcommon.SpanID]bool{rootB: true, childB: true}
+	for _, b := range batches {
+		ids := map[pcommon.SpanID]bool{}
+		for i := 0; i < b.ResourceSpans().Len(); i++ {
+			rs := b.ResourceSpans().At(i)
+			for j := 0; j < rs.ScopeSpans().Len(); j++ {
+				ss := rs.ScopeSpans().At(j)
+				for k := 0; k < ss.Spans().Len(); k++ {
+					ids[ss.Spans().At(k).SpanID()] = true
+				}
+			}
+		}
+		assert.True(t, maps.Equal(ids, svcA) || maps.Equal(ids, svcB),
+			"batch span IDs %v matched neither svc-a %v nor svc-b %v", ids, svcA, svcB)
+	}
 }
 
 func TestSubtrace_LocalRootArrivesLate(t *testing.T) {
