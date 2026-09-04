@@ -84,7 +84,7 @@ jobs:
         id: filename
         env:
           MATRIX_TEST: ${{ matrix.test }}
-        run: echo "name=$(echo "${MATRIX_TEST}" | sed -e 's/|/_/g')" >> "$GITHUB_OUTPUT"
+        run: echo "name=${MATRIX_TEST//|/_}" >> "$GITHUB_OUTPUT"
       - name: Create Test Result Archive
         if: ${{ failure() || success() }}
         continue-on-error: true
