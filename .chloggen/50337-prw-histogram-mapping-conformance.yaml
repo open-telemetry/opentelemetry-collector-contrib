@@ -17,7 +17,11 @@ subtext: |
   the count without adjusting it at all, so one that observed NaN was emitted
   with a count larger than its buckets account for. A custom bucket histogram
   carrying no bounds was dropped rather than translated, and a stale marker was
-  lost when the buckets it carries could not be summed. The sum is now left
-  unset when the count is zero, which OpenTelemetry requires.
+  lost when the buckets it carries could not be summed. Deltas that take a
+  running bucket count below zero are refused rather than converted to a very
+  large population, and a stale marker no longer carries the buckets its spans
+  describe, since a data point that records nothing cannot hold observations.
+  The sum is now left unset when the count is zero, which OpenTelemetry
+  requires.
 
 change_logs: [user]
