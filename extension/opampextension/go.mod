@@ -124,9 +124,11 @@ require (
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260803160001-6ac0973c030d // indirect
-	google.golang.org/protobuf v1.36.12 // indirect
+	google.golang.org/protobuf v1.36.12
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages => ../opampcustommessages
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status => ../../pkg/status
+
+replace github.com/open-telemetry/opamp-go => github.com/amarkdotdev/opamp-go v0.23.1-0.20260904074245-126dde4b955a

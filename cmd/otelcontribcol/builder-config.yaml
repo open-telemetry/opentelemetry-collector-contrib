@@ -291,3 +291,4 @@ providers:
 # file before passing it to OCB, to ensure that local versions are used for all
 # Contrib modules.
 replaces:
+  - github.com/open-telemetry/opamp-go => github.com/amarkdotdev/opamp-go v0.23.1-0.20260904074245-126dde4b955a
