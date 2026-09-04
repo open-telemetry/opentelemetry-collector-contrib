@@ -980,6 +980,26 @@ func (ms *K8sStatefulsetDesiredPodsMetricConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
+// K8sStatefulsetPodAvailableMetricConfig provides config for the k8s.statefulset.pod.available metric.
+type K8sStatefulsetPodAvailableMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sStatefulsetPodAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // K8sStatefulsetReadyPodsMetricConfig provides config for the k8s.statefulset.ready_pods metric.
 type K8sStatefulsetReadyPodsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1213,6 +1233,7 @@ type MetricsConfig struct {
 	K8sServiceLoadBalancerIngressCount      K8sServiceLoadBalancerIngressCountMetricConfig      `mapstructure:"k8s.service.load_balancer.ingress.count"`
 	K8sStatefulsetCurrentPods               K8sStatefulsetCurrentPodsMetricConfig               `mapstructure:"k8s.statefulset.current_pods"`
 	K8sStatefulsetDesiredPods               K8sStatefulsetDesiredPodsMetricConfig               `mapstructure:"k8s.statefulset.desired_pods"`
+	K8sStatefulsetPodAvailable              K8sStatefulsetPodAvailableMetricConfig              `mapstructure:"k8s.statefulset.pod.available"`
 	K8sStatefulsetReadyPods                 K8sStatefulsetReadyPodsMetricConfig                 `mapstructure:"k8s.statefulset.ready_pods"`
 	K8sStatefulsetUpdatedPods               K8sStatefulsetUpdatedPodsMetricConfig               `mapstructure:"k8s.statefulset.updated_pods"`
 	OpenshiftAppliedclusterquotaLimit       OpenshiftAppliedclusterquotaLimitMetricConfig       `mapstructure:"openshift.appliedclusterquota.limit"`
@@ -1365,6 +1386,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		K8sStatefulsetDesiredPods: K8sStatefulsetDesiredPodsMetricConfig{
 			Enabled: true,
+		},
+		K8sStatefulsetPodAvailable: K8sStatefulsetPodAvailableMetricConfig{
+			Enabled: false,
 		},
 		K8sStatefulsetReadyPods: K8sStatefulsetReadyPodsMetricConfig{
 			Enabled: true,

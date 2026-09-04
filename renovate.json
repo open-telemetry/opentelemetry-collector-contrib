@@ -5,15 +5,18 @@
     "dependencies"
   ],
   "constraints": {
-    "go": "1.25"
+    "go": "1.26"
   },
   "schedule": [
     "on tuesday"
   ],
   "minimumReleaseAge": "2 days",
   "extends": [
-    "config:recommended",
+    "config:best-practices",
     "helpers:pinGitHubActionDigestsToSemver"
+  ],
+  "gitIgnoredAuthors": [
+    "197425009+otelbot@users.noreply.github.com"
   ],
   "ignorePaths": [
     "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",
@@ -100,18 +103,22 @@
       ]
     },
     {
-      "matchPackagePatterns": ["^github.com/DataDog/opentelemetry-mapping-go/"],
-      "enabled": false
+      "enabled": false,
+      "matchPackageNames": [
+        "/^github.com/DataDog/opentelemetry-mapping-go//"
+      ]
     },
     {
-      "matchPaths": [
+      "matchFileNames": [
         "exporter/datadogexporter/**",
         "connector/datadogconnector/**",
         "internal/datadog/**",
         "pkg/datadog/**"
       ],
-      "matchPackagePatterns": ["^github.com/DataDog/datadog-agent"],
-      "enabled": false
+      "enabled": false,
+      "matchPackageNames": [
+        "/^github.com/DataDog/datadog-agent/"
+      ]
     },
     {
       "matchManagers": [

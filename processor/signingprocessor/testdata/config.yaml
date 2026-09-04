@@ -1,0 +1,54 @@
+# Signing processor — file-based key material (minimal config).
+# algorithm and certificate_ref use their defaults (RS256, fingerprint).
+signing:
+  key_source:
+    type: file
+    file:
+      cert_file: /etc/otelcol/signing-cert.pem
+      key_file:  /etc/otelcol/signing-key.pem
+
+# RS512 variant with full certificate reference.
+signing/sha512_full:
+  algorithm: RS512
+  certificate_ref: full
+  key_source:
+    type: file
+    file:
+      cert_file: /etc/otelcol/signing-cert.pem
+      key_file:  /etc/otelcol/signing-key.pem
+
+# Environment-variable key material.
+signing/env:
+  key_source:
+    type: env
+    env:
+      cert_env_var: SIGNING_CERT_PEM
+      key_env_var:  SIGNING_KEY_PEM
+
+# Kubernetes Secret key material.
+signing/k8s:
+  key_source:
+    type: k8s_secret
+    k8s_secret:
+      name:      signing-secret
+      namespace: default
+      cert_key:  tls.crt
+      key_key:   tls.key
+
+# OpenBao / Vault key material.
+signing/bao:
+  key_source:
+    type: bao
+    bao:
+      address:     https://bao.example.com
+      secret_path: secret/data/signing
+      cert_field:  certificate
+      key_field:   private_key
+
+# HMAC-SHA256 with key from environment variable.
+signing/hmac:
+  algorithm: HMAC-SHA256
+  key_source:
+    type: env
+    env:
+      hmac_key_env_var: SIGNING_HMAC_KEY

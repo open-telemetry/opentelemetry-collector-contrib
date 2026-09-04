@@ -81,7 +81,9 @@ server:
 # Keys with boolean true/false values that enable a particular
 # OpAMP capability.
 capabilities:
-  # The Supervisor will accept remote configuration from the Server.
+  # The Supervisor will accept remote configuration from the Server and
+  # report remote configuration status to the Server. Enables both the
+  # AcceptsRemoteConfig and ReportsRemoteConfig OpAMP capabilities.
   accepts_remote_config: # false if unspecified
 
   # The Supervisor will accept restart requests.
@@ -114,7 +116,10 @@ capabilities:
   # The Collector will report Health.
   reports_health: # true if unspecified
 
-  # The Supervisor will report remote config status to the Server.
+  # DEPRECATED: This option has no effect and will be removed in v0.165.0.
+  # Remote config status is reported whenever accepts_remote_config is
+  # enabled. See
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49763
   reports_remote_config: # false if unspecified
 
   # The Supervisor will report available Collector components to the Server.
@@ -183,6 +188,15 @@ agent:
   # The port the Supervisor will start its OpAmp server on and the Collector's
   # OpAmp extension will connect to
   opamp_server_port:
+
+  # Optional configuration for how collector executable updates are identified
+  # and verified. The archive format is not configured here; the supervisor
+  # detects it from the download URL and Content-Type header.
+  # NOTE: This functionality is not yet fully implemented.
+  package:
+    # Name of the collector binary as it appears inside the archive the supervisor
+    # downloads. Used to locate the binary in archives that bundle multiple files.
+    agent_binary: "otelcol-contrib"
 
   # List of paths to fallback configuration files to use when the OpAMP server is
   # unreachable. If more than one path is specified, they are merged in order.
