@@ -7,14 +7,14 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.160.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.160.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.66.0
+	go.opentelemetry.io/collector/component v1.66.1-0.20260903163450-cc4b33fc673f
 	go.opentelemetry.io/collector/component/componenttest v0.160.0
-	go.opentelemetry.io/collector/config/confignet v1.66.0
-	go.opentelemetry.io/collector/confmap v1.66.0
-	go.opentelemetry.io/collector/consumer v1.66.0
+	go.opentelemetry.io/collector/config/confignet v1.66.1-0.20260903163450-cc4b33fc673f
+	go.opentelemetry.io/collector/confmap v1.66.1-0.20260903163450-cc4b33fc673f
+	go.opentelemetry.io/collector/consumer v1.66.1-0.20260903163450-cc4b33fc673f
 	go.opentelemetry.io/collector/consumer/consumertest v0.160.0
-	go.opentelemetry.io/collector/pdata v1.66.0
-	go.opentelemetry.io/collector/receiver v1.66.0
+	go.opentelemetry.io/collector/pdata v1.66.1-0.20260903163450-cc4b33fc673f
+	go.opentelemetry.io/collector/receiver v1.66.1-0.20260903163450-cc4b33fc673f
 	go.opentelemetry.io/collector/receiver/receivertest v0.160.0
 	go.uber.org/goleak v1.3.0
 )
@@ -40,10 +40,10 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.160.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.160.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.160.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.66.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.66.1-0.20260903163450-cc4b33fc673f // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.160.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.160.0 // indirect
-	go.opentelemetry.io/collector/pipeline v1.66.0 // indirect
+	go.opentelemetry.io/collector/pipeline v1.66.1-0.20260903163450-cc4b33fc673f // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.160.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.160.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.160.0 // indirect
