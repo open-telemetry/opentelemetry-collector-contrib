@@ -4,7 +4,6 @@
 package k8sobjectsreceiver
 
 import (
-	"context"
 	"errors"
 	"strings"
 	"sync"
@@ -863,7 +862,7 @@ func TestLeaderCallbacksAreRaceFree(t *testing.T) {
 	}()
 	go func() {
 		defer wg.Done()
-		_ = r.Shutdown(context.Background())
+		_ = r.Shutdown(t.Context())
 	}()
 	wg.Wait()
 }
