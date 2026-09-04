@@ -1,0 +1,85 @@
+# Oracle Database Receiver — Example Configuration
+# Copy this file, fill in the required fields, and run:
+#   otelcol --config oracle-config.yaml
+
+receivers:
+  oracledb:
+    # ---------------------------------------------------------------------------
+    # Connection — choose one of the following formats:
+    # ---------------------------------------------------------------------------
+
+    # Option 1: Separate fields
+    endpoint: "<HOST>:1521"
+    username: "<USERNAME>"
+    password: "<PASSWORD>"
+    service:  "<SERVICE_NAME>"
+
+    # Option 2: Datasource URL (use for TLS, e.g. Autonomous DB on port 1522)
+    # datasource: "oracle://<USERNAME>:<PASSWORD>@<HOST>:1522/<SERVICE>?ssl=true&ssl%20verify=true"
+
+    collection_interval: 10s
+
+    # ---------------------------------------------------------------------------
+    # Events (optional)
+    # ---------------------------------------------------------------------------
+    events:
+      db.server.query_sample:
+        enabled: true
+      db.server.top_query:
+        enabled: true
+      db.server.session.wait_sample:
+        enabled: true
+
+    top_query_collection:
+      max_query_sample_count: 1000
+      top_query_count: 200
+      collection_interval: 60s
+
+    query_sample_collection:
+      max_rows_per_query: 100
+
+    session_wait_event_collection:
+      max_rows_per_query: 100
+
+    # ---------------------------------------------------------------------------
+    # Metrics — some metrics are enabled by default, others are opt-in.
+    # For the full list and their default states, see metadata.yaml.
+    # ---------------------------------------------------------------------------
+    metrics:
+      oracledb.cpu_time:
+        enabled: true
+      oracledb.executions:
+        enabled: true
+      oracledb.sessions.usage:
+        enabled: true
+      oracledb.physical_reads:
+        enabled: true
+      oracledb.enqueue_deadlocks:
+        enabled: true
+      # Add more metrics from metadata.yaml as needed, e.g.:
+      # oracledb.tablespace_size.usage:
+      #   enabled: true
+
+# ---------------------------------------------------------------------------
+# Processors, exporters, and pipelines below are just an example.
+# You can use any processors and exporters supported by the OpenTelemetry
+# Collector. See https://opentelemetry.io/docs/collector/configuration/
+# ---------------------------------------------------------------------------
+processors:
+  batch:
+
+exporters:
+  otlphttp:
+    endpoint: "<YOUR_OTLP_ENDPOINT>"
+    compression: gzip
+
+service:
+  pipelines:
+    metrics/oracledb:
+      receivers: [oracledb]
+      processors: [batch]
+      exporters: [otlphttp]
+    logs/oracledb:
+      receivers: [oracledb]
+      processors: [batch]
+      exporters: [otlphttp]
