@@ -98,8 +98,10 @@ GOTESTSUM_OPT?= --rerun-fails=1
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
 
-# All source code and documents. Used in spell check.
+# All source code and documents.
 ALL_SRC_AND_DOC_CMD := find . -type f \( \( -name "*.md" -o -name "*.go" -o -name "*.yaml" \) -and \( -not -path '*/third_party/*' \) \) | sort
+# NUL-separated variant used to batch spell checks.
+ALL_SRC_AND_DOC_NULL_CMD := find . -type f \( \( -name "*.md" -o -name "*.go" -o -name "*.yaml" \) -and \( -not -path '*/third_party/*' \) \) -print0
 
 ADDLICENSE_CMD := $(ADDLICENSE) -s=only -y "" -c "The OpenTelemetry Authors"
 
@@ -320,14 +322,15 @@ tidy:
 toolchain:
 	$(GOCMD) get toolchain@none
 
+# Batch file arguments to stay below Windows command-line length limits.
 .PHONY: misspell
 misspell:
 	@echo "running $(MISSPELL)"
-	@$(MISSPELL) $$($(ALL_SRC_AND_DOC_CMD))
+	@$(ALL_SRC_AND_DOC_NULL_CMD) | xargs -0 -n 500 $(MISSPELL)
 
 .PHONY: misspell-correction
 misspell-correction:
-	@$(MISSPELL_CORRECTION) $$($(ALL_SRC_AND_DOC_CMD))
+	@$(ALL_SRC_AND_DOC_NULL_CMD) | xargs -0 -n 500 $(MISSPELL_CORRECTION)
 
 .PHONY: moddownload
 moddownload:

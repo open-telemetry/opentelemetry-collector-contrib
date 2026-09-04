@@ -465,6 +465,7 @@ require (
 	go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.17.0 // indirect
 	go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.17.0 // indirect
 	go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0 // indirect
+	go.opentelemetry.io/contrib/detectors/azure/azurefunctions v0.17.0 // indirect
 	go.opentelemetry.io/contrib/detectors/azure/azurevm v0.17.0 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.45.0 // indirect
 	go.opentelemetry.io/contrib/detectors/hetzner v0.17.0 // indirect

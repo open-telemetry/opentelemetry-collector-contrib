@@ -457,6 +457,8 @@ go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.17.0 h1:sSDJeWCxp
 go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.17.0/go.mod h1:gjTLF6FGtedGD3c70yX5h+RLztW2aa+XbvpiGhvfK9g=
 go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0 h1:6TvMbWB8r3b3bDnmEOINXY4LGDkS5Tb/KdMIRk1b8gQ=
 go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0/go.mod h1:l5PtALrPd1LdGoCatPskfemVbh1KupYQ6GyWX+JiyRY=
+go.opentelemetry.io/contrib/detectors/azure/azurefunctions v0.17.0 h1:OvSZYQ90HTKyuWa1jCrMgB8FdHbdNgIJUBwzeJEjmTk=
+go.opentelemetry.io/contrib/detectors/azure/azurefunctions v0.17.0/go.mod h1:LI1ldqOhq8cABV3H4xFa0Ct5LA0zRvsxYoOM+qfe1Pw=
 go.opentelemetry.io/contrib/detectors/hetzner v0.17.0 h1:HiEdsKe2YvfTHdVa9Z8KdIagp17qxi/4yNs2vZgikbk=
 go.opentelemetry.io/contrib/detectors/hetzner v0.17.0/go.mod h1:Ul/Uo/wOY7XrBXnrtDbWCl6E6pQUjOSt8VfFDZSgafE=
 go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.17.0 h1:zhELKuXxvdj0t3hWImgDdSm8Aaujhf8RjFBhIGe1yY4=
