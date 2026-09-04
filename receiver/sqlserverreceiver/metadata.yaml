@@ -33,7 +33,7 @@ resource_attributes:
     enabled: false
     type: int
   service.instance.id:
-    description: A unique identifier of the SQL Server instance in the format host:port. In Windows Performance Counter mode the host is derived from computer_name (falling back to the collector host when monitoring locally), with a default port of 1433.
+    description: A unique identifier of the SQL Server instance. When using direct connection settings, the format is host:port. When using a datasource, the format is host\instance for a named instance and host:port otherwise; the port defaults to 1433 when omitted. In Windows Performance Counter mode, the format remains host:1433; host is computer_name for remote monitoring, or the local collector host when monitoring locally.
     enabled: true
     type: string
   service.name:
@@ -1445,7 +1445,6 @@ feature_gates:
       When enabled, the server.address and server.port resource attributes are removed from metrics.
     from_version: v0.129.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40141      
-    skip_strict_validation: true
 
 tests:
   config:

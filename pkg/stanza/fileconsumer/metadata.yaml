@@ -16,28 +16,24 @@ feature_gates:
       When enabled, allows usage of the `delete_after_read` setting.
     from_version: v0.70.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314
-    skip_strict_validation: true
   - id: filelog.allowHeaderMetadataParsing
     stage: beta
     description: >-
       When enabled, allows usage of the `header` setting.
     from_version: v0.73.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198
-    skip_strict_validation: true
   - id: filelog.mtimeSortType
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, allows usage of `ordering_criteria.mode` = `mtime`.
     from_version: v0.89.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812
-    skip_strict_validation: true
   - id: filelog.protobufCheckpointEncoding
     stage: beta
     description: >-
       Use protobuf encoding for checkpoint storage instead of JSON.
     from_version: v0.148.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266
-    skip_strict_validation: true
   - id: filelog.requireExplicitTopN
     stage: alpha
     description: >-
@@ -46,14 +42,12 @@ feature_gates:
       back to the legacy default of 1.
     from_version: v0.159.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47444
-    skip_strict_validation: true
   - id: filelog.windows.caseInsensitive
     stage: beta
     description: >-
       On Windows, make matching patterns in include/exclude case insensitive.
     from_version: v0.142.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43777
-    skip_strict_validation: true
 
 telemetry:
   metrics:

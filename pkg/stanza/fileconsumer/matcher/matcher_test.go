@@ -16,8 +16,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 )
 
-func intPtr(i int) *int { return &i }
-
 func TestNew(t *testing.T) {
 	cases := []struct {
 		name                      string
@@ -89,7 +87,7 @@ func TestNew(t *testing.T) {
 				Include: []string{"*.log"},
 				OrderingCriteria: OrderingCriteria{
 					Regex: "",
-					TopN:  intPtr(1),
+					TopN:  new(1),
 					SortBy: []Sort{
 						{
 							SortType: "numeric",
@@ -106,7 +104,7 @@ func TestNew(t *testing.T) {
 				Include: []string{"*.log"},
 				OrderingCriteria: OrderingCriteria{
 					Regex: "[a-z",
-					TopN:  intPtr(1),
+					TopN:  new(1),
 					SortBy: []Sort{
 						{
 							SortType: "numeric",
@@ -123,7 +121,7 @@ func TestNew(t *testing.T) {
 				Include: []string{"*.log"},
 				OrderingCriteria: OrderingCriteria{
 					Regex: "[a-z]",
-					TopN:  intPtr(-1),
+					TopN:  new(-1),
 					SortBy: []Sort{
 						{
 							SortType: "numeric",
@@ -150,7 +148,7 @@ func TestNew(t *testing.T) {
 				Include: []string{"*.log"},
 				OrderingCriteria: OrderingCriteria{
 					Regex: `(?P<num>\d{2}).*log`,
-					TopN:  intPtr(1),
+					TopN:  new(1),
 					SortBy: []Sort{
 						{
 							SortType: "",
@@ -166,7 +164,7 @@ func TestNew(t *testing.T) {
 				Include: []string{"*.log"},
 				OrderingCriteria: OrderingCriteria{
 					Regex: `(?P<num>\d{2}).*log`,
-					TopN:  intPtr(1),
+					TopN:  new(1),
 					SortBy: []Sort{
 						{
 							SortType: "numeric",
@@ -183,7 +181,7 @@ func TestNew(t *testing.T) {
 				Include: []string{"*.log"},
 				OrderingCriteria: OrderingCriteria{
 					Regex: `(?P<num>[a-z]+).*log`,
-					TopN:  intPtr(1),
+					TopN:  new(1),
 					SortBy: []Sort{
 						{
 							SortType: "alphabetical",
@@ -200,7 +198,7 @@ func TestNew(t *testing.T) {
 				Include: []string{"*.log"},
 				OrderingCriteria: OrderingCriteria{
 					Regex: `(?P<num>\d{2}).*log`,
-					TopN:  intPtr(1),
+					TopN:  new(1),
 					SortBy: []Sort{
 						{
 							SortType: "timestamp",
@@ -217,7 +215,7 @@ func TestNew(t *testing.T) {
 			criteria: Criteria{
 				Include: []string{"*.log"},
 				OrderingCriteria: OrderingCriteria{
-					TopN: intPtr(1),
+					TopN: new(1),
 					SortBy: []Sort{
 						{
 							SortType: "mtime",
@@ -232,7 +230,7 @@ func TestNew(t *testing.T) {
 			criteria: Criteria{
 				Include: []string{"*.log"},
 				OrderingCriteria: OrderingCriteria{
-					TopN: intPtr(1),
+					TopN: new(1),
 					SortBy: []Sort{
 						{
 							SortType: "mtime",
@@ -266,7 +264,7 @@ func TestNew(t *testing.T) {
 			criteria: Criteria{
 				Include: []string{"*.log"},
 				OrderingCriteria: OrderingCriteria{
-					TopN:   intPtr(0),
+					TopN:   new(0),
 					SortBy: []Sort{{SortType: "mtime"}},
 				},
 			},
@@ -277,7 +275,7 @@ func TestNew(t *testing.T) {
 			criteria: Criteria{
 				Include: []string{"*.log"},
 				OrderingCriteria: OrderingCriteria{
-					TopN:   intPtr(5),
+					TopN:   new(5),
 					SortBy: []Sort{{SortType: "mtime"}},
 				},
 			},
@@ -304,6 +302,9 @@ func TestNew(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.enableMtimeFeatureGate {
 				enableSortByMTimeFeature(t)
+			} else {
+				// explicitly disable the gate, because the feature gate is always enabled as it's beta.
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogMtimeSortTypeFeatureGate.ID(), false))
 			}
 			if tc.enableRequireExplicitTopN {
 				enableRequireExplicitTopNFeature(t)
@@ -357,7 +358,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"*.log"},
 			filterCriteria: OrderingCriteria{
 				Regex: `(?P<value>\d{4}).*log`, // input will match this
-				TopN:  intPtr(1),
+				TopN:  new(1),
 				SortBy: []Sort{
 					{
 						SortType: sortTypeNumeric,
@@ -381,7 +382,7 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				Regex: `err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`,
-				TopN:  intPtr(1),
+				TopN:  new(1),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeTimestamp,
@@ -401,7 +402,7 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				Regex: `err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`,
-				TopN:  intPtr(3),
+				TopN:  new(3),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeTimestamp,
@@ -421,7 +422,7 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				Regex: `err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`,
-				TopN:  intPtr(2),
+				TopN:  new(2),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeTimestamp,
@@ -441,7 +442,7 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				Regex: `err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`,
-				TopN:  intPtr(1),
+				TopN:  new(1),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeTimestamp,
@@ -461,7 +462,7 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				Regex: `err\.(?P<value>\d+).*log`,
-				TopN:  intPtr(1),
+				TopN:  new(1),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeNumeric,
@@ -478,7 +479,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				TopN:  intPtr(6),
+				TopN:  new(6),
 				Regex: `err\.[a-z]\.(?P<value>\d+).*log`,
 				SortBy: []Sort{
 					{
@@ -496,7 +497,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				TopN:    intPtr(6),
+				TopN:    new(6),
 				GroupBy: `err\.(?P<value>[a-z]+).[0-9]*.*log`,
 				Regex:   `err\.[a-z]\.(?P<value>\d+).*log`,
 				SortBy: []Sort{
@@ -515,7 +516,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				TopN:    intPtr(6),
+				TopN:    new(6),
 				GroupBy: `err\.(?P<value>[a-z]+).[0-9]*.*log`,
 			},
 			expected: []string{"err.a.123456786.log", "err.a.123456787.log", "err.a.123456788.log", "err.a.123456789.log", "err.b.123456788.log", "err.b.123456789.log"},
@@ -527,7 +528,7 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				Regex: `err\.(?P<value>\d+).*log`,
-				TopN:  intPtr(1),
+				TopN:  new(1),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeNumeric,
@@ -545,7 +546,7 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				Regex: `err\.(?P<value>[a-zA-Z]+).*log`,
-				TopN:  intPtr(1),
+				TopN:  new(1),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeAlphabetical,
@@ -563,7 +564,7 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				Regex: `err\.(?P<value>[a-zA-Z]+).*log`,
-				TopN:  intPtr(2),
+				TopN:  new(2),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeAlphabetical,
@@ -581,7 +582,7 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				Regex: `err\.(?P<value>[a-zA-Z]+).*log`,
-				TopN:  intPtr(1),
+				TopN:  new(1),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeAlphabetical,
@@ -608,7 +609,7 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
-				TopN:  intPtr(4),
+				TopN:  new(4),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeAlphabetical,
@@ -647,7 +648,7 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
-				TopN:  intPtr(1),
+				TopN:  new(1),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeAlphabetical,
@@ -686,7 +687,7 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
-				TopN:  intPtr(1),
+				TopN:  new(1),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeAlphabetical,
@@ -725,7 +726,7 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
-				TopN:  intPtr(1),
+				TopN:  new(1),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeNumeric,
@@ -764,7 +765,7 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
-				TopN:  intPtr(1),
+				TopN:  new(1),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeNumeric,
@@ -803,7 +804,7 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
-				TopN:  intPtr(1),
+				TopN:  new(1),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeNumeric,
@@ -842,7 +843,7 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
-				TopN:  intPtr(1),
+				TopN:  new(1),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeNumeric,
@@ -957,7 +958,7 @@ func TestMtimeSortWithTopNZeroReturnsAllFiles(t *testing.T) {
 	m, err := New(Criteria{
 		Include: []string{"*.log"},
 		OrderingCriteria: OrderingCriteria{
-			TopN: intPtr(0), // 0 = match all files
+			TopN: new(0), // 0 = match all files
 			SortBy: []Sort{
 				{SortType: sortTypeMtime},
 			},

@@ -13,7 +13,7 @@ jobs:
       actions: write
       checks: read
       contents: read
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -23,6 +23,7 @@ jobs:
         with:
           client-id: ${{ vars.OTELBOT_CLIENT_ID }}
           private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
+          permission-members: read
       - name: Run rerun-failed-workflows.sh
         run: ./.github/workflows/scripts/rerun-failed-workflows.sh
         env:

@@ -52,6 +52,26 @@ metrics:
     unit: us
     attributes: [cpu.mode]
 
+  systemd.service.memory.usage:
+    description: Bytes of memory in use by this service.
+    enabled: true
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    unit: By
+
+  systemd.service.memory.usage.max:
+    description: Maximum memory used by this service, in bytes.
+    enabled: true
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    unit: By
+
   systemd.service.restarts:
     description: Number of automatic restarts for the service.
     extended_documentation: |
