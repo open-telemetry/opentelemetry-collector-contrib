@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Name }}
+    spec:
+      serviceAccountName: {{ .Name }}-sa
+      containers:
+        - name: otelcol
+          image: otelcontribcol:latest
+          imagePullPolicy: Never
+          env:
+            - name: WEBSITE_SITE_NAME
+              value: "test-app-service"
+            - name: WEBSITE_RESOURCE_GROUP
+              value: "test-resource-group"
+            - name: WEBSITE_OWNER_NAME
+              value: "00000000-0000-0000-0000-000000000000+test-resource-group-CentralUSwebspace"
+            - name: REGION_NAME
+              value: "Central US"
+            - name: WEBSITE_SLOT_NAME
+              value: "staging"
+            - name: WEBSITE_INSTANCE_ID
+              value: "test-instance-id-12345"
+          args:
+            - "--config=/conf/relay"
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Name }}-config
+            items:
+              - key: relay
+                path: relay

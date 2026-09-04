@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions/v2"
@@ -190,7 +189,7 @@ func TestAzureScraperScrape_ChronologicalAndNoDuplicate(t *testing.T) {
 				Response: armmonitor.Response{
 					Value: []*armmonitor.Metric{
 						{
-							Name: &armmonitor.LocalizableString{Value: to.Ptr(metricName)},
+							Name: &armmonitor.LocalizableString{Value: new(metricName)},
 							Unit: &unit,
 							Timeseries: []*armmonitor.TimeSeriesElement{
 								{
@@ -261,7 +260,7 @@ func TestAzureScraperScrape_ChronologicalAndNoDuplicate(t *testing.T) {
 				Response: armmonitor.Response{
 					Value: []*armmonitor.Metric{
 						{
-							Name: &armmonitor.LocalizableString{Value: to.Ptr(metricName)},
+							Name: &armmonitor.LocalizableString{Value: new(metricName)},
 							Unit: &unit,
 							Timeseries: []*armmonitor.TimeSeriesElement{
 								{
@@ -600,61 +599,61 @@ func TestAzureScraperProcessResources(t *testing.T) {
 			cfg:  cfgWithSubTypes,
 			resourcesArg: []*armresources.GenericResourceExpanded{
 				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
-					Type: to.Ptr("Microsoft.Storage/storageAccounts"),
+					ID:   new("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
+					Type: new("Microsoft.Storage/storageAccounts"),
 					Tags: map[string]*string{
-						"tagA": to.Ptr("tagA value"),
+						"tagA": new("tagA value"),
 					},
 				},
 				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
-					Type: to.Ptr("Microsoft.Compute/virtualMachines"),
+					ID:   new("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
+					Type: new("Microsoft.Compute/virtualMachines"),
 					Tags: map[string]*string{
-						"tagB": to.Ptr("tagB value"),
+						"tagB": new("tagB value"),
 					},
 				},
 			},
 			expected: []*armresources.GenericResourceExpanded{
 				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
-					Type: to.Ptr("Microsoft.Storage/storageAccounts"),
+					ID:   new("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
+					Type: new("Microsoft.Storage/storageAccounts"),
 					Tags: map[string]*string{
-						"tagA": to.Ptr("tagA value"),
+						"tagA": new("tagA value"),
 					},
 				},
 				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/blobServices/default"),
-					Type: to.Ptr("Microsoft.Storage/storageAccounts/blobServices"),
+					ID:   new("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/blobServices/default"),
+					Type: new("Microsoft.Storage/storageAccounts/blobServices"),
 					Tags: map[string]*string{
-						"tagA": to.Ptr("tagA value"),
+						"tagA": new("tagA value"),
 					},
 				},
 				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/fileServices/default"),
-					Type: to.Ptr("Microsoft.Storage/storageAccounts/fileServices"),
+					ID:   new("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/fileServices/default"),
+					Type: new("Microsoft.Storage/storageAccounts/fileServices"),
 					Tags: map[string]*string{
-						"tagA": to.Ptr("tagA value"),
+						"tagA": new("tagA value"),
 					},
 				},
 				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/queueServices/default"),
-					Type: to.Ptr("Microsoft.Storage/storageAccounts/queueServices"),
+					ID:   new("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/queueServices/default"),
+					Type: new("Microsoft.Storage/storageAccounts/queueServices"),
 					Tags: map[string]*string{
-						"tagA": to.Ptr("tagA value"),
+						"tagA": new("tagA value"),
 					},
 				},
 				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/tableServices/default"),
-					Type: to.Ptr("Microsoft.Storage/storageAccounts/tableServices"),
+					ID:   new("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/tableServices/default"),
+					Type: new("Microsoft.Storage/storageAccounts/tableServices"),
 					Tags: map[string]*string{
-						"tagA": to.Ptr("tagA value"),
+						"tagA": new("tagA value"),
 					},
 				},
 				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
-					Type: to.Ptr("Microsoft.Compute/virtualMachines"),
+					ID:   new("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
+					Type: new("Microsoft.Compute/virtualMachines"),
 					Tags: map[string]*string{
-						"tagB": to.Ptr("tagB value"),
+						"tagB": new("tagB value"),
 					},
 				},
 			},
@@ -664,33 +663,33 @@ func TestAzureScraperProcessResources(t *testing.T) {
 			cfg:  cfgWithoutSubTypes,
 			resourcesArg: []*armresources.GenericResourceExpanded{
 				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
-					Type: to.Ptr("Microsoft.Storage/storageAccounts"),
+					ID:   new("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
+					Type: new("Microsoft.Storage/storageAccounts"),
 					Tags: map[string]*string{
-						"tagA": to.Ptr("tagA value"),
+						"tagA": new("tagA value"),
 					},
 				},
 				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
-					Type: to.Ptr("Microsoft.Compute/virtualMachines"),
+					ID:   new("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
+					Type: new("Microsoft.Compute/virtualMachines"),
 					Tags: map[string]*string{
-						"tagB": to.Ptr("tagB value"),
+						"tagB": new("tagB value"),
 					},
 				},
 			},
 			expected: []*armresources.GenericResourceExpanded{
 				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
-					Type: to.Ptr("Microsoft.Storage/storageAccounts"),
+					ID:   new("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
+					Type: new("Microsoft.Storage/storageAccounts"),
 					Tags: map[string]*string{
-						"tagA": to.Ptr("tagA value"),
+						"tagA": new("tagA value"),
 					},
 				},
 				{
-					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
-					Type: to.Ptr("Microsoft.Compute/virtualMachines"),
+					ID:   new("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
+					Type: new("Microsoft.Compute/virtualMachines"),
 					Tags: map[string]*string{
-						"tagB": to.Ptr("tagB value"),
+						"tagB": new("tagB value"),
 					},
 				},
 			},
@@ -1117,12 +1116,12 @@ func TestMapFindInsensitive(t *testing.T) {
 
 func TestBuildSubTypeResource_PointersAreDistinct(t *testing.T) {
 	orig := armresources.GenericResourceExpanded{
-		ID:       to.Ptr("/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/myResource"),
-		Type:     to.Ptr("Microsoft.Storage/storageAccounts"),
-		Name:     to.Ptr("myResource"),
-		Location: to.Ptr("westeurope"),
+		ID:       new("/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/myResource"),
+		Type:     new("Microsoft.Storage/storageAccounts"),
+		Name:     new("myResource"),
+		Location: new("westeurope"),
 		Tags: map[string]*string{
-			"env": to.Ptr("prod"),
+			"env": new("prod"),
 		},
 	}
 

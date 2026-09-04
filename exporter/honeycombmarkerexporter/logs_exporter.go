@@ -106,8 +106,18 @@ func (e *honeycombLogsExporter) exportMarkers(ctx context.Context, ld plog.Logs)
 }
 
 func (e *honeycombLogsExporter) sendMarker(ctx context.Context, m marker, logRecord plog.LogRecord) error {
-	requestMap := map[string]string{
+	requestMap := map[string]any{
 		"type": m.Type,
+	}
+
+	timestamp := logRecord.Timestamp()
+
+	if timestamp == 0 {
+		timestamp = logRecord.ObservedTimestamp()
+	}
+
+	if timestamp != 0 {
+		requestMap["start_time"] = timestamp.AsTime().Unix()
 	}
 
 	messageValue, found := logRecord.Attributes().Get(m.MessageKey)

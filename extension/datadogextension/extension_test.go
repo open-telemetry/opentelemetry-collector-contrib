@@ -94,11 +94,6 @@ func TestExtensionLifecycle(t *testing.T) {
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		serverConfig.WriteTimeout = 0
-		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -177,11 +172,6 @@ func TestNotifyConfig(t *testing.T) {
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		serverConfig.WriteTimeout = 0
-		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -235,11 +225,6 @@ func TestCollectorResourceAttributesArePopulated(t *testing.T) {
 	hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 	uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -287,11 +272,6 @@ func TestCollectorResourceAttributesWithMultipleKeys(t *testing.T) {
 	hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 	uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -351,11 +331,6 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		serverConfig.WriteTimeout = 0
-		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -398,11 +373,6 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		serverConfig.WriteTimeout = 0
-		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -443,11 +413,6 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		serverConfig.WriteTimeout = 0
-		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -534,11 +499,6 @@ func TestExtension_DeploymentTypeInPayload(t *testing.T) {
 			hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 			uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 			serverConfig := confighttp.NewDefaultServerConfig()
-			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			serverConfig.WriteTimeout = 0
-			serverConfig.ReadHeaderTimeout = 0
-			serverConfig.IdleTimeout = 0
-			serverConfig.KeepAlivesEnabled = false
 			serverConfig.NetAddr = confignet.AddrConfig{
 				Transport: confignet.TransportTypeTCP,
 				Endpoint:  "localhost:0",
@@ -592,11 +552,6 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		serverConfig.WriteTimeout = 0
-		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -655,11 +610,6 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		serverConfig.WriteTimeout = 0
-		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -720,11 +670,6 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		serverConfig.WriteTimeout = 0
-		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -792,11 +737,6 @@ func TestNotifyConfigConcurrentAccess(t *testing.T) {
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		serverConfig.WriteTimeout = 0
-		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -871,9 +811,6 @@ func TestNotifyConfigConcurrentAccess(t *testing.T) {
 func TestBuildAgentConfigPropagatesTLSSetting(t *testing.T) {
 	t.Run("insecure_skip_verify true propagates to skip_ssl_validation", func(t *testing.T) {
 		clientConfig := confighttp.NewDefaultClientConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		clientConfig.MaxIdleConns = 0
-		clientConfig.IdleConnTimeout = 0
 		clientConfig.ForceAttemptHTTP2 = false
 		clientConfig.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
 		cfg := &Config{
@@ -1063,11 +1000,6 @@ func TestExtensionLivenessMetric(t *testing.T) {
 
 		// Create extension with test config
 		serverConfig := confighttp.NewDefaultServerConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		serverConfig.WriteTimeout = 0
-		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -1145,11 +1077,6 @@ func TestExtensionLivenessMetric(t *testing.T) {
 
 		// Create extension without configured hostname
 		serverConfig := confighttp.NewDefaultServerConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		serverConfig.WriteTimeout = 0
-		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",
@@ -1223,11 +1150,6 @@ func TestExtensionLivenessMetric(t *testing.T) {
 
 		// Create extension
 		serverConfig := confighttp.NewDefaultServerConfig()
-		// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-		serverConfig.WriteTimeout = 0
-		serverConfig.ReadHeaderTimeout = 0
-		serverConfig.IdleTimeout = 0
-		serverConfig.KeepAlivesEnabled = false
 		serverConfig.NetAddr = confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 			Endpoint:  "localhost:0",

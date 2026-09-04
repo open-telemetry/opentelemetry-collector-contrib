@@ -33,7 +33,7 @@ func TestHandleSecurityPolicyRequestData(t *testing.T) {
 				RemoteIPInfo: &remoteIPInfo{
 					IPAddress:  "10.0.0.1",
 					RegionCode: "US",
-					ASN:        int64ptr(12345),
+					ASN:        new(int64(12345)),
 				},
 				TLSJa4Fingerprint: "ja4_fingerprint",
 				TLSJa3Fingerprint: "ja3_fingerprint",
@@ -95,7 +95,7 @@ func TestHandleSecurityPolicyBase(t *testing.T) {
 			name: "all fields populated",
 			policy: &securityPolicyBase{
 				Name:             "test-policy",
-				Priority:         int64ptr(100),
+				Priority:         new(int64(100)),
 				ConfiguredAction: "DENY",
 				Outcome:          "DENY",
 			},
@@ -110,7 +110,7 @@ func TestHandleSecurityPolicyBase(t *testing.T) {
 			name: "zero priority",
 			policy: &securityPolicyBase{
 				Name:             "policy-zero",
-				Priority:         int64ptr(0),
+				Priority:         new(int64(0)),
 				ConfiguredAction: "allow",
 				Outcome:          "accepted",
 			},
@@ -282,7 +282,7 @@ func TestHandleSecurityPolicyExtended(t *testing.T) {
 			policy: &securityPolicyExtended{
 				securityPolicyBase: securityPolicyBase{
 					Name:             "test-policy",
-					Priority:         int64ptr(10),
+					Priority:         new(int64(10)),
 					ConfiguredAction: "DENY",
 					Outcome:          "DENY",
 				},
@@ -299,7 +299,7 @@ func TestHandleSecurityPolicyExtended(t *testing.T) {
 			policy: &securityPolicyExtended{
 				securityPolicyBase: securityPolicyBase{
 					Name:             "test-policy",
-					Priority:         int64ptr(10),
+					Priority:         new(int64(10)),
 					ConfiguredAction: "DENY",
 					Outcome:          "DENY",
 				},
@@ -322,7 +322,7 @@ func TestHandleSecurityPolicyExtended(t *testing.T) {
 			policy: &securityPolicyExtended{
 				securityPolicyBase: securityPolicyBase{
 					Name:             "test-policy",
-					Priority:         int64ptr(10),
+					Priority:         new(int64(10)),
 					ConfiguredAction: "DENY",
 					Outcome:          "DENY",
 				},
@@ -341,7 +341,7 @@ func TestHandleSecurityPolicyExtended(t *testing.T) {
 			policy: &securityPolicyExtended{
 				securityPolicyBase: securityPolicyBase{
 					Name:             "test-policy",
-					Priority:         int64ptr(10),
+					Priority:         new(int64(10)),
 					ConfiguredAction: "DENY",
 					Outcome:          "DENY",
 				},
@@ -362,7 +362,7 @@ func TestHandleSecurityPolicyExtended(t *testing.T) {
 			policy: &securityPolicyExtended{
 				securityPolicyBase: securityPolicyBase{
 					Name:             "test-policy",
-					Priority:         int64ptr(10),
+					Priority:         new(int64(10)),
 					ConfiguredAction: "DENY",
 					Outcome:          "DENY",
 				},
@@ -383,7 +383,7 @@ func TestHandleSecurityPolicyExtended(t *testing.T) {
 			policy: &securityPolicyExtended{
 				securityPolicyBase: securityPolicyBase{
 					Name:             "test-policy",
-					Priority:         int64ptr(10),
+					Priority:         new(int64(10)),
 					ConfiguredAction: "DENY",
 					Outcome:          "DENY",
 				},
@@ -435,7 +435,7 @@ func TestHandleEnforcedSecurityPolicy(t *testing.T) {
 				securityPolicyExtended: securityPolicyExtended{
 					securityPolicyBase: securityPolicyBase{
 						Name:             "test-policy",
-						Priority:         int64ptr(10),
+						Priority:         new(int64(10)),
 						ConfiguredAction: "DENY",
 						Outcome:          "DENY",
 					},
@@ -454,7 +454,7 @@ func TestHandleEnforcedSecurityPolicy(t *testing.T) {
 				securityPolicyExtended: securityPolicyExtended{
 					securityPolicyBase: securityPolicyBase{
 						Name:             "test-policy",
-						Priority:         int64ptr(10),
+						Priority:         new(int64(10)),
 						ConfiguredAction: "DENY",
 						Outcome:          "DENY",
 					},
@@ -477,7 +477,7 @@ func TestHandleEnforcedSecurityPolicy(t *testing.T) {
 				securityPolicyExtended: securityPolicyExtended{
 					securityPolicyBase: securityPolicyBase{
 						Name:             "test-policy",
-						Priority:         int64ptr(10),
+						Priority:         new(int64(10)),
 						ConfiguredAction: "DENY",
 						Outcome:          "DENY",
 					},
@@ -548,7 +548,7 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 					securityPolicyExtended: securityPolicyExtended{
 						securityPolicyBase: securityPolicyBase{
 							Name:             "test-policy",
-							Priority:         int64ptr(100),
+							Priority:         new(int64(100)),
 							ConfiguredAction: "DENY",
 							Outcome:          "DENY",
 						},
@@ -571,7 +571,7 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 				PreviewSecurityPolicy: &securityPolicyExtended{
 					securityPolicyBase: securityPolicyBase{
 						Name:             "preview-policy",
-						Priority:         int64ptr(50),
+						Priority:         new(int64(50)),
 						ConfiguredAction: "ALLOW",
 						Outcome:          "ACCEPT",
 					},
@@ -592,7 +592,7 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 			log: &armorlog{
 				EnforcedEdgeSecurityPolicy: &securityPolicyBase{
 					Name:             "edge-policy",
-					Priority:         int64ptr(75),
+					Priority:         new(int64(75)),
 					ConfiguredAction: "DENY",
 					Outcome:          "DENY",
 				},
@@ -612,7 +612,7 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 			log: &armorlog{
 				PreviewEdgeSecurityPolicy: &securityPolicyBase{
 					Name:             "preview-edge-policy",
-					Priority:         int64ptr(25),
+					Priority:         new(int64(25)),
 					ConfiguredAction: "ALLOW",
 					Outcome:          "ACCEPT",
 				},
@@ -634,7 +634,7 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 					securityPolicyExtended: securityPolicyExtended{
 						securityPolicyBase: securityPolicyBase{
 							Name:             "test-policy",
-							Priority:         int64ptr(100),
+							Priority:         new(int64(100)),
 							ConfiguredAction: "DENY",
 							Outcome:          "DENY",
 						},
@@ -671,7 +671,7 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 				PreviewSecurityPolicy: &securityPolicyExtended{
 					securityPolicyBase: securityPolicyBase{
 						Name:             "full-preview",
-						Priority:         int64ptr(10),
+						Priority:         new(int64(10)),
 						ConfiguredAction: "DENY",
 						Outcome:          "DENY",
 					},
@@ -716,7 +716,7 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 					securityPolicyExtended: securityPolicyExtended{
 						securityPolicyBase: securityPolicyBase{
 							Name:             "enforced-policy",
-							Priority:         int64ptr(100),
+							Priority:         new(int64(100)),
 							ConfiguredAction: "DENY",
 							Outcome:          "DENY",
 						},
@@ -725,7 +725,7 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 				PreviewSecurityPolicy: &securityPolicyExtended{
 					securityPolicyBase: securityPolicyBase{
 						Name:             "preview-policy",
-						Priority:         int64ptr(50),
+						Priority:         new(int64(50)),
 						ConfiguredAction: "ALLOW",
 						Outcome:          "ACCEPT",
 					},
@@ -754,7 +754,7 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 					securityPolicyExtended: securityPolicyExtended{
 						securityPolicyBase: securityPolicyBase{
 							Name:             "enforced-policy",
-							Priority:         int64ptr(100),
+							Priority:         new(int64(100)),
 							ConfiguredAction: "DENY",
 							Outcome:          "DENY",
 						},
@@ -766,20 +766,20 @@ func TestHandleArmorLogAttributes(t *testing.T) {
 				PreviewSecurityPolicy: &securityPolicyExtended{
 					securityPolicyBase: securityPolicyBase{
 						Name:             "preview-policy",
-						Priority:         int64ptr(50),
+						Priority:         new(int64(50)),
 						ConfiguredAction: "ALLOW",
 						Outcome:          "ACCEPT",
 					},
 				},
 				EnforcedEdgeSecurityPolicy: &securityPolicyBase{
 					Name:             "enforced-edge-policy",
-					Priority:         int64ptr(75),
+					Priority:         new(int64(75)),
 					ConfiguredAction: "DENY",
 					Outcome:          "DENY",
 				},
 				PreviewEdgeSecurityPolicy: &securityPolicyBase{
 					Name:             "preview-edge-policy",
-					Priority:         int64ptr(25),
+					Priority:         new(int64(25)),
 					ConfiguredAction: "ALLOW",
 					Outcome:          "ACCEPT",
 				},

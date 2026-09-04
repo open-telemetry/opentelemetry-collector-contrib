@@ -1,6 +1,12 @@
 description: Config is the configuration for the elasticsearch receiver
 type: object
 properties:
+  cluster_stats_master_only:
+    description: ClusterStatsMasterOnly indicates whether cluster stats (from /_cluster/stats) should only be scraped when this receiver's endpoint is the cluster's current elected master node. This is useful when running one receiver instance per node and targeting the same cluster, to avoid every instance issuing the same master-coordinated, cluster-wide call every collection interval. Has no effect if SkipClusterMetrics is true.
+    type: boolean
+  index_stats_master_only:
+    description: IndexStatsMasterOnly indicates whether index stats (from /_stats) should only be scraped when this receiver's endpoint is the cluster's current elected master node. Same rationale as ClusterStatsMasterOnly.
+    type: boolean
   indices:
     description: Indices defines the indices to scrape. See https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-stats.html#index-stats-api-path-params for which names are viable. If Indices is empty, no indices will be scraped.
     type: array

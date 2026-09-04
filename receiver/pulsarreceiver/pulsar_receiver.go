@@ -81,9 +81,8 @@ func (c *pulsarTracesConsumer) Start(context.Context, component.Host) error {
 	if err == nil {
 		c.consumer = _consumer
 		go func() {
-			if e := consumerTracesLoop(ctx, c); e != nil {
-				c.settings.Logger.Error("consume traces loop occurs an error", zap.Error(e))
-			}
+			e := consumerTracesLoop(ctx, c)
+			c.settings.Logger.Error("consume traces loop occurs an error", zap.Error(e))
 		}()
 	}
 
@@ -195,9 +194,8 @@ func (c *pulsarMetricsConsumer) Start(context.Context, component.Host) error {
 		c.consumer = _consumer
 
 		go func() {
-			if e := consumeMetricsLoop(ctx, c); e != nil {
-				c.settings.Logger.Error("consume metrics loop occurs an error", zap.Error(e))
-			}
+			e := consumeMetricsLoop(ctx, c)
+			c.settings.Logger.Error("consume metrics loop occurs an error", zap.Error(e))
 		}()
 	}
 
@@ -311,9 +309,8 @@ func (c *pulsarLogsConsumer) Start(context.Context, component.Host) error {
 	if err == nil {
 		c.consumer = _consumer
 		go func() {
-			if e := consumeLogsLoop(ctx, c); e != nil {
-				c.settings.Logger.Error("consume logs loop occurs an error", zap.Error(e))
-			}
+			e := consumeLogsLoop(ctx, c)
+			c.settings.Logger.Error("consume logs loop occurs an error", zap.Error(e))
 		}()
 	}
 

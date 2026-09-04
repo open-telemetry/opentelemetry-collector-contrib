@@ -78,9 +78,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTlscheckTimeLeftDataPoint(ts, 1, "tlscheck.x509.issuer-val", "tlscheck.x509.cn-val", []any{"tlscheck.x509.san-item1", "tlscheck.x509.san-item2"})
+			mb.RecordTlscheckTimeLeftDataPoint(ts, 1, "tlscheck.x509.issuer-val", "tlscheck.x509.cn-val", []any{"tlscheck.x509.san-item1", "tlscheck.x509.san-item2"}, "tlscheck.x509.fingerprint-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordTlscheckTimeLeftDataPoint(ts, 3, "tlscheck.x509.issuer-val-2", "tlscheck.x509.cn-val-2", []any{"tlscheck.x509.san-item3", "tlscheck.x509.san-item4"})
+				mb.RecordTlscheckTimeLeftDataPoint(ts, 3, "tlscheck.x509.issuer-val-2", "tlscheck.x509.cn-val-2", []any{"tlscheck.x509.san-item3", "tlscheck.x509.san-item4"}, "tlscheck.x509.fingerprint-val-2")
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -161,6 +161,8 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("tlscheck.x509.cn")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("tlscheck.x509.san")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("tlscheck.x509.fingerprint")
 						assert.False(t, ok)
 					}
 				}

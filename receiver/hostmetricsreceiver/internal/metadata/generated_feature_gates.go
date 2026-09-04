@@ -22,6 +22,22 @@ var ReceiverHostmetricsreceiverUseCPUTicksFeatureGate = featuregate.GlobalRegist
 	featuregate.WithRegisterFromVersion("v0.152.0"),
 )
 
+var ReceiverHostmetricsDontEmitV0SystemConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.hostmetrics.DontEmitV0SystemConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, all scrapers stop emitting legacy semantic convention metrics, superseding per-scraper gates."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/semantic-conventions/issues/3041"),
+	featuregate.WithRegisterFromVersion("v0.160.0"),
+)
+
+var ReceiverHostmetricsEmitV1SystemConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.hostmetrics.EmitV1SystemConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, all scrapers emit metrics aligned with the latest semantic conventions, superseding per-scraper gates."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/semantic-conventions/issues/3041"),
+	featuregate.WithRegisterFromVersion("v0.160.0"),
+)
+
 var ReceiverHostmetricsreceiverUseLinuxMemAvailableFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.hostmetricsreceiver.UseLinuxMemAvailable",
 	featuregate.StageBeta,

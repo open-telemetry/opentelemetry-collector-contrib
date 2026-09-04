@@ -68,8 +68,14 @@ func TestLoadConfig(t *testing.T) {
 					config.TLS = configtls.ClientConfig{
 						InsecureSkipVerify: true,
 					}
-					config.MaxIdleConns = maxIdleConns
-					config.IdleConnTimeout = idleConnTimeout
+					// max_idle_conns and idle_conn_timeout are deprecated keys; unmarshal them
+					// through confmap (rather than setting the fields directly) so that config
+					// picks up the same deprecation-warning bookkeeping that loading
+					// testdata/config.yaml produces below.
+					require.NoError(t, confmap.NewFromStringMap(map[string]any{
+						"max_idle_conns":    maxIdleConns,
+						"idle_conn_timeout": idleConnTimeout,
+					}).Unmarshal(config))
 				}),
 				Format:             "proto",
 				DefaultServiceName: "test_name",

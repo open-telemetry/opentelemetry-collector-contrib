@@ -1,7 +1,6 @@
 kafka: {}
 kafka/full:
   brokers: ["foo:123", "bar:456"]
-  resolve_canonical_bootstrap_servers_only: true
   client_id: vip
   protocol_version: 3.1.2
   rack_id: rack1
@@ -36,7 +35,6 @@ kafka/sasl_plain:
       mechanism: PLAIN
       username: abc
       password: def
-      version: 1
 kafka/legacy_auth_tls:
   auth:
     tls:
@@ -61,14 +59,6 @@ kafka/sasl_invalid_mechanism:
     sasl:
       mechanism: FANCY
 
-kafka/sasl_invalid_version:
-  auth:
-    sasl:
-      mechanism: PLAIN
-      username: abc
-      password: def
-      version: -1
-
 kafka/sasl_plain_username_required:
   auth:
     sasl:
@@ -85,7 +75,6 @@ kafka/foo:
   brokers:
     - "foo:123"
     - "bar:456"
-  resolve_canonical_bootstrap_servers_only: true
   client_id: otel-collector
   auth:
     tls:

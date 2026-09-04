@@ -53,7 +53,7 @@ Some features are hidden behind feature gates before they are part of the main c
 
 ## Support
 
-Each component is supported either by the community of OpenTelemetry Collector Contrib maintainers, as defined by the GitHub group [@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer), or by specific vendors. See the individual README files for information about the specific components.
+Each component is supported either by the community of OpenTelemetry Collector Contrib maintainers, as defined by the GitHub group [@open-telemetry/collector-contrib-maintainers](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainers), or by specific vendors. See the individual README files for information about the specific components.
 
 The OpenTelemetry Collector Contrib maintainers may at any time downgrade specific components if they are deemed unmaintained or if they pose a risk to the repository and/or binary distribution.
 
@@ -69,6 +69,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
+- [Braydon Kains](https://github.com/braydonk), Google
 - [Christos Markou](https://github.com/ChrsMark), Elastic
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Edmo Vamerlatti Costa](https://github.com/edmocosta), Elastic
@@ -83,11 +84,11 @@ For more information about the maintainer role, see the [community repository](h
 ### Approvers
 
 - [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
-- [Braydon Kains](https://github.com/braydonk), Google
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
 - [Israel Blancas](https://github.com/iblancasa), Coralogix
 - [Joshua MacDonald](https://github.com/jmacd), Microsoft
+- [Paulo Dias](https://github.com/paulojmdias), Five9
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
@@ -102,13 +103,13 @@ For more information about the approver role, see the [community repository](htt
 - [Dónal O'Sullivan](https://github.com/osullivandonal), Elastic
 - [Douglas Camata](https://github.com/douglascamata), Coralogix
 - [Dylan Strohschein](https://github.com/dyl10s), Dynatrace
+- [George Krajcsovits](https://github.com/krajorama), Grafana Labs
 - [James Moessis](https://github.com/jamesmoessis), Atlassian
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Khushi Jain](https://github.com/khushijain21), Elastic
 - [Mike Goldsmith](https://github.com/MikeGoldsmith), Honeycomb
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
-- [Paulo Dias](https://github.com/paulojmdias), Five9
 - [Roger Coll](https://github.com/rogercoll), Elastic
 - [Vibhanshu Singh](https://github.com/singhvibhanshu)
 - Actively seeking contributors to triage issues

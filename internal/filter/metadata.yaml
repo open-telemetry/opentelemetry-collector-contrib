@@ -1,4 +1,27 @@
+
 status:
   disable_codecov_badge: true
+  stability:
+    alpha: [logs, metrics, traces]
   codeowners:
     active: [open-telemetry/collector-approvers]
+
+feature_gates:
+  - id: filter.filterlog.useOTTLBridge
+    stage: alpha
+    description: When enabled, filterlog will convert filterlog configuration to OTTL and use filterottl evaluation
+    from_version: v0.81.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18642
+    skip_strict_validation: true
+  - id: filter.filtermetric.useOTTLBridge
+    stage: alpha
+    description: When enabled, filtermetric will convert filtermetric configuration to OTTL and use filterottl evaluation
+    from_version: v0.81.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18642
+    skip_strict_validation: true
+  - id: filter.filterspan.useOTTLBridge
+    stage: alpha
+    description: When enabled, filterspan will convert filterspan configuration to OTTL and use filterottl evaluation
+    from_version: v0.79.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18642
+    skip_strict_validation: true

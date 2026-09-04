@@ -13,7 +13,3 @@ status:
   codeowners:
     active: [splunkericl]
     emeritus: [zpzhuSplunk]
-
-tests:
-  skip_lifecycle: true
-  skip_shutdown: true

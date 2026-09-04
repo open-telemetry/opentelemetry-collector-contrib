@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/yanggrpcreceiver/internal/metadata"
@@ -67,7 +66,8 @@ func TestDetailedTelemetryValidation(t *testing.T) {
 	// Create receiver configuration
 	config := createDefaultConfig().(*Config)
 
-	config.ServerConfig.NetAddr.Endpoint = "localhost:57403"
+	endpoint := getFreeEndpoint(t)
+	config.ServerConfig.NetAddr.Endpoint = endpoint
 	config.ServerConfig.NetAddr.Transport = "tcp"
 
 	settings := receiver.Settings{
@@ -87,7 +87,13 @@ func TestDetailedTelemetryValidation(t *testing.T) {
 		assert.NoError(t, rcvr.Shutdown(ctx))
 	}()
 
-	time.Sleep(50 * time.Millisecond)
+	// Wait until the gRPC server is ready to accept streams instead of using a
+	// fixed sleep, which is unreliable on slow or loaded CI machines. Reusing a
+	// single ready connection for all sends avoids per-send connection setup
+	// racing the send deadline, which previously surfaced as
+	// "failed to create stream: context deadline exceeded".
+	conn := newReadyClientConn(t, endpoint)
+	defer conn.Close()
 
 	// Send realistic telemetry data with multiple interfaces
 	testCases := []struct {
@@ -125,7 +131,7 @@ func TestDetailedTelemetryValidation(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		err := sendDetailedTelemetryData("localhost:57403", "CISCO-TEST-SWITCH", tc.interfaceName, tc.rxPkts, tc.txPkts, tc.rxBytes, tc.txBytes)
+		err := sendDetailedTelemetryData(conn, "CISCO-TEST-SWITCH", tc.interfaceName, tc.rxPkts, tc.txPkts, tc.rxBytes, tc.txBytes)
 		assert.NoError(t, err, "Failed to send telemetry for %s: %v", tc.name, err)
 	}
 
@@ -293,18 +299,12 @@ func TestDetailedTelemetryValidation(t *testing.T) {
 }
 
 // sendDetailedTelemetryData sends telemetry data for a specific interface with detailed metrics
-func sendDetailedTelemetryData(endpoint, nodeID, interfaceName string, rxPkts, txPkts, rxBytes, txBytes uint64) error {
-	conn, err := grpc.NewClient(endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return fmt.Errorf("failed to connect to receiver: %w", err)
-	}
-	defer conn.Close()
-
+func sendDetailedTelemetryData(conn *grpc.ClientConn, nodeID, interfaceName string, rxPkts, txPkts, rxBytes, txBytes uint64) error {
 	client := pb.NewGRPCMdtDialoutClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	stream, err := client.MdtDialout(ctx)
+	stream, err := client.MdtDialout(ctx, grpc.WaitForReady(true))
 	if err != nil {
 		return fmt.Errorf("failed to create stream: %w", err)
 	}

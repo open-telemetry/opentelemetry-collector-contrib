@@ -79,7 +79,12 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 	if err != nil {
 		return nil, err
 	}
-	return resourcetotelemetry.WrapMetricsExporter(prwCfg.ResourceToTelemetrySettings, exporter), nil
+	settings := prwCfg.ResourceConstantLabels
+	if settings.IsEmpty() && !metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate.IsEnabled() && !prwCfg.ResourceToTelemetrySettings.IsEmpty() {
+		set.Logger.Warn("resource_to_telemetry_conversion is deprecated; use resource_constant_labels instead")
+		settings = prwCfg.ResourceToTelemetrySettings
+	}
+	return resourcetotelemetry.WrapMetricsExporter(settings, exporter), nil
 }
 
 func createDefaultConfig() component.Config {

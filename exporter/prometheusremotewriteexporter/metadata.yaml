@@ -11,30 +11,32 @@ status:
     active: [Aneurysm9, rapphil, dashpole, ArthurSens, ywwg]
 
 feature_gates:
+  - id: exporter.prometheusremotewrite.DisableResourceToTelemetryConversion
+    description: When enabled, the deprecated resource_to_telemetry_conversion section and legacy conversion fields are disabled, and resource_constant_labels must be used instead
+    stage: alpha
+    from_version: "v0.160.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48862
+    skip_strict_validation: true
   - id: exporter.prometheusremotewritexporter.EnableMultipleWorkers
     description: When enabled and settings configured, the Prometheus remote exporter will spawn multiple workers/goroutines to handle incoming metrics batches concurrently.
     stage: alpha
     from_version: v0.118.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/36134
-    skip_strict_validation: true
   - id: exporter.prometheusremotewritexporter.RetryOn429
     description: When enabled, the Prometheus remote write exporter will retry 429 http status code. Requires exporter.prometheusremotewritexporter.metrics.RetryOn429 to be enabled.
     stage: alpha
     from_version: v0.101.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/31924
-    skip_strict_validation: true
   - id: exporter.prometheusremotewritexporter.enableSendingRW2
     description: When enabled, the Prometheus remote write exporter will support sending rw2. Extra configuration is still required besides enabling this feature gate.
     stage: alpha
     from_version: v0.125.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/35888
-    skip_strict_validation: true
   - id: exporter.prometheusremotewritexporter.removeTopLevelHTTPSettings
     stage: alpha
     description: "When enabled, it rejects top-level HTTP client settings (e.g. endpoint, tls, proxy_url); configure them under the http block instead."
     from_version: v0.158.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46209
-    skip_strict_validation: true
 tests:
   expect_consumer_error: true
   goleak:
@@ -42,6 +44,8 @@ tests:
       top:
         # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
         - "go.opencensus.io/stats/view.(*worker).start"
+        - "internal/poll.runtime_pollWait"
+        - "net.(*sysDialer).dialParallel"
 
 telemetry:
   metrics:

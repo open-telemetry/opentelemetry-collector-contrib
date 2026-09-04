@@ -771,3 +771,73 @@ func TestArrayAttributesArePreserved(t *testing.T) {
 	require.Equal(t, 11.0, nestedIDs.Slice().At(0).Double())
 	require.Equal(t, 22.0, nestedIDs.Slice().At(1).Double())
 }
+
+// TestMaxRequestBodySizeGzip covers the compressed path. MaxBytesReader bounds
+// the compressed bytes, but the decompressed stream is read separately, so a
+// small gzip payload that expands past the limit must still be rejected rather
+// than buffered in full.
+func TestMaxRequestBodySizeGzip(t *testing.T) {
+	tests := []struct {
+		name               string
+		maxRequestBodySize int64
+		decompressedSize   int
+		expectedStatus     int
+	}{
+		{
+			name:               "decompressed_within_limit",
+			maxRequestBodySize: 4096,
+			decompressedSize:   512,
+			expectedStatus:     http.StatusOK,
+		},
+		{
+			name:               "decompressed_exceeds_limit",
+			maxRequestBodySize: 1024,
+			decompressedSize:   512 * 1024,
+			expectedStatus:     http.StatusUnprocessableEntity,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Highly compressible padding, so the compressed body stays far below
+			// the limit while the decompressed payload does not.
+			padding := strings.Repeat("a", tt.decompressedSize)
+			logEntry := map[string]any{
+				"ClientIP":           "127.0.0.1",
+				"EdgeStartTimestamp": "2023-03-03T05:29:05Z",
+				"padding":            padding,
+			}
+			body, err := json.Marshal(logEntry)
+			require.NoError(t, err)
+
+			var compressed bytes.Buffer
+			gw := gzip.NewWriter(&compressed)
+			_, err = gw.Write(body)
+			require.NoError(t, err)
+			require.NoError(t, gw.Close())
+
+			require.Less(t, int64(compressed.Len()), tt.maxRequestBodySize,
+				"compressed body must fit under the limit for this test to exercise decompression")
+
+			cfg := &Config{
+				Logs: LogsConfig{
+					Endpoint:           "localhost:0",
+					MaxRequestBodySize: tt.maxRequestBodySize,
+					TimestampField:     "EdgeStartTimestamp",
+					Secret:             "abc123",
+				},
+			}
+
+			r := newReceiver(t, cfg, consumertest.NewNop())
+
+			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(compressed.Bytes()))
+			req.Header.Add(secretHeaderName, "abc123")
+			req.Header.Add("Content-Encoding", "gzip")
+
+			w := httptest.NewRecorder()
+			r.handleRequest(w, req)
+
+			require.Equal(t, tt.expectedStatus, w.Code)
+		})
+	}
+}

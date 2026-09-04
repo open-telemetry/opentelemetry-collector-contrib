@@ -27,8 +27,8 @@ var buildInfo = component.BuildInfo{
 func TestNewHTTPClient(t *testing.T) {
 	hcsEmpty := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	hcsEmpty.MaxIdleConns = 0
-	hcsEmpty.IdleConnTimeout = 0
+	hcsEmpty.MaxIdleConns = 0    //nolint:staticcheck // SA1019: testing legacy field handling
+	hcsEmpty.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: testing legacy field handling
 	hcsEmpty.ForceAttemptHTTP2 = false
 	client1 := NewHTTPClient(hcsEmpty)
 	defaultTransport := &http.Transport{
@@ -60,11 +60,11 @@ func TestNewHTTPClient(t *testing.T) {
 	hcs.ReadBufferSize = 100
 	hcs.WriteBufferSize = 200
 	hcs.Timeout = 10 * time.Second
-	hcs.IdleConnTimeout = idleConnTimeout
-	hcs.MaxIdleConns = maxIdleConn
-	hcs.MaxIdleConnsPerHost = maxIdleConnPerHost
+	hcs.IdleConnTimeout = idleConnTimeout        //nolint:staticcheck // SA1019: testing legacy field handling
+	hcs.MaxIdleConns = maxIdleConn               //nolint:staticcheck // SA1019: testing legacy field handling
+	hcs.MaxIdleConnsPerHost = maxIdleConnPerHost //nolint:staticcheck // SA1019: testing legacy field handling
 	hcs.MaxConnsPerHost = maxConnPerHost
-	hcs.DisableKeepAlives = true
+	hcs.DisableKeepAlives = true //nolint:staticcheck // SA1019: testing legacy field handling
 	hcs.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
 	hcs.ProxyURL = "proxy"
 
@@ -105,11 +105,11 @@ func TestNewHTTPClient(t *testing.T) {
 	hcsForC3.ReadBufferSize = 100
 	hcsForC3.WriteBufferSize = 200
 	hcsForC3.Timeout = 10 * time.Second
-	hcsForC3.IdleConnTimeout = idleConnTimeout
-	hcsForC3.MaxIdleConns = maxIdleConn
-	hcsForC3.MaxIdleConnsPerHost = maxIdleConnPerHost
+	hcsForC3.IdleConnTimeout = idleConnTimeout        //nolint:staticcheck // SA1019: testing legacy field handling
+	hcsForC3.MaxIdleConns = maxIdleConn               //nolint:staticcheck // SA1019: testing legacy field handling
+	hcsForC3.MaxIdleConnsPerHost = maxIdleConnPerHost //nolint:staticcheck // SA1019: testing legacy field handling
 	hcsForC3.MaxConnsPerHost = maxConnPerHost
-	hcsForC3.DisableKeepAlives = true
+	hcsForC3.DisableKeepAlives = true //nolint:staticcheck // SA1019: testing legacy field handling
 	hcsForC3.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
 	hcsForC3.ProxyURL = "http://datadog-proxy.myorganization.com:3128"
 
@@ -145,11 +145,11 @@ func TestNewHTTPClient(t *testing.T) {
 	hcsForC5.ReadBufferSize = 100
 	hcsForC5.WriteBufferSize = 200
 	hcsForC5.Timeout = 10 * time.Second
-	hcsForC5.IdleConnTimeout = idleConnTimeout
-	hcsForC5.MaxIdleConns = maxIdleConn
-	hcsForC5.MaxIdleConnsPerHost = maxIdleConnPerHost
+	hcsForC5.IdleConnTimeout = idleConnTimeout        //nolint:staticcheck // SA1019: testing legacy field handling
+	hcsForC5.MaxIdleConns = maxIdleConn               //nolint:staticcheck // SA1019: testing legacy field handling
+	hcsForC5.MaxIdleConnsPerHost = maxIdleConnPerHost //nolint:staticcheck // SA1019: testing legacy field handling
 	hcsForC5.MaxConnsPerHost = maxConnPerHost
-	hcsForC5.DisableKeepAlives = true
+	hcsForC5.DisableKeepAlives = true //nolint:staticcheck // SA1019: testing legacy field handling
 	hcsForC5.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
 
 	// The rest are ignored

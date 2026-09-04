@@ -618,11 +618,6 @@ func TestHTTPServerIntegration(t *testing.T) {
 
 	// Step 3: Create HTTP server configuration
 	httpServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	httpServerConfig.WriteTimeout = 0
-	httpServerConfig.ReadHeaderTimeout = 0
-	httpServerConfig.IdleTimeout = 0
-	httpServerConfig.KeepAlivesEnabled = false
 	httpServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -757,21 +752,11 @@ func TestHTTPServerConfigIntegration(t *testing.T) {
 
 	// Test different server configurations
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	defaultServerConfig.WriteTimeout = 0
-	defaultServerConfig.ReadHeaderTimeout = 0
-	defaultServerConfig.IdleTimeout = 0
-	defaultServerConfig.KeepAlivesEnabled = false
 	defaultServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  httpserver.DefaultServerEndpoint,
 	}
 	customServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	customServerConfig.WriteTimeout = 0
-	customServerConfig.ReadHeaderTimeout = 0
-	customServerConfig.IdleTimeout = 0
-	customServerConfig.KeepAlivesEnabled = false
 	customServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:9999",
@@ -867,11 +852,6 @@ func TestHTTPServerConcurrentAccess(t *testing.T) {
 
 	// Create server
 	httpServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	httpServerConfig.WriteTimeout = 0
-	httpServerConfig.ReadHeaderTimeout = 0
-	httpServerConfig.IdleTimeout = 0
-	httpServerConfig.KeepAlivesEnabled = false
 	httpServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",

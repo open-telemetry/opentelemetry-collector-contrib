@@ -10,8 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func TestLocalScopeStack(t *testing.T) {
@@ -133,7 +131,7 @@ func Test_localIdentifierGetter_Get(t *testing.T) {
 				identifier: &basePath[any]{
 					name: "value",
 					keys: []Key[any]{
-						&baseKey[any]{s: ottltest.Strp("field")},
+						&baseKey[any]{s: new("field")},
 					},
 				},
 			},
@@ -145,7 +143,7 @@ func Test_localIdentifierGetter_Get(t *testing.T) {
 			getter: &localIdentifierGetter[any]{
 				identifier: &basePath[any]{
 					name: "value",
-					keys: []Key[any]{&baseKey[any]{i: ottltest.Intp(2)}},
+					keys: []Key[any]{&baseKey[any]{i: new(int64(2))}},
 				},
 			},
 			ctx:     context.WithValue(t.Context(), localActivationKey{}, &localActivation{bindings: map[string]any{"value": []any{"only"}}}),

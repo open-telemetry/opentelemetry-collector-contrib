@@ -14,8 +14,6 @@ status:
     seeking_new: true
 tests:
   config:
-  goleak:
-    skip: true
 
 telemetry:
   metrics:

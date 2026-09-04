@@ -95,12 +95,44 @@ func TestReplacePatternValidPod(t *testing.T) {
 
 	attrMap := map[string]any{
 		"aws.eks.cluster.name": "test-cluster-name",
-		"PodName":              "test-pod-001",
+		"pod":                  "test-pod-001",
 	}
 
 	s, success := replacePatterns(input, anyMapToStringMap(attrMap), logger)
 
 	assert.Equal(t, "/aws/eks/containerinsights/test-pod-001/performance", s)
+	assert.True(t, success)
+}
+
+func TestReplacePatternValidPodNameFromK8sSemconv(t *testing.T) {
+	logger := zap.NewNop()
+
+	input := "/aws/eks/containerinsights/{PodName}/performance"
+
+	attrMap := map[string]any{
+		"aws.eks.cluster.name": "test-cluster-name",
+		"k8s.pod.name":         "test-pod-001",
+	}
+
+	s, success := replacePatterns(input, anyMapToStringMap(attrMap), logger)
+
+	assert.Equal(t, "/aws/eks/containerinsights/test-pod-001/performance", s)
+	assert.True(t, success)
+}
+
+func TestReplacePatternPodNamePrefersLegacyPodAttribute(t *testing.T) {
+	logger := zap.NewNop()
+
+	input := "/aws/eks/containerinsights/{PodName}/performance"
+
+	attrMap := map[string]any{
+		"pod":          "legacy-pod-name",
+		"k8s.pod.name": "semconv-pod-name",
+	}
+
+	s, success := replacePatterns(input, anyMapToStringMap(attrMap), logger)
+
+	assert.Equal(t, "/aws/eks/containerinsights/legacy-pod-name/performance", s)
 	assert.True(t, success)
 }
 

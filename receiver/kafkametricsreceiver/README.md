@@ -21,9 +21,10 @@ and converts them into otlp.
 
 ## Prerequisites
 
-This receiver supports Kafka versions:
-  -  2.X
-  -  3.X
+This receiver supports Kafka versions 2.x, 3.x and 4.x (including KRaft mode).
+
+> **Note:** Compatibility is determined by the underlying Kafka protocol support in the driver (e.g., `franz-go` or `sarama`). Basic metrics collection remains compatible with Kafka 4.x brokers.
+>
 
 ## Feature gates
 

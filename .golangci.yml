@@ -14,8 +14,12 @@ formatters:
         - default
         - prefix(github.com/open-telemetry/opentelemetry-collector-contrib)
     gofumpt:
-      # Choose whether to use the extra rules.
-      extra-rules: true
+      # `extra-rules: true` is deprecated in favor of enabling each extra rule
+      # individually; these three together are equivalent to the old setting.
+      extra:
+        group-params: true
+        clothe-returns: true
+        balance-calls: true
 
 issues:
   # Maximum issues count per one linter.
@@ -74,6 +78,31 @@ linters:
         path: pagefile.go # This exclusion is required for Windows only
         text: cachedBytes
 
+      # G101 and G602 are not new rules, but gosec v2.28.0 changed their
+      # detection and they now fire on test fixtures. The production-code
+      # reports are still wanted, so only exclude them under tests.
+      # TODO: triage these separately from the go 1.26 bump.
+      - linters:
+          - gosec
+        path: _test\.go
+        text: "^G(101|602):"
+
+      # handleConn has no `return nil` path, so `err != nil` is always true.
+      # staticcheck only started reporting this in v0.8.0. Keep the check
+      # rather than rely on an invariant that is easy to break.
+      - linters:
+          - staticcheck
+        path: receiver/fluentforwardreceiver/server.go
+        text: SA4023
+
+      # On windows, addPermissionInfo always returns a non-nil error (owner/permission info
+      # isn't implemented there), so `err != nil` is always true on that platform only.
+      # Keep the check rather than rely on an invariant that is easy to break.
+      - linters:
+          - staticcheck
+        path: pkg/stanza/fileconsumer/attrs/attrs.go
+        text: SA4023
+
       - linters:
           - unused
         path: receiver/macosunifiedloggingreceiver/config_common.go
@@ -113,9 +142,6 @@ linters:
       - linters:
           - forbidigo
         path: exporter/awsxrayexporter/internal/translator/
-      - linters:
-          - forbidigo
-        path: internal/filter/
 
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47586
       - linters:
@@ -223,6 +249,7 @@ linters:
             - go.opentelemetry.io/otel/semconv/v1.40.0
             - go.opentelemetry.io/otel/semconv/v1.41.0
             - go.opentelemetry.io/otel/semconv/v1.42.0
+            - go.opentelemetry.io/otel/semconv/v1.43.0
 
         semconv-in-test:
           list-mode: lax
@@ -287,6 +314,29 @@ linters:
         - G115
         - G402
         - G404
+        # Everything below is new in gosec v2.28.0, which arrived with the
+        # golangci-lint v2.13.1 bump, and fires on code that predates it.
+        # TODO: triage these separately from the go 1.26 bump.
+        - G113
+        - G117
+        - G118
+        - G119
+        - G120
+        - G121
+        - G122
+        - G123
+        - G124
+        - G408
+        - G701
+        - G702
+        - G703
+        - G704
+        - G705
+        - G706
+        - G707
+        - G708
+        - G709
+        - G710
 
     govet:
       # TODO: Enable this and fix the alignment issues.

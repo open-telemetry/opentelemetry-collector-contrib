@@ -240,8 +240,8 @@ components:
         - wavefront
         - webhook_event
         - windows_event_log
+        - windows_perf_counters
         - windows_service
-        - windowsperfcounters
         - yang_grpc
         - zipkin
         - zookeeper

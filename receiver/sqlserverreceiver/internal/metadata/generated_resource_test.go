@@ -30,7 +30,7 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 3, res.Attributes().Len())
+				assert.Equal(t, 5, res.Attributes().Len())
 			case "all_set":
 				assert.Equal(t, 9, res.Attributes().Len())
 			case "none_set":
@@ -45,12 +45,12 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Equal(t, "host.name-val", hostNameAttrVal.Str())
 			}
 			serverAddressAttrVal, ok := res.Attributes().Get("server.address")
-			assert.Equal(t, tt == "all_set", ok)
+			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "server.address-val", serverAddressAttrVal.Str())
 			}
 			serverPortAttrVal, ok := res.Attributes().Get("server.port")
-			assert.Equal(t, tt == "all_set", ok)
+			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, 11, serverPortAttrVal.Int())
 			}

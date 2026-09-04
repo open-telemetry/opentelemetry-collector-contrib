@@ -14,6 +14,3 @@ status:
 tests:
   config:
   expect_consumer_error: true
-  skip_lifecycle: true
-  goleak:
-    skip: true

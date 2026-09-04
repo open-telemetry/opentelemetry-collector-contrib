@@ -134,8 +134,7 @@ type ParseFunc func(layout string) (time.Time, error)
 func Parse(format string, parse ParseFunc) (time.Time, string, error) {
 	indexes := ctimeRegexp.FindAllStringIndex(format, -1)
 	t, layout, err := iterativeParse("", format, 0, indexes, parse)
-	var timeErr *time.ParseError
-	if errors.As(err, &timeErr) {
+	if timeErr, ok := errors.AsType[*time.ParseError](err); ok {
 		timeErr.Layout = format
 	}
 	return t, layout, err

@@ -56,6 +56,13 @@ func (rb *ResourceBuilder) SetProcessExecutablePath(val string) {
 	}
 }
 
+// SetProcessLinuxCgroup sets provided value as "process.linux.cgroup" attribute.
+func (rb *ResourceBuilder) SetProcessLinuxCgroup(val string) {
+	if rb.config.ProcessLinuxCgroup.Enabled {
+		rb.res.Attributes().PutStr("process.linux.cgroup", val)
+	}
+}
+
 // SetProcessOwner sets provided value as "process.owner" attribute.
 func (rb *ResourceBuilder) SetProcessOwner(val string) {
 	if rb.config.ProcessOwner.Enabled {

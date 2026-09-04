@@ -44,7 +44,6 @@ tests:
     user_agent: user-agent
     timeout: 20s
     subscription: projects/my-project/subscriptions/otlp-subscription
-  skip_lifecycle: true
   goleak:
     ignore:
       # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.

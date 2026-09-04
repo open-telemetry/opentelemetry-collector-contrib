@@ -207,6 +207,13 @@ of the GCP platform the application is running on, use the gcp detector:
 It also can optionally gather labels for the GCE instance that the collector is running on.
 Note that in order to fetch GCE labels, the service account assigned to the GCE instance must have the `roles/compute.viewer` role.
 
+On GKE, the machine type of the node is not available from the metadata server, so the
+detector fetches `host.type` from the Compute API when the `host.type` resource attribute
+is enabled (the default). This requires the runtime identity to have the
+`compute.instances.get` permission (covered by `roles/compute.viewer`); without it, the
+attribute is skipped and the failure is logged. To avoid the API call entirely, disable
+the attribute with `resource_attributes: { host.type: { enabled: false } }`.
+
 Example:
 
 ```yaml
@@ -248,6 +255,7 @@ The list of the populated resource attributes can be found at [GCP Detector Reso
     * k8s.cluster.name
     * host.id (instance id)
     * host.name (instance name; availability with workload identity depends on GKE version)
+    * host.type (machine type; requires the `compute.instances.get` permission, skipped otherwise)
 
 #### Google Cloud Run Services Metadata
 
@@ -595,6 +603,25 @@ processors:
 ```
 
 > **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the `CONTAINER_APP_NAME` environment variable is not set (not running on Azure Container Apps), instead of silently returning an empty resource.
+
+### Azure App Service
+
+Uses the [Azure App Service](https://learn.microsoft.com/en-us/azure/app-service/) [injected environment variables](https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings) to retrieve related resource attributes.
+
+Note: Azure Functions apps run on the same App Service infrastructure but are not detected by this detector.
+
+The list of the populated resource attributes can be found at [Azure App Service Detector Resource Attributes](./internal/azure/appservice/documentation.md).
+
+Example:
+```yaml
+processors:
+  resourcedetection/azureappservice:
+    detectors: [env, azureappservice]
+    timeout: 2s
+    override: false
+```
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the `WEBSITE_SITE_NAME`, `WEBSITE_RESOURCE_GROUP` or `WEBSITE_OWNER_NAME` environment variables are not set (not running on Azure App Service), or if `FUNCTIONS_WORKER_RUNTIME` is set (running as an Azure Functions app), instead of silently returning an empty resource.
 
 ### Consul
 
@@ -1035,7 +1062,7 @@ processors:
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "azurecontainerapps", "heroku", "openshift", "dynatrace", "consul", "docker", "k8s_api", "k8snode" (deprecated, use "k8s_api"), "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs", "tencent_cvm", "ibmcloud_vpc", "ibmcloud_classic"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "azureappservice", "azurecontainerapps", "heroku", "openshift", "dynatrace", "consul", "docker", "k8s_api", "k8snode" (deprecated, use "k8s_api"), "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs", "tencent_cvm", "ibmcloud_vpc", "ibmcloud_classic"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>

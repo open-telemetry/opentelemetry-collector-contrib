@@ -31,10 +31,10 @@ func TestHuaweiCloudCESReceiverIntegration(t *testing.T) {
 			{
 				Namespace:  "SYS.ECS",
 				MetricName: "cpu_util",
-				Dimensions: []model.MetricsDimension{
+				Dimensions: []model.MetricsDimensionResp{
 					{
-						Name:  "instance_id",
-						Value: "faea5b75-e390-4e2b-8733-9226a9026070",
+						Name:  new("instance_id"),
+						Value: new("faea5b75-e390-4e2b-8733-9226a9026070"),
 					},
 				},
 				Unit: "%",
@@ -42,10 +42,10 @@ func TestHuaweiCloudCESReceiverIntegration(t *testing.T) {
 			{
 				Namespace:  "SYS.ECS",
 				MetricName: "mem_util",
-				Dimensions: []model.MetricsDimension{
+				Dimensions: []model.MetricsDimensionResp{
 					{
-						Name:  "instance_id",
-						Value: "abcea5b75-e390-4e2b-8733-9226a9026070",
+						Name:  new("instance_id"),
+						Value: new("abcea5b75-e390-4e2b-8733-9226a9026070"),
 					},
 				},
 				Unit: "%",
@@ -53,10 +53,10 @@ func TestHuaweiCloudCESReceiverIntegration(t *testing.T) {
 			{
 				Namespace:  "SYS.VPC",
 				MetricName: "upstream_bandwidth_usage",
-				Dimensions: []model.MetricsDimension{
+				Dimensions: []model.MetricsDimensionResp{
 					{
-						Name:  "publicip_id",
-						Value: "faea5b75-e390-4e2b-8733-9226a9026070",
+						Name:  new("publicip_id"),
+						Value: new("faea5b75-e390-4e2b-8733-9226a9026070"),
 					},
 				},
 				Unit: "%",
@@ -65,40 +65,40 @@ func TestHuaweiCloudCESReceiverIntegration(t *testing.T) {
 	}, nil)
 
 	mc.On("ShowMetricData", mock.Anything).Return(&model.ShowMetricDataResponse{
-		MetricName: stringPtr("cpu_util"),
+		MetricName: new("cpu_util"),
 		Datapoints: &[]model.Datapoint{
 			{
-				Average:   float64Ptr(10),
+				Average:   new(float64(10)),
 				Timestamp: 1556625610000,
 			},
 			{
-				Average:   float64Ptr(20),
+				Average:   new(float64(20)),
 				Timestamp: 1556625715000,
 			},
 		},
 	}, nil).Times(1)
 	mc.On("ShowMetricData", mock.Anything).Return(&model.ShowMetricDataResponse{
-		MetricName: stringPtr("mem_util"),
+		MetricName: new("mem_util"),
 		Datapoints: &[]model.Datapoint{
 			{
-				Average:   float64Ptr(30),
+				Average:   new(float64(30)),
 				Timestamp: 1556625610000,
 			},
 			{
-				Average:   float64Ptr(40),
+				Average:   new(float64(40)),
 				Timestamp: 1556625715000,
 			},
 		},
 	}, nil).Times(1)
 	mc.On("ShowMetricData", mock.Anything).Return(&model.ShowMetricDataResponse{
-		MetricName: stringPtr("upstream_bandwidth_usage"),
+		MetricName: new("upstream_bandwidth_usage"),
 		Datapoints: &[]model.Datapoint{
 			{
-				Average:   float64Ptr(50),
+				Average:   new(float64(50)),
 				Timestamp: 1556625610000,
 			},
 			{
-				Average:   float64Ptr(60),
+				Average:   new(float64(60)),
 				Timestamp: 1556625715000,
 			},
 		},

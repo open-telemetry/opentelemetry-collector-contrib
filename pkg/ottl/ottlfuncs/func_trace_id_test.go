@@ -93,7 +93,7 @@ func BenchmarkTraceID(b *testing.B) {
 			var err error
 
 			if tc.isLiteral {
-				getter, err = ottl.NewTestingLiteralGetter(true, makeIDGetter(tc.data))
+				getter, err = ottl.NewTestingOptionalLiteralGetter(true, makeIDGetter(tc.data))
 				require.NoError(b, err)
 			} else {
 				getter = makeIDGetter(tc.data)

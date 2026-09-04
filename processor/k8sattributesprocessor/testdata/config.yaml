@@ -104,6 +104,39 @@ k8s_attributes/too_many_sources:
         - from: connection
           name: ip
 
+k8s_attributes/duplicate_association_single_source:
+  pod_association:
+    - sources:
+        - from: resource_attribute
+          name: container.id
+    - sources:
+        - from: resource_attribute
+          name: container.id
+
+k8s_attributes/duplicate_association_reordered_sources:
+  pod_association:
+    - sources:
+        - from: resource_attribute
+          name: k8s.pod.uid
+        - from: resource_attribute
+          name: container.id
+    - sources:
+        - from: resource_attribute
+          name: container.id
+        - from: resource_attribute
+          name: k8s.pod.uid
+
+k8s_attributes/distinct_associations:
+  pod_association:
+    - sources:
+        - from: resource_attribute
+          name: k8s.pod.uid
+        - from: resource_attribute
+          name: container.id
+    - sources:
+        - from: resource_attribute
+          name: k8s.pod.uid
+
 k8s_attributes/bad_keys_labels:
   extract:
     labels:
@@ -153,12 +186,6 @@ k8s_attributes/bad_filter_label_op:
         value: v1
         op: "unknown"
 
-k8s_attributes/deployment_name_from_replicaset:
-  extract:
-    deployment_name_from_replicaset: true
-k8s_attributes/deployment_name_from_replicaset_false:
-  extract:
-    deployment_name_from_replicaset: false
 k8s_attributes/bad_filter_field_op:
   filter:
     fields:
@@ -217,6 +244,13 @@ k8s_attributes/extract_from_deployment:
         key: app
         from: deployment
 
+k8s_attributes/extract_from_replicaset:
+  extract:
+    labels:
+      - tag_name: replicaset_label
+        key: app
+        from: replicaset
+
 k8s_attributes/extract_from_statefulset:
   extract:
     labels:
@@ -237,6 +271,13 @@ k8s_attributes/extract_from_job:
       - tag_name: job_label
         key: app
         from: job
+
+k8s_attributes/extract_from_cronjob:
+  extract:
+    labels:
+      - tag_name: cronjob_label
+        key: app
+        from: cronjob
 
 k8s_attributes/all_metadata_fields:
   extract:

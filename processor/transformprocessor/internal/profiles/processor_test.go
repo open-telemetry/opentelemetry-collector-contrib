@@ -1087,6 +1087,261 @@ func Test_ProcessProfiles_CacheAccess(t *testing.T) {
 	}
 }
 
+func Test_ProcessProfiles_SharedCache(t *testing.T) {
+	tests := []struct {
+		name       string
+		statements []common.ContextStatements
+		want       func(td pprofile.Profiles)
+	}{
+		{
+			name: "resource cache shared across groups",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(resource.attributes["result"], resource.cache["k"])`}, SharedCache: true},
+			},
+			want: func(td pprofile.Profiles) {
+				td.ResourceProfiles().At(0).Resource().Attributes().PutStr("result", "pass")
+			},
+		},
+		{
+			name: "scope cache shared across groups",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(scope.attributes["result"], scope.cache["k"])`}, SharedCache: true},
+			},
+			want: func(td pprofile.Profiles) {
+				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Scope().Attributes().PutStr("result", "pass")
+			},
+		},
+		{
+			name: "profile cache shared across groups",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(profile.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(profile.original_payload_format, profile.cache["k"])`}, SharedCache: true},
+			},
+			want: func(td pprofile.Profiles) {
+				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SetOriginalPayloadFormat("pass")
+				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(1).SetOriginalPayloadFormat("pass")
+			},
+		},
+		{
+			name: "cache not shared with groups where SharedCache is false",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(profile.cache["k"], "fail")`}, SharedCache: true},
+				{Statements: []string{`set(profile.original_payload_format, "pass") where profile.cache["k"] == nil`}},
+			},
+			want: func(td pprofile.Profiles) {
+				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SetOriginalPayloadFormat("pass")
+				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(1).SetOriginalPayloadFormat("pass")
+			},
+		},
+		{
+			name: "explicit context cache shared across groups",
+			statements: []common.ContextStatements{
+				{Context: common.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
+				{Context: common.Resource, Statements: []string{`set(attributes["result"], cache["k"])`}, SharedCache: true},
+			},
+			want: func(td pprofile.Profiles) {
+				td.ResourceProfiles().At(0).Resource().Attributes().PutStr("result", "pass")
+			},
+		},
+		{
+			name: "higher-level cache is not visible from a lower-level context",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.cache["k"], "fail")`}, SharedCache: true},
+				{Statements: []string{`set(profile.original_payload_format, "pass") where profile.cache["k"] == nil`}, SharedCache: true},
+			},
+			want: func(td pprofile.Profiles) {
+				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).SetOriginalPayloadFormat("pass")
+				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(1).SetOriginalPayloadFormat("pass")
+			},
+		},
+		{
+			name: "lower-level cache is not visible from a higher-level context",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(profile.cache["k"], "fail")`}, SharedCache: true},
+				{Statements: []string{`set(resource.attributes["result"], "pass") where resource.cache["k"] == nil`}, SharedCache: true},
+			},
+			want: func(td pprofile.Profiles) {
+				td.ResourceProfiles().At(0).Resource().Attributes().PutStr("result", "pass")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructProfiles()
+			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
+			require.NoError(t, err)
+
+			_, err = processor.ProcessProfiles(t.Context(), td)
+			require.NoError(t, err)
+
+			exTd := constructProfiles()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessProfiles_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
+	tests := []struct {
+		name       string
+		statements []common.ContextStatements
+		want       func(td pprofile.Profiles)
+	}{
+		{
+			name: "resource cache persists across resources",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.cache["k"], "seen") where resource.attributes["host.name"] == "host1"`}, SharedCache: true},
+				{Statements: []string{`set(resource.attributes["result"], "pass") where resource.cache["k"] == "seen"`}, SharedCache: true},
+			},
+			want: func(td pprofile.Profiles) {
+				for _, rp := range td.ResourceProfiles().All() {
+					rp.Resource().Attributes().PutStr("result", "pass")
+				}
+			},
+		},
+		{
+			name: "scope cache persists across scopes and resources",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1"`}, SharedCache: true},
+				{Statements: []string{`set(scope.attributes["result"], "pass") where scope.cache["k"] == "seen"`}, SharedCache: true},
+			},
+			want: func(td pprofile.Profiles) {
+				for _, rp := range td.ResourceProfiles().All() {
+					for _, sp := range rp.ScopeProfiles().All() {
+						sp.Scope().Attributes().PutStr("result", "pass")
+					}
+				}
+			},
+		},
+		{
+			name: "profile cache persists across scopes and resources",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(profile.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and profile.original_payload_format == "operationA"`}, SharedCache: true},
+				{Statements: []string{`set(profile.original_payload_format, "pass") where profile.cache["k"] == "seen"`}, SharedCache: true},
+			},
+			want: func(td pprofile.Profiles) {
+				forEachProfile(td, func(p pprofile.Profile) {
+					p.SetOriginalPayloadFormat("pass")
+				})
+			},
+		},
+		{
+			name: "profile cache persists across scopes and resources within a single group",
+			statements: []common.ContextStatements{
+				{Statements: []string{
+					`set(profile.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and profile.original_payload_format == "operationA"`,
+					`set(profile.original_payload_format, "pass") where profile.cache["k"] == "seen"`,
+				}, SharedCache: true},
+			},
+			want: func(td pprofile.Profiles) {
+				forEachProfile(td, func(p pprofile.Profile) {
+					p.SetOriginalPayloadFormat("pass")
+				})
+			},
+		},
+		{
+			name: "cache does not persist across profiles when SharedCache is false",
+			statements: []common.ContextStatements{
+				{Statements: []string{
+					`set(profile.cache["k"], "seen") where profile.original_payload_format == "operationA"`,
+					`set(profile.original_payload_format, "pass") where profile.cache["k"] == "seen"`,
+				}},
+			},
+			want: func(td pprofile.Profiles) {
+				forEachProfile(td, func(p pprofile.Profile) {
+					if p.OriginalPayloadFormat() == "operationA" {
+						p.SetOriginalPayloadFormat("pass")
+					}
+				})
+			},
+		},
+		{
+			name: "cache does not persist across resources when SharedCache is false",
+			statements: []common.ContextStatements{
+				{Statements: []string{
+					`set(resource.cache["k"], "seen") where resource.attributes["host.name"] == "host1"`,
+					`set(resource.attributes["result"], "pass") where resource.cache["k"] == "seen"`,
+				}},
+			},
+			want: func(td pprofile.Profiles) {
+				td.ResourceProfiles().At(0).Resource().Attributes().PutStr("result", "pass")
+			},
+		},
+		{
+			name: "cache does not persist across scopes when SharedCache is false",
+			statements: []common.ContextStatements{
+				{Statements: []string{
+					`set(scope.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1"`,
+					`set(scope.attributes["result"], "pass") where scope.cache["k"] == "seen"`,
+				}},
+			},
+			want: func(td pprofile.Profiles) {
+				td.ResourceProfiles().At(0).ScopeProfiles().At(0).Scope().Attributes().PutStr("result", "pass")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructProfilesMultipleResourcesScopes()
+			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
+			require.NoError(t, err)
+
+			_, err = processor.ProcessProfiles(t.Context(), td)
+			require.NoError(t, err)
+
+			exTd := constructProfilesMultipleResourcesScopes()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessProfiles_SharedCacheCrossContextAccess(t *testing.T) {
+	tests := []struct {
+		name       string
+		statements []common.ContextStatements
+		wantErr    string
+	}{
+		{
+			name: "resource cache from an inferred profile context",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(profile.original_payload_format, resource.cache["k"])`}, SharedCache: true},
+			},
+			wantErr: `access to cache must be performed using the same context, please replace "resource.cache[k]" with "profile.cache[k]"`,
+		},
+		{
+			name: "scope cache from an inferred profile context",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(profile.original_payload_format, scope.cache["k"])`}, SharedCache: true},
+			},
+			wantErr: `access to cache must be performed using the same context, please replace "scope.cache[k]" with "profile.cache[k]"`,
+		},
+		{
+			name: "resource cache from an explicit profile context",
+			statements: []common.ContextStatements{
+				{Context: common.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
+				{Context: common.Profile, Statements: []string{`set(original_payload_format, resource.cache["k"])`}, SharedCache: true},
+			},
+			wantErr: `access to cache must be performed using the same context, please replace "resource.cache[k]" with "profile.cache[k]"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
+			require.ErrorContains(t, err, tt.wantErr)
+		})
+	}
+}
+
 func Test_NewProcessor_ConditionsParse(t *testing.T) {
 	type testCase struct {
 		name              string
@@ -1287,6 +1542,51 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 			}
 			require.NoError(t, err)
 		})
+	}
+}
+
+func constructProfilesMultipleResourcesScopes() pprofile.Profiles {
+	profiles := pprofiletest.Profiles{}
+	for _, host := range []string{"host1", "host2"} {
+		r := pcommon.NewResource()
+		r.Attributes().PutStr("host.name", host)
+		resourceProfile := pprofiletest.ResourceProfile{Resource: r}
+		for _, scopeName := range []string{"scope1", "scope2"} {
+			s := pcommon.NewInstrumentationScope()
+			s.SetName(scopeName)
+			resourceProfile.ScopeProfiles = append(resourceProfile.ScopeProfiles, pprofiletest.ScopeProfile{
+				SchemaURL: "test_schema_url",
+				Scope:     s,
+				Profiles: []pprofiletest.Profile{
+					{
+						ProfileID:             profileID,
+						TimeNanos:             1111,
+						DurationNanos:         222,
+						OriginalPayloadFormat: "operationA",
+					},
+					{
+						ProfileID:             profileID,
+						TimeNanos:             3333,
+						DurationNanos:         444,
+						OriginalPayloadFormat: "operationB",
+					},
+				},
+			})
+		}
+		profiles.ResourceProfiles = append(profiles.ResourceProfiles, resourceProfile)
+	}
+	return profiles.Transform()
+}
+
+// forEachProfile runs fn against every profile of the profiles returned by
+// constructProfilesMultipleResourcesScopes.
+func forEachProfile(td pprofile.Profiles, fn func(pprofile.Profile)) {
+	for _, rp := range td.ResourceProfiles().All() {
+		for _, sp := range rp.ScopeProfiles().All() {
+			for _, p := range sp.Profiles().All() {
+				fn(p)
+			}
+		}
 	}
 }
 

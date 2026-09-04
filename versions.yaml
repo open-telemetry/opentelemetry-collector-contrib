@@ -5,11 +5,10 @@ module-sets:
   stable-base:
     version: v1.0.0
     modules:
-      # Uncomment once https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49152 is merged
-      # - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
 
   contrib-base:
-    version: v0.158.0
+    version: v0.160.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -184,6 +183,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status
@@ -203,6 +203,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cardinalityguardianprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/awsecsattributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor
@@ -210,7 +211,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/drainprocessor
-      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/dynamicsamplingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor
@@ -219,7 +219,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/isolationforestprocessor
-      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor
@@ -230,7 +229,9 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/rollingspanlatencyprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/signingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor
@@ -324,7 +325,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/examples/federation/prom-counter
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver

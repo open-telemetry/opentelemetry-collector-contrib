@@ -86,10 +86,6 @@ func TestGetPrometheusConfig(t *testing.T) {
 	clientConfig.Endpoint = "localhost:1234"
 
 	clientConfigJobName := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigJobName.MaxIdleConns = 0
-	clientConfigJobName.IdleConnTimeout = 0
-	clientConfigJobName.ForceAttemptHTTP2 = false
 	clientConfigJobName.Endpoint = "localhost:1234"
 
 	tests := []struct {

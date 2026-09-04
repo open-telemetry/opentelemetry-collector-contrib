@@ -31,7 +31,7 @@ func newExtension(settings extension.Settings, cfg *Config) *pebbleTailStorageEx
 }
 
 func (e *pebbleTailStorageExtension) Start(ctx context.Context, _ component.Host) error {
-	storage, err := newStorage(ctx, e.cfg.Directory, e.settings.Logger)
+	storage, err := newStorage(ctx, e.cfg, e.settings.Logger)
 	if err != nil {
 		return err
 	}

@@ -24,7 +24,6 @@ feature_gates:
       semconv v1.38.0 attributes rpc.jsonrpc.error_code and rpc.jsonrpc.error_message.
     from_version: v0.154.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22095
-    skip_strict_validation: true
 
 tests:
   config:

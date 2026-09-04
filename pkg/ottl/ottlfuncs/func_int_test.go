@@ -29,11 +29,13 @@ func Test_Int(t *testing.T) {
 			name:     "empty string",
 			value:    "",
 			expected: nil,
+			err:      true,
 		},
 		{
 			name:     "not a number string",
 			value:    "test",
 			expected: nil,
+			err:      true,
 		},
 		{
 			name:     "int64",

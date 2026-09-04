@@ -1,0 +1,796 @@
+exclusions:
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor
+    feature_gates:
+      - name: opampsupervisor.Extensions
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector
+    feature_gates:
+      - name: connector.servicegraph.legacyLatencyMetricNames
+        validation:
+          enabled: false
+      - name: connector.servicegraph.legacyLatencyUnitMs
+        validation:
+          enabled: false
+      - name: connector.servicegraph.virtualNode
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector
+    feature_gates:
+      - name: connector.spanmetrics.excludeResourceMetrics
+        validation:
+          enabled: false
+      - name: connector.spanmetrics.includeCollectorInstanceID
+        validation:
+          enabled: false
+      - name: connector.spanmetrics.legacyMetricNames
+        validation:
+          enabled: false
+      - name: connector.spanmetrics.useSecondAsDefaultMetricsUnit
+        validation:
+          enabled: false
+      - name: spanmetrics.statusCodeConvention.useOtelPrefix
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter
+    feature_gates:
+      - name: awsemf.nodimrollupdefault
+        validation:
+          enabled: false
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter
+    # TODO: Update the exporter to pass the tests
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter
+    lifecycle_test:
+      enabled: false
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter
+    # TODO: Update the exporter to pass the tests
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter
+    feature_gates:
+      - name: exporter.datadogexporter.DisableAPMStats
+        validation:
+          enabled: false
+      - name: exporter.datadogexporter.TraceExportUseCustomHTTPClient
+        validation:
+          enabled: false
+      - name: exporter.datadogexporter.metricexportserializerclient
+        validation:
+          enabled: false
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter
+    lifecycle_test:
+      enabled: false
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorisexporter
+    # TODO: Update the exporter to pass the tests
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter
+    feature_gates:
+      - name: exporter.googlecloud.CustomMonitoredResources
+        validation:
+          enabled: false
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter
+    # TODO: Update the exporter to pass the tests
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudstorageexporter
+    # we skip the generated tests since and implement our own, as we make requests to google
+    # API on new GCS exporter
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter
+    feature_gates:
+      - name: exporter.prometheusexporter.DisableAddMetricSuffixes
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter
+    feature_gates:
+      - name: exporter.prometheusremotewritexporter.EnableMultipleWorkers
+        validation:
+          enabled: false
+      - name: exporter.prometheusremotewritexporter.RetryOn429
+        validation:
+          enabled: false
+      - name: exporter.prometheusremotewritexporter.enableSendingRW2
+        validation:
+          enabled: false
+      - name: exporter.prometheusremotewritexporter.removeTopLevelHTTPSettings
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter
+    # Update the exporter to pass the tests
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter
+    # Needed because the component intentionally fails during start-up if unable to connect to rabbitmq broker
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter
+    feature_gates:
+      - name: exporter.signalfx.consumeEntityEvents
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter
+    # TODO: Update the exporter to pass the tests
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter
+    # TODO: Update the exporter to pass the tests
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter
+    # TODO: Update the exporter to pass the tests
+    lifecycle_test:
+      enabled: false
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension
+    # TODO: Update the extension to make the tests pass
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy
+    lifecycle_test:
+      enabled: false
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+    feature_gates:
+      - name: extension.awslogsencoding.cloudtrail.enable.user.identity.prefix
+        validation:
+          enabled: false
+      - name: extension.awslogsencoding.vpcflow.start.iso8601
+        validation:
+          enabled: false
+      - name: extension.encoding.awslogsencoding.DontEmitV0RPCConventions
+        validation:
+          enabled: false
+      - name: extension.encoding.awslogsencoding.EmitV1RPCConventions
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+    feature_gates:
+      - name: extension.azureencoding.DontEmitV0LogConventions
+        validation:
+          enabled: false
+      - name: extension.azureencoding.EmitV1LogConventions
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension
+    feature_gates:
+      - name: extension.encoding.googlecloudlogentryencoding.DontEmitV0RPCConventions
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension
+    feature_gates:
+      - name: extension.healthcheck.useComponentStatus
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling
+    # TODO: Update the extension to make the tests pass
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector
+    # Skip life cycle tests as we need a real kubeconfig to run the lifecycle tests, as the test needs to generate a kubeconfig client. Enable them once we have a proper solution for this
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/cfgardenobserver
+    # We don't want to make actual connections to CloudFoundry api in our tests
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver
+    # TODO: Update the extension to make the tests pass
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver
+    # TODO: Update the extension to make the tests pass
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension
+    feature_gates:
+      - name: extension.opampextension.RemoteRestarts
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage
+    # TODO: Update the extension to make the tests pass
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension
+    # TODO: Update the extension to make the tests pass
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal
+    feature_gates:
+      - name: internal.coreinternal.goldendataset.DontEmitV0DatabaseConventions
+        validation:
+          enabled: false
+      - name: internal.coreinternal.goldendataset.DontEmitV0FaaSConventions
+        validation:
+          enabled: false
+      - name: internal.coreinternal.goldendataset.DontEmitV0HTTPConventions
+        validation:
+          enabled: false
+      - name: internal.coreinternal.goldendataset.DontEmitV0MessagingConventions
+        validation:
+          enabled: false
+      - name: internal.coreinternal.goldendataset.DontEmitV0NetworkConventions
+        validation:
+          enabled: false
+      - name: internal.coreinternal.goldendataset.DontEmitV0RPCConventions
+        validation:
+          enabled: false
+      - name: internal.coreinternal.goldendataset.EmitV1DatabaseConventions
+        validation:
+          enabled: false
+      - name: internal.coreinternal.goldendataset.EmitV1FaaSConventions
+        validation:
+          enabled: false
+      - name: internal.coreinternal.goldendataset.EmitV1HTTPConventions
+        validation:
+          enabled: false
+      - name: internal.coreinternal.goldendataset.EmitV1MessagingConventions
+        validation:
+          enabled: false
+      - name: internal.coreinternal.goldendataset.EmitV1NetworkConventions
+        validation:
+          enabled: false
+      - name: internal.coreinternal.goldendataset.EmitV1RPCConventions
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog
+    feature_gates:
+      - name: datadog.EnableOperationAndResourceNameV2
+        validation:
+          enabled: false
+      - name: datadog.EnableReceiveResourceSpansV2
+        validation:
+          enabled: false
+      - name: datadog.EnableScopeConvention
+        validation:
+          enabled: false
+      - name: exporter.datadogexporter.AddUnits
+        validation:
+          enabled: false
+      - name: exporter.datadogexporter.DisableAllMetricRemapping
+        validation:
+          enabled: false
+      - name: exporter.datadogexporter.EnableAttributeSliceMultiTagExporting
+        validation:
+          enabled: false
+      - name: exporter.datadogexporter.InferIntervalForDeltaMetrics
+        validation:
+          enabled: false
+      - name: exporter.datadogexporter.metricremappingdisabled
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
+    feature_gates:
+      - name: pkg.experimentalmetricmetadata.useEntityEventsSpecification
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
+    feature_gates:
+      - name: ottl.PanicDuplicateName
+        validation:
+          enabled: false
+      - name: ottl.contexts.enableOTelColContext
+        validation:
+          enabled: false
+      - name: ottl.functions.enableLambda
+        validation:
+          enabled: false
+      - name: ottl.set.allowNil
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
+    feature_gates:
+      - name: logs.assignKeys
+        validation:
+          enabled: false
+      - name: logs.jsonParserArray
+        validation:
+          enabled: false
+      - name: parser.uri.ecscompliant
+        validation:
+          enabled: false
+      - name: stanza.synchronousLogEmitter
+        validation:
+          enabled: false
+      - name: stanza.udp.useStableNetworkAttributes
+        validation:
+          enabled: false
+      - name: stanza.windows.eventDrivenScraping
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer
+    feature_gates:
+      - name: filelog.allowFileDeletion
+        validation:
+          enabled: false
+      - name: filelog.allowHeaderMetadataParsing
+        validation:
+          enabled: false
+      - name: filelog.mtimeSortType
+        validation:
+          enabled: false
+      - name: filelog.protobufCheckpointEncoding
+        validation:
+          enabled: false
+      - name: filelog.requireExplicitTopN
+        validation:
+          enabled: false
+      - name: filelog.windows.caseInsensitive
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs
+    feature_gates:
+      - name: pkg.translator.azurelogs.DontEmitV0LogConventions
+        validation:
+          enabled: false
+      - name: pkg.translator.azurelogs.EmitV1LogConventions
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro
+    feature_gates:
+      - name: pkg.translator.faro.DontEmitV0DeploymentEnvironmentConventions
+        validation:
+          enabled: false
+      - name: pkg.translator.faro.EmitV1DeploymentEnvironmentConventions
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
+    feature_gates:
+      - name: pkg.translator.jaeger.DontEmitV0HttpConventions
+        validation:
+          enabled: false
+      - name: pkg.translator.jaeger.EmitV1HttpConventions
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus
+    feature_gates:
+      - name: pkg.translator.prometheus.PermissiveLabelSanitization
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking
+    feature_gates:
+      - name: translator.skywalking.useStableSemconv
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin
+    feature_gates:
+      - name: pkg.translator.zipkin.DontEmitV0CloudResourceConventions
+        validation:
+          enabled: false
+      - name: pkg.translator.zipkin.DontEmitV0HttpConventions
+        validation:
+          enabled: false
+      - name: pkg.translator.zipkin.DontEmitV0NetworkConventions
+        validation:
+          enabled: false
+      - name: pkg.translator.zipkin.DontEmitV0ScopeConventions
+        validation:
+          enabled: false
+      - name: pkg.translator.zipkin.EmitV1CloudResourceConventions
+        validation:
+          enabled: false
+      - name: pkg.translator.zipkin.EmitV1HttpConventions
+        validation:
+          enabled: false
+      - name: pkg.translator.zipkin.EmitV1NetworkConventions
+        validation:
+          enabled: false
+      - name: pkg.translator.zipkin.EmitV1ScopeConventions
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
+    feature_gates:
+      - name: processor.k8sattributes.DontEmitV0K8sConventions
+        validation:
+          enabled: false
+      - name: processor.k8sattributes.EmitV1K8sConventions
+        validation:
+          enabled: false
+      - name: processor.k8sattributes.ShareProcessorBetweenPipelines
+        validation:
+          enabled: false
+      - name: processor.k8sattributes.telemetry.disableOldFormatMetrics
+        validation:
+          enabled: false
+      - name: processor.k8sattributes.telemetry.enableNewFormatMetrics
+        validation:
+          enabled: false
+    lifecycle_test:
+      enabled: false
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor
+    feature_gates:
+      - name: metricsgeneration.MatchAttributes
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibaba/ecs
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/elasticbeanstalk
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/dynatrace
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/hetzner
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/classic
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/vpc
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openstack/nova
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/oraclecloud
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/tencent/cvm
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/upcloud
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/vultr
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor
+    feature_gates:
+      - name: processor.tailsamplingprocessor.metricstatcountbytessampled
+        validation:
+          enabled: false
+      - name: processor.tailsamplingprocessor.metricstatcountspanssampled
+        validation:
+          enabled: false
+      - name: processor.tailsamplingprocessor.recordpolicy
+        validation:
+          enabled: false
+      - name: processor.tailsamplingprocessor.tailstorageextension
+        validation:
+          enabled: false
+      - name: processor.tailsamplingprocessor.usetracestate
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor
+    feature_gates:
+      - name: transform.flatten.logs
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver
+    # TODO: Update the receiver to pass the tests
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectoryinvreceiver
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver
+    feature_gates:
+      - name: receiver.apache.disableOldFormatMetrics
+        validation:
+          enabled: false
+      - name: receiver.apache.enableNewFormatMetrics
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
+    # TODO: Update the receiver to pass the tests
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver
+    # TODO: Update the receiver to pass the tests
+    feature_gates:
+      - name: receiver.awsecscontainermetrics.DontEmitV0ContainerConventions
+        validation:
+          enabled: false
+      - name: receiver.awsecscontainermetrics.EmitV1ContainerConventions
+        validation:
+          enabled: false
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver
+    # TODO Fix this
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver
+    # TODO: Update the receiver to make the tests pass
+    lifecycle_test:
+      enabled: false
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver
+    # TODO: Update the exporter to pass the tests
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver
+    # TODO: Update the exporter to pass the tests
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver
+    # TODO: Update the exporter to pass the tests
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/scraper/systemscraper
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver
+    feature_gates:
+      - name: cloudfoundry.resourceAttributes.allow
+        validation:
+          enabled: false
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver
+    feature_gates:
+      - name: receiver.datadogreceiver.DontEmitDeprecatedRPCServiceAttr
+        validation:
+          enabled: false
+      - name: receiver.datadogreceiver.Enable128BitTraceID
+        validation:
+          enabled: false
+      - name: receiver.datadogreceiver.EnableMultiTagParsing
+        validation:
+          enabled: false
+    # Skip lifecycle tests since there are multiple receivers that run on the same port
+    lifecycle_test:
+      enabled: false
+    # see https://github.com/cihub/seelog/issues/182
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver
+    feature_gates:
+      - name: receiver.githubreceiver.UseCheckRunID
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver
+    # TODO: Update the receiver to pass the tests
+    lifecycle_test:
+      enabled: false
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubpushreceiver
+    # start requires an encoding extension to exist
+    lifecycle_test:
+      enabled: false
+    # requires google credentials for the storage client
+    shutdown_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver
+    feature_gates:
+      - name: hostmetrics.process.bootTimeCache
+        validation:
+          enabled: false
+      - name: receiver.hostmetricsreceiver.UseLinuxMemAvailable
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
+    lifecycle_test:
+      enabled: false
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver
+    # TODO: Update the receiver to pass the tests
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver
+    lifecycle_test:
+      enabled: false
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
+    feature_gates:
+      - name: receiver.kafkametricsreceiver.UseFranzGo
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver
+    # TODO: Update the receiver to pass the tests
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+    feature_gates:
+      - name: receiver.kubeletstats.cpuUsageScrapeBased
+        validation:
+          enabled: false
+    goleak:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver
+    # TODO: Update the receiver to pass the tests
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+    feature_gates:
+      - name: postgresqlreceiver.preciselagmetrics
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver
+    feature_gates:
+      - name: receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion
+        validation:
+          enabled: false
+      - name: receiver.prometheusreceiver.IgnoreScopeInfoMetric
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver
+    # TODO: Update the receiver to pass the tests
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver
+    lifecycle_test:
+      enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+    feature_gates:
+      - name: receiver.vcenter.resourcePoolMemoryUsageAttribute
+        validation:
+          enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver
+    feature_gates:
+      - name: domainControllers.autodiscovery
+        validation:
+          enabled: false

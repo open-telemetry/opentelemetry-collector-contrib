@@ -1324,8 +1324,6 @@ top query
 | sqlserver.total_rows | Total number of rows returned by the query, reported in delta value. | Any Int | - |
 | sqlserver.total_elapsed_time | Total elapsed time for completed executions of this plan, reported in delta seconds. | Any Double | - |
 | sqlserver.total_grant_kb | The total amount of reserved memory grant in KB this plan received since it was compiled, reported in delta value. | Any Int | - |
-| server.address | The network address of the server hosting the database. | Any Str | - |
-| server.port | The port number on which the server is listening. | Any Int | - |
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str | - |
 | sqlserver.procedure_execution_count | Number of times that the procedure has been executed since it was last compiled, reported in delta value. | Any Int | - |
 | sqlserver.procedure_id | The SQL Server ID of the stored procedure, if any | Any Str | - |
@@ -1338,21 +1336,11 @@ top query
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
 | host.name | The host name of SQL Server | Any Str | true | - | - |
-| server.address | Name of the database host. | Any Str | false | - | - |
-| server.port | Server port number. | Any Int | false | - | - |
-| service.instance.id | A unique identifier of the SQL Server instance in the format host:port. In Windows Performance Counter mode the host is derived from computer_name (falling back to the collector host when monitoring locally), with a default port of 1433. | Any Str | true | - | - |
+| server.address | Name of the database host. | Any Str | true | - | - |
+| server.port | Server port number. | Any Int | true | - | - |
+| service.instance.id | A unique identifier of the SQL Server instance. When using direct connection settings, the format is host:port. When using a datasource, the format is host\instance for a named instance and host:port otherwise; the port defaults to 1433 when omitted. In Windows Performance Counter mode, the format remains host:1433; host is computer_name for remote monitoring, or the local collector host when monitoring locally. | Any Str | true | - | - |
 | service.name | Logical name of the service. When enabled, defaults to unknown_service:microsoft.sql_server. | Any Str | false | - | - |
 | service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |
 | sqlserver.computer.name | The name of the SQL Server instance being monitored. | Any Str | false | - | - |
 | sqlserver.database.name | The name of the SQL Server database. | Any Str | true | - | - |
 | sqlserver.instance.name | The name of the SQL Server instance being monitored. | Any Str | false | - | - |
-
-## Feature Gates
-
-This component has the following feature gates:
-
-| Feature Gate | Stage | Description | From Version | To Version | Reference |
-| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `receiver.sqlserver.RemoveServerResourceAttribute` | alpha | When enabled, the server.address and server.port resource attributes are removed from metrics. | v0.129.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40141) |
-
-For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

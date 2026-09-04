@@ -1,7 +1,7 @@
 version: '3'
 services:
   envoy:
-    image: envoyproxy/envoy-alpine:v1.21-latest
+    image: envoyproxy/envoy-alpine:v1.21-latest@sha256:c959cb1484133cd978079d2696b4d903ba489e794db80f0f36469cb5e93ba468
     command: ["/usr/local/bin/envoy", "-c", "/etc/envoy-config.yaml", "-l", "debug"]
     ports:
       - "10000:10000"
@@ -12,7 +12,7 @@ services:
       - ./certs/ca.crt:/etc/ca.crt
       - ./envoy-config.yaml:/etc/envoy-config.yaml
   otel-collector:
-    image: otel/opentelemetry-collector:0.158.0
+    image: otel/opentelemetry-collector:0.159.0@sha256:7725a7a10c87d8853208bdd4bb3439ad3c0d7b32b4292b9300ac07c8daba14a2
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./certs/otel-collector.crt:/etc/otel-collector.crt

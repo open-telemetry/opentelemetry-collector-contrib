@@ -356,8 +356,8 @@ func (s *processScraper) scrapeAndAppendDiskMetrics(ctx context.Context, now pco
 		return err
 	}
 
-	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead)
-	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite)
+	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead, metadata.AttributeDiskIoDirectionRead)
+	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite, metadata.AttributeDiskIoDirectionWrite)
 	s.mb.RecordProcessDiskOperationsDataPoint(now, int64(io.ReadCount), metadata.AttributeDirectionRead)
 	s.mb.RecordProcessDiskOperationsDataPoint(now, int64(io.WriteCount), metadata.AttributeDirectionWrite)
 
@@ -377,8 +377,8 @@ func (s *processScraper) scrapeAndAppendPagingMetric(ctx context.Context, now pc
 		return nil
 	}
 
-	s.mb.RecordProcessPagingFaultsDataPoint(now, int64(pageFaultsStat.MajorFaults), metadata.AttributePagingFaultTypeMajor)
-	s.mb.RecordProcessPagingFaultsDataPoint(now, int64(pageFaultsStat.MinorFaults), metadata.AttributePagingFaultTypeMinor)
+	s.mb.RecordProcessPagingFaultsDataPoint(now, int64(pageFaultsStat.MajorFaults), metadata.AttributePagingFaultTypeMajor, metadata.AttributeSystemPagingFaultTypeMajor)
+	s.mb.RecordProcessPagingFaultsDataPoint(now, int64(pageFaultsStat.MinorFaults), metadata.AttributePagingFaultTypeMinor, metadata.AttributeSystemPagingFaultTypeMinor)
 
 	return nil
 }
@@ -450,8 +450,8 @@ func (s *processScraper) scrapeAndAppendContextSwitchMetrics(ctx context.Context
 		}
 	}
 
-	s.mb.RecordProcessContextSwitchesDataPoint(now, contextSwitches.Involuntary, metadata.AttributeContextSwitchTypeInvoluntary)
-	s.mb.RecordProcessContextSwitchesDataPoint(now, contextSwitches.Voluntary, metadata.AttributeContextSwitchTypeVoluntary)
+	s.mb.RecordProcessContextSwitchesDataPoint(now, contextSwitches.Involuntary, metadata.AttributeContextSwitchTypeInvoluntary, metadata.AttributeProcessContextSwitchTypeInvoluntary)
+	s.mb.RecordProcessContextSwitchesDataPoint(now, contextSwitches.Voluntary, metadata.AttributeContextSwitchTypeVoluntary, metadata.AttributeProcessContextSwitchTypeVoluntary)
 
 	return nil
 }

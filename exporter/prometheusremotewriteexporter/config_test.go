@@ -67,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
 				MaxBatchSizeBytes:          3000000,
-				MaxBatchRequestParallelism: toPtr(10),
+				MaxBatchRequestParallelism: new(10),
 				TimeoutSettings:            exporterhelper.NewDefaultTimeoutConfig(),
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
@@ -82,11 +82,12 @@ func TestLoadConfig(t *testing.T) {
 					QueueSize:    2000,
 					NumConsumers: 10,
 				},
-				AddMetricSuffixes:           false,
-				Namespace:                   "test-space",
-				ExternalLabels:              map[string]string{"key1": "value1", "key2": "value2"},
-				ClientConfig:                confighttp.ClientConfig{},
-				HTTP:                        clientConfigWithHeaders,
+				AddMetricSuffixes: false,
+				Namespace:         "test-space",
+				ExternalLabels:    map[string]string{"key1": "value1", "key2": "value2"},
+				ClientConfig:      confighttp.ClientConfig{},
+				HTTP:              clientConfigWithHeaders,
+				//nolint:staticcheck // test deprecated field
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 				TargetInfo: TargetInfo{
 					Enabled: true,
@@ -208,14 +209,25 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "resource_constant_labels"),
+			expected: func() component.Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.ClientConfig = confighttp.ClientConfig{}
+				cfg.HTTP.Endpoint = "localhost:8888"
+				cfg.ResourceConstantLabels = resourcetotelemetry.Settings{
+					Included: []string{"service*"},
+					Excluded: []string{"service.attr1"},
+				}
+				return cfg
+			}(),
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			if tt.enableSendingRW2 {
-				oldValue := metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate.IsEnabled()
-				testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, true)
-				defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, oldValue)
+				defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, true)()
 			}
 
 			factory := NewFactory()
@@ -349,12 +361,29 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 			}
 			if tc.checkDefaults {
 				require.Equal(t, getDefaultHTTPClientConfig().WriteBufferSize, cfg.HTTP.WriteBufferSize)
-				require.Equal(t, getDefaultHTTPClientConfig().MaxIdleConns, cfg.HTTP.MaxIdleConns)
+				require.Equal(t, getDefaultHTTPClientConfig().MaxIdleConns, cfg.HTTP.MaxIdleConns) //nolint:staticcheck // SA1019: MaxIdleConns is deprecated but still in use, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316
 			}
 		})
 	}
 }
 
-func toPtr[T any](val T) *T {
-	return &val
+func TestResourceConstantLabelsValidation(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ResourceConstantLabels = resourcetotelemetry.Settings{
+		Included: []string{"service*"},
+	}
+	assert.NoError(t, cfg.Validate())
+
+	invalidCfg := createDefaultConfig().(*Config)
+	invalidCfg.ResourceConstantLabels.Enabled = true //nolint:staticcheck // testing deprecated field rejection
+	assert.Error(t, invalidCfg.Validate())
+
+	cfg.ResourceToTelemetrySettings.Enabled = true //nolint:staticcheck // ignore deprecated field
+	assert.Error(t, cfg.Validate())
+
+	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate, true)()
+	assert.Error(t, cfg.Validate())
+
+	cfg.ResourceToTelemetrySettings = resourcetotelemetry.Settings{}
+	assert.NoError(t, cfg.Validate())
 }

@@ -457,6 +457,10 @@ component_management:
     name: extension_tailstorage_pebbletailstorage
     paths:
     - extension/tailstorage/pebbletailstorageextension/**
+  - component_id: processor_adaptivetailsampling
+    name: processor_adaptivetailsampling
+    paths:
+    - processor/adaptivetailsamplingprocessor/**
   - component_id: processor_attributes
     name: processor_attributes
     paths:
@@ -489,10 +493,6 @@ component_management:
     name: processor_drain
     paths:
     - processor/drainprocessor/**
-  - component_id: processor_dynamicsampling
-    name: processor_dynamicsampling
-    paths:
-    - processor/dynamicsamplingprocessor/**
   - component_id: processor_filter
     name: processor_filter
     paths:
@@ -569,10 +569,18 @@ component_management:
     name: processor_resource
     paths:
     - processor/resourceprocessor/**
+  - component_id: processor_rollingspanlatency
+    name: processor_rollingspanlatency
+    paths:
+    - processor/rollingspanlatencyprocessor/**
   - component_id: processor_schema
     name: processor_schema
     paths:
     - processor/schemaprocessor/**
+  - component_id: processor_signing
+    name: processor_signing
+    paths:
+    - processor/signingprocessor/**
   - component_id: processor_span
     name: processor_span
     paths:

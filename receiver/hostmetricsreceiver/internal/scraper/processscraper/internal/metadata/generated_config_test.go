@@ -31,20 +31,32 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []ProcessContextSwitchesMetricAttributeKey{ProcessContextSwitchesMetricAttributeKeyContextSwitchType},
 					},
+					ProcessContextSwitchesV1: ProcessContextSwitchesV1MetricConfig{
+						Enabled: true,
+					},
 					ProcessCPUTime: ProcessCPUTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []ProcessCPUTimeMetricAttributeKey{ProcessCPUTimeMetricAttributeKeyState},
+					},
+					ProcessCPUTimeV1: ProcessCPUTimeV1MetricConfig{
+						Enabled: true,
 					},
 					ProcessCPUUtilization: ProcessCPUUtilizationMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []ProcessCPUUtilizationMetricAttributeKey{ProcessCPUUtilizationMetricAttributeKeyState},
 					},
+					ProcessCPUUtilizationV1: ProcessCPUUtilizationV1MetricConfig{
+						Enabled: true,
+					},
 					ProcessDiskIo: ProcessDiskIoMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []ProcessDiskIoMetricAttributeKey{ProcessDiskIoMetricAttributeKeyDirection},
+					},
+					ProcessDiskIoV1: ProcessDiskIoV1MetricConfig{
+						Enabled: true,
 					},
 					ProcessDiskOperations: ProcessDiskOperationsMetricConfig{
 						Enabled:             true,
@@ -71,13 +83,27 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []ProcessPagingFaultsMetricAttributeKey{ProcessPagingFaultsMetricAttributeKeyPagingFaultType},
 					},
+					ProcessPagingFaultsV1: ProcessPagingFaultsV1MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ProcessPagingFaultsV1MetricAttributeKey{ProcessPagingFaultsV1MetricAttributeKeySystemPagingFaultType},
+					},
 					ProcessSignalsPending: ProcessSignalsPendingMetricConfig{
+						Enabled: true,
+					},
+					ProcessThreadCountV1: ProcessThreadCountV1MetricConfig{
 						Enabled: true,
 					},
 					ProcessThreads: ProcessThreadsMetricConfig{
 						Enabled: true,
 					},
+					ProcessUnixFileDescriptorCountV1: ProcessUnixFileDescriptorCountV1MetricConfig{
+						Enabled: true,
+					},
 					ProcessUptime: ProcessUptimeMetricConfig{
+						Enabled: true,
+					},
+					ProcessWindowsHandleCountV1: ProcessWindowsHandleCountV1MetricConfig{
 						Enabled: true,
 					},
 				},
@@ -87,6 +113,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ProcessCommandLine:    ResourceAttributeConfig{Enabled: true},
 					ProcessExecutableName: ResourceAttributeConfig{Enabled: true},
 					ProcessExecutablePath: ResourceAttributeConfig{Enabled: true},
+					ProcessLinuxCgroup:    ResourceAttributeConfig{Enabled: true},
 					ProcessOwner:          ResourceAttributeConfig{Enabled: true},
 					ProcessParentPid:      ResourceAttributeConfig{Enabled: true},
 					ProcessPid:            ResourceAttributeConfig{Enabled: true},
@@ -102,20 +129,32 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []ProcessContextSwitchesMetricAttributeKey{ProcessContextSwitchesMetricAttributeKeyContextSwitchType},
 					},
+					ProcessContextSwitchesV1: ProcessContextSwitchesV1MetricConfig{
+						Enabled: false,
+					},
 					ProcessCPUTime: ProcessCPUTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []ProcessCPUTimeMetricAttributeKey{ProcessCPUTimeMetricAttributeKeyState},
+					},
+					ProcessCPUTimeV1: ProcessCPUTimeV1MetricConfig{
+						Enabled: false,
 					},
 					ProcessCPUUtilization: ProcessCPUUtilizationMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []ProcessCPUUtilizationMetricAttributeKey{ProcessCPUUtilizationMetricAttributeKeyState},
 					},
+					ProcessCPUUtilizationV1: ProcessCPUUtilizationV1MetricConfig{
+						Enabled: false,
+					},
 					ProcessDiskIo: ProcessDiskIoMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []ProcessDiskIoMetricAttributeKey{ProcessDiskIoMetricAttributeKeyDirection},
+					},
+					ProcessDiskIoV1: ProcessDiskIoV1MetricConfig{
+						Enabled: false,
 					},
 					ProcessDiskOperations: ProcessDiskOperationsMetricConfig{
 						Enabled:             false,
@@ -142,13 +181,27 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []ProcessPagingFaultsMetricAttributeKey{ProcessPagingFaultsMetricAttributeKeyPagingFaultType},
 					},
+					ProcessPagingFaultsV1: ProcessPagingFaultsV1MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ProcessPagingFaultsV1MetricAttributeKey{ProcessPagingFaultsV1MetricAttributeKeySystemPagingFaultType},
+					},
 					ProcessSignalsPending: ProcessSignalsPendingMetricConfig{
+						Enabled: false,
+					},
+					ProcessThreadCountV1: ProcessThreadCountV1MetricConfig{
 						Enabled: false,
 					},
 					ProcessThreads: ProcessThreadsMetricConfig{
 						Enabled: false,
 					},
+					ProcessUnixFileDescriptorCountV1: ProcessUnixFileDescriptorCountV1MetricConfig{
+						Enabled: false,
+					},
 					ProcessUptime: ProcessUptimeMetricConfig{
+						Enabled: false,
+					},
+					ProcessWindowsHandleCountV1: ProcessWindowsHandleCountV1MetricConfig{
 						Enabled: false,
 					},
 				},
@@ -158,6 +211,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ProcessCommandLine:    ResourceAttributeConfig{Enabled: false},
 					ProcessExecutableName: ResourceAttributeConfig{Enabled: false},
 					ProcessExecutablePath: ResourceAttributeConfig{Enabled: false},
+					ProcessLinuxCgroup:    ResourceAttributeConfig{Enabled: false},
 					ProcessOwner:          ResourceAttributeConfig{Enabled: false},
 					ProcessParentPid:      ResourceAttributeConfig{Enabled: false},
 					ProcessPid:            ResourceAttributeConfig{Enabled: false},
@@ -168,7 +222,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ProcessContextSwitchesMetricConfig{}, ProcessCPUTimeMetricConfig{}, ProcessCPUUtilizationMetricConfig{}, ProcessDiskIoMetricConfig{}, ProcessDiskOperationsMetricConfig{}, ProcessHandlesMetricConfig{}, ProcessMemoryUsageMetricConfig{}, ProcessMemoryUtilizationMetricConfig{}, ProcessMemoryVirtualMetricConfig{}, ProcessOpenFileDescriptorsMetricConfig{}, ProcessPagingFaultsMetricConfig{}, ProcessSignalsPendingMetricConfig{}, ProcessThreadsMetricConfig{}, ProcessUptimeMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ProcessContextSwitchesMetricConfig{}, ProcessContextSwitchesV1MetricConfig{}, ProcessCPUTimeMetricConfig{}, ProcessCPUTimeV1MetricConfig{}, ProcessCPUUtilizationMetricConfig{}, ProcessCPUUtilizationV1MetricConfig{}, ProcessDiskIoMetricConfig{}, ProcessDiskIoV1MetricConfig{}, ProcessDiskOperationsMetricConfig{}, ProcessHandlesMetricConfig{}, ProcessMemoryUsageMetricConfig{}, ProcessMemoryUtilizationMetricConfig{}, ProcessMemoryVirtualMetricConfig{}, ProcessOpenFileDescriptorsMetricConfig{}, ProcessPagingFaultsMetricConfig{}, ProcessPagingFaultsV1MetricConfig{}, ProcessSignalsPendingMetricConfig{}, ProcessThreadCountV1MetricConfig{}, ProcessThreadsMetricConfig{}, ProcessUnixFileDescriptorCountV1MetricConfig{}, ProcessUptimeMetricConfig{}, ProcessWindowsHandleCountV1MetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -245,6 +299,18 @@ func TestProcessPagingFaultsMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
+func TestProcessPagingFaultsV1MetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ProcessPagingFaultsV1
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ProcessPagingFaultsV1MetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric process.paging.faults@v1 doesn't have an attribute invalid, valid attributes: [system.paging.fault.type]")
+
+	cfg = DefaultMetricsConfig().ProcessPagingFaultsV1
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -272,6 +338,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				ProcessCommandLine:    ResourceAttributeConfig{Enabled: true},
 				ProcessExecutableName: ResourceAttributeConfig{Enabled: true},
 				ProcessExecutablePath: ResourceAttributeConfig{Enabled: true},
+				ProcessLinuxCgroup:    ResourceAttributeConfig{Enabled: true},
 				ProcessOwner:          ResourceAttributeConfig{Enabled: true},
 				ProcessParentPid:      ResourceAttributeConfig{Enabled: true},
 				ProcessPid:            ResourceAttributeConfig{Enabled: true},
@@ -285,6 +352,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				ProcessCommandLine:    ResourceAttributeConfig{Enabled: false},
 				ProcessExecutableName: ResourceAttributeConfig{Enabled: false},
 				ProcessExecutablePath: ResourceAttributeConfig{Enabled: false},
+				ProcessLinuxCgroup:    ResourceAttributeConfig{Enabled: false},
 				ProcessOwner:          ResourceAttributeConfig{Enabled: false},
 				ProcessParentPid:      ResourceAttributeConfig{Enabled: false},
 				ProcessPid:            ResourceAttributeConfig{Enabled: false},
