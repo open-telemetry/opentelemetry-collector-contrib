@@ -8,6 +8,54 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
+// SystemNetworkBandwidthUtilizationMetricAttributeKey specifies the key of an attribute for the system.network.bandwidth.utilization metric.
+type SystemNetworkBandwidthUtilizationMetricAttributeKey string
+
+const (
+	SystemNetworkBandwidthUtilizationMetricAttributeKeyDevice SystemNetworkBandwidthUtilizationMetricAttributeKey = "device"
+)
+
+// SystemNetworkBandwidthUtilizationMetricConfig provides config for the system.network.bandwidth.utilization metric.
+type SystemNetworkBandwidthUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemNetworkBandwidthUtilizationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemNetworkBandwidthUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemNetworkBandwidthUtilizationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemNetworkBandwidthUtilizationMetricAttributeKeyDevice:
+		default:
+			return fmt.Errorf("metric system.network.bandwidth.utilization doesn't have an attribute %v, valid attributes: [device]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // SystemNetworkConnectionsMetricAttributeKey specifies the key of an attribute for the system.network.connections metric.
 type SystemNetworkConnectionsMetricAttributeKey string
 
@@ -295,17 +343,23 @@ func (ms *SystemNetworkPacketsMetricConfig) Validate() error {
 
 // MetricsConfig provides config for network metrics.
 type MetricsConfig struct {
-	SystemNetworkConnections    SystemNetworkConnectionsMetricConfig    `mapstructure:"system.network.connections"`
-	SystemNetworkConntrackCount SystemNetworkConntrackCountMetricConfig `mapstructure:"system.network.conntrack.count"`
-	SystemNetworkConntrackMax   SystemNetworkConntrackMaxMetricConfig   `mapstructure:"system.network.conntrack.max"`
-	SystemNetworkDropped        SystemNetworkDroppedMetricConfig        `mapstructure:"system.network.dropped"`
-	SystemNetworkErrors         SystemNetworkErrorsMetricConfig         `mapstructure:"system.network.errors"`
-	SystemNetworkIo             SystemNetworkIoMetricConfig             `mapstructure:"system.network.io"`
-	SystemNetworkPackets        SystemNetworkPacketsMetricConfig        `mapstructure:"system.network.packets"`
+	SystemNetworkBandwidthUtilization SystemNetworkBandwidthUtilizationMetricConfig `mapstructure:"system.network.bandwidth.utilization"`
+	SystemNetworkConnections          SystemNetworkConnectionsMetricConfig          `mapstructure:"system.network.connections"`
+	SystemNetworkConntrackCount       SystemNetworkConntrackCountMetricConfig       `mapstructure:"system.network.conntrack.count"`
+	SystemNetworkConntrackMax         SystemNetworkConntrackMaxMetricConfig         `mapstructure:"system.network.conntrack.max"`
+	SystemNetworkDropped              SystemNetworkDroppedMetricConfig              `mapstructure:"system.network.dropped"`
+	SystemNetworkErrors               SystemNetworkErrorsMetricConfig               `mapstructure:"system.network.errors"`
+	SystemNetworkIo                   SystemNetworkIoMetricConfig                   `mapstructure:"system.network.io"`
+	SystemNetworkPackets              SystemNetworkPacketsMetricConfig              `mapstructure:"system.network.packets"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		SystemNetworkBandwidthUtilization: SystemNetworkBandwidthUtilizationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SystemNetworkBandwidthUtilizationMetricAttributeKey{SystemNetworkBandwidthUtilizationMetricAttributeKeyDevice},
+		},
 		SystemNetworkConnections: SystemNetworkConnectionsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,

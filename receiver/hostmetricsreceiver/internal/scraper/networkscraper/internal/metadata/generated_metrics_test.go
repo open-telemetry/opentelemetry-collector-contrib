@@ -58,6 +58,7 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["system.network.bandwidth.utilization"] = mb.metricSystemNetworkBandwidthUtilization.config.AggregationStrategy
 			aggMap["system.network.connections"] = mb.metricSystemNetworkConnections.config.AggregationStrategy
 			aggMap["system.network.dropped"] = mb.metricSystemNetworkDropped.config.AggregationStrategy
 			aggMap["system.network.errors"] = mb.metricSystemNetworkErrors.config.AggregationStrategy
@@ -71,6 +72,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
+
+			allMetricsCount++
+			mb.RecordSystemNetworkBandwidthUtilizationDataPoint(ts, 1, "device-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemNetworkBandwidthUtilizationDataPoint(ts, 3, "device-val-2")
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkConnectionsDataPoint(ts, 1, AttributeProtocolTCP, "state-val")
@@ -111,6 +118,7 @@ func TestMetricsBuilder(t *testing.T) {
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricSystemNetworkBandwidthUtilization.aggDataPoints)
 				assert.Empty(t, mb.metricSystemNetworkConnections.aggDataPoints)
 				assert.Empty(t, mb.metricSystemNetworkDropped.aggDataPoints)
 				assert.Empty(t, mb.metricSystemNetworkErrors.aggDataPoints)
@@ -143,6 +151,46 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for _, mi := range allMetricsList {
 				switch mi.Name() {
+				case "system.network.bandwidth.utilization":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.network.bandwidth.utilization"], "Found a duplicate in the metrics slice: system.network.bandwidth.utilization")
+						validatedMetrics["system.network.bandwidth.utilization"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The network bandwidth utilization as a fraction of the total bandwidth.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						deviceAttrVal, ok := dp.Attributes().Get("device")
+						assert.True(t, ok)
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.network.bandwidth.utilization"], "Found a duplicate in the metrics slice: system.network.bandwidth.utilization")
+						validatedMetrics["system.network.bandwidth.utilization"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The network bandwidth utilization as a fraction of the total bandwidth.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["system.network.bandwidth.utilization"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("device")
+						assert.False(t, ok)
+					}
 				case "system.network.connections":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["system.network.connections"], "Found a duplicate in the metrics slice: system.network.connections")

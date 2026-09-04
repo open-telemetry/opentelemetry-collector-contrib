@@ -97,6 +97,20 @@ metrics:
     enabled: true
 ```
 
+### system.network.bandwidth.utilization
+
+The network bandwidth utilization as a fraction of the total bandwidth.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| device | Name of the network interface. | Any Str | Recommended | - |
+
 ### system.network.conntrack.count
 
 The count of entries in conntrack table.
