@@ -52,10 +52,10 @@ func TestIsLocalRoot_RemoteFlagSet(t *testing.T) {
 	assert.True(t, isLocalRoot(bs, map[pcommon.SpanID]bufferedSpan{}))
 }
 
-// HAS_IS_REMOTE=1, IS_REMOTE=0 --> not local root
+// HAS_IS_REMOTE=1, IS_REMOTE=0 --> safe default: local root
 func TestIsLocalRoot_LocalFlagClear(t *testing.T) {
 	bs := newBS(makeSpanID(3), makeSpanID(99), spanFlagsContextHasIsRemoteMask, "svc-a")
-	assert.False(t, isLocalRoot(bs, map[pcommon.SpanID]bufferedSpan{}))
+	assert.True(t, isLocalRoot(bs, map[pcommon.SpanID]bufferedSpan{}))
 }
 
 // parent not in index --> safe default: local root

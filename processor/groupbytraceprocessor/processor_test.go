@@ -6,6 +6,7 @@ package groupbytraceprocessor
 import (
 	"context"
 	"errors"
+	"fmt"
 	"maps"
 	"sync"
 	"testing"
@@ -870,6 +871,147 @@ func TestSubtrace_Regression_TraceStrategy(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return sink.SpanCount() == 2
 	}, 5*time.Second, 5*time.Millisecond)
+}
+
+// TestSubtrace_Matrix_ThreeServices_MissingLocalRoot exercises a three-service
+// trace (svc-a -> svc-b -> svc-c) in which one of the three local root spans
+// never arrives. The span whose parent is the missing root becomes a local root
+// itself, so every submitted span must still be emitted exactly once, grouped
+// by service. The matrix covers each of the three missing roots against every
+// arrival order of the three service batches.
+func TestSubtrace_Matrix_ThreeServices_MissingLocalRoot(t *testing.T) {
+	traceID := makeTraceID(20)
+	rootA, childA := makeSpanID(1), makeSpanID(2)
+	rootB, childB := makeSpanID(3), makeSpanID(4)
+	rootC, childC := makeSpanID(5), makeSpanID(6)
+
+	// The complete trace: each service's local root comes first, and svc-b/svc-c
+	// enter through a remote child of the previous service's child span.
+	type service struct {
+		name  string
+		specs []spanSpec
+	}
+	complete := []service{
+		{"svc-a", []spanSpec{{rootA, pcommon.NewSpanIDEmpty(), false}, {childA, rootA, false}}},
+		{"svc-b", []spanSpec{{rootB, childA, true}, {childB, rootB, false}}},
+		{"svc-c", []spanSpec{{rootC, childB, true}, {childC, rootC, false}}},
+	}
+
+	orders := [][]int{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}
+
+	for missing := range complete {
+		for _, order := range orders {
+			name := fmt.Sprintf("missing_root_%s/order_%d%d%d",
+				complete[missing].name, order[0], order[1], order[2])
+			t.Run(name, func(t *testing.T) {
+				// Drop the local root of the "missing" service.
+				submitted := make([]service, len(complete))
+				for i, svc := range complete {
+					submitted[i] = service{name: svc.name, specs: svc.specs}
+					if i == missing {
+						submitted[i].specs = svc.specs[1:]
+					}
+				}
+
+				// Every service's submitted spans form exactly one expected batch:
+				// the orphaned child is its own local root once its parent is gone.
+				var expected []map[pcommon.SpanID]bool
+				expectedSpans := 0
+				for _, svc := range submitted {
+					ids := map[pcommon.SpanID]bool{}
+					for _, spec := range svc.specs {
+						ids[spec.id] = true
+					}
+					expected = append(expected, ids)
+					expectedSpans += len(svc.specs)
+				}
+
+				sink := new(consumertest.TracesSink)
+				cfg := Config{
+					NumTraces:    100,
+					NumWorkers:   1,
+					WaitDuration: 20 * time.Millisecond,
+					EmitStrategy: EmitStrategyService,
+				}
+				p := newSubtraceProcessor(t, cfg, sink)
+				defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+				for _, i := range order {
+					svc := submitted[i]
+					require.NoError(t, p.ConsumeTraces(t.Context(),
+						buildSpecTrace(traceID, svc.name, svc.specs...)))
+				}
+
+				require.Eventually(t, func() bool {
+					return sink.SpanCount() >= expectedSpans
+				}, 5*time.Second, 5*time.Millisecond)
+
+				assert.Equal(t, expectedSpans, sink.SpanCount(), "no span may be emitted twice")
+
+				batches := sink.AllTraces()
+				require.Len(t, batches, len(expected))
+
+				// Each emitted batch must match a distinct expected service group.
+				remaining := expected
+				for _, b := range batches {
+					ids := batchSpanIDs(b)
+					matched := -1
+					for i, want := range remaining {
+						if maps.Equal(ids, want) {
+							matched = i
+							break
+						}
+					}
+					require.NotEqual(t, -1, matched,
+						"batch span IDs %v matched none of the remaining expected groups %v", ids, remaining)
+					remaining = append(remaining[:matched], remaining[matched+1:]...)
+				}
+				assert.Empty(t, remaining)
+			})
+		}
+	}
+}
+
+// batchSpanIDs collects the set of span IDs contained in a batch.
+func batchSpanIDs(td ptrace.Traces) map[pcommon.SpanID]bool {
+	ids := map[pcommon.SpanID]bool{}
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		rs := td.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				ids[ss.Spans().At(k).SpanID()] = true
+			}
+		}
+	}
+	return ids
+}
+
+// spanSpec describes one span to build: its ID, its parent, and whether the
+// parent context is flagged as remote (i.e. it is a service-entry span).
+type spanSpec struct {
+	id     pcommon.SpanID
+	parent pcommon.SpanID
+	remote bool
+}
+
+// buildSpecTrace builds a single-resource batch for serviceName holding the
+// given spans, all sharing traceID.
+func buildSpecTrace(traceID pcommon.TraceID, serviceName string, specs ...spanSpec) ptrace.Traces {
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("service.name", serviceName)
+	ss := rs.ScopeSpans().AppendEmpty()
+	for _, spec := range specs {
+		s := ss.Spans().AppendEmpty()
+		s.SetTraceID(traceID)
+		s.SetSpanID(spec.id)
+		s.SetParentSpanID(spec.parent)
+		if spec.remote {
+			s.SetFlags(spanFlagsContextHasIsRemoteMask | spanFlagsContextIsRemoteMask)
+		}
+	}
+	return td
 }
 
 // newSubtraceProcessor creates a started groupByTraceProcessor wired with the
