@@ -1695,12 +1695,10 @@ func TestCollectIndexStatsSkipsViews(t *testing.T) {
 
 func TestResourceAttributeDbSystemVersion(t *testing.T) {
 	// Test the setResourceAttributes function directly
-	rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
-
 	// Test with enabled db.system.version
 	cfg := metadata.DefaultResourceAttributesConfig()
 	cfg.DbSystemVersion.Enabled = true
-	rb = metadata.NewResourceBuilder(cfg)
+	rb := metadata.NewResourceBuilder(cfg)
 
 	mongo50, err := version.NewVersion("5.0.0")
 	require.NoError(t, err)
