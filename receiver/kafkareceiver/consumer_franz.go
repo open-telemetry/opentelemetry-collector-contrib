@@ -211,7 +211,6 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 
 	cm, err := c.newConsumeFn(host, c.obsrecv, c.telemetryBuilder)
 	if err != nil {
-		c.client = nil
 		clientToClose = client
 		return err
 	}
