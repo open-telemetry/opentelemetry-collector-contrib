@@ -19,6 +19,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension/internal/metadata"
 )
 
 const (
@@ -31,23 +33,34 @@ const (
 	sizeCheckInterval = time.Second
 )
 
+type storageIter interface {
+	SeekPrefixGE([]byte) bool
+	Valid() bool
+	Next() bool
+	ValueAndErr() ([]byte, error)
+	Error() error
+	Close() error
+}
+
 var errStorageLimitReached = errors.New("pebble tail storage size limit reached")
 
 type storage struct {
 	db               *pebble.DB
 	logger           *zap.Logger
+	telemetry        *metadata.TelemetryBuilder
 	maxSize          uint64
 	nextSeq          atomic.Uint64
 	lastObservedSize atomic.Uint64
 	unmarshaler      ptrace.Unmarshaler
 	marshaler        ptrace.Marshaler
+	newIter          func() (storageIter, error)
 
 	diskUsage            func() uint64
 	stopSizeMonitor      context.CancelFunc
 	sizeMonitorWaitGroup sync.WaitGroup
 }
 
-func newStorage(ctx context.Context, cfg *Config, logger *zap.Logger) (*storage, error) {
+func newStorage(ctx context.Context, cfg *Config, logger *zap.Logger, telemetry *metadata.TelemetryBuilder) (*storage, error) {
 	if logger == nil {
 		logger = zap.NewNop()
 	}
@@ -60,9 +73,13 @@ func newStorage(ctx context.Context, cfg *Config, logger *zap.Logger) (*storage,
 	s := &storage{
 		db:          db,
 		logger:      logger,
+		telemetry:   telemetry,
 		maxSize:     uint64(cfg.MaxStorageSizeMiB) << 20,
 		marshaler:   &ptrace.ProtoMarshaler{},
 		unmarshaler: &ptrace.ProtoUnmarshaler{},
+	}
+	s.newIter = func() (storageIter, error) {
+		return s.db.NewIter(nil)
 	}
 	s.diskUsage = func() uint64 {
 		return s.db.Metrics().DiskSpaceUsage()
@@ -160,8 +177,11 @@ func (s *storage) Delete(traceID pcommon.TraceID) error {
 }
 
 func (s *storage) readByTracePrefix(prefix []byte) ptrace.Traces {
-	iter, err := s.db.NewIter(nil)
+	iter, err := s.newIter()
 	if err != nil {
+		if s.telemetry != nil {
+			s.telemetry.ExtensionPebbleTailStorageReadErrors.Add(context.Background(), 1)
+		}
 		s.logger.Warn("failed to create tail storage iterator", zap.Error(err))
 		return ptrace.NewTraces()
 	}
@@ -176,12 +196,18 @@ func (s *storage) readByTracePrefix(prefix []byte) ptrace.Traces {
 	for ; iter.Valid(); iter.Next() {
 		val, err := iter.ValueAndErr()
 		if err != nil {
+			if s.telemetry != nil {
+				s.telemetry.ExtensionPebbleTailStorageReadErrors.Add(context.Background(), 1)
+			}
 			s.logger.Warn("failed to read trace payload from tail storage", zap.Error(err))
 			continue
 		}
 
 		td, err := s.unmarshaler.UnmarshalTraces(val)
 		if err != nil {
+			if s.telemetry != nil {
+				s.telemetry.ExtensionPebbleTailStorageReadErrors.Add(context.Background(), 1)
+			}
 			s.logger.Warn("failed to unmarshal trace payload from tail storage", zap.Error(err))
 			continue
 		}
@@ -194,6 +220,9 @@ func (s *storage) readByTracePrefix(prefix []byte) ptrace.Traces {
 	}
 
 	if err := iter.Error(); err != nil {
+		if s.telemetry != nil {
+			s.telemetry.ExtensionPebbleTailStorageReadErrors.Add(context.Background(), 1)
+		}
 		s.logger.Warn("tail storage iterator error", zap.Error(err))
 	}
 
