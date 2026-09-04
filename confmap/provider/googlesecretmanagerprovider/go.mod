@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/secretmanager v1.21.0
 	github.com/googleapis/gax-go/v2 v2.24.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/confmap v1.66.0
+	go.opentelemetry.io/collector/confmap v1.66.1-0.20260903163450-cc4b33fc673f
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.83.2
 )
@@ -31,7 +31,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.66.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.66.1-0.20260903163450-cc4b33fc673f // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.67.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
 	go.opentelemetry.io/otel v1.44.0 // indirect
