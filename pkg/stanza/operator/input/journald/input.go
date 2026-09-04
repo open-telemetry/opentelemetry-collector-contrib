@@ -32,12 +32,13 @@ type Input struct {
 
 	newCmd func(ctx context.Context, cursor []byte) cmd
 
-	persister                operator.Persister
-	convertMessageBytes      bool
-	cancel                   context.CancelFunc
-	wg                       sync.WaitGroup
-	errChan                  chan error
-	includeLogRecordOriginal bool
+	persister                    operator.Persister
+	convertMessageBytes          bool
+	ConvertToSemanticConventions bool
+	cancel                       context.CancelFunc
+	wg                           sync.WaitGroup
+	errChan                      chan error
+	includeLogRecordOriginal     bool
 }
 
 type cmd interface {
@@ -251,18 +252,29 @@ func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, err
 		return nil, "", errors.New("journald field for cursor is not a string")
 	}
 
-	entry, err := operator.NewEntry(body)
+	// When converting to semantic conventions the body is not used as-is, its
+	// fields are mapped onto the entry below instead.
+	var entryBody any
+	if !operator.ConvertToSemanticConventions {
+		entryBody = body
+	}
+
+	e, err := operator.NewEntry(entryBody)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to create entry: %w", err)
 	}
 
-	entry.Timestamp = time.Unix(0, timestampInt*1000) // in microseconds
-
-	if operator.includeLogRecordOriginal {
-		entry.AddAttribute(string(semconv.LogRecordOriginalKey), strings.TrimSpace(string(line)))
+	if operator.ConvertToSemanticConventions {
+		mapJournalEntryAttributes(e, body)
 	}
 
-	return entry, cursorString, nil
+	e.Timestamp = time.Unix(0, timestampInt*1000) // in microseconds
+
+	if operator.includeLogRecordOriginal {
+		e.AddAttribute(string(semconv.LogRecordOriginalKey), strings.TrimSpace(string(line)))
+	}
+
+	return e, cursorString, nil
 }
 
 // Stop will stop generating logs.
