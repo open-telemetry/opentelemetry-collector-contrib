@@ -18,6 +18,8 @@ properties:
         $ref: ./internal/scraper/diskscraper.config
       filesystem:
         $ref: ./internal/scraper/filesystemscraper.config
+      hardware:
+        $ref: ./internal/scraper/hardwarescraper.config
       load:
         $ref: ./internal/scraper/loadscraper.config
       memory:
