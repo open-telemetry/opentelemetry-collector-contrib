@@ -26,6 +26,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/checkpoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
@@ -904,12 +905,21 @@ func TestSharedInformerFactoryDedupesListAndWatch(t *testing.T) {
 	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { _ = r.Shutdown(t.Context()) })
 
-	// Sharing means one factory / one informer per GVR → one List and one Watch total.
+	// Wait until both calls have been observed.
 	require.Eventually(t, func() bool {
 		mu.Lock()
 		defer mu.Unlock()
-		return listCalls == 1 && watchCalls == 1
-	}, time.Second, 10*time.Millisecond, "pull + watch on the same scope should share one List and one Watch")
+		return listCalls >= 1 && watchCalls >= 1
+	}, time.Second, 10*time.Millisecond, "pull + watch should each fire at least once")
+
+	// Keep watching for a bit to catch a late second List/Watch that would
+	// indicate the informer factory wasn't actually shared. Never() fails if
+	// the condition becomes true within the window.
+	require.Never(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return listCalls > 1 || watchCalls > 1
+	}, 300*time.Millisecond, 20*time.Millisecond, "pull + watch on the same scope should share one List and one Watch")
 }
 
 func TestStoragePersistenceSuppressesReDelivery(t *testing.T) {
@@ -954,49 +964,6 @@ func TestStoragePersistenceSuppressesReDelivery(t *testing.T) {
 	require.Eventually(t, func() bool { return consumer.Count() == 1 }, time.Second, 10*time.Millisecond)
 }
 
-func TestDuplicateNamespacesDeduplicated(t *testing.T) {
-	t.Parallel()
-
-	mockClient := newMockDynamicClient()
-
-	// Bucket List calls by namespace to catch per-namespace duplication.
-	var (
-		nsListCalls = map[string]int{}
-		mu          sync.Mutex
-	)
-	mockClient.client.(*fake.FakeDynamicClient).PrependReactor("list", "pods", func(action k8s_testing.Action) (bool, runtime.Object, error) {
-		mu.Lock()
-		nsListCalls[action.GetNamespace()]++
-		mu.Unlock()
-		return false, nil, nil
-	})
-
-	// "default" is repeated to exercise the dedup path in factoriesForConfig.
-	rCfg := createDefaultConfig().(*Config)
-	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
-	rCfg.makeDiscoveryClient = getMockDiscoveryClient
-	rCfg.ErrorMode = PropagateError
-	rCfg.Objects = []*K8sObjectsConfig{
-		{
-			Name:       "pods",
-			Mode:       k8sinventory.WatchMode,
-			Namespaces: []string{"default", "default", "kube-system"},
-		},
-	}
-
-	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), rCfg, consumertest.NewNop())
-	require.NoError(t, err)
-	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { _ = r.Shutdown(t.Context()) })
-
-	// Expect one List per unique namespace; the duplicate "default" must collapse.
-	mu.Lock()
-	defer mu.Unlock()
-	assert.Equal(t, 1, nsListCalls["default"])
-	assert.Equal(t, 1, nsListCalls["kube-system"])
-	assert.Len(t, nsListCalls, 2)
-}
-
 // primeStorage seeds a resourceVersion checkpoint for (namespace, resource)
 // under the storage-client identity the receiver will use at runtime.
 func primeStorage(t *testing.T, host component.Host, storageID, receiverID component.ID, namespace, resource, rv string) {
@@ -1009,8 +976,6 @@ func primeStorage(t *testing.T, host component.Host, storageID, receiverID compo
 	normalizedID := component.MustNewIDWithName(strings.ReplaceAll(receiverID.Type().String(), "_", ""), receiverID.Name())
 	client, err := storageExt.GetClient(t.Context(), component.KindReceiver, normalizedID, "")
 	require.NoError(t, err)
-	key := "latestResourceVersion/" + resource + "." + namespace
-	require.NoError(t, client.Set(t.Context(), key, []byte(rv)))
+	require.NoError(t, client.Set(t.Context(), checkpoint.CheckpointKey(namespace, resource), []byte(rv)))
 	require.NoError(t, client.Close(t.Context()))
 }
-

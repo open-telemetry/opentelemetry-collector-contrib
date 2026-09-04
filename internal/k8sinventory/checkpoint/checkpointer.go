@@ -204,10 +204,14 @@ func (c *Checkpointer) DeleteCheckpoint(
 	return nil
 }
 
-// checkpointKey generates a unique storage key
+func (*Checkpointer) checkpointKey(namespace, objectType string) string {
+	return CheckpointKey(namespace, objectType)
+}
+
+// CheckpointKey generates a unique storage key
 // returns resourceVersion key for global watch stream (without namespace) or
 // per namespace watch stream.
-func (*Checkpointer) checkpointKey(namespace, objectType string) string {
+func CheckpointKey(namespace, objectType string) string {
 	// when watch stream is cluster-wide or cluster-scoped resource (no namespace),
 	// the resource version is persisted per object type only.
 	if namespace == "" {
