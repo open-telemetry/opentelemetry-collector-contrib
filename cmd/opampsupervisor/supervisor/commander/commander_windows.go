@@ -39,3 +39,40 @@ func sysProcAttrs() *syscall.SysProcAttr {
 		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
 	}
 }
+
+// openAgentLogFile opens the file that captures the managed agent's
+// stdout/stderr. Unlike Unix, Go's os.O_APPEND does not survive handle
+// inheritance on Windows: the agent child inherits the raw handle and writes at
+// its own file offset, so after an external copytruncate-style rotation
+// truncates the file, the child's next write recreates the old size as a
+// zero-filled hole. Opening with a pure FILE_APPEND_DATA handle (no
+// FILE_WRITE_DATA) instead makes the kernel force every write through the
+// handle - including the inherited child's - to the current end-of-file, so
+// rotation actually reclaims space.
+func openAgentLogFile(path string) (*os.File, error) {
+	// A FILE_APPEND_DATA-only handle cannot truncate on open, so truncate first
+	// through a throwaway read/write handle to match O_TRUNC on Unix.
+	trunc, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	if err != nil {
+		return nil, err
+	}
+	trunc.Close()
+
+	pathp, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return nil, err
+	}
+	handle, err := windows.CreateFile(
+		pathp,
+		windows.FILE_APPEND_DATA,
+		windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE,
+		nil,
+		windows.OPEN_EXISTING,
+		windows.FILE_ATTRIBUTE_NORMAL,
+		0,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return os.NewFile(uintptr(handle), path), nil
+}

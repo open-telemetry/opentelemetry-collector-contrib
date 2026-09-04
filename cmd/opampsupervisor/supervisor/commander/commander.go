@@ -148,7 +148,12 @@ func (c *Commander) ValidateConfig(ctx context.Context, configPath string, addit
 }
 
 func (c *Commander) startNormal() error {
-	stdoutFile, err := os.Create(c.logFilePath)
+	// Opened via openAgentLogFile (per-platform - see commander_others.go /
+	// commander_windows.go) so every write lands at the file's current
+	// end-of-file, and external copytruncate-style log rotation (logrotate et
+	// al.) works correctly instead of the file's size reverting on the next
+	// write.
+	stdoutFile, err := openAgentLogFile(c.logFilePath)
 	if err != nil {
 		return fmt.Errorf("cannot create %s: %w", c.logFilePath, err)
 	}
