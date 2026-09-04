@@ -4,10 +4,12 @@
 package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 
 import (
-	"fmt"
+	"encoding/hex"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // subtraceID is the composite key that uniquely identifies one service's subtrace
@@ -76,13 +78,11 @@ func serviceIdentity(r pcommon.Resource) string {
 	return namespace + "|" + name.AsString() + "|" + id
 }
 
-// hashMapAttrs returns a deterministic string representation of all resource
-// attributes, used as a fallback service identity when service.name is absent.
+// hashMapAttrs returns a deterministic hash of all resource attributes, used
+// as a fallback service identity when service.name is absent.
 func hashMapAttrs(attrs pcommon.Map) string {
-	// Build a sorted representation via the JSON marshaller baked into pdata.
-	m := pcommon.NewMap()
-	attrs.CopyTo(m)
-	return fmt.Sprintf("%v", m.AsRaw())
+	h := pdatautil.MapHash(attrs)
+	return hex.EncodeToString(h[:])
 }
 
 // reaches reports whether the span identified by spanID is a member of the
@@ -156,10 +156,12 @@ func assemble(members []bufferedSpan) ptrace.Traces {
 
 // hashResource returns a string key for a resource, used for grouping.
 func hashResource(r pcommon.Resource) string {
-	return fmt.Sprintf("%v", r.Attributes().AsRaw())
+	h := pdatautil.MapHash(r.Attributes())
+	return hex.EncodeToString(h[:])
 }
 
 // hashScope returns a string key for an instrumentation scope, used for grouping.
 func hashScope(s pcommon.InstrumentationScope) string {
-	return fmt.Sprintf("%s@%s|%v", s.Name(), s.Version(), s.Attributes().AsRaw())
+	h := pdatautil.MapHash(s.Attributes())
+	return s.Name() + "@" + s.Version() + "|" + hex.EncodeToString(h[:])
 }
