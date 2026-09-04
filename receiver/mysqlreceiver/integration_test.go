@@ -336,12 +336,14 @@ func TestIntegrationLogScraper(t *testing.T) {
 			// Use an observer logger so we can assert logDetectedVersion output.
 			observerCore, loggedEntries := observer.New(zapcore.WarnLevel)
 			settings := receivertest.NewNopSettings(metadata.Type)
-			scraper := newMySQLScraper(
+			scraper, err := newMySQLScraper(
 				settings,
 				cfg,
+				nil,
 				newCache[int64](int(cfg.TopQueryCollection.MaxQuerySampleCount*2*2)),
 				sharedPlanCache,
 			)
+			require.NoError(t, err)
 			scraper.logger = zap.New(observerCore)
 			require.NoError(t, scraper.start(ctx, nil))
 			defer func() { assert.NoError(t, scraper.shutdown(ctx)) }()
@@ -456,12 +458,14 @@ func TestIntegrationLogScraper(t *testing.T) {
 
 			// --- scrapeQuerySampleFunc ---
 			// Use a separate scraper sharing the same plan cache to prove reuse.
-			sampleScraper := newMySQLScraper(
+			sampleScraper, err := newMySQLScraper(
 				settings,
 				cfg,
+				nil,
 				newCache[int64](1),
 				sharedPlanCache,
 			)
+			require.NoError(t, err)
 			require.NoError(t, sampleScraper.start(ctx, nil))
 			defer func() { assert.NoError(t, sampleScraper.shutdown(ctx)) }()
 
@@ -815,12 +819,14 @@ func TestIntegrationQuerySampleAttributes(t *testing.T) {
 
 			sharedPlanCache := newTTLCache[string](cfg.TopQueryCollection.QueryPlanCacheSize, 0)
 			settings := receivertest.NewNopSettings(metadata.Type)
-			scraper := newMySQLScraper(
+			scraper, err := newMySQLScraper(
 				settings,
 				cfg,
+				nil,
 				newCache[int64](int(cfg.TopQueryCollection.MaxQuerySampleCount*2*2)),
 				sharedPlanCache,
 			)
+			require.NoError(t, err)
 			require.NoError(t, scraper.start(ctx, nil))
 			defer func() { assert.NoError(t, scraper.shutdown(ctx)) }()
 

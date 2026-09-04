@@ -5,7 +5,7 @@
     "dependencies"
   ],
   "constraints": {
-    "go": "1.25"
+    "go": "1.26"
   },
   "schedule": [
     "on tuesday"
@@ -14,6 +14,9 @@
   "extends": [
     "config:best-practices",
     "helpers:pinGitHubActionDigestsToSemver"
+  ],
+  "gitIgnoredAuthors": [
+    "197425009+otelbot@users.noreply.github.com"
   ],
   "ignorePaths": [
     "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",

@@ -24,7 +24,6 @@ feature_gates:
     stage: beta
     from_version: "v0.89.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831
-    skip_strict_validation: true
 
   - id: receiver.postgresql.connectionPool
     description: Use of connection pooling
@@ -254,7 +253,7 @@ attributes:
     description: The type of event for which the backend is waiting, if any; otherwise NULL.
     type: string
   relation:
-    description: OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation.
+    description: The name of the relation (table, index, view, etc.) targeted by the lock, or empty if the target is not a relation or part of a relation.
     type: string
     requirement_level: recommended
   replication_client:
@@ -456,7 +455,7 @@ metrics:
     unit: "{databases}"
   postgresql.database.locks:
     enabled: false
-    description: The number of database locks.
+    description: The number of database locks, including those held by the receiver's own connections.
     stability: development
     unit: "{lock}"
     gauge:

@@ -696,7 +696,7 @@ func TestReceiverStorageInitialization(t *testing.T) {
 	}{
 		{
 			name:                "storage configured",
-			storageID:           ptr(storagetest.NewStorageID("file_storage")),
+			storageID:           new(storagetest.NewStorageID("file_storage")),
 			expectStorageClient: true,
 		},
 		{
@@ -757,7 +757,7 @@ func TestReceiverMultipleObjectsPersistence(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
-	rCfg.Storage = ptr(storagetest.NewStorageID("file_storage"))
+	rCfg.Storage = new(storagetest.NewStorageID("file_storage"))
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
@@ -799,7 +799,7 @@ func TestReceiverStorageClientInitializedWhenConfigured(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
-	rCfg.Storage = ptr(storagetest.NewStorageID("file_storage"))
+	rCfg.Storage = new(storagetest.NewStorageID("file_storage"))
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
@@ -1014,7 +1014,3 @@ func primeStorage(t *testing.T, host component.Host, storageID, receiverID compo
 	require.NoError(t, client.Close(t.Context()))
 }
 
-// ptr is a helper to create a pointer to a value
-func ptr[T any](v T) *T {
-	return &v
-}

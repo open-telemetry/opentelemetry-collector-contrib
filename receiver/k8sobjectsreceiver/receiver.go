@@ -333,11 +333,7 @@ func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventor
 	}
 
 	stopChan := make(chan struct{})
-	kr.wg.Add(1)
-	//nolint:modernize // WaitGroup.Go not available without additional dependencies
-	go func() {
-		defer kr.wg.Done()
-
+	kr.wg.Go(func() {
 		timer := time.NewTimer(object.InitialDelay)
 		defer timer.Stop()
 
@@ -360,7 +356,7 @@ func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventor
 			close(observerStopChan)
 		case <-ctx.Done():
 		}
-	}()
+	})
 
 	return stopChan, nil
 }

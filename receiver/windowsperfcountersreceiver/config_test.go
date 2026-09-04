@@ -235,6 +235,214 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
+func TestLoadDeprecatedConfig(t *testing.T) {
+	t.Parallel()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-deprecated.yaml"))
+	require.NoError(t, err)
+	counterConfig := CounterConfig{
+		Name: "counter1",
+		MetricRep: MetricRep{
+			Name: "metric",
+		},
+	}
+	singleObject := createDefaultConfig()
+	singleObject.(*Config).PerfCounters = []ObjectConfig{{Object: "object", Counters: []CounterConfig{counterConfig}}}
+	singleObject.(*Config).MetricMetaData = map[string]MetricConfig{
+		"metric": {
+			Description: "desc",
+			Unit:        "1",
+			Gauge:       GaugeMetric{},
+		},
+	}
+
+	tests := []struct {
+		id           component.ID
+		expected     component.Config
+		expectedErrs []string
+	}{
+		{
+			id:       component.NewIDWithName(metadata.DeprecatedType, ""),
+			expected: singleObject,
+		},
+		{
+			id: component.NewIDWithName(metadata.DeprecatedType, "customname"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 30 * time.Second,
+					InitialDelay:       time.Second,
+				},
+				PerfCounters: []ObjectConfig{
+					{
+						Object:          "object1",
+						Instances:       []string{"*", "_Global_"},
+						AggregationName: "_Global_",
+						Counters:        []CounterConfig{counterConfig},
+					},
+					{
+						Object: "object2",
+						Counters: []CounterConfig{
+							counterConfig,
+							{
+								Name: "counter2",
+								MetricRep: MetricRep{
+									Name: "metric2",
+								},
+							},
+						},
+					},
+				},
+				MetricMetaData: map[string]MetricConfig{
+					"metric": {
+						Description: "desc",
+						Unit:        "1",
+						Gauge:       GaugeMetric{},
+					},
+					"metric2": {
+						Description: "desc",
+						Unit:        "1",
+						Gauge:       GaugeMetric{},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.DeprecatedType, "nometrics"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 60 * time.Second,
+					InitialDelay:       time.Second,
+				},
+				PerfCounters: []ObjectConfig{
+					{
+						Object:   "object",
+						Counters: []CounterConfig{{Name: "counter1"}},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.DeprecatedType, "nometricspecified"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 60 * time.Second,
+					InitialDelay:       time.Second,
+				},
+				PerfCounters: []ObjectConfig{
+					{
+						Object:   "object",
+						Counters: []CounterConfig{{Name: "counter1"}},
+					},
+				},
+				MetricMetaData: map[string]MetricConfig{
+					"metric": {
+						Description: "desc",
+						Unit:        "1",
+						Gauge:       GaugeMetric{},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.DeprecatedType, "summetric"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 60 * time.Second,
+					InitialDelay:       time.Second,
+				},
+				PerfCounters: []ObjectConfig{
+					{
+						Object:   "object",
+						Counters: []CounterConfig{{Name: "counter1", MetricRep: MetricRep{Name: "metric"}}},
+					},
+				},
+				MetricMetaData: map[string]MetricConfig{
+					"metric": {
+						Description: "desc",
+						Unit:        "1",
+						Sum: SumMetric{
+							Aggregation: "cumulative",
+							Monotonic:   false,
+						},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.DeprecatedType, "unspecifiedmetrictype"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 60 * time.Second,
+					InitialDelay:       time.Second,
+				},
+				PerfCounters: []ObjectConfig{
+					{
+						Object:   "object",
+						Counters: []CounterConfig{{Name: "counter1", MetricRep: MetricRep{Name: "metric"}}},
+					},
+				},
+				MetricMetaData: map[string]MetricConfig{
+					"metric": {
+						Description: "desc",
+						Unit:        "1",
+						Gauge:       GaugeMetric{},
+					},
+				},
+			},
+		},
+		{
+			id:           component.NewIDWithName(metadata.DeprecatedType, "negative-collection-interval"),
+			expectedErrs: []string{"collection_interval must be a positive duration", negativeCollectionIntervalErr},
+		},
+		{
+			id:           component.NewIDWithName(metadata.DeprecatedType, "noperfcounters"),
+			expectedErrs: []string{noPerfCountersErr},
+		},
+		{
+			id:           component.NewIDWithName(metadata.DeprecatedType, "noobjectname"),
+			expectedErrs: []string{noObjectNameErr},
+		},
+		{
+			id:           component.NewIDWithName(metadata.DeprecatedType, "nocounters"),
+			expectedErrs: []string{fmt.Sprintf(noCountersErr, "object")},
+		},
+		{
+			id: component.NewIDWithName(metadata.DeprecatedType, "allerrors"),
+			expectedErrs: []string{
+				"collection_interval must be a positive duration",
+				fmt.Sprintf(noCountersErr, "object"),
+				fmt.Sprintf(emptyInstanceErr, "object"),
+				noObjectNameErr,
+				negativeCollectionIntervalErr,
+			},
+		},
+		{
+			id:           component.NewIDWithName(metadata.DeprecatedType, "emptyinstance"),
+			expectedErrs: []string{fmt.Sprintf(emptyInstanceErr, "object")},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+
+			if len(tt.expectedErrs) > 0 {
+				for _, err := range tt.expectedErrs {
+					assert.ErrorContains(t, confmap.Validate(cfg), err)
+				}
+				return
+			}
+			assert.NoError(t, confmap.Validate(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
 func TestAggregationSettings(t *testing.T) {
 	tests := []struct {
 		name                       string
