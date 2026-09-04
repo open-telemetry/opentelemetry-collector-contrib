@@ -1,0 +1,2 @@
+/Users/satheesh.d/opentelemetry-collector-contrib/exporter/awsxrayexporter/java-translator/src/test/java/io/opentelemetry/contrib/awsxray/translator/CauseTranslatorTest.java
+/Users/satheesh.d/opentelemetry-collector-contrib/exporter/awsxrayexporter/java-translator/src/test/java/io/opentelemetry/contrib/awsxray/translator/SegmentTranslatorTest.java
