@@ -1,0 +1,9 @@
+change_type: enhancement
+component: receiver/mongodb
+note: Add db.system.version resource attribute
+issues: [50710]
+subtext: |-
+  The mongodbreceiver now exposes the MongoDB version as a resource attribute (db.system.version).
+  This follows the pattern used by mysqlreceiver and is disabled by default.
+  The version is already fetched during connection initialization and is now included in resource attributes.
+change_logs: [user]
