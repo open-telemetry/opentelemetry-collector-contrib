@@ -131,6 +131,15 @@ func (c *franzConsumer) reportRecoverable(err error) {
 
 func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 	c.mu.Lock()
+	// Declared before defer c.mu.Unlock() so this runs after the lock is released (LIFO).
+	// Closing the client under the lock risks a deadlock: Close() may invoke
+	// partition-assigned/lost callbacks that also acquire c.mu.
+	var clientToClose *kgo.Client
+	defer func() {
+		if clientToClose != nil {
+			clientToClose.Close()
+		}
+	}()
 	defer c.mu.Unlock()
 	select {
 	case <-c.closing:
@@ -202,6 +211,8 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 
 	cm, err := c.newConsumeFn(host, c.obsrecv, c.telemetryBuilder)
 	if err != nil {
+		c.client = nil
+		clientToClose = client
 		return err
 	}
 	c.consumeMessage = cm

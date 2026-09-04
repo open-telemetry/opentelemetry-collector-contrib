@@ -1369,7 +1369,7 @@ func TestFranzConsumerBrokerCacheEvictOnDisconnect(t *testing.T) {
 	require.Empty(t, c.brokerReadOpts)
 }
 
-func TestStartFailureShutdownNotBlocks(t *testing.T) {
+func TestStartFailureShutdownDoesNotBlock(t *testing.T) {
 	// Reproduces issue #50631: when Start() fails due to misconfigured TLS,
 	// Shutdown() should not block indefinitely.
 	const topic = "otlp_spans"
@@ -1380,7 +1380,7 @@ func TestStartFailureShutdownNotBlocks(t *testing.T) {
 	cfg.ConsumerConfig.InitialOffset = "earliest"
 	cfg.ConsumerConfig.GroupID = t.Name()
 
-	// Configure bad TLS cert path to trigger failure in NewFranzConsumerGroup
+	// Configure bad TLS cert path to trigger failure in NewFranzConsumerGroup.
 	cfg.ClientConfig.TLS = &configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile:   "/this/goes/nowhere.cert",
@@ -1393,12 +1393,13 @@ func TestStartFailureShutdownNotBlocks(t *testing.T) {
 	consumer, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, nil)
 	require.NoError(t, err)
 
-	// Start should fail due to bad TLS config
+	// Start should fail due to bad TLS config. Assert on the stable wrapper
+	// message produced by NewFranzConsumerGroup, not the OS-specific syscall text.
 	err = consumer.Start(t.Context(), componenttest.NewNopHost())
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "no such file or directory")
+	require.Contains(t, err.Error(), "failed to load TLS config")
 
-	// Shutdown should not block, even though Start failed
+	// Shutdown should not block, even though Start failed.
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	err = consumer.Shutdown(ctx)
