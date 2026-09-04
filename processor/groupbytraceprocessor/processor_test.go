@@ -642,6 +642,43 @@ func TestSubtrace_HappyPath_TwoServices(t *testing.T) {
 	}
 }
 
+func TestSubtrace_IsRemoteCleared_TwoServices(t *testing.T) {
+	traceID := makeTraceID(10)
+	rootA := makeSpanID(1)
+	childA := makeSpanID(2)
+	rootB := makeSpanID(3)
+	childB := makeSpanID(4)
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{
+		NumTraces:    100,
+		NumWorkers:   1,
+		WaitDuration: 20 * time.Millisecond,
+		EmitStrategy: EmitStrategyService,
+	}
+	p := newSubtraceProcessor(t, cfg, sink)
+	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+	tdA := buildServiceTrace(traceID, "svc-a", rootA, childA)
+
+	// Build svc-b where rootB's IS_REMOTE flag is explicitly cleared (HAS_IS_REMOTE=1,
+	// IS_REMOTE=0). isLocalRoot short-circuits on this flag combination and returns
+	// false, so rootB is not treated as a service-entry span. svc-b spans are therefore
+	// absorbed into svc-a's subtrace, and the whole trace is emitted as a single batch.
+	tdB := buildRemoteChildTrace(traceID, "svc-b", rootA, rootB, childB)
+	tdB.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetFlags(spanFlagsContextHasIsRemoteMask)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), tdA))
+	require.NoError(t, p.ConsumeTraces(t.Context(), tdB))
+
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() == 4
+	}, 5*time.Second, 5*time.Millisecond)
+
+	// One batch: all four spans belong to rootA's subtrace.
+	assert.Len(t, sink.AllTraces(), 1)
+}
+
 func TestSubtrace_LocalRootArrivesLate(t *testing.T) {
 	traceID := makeTraceID(2)
 	rootID := makeSpanID(1)
