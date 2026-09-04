@@ -707,12 +707,6 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 		o.statusSubscriptionWg.Done()
 	}()
 
-	var (
-		lastStatus componentstatus.Status
-		lastErr    string
-		currentErr string
-	)
-
 	for {
 		select {
 		case <-o.lifetimeCtx.Done():
@@ -726,21 +720,7 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 				continue
 			}
 
-			currentStatus := statusUpdate.Status()
-			if statusUpdate.Err() != nil {
-				currentErr = statusUpdate.Err().Error()
-			}
-
-			if currentStatus == lastStatus && currentErr == lastErr {
-				continue
-			}
-
-			lastStatus = currentStatus
-			lastErr = currentErr
-
-			componentHealth := convertComponentHealth(statusUpdate)
-
-			o.setHealth(componentHealth)
+			o.setHealth(convertComponentHealth(statusUpdate))
 		}
 	}
 }
@@ -761,6 +741,10 @@ func convertComponentHealth(statusUpdate *status.AggregateStatus) *protobufs.Com
 
 	if statusUpdate.Err() != nil {
 		componentHealth.LastError = statusUpdate.Err().Error()
+	}
+
+	if attrs := pcommonMapToKeyValues(statusUpdate.Attributes()); len(attrs) > 0 {
+		componentHealth.Attributes = attrs
 	}
 
 	if len(statusUpdate.ComponentStatusMap) > 0 {
