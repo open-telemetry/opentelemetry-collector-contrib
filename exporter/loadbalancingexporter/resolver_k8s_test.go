@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"sync"
 	"testing"
 	"time"
 
@@ -82,7 +83,7 @@ func TestK8sResolve(t *testing.T) {
 		// Wait for the initial endpoints to be populated by the informer
 		// The informer cache sync only guarantees the cache is ready, but the OnAdd
 		// handler runs asynchronously and may not have completed yet
-		cErr := waitForCondition(t, 3*time.Second, 20*time.Millisecond, func(ctx context.Context) (bool, error) {
+		cErr := waitForCondition(t, 3*time.Second, func(ctx context.Context) (bool, error) {
 			if _, resErr := res.resolve(ctx); resErr != nil {
 				return false, resErr
 			}
@@ -249,7 +250,7 @@ func TestK8sResolve(t *testing.T) {
 
 			slices.Sort(tt.expectedEndpoints)
 
-			cErr := waitForCondition(t, 1200*time.Millisecond, 20*time.Millisecond, func(ctx context.Context) (bool, error) {
+			cErr := waitForCondition(t, 1200*time.Millisecond, func(ctx context.Context) (bool, error) {
 				if _, err := suiteCtx.resolver.resolve(ctx); err != nil {
 					return false, err
 				}
@@ -301,7 +302,7 @@ func TestK8sResolveWithServiceFQDN(t *testing.T) {
 
 	expected := []string{fmt.Sprintf("%s.%s.%s:%d", hostname, serviceName, namespace, port)}
 
-	cErr := waitForCondition(t, 3*time.Second, 20*time.Millisecond, func(ctx context.Context) (bool, error) {
+	cErr := waitForCondition(t, 3*time.Second, func(ctx context.Context) (bool, error) {
 		if _, err := res.resolve(ctx); err != nil {
 			return false, err
 		}
@@ -312,14 +313,114 @@ func TestK8sResolveWithServiceFQDN(t *testing.T) {
 	}
 }
 
-// waitForCondition will poll the condition function until it returns true or times out.
-// Any errors returned from the condition are treated as test failures.
-func waitForCondition(t *testing.T, timeout, interval time.Duration, condition func(context.Context) (bool, error)) error {
+// TestK8sResolveEndpointReadyTransition covers the readiness filter added in
+// convertToEndpoints end to end through the informer: an endpoint with
+// Conditions.Ready == false must not appear in the initial list, a nil
+// Ready must (per the EndpointSlice API's "nil means true" contract), and an
+// OnUpdate flipping Ready must add/remove the endpoint and fire the resolver
+// callback -- this is the load-bearing case for a pod that terminates while
+// its address is still present in the slice.
+func TestK8sResolveEndpointReadyTransition(t *testing.T) {
+	serviceName := "lb"
+	namespace := "default"
+	port := int32(4317)
+	notReady, ready := false, true
+
+	endpointSlice := &discoveryv1.EndpointSlice{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceName,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"kubernetes.io/service-name": serviceName,
+			},
+		},
+		Endpoints: []discoveryv1.Endpoint{
+			{Addresses: []string{"10.0.0.1"}, Conditions: discoveryv1.EndpointConditions{Ready: &notReady}},
+			{Addresses: []string{"10.0.0.2"}}, // nil Ready: must be treated as ready
+			{Addresses: []string{"10.0.0.3"}, Conditions: discoveryv1.EndpointConditions{Ready: &ready}},
+		},
+	}
+
+	cl := fake.NewClientset(endpointSlice)
+	_, tb := getTelemetryAssets(t)
+	res, err := newK8sResolver(cl, zap.NewNop(), serviceName, []int32{port}, defaultListWatchTimeout, false, tb)
+	require.NoError(t, err)
+	require.NoError(t, res.start(t.Context()))
+	t.Cleanup(func() {
+		require.NoError(t, res.shutdown(t.Context()))
+	})
+
+	// (a) not-ready excluded on initial list, (d) nil Ready included.
+	expectInitial := []string{"10.0.0.2:4317", "10.0.0.3:4317"}
+	cErr := waitForCondition(t, 3*time.Second, func(context.Context) (bool, error) {
+		return slices.Equal(expectInitial, res.Endpoints()), nil
+	})
+	require.NoError(t, cErr, "timed out waiting for initial resolver endpoints")
+
+	// Register the callback only after the initial population has been observed,
+	// and assert on the payload a callback delivers rather than on a count: the
+	// initial-population callback (if its invocation is still in flight at
+	// registration time) can only ever deliver the initial list, so it can never
+	// satisfy a payload match on the post-transition list.
+	var (
+		cbMu    sync.Mutex
+		cbLists [][]string
+	)
+	res.onChange(func(endpoints []string) {
+		cbMu.Lock()
+		defer cbMu.Unlock()
+		cbLists = append(cbLists, slices.Clone(endpoints))
+	})
+
+	// (b) true -> false removes the endpoint from the resolved set.
+	exist := endpointSlice.DeepCopy()
+	updated := endpointSlice.DeepCopy()
+	updated.Endpoints[2].Conditions.Ready = &notReady
+	patch := client.MergeFrom(exist)
+	data, err := patch.Data(updated)
+	require.NoError(t, err)
+	_, err = cl.DiscoveryV1().EndpointSlices(namespace).
+		Patch(t.Context(), serviceName, types.MergePatchType, data, metav1.PatchOptions{})
+	require.NoError(t, err)
+
+	expectAfterRemoval := []string{"10.0.0.2:4317"}
+	cErr = waitForCondition(t, 3*time.Second, func(context.Context) (bool, error) {
+		cbMu.Lock()
+		defer cbMu.Unlock()
+		return slices.ContainsFunc(cbLists, func(l []string) bool {
+			return slices.Equal(expectAfterRemoval, l)
+		}), nil
+	})
+	require.NoError(t, cErr, "callback never delivered the post-removal endpoint list")
+	require.Equal(t, expectAfterRemoval, res.Endpoints(), "resolved set should not contain the not-ready endpoint")
+
+	// (c) the initially not-ready endpoint is added once it becomes ready.
+	exist = updated
+	updated = updated.DeepCopy()
+	updated.Endpoints[0].Conditions.Ready = &ready
+	patch = client.MergeFrom(exist)
+	data, err = patch.Data(updated)
+	require.NoError(t, err)
+	_, err = cl.DiscoveryV1().EndpointSlices(namespace).
+		Patch(t.Context(), serviceName, types.MergePatchType, data, metav1.PatchOptions{})
+	require.NoError(t, err)
+
+	expectAfterAddition := []string{"10.0.0.1:4317", "10.0.0.2:4317"}
+	cErr = waitForCondition(t, 3*time.Second, func(context.Context) (bool, error) {
+		return slices.Equal(expectAfterAddition, res.Endpoints()), nil
+	})
+	require.NoError(t, cErr, "timed out waiting for the now-ready endpoint to be added")
+}
+
+// waitForCondition will poll the condition function every 20ms until it
+// returns true or times out. Any errors returned from the condition are
+// treated as test failures.
+func waitForCondition(t *testing.T, timeout time.Duration, condition func(context.Context) (bool, error)) error {
 	ctx, cancel := context.WithTimeout(t.Context(), timeout)
 	defer cancel()
 	t.Helper()
 
-	return wait.PollUntilContextTimeout(ctx, interval, timeout, true, condition)
+	return wait.PollUntilContextTimeout(ctx, 20*time.Millisecond, timeout, true, condition)
 }
 
 func Test_newK8sResolver(t *testing.T) {

@@ -162,6 +162,14 @@ func convertToEndpoints(retNames bool, eps ...*discoveryv1.EndpointSlice) (bool,
 	ok := true
 	for _, ep := range eps {
 		for _, endpoint := range ep.Endpoints {
+			// discoveryv1.EndpointConditions.Ready is a tri-state *bool: the API
+			// docs specify "a nil value should be interpreted as true", so only an
+			// explicit false excludes the endpoint. On a Service configured with
+			// publishNotReadyAddresses: true, Ready is always forced true, so this
+			// filter never applies there.
+			if endpoint.Conditions.Ready != nil && !*endpoint.Conditions.Ready {
+				continue
+			}
 			for _, addr := range endpoint.Addresses {
 				if retNames {
 					if endpoint.Hostname == nil || *endpoint.Hostname == "" {
