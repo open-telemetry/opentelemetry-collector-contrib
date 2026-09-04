@@ -4,6 +4,7 @@
 package k8sobjectsreceiver
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"sync"
@@ -831,6 +832,40 @@ func TestReceiverStorageClientInitializedWhenConfigured(t *testing.T) {
 
 	err = r.Shutdown(t.Context())
 	require.NoError(t, err)
+}
+
+func TestLeaderCallbacksAreRaceFree(t *testing.T) {
+	// Race the OnLeading callback against Shutdown. Under `-race`, unsynchronized
+	// access to kr.registry / kr.cancel / kr.stopped would trip the detector.
+	fakeLeaderElection := &k8sleaderelectortest.FakeLeaderElection{}
+	fakeHost := &k8sleaderelectortest.FakeHost{FakeLeaderElection: fakeLeaderElection}
+	leaderElectorID := component.MustNewID("k8s_leader_elector")
+
+	mockClient := newMockDynamicClient()
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
+	rCfg.Objects = []*K8sObjectsConfig{
+		{Name: "pods", Mode: k8sinventory.PullMode, Interval: 30 * time.Second},
+	}
+	rCfg.K8sLeaderElector = &leaderElectorID
+
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), rCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NoError(t, r.Start(t.Context(), fakeHost))
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		fakeLeaderElection.InvokeOnLeading()
+	}()
+	go func() {
+		defer wg.Done()
+		_ = r.Shutdown(context.Background())
+	}()
+	wg.Wait()
 }
 
 func TestCacheSyncTimeoutFailsStart(t *testing.T) {

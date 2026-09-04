@@ -42,8 +42,9 @@ type k8sobjectsreceiver struct {
 	mu              sync.Mutex
 	cancel          context.CancelFunc
 	registry        *informer.FactoryRegistry
-	observerFunc    func(ctx context.Context, object *K8sObjectsConfig) (k8sinventory.Observer, error)
+	observerFunc    func(ctx context.Context, reg *informer.FactoryRegistry, object *K8sObjectsConfig) (k8sinventory.Observer, error)
 	wg              sync.WaitGroup
+	stopped         bool
 }
 
 func newReceiver(params receiver.Settings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
@@ -87,8 +88,8 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 	return kr, nil
 }
 
-func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K8sObjectsConfig) (k8sinventory.Observer, error) {
-	return func(ctx context.Context, object *K8sObjectsConfig) (k8sinventory.Observer, error) {
+func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, reg *informer.FactoryRegistry, object *K8sObjectsConfig) (k8sinventory.Observer, error) {
+	return func(ctx context.Context, reg *informer.FactoryRegistry, object *K8sObjectsConfig) (k8sinventory.Observer, error) {
 		obsConf := k8sinventory.Config{
 			Gvr:           *object.gvr,
 			Namespaces:    object.Namespaces,
@@ -99,7 +100,7 @@ func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K
 		switch object.Mode {
 		case k8sinventory.PullMode:
 			return informer.NewPull(
-				kr.registry,
+				reg,
 				informer.PullConfig{
 					Config:           obsConf,
 					Interval:         object.Interval,
@@ -116,7 +117,7 @@ func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K
 			)
 		case k8sinventory.WatchMode:
 			return informer.NewWatch(
-				kr.registry,
+				reg,
 				informer.WatchConfig{
 					Config:              obsConf,
 					IncludeInitialState: kr.config.IncludeInitialState,
@@ -212,31 +213,40 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 		elector.SetCallBackFuncs(
 			func(ctx context.Context) {
 				cctx, cancel := context.WithCancel(ctx)
+				registry := informer.NewFactoryRegistry(kr.client, 0)
+				kr.mu.Lock()
+				if kr.stopped {
+					kr.mu.Unlock()
+					cancel()
+					registry.Shutdown()
+					return
+				}
 				kr.cancel = cancel
-				kr.registry = informer.NewFactoryRegistry(kr.client, 0)
+				kr.registry = registry
+				kr.mu.Unlock()
 				for _, object := range validConfigs {
-					if err = kr.start(cctx, object); err != nil {
-						kr.setting.Logger.Error("Could not start receiver for object type", zap.String("object", object.Name))
+					if err = kr.start(cctx, registry, object); err != nil {
+						kr.setting.Logger.Error("Could not start receiver for object type", zap.String("object", object.Name), zap.Error(err))
 					}
 				}
 				kr.setting.Logger.Info("Object Receiver started as leader")
 			},
 			func() {
-				// Shutdown on leader loss. The receiver will restart if leadership is regained
-				// since the callbacks remain registered with the leader elector extension.
+				// Tear down observers on leader loss so a leadership regain
+				// gets a fresh registry. Stays reversible: no permanent stop.
 				kr.setting.Logger.Info("no longer leader, stopping")
-				err = kr.Shutdown(context.Background())
-				if err != nil {
-					kr.setting.Logger.Error("shutdown receiver error:", zap.Error(err))
-				}
+				kr.stopObservers()
 			},
 		)
 	} else {
 		cctx, cancel := context.WithCancel(ctx)
+		registry := informer.NewFactoryRegistry(kr.client, 0)
+		kr.mu.Lock()
 		kr.cancel = cancel
-		kr.registry = informer.NewFactoryRegistry(kr.client, 0)
+		kr.registry = registry
+		kr.mu.Unlock()
 		for _, object := range validConfigs {
-			if err := kr.start(cctx, object); err != nil {
+			if err := kr.start(cctx, registry, object); err != nil {
 				return err
 			}
 		}
@@ -245,19 +255,33 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 	return nil
 }
 
-func (kr *k8sobjectsreceiver) Shutdown(ctx context.Context) error {
-	kr.setting.Logger.Info("Object Receiver stopped")
-	if kr.cancel != nil {
-		kr.cancel()
+// stopObservers tears down the current leader term: cancels the term context,
+// stops observers, and shuts down the factory registry.
+func (kr *k8sobjectsreceiver) stopObservers() {
+	kr.mu.Lock()
+	cancel := kr.cancel
+	registry := kr.registry
+	kr.cancel = nil
+	kr.registry = nil
+	kr.mu.Unlock()
+
+	if cancel != nil {
+		cancel()
 	}
 	kr.stopWatches()
-
-	if kr.registry != nil {
-		kr.registry.Shutdown()
-		kr.registry = nil
+	if registry != nil {
+		registry.Shutdown()
 	}
+}
 
-	// Close storage client if it exists
+func (kr *k8sobjectsreceiver) Shutdown(ctx context.Context) error {
+	kr.setting.Logger.Info("Object Receiver stopped")
+	kr.mu.Lock()
+	kr.stopped = true
+	kr.mu.Unlock()
+
+	kr.stopObservers()
+
 	if kr.storageClient != nil {
 		if err := kr.storageClient.Close(ctx); err != nil {
 			kr.setting.Logger.Error("failed to close storage client", zap.Error(err))
@@ -277,7 +301,7 @@ func (kr *k8sobjectsreceiver) stopWatches() {
 	kr.wg.Wait()
 }
 
-func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfig) error {
+func (kr *k8sobjectsreceiver) start(ctx context.Context, reg *informer.FactoryRegistry, object *K8sObjectsConfig) error {
 	// Handle exclude_namespaces: compile regexes and filter namespaces
 	// TODO: when using informers, we should find a way to get just the metadata.name of the namespace, and then filter on that
 	if len(object.ExcludeNamespaces) > 0 {
@@ -311,7 +335,7 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 		kr.setting.Logger.Info("Collecting from namespaces", zap.Strings("namespaces", object.Namespaces))
 	}
 
-	obs, err := kr.observerFunc(ctx, object)
+	obs, err := kr.observerFunc(ctx, reg, object)
 	if err != nil {
 		return err
 	}
