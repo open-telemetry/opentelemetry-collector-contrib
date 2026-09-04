@@ -858,10 +858,10 @@ service:
 			},
 		})
 
-		telemetrySettings := newNopTelemetrySettings()
-		telemetrySettings.Resource.Attributes().PutStr("service.instance.id", "supervisor-instance")
+		supervisorTelemetrySettings := newNopTelemetrySettings()
+		supervisorTelemetrySettings.Resource.Attributes().PutStr("service.instance.id", "supervisor-instance")
 		s := Supervisor{
-			telemetrySettings: telemetrySettings,
+			telemetrySettings: supervisorTelemetrySettings,
 			config: config.Supervisor{
 				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
 				Agent: config.Agent{
@@ -1042,10 +1042,10 @@ func TestComposeExtraTelemetryConfigUsesDeclarativeResourceAttributes(t *testing
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			telemetrySettings := newNopTelemetrySettings()
-			telemetrySettings.Resource.Attributes().PutStr("service.instance.id", "supervisor-instance")
+			supervisorTelemetrySettings := newNopTelemetrySettings()
+			supervisorTelemetrySettings.Resource.Attributes().PutStr("service.instance.id", "supervisor-instance")
 			s := Supervisor{
-				telemetrySettings: telemetrySettings,
+				telemetrySettings: supervisorTelemetrySettings,
 				config: config.Supervisor{Agent: config.Agent{
 					Description: config.AgentDescription{IncludeSupervisorInstanceID: tc.includeSupervisorInstanceID},
 				}},
