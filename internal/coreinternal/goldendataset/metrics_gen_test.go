@@ -55,16 +55,32 @@ func TestDoubleHistogramFunctions(t *testing.T) {
 	require.EqualValues(t, 1, pt.Count())
 	require.EqualValues(t, 1, pt.Sum())
 	require.EqualValues(t, 1, pt.BucketCounts().At(0))
+	require.True(t, pt.HasSum())
+	require.True(t, pt.HasMin())
+	require.True(t, pt.HasMax())
+	require.EqualValues(t, 1, pt.Min())
+	require.EqualValues(t, 1, pt.Max())
 
+	// A larger value moves Max but leaves Min alone.
 	addDoubleHistogramVal(pt, 2)
 	require.EqualValues(t, 2, pt.Count())
 	require.EqualValues(t, 3, pt.Sum())
 	require.EqualValues(t, 1, pt.BucketCounts().At(1))
+	require.EqualValues(t, 1, pt.Min())
+	require.EqualValues(t, 2, pt.Max())
 
+	// Repeating a value already seen leaves both Min and Max alone.
 	addDoubleHistogramVal(pt, 2)
 	require.EqualValues(t, 3, pt.Count())
 	require.EqualValues(t, 5, pt.Sum())
 	require.EqualValues(t, 2, pt.BucketCounts().At(1))
+	require.EqualValues(t, 1, pt.Min())
+	require.EqualValues(t, 2, pt.Max())
+
+	// A smaller value moves Min but leaves Max alone.
+	addDoubleHistogramVal(pt, 0)
+	require.EqualValues(t, 0, pt.Min())
+	require.EqualValues(t, 2, pt.Max())
 }
 
 func TestGenDoubleHistogram(t *testing.T) {
@@ -77,6 +93,13 @@ func TestGenDoubleHistogram(t *testing.T) {
 	buckets := pt.BucketCounts()
 	require.Equal(t, 6, buckets.Len())
 	require.EqualValues(t, 2, buckets.At(2))
+
+	// The generated values are 1, cfg.PtVal occurrences of 3, then 5.
+	require.True(t, pt.HasSum())
+	require.True(t, pt.HasMin())
+	require.True(t, pt.HasMax())
+	require.EqualValues(t, 1, pt.Min())
+	require.EqualValues(t, 5, pt.Max())
 }
 
 func TestGenDoubleGauge(t *testing.T) {

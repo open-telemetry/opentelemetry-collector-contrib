@@ -58,6 +58,91 @@ func TestHistogram(t *testing.T) {
 	assert.Len(t, diffs, 3)
 }
 
+// newHistogramMetrics returns metrics holding a single histogram data point with a sum, min and
+// max set, after applying the given mutation to that point.
+func newHistogramMetrics(mutate func(pmetric.HistogramDataPoint)) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	metric := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric.SetName("test_histogram")
+	pt := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
+	pt.SetCount(3)
+	pt.SetSum(6)
+	pt.SetMin(1)
+	pt.SetMax(3)
+	mutate(pt)
+	return md
+}
+
+// TestHistogramSumMinMax covers the HasSum, Min, HasMin, Max and HasMax fields of
+// HistogramDataPoint, which the goldendataset-based tests above never vary.
+func TestHistogramSumMinMax(t *testing.T) {
+	// Each case asserts only that the diffs it cares about are reported, so that the test does not
+	// have to be updated whenever an unrelated field is added to or reordered in diffHistogramPt.
+	// TestNoDiffForIdenticalHistogramSumMinMax covers the other direction, that no diff is reported
+	// for points that are equal.
+	//
+	// Removing an optional field reports both the presence flag and the value, because the value
+	// accessor falls back to the zero value once the field is unset. This mirrors how
+	// diffExponentialHistogramPt reports its optional fields.
+	tests := []struct {
+		name     string
+		mutate   func(pmetric.HistogramDataPoint)
+		wantMsgs []string
+	}{
+		{
+			name:     "different sum",
+			mutate:   func(pt pmetric.HistogramDataPoint) { pt.SetSum(7) },
+			wantMsgs: []string{"HistogramDataPoint Sum"},
+		},
+		{
+			name:     "different min",
+			mutate:   func(pt pmetric.HistogramDataPoint) { pt.SetMin(0) },
+			wantMsgs: []string{"HistogramDataPoint Min"},
+		},
+		{
+			name:     "different max",
+			mutate:   func(pt pmetric.HistogramDataPoint) { pt.SetMax(4) },
+			wantMsgs: []string{"HistogramDataPoint Max"},
+		},
+		{
+			name:     "sum unset",
+			mutate:   func(pt pmetric.HistogramDataPoint) { pt.RemoveSum() },
+			wantMsgs: []string{"HistogramDataPoint HasSum", "HistogramDataPoint Sum"},
+		},
+		{
+			name:     "min unset",
+			mutate:   func(pt pmetric.HistogramDataPoint) { pt.RemoveMin() },
+			wantMsgs: []string{"HistogramDataPoint HasMin", "HistogramDataPoint Min"},
+		},
+		{
+			name:     "max unset",
+			mutate:   func(pt pmetric.HistogramDataPoint) { pt.RemoveMax() },
+			wantMsgs: []string{"HistogramDataPoint HasMax", "HistogramDataPoint Max"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expected := newHistogramMetrics(func(pmetric.HistogramDataPoint) {})
+			actual := newHistogramMetrics(tt.mutate)
+
+			diffs := DiffMetrics(nil, expected, actual)
+
+			msgs := make([]string, 0, len(diffs))
+			for _, d := range diffs {
+				msgs = append(msgs, d.Msg)
+			}
+			assert.Subset(t, msgs, tt.wantMsgs)
+		})
+	}
+}
+
+func TestNoDiffForIdenticalHistogramSumMinMax(t *testing.T) {
+	expected := newHistogramMetrics(func(pmetric.HistogramDataPoint) {})
+	actual := newHistogramMetrics(func(pmetric.HistogramDataPoint) {})
+	assert.Empty(t, DiffMetrics(nil, expected, actual))
+}
+
 func TestAttributes(t *testing.T) {
 	cfg1 := goldendataset.DefaultCfg()
 	cfg1.MetricDescriptorType = pmetric.MetricTypeHistogram
