@@ -5,6 +5,14 @@
 
 package k8sattributesprocessor
 
+// These tests validate the resource attributes that the processor adds
+// against the OpenTelemetry semantic conventions, using a Weaver live-check
+// container via pkg/semconvtest. By default the check runs against the
+// latest published semantic-conventions registry, which Weaver downloads at
+// startup, on the otel/weaver:latest image. Both can be pinned with
+// semconvtest.WithVersion and semconvtest.WithRegistry when deterministic
+// results are needed.
+
 import (
 	"net"
 	"testing"
@@ -124,6 +132,10 @@ func TestSemconvComplianceContainerAttributesV1(t *testing.T) {
 // http.server.request.duration histogram. This input produces no violations
 // on its own, so the live-check result reflects only the attributes that the
 // processor adds.
+// The metric name, the unit, and the attribute names below are hard-coded to
+// the stable HTTP semantic conventions. If a live-check failure mentions
+// http.*, url.* or network.* attributes, check whether these labels still
+// match the current registry.
 func generateSemconvCarrierMetrics() pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
