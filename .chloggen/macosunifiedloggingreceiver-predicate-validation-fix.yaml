@@ -1,5 +1,5 @@
 change_type: bug_fix
-component: receiver/macosunifiedlogging
+component: receiver/macos_unified_logging
 note: Add messageType field to predicate validation
 issues: [50626]
 subtext: |-
