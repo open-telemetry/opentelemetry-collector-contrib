@@ -180,6 +180,9 @@ agent:
     # Passed to the Supervisor-injected OpAMP extension to copy the collector's 
     # resource attributes into the non-identifying attributes.
     include_resource_attributes: true
+    # Adds the Supervisor's service.instance.id to the Collector's own telemetry
+    # as `supervisor.service.instance.id`. Defaults to false.
+    include_supervisor_instance_id: true
     identifying_attributes:
       client.id: "01HWWSK84BMT7J45663MBJMTPJ"
     non_identifying_attributes:

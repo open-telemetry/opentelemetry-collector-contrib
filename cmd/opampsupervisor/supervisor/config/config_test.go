@@ -1096,6 +1096,7 @@ agent:
   executable: %s
   description:
     include_resource_attributes: true
+    include_supervisor_instance_id: true
     identifying_attributes:
       "service.name": "io.opentelemetry.collector"
     non_identifying_attributes:
@@ -1144,7 +1145,8 @@ telemetry:
 					Agent: Agent{
 						Executable: executablePath,
 						Description: AgentDescription{
-							IncludeResourceAttributes: true,
+							IncludeResourceAttributes:   true,
+							IncludeSupervisorInstanceID: true,
 							IdentifyingAttributes: map[string]string{
 								"service.name": "io.opentelemetry.collector",
 							},
