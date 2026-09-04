@@ -50,6 +50,15 @@ type Edge struct {
 
 	// VirtualNodeLabel is an optional label to be added to the spans
 	VirtualNodeLabel VirtualNodeLabel
+
+	// ProducerKey, when set, points to the producer span (trace/span) that this
+	// consumer edge references via Links(). This is empty for producer/client
+	// edges and for server-parent keyed edges.
+	ProducerKey Key
+
+	// IsMatched is set to true when a producer edge is successfully matched with
+	// a consumer edge. This is used to avoid counting it as an expired edge.
+	IsMatched bool
 }
 
 func newEdge(key Key, ttl time.Duration) *Edge {

@@ -78,12 +78,13 @@ func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resourc
 }
 
 // addSampleWithLabels is a helper function to create and add a sample with labels
-func (c *prometheusConverterV2) addSampleWithLabels(sampleValue float64, timestamp int64, noRecordedValue bool,
+func (c *prometheusConverterV2) addSampleWithLabels(sampleValue float64, timestamp, startTimestamp int64, noRecordedValue bool,
 	baseName string, baseLabels []prompb.Label, labelName, labelValue string, metadata metadata,
 ) {
 	sample := &writev2.Sample{
-		Value:     sampleValue,
-		Timestamp: timestamp,
+		Value:          sampleValue,
+		Timestamp:      timestamp,
+		StartTimestamp: startTimestamp,
 	}
 	if noRecordedValue {
 		sample.Value = math.Float64frombits(value.StaleNaN)
@@ -102,6 +103,7 @@ func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryD
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
+		startTimestamp := convertTimeStamp(pt.StartTimestamp())
 		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, false, c.labelNamer, settings.DisableScopeInfo)
 		if err != nil {
 			errs = multierr.Append(errs, err)
@@ -110,14 +112,14 @@ func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryD
 		noRecordedValue := pt.Flags().NoRecordedValue()
 
 		// Add sum and count samples
-		c.addSampleWithLabels(pt.Sum(), timestamp, noRecordedValue, baseName+sumStr, baseLabels, "", "", metadata)
-		c.addSampleWithLabels(float64(pt.Count()), timestamp, noRecordedValue, baseName+countStr, baseLabels, "", "", metadata)
+		c.addSampleWithLabels(pt.Sum(), timestamp, startTimestamp, noRecordedValue, baseName+sumStr, baseLabels, "", "", metadata)
+		c.addSampleWithLabels(float64(pt.Count()), timestamp, startTimestamp, noRecordedValue, baseName+countStr, baseLabels, "", "", metadata)
 
 		// Process quantiles
 		for i := 0; i < pt.QuantileValues().Len(); i++ {
 			qt := pt.QuantileValues().At(i)
 			percentileStr := strconv.FormatFloat(qt.Quantile(), 'f', -1, 64)
-			c.addSampleWithLabels(qt.Value(), timestamp, noRecordedValue, baseName, baseLabels, quantileStr, percentileStr, metadata)
+			c.addSampleWithLabels(qt.Value(), timestamp, startTimestamp, noRecordedValue, baseName, baseLabels, quantileStr, percentileStr, metadata)
 		}
 	}
 	return errs
@@ -130,6 +132,7 @@ func (c *prometheusConverterV2) addHistogramDataPoints(dataPoints pmetric.Histog
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
+		startTimestamp := convertTimeStamp(pt.StartTimestamp())
 		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, false, c.labelNamer, settings.DisableScopeInfo)
 		if err != nil {
 			errs = multierr.Append(errs, err)
@@ -156,11 +159,11 @@ func (c *prometheusConverterV2) addHistogramDataPoints(dataPoints pmetric.Histog
 		// If the sum is unset, it indicates the _sum metric point should be
 		// omitted
 		if pt.HasSum() {
-			c.addSampleWithLabels(pt.Sum(), timestamp, noRecordedValue, baseName+sumStr, baseLabels, "", "", metadata)
+			c.addSampleWithLabels(pt.Sum(), timestamp, startTimestamp, noRecordedValue, baseName+sumStr, baseLabels, "", "", metadata)
 		}
 
 		// treat count as a sample in an individual TimeSeries
-		c.addSampleWithLabels(float64(pt.Count()), timestamp, noRecordedValue, baseName+countStr, baseLabels, "", "", metadata)
+		c.addSampleWithLabels(float64(pt.Count()), timestamp, startTimestamp, noRecordedValue, baseName+countStr, baseLabels, "", "", metadata)
 
 		// cumulative count for conversion to cumulative histogram
 		var cumulativeCount uint64
@@ -170,10 +173,10 @@ func (c *prometheusConverterV2) addHistogramDataPoints(dataPoints pmetric.Histog
 			bound := pt.ExplicitBounds().At(i)
 			cumulativeCount += pt.BucketCounts().At(i)
 			boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
-			c.addSampleWithLabels(float64(cumulativeCount), timestamp, noRecordedValue, baseName+bucketStr, baseLabels, leStr, boundStr, metadata)
+			c.addSampleWithLabels(float64(cumulativeCount), timestamp, startTimestamp, noRecordedValue, baseName+bucketStr, baseLabels, leStr, boundStr, metadata)
 		}
 		// add le=+Inf bucket
-		c.addSampleWithLabels(float64(pt.Count()), timestamp, noRecordedValue, baseName+bucketStr, baseLabels, leStr, pInfStr, metadata)
+		c.addSampleWithLabels(float64(pt.Count()), timestamp, startTimestamp, noRecordedValue, baseName+bucketStr, baseLabels, leStr, pInfStr, metadata)
 
 		// TODO implement exemplars support
 	}

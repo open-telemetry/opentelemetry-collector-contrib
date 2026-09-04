@@ -22,7 +22,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_newPathGetSetter(t *testing.T) {
@@ -160,7 +159,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				N: "filtered_attributes",
 				KeySlice: []ottl.Key[*TransformContext]{
 					&pathtest.Key[*TransformContext]{
-						S: ottltest.Strp("str"),
+						S: new("str"),
 					},
 				},
 			},
@@ -176,7 +175,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				N: "filtered_attributes",
 				KeySlice: []ottl.Key[*TransformContext]{
 					&pathtest.Key[*TransformContext]{
-						S: ottltest.Strp("int"),
+						S: new("int"),
 					},
 				},
 			},
@@ -203,7 +202,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				N: "cache",
 				KeySlice: []ottl.Key[*TransformContext]{
 					&pathtest.Key[*TransformContext]{
-						S: ottltest.Strp("temp"),
+						S: new("temp"),
 					},
 				},
 			},
@@ -304,7 +303,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 				N: "attributes",
 				KeySlice: []ottl.Key[*TransformContext]{
 					&pathtest.Key[*TransformContext]{
-						S: ottltest.Strp("foo"),
+						S: new("foo"),
 					},
 				},
 			}},
@@ -314,7 +313,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			name: "resource with context",
 			path: &pathtest.Path[*TransformContext]{C: "resource", N: "attributes", KeySlice: []ottl.Key[*TransformContext]{
 				&pathtest.Key[*TransformContext]{
-					S: ottltest.Strp("foo"),
+					S: new("foo"),
 				},
 			}},
 			expected: "bar",
@@ -388,7 +387,7 @@ func TestHigherContextCacheAccessError(t *testing.T) {
 				C: higherContext,
 				KeySlice: []ottl.Key[*TransformContext]{
 					&pathtest.Key[*TransformContext]{
-						S: ottltest.Strp("key"),
+						S: new("key"),
 					},
 				},
 				FullPath: fmt.Sprintf("%s.cache[key]", higherContext),

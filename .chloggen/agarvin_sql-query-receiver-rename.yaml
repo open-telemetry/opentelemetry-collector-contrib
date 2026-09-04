@@ -1,5 +1,0 @@
-change_type: 'deprecation'
-component: receiver/sql_query
-note: Rename the 'sqlquery' receiver to 'sql_query'. The old 'sqlquery' type remains available as a deprecated alias.
-issues: [45339]
-change_logs: [user]
