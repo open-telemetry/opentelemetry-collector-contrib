@@ -1253,6 +1253,18 @@ events:
     enabled: true
 ```
 
+### db.server.query_plan
+
+query execution plan, decoupled from db.server.top_query to avoid oversized plan payloads dropping lightweight query statistics
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| sqlserver.query_hash | Binary hash value calculated on the query and used to identify queries with similar logic, reported in the HEX format. | Any Str | - |
+| sqlserver.query_plan | The query execution plan used by the SQL Server. | Any Str | - |
+| sqlserver.query_plan_hash | Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format. | Any Str | - |
+
 ### db.server.query_sample
 
 query sample
@@ -1319,7 +1331,6 @@ top query
 | sqlserver.total_logical_writes | Total number of logical writes performed by executions of this plan since it was compiled, reported in delta value. | Any Int | - |
 | sqlserver.total_physical_reads | Total number of physical reads performed by executions of this plan since it was compiled, reported in delta value. | Any Int | - |
 | sqlserver.query_hash | Binary hash value calculated on the query and used to identify queries with similar logic, reported in the HEX format. | Any Str | - |
-| sqlserver.query_plan | The query execution plan used by the SQL Server. | Any Str | - |
 | sqlserver.query_plan_hash | Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format. | Any Str | - |
 | sqlserver.total_rows | Total number of rows returned by the query, reported in delta value. | Any Int | - |
 | sqlserver.total_elapsed_time | Total elapsed time for completed executions of this plan, reported in delta seconds. | Any Double | - |

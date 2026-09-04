@@ -1759,7 +1759,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			logicalWritesVal.(int64),
 			physicalReadsVal.(int64),
 			queryHashVal,
-			queryPlanVal.(string),
 			queryPlanHashVal,
 			rowsReturnedVal.(int64),
 			totalElapsedTimeVal,
@@ -1772,6 +1771,13 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			row[storedProcedureName],
 			lastExecutionTimeVal,
 			planCreationTimeVal,
+		)
+		s.lb.RecordDbServerQueryPlanEvent(
+			context.Background(),
+			timestamp,
+			queryHashVal,
+			queryPlanVal.(string),
+			queryPlanHashVal,
 		)
 	}
 	return resources, errors.Join(errs...)

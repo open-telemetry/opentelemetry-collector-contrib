@@ -233,6 +233,37 @@ func TestFactory(t *testing.T) {
 				require.NoError(t, r.Shutdown(t.Context()))
 			},
 		},
+		{
+			desc: "[logs] db.server.query_plan alone still runs the query-text-and-plan scraper",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig().(*Config)
+				cfg.Username = "sa"
+				cfg.Password = "password"
+				cfg.Server = "0.0.0.0"
+				cfg.Port = 1433
+				require.NoError(t, cfg.Validate())
+				cfg.InstanceName = "instanceName"
+
+				cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = true
+
+				params := receivertest.NewNopSettings(metadata.Type)
+				sqlScrapers, _ := setupSQLServerLogsScrapers(params, cfg)
+				require.NotEmpty(t, sqlScrapers)
+
+				q := getSQLServerQueryTextAndPlanQuery()
+
+				databaseTopQueryScraperFound := false
+				for _, scraper := range sqlScrapers {
+					if scraper.sqlQuery == q {
+						databaseTopQueryScraperFound = true
+						break
+					}
+				}
+
+				require.True(t, databaseTopQueryScraperFound)
+			},
+		},
 	}
 
 	for _, tc := range testCases {

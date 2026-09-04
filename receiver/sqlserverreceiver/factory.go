@@ -114,7 +114,7 @@ func setupLogQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerQuerySamplesQuery())
 	}
 
-	if cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
+	if cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled || cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled {
 		queries = append(queries, getSQLServerQueryTextAndPlanQuery())
 	}
 
