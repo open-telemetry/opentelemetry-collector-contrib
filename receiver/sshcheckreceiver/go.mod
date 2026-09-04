@@ -24,7 +24,7 @@ require (
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.160.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
-	golang.org/x/crypto v0.55.0
+	golang.org/x/crypto v0.56.0
 )
 
 require (
