@@ -1687,17 +1687,17 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		RedisCmdCalls: RedisCmdCallsMetricConfig{
-			Enabled:             false,
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []RedisCmdCallsMetricAttributeKey{RedisCmdCallsMetricAttributeKeyCmd},
 		},
 		RedisCmdLatency: RedisCmdLatencyMetricConfig{
-			Enabled:             false,
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []RedisCmdLatencyMetricAttributeKey{RedisCmdLatencyMetricAttributeKeyCmd, RedisCmdLatencyMetricAttributeKeyPercentile},
 		},
 		RedisCmdUsec: RedisCmdUsecMetricConfig{
-			Enabled:             false,
+			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []RedisCmdUsecMetricAttributeKey{RedisCmdUsecMetricAttributeKeyCmd},
 		},
