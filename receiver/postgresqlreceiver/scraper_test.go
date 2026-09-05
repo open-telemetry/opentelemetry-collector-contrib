@@ -705,6 +705,8 @@ var querySampleColumns = []string{
 	querySampleColumnClientHostname,
 	querySampleColumnClientPort,
 	querySampleColumnQueryStart,
+	querySampleColumnBackendStart,
+	querySampleColumnSessionDuration,
 	querySampleColumnWaitEventType,
 	querySampleColumnWaitEvent,
 	querySampleColumnQueryID,

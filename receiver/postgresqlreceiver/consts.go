@@ -21,6 +21,7 @@ const (
 
 const (
 	querySampleColumnApplicationName      = "application_name"
+	querySampleColumnBackendStart         = "backend_start"
 	querySampleColumnClientAddr           = "client_addr"
 	querySampleColumnClientHostname       = "client_hostname"
 	querySampleColumnClientPort           = "client_port"
@@ -31,6 +32,7 @@ const (
 	querySampleColumnQueryID              = "query_id"
 	querySampleColumnQueryStart           = "query_start"
 	querySampleColumnQueryStartTimestamp  = "_query_start_timestamp"
+	querySampleColumnSessionDuration      = "session_duration"
 	querySampleColumnState                = "state"
 	querySampleColumnUsename              = "usename"
 	querySampleColumnWaitEvent            = "wait_event"
