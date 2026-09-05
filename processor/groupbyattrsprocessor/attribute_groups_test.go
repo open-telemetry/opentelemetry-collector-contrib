@@ -98,6 +98,7 @@ func TestResourceAttributeScenarios(t *testing.T) {
 	lg := newLogsGroup()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			lg.index.startResource(tt.baseResource, 2)
 			recordAttributeMap := pcommon.NewMap()
 			if tt.fillRecordAttributesFun != nil {
 				tt.fillRecordAttributesFun(recordAttributeMap)
@@ -108,7 +109,7 @@ func TestResourceAttributeScenarios(t *testing.T) {
 				tt.fillExpectedResourceFun(tt.baseResource, expectedResource)
 			}
 
-			rl := lg.findOrCreateResourceLogs(tt.baseResource, recordAttributeMap)
+			rl := lg.findOrCreateResourceLogs(recordAttributeMap)
 			assert.Equal(t, expectedResource.Attributes().AsRaw(), rl.Resource().Attributes().AsRaw())
 		})
 	}
@@ -148,8 +149,9 @@ func TestInstrumentationLibraryMatching(t *testing.T) {
 
 func BenchmarkAttrGrouping(b *testing.B) {
 	lg := newLogsGroup()
+	lg.index.startResource(res, 2)
 	b.ReportAllocs()
 	for b.Loop() {
-		lg.findOrCreateResourceLogs(res, groups[rand.IntN(count)])
+		lg.findOrCreateResourceLogs(groups[rand.IntN(count)])
 	}
 }
