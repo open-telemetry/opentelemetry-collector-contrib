@@ -1,0 +1,11 @@
+change_type: bug_fix
+component: receiver/libhoney
+note: Use the documented field names in the msgpack batch response so clients can read the per-event status
+issues: [50378]
+subtext: |
+  ResponseInBatch carried only json tags, so the msgpack encoder fell back to the
+  Go field names (Status, ErrorStr). libhoney decodes the response into a struct
+  tagged msgpack:"status"/"error", read a zero status, and reported every event
+  in the batch as failed even though the receiver had accepted it - one
+  client-side error per event, with no data loss and no retries.
+change_logs: [user]

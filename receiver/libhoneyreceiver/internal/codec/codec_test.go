@@ -782,3 +782,34 @@ func TestBuildLibhoneyEventFromMap_NativeTimeValue(t *testing.T) {
 			"span 1 and 2 should have different timestamps")
 	})
 }
+
+// The msgpack response has to carry the same field names as the JSON one.
+// libhoney decodes it into a struct tagged msgpack:"status"/"error"; without
+// the tags msgpack falls back to the Go field names, libhoney reads a zero
+// status and reports every event in the batch as failed even though the
+// receiver accepted it.
+func TestMarshalResponse_FieldNamesMatchAcrossEncodings(t *testing.T) {
+	batch := []response.ResponseInBatch{{Status: 202}}
+
+	mpBody, err := MpEncoder.MarshalResponse(batch)
+	require.NoError(t, err)
+
+	var mpDecoded []struct {
+		Error  string `msgpack:"error"`
+		Status int    `msgpack:"status"`
+	}
+	require.NoError(t, msgpack.Unmarshal(mpBody, &mpDecoded))
+	require.Len(t, mpDecoded, 1)
+	assert.Equal(t, 202, mpDecoded[0].Status)
+
+	jsonBody, err := JsEncoder.MarshalResponse(batch)
+	require.NoError(t, err)
+
+	var jsonDecoded []struct {
+		Error  string `json:"error"`
+		Status int    `json:"status"`
+	}
+	require.NoError(t, json.Unmarshal(jsonBody, &jsonDecoded))
+	require.Len(t, jsonDecoded, 1)
+	assert.Equal(t, 202, jsonDecoded[0].Status)
+}
