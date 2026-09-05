@@ -145,6 +145,79 @@ func timeFromTimestamp(ts any) (time.Time, error) {
 	}
 }
 
+// readMapKey reads a msgpack map key, which is expected to be a string but,
+// as fluentd's msgpack-ruby based senders tag ASCII-8BIT encoded strings as
+// "bin" rather than "str", can also arrive as a binary type.
+func readMapKey(dc *msgp.Reader) (string, error) {
+	key, err := dc.ReadString()
+	if err != nil {
+		keyBytes, keyBytesErr := dc.ReadBytes(nil)
+		if keyBytesErr != nil {
+			return "", keyBytesErr
+		}
+		key = string(keyBytes)
+	}
+	return key, nil
+}
+
+// readIntf behaves like dc.ReadIntf() but tolerates map keys encoded as
+// binary type rather than string (see readMapKey) at any nesting depth,
+// which msgp.Reader.ReadIntf does not. depth guards against unbounded
+// recursion (e.g. a maliciously deeply-nested payload), mirroring the limit
+// dc.ReadIntf() itself enforces via its own unexported recursion counter.
+func readIntf(dc *msgp.Reader, depth int) (any, error) {
+	if depth >= dc.GetMaxRecursionDepth() {
+		return nil, msgp.ErrRecursion
+	}
+
+	t, err := dc.NextType()
+	if err != nil {
+		return nil, err
+	}
+
+	switch t {
+	case msgp.MapType:
+		sz, err := dc.ReadMapHeader()
+		if err != nil {
+			return nil, err
+		}
+		if sz > dc.GetMaxElements() {
+			return nil, msgp.ErrLimitExceeded
+		}
+		m := make(map[string]any, sz)
+		for range sz {
+			key, err := readMapKey(dc)
+			if err != nil {
+				return nil, err
+			}
+			val, err := readIntf(dc, depth+1)
+			if err != nil {
+				return nil, err
+			}
+			m[key] = val
+		}
+		return m, nil
+	case msgp.ArrayType:
+		sz, err := dc.ReadArrayHeader()
+		if err != nil {
+			return nil, err
+		}
+		if sz > dc.GetMaxElements() {
+			return nil, msgp.ErrLimitExceeded
+		}
+		arr := make([]any, sz)
+		for i := range sz {
+			arr[i], err = readIntf(dc, depth+1)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return arr, nil
+	default:
+		return dc.ReadIntf()
+	}
+}
+
 func parseRecordToLogRecord(dc *msgp.Reader, lr plog.LogRecord) error {
 	tsIntf, err := dc.ReadIntf()
 	if err != nil {
@@ -165,17 +238,11 @@ func parseRecordToLogRecord(dc *msgp.Reader, lr plog.LogRecord) error {
 
 	for recordLen > 0 {
 		recordLen--
-		key, err := dc.ReadString()
+		key, err := readMapKey(dc)
 		if err != nil {
-			// The protocol doesn't specify this but apparently some map keys
-			// can be binary type instead of string
-			keyBytes, keyBytesErr := dc.ReadBytes(nil)
-			if keyBytesErr != nil {
-				return msgp.WrapError(keyBytesErr, "Record")
-			}
-			key = string(keyBytes)
+			return msgp.WrapError(err, "Record")
 		}
-		val, err := dc.ReadIntf()
+		val, err := readIntf(dc, 0)
 		if err != nil {
 			return msgp.WrapError(err, "Record", key)
 		}
