@@ -47,12 +47,12 @@ require (
 	go.opentelemetry.io/collector/processor/xprocessor v0.160.1-0.20260903163450-cc4b33fc673f
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.160.1-0.20260903163450-cc4b33fc673f
 	go.opentelemetry.io/collector/receiver/receivertest v0.160.1-0.20260903163450-cc4b33fc673f
-	go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.17.0
-	go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.17.0
-	go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0
-	go.opentelemetry.io/contrib/detectors/hetzner v0.17.0
-	go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.17.0
-	go.opentelemetry.io/contrib/detectors/vultr v0.17.0
+	go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.18.0
+	go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.18.0
+	go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.18.0
+	go.opentelemetry.io/contrib/detectors/hetzner v0.18.0
+	go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.18.0
+	go.opentelemetry.io/contrib/detectors/vultr v0.18.0
 	go.opentelemetry.io/otel v1.46.0
 	go.opentelemetry.io/otel/metric v1.46.0
 	go.opentelemetry.io/otel/sdk v1.46.0
