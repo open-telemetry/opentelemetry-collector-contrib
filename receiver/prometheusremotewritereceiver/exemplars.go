@@ -16,8 +16,6 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
@@ -29,6 +27,7 @@ import (
 //   - instrumentation scope version
 //   - metric name
 //   - metric type
+//   - a hash of the remaining data labels
 //
 // TODO:
 //
@@ -39,8 +38,8 @@ func collectExemplars(
 	req *writev2.Request,
 	settings receiver.Settings,
 	stats *promremote.WriteResponseStats,
-) map[uint64]pmetric.ExemplarSlice {
-	result := make(map[uint64]pmetric.ExemplarSlice)
+) map[exemplarKey]pmetric.ExemplarSlice {
+	result := make(map[exemplarKey]pmetric.ExemplarSlice)
 	builder := labels.NewScratchBuilder(0)
 	stats.Exemplars = 0
 	for i := range req.Timeseries {
@@ -61,17 +60,8 @@ func collectExemplars(
 			continue
 		}
 
-		scopeName, scopeVersion := extractScopeFromLabels(settings, ls)
-
-		key := exemplarKey{
-			ScopeName:    scopeName,
-			ScopeVersion: scopeVersion,
-			MetricName:   metadata.Name,
-			MetricType:   ts.Metadata.Type,
-			AttrsHash:    pdatautil.MapHash(extractAttributes(ls)),
-		}
-
-		slice, ok := result[key.hash()]
+		key := makeExemplarKey(ls)
+		slice, ok := result[key]
 		if !ok {
 			slice = pmetric.NewExemplarSlice()
 		}
@@ -92,23 +82,10 @@ func collectExemplars(
 			stats.Exemplars++
 		}
 
-		result[key.hash()] = slice
+		result[key] = slice
 	}
 
 	return result
-}
-
-func extractScopeFromLabels(settings receiver.Settings, ls labels.Labels) (string, string) {
-	name := settings.BuildInfo.Description
-	version := settings.BuildInfo.Version
-
-	if sName := ls.Get("otel_scope_name"); sName != "" {
-		name = sName
-	}
-	if sVersion := ls.Get("otel_scope_version"); sVersion != "" {
-		version = sVersion
-	}
-	return name, version
 }
 
 // setTraceAndSpan converts the hex-encoded trace and span ID labels and reports
@@ -162,28 +139,16 @@ func copyExemplarAttributes(dest pcommon.Map, labels labels.Labels, traceIDSet, 
 	}
 }
 
-type exemplarKey struct {
-	ScopeName    string
-	ScopeVersion string
-	MetricName   string
-	MetricType   writev2.Metadata_MetricType
-	AttrsHash    [16]byte // hash of data labels (excludes job, instance, __name__, otel_scope_*)
+// exemplarKey identifies the series an exemplar belongs to. Prometheus defines a series by its
+// labels, so the key is the label set itself.
+type exemplarKey string
+
+// makeExemplarKey returns the map key for a series. labels.Bytes is an opaque encoding meant to
+// be used this way, and the map does not outlive the request, so a change to it cannot matter.
+func makeExemplarKey(ls labels.Labels) exemplarKey {
+	return exemplarKey(ls.Bytes(nil))
 }
 
 // sep is a byte that is not valid UTF-8, used as a field separator to prevent
 // hash collisions between different field boundary combinations (e.g. "ab"+"c" vs "a"+"bc").
 var sep = []byte{0xff}
-
-func (k exemplarKey) hash() uint64 {
-	h := identity.Resource{}.Hash()
-	h.Write([]byte(k.ScopeName))
-	h.Write(sep)
-	h.Write([]byte(k.ScopeVersion))
-	h.Write(sep)
-	h.Write([]byte(k.MetricName))
-	h.Write(sep)
-	h.Write([]byte(k.MetricType.String()))
-	h.Write(sep)
-	h.Write(k.AttrsHash[:])
-	return h.Sum64()
-}
