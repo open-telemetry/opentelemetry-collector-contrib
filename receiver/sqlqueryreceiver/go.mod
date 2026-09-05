@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.47.0
-	github.com/SAP/go-hdb v1.18.0
+	github.com/SAP/go-hdb v1.18.2
 	github.com/docker/go-connections v0.7.0 // indirect
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/lib/pq v1.12.3
