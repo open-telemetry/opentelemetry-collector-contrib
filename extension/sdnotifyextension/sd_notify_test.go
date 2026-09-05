@@ -57,22 +57,27 @@ func TestStart_NoNotifySocket_IsNoop(t *testing.T) {
 	t.Setenv("NOTIFY_SOCKET", "")
 	s := newSDNotify(&Config{}, zaptest.NewLogger(t))
 	require.NoError(t, s.Start(t.Context(), noopHost{}))
-	require.NoError(t, s.Shutdown(t.Context()))
+	require.NoError(t, s.Ready())
+	require.NoError(t, s.NotReady())
 }
 
-func TestShutdown_BeforeStart_IsNoop(t *testing.T) {
-	s := newSDNotify(&Config{}, zaptest.NewLogger(t))
-	require.NoError(t, s.Shutdown(t.Context()))
-}
-
-func TestShutdown_IsIdempotent(t *testing.T) {
+func TestNotReady_BeforeReady_IsNoop(t *testing.T) {
 	_ = startFakeNotifySocket(t)
 
 	s := newSDNotify(&Config{}, zaptest.NewLogger(t))
 	require.NoError(t, s.Start(t.Context(), noopHost{}))
+	require.NoError(t, s.NotReady())
+}
 
-	require.NoError(t, s.Shutdown(t.Context()))
-	require.NoError(t, s.Shutdown(t.Context()))
+func TestNotReady_IsIdempotent(t *testing.T) {
+	_ = startFakeNotifySocket(t)
+
+	s := newSDNotify(&Config{}, zaptest.NewLogger(t))
+	require.NoError(t, s.Start(t.Context(), noopHost{}))
+	require.NoError(t, s.Ready())
+
+	require.NoError(t, s.NotReady())
+	require.NoError(t, s.NotReady())
 }
 
 func TestReady_SendsREADY(t *testing.T) {
@@ -80,7 +85,7 @@ func TestReady_SendsREADY(t *testing.T) {
 
 	s := newSDNotify(&Config{}, zaptest.NewLogger(t))
 	require.NoError(t, s.Start(t.Context(), noopHost{}))
-	t.Cleanup(func() { _ = s.Shutdown(t.Context()) })
+	t.Cleanup(func() { _ = s.NotReady() })
 
 	require.NoError(t, s.Ready())
 	select {
@@ -96,7 +101,10 @@ func TestSIGTERM_SendsSTOPPING(t *testing.T) {
 
 	s := newSDNotify(&Config{}, zaptest.NewLogger(t))
 	require.NoError(t, s.Start(t.Context(), noopHost{}))
-	t.Cleanup(func() { _ = s.Shutdown(t.Context()) })
+	t.Cleanup(func() { _ = s.NotReady() })
+
+	require.NoError(t, s.Ready())
+	require.Equal(t, "READY=1", <-msgs)
 
 	require.NoError(t, syscall.Kill(os.Getpid(), syscall.SIGTERM))
 	select {
@@ -112,7 +120,10 @@ func TestSIGHUP_SendsRELOADING(t *testing.T) {
 
 	s := newSDNotify(&Config{}, zaptest.NewLogger(t))
 	require.NoError(t, s.Start(t.Context(), noopHost{}))
-	t.Cleanup(func() { _ = s.Shutdown(t.Context()) })
+	t.Cleanup(func() { _ = s.NotReady() })
+
+	require.NoError(t, s.Ready())
+	require.Equal(t, "READY=1", <-msgs)
 
 	require.NoError(t, syscall.Kill(os.Getpid(), syscall.SIGHUP))
 	select {
@@ -132,7 +143,10 @@ func TestWatchdog_SendsWATCHDOG(t *testing.T) {
 
 	s := newSDNotify(&Config{}, zaptest.NewLogger(t))
 	require.NoError(t, s.Start(t.Context(), noopHost{}))
-	t.Cleanup(func() { _ = s.Shutdown(t.Context()) })
+	t.Cleanup(func() { _ = s.NotReady() })
+
+	require.NoError(t, s.Ready())
+	require.Equal(t, "READY=1", <-msgs)
 
 	ctx, cancel := context.WithTimeout(t.Context(), 325*time.Millisecond)
 	defer cancel()

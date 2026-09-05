@@ -24,7 +24,8 @@ type sdnotify struct {
 	logger *zap.Logger
 	host   component.Host
 
-	shutdownOnce sync.Once
+	notReadyOnce sync.Once
+	wg           sync.WaitGroup
 	done         chan struct{}
 	termCh       chan os.Signal
 	sighupCh     chan os.Signal
@@ -58,9 +59,18 @@ func (s *sdnotify) Start(_ context.Context, host component.Host) error {
 	// https://www.man7.org/linux/man-pages/man3/sd_notify.3.html
 	if os.Getenv("NOTIFY_SOCKET") == "" {
 		s.logger.Warn("NOTIFY_SOCKET is not set; sd_notify support is disabled")
-
-		return nil
 	}
+
+	return nil
+}
+
+func (*sdnotify) Shutdown(_ context.Context) error {
+	return nil
+}
+
+func (s *sdnotify) Ready() error {
+	s.notReadyOnce = sync.Once{}
+	s.done = make(chan struct{})
 
 	// STOPPING=1 must be sent only on genuine termination (SIGINT/SIGTERM).
 	//
@@ -73,7 +83,7 @@ func (s *sdnotify) Start(_ context.Context, host component.Host) error {
 	// See the issue below for discussion of this suggestion:
 	// https://github.com/open-telemetry/opentelemetry-collector/issues/15732
 	signal.Notify(s.termCh, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
+	s.wg.Go(func() {
 		select {
 		case <-s.done:
 			return
@@ -85,7 +95,7 @@ func (s *sdnotify) Start(_ context.Context, host component.Host) error {
 				s.logger.Info("sdnotify: sent STOPPING=1 to systemd")
 			}
 		}
-	}()
+	})
 
 	// RELOADING=1\nMONOTONIC_USEC=X is send only for Type=notify-reload services.
 	// Systemd signals the process with SIGHUP when a reload is requested.
@@ -97,7 +107,7 @@ func (s *sdnotify) Start(_ context.Context, host component.Host) error {
 	// OpenTelemetry Collector's own signal handler.
 	monotonicEpoch := time.Now()
 	signal.Notify(s.sighupCh, syscall.SIGHUP)
-	go func() {
+	s.wg.Go(func() {
 		for {
 			select {
 			case <-s.done:
@@ -125,7 +135,7 @@ func (s *sdnotify) Start(_ context.Context, host component.Host) error {
 				}
 			}
 		}
-	}()
+	})
 
 	// WATCHDOG=1 is the keep-alive ping that services need to issue in regular
 	// intervals if WatchdogSec= is enabled for it.
@@ -137,7 +147,7 @@ func (s *sdnotify) Start(_ context.Context, host component.Host) error {
 	case duration == 0:
 		s.logger.Debug("sdnotify: WATCHDOG_USEC not set; watchdog disabled")
 	default:
-		go func() {
+		s.wg.Go(func() {
 			// Per sd_watchdog_enabled(3): It is recommended that a daemon sends a keep-alive
 			// notification message to the service manager every half of the time returned here.
 			ticker := time.NewTicker(duration / 2)
@@ -147,29 +157,16 @@ func (s *sdnotify) Start(_ context.Context, host component.Host) error {
 				case <-s.done:
 					return
 				case <-ticker.C:
-					if _, err := daemon.SdNotify(false, daemon.SdNotifyWatchdog); err != nil {
+					if _, watchdogErr := daemon.SdNotify(false, daemon.SdNotifyWatchdog); watchdogErr != nil {
 						s.logger.Debug("sdnotify WATCHDOG=1 failed", zap.Error(err))
 					}
 				}
 			}
-		}()
+		})
 	}
 
-	return nil
-}
-
-func (s *sdnotify) Shutdown(_ context.Context) error {
-	s.shutdownOnce.Do(func() {
-		signal.Stop(s.termCh)
-		signal.Stop(s.sighupCh)
-		close(s.done)
-	})
-
-	return nil
-}
-
-func (s *sdnotify) Ready() error {
 	// READY=1 informs systemd that the collector is fully ready to receive traffic.
+	// If NOTIFY_SOCKET is unset, daemon.SdNotify is a no-op and sent will be false.
 	sent, err := daemon.SdNotify(false, daemon.SdNotifyReady)
 	switch {
 	case err != nil:
@@ -178,11 +175,19 @@ func (s *sdnotify) Ready() error {
 		s.logger.Info("sdnotify: sent READY=1 to systemd")
 	default:
 		s.logger.Info("sdnotify: NOTIFY_SOCKET not set; READY=1 was a no-op")
+		return nil
 	}
 
 	return nil
 }
 
-func (*sdnotify) NotReady() error {
+func (s *sdnotify) NotReady() error {
+	s.notReadyOnce.Do(func() {
+		signal.Stop(s.termCh)
+		signal.Stop(s.sighupCh)
+		close(s.done)
+	})
+	s.wg.Wait()
+
 	return nil
 }

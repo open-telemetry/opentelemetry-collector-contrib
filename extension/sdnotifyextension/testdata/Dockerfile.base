@@ -1,6 +1,6 @@
 # Shared base image for the integration tests.
 
-FROM ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-builder:0.159.0 AS build-stage
+FROM ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-builder:latest AS build-stage
 
 WORKDIR /src
 COPY --chmod=755 . /src
