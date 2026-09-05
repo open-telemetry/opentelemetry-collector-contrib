@@ -81,7 +81,9 @@ server:
 # Keys with boolean true/false values that enable a particular
 # OpAMP capability.
 capabilities:
-  # The Supervisor will accept remote configuration from the Server.
+  # The Supervisor will accept remote configuration from the Server and
+  # report remote configuration status to the Server. Enables both the
+  # AcceptsRemoteConfig and ReportsRemoteConfig OpAMP capabilities.
   accepts_remote_config: # false if unspecified
 
   # The Supervisor will accept restart requests.
@@ -114,7 +116,10 @@ capabilities:
   # The Collector will report Health.
   reports_health: # true if unspecified
 
-  # The Supervisor will report remote config status to the Server.
+  # DEPRECATED: This option has no effect and will be removed in v0.165.0.
+  # Remote config status is reported whenever accepts_remote_config is
+  # enabled. See
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49763
   reports_remote_config: # false if unspecified
 
   # The Supervisor will report available Collector components to the Server.
