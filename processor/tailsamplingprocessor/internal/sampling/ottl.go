@@ -15,6 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
@@ -29,6 +30,13 @@ var _ samplingpolicy.Evaluator = (*ottlConditionFilter)(nil)
 
 // NewOTTLConditionFilter looks at the trace data and returns a corresponding SamplingDecision.
 func NewOTTLConditionFilter(settings component.TelemetrySettings, spanConditions, spanEventConditions []string, errMode ottl.ErrorMode) (samplingpolicy.Evaluator, error) {
+	if errMode == "" {
+		if metadata.ProcessorTailsamplingprocessorDefaultErrorModeIgnoreFeatureGate.IsEnabled() {
+			errMode = ottl.IgnoreError
+		} else {
+			errMode = ottl.PropagateError
+		}
+	}
 	filter := &ottlConditionFilter{
 		errorMode: errMode,
 		logger:    settings.Logger,
