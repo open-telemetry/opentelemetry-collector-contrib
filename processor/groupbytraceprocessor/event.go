@@ -32,6 +32,17 @@ const (
 
 	// traceID to be removed
 	traceRemoved
+
+	// Subtrace events — only used when EmitStrategy == EmitStrategyService:
+
+	// subtraceID whose wait timer has fired
+	subtraceExpired
+
+	// assembled ptrace.Traces ready for the next consumer
+	subtraceReleased
+
+	// subtraceID to be removed from storage
+	subtraceRemoved
 )
 
 var (
@@ -78,6 +89,10 @@ type eventMachine struct {
 	onTraceExpired  func(traceID pcommon.TraceID, worker *eventMachineWorker) error
 	onTraceReleased func(rss []ptrace.ResourceSpans) error
 	onTraceRemoved  func(traceID pcommon.TraceID) error
+
+	onSubtraceExpired  func(id subtraceID, worker *eventMachineWorker) error
+	onSubtraceReleased func(td ptrace.Traces) error
+	onSubtraceRemoved  func(id subtraceID) error
 
 	onError func(event)
 
@@ -208,6 +223,48 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 		em.handleEventWithObservability("onTraceRemoved", func() error {
 			return em.onTraceRemoved(payload)
 		})
+	case subtraceExpired:
+		if em.onSubtraceExpired == nil {
+			em.logger.Debug("onSubtraceExpired not set, skipping event")
+			em.callOnError(e)
+			return
+		}
+		payload, ok := e.payload.(subtraceID)
+		if !ok {
+			em.callOnError(e)
+			return
+		}
+		em.handleEventWithObservability("subtrace_expired", func() error {
+			return em.onSubtraceExpired(payload, w)
+		})
+	case subtraceReleased:
+		if em.onSubtraceReleased == nil {
+			em.logger.Debug("onSubtraceReleased not set, skipping event")
+			em.callOnError(e)
+			return
+		}
+		payload, ok := e.payload.(ptrace.Traces)
+		if !ok {
+			em.callOnError(e)
+			return
+		}
+		em.handleEventWithObservability("subtrace_released", func() error {
+			return em.onSubtraceReleased(payload)
+		})
+	case subtraceRemoved:
+		if em.onSubtraceRemoved == nil {
+			em.logger.Debug("onSubtraceRemoved not set, skipping event")
+			em.callOnError(e)
+			return
+		}
+		payload, ok := e.payload.(subtraceID)
+		if !ok {
+			em.callOnError(e)
+			return
+		}
+		em.handleEventWithObservability("subtrace_removed", func() error {
+			return em.onSubtraceRemoved(payload)
+		})
 	default:
 		em.logger.Info("unknown event type", zap.Any("event", e.typ))
 		em.callOnError(e)
@@ -311,8 +368,11 @@ func (em *eventMachine) handleEventWithObservability(event string, do func() err
 type eventMachineWorker struct {
 	machine *eventMachine
 
-	// the ring buffer holds the IDs for all the in-flight traces
+	// buffer holds the IDs for all in-flight traces (EmitStrategyTrace).
 	buffer *ringBuffer
+
+	// subtraceBuffer holds the IDs for all in-flight subtraces (EmitStrategyService).
+	subtraceBuffer *subtraceRingBuffer
 
 	events chan event
 }

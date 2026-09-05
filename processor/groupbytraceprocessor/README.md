@@ -39,18 +39,48 @@ processors:
     wait_duration: 10s
     num_traces: 1000
     num_workers: 2
+  groupbytrace/service:
+    wait_duration: 5s
+    num_traces: 100000
+    emit_strategy: service
 ```
 
 ## Configuration
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using the processor.
 
-The `num_traces` (default=1,000,000) property tells the processor what's the maximum number of traces to keep in the internal storage. A higher `num_traces` might incur in a higher memory usage.
+The `num_traces` (default=1,000,000) property tells the processor what's the maximum number of traces to keep in the internal storage. A higher `num_traces` might incur in a higher memory usage. In `emit_strategy: service` mode, each slot tracks one service subtrace rather than one full trace.
 
-The `wait_duration` (default=1s) property tells the processor for how long it should keep traces in the internal storage. Once a trace is kept for this duration, it's then released to the next consumer and removed from the internal storage. Spans from a trace that has been released will be kept for the entire duration again.
+The `wait_duration` (default=1s) property tells the processor for how long it should keep traces in the internal storage. Once a trace is kept for this duration, it's then released to the next consumer and removed from the internal storage. Spans from a trace that has been released will be kept for the entire duration again. In `emit_strategy: service` mode, this instead applies to subtraces.
 
 The `num_workers` (default=1) property controls how many concurrent workers the processor will use to process traces. If you are looking to optimize this value
-then using GOMAXPROCS could be considered as a starting point. 
+then using GOMAXPROCS could be considered as a starting point.
+
+The `emit_strategy` (default=`"trace"`) property controls the span-emission granularity:
+
+| Value | Behaviour |
+|-------|-----------|
+| `"trace"` (default) | Buffer all spans for a trace and release them together after `wait_duration`. |
+| `"service"` | Buffer spans per service subtree within a trace and release each subtree separately after `wait_duration`. |
+
+## Subtrace Emit
+
+When `emit_strategy: service` is set, the processor groups spans at service granularity rather than trace granularity. Spans are grouped by service using a calculated "local root", which is a span whose parent context is invalid (empty parent span ID) or remote (propagated from another service). This is the service-entry span: the first span created by a service for a given request.
+
+This is useful for reducing latency when a downstream consumer performs processing for all spans from a given service within a trace and it isn't necessary to wait for the full distributed trace to arrive. The `wait_duration` option can sometimes be lowered when using this mode, as spans from a single service in a trace can arrive before the full trace completes, particularly in traces that contain asynchronous operations.
+
+### Local-root detection
+
+A span is classified as a local root when:
+
+1. Its parent span ID is empty (global root), or
+2. The `IS_REMOTE` flag is set in `Span.flags`, indicating the parent is in another service, or
+3. The parent span is not found in the current buffer and is therefore treated as a local root as a safe default (where the real local root is expected to arrive later), or
+4. The parent span belongs to a different service identity (different `service.name`, `service.namespace`, or `service.instance.id`).
+
+### Orphan spans
+
+Spans whose local root never arrives (e.g., the parent is in a different collector instance) are flushed on Collector shutdown. There is no separate fallback timer; overflow from the ring buffer will drop the oldest subtrace's spans without warning.
 
 ## Metrics
 
@@ -67,6 +97,8 @@ The following metrics are recorded by this processor:
 * `otelcol_processor_groupbytrace_spans_released` and `otelcol_processor_groupbytrace_traces_released` represent the number of spans and traces effectively released to the next component.
 * `otelcol_processor_groupbytrace_traces_evicted` represents the number of traces that have been evicted from the internal storage due to capacity problems. Ideally, this should be zero, or very close to zero at all times. If you keep getting items evicted, increase the `num_traces`.
 * `otelcol_processor_groupbytrace_incomplete_releases` represents the traces that have been marked as expired, but had been previously been removed. This might be the case when a span from a trace has been received in a batch while the trace existed in the in-memory storage, but has since been released/removed before the span could be added to the trace. This should always be very close to 0, and a high value might indicate a software bug.
+
+When `emit_strategy: service` is configured, the same metrics are emitted for subtraces: `otelcol_processor_groupbytrace_traces_released` counts released subtraces, `otelcol_processor_groupbytrace_spans_released` counts their spans, `otelcol_processor_groupbytrace_traces_evicted` counts evicted subtraces, and `otelcol_processor_groupbytrace_incomplete_releases` counts expiry events that found no buffer entry.
 
 A healthy system would have the same value for the metric `otelcol_processor_groupbytrace_spans_released` and for three events under `otelcol_processor_groupbytrace_event_latency_bucket`: `onTraceExpired`, `onTraceRemoved` and `onTraceReleased`.
 

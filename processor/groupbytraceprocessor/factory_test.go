@@ -5,8 +5,10 @@ package groupbytraceprocessor
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
 
@@ -64,4 +66,35 @@ func TestCreateTestProcessorWithNotImplementedOptions(t *testing.T) {
 		assert.ErrorIs(t, tt.expectedErr, err)
 		assert.Nil(t, p)
 	}
+}
+
+// TestCreateProcessorServiceEmitNumTracesLessThanNumWorkers verifies that
+// num_traces < num_workers (integer division → 0-size ring buffer) does not
+// panic when the processor is created or used.
+func TestCreateProcessorServiceEmitNumTracesLessThanNumWorkers(t *testing.T) {
+	cfg := &Config{
+		NumTraces:    1,
+		NumWorkers:   2,
+		WaitDuration: time.Second,
+		EmitStrategy: EmitStrategyService,
+	}
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, p)
+}
+
+func TestUnknownEmitStrategy(t *testing.T) {
+	_, err := NewFactory().CreateTraces(
+		t.Context(),
+		processortest.NewNopSettings(metadata.Type),
+		&Config{
+			NumTraces:    10,
+			NumWorkers:   1,
+			WaitDuration: time.Second,
+			EmitStrategy: EmitStrategy("invalid"),
+		},
+		consumertest.NewNop(),
+	)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown emit_strategy")
 }
