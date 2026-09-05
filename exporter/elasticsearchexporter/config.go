@@ -40,13 +40,6 @@ type Config struct {
 	// This setting is required if no URL is configured.
 	CloudID string `mapstructure:"cloudid"`
 
-	// NumWorkers configures the number of workers publishing bulk requests.
-	//
-	// Deprecated: [v0.136.0] This config is now deprecated. Use `sending_queue::num_consumers`
-	// instead. If this config is defined and `sending_queue::num_consumers` is not defined then
-	// it will be used to set `sending_queue::num_consumers`.
-	NumWorkers int `mapstructure:"num_workers"`
-
 	// LogsIndex configures the static index used for document routing for logs.
 	// It should be empty if dynamic document routing is preferred.
 	LogsIndex        string              `mapstructure:"logs_index"`
@@ -82,10 +75,6 @@ type Config struct {
 	Discovery      DiscoverySettings       `mapstructure:"discover"`
 	Retry          RetrySettings           `mapstructure:"retry"`
 
-	// Deprecated: [v0.136.0] This config is now deprecated. Use `sending_queue::batch` instead.
-	// If this config is defined then it will be used to configure sending queue's batch provided
-	// sending queue's config are not explicitly defined.
-	Flush          FlushSettings          `mapstructure:"flush"`
 	Mapping        MappingsSettings       `mapstructure:"mapping"`
 	LogstashFormat LogstashFormatSettings `mapstructure:"logstash_format"`
 
@@ -113,13 +102,11 @@ type Config struct {
 	IncludeSourceOnError *bool `mapstructure:"include_source_on_error"`
 
 	// Experimental: MetadataKeys defines a list of client.Metadata keys that
-	// will be used as partition keys for when batcher is enabled and will be
-	// added to the exporter's telemetry if defined. The config only applies
-	// when `sending_queue::batch` is defined or when the, now deprecated, batcher
-	// is used (set to `true` or `false`). The metadata keys are converted to
-	// lower case as key lookups for client metadata is case insensitive. This
-	// means that the metric produced by internal telemetry will also have the
-	// attribute in lower case.
+	// will be used as partition keys when `sending_queue::batch` is enabled and
+	// will be added to the exporter's telemetry if defined. The metadata keys
+	// are converted to lower case because client metadata key lookups are case
+	// insensitive. This means that the metric produced by internal telemetry
+	// will also have the attribute in lower case.
 	//
 	// Keys are case-insensitive and duplicates will trigger a validation error.
 	MetadataKeys []string `mapstructure:"metadata_keys"`
@@ -224,33 +211,6 @@ type DiscoverySettings struct {
 	_ struct{}
 }
 
-// FlushSettings defines settings for configuring the write buffer flushing
-// policy in the Elasticsearch exporter. The exporter sends a bulk request with
-// all events already serialized into the send-buffer.
-//
-// Deprecated: [v0.136.0] This config is now deprecated. Use `sending_queue::batch` instead.
-// If this config is defined then it will be used to configure sending queue's batch provided
-// sending queue's config are not explicitly defined.
-type FlushSettings struct {
-	// Bytes sets the send buffer flushing limit.
-	// Bytes is now deprecated. Use `sending_queue::batch::{min, max}_size` with `bytes`
-	// sizer to configure batching based on bytes.
-	//
-	// If this config option is defined then it will be used to configure `sending_queue::batch::max_size`
-	// provided it is not explcitly defined.
-	Bytes int `mapstructure:"bytes"`
-
-	// Interval configures the max age of a document in the send buffer.
-	// Interval is now deprecated. Use `sending-queue::batch::flush_timeout` instead.
-	//
-	// If this config option is defined then it will be used to configure `sending_queue::batch::flush_timeout`
-	// provided it is not explcitly defined.
-	Interval time.Duration `mapstructure:"interval"`
-
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
 // RetrySettings defines settings for the HTTP request retries in the Elasticsearch exporter.
 // Failed sends are retried with exponential backoff.
 type RetrySettings struct {
@@ -338,20 +298,20 @@ var (
 const defaultElasticsearchEnvName = "ELASTICSEARCH_URL"
 
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	// ClientConfig is squashed and implements custom unmarshaling, so confmap
+	// does not report unused top-level keys here. Reject the removed settings explicitly.
+	var invalidKeys []string
+	for _, key := range []string{"flush", "num_workers"} {
+		if conf.IsSet(key) {
+			invalidKeys = append(invalidKeys, key)
+		}
+	}
+	if len(invalidKeys) > 0 {
+		return fmt.Errorf("has invalid keys: %s", strings.Join(invalidKeys, ", "))
+	}
+
 	if err := conf.Unmarshal(cfg); err != nil {
 		return err
-	}
-	if !conf.IsSet("sending_queue::num_consumers") && conf.IsSet("num_workers") {
-		cfg.QueueBatchConfig.Get().NumConsumers = cfg.NumWorkers
-	}
-	if cfg.QueueBatchConfig.HasValue() && cfg.QueueBatchConfig.Get().Batch.HasValue() {
-		qbCfg := cfg.QueueBatchConfig.Get().Batch.Get()
-		if !conf.IsSet("sending_queue::batch::flush_timeout") && conf.IsSet("flush::interval") {
-			qbCfg.FlushTimeout = cfg.Flush.Interval
-		}
-		if !conf.IsSet("sending_queue::batch::max_size") && conf.IsSet("flush::bytes") {
-			qbCfg.MaxSize = int64(cfg.Flush.Bytes)
-		}
 	}
 
 	if !conf.IsSet("retry::retry_on_document_status") {
@@ -537,12 +497,6 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 	}
 	if cfg.TracesDynamicIndex.Enabled {
 		logger.Warn("traces_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")
-	}
-	if cfg.Flush.Bytes > 0 || cfg.Flush.Interval > 0 {
-		logger.Warn("flush settings are now deprecated and ignored. Use `sending_queue` instead.")
-	}
-	if cfg.NumWorkers > 0 {
-		logger.Warn("num_workers is now deprecated and ignored. Use `sending_queue` instead.")
 	}
 }
 
