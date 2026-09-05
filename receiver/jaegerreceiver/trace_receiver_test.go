@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -73,6 +74,46 @@ func TestThriftHTTPBodyDecode(t *testing.T) {
 	gotBatch, hErr := jr.decodeThriftHTTPBody(r)
 	require.Nil(t, hErr, "failed to decode http body")
 	assert.Equal(t, batch, gotBatch)
+}
+
+// TestThriftHTTPBodyDecodeMemoryAmplification reproduces the payload from
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49218:
+// a tiny Thrift payload that declares a Spans list with a huge element count so
+// the decoder would pre-allocate a large slice (CWE-789). The decoder must
+// reject it instead of allocating based on the wire-declared size.
+func TestThriftHTTPBodyDecodeMemoryAmplification(t *testing.T) {
+	// Minimal Batch: Process.serviceName="x", then a Spans list declaring
+	// 33,554,432 struct elements while carrying no element data at all.
+	var payload bytes.Buffer
+	payload.Write([]byte{0x0c, 0x00, 0x01}) // field: STRUCT (12), id 1 (Process)
+	payload.Write([]byte{0x0b, 0x00, 0x01}) // field: STRING (11), id 1 (serviceName)
+	payload.Write(binary.BigEndian.AppendUint32(nil, 1))
+	payload.WriteByte('x')                                        // serviceName value "x"
+	payload.WriteByte(0x00)                                       // Process struct stop
+	payload.Write([]byte{0x0f, 0x00, 0x02})                       // field: LIST (15), id 2 (Spans)
+	payload.WriteByte(0x0c)                                       // list element type: STRUCT (12)
+	payload.Write(binary.BigEndian.AppendUint32(nil, 0x02000000)) // list size: 33,554,432
+
+	r := httptest.NewRequest(http.MethodPost, "/api/traces", bytes.NewReader(payload.Bytes()))
+	r.Header.Add("content-type", "application/x-thrift")
+
+	jr := jReceiver{}
+
+	// The declared list would pre-allocate 33,554,432 *Span pointers (~256MB) if
+	// the wire-declared size were trusted. Measure the bytes allocated across the
+	// decode and assert the decoder never allocated anywhere near that.
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	gotBatch, hErr := jr.decodeThriftHTTPBody(r)
+	runtime.ReadMemStats(&after)
+
+	require.NotNil(t, hErr, "malicious payload must be rejected")
+	assert.Nil(t, gotBatch)
+	assert.Equal(t, http.StatusBadRequest, hErr.statusCode)
+
+	const allocLimit = 10 * 1024 * 1024 // 10MB, far below the ~256MB pre-allocation
+	assert.Less(t, after.TotalAlloc-before.TotalAlloc, uint64(allocLimit),
+		"decoder allocated based on the wire-declared container size")
 }
 
 func TestReception(t *testing.T) {
