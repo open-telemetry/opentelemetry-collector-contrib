@@ -27,7 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metricgroup"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/ecsserializer"
 )
 
 type elasticsearchExporter struct {
@@ -613,17 +613,17 @@ func (*elasticsearchExporter) pushProfileRecord(
 ) error {
 	return encoder.encodeProfile(ec, dic, profile, func(buf *bytes.Buffer, docID, index string) error {
 		switch index {
-		case otelserializer.StackTraceIndex:
+		case ecsserializer.StackTraceIndex:
 			return stackTracesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
-		case otelserializer.StackFrameIndex:
+		case ecsserializer.StackFrameIndex:
 			return stackFramesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
-		case otelserializer.AllEventsIndex:
+		case ecsserializer.AllEventsIndex:
 			return eventsSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
-		case otelserializer.ExecutablesIndex:
+		case ecsserializer.ExecutablesIndex:
 			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionUpdate)
-		case otelserializer.ExecutablesSymQueueIndex,
-			otelserializer.LeafFramesSymQueueIndex,
-			otelserializer.HostsMetadataIndex:
+		case ecsserializer.ExecutablesSymQueueIndex,
+			ecsserializer.LeafFramesSymQueueIndex,
+			ecsserializer.HostsMetadataIndex:
 			// These regular indices have a low write-frequency and can share the executablesSession.
 			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		default:
