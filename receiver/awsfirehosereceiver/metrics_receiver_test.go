@@ -166,6 +166,26 @@ func TestMetricsConsumer_Errors(t *testing.T) {
 	}
 }
 
+func TestMetricsConsumer_NextRecordError(t *testing.T) {
+	mc := &metricsConsumer{
+		unmarshaler: unmarshalertest.NewNopMetrics(),
+		consumer:    consumertest.NewNop(),
+	}
+	t.Run("WithDecompressionLimitExceeded", func(t *testing.T) {
+		nextRecord := func() ([]byte, error) { return nil, errDecompressedRecordTooLarge }
+		gotStatus, gotErr := mc.Consume(t.Context(), nextRecord, nil)
+		require.Equal(t, http.StatusRequestEntityTooLarge, gotStatus)
+		require.ErrorIs(t, gotErr, errDecompressedRecordTooLarge)
+	})
+	t.Run("WithOtherError", func(t *testing.T) {
+		testErr := errors.New("test error")
+		nextRecord := func() ([]byte, error) { return nil, testErr }
+		gotStatus, gotErr := mc.Consume(t.Context(), nextRecord, nil)
+		require.Equal(t, http.StatusBadRequest, gotStatus)
+		require.Equal(t, testErr, gotErr)
+	})
+}
+
 func TestMetricsConsumer(t *testing.T) {
 	t.Run("WithCommonAttributes", func(t *testing.T) {
 		base := pmetric.NewMetrics()
