@@ -23,6 +23,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto/mapping/internal"
 )
 
+//go:generate go run ./internal/tablegen -scale 8 -output tables_generated.go
+
 const (
 	// MinScale ensures that the ../exponent mapper is used for
 	// zero and negative scale values.  Do not use the logarithm
@@ -141,10 +143,21 @@ func (l *logarithmMapping) MapToIndex(value float64) int32 {
 		return l.minNormalLowerBoundaryIndex() - 1
 	}
 
+	significand := internal.GetSignificand(value)
+
 	// Exact power-of-two correctness: an optional special case.
-	if internal.GetSignificand(value) == 0 {
+	if significand == 0 {
 		exp := internal.GetNormalBase2(value)
 		return (exp << l.scale) - 1
+	}
+
+	if l.scale <= tableScale {
+		bucket := int32(indexTable[uint64(significand)>>tableShift])
+		if uint64(significand) >= boundaries[bucket+1] {
+			bucket++
+		}
+		fineIndex := (internal.GetNormalBase2(value) << tableScale) + bucket - 1
+		return fineIndex >> (tableScale - l.scale)
 	}
 
 	// Non-power of two cases.  Use Floor(x) to round the scaled
@@ -153,7 +166,6 @@ func (l *logarithmMapping) MapToIndex(value float64) int32 {
 	// and typically not performed in hardware, so this is likely
 	// less code.
 	index := int32(math.Floor(math.Log(value) * l.scaleFactor))
-
 	if maxIdx := l.maxNormalLowerBoundaryIndex(); index >= maxIdx {
 		return maxIdx
 	}
