@@ -40,7 +40,7 @@ func TestTopicScraperFranz_CreateStartScrapeShutdown(t *testing.T) {
 	var s scraper.Metrics
 	var err error
 
-	s, err = createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err = createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -61,7 +61,7 @@ func TestTopicScraperFranz_InvalidTopicRegex(t *testing.T) {
 	cfg := franzTopicsTestConfig(t)
 	cfg.TopicMatch = "[" // invalid
 
-	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.Error(t, err)
 	require.Nil(t, s)
 }
@@ -70,7 +70,7 @@ func TestTopicScraperFranz_EmptyClusterAlias(t *testing.T) {
 	cfg := franzTopicsTestConfig(t)
 	cfg.ClusterAlias = ""
 
-	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -111,7 +111,7 @@ func TestTopicScraperFranz_ScrapeMetricValues(t *testing.T) {
 	cfg.MetricsBuilderConfig.Metrics.KafkaTopicMinInsyncReplicas.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.KafkaTopicReplicationFactor.Enabled = true
 
-	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
@@ -194,7 +194,7 @@ func TestTopicScraperFranz_EmptyClusterID(t *testing.T) {
 	}
 	cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterID.Enabled = true
 
-	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
@@ -216,7 +216,7 @@ func TestTopicScraperFranz_TopicFilterExcludes(t *testing.T) {
 		TopicMatch:           "include-.*",
 	}
 
-	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
@@ -257,7 +257,7 @@ func TestTopicScraperFranz_ScrapePartialError_UnparseableConfig(t *testing.T) {
 	}
 	cfg.MetricsBuilderConfig.Metrics.KafkaTopicMinInsyncReplicas.Enabled = true
 
-	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
@@ -290,7 +290,7 @@ func TestTopicScraperFranz_ScrapeUnreachable(t *testing.T) {
 		TopicMatch:           ".*",
 	}
 
-	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
