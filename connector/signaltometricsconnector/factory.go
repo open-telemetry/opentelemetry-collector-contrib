@@ -39,7 +39,7 @@ func NewFactory() connector.Factory {
 
 func createDefaultConfig() component.Config {
 	return &config.Config{
-		ErrorMode: ottl.PropagateError,
+		ErrorMode: ottl.IgnoreError,
 	}
 }
 
