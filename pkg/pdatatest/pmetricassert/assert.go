@@ -240,6 +240,9 @@ func compareDatapointValues(expected, actual datapointAssertion) error {
 			errs = append(errs, fmt.Errorf("double_value mismatch: expected %v, got %v", *expected.DoubleValue, *actual.DoubleValue))
 		}
 	}
+	if err := compareValueConstraints(expected.valueConstraints, actual); err != nil {
+		errs = append(errs, err)
+	}
 	if expected.Count != nil {
 		if actual.Count == nil {
 			errs = append(errs, errors.New("missing expected count"))
@@ -280,6 +283,34 @@ func compareDatapointValues(expected, actual datapointAssertion) error {
 			errs = append(errs, errors.New("missing expected bucket_counts"))
 		} else if !slices.Equal(expected.BucketCounts, actual.BucketCounts) {
 			errs = append(errs, fmt.Errorf("bucket_counts mismatch: expected %v, got %v", expected.BucketCounts, actual.BucketCounts))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// compareValueConstraints evaluates the /gt, /gte, /lt, /lte assertions parsed
+// from int_value/<op> and double_value/<op> keys against the actual datapoint
+// value.
+func compareValueConstraints(constraints []numericValueConstraint, actual datapointAssertion) error {
+	var errs []error
+	for _, c := range constraints {
+		switch c.field {
+		case "int_value":
+			if actual.IntValue == nil {
+				errs = append(errs, fmt.Errorf("missing int_value required by /%s", c.op))
+				continue
+			}
+			if err := compareNumericOp("int_value", c.op, c.operand, *actual.IntValue); err != nil {
+				errs = append(errs, err)
+			}
+		case "double_value":
+			if actual.DoubleValue == nil {
+				errs = append(errs, fmt.Errorf("missing double_value required by /%s", c.op))
+				continue
+			}
+			if err := compareNumericOp("double_value", c.op, c.operand, *actual.DoubleValue); err != nil {
+				errs = append(errs, err)
+			}
 		}
 	}
 	return errors.Join(errs...)
@@ -326,6 +357,22 @@ func compareAttributes(expected, actual map[string]any, mode attributeMode) erro
 			}
 			continue
 		}
+		if key, op, ok := cutNumericAttributeKey(rawKey); ok {
+			seen[key] = struct{}{}
+			actualValue, exists := actual[key]
+			if !exists {
+				errs = append(errs, fmt.Errorf("missing attribute %q required by /%s", key, op))
+				continue
+			}
+			if err := compareNumericOp(fmt.Sprintf("attribute %q", key), op, expectedValue, actualValue); err != nil {
+				errs = append(errs, err)
+			}
+			continue
+		}
+		// An unrecognized operator suffix falls through to exact matching on
+		// the literal key: attribute keys may legitimately contain '/' (e.g.
+		// app.kubernetes.io/name), and a mistyped operator still fails loudly
+		// via the resulting missing/unexpected attribute mismatch.
 		seen[rawKey] = struct{}{}
 		actualValue, ok := actual[rawKey]
 		if !ok {
@@ -347,6 +394,21 @@ func compareAttributes(expected, actual map[string]any, mode attributeMode) erro
 	return errors.Join(errs...)
 }
 
+// cutNumericAttributeKey splits an attribute key of the form `<key>/<op>`
+// where <op> is a numeric comparison operator, returning the bare key and the
+// operator. It reports ok=false for keys without a recognized numeric suffix.
+func cutNumericAttributeKey(rawKey string) (key, op string, ok bool) {
+	idx := strings.LastIndexByte(rawKey, '/')
+	if idx < 0 {
+		return "", "", false
+	}
+	suffix := rawKey[idx+1:]
+	if !isNumericOperator(suffix) {
+		return "", "", false
+	}
+	return rawKey[:idx], suffix, true
+}
+
 func compareRegexAttribute(key string, expectedValue, actualValue any) error {
 	pattern, ok := expectedValue.(string)
 	if !ok {
@@ -364,6 +426,110 @@ func compareRegexAttribute(key string, expectedValue, actualValue any) error {
 		return fmt.Errorf("attribute %q value %q does not match regex %q", key, actualStr, pattern)
 	}
 	return nil
+}
+
+func isNumericOperator(op string) bool {
+	switch op {
+	case "gt", "gte", "lt", "lte":
+		return true
+	}
+	return false
+}
+
+// compareNumericOp evaluates a /gt, /gte, /lt, or /lte comparison of the actual
+// value against the expected operand. Both values must be numeric. Integers are
+// compared exactly; otherwise the comparison falls back to float64.
+func compareNumericOp(keyStr, op string, expectedValue, actualValue any) error {
+	expInt, expIsInt := toInt64(expectedValue)
+	actInt, actIsInt := toInt64(actualValue)
+
+	if expIsInt && actIsInt {
+		if numericOpHolds(op, actInt > expInt, actInt >= expInt, actInt < expInt, actInt <= expInt) {
+			return nil
+		}
+		if !isNumericOperator(op) {
+			return fmt.Errorf("unsupported operator /%s for %s", op, keyStr)
+		}
+		return fmt.Errorf("%s %v is not %s %v", keyStr, actualValue, opToSymbol(op), expectedValue)
+	}
+
+	expFloat, expIsFloat := toFloat64(expectedValue)
+	actFloat, actIsFloat := toFloat64(actualValue)
+
+	if !expIsFloat {
+		return fmt.Errorf("%s/%s must be a numeric value", keyStr, op)
+	}
+	if !actIsFloat {
+		return fmt.Errorf("%s must be a numeric value to match /%s (got %T)", keyStr, op, actualValue)
+	}
+	if !isNumericOperator(op) {
+		return fmt.Errorf("unsupported operator /%s for %s", op, keyStr)
+	}
+	if numericOpHolds(op, actFloat > expFloat, actFloat >= expFloat, actFloat < expFloat, actFloat <= expFloat) {
+		return nil
+	}
+	return fmt.Errorf("%s %v is not %s %v", keyStr, actualValue, opToSymbol(op), expectedValue)
+}
+
+func numericOpHolds(op string, gt, gte, lt, lte bool) bool {
+	switch op {
+	case "gt":
+		return gt
+	case "gte":
+		return gte
+	case "lt":
+		return lt
+	case "lte":
+		return lte
+	}
+	return false
+}
+
+func opToSymbol(op string) string {
+	switch op {
+	case "gt":
+		return ">"
+	case "gte":
+		return ">="
+	case "lt":
+		return "<"
+	case "lte":
+		return "<="
+	}
+	return op
+}
+
+func toFloat64(v any) (float64, bool) {
+	switch x := v.(type) {
+	case float64:
+		return x, true
+	case float32:
+		return float64(x), true
+	case int:
+		return float64(x), true
+	case int64:
+		return float64(x), true
+	case uint64:
+		return float64(x), true
+	default:
+		return 0, false
+	}
+}
+
+func toInt64(v any) (int64, bool) {
+	switch x := v.(type) {
+	case int:
+		return int64(x), true
+	case int64:
+		return x, true
+	case uint64:
+		return int64(x), true
+	case float64:
+		if float64(int64(x)) == x {
+			return int64(x), true
+		}
+	}
+	return 0, false
 }
 
 func boolPtrEqual(a, b *bool) bool {

@@ -779,3 +779,241 @@ resources:
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "cannot specify both")
 }
+
+func TestAssertMetrics_NumericValueModifiers(t *testing.T) {
+	m := buildSampleMetrics()
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+
+	// The sample sum "svc.requests" has int_value 42 for both GET and POST.
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                  int_value/gt: 40
+                  int_value/lt: 50
+                - attributes:
+                    method: POST
+                  int_value/gte: 42
+                  int_value/lte: 42
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+
+	// Update values to violate conditions.
+	rm := m.ResourceMetrics().At(0)
+	dps := rm.ScopeMetrics().At(0).Metrics().At(1).Sum().DataPoints()
+	dps.At(0).SetIntValue(39) // GET < 40 (fails int_value/gt: 40)
+
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `int_value 39 is not > 40`)
+}
+
+func TestAssertMetrics_NumericDoubleValueModifiers(t *testing.T) {
+	m := buildSampleMetrics()
+	// Turn svc.active into a double gauge with a runtime-dependent value.
+	rm := m.ResourceMetrics().At(0)
+	gauge := rm.ScopeMetrics().At(0).Metrics().At(0).Gauge()
+	gauge.DataPoints().At(0).SetDoubleValue(3.5)
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+              datapoints:
+                - double_value/gt: 0
+                  double_value/lt: 10
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+
+	gauge.DataPoints().At(0).SetDoubleValue(11) // not < 10
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `double_value 11 is not < 10`)
+}
+
+func TestAssertMetrics_UnknownDatapointOperator(t *testing.T) {
+	m := buildSampleMetrics()
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                  int_value/gtee: 40
+                  int_value/regex: "4."
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `unsupported datapoint assertion key "int_value/gtee"`)
+	require.Contains(t, err.Error(), `unsupported datapoint assertion key "int_value/regex"`)
+}
+
+func TestAssertMetrics_UnknownAttributeOperatorFailsLoudly(t *testing.T) {
+	m := buildSampleMetrics()
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+
+	// A mistyped operator on an attribute key falls back to exact matching
+	// on the literal key (attribute keys may legitimately contain '/'), so
+	// the assertion must fail rather than silently pass.
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                    method/gtee: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `missing datapoint with attributes`)
+}
+
+func TestAssertMetrics_NumericAttributeModifiers(t *testing.T) {
+	m := buildSampleMetrics()
+	rm := m.ResourceMetrics().At(0)
+	rm.Resource().Attributes().PutInt("queue.depth", 10)
+
+	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`version: 1
+signal: metrics
+resources:
+    - attributes:
+        service.name: svc
+        queue.depth/gte: 5
+        queue.depth/lt: 20
+      scopes:
+        - name: github.com/example/receiver
+          version: v0.0.1
+          metrics:
+            - name: svc.active
+              type: gauge
+              unit: "1"
+            - name: svc.requests
+              type: sum
+              unit: "{requests}"
+              temporality: cumulative
+              monotonic: true
+              datapoints:
+                - attributes:
+                    method: GET
+                - attributes:
+                    method: POST
+`), 0o600))
+
+	require.NoError(t, AssertMetrics(path, m))
+
+	// Update attribute to violate condition.
+	rm.Resource().Attributes().PutInt("queue.depth", 30) // >= 5, but not < 20
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `missing expected resource:`)
+}
+
+// TestAssertMetrics_NumericOperatorsExample exercises the committed
+// testdata/numeric_operators.assert.yaml example against metrics whose values
+// are meaningful but not exact — the motivating use case for the numeric
+// comparison operators.
+func TestAssertMetrics_NumericOperatorsExample(t *testing.T) {
+	m := pmetric.NewMetrics()
+	rm := m.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("service.name", "example")
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName("github.com/example/receiver")
+	sm.Scope().SetVersion("v0.1.0")
+
+	duration := sm.Metrics().AppendEmpty()
+	duration.SetName("http.server.request.duration")
+	duration.SetUnit("s")
+	duration.SetEmptyGauge().DataPoints().AppendEmpty().SetDoubleValue(0.42) // runtime-dependent
+
+	active := sm.Metrics().AppendEmpty()
+	active.SetName("http.server.active_requests")
+	active.SetUnit("{requests}")
+	activeSum := active.SetEmptySum()
+	activeSum.SetIsMonotonic(false)
+	activeSum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	activeSum.DataPoints().AppendEmpty().SetIntValue(3) // runtime-dependent
+
+	path := filepath.Join("testdata", "numeric_operators.assert.yaml")
+	require.NoError(t, AssertMetrics(path, m))
+
+	// A value outside the asserted range fails.
+	duration.Gauge().DataPoints().At(0).SetDoubleValue(120)
+	err := AssertMetrics(path, m)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `double_value 120 is not < 60`)
+}

@@ -153,6 +153,44 @@ Use at most one of `version:`, `version/exists:`, or `version/regex:` per
 scope. `version/exists` accepts only `true`; any other value is a schema
 error.
 
+### Numeric comparison matchers
+
+Datapoint value keys and attribute keys can use the `/gt`, `/gte`, `/lt`, and
+`/lte` suffixes when a numeric value is meaningful but not exact, such as
+durations and other runtime-dependent measurements. Operators can be combined
+on the same key to assert a range.
+
+Datapoint value operators attach to the typed value fields — `int_value/<op>`
+for integer datapoints and `double_value/<op>` for double datapoints, matching
+the `int_value:`/`double_value:` keys used for exact assertions:
+
+```yaml
+datapoints:
+  - attributes:
+      method: GET
+    int_value/gte: 0
+    int_value/lt: 1000
+  - attributes:
+      operation: flush
+    double_value/gt: 0
+```
+
+Attribute operators apply to resource attributes and datapoint attributes:
+
+```yaml
+attributes:
+  queue.depth/gte: 1
+```
+
+The expected and actual values must both be numeric. Integers are compared
+exactly; other numeric values fall back to a float64 comparison.
+
+An unrecognized operator suffix on a `int_value`/`double_value` key is rejected
+when the assertion file is read. On attribute keys, a key with an unrecognized
+suffix is matched exactly as a literal key, because attribute keys may
+legitimately contain `/` (e.g. `app.kubernetes.io/name`); a mistyped operator
+therefore fails the assertion as a missing attribute.
+
 ### Shorthand: single empty-attribute datapoint
 
 A metric with exactly one datapoint that has no attributes can omit
@@ -181,8 +219,8 @@ must contain at least one datapoint; see
 ## Roadmap
 
 This is the identity-only subset of the grammar in #48079. Operator-suffix
-extensions beyond attribute `/exists`/`/regex`, `attributes/include`, and scope
-`version` `/exists`/`/regex` (`/exclude`, `/all`, `/count`, `/approx`,
-`/gt|gte|lt|lte`) and opt-in fields
+extensions beyond attribute `/exists`/`/regex`, `attributes/include`, scope
+`version` `/exists`/`/regex`, and the numeric comparison matchers
+(`/exclude`, `/all`, `/count`, `/approx`) and opt-in fields
 (`IncludeValues()`, `IncludeTimestamps()`, `IncludeExemplars()`, type-specific
 histogram fields) are tracked as follow-ups under that issue.

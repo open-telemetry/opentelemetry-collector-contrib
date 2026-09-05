@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -200,6 +202,20 @@ type metricAssertion struct {
 	Datapoints  []datapointAssertion `yaml:"datapoints,omitempty"`
 }
 
+// numericValueConstraint is a `/gt`, `/gte`, `/lt`, or `/lte` assertion parsed
+// from an `int_value/<op>` or `double_value/<op>` datapoint key. It applies to
+// a numeric datapoint value that is meaningful but not exact.
+type numericValueConstraint struct {
+	// field is the value field the constraint applies to: "int_value" or
+	// "double_value".
+	field string
+	// op is the comparison operator: "gt", "gte", "lt", or "lte".
+	op string
+	// operand is the expected bound, decoded as int64 for int_value and
+	// float64 for double_value.
+	operand any
+}
+
 type datapointAssertion struct {
 	Attributes     map[string]any `yaml:"attributes,omitempty"`
 	AttributeMode  attributeMode  `yaml:"-"`
@@ -211,10 +227,15 @@ type datapointAssertion struct {
 	BucketCounts   []uint64       `yaml:"bucket_counts,omitempty"`
 	Min            *float64       `yaml:"min,omitempty"`
 	Max            *float64       `yaml:"max,omitempty"`
+	// valueConstraints holds numeric comparison assertions parsed from
+	// int_value/<op> and double_value/<op> keys. It is read-only state; it is
+	// never emitted by WriteAssertionFile.
+	valueConstraints []numericValueConstraint
 }
 
 // UnmarshalYAML implements custom unmarshaling to support `attributes/include`
-// as an alternative to `attributes` on datapoint assertions.
+// as an alternative to `attributes` on datapoint assertions, and the numeric
+// comparison operators `int_value/<op>` and `double_value/<op>`.
 func (d *datapointAssertion) UnmarshalYAML(node *yaml.Node) error {
 	var raw map[string]yaml.Node
 	if err := node.Decode(&raw); err != nil {
@@ -295,7 +316,67 @@ func (d *datapointAssertion) UnmarshalYAML(node *yaml.Node) error {
 		}
 		d.Max = &maxVal
 	}
+	// Decode numeric comparison operators on the value fields, e.g.
+	// int_value/gte or double_value/lt. Unlike attribute keys, a value field
+	// key never legitimately contains '/', so an unrecognized operator suffix
+	// is a typo and is rejected rather than silently ignored.
+	if err := d.decodeValueConstraints(raw); err != nil {
+		return err
+	}
 	return nil
+}
+
+func (d *datapointAssertion) decodeValueConstraints(raw map[string]yaml.Node) error {
+	keys := make([]string, 0, len(raw))
+	for k := range raw {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var errs []error
+	for _, rawKey := range keys {
+		field, op, ok := cutNumericValueKey(rawKey)
+		if !ok {
+			continue
+		}
+		if !isNumericOperator(op) {
+			errs = append(errs, fmt.Errorf("unsupported datapoint assertion key %q (supported operators: /gt, /gte, /lt, /lte)", rawKey))
+			continue
+		}
+		node := raw[rawKey]
+		c := numericValueConstraint{field: field, op: op}
+		switch field {
+		case "int_value":
+			var iv int64
+			if err := node.Decode(&iv); err != nil {
+				errs = append(errs, fmt.Errorf("datapoint assertion: decode %s: %w", rawKey, err))
+				continue
+			}
+			c.operand = iv
+		case "double_value":
+			var dv float64
+			if err := node.Decode(&dv); err != nil {
+				errs = append(errs, fmt.Errorf("datapoint assertion: decode %s: %w", rawKey, err))
+				continue
+			}
+			c.operand = dv
+		}
+		d.valueConstraints = append(d.valueConstraints, c)
+	}
+	return errors.Join(errs...)
+}
+
+// cutNumericValueKey splits a raw datapoint key of the form
+// `int_value/<op>` or `double_value/<op>` into the value field and the
+// operator suffix. It reports ok=false for keys that are not operator-suffixed
+// value keys.
+func cutNumericValueKey(rawKey string) (field, op string, ok bool) {
+	for _, f := range []string{"int_value", "double_value"} {
+		if suffix, found := strings.CutPrefix(rawKey, f+"/"); found {
+			return f, suffix, true
+		}
+	}
+	return "", "", false
 }
 
 func readDocument(path string) (*document, error) {
@@ -374,5 +455,6 @@ func isEmptyDatapointAssertion(dp datapointAssertion) bool {
 		dp.ExplicitBounds == nil &&
 		len(dp.BucketCounts) == 0 &&
 		dp.Min == nil &&
-		dp.Max == nil
+		dp.Max == nil &&
+		len(dp.valueConstraints) == 0
 }
