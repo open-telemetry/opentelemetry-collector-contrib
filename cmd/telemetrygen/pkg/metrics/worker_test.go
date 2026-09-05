@@ -647,6 +647,55 @@ func TestUniqueSumTimeseries(t *testing.T) {
 	}
 }
 
+// TestUniqueTimeseriesDoesNotGrowBaseAttrs is a regression for #49950:
+// --unique-timeseries must not append into the shared base attribute slice.
+func TestUniqueTimeseriesDoesNotGrowBaseAttrs(t *testing.T) {
+	running := &atomic.Bool{}
+	running.Store(true)
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	m := &mockExporter{}
+	tb := newTimeBox(true, time.Second)
+	defer tb.shutdown()
+
+	// Spare capacity would let a buggy append reuse/grow the backing array.
+	base := make([]attribute.KeyValue, 1, 1024)
+	base[0] = attribute.String("k", "v")
+	origLen, origCap := len(base), cap(base)
+
+	w := worker{
+		metricName:             "test",
+		metricType:             MetricTypeSum,
+		aggregationTemporality: AggregationTemporality(metricdata.CumulativeTemporality),
+		numMetrics:             200,
+		enforceUnique:          true,
+		running:                running,
+		limitPerSecond:         rate.Inf,
+		logger:                 zap.NewNop(),
+		wg:                     wg,
+		clock:                  &realClock{},
+	}
+	w.simulateMetrics(resource.Default(), m, base, tb)
+	wg.Wait()
+
+	require.Len(t, m.rms, 200)
+	assert.Len(t, base, origLen, "base attrs must not grow across iterations")
+	assert.Equal(t, origCap, cap(base), "base capacity must be unchanged")
+	// With the buggy append-into-shared-slice, spare capacity is overwritten even
+	// though the caller's slice header length stays the same. Assert that did not happen.
+	for i, kv := range base[origLen:origCap] {
+		assert.Equal(t, attribute.KeyValue{}, kv, "spare capacity must remain untouched at %d", i)
+	}
+
+	for _, rm := range m.rms {
+		attrs := rm.ScopeMetrics[0].Metrics[0].Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
+		assert.Equal(t, 2, attrs.Len()) // k + timebox
+		_, ok := attrs.Value(timeBoxAttributeName)
+		assert.True(t, ok)
+	}
+}
+
 // TestBatching tests the basic batching functionality
 func TestBatching(t *testing.T) {
 	mockExp := &mockExporter{}
