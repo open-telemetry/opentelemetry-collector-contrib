@@ -34,6 +34,7 @@ type tracesJSONExporter struct {
 	schemaFeatures struct {
 		AttributeKeys bool
 	}
+	detector schemaDetector
 }
 
 func newTracesJSONExporter(logger *zap.Logger, cfg *Config) *tracesJSONExporter {
@@ -64,12 +65,17 @@ func (e *tracesJSONExporter) start(ctx context.Context, _ component.Host) error 
 		}
 	}
 
-	err = e.detectSchemaFeatures(ctx)
-	if err != nil {
-		e.logger.Error("schema detection failed", zap.Error(err))
+	// Attempt detection once at start, but do NOT treat failure as "feature absent"
+	// (issue #48875). A transient ClickHouse outage at startup must not cache a
+	// degraded INSERT that omits the keys columns forever. ensureDetected leaves
+	// the detector in schemaUnknown on error so the first push re-detects.
+	//
+	// For permanent failures (unknown table, access denied) the fallback renders
+	// a degraded INSERT without the optional columns so write-only ClickHouse
+	// users keep delivering rows instead of silently losing everything.
+	if err := e.detector.ensureDetected(ctx, e.logger, e.probeSchemaFeatures, e.renderInsertTracesJSONSQL); err != nil {
+		e.logger.Warn("clickhouseexporter schema detection deferred; will retry on first batch", zap.Error(err))
 	}
-
-	e.renderInsertTracesJSONSQL()
 
 	return nil
 }
@@ -79,7 +85,10 @@ const (
 	tracesJSONColumnSpanAttributesKeys     = "SpanAttributesKeys"
 )
 
-func (e *tracesJSONExporter) detectSchemaFeatures(ctx context.Context) error {
+// probeSchemaFeatures runs a single DESC TABLE and, on success, populates
+// schemaFeatures and renders the cached INSERT. Called via schemaDetector under
+// its mutex so that only one goroutine renders the INSERT.
+func (e *tracesJSONExporter) probeSchemaFeatures(ctx context.Context) error {
 	columnNames, err := internal.GetTableColumns(ctx, e.db, e.cfg.database(), e.cfg.TracesTableName)
 	if err != nil {
 		return err
@@ -94,6 +103,7 @@ func (e *tracesJSONExporter) detectSchemaFeatures(ctx context.Context) error {
 		}
 	}
 
+	e.renderInsertTracesJSONSQL()
 	return nil
 }
 
@@ -109,6 +119,16 @@ func (e *tracesJSONExporter) shutdown(_ context.Context) error {
 }
 
 func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
+	// If schema detection has not yet succeeded (transient ClickHouse outage at
+	// start), re-probe before preparing the INSERT. ensureDetected returns a
+	// plain (non-permanent) error on continued failure so exporterhelper's
+	// retry_on_failure / sending queue defers this batch instead of dropping it.
+	// Permanent failures (access denied, unknown table) fall back to a degraded
+	// INSERT so write-only users keep delivering.
+	if err := e.detector.ensureDetected(ctx, e.logger, e.probeSchemaFeatures, e.renderInsertTracesJSONSQL); err != nil {
+		return err
+	}
+
 	batch, err := e.db.PrepareBatch(ctx, e.insertSQL)
 	if err != nil {
 		return err
@@ -291,7 +311,8 @@ func (e *tracesJSONExporter) renderInsertTracesJSONSQL() {
 
 func renderCreateTracesJSONTableSQL(cfg *Config) string {
 	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Timestamp)")
-	return fmt.Sprintf(sqltemplates.TracesJSONCreateTable,
+	return fmt.Sprintf(
+		sqltemplates.TracesJSONCreateTable,
 		cfg.database(), cfg.TracesTableName, cfg.clusterString(),
 		cfg.tableEngineString(),
 		ttlExpr,

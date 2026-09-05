@@ -27,6 +27,7 @@ type logsExporter struct {
 	schemaFeatures struct {
 		EventName bool
 	}
+	detector schemaDetector
 
 	logger *zap.Logger
 	cfg    *Config
@@ -60,13 +61,15 @@ func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
 		}
 	}
 
-	err = e.detectSchemaFeatures(ctx)
-	if err != nil {
-		e.logger.Error("schema detection failed", zap.Error(err))
-	}
-
-	if err := e.renderInsertLogsSQL(); err != nil {
-		return fmt.Errorf("render logs insert sql: %w", err)
+	// Attempt detection once at start, but do NOT treat failure as "feature absent"
+	// (issue #48875). A transient ClickHouse outage at startup must not cache a
+	// degraded INSERT that omits the EventName column forever.
+	//
+	// For permanent failures (unknown table, access denied) the fallback renders
+	// a degraded INSERT without the optional columns so write-only ClickHouse
+	// users keep delivering rows instead of silently losing everything.
+	if err := e.detector.ensureDetected(ctx, e.logger, e.probeSchemaFeatures, e.renderDegradedInsert); err != nil {
+		e.logger.Warn("clickhouseexporter schema detection deferred; will retry on first batch", zap.Error(err))
 	}
 
 	return nil
@@ -76,7 +79,10 @@ const (
 	logsColumnEventName = "EventName"
 )
 
-func (e *logsExporter) detectSchemaFeatures(ctx context.Context) error {
+// probeSchemaFeatures runs a single DESC TABLE and, on success, populates
+// schemaFeatures and renders the cached INSERT. Called via schemaDetector under
+// its mutex so that only one goroutine renders the INSERT.
+func (e *logsExporter) probeSchemaFeatures(ctx context.Context) error {
 	columnNames, err := internal.GetTableColumns(ctx, e.db, e.cfg.database(), e.cfg.LogsTableName)
 	if err != nil {
 		return err
@@ -88,7 +94,7 @@ func (e *logsExporter) detectSchemaFeatures(ctx context.Context) error {
 		}
 	}
 
-	return nil
+	return e.renderInsertLogsSQL()
 }
 
 func (e *logsExporter) shutdown(_ context.Context) error {
@@ -100,6 +106,16 @@ func (e *logsExporter) shutdown(_ context.Context) error {
 }
 
 func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
+	// If schema detection has not yet succeeded (transient ClickHouse outage at
+	// start), re-probe before preparing the INSERT. ensureDetected returns a
+	// plain (non-permanent) error on continued failure so exporterhelper's
+	// retry_on_failure / sending queue defers this batch instead of dropping it.
+	// Permanent failures (access denied, unknown table) fall back to a degraded
+	// INSERT so write-only users keep delivering.
+	if err := e.detector.ensureDetected(ctx, e.logger, e.probeSchemaFeatures, e.renderDegradedInsert); err != nil {
+		return err
+	}
+
 	batch, err := e.db.PrepareBatch(ctx, e.insertSQL)
 	if err != nil {
 		return err
@@ -194,6 +210,16 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 		zap.String("total_cost", totalDuration.String()))
 
 	return nil
+}
+
+// renderDegradedInsert renders the INSERT statement with all optional feature
+// flags at their zero values. Used as the fallback when DESC TABLE fails with a
+// permanent ClickHouse error (access denied, unknown table) so write-only users
+// keep delivering rows without the EventName column.
+func (e *logsExporter) renderDegradedInsert() {
+	if err := e.renderInsertLogsSQL(); err != nil {
+		e.logger.Error("failed to render degraded INSERT", zap.Error(err))
+	}
 }
 
 func (e *logsExporter) renderInsertLogsSQL() error {

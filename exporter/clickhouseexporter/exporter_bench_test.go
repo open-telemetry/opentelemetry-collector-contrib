@@ -199,6 +199,9 @@ func BenchmarkPushLogsData(b *testing.B) {
 	}
 	exporter.schemaFeatures.EventName = true
 	exporter.insertSQL = "INSERT INTO test"
+	// Pre-mark schema as detected so the benchmark exercises the steady-state
+	// push path and not the lazy-detection retry introduced for #48875.
+	exporter.detector.state.Store(int32(schemaDetected))
 	b.ReportAllocs()
 	b.ResetTimer()
 	for b.Loop() {
