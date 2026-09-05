@@ -64,3 +64,22 @@ func TestScraperTLSConfigError(t *testing.T) {
 	_, err := scraper.scrape(t.Context())
 	require.Error(t, err)
 }
+
+func TestCalculateHitRatio(t *testing.T) {
+	tests := []struct {
+		name     string
+		hits     int64
+		misses   int64
+		expected float64
+	}{
+		{name: "all hits", hits: 100, misses: 0, expected: 100},
+		{name: "all misses", hits: 0, misses: 100, expected: 0},
+		{name: "mostly hits", hits: 90, misses: 10, expected: 90},
+		{name: "no operations", hits: 0, misses: 0, expected: 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, calculateHitRatio(tt.hits, tt.misses))
+		})
+	}
+}
