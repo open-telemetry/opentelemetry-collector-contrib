@@ -5,6 +5,8 @@ package cache // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 // Cache is a cache implementation for the tailsamplingprocessor's decision cache.
@@ -21,4 +23,9 @@ type Cache interface {
 
 type DecisionMetadata struct {
 	PolicyName string
+	// Threshold is the effective sampling threshold that was used for the
+	// trace's decision. The zero value is sampling.AlwaysSampleThreshold,
+	// which is what non-probabilistic (filter-style) policies report for a
+	// Sampled decision.
+	Threshold sampling.Threshold
 }
