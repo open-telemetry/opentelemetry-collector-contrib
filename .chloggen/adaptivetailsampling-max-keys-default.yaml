@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: processor/adaptive_tail_sampling
+
+note: Default `max_keys` to 500 when omitted; explicitly setting it to 0 still means unlimited.
+
+issues: [49311]
+
+change_logs: [user]
