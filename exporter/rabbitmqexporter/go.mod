@@ -6,7 +6,7 @@ require (
 	github.com/moby/moby/client v0.5.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.160.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/rabbitmq v0.160.0
-	github.com/rabbitmq/amqp091-go v1.12.0
+	github.com/rabbitmq/amqp091-go v1.13.0
 	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go v0.44.0
 	go.opentelemetry.io/collector/component v1.66.1-0.20260903163450-cc4b33fc673f
