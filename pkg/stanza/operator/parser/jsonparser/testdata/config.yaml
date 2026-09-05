@@ -40,3 +40,6 @@ timestamp:
 parse_ints:
   type: json_parser
   parse_ints: true
+drop_field:
+  type: json_parser
+  drop_field: true

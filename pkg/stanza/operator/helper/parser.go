@@ -31,6 +31,7 @@ func NewParserConfig(operatorID, operatorType string) ParserConfig {
 // ParserConfig provides the basic implementation of a parser config.
 type ParserConfig struct {
 	TransformerConfig `mapstructure:",squash"`
+	DropFieldConfig   `mapstructure:",squash"`
 	ParseFrom         entry.Field         `mapstructure:"parse_from"`
 	ParseTo           entry.RootableField `mapstructure:"parse_to"`
 	BodyField         *entry.Field        `mapstructure:"body"`
@@ -53,6 +54,7 @@ func (c ParserConfig) Build(set component.TelemetrySettings) (ParserOperator, er
 
 	parserOperator := ParserOperator{
 		TransformerOperator: transformerOperator,
+		DropFieldConfig:     c.DropFieldConfig,
 		ParseFrom:           c.ParseFrom,
 		ParseTo:             c.ParseTo.Field,
 		BodyField:           c.BodyField,
@@ -90,9 +92,10 @@ func (c ParserConfig) Build(set component.TelemetrySettings) (ParserOperator, er
 // ParserOperator provides a basic implementation of a parser operator.
 type ParserOperator struct {
 	TransformerOperator
-	ParseFrom       entry.Field
-	ParseTo         entry.Field
-	BodyField       *entry.Field
+	DropFieldConfig
+	ParseFrom entry.Field
+	ParseTo   entry.Field
+	BodyField *entry.Field
 	TimeParser      *TimeParser
 	SeverityParser  *SeverityParser
 	TraceParser     *TraceParser
@@ -243,6 +246,7 @@ func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, pars
 	if scopeNameParserErr != nil {
 		return handle(fmt.Errorf("scope_name parser: %w", scopeNameParserErr))
 	}
+	p.Drop(entry, p.ParseFrom)
 	return nil
 }
 

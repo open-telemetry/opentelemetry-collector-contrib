@@ -19,3 +19,7 @@ preset:
   type: helpers_test
   severity:
     preset: http
+drop_field:
+  type: helpers_test
+  severity:
+    drop_field: true
