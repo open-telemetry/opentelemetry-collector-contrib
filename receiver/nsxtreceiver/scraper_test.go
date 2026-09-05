@@ -158,6 +158,24 @@ func TestScraperRecordNoStat(_ *testing.T) {
 	scraper.recordNode(pcommon.NewTimestampFromTime(time.Now()), &nodeInfo{stats: nil})
 }
 
+func TestScraperRecordInterfaceNoStat(_ *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.Endpoint = "http://localhost"
+	scraper := newScraper(
+		&Config{
+			ClientConfig:         clientConfig,
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		},
+		receivertest.NewNopSettings(metadata.Type),
+	)
+	scraper.host = componenttest.NewNopHost()
+	scraper.recordNodeInterface(pcommon.NewTimestampFromTime(time.Now()), dm.NodeProperties{}, interfaceInformation{stats: nil})
+}
+
 func loadTestNodeStatus(t *testing.T, nodeID string, class nodeClass) (*dm.NodeStatus, error) {
 	classType := "cluster"
 	if class == transportClass {
