@@ -287,10 +287,12 @@ func (s *weaverSession) shutdown(ctx context.Context) error {
 func (opts *weaverOptions) testContainerOptions() []testcontainers.ContainerCustomizer {
 	containerOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithCmdArgs(opts.cmdArgs()...),
-		// Expose the required ports on the container and wait for the OTLP
-		// listener to be ready before returning.
+		// Expose the required ports on the container and wait for Weaver's
+		// /health endpoint before returning. A plain port check is not
+		// reliable here: Docker's port proxy accepts connections on the host
+		// side before the process inside the container listens.
 		testcontainers.WithExposedPorts(weaverOTLPListenerPort, weaverStopPort),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort(weaverOTLPListenerPort)),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/health").WithPort(weaverStopPort)),
 	}
 	return containerOpts
 }
@@ -303,7 +305,14 @@ func (opts *weaverOptions) cmdArgs() []string {
 	if opts.registry != "" {
 		args = append(args, "--registry", opts.registry)
 	}
-	args = append(args, "--output", "http", "--format", "json")
+	// Weaver v0.26.0 changed the default bind address of the OTLP and admin
+	// listeners to 127.0.0.1, which makes the container's mapped ports
+	// unreachable. Bind all interfaces instead; the flag exists in all
+	// supported versions (v0.22.1+), where this was also the default.
+	// The bind applies inside the container's network namespace only, so it
+	// does not reintroduce the host-level exposure that the v0.26.0 change
+	// addressed.
+	args = append(args, "--output", "http", "--format", "json", "--otlp-grpc-address", "0.0.0.0")
 	return args
 }
 
