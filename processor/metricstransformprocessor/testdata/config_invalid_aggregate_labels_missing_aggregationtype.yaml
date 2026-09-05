@@ -4,5 +4,4 @@ metrics_transform:
       action: update
       operations:
         - action: aggregate_labels
-          label_set: [label1]
-          aggregation_type: invalid
+          label_set: [label1, label2]
