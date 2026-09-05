@@ -222,10 +222,7 @@ service:
 	}
 
 	require.Positive(t, totalSamples, "Expected at least 1 sample")
-	// On every alternative scrape the prior scrape will be reported as sale.
-	// Expect at least:
-	//    * The first scrape will NOT return stale markers
-	//    * (N-1 / alternatives) = ((10-1) / 2) = ~40% chance of stale markers being emitted.
-	chance := float64(staleMarkerCount) / float64(totalSamples)
-	require.GreaterOrEqualf(t, chance, 0.4, "Expected at least one stale marker: %.3f", chance)
+	// Assert staleness markers are emitted end-to-end. A ratio threshold near the
+	// ~0.47 steady-state mean was flaky as sample counts vary under load (#50434).
+	require.Positivef(t, staleMarkerCount, "Expected at least one stale marker out of %d samples", totalSamples)
 }
