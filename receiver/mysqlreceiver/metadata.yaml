@@ -500,6 +500,14 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [handler]
+  mysql.health:
+    enabled: false
+    description: The health status of the MySQL server.
+    extended_documentation: A value of '1' indicates healthy and '0' indicates unhealthy.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: int
   mysql.index.io.wait.count:
     enabled: true
     description: The total count of I/O wait events for an index.
@@ -766,6 +774,16 @@ metrics:
       input_type: string
       monotonic: true
       aggregation_temporality: cumulative
+  mysql.query.execution.time:
+    enabled: false
+    description: The total execution time of SQL statements tracked by the server.
+    extended_documentation: This metric reports cumulative statement execution time in seconds, including statements issued by the receiver. Values reset when statement summary state is reset or the server restarts.
+    stability: development
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
   mysql.query.slow.count:
     enabled: false
     description: The number of slow queries.
@@ -834,6 +852,14 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [row_operations]
+  mysql.session.active.count:
+    enabled: false
+    description: The number of active MySQL sessions with query text and state.
+    extended_documentation: Idle sessions and the receiver's own query are excluded.
+    stability: development
+    unit: "{session}"
+    gauge:
+      value_type: int
   mysql.sorts:
     enabled: true
     description: The number of MySQL sorts.

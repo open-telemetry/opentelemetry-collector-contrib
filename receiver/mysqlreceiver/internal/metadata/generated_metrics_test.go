@@ -183,6 +183,9 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlHandlersDataPoint(ts, "3", AttributeHandlerDelete)
 			}
+
+			allMetricsCount++
+			mb.RecordMysqlHealthDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlIndexIoWaitCountDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val", "index_name-val")
@@ -311,6 +314,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMysqlQueryCountDataPoint(ts, "1")
 
 			allMetricsCount++
+			mb.RecordMysqlQueryExecutionTimeDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordMysqlQuerySlowCountDataPoint(ts, "1")
 
 			allMetricsCount++
@@ -339,6 +345,9 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlRowOperationsDataPoint(ts, "3", AttributeRowOperationsInserted)
 			}
+
+			allMetricsCount++
+			mb.RecordMysqlSessionActiveCountDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlSortsDataPoint(ts, "1", AttributeSortsMergePasses)
@@ -968,6 +977,18 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("kind")
 						assert.False(t, ok)
 					}
+				case "mysql.health":
+					assert.False(t, validatedMetrics["mysql.health"], "Found a duplicate in the metrics slice: mysql.health")
+					validatedMetrics["mysql.health"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The health status of the MySQL server.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.index.io.wait.count":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.index.io.wait.count"], "Found a duplicate in the metrics slice: mysql.index.io.wait.count")
@@ -1810,6 +1831,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.query.execution.time":
+					assert.False(t, validatedMetrics["mysql.query.execution.time"], "Found a duplicate in the metrics slice: mysql.query.execution.time")
+					validatedMetrics["mysql.query.execution.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The total execution time of SQL statements tracked by the server.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mysql.query.slow.count":
 					assert.False(t, validatedMetrics["mysql.query.slow.count"], "Found a duplicate in the metrics slice: mysql.query.slow.count")
 					validatedMetrics["mysql.query.slow.count"] = true
@@ -1997,6 +2032,18 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("operation")
 						assert.False(t, ok)
 					}
+				case "mysql.session.active.count":
+					assert.False(t, validatedMetrics["mysql.session.active.count"], "Found a duplicate in the metrics slice: mysql.session.active.count")
+					validatedMetrics["mysql.session.active.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of active MySQL sessions with query text and state.", mi.Description())
+					assert.Equal(t, "{session}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.sorts":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["mysql.sorts"], "Found a duplicate in the metrics slice: mysql.sorts")

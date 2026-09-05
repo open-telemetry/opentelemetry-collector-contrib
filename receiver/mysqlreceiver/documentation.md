@@ -424,6 +424,16 @@ The number of currently open files.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Int | Development |
 
+### mysql.health
+
+The health status of the MySQL server.
+
+A value of '1' indicates healthy and '0' indicates unhealthy.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
 ### mysql.innodb.data_file.io
 
 The total bytes read from and written to InnoDB data files.
@@ -606,6 +616,16 @@ The number of statements executed by the server.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | 1 | Sum | Int | Cumulative | true | Development |
 
+### mysql.query.execution.time
+
+The total execution time of SQL statements tracked by the server.
+
+This metric reports cumulative statement execution time in seconds, including statements issued by the receiver. Values reset when statement summary state is reset or the server restarts.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
 ### mysql.query.slow.count
 
 The number of slow queries.
@@ -654,6 +674,16 @@ This field is an indication of how “late” the replica is.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | false | Development |
+
+### mysql.session.active.count
+
+The number of active MySQL sessions with query text and state.
+
+Idle sessions and the receiver's own query are excluded.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {session} | Gauge | Int | Development |
 
 ### mysql.statement_event.count
 

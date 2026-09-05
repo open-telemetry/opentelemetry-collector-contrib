@@ -180,6 +180,9 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
+	errs := &scrapererror.ScrapeErrors{}
+
+	m.scrapeHealth(now)
 
 	// collect innodb metrics.
 	innodbStats, innoErr := m.sqlclient.getInnodbStats()
@@ -187,7 +190,6 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		m.logger.Error("Failed to fetch InnoDB stats", zap.Error(innoErr))
 	}
 
-	errs := &scrapererror.ScrapeErrors{}
 	for k, v := range innodbStats {
 		if k != "buffer_pool_size" {
 			continue
@@ -206,6 +208,8 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	// collect performance event statements metrics.
 	m.scrapeStatementEventsStats(now, errs)
+	m.scrapeQueryExecutionTime(now, errs)
+	m.scrapeActiveSessionCount(now, errs)
 	// collect lock table events metrics
 	m.scrapeTableLockWaitEventStats(now, errs)
 
@@ -270,6 +274,18 @@ func (m *mySQLScraper) scrapeQuerySampleFunc(ctx context.Context) (plog.Logs, er
 
 	m.scrapeQuerySamples(ctx, now, errs)
 	return m.emitLogs(errs)
+}
+
+func (m *mySQLScraper) scrapeHealth(now pcommon.Timestamp) {
+	if !m.config.MetricsBuilderConfig.Metrics.MysqlHealth.Enabled {
+		return
+	}
+
+	if err := m.sqlclient.checkDBAvailability(); err != nil {
+		m.mb.RecordMysqlHealthDataPoint(now, 0)
+		return
+	}
+	m.mb.RecordMysqlHealthDataPoint(now, 1)
 }
 
 func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
@@ -774,6 +790,34 @@ func (m *mySQLScraper) scrapeStatementEventsStats(now pcommon.Timestamp, errs *s
 
 		m.mb.RecordMysqlStatementEventWaitTimeDataPoint(now, s.sumTimerWait, s.schema, s.digest, s.digestText)
 	}
+}
+
+func (m *mySQLScraper) scrapeQueryExecutionTime(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	if !m.config.MetricsBuilderConfig.Metrics.MysqlQueryExecutionTime.Enabled {
+		return
+	}
+
+	executionTime, err := m.sqlclient.getQueryExecutionTime()
+	if err != nil {
+		m.logger.Error("Failed to fetch query execution time", zap.Error(err))
+		errs.AddPartial(1, err)
+		return
+	}
+	m.mb.RecordMysqlQueryExecutionTimeDataPoint(now, executionTime)
+}
+
+func (m *mySQLScraper) scrapeActiveSessionCount(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	if !m.config.MetricsBuilderConfig.Metrics.MysqlSessionActiveCount.Enabled {
+		return
+	}
+
+	activeSessionCount, err := m.sqlclient.getActiveSessionCount()
+	if err != nil {
+		m.logger.Error("Failed to fetch active session count", zap.Error(err))
+		errs.AddPartial(1, err)
+		return
+	}
+	m.mb.RecordMysqlSessionActiveCountDataPoint(now, activeSessionCount)
 }
 
 func (m *mySQLScraper) scrapeTableLockWaitEventStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {

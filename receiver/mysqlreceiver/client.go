@@ -113,10 +113,13 @@ func (v dbVersion) supportsProcesslist() bool {
 
 type client interface {
 	Connect() error
+	checkDBAvailability() error
 	getDBVersion() dbVersion
 	getGlobalStats() (map[string]string, error)
 	getInnodbStats() (map[string]string, error)
 	getInnodbTransactionStats() (innodbTransactionStats, error)
+	getQueryExecutionTime() (float64, error)
+	getActiveSessionCount() (int64, error)
 	getTableStats() ([]tableStats, error)
 	getTableIoWaitsStats() ([]tableIoWaitsStats, error)
 	getIndexIoWaitsStats() ([]indexIoWaitsStats, error)
@@ -363,6 +366,21 @@ func (c *mySQLClient) populateDBVersion() {
 	}
 }
 
+func (c *mySQLClient) checkDBAvailability() error {
+	const healthCheckTimeout = 5 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), healthCheckTimeout)
+	defer cancel()
+
+	var result int
+	if err := c.client.QueryRowContext(ctx, "/* otel-collector-ignore */ SELECT 1 FROM DUAL").Scan(&result); err != nil {
+		return err
+	}
+	if result != 1 {
+		return fmt.Errorf("unexpected database availability query result: %d", result)
+	}
+	return nil
+}
+
 // fetchDBVersion queries the database for its version string and parses it
 // into a dbVersion. Called once during Connect. A short context timeout
 // prevents a blackholed or slow endpoint from stalling collector startup.
@@ -436,6 +454,32 @@ func (c *mySQLClient) getGlobalStats() (map[string]string, error) {
 func (c *mySQLClient) getInnodbStats() (map[string]string, error) {
 	q := "SELECT name, count FROM information_schema.innodb_metrics WHERE name LIKE '%buffer_pool_size%';"
 	return query(*c, q)
+}
+
+// getQueryExecutionTime queries the db for cumulative SQL statement execution time in seconds.
+func (c *mySQLClient) getQueryExecutionTime() (float64, error) {
+	q := "SELECT COALESCE(SUM(SUM_TIMER_WAIT), 0) / 1000000000000.0 " +
+		"FROM performance_schema.events_statements_summary_by_digest"
+
+	var executionTime float64
+	err := c.client.QueryRow(q).Scan(&executionTime)
+	return executionTime, err
+}
+
+// getActiveSessionCount queries the db for the number of active sessions.
+func (c *mySQLClient) getActiveSessionCount() (int64, error) {
+	q := "/* otel-collector-ignore */ SELECT COUNT(*) " +
+		"FROM performance_schema.threads " +
+		"WHERE PROCESSLIST_STATE IS NOT NULL " +
+		"AND TRIM(PROCESSLIST_STATE) != '' " +
+		"AND PROCESSLIST_COMMAND NOT IN ('Sleep', 'Daemon') " +
+		"AND PROCESSLIST_ID != CONNECTION_ID() " +
+		"AND COALESCE(PROCESSLIST_INFO, '') != '' " +
+		"AND COALESCE(PROCESSLIST_INFO, '') NOT LIKE '/* otel-collector-ignore */%'"
+
+	var activeSessionCount int64
+	err := c.client.QueryRow(q).Scan(&activeSessionCount)
+	return activeSessionCount, err
 }
 
 // getInnodbTransactionStats queries the db for InnoDB transaction metrics.
