@@ -5,6 +5,7 @@ package postgresqlreceiver
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -396,6 +397,330 @@ func TestLockQueries(t *testing.T) {
 			}
 			assert.Equal(t, tc.expected, locks)
 			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestRepairNormalizedQuery(t *testing.T) {
+	tests := []struct {
+		name     string
+		query    string
+		expected string
+	}{
+		{
+			name:     "extract with parameter is rewritten to a function call",
+			query:    "SELECT * FROM orders WHERE EXTRACT($1 FROM order_date) = $2",
+			expected: "SELECT * FROM orders WHERE pg_catalog.extract($1, order_date) = $2",
+		},
+		{
+			name:     "extract rewrite preserves surrounding parameter numbering",
+			query:    "SELECT CAST($1 AS varchar(50)) FROM orders WHERE EXTRACT($2 FROM order_date) BETWEEN $3 AND $4",
+			expected: "SELECT CAST($1 AS varchar(50)) FROM orders WHERE pg_catalog.extract($2, order_date) BETWEEN $3 AND $4",
+		},
+		{
+			name:     "extract rewrite is balanced when the source is a nested call",
+			query:    "SELECT EXTRACT($1 FROM greatest(a, b))",
+			expected: "SELECT pg_catalog.extract($1, greatest(a, b))",
+		},
+		{
+			name:     "extract rewrite tolerates extra whitespace",
+			query:    "SELECT extract(  $1   FROM   order_date )",
+			expected: "SELECT pg_catalog.extract($1, order_date )",
+		},
+		{
+			name:     "extract rewrite is case insensitive",
+			query:    "SELECT Extract($1 From order_date)",
+			expected: "SELECT pg_catalog.extract($1, order_date)",
+		},
+		{
+			name:     "multiple extracts are all rewritten",
+			query:    "SELECT EXTRACT($1 FROM a), EXTRACT($2 FROM b)",
+			expected: "SELECT pg_catalog.extract($1, a), pg_catalog.extract($2, b)",
+		},
+		{
+			name:     "extract with a literal field is already valid and left alone",
+			query:    "SELECT EXTRACT(YEAR FROM order_date)",
+			expected: "SELECT EXTRACT(YEAR FROM order_date)",
+		},
+		{
+			name:     "extract rewrite reaches a nested extract",
+			query:    "SELECT EXTRACT($1 FROM EXTRACT($2 FROM x))",
+			expected: "SELECT pg_catalog.extract($1, pg_catalog.extract($2, x))",
+		},
+		{
+			name:     "typed interval literal is rewritten to a cast",
+			query:    "SELECT now() - interval $1",
+			expected: "SELECT now() - CAST($1 AS interval)",
+		},
+		{
+			name:     "typed timestamp literal is rewritten to a cast",
+			query:    "SELECT * FROM events WHERE created_at > timestamp $1",
+			expected: "SELECT * FROM events WHERE created_at > CAST($1 AS timestamp)",
+		},
+		{
+			name:     "typed timestamptz literal is rewritten to a cast",
+			query:    "SELECT * FROM events WHERE created_at > timestamptz $1",
+			expected: "SELECT * FROM events WHERE created_at > CAST($1 AS timestamptz)",
+		},
+		{
+			name:     "typed date literal is rewritten to a cast",
+			query:    "SELECT * FROM events WHERE created_at > date $1",
+			expected: "SELECT * FROM events WHERE created_at > CAST($1 AS date)",
+		},
+		{
+			name:     "typed time literal is rewritten to a cast",
+			query:    "SELECT * FROM events WHERE created_at > time $1",
+			expected: "SELECT * FROM events WHERE created_at > CAST($1 AS time)",
+		},
+		{
+			name:     "typed timetz literal is rewritten to a cast",
+			query:    "SELECT * FROM events WHERE started_at > timetz $1",
+			expected: "SELECT * FROM events WHERE started_at > CAST($1 AS timetz)",
+		},
+		{
+			name:     "timestamp is not truncated to time when both appear",
+			query:    "SELECT * FROM t WHERE ts > timestamp $1 AND t > time $2",
+			expected: "SELECT * FROM t WHERE ts > CAST($1 AS timestamp) AND t > CAST($2 AS time)",
+		},
+		{
+			name:     "typed literal rewrite is case insensitive",
+			query:    "SELECT now() - INTERVAL $1",
+			expected: "SELECT now() - CAST($1 AS INTERVAL)",
+		},
+		{
+			name:     "multi word timestamp with time zone is rewritten whole",
+			query:    "SELECT * FROM t WHERE ts > timestamp with time zone $1",
+			expected: "SELECT * FROM t WHERE ts > CAST($1 AS timestamp with time zone)",
+		},
+		{
+			name:     "multi word timestamp without time zone is rewritten whole",
+			query:    "SELECT * FROM t WHERE ts > timestamp without time zone $1",
+			expected: "SELECT * FROM t WHERE ts > CAST($1 AS timestamp without time zone)",
+		},
+		{
+			name:     "multi word double precision is rewritten whole",
+			query:    "SELECT * FROM t WHERE d > double precision $1",
+			expected: "SELECT * FROM t WHERE d > CAST($1 AS double precision)",
+		},
+		{
+			name:     "non temporal typed literal is rewritten to a cast",
+			query:    "SELECT * FROM t WHERE total > numeric $1",
+			expected: "SELECT * FROM t WHERE total > CAST($1 AS numeric)",
+		},
+		{
+			name:     "uuid typed literal is rewritten to a cast",
+			query:    "SELECT * FROM t WHERE id = uuid $1",
+			expected: "SELECT * FROM t WHERE id = CAST($1 AS uuid)",
+		},
+		{
+			name:     "single interval field qualifier is kept inside the cast",
+			query:    "SELECT now() - interval $1 day",
+			expected: "SELECT now() - CAST($1 AS interval day)",
+		},
+		{
+			name:     "interval field range qualifier is kept inside the cast",
+			query:    "SELECT now() - interval $1 DAY TO SECOND",
+			expected: "SELECT now() - CAST($1 AS interval DAY TO SECOND)",
+		},
+		{
+			name:     "a word after the parameter that is not a field keyword is left outside the cast",
+			query:    "SELECT * FROM t WHERE ts > timestamp $1 ORDER BY ts",
+			expected: "SELECT * FROM t WHERE ts > CAST($1 AS timestamp) ORDER BY ts",
+		},
+		{
+			name:     "both repairs apply to the same expression",
+			query:    "SELECT EXTRACT($1 FROM timestamp $2)",
+			expected: "SELECT pg_catalog.extract($1, CAST($2 AS timestamp))",
+		},
+		{
+			name:     "AT TIME ZONE is already valid and left alone",
+			query:    "SELECT now() AT TIME ZONE $1",
+			expected: "SELECT now() AT TIME ZONE $1",
+		},
+		{
+			name:     "quoted identifier that looks like extract is left alone",
+			query:    `SELECT * FROM t WHERE "EXTRACT($1 FROM x)" = $2`,
+			expected: `SELECT * FROM t WHERE "EXTRACT($1 FROM x)" = $2`,
+		},
+		{
+			name:     "string literal that looks like extract is left alone",
+			query:    "SELECT * FROM t WHERE msg = 'EXTRACT($1 FROM x)'",
+			expected: "SELECT * FROM t WHERE msg = 'EXTRACT($1 FROM x)'",
+		},
+		{
+			name:     "quoted identifier that looks like a typed literal is left alone",
+			query:    `SELECT * FROM t WHERE "interval $1" = $2`,
+			expected: `SELECT * FROM t WHERE "interval $1" = $2`,
+		},
+		{
+			name:     "string literal that looks like a typed literal is left alone",
+			query:    "SELECT * FROM t WHERE msg = 'interval $1'",
+			expected: "SELECT * FROM t WHERE msg = 'interval $1'",
+		},
+		{
+			name:     "type name deeper inside a string literal is left alone",
+			query:    "SELECT * FROM t WHERE msg = 'waited an interval $1'",
+			expected: "SELECT * FROM t WHERE msg = 'waited an interval $1'",
+		},
+		{
+			name:     "type name deeper inside a quoted identifier is left alone",
+			query:    `SELECT * FROM t WHERE "my interval $1" = $2`,
+			expected: `SELECT * FROM t WHERE "my interval $1" = $2`,
+		},
+		{
+			name:     "doubled quote inside a literal does not end the protected span",
+			query:    "SELECT * FROM t WHERE msg = 'it''s an interval $1'",
+			expected: "SELECT * FROM t WHERE msg = 'it''s an interval $1'",
+		},
+		{
+			name:     "escaped quote in an E string does not end the protected span",
+			query:    `SELECT * FROM t WHERE msg = E'x\' interval $1'`,
+			expected: `SELECT * FROM t WHERE msg = E'x\' interval $1'`,
+		},
+		{
+			name:     "type name inside a line comment is left alone",
+			query:    "SELECT * FROM t WHERE ts > -- interval\n  $1",
+			expected: "SELECT * FROM t WHERE ts > -- interval\n  $1",
+		},
+		{
+			name:     "type name inside a block comment is left alone",
+			query:    "SELECT /* interval $1 */ * FROM t WHERE id = $2",
+			expected: "SELECT /* interval $1 */ * FROM t WHERE id = $2",
+		},
+		{
+			name:     "type name inside a nested block comment is left alone",
+			query:    "SELECT /* a /* interval $1 */ b */ * FROM t WHERE id = $2",
+			expected: "SELECT /* a /* interval $1 */ b */ * FROM t WHERE id = $2",
+		},
+		{
+			name:     "type name inside a dollar quoted string is left alone",
+			query:    "SELECT $tag$ interval $1 $tag$ FROM t",
+			expected: "SELECT $tag$ interval $1 $tag$ FROM t",
+		},
+		{
+			name:     "type name inside an untagged dollar quoted string is left alone",
+			query:    "SELECT $$ interval $1 $$ FROM t",
+			expected: "SELECT $$ interval $1 $$ FROM t",
+		},
+		{
+			name:     "a protected span does not suppress a later repair",
+			query:    "SELECT * FROM t WHERE msg = 'interval $1' AND ts > timestamp $2",
+			expected: "SELECT * FROM t WHERE msg = 'interval $1' AND ts > CAST($2 AS timestamp)",
+		},
+		{
+			name:     "identifier prefixed with a type name is not rewritten",
+			query:    "SELECT * FROM t WHERE interval_col = $1",
+			expected: "SELECT * FROM t WHERE interval_col = $1",
+		},
+		{
+			name: "a type modifier breaks the typed literal form and is left alone",
+			// timestamp(3) $1 is still unparseable; the parenthesis means there is no whitespace
+			// between the type name and the parameter, so no cast is inferred. Recorded as a
+			// known limit rather than a rewrite that guesses at the modifier.
+			query:    "SELECT * FROM t WHERE ts > timestamp(3) $1",
+			expected: "SELECT * FROM t WHERE ts > timestamp(3) $1",
+		},
+		{
+			name:     "already valid query is returned unchanged",
+			query:    "SELECT a, b FROM t WHERE id = $1 ORDER BY b DESC",
+			expected: "SELECT a, b FROM t WHERE id = $1 ORDER BY b DESC",
+		},
+		{
+			name:     "date_part with a parameter is already valid and left alone",
+			query:    "SELECT date_part($1, order_date)",
+			expected: "SELECT date_part($1, order_date)",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, repairNormalizedQuery(tc.query))
+		})
+	}
+}
+
+func TestProtectedSpans(t *testing.T) {
+	tests := []struct {
+		name string
+		// query marks the expected spans inline: every byte covered by a protected span is
+		// written as one of the marker runes below in want, and every other byte as a dot. That
+		// keeps offsets readable next to the query instead of listing index pairs.
+		query string
+		want  string
+	}{
+		{
+			name:  "no protected regions",
+			query: "SELECT a FROM t WHERE id = $1",
+			want:  ".............................",
+		},
+		{
+			name:  "string literal",
+			query: "SELECT 'abc' FROM t",
+			want:  ".......XXXXX.......",
+		},
+		{
+			name:  "doubled quote continues the literal",
+			query: "SELECT 'it''s' FROM t",
+			want:  ".......XXXXXXX.......",
+		},
+		{
+			name:  "backslash escape only applies to an E string",
+			query: `SELECT E'a\'b' , 'c'`,
+			want:  "........XXXXXX...XXX",
+		},
+		{
+			name:  "a word ending in e does not introduce an E string",
+			query: `SELECT tare'a\'`,
+			want:  "...........XXXX",
+		},
+		{
+			name:  "quoted identifier",
+			query: `SELECT "col" FROM t`,
+			want:  ".......XXXXX.......",
+		},
+		{
+			name:  "line comment stops at the newline",
+			query: "SELECT a -- note\nFROM t",
+			want:  ".........XXXXXXX.......",
+		},
+		{
+			name:  "block comments nest",
+			query: "SELECT /* a /* b */ c */ 1",
+			want:  ".......XXXXXXXXXXXXXXXXX..",
+		},
+		{
+			name:  "dollar quoted string",
+			query: "SELECT $t$ a $t$ FROM x",
+			want:  ".......XXXXXXXXX.......",
+		},
+		{
+			name:  "a parameter placeholder does not open a dollar quote",
+			query: "SELECT $1 FROM t WHERE b = $2",
+			want:  ".............................",
+		},
+		{
+			name:  "unterminated literal protects to the end",
+			query: "SELECT 'abc FROM t",
+			want:  ".......XXXXXXXXXXX",
+		},
+		{
+			name:  "unterminated block comment protects to the end",
+			query: "SELECT /* abc FROM t",
+			want:  ".......XXXXXXXXXXXXX",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Len(t, tc.want, len(tc.query), "the want mask must be as long as the query")
+
+			got := []byte(strings.Repeat(".", len(tc.query)))
+			for _, span := range protectedSpans(tc.query) {
+				for i := span[0]; i < span[1]; i++ {
+					got[i] = 'X'
+				}
+			}
+			assert.Equal(t, tc.want, string(got), "query: %s", tc.query)
 		})
 	}
 }
