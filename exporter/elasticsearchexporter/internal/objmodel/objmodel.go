@@ -32,18 +32,18 @@
 package objmodel // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 
 import (
+	"bytes"
 	"encoding/hex"
-	"io"
 	"maps"
 	"math"
 	"slices"
 	"strings"
 	"time"
 
-	"github.com/elastic/go-structform"
-	"github.com/elastic/go-structform/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/jsonwriter"
 )
 
 // Document is an intermediate representation for converting open telemetry records with arbitrary attributes
@@ -296,67 +296,54 @@ func (doc *Document) Dedup(protectedSet map[string]struct{}) {
 	}
 }
 
-func newJSONVisitor(w io.Writer) *json.Visitor {
-	v := json.NewVisitor(w)
-	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
-	// This is required to generate the correct dynamic mapping in ES.
-	v.SetExplicitRadixPoint(true)
-	return v
-}
-
-// Serialize writes the document to the given writer. The document fields will be
+// Serialize writes the document to buf. The document fields will be
 // deduplicated and, if dedot is true, turned into nested objects prior to
-// serialization.
-func (doc *Document) Serialize(w io.Writer, dedot bool, protectedSet map[string]struct{}) error {
+// serialization. The error return is always nil.
+func (doc *Document) Serialize(buf *bytes.Buffer, dedot bool, protectedSet map[string]struct{}) error {
 	doc.Dedup(protectedSet)
-	v := newJSONVisitor(w)
-	return doc.iterJSON(v, dedot)
+	jw := jsonwriter.New(buf)
+	doc.writeJSON(jw, dedot)
+	return nil
 }
 
-func (doc *Document) iterJSON(v *json.Visitor, dedot bool) error {
+func (doc *Document) writeJSON(w *jsonwriter.Writer, dedot bool) {
 	if dedot {
-		return doc.iterJSONDedot(v)
+		doc.writeJSONDedot(w)
+		return
 	}
-	return doc.iterJSONFlat(v)
+	doc.writeJSONFlat(w)
 }
 
-func (doc *Document) iterJSONFlat(w *json.Visitor) error {
-	err := w.OnObjectStart(-1, structform.AnyType)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = w.OnObjectFinished()
-	}()
-
+func (doc *Document) writeJSONFlat(w *jsonwriter.Writer) {
+	w.StartObject()
+	first := true
 	for i := range doc.fields {
 		fld := &doc.fields[i]
 		if fld.value.IsEmpty() {
 			continue
 		}
-
-		if err := w.OnKey(fld.key); err != nil {
-			return err
-		}
-
-		if err := fld.value.iterJSON(w, true); err != nil {
-			return err
-		}
+		first = w.Key(fld.key, first)
+		fld.value.writeJSON(w, true)
 	}
-
-	return nil
+	w.EndObject()
 }
 
-func (doc *Document) iterJSONDedot(w *json.Visitor) error {
+func (doc *Document) writeJSONDedot(w *jsonwriter.Writer) {
 	objPrefix := ""
 	level := 0
+	// first-field flag per nested object. 16 covers typical ECS/k8s dotted keys.
+	// Deeper nesting grows the slice on the heap.
+	var firstBuf [16]bool
+	firstBuf[0] = true
+	firstAtLevel := firstBuf[:1]
 
-	if err := w.OnObjectStart(-1, structform.AnyType); err != nil {
-		return err
+	w.StartObject()
+
+	pop := func() {
+		w.EndObject()
+		firstAtLevel = firstAtLevel[:len(firstAtLevel)-1]
+		level--
 	}
-	defer func() {
-		_ = w.OnObjectFinished()
-	}()
 
 	for i := range doc.fields {
 		fld := &doc.fields[i]
@@ -380,18 +367,13 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 					}
 
 					delta = delta[idx+1:]
-					level--
-					if err := w.OnObjectFinished(); err != nil {
-						return err
-					}
+					pop()
 				}
 
 				objPrefix = key[:L]
 			} else { // no common prefix, close all objects we reported so far.
-				for ; level > 0; level-- {
-					if err := w.OnObjectFinished(); err != nil {
-						return err
-					}
+				for level > 0 {
+					pop()
 				}
 				objPrefix = ""
 			}
@@ -405,35 +387,27 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 				break
 			}
 
+			fieldName := key[start : start+idx]
+			last := len(firstAtLevel) - 1
+			firstAtLevel[last] = w.Key(fieldName, firstAtLevel[last])
+			w.StartObject()
+			firstAtLevel = append(firstAtLevel, true)
 			level++
 			objPrefix = key[:len(objPrefix)+idx+1]
-			fieldName := key[start : start+idx]
-			if err := w.OnKey(fieldName); err != nil {
-				return err
-			}
-			if err := w.OnObjectStart(-1, structform.AnyType); err != nil {
-				return err
-			}
 		}
 
 		// report value
 		fieldName := key[len(objPrefix):]
-		if err := w.OnKey(fieldName); err != nil {
-			return err
-		}
-		if err := fld.value.iterJSON(w, true); err != nil {
-			return err
-		}
+		last := len(firstAtLevel) - 1
+		firstAtLevel[last] = w.Key(fieldName, firstAtLevel[last])
+		fld.value.writeJSON(w, true)
 	}
 
 	// close all pending object levels
-	for ; level > 0; level-- {
-		if err := w.OnObjectFinished(); err != nil {
-			return err
-		}
+	for level > 0 {
+		pop()
 	}
-
-	return nil
+	w.EndObject()
 }
 
 // StringValue create a new value from a string.
@@ -533,52 +507,51 @@ func (v *Value) IsEmpty() bool {
 	}
 }
 
-func (v *Value) iterJSON(w *json.Visitor, dedot bool) error {
+func (v *Value) writeJSON(w *jsonwriter.Writer, dedot bool) {
 	switch v.kind {
 	case KindNil:
-		return w.OnNil()
+		w.NullVal()
 	case KindBool:
-		return w.OnBool(v.ui == 1)
+		w.BoolVal(v.ui == 1)
 	case KindInt:
-		return w.OnInt64(v.i)
+		w.Int64Val(v.i)
 	case KindUInt:
-		return w.OnUint64(v.ui)
+		w.Uint64Val(v.ui)
 	case KindDouble:
 		if math.IsNaN(v.dbl) || math.IsInf(v.dbl, 0) {
 			// NaN and Inf are undefined for JSON. Let's serialize to "null"
-			return w.OnNil()
+			w.NullVal()
+			return
 		}
-		return w.OnFloat64(v.dbl)
+		w.Float64Val(v.dbl)
 	case KindString:
-		return w.OnString(v.str)
+		w.JSONString(v.str)
 	case KindTimestamp:
-		str := v.ts.UTC().Format(tsLayout)
-		return w.OnString(str)
+		w.JSONString(v.ts.UTC().Format(tsLayout))
 	case KindObject:
 		if len(v.doc.fields) == 0 {
-			return w.OnNil()
+			w.NullVal()
+			return
 		}
-		return v.doc.iterJSON(w, dedot)
+		v.doc.writeJSON(w, dedot)
 	case KindUnflattenableObject:
 		if len(v.doc.fields) == 0 {
-			return w.OnNil()
+			w.NullVal()
+			return
 		}
-		return v.doc.iterJSON(w, true)
+		v.doc.writeJSON(w, true)
 	case KindArr:
-		if err := w.OnArrayStart(-1, structform.AnyType); err != nil {
-			return err
-		}
+		w.StartArray()
+		first := true
 		for i := range v.arr {
-			if err := v.arr[i].iterJSON(w, dedot); err != nil {
-				return err
+			if v.arr[i].kind == KindIgnore {
+				continue
 			}
+			first = w.ArrayComma(first)
+			v.arr[i].writeJSON(w, dedot)
 		}
-		if err := w.OnArrayFinished(); err != nil {
-			return err
-		}
+		w.EndArray()
 	}
-
-	return nil
 }
 
 func arrFromAttributes(aa pcommon.Slice) []Value {
