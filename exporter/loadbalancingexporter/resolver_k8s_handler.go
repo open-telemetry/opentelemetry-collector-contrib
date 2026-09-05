@@ -120,6 +120,9 @@ func (h handler) OnDelete(obj any) {
 	var ok bool
 
 	switch object := obj.(type) {
+	case cache.DeletedFinalStateUnknown:
+		h.OnDelete(object.Obj)
+		return
 	case *cache.DeletedFinalStateUnknown:
 		h.OnDelete(object.Obj)
 		return

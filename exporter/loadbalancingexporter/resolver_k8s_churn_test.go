@@ -15,6 +15,7 @@ import (
 	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/cache"
 )
 
 // countSyncMap returns the number of entries currently held in a sync.Map.
@@ -203,6 +204,35 @@ func TestK8sHandlerOnDeleteRemovesValidSubset(t *testing.T) {
 	h.OnDelete(mkSlice(epNamed("pod-a", "10.0.0.1"), epNoHostname("10.0.0.2")))
 	assert.ElementsMatch(t, []string{"pod-b"}, storeKeys(store),
 		"pod-a should be removed on delete even though the tombstone slice had a hostnameless endpoint")
+}
+
+func TestK8sHandlerOnDeleteHandlesTombstones(t *testing.T) {
+	endpointSlice := mkSlice(epNoHostname("10.0.0.1"))
+	tests := []struct {
+		name      string
+		tombstone any
+	}{
+		{
+			name:      "value",
+			tombstone: cache.DeletedFinalStateUnknown{Obj: endpointSlice},
+		},
+		{
+			name:      "pointer",
+			tombstone: &cache.DeletedFinalStateUnknown{Obj: endpointSlice},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h, store := newTestHandler(t, false)
+			h.OnAdd(endpointSlice, false)
+			require.ElementsMatch(t, []string{"10.0.0.1"}, storeKeys(store))
+
+			h.OnDelete(tt.tombstone)
+
+			assert.Empty(t, storeKeys(store))
+		})
+	}
 }
 
 // TestK8sResolverIPChurnDoesNotLeak is a regression guard confirming the
