@@ -1364,8 +1364,10 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	sink.ExpectToken(t, []byte(content))
 	sink.ExpectNoCalls(t)
 	operator.wg.Wait()
-	if runtime.GOOS != "windows" {
-		// On windows, we never keep files in previousPollFiles, so we don't expect to see them here
+	if runtime.GOOS != windowsOS {
+		// On Windows, files are closed immediately after each poll by default
+		// (the filelog.windows.keepFilesOpen feature gate is opt-in), so we don't
+		// expect to see them retained here.
 		require.Len(t, operator.tracker.PreviousPollFiles(), 1)
 	}
 
@@ -1381,13 +1383,18 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	operator.wg.Wait()
 }
 
-func TestWindowsFilesClosedImmediately(t *testing.T) {
+// TestFilesKeptOpenBetweenPolls verifies that, when keep-files-open is enabled, file
+// handles are kept open between poll cycles. It also verifies that the file can still
+// be moved while we hold the handle (made possible by opening with FILE_SHARE_DELETE on
+// Windows) and that the handle is released within a couple of polls once the file is no
+// longer matched, so it is never held perpetually.
+func TestFilesKeptOpenBetweenPolls(t *testing.T) {
 	t.Parallel()
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, sink := testManager(t, cfg)
+	operator, sink := testManagerKeepFilesOpen(t, cfg)
 
 	temp := filetest.OpenTemp(t, tempDir)
 	filetest.WriteString(t, temp, "testlog\n")
@@ -1395,8 +1402,51 @@ func TestWindowsFilesClosedImmediately(t *testing.T) {
 
 	operator.poll(t.Context())
 	sink.ExpectToken(t, []byte("testlog"))
+	operator.wg.Wait()
 
-	// On Windows, poll should close the file after reading it. We can test this by trying to move it.
+	// The handle should be kept open between polls so we can still read data
+	// written to files that get rotated out of the matching pattern.
+	require.Len(t, operator.tracker.PreviousPollFiles(), 1)
+
+	// Even though we hold the handle, the file can be moved out of the include
+	// pattern. On Windows this only works because we open with FILE_SHARE_DELETE.
+	newDir := tempDir + "_new"
+	require.NoError(t, os.MkdirAll(newDir, 0o777))
+	require.NoError(t, os.Rename(temp.Name(), filepath.Join(newDir, "moved.log")))
+
+	// After the file is no longer matched, the handle should be released within
+	// a couple of polls rather than being held perpetually (which on Windows
+	// would leave a cross-volume move stuck in a delete-pending state).
+	operator.poll(t.Context())
+	operator.wg.Wait()
+	operator.poll(t.Context())
+	operator.wg.Wait()
+	require.Empty(t, operator.tracker.PreviousPollFiles())
+}
+
+// TestFilesClosedImmediatelyBetweenPolls verifies the legacy behavior (keep-files-open
+// disabled, i.e. the default on Windows): file handles are closed immediately after each
+// poll, so nothing is retained between polls and the file can be moved right away.
+func TestFilesClosedImmediatelyBetweenPolls(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, sink := testManagerKeepFilesClosed(t, cfg)
+
+	temp := filetest.OpenTemp(t, tempDir)
+	filetest.WriteString(t, temp, "testlog\n")
+	require.NoError(t, temp.Close())
+
+	operator.poll(t.Context())
+	sink.ExpectToken(t, []byte("testlog"))
+	operator.wg.Wait()
+
+	// Files are closed immediately after the poll, so nothing is retained.
+	require.Empty(t, operator.tracker.PreviousPollFiles())
+
+	// Because the handle was released, the file can be moved out of the pattern.
 	require.NoError(t, os.Rename(temp.Name(), temp.Name()+"_renamed"))
 }
 

@@ -204,6 +204,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		maxBatches:          c.MaxBatches,
 		telemetryBuilder:    telemetryBuilder,
 		noTracking:          o.noTracking,
+		keepFilesOpen:       keepFilesOpenBetweenPolls(),
 		pollsToArchive:      c.PollsToArchive,
 		onTruncate:          c.OnTruncate,
 		skipUnmodifiedFiles: c.SkipUnmodifiedFiles,
