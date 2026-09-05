@@ -114,6 +114,7 @@ func (cfg *Config) Validate() error {
 			string(conventions.K8SJobNameKey), string(conventions.K8SJobUIDKey),
 			string(conventions.K8SCronJobNameKey), string(conventions.K8SCronJobUIDKey),
 			string(conventions.K8SNodeNameKey), string(conventions.K8SNodeUIDKey),
+			string(kube.K8sOwnerKind), string(kube.K8sOwnerName), string(kube.K8sOwnerUID),
 			string(conventions.K8SContainerNameKey), string(conventions.ContainerIDKey),
 			string(conventions.ContainerImageNameKey), containerImageTag, string(conventions.ContainerImageTagsKey),
 			string(conventions.ServiceNamespaceKey), string(conventions.ServiceNameKey),
@@ -171,6 +172,7 @@ type ExtractConfig struct {
 	//   k8s.job.name, k8s.job.uid,
 	//   k8s.cronjob.name, k8s.cronjob.uid,
 	//   k8s.statefulset.name, k8s.statefulset.uid,
+	//   k8s.owner.kind, k8s.owner.name, k8s.owner.uid,
 	//   k8s.container.name, container.id, container.image.name,
 	//   container.image.tag, container.image.repo_digests
 	//   k8s.cluster.uid
