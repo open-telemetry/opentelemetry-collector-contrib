@@ -13,6 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
@@ -121,7 +122,7 @@ func TestCollectMetricData(t *testing.T) {
 		},
 	})
 
-	dc := NewDataCollector(receivertest.NewNopSettings(metadata.Type), ms, metadata.NewDefaultMetricsBuilderConfig(), []string{"Ready"}, nil)
+	dc := NewDataCollector(receivertest.NewNopSettings(metadata.Type), ms, metadata.NewDefaultMetricsBuilderConfig(), []string{"Ready"}, nil, pod.ContainerMetricsConfig{})
 	m1 := dc.CollectMetricData(time.Now())
 
 	// Verify number of resource metrics only, content is tested in other tests.
@@ -150,7 +151,7 @@ func TestCollectServiceMetrics(t *testing.T) {
 
 	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sServiceEndpointCount.Enabled = true
-	dc := NewDataCollector(receivertest.NewNopSettings(metadata.Type), ms, mbc, nil, nil)
+	dc := NewDataCollector(receivertest.NewNopSettings(metadata.Type), ms, mbc, nil, nil, pod.ContainerMetricsConfig{})
 	m := dc.CollectMetricData(time.Now())
 
 	foundEndpointCount := false
@@ -202,7 +203,7 @@ func TestCollectLoadBalancerServiceMetrics(t *testing.T) {
 
 	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sServiceLoadBalancerIngressCount.Enabled = true
-	dc := NewDataCollector(receivertest.NewNopSettings(metadata.Type), ms, mbc, nil, nil)
+	dc := NewDataCollector(receivertest.NewNopSettings(metadata.Type), ms, mbc, nil, nil, pod.ContainerMetricsConfig{})
 	m := dc.CollectMetricData(time.Now())
 
 	foundLBIngressCount := false
