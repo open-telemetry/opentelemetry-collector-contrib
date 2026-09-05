@@ -181,39 +181,60 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	// collect innodb metrics.
-	innodbStats, innoErr := m.sqlclient.getInnodbStats()
-	if innoErr != nil {
-		m.logger.Error("Failed to fetch InnoDB stats", zap.Error(innoErr))
-	}
-
 	errs := &scrapererror.ScrapeErrors{}
-	for k, v := range innodbStats {
-		if k != "buffer_pool_size" {
-			continue
+
+	// collect innodb metrics.
+	metrics := m.config.MetricsBuilderConfig.Metrics
+	if metrics.MysqlBufferPoolLimit.Enabled || 
+		(metrics.MysqlInnodbHistoryListLength.Enabled || 
+		 metrics.MysqlInnodbTransactionActiveCount.Enabled || 
+		 metrics.MysqlInnodbTransactionActiveDurationMax.Enabled) {
+		innodbStats, innoErr := m.sqlclient.getInnodbStats()
+		if innoErr != nil {
+			m.logger.Error("Failed to fetch InnoDB stats", zap.Error(innoErr))
 		}
-		addPartialIfError(errs, m.mb.RecordMysqlBufferPoolLimitDataPoint(now, v))
+
+		for k, v := range innodbStats {
+			if k != "buffer_pool_size" {
+				continue
+			}
+			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolLimitDataPoint(now, v))
+		}
+		m.scrapeInnodbTransactionStats(now, errs)
 	}
-	m.scrapeInnodbTransactionStats(now, errs)
 
 	// collect io_waits metrics.
-	m.scrapeTableIoWaitsStats(now, errs)
-	m.scrapeIndexIoWaitsStats(now, errs)
+	metrics := m.config.MetricsBuilderConfig.Metrics
+	if metrics.MysqlTableIoWaitCount.Enabled || metrics.MysqlTableIoWaitTime.Enabled {
+		m.scrapeTableIoWaitsStats(now, errs)
+	}
+	if metrics.MysqlIndexIoWaitCount.Enabled || metrics.MysqlIndexIoWaitTime.Enabled {
+		m.scrapeIndexIoWaitsStats(now, errs)
+	}
 
 	// collect table size metrics.
-
-	m.scrapeTableStats(now, errs)
+	if metrics.MysqlTableRows.Enabled || metrics.MysqlTableAverageRowLength.Enabled || metrics.MysqlTableSize.Enabled {
+		m.scrapeTableStats(now, errs)
+	}
 
 	// collect performance event statements metrics.
-	m.scrapeStatementEventsStats(now, errs)
+	if metrics.MysqlStatementEventCount.Enabled || metrics.MysqlStatementEventWaitTime.Enabled {
+		m.scrapeStatementEventsStats(now, errs)
+	}
 	// collect lock table events metrics
-	m.scrapeTableLockWaitEventStats(now, errs)
+	if metrics.MysqlTableLockWaitReadCount.Enabled || metrics.MysqlTableLockWaitReadTime.Enabled ||
+		metrics.MysqlTableLockWaitWriteCount.Enabled || metrics.MysqlTableLockWaitWriteTime.Enabled {
+		m.scrapeTableLockWaitEventStats(now, errs)
+	}
 
 	// collect global status metrics.
 	m.scrapeGlobalStats(now, errs)
 
 	// collect replicas status metrics.
-	m.scrapeReplicaStatusStats(now)
+	if metrics.MysqlReplicaTimeBehindSource.Enabled || metrics.MysqlReplicaSQLDelay.Enabled || 
+		metrics.MysqlReplicaThreadRunning.Enabled {
+		m.scrapeReplicaStatusStats(now)
+	}
 
 	rb := m.mb.NewResourceBuilder()
 	m.setResourceAttributes(rb)
@@ -823,17 +844,25 @@ func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
 		return
 	}
 
+	metrics := m.config.MetricsBuilderConfig.Metrics
 	for i := range replicaStatusStats {
 		s := replicaStatusStats[i]
 
-		val, _ := s.secondsBehindSource.Value()
-		if val != nil {
-			m.mb.RecordMysqlReplicaTimeBehindSourceDataPoint(now, val.(int64))
+		if metrics.MysqlReplicaTimeBehindSource.Enabled {
+			val, _ := s.secondsBehindSource.Value()
+			if val != nil {
+				m.mb.RecordMysqlReplicaTimeBehindSourceDataPoint(now, val.(int64))
+			}
 		}
 
-		m.mb.RecordMysqlReplicaSQLDelayDataPoint(now, s.sqlDelay)
-		m.mb.RecordMysqlReplicaThreadRunningDataPoint(now, replicaThreadRunningValue(s.replicaIORunning), metadata.AttributeMysqlReplicaThreadTypeIo, s.channelName)
-		m.mb.RecordMysqlReplicaThreadRunningDataPoint(now, replicaThreadRunningValue(s.replicaSQLRunning), metadata.AttributeMysqlReplicaThreadTypeSQL, s.channelName)
+		if metrics.MysqlReplicaSQLDelay.Enabled {
+			m.mb.RecordMysqlReplicaSQLDelayDataPoint(now, s.sqlDelay)
+		}
+
+		if metrics.MysqlReplicaThreadRunning.Enabled {
+			m.mb.RecordMysqlReplicaThreadRunningDataPoint(now, replicaThreadRunningValue(s.replicaIORunning), metadata.AttributeMysqlReplicaThreadTypeIo, s.channelName)
+			m.mb.RecordMysqlReplicaThreadRunningDataPoint(now, replicaThreadRunningValue(s.replicaSQLRunning), metadata.AttributeMysqlReplicaThreadTypeSQL, s.channelName)
+		}
 	}
 }
 
