@@ -6,8 +6,10 @@ package dorisexporter // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	_ "embed"
 	"fmt"
+	"math"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 )
 
 //go:embed sql/metrics_summary_ddl.sql
@@ -51,7 +53,30 @@ func (m *metricModelSummary) add(pm pmetric.Metric, dm *dMetric, e *metricsExpor
 	for i := 0; i < dataPoints.Len(); i++ {
 		dp := dataPoints.At(i)
 
+		if dp.Flags().NoRecordedValue() {
+			e.logger.Warn("dropping summary datapoint with NoRecordedValue flag", zap.String("metric_name", dm.MetricName))
+			continue
+		}
+
+		if math.IsNaN(dp.Sum()) || math.IsInf(dp.Sum(), 0) {
+			e.logger.Warn("dropping summary datapoint with non-finite sum", zap.String("metric_name", dm.MetricName), zap.Float64("sum", dp.Sum()))
+			continue
+		}
+
 		quantileValues := dp.QuantileValues()
+		hasInvalidQuantile := false
+		for j := 0; j < quantileValues.Len(); j++ {
+			qv := quantileValues.At(j)
+			if math.IsNaN(qv.Quantile()) || math.IsInf(qv.Quantile(), 0) || math.IsNaN(qv.Value()) || math.IsInf(qv.Value(), 0) {
+				e.logger.Warn("dropping summary datapoint with non-finite quantile value", zap.String("metric_name", dm.MetricName), zap.Float64("quantile", qv.Quantile()), zap.Float64("value", qv.Value()))
+				hasInvalidQuantile = true
+				break
+			}
+		}
+		if hasInvalidQuantile {
+			continue
+		}
+
 		newQuantileValues := make([]*dQuantileValue, 0, quantileValues.Len())
 		for j := 0; j < quantileValues.Len(); j++ {
 			quantileValue := quantileValues.At(j)
