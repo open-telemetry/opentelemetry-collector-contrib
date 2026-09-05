@@ -1,0 +1,4 @@
+change_type: new_component
+component: processor/rolling_span_latency
+note: Add rollingspanlatencyprocessor.
+issues: [50260]
