@@ -212,6 +212,15 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
+			mb.RecordMysqlInnodbRedoLogCheckpointAgeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordMysqlInnodbRedoLogLsnCheckpointDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordMysqlInnodbRedoLogLsnCurrentDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordMysqlInnodbRowLockWaitCountDataPoint(ts, "1")
 
 			allMetricsCount++
@@ -1186,6 +1195,42 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("operation")
 						assert.False(t, ok)
 					}
+				case "mysql.innodb.redo_log.checkpoint.age":
+					assert.False(t, validatedMetrics["mysql.innodb.redo_log.checkpoint.age"], "Found a duplicate in the metrics slice: mysql.innodb.redo_log.checkpoint.age")
+					validatedMetrics["mysql.innodb.redo_log.checkpoint.age"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The difference, in bytes, between the current InnoDB redo log sequence number and the most recent checkpoint log sequence number.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.innodb.redo_log.lsn.checkpoint":
+					assert.False(t, validatedMetrics["mysql.innodb.redo_log.lsn.checkpoint"], "Found a duplicate in the metrics slice: mysql.innodb.redo_log.lsn.checkpoint")
+					validatedMetrics["mysql.innodb.redo_log.lsn.checkpoint"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The InnoDB redo log sequence number of the most recent checkpoint.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.innodb.redo_log.lsn.current":
+					assert.False(t, validatedMetrics["mysql.innodb.redo_log.lsn.current"], "Found a duplicate in the metrics slice: mysql.innodb.redo_log.lsn.current")
+					validatedMetrics["mysql.innodb.redo_log.lsn.current"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The current InnoDB redo log sequence number.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.innodb.row_lock.wait.count":
 					assert.False(t, validatedMetrics["mysql.innodb.row_lock.wait.count"], "Found a duplicate in the metrics slice: mysql.innodb.row_lock.wait.count")
 					validatedMetrics["mysql.innodb.row_lock.wait.count"] = true

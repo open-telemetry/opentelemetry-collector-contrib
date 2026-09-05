@@ -37,6 +37,22 @@ const (
 // replaced SHOW SLAVE STATUS. Initialized at package load; panics on bad literal.
 var minMySQLReplicaStatusVersion = version.Must(version.NewVersion("8.0.22"))
 
+// minMySQLPerfSchemaLogStatusVersion is the MySQL version at which
+// performance_schema.log_status was introduced.
+var minMySQLPerfSchemaLogStatusVersion = version.Must(version.NewVersion("8.0.11"))
+
+// minMySQLGlobalStatusRedoLogVersion is the MySQL version at which the
+// structured InnoDB redo-log status variables were added to SHOW GLOBAL STATUS.
+var minMySQLGlobalStatusRedoLogVersion = version.Must(version.NewVersion("8.0.30"))
+
+type innodbRedoLogStatsSource int
+
+const (
+	innodbRedoLogStatsSourceUnsupported innodbRedoLogStatsSource = iota
+	innodbRedoLogStatsSourceGlobalStatus
+	innodbRedoLogStatsSourceLogStatus
+)
+
 // dbVersion holds the parsed database version and product identity.
 // Capability predicates keep version-specific branching out of callers.
 type dbVersion struct {
@@ -111,12 +127,34 @@ func (v dbVersion) supportsProcesslist() bool {
 	return v.product == dbProductMySQL && !v.version.LessThan(minMySQLReplicaStatusVersion)
 }
 
+func (v dbVersion) supportsInnodbRedoLogStats() bool {
+	return v.innodbRedoLogStatsSource() != innodbRedoLogStatsSourceUnsupported
+}
+
+func (v dbVersion) requiresBackupAdminForInnodbRedoLogStats() bool {
+	return v.innodbRedoLogStatsSource() == innodbRedoLogStatsSourceLogStatus
+}
+
+func (v dbVersion) innodbRedoLogStatsSource() innodbRedoLogStatsSource {
+	if !v.isValid() || v.product != dbProductMySQL {
+		return innodbRedoLogStatsSourceUnsupported
+	}
+	if !v.version.LessThan(minMySQLGlobalStatusRedoLogVersion) {
+		return innodbRedoLogStatsSourceGlobalStatus
+	}
+	if !v.version.LessThan(minMySQLPerfSchemaLogStatusVersion) {
+		return innodbRedoLogStatsSourceLogStatus
+	}
+	return innodbRedoLogStatsSourceUnsupported
+}
+
 type client interface {
 	Connect() error
 	getDBVersion() dbVersion
 	getGlobalStats() (map[string]string, error)
 	getInnodbStats() (map[string]string, error)
 	getInnodbTransactionStats() (innodbTransactionStats, error)
+	getInnodbRedoLogStatsFromLogStatus() (innodbRedoLogStats, error)
 	getTableStats() ([]tableStats, error)
 	getTableIoWaitsStats() ([]tableIoWaitsStats, error)
 	getIndexIoWaitsStats() ([]indexIoWaitsStats, error)
@@ -177,6 +215,12 @@ type innodbTransactionStats struct {
 	historyListLength            int64
 	activeTransactions           int64
 	maxActiveTransactionDuration int64
+}
+
+type innodbRedoLogStats struct {
+	currentLSN    int64
+	checkpointLSN int64
+	checkpointAge int64
 }
 
 type statementEventStats struct {
@@ -450,6 +494,26 @@ func (c *mySQLClient) getInnodbTransactionStats() (innodbTransactionStats, error
 		&stats.historyListLength,
 		&stats.activeTransactions,
 		&stats.maxActiveTransactionDuration,
+	)
+	return stats, err
+}
+
+// getInnodbRedoLogStatsFromLogStatus queries performance_schema.log_status for
+// InnoDB redo log metrics on MySQL versions before the structured global status
+// variables were introduced.
+func (c *mySQLClient) getInnodbRedoLogStatsFromLogStatus() (innodbRedoLogStats, error) {
+	q := "SELECT current_lsn, checkpoint_lsn, current_lsn - checkpoint_lsn " +
+		"FROM (" +
+		"SELECT " +
+		"COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(STORAGE_ENGINES, '$.InnoDB.LSN')) AS SIGNED), 0) AS current_lsn, " +
+		"COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(STORAGE_ENGINES, '$.InnoDB.LSN_checkpoint')) AS SIGNED), 0) AS checkpoint_lsn " +
+		"FROM performance_schema.log_status" +
+		") AS innodb_redo_log_status"
+	var stats innodbRedoLogStats
+	err := c.client.QueryRow(q).Scan(
+		&stats.currentLSN,
+		&stats.checkpointLSN,
+		&stats.checkpointAge,
 	)
 	return stats, err
 }

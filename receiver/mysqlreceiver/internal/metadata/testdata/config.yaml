@@ -50,6 +50,12 @@ all_set:
     mysql.innodb.operation.pending:
       enabled: true
       attributes: ["operation"]
+    mysql.innodb.redo_log.checkpoint.age:
+      enabled: true
+    mysql.innodb.redo_log.lsn.checkpoint:
+      enabled: true
+    mysql.innodb.redo_log.lsn.current:
+      enabled: true
     mysql.innodb.row_lock.wait.count:
       enabled: true
     mysql.innodb.row_lock.wait.duration.avg:
@@ -242,6 +248,12 @@ reaggregate_set:
     mysql.innodb.operation.pending:
       enabled: true
       attributes: []
+    mysql.innodb.redo_log.checkpoint.age:
+      enabled: true
+    mysql.innodb.redo_log.lsn.checkpoint:
+      enabled: true
+    mysql.innodb.redo_log.lsn.current:
+      enabled: true
     mysql.innodb.row_lock.wait.count:
       enabled: true
     mysql.innodb.row_lock.wait.duration.avg:
@@ -434,6 +446,12 @@ none_set:
     mysql.innodb.operation.pending:
       enabled: false
       attributes: ["operation"]
+    mysql.innodb.redo_log.checkpoint.age:
+      enabled: false
+    mysql.innodb.redo_log.lsn.checkpoint:
+      enabled: false
+    mysql.innodb.redo_log.lsn.current:
+      enabled: false
     mysql.innodb.row_lock.wait.count:
       enabled: false
     mysql.innodb.row_lock.wait.duration.avg:

@@ -1218,6 +1218,15 @@ var MetricsInfo = metricsInfo{
 		Name:       "mysql.innodb.operation.pending",
 		Attributes: []string{"operations"},
 	},
+	MysqlInnodbRedoLogCheckpointAge: metricInfo{
+		Name: "mysql.innodb.redo_log.checkpoint.age",
+	},
+	MysqlInnodbRedoLogLsnCheckpoint: metricInfo{
+		Name: "mysql.innodb.redo_log.lsn.checkpoint",
+	},
+	MysqlInnodbRedoLogLsnCurrent: metricInfo{
+		Name: "mysql.innodb.redo_log.lsn.current",
+	},
 	MysqlInnodbRowLockWaitCount: metricInfo{
 		Name: "mysql.innodb.row_lock.wait.count",
 	},
@@ -1409,6 +1418,9 @@ type metricsInfo struct {
 	MysqlInnodbDataFileIo                   metricInfo
 	MysqlInnodbHistoryListLength            metricInfo
 	MysqlInnodbOperationPending             metricInfo
+	MysqlInnodbRedoLogCheckpointAge         metricInfo
+	MysqlInnodbRedoLogLsnCheckpoint         metricInfo
+	MysqlInnodbRedoLogLsnCurrent            metricInfo
 	MysqlInnodbRowLockWaitCount             metricInfo
 	MysqlInnodbRowLockWaitDurationAvg       metricInfo
 	MysqlInnodbRowLockWaitDurationMax       metricInfo
@@ -2912,6 +2924,156 @@ func (m *metricMysqlInnodbOperationPending) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlInnodbOperationPending(cfg MysqlInnodbOperationPendingMetricConfig) metricMysqlInnodbOperationPending {
 	m := metricMysqlInnodbOperationPending{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbRedoLogCheckpointAge struct {
+	data     pmetric.Metric                              // data buffer for generated metric.
+	config   MysqlInnodbRedoLogCheckpointAgeMetricConfig // metric config provided by user.
+	capacity int                                         // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.redo_log.checkpoint.age metric with initial data.
+func (m *metricMysqlInnodbRedoLogCheckpointAge) init() {
+	m.data.SetName("mysql.innodb.redo_log.checkpoint.age")
+	m.data.SetDescription("The difference, in bytes, between the current InnoDB redo log sequence number and the most recent checkpoint log sequence number.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbRedoLogCheckpointAge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbRedoLogCheckpointAge) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbRedoLogCheckpointAge) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbRedoLogCheckpointAge(cfg MysqlInnodbRedoLogCheckpointAgeMetricConfig) metricMysqlInnodbRedoLogCheckpointAge {
+	m := metricMysqlInnodbRedoLogCheckpointAge{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbRedoLogLsnCheckpoint struct {
+	data     pmetric.Metric                              // data buffer for generated metric.
+	config   MysqlInnodbRedoLogLsnCheckpointMetricConfig // metric config provided by user.
+	capacity int                                         // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.redo_log.lsn.checkpoint metric with initial data.
+func (m *metricMysqlInnodbRedoLogLsnCheckpoint) init() {
+	m.data.SetName("mysql.innodb.redo_log.lsn.checkpoint")
+	m.data.SetDescription("The InnoDB redo log sequence number of the most recent checkpoint.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbRedoLogLsnCheckpoint) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbRedoLogLsnCheckpoint) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbRedoLogLsnCheckpoint) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbRedoLogLsnCheckpoint(cfg MysqlInnodbRedoLogLsnCheckpointMetricConfig) metricMysqlInnodbRedoLogLsnCheckpoint {
+	m := metricMysqlInnodbRedoLogLsnCheckpoint{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbRedoLogLsnCurrent struct {
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   MysqlInnodbRedoLogLsnCurrentMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.redo_log.lsn.current metric with initial data.
+func (m *metricMysqlInnodbRedoLogLsnCurrent) init() {
+	m.data.SetName("mysql.innodb.redo_log.lsn.current")
+	m.data.SetDescription("The current InnoDB redo log sequence number.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbRedoLogLsnCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbRedoLogLsnCurrent) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbRedoLogLsnCurrent) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbRedoLogLsnCurrent(cfg MysqlInnodbRedoLogLsnCurrentMetricConfig) metricMysqlInnodbRedoLogLsnCurrent {
+	m := metricMysqlInnodbRedoLogLsnCurrent{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -6569,6 +6731,9 @@ type MetricsBuilder struct {
 	metricMysqlInnodbDataFileIo                   metricMysqlInnodbDataFileIo
 	metricMysqlInnodbHistoryListLength            metricMysqlInnodbHistoryListLength
 	metricMysqlInnodbOperationPending             metricMysqlInnodbOperationPending
+	metricMysqlInnodbRedoLogCheckpointAge         metricMysqlInnodbRedoLogCheckpointAge
+	metricMysqlInnodbRedoLogLsnCheckpoint         metricMysqlInnodbRedoLogLsnCheckpoint
+	metricMysqlInnodbRedoLogLsnCurrent            metricMysqlInnodbRedoLogLsnCurrent
 	metricMysqlInnodbRowLockWaitCount             metricMysqlInnodbRowLockWaitCount
 	metricMysqlInnodbRowLockWaitDurationAvg       metricMysqlInnodbRowLockWaitDurationAvg
 	metricMysqlInnodbRowLockWaitDurationMax       metricMysqlInnodbRowLockWaitDurationMax
@@ -6659,6 +6824,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlInnodbDataFileIo:                   newMetricMysqlInnodbDataFileIo(mbc.Metrics.MysqlInnodbDataFileIo),
 		metricMysqlInnodbHistoryListLength:            newMetricMysqlInnodbHistoryListLength(mbc.Metrics.MysqlInnodbHistoryListLength),
 		metricMysqlInnodbOperationPending:             newMetricMysqlInnodbOperationPending(mbc.Metrics.MysqlInnodbOperationPending),
+		metricMysqlInnodbRedoLogCheckpointAge:         newMetricMysqlInnodbRedoLogCheckpointAge(mbc.Metrics.MysqlInnodbRedoLogCheckpointAge),
+		metricMysqlInnodbRedoLogLsnCheckpoint:         newMetricMysqlInnodbRedoLogLsnCheckpoint(mbc.Metrics.MysqlInnodbRedoLogLsnCheckpoint),
+		metricMysqlInnodbRedoLogLsnCurrent:            newMetricMysqlInnodbRedoLogLsnCurrent(mbc.Metrics.MysqlInnodbRedoLogLsnCurrent),
 		metricMysqlInnodbRowLockWaitCount:             newMetricMysqlInnodbRowLockWaitCount(mbc.Metrics.MysqlInnodbRowLockWaitCount),
 		metricMysqlInnodbRowLockWaitDurationAvg:       newMetricMysqlInnodbRowLockWaitDurationAvg(mbc.Metrics.MysqlInnodbRowLockWaitDurationAvg),
 		metricMysqlInnodbRowLockWaitDurationMax:       newMetricMysqlInnodbRowLockWaitDurationMax(mbc.Metrics.MysqlInnodbRowLockWaitDurationMax),
@@ -6832,6 +7000,9 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlInnodbDataFileIo.emit(ils.Metrics())
 	mb.metricMysqlInnodbHistoryListLength.emit(ils.Metrics())
 	mb.metricMysqlInnodbOperationPending.emit(ils.Metrics())
+	mb.metricMysqlInnodbRedoLogCheckpointAge.emit(ils.Metrics())
+	mb.metricMysqlInnodbRedoLogLsnCheckpoint.emit(ils.Metrics())
+	mb.metricMysqlInnodbRedoLogLsnCurrent.emit(ils.Metrics())
 	mb.metricMysqlInnodbRowLockWaitCount.emit(ils.Metrics())
 	mb.metricMysqlInnodbRowLockWaitDurationAvg.emit(ils.Metrics())
 	mb.metricMysqlInnodbRowLockWaitDurationMax.emit(ils.Metrics())
@@ -7063,6 +7234,21 @@ func (mb *MetricsBuilder) RecordMysqlInnodbOperationPendingDataPoint(ts pcommon.
 	}
 	mb.metricMysqlInnodbOperationPending.recordDataPoint(mb.startTime, ts, val, operationsAttributeValue.String())
 	return nil
+}
+
+// RecordMysqlInnodbRedoLogCheckpointAgeDataPoint adds a data point to mysql.innodb.redo_log.checkpoint.age metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbRedoLogCheckpointAgeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbRedoLogCheckpointAge.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbRedoLogLsnCheckpointDataPoint adds a data point to mysql.innodb.redo_log.lsn.checkpoint metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbRedoLogLsnCheckpointDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbRedoLogLsnCheckpoint.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbRedoLogLsnCurrentDataPoint adds a data point to mysql.innodb.redo_log.lsn.current metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbRedoLogLsnCurrentDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbRedoLogLsnCurrent.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMysqlInnodbRowLockWaitCountDataPoint adds a data point to mysql.innodb.row_lock.wait.count metric.
