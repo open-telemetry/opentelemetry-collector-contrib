@@ -71,6 +71,7 @@ body:
       - exporter/logicmonitor
       - exporter/logzio
       - exporter/mezmo
+      - exporter/nats
       - exporter/opensearch
       - exporter/otelarrow
       - exporter/prometheus
