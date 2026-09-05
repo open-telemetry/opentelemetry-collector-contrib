@@ -4,9 +4,6 @@ package metadata
 
 import (
 	"context"
-	"testing"
-	"time"
-
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -14,6 +11,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+	"testing"
+	"time"
 )
 
 type eventsTestDataSet int
@@ -31,6 +30,7 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	lb := NewLogsBuilder(loadLogsBuilderConfig(t, "all_set"), settings)
 
 	rb := lb.NewResourceBuilder()
+	rb.SetDbSystemVersion("db.system.version-val")
 	rb.SetServerAddress("server.address-val")
 	rb.SetServerPort(11)
 	rb.SetServiceInstanceID("service.instance.id-val")
@@ -139,6 +139,7 @@ func TestLogsBuilder(t *testing.T) {
 			lb.RecordDbServerTopQueryEvent(ctx, timestamp, "db.collection.name-val", "db.namespace-val", "db.operation.name-val", "db.query.text-val", AttributeDbSystemNameMongodb, "mongodb.cursor.id-val", "mongodb.cursor.originating_command-val", "mongodb.explain_plan.hash-val", "mongodb.explain_plan.text-val", []any{"mongodb.operation.comment-item1", "mongodb.operation.comment-item2"}, 26.100000, 31, 31, 26.100000, 31, "mongodb.operation.plan.summary-val", 33, "mongodb.operation.type-val", false)
 
 			rb := lb.NewResourceBuilder()
+			rb.SetDbSystemVersion("db.system.version-val")
 			rb.SetServerAddress("server.address-val")
 			rb.SetServerPort(11)
 			rb.SetServiceInstanceID("service.instance.id-val")
