@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: receiver/macos_unified_logging
+note: Add messageType field to predicate validation
+issues: [50626]
+subtext: |-
+  Added missing 'messageType' field to validPredicateFields to fix validation error for README example.
+  Updated README example to use OR form instead of IN for messageType/logType as IN doesn't work reliably with these fields.
+change_logs: [user]

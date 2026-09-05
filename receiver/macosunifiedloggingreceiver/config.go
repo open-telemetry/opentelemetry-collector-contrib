@@ -29,6 +29,7 @@ var validPredicateFields = map[string]bool{
 	"formatString":                   true,
 	"logType":                        true,
 	"machContinuousTimestamp":        true,
+	"messageType":                    true,
 	"parentActivityIdentifier":       true,
 	"process":                        true,
 	"processIdentifier":              true,

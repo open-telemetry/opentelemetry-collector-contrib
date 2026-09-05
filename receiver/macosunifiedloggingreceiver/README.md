@@ -116,7 +116,7 @@ messageType == 'Error'
 
 Combine filters:
 ```
-subsystem == 'com.apple.example' AND messageType IN {'Error', 'Fault'}
+subsystem == 'com.apple.example' AND (messageType == 'Error' OR messageType == 'Fault')
 ```
 
 For a full description of predicate expressions, run `log help predicates`.
