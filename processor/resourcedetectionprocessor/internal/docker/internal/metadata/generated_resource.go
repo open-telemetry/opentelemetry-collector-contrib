@@ -21,10 +21,24 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetContainerImageID sets provided value as "container.image.id" attribute.
+func (rb *ResourceBuilder) SetContainerImageID(val string) {
+	if rb.config.ContainerImageID.Enabled {
+		rb.res.Attributes().PutStr("container.image.id", val)
+	}
+}
+
 // SetContainerImageName sets provided value as "container.image.name" attribute.
 func (rb *ResourceBuilder) SetContainerImageName(val string) {
 	if rb.config.ContainerImageName.Enabled {
 		rb.res.Attributes().PutStr("container.image.name", val)
+	}
+}
+
+// SetContainerImageTags sets provided value as "container.image.tags" attribute.
+func (rb *ResourceBuilder) SetContainerImageTags(val []any) {
+	if rb.config.ContainerImageTags.Enabled {
+		rb.res.Attributes().PutEmptySlice("container.image.tags").FromRaw(val)
 	}
 }
 
