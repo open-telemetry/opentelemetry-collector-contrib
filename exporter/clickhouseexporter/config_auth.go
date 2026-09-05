@@ -5,6 +5,7 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -88,7 +89,7 @@ func (h *headerCaptureRoundTripper) RoundTrip(req *http.Request) (*http.Response
 
 func jwtFromAuthorization(header string) (string, error) {
 	if header == "" {
-		return "", fmt.Errorf("authenticator did not return an authorization token")
+		return "", errors.New("authenticator did not return an authorization token")
 	}
 
 	token := header
@@ -99,7 +100,7 @@ func jwtFromAuthorization(header string) (string, error) {
 	}
 	token = strings.TrimSpace(token)
 	if token == "" {
-		return "", fmt.Errorf("authenticator returned an empty token")
+		return "", errors.New("authenticator returned an empty token")
 	}
 	return token, nil
 }
