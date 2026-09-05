@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
@@ -1366,4 +1367,42 @@ func TestFranzConsumerBrokerCacheEvictOnDisconnect(t *testing.T) {
 	// Disconnect should evict both entries.
 	c.OnBrokerDisconnect(meta, nil)
 	require.Empty(t, c.brokerReadOpts)
+}
+
+func TestStartFailureShutdownDoesNotBlock(t *testing.T) {
+	// Reproduces issue #50631: when Start() fails due to misconfigured TLS,
+	// Shutdown() should not block indefinitely.
+	const topic = "otlp_spans"
+	_, clientConfig := kafkatest.NewCluster(t, kfake.SeedTopics(int32(1), topic))
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.ClientConfig = clientConfig
+	cfg.ConsumerConfig.InitialOffset = "earliest"
+	cfg.ConsumerConfig.GroupID = t.Name()
+
+	// Configure bad TLS cert path to trigger failure in NewFranzConsumerGroup.
+	cfg.ClientConfig.TLS = &configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile:   "/this/goes/nowhere.cert",
+			CertFile: "/this/goes/nowhere.cert",
+			KeyFile:  "bunk",
+		},
+	}
+
+	settings, _, _ := mustNewSettings(t)
+	consumer, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, nil)
+	require.NoError(t, err)
+
+	// Start should fail due to bad TLS config. Assert on the stable wrapper
+	// message produced by NewFranzConsumerGroup, not the OS-specific syscall text.
+	err = consumer.Start(t.Context(), componenttest.NewNopHost())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to load TLS config")
+
+	// Shutdown should not block, even though Start failed.
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	err = consumer.Shutdown(ctx)
+	require.NoError(t, err)
+	require.NoError(t, ctx.Err(), "Shutdown should not timeout")
 }
