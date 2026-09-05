@@ -1303,6 +1303,67 @@ func TestSpanEventRedacted(t *testing.T) {
 	require.Equal(t, "foobar", val.Str())
 }
 
+func TestLogBodyAllowedStringValue(t *testing.T) {
+	body := pcommon.NewValueStr("user@mycompany.com")
+	tc := testConfig{
+		config: &Config{
+			AllowAllKeys:  true,
+			AllowedValues: []string{".+@mycompany.com"},
+			Summary:       "debug",
+		},
+		logBody: &body,
+	}
+
+	outLogs := runLogsTest(t, tc)
+	outLogBody := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
+	outLogAttrs := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+	assert.Equal(t, pcommon.ValueTypeStr, outLogBody.Type())
+	// An allowed string body must be left untouched.
+	assert.Equal(t, "user@mycompany.com", outLogBody.Str())
+	// The allowed body is surfaced in the summary attributes (see issue #50417).
+	val, found := outLogAttrs.Get(redactionBodyAllowedKeys)
+	assert.True(t, found)
+	assert.Equal(t, "body", val.Str())
+	val, found = outLogAttrs.Get(redactionBodyAllowedCount)
+	assert.True(t, found)
+	assert.Equal(t, int64(1), val.Int())
+	// An allowed body must not be reported as masked or redacted.
+	_, found = outLogAttrs.Get(redactionBodyMaskedKeys)
+	assert.False(t, found)
+	_, found = outLogAttrs.Get(redactionBodyRedactedKeys)
+	assert.False(t, found)
+}
+
+func TestLogBodyNonMatchingAllowedStringValueIsSanitized(t *testing.T) {
+	body := pcommon.NewValueStr("credit card 4111111111111111")
+	tc := testConfig{
+		config: &Config{
+			AllowAllKeys:  true,
+			BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+			AllowedValues: []string{".+@mycompany.com"},
+			Summary:       "debug",
+		},
+		logBody: &body,
+	}
+
+	outLogs := runLogsTest(t, tc)
+	outLogBody := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
+	outLogAttrs := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+	// A string body that does not match an allowed value regex is still masked.
+	assert.Equal(t, "credit card ****", outLogBody.Str())
+	val, found := outLogAttrs.Get(redactionBodyMaskedKeys)
+	assert.True(t, found)
+	assert.Equal(t, "body", val.Str())
+	val, found = outLogAttrs.Get(redactionBodyMaskedCount)
+	assert.True(t, found)
+	assert.Equal(t, int64(1), val.Int())
+	// The body is not reported as allowed.
+	_, found = outLogAttrs.Get(redactionBodyAllowedKeys)
+	assert.False(t, found)
+	_, found = outLogAttrs.Get(redactionBodyAllowedCount)
+	assert.False(t, found)
+}
+
 func TestLogBodyRedactionDifferentTypes(t *testing.T) {
 	stringBody := pcommon.NewValueStr("placeholder 4111111111111111")
 	tc := testConfig{

@@ -1,0 +1,14 @@
+change_type: bug_fix
+
+component: processor/redaction
+
+note: Record the `body` key in the redaction summary attributes when a string log body matches an allowed value
+
+issues: [50417]
+
+subtext: |
+  Previously the processor returned early without recording the allowed value, so an
+  allowed string log body was never reflected in `redaction.body.allowed.keys` /
+  `redaction.body.allowed.count`.
+
+change_logs: [user]
