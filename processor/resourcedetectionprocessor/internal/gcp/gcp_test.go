@@ -583,6 +583,10 @@ func (f *fakeGCPDetector) GKEHostID() (string, error) {
 	return f.gkeHostID, nil
 }
 
+func (f *fakeGCPDetector) GKEHostType() (string, error) {
+	return "", nil
+}
+
 func (f *fakeGCPDetector) FaaSName() (string, error) {
 	if f.err != nil {
 		return "", f.err
