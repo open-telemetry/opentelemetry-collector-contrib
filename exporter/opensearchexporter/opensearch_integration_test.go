@@ -12,6 +12,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -73,6 +75,109 @@ func setupOpenSearch(t *testing.T) string {
 	require.NoError(t, err)
 
 	return fmt.Sprintf("http://%s:%s", host, port.Port())
+}
+
+// httpGetJSON is a small helper for querying OpenSearch control-plane endpoints
+// (ISM policies, index templates, aliases) that the typed client does not expose.
+func httpGetJSON(t *testing.T, url string) (int, map[string]any) {
+	t.Helper()
+	resp, err := http.Get(url) //nolint:noctx,gosec // test-only, endpoint is a local container
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	body := map[string]any{}
+	if resp.StatusCode == http.StatusOK {
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+	}
+	return resp.StatusCode, body
+}
+
+func TestIntegration_ISM_CreatesPolicyAndWriteAlias(t *testing.T) {
+	endpoint := setupOpenSearch(t)
+
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.ClientConfig.Endpoint = endpoint
+	cfg.MappingsSettings.Mode = "otel-v1"
+	cfg.MappingsSettings.ManageIndexTemplate = true
+	cfg.MappingsSettings.ISM.Enabled = true
+	cfg.MappingsSettings.ISM.RolloverMinSize = "10gb"
+	cfg.MappingsSettings.ISM.RolloverMinIndexAge = "1h"
+	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
+
+	require.NoError(t, cfg.Validate())
+
+	exporter, err := NewFactory().CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+	require.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, exporter.Shutdown(context.Background())) //nolint:usetesting
+	})
+
+	// The ISM rollover policy is created for the span alias.
+	status, policy := httpGetJSON(t, endpoint+"/_plugins/_ism/policies/otel-v1-apm-span-policy")
+	require.Equal(t, http.StatusOK, status, "ISM policy should exist")
+	assert.Contains(t, policy, "policy")
+
+	// The initial index exists with the write alias attached.
+	status, alias := httpGetJSON(t, endpoint+"/otel-v1-apm-span-000001/_alias/otel-v1-apm-span")
+	require.Equal(t, http.StatusOK, status, "initial index with write alias should exist")
+	idx, ok := alias["otel-v1-apm-span-000001"].(map[string]any)
+	require.True(t, ok, "initial index should be present in alias response: %v", alias)
+	aliases, ok := idx["aliases"].(map[string]any)
+	require.True(t, ok)
+	writeAlias, ok := aliases["otel-v1-apm-span"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, true, writeAlias["is_write_index"])
+
+	// Idempotency: a second Start() must not error even though the policy/alias exist.
+	require.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
+}
+
+func TestIntegration_CustomIndexTemplate_Overlay(t *testing.T) {
+	endpoint := setupOpenSearch(t)
+
+	// Overlay uplifts a custom attribute to a typed field and keeps free-form span
+	// attributes un-indexed to bound the field count.
+	overlay := `{"template":{"mappings":{"properties":{"custom_uplifted_field":{"type":"integer"},"attributes":{"type":"object","enabled":false}}}}}`
+	overlayPath := filepath.Join(t.TempDir(), "overlay.json")
+	require.NoError(t, os.WriteFile(overlayPath, []byte(overlay), 0o600))
+
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.ClientConfig.Endpoint = endpoint
+	cfg.MappingsSettings.Mode = "otel-v1"
+	cfg.MappingsSettings.ManageIndexTemplate = true
+	cfg.MappingsSettings.IndexTemplateFile = overlayPath
+	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
+
+	require.NoError(t, cfg.Validate())
+
+	exporter, err := NewFactory().CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+	require.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, exporter.Shutdown(context.Background())) //nolint:usetesting
+	})
+
+	status, tmpl := httpGetJSON(t, endpoint+"/_index_template/otel-v1-apm-span-index-template")
+	require.Equal(t, http.StatusOK, status, "index template should exist")
+
+	templates, ok := tmpl["index_templates"].([]any)
+	require.True(t, ok, "index_templates array expected: %v", tmpl)
+	require.NotEmpty(t, templates)
+	first := templates[0].(map[string]any)["index_template"].(map[string]any)
+	props := first["template"].(map[string]any)["mappings"].(map[string]any)["properties"].(map[string]any)
+
+	// Overlay-added property is present and typed.
+	uplifted, ok := props["custom_uplifted_field"].(map[string]any)
+	require.True(t, ok, "custom overlay field should be merged into the template: %v", props)
+	assert.Equal(t, "integer", uplifted["type"])
+
+	// Overlay override applied: attributes object is disabled (un-indexed).
+	attrs, ok := props["attributes"].(map[string]any)
+	require.True(t, ok, "attributes property should exist")
+	assert.Equal(t, false, attrs["enabled"])
+
+	// Built-in base mapping is preserved (not clobbered by the overlay).
+	assert.Contains(t, props, "traceId")
 }
 
 func TestIntegration_OtelV1Mapping_Traces(t *testing.T) {
