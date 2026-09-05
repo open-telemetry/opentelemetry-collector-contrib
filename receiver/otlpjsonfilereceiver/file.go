@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
@@ -225,11 +226,24 @@ func createProfilesReceiver(_ context.Context, settings receiver.Settings, confi
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, _ map[string]any, _ int64, _ []int64) error {
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, _ int64, _ []int64) error {
 		for _, token := range tokens {
 			p, _ := profilesUnmarshaler.UnmarshalProfiles(token)
-			// TODO Append token.Attributes
 			if p.ResourceProfiles().Len() != 0 {
+				// Appends token.Attributes
+				dic := p.Dictionary()
+				for i := 0; i < p.ResourceProfiles().Len(); i++ {
+					resourceProfile := p.ResourceProfiles().At(i)
+					for j := 0; j < resourceProfile.ScopeProfiles().Len(); j++ {
+						scopeProfile := resourceProfile.ScopeProfiles().At(j)
+						for k := 0; k < scopeProfile.Profiles().Len(); k++ {
+							profile := scopeProfile.Profiles().At(k)
+							if err := appendToProfile(attributes, dic, profile); err != nil {
+								settings.Logger.Warn("Failed to append file attributes to profile", zap.Error(err))
+							}
+						}
+					}
+				}
 				_ = profiles.ConsumeProfiles(ctx, p)
 			}
 		}
@@ -240,6 +254,63 @@ func createProfilesReceiver(_ context.Context, settings receiver.Settings, confi
 	}
 
 	return &otlpjsonfilereceiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
+}
+
+// appendToProfile is the profiles equivalent of appendToMap. Profile attributes are
+// not stored inline: they are interned in the shared profiles dictionary and referenced
+// by index, so each key and key/value pair has to be added to the dictionary first.
+func appendToProfile(attributes map[string]any, dic pprofile.ProfilesDictionary, profile pprofile.Profile) error {
+	for key, value := range attributes {
+		kvu := pprofile.NewKeyValueAndUnit()
+		switch v := value.(type) {
+		case string:
+			kvu.Value().SetStr(v)
+		case int:
+			kvu.Value().SetInt(int64(v))
+		case float64:
+			kvu.Value().SetDouble(v)
+		case bool:
+			kvu.Value().SetBool(v)
+		default:
+			continue
+		}
+
+		keyIdx, err := pprofile.SetString(dic.StringTable(), key)
+		if err != nil {
+			return err
+		}
+		kvu.SetKeyStrindex(keyIdx)
+
+		attrIdx, err := pprofile.SetAttribute(dic.AttributeTable(), kvu)
+		if err != nil {
+			return err
+		}
+
+		// Repoint an attribute that already uses this key instead of appending a
+		// second one, so the result matches the upsert semantics appendToMap gets
+		// for free from pcommon.Map.
+		if !replaceAttributeIndex(dic, profile, keyIdx, attrIdx) {
+			profile.AttributeIndices().Append(attrIdx)
+		}
+	}
+	return nil
+}
+
+// replaceAttributeIndex points the profile's first attribute carrying keyIdx at
+// attrIdx, and reports whether such an attribute was found.
+func replaceAttributeIndex(dic pprofile.ProfilesDictionary, profile pprofile.Profile, keyIdx, attrIdx int32) bool {
+	table := dic.AttributeTable()
+	indices := profile.AttributeIndices()
+	for i, idx := range indices.All() {
+		if idx < 0 || int(idx) >= table.Len() {
+			continue
+		}
+		if table.At(int(idx)).KeyStrindex() == keyIdx {
+			indices.SetAt(i, attrIdx)
+			return true
+		}
+	}
+	return false
 }
 
 func appendToMap(attributes map[string]any, attr pcommon.Map) {
