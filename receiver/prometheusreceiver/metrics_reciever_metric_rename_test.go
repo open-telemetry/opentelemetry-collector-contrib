@@ -238,6 +238,9 @@ func TestLabelRenaming(t *testing.T) {
 
 	testComponent(t, targets, nil, func(cfg *PromConfig) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
+			labelDropConfig := relabel.DefaultRelabelConfig
+			labelDropConfig.Regex = relabel.MustNewRegexp("(url.*)")
+			labelDropConfig.Action = relabel.LabelDrop
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{
 					// this config should add new label {foo="bar"} to all metrics'
@@ -263,11 +266,7 @@ func TestLabelRenaming(t *testing.T) {
 					Action:      relabel.LabelMap,
 					Replacement: "bar$1",
 				},
-				{
-					// this config should drop the matched regex label
-					Regex:  relabel.MustNewRegexp("(url.*)"),
-					Action: relabel.LabelDrop,
-				},
+				&labelDropConfig, // Drop the matched regex label.
 			}
 		}
 	})
@@ -381,13 +380,12 @@ func TestLabelRenamingKeepAction(t *testing.T) {
 
 	testComponent(t, targets, nil, func(cfg *PromConfig) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
+			labelKeepConfig := relabel.DefaultRelabelConfig
+			labelKeepConfig.Regex = relabel.MustNewRegexp("__name__|__scheme__|__address__|" +
+				"__metrics_path__|__scrape_interval__|instance|job|(m.*)")
+			labelKeepConfig.Action = relabel.LabelKeep
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
-				{
-					// this config should keep only metric that matches the regex metric name, and drop the rest
-					Regex: relabel.MustNewRegexp("__name__|__scheme__|__address__|" +
-						"__metrics_path__|__scrape_interval__|instance|job|(m.*)"),
-					Action: relabel.LabelKeep,
-				},
+				&labelKeepConfig, // Keep only metrics matching the metric name regex.
 			}
 		}
 	})

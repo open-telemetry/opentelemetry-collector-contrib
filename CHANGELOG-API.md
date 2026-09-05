@@ -7,6 +7,58 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.160.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/datadog`: Remove deprecated func: StaticAPIKeyCheck (#50599)
+- `pkg/ottl`: Remove the deprecated `ottlprofile.NewTransformContext` and `ottlprofilesample.NewTransformContext`. Use `NewTransformContextPtr` instead. (#50399)
+- `pkg/ottl`: Change the "Like" Getters to return a value and a bool instead of a pointer (#50564)
+  `StringLikeGetter`, `FloatLikeGetter`, `IntLikeGetter`, `BoolLikeGetter`, and `ByteSliceLikeGetter`
+  now return the value by-value plus a `bool` that is `true` when a value was found and `false`
+  when the underlying value was nil, instead of returning a pointer.
+  
+- `processor/adaptive_tail_sampling`: Rename the `dynamic_sampling` processor to `adaptive_tail_sampling`. There is no alias, the old name stops working. (#50367)
+  The rename covers every surface that carried the old name:
+  the config id (`dynamic_sampling` -> `adaptive_tail_sampling`), the sampler types
+  (`dynamic_percentage` -> `adaptive_percentage`, `dynamic_throughput` -> `adaptive_throughput`),
+  the metric prefix (`otelcol_processor_dynamic_sampling_*` -> `otelcol_processor_adaptive_tail_sampling_*`),
+  the span attribute namespace (`otelcol.processor.dynamic_sampling.*` -> `otelcol.processor.adaptive_tail_sampling.*`),
+  and the Go module path (`processor/dynamicsamplingprocessor` -> `processor/adaptivetailsamplingprocessor`).
+  
+
+### 🚀 New components 🚀
+
+- `pkg/semconvtest`: Add pkg/semconvtest for validating component telemetry against OpenTelemetry Semantic Conventions using Weaver (#44905)
+  Provides a Go testing API that spins up a Weaver container via testcontainers-go,
+  sends logs/metrics/traces via OTLP gRPC, and parses live-check results for semconv violations.
+  Includes a sample receiver demonstrating the intended usage pattern for component authors.
+  
+
+### 💡 Enhancements 💡
+
+- `internal/k8sinventory`: Add informer-based observer implementation (#43602)
+- `pkg/ottl`: Add `ottl.SliceGetter` so functions can take slice arguments as either static literals or dynamic expressions. (#49341)
+  Unlike bare slice arguments, `ottl.SliceGetter` accepts literal lists or a getter
+  expression that resolves to a slice at runtime. Element type may be a typed
+  `ottl.Getter` (e.g. `ottl.StringGetter`) or a scalar.
+  
+- `pkg/ottl`: Add `WithCache` options to `TransformContext` creation functions (#50563)
+  This enables passing in a custom cache, for example to allow sharing between contexts.
+- `pkg/pdatatest`: add pmetricassert attribute include matcher (#48471)
+- `pkg/resourcetotelemetry`: Add `Included` and `Excluded` pattern matching to `Settings`. (#48861, #48862)
+  Supports wildcard patterns via `included` and `excluded` lists to selectively convert resource attributes to telemetry attributes, and deprecates `Enabled` and `ExcludeServiceAttributes`.
+  
+- `pkg/translator/prometheusremotewrite`: `FromMetricsV2` now translates the start timestamp of cumulative sums, histograms and summaries into `start_timestamp`. (#50089)
+- `receiver/windows_perf_counters`: Allow Windows performance counter wildcard queries to include their aggregation instance (#29054)
+  Existing `instances: "*"` configurations continue to omit `_Total`. Use `instances: ["*", "_Total"]` to retain it. For a custom aggregate such as `_Global_`, set `aggregation_name` and list that name beside the wildcard to retain it.
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/ottl`: The `IntLikeGetter` now returns an error when a string value cannot be parsed as an int (#50564)
+
+<!-- previous-version -->
+
 ## v0.159.0
 
 ### 🛑 Breaking changes 🛑
