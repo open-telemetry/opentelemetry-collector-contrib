@@ -1823,6 +1823,8 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | oracle.db.role | The database role of the Oracle instance (e.g. "PRIMARY", "PHYSICAL STANDBY"). | Any Str | true | - | - |
 | oracle.db.version | The Oracle Database version string. | Any Str | true | - | - |
 | oracledb.instance.name | The name of the instance that data is coming from. | Any Str | true | - | - |
+| server.address | Server domain name if available without reverse DNS lookup; otherwise, IP address or UNIX domain socket name. | Any Str | true | - | - |
+| server.port | Server port number. | Any Int | true | - | - |
 | service.instance.id | A unique identifier of the Oracle DB instance in the format host:port/serviceName. (defaults to 'unknown:1521', in case of error in generating this value) | Any Str | true | - | - |
 | service.name | Logical name of the service. When enabled, defaults to unknown_service:oracle. | Any Str | false | - | - |
 | service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |

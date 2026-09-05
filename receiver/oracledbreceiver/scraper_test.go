@@ -1706,6 +1706,8 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 				topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
 				instanceName:         "oraclehost:1521/ORCL",
 				hostName:             "oraclehost:1521",
+				serverAddress:        "oraclehost",
+				serverPort:           1521,
 				obfuscator:           newObfuscator(),
 				serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
 			}
@@ -2597,6 +2599,8 @@ func TestTopNLogsDiscardedWhenExecutionCountUnchanged(t *testing.T) {
 		topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
 		instanceName:         "oraclehost:1521/ORCL",
 		hostName:             "oraclehost:1521",
+		serverAddress:        "oraclehost",
+		serverPort:           1521,
 		obfuscator:           newObfuscator(),
 		serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
 	}
@@ -2684,6 +2688,8 @@ func TestTopNLogsProcedureNameEmpty(t *testing.T) {
 		topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
 		instanceName:         "oraclehost:1521/ORCL",
 		hostName:             "oraclehost:1521",
+		serverAddress:        "oraclehost",
+		serverPort:           1521,
 		obfuscator:           newObfuscator(),
 		serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
 	}
@@ -2868,6 +2874,8 @@ func TestObfuscateCacheHitsHandlesTruncatedSQL(t *testing.T) {
 		topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
 		instanceName:         "oraclehost:1521/ORCL",
 		hostName:             "oraclehost:1521",
+		serverAddress:        "oraclehost",
+		serverPort:           1521,
 		obfuscator:           newObfuscator(),
 		serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
 	}

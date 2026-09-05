@@ -856,6 +856,8 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetOracleDbRole("oracle.db.role-val")
 			rb.SetOracleDbVersion("oracle.db.version-val")
 			rb.SetOracledbInstanceName("oracledb.instance.name-val")
+			rb.SetServerAddress("server.address-val")
+			rb.SetServerPort(11)
 			rb.SetServiceInstanceID("service.instance.id-val")
 			rb.SetServiceName("service.name-val")
 			rb.SetServiceNamespace("service.namespace-val")

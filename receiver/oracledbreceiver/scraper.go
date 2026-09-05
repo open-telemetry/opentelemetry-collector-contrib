@@ -393,6 +393,8 @@ type oracleScraper struct {
 	querySampleCfg           QuerySample
 	sessionWaitEventCfg      SessionWaitEvent
 	serviceInstanceID        string
+	serverAddress            string
+	serverPort               int64
 	lastExecutionTimestamp   time.Time
 	// instanceInfo holds Oracle deployment metadata detected once at start().
 	// All fields are best-effort: detection failures are logged and leave the
@@ -401,6 +403,7 @@ type oracleScraper struct {
 }
 
 func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName, hostName string) (scraper.Metrics, error) {
+	serverAddress, serverPort := resolveServerEndpoint(hostName, logger)
 	s := &oracleScraper{
 		mb:                   metricsBuilder,
 		metricsBuilderConfig: metricsBuilderConfig,
@@ -411,6 +414,8 @@ func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig me
 		instanceName:         instanceName,
 		hostName:             hostName,
 		serviceInstanceID:    getInstanceID(instanceName, logger),
+		serverAddress:        serverAddress,
+		serverPort:           serverPort,
 	}
 	return scraper.NewMetrics(s.scrape, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
@@ -419,6 +424,7 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 	logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string, metricCache *lru.Cache[string, map[string]int64],
 	topQueryCollectCfg TopQueryCollection, querySampleCfg QuerySample, sessionWaitEventCfg SessionWaitEvent, hostName string,
 ) (scraper.Logs, error) {
+	serverAddress, serverPort := resolveServerEndpoint(hostName, logger)
 	s := &oracleScraper{
 		lb:                  logsBuilder,
 		logsBuilderConfig:   logsBuilderConfig,
@@ -434,6 +440,8 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 		hostName:            hostName,
 		obfuscator:          newObfuscator(),
 		serviceInstanceID:   getInstanceID(instanceName, logger),
+		serverAddress:       serverAddress,
+		serverPort:          serverPort,
 	}
 	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
@@ -2320,6 +2328,11 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
 
+	rb.SetServerAddress(s.serverAddress)
+	if s.serverPort > 0 {
+		rb.SetServerPort(s.serverPort)
+	}
+
 	if s.instanceInfo.dbVersion != "" {
 		rb.SetOracleDbVersion(s.instanceInfo.dbVersion)
 	}
@@ -2335,29 +2348,42 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	return rb
 }
 
+func resolveServerEndpoint(hostName string, logger *zap.Logger) (string, int64) {
+	host, portStr, err := net.SplitHostPort(hostName)
+	if err != nil {
+		return hostName, 1521
+	}
+
+	if strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback() {
+		hostname, err := os.Hostname()
+		if err != nil {
+			logger.Warn("Failed resolving loopback to machine hostname for server.address", zap.Error(err))
+		} else {
+			host = hostname
+		}
+	}
+
+	port, err := strconv.ParseInt(portStr, 10, 32)
+	if err != nil || port == 0 {
+		port = 1521
+	}
+
+	return host, port
+}
+
 func getInstanceID(instanceString string, logger *zap.Logger) string {
 	hostAndPort, service, found := strings.Cut(instanceString, "/")
 	if !found {
 		logger.Info("No service name found in the connection string", zap.String("instanceString", instanceString))
 	}
 
-	host, port, err := net.SplitHostPort(hostAndPort)
-	if err != nil {
-		logger.Warn("Computing service.instance.id failed. Couldn't extract host and port from the connection data.", zap.Error(err))
-		return constructInstanceID("unknown", "1521", service)
+	host, port := resolveServerEndpoint(hostAndPort, logger)
+
+	if strings.TrimSpace(host) == "" {
+		host = "unknown"
 	}
 
-	// Replace the host value with machine name if connecting to localhost target
-	if strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback() {
-		localhost, err := os.Hostname()
-		if err != nil {
-			logger.Warn("Failed getting localhost machine name for the service.instance.id.")
-		} else {
-			host = localhost
-		}
-	}
-
-	return constructInstanceID(host, port, service)
+	return constructInstanceID(host, strconv.FormatInt(port, 10), service)
 }
 
 func constructInstanceID(host, port, service string) string {

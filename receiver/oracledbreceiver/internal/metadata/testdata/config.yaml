@@ -383,6 +383,10 @@ all_set:
       enabled: true
     oracledb.instance.name:
       enabled: true
+    server.address:
+      enabled: true
+    server.port:
+      enabled: true
     service.instance.id:
       enabled: true
     service.name:
@@ -772,6 +776,10 @@ reaggregate_set:
     oracle.db.version:
       enabled: true
     oracledb.instance.name:
+      enabled: true
+    server.address:
+      enabled: true
+    server.port:
       enabled: true
     service.instance.id:
       enabled: true
@@ -1163,6 +1171,10 @@ none_set:
       enabled: false
     oracledb.instance.name:
       enabled: false
+    server.address:
+      enabled: false
+    server.port:
+      enabled: false
     service.instance.id:
       enabled: false
     service.name:
@@ -1189,6 +1201,12 @@ override_set:
     oracledb.instance.name:
       enabled: true
       override_value: "override-oracledb.instance.name"
+    server.address:
+      enabled: true
+      override_value: "override-server.address"
+    server.port:
+      enabled: true
+      override_value: 123
     service.instance.id:
       enabled: true
       override_value: "override-service.instance.id"
@@ -1231,6 +1249,18 @@ filter_set_include:
       events_include:
         - regexp: ".*"
     oracledb.instance.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    server.address:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    server.port:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -1292,6 +1322,18 @@ filter_set_exclude:
         - strict: "oracledb.instance.name-val"
       events_exclude:
         - strict: "oracledb.instance.name-val"
+    server.address:
+      enabled: true
+      metrics_exclude:
+        - strict: "server.address-val"
+      events_exclude:
+        - strict: "server.address-val"
+    server.port:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+      events_exclude:
+        - regexp: ".*"
     service.instance.id:
       enabled: true
       metrics_exclude:

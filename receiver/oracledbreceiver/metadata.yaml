@@ -40,6 +40,14 @@ resource_attributes:
     description: The name of the instance that data is coming from.
     enabled: true
     type: string
+  server.address:
+    description: Server domain name if available without reverse DNS lookup; otherwise, IP address or UNIX domain socket name.
+    enabled: true
+    type: string
+  server.port:
+    description: Server port number.
+    enabled: true
+    type: int
   service.instance.id:
     description: A unique identifier of the Oracle DB instance in the format host:port/serviceName. (defaults to 'unknown:1521', in case of error in generating this value)
     enabled: true

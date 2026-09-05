@@ -4,6 +4,9 @@ resourceMetrics:
         - key: host.name
           value:
             stringValue: ""
+        - key: server.address
+          value:
+            stringValue: ""
         - key: oracledb.instance.name
           value:
             stringValue: ""
