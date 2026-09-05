@@ -152,6 +152,9 @@ attributes:
   postgresql.application_name:
     description: Name of the application that is connected to this backend.
     type: string
+  postgresql.backend_start:
+    description: UTC timestamp (RFC3339) when this backend (connection) was started, from pg_stat_activity.backend_start. Stable for the lifetime of the connection, unlike postgresql.query_start which changes on every query.
+    type: string
   postgresql.blocking.lock.mode:
     description: The lock mode being requested by the blocked session (e.g. RowExclusiveLock, AccessExclusiveLock). Empty string when not blocked.
     type: string
@@ -218,6 +221,9 @@ attributes:
     type: string
   postgresql.rows:
     description: Total number of rows retrieved or affected by the statement, reported in delta value.
+    type: int
+  postgresql.session_duration:
+    description: Whole seconds since this backend (connection) was started, computed as now() minus pg_stat_activity.backend_start. 0 if backend_start is unavailable.
     type: int
   postgresql.shared_blks_dirtied:
     description: Total number of shared blocks dirtied by the statement, reported in delta value.
@@ -298,6 +304,8 @@ events:
       - user.name
       - postgresql.state
       - postgresql.pid
+      - postgresql.backend_start
+      - postgresql.session_duration
       - postgresql.application_name
       - network.peer.address
       - network.peer.port

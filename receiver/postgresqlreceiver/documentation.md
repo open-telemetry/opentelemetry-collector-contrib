@@ -675,6 +675,8 @@ query sample
 | user.name | Name of the user logged into this backend. | Any Str | - |
 | postgresql.state | Current overall state of this backend | Any Str | - |
 | postgresql.pid | Process ID of this backend. | Any Int | - |
+| postgresql.backend_start | UTC timestamp (RFC3339) when this backend (connection) was started, from pg_stat_activity.backend_start. Stable for the lifetime of the connection, unlike postgresql.query_start which changes on every query. | Any Str | - |
+| postgresql.session_duration | Whole seconds since this backend (connection) was started, computed as now() minus pg_stat_activity.backend_start. 0 if backend_start is unavailable. | Any Int | - |
 | postgresql.application_name | Name of the application that is connected to this backend. | Any Str | - |
 | network.peer.address | IP address of the client connected to this backend. | Any Str | - |
 | network.peer.port | TCP port number that the client is using for communication with this backend. | Any Int | - |

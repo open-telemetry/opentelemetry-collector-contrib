@@ -1316,6 +1316,7 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		querySampleSimpleColumns := []string{
 			querySampleColumnClientHostname,
 			querySampleColumnQueryStart,
+			querySampleColumnBackendStart,
 			querySampleColumnWaitEventType,
 			querySampleColumnWaitEvent,
 			querySampleColumnQueryID,
@@ -1392,6 +1393,15 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 			}
 		}
 
+		sessionDuration := int64(0)
+		if row[querySampleColumnSessionDuration] != "" {
+			sessionDuration, err = strconv.ParseInt(row[querySampleColumnSessionDuration], 10, 64)
+			if err != nil {
+				logger.Warn("failed to convert session_duration to int64", zap.Error(err))
+				errs = append(errs, err)
+			}
+		}
+
 		// TODO: check if the query is truncated.
 		obfuscated, err := obfuscateSQL(row[querySampleColumnQuery])
 		if err != nil {
@@ -1406,6 +1416,7 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		currentAttributes[string(semconv.UserNameKey)] = row[querySampleColumnUsename]
 		currentAttributes[postgresqlTotalExecTimeAttributeName] = duration
 		currentAttributes[dbAttributePrefix+querySampleColumnBlockingWaitDuration] = blockingWaitDuration
+		currentAttributes[dbAttributePrefix+querySampleColumnSessionDuration] = sessionDuration
 		finalAttributes = append(finalAttributes, currentAttributes)
 	}
 
