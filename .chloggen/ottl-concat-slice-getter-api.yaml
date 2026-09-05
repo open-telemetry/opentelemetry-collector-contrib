@@ -1,0 +1,8 @@
+change_type: breaking
+component: pkg/ottl
+note: Change `ConcatArguments.Vals` to use `ottl.SliceGetter`.
+issues: [27821, 38690]
+subtext: |
+  Code constructing `ConcatArguments` directly must now provide an
+  `ottl.SliceGetter[K, ottl.StringLikeGetter[K]]` instead of `[]ottl.StringLikeGetter[K]`.
+change_logs: [api]

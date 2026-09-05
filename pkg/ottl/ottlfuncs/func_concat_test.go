@@ -220,12 +220,29 @@ func Test_concat(t *testing.T) {
 				getters[i] = val
 			}
 
-			exprFunc := concat(getters, tt.delimiter)
+			vals := ottl.NewTestingSliceGetter[any, ottl.StringLikeGetter[any]](true, getters)
+			exprFunc := concat(vals, tt.delimiter)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func Test_concat_runtime_slice(t *testing.T) {
+	t.Parallel()
+
+	getters := []ottl.StringLikeGetter[any]{
+		&ottl.StandardStringLikeGetter[any]{Getter: func(context.Context, any) (any, error) { return "hello", nil }},
+		&ottl.StandardStringLikeGetter[any]{Getter: func(context.Context, any) (any, error) { return "world", nil }},
+	}
+	vals := ottl.NewTestingSliceGetter[any, ottl.StringLikeGetter[any]](false, getters)
+	delimiter := &ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return " ", nil }}
+
+	exprFunc := concat(vals, delimiter)
+	result, err := exprFunc(t.Context(), nil)
+	require.NoError(t, err)
+	assert.Equal(t, "hello world", result)
 }
 
 func Test_concat_error(t *testing.T) {
@@ -239,7 +256,8 @@ func Test_concat_error(t *testing.T) {
 			return "test", nil
 		},
 	}
-	exprFunc := concat[any]([]ottl.StringLikeGetter[any]{target}, delimiter)
+	vals := ottl.NewTestingSliceGetter[any, ottl.StringLikeGetter[any]](true, []ottl.StringLikeGetter[any]{target})
+	exprFunc := concat(vals, delimiter)
 	_, err := exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
@@ -255,7 +273,8 @@ func Test_concat_error_delimiter(t *testing.T) {
 			return 3, nil
 		},
 	}
-	exprFunc := concat[any]([]ottl.StringLikeGetter[any]{target}, delimiter)
+	vals := ottl.NewTestingSliceGetter[any, ottl.StringLikeGetter[any]](true, []ottl.StringLikeGetter[any]{target})
+	exprFunc := concat(vals, delimiter)
 	_, err := exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
@@ -279,13 +298,13 @@ func Test_ConcatFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 		concatArgs, ok := args.(*ConcatArguments[any])
 		require.True(t, ok)
-		concatArgs.Vals = []ottl.StringLikeGetter[any]{
+		concatArgs.Vals = *ottl.NewTestingSliceGetter[any, ottl.StringLikeGetter[any]](true, []ottl.StringLikeGetter[any]{
 			&ottl.StandardStringLikeGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return "hello", nil
 				},
 			},
-		}
+		})
 		concatArgs.Delimiter = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
 				return "-", nil

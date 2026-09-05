@@ -1,0 +1,8 @@
+change_type: enhancement
+component: pkg/ottl
+note: Allow `Concat` to accept slice values produced by paths and converter expressions.
+issues: [27821, 38690]
+subtext: |
+  `Concat` can now consume dynamic slices such as `Concat(Split(attributes["id"], "-"), "")`
+  and slice-valued attributes while preserving support for literal lists.
+change_logs: [user]
