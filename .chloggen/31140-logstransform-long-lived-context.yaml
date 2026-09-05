@@ -1,0 +1,9 @@
+change_type: bug_fix
+
+component: processor/logstransform
+
+note: Fix a bug where the logstransform processor's internal converter loop was tied to the short-lived Start context, causing the processor to stop processing logs shortly after startup. The loop now runs for the full lifetime of the component and stops cleanly on Shutdown.
+
+issues: [31140]
+
+change_logs: [user]
