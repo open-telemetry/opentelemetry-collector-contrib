@@ -15,8 +15,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+<<<<<<< HEAD
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+=======
+>>>>>>> 843bdf5d ([extension/bearertokenauth] Implement oauth2.TokenSource Token() interface)
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/zap/zaptest"
@@ -509,6 +512,7 @@ func TestBearerTokenFileWithComments(t *testing.T) {
 	assert.NoError(t, bauth.Shutdown(t.Context()))
 }
 
+<<<<<<< HEAD
 func TestBearerStartWithRetryOnFailure(t *testing.T) {
 	dir := t.TempDir()
 	tokenPath := filepath.Join(dir, "delayed.token")
@@ -645,3 +649,22 @@ func (h *statusRecordingHost) lastEvent() *componentstatus.Event {
 	}
 	return h.events[len(h.events)-1]
 }
+
+func TestBearerTokenAuth_Token(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.BearerToken = "my-secret-token"
+
+	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+	require.NotNil(t, bauth)
+	require.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, bauth.Shutdown(t.Context()))
+	}()
+
+	tok, err := bauth.Token(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, tok)
+	assert.Equal(t, "my-secret-token", tok.AccessToken)
+	assert.Equal(t, "Bearer", tok.TokenType)
+}
+
