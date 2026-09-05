@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/containerd/errdefs v1.0.0
-	github.com/gobwas/glob v0.2.3
+	github.com/gobwas/glob v1.0.0
 	github.com/moby/moby/api v1.55.0
 	github.com/moby/moby/client v0.5.1
 	github.com/stretchr/testify v1.12.1
