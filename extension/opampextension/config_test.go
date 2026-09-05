@@ -214,9 +214,10 @@ func TestOpAMPServer_GetTLSConfig(t *testing.T) {
 
 func TestConfig_Validate(t *testing.T) {
 	type fields struct {
-		Server       *OpAMPServer
-		InstanceUID  string
-		Capabilities Capabilities
+		Server           *OpAMPServer
+		InstanceUID      string
+		Capabilities     Capabilities
+		ReportsRawConfig bool
 	}
 	tests := []struct {
 		name    string
@@ -358,13 +359,52 @@ func TestConfig_Validate(t *testing.T) {
 				return assert.Equal(t, "extension.opampextension.RemoteRestarts feature gate must be enabled to use the accepts_restart_command capability", err.Error())
 			},
 		},
+		{
+			name: "reports_raw_config without reports_effective_config",
+			fields: fields{
+				ReportsRawConfig: true,
+				Capabilities: Capabilities{
+					ReportsEffectiveConfig: false,
+				},
+				Server: &OpAMPServer{
+					HTTP: &httpFields{
+						commonFields: commonFields{
+							Endpoint: "https://127.0.0.1:4320/v1/opamp",
+						},
+					},
+				},
+				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			},
+			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.Equal(t, "reports_raw_config requires reports_effective_config to be enabled", err.Error())
+			},
+		},
+		{
+			name: "reports_raw_config with reports_effective_config",
+			fields: fields{
+				ReportsRawConfig: true,
+				Capabilities: Capabilities{
+					ReportsEffectiveConfig: true,
+				},
+				Server: &OpAMPServer{
+					HTTP: &httpFields{
+						commonFields: commonFields{
+							Endpoint: "https://127.0.0.1:4320/v1/opamp",
+						},
+					},
+				},
+				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			},
+			wantErr: assert.NoError,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				Server:       tt.fields.Server,
-				InstanceUID:  tt.fields.InstanceUID,
-				Capabilities: tt.fields.Capabilities,
+				Server:           tt.fields.Server,
+				InstanceUID:      tt.fields.InstanceUID,
+				Capabilities:     tt.fields.Capabilities,
+				ReportsRawConfig: tt.fields.ReportsRawConfig,
 			}
 			tt.wantErr(t, cfg.Validate())
 		})
