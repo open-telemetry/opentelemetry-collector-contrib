@@ -9,7 +9,7 @@ status:
   stability:
     alpha: [metrics, traces, logs]
   distributions: [contrib]
-  unsupported_platforms: [aix]
+  unsupported_platforms: [aix, freebsd]
   codeowners:
     active: [dao-jun]
     emeritus: [dmitryax]
