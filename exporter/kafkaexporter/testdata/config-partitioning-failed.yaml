@@ -49,6 +49,15 @@ kafka/traces_message_key_exclusive:
   traces:
     message_key_from_metadata_key: my_key
   partition_traces_by_id: true
+kafka/traces_partition_exclusive:
+  partition_traces_by_id: true
+  partition_traces_by_resource_attributes:
+    - service.name
+kafka/traces_message_key_exclusive_resource:
+  traces:
+    message_key_from_metadata_key: my_key
+  partition_traces_by_resource_attributes:
+    - service.name
 kafka/metrics_message_key_exclusive:
   metrics:
     message_key_from_metadata_key: my_key
