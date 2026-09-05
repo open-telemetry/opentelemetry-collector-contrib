@@ -1,0 +1,6 @@
+FROM otelcol-sdnotify-base:latest
+
+COPY extension/sdnotifyextension/testdata/otelcol-config.yaml /etc/otelcol/config.yaml
+
+COPY extension/sdnotifyextension/testdata/otelcol-nonotify.service /etc/systemd/system/otelcol.service
+RUN ln -s /etc/systemd/system/otelcol.service /etc/systemd/system/multi-user.target.wants/otelcol.service
