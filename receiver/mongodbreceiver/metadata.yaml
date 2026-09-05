@@ -201,6 +201,32 @@ attributes:
   mongodb.query.truncated:
     description: Whether the value carried by db.query.text is a truncated rendering of the MongoDB command, as indicated by `$truncated` in the currentOp output.
     type: bool
+  mongodb.replica_set.lag.type:
+    description: The replication progress that the lag is measured against.
+    type: string
+    requirement_level: recommended
+    enum:
+      - applied
+      - durable
+  mongodb.replica_set.member.name:
+    description: The name of the replica set member, in host:port form.
+    type: string
+    requirement_level: recommended
+  mongodb.replica_set.member.state:
+    description: The state of a member within the replica set.
+    type: string
+    requirement_level: recommended
+    enum:
+      - startup
+      - primary
+      - secondary
+      - recovering
+      - startup2
+      - unknown
+      - arbiter
+      - down
+      - rollback
+      - removed
   mongodb.wt.concurrent_transaction.ticket.type:
     description: The WiredTiger concurrent-transaction ticket type.
     type: string
@@ -642,6 +668,34 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
     attributes: [operation]
+  mongodb.oplog.limit:
+    description: The maximum amount of storage the oplog is allowed to use.
+    stability: development
+    unit: By
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
+  mongodb.oplog.usage:
+    description: The amount of storage the oplog is using.
+    stability: development
+    unit: By
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
+  mongodb.oplog.window:
+    description: The time span between the oldest and the newest entry retained in the oplog.
+    stability: development
+    unit: s
+    enabled: false
+    gauge:
+      value_type: double
+    attributes: []
   mongodb.page_faults:
     description: The number of page faults.
     stability: development
@@ -715,6 +769,43 @@ metrics:
       value_type: double
       aggregation_temporality: delta
       monotonic: false
+  mongodb.replica_set.headroom:
+    description: The time margin a replica set member has before it falls off the end of the oplog.
+    stability: development
+    unit: s
+    enabled: false
+    gauge:
+      value_type: double
+    attributes: [mongodb.replica_set.member.name]
+  mongodb.replica_set.lag:
+    description: The time a replica set member is behind the primary.
+    stability: development
+    unit: s
+    enabled: false
+    gauge:
+      value_type: double
+    attributes: [mongodb.replica_set.member.name, mongodb.replica_set.lag.type]
+  mongodb.replica_set.member.count:
+    description: The number of members in the replica set.
+    stability: development
+    unit: "{member}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [mongodb.replica_set.member.state]
+  mongodb.replica_set.member.status:
+    description: The current replica set state of the scraped instance.
+    extended_documentation: A timeseries is produced for every possible state. The value is 1 for the state the instance is currently in, and 0 for all others.
+    stability: development
+    unit: "1"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [mongodb.replica_set.member.state]
   mongodb.session.count:
     description: The total number of active sessions.
     stability: development

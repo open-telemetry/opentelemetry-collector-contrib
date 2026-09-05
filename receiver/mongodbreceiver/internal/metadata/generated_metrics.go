@@ -208,6 +208,90 @@ var MapAttributeMongodbOperationState = map[string]AttributeMongodbOperationStat
 	"waiting": AttributeMongodbOperationStateWaiting,
 }
 
+// AttributeMongodbReplicaSetLagType specifies the value mongodb.replica_set.lag.type attribute.
+type AttributeMongodbReplicaSetLagType int
+
+const (
+	_ AttributeMongodbReplicaSetLagType = iota
+	AttributeMongodbReplicaSetLagTypeApplied
+	AttributeMongodbReplicaSetLagTypeDurable
+)
+
+// String returns the string representation of the AttributeMongodbReplicaSetLagType.
+func (av AttributeMongodbReplicaSetLagType) String() string {
+	switch av {
+	case AttributeMongodbReplicaSetLagTypeApplied:
+		return "applied"
+	case AttributeMongodbReplicaSetLagTypeDurable:
+		return "durable"
+	}
+	return ""
+}
+
+// MapAttributeMongodbReplicaSetLagType is a helper map of string to AttributeMongodbReplicaSetLagType attribute value.
+var MapAttributeMongodbReplicaSetLagType = map[string]AttributeMongodbReplicaSetLagType{
+	"applied": AttributeMongodbReplicaSetLagTypeApplied,
+	"durable": AttributeMongodbReplicaSetLagTypeDurable,
+}
+
+// AttributeMongodbReplicaSetMemberState specifies the value mongodb.replica_set.member.state attribute.
+type AttributeMongodbReplicaSetMemberState int
+
+const (
+	_ AttributeMongodbReplicaSetMemberState = iota
+	AttributeMongodbReplicaSetMemberStateStartup
+	AttributeMongodbReplicaSetMemberStatePrimary
+	AttributeMongodbReplicaSetMemberStateSecondary
+	AttributeMongodbReplicaSetMemberStateRecovering
+	AttributeMongodbReplicaSetMemberStateStartup2
+	AttributeMongodbReplicaSetMemberStateUnknown
+	AttributeMongodbReplicaSetMemberStateArbiter
+	AttributeMongodbReplicaSetMemberStateDown
+	AttributeMongodbReplicaSetMemberStateRollback
+	AttributeMongodbReplicaSetMemberStateRemoved
+)
+
+// String returns the string representation of the AttributeMongodbReplicaSetMemberState.
+func (av AttributeMongodbReplicaSetMemberState) String() string {
+	switch av {
+	case AttributeMongodbReplicaSetMemberStateStartup:
+		return "startup"
+	case AttributeMongodbReplicaSetMemberStatePrimary:
+		return "primary"
+	case AttributeMongodbReplicaSetMemberStateSecondary:
+		return "secondary"
+	case AttributeMongodbReplicaSetMemberStateRecovering:
+		return "recovering"
+	case AttributeMongodbReplicaSetMemberStateStartup2:
+		return "startup2"
+	case AttributeMongodbReplicaSetMemberStateUnknown:
+		return "unknown"
+	case AttributeMongodbReplicaSetMemberStateArbiter:
+		return "arbiter"
+	case AttributeMongodbReplicaSetMemberStateDown:
+		return "down"
+	case AttributeMongodbReplicaSetMemberStateRollback:
+		return "rollback"
+	case AttributeMongodbReplicaSetMemberStateRemoved:
+		return "removed"
+	}
+	return ""
+}
+
+// MapAttributeMongodbReplicaSetMemberState is a helper map of string to AttributeMongodbReplicaSetMemberState attribute value.
+var MapAttributeMongodbReplicaSetMemberState = map[string]AttributeMongodbReplicaSetMemberState{
+	"startup":    AttributeMongodbReplicaSetMemberStateStartup,
+	"primary":    AttributeMongodbReplicaSetMemberStatePrimary,
+	"secondary":  AttributeMongodbReplicaSetMemberStateSecondary,
+	"recovering": AttributeMongodbReplicaSetMemberStateRecovering,
+	"startup2":   AttributeMongodbReplicaSetMemberStateStartup2,
+	"unknown":    AttributeMongodbReplicaSetMemberStateUnknown,
+	"arbiter":    AttributeMongodbReplicaSetMemberStateArbiter,
+	"down":       AttributeMongodbReplicaSetMemberStateDown,
+	"rollback":   AttributeMongodbReplicaSetMemberStateRollback,
+	"removed":    AttributeMongodbReplicaSetMemberStateRemoved,
+}
+
 // AttributeMongodbWtConcurrentTransactionTicketType specifies the value mongodb.wt.concurrent_transaction.ticket.type attribute.
 type AttributeMongodbWtConcurrentTransactionTicketType int
 
@@ -484,6 +568,15 @@ var MetricsInfo = metricsInfo{
 		Name:       "mongodb.operation.time",
 		Attributes: []string{"operation"},
 	},
+	MongodbOplogLimit: metricInfo{
+		Name: "mongodb.oplog.limit",
+	},
+	MongodbOplogUsage: metricInfo{
+		Name: "mongodb.oplog.usage",
+	},
+	MongodbOplogWindow: metricInfo{
+		Name: "mongodb.oplog.window",
+	},
 	MongodbPageFaults: metricInfo{
 		Name: "mongodb.page_faults",
 	},
@@ -507,6 +600,22 @@ var MetricsInfo = metricsInfo{
 	},
 	MongodbReplUpdatesPerSec: metricInfo{
 		Name: "mongodb.repl_updates_per_sec",
+	},
+	MongodbReplicaSetHeadroom: metricInfo{
+		Name:       "mongodb.replica_set.headroom",
+		Attributes: []string{"mongodb.replica_set.member.name"},
+	},
+	MongodbReplicaSetLag: metricInfo{
+		Name:       "mongodb.replica_set.lag",
+		Attributes: []string{"mongodb.replica_set.member.name", "mongodb.replica_set.lag.type"},
+	},
+	MongodbReplicaSetMemberCount: metricInfo{
+		Name:       "mongodb.replica_set.member.count",
+		Attributes: []string{"mongodb.replica_set.member.state"},
+	},
+	MongodbReplicaSetMemberStatus: metricInfo{
+		Name:       "mongodb.replica_set.member.status",
+		Attributes: []string{"mongodb.replica_set.member.state"},
 	},
 	MongodbSessionCount: metricInfo{
 		Name: "mongodb.session.count",
@@ -578,6 +687,9 @@ type metricsInfo struct {
 	MongodbOperationLatencyTime               metricInfo
 	MongodbOperationReplCount                 metricInfo
 	MongodbOperationTime                      metricInfo
+	MongodbOplogLimit                         metricInfo
+	MongodbOplogUsage                         metricInfo
+	MongodbOplogWindow                        metricInfo
 	MongodbPageFaults                         metricInfo
 	MongodbQueriesRate                        metricInfo
 	MongodbReplCommandsPerSec                 metricInfo
@@ -586,6 +698,10 @@ type metricsInfo struct {
 	MongodbReplInsertsPerSec                  metricInfo
 	MongodbReplQueriesPerSec                  metricInfo
 	MongodbReplUpdatesPerSec                  metricInfo
+	MongodbReplicaSetHeadroom                 metricInfo
+	MongodbReplicaSetLag                      metricInfo
+	MongodbReplicaSetMemberCount              metricInfo
+	MongodbReplicaSetMemberStatus             metricInfo
 	MongodbSessionCount                       metricInfo
 	MongodbStorageSize                        metricInfo
 	MongodbUpdatesRate                        metricInfo
@@ -3134,6 +3250,160 @@ func newMetricMongodbOperationTime(cfg MongodbOperationTimeMetricConfig) metricM
 	return m
 }
 
+type metricMongodbOplogLimit struct {
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   MongodbOplogLimitMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.oplog.limit metric with initial data.
+func (m *metricMongodbOplogLimit) init() {
+	m.data.SetName("mongodb.oplog.limit")
+	m.data.SetDescription("The maximum amount of storage the oplog is allowed to use.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMongodbOplogLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbOplogLimit) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbOplogLimit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbOplogLimit(cfg MongodbOplogLimitMetricConfig) metricMongodbOplogLimit {
+	m := metricMongodbOplogLimit{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMongodbOplogUsage struct {
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   MongodbOplogUsageMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.oplog.usage metric with initial data.
+func (m *metricMongodbOplogUsage) init() {
+	m.data.SetName("mongodb.oplog.usage")
+	m.data.SetDescription("The amount of storage the oplog is using.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMongodbOplogUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbOplogUsage) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbOplogUsage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbOplogUsage(cfg MongodbOplogUsageMetricConfig) metricMongodbOplogUsage {
+	m := metricMongodbOplogUsage{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMongodbOplogWindow struct {
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   MongodbOplogWindowMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.oplog.window metric with initial data.
+func (m *metricMongodbOplogWindow) init() {
+	m.data.SetName("mongodb.oplog.window")
+	m.data.SetDescription("The time span between the oldest and the newest entry retained in the oplog.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMongodbOplogWindow) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbOplogWindow) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbOplogWindow) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbOplogWindow(cfg MongodbOplogWindowMetricConfig) metricMongodbOplogWindow {
+	m := metricMongodbOplogWindow{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMongodbPageFaults struct {
 	data     pmetric.Metric                // data buffer for generated metric.
 	config   MongodbPageFaultsMetricConfig // metric config provided by user.
@@ -3528,6 +3798,369 @@ func (m *metricMongodbReplUpdatesPerSec) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbReplUpdatesPerSec(cfg MongodbReplUpdatesPerSecMetricConfig) metricMongodbReplUpdatesPerSec {
 	m := metricMongodbReplUpdatesPerSec{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMongodbReplicaSetHeadroom struct {
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        MongodbReplicaSetHeadroomMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []float64                             // slice containing number of aggregated datapoints at each index
+}
+
+// init fills mongodb.replica_set.headroom metric with initial data.
+func (m *metricMongodbReplicaSetHeadroom) init() {
+	m.data.SetName("mongodb.replica_set.headroom")
+	m.data.SetDescription("The time margin a replica set member has before it falls off the end of the oplog.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricMongodbReplicaSetHeadroom) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, mongodbReplicaSetMemberNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbReplicaSetHeadroomMetricAttributeKeyMongodbReplicaSetMemberName) {
+		dp.Attributes().PutStr("mongodb.replica_set.member.name", mongodbReplicaSetMemberNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbReplicaSetHeadroom) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbReplicaSetHeadroom) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbReplicaSetHeadroom(cfg MongodbReplicaSetHeadroomMetricConfig) metricMongodbReplicaSetHeadroom {
+	m := metricMongodbReplicaSetHeadroom{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMongodbReplicaSetLag struct {
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        MongodbReplicaSetLagMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []float64                        // slice containing number of aggregated datapoints at each index
+}
+
+// init fills mongodb.replica_set.lag metric with initial data.
+func (m *metricMongodbReplicaSetLag) init() {
+	m.data.SetName("mongodb.replica_set.lag")
+	m.data.SetDescription("The time a replica set member is behind the primary.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricMongodbReplicaSetLag) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, mongodbReplicaSetMemberNameAttributeValue string, mongodbReplicaSetLagTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbReplicaSetLagMetricAttributeKeyMongodbReplicaSetMemberName) {
+		dp.Attributes().PutStr("mongodb.replica_set.member.name", mongodbReplicaSetMemberNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, MongodbReplicaSetLagMetricAttributeKeyMongodbReplicaSetLagType) {
+		dp.Attributes().PutStr("mongodb.replica_set.lag.type", mongodbReplicaSetLagTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbReplicaSetLag) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbReplicaSetLag) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbReplicaSetLag(cfg MongodbReplicaSetLagMetricConfig) metricMongodbReplicaSetLag {
+	m := metricMongodbReplicaSetLag{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMongodbReplicaSetMemberCount struct {
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        MongodbReplicaSetMemberCountMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
+}
+
+// init fills mongodb.replica_set.member.count metric with initial data.
+func (m *metricMongodbReplicaSetMemberCount) init() {
+	m.data.SetName("mongodb.replica_set.member.count")
+	m.data.SetDescription("The number of members in the replica set.")
+	m.data.SetUnit("{member}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricMongodbReplicaSetMemberCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, mongodbReplicaSetMemberStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbReplicaSetMemberCountMetricAttributeKeyMongodbReplicaSetMemberState) {
+		dp.Attributes().PutStr("mongodb.replica_set.member.state", mongodbReplicaSetMemberStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbReplicaSetMemberCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbReplicaSetMemberCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbReplicaSetMemberCount(cfg MongodbReplicaSetMemberCountMetricConfig) metricMongodbReplicaSetMemberCount {
+	m := metricMongodbReplicaSetMemberCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMongodbReplicaSetMemberStatus struct {
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        MongodbReplicaSetMemberStatusMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []int64                                   // slice containing number of aggregated datapoints at each index
+}
+
+// init fills mongodb.replica_set.member.status metric with initial data.
+func (m *metricMongodbReplicaSetMemberStatus) init() {
+	m.data.SetName("mongodb.replica_set.member.status")
+	m.data.SetDescription("The current replica set state of the scraped instance.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricMongodbReplicaSetMemberStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, mongodbReplicaSetMemberStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MongodbReplicaSetMemberStatusMetricAttributeKeyMongodbReplicaSetMemberState) {
+		dp.Attributes().PutStr("mongodb.replica_set.member.state", mongodbReplicaSetMemberStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbReplicaSetMemberStatus) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbReplicaSetMemberStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbReplicaSetMemberStatus(cfg MongodbReplicaSetMemberStatusMetricConfig) metricMongodbReplicaSetMemberStatus {
+	m := metricMongodbReplicaSetMemberStatus{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -4215,6 +4848,9 @@ type MetricsBuilder struct {
 	metricMongodbOperationLatencyTime               metricMongodbOperationLatencyTime
 	metricMongodbOperationReplCount                 metricMongodbOperationReplCount
 	metricMongodbOperationTime                      metricMongodbOperationTime
+	metricMongodbOplogLimit                         metricMongodbOplogLimit
+	metricMongodbOplogUsage                         metricMongodbOplogUsage
+	metricMongodbOplogWindow                        metricMongodbOplogWindow
 	metricMongodbPageFaults                         metricMongodbPageFaults
 	metricMongodbQueriesRate                        metricMongodbQueriesRate
 	metricMongodbReplCommandsPerSec                 metricMongodbReplCommandsPerSec
@@ -4223,6 +4859,10 @@ type MetricsBuilder struct {
 	metricMongodbReplInsertsPerSec                  metricMongodbReplInsertsPerSec
 	metricMongodbReplQueriesPerSec                  metricMongodbReplQueriesPerSec
 	metricMongodbReplUpdatesPerSec                  metricMongodbReplUpdatesPerSec
+	metricMongodbReplicaSetHeadroom                 metricMongodbReplicaSetHeadroom
+	metricMongodbReplicaSetLag                      metricMongodbReplicaSetLag
+	metricMongodbReplicaSetMemberCount              metricMongodbReplicaSetMemberCount
+	metricMongodbReplicaSetMemberStatus             metricMongodbReplicaSetMemberStatus
 	metricMongodbSessionCount                       metricMongodbSessionCount
 	metricMongodbStorageSize                        metricMongodbStorageSize
 	metricMongodbUpdatesRate                        metricMongodbUpdatesRate
@@ -4292,6 +4932,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMongodbOperationLatencyTime:               newMetricMongodbOperationLatencyTime(mbc.Metrics.MongodbOperationLatencyTime),
 		metricMongodbOperationReplCount:                 newMetricMongodbOperationReplCount(mbc.Metrics.MongodbOperationReplCount),
 		metricMongodbOperationTime:                      newMetricMongodbOperationTime(mbc.Metrics.MongodbOperationTime),
+		metricMongodbOplogLimit:                         newMetricMongodbOplogLimit(mbc.Metrics.MongodbOplogLimit),
+		metricMongodbOplogUsage:                         newMetricMongodbOplogUsage(mbc.Metrics.MongodbOplogUsage),
+		metricMongodbOplogWindow:                        newMetricMongodbOplogWindow(mbc.Metrics.MongodbOplogWindow),
 		metricMongodbPageFaults:                         newMetricMongodbPageFaults(mbc.Metrics.MongodbPageFaults),
 		metricMongodbQueriesRate:                        newMetricMongodbQueriesRate(mbc.Metrics.MongodbQueriesRate),
 		metricMongodbReplCommandsPerSec:                 newMetricMongodbReplCommandsPerSec(mbc.Metrics.MongodbReplCommandsPerSec),
@@ -4300,6 +4943,10 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMongodbReplInsertsPerSec:                  newMetricMongodbReplInsertsPerSec(mbc.Metrics.MongodbReplInsertsPerSec),
 		metricMongodbReplQueriesPerSec:                  newMetricMongodbReplQueriesPerSec(mbc.Metrics.MongodbReplQueriesPerSec),
 		metricMongodbReplUpdatesPerSec:                  newMetricMongodbReplUpdatesPerSec(mbc.Metrics.MongodbReplUpdatesPerSec),
+		metricMongodbReplicaSetHeadroom:                 newMetricMongodbReplicaSetHeadroom(mbc.Metrics.MongodbReplicaSetHeadroom),
+		metricMongodbReplicaSetLag:                      newMetricMongodbReplicaSetLag(mbc.Metrics.MongodbReplicaSetLag),
+		metricMongodbReplicaSetMemberCount:              newMetricMongodbReplicaSetMemberCount(mbc.Metrics.MongodbReplicaSetMemberCount),
+		metricMongodbReplicaSetMemberStatus:             newMetricMongodbReplicaSetMemberStatus(mbc.Metrics.MongodbReplicaSetMemberStatus),
 		metricMongodbSessionCount:                       newMetricMongodbSessionCount(mbc.Metrics.MongodbSessionCount),
 		metricMongodbStorageSize:                        newMetricMongodbStorageSize(mbc.Metrics.MongodbStorageSize),
 		metricMongodbUpdatesRate:                        newMetricMongodbUpdatesRate(mbc.Metrics.MongodbUpdatesRate),
@@ -4446,6 +5093,9 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMongodbOperationLatencyTime.emit(ils.Metrics())
 	mb.metricMongodbOperationReplCount.emit(ils.Metrics())
 	mb.metricMongodbOperationTime.emit(ils.Metrics())
+	mb.metricMongodbOplogLimit.emit(ils.Metrics())
+	mb.metricMongodbOplogUsage.emit(ils.Metrics())
+	mb.metricMongodbOplogWindow.emit(ils.Metrics())
 	mb.metricMongodbPageFaults.emit(ils.Metrics())
 	mb.metricMongodbQueriesRate.emit(ils.Metrics())
 	mb.metricMongodbReplCommandsPerSec.emit(ils.Metrics())
@@ -4454,6 +5104,10 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMongodbReplInsertsPerSec.emit(ils.Metrics())
 	mb.metricMongodbReplQueriesPerSec.emit(ils.Metrics())
 	mb.metricMongodbReplUpdatesPerSec.emit(ils.Metrics())
+	mb.metricMongodbReplicaSetHeadroom.emit(ils.Metrics())
+	mb.metricMongodbReplicaSetLag.emit(ils.Metrics())
+	mb.metricMongodbReplicaSetMemberCount.emit(ils.Metrics())
+	mb.metricMongodbReplicaSetMemberStatus.emit(ils.Metrics())
 	mb.metricMongodbSessionCount.emit(ils.Metrics())
 	mb.metricMongodbStorageSize.emit(ils.Metrics())
 	mb.metricMongodbUpdatesRate.emit(ils.Metrics())
@@ -4665,6 +5319,21 @@ func (mb *MetricsBuilder) RecordMongodbOperationTimeDataPoint(ts pcommon.Timesta
 	mb.metricMongodbOperationTime.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
 }
 
+// RecordMongodbOplogLimitDataPoint adds a data point to mongodb.oplog.limit metric.
+func (mb *MetricsBuilder) RecordMongodbOplogLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMongodbOplogLimit.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMongodbOplogUsageDataPoint adds a data point to mongodb.oplog.usage metric.
+func (mb *MetricsBuilder) RecordMongodbOplogUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMongodbOplogUsage.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMongodbOplogWindowDataPoint adds a data point to mongodb.oplog.window metric.
+func (mb *MetricsBuilder) RecordMongodbOplogWindowDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricMongodbOplogWindow.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordMongodbPageFaultsDataPoint adds a data point to mongodb.page_faults metric.
 func (mb *MetricsBuilder) RecordMongodbPageFaultsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricMongodbPageFaults.recordDataPoint(mb.startTime, ts, val)
@@ -4703,6 +5372,26 @@ func (mb *MetricsBuilder) RecordMongodbReplQueriesPerSecDataPoint(ts pcommon.Tim
 // RecordMongodbReplUpdatesPerSecDataPoint adds a data point to mongodb.repl_updates_per_sec metric.
 func (mb *MetricsBuilder) RecordMongodbReplUpdatesPerSecDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricMongodbReplUpdatesPerSec.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMongodbReplicaSetHeadroomDataPoint adds a data point to mongodb.replica_set.headroom metric.
+func (mb *MetricsBuilder) RecordMongodbReplicaSetHeadroomDataPoint(ts pcommon.Timestamp, val float64, mongodbReplicaSetMemberNameAttributeValue string) {
+	mb.metricMongodbReplicaSetHeadroom.recordDataPoint(mb.startTime, ts, val, mongodbReplicaSetMemberNameAttributeValue)
+}
+
+// RecordMongodbReplicaSetLagDataPoint adds a data point to mongodb.replica_set.lag metric.
+func (mb *MetricsBuilder) RecordMongodbReplicaSetLagDataPoint(ts pcommon.Timestamp, val float64, mongodbReplicaSetMemberNameAttributeValue string, mongodbReplicaSetLagTypeAttributeValue AttributeMongodbReplicaSetLagType) {
+	mb.metricMongodbReplicaSetLag.recordDataPoint(mb.startTime, ts, val, mongodbReplicaSetMemberNameAttributeValue, mongodbReplicaSetLagTypeAttributeValue.String())
+}
+
+// RecordMongodbReplicaSetMemberCountDataPoint adds a data point to mongodb.replica_set.member.count metric.
+func (mb *MetricsBuilder) RecordMongodbReplicaSetMemberCountDataPoint(ts pcommon.Timestamp, val int64, mongodbReplicaSetMemberStateAttributeValue AttributeMongodbReplicaSetMemberState) {
+	mb.metricMongodbReplicaSetMemberCount.recordDataPoint(mb.startTime, ts, val, mongodbReplicaSetMemberStateAttributeValue.String())
+}
+
+// RecordMongodbReplicaSetMemberStatusDataPoint adds a data point to mongodb.replica_set.member.status metric.
+func (mb *MetricsBuilder) RecordMongodbReplicaSetMemberStatusDataPoint(ts pcommon.Timestamp, val int64, mongodbReplicaSetMemberStateAttributeValue AttributeMongodbReplicaSetMemberState) {
+	mb.metricMongodbReplicaSetMemberStatus.recordDataPoint(mb.startTime, ts, val, mongodbReplicaSetMemberStateAttributeValue.String())
 }
 
 // RecordMongodbSessionCountDataPoint adds a data point to mongodb.session.count metric.

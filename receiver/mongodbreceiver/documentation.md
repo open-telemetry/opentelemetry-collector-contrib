@@ -446,6 +446,30 @@ The number of replicated operations executed.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | Recommended | - |
 
+### mongodb.oplog.limit
+
+The maximum amount of storage the oplog is allowed to use.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+### mongodb.oplog.usage
+
+The amount of storage the oplog is using.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+### mongodb.oplog.window
+
+The time span between the oldest and the newest entry retained in the oplog.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
 ### mongodb.page_faults
 
 The number of page faults.
@@ -509,6 +533,65 @@ The number of replicated updates executed per second.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {update}/s | Gauge | Double | Development |
+
+### mongodb.replica_set.headroom
+
+The time margin a replica set member has before it falls off the end of the oplog.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.replica_set.member.name | The name of the replica set member, in host:port form. | Any Str | Recommended | - |
+
+### mongodb.replica_set.lag
+
+The time a replica set member is behind the primary.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.replica_set.member.name | The name of the replica set member, in host:port form. | Any Str | Recommended | - |
+| mongodb.replica_set.lag.type | The replication progress that the lag is measured against. | Str: ``applied``, ``durable`` | Recommended | - |
+
+### mongodb.replica_set.member.count
+
+The number of members in the replica set.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {member} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.replica_set.member.state | The state of a member within the replica set. | Str: ``startup``, ``primary``, ``secondary``, ``recovering``, ``startup2``, ``unknown``, ``arbiter``, ``down``, ``rollback``, ``removed`` | Recommended | - |
+
+### mongodb.replica_set.member.status
+
+The current replica set state of the scraped instance.
+
+A timeseries is produced for every possible state. The value is 1 for the state the instance is currently in, and 0 for all others.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.replica_set.member.state | The state of a member within the replica set. | Str: ``startup``, ``primary``, ``secondary``, ``recovering``, ``startup2``, ``unknown``, ``arbiter``, ``down``, ``rollback``, ``removed`` | Recommended | - |
 
 ### mongodb.updates.rate
 
