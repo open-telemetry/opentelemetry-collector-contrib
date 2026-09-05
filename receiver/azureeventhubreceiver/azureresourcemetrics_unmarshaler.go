@@ -85,11 +85,11 @@ type azureResourceMetricRecord struct {
 	MetricName string `json:"metricName"`
 	TimeGrain  string `json:"timeGrain"`
 
-	Total   float64 `json:"total"`
-	Count   float64 `json:"count"`
-	Minimum float64 `json:"minimum"`
-	Maximum float64 `json:"maximum"`
-	Average float64 `json:"average"`
+	Total   *float64 `json:"total"`
+	Count   *float64 `json:"count"`
+	Minimum *float64 `json:"minimum"`
+	Maximum *float64 `json:"maximum"`
+	Average *float64 `json:"average"`
 }
 
 func (r *azureResourceMetricRecord) AppendMetrics(c azureResourceMetricsConfiger, md *pmetric.Metrics) error {
@@ -126,53 +126,68 @@ func (r *azureResourceMetricRecord) AppendMetrics(c azureResourceMetricsConfiger
 	startTimestamp = pcommon.NewTimestampFromTime(nanos.AsTime().Add(-time.Minute))
 
 	if c.GetAggregation() == "average" {
+		if r.Total == nil || r.Count == nil {
+			c.GetLogger().Warn("Metric record is missing total or count; skipping average",
+				zap.String("metricName", r.MetricName))
+			return nil
+		}
 		metrics.EnsureCapacity(1)
 		metricAverage := metrics.AppendEmpty()
 		metricAverage.SetName(strings.ToLower(strings.ReplaceAll(r.MetricName, " ", "_")))
 		dpAverage := metricAverage.SetEmptyGauge().DataPoints().AppendEmpty()
 		dpAverage.SetStartTimestamp(startTimestamp)
 		dpAverage.SetTimestamp(nanos)
-		dpAverage.SetDoubleValue(r.Total / r.Count)
+		dpAverage.SetDoubleValue(*r.Total / *r.Count)
 
 		return nil
 	}
 
 	metrics.EnsureCapacity(5)
 
-	metricTotal := metrics.AppendEmpty()
-	metricTotal.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Total")))
-	dpTotal := metricTotal.SetEmptyGauge().DataPoints().AppendEmpty()
-	dpTotal.SetStartTimestamp(startTimestamp)
-	dpTotal.SetTimestamp(nanos)
-	dpTotal.SetDoubleValue(r.Total)
+	if r.Total != nil {
+		metricTotal := metrics.AppendEmpty()
+		metricTotal.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Total")))
+		dpTotal := metricTotal.SetEmptyGauge().DataPoints().AppendEmpty()
+		dpTotal.SetStartTimestamp(startTimestamp)
+		dpTotal.SetTimestamp(nanos)
+		dpTotal.SetDoubleValue(*r.Total)
+	}
 
-	metricCount := metrics.AppendEmpty()
-	metricCount.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Count")))
-	dpCount := metricCount.SetEmptyGauge().DataPoints().AppendEmpty()
-	dpCount.SetStartTimestamp(startTimestamp)
-	dpCount.SetTimestamp(nanos)
-	dpCount.SetDoubleValue(r.Count)
+	if r.Count != nil {
+		metricCount := metrics.AppendEmpty()
+		metricCount.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Count")))
+		dpCount := metricCount.SetEmptyGauge().DataPoints().AppendEmpty()
+		dpCount.SetStartTimestamp(startTimestamp)
+		dpCount.SetTimestamp(nanos)
+		dpCount.SetDoubleValue(*r.Count)
+	}
 
-	metricMin := metrics.AppendEmpty()
-	metricMin.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Minimum")))
-	dpMin := metricMin.SetEmptyGauge().DataPoints().AppendEmpty()
-	dpMin.SetStartTimestamp(startTimestamp)
-	dpMin.SetTimestamp(nanos)
-	dpMin.SetDoubleValue(r.Minimum)
+	if r.Minimum != nil {
+		metricMin := metrics.AppendEmpty()
+		metricMin.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Minimum")))
+		dpMin := metricMin.SetEmptyGauge().DataPoints().AppendEmpty()
+		dpMin.SetStartTimestamp(startTimestamp)
+		dpMin.SetTimestamp(nanos)
+		dpMin.SetDoubleValue(*r.Minimum)
+	}
 
-	metricMax := metrics.AppendEmpty()
-	metricMax.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Maximum")))
-	dpMax := metricMax.SetEmptyGauge().DataPoints().AppendEmpty()
-	dpMax.SetStartTimestamp(startTimestamp)
-	dpMax.SetTimestamp(nanos)
-	dpMax.SetDoubleValue(r.Maximum)
+	if r.Maximum != nil {
+		metricMax := metrics.AppendEmpty()
+		metricMax.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Maximum")))
+		dpMax := metricMax.SetEmptyGauge().DataPoints().AppendEmpty()
+		dpMax.SetStartTimestamp(startTimestamp)
+		dpMax.SetTimestamp(nanos)
+		dpMax.SetDoubleValue(*r.Maximum)
+	}
 
-	metricAverage := metrics.AppendEmpty()
-	metricAverage.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Average")))
-	dpAverage := metricAverage.SetEmptyGauge().DataPoints().AppendEmpty()
-	dpAverage.SetStartTimestamp(startTimestamp)
-	dpAverage.SetTimestamp(nanos)
-	dpAverage.SetDoubleValue(r.Average)
+	if r.Average != nil {
+		metricAverage := metrics.AppendEmpty()
+		metricAverage.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(r.MetricName, " ", "_"), "Average")))
+		dpAverage := metricAverage.SetEmptyGauge().DataPoints().AppendEmpty()
+		dpAverage.SetStartTimestamp(startTimestamp)
+		dpAverage.SetTimestamp(nanos)
+		dpAverage.SetDoubleValue(*r.Average)
+	}
 
 	return nil
 }
