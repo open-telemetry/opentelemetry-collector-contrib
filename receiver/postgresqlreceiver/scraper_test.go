@@ -1417,7 +1417,7 @@ func TestScrapeTopQueries(t *testing.T) {
 func TestScrapeTopQueriesSkipsNilDatabase(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{}
-	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	require.NoError(t, err)
 	defer db.Close()
