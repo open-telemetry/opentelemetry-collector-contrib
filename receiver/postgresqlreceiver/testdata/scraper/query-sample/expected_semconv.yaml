@@ -34,9 +34,6 @@ resourceLogs:
               - key: postgresql.backend_start
                 value:
                   stringValue: ""
-              - key: postgresql.session_duration
-                value:
-                  intValue: "0"
               - key: postgresql.application_name
                 value:
                   stringValue: receiver

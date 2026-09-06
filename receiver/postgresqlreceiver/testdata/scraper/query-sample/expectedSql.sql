@@ -8,7 +8,6 @@ SELECT
     CASE WHEN sa.backend_start IS NOT NULL
          THEN to_char(sa.backend_start AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
          ELSE '' END AS backend_start,
-    COALESCE(EXTRACT(EPOCH FROM (clock_timestamp() - sa.backend_start))::BIGINT, 0) AS session_duration,
     COALESCE(sa.wait_event_type, '') AS wait_event_type,
     COALESCE(sa.wait_event, '') AS wait_event,
     COALESCE(sa.query_id::TEXT, '') AS query_id,

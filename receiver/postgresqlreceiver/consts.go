@@ -32,7 +32,6 @@ const (
 	querySampleColumnQueryID              = "query_id"
 	querySampleColumnQueryStart           = "query_start"
 	querySampleColumnQueryStartTimestamp  = "_query_start_timestamp"
-	querySampleColumnSessionDuration      = "session_duration"
 	querySampleColumnState                = "state"
 	querySampleColumnUsename              = "usename"
 	querySampleColumnWaitEvent            = "wait_event"
