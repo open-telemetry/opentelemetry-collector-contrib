@@ -1,0 +1,29 @@
+type: rolling_span_latency
+
+status:
+  class: processor
+  stability:
+    development: [traces]
+  distributions: []
+  codeowners:
+    active: [atoulme, rnterbush, pavankrish123]
+
+telemetry:
+  metrics:
+    processor_rolling_span_latency_active_baselines:
+      enabled: true
+      stability: development
+      description: Current number of active per-key latency baselines tracked by the processor.
+      unit: "{baselines}"
+      gauge:
+        value_type: int
+        async: true
+    processor_rolling_span_latency_dropped_keys_total:
+      enabled: true
+      stability: development
+      description: Number of new baseline keys dropped because max_baselines was reached.
+      unit: "{keys}"
+      sum:
+        value_type: int
+        monotonic: true
+        async: true

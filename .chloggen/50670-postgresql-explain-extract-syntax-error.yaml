@@ -1,0 +1,40 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: receiver/postgresql
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Collect query plans for top queries that use `EXTRACT(field FROM ...)` or a typed literal such as `interval '1 day'` or `timestamp with time zone '2024-01-01'`
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [50670]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  `pg_stat_statements` produces its normalized query text by substituting `$N` over the byte
+  ranges of the constants it recorded, without re-parsing the result, so it can place a parameter
+  where PostgreSQL does not accept one. `EXTRACT(YEAR FROM col)` becomes `EXTRACT($1 FROM col)`
+  and `interval '1 day'` becomes `interval $1`, both of which fail to `PREPARE` with a syntax
+  error. Affected queries were emitted with an empty `postgresql.query_plan`, and because the
+  empty result was cached the query stayed unexplainable for the lifetime of the cache entry.
+  These forms are now rewritten to `pg_catalog.extract($1, col)` and `CAST($1 AS interval)` before
+  the plan is requested. The typed-literal rewrite covers the built-in type names, including
+  multi-word spellings such as `timestamp with time zone` and interval field qualifiers such as
+  `interval $1 day`. Both rewrites are skipped inside string literals, quoted identifiers,
+  dollar-quoted strings and comments, so queries that already explained successfully are
+  unaffected. The `EXTRACT` rewrite requires PostgreSQL 14 or later, which is where
+  `pg_catalog.extract` was added.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
