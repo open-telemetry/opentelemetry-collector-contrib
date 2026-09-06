@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: receiver/mysql
+
+note: Add disabled-by-default InnoDB history list and active transaction metrics.
+
+issues: [50380]
+
+change_logs: [user]
