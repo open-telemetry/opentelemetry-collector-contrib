@@ -14,6 +14,8 @@
 // regular expression. The scope version field supports the same operators.
 // Attribute maps may use attributes/include instead of attributes to assert a
 // subset of the map while allowing extra keys.
+// A double_value key may use the /precision<n> suffix to compare rounded to n
+// decimal places, mirroring pmetrictest's IgnoreMetricFloatPrecision.
 //
 // See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48079
 // for the design discussion and roadmap of operator-suffix grammar
