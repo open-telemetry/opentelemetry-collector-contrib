@@ -184,8 +184,80 @@ metadata:
         data:
           type: "gauge"
         unit: "second"
+      - name: "avg_bytes_written"
+        column_name: "AVG_BYTES_WRITTEN"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "avg_rows_written"
+        column_name: "AVG_ROWS_WRITTEN"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "row"
+      - name: "statement_count"
+        column_name: "STATEMENT_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "run_in_rw_transaction_execution_count"
+        column_name: "RUN_IN_RW_TRANSACTION_EXECUTION_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_memory_peak_usage_bytes"
+        column_name: "AVG_MEMORY_PEAK_USAGE_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "avg_memory_usage_percentage"
+        column_name: "AVG_MEMORY_USAGE_PERCENTAGE"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_query_plan_creation_time_secs"
+        column_name: "AVG_QUERY_PLAN_CREATION_TIME_SECS"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "avg_filesystem_delay_secs"
+        column_name: "AVG_FILESYSTEM_DELAY_SECS"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "avg_remote_server_calls"
+        column_name: "AVG_REMOTE_SERVER_CALLS"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_rows_spooled"
+        column_name: "AVG_ROWS_SPOOLED"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "row"
+      - name: "avg_disk_io_cost"
+        column_name: "AVG_DISK_IO_COST"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_columnar_read_share"
+        column_name: "AVG_COLUMNAR_READ_SHARE"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
   - name: "total minute query stats"
-    query: "SELECT INTERVAL_END, EXECUTION_COUNT, AVG_LATENCY_SECONDS, AVG_ROWS, AVG_BYTES, AVG_ROWS_SCANNED, AVG_CPU_SECONDS, ALL_FAILED_EXECUTION_COUNT, ALL_FAILED_AVG_LATENCY_SECONDS, CANCELLED_OR_DISCONNECTED_EXECUTION_COUNT, TIMED_OUT_EXECUTION_COUNT, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 99.0) AS NINETY_NINE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 95.0) AS NINETY_FIVE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 50.0) AS FIFTY_PERCENTILE_LATENCY FROM SPANNER_SYS.QUERY_STATS_TOTAL_MINUTE WHERE INTERVAL_END = @pullTimestamp"
+    query: "SELECT INTERVAL_END, EXECUTION_COUNT, AVG_LATENCY_SECONDS, AVG_ROWS, AVG_BYTES, AVG_ROWS_SCANNED, AVG_CPU_SECONDS, ALL_FAILED_EXECUTION_COUNT, ALL_FAILED_AVG_LATENCY_SECONDS, CANCELLED_OR_DISCONNECTED_EXECUTION_COUNT, TIMED_OUT_EXECUTION_COUNT, AVG_BYTES_WRITTEN, AVG_ROWS_WRITTEN, RUN_IN_RW_TRANSACTION_EXECUTION_COUNT, AVG_MEMORY_PEAK_USAGE_BYTES, AVG_MEMORY_USAGE_PERCENTAGE, AVG_QUERY_PLAN_CREATION_TIME_SECS, AVG_FILESYSTEM_DELAY_SECS, AVG_REMOTE_SERVER_CALLS, AVG_ROWS_SPOOLED, AVG_DISK_IO_COST, AVG_COLUMNAR_READ_SHARE, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 99.0) AS NINETY_NINE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 95.0) AS NINETY_FIVE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 50.0) AS FIFTY_PERCENTILE_LATENCY FROM SPANNER_SYS.QUERY_STATS_TOTAL_MINUTE WHERE INTERVAL_END = @pullTimestamp"
     metric_name_prefix: "database/spanner/query_stats/total/"
     timestamp_column_name: "INTERVAL_END"
     high_cardinality: false
@@ -268,6 +340,72 @@ metadata:
         data:
           type: "gauge"
         unit: "second"
+      - name: "avg_bytes_written"
+        column_name: "AVG_BYTES_WRITTEN"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "avg_rows_written"
+        column_name: "AVG_ROWS_WRITTEN"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "row"
+      - name: "run_in_rw_transaction_execution_count"
+        column_name: "RUN_IN_RW_TRANSACTION_EXECUTION_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_memory_peak_usage_bytes"
+        column_name: "AVG_MEMORY_PEAK_USAGE_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "avg_memory_usage_percentage"
+        column_name: "AVG_MEMORY_USAGE_PERCENTAGE"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_query_plan_creation_time_secs"
+        column_name: "AVG_QUERY_PLAN_CREATION_TIME_SECS"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "avg_filesystem_delay_secs"
+        column_name: "AVG_FILESYSTEM_DELAY_SECS"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "avg_remote_server_calls"
+        column_name: "AVG_REMOTE_SERVER_CALLS"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_rows_spooled"
+        column_name: "AVG_ROWS_SPOOLED"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "row"
+      - name: "avg_disk_io_cost"
+        column_name: "AVG_DISK_IO_COST"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_columnar_read_share"
+        column_name: "AVG_COLUMNAR_READ_SHARE"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
 #
 # -------------------------------------------- Reads Stats -------------------------------------------------------------
 #
