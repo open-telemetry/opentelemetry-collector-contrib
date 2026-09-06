@@ -1,9 +1,17 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: container.image.id
+          value:
+            stringValue: "*"
         - key: container.image.name
           value:
-            stringValue: otelcontribcol:latest
+            stringValue: "*"
+        - key: container.image.tags
+          value:
+            arrayValue:
+              values:
+                - stringValue: latest
         - key: container.name
           value:
             stringValue: "<container-name>"
