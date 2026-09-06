@@ -16,8 +16,8 @@ issues: [50770]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The auto-allowlist only covered five of the summary attributes the processor writes. When data passed
-  through a second redaction processor, `redaction.allowed.keys`, `redaction.allowed.count` and the six
+  The auto-allowlist only covered five of the fourteen summary attributes the processor writes. When data passed
+  through a second redaction processor, `redaction.allowed.keys`, `redaction.allowed.count` and the seven
   `redaction.body.*` attributes were treated as unknown keys, deleted, and reported in
   `redaction.redacted.keys`. All summary attributes are now allowed through, so the summary accumulates
   across chained processors as intended.
