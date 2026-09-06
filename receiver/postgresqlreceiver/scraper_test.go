@@ -31,6 +31,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -1536,6 +1538,7 @@ func TestExplainQuery(t *testing.T) {
 	testCases := []struct {
 		name              string
 		query             string
+		preparedQuery     string // SQL sent to PREPARE; empty means query is already valid
 		queryID           string
 		normalizedQueryID string
 		paramCount        int
@@ -1605,6 +1608,27 @@ func TestExplainQuery(t *testing.T) {
 			paramCount:        1,
 			mockPlanResult:    `[{"Plan":{"Node Type":"Seq Scan","Relation Name":"orders"}}]`,
 		},
+		{
+			// pg_stat_statements emits EXTRACT($n FROM ...), which is not valid SQL.
+			// explainQuery must rewrite it before PREPARE; the mock fails if the
+			// unrepaired text is sent.
+			name:              "extract with parameter is repaired before PREPARE",
+			query:             "SELECT * FROM orders WHERE EXTRACT($1 FROM order_date) = $2",
+			preparedQuery:     "SELECT * FROM orders WHERE pg_catalog.extract($1, order_date) = $2",
+			queryID:           "30001",
+			normalizedQueryID: "30001",
+			paramCount:        2,
+			mockPlanResult:    `[{"Plan":{"Node Type":"Seq Scan","Relation Name":"orders"}}]`,
+		},
+		{
+			name:              "typed interval literal is repaired before PREPARE",
+			query:             "SELECT now() - interval $1",
+			preparedQuery:     "SELECT now() - CAST($1 AS interval)",
+			queryID:           "30002",
+			normalizedQueryID: "30002",
+			paramCount:        1,
+			mockPlanResult:    `[{"Plan":{"Node Type":"Result"}}]`,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -1621,9 +1645,13 @@ func TestExplainQuery(t *testing.T) {
 				closeFn: func() error { return nil },
 			}
 
+			prepareBody := tc.query
+			if tc.preparedQuery != "" {
+				prepareBody = tc.preparedQuery
+			}
 			expectedPrepareSQL := fmt.Sprintf(
 				"/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_%s AS %s;",
-				tc.normalizedQueryID, tc.query,
+				tc.normalizedQueryID, prepareBody,
 			)
 			mock.ExpectQuery(expectedPrepareSQL).WillReturnRows(sqlmock.NewRows([]string{"result"}))
 
@@ -1657,6 +1685,85 @@ func TestExplainQuery(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tc.mockPlanResult, plan)
 			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestExplainQueryLogsRepair(t *testing.T) {
+	const repairMessage = "repaired normalized query before EXPLAIN"
+
+	testCases := []struct {
+		name          string
+		query         string
+		preparedQuery string
+		paramCount    int
+	}{
+		{
+			name:          "a repaired query logs the text before and after",
+			query:         "SELECT * FROM orders WHERE EXTRACT($1 FROM order_date) = $2",
+			preparedQuery: "SELECT * FROM orders WHERE pg_catalog.extract($1, order_date) = $2",
+			paramCount:    2,
+		},
+		{
+			// The log is only useful when it means a rewrite happened, so a query that
+			// passes through untouched must not produce one.
+			name:       "an unrepaired query logs nothing",
+			query:      "SELECT * FROM orders WHERE order_date = $1",
+			paramCount: 1,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+			require.NoError(t, err)
+			defer db.Close()
+
+			core, logs := observer.New(zapcore.DebugLevel)
+			client := &postgreSQLClient{
+				client:  db,
+				closeFn: func() error { return nil },
+			}
+
+			prepareBody := tc.query
+			if tc.preparedQuery != "" {
+				prepareBody = tc.preparedQuery
+			}
+			mock.ExpectQuery(fmt.Sprintf(
+				"/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_40001 AS %s;",
+				prepareBody,
+			)).WillReturnRows(sqlmock.NewRows([]string{"result"}))
+
+			mock.ExpectQuery(
+				"/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_40001';",
+			).WillReturnRows(sqlmock.NewRows([]string{"param_count"}).AddRow(fmt.Sprintf("%d", tc.paramCount)))
+
+			nulls := make([]string, tc.paramCount)
+			for i := range nulls {
+				nulls[i] = "null"
+			}
+			mock.ExpectQuery(fmt.Sprintf("EXPLAIN(FORMAT JSON) EXECUTE otel_40001(%s);", strings.Join(nulls, ", "))).
+				WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(`[{"Plan":{"Node Type":"Seq Scan"}}]`))
+
+			mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_40001").
+				WillReturnResult(sqlmock.NewResult(0, 0))
+
+			_, err = client.explainQuery(t.Context(), tc.query, "40001", zap.New(core))
+			require.NoError(t, err)
+			require.NoError(t, mock.ExpectationsWereMet())
+
+			entries := logs.FilterMessage(repairMessage).All()
+			if tc.preparedQuery == "" {
+				assert.Empty(t, entries)
+				return
+			}
+			require.Len(t, entries, 1)
+			assert.Equal(t, zapcore.DebugLevel, entries[0].Level)
+			assert.Equal(t, map[string]any{
+				"queryID":         "40001",
+				"normalizedQuery": tc.query,
+				"preparedQuery":   tc.preparedQuery,
+			}, entries[0].ContextMap())
 		})
 	}
 }
