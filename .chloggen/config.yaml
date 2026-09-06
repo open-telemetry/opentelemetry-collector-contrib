@@ -224,6 +224,7 @@ components:
     - processor/remotetap
     - processor/resource
     - processor/resource_detection
+    - processor/rolling_span_latency
     - processor/scalewaydetector
     - processor/schema
     - processor/signing

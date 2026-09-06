@@ -269,7 +269,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectWalAge(ctx, now, listClient, &errs)
 	p.collectReplicationStats(ctx, now, listClient, &errs)
 	p.collectMaxConnections(ctx, now, listClient, &errs)
-	p.collectSharedRelationLocks(ctx, now, listClient, &errs)
+	p.collectServerScopedLocks(ctx, now, listClient, &errs)
 
 	if p.useOTelSemconv {
 		rb := p.setupSemconvResourceBuilder(p.mb.NewResourceBuilder())
@@ -369,7 +369,8 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 				logCtx = ctx
 			}
 		}
-		p.lb.RecordDbServerQuerySampleEvent(logCtx,
+		p.lb.RecordDbServerQuerySampleEvent(
+			logCtx,
 			timestamp,
 			metadata.AttributeDbSystemNamePostgresql,
 			attrString(atts, string(semconv.DBNamespaceKey)),
@@ -564,6 +565,42 @@ func (p *postgreSQLScraper) shutdown(_ context.Context) error {
 	return nil
 }
 
+func (p *postgreSQLScraper) backendsMetricsEnabled() bool {
+	return p.config.MetricsBuilderConfig.Metrics.PostgresqlBackends.Enabled
+}
+
+func (p *postgreSQLScraper) dbSizeMetricsEnabled() bool {
+	return p.config.MetricsBuilderConfig.Metrics.PostgresqlDbSize.Enabled
+}
+
+func (p *postgreSQLScraper) databaseStatsMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlCommits.Enabled ||
+		m.PostgresqlRollbacks.Enabled ||
+		m.PostgresqlDeadlocks.Enabled ||
+		m.PostgresqlTempFiles.Enabled ||
+		m.PostgresqlTempIo.Enabled ||
+		m.PostgresqlTupUpdated.Enabled ||
+		m.PostgresqlTupReturned.Enabled ||
+		m.PostgresqlTupFetched.Enabled ||
+		m.PostgresqlTupInserted.Enabled ||
+		m.PostgresqlTupDeleted.Enabled ||
+		m.PostgresqlBlksHit.Enabled ||
+		m.PostgresqlBlksRead.Enabled
+}
+
+// pg_stat_database_conflicts counters are only populated on standby servers, so
+// this is checked separately to avoid an unnecessary query on primaries.
+func (p *postgreSQLScraper) databaseConflictsMetricsEnabled() bool {
+	return p.config.MetricsBuilderConfig.Metrics.PostgresqlQueryConflicts.Enabled
+}
+
+// pg_stat_statements requires an extension that may not be installed, so this is
+// checked separately to avoid an unnecessary erroring query when it's absent.
+func (p *postgreSQLScraper) executionTimeMetricsEnabled() bool {
+	return p.config.MetricsBuilderConfig.Metrics.PostgresqlQueryExecutionTime.Enabled
+}
+
 func (p *postgreSQLScraper) retrieveDBMetrics(
 	ctx context.Context,
 	listClient client,
@@ -573,23 +610,27 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 ) {
 	wg := &sync.WaitGroup{}
 
-	wg.Add(3)
-	go p.retrieveBackends(ctx, wg, listClient, databases, r, errs)
-	go p.retrieveDatabaseSize(ctx, wg, listClient, databases, r, errs)
-	go p.retrieveDatabaseStats(ctx, wg, listClient, databases, r, errs)
+	if p.backendsMetricsEnabled() {
+		wg.Add(1)
+		go p.retrieveBackends(ctx, wg, listClient, databases, r, errs)
+	}
 
-	// pg_stat_database_conflicts is queried separately and only when the metric is
-	// enabled, since the counters are only populated on standby servers and would
-	// otherwise add an unnecessary query on every scrape.
-	if p.config.MetricsBuilderConfig.Metrics.PostgresqlQueryConflicts.Enabled {
+	if p.dbSizeMetricsEnabled() {
+		wg.Add(1)
+		go p.retrieveDatabaseSize(ctx, wg, listClient, databases, r, errs)
+	}
+
+	if p.databaseStatsMetricsEnabled() {
+		wg.Add(1)
+		go p.retrieveDatabaseStats(ctx, wg, listClient, databases, r, errs)
+	}
+
+	if p.databaseConflictsMetricsEnabled() {
 		wg.Add(1)
 		go p.retrieveDatabaseConflicts(ctx, wg, listClient, databases, r, errs)
 	}
 
-	// pg_stat_statements is queried separately and only when the metric is enabled, since it
-	// requires the pg_stat_statements extension and would otherwise add an unnecessary query
-	// (that errors when the extension is absent) on every scrape.
-	if p.config.MetricsBuilderConfig.Metrics.PostgresqlQueryExecutionTime.Enabled {
+	if p.executionTimeMetricsEnabled() {
 		wg.Add(1)
 		go p.retrieveExecutionTime(ctx, wg, listClient, databases, r, errs)
 	}
@@ -644,15 +685,54 @@ func formatNamespace(database, schema string) string {
 	return database + "|" + schema
 }
 
+func (p *postgreSQLScraper) blocksReadMetricsEnabled() bool {
+	return p.config.MetricsBuilderConfig.Metrics.PostgresqlBlocksRead.Enabled
+}
+
+func (p *postgreSQLScraper) perTableFieldsMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlRows.Enabled ||
+		m.PostgresqlOperations.Enabled ||
+		m.PostgresqlTableSize.Enabled ||
+		m.PostgresqlTableVacuumCount.Enabled ||
+		m.PostgresqlSequentialScans.Enabled
+}
+
+// Also true whenever perTableFieldsMetricsEnabled is, since the full per-table
+// query already produces the count as a side effect.
+func (p *postgreSQLScraper) tableCountMetricsEnabled() bool {
+	return p.perTableFieldsMetricsEnabled() || p.config.MetricsBuilderConfig.Metrics.PostgresqlTableCount.Enabled
+}
+
 func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *errsMux) (numTables int64) {
-	blockReads, err := dbClient.getBlocksReadByTable(ctx, db)
-	if err != nil {
-		errs.addPartial(err)
+	var blockReads map[tableIdentifier]tableIOStats
+	if p.blocksReadMetricsEnabled() {
+		var err error
+		blockReads, err = dbClient.getBlocksReadByTable(ctx, db)
+		if err != nil {
+			errs.addPartial(err)
+		}
 	}
 
-	tableMetrics, err := dbClient.getDatabaseTableMetrics(ctx, db)
-	if err != nil {
-		errs.addPartial(err)
+	needsPerTableFields := p.perTableFieldsMetricsEnabled()
+	needsTableMetrics := p.tableCountMetricsEnabled()
+
+	var tableMetrics map[tableIdentifier]tableStats
+	switch {
+	case needsPerTableFields:
+		var err error
+		tableMetrics, err = dbClient.getDatabaseTableMetrics(ctx, db)
+		if err != nil {
+			errs.addPartial(err)
+		}
+		numTables = int64(len(tableMetrics))
+	case needsTableMetrics:
+		// table.count is the only enabled table metric — use the cheap count.
+		var err error
+		numTables, err = dbClient.getTableCount(ctx)
+		if err != nil {
+			errs.addPartial(err)
+		}
 	}
 
 	for tableKey, tm := range tableMetrics {
@@ -693,7 +773,12 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 			p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 		}
 	}
-	return int64(len(tableMetrics))
+	return numTables
+}
+
+func (p *postgreSQLScraper) indexMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlIndexScans.Enabled || m.PostgresqlIndexSize.Enabled
 }
 
 func (p *postgreSQLScraper) collectIndexes(
@@ -703,6 +788,10 @@ func (p *postgreSQLScraper) collectIndexes(
 	database string,
 	errs *errsMux,
 ) {
+	if !p.indexMetricsEnabled() {
+		return
+	}
+
 	idxStats, err := client.getIndexStats(ctx, database)
 	if err != nil {
 		errs.addPartial(err)
@@ -726,6 +815,10 @@ func (p *postgreSQLScraper) collectIndexes(
 	}
 }
 
+func (p *postgreSQLScraper) functionCallsMetricsEnabled() bool {
+	return p.config.MetricsBuilderConfig.Metrics.PostgresqlFunctionCalls.Enabled
+}
+
 func (p *postgreSQLScraper) collectFunctions(
 	ctx context.Context,
 	now pcommon.Timestamp,
@@ -733,6 +826,10 @@ func (p *postgreSQLScraper) collectFunctions(
 	database string,
 	errs *errsMux,
 ) {
+	if !p.functionCallsMetricsEnabled() {
+		return
+	}
+
 	funcStats, err := client.getFunctionStats(ctx, database)
 	if err != nil {
 		errs.addPartial(err)
@@ -778,6 +875,17 @@ func (p *postgreSQLScraper) collectVectorStats(
 	p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
+// vectorSearchMetricsEnabled reports whether any of the 3 metrics fed by
+// getVectorSearchStats are enabled. All 3 are opt-in and derived from the same
+// pg_stat_statements query, so the query is skipped entirely unless at least one
+// of them is enabled.
+func (p *postgreSQLScraper) vectorSearchMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlVectorSearchCalls.Enabled ||
+		m.PostgresqlVectorSearchDuration.Enabled ||
+		m.PostgresqlVectorSearchRowsReturned.Enabled
+}
+
 // recordVectorSearchStats records the vector search metrics into the metrics builder and reports
 // whether any datapoints were recorded. It does not emit a ResourceMetrics itself; collectVectorStats
 // performs the consolidated emit.
@@ -788,11 +896,7 @@ func (p *postgreSQLScraper) recordVectorSearchStats(
 	database string,
 	errs *errsMux,
 ) bool {
-	// All metrics are opt-in and derived from the same pg_stat_statements query, so skip
-	// the collection entirely unless at least one of them is enabled.
-	if !p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorSearchCalls.Enabled &&
-		!p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorSearchDuration.Enabled &&
-		!p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorSearchRowsReturned.Enabled {
+	if !p.vectorSearchMetricsEnabled() {
 		return false
 	}
 
@@ -820,6 +924,15 @@ func (p *postgreSQLScraper) recordVectorSearchStats(
 	return recorded
 }
 
+// vectorInsertMetricsEnabled reports whether either of the 2 metrics fed by
+// getVectorInsertStats is enabled. Both are opt-in and derived from the same
+// pg_stat_statements query, so the query is skipped entirely unless at least one
+// of them is enabled.
+func (p *postgreSQLScraper) vectorInsertMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlVectorInsertRows.Enabled || m.PostgresqlVectorInsertDuration.Enabled
+}
+
 // recordVectorInsertStats records the vector insert metrics into the metrics builder and reports
 // whether any datapoints were recorded. Like recordVectorSearchStats it does not emit a
 // ResourceMetrics itself; collectVectorStats performs the consolidated emit.
@@ -830,10 +943,7 @@ func (p *postgreSQLScraper) recordVectorInsertStats(
 	database string,
 	errs *errsMux,
 ) bool {
-	// Both metrics are opt-in and derived from the same pg_stat_statements query, so skip
-	// the collection entirely unless at least one of them is enabled.
-	if !p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorInsertRows.Enabled &&
-		!p.config.MetricsBuilderConfig.Metrics.PostgresqlVectorInsertDuration.Enabled {
+	if !p.vectorInsertMetricsEnabled() {
 		return false
 	}
 
@@ -853,12 +963,25 @@ func (p *postgreSQLScraper) recordVectorInsertStats(
 	return recorded
 }
 
+func (p *postgreSQLScraper) bgWriterMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlBgwriterBuffersAllocated.Enabled ||
+		m.PostgresqlBgwriterBuffersWrites.Enabled ||
+		m.PostgresqlBgwriterCheckpointCount.Enabled ||
+		m.PostgresqlBgwriterDuration.Enabled ||
+		m.PostgresqlBgwriterMaxwritten.Enabled
+}
+
 func (p *postgreSQLScraper) collectBGWriterStats(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	client client,
 	errs *errsMux,
 ) {
+	if !p.bgWriterMetricsEnabled() {
+		return
+	}
+
 	bgStats, err := client.getBGWriterStats(ctx)
 	if err != nil {
 		errs.addPartial(err)
@@ -885,7 +1008,12 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	p.mb.RecordPostgresqlBgwriterMaxwrittenDataPoint(now, bgStats.maxWritten)
 }
 
-// collectDatabaseLocks collects the locks on relations local to the connected database
+// Shared by collectDatabaseLocks and collectServerScopedLocks, which both feed this one metric.
+func (p *postgreSQLScraper) databaseLocksMetricsEnabled() bool {
+	return p.config.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled
+}
+
+// collectDatabaseLocks collects the locks whose target belongs to the connected database
 func (p *postgreSQLScraper) collectDatabaseLocks(
 	ctx context.Context,
 	now pcommon.Timestamp,
@@ -893,6 +1021,10 @@ func (p *postgreSQLScraper) collectDatabaseLocks(
 	database string,
 	errs *errsMux,
 ) {
+	if !p.databaseLocksMetricsEnabled() {
+		return
+	}
+
 	dbLocks, err := dbClient.getDatabaseLocks(ctx)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching database locks", zap.String("database", database), zap.Error(err))
@@ -904,22 +1036,32 @@ func (p *postgreSQLScraper) collectDatabaseLocks(
 	}
 }
 
-func (p *postgreSQLScraper) collectSharedRelationLocks(
+// collectServerScopedLocks collects the locks that belong to no single database:
+// locks on shared catalogs and locks whose target is a transaction ID.
+func (p *postgreSQLScraper) collectServerScopedLocks(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	client client,
 	errs *errsMux,
 ) {
-	sharedLocks, err := client.getSharedRelationLocks(ctx)
+	if !p.databaseLocksMetricsEnabled() {
+		return
+	}
+
+	serverLocks, err := client.getServerScopedLocks(ctx)
 	if err != nil {
-		p.logger.Error("Errors encountered while fetching shared relation locks", zap.Error(err))
+		p.logger.Error("Errors encountered while fetching server-scoped locks", zap.Error(err))
 		errs.addPartial(err)
 		return
 	}
-	// Shared relations (pg_locks.database = 0) are server-scoped, so db.namespace is empty.
-	for _, dbLock := range sharedLocks {
+	// These locks are not attributable to a database, so db.namespace is empty.
+	for _, dbLock := range serverLocks {
 		p.mb.RecordPostgresqlDatabaseLocksDataPoint(now, dbLock.locks, dbLock.relation, dbLock.mode, dbLock.lockType, "")
 	}
+}
+
+func (p *postgreSQLScraper) maxConnectionsMetricsEnabled() bool {
+	return p.config.MetricsBuilderConfig.Metrics.PostgresqlConnectionMax.Enabled
 }
 
 func (p *postgreSQLScraper) collectMaxConnections(
@@ -928,6 +1070,10 @@ func (p *postgreSQLScraper) collectMaxConnections(
 	client client,
 	errs *errsMux,
 ) {
+	if !p.maxConnectionsMetricsEnabled() {
+		return
+	}
+
 	mc, err := client.getMaxConnections(ctx)
 	if err != nil {
 		errs.addPartial(err)
@@ -936,12 +1082,24 @@ func (p *postgreSQLScraper) collectMaxConnections(
 	p.mb.RecordPostgresqlConnectionMaxDataPoint(now, mc)
 }
 
+// wal.delay/wal.lag naming depends on a feature gate; both are checked here.
+func (p *postgreSQLScraper) replicationMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlReplicationDataDelay.Enabled ||
+		m.PostgresqlWalDelay.Enabled ||
+		m.PostgresqlWalLag.Enabled
+}
+
 func (p *postgreSQLScraper) collectReplicationStats(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	client client,
 	errs *errsMux,
 ) {
+	if !p.replicationMetricsEnabled() {
+		return
+	}
+
 	rss, err := client.getReplicationStats(ctx)
 	if err != nil {
 		errs.addPartial(err)
@@ -975,12 +1133,20 @@ func (p *postgreSQLScraper) collectReplicationStats(
 	}
 }
 
+func (p *postgreSQLScraper) walAgeMetricsEnabled() bool {
+	return p.config.MetricsBuilderConfig.Metrics.PostgresqlWalAge.Enabled
+}
+
 func (p *postgreSQLScraper) collectWalAge(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	client client,
 	errs *errsMux,
 ) {
+	if !p.walAgeMetricsEnabled() {
+		return
+	}
+
 	walAge, err := client.getLatestWalAgeSeconds(ctx)
 	if errors.Is(err, errNoLastArchive) {
 		// return no error as there is no last archive to derive the value from
