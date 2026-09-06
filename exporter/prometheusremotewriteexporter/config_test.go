@@ -82,11 +82,12 @@ func TestLoadConfig(t *testing.T) {
 					QueueSize:    2000,
 					NumConsumers: 10,
 				},
-				AddMetricSuffixes:           false,
-				Namespace:                   "test-space",
-				ExternalLabels:              map[string]string{"key1": "value1", "key2": "value2"},
-				ClientConfig:                confighttp.ClientConfig{},
-				HTTP:                        clientConfigWithHeaders,
+				AddMetricSuffixes: false,
+				Namespace:         "test-space",
+				ExternalLabels:    map[string]string{"key1": "value1", "key2": "value2"},
+				ClientConfig:      confighttp.ClientConfig{},
+				HTTP:              clientConfigWithHeaders,
+				//nolint:staticcheck // test deprecated field
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 				TargetInfo: TargetInfo{
 					Enabled: true,
@@ -207,6 +208,19 @@ func TestLoadConfig(t *testing.T) {
 					Enabled: true,
 				},
 			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "resource_constant_labels"),
+			expected: func() component.Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.ClientConfig = confighttp.ClientConfig{}
+				cfg.HTTP.Endpoint = "localhost:8888"
+				cfg.ResourceConstantLabels = resourcetotelemetry.Settings{
+					Included: []string{"service*"},
+					Excluded: []string{"service.attr1"},
+				}
+				return cfg
+			}(),
 		},
 	}
 
@@ -351,4 +365,25 @@ func TestHTTPOverridesFlatConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestResourceConstantLabelsValidation(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ResourceConstantLabels = resourcetotelemetry.Settings{
+		Included: []string{"service*"},
+	}
+	assert.NoError(t, cfg.Validate())
+
+	invalidCfg := createDefaultConfig().(*Config)
+	invalidCfg.ResourceConstantLabels.Enabled = true //nolint:staticcheck // testing deprecated field rejection
+	assert.Error(t, invalidCfg.Validate())
+
+	cfg.ResourceToTelemetrySettings.Enabled = true //nolint:staticcheck // ignore deprecated field
+	assert.Error(t, cfg.Validate())
+
+	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewriteDisableResourceToTelemetryConversionFeatureGate, true)()
+	assert.Error(t, cfg.Validate())
+
+	cfg.ResourceToTelemetrySettings = resourcetotelemetry.Settings{}
+	assert.NoError(t, cfg.Validate())
 }

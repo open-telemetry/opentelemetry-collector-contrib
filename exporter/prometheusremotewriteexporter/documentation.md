@@ -140,6 +140,7 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `exporter.prometheusremotewrite.DisableResourceToTelemetryConversion` | alpha | When enabled, the deprecated resource_to_telemetry_conversion section and legacy conversion fields are disabled, and resource_constant_labels must be used instead | v0.160.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48862) |
 | `exporter.prometheusremotewritexporter.EnableMultipleWorkers` | alpha | When enabled and settings configured, the Prometheus remote exporter will spawn multiple workers/goroutines to handle incoming metrics batches concurrently. | v0.118.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/36134) |
 | `exporter.prometheusremotewritexporter.RetryOn429` | alpha | When enabled, the Prometheus remote write exporter will retry 429 http status code. Requires exporter.prometheusremotewritexporter.metrics.RetryOn429 to be enabled. | v0.101.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/31924) |
 | `exporter.prometheusremotewritexporter.enableSendingRW2` | alpha | When enabled, the Prometheus remote write exporter will support sending rw2. Extra configuration is still required besides enabling this feature gate. | v0.125.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/35888) |
