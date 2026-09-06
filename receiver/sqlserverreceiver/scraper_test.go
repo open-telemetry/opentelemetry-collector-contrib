@@ -25,7 +25,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -172,19 +171,11 @@ func TestEmptyScrape(t *testing.T) {
 
 func TestSuccessfulScrape(t *testing.T) {
 	tests := []struct {
-		removeServerResourceAttributeFeatureGate bool
-		name                                     string
-		// propertiesFixtureFile overrides the fixture returned for the server properties
-		// query. Empty means the default on-prem fixture (propertyQueryData.txt).
+		name                  string
 		propertiesFixtureFile string
 	}{
 		{
-			name:                                     "TestSuccessfulScrape with removing server resource attribute feature gate on",
-			removeServerResourceAttributeFeatureGate: true,
-		},
-		{
-			name:                                     "TestSuccessfulScrape with removing server resource attribute feature gate off",
-			removeServerResourceAttributeFeatureGate: false,
+			name: "TestSuccessfulScrape",
 		},
 		{
 			// Azure SQL Managed Instance (EngineEdition 8) returns a reduced property column
@@ -199,15 +190,12 @@ func TestSuccessfulScrape(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			testutil.SetFeatureGateForTest(t, metadata.ReceiverSqlserverRemoveServerResourceAttributeFeatureGate, test.removeServerResourceAttributeFeatureGate)
 			cfg := createDefaultConfig().(*Config)
 			cfg.Username = "sa"
 			cfg.Password = "password"
 			cfg.Port = 1433
 			cfg.Server = "0.0.0.0"
 			cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-			cfg.MetricsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
-			cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 			cfg.MetricsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
 			cfg.MetricsBuilderConfig.ResourceAttributes.ServiceNamespace.Enabled = true
 			cfg.LogsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
@@ -236,32 +224,27 @@ func TestSuccessfulScrape(t *testing.T) {
 
 				actualMetrics, err := scraper.ScrapeMetrics(t.Context())
 				assert.NoError(t, err)
-				fileSuffix := ".yaml"
-				if test.removeServerResourceAttributeFeatureGate {
-					fileSuffix = "RemoveServerResourceAttributes.yaml"
-				}
 				var expectedFile string
 				switch scraper.sqlQuery {
 				case getSQLServerAvailabilityGroupQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedAvailabilityGroupMetrics")
+					expectedFile = filepath.Join("testdata", "expectedAvailabilityGroupMetrics.yaml")
 				case getSQLServerDatabaseIOQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedDatabaseIO")
+					expectedFile = filepath.Join("testdata", "expectedDatabaseIO.yaml")
 				case getSQLServerPerformanceCounterQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedPerfCounters")
+					expectedFile = filepath.Join("testdata", "expectedPerfCounters.yaml")
 				case getSQLServerPropertiesQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedProperties")
+					expectedFile = filepath.Join("testdata", "expectedProperties.yaml")
 				case getSQLServerWaitStatsQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedWaitStats")
+					expectedFile = filepath.Join("testdata", "expectedWaitStats.yaml")
 				case getSQLServerIndexPhysicalStatsQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedIndexPhysicalMetrics")
+					expectedFile = filepath.Join("testdata", "expectedIndexPhysicalMetrics.yaml")
 				case getSQLServerWorkerThreadsQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedWorkerThreads")
+					expectedFile = filepath.Join("testdata", "expectedWorkerThreads.yaml")
 				case getSQLServerCPUMemoryQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedCPUMemory")
+					expectedFile = filepath.Join("testdata", "expectedCPUMemory.yaml")
 				case getSQLServerDiskIOQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedDiskIO")
+					expectedFile = filepath.Join("testdata", "expectedDiskIO.yaml")
 				}
-				expectedFile += fileSuffix
 
 				// Uncomment line below to re-generate expected metrics.
 				// golden.WriteMetrics(t, expectedFile, actualMetrics)
