@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.45.1
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.84.1
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.85.0
 	github.com/aws/smithy-go v1.28.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.66.1-0.20260903163450-cc4b33fc673f
