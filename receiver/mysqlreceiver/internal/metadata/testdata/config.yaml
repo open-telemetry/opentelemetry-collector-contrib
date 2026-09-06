@@ -45,6 +45,8 @@ all_set:
     mysql.innodb.data_file.io:
       enabled: true
       attributes: ["disk.io.direction"]
+    mysql.innodb.history_list.length:
+      enabled: true
     mysql.innodb.operation.pending:
       enabled: true
       attributes: ["operation"]
@@ -53,6 +55,10 @@ all_set:
     mysql.innodb.row_lock.wait.duration.avg:
       enabled: true
     mysql.innodb.row_lock.wait.duration.max:
+      enabled: true
+    mysql.innodb.transaction.active.count:
+      enabled: true
+    mysql.innodb.transaction.active.duration.max:
       enabled: true
     mysql.joins:
       enabled: true
@@ -231,6 +237,8 @@ reaggregate_set:
     mysql.innodb.data_file.io:
       enabled: true
       attributes: []
+    mysql.innodb.history_list.length:
+      enabled: true
     mysql.innodb.operation.pending:
       enabled: true
       attributes: []
@@ -239,6 +247,10 @@ reaggregate_set:
     mysql.innodb.row_lock.wait.duration.avg:
       enabled: true
     mysql.innodb.row_lock.wait.duration.max:
+      enabled: true
+    mysql.innodb.transaction.active.count:
+      enabled: true
+    mysql.innodb.transaction.active.duration.max:
       enabled: true
     mysql.joins:
       enabled: true
@@ -417,6 +429,8 @@ none_set:
     mysql.innodb.data_file.io:
       enabled: false
       attributes: ["disk.io.direction"]
+    mysql.innodb.history_list.length:
+      enabled: false
     mysql.innodb.operation.pending:
       enabled: false
       attributes: ["operation"]
@@ -425,6 +439,10 @@ none_set:
     mysql.innodb.row_lock.wait.duration.avg:
       enabled: false
     mysql.innodb.row_lock.wait.duration.max:
+      enabled: false
+    mysql.innodb.transaction.active.count:
+      enabled: false
+    mysql.innodb.transaction.active.duration.max:
       enabled: false
     mysql.joins:
       enabled: false

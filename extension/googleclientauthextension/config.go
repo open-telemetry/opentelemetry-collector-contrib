@@ -18,7 +18,7 @@ type Config struct {
 
 func (cfg *Config) Validate() error {
 	if err := cfg.Config.Validate(); err != nil {
-		return fmt.Errorf("googlecloud exporter settings are invalid :%w", err)
+		return fmt.Errorf("googleclientauth settings are invalid :%w", err)
 	}
 	return nil
 }

@@ -61,9 +61,12 @@ The following settings can be optionally configured:
   - `enabled`: enable the sending queue (default: `true`)
   - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false` (default: `10000`)
   - `num_consumers`: minimum number of workers to use to fan out the outgoing requests. (default: `5` or default: `1` if `EnableMultipleWorkersFeatureGate` is enabled).
-- `resource_to_telemetry_conversion`
-  - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
-  - `exclude_service_attributes` (default = false): If set to `true`, the `service.name`, `service.instance.id` and `service.namespace`  resource attributes, which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics.
+- `resource_constant_labels`: Controls which resource attributes are added as constant labels on exported metrics. Takes precedence over `resource_to_telemetry_conversion`.
+  - `included`: List of wildcard patterns (e.g., `service*`, `k8s.pod.*`) matching resource attribute keys to include. Note: if `included` is empty and `excluded` is non-empty, all resource attributes except those matched by `excluded` will be included.
+  - `excluded`: List of wildcard patterns matching resource attribute keys to exclude, overriding any matches in `included`. If `included` is empty, setting `excluded` implies including all non-excluded attributes.
+- `resource_to_telemetry_conversion` **[Deprecated: use `resource_constant_labels` instead]**: Can be disabled entirely via the `exporter.prometheusremotewrite.DisableResourceToTelemetryConversion` feature gate.
+  - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default. **[Deprecated]**: When using `resource_constant_labels`, the equivalent configuration is setting `included: ["*"]`.
+  - `exclude_service_attributes` (default = false): If set to `true`, the `service.name`, `service.instance.id` and `service.namespace` resource attributes, which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics. **[Deprecated]**: When using `resource_constant_labels`, the equivalent configuration is adding `service.name`, `service.instance.id`, and `service.namespace` to `excluded`.
 - `wal`: Write-Ahead-Log settings for the exporter.
   - `directory` (default = ``): The directory to store the WAL in.
   - `buffer_size` (default = `300`): Count of elements to be read from the WAL before truncating.
