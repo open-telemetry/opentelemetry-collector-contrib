@@ -462,17 +462,17 @@ require (
 	go.opentelemetry.io/contrib/bridges/otelzap v0.20.0 // indirect
 	go.opentelemetry.io/contrib/detectors/aws/ecs v1.45.0 // indirect
 	go.opentelemetry.io/contrib/detectors/aws/eks v1.45.0 // indirect
-	go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.17.0 // indirect
-	go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.17.0 // indirect
-	go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.17.0 // indirect
+	go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.18.0 // indirect
+	go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.18.0 // indirect
+	go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.18.0 // indirect
 	go.opentelemetry.io/contrib/detectors/azure/azurevm v0.17.0 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.45.0 // indirect
-	go.opentelemetry.io/contrib/detectors/hetzner v0.17.0 // indirect
-	go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.17.0 // indirect
-	go.opentelemetry.io/contrib/detectors/vultr v0.17.0 // indirect
+	go.opentelemetry.io/contrib/detectors/hetzner v0.18.0 // indirect
+	go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.18.0 // indirect
+	go.opentelemetry.io/contrib/detectors/vultr v0.18.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.70.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.69.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.71.0 // indirect
 	go.opentelemetry.io/contrib/otelconf v0.25.0 // indirect
 	go.opentelemetry.io/contrib/propagators/autoprop v0.70.0 // indirect
 	go.opentelemetry.io/contrib/propagators/aws v1.45.0 // indirect
