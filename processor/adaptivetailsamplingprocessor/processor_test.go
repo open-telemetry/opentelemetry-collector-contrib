@@ -1341,12 +1341,28 @@ func TestProcessor_RuleConditionRuntimeEvalError(t *testing.T) {
 
 	// The trace times out, the condition errors, the rule does not match, and
 	// the trace is dropped rather than wedged.
-	assert.Eventually(t, func() bool {
-		p.mu.Lock()
-		defer p.mu.Unlock()
-		return len(p.traces) == 0
+	//
+	// Wait on the unmatched-drop counter rather than on p.traces emptying:
+	// decide pops the trace from the pending map before it evaluates rules,
+	// so an empty map does not yet guarantee the eval-error and drop
+	// metrics have been recorded. The drop counter is the last thing the
+	// decision path touches, so once it is visible both are.
+	require.Eventually(t, func() bool {
+		_, err := tt.GetMetric("otelcol_processor_adaptive_tail_sampling_traces_dropped")
+		return err == nil
 	}, time.Second, 10*time.Millisecond)
+	p.mu.Lock()
+	assert.Empty(t, p.traces, "decided trace must be removed from the pending map")
+	p.mu.Unlock()
 	assert.Equal(t, 0, sink.SpanCount(), "errored condition must be treated as non-match")
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingTracesDropped(t, tt,
+		[]metricdata.DataPoint[int64]{{
+			Value:      1,
+			Attributes: attribute.NewSet(attribute.String("rule", unmatchedRuleLabel)),
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
 	metadatatest.AssertEqualProcessorAdaptiveTailSamplingOttlEvalErrors(t, tt,
 		[]metricdata.DataPoint[int64]{{
 			Value:      1,
