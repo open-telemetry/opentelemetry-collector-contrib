@@ -3,7 +3,7 @@ metadata:
 # -------------------------------------------- Active Queries Summary --------------------------------------------------
 #
   - name: "active queries summary"
-    query: "SELECT * FROM SPANNER_SYS.ACTIVE_QUERIES_SUMMARY"
+    query: "SELECT *, CAST(TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), OLDEST_START_TIME, SECOND) AS FLOAT64) AS OLDEST_QUERY_AGE_SECONDS FROM SPANNER_SYS.ACTIVE_QUERIES_SUMMARY"
     metric_name_prefix: "database/spanner/active_queries_summary/"
     high_cardinality: false
     metrics:
@@ -13,6 +13,12 @@ metadata:
         data:
           type: "gauge"
         unit: "one"
+      - name: "oldest_query_age_seconds"
+        column_name: "OLDEST_QUERY_AGE_SECONDS"
+        value_type: "null_float"
+        data:
+          type: "gauge"
+        unit: "second"
       - name: "count_older_than_1s"
         column_name: "COUNT_OLDER_THAN_1S"
         value_type: "int"
@@ -70,7 +76,7 @@ metadata:
 # -------------------------------------------- Queries Stats -----------------------------------------------------------
 #
   - name: "top minute query stats"
-    query: "SELECT INTERVAL_END, TEXT, REQUEST_TAG, TEXT_TRUNCATED, TEXT_FINGERPRINT, EXECUTION_COUNT, AVG_LATENCY_SECONDS, AVG_ROWS, AVG_BYTES, AVG_ROWS_SCANNED, AVG_CPU_SECONDS, ALL_FAILED_EXECUTION_COUNT, ALL_FAILED_AVG_LATENCY_SECONDS, CANCELLED_OR_DISCONNECTED_EXECUTION_COUNT, TIMED_OUT_EXECUTION_COUNT, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 99.0) AS NINETY_NINE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 95.0) AS NINETY_FIVE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 50.0) AS FIFTY_PERCENTILE_LATENCY FROM SPANNER_SYS.QUERY_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, EXECUTION_COUNT * AVG_CPU_SECONDS DESC"
+    query: "SELECT INTERVAL_END, TEXT, REQUEST_TAG, TEXT_TRUNCATED, TEXT_FINGERPRINT, EXECUTION_COUNT, AVG_LATENCY_SECONDS, AVG_ROWS, AVG_BYTES, AVG_ROWS_SCANNED, AVG_CPU_SECONDS, ALL_FAILED_EXECUTION_COUNT, ALL_FAILED_AVG_LATENCY_SECONDS, CANCELLED_OR_DISCONNECTED_EXECUTION_COUNT, TIMED_OUT_EXECUTION_COUNT, AVG_BYTES_WRITTEN, AVG_ROWS_WRITTEN, STATEMENT_COUNT, RUN_IN_RW_TRANSACTION_EXECUTION_COUNT, AVG_MEMORY_PEAK_USAGE_BYTES, AVG_MEMORY_USAGE_PERCENTAGE, AVG_QUERY_PLAN_CREATION_TIME_SECS, AVG_FILESYSTEM_DELAY_SECS, AVG_REMOTE_SERVER_CALLS, AVG_ROWS_SPOOLED, AVG_DISK_IO_COST, AVG_COLUMNAR_READ_SHARE, QUERY_TYPE, LATENCY_DISTRIBUTION_JSON_STRING, STATISTICS_PACKAGE_NAMES, TO_JSON_STRING(QUERY_OPTIMIZER_VERSIONS) AS QUERY_OPTIMIZER_VERSIONS_JSON, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 99.0) AS NINETY_NINE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 95.0) AS NINETY_FIVE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 50.0) AS FIFTY_PERCENTILE_LATENCY FROM SPANNER_SYS.QUERY_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, EXECUTION_COUNT * AVG_CPU_SECONDS DESC"
     metric_name_prefix: "database/spanner/query_stats/top/"
     timestamp_column_name: "INTERVAL_END"
     high_cardinality: true
@@ -87,6 +93,18 @@ metadata:
       - name: "query_text_fingerprint"
         column_name: "TEXT_FINGERPRINT"
         value_type: "int"
+      - name: "query_type"
+        column_name: "QUERY_TYPE"
+        value_type: "string"
+      - name: "latency_distribution"
+        column_name: "LATENCY_DISTRIBUTION_JSON_STRING"
+        value_type: "string"
+      - name: "statistics_package_names"
+        column_name: "STATISTICS_PACKAGE_NAMES"
+        value_type: "string_slice"
+      - name: "query_optimizer_versions"
+        column_name: "QUERY_OPTIMIZER_VERSIONS_JSON"
+        value_type: "string"
     metrics:
       - name: "execution_count"
         column_name: "EXECUTION_COUNT"
