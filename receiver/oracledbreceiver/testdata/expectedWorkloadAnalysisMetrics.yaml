@@ -4,12 +4,12 @@ resourceMetrics:
         - key: host.name
           value:
             stringValue: ""
-        - key: server.address
-          value:
-            stringValue: ""
         - key: oracledb.instance.name
           value:
             stringValue: ""
+        - key: server.port
+          value:
+            intValue: "1521"
         - key: service.instance.id
           value:
             stringValue: ""

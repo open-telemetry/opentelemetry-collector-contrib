@@ -1709,7 +1709,7 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 				serverAddress:        "oraclehost",
 				serverPort:           1521,
 				obfuscator:           newObfuscator(),
-				serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+				serviceInstanceID:    testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 			}
 
 			scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
@@ -1952,7 +1952,9 @@ func TestSamplesQuery(t *testing.T) {
 				logsBuilderConfig:  metadata.DefaultLogsBuilderConfig(),
 				obfuscator:         newObfuscator(),
 				instanceName:       "oraclehost:1521/ORCL",
-				serviceInstanceID:  getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+				serverAddress:      "oraclehost",
+				serverPort:         1521,
+				serviceInstanceID:  testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 			}
 			scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = false
 			scrpr.logsBuilderConfig.Events.DbServerQuerySample.Enabled = true
@@ -2020,7 +2022,9 @@ func TestSamplesQueryCursorAgedOut(t *testing.T) {
 		logsBuilderConfig: logsCfg,
 		obfuscator:        newObfuscator(),
 		instanceName:      "oraclehost:1521/ORCL",
-		serviceInstanceID: getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+		serverAddress:     "oraclehost",
+		serverPort:        1521,
+		serviceInstanceID: testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 	}
 	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
 	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
@@ -2158,7 +2162,9 @@ func TestSessionWaitEventsQuery(t *testing.T) {
 				logsBuilderConfig:   logsCfg,
 				obfuscator:          newObfuscator(),
 				instanceName:        "oraclehost:1521/ORCL",
-				serviceInstanceID:   getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+				serverAddress:       "oraclehost",
+				serverPort:          1521,
+				serviceInstanceID:   testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 				sessionWaitEventCfg: SessionWaitEvent{MaxRowsPerQuery: 200},
 			}
 			err := scrpr.start(t.Context(), componenttest.NewNopHost())
@@ -2509,37 +2515,83 @@ func sysmetricDirectionValues(metrics pmetric.MetricSlice) map[string]map[string
 	return out
 }
 
-func TestGetInstanceId(t *testing.T) {
-	localhostName, _ := os.Hostname()
+func TestResolveServerEndpoint(t *testing.T) {
+	localhostName, err := os.Hostname()
+	require.NoError(t, err)
 
-	instanceString := "example.com:1521/XE"
-	instanceID := getInstanceID(instanceString, zap.NewNop())
-	assert.Equal(t, "example.com:1521/XE", instanceID)
+	tests := []struct {
+		name         string
+		hostName     string
+		expectedHost string
+		expectedPort int64
+	}{
+		{name: "host and port", hostName: "oraclehost:1521", expectedHost: "oraclehost", expectedPort: 1521},
+		{name: "host without port", hostName: "oraclehost", expectedHost: "oraclehost", expectedPort: 1521},
+		{name: "host with non default port", hostName: "oraclehost:51521", expectedHost: "oraclehost", expectedPort: 51521},
+		{name: "container hostname is not loopback", hostName: "ora-docker:1521", expectedHost: "ora-docker", expectedPort: 1521},
+		{name: "docker host gateway is not loopback", hostName: "host.docker.internal:1521", expectedHost: "host.docker.internal", expectedPort: 1521},
+		{name: "localhost with port", hostName: "localhost:51521", expectedHost: localhostName, expectedPort: 51521},
+		{name: "localhost without port", hostName: "localhost", expectedHost: localhostName, expectedPort: 1521},
+		{name: "localhost is matched case insensitively", hostName: "Localhost", expectedHost: localhostName, expectedPort: 1521},
+		{name: "IPv4 loopback with port", hostName: "127.0.0.1:1521", expectedHost: localhostName, expectedPort: 1521},
+		{name: "IPv4 loopback without port", hostName: "127.0.0.1", expectedHost: localhostName, expectedPort: 1521},
+		{name: "IPv6 loopback with port", hostName: "[::1]:1521", expectedHost: localhostName, expectedPort: 1521},
+		{name: "bracketed IPv6 loopback without port", hostName: "[::1]", expectedHost: localhostName, expectedPort: 1521},
+		{name: "bare IPv6 loopback", hostName: "::1", expectedHost: localhostName, expectedPort: 1521},
+		{name: "bracketed IPv6 with port is not loopback", hostName: "[2001:db8::1]:1521", expectedHost: "2001:db8::1", expectedPort: 1521},
+		{name: "bare IPv6 is not loopback", hostName: "2001:db8::1", expectedHost: "2001:db8::1", expectedPort: 1521},
+		{name: "empty target", hostName: "", expectedHost: localhostName, expectedPort: 1521},
+		{name: "port zero defaults", hostName: "oraclehost:0", expectedHost: "oraclehost", expectedPort: 1521},
+		{name: "empty port defaults", hostName: "oraclehost:", expectedHost: "oraclehost", expectedPort: 1521},
+		{name: "non numeric port defaults", hostName: "oraclehost:notaport", expectedHost: "oraclehost", expectedPort: 1521},
+	}
 
-	localHostStringUppercase := "Localhost:1521/XE"
-	localInstanceID := getInstanceID(localHostStringUppercase, zap.NewNop())
-	assert.NotNil(t, localInstanceID)
-	assert.Equal(t, localhostName+":1521/XE", localInstanceID)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			host, port := resolveServerEndpoint(test.hostName, zap.NewNop())
+			assert.Equal(t, test.expectedHost, host)
+			assert.Equal(t, test.expectedPort, port)
+		})
+	}
+}
 
-	localHostString := "127.0.0.1:1521/XE"
-	localInstanceID = getInstanceID(localHostString, zap.NewNop())
-	assert.NotNil(t, localInstanceID)
-	assert.Equal(t, localhostName+":1521/XE", localInstanceID)
+// testInstanceID mirrors what newScraper computes: one endpoint resolution feeding service.instance.id.
+func testInstanceID(hostName, instanceName string) string {
+	_, _, instanceID := resolveInstanceIdentity(hostName, instanceName, zap.NewNop())
+	return instanceID
+}
 
-	localHostStringIPV6 := "[::1]:1521/XE"
-	localInstanceID = getInstanceID(localHostStringIPV6, zap.NewNop())
-	assert.NotNil(t, localInstanceID)
-	assert.Equal(t, localhostName+":1521/XE", localInstanceID)
+func TestServiceInstanceID(t *testing.T) {
+	localhostName, err := os.Hostname()
+	require.NoError(t, err)
 
-	hostWithoutService := "127.0.0.1:1521"
-	localInstanceID = getInstanceID(hostWithoutService, zap.NewNop())
-	assert.NotNil(t, localInstanceID)
-	assert.Equal(t, localhostName+":1521", localInstanceID)
+	tests := []struct {
+		name           string
+		instanceString string
+		expected       string
+	}{
+		{name: "remote host and port", instanceString: "example.com:1521/XE", expected: "example.com:1521/XE"},
+		{name: "remote host without port", instanceString: "example.com/XE", expected: "example.com:1521/XE"},
+		{name: "localhost is resolved case insensitively", instanceString: "Localhost:1521/XE", expected: localhostName + ":1521/XE"},
+		{name: "localhost without port", instanceString: "localhost/XE", expected: localhostName + ":1521/XE"},
+		{name: "IPv4 loopback with port", instanceString: "127.0.0.1:1521/XE", expected: localhostName + ":1521/XE"},
+		{name: "IPv4 loopback without port", instanceString: "127.0.0.1/XE", expected: localhostName + ":1521/XE"},
+		{name: "IPv6 loopback with port", instanceString: "[::1]:1521/XE", expected: localhostName + ":1521/XE"},
+		{name: "IPv6 loopback without port", instanceString: "[::1]/XE", expected: localhostName + ":1521/XE"},
+		{name: "bare IPv6 loopback", instanceString: "::1/XE", expected: localhostName + ":1521/XE"},
+		// A non-loopback IPv6 host is not re-bracketed by constructInstanceID; unchanged from before.
+		{name: "non loopback IPv6 with port", instanceString: "[2001:db8::1]:1521/XE", expected: "2001:db8::1:1521/XE"},
+		{name: "host without service", instanceString: "127.0.0.1:1521", expected: localhostName + ":1521"},
+		{name: "empty instance string", instanceString: "", expected: localhostName + ":1521"},
+	}
 
-	hostNameErrorSample := ""
-	localInstanceID = getInstanceID(hostNameErrorSample, zap.NewNop())
-	assert.NotNil(t, localInstanceID)
-	assert.Equal(t, "unknown:1521", localInstanceID)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// The receiver resolves the target the connection uses; the instance string only adds the service.
+			target, _, _ := strings.Cut(test.instanceString, "/")
+			assert.Equal(t, test.expected, testInstanceID(target, test.instanceString))
+		})
+	}
 }
 
 func TestTopNLogsDiscardedWhenExecutionCountUnchanged(t *testing.T) {
@@ -2602,7 +2654,7 @@ func TestTopNLogsDiscardedWhenExecutionCountUnchanged(t *testing.T) {
 		serverAddress:        "oraclehost",
 		serverPort:           1521,
 		obfuscator:           newObfuscator(),
-		serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+		serviceInstanceID:    testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 	}
 
 	scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
@@ -2691,7 +2743,7 @@ func TestTopNLogsProcedureNameEmpty(t *testing.T) {
 		serverAddress:        "oraclehost",
 		serverPort:           1521,
 		obfuscator:           newObfuscator(),
-		serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+		serviceInstanceID:    testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 	}
 
 	scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
@@ -2877,7 +2929,7 @@ func TestObfuscateCacheHitsHandlesTruncatedSQL(t *testing.T) {
 		serverAddress:        "oraclehost",
 		serverPort:           1521,
 		obfuscator:           newObfuscator(),
-		serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+		serviceInstanceID:    testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 	}
 
 	scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true

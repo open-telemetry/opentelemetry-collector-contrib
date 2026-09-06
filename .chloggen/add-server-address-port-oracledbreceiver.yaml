@@ -21,6 +21,13 @@ subtext: |
   `localhost` or `127.0.0.1`), `server.address` reports the host name of the machine running the collector
   rather than `localhost`, since the monitored instance is co-located with the collector. This matches how
   `service.instance.id` already resolves its host, and both attributes now share one resolution path.
+  `host.name` is unchanged.
+
+  Because of that shared path, `service.instance.id` now resolves connection strings that omit the port,
+  which Oracle Easy Connect allows: `oracle://otel:password@localhost/XE` was reported as
+  `unknown:1521/XE` and is now reported as `<collector host name>:1521/XE`. Targets that already
+  specified a port are unaffected.
+
   To stop emitting the server attributes, disable them via `resource_attributes.server.address.enabled: false`
   and `resource_attributes.server.port.enabled: false`.
 
@@ -31,4 +38,4 @@ subtext: |
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: []
+change_logs: [user]

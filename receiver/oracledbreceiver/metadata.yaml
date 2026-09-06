@@ -41,11 +41,11 @@ resource_attributes:
     enabled: true
     type: string
   server.address:
-    description: Server domain name if available without reverse DNS lookup; otherwise, IP address or UNIX domain socket name.
+    description: The address of the monitored Oracle instance. A loopback target (for example localhost or 127.0.0.1) is reported as the host name of the machine running the collector, since the instance is co-located with it.
     enabled: true
     type: string
   server.port:
-    description: Server port number.
+    description: The port of the monitored Oracle instance, defaulting to 1521 when the target does not specify one.
     enabled: true
     type: int
   service.instance.id:
