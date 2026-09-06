@@ -23,10 +23,9 @@ subtext: |
   `service.instance.id` already resolves its host, and both attributes now share one resolution path.
   `host.name` is unchanged.
 
-  Because of that shared path, `service.instance.id` now resolves connection strings that omit the port,
-  which Oracle Easy Connect allows: `oracle://otel:password@localhost/XE` was reported as
-  `unknown:1521/XE` and is now reported as `<collector host name>:1521/XE`. Targets that already
-  specified a port are unaffected.
+  The shared path also covers a target that omits the port, which Oracle Easy Connect permits even though
+  the current driver requires one: such a target now resolves to `<host>:1521/<service>` instead of falling
+  back to `unknown:1521/<service>`. Targets that specify a port are unaffected.
 
   To stop emitting the server attributes, disable them via `resource_attributes.server.address.enabled: false`
   and `resource_attributes.server.port.enabled: false`.

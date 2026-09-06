@@ -2331,7 +2331,6 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
 
-	// server.address is omitted rather than reported empty when the host couldn't be determined.
 	if s.serverAddress != "" {
 		rb.SetServerAddress(s.serverAddress)
 	}
