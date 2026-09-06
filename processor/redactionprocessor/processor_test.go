@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"sort"
 	"strings"
 	"sync"
@@ -1166,9 +1167,7 @@ func TestDiagnosticAttrsSurviveReentry(t *testing.T) {
 	}
 
 	raw := map[string]any{"id": 5, "redundant": 1.2}
-	for k, v := range diagnostics {
-		raw[k] = v
-	}
+	maps.Copy(raw, diagnostics)
 
 	attrs := pcommon.NewMap()
 	require.NoError(t, attrs.FromRaw(raw))
