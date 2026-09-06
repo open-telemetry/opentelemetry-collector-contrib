@@ -260,12 +260,15 @@ func (dc *Client) LatestContainerStats(containerID string, maxAge time.Duration)
 
 // startContainerStream opens a persistent streaming stats connection for the container
 // and continuously updates the cached latest stats in the background.
-// Cancels any existing stream for that container first.
+// No-Op if a stream is already running for that container.
 func (dc *Client) startContainerStream(containerID string) {
 	dc.streamContainerCancelsLock.Lock()
-	if cancel, ok := dc.streamContainerCancels[containerID]; ok {
-		cancel()
+	if _, ok := dc.streamContainerCancels[containerID]; ok {
+		// This container already has a stream running, so we don't need to start another one.
+		dc.streamContainerCancelsLock.Unlock()
+		return
 	}
+
 	streamCtx, cancel := context.WithCancel(dc.streamClientCtx)
 	dc.streamContainerCancels[containerID] = cancel
 	dc.streamContainerCancelsLock.Unlock()
@@ -310,6 +313,10 @@ func (dc *Client) runStatsStream(ctx context.Context, containerID string) error 
 			var stats ctypes.StatsResponse
 			if err := decoder.Decode(&stats); err != nil {
 				resp.Body.Close()
+
+				if ctx.Err() != nil {
+					return nil
+				}
 
 				if !errors.Is(err, io.EOF) {
 					dc.logger.Warn(
