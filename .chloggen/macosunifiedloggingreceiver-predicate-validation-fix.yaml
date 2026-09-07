@@ -3,6 +3,6 @@ component: receiver/macos_unified_logging
 note: Fix messageType predicate validation
 issues: [50626]
 subtext: |-
-  Added missing 'messageType' field to validPredicateFields to fix validation error for README example.
-  The README already uses OR form for messageType/logType comparisons, which works correctly.
+  Added missing 'messageType' field to validPredicateFields to fix validation error for the README example.
+  Updated the README example to use the supported OR form for messageType/logType comparisons.
 change_logs: [user]
