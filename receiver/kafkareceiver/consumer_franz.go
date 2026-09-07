@@ -56,7 +56,7 @@ type franzConsumer struct {
 	consumeMessage   consumeMessageFunc
 
 	mu             sync.RWMutex
-	startAttempted bool        // set on first Start() call; prevents retry after failure
+	startAttempted bool          // set on first Start() call; prevents retry after failure
 	started        chan struct{} // closed when Start() succeeds; signals triggerShutdown
 	consumerClosed chan struct{}
 	closing        chan struct{}
