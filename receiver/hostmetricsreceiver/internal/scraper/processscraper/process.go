@@ -51,6 +51,7 @@ func (m *processMetadata) buildResource(rb *metadata.ResourceBuilder) pcommon.Re
 	rb.SetProcessExecutableName(m.executable.name)
 	rb.SetProcessExecutablePath(m.executable.path)
 	rb.SetProcessCgroup(m.executable.cgroup)
+	rb.SetProcessLinuxCgroup(m.executable.cgroup)
 	if m.command != nil {
 		rb.SetProcessCommand(m.command.command)
 		if m.command.commandLineSlice != nil {

@@ -32,7 +32,7 @@ The collection interval and the list of performance counters to be scraped can
 be configured:
 
 ```yaml
-windowsperfcounters:
+windows_perf_counters:
   collection_interval: <duration> # default = "1m"
   initial_delay: <duration> # default = "1s"
   metrics:
@@ -82,7 +82,7 @@ To retain the aggregation instance alongside the wildcard results, explicitly
 include its name in `instances`. This still creates one wildcard query:
 
 ```yaml
-windowsperfcounters:
+windows_perf_counters:
   metrics:
     processor.time:
       description: CPU active and idle time
@@ -128,12 +128,12 @@ will be logged.
 ### Scraping at different frequencies
 
 If you would like to scrape some counters at a different frequency than others,
-you can configure multiple `windowsperfcounters` receivers with different
+you can configure multiple `windows_perf_counters` receivers with different
 `collection_interval` values. For example:
 
 ```yaml
 receivers:
-  windowsperfcounters/memory:
+  windows_perf_counters/memory:
     metrics:
       bytes.committed:
         description: the number of bytes committed to memory
@@ -146,7 +146,7 @@ receivers:
           - name: Committed Bytes
             metric: bytes.committed
 
-  windowsperfcounters/processor:
+  windows_perf_counters/processor:
     collection_interval: 1m
     metrics:
       processor.time:
@@ -172,7 +172,7 @@ receivers:
 service:
   pipelines:
     metrics:
-      receivers: [windowsperfcounters/memory, windowsperfcounters/processor]
+      receivers: [windows_perf_counters/memory, windows_perf_counters/processor]
 ```
 
 ### Defining metric format
@@ -204,7 +204,7 @@ e.g. To output the `Memory/Committed Bytes` counter as a metric with the name
 
 ```yaml
 receivers:
-  windowsperfcounters:
+  windows_perf_counters:
     metrics:
       bytes.committed:
         description: the number of bytes committed to memory
@@ -220,7 +220,7 @@ receivers:
 service:
   pipelines:
     metrics:
-      receivers: [windowsperfcounters]
+      receivers: [windows_perf_counters]
 ```
 
 ## Known Limitation

@@ -15,6 +15,9 @@ $defs:
       azure:
         description: Azure contains user-specified configurations for the azure detector
         $ref: ./internal/azure.config
+      azureappservice:
+        description: AzureAppServiceConfig contains user-specified configurations for the Azure App Service detector
+        $ref: ./internal/azure/appservice.config
       azurecontainerapps:
         description: AzureContainerAppsConfig contains user-specified configurations for the Azure Container Apps detector
         $ref: ./internal/azure/containerapps.config

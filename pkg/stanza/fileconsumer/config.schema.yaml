@@ -44,6 +44,8 @@ $defs:
         format: duration
       polls_to_archive:
         type: integer
+      skip_unmodified_files:
+        type: boolean
       start_at:
         type: string
     allOf:

@@ -13,7 +13,9 @@ exclude  = [
     "^https://docs.honeycomb.io",
     "^https://www.ibm.com",
     "^https://access.redhat.com",
-    "^https://superuser.com"
+    "^https://superuser.com",
+    # Slack returns 403 to automated link checkers.
+    "^https://cloud-native.slack.com"
 ]
 
 # better to be safe and avoid failures

@@ -176,6 +176,7 @@ body:
       - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/sampling
+      - pkg/semconvtest
       - pkg/stanza
       - pkg/stanza/fileconsumer
       - pkg/stanza/operator/input/journald
@@ -196,6 +197,7 @@ body:
       - pkg/winperfcounters
       - pkg/xk8stest
       - pkg/xstreamencoding
+      - processor/adaptivetailsampling
       - processor/attributes
       - processor/awsecsattributes
       - processor/cardinalityguardian
@@ -204,7 +206,6 @@ body:
       - processor/deltatocumulative
       - processor/deltatorate
       - processor/drain
-      - processor/dynamicsampling
       - processor/filter
       - processor/genainormalizer
       - processor/geoip
@@ -238,7 +239,9 @@ body:
       - processor/resourcedetection/internal/tencent/cvm
       - processor/resourcedetection/internal/upcloud
       - processor/resourcedetection/internal/vultr
+      - processor/rollingspanlatency
       - processor/schema
+      - processor/signing
       - processor/span
       - processor/spanpruning
       - processor/sumologic

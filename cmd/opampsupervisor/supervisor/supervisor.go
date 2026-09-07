@@ -69,6 +69,9 @@ var (
 	//go:embed templates/owntelemetry.yaml
 	ownTelemetryTpl string
 
+	//go:embed templates/nooptelemetry.yaml
+	noopTelemetry string
+
 	lastRecvRemoteConfigFile       = "last_recv_remote_config.dat"
 	lastWorkingRemoteConfigFile    = "last_working_remote_config.dat"
 	lastRecvOwnTelemetryConfigFile = "last_recv_own_telemetry_config.dat"
@@ -283,7 +286,7 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 		readers = []telemetryconfig.MetricReader{}
 	}
 
-	resourceCfg, err := buildSupervisorResourceConfig(&cfg.Resource)
+	resourceCfg, err := buildSupervisorResourceConfig(ctx, logger, &cfg.Resource)
 	if err != nil {
 		return telemetrySettings{}, err
 	}
@@ -379,6 +382,15 @@ func (s *Supervisor) Start(ctx context.Context) error {
 				"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272 for progress.",
 		)
 		return errors.New("accepts_packages capability is not yet fully implemented")
+	}
+
+	if s.config.Capabilities.ReportsRemoteConfig { //nolint:staticcheck // SA1019: deprecated field is read only to warn about its use
+		s.telemetrySettings.Logger.Error(
+			"The reports_remote_config capability is deprecated and has no effect. " +
+				"Remote config status is reported whenever accepts_remote_config is enabled. " +
+				"Remove reports_remote_config from the supervisor config; it will be removed in a future release. " +
+				"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49763 for details.",
+		)
 	}
 
 	if err = s.getFeatureGates(); err != nil {
@@ -1244,6 +1256,13 @@ func (s *Supervisor) composeNoopConfig() ([]byte, error) {
 		return nil, err
 	}
 	if err := config.MergeConfFromYAML(conf, s.composeOpAMPExtensionConfig()); err != nil {
+		return nil, err
+	}
+	// The bootstrap Collector is stopped as soon as it has reported its
+	// AgentDescription, so its internal metrics are never collected. Disabling
+	// them keeps the Collector's default reader from binding localhost:8888,
+	// which fails the bootstrap when that port is already in use.
+	if err := config.MergeConfFromYAML(conf, []byte(noopTelemetry)); err != nil {
 		return nil, err
 	}
 
@@ -2426,7 +2445,7 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Connect
 
 // saveAndReportConfigStatus saves the config status to the persistent state and reports it to the server.
 func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) {
-	if !s.config.Capabilities.ReportsRemoteConfig {
+	if !s.config.Capabilities.AcceptsRemoteConfig {
 		s.telemetrySettings.Logger.Debug("supervisor is not configured to report remote config status")
 		return
 	}
@@ -2456,7 +2475,7 @@ func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStat
 // the status is reported without overwriting the persisted status of the
 // config that triggered the rollback, and true is returned.
 func (s *Supervisor) reportActiveConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) bool {
-	if !s.config.Capabilities.ReportsRemoteConfig {
+	if !s.config.Capabilities.AcceptsRemoteConfig {
 		s.telemetrySettings.Logger.Debug("supervisor is not configured to report remote config status")
 		return false
 	}

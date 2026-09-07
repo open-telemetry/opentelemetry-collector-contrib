@@ -25,12 +25,16 @@ const (
 	MetadataFromNode = "node"
 	// MetadataFromDeployment is used to specify to extract metadata/labels/annotations from deployment
 	MetadataFromDeployment = "deployment"
+	// MetadataFromReplicaSet is used to specify to extract metadata/labels/annotations from replicaset
+	MetadataFromReplicaSet = "replicaset"
 	// MetadataFromStatefulSet is used to specify to extract metadata/labels/annotations from statefulset
 	MetadataFromStatefulSet = "statefulset"
 	// MetadataFromDaemonSet  is used to specify to extract metadata/labels/annotations from daemonset
 	MetadataFromDaemonSet = "daemonset"
 	// MetadataFromJob  is used to specify to extract metadata/labels/annotations from job
-	MetadataFromJob        = "job"
+	MetadataFromJob = "job"
+	// MetadataFromCronJob is used to specify to extract metadata/labels/annotations from cronjob
+	MetadataFromCronJob    = "cronjob"
 	PodIdentifierMaxLength = 4
 
 	ResourceSource   = "resource_attribute"
@@ -87,9 +91,11 @@ type Client interface {
 	GetNamespace(string) (*Namespace, bool)
 	GetNode(string) (*Node, bool)
 	GetDeployment(string) (*Deployment, bool)
+	GetReplicaSet(string) (*ReplicaSet, bool)
 	GetStatefulSet(string) (*StatefulSet, bool)
 	GetDaemonSet(string) (*DaemonSet, bool)
 	GetJob(string) (*Job, bool)
+	GetCronJob(string) (*CronJob, bool)
 	Start() error
 	Stop()
 }
@@ -112,9 +118,11 @@ type Pod struct {
 	Namespace      string
 	NodeName       string
 	DeploymentUID  string
+	ReplicaSetUID  string
 	StatefulSetUID string
 	DaemonSetUID   string
 	JobUID         string
+	CronJobUID     string
 	HostNetwork    bool
 
 	// Containers specifies all containers in this pod.
@@ -254,9 +262,8 @@ type ExtractionRules struct {
 	ServiceVersion            bool
 	ServiceInstanceID         bool
 
-	Annotations                  []FieldExtractionRule
-	Labels                       []FieldExtractionRule
-	DeploymentNameFromReplicaSet bool
+	Annotations []FieldExtractionRule
+	Labels      []FieldExtractionRule
 }
 
 // IncludesOwnerMetadata determines whether the ExtractionRules include metadata about Pod Owners
@@ -302,9 +309,11 @@ type FieldExtractionRule struct {
 	//  - namespace
 	//  - node
 	//  - deployment
+	//  - replicaset
 	//  - statefulset
 	//  - daemonset
 	//  - job
+	//  - cronjob
 	From string
 }
 
@@ -333,6 +342,12 @@ func (r *FieldExtractionRule) extractFromDeploymentMetadata(metadata, tags map[s
 	}
 }
 
+func (r *FieldExtractionRule) extractFromReplicaSetMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
+	if r.From == MetadataFromReplicaSet {
+		r.extractFromMetadata(metadata, tags, attrFunc)
+	}
+}
+
 func (r *FieldExtractionRule) extractFromStatefulSetMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromStatefulSet {
 		r.extractFromMetadata(metadata, tags, attrFunc)
@@ -347,6 +362,12 @@ func (r *FieldExtractionRule) extractFromDaemonSetMetadata(metadata, tags map[st
 
 func (r *FieldExtractionRule) extractFromJobMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromJob {
+		r.extractFromMetadata(metadata, tags, attrFunc)
+	}
+}
+
+func (r *FieldExtractionRule) extractFromCronJobMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
+	if r.From == MetadataFromCronJob {
 		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
@@ -429,6 +450,7 @@ type ReplicaSet struct {
 	Namespace  string
 	UID        string
 	Deployment Deployment
+	Attributes map[string]string
 }
 
 // StatefulSet represents a kubernetes statefulset.

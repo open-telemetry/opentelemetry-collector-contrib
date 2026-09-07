@@ -9,7 +9,6 @@ import (
 	"time"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
-	"github.com/gogo/protobuf/proto"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -68,7 +67,7 @@ func spanToLogServiceData(span ptrace.Span, resourceContents, instrumentationLib
 		timeNano = time.Now().UnixNano()
 	}
 	slsLog := sls.Log{
-		Time: proto.Uint32(uint32(timeNano / 1000 / 1000 / 1000)),
+		Time: new(uint32(timeNano / 1000 / 1000 / 1000)),
 	}
 	// pre alloc, refine if logContent's len > 16
 	preAllocCount := 16
@@ -80,64 +79,64 @@ func spanToLogServiceData(span ptrace.Span, resourceContents, instrumentationLib
 
 	contentsBuffer = append(contentsBuffer,
 		sls.LogContent{
-			Key:   proto.String(traceIDField),
-			Value: proto.String(traceutil.TraceIDToHexOrEmptyString(span.TraceID())),
+			Key:   new(traceIDField),
+			Value: new(traceutil.TraceIDToHexOrEmptyString(span.TraceID())),
 		},
 		sls.LogContent{
-			Key:   proto.String(spanIDField),
-			Value: proto.String(traceutil.SpanIDToHexOrEmptyString(span.SpanID())),
+			Key:   new(spanIDField),
+			Value: new(traceutil.SpanIDToHexOrEmptyString(span.SpanID())),
 		},
 		// if ParentSpanID is not valid, the return "", it is compatible for log service
 		sls.LogContent{
-			Key:   proto.String(parentSpanIDField),
-			Value: proto.String(traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID())),
+			Key:   new(parentSpanIDField),
+			Value: new(traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID())),
 		},
 		sls.LogContent{
-			Key:   proto.String(kindField),
-			Value: proto.String(spanKindToShortString(span.Kind())),
+			Key:   new(kindField),
+			Value: new(spanKindToShortString(span.Kind())),
 		},
 		sls.LogContent{
-			Key:   proto.String(nameField),
-			Value: proto.String(span.Name()),
+			Key:   new(nameField),
+			Value: new(span.Name()),
 		},
 		sls.LogContent{
-			Key:   proto.String(linksField),
-			Value: proto.String(spanLinksToString(span.Links())),
+			Key:   new(linksField),
+			Value: new(spanLinksToString(span.Links())),
 		},
 		sls.LogContent{
-			Key:   proto.String(logsField),
-			Value: proto.String(eventsToString(span.Events())),
+			Key:   new(logsField),
+			Value: new(eventsToString(span.Events())),
 		},
 		sls.LogContent{
-			Key:   proto.String(traceStateField),
-			Value: proto.String(span.TraceState().AsRaw()),
+			Key:   new(traceStateField),
+			Value: new(span.TraceState().AsRaw()),
 		},
 		sls.LogContent{
-			Key:   proto.String(startTimeField),
-			Value: proto.String(strconv.FormatUint(uint64(span.StartTimestamp()/1000), 10)),
+			Key:   new(startTimeField),
+			Value: new(strconv.FormatUint(uint64(span.StartTimestamp()/1000), 10)),
 		},
 		sls.LogContent{
-			Key:   proto.String(endTimeField),
-			Value: proto.String(strconv.FormatUint(uint64(span.EndTimestamp()/1000), 10)),
+			Key:   new(endTimeField),
+			Value: new(strconv.FormatUint(uint64(span.EndTimestamp()/1000), 10)),
 		},
 		sls.LogContent{
-			Key:   proto.String(durationField),
-			Value: proto.String(strconv.FormatUint(uint64((span.EndTimestamp()-span.StartTimestamp())/1000), 10)),
+			Key:   new(durationField),
+			Value: new(strconv.FormatUint(uint64((span.EndTimestamp()-span.StartTimestamp())/1000), 10)),
 		})
 	attributeMap := span.Attributes().AsRaw()
 	attributeJSONBytes, _ := json.Marshal(attributeMap)
 	contentsBuffer = append(contentsBuffer,
 		sls.LogContent{
-			Key:   proto.String(attributeField),
-			Value: proto.String(string(attributeJSONBytes)),
+			Key:   new(attributeField),
+			Value: new(string(attributeJSONBytes)),
 		},
 		sls.LogContent{
-			Key:   proto.String(statusCodeField),
-			Value: proto.String(statusCodeToShortString(span.Status().Code())),
+			Key:   new(statusCodeField),
+			Value: new(statusCodeToShortString(span.Status().Code())),
 		},
 		sls.LogContent{
-			Key:   proto.String(statusMessageField),
-			Value: proto.String(span.Status().Message()),
+			Key:   new(statusMessageField),
+			Value: new(span.Status().Message()),
 		})
 
 	for i := range contentsBuffer {

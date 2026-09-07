@@ -69,7 +69,3 @@ resource_attributes:
     description: The OCI realm identifier for the isolated partition where the tenancy and resources reside, such as "oc1" or "oc2".
     enabled: true
     type: string
-
-tests:
-  skip_lifecycle: true
-  skip_shutdown: true

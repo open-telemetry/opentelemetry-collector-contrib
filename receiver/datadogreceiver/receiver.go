@@ -205,7 +205,7 @@ func newDataDogReceiver(ctx context.Context, config *Config, params receiver.Set
 			datadogSite = defaultConfigIntakeProxyAPISite
 		}
 		intakeReverseProxy = &httputil.ReverseProxy{
-			Director: createIntakeReverseProxyDirector(datadogSite, string(config.Intake.Proxy.API.Key)),
+			Rewrite: createIntakeReverseProxyRewrite(datadogSite, string(config.Intake.Proxy.API.Key)),
 		}
 		if config.Intake.Proxy.API.FailOnInvalidKey {
 			apiClient := clientutil.CreateAPIClient(
@@ -770,16 +770,20 @@ func (ddr *datadogReceiver) handleStats(w http.ResponseWriter, req *http.Request
 	_, _ = w.Write([]byte("OK"))
 }
 
-func createIntakeReverseProxyDirector(site, key string) func(*http.Request) {
+func createIntakeReverseProxyRewrite(site, key string) func(*httputil.ProxyRequest) {
 	host := fmt.Sprintf("api.%s", site)
 	query := fmt.Sprintf("api_key=%s", key)
-	return func(req *http.Request) {
-		req.URL.Scheme = "https"
-		req.URL.Host = host
+	return func(pr *httputil.ProxyRequest) {
+		pr.Out.URL.Scheme = "https"
+		pr.Out.URL.Host = host
 		// we want to use our own API key for all calls
-		req.Header.Set("Dd-Api-Key", key)
+		pr.Out.Header.Set("Dd-Api-Key", key)
 		// intake puts the API key in the query string as well
-		req.URL.RawQuery = query
+		pr.Out.URL.RawQuery = query
+		// Unlike Director, Rewrite strips the X-Forwarded-* headers before it is
+		// called and does not re-add them, so set them explicitly to preserve the
+		// behavior we had when this proxy used Director.
+		pr.SetXForwarded()
 		// Technically, the JSON body of the `/intake` request contains the API key as well
 		// (it's the top-level `apiKey` field of the payload JSON object),
 		// but it appears as though the value of that field does not matter,
