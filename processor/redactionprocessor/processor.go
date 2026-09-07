@@ -389,6 +389,10 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 
 //nolint:gosec
 func (s *redaction) maskValue(val string, regex *regexp.Regexp) string {
+	defaultMaskingString := "****"
+	if s.config.MaskingString != "" {
+		defaultMaskingString = s.config.MaskingString
+	}
 	hashFunc := func(match string) string {
 		switch s.hashFunction {
 		case SHA1:
@@ -402,7 +406,7 @@ func (s *redaction) maskValue(val string, regex *regexp.Regexp) string {
 		case HMACSHA512:
 			return hashStringHMAC(match, s.config.HMACKey, sha512.New)
 		default:
-			return "****"
+			return defaultMaskingString
 		}
 	}
 	return regex.ReplaceAllStringFunc(val, hashFunc)

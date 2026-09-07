@@ -2568,3 +2568,24 @@ func TestDBObfuscationErrorInAttribute(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "SELECT * FROM users WHERE id = ?", val.Str())
 }
+
+func TestMaskingStringIsApplied(t *testing.T) {
+	cfg := &Config{
+		MaskingString: "[REDACTED]",
+		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+	}
+
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	ils := rl.ScopeLogs().AppendEmpty()
+	logRecord := ils.LogRecords().AppendEmpty()
+	logRecord.Body().SetStr("credit card 4111111111111111")
+
+	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	require.NoError(t, err)
+	outLogs, err := processor.processLogs(t.Context(), logs)
+	require.NoError(t, err)
+
+	outLog := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, "credit card [REDACTED]", outLog.Body().Str())
+}
