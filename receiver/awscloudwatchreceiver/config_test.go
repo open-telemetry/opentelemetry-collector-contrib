@@ -721,7 +721,7 @@ func TestLogGroupTagsConfigSelectTags(t *testing.T) {
 
 	require.Nil(t, LogGroupTagsConfig{IncludeTags: true}.selectTags(nil))
 	require.Equal(t, defaultTagAttributePrefix, LogGroupTagsConfig{}.attributePrefix())
-	require.Equal(t, "", LogGroupTagsConfig{TagAttributePrefix: stringPtr("")}.attributePrefix())
+	require.Empty(t, LogGroupTagsConfig{TagAttributePrefix: stringPtr("")}.attributePrefix())
 }
 
 func stringPtr(s string) *string {

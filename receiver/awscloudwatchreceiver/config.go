@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -161,15 +162,10 @@ func (t LogGroupTagsConfig) selectTags(raw map[string]string) map[string]string 
 	attrPrefix := t.attributePrefix()
 	out := make(map[string]string, len(raw))
 	for k, v := range raw {
-		include := false
+		var include bool
 		switch {
 		case len(t.TagNames) > 0:
-			for _, name := range t.TagNames {
-				if name == k {
-					include = true
-					break
-				}
-			}
+			include = slices.Contains(t.TagNames, k)
 		case t.TagPrefix != "":
 			include = strings.HasPrefix(k, t.TagPrefix)
 		default:
