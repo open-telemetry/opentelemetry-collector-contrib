@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -98,18 +99,98 @@ type GroupConfig struct {
 
 // AutodiscoverConfig is the configuration for the autodiscovery functionality of log groups
 type AutodiscoverConfig struct {
-	Prefix                string       `mapstructure:"prefix"`
-	Pattern               string       `mapstructure:"pattern"`
-	Limit                 int          `mapstructure:"limit"`
-	Streams               StreamConfig `mapstructure:"streams"`
-	AccountIdentifiers    []string     `mapstructure:"account_identifiers"`
-	IncludeLinkedAccounts *bool        `mapstructure:"include_linked_accounts"`
+	Prefix                string             `mapstructure:"prefix"`
+	Pattern               string             `mapstructure:"pattern"`
+	Limit                 int                `mapstructure:"limit"`
+	Streams               StreamConfig       `mapstructure:"streams"`
+	AccountIdentifiers    []string           `mapstructure:"account_identifiers"`
+	IncludeLinkedAccounts *bool              `mapstructure:"include_linked_accounts"`
+	Tags                  LogGroupTagsConfig `mapstructure:",squash"`
 }
 
 // StreamConfig represents the configuration for the log stream filtering
 type StreamConfig struct {
-	Prefixes []*string `mapstructure:"prefixes"`
-	Names    []*string `mapstructure:"names"`
+	Prefixes []*string          `mapstructure:"prefixes"`
+	Names    []*string          `mapstructure:"names"`
+	Tags     LogGroupTagsConfig `mapstructure:",squash"`
+}
+
+// defaultTagAttributePrefix is prepended to log group tag keys when they are
+// attached as resource attributes, unless tag_attribute_prefix is set explicitly
+// (including to the empty string, which passes tags through as-is).
+const defaultTagAttributePrefix = "cloudwatch.log.group.tag."
+
+// LogGroupTagsConfig configures optional enrichment of emitted log records with
+// the source log group's CloudWatch tags. It is disabled by default; when
+// enabled the receiver calls ListTagsForResource for each log group during
+// discovery and attaches the selected tags as resource attributes.
+type LogGroupTagsConfig struct {
+	// IncludeTags gates tag enrichment. When false (default) the receiver
+	// behaves exactly as before and makes no tag API calls.
+	IncludeTags bool `mapstructure:"include_tags"`
+	// TagNames is an explicit allowlist of tag keys to include. Mutually
+	// exclusive with TagPrefix. When both TagNames and TagPrefix are empty all
+	// tags are included.
+	TagNames []string `mapstructure:"tag_names"`
+	// TagPrefix includes only tags whose key starts with this prefix. Mutually
+	// exclusive with TagNames.
+	TagPrefix string `mapstructure:"tag_prefix"`
+	// TagAttributePrefix is prepended to each tag key when creating the resource
+	// attribute. A nil pointer applies defaultTagAttributePrefix; an explicit
+	// empty string passes tags through as-is. Set via mapstructure so the
+	// distinction between "unset" and "empty" is preserved.
+	TagAttributePrefix *string `mapstructure:"tag_attribute_prefix"`
+}
+
+// attributePrefix returns the effective prefix applied to tag-derived resource
+// attribute keys, defaulting to defaultTagAttributePrefix when unset.
+func (t LogGroupTagsConfig) attributePrefix() string {
+	if t.TagAttributePrefix == nil {
+		return defaultTagAttributePrefix
+	}
+	return *t.TagAttributePrefix
+}
+
+// selectTags filters the raw tag map according to the configured allowlist or
+// prefix and returns a new map keyed by the resource-attribute name (with the
+// configured attribute prefix applied).
+func (t LogGroupTagsConfig) selectTags(raw map[string]string) map[string]string {
+	if len(raw) == 0 {
+		return nil
+	}
+	attrPrefix := t.attributePrefix()
+	out := make(map[string]string, len(raw))
+	for k, v := range raw {
+		include := false
+		switch {
+		case len(t.TagNames) > 0:
+			for _, name := range t.TagNames {
+				if name == k {
+					include = true
+					break
+				}
+			}
+		case t.TagPrefix != "":
+			include = strings.HasPrefix(k, t.TagPrefix)
+		default:
+			include = true
+		}
+		if include {
+			out[attrPrefix+k] = v
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+// validate ensures tag_names and tag_prefix are not both set.
+func (t LogGroupTagsConfig) validate() error {
+	if len(t.TagNames) > 0 && t.TagPrefix != "" {
+		return errTagNamesAndPrefix
+	}
+	return nil
 }
 
 var (
@@ -130,6 +211,7 @@ var (
 	errCollectionIntervalLessThanPeriod = errors.New("metrics collection_interval must be greater than or equal to period")
 	errInitialLookbackAndStartFrom      = errors.New("both initial_lookback and start_from are configured, Only one or the other is permitted")
 	errInvalidInitialLookback           = errors.New("initial_lookback must be a positive duration (e.g. 1h)")
+	errTagNamesAndPrefix                = errors.New("tag_names and tag_prefix are mutually exclusive; set one or the other")
 )
 
 // Validate overrides the embedded ControllerConfig.Validate so that a zero CollectionInterval
@@ -268,6 +350,12 @@ func (c *GroupConfig) validate() error {
 		return validateAutodiscover(*c.AutodiscoverConfig)
 	}
 
+	for _, sc := range c.NamedConfigs {
+		if err := sc.Tags.validate(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -278,5 +366,5 @@ func validateAutodiscover(cfg AutodiscoverConfig) error {
 	if cfg.Pattern != "" && cfg.Prefix != "" {
 		return errPrefixAndPatternConfigured
 	}
-	return nil
+	return cfg.Tags.validate()
 }

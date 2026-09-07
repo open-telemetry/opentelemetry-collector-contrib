@@ -176,6 +176,69 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errInvalidInitialLookback,
 		},
+		{
+			name: "Autodiscover tag_names and tag_prefix mutually exclusive",
+			config: Config{
+				Region: "us-east-1",
+				Logs: LogsConfig{
+					MaxEventsPerRequest: defaultEventLimit,
+					PollInterval:        defaultPollInterval,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit: defaultLogGroupLimit,
+							Tags: LogGroupTagsConfig{
+								IncludeTags: true,
+								TagNames:    []string{"team"},
+								TagPrefix:   "log.",
+							},
+						},
+					},
+				},
+			},
+			expectedErr: errTagNamesAndPrefix,
+		},
+		{
+			name: "Named tag_names and tag_prefix mutually exclusive",
+			config: Config{
+				Region: "us-east-1",
+				Logs: LogsConfig{
+					MaxEventsPerRequest: defaultEventLimit,
+					PollInterval:        defaultPollInterval,
+					Groups: GroupConfig{
+						NamedConfigs: map[string]StreamConfig{
+							"some-log-group": {
+								Names: []*string{aws.String("some-lg-name")},
+								Tags: LogGroupTagsConfig{
+									IncludeTags: true,
+									TagNames:    []string{"team"},
+									TagPrefix:   "log.",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedErr: errTagNamesAndPrefix,
+		},
+		{
+			name: "Autodiscover tags valid with tag_names only",
+			config: Config{
+				Region: "us-east-1",
+				Logs: LogsConfig{
+					MaxEventsPerRequest: defaultEventLimit,
+					PollInterval:        defaultPollInterval,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit: defaultLogGroupLimit,
+							Tags: LogGroupTagsConfig{
+								IncludeTags: true,
+								TagNames:    []string{"team", "environment"},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range cases {
@@ -595,4 +658,72 @@ func TestValidateMetricsConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLogGroupTagsConfigSelectTags(t *testing.T) {
+	raw := map[string]string{
+		"team":                        "messaging",
+		"environment":                 "production",
+		"log.tenant":                  "acme",
+		"aws:cloudformation:stack-id": "abc",
+	}
+
+	cases := []struct {
+		name     string
+		cfg      LogGroupTagsConfig
+		expected map[string]string
+	}{
+		{
+			name: "all tags with default prefix",
+			cfg:  LogGroupTagsConfig{IncludeTags: true},
+			expected: map[string]string{
+				defaultTagAttributePrefix + "team":                        "messaging",
+				defaultTagAttributePrefix + "environment":                 "production",
+				defaultTagAttributePrefix + "log.tenant":                  "acme",
+				defaultTagAttributePrefix + "aws:cloudformation:stack-id": "abc",
+			},
+		},
+		{
+			name: "allowlist with default prefix",
+			cfg:  LogGroupTagsConfig{IncludeTags: true, TagNames: []string{"team", "environment"}},
+			expected: map[string]string{
+				defaultTagAttributePrefix + "team":        "messaging",
+				defaultTagAttributePrefix + "environment": "production",
+			},
+		},
+		{
+			name: "allowlist passthrough (empty attribute prefix)",
+			cfg:  LogGroupTagsConfig{IncludeTags: true, TagNames: []string{"team", "environment"}, TagAttributePrefix: stringPtr("")},
+			expected: map[string]string{
+				"team":        "messaging",
+				"environment": "production",
+			},
+		},
+		{
+			name: "tag prefix with custom attribute prefix",
+			cfg:  LogGroupTagsConfig{IncludeTags: true, TagPrefix: "log.", TagAttributePrefix: stringPtr("org.routing.")},
+			expected: map[string]string{
+				"org.routing.log.tenant": "acme",
+			},
+		},
+		{
+			name:     "no matches returns nil",
+			cfg:      LogGroupTagsConfig{IncludeTags: true, TagNames: []string{"nonexistent"}},
+			expected: nil,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.expected, tc.cfg.selectTags(raw))
+		})
+	}
+
+	require.Nil(t, LogGroupTagsConfig{IncludeTags: true}.selectTags(nil))
+	require.Equal(t, defaultTagAttributePrefix, LogGroupTagsConfig{}.attributePrefix())
+	require.Equal(t, "", LogGroupTagsConfig{TagAttributePrefix: stringPtr("")}.attributePrefix())
+}
+
+func stringPtr(s string) *string {
+	return &s
 }
