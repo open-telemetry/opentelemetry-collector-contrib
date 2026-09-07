@@ -1761,6 +1761,8 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 				scrapeErrors = append(scrapeErrors, procedureCollectionErrors)
 			}
 			s.lastProcedureMetricsTimestamp = currentCollectionTime
+		} else {
+			s.logger.Debug("Skipping the collection of procedure metrics because collection interval has not yet elapsed.")
 		}
 	}
 
@@ -1971,7 +1973,6 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 
 	metricNames := getProcedureMetricNames()
 	var hits []procedureMetricCacheHit
-	var discardedHits int
 	for _, row := range metricRows {
 		newCacheVal := make(map[string]int64, len(metricNames))
 		for _, columnName := range metricNames {
@@ -2018,17 +2019,10 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 			// skip if possible purge or no new executions since last scrape
 			if !possiblePurge && hit.metrics[queryExecutionMetric] > 0 {
 				hits = append(hits, hit)
-			} else {
-				discardedHits++
 			}
 		}
 		s.procedureMetricCache.Add(cacheKey, newCacheVal)
 	}
-
-	s.logger.Debug("Procedure metrics scrape summary",
-		zap.Int("rows-from-db", len(metricRows)),
-		zap.Int("deltas-to-emit", len(hits)),
-		zap.Int("discarded", discardedHits))
 
 	if len(hits) == 0 {
 		return errors.Join(errs...)

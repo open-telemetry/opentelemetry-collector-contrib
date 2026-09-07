@@ -215,12 +215,21 @@ The receiver detects a CDB-root connection and switches to the `CDB_*` equivalen
 | `db.server.top_query` | `CDB_PROCEDURES`, plus `CON_ID` in the `PROCEDURE_EXECUTIONS` grouping | wrong or empty `procedure_name`; execution counts merged across PDBs |
 | `db.server.query_sample` | `CDB_PROCEDURES`, `CDB_OBJECTS` | wrong or empty `procedure_name` and blocked-object owner/name |
 
-This requires container-wide grants:
-
-```sql
-GRANT SELECT ON CDB_PROCEDURES TO <username> CONTAINER=ALL;
-GRANT SELECT ON CDB_OBJECTS TO <username> CONTAINER=ALL;
-```
+> [!IMPORTANT]
+> On a CDB-root connection these container-wide grants are **required** for the three events
+> above, not optional:
+>
+> ```sql
+> GRANT SELECT ON CDB_PROCEDURES TO <username> CONTAINER=ALL;
+> GRANT SELECT ON CDB_OBJECTS TO <username> CONTAINER=ALL;
+> ```
+>
+> Unlike per-PDB *metrics*, which fall back to the single-container query set when grants are
+> missing, the event queries have no `DBA_*` fallback once a CDB root is detected. Without these
+> grants they fail with `ORA-00942: table or view does not exist` on every scrape, and the
+> receiver reports a scrape error instead of the event. This affects `db.server.top_query` and
+> `db.server.query_sample` as well, so existing CDB-root deployments must add the grants before
+> upgrading.
 
 Users holding `SELECT_CATALOG_ROLE` inherit these and need no explicit grant. Non-CDB and
 direct-PDB connections continue to use the `DBA_*` views and need nothing extra.
@@ -247,7 +256,7 @@ GRANT SELECT ON V_$LOCK TO <username>;
 GRANT SELECT ON V_$CONTAINERS TO <username>;
 GRANT SELECT ON DBA_OBJECTS TO <username>;
 GRANT SELECT ON DBA_PROCEDURES TO <username>;
--- CDB-root connections only (see "CDB-root connections" above):
+-- Required on CDB-root connections (see "CDB-root connections" above):
 GRANT SELECT ON CDB_PROCEDURES TO <username> CONTAINER=ALL;
 GRANT SELECT ON CDB_OBJECTS TO <username> CONTAINER=ALL;
 ```

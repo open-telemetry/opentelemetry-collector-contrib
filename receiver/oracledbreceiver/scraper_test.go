@@ -2901,10 +2901,7 @@ func TestProcedureMetricsFirstScrapeSeedsCacheOnly(t *testing.T) {
 func TestProcedureMetricsDiscardedWhenExecutionCountUnchanged(t *testing.T) {
 	// Seed the cache with the same cumulative EXECUTIONS as the fixture row so
 	// the delta is zero.
-	unchanged := make(map[string]int64, len(procedureCacheValue))
-	for k, v := range procedureCacheValue {
-		unchanged[k] = v
-	}
+	unchanged := maps.Clone(procedureCacheValue)
 	unchanged["EXECUTIONS"] = 300413
 
 	scrpr := newProcedureMetricsScraper(t, procedureMetricsDbClientFn(t), unchanged)
@@ -2924,10 +2921,7 @@ func TestProcedureMetricsDiscardedWhenExecutionCountUnchanged(t *testing.T) {
 // instead of emitting a bogus negative value.
 func TestProcedureMetricsDiscardedOnPossiblePurge(t *testing.T) {
 	// Seed with cumulative values HIGHER than the fixture row, so deltas go negative.
-	purged := make(map[string]int64, len(procedureCacheValue))
-	for k, v := range procedureCacheValue {
-		purged[k] = v
-	}
+	purged := maps.Clone(procedureCacheValue)
 	purged["EXECUTIONS"] = 100
 	purged["BUFFER_GETS"] = 999999999
 
