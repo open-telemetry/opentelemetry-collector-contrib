@@ -1313,7 +1313,7 @@ func TestNamedGroupTagEnrichment(t *testing.T) {
 			testLogGroupName: {
 				Names: []*string{aws.String(testLogStreamName)},
 				// tag_prefix "log." with passthrough attribute prefix ("").
-				Tags: LogGroupTagsConfig{IncludeTags: true, TagPrefix: "log.", TagAttributePrefix: stringPtr("")},
+				Tags: LogGroupTagsConfig{IncludeTags: true, TagPrefix: "log.", TagAttributePrefix: aws.String("")},
 			},
 		},
 	}
