@@ -15,117 +15,53 @@ import (
 func TestQueryContents(t *testing.T) {
 	queryTests := []struct {
 		name                     string
-		instanceName             string
-		getQuery                 func(string) string
+		getQuery                 func() string
 		expectedQueryValFilename string
 	}{
 		{
-			name:                     "Test database IO query without instance name",
-			instanceName:             "",
+			name:                     "Test database IO query",
 			getQuery:                 getSQLServerDatabaseIOQuery,
 			expectedQueryValFilename: "databaseIOQueryWithoutInstanceName.txt",
 		},
 		{
-			name:                     "Test database IO query with instance name",
-			instanceName:             "instanceName",
-			getQuery:                 getSQLServerDatabaseIOQuery,
-			expectedQueryValFilename: "databaseIOQueryWithInstanceName.txt",
-		},
-		{
-			name:                     "Test perf counter query without instance name",
-			instanceName:             "",
+			name:                     "Test perf counter query",
 			getQuery:                 getSQLServerPerformanceCounterQuery,
 			expectedQueryValFilename: "perfCounterQueryWithoutInstanceName.txt",
 		},
 		{
-			name:                     "Test perf counter query with instance name",
-			instanceName:             "instanceName",
-			getQuery:                 getSQLServerPerformanceCounterQuery,
-			expectedQueryValFilename: "perfCounterQueryWithInstanceName.txt",
-		},
-		{
-			name:                     "Test properties query without instance name",
-			instanceName:             "",
+			name:                     "Test properties query",
 			getQuery:                 getSQLServerPropertiesQuery,
 			expectedQueryValFilename: "propertyQueryWithoutInstanceName.txt",
 		},
 		{
-			name:                     "Test properties query with instance name",
-			instanceName:             "instanceName",
-			getQuery:                 getSQLServerPropertiesQuery,
-			expectedQueryValFilename: "propertyQueryWithInstanceName.txt",
-		},
-		{
-			name:                     "Test wait stats query without instance name",
-			instanceName:             "",
+			name:                     "Test wait stats query",
 			getQuery:                 getSQLServerWaitStatsQuery,
 			expectedQueryValFilename: "waitStatsQueryWithoutInstanceName.txt",
 		},
 		{
-			name:                     "Test wait stats query with instance name",
-			instanceName:             "instanceName",
-			getQuery:                 getSQLServerWaitStatsQuery,
-			expectedQueryValFilename: "waitStatsQueryWithInstanceName.txt",
-		},
-		{
-			name:                     "Test worker threads query without instance name",
-			instanceName:             "",
+			name:                     "Test worker threads query",
 			getQuery:                 getSQLServerWorkerThreadsQuery,
 			expectedQueryValFilename: "workerThreadsQueryWithoutInstanceName.txt",
 		},
 		{
-			name:                     "Test worker threads query with instance name",
-			instanceName:             "instanceName",
-			getQuery:                 getSQLServerWorkerThreadsQuery,
-			expectedQueryValFilename: "workerThreadsQueryWithInstanceName.txt",
-		},
-		{
-			name:                     "Test index physical stats query without instance name",
-			instanceName:             "",
+			name:                     "Test index physical stats query",
 			getQuery:                 getSQLServerIndexPhysicalStatsQuery,
 			expectedQueryValFilename: "indexPhysicalQueryWithoutInstanceName.txt",
 		},
 		{
-			name:                     "Test index physical stats query with instance name",
-			instanceName:             "instanceName",
-			getQuery:                 getSQLServerIndexPhysicalStatsQuery,
-			expectedQueryValFilename: "indexPhysicalQueryWithInstanceName.txt",
-		},
-		{
-			name:                     "Test availability group query without instance name",
-			instanceName:             "",
+			name:                     "Test availability group query",
 			getQuery:                 getSQLServerAvailabilityGroupQuery,
 			expectedQueryValFilename: "availabilityGroupQueryWithoutInstanceName.txt",
 		},
 		{
-			name:                     "Test availability group query with instance name",
-			instanceName:             "instanceName",
-			getQuery:                 getSQLServerAvailabilityGroupQuery,
-			expectedQueryValFilename: "availabilityGroupQueryWithInstanceName.txt",
-		},
-		{
-			name:                     "Test CPU memory query without instance name",
-			instanceName:             "",
+			name:                     "Test CPU memory query",
 			getQuery:                 getSQLServerCPUMemoryQuery,
 			expectedQueryValFilename: "cpuMemoryQueryWithoutInstanceName.txt",
 		},
 		{
-			name:                     "Test CPU memory query with instance name",
-			instanceName:             "instanceName",
-			getQuery:                 getSQLServerCPUMemoryQuery,
-			expectedQueryValFilename: "cpuMemoryQueryWithInstanceName.txt",
-		},
-		{
-			name:                     "Test disk IO query without instance name",
-			instanceName:             "",
+			name:                     "Test disk IO query",
 			getQuery:                 getSQLServerDiskIOQuery,
 			expectedQueryValFilename: "diskIOQueryWithoutInstanceName.txt",
-		},
-		{
-			name:                     "Test disk IO query with instance name",
-			instanceName:             "instanceName",
-			getQuery:                 getSQLServerDiskIOQuery,
-			expectedQueryValFilename: "diskIOQueryWithInstanceName.txt",
 		},
 	}
 
@@ -136,7 +72,7 @@ func TestQueryContents(t *testing.T) {
 			// Replace all will fix newlines when testing on Windows
 			expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
 
-			actual := tt.getQuery(tt.instanceName)
+			actual := tt.getQuery()
 			require.Equal(t, expected, actual)
 		})
 	}

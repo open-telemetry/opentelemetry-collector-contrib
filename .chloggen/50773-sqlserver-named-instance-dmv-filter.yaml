@@ -1,0 +1,16 @@
+change_type: bug_fix
+
+component: receiver/sqlserver
+
+note: Fix direct connection queries returning no data when `instance_name` is set to a named instance
+
+issues: [50773]
+
+subtext: |
+  The direct connection queries filtered rows with `@@SERVERNAME = '<instance_name>'`. On a named
+  instance `@@SERVERNAME` returns `<host>\<instance>`, which never matches the bare instance name,
+  so every query returned zero rows and no metrics were emitted. The filter was also redundant:
+  a connection is scoped to a single instance and its DMVs only expose that instance. It has been
+  removed. `instance_name` remains in use for the Windows performance counter collection path.
+
+change_logs: [user]
