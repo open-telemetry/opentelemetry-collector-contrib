@@ -604,6 +604,14 @@ func (vc *vcenterClient) convertVSANResultToMetricResults(vSANResult types.VsanP
 		MetricDetails: []*vSANMetricDetails{},
 	}
 
+	// The vSAN performance API returns an empty SampleInfo when an entity has no
+	// recent performance data (e.g. a freshly provisioned cluster or a vSAN
+	// performance service that is temporarily unavailable). Skip such entities
+	// instead of failing the whole scrape cycle trying to parse an empty timestamp.
+	if strings.TrimSpace(vSANResult.SampleInfo) == "" {
+		return &metricResults, nil
+	}
+
 	// Parse all timestamps
 	localZone, _ := time.Now().Local().Zone()
 	timeStrings := strings.Split(vSANResult.SampleInfo, ",")

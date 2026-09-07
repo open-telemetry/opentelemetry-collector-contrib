@@ -191,6 +191,25 @@ suffix is matched exactly as a literal key, because attribute keys may
 legitimately contain `/` (e.g. `app.kubernetes.io/name`); a mistyped operator
 therefore fails the assertion as a missing attribute.
 
+### Datapoint value precision matcher
+
+A `double_value` key can use the `/precision<n>` suffix when the value is a
+float whose trailing digits are not stable. Both sides are rounded to `n`
+decimal places before they are compared, matching `pmetrictest`'s
+`IgnoreMetricFloatPrecision`:
+
+```yaml
+datapoints:
+  - attributes:
+      state: user
+    double_value/precision3: 1.235
+```
+
+`n` must be between 0 and 15; beyond that a `float64` cannot distinguish the
+values. Use at most one of `double_value:` or `double_value/precision<n>:` per
+datapoint. The operator applies only to `double_value`, since integer values
+have no float precision to ignore.
+
 ### Shorthand: single empty-attribute datapoint
 
 A metric with exactly one datapoint that has no attributes can omit
@@ -220,7 +239,8 @@ must contain at least one datapoint; see
 
 This is the identity-only subset of the grammar in #48079. Operator-suffix
 extensions beyond attribute `/exists`/`/regex`, `attributes/include`, scope
-`version` `/exists`/`/regex`, and the numeric comparison matchers
-(`/exclude`, `/all`, `/count`, `/approx`) and opt-in fields
-(`IncludeValues()`, `IncludeTimestamps()`, `IncludeExemplars()`, type-specific
-histogram fields) are tracked as follow-ups under that issue.
+`version` `/exists`/`/regex`, the numeric comparison matchers, and the
+`double_value/precision<n>` matcher (`/exclude`, `/all`, `/count`, `/approx`)
+and opt-in fields (`IncludeValues()`, `IncludeTimestamps()`,
+`IncludeExemplars()`, type-specific histogram fields) are tracked as follow-ups
+under that issue.
