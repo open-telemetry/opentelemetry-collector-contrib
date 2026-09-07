@@ -757,6 +757,38 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	}`, buf.String())
 }
 
+func TestEncodeSpanECSModeDBSystemName(t *testing.T) {
+	encoder, _ := newEncoder(MappingECS)
+
+	resource := pcommon.NewResource()
+	scope := pcommon.NewInstrumentationScope()
+
+	span := ptrace.NewSpan()
+	require.NoError(t, span.Attributes().FromRaw(map[string]any{
+		"db.system.name": "sql",
+	}))
+	span.SetName("client span")
+	span.SetSpanID([8]byte{0x19, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26})
+	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	span.SetKind(ptrace.SpanKindClient)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Date(2026, 7, 27, 3, 4, 5, 6, time.UTC)))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Date(2026, 7, 27, 3, 4, 6, 6, time.UTC)))
+
+	var buf bytes.Buffer
+	err := encoder.encodeSpan(
+		encodingContext{
+			resource: resource,
+			scope:    scope,
+		},
+		span,
+		elasticsearch.Index{},
+		&buf,
+	)
+	require.NoError(t, err)
+
+	assert.Equal(t, "sql", gjson.GetBytes(buf.Bytes(), "span.db.type").String())
+}
+
 func TestEncodeLogECSMode(t *testing.T) {
 	logs := plog.NewLogs()
 	resource := logs.ResourceLogs().AppendEmpty().Resource()
