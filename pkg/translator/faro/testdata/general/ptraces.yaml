@@ -16,7 +16,7 @@ resourceSpans:
         - key: service.version
           value:
             stringValue: abcdefg
-        - key: deployment.environment
+        - key: deployment.environment.name
           value:
             stringValue: production
         - key: service.namespace
