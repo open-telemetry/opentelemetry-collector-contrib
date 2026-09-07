@@ -162,7 +162,7 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	case getSQLServerQuerySamplesQuery():
 		isQuerySample = true
 		resources, err = s.recordDatabaseSampleQuery(ctx)
-	case getSQLServerProcedureMetricsQuery(s.config.ProcedureMetrics.TopProcedureCount, s.config.InstanceName):
+	case getSQLServerProcedureMetricsQuery(s.config.InstanceName):
 		resources, err = s.recordDatabaseProcedureMetrics(ctx)
 		if err != nil {
 			s.logger.Error("ProcedureMetrics: scrape failed", zap.Error(err))
@@ -2333,54 +2333,100 @@ func (s *sqlServerScraperHelper) recordDatabaseProcedureMetrics(ctx context.Cont
 		colMinElapsedTime   = "min_elapsed_time"
 		colMaxElapsedTime   = "max_elapsed_time"
 		colLastExecTime     = "last_execution_time"
+
+		dbSystemNameVal = "microsoft.sql_server"
 	)
 
-	rows, err := s.client.QueryRows(ctx)
-	if err != nil {
-		return pcommon.Resource{}, err
+	// cacheAndDiff builds its key from the first three arguments. The database and
+	// procedure IDs together identify a procedure; the literal "0" opts out of the extra
+	// stored-procedure key prefix that the query-level events need.
+	const noProcedurePrefix = "0"
+
+	deltaColumns := []string{
+		colExecutionCount, colTotalWorkerTime, colTotalElapsedTime, colTotalPhysReads,
+		colTotalLogReads, colTotalLogWrites, colTotalSpills,
 	}
 
-	var resources pcommon.Resource
-	var resourcesAdded bool
-	var errs []error
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	dbSystemName := "mssql"
+	rows, err := s.client.QueryRows(ctx,
+		sql.Named("maxSampleCount", s.config.ProcedureMetrics.MaxProcedureSampleCount))
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return pcommon.NewResource(), fmt.Errorf("sqlServerScraperHelper failed getting rows: %w", err)
+		}
+		s.logger.Warn("problems encountered getting log rows", zap.Error(err))
+	}
 
+	var errs []error
+
+	type procedureRow struct {
+		row    sqlquery.StringMap
+		deltas map[string]int64
+	}
+
+	// The query orders by cumulative elapsed time, which covers the whole period the plan
+	// has been cached rather than this interval, so it is only a prefilter. Rank the
+	// candidates by their elapsed-time delta instead so the procedures reported are the
+	// ones that were actually active since the last scrape.
+	candidates := make([]procedureRow, 0, len(rows))
 	for _, row := range rows {
 		procedureID := row[colProcedureID]
 		databaseID := row[colDatabaseID]
 
-		executionCountRaw := s.retrieveValue(row, colExecutionCount, &errs, retrieveInt)
-		totalWorkerTimeRaw := s.retrieveValue(row, colTotalWorkerTime, &errs, retrieveInt)
-		totalElapsedTimeRaw := s.retrieveValue(row, colTotalElapsedTime, &errs, retrieveInt)
-		totalPhysReadsRaw := s.retrieveValue(row, colTotalPhysReads, &errs, retrieveInt)
-		totalLogReadsRaw := s.retrieveValue(row, colTotalLogReads, &errs, retrieveInt)
-		totalLogWritesRaw := s.retrieveValue(row, colTotalLogWrites, &errs, retrieveInt)
-		totalSpillsRaw := s.retrieveValue(row, colTotalSpills, &errs, retrieveInt)
-		minElapsedTimeRaw := s.retrieveValue(row, colMinElapsedTime, &errs, retrieveInt)
-		maxElapsedTimeRaw := s.retrieveValue(row, colMaxElapsedTime, &errs, retrieveInt)
+		deltas := make(map[string]int64, len(deltaColumns))
+		seeded, parseFailed := false, false
+		for _, column := range deltaColumns {
+			value, err := retrieveInt(row, column)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("failed to parse %s for procedure %s: %w", column, procedureID, err))
+				parseFailed = true
+				break
+			}
+			cached, delta := s.cacheAndDiff(databaseID, procedureID, noProcedurePrefix, column, value.(int64))
+			if !cached {
+				seeded = true
+			}
+			deltas[column] = delta
+		}
 
-		if executionCountRaw == nil || totalElapsedTimeRaw == nil {
+		// An uncached counter means this is the first scrape for the procedure, so there is
+		// no prior value to diff against and the row only seeds the cache. A zero execution
+		// delta means the procedure has not run since the last scrape.
+		if parseFailed || seeded || deltas[colExecutionCount] == 0 {
 			continue
 		}
 
-		cached, execCountDelta := s.cacheAndDiff(databaseID, procedureID, "0", colExecutionCount, executionCountRaw.(int64))
-		_, workerTimeDelta := s.cacheAndDiff(databaseID, procedureID, "0", colTotalWorkerTime, totalWorkerTimeRaw.(int64))
-		_, elapsedTimeDelta := s.cacheAndDiff(databaseID, procedureID, "0", colTotalElapsedTime, totalElapsedTimeRaw.(int64))
-		_, physReadsDelta := s.cacheAndDiff(databaseID, procedureID, "0", colTotalPhysReads, totalPhysReadsRaw.(int64))
-		_, logReadsDelta := s.cacheAndDiff(databaseID, procedureID, "0", colTotalLogReads, totalLogReadsRaw.(int64))
-		_, logWritesDelta := s.cacheAndDiff(databaseID, procedureID, "0", colTotalLogWrites, totalLogWritesRaw.(int64))
-		_, spillsDelta := s.cacheAndDiff(databaseID, procedureID, "0", colTotalSpills, totalSpillsRaw.(int64))
+		candidates = append(candidates, procedureRow{row: row, deltas: deltas})
+	}
 
-		if !cached || execCountDelta == 0 {
-			continue
+	sort.SliceStable(candidates, func(i, j int) bool {
+		return candidates[i].deltas[colTotalElapsedTime] > candidates[j].deltas[colTotalElapsedTime]
+	})
+	if len(candidates) > int(s.config.ProcedureMetrics.TopProcedureCount) {
+		candidates = candidates[:s.config.ProcedureMetrics.TopProcedureCount]
+	}
+
+	var resources pcommon.Resource
+	var resourcesAdded bool
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
+
+	for _, candidate := range candidates {
+		row, deltas := candidate.row, candidate.deltas
+		procedureID := row[colProcedureID]
+
+		// min/max elapsed time are lifetime values from the DMV rather than deltas, so a
+		// parse failure on them must not discard the row's delta counters.
+		minElapsedTime, err := retrieveInt(row, colMinElapsedTime)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for procedure %s: %w", colMinElapsedTime, procedureID, err))
+		}
+		maxElapsedTime, err := retrieveInt(row, colMaxElapsedTime)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for procedure %s: %w", colMaxElapsedTime, procedureID, err))
 		}
 
-		totalWorkerTimeSec := float64(workerTimeDelta) / 1_000_000
-		totalElapsedTimeSec := float64(elapsedTimeDelta) / 1_000_000
-		avgElapsedTimeMs := float64(elapsedTimeDelta) / float64(execCountDelta) / 1_000.0
-		minElapsedTimeMs := float64(minElapsedTimeRaw.(int64)) / 1_000.0
-		maxElapsedTimeMs := float64(maxElapsedTimeRaw.(int64)) / 1_000.0
+		execCountDelta := deltas[colExecutionCount]
+		totalWorkerTimeSec := float64(deltas[colTotalWorkerTime]) / 1_000_000
+		totalElapsedTimeSec := float64(deltas[colTotalElapsedTime]) / 1_000_000
 
 		if !resourcesAdded {
 			resources = s.setupResourceBuilder(s.lb.NewResourceBuilder(), row).Emit()
@@ -2390,26 +2436,27 @@ func (s *sqlServerScraperHelper) recordDatabaseProcedureMetrics(ctx context.Cont
 		s.lb.RecordDbServerProcedureMetricsEvent(
 			context.Background(),
 			timestamp,
-			dbSystemName,
+			dbSystemNameVal,
 			row[colDatabaseName],
-			s.config.Server,
-			int64(s.config.Port),
 			procedureID,
 			row[colProcedureName],
 			row[colSchemaName],
-			row[colDatabaseName],
 			execCountDelta,
 			totalWorkerTimeSec,
 			totalElapsedTimeSec,
-			logReadsDelta,
-			logWritesDelta,
-			physReadsDelta,
-			spillsDelta,
-			avgElapsedTimeMs,
-			maxElapsedTimeMs,
-			minElapsedTimeMs,
+			deltas[colTotalLogReads],
+			deltas[colTotalLogWrites],
+			deltas[colTotalPhysReads],
+			deltas[colTotalSpills],
+			totalElapsedTimeSec/float64(execCountDelta),
+			float64(maxElapsedTime.(int64))/1_000_000,
+			float64(minElapsedTime.(int64))/1_000_000,
 			row[colLastExecTime],
 		)
+	}
+
+	if !resourcesAdded {
+		resources = pcommon.NewResource()
 	}
 	return resources, errors.Join(errs...)
 }

@@ -4,6 +4,7 @@ package metadata
 
 import (
 	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -17,7 +18,7 @@ type eventDbServerProcedureMetrics struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerProcedureMetrics) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, serverAddressAttributeValue string, serverPortAttributeValue int64, sqlserverProcedureIDAttributeValue string, sqlserverProcedureNameAttributeValue string, sqlserverProcedureSchemaNameAttributeValue string, sqlserverProcedureDatabaseNameAttributeValue string, sqlserverProcedureExecutionCountAttributeValue int64, sqlserverTotalWorkerTimeAttributeValue float64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverProcedureTotalSpillsAttributeValue int64, sqlserverProcedureAvgElapsedTimeMsAttributeValue float64, sqlserverProcedureMaxElapsedTimeMsAttributeValue float64, sqlserverProcedureMinElapsedTimeMsAttributeValue float64, sqlserverProcedureLastExecutionTimeAttributeValue string) {
+func (e *eventDbServerProcedureMetrics) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverProcedureIDAttributeValue string, sqlserverProcedureNameAttributeValue string, sqlserverProcedureSchemaNameAttributeValue string, sqlserverProcedureExecutionCountAttributeValue int64, sqlserverTotalWorkerTimeAttributeValue float64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverProcedureTotalSpillsAttributeValue int64, sqlserverProcedureAvgElapsedTimeAttributeValue float64, sqlserverProcedureMaxElapsedTimeAttributeValue float64, sqlserverProcedureMinElapsedTimeAttributeValue float64, sqlserverProcedureLastExecutionTimeAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
@@ -31,12 +32,9 @@ func (e *eventDbServerProcedureMetrics) recordEvent(ctx context.Context, timesta
 	}
 	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
 	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	dp.Attributes().PutStr("server.address", serverAddressAttributeValue)
-	dp.Attributes().PutInt("server.port", serverPortAttributeValue)
 	dp.Attributes().PutStr("sqlserver.procedure_id", sqlserverProcedureIDAttributeValue)
 	dp.Attributes().PutStr("sqlserver.procedure_name", sqlserverProcedureNameAttributeValue)
 	dp.Attributes().PutStr("sqlserver.procedure.schema_name", sqlserverProcedureSchemaNameAttributeValue)
-	dp.Attributes().PutStr("sqlserver.procedure.database_name", sqlserverProcedureDatabaseNameAttributeValue)
 	dp.Attributes().PutInt("sqlserver.procedure_execution_count", sqlserverProcedureExecutionCountAttributeValue)
 	dp.Attributes().PutDouble("sqlserver.total_worker_time", sqlserverTotalWorkerTimeAttributeValue)
 	dp.Attributes().PutDouble("sqlserver.total_elapsed_time", sqlserverTotalElapsedTimeAttributeValue)
@@ -44,9 +42,9 @@ func (e *eventDbServerProcedureMetrics) recordEvent(ctx context.Context, timesta
 	dp.Attributes().PutInt("sqlserver.total_logical_writes", sqlserverTotalLogicalWritesAttributeValue)
 	dp.Attributes().PutInt("sqlserver.total_physical_reads", sqlserverTotalPhysicalReadsAttributeValue)
 	dp.Attributes().PutInt("sqlserver.procedure.total_spills", sqlserverProcedureTotalSpillsAttributeValue)
-	dp.Attributes().PutDouble("sqlserver.procedure.avg_elapsed_time_ms", sqlserverProcedureAvgElapsedTimeMsAttributeValue)
-	dp.Attributes().PutDouble("sqlserver.procedure.max_elapsed_time_ms", sqlserverProcedureMaxElapsedTimeMsAttributeValue)
-	dp.Attributes().PutDouble("sqlserver.procedure.min_elapsed_time_ms", sqlserverProcedureMinElapsedTimeMsAttributeValue)
+	dp.Attributes().PutDouble("sqlserver.procedure.avg_elapsed_time", sqlserverProcedureAvgElapsedTimeAttributeValue)
+	dp.Attributes().PutDouble("sqlserver.procedure.max_elapsed_time", sqlserverProcedureMaxElapsedTimeAttributeValue)
+	dp.Attributes().PutDouble("sqlserver.procedure.min_elapsed_time", sqlserverProcedureMinElapsedTimeAttributeValue)
 	dp.Attributes().PutStr("sqlserver.procedure.last_execution_time", sqlserverProcedureLastExecutionTimeAttributeValue)
 
 }
@@ -364,8 +362,8 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 }
 
 // RecordDbServerProcedureMetricsEvent adds a log record of db.server.procedure_metrics event.
-func (lb *LogsBuilder) RecordDbServerProcedureMetricsEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, serverAddressAttributeValue string, serverPortAttributeValue int64, sqlserverProcedureIDAttributeValue string, sqlserverProcedureNameAttributeValue string, sqlserverProcedureSchemaNameAttributeValue string, sqlserverProcedureDatabaseNameAttributeValue string, sqlserverProcedureExecutionCountAttributeValue int64, sqlserverTotalWorkerTimeAttributeValue float64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverProcedureTotalSpillsAttributeValue int64, sqlserverProcedureAvgElapsedTimeMsAttributeValue float64, sqlserverProcedureMaxElapsedTimeMsAttributeValue float64, sqlserverProcedureMinElapsedTimeMsAttributeValue float64, sqlserverProcedureLastExecutionTimeAttributeValue string) {
-	lb.eventDbServerProcedureMetrics.recordEvent(ctx, timestamp, dbSystemNameAttributeValue, dbNamespaceAttributeValue, serverAddressAttributeValue, serverPortAttributeValue, sqlserverProcedureIDAttributeValue, sqlserverProcedureNameAttributeValue, sqlserverProcedureSchemaNameAttributeValue, sqlserverProcedureDatabaseNameAttributeValue, sqlserverProcedureExecutionCountAttributeValue, sqlserverTotalWorkerTimeAttributeValue, sqlserverTotalElapsedTimeAttributeValue, sqlserverTotalLogicalReadsAttributeValue, sqlserverTotalLogicalWritesAttributeValue, sqlserverTotalPhysicalReadsAttributeValue, sqlserverProcedureTotalSpillsAttributeValue, sqlserverProcedureAvgElapsedTimeMsAttributeValue, sqlserverProcedureMaxElapsedTimeMsAttributeValue, sqlserverProcedureMinElapsedTimeMsAttributeValue, sqlserverProcedureLastExecutionTimeAttributeValue)
+func (lb *LogsBuilder) RecordDbServerProcedureMetricsEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverProcedureIDAttributeValue string, sqlserverProcedureNameAttributeValue string, sqlserverProcedureSchemaNameAttributeValue string, sqlserverProcedureExecutionCountAttributeValue int64, sqlserverTotalWorkerTimeAttributeValue float64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverProcedureTotalSpillsAttributeValue int64, sqlserverProcedureAvgElapsedTimeAttributeValue float64, sqlserverProcedureMaxElapsedTimeAttributeValue float64, sqlserverProcedureMinElapsedTimeAttributeValue float64, sqlserverProcedureLastExecutionTimeAttributeValue string) {
+	lb.eventDbServerProcedureMetrics.recordEvent(ctx, timestamp, dbSystemNameAttributeValue, dbNamespaceAttributeValue, sqlserverProcedureIDAttributeValue, sqlserverProcedureNameAttributeValue, sqlserverProcedureSchemaNameAttributeValue, sqlserverProcedureExecutionCountAttributeValue, sqlserverTotalWorkerTimeAttributeValue, sqlserverTotalElapsedTimeAttributeValue, sqlserverTotalLogicalReadsAttributeValue, sqlserverTotalLogicalWritesAttributeValue, sqlserverTotalPhysicalReadsAttributeValue, sqlserverProcedureTotalSpillsAttributeValue, sqlserverProcedureAvgElapsedTimeAttributeValue, sqlserverProcedureMaxElapsedTimeAttributeValue, sqlserverProcedureMinElapsedTimeAttributeValue, sqlserverProcedureLastExecutionTimeAttributeValue)
 }
 
 // RecordDbServerQuerySampleEvent adds a log record of db.server.query_sample event.

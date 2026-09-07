@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -392,6 +393,9 @@ type mockClient struct {
 	// server properties query. Used to exercise the reduced Azure SQL Managed
 	// Instance column shape.
 	propertiesFixtureFile string
+	// procedureFixtureFile, when set, overrides the fixture returned for the stored
+	// procedure metrics query.
+	procedureFixtureFile string
 }
 
 type mockInvalidClient struct {
@@ -505,6 +509,12 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQuerySamplesQuery():
 		queryResults, err = readFile("recordDatabaseSampleQueryData.txt")
+	case getSQLServerProcedureMetricsQuery(mc.instanceName):
+		fixture := "procedureMetricsQueryData.txt"
+		if mc.procedureFixtureFile != "" {
+			fixture = mc.procedureFixtureFile
+		}
+		queryResults, err = readFile(fixture)
 	default:
 		return nil, errors.New("No valid query found")
 	}
@@ -1587,4 +1597,155 @@ func TestIsDiskIOQueryEnabled(t *testing.T) {
 	metrics.SqlserverDiskOperations.Enabled = false
 	metrics.SqlserverDiskIo.Enabled = true
 	assert.True(t, isDiskIOQueryEnabled(metrics))
+}
+
+// newProcedureMetricsScraper builds a logs scraper with only the procedure metrics
+// event enabled, so scrapers[0] is always the procedure metrics scraper.
+func newProcedureMetricsScraper(t *testing.T) *sqlServerScraperHelper {
+	t.Helper()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.LogsBuilderConfig.Events.DbServerProcedureMetrics.Enabled = true
+	require.NoError(t, cfg.Validate())
+
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	require.NotEmpty(t, scrapers)
+
+	scraper := scrapers[0]
+	require.NotNil(t, scraper.cache)
+	scraper.client = mockClient{
+		instanceName: scraper.config.InstanceName,
+		SQL:          scraper.sqlQuery,
+	}
+	return scraper
+}
+
+// seedProcedureCache primes the delta cache so the next scrape produces deltas rather
+// than only seeding. Mirrors the key layout used by recordDatabaseProcedureMetrics; the
+// fixture's procedures all live in database 5.
+func seedProcedureCache(scraper *sqlServerScraperHelper, procedureID string, values map[string]int64) {
+	const fixtureDatabaseID = "5"
+	for column, value := range values {
+		scraper.cacheAndDiff(fixtureDatabaseID, procedureID, "0", column, value)
+	}
+}
+
+func TestProcedureMetricsQuery(t *testing.T) {
+	scraper := newProcedureMetricsScraper(t)
+
+	seedProcedureCache(scraper, "1234567", map[string]int64{
+		"execution_count":      1000,
+		"total_worker_time":    30_000_000,
+		"total_elapsed_time":   60_000_000,
+		"total_physical_reads": 100,
+		"total_logical_reads":  400_000,
+		"total_logical_writes": 500,
+		"total_spills":         20,
+	})
+	seedProcedureCache(scraper, "7654321", map[string]int64{
+		"execution_count":      200,
+		"total_worker_time":    4_000_000,
+		"total_elapsed_time":   8_000_000,
+		"total_physical_reads": 5,
+		"total_logical_reads":  15_000,
+		"total_logical_writes": 3_000,
+		"total_spills":         0,
+	})
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "expectedProcedureMetricsQuery.yaml")
+	// Uncomment line below to re-generate expected logs.
+	// golden.WriteLogs(t, expectedFile, actualLogs)
+	expectedLogs, err := golden.ReadLogs(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp()))
+
+	records := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	assert.Equal(t, "db.server.procedure_metrics", records.At(0).EventName())
+}
+
+// The first scrape has nothing to diff against, so it must only prime the cache.
+func TestProcedureMetricsFirstScrapeSeedsCacheOnly(t *testing.T) {
+	scraper := newProcedureMetricsScraper(t)
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, 0, actualLogs.ResourceLogs().Len(), "first scrape should only seed the cache")
+	assert.Positive(t, scraper.cache.Len(), "first scrape should have cached the procedure counters")
+}
+
+// A procedure that has not executed since the last scrape has a zero execution delta
+// and must be dropped rather than emitted with empty counters.
+func TestProcedureMetricsSkipsUnexecutedProcedures(t *testing.T) {
+	scraper := newProcedureMetricsScraper(t)
+
+	// Seed with the fixture's own cumulative values so every delta is zero.
+	seedProcedureCache(scraper, "1234567", map[string]int64{
+		"execution_count":      1500,
+		"total_worker_time":    45_000_000,
+		"total_elapsed_time":   90_000_000,
+		"total_physical_reads": 120,
+		"total_logical_reads":  480_000,
+		"total_logical_writes": 600,
+		"total_spills":         24,
+	})
+	seedProcedureCache(scraper, "7654321", map[string]int64{
+		"execution_count":      300,
+		"total_worker_time":    6_000_000,
+		"total_elapsed_time":   12_000_000,
+		"total_physical_reads": 10,
+		"total_logical_reads":  20_000,
+		"total_logical_writes": 4_000,
+		"total_spills":         0,
+	})
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, 0, actualLogs.ResourceLogs().Len(), "procedures with no new executions should not be reported")
+}
+
+// Procedures must be ranked by elapsed time accrued since the last scrape, not by the
+// cumulative total the query orders on. usp_UpdateInventory has the smaller lifetime
+// total but the larger delta here, so it is the one that survives a top count of 1.
+func TestProcedureMetricsRanksByElapsedTimeDelta(t *testing.T) {
+	scraper := newProcedureMetricsScraper(t)
+	scraper.config.ProcedureMetrics.TopProcedureCount = 1
+
+	seedProcedureCache(scraper, "1234567", map[string]int64{
+		"execution_count":      1499,
+		"total_worker_time":    44_999_000,
+		"total_elapsed_time":   89_999_000, // delta of 1ms despite the largest total
+		"total_physical_reads": 119,
+		"total_logical_reads":  479_999,
+		"total_logical_writes": 599,
+		"total_spills":         23,
+	})
+	seedProcedureCache(scraper, "7654321", map[string]int64{
+		"execution_count":      100,
+		"total_worker_time":    1_000_000,
+		"total_elapsed_time":   2_000_000, // delta of 10s
+		"total_physical_reads": 1,
+		"total_logical_reads":  1_000,
+		"total_logical_writes": 100,
+		"total_spills":         0,
+	})
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	records := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	require.Equal(t, 1, records.Len(), "top_procedure_count should cap the reported procedures")
+
+	name, ok := records.At(0).Attributes().Get("sqlserver.procedure_name")
+	require.True(t, ok)
+	assert.Equal(t, "[sales].[usp_UpdateInventory]", name.Str(),
+		"the procedure with the largest elapsed-time delta should win, not the largest cumulative total")
 }

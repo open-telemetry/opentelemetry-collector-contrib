@@ -52,7 +52,8 @@ func TestFactory(t *testing.T) {
 						MaxRowsPerQuery: 100,
 					},
 					ProcedureMetrics: ProcedureMetrics{
-						TopProcedureCount: 250,
+						MaxProcedureSampleCount: 1000,
+						TopProcedureCount:       250,
 					},
 					MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 					LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),

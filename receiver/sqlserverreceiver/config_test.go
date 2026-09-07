@@ -111,6 +111,55 @@ func TestValidate(t *testing.T) {
 			expectedSuccess: false,
 		},
 		{
+			desc: "config with invalid MaxProcedureSampleCount value",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				ProcedureMetrics: ProcedureMetrics{
+					MaxProcedureSampleCount: 100000,
+				},
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "config with TopProcedureCount above MaxProcedureSampleCount",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				ProcedureMetrics: ProcedureMetrics{
+					MaxProcedureSampleCount: 100,
+					TopProcedureCount:       200,
+				},
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "config with zero TopProcedureCount while the event is enabled",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				LogsBuilderConfig:    procedureMetricsEnabledLogsConfig(),
+				ProcedureMetrics: ProcedureMetrics{
+					MaxProcedureSampleCount: 1000,
+					TopProcedureCount:       0,
+				},
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "valid procedure metrics config with the event enabled",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				LogsBuilderConfig:    procedureMetricsEnabledLogsConfig(),
+				ProcedureMetrics: ProcedureMetrics{
+					MaxProcedureSampleCount: 1000,
+					TopProcedureCount:       250,
+				},
+			},
+			expectedSuccess: true,
+		},
+		{
 			desc: "config with invalid LookbackTime",
 			cfg: &Config{
 				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
@@ -287,4 +336,10 @@ func TestLoadConfig(t *testing.T) {
 		config.TopQueryCollection.LookbackTime = 60 * time.Second
 		assert.Equal(t, 60*time.Second, config.EffectiveLookbackTime(), "'EffectiveLookbackTime' should return the user provided 'LookbackTime' if any.")
 	})
+}
+
+func procedureMetricsEnabledLogsConfig() metadata.LogsBuilderConfig {
+	cfg := metadata.DefaultLogsBuilderConfig()
+	cfg.Events.DbServerProcedureMetrics.Enabled = true
+	return cfg
 }

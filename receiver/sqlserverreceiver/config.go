@@ -40,8 +40,15 @@ type ConnectionPool struct {
 	_ struct{}
 }
 
+// ProcedureMetrics configures the collection of stored procedure statistics. Candidate
+// rows are fetched up to MaxProcedureSampleCount, then the TopProcedureCount procedures
+// with the largest elapsed-time delta over the interval are reported.
 type ProcedureMetrics struct {
-	TopProcedureCount int64 `mapstructure:"top_procedure_count"`
+	MaxProcedureSampleCount uint `mapstructure:"max_procedure_sample_count"`
+	TopProcedureCount       uint `mapstructure:"top_procedure_count"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type TopQueryCollection struct {
@@ -70,7 +77,7 @@ type Config struct {
 
 	QuerySample QuerySample `mapstructure:"query_sample_collection"`
 
-	ProcedureMetrics ProcedureMetrics `mapstructure:"procedure_metrics"`
+	ProcedureMetrics ProcedureMetrics `mapstructure:"procedure_metrics_collection"`
 
 	// ConnectionPool tunes the shared database connection pool used by all
 	// scrapers of this receiver.
@@ -111,6 +118,25 @@ func (cfg *Config) Validate() error {
 
 	if cfg.TopQueryCollection.CollectionInterval < 0 {
 		return errors.New("`top_query_collection.collection_interval` must not be less than 0")
+	}
+
+	if cfg.ProcedureMetrics.MaxProcedureSampleCount > 10000 {
+		return errors.New("`max_procedure_sample_count` must be between 1 and 10000")
+	}
+
+	if cfg.ProcedureMetrics.TopProcedureCount > cfg.ProcedureMetrics.MaxProcedureSampleCount {
+		return errors.New("`top_procedure_count` must be less than or equal to `max_procedure_sample_count`")
+	}
+
+	// Zero counts would leave the event silently reporting nothing, so they are only
+	// rejected when the event that reads them is actually enabled.
+	if cfg.LogsBuilderConfig.Events.DbServerProcedureMetrics.Enabled {
+		if cfg.ProcedureMetrics.MaxProcedureSampleCount < 1 {
+			return errors.New("`max_procedure_sample_count` must be between 1 and 10000")
+		}
+		if cfg.ProcedureMetrics.TopProcedureCount < 1 {
+			return errors.New("`top_procedure_count` must be greater than 0")
+		}
 	}
 
 	if poolErr := cfg.validateConnectionPool(); poolErr != nil {

@@ -5,7 +5,7 @@ IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
     RETURN
 END
 
-SELECT TOP (%d)
+SELECT TOP (@maxSampleCount)
     DB_NAME(ps.database_id) AS database_name,
     OBJECT_SCHEMA_NAME(ps.object_id, ps.database_id) AS schema_name,
     QUOTENAME(OBJECT_SCHEMA_NAME(ps.object_id, ps.database_id)) + N'.' + QUOTENAME(OBJECT_NAME(ps.object_id, ps.database_id)) AS procedure_name,
@@ -20,7 +20,7 @@ SELECT TOP (%d)
     ps.total_spills,
     ps.min_elapsed_time,
     ps.max_elapsed_time,
-    CONVERT(varchar(30), ps.last_execution_time, 127) AS last_execution_time
+    CONVERT(NVARCHAR, TODATETIMEOFFSET(ps.last_execution_time, DATEPART(TZOFFSET, SYSDATETIMEOFFSET())), 126) AS last_execution_time
 FROM sys.dm_exec_procedure_stats AS ps
 WHERE ps.database_id > 4
   AND ps.execution_count > 0
