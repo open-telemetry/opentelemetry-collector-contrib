@@ -22,6 +22,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -630,6 +631,32 @@ func TestInputJournaldOtelAttributes_UnmappedFields(t *testing.T) {
 		assert.Equal(t, "5", e.Attributes["journald.ERRNO"])
 		assert.Equal(t, "777", e.Attributes["journald.TID"])
 		assert.Equal(t, entry.Error, e.Severity)
+	case <-time.After(time.Second):
+		require.FailNow(t, "timed out waiting for entry")
+	}
+}
+
+func TestInputJournaldOtelAttributes_ExprAttributeOnRawBody(t *testing.T) {
+	// A user-configured `attributes` EXPR referencing `body` must still see the raw
+	// journal record, even though ConvertToSemanticConventions replaces entry.Body
+	// with the MESSAGE field afterwards.
+	const line = `{"MESSAGE":"boom","PRIORITY":"3","SYSLOG_IDENTIFIER":"myapp","_HOSTNAME":"h","_PID":"1","_COMM":"c","_EXE":"/c","_CMDLINE":"c","__REALTIME_TIMESTAMP":"1587047866229555","__CURSOR":"s=1"}` + "\n"
+
+	cfg := NewConfigWithID("my_journald_input")
+	cfg.ConvertToSemanticConventions = true
+	cfg.Attributes = map[string]helper.ExprStringConfig{
+		"custom.identifier": "EXPR(body.SYSLOG_IDENTIFIER)",
+	}
+
+	received, stop := newTestOperator(t, cfg, func(_ context.Context, _ []byte) cmd {
+		return &fakeJournaldCmdCustom{response: line}
+	})
+	defer stop()
+
+	select {
+	case e := <-received:
+		assert.Equal(t, "boom", e.Body)
+		assert.Equal(t, "myapp", e.Attributes["custom.identifier"])
 	case <-time.After(time.Second):
 		require.FailNow(t, "timed out waiting for entry")
 	}

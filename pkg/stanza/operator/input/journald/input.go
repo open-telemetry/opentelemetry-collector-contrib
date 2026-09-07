@@ -252,14 +252,7 @@ func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, err
 		return nil, "", errors.New("journald field for cursor is not a string")
 	}
 
-	// When converting to semantic conventions the body is not used as-is, its
-	// fields are mapped onto the entry below instead.
-	var entryBody any
-	if !operator.ConvertToSemanticConventions {
-		entryBody = body
-	}
-
-	e, err := operator.NewEntry(entryBody)
+	entry, err := operator.NewEntry(body)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to create entry: %w", err)
 	}
