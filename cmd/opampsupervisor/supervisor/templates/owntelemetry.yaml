@@ -15,6 +15,43 @@ service:
                   "{{$k.Key}}": "{{$k.Value}}"
                 {{- end}}
                 {{- end}}
+{{- if or .TracesTLS .TracesCertificate}}
+                tls:
+                  {{- if .TracesTLS}}
+                  {{- if .TracesTLS.CaPemContents}}
+                  ca_pem: |
+{{indentLines .TracesTLS.CaPemContents "                    "}}
+                  {{- end}}
+                  {{- end}}
+
+                  {{- if .TracesCertificate}}
+                  cert_pem: |
+{{indentLines (printf "%s" .TracesCertificate.Cert) "                    "}}
+                  key_pem: |
+{{indentLines (printf "%s" .TracesCertificate.PrivateKey) "                    "}}
+                  {{- end}}
+
+                  {{- if .TracesTLS}}
+                  {{- if .TracesTLS.InsecureSkipVerify}}
+                  insecure_skip_verify: true
+                  {{- end}}
+                  {{- if .TracesTLS.IncludeSystemCaCertsPool}}
+                  include_system_ca_certs_pool: true
+                  {{- end}}
+                  {{- if .TracesTLS.MinVersion}}
+                  min_version: "{{.TracesTLS.MinVersion}}"
+                  {{- end}}
+                  {{- if .TracesTLS.MaxVersion}}
+                  max_version: "{{.TracesTLS.MaxVersion}}"
+                  {{- end}}
+                  {{- if .TracesTLS.CipherSuites}}
+                  cipher_suites:
+                  {{- range .TracesTLS.CipherSuites}}
+                    - "{{.}}"
+                  {{- end}}
+                  {{- end}}
+                  {{- end}}
+{{- end}}
 {{- end}}
 {{- if .MetricsEndpoint}}
     metrics:
@@ -30,6 +67,43 @@ service:
                   "{{$k.Key}}": "{{$k.Value}}"
                 {{- end}}
                 {{- end}}
+{{- if or .MetricsTLS .MetricsCertificate}}
+                tls:
+                  {{- if .MetricsTLS}}
+                  {{- if .MetricsTLS.CaPemContents}}
+                  ca_pem: |
+{{indentLines .MetricsTLS.CaPemContents "                    "}}
+                  {{- end}}
+                  {{- end}}
+
+                  {{- if .MetricsCertificate}}
+                  cert_pem: |
+{{indentLines (printf "%s" .MetricsCertificate.Cert) "                    "}}
+                  key_pem: |
+{{indentLines (printf "%s" .MetricsCertificate.PrivateKey) "                    "}}
+                  {{- end}}
+
+                  {{- if .MetricsTLS}}
+                  {{- if .MetricsTLS.InsecureSkipVerify}}
+                  insecure_skip_verify: true
+                  {{- end}}
+                  {{- if .MetricsTLS.IncludeSystemCaCertsPool}}
+                  include_system_ca_certs_pool: true
+                  {{- end}}
+                  {{- if .MetricsTLS.MinVersion}}
+                  min_version: "{{.MetricsTLS.MinVersion}}"
+                  {{- end}}
+                  {{- if .MetricsTLS.MaxVersion}}
+                  max_version: "{{.MetricsTLS.MaxVersion}}"
+                  {{- end}}
+                  {{- if .MetricsTLS.CipherSuites}}
+                  cipher_suites:
+                  {{- range .MetricsTLS.CipherSuites}}
+                    - "{{.}}"
+                  {{- end}}
+                  {{- end}}
+                  {{- end}}
+{{- end}}
 {{- end}}
 {{- if .LogsEndpoint}}
     logs:
@@ -45,4 +119,39 @@ service:
                   "{{$k.Key}}": "{{$k.Value}}"
                 {{- end}}
                 {{- end}}
+{{- if or .LogsTLS .LogsCertificate}}
+                tls:
+                  {{- if .LogsTLS}}
+                  {{- if .LogsTLS.CaPemContents}}
+                  ca_pem: |
+{{indentLines .LogsTLS.CaPemContents "                    "}}
+                  {{- end}}
+                  {{- end}}
+                  {{- if .LogsCertificate}}
+                  cert_pem: |
+{{indentLines (printf "%s" .LogsCertificate.Cert) "                    "}}
+                  key_pem: |
+{{indentLines (printf "%s" .LogsCertificate.PrivateKey) "                    "}}
+                  {{- end}}
+                  {{- if .LogsTLS}}
+                  {{- if .LogsTLS.InsecureSkipVerify}}
+                  insecure_skip_verify: true
+                  {{- end}}
+                  {{- if .LogsTLS.IncludeSystemCaCertsPool}}
+                  include_system_ca_certs_pool: true
+                  {{- end}}
+                  {{- if .LogsTLS.MinVersion}}
+                  min_version: "{{.LogsTLS.MinVersion}}"
+                  {{- end}}
+                  {{- if .LogsTLS.MaxVersion}}
+                  max_version: "{{.LogsTLS.MaxVersion}}"
+                  {{- end}}
+                  {{- if .LogsTLS.CipherSuites}}
+                  cipher_suites:
+                  {{- range .LogsTLS.CipherSuites}}
+                    - "{{.}}"
+                  {{- end}}
+                  {{- end}}
+                  {{- end}}
+{{- end}}
 {{- end}}
