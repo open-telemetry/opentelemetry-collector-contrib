@@ -39,7 +39,8 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -80,7 +81,8 @@ func createMetricsReceiver(
 	s, err := scraper.NewMetrics(
 		ms.scrape,
 		scraper.WithStart(ms.start),
-		scraper.WithShutdown(ms.shutdown))
+		scraper.WithShutdown(ms.shutdown),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +99,7 @@ func createLogsReceiver(_ context.Context, params receiver.Settings, rConf compo
 
 	opts := make([]scraperhelper.ControllerOption, 0)
 
-	if cfg.Events.DbServerQuerySample.Enabled {
+	if cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled {
 		s, err := scraper.NewLogs(
 			ms.scrapeLogs,
 			scraper.WithStart(ms.start),
@@ -112,10 +114,13 @@ func createLogsReceiver(_ context.Context, params receiver.Settings, rConf compo
 				scraper.NewFactory(
 					metadata.Type, nil, scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
 						return s, nil
-					}, metadata.LogsStability)), nil))
+					}, metadata.LogsStability),
+				), nil,
+			),
+		)
 	}
 
-	if cfg.Events.DbServerTopQuery.Enabled {
+	if cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		tqms := newMongodbScraper(params, cfg)
 		tqms.planCache = buildPlanCache(cfg, params.Logger)
 		tqs, err := scraper.NewLogs(
@@ -132,9 +137,13 @@ func createLogsReceiver(_ context.Context, params receiver.Settings, rConf compo
 				scraper.NewFactory(
 					metadata.Type, nil, scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
 						return tqs, nil
-					}, metadata.LogsStability)), nil))
+					}, metadata.LogsStability),
+				), nil,
+			),
+		)
 	}
 
 	return scraperhelper.NewLogsController(
-		&cfg.ControllerConfig, params, consumer, opts...)
+		&cfg.ControllerConfig, params, consumer, opts...,
+	)
 }

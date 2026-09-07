@@ -13,6 +13,11 @@ status:
 tests:
   config:
 
+attributes:
+  mask:
+    description: The mask name that matched more than one position in a single template.
+    type: string
+
 telemetry:
   metrics:
     processor_drain_clusters_active:
@@ -26,6 +31,15 @@ telemetry:
       enabled: true
       description: Number of log records successfully annotated with a template.
       unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_drain_masks_duplicates:
+      enabled: true
+      description: Number of records where a mask name matched more than one position in the matched template. Incremented once per record per duplicated mask name; the losing values are discarded and first-match wins.
+      unit: "{records}"
+      attributes: [mask]
       sum:
         value_type: int
         monotonic: true

@@ -1330,3 +1330,115 @@ func getSQLServerIndexPhysicalStatsQuery(instanceName string) string {
 	r := strings.NewReplacer("{filter_instance_name}", "")
 	return r.Replace(sqlServerIndexPhysicalStatsQuery)
 }
+
+// sqlServerCPUMemoryQuery collects host-level CPU utilization and physical memory from
+// sys.dm_os_ring_buffers and sys.dm_os_sys_memory as observed by SQL Server.
+const sqlServerCPUMemoryQuery string = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+SELECT
+	 'sqlserver_cpu_memory' AS [measurement]
+	,REPLACE(@@SERVERNAME,'\',':') AS [sql_instance]
+	,HOST_NAME() AS [computer_name]
+	,(100 - y.SystemIdle) / 100.0 AS [cpu_utilization]
+	,m.total_physical_memory_kb * 1024 AS [memory_limit_bytes]
+	,(m.total_physical_memory_kb - m.available_physical_memory_kb) * 1024 AS [memory_used_bytes]
+	,m.available_physical_memory_kb * 1024 AS [memory_free_bytes]
+FROM (
+	SELECT TOP 1
+		CAST(record AS XML).value('(./Record/SchedulerMonitorEvent/SystemHealth/SystemIdle)[1]','int') AS SystemIdle
+	FROM sys.dm_os_ring_buffers
+	WHERE ring_buffer_type = N'RING_BUFFER_SCHEDULER_MONITOR'
+	ORDER BY timestamp DESC
+) y
+CROSS JOIN sys.dm_os_sys_memory m
+WHERE 1=1
+{filter_instance_name}
+OPTION(RECOMPILE)
+`
+
+func getSQLServerCPUMemoryQuery(instanceName string) string {
+	if instanceName != "" {
+		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
+		r := strings.NewReplacer("{filter_instance_name}", whereClause)
+		return r.Replace(sqlServerCPUMemoryQuery)
+	}
+
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerCPUMemoryQuery)
+}
+
+// sqlServerDiskIOQuery collects per-drive read/write IOPS and throughput for SQL Server database files.
+const sqlServerDiskIOQuery string = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+DECLARE
+	 @SqlStatement AS nvarchar(max)
+	,@EngineEdition AS INT = CAST(SERVERPROPERTY('EngineEdition') AS INT)
+	,@JoinClause AS nvarchar(max) = ''
+
+IF @EngineEdition = 5
+BEGIN
+	SET @JoinClause = N'
+INNER JOIN sys.database_files AS mf WITH (NOLOCK)
+	ON vfs.[database_id] = DB_ID() AND vfs.[file_id] = mf.[file_id]'
+END
+ELSE
+BEGIN
+	SET @JoinClause = N'
+INNER JOIN sys.master_files AS mf WITH (NOLOCK)
+	ON vfs.[database_id] = mf.[database_id] AND vfs.[file_id] = mf.[file_id]'
+END
+
+SET @SqlStatement = N'
+SELECT
+	 ''sqlserver_disk_io'' AS [measurement]
+	,REPLACE(@@SERVERNAME,''\'','':'') AS [sql_instance]
+	,HOST_NAME() AS [computer_name]
+	,CASE
+		WHEN mf.physical_name LIKE ''[A-Z]:\%'' THEN LEFT(mf.physical_name, 3)
+		WHEN mf.physical_name LIKE ''\\_%\_%\%'' THEN LEFT(mf.physical_name,
+			CHARINDEX(''\'', mf.physical_name,
+				CHARINDEX(''\'', mf.physical_name, 3) + 1) - 1)
+		ELSE ''/''
+	END AS [disk_drive]
+	,SUM(vfs.num_of_reads) AS [read_ops]
+	,SUM(vfs.num_of_writes) AS [write_ops]
+	,SUM(vfs.num_of_bytes_read) AS [read_bytes]
+	,SUM(vfs.num_of_bytes_written) AS [write_bytes]
+FROM sys.dm_io_virtual_file_stats(NULL, NULL) vfs'
++ @JoinClause + N'
+WHERE 1=1
+{filter_instance_name}
+GROUP BY CASE
+		WHEN mf.physical_name LIKE ''[A-Z]:\%'' THEN LEFT(mf.physical_name, 3)
+		WHEN mf.physical_name LIKE ''\\_%\_%\%'' THEN LEFT(mf.physical_name,
+			CHARINDEX(''\'', mf.physical_name,
+				CHARINDEX(''\'', mf.physical_name, 3) + 1) - 1)
+		ELSE ''/''
+	END
+OPTION(RECOMPILE)'
+
+EXEC sp_executesql @SqlStatement
+`
+
+func getSQLServerDiskIOQuery(instanceName string) string {
+	if instanceName != "" {
+		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = ''%s''", instanceName)
+		r := strings.NewReplacer("{filter_instance_name}", whereClause)
+		return r.Replace(sqlServerDiskIOQuery)
+	}
+
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerDiskIOQuery)
+}

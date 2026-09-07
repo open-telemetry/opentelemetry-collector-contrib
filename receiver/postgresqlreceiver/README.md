@@ -55,19 +55,61 @@ The monitoring user must be granted `SELECT` on `pg_stat_database`.
 
 ## Configuration
 
-The following settings are required to create a database connection:
+The following setting is required to create a database connection:
 
 - `username`
-- `password`
+
+Exactly one of the following credential settings is also required:
+
+- `password`: A static PostgreSQL password.
+- `db_auth`: The component ID of a database authentication provider extension. The provider supplies the password, and can optionally override `username`, whenever the receiver opens a connection. `db_auth` and `password` are mutually exclusive.
+
+For example, a provider extension must be declared, referenced from the receiver,
+and enabled in `service.extensions`:
+
+```yaml
+extensions:
+  aws_iam_db_auth:
+    region: us-east-2
+
+receivers:
+  postgresql:
+    endpoint: my-database.example.com:5432
+    username: monitor
+    db_auth: aws_iam_db_auth
+
+service:
+  extensions: [aws_iam_db_auth]
+  pipelines:
+    metrics:
+      receivers: [postgresql]
+```
+
+The selected provider extension must be included in the Collector distribution.
+Provider-wide settings, such as the region above, belong to the extension;
+`endpoint` and `username` are passed to it by the receiver for each credential
+request.
 
 The following settings are optional:
 
 - `endpoint` (default = `localhost:5432`): The endpoint of the PostgreSQL server. Whether using TCP or Unix sockets, this value should be `host:port`. If `transport` is set to `unix`, the endpoint will internally be translated from `host:port` to `/host.s.PGSQL.port`
 - `transport` (default = `tcp`): The transport protocol being used to connect to PostgreSQL. Available options are `tcp` and `unix`.
 
-- `databases` (default = `[]`): The list of databases for which the receiver will attempt to collect statistics. If an empty list is provided, the receiver will attempt to collect statistics for all non-template databases.
+- `databases` (default = `[]`): The list of databases for which the receiver will attempt to collect statistics. If an empty list is provided, the receiver will attempt to collect statistics for all non-template databases. This list applies to metrics only; the query sample and top query collectors ignore it and are filtered solely by `exclude_databases`.
 
-- `exclude_databases` (default = `[]`): List of databases which will be excluded when collecting statistics.
+- `exclude_databases` (default = `[]`): List of databases excluded from statistics, query samples, and top queries. Excluded databases are filtered out of every collection query and the receiver opens no per-database connection to them. Exception: the receiver always connects to the default `postgres` database for discovery and server-level queries, even if it is listed here.
+
+> [!NOTE]
+> Managed PostgreSQL services create internal databases that no customer credential can connect to. The receiver discovers them like any other database and logs a connection error on every scrape. If you use one of these services, add its internal databases to `exclude_databases`:
+>
+> | Service | Databases to exclude |
+> |---|---|
+> | Amazon RDS / Aurora PostgreSQL | `rdsadmin` |
+> | Azure Database for PostgreSQL | `azure_maintenance` |
+> | Google Cloud SQL | `cloudsqladmin` |
+> | Google AlloyDB | `alloydbadmin`, `alloydbmetadata` |
+>
+> Example: `exclude_databases: [rdsadmin]`
 
 The following settings are also optional and nested under `tls` to help configure client transport security
 
@@ -246,6 +288,14 @@ When this feature gate is enabled, the following optional settings are available
 
 Those settings and their defaults are further documented in the [`sql/database`](https://pkg.go.dev/database/sql#DB) package.
 
+The connection pool composes with a `db_auth` block (e.g. AWS IAM). The
+credential is re-resolved on every new connection the pool opens, so a short-lived
+token (an RDS IAM token lives ~15 minutes) is re-minted as the pool grows or
+replaces connections, and a connection is never opened with an expired token.
+Connections already established stay valid for their lifetime — IAM authenticates
+only at connection open, not per query — so tune `max_lifetime` to bound how long
+a connection lives before it must reconnect with a fresh token.
+
 ### Example Configuration
 
 ```yaml
@@ -274,3 +324,7 @@ This gate is mutually exclusive with `receiver.postgresql.separateSchemaAttr` �
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
+
+> [!NOTE]
+> The optional `postgresql.query.execution.time` metric requires the `pg_stat_statements` extension to be
+> installed and enabled.

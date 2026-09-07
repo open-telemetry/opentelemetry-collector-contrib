@@ -8,6 +8,6 @@
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| k8s.cluster.uid | The Kubernetes cluster UID, derived from the kube-system namespace UID. | Any Str | true | - | - |
-| k8s.node.name | The Kubernetes node name | Any Str | true | - | - |
-| k8s.node.uid | The Kubernetes node UID | Any Str | true | - | - |
+| k8s.cluster.uid | The Kubernetes cluster UID, derived from the kube-system namespace UID. | Any Str | true | [k8s.cluster.uid](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/k8s.md#k8s-cluster-uid) | - |
+| k8s.node.name | The Kubernetes node name | Any Str | true | [k8s.node.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/k8s.md#k8s-node-name) | - |
+| k8s.node.uid | The Kubernetes node UID | Any Str | true | [k8s.node.uid](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/k8s.md#k8s-node-uid) | - |

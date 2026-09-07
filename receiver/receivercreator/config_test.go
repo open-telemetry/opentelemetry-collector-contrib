@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/otelcol"
@@ -122,7 +122,6 @@ func TestLoadConfig(t *testing.T) {
 					observer.K8sServiceType:   {"k8s.service.key": "k8s.service.value"},
 					observer.K8sIngressType:   {"k8s.ingress.key": "k8s.ingress.value"},
 					observer.K8sNodeType:      {"k8s.node.key": "k8s.node.value"},
-					observer.KafkaTopicType:   {},
 				},
 				Discovery: DiscoveryConfig{
 					DefaultFileLogConfig: userConfigMap{
@@ -144,7 +143,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

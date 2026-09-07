@@ -2,7 +2,7 @@ description: Config defines user-specified configurations unique to the Nova det
 type: object
 properties:
   fail_on_missing_metadata:
-    description: FailOnMissingMetadata, if true, causes the detector to return an error when the Nova metadata service is unavailable or required fields are missing. If false (default), the detector does best-effort population.
+    description: 'Deprecated: Use the top-level fail_on_missing_metadata in the processor config instead. This field will be removed in a future release.'
     type: boolean
   labels:
     description: 'Labels is a list of regex patterns to match Nova instance metadata keys (from the "meta" map) that should be added as resource attributes. Matched keys are emitted as "openstack.nova.meta.<key>: <value>".'

@@ -497,6 +497,46 @@ func (ms *K8sNodeFilesystemCapacityMetricConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
+// K8sNodeFilesystemInodeCountMetricConfig provides config for the k8s.node.filesystem.inode.count metric.
+type K8sNodeFilesystemInodeCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sNodeFilesystemInodeCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sNodeFilesystemInodeFreeMetricConfig provides config for the k8s.node.filesystem.inode.free metric.
+type K8sNodeFilesystemInodeFreeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sNodeFilesystemInodeFreeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // K8sNodeFilesystemUsageMetricConfig provides config for the k8s.node.filesystem.usage metric.
 type K8sNodeFilesystemUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1438,6 +1478,8 @@ type MetricsConfig struct {
 	K8sNodeCPUUsage                        K8sNodeCPUUsageMetricConfig                        `mapstructure:"k8s.node.cpu.usage"`
 	K8sNodeFilesystemAvailable             K8sNodeFilesystemAvailableMetricConfig             `mapstructure:"k8s.node.filesystem.available"`
 	K8sNodeFilesystemCapacity              K8sNodeFilesystemCapacityMetricConfig              `mapstructure:"k8s.node.filesystem.capacity"`
+	K8sNodeFilesystemInodeCount            K8sNodeFilesystemInodeCountMetricConfig            `mapstructure:"k8s.node.filesystem.inode.count"`
+	K8sNodeFilesystemInodeFree             K8sNodeFilesystemInodeFreeMetricConfig             `mapstructure:"k8s.node.filesystem.inode.free"`
 	K8sNodeFilesystemUsage                 K8sNodeFilesystemUsageMetricConfig                 `mapstructure:"k8s.node.filesystem.usage"`
 	K8sNodeMemoryAvailable                 K8sNodeMemoryAvailableMetricConfig                 `mapstructure:"k8s.node.memory.available"`
 	K8sNodeMemoryMajorPageFaults           K8sNodeMemoryMajorPageFaultsMetricConfig           `mapstructure:"k8s.node.memory.major_page_faults"`
@@ -1552,6 +1594,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		K8sNodeFilesystemCapacity: K8sNodeFilesystemCapacityMetricConfig{
 			Enabled: true,
+		},
+		K8sNodeFilesystemInodeCount: K8sNodeFilesystemInodeCountMetricConfig{
+			Enabled: false,
+		},
+		K8sNodeFilesystemInodeFree: K8sNodeFilesystemInodeFreeMetricConfig{
+			Enabled: false,
 		},
 		K8sNodeFilesystemUsage: K8sNodeFilesystemUsageMetricConfig{
 			Enabled: true,

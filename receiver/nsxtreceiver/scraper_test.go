@@ -106,8 +106,8 @@ func TestStartClientAlreadySet(t *testing.T) {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = mockClient.URL
 	scraper := newScraper(
@@ -124,8 +124,8 @@ func TestStartClientAlreadySet(t *testing.T) {
 func TestStartBadUrl(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = "\x00"
 	scraper := newScraper(
@@ -143,8 +143,8 @@ func TestStartBadUrl(t *testing.T) {
 func TestScraperRecordNoStat(_ *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = "http://localhost"
 	scraper := newScraper(

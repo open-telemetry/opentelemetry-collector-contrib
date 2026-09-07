@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -40,7 +40,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		},
 	}
 
-	assert.NoError(t, xconfmap.Validate(cfg))
+	assert.NoError(t, confmap.Validate(cfg))
 }
 
 func TestCreateTraces(t *testing.T) {

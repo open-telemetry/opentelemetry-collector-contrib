@@ -153,7 +153,8 @@ func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
 					testcontainers.GenericContainerRequest{
 						ContainerRequest: req,
 						Started:          true,
-					})
+					},
+				)
 				if err != nil {
 					errs = multierr.Append(errs, fmt.Errorf("execute container request: %w", err))
 					return false

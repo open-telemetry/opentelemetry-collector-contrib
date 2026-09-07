@@ -8,6 +8,6 @@
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| cloud.platform | The cloud.platform | Any Str | true | - | - |
-| cloud.provider | The cloud.provider | Any Str | true | - | - |
-| k8s.cluster.name | The k8s.cluster.name parsed from the Azure Instance Metadata Service's infrastructure resource group field | Any Str | false | - | - |
+| cloud.platform | The cloud.platform | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
+| cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
+| k8s.cluster.name | The k8s.cluster.name parsed from the Azure Instance Metadata Service's infrastructure resource group field | Any Str | false | [k8s.cluster.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/k8s.md#k8s-cluster-name) | - |

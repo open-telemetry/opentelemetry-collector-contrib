@@ -1,0 +1,21 @@
+default:
+all_set:
+  resource_attributes:
+    azure.container_app.instance.id:
+      enabled: true
+    cloud.platform:
+      enabled: true
+    cloud.provider:
+      enabled: true
+    service.name:
+      enabled: true
+none_set:
+  resource_attributes:
+    azure.container_app.instance.id:
+      enabled: false
+    cloud.platform:
+      enabled: false
+    cloud.provider:
+      enabled: false
+    service.name:
+      enabled: false

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -276,4 +277,55 @@ func TestCommunityID(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_CommunityIDFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewCommunityIDFactory[any]()
+		assert.Equal(t, "CommunityID", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewCommunityIDFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &CommunityIDArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"SourceIP", "SourcePort", "DestinationIP", "DestinationPort", "Protocol", "Seed"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewCommunityIDFactory[any]()
+		args := factory.CreateDefaultArguments()
+		communityIDArgs, ok := args.(*CommunityIDArguments[any])
+		require.True(t, ok)
+		communityIDArgs.SourceIP = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "1.2.3.4", nil
+			},
+		}
+		communityIDArgs.SourcePort = &ottl.StandardIntGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return int64(1234), nil
+			},
+		}
+		communityIDArgs.DestinationIP = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "5.6.7.8", nil
+			},
+		}
+		communityIDArgs.DestinationPort = &ottl.StandardIntGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return int64(5678), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createCommunityIDFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "CommunityIDFactory args must be of type *CommunityIDArguments[K]")
+	})
 }

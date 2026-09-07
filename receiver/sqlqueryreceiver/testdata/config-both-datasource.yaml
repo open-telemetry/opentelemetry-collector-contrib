@@ -1,4 +1,4 @@
-sqlquery:
+sql_query:
   collection_interval: 10s
   driver: mysql
   datasource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable"

@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
@@ -115,7 +115,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
 			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
@@ -198,7 +198,7 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
 			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
@@ -261,7 +261,7 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
 			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
@@ -324,7 +324,7 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
 			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
@@ -387,7 +387,7 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
 			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
@@ -450,7 +450,7 @@ func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
 			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
@@ -516,7 +516,7 @@ func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
 			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
@@ -606,7 +606,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
 			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
@@ -657,7 +657,7 @@ func TestLoadingSpans(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
 			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
@@ -743,7 +743,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.EqualExportedValues(t, tt.expected, cfg)
 			assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 		})
@@ -1147,7 +1147,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_trace"),
-			errorMessage: `condition has invalid syntax: 1:23: unexpected token "<EOF>" (expected Field ("." Field)*)`,
+			errorMessage: `condition has invalid syntax at 1:23: (expected Field ("." Field)*)`,
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_metric"),
@@ -1155,11 +1155,11 @@ func TestLoadingConfigOTTL(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_log"),
-			errorMessage: `condition has invalid syntax: 1:11: unexpected token "condition" (expected <opcomparison> Value)`,
+			errorMessage: `condition has invalid syntax at 1:11 near ` + "`condition`" + `: (expected <opcomparison> Value)`,
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_profile"),
-			errorMessage: `condition has invalid syntax: 1:11: unexpected token "condition" (expected <opcomparison> Value)`,
+			errorMessage: `condition has invalid syntax at 1:11 near ` + "`condition`" + `: (expected <opcomparison> Value)`,
 		},
 	}
 
@@ -1176,14 +1176,14 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				err = xconfmap.Validate(cfg)
+				err = confmap.Validate(cfg)
 				assert.Error(t, err)
 
 				if tt.errorMessage != "" {
 					assert.EqualError(t, err, tt.errorMessage)
 				}
 			} else {
-				assert.NoError(t, xconfmap.Validate(cfg))
+				assert.NoError(t, confmap.Validate(cfg))
 				assert.EqualExportedValues(t, tt.expected, cfg)
 				assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 			}

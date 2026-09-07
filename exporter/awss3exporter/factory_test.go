@@ -25,7 +25,8 @@ func TestCreateMetrics(t *testing.T) {
 	exp, err := createMetricsExporter(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 }
@@ -35,7 +36,8 @@ func TestCreateTraces(t *testing.T) {
 	exp, err := createTracesExporter(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 }
@@ -45,7 +47,8 @@ func TestCreateLogs(t *testing.T) {
 	exp, err := createLogsExporter(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 }
@@ -56,14 +59,16 @@ func TestUnsupportedMarshalerOptions(t *testing.T) {
 	exp, err := createMetricsExporter(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.Error(t, err)
 	require.Nil(t, exp)
 
 	exp2, err := createTracesExporter(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
-		cfg)
+		cfg,
+	)
 	assert.Error(t, err)
 	require.Nil(t, exp2)
 }

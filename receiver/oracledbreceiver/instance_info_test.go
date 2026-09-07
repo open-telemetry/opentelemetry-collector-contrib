@@ -494,48 +494,6 @@ func TestSetupResourceBuilder_NoPDB(t *testing.T) {
 	assert.Equal(t, "19.0.0.0.0", version.Str())
 }
 
-func TestSetupResourceBuilder_WithPDB(t *testing.T) {
-	cfg := metadata.NewDefaultMetricsBuilderConfig()
-	scrpr := oracleScraper{
-		mb:                   metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
-		metricsBuilderConfig: cfg,
-		instanceName:         "myinstance",
-		hostName:             "myhost",
-		instanceInfo: oracleInstanceInfo{
-			dbVersion:      "19.0.0.0.0",
-			isCDB:          true,
-			connectedToPDB: true,
-			pdbName:        "SALESPDB",
-		},
-	}
-
-	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
-
-	pdbName, ok := res.Attributes().Get("oracle.db.pdb")
-	require.True(t, ok)
-	assert.Equal(t, "SALESPDB", pdbName.Str())
-}
-
-func TestSetupResourceBuilder_PDBConnectedButEmptyName(t *testing.T) {
-	// connectedToPDB=true but pdbName="" (name query failed): attribute must be absent, not empty.
-	cfg := metadata.NewDefaultMetricsBuilderConfig()
-	scrpr := oracleScraper{
-		mb:                   metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
-		metricsBuilderConfig: cfg,
-		instanceInfo: oracleInstanceInfo{
-			dbVersion:      "19.0.0.0.0",
-			isCDB:          true,
-			connectedToPDB: true,
-			pdbName:        "",
-		},
-	}
-
-	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
-
-	_, hasPDB := res.Attributes().Get("oracle.db.pdb")
-	assert.False(t, hasPDB)
-}
-
 func TestSetupResourceBuilder_AllMetadataFields(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
 	scrpr := oracleScraper{
@@ -580,7 +538,7 @@ func TestSetupResourceBuilder_EmptyMetadataFieldsNotEmitted(t *testing.T) {
 
 	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
 
-	for _, attr := range []string{"oracle.db.version", "oracle.db.role", "oracle.db.open_mode", "oracle.db.hosting_type", "oracle.db.pdb"} {
+	for _, attr := range []string{"oracle.db.version", "oracle.db.role", "oracle.db.open_mode", "oracle.db.hosting_type"} {
 		_, exists := res.Attributes().Get(attr)
 		assert.False(t, exists, "attribute %q should not be emitted when empty", attr)
 	}

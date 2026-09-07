@@ -10,15 +10,18 @@
   r.STATUS AS request_status,
   ISNULL(s.host_name, '') AS host_name,
   r.command,
-  SUBSTRING(o.TEXT, (r.statement_start_offset / 2) + 1, (
-      (
-        CASE r.statement_end_offset
-          WHEN - 1
-            THEN DATALENGTH(o.TEXT)
-          ELSE r.statement_end_offset
-          END - r.statement_start_offset
-        ) / 2
-      ) + 1) AS statement_text,
+  COALESCE(
+    SUBSTRING(o.TEXT, (r.statement_start_offset / 2) + 1, (
+        (
+          CASE r.statement_end_offset
+            WHEN - 1
+              THEN DATALENGTH(o.TEXT)
+            ELSE r.statement_end_offset
+            END - r.statement_start_offset
+          ) / 2
+        ) + 1),
+    ib.event_info,
+    '') AS statement_text,
   r.blocking_session_id,
   CASE
     WHEN r.blocking_session_id > 0 AND r.wait_time > 0
@@ -56,6 +59,8 @@
 FROM sys.dm_exec_requests r
 INNER JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id
 INNER JOIN sys.dm_exec_connections c ON s.session_id = c.session_id
-CROSS APPLY sys.dm_exec_sql_text(r.plan_handle) AS o
-WHERE o.TEXT NOT LIKE N'/* otel-collector */%'
+OUTER APPLY sys.dm_exec_sql_text(r.plan_handle) AS o
+OUTER APPLY sys.dm_exec_input_buffer(r.session_id, r.request_id) AS ib
+WHERE (o.TEXT IS NULL OR o.TEXT NOT LIKE N'/* otel-collector */%')
+	AND (ib.event_info IS NULL OR ib.event_info NOT LIKE N'/* otel-collector */%')
 	AND r.session_id != @@SPID;

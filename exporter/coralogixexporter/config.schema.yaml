@@ -61,6 +61,8 @@ properties:
     type: string
   rate_limiter:
     $ref: rate_limiter_config
+  retry_on_failure:
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
@@ -74,5 +76,4 @@ properties:
     description: Coralogix traces ingress endpoint (supports both gRPC and HTTP)
     $ref: transport_config
 allOf:
-  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config

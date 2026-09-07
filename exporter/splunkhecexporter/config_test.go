@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
@@ -51,9 +51,9 @@ func TestLoadConfig(t *testing.T) {
 	}
 	clientConfig.HTTP2PingTimeout = 10 * time.Second
 	clientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
-	clientConfig.MaxIdleConns = hundred
-	clientConfig.MaxIdleConnsPerHost = hundred
-	clientConfig.IdleConnTimeout = idleConnTimeout
+	clientConfig.MaxIdleConns = hundred            //nolint:staticcheck // SA1019: MaxIdleConns is deprecated in favor of Keepalive.MaxIdleConns.
+	clientConfig.MaxIdleConnsPerHost = hundred     //nolint:staticcheck // SA1019: MaxIdleConnsPerHost is deprecated in favor of Keepalive.MaxIdleConnsPerHost.
+	clientConfig.IdleConnTimeout = idleConnTimeout //nolint:staticcheck // SA1019: IdleConnTimeout is deprecated in favor of Keepalive.IdleConnTimeout.
 
 	tests := []struct {
 		id       component.ID
@@ -138,7 +138,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 
 			require.NoError(t, sub.Unmarshal(cfg))
-			require.NoError(t, xconfmap.Validate(cfg))
+			require.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -233,7 +233,7 @@ func TestConfig_Validate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := xconfmap.Validate(tt.cfg)
+			err := confmap.Validate(tt.cfg)
 			if tt.wantErr == "" {
 				require.NoError(t, err)
 			} else {

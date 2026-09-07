@@ -1,4 +1,5 @@
 kafka:
+  signal_header: true
   logs:
     topic: spans
   metrics:

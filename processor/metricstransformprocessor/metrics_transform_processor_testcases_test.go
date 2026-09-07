@@ -1440,6 +1440,29 @@ var standardTests = []metricsTransformTest{
 			metricBuilder(pmetric.MetricTypeGauge, "metric3").addIntDatapoint(1, 1, 3).build(),
 		},
 	},
+	{
+		name: "combine_error_summary_single_match",
+		transforms: []internalTransform{
+			{
+				MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric1$")},
+				Action:              Combine,
+				NewName:             "new",
+				AggregationType:     aggregateutil.Sum,
+			},
+		},
+		in: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeSummary, "metric1", "label1").
+				addSummaryDatapoint(1, 2, 10, 100.0, "label1-value1").
+				addSummaryDatapoint(1, 2, 20, 200.0, "label1-value2").build(),
+			metricBuilder(pmetric.MetricTypeGauge, "metric2").addIntDatapoint(1, 1, 2).build(),
+		},
+		out: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeSummary, "metric1", "label1").
+				addSummaryDatapoint(1, 2, 10, 100.0, "label1-value1").
+				addSummaryDatapoint(1, 2, 20, 200.0, "label1-value2").build(),
+			metricBuilder(pmetric.MetricTypeGauge, "metric2").addIntDatapoint(1, 1, 2).build(),
+		},
+	},
 	// Toggle Data Type
 	{
 		name: "metric_toggle_scalar_data_type_int64_to_double",

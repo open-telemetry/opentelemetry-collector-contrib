@@ -104,12 +104,12 @@ func TestTopicScraperFranz_ScrapeMetricValues(t *testing.T) {
 		ClusterAlias:         "franz-topics",
 		TopicMatch:           ".*",
 	}
-	cfg.ResourceAttributes.KafkaClusterAlias.Enabled = true
-	cfg.ResourceAttributes.KafkaClusterID.Enabled = true
-	cfg.Metrics.KafkaTopicLogRetentionPeriod.Enabled = true
-	cfg.Metrics.KafkaTopicLogRetentionSize.Enabled = true
-	cfg.Metrics.KafkaTopicMinInsyncReplicas.Enabled = true
-	cfg.Metrics.KafkaTopicReplicationFactor.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterAlias.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterID.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.KafkaTopicLogRetentionPeriod.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.KafkaTopicLogRetentionSize.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.KafkaTopicMinInsyncReplicas.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.KafkaTopicReplicationFactor.Enabled = true
 
 	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
@@ -192,7 +192,7 @@ func TestTopicScraperFranz_EmptyClusterID(t *testing.T) {
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		TopicMatch:           ".*",
 	}
-	cfg.ResourceAttributes.KafkaClusterID.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterID.Enabled = true
 
 	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
@@ -255,7 +255,7 @@ func TestTopicScraperFranz_ScrapePartialError_UnparseableConfig(t *testing.T) {
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		TopicMatch:           ".*",
 	}
-	cfg.Metrics.KafkaTopicMinInsyncReplicas.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.KafkaTopicMinInsyncReplicas.Enabled = true
 
 	s, err := createTopicsScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)

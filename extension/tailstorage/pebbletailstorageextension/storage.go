@@ -8,9 +8,12 @@ package pebbletailstorageextension // import "github.com/open-telemetry/opentele
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/cockroachdb/pebble/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -24,22 +27,32 @@ const (
 
 	// storageVersion is a version to support evolution.
 	storageVersion = "v0"
+
+	sizeCheckInterval = time.Second
 )
 
+var errStorageLimitReached = errors.New("pebble tail storage size limit reached")
+
 type storage struct {
-	db          *pebble.DB
-	logger      *zap.Logger
-	nextSeq     atomic.Uint64
-	unmarshaler ptrace.Unmarshaler
-	marshaler   ptrace.Marshaler
+	db               *pebble.DB
+	logger           *zap.Logger
+	maxSize          uint64
+	nextSeq          atomic.Uint64
+	lastObservedSize atomic.Uint64
+	unmarshaler      ptrace.Unmarshaler
+	marshaler        ptrace.Marshaler
+
+	diskUsage            func() uint64
+	stopSizeMonitor      context.CancelFunc
+	sizeMonitorWaitGroup sync.WaitGroup
 }
 
-func newStorage(ctx context.Context, storageDir string, logger *zap.Logger) (*storage, error) {
+func newStorage(ctx context.Context, cfg *Config, logger *zap.Logger) (*storage, error) {
 	if logger == nil {
 		logger = zap.NewNop()
 	}
 
-	db, created, err := newPebbleDB(filepath.Join(storageDir, storageVersion), logger)
+	db, created, err := newPebbleDB(filepath.Join(cfg.Directory, storageVersion), logger)
 	if err != nil {
 		return nil, err
 	}
@@ -47,8 +60,12 @@ func newStorage(ctx context.Context, storageDir string, logger *zap.Logger) (*st
 	s := &storage{
 		db:          db,
 		logger:      logger,
+		maxSize:     uint64(cfg.MaxStorageSizeMiB) << 20,
 		marshaler:   &ptrace.ProtoMarshaler{},
 		unmarshaler: &ptrace.ProtoUnmarshaler{},
+	}
+	s.diskUsage = func() uint64 {
+		return s.db.Metrics().DiskSpaceUsage()
 	}
 
 	if !created {
@@ -58,6 +75,15 @@ func newStorage(ctx context.Context, storageDir string, logger *zap.Logger) (*st
 		if err := s.drop(ctx); err != nil {
 			return nil, err
 		}
+	}
+
+	if s.maxSize > 0 {
+		s.updateDiskUsage()
+		monitorCtx, cancel := context.WithCancel(context.Background())
+		s.stopSizeMonitor = cancel
+		s.sizeMonitorWaitGroup.Go(func() {
+			s.monitorDiskUsage(monitorCtx)
+		})
 	}
 
 	return s, nil
@@ -83,6 +109,10 @@ func (s *storage) drop(ctx context.Context) error {
 }
 
 func (s *storage) Close() error {
+	if s.stopSizeMonitor != nil {
+		s.stopSizeMonitor()
+		s.sizeMonitorWaitGroup.Wait()
+	}
 	return s.db.Close()
 }
 
@@ -92,7 +122,13 @@ func (s *storage) Append(traceID pcommon.TraceID, td ptrace.Traces) error {
 		return fmt.Errorf("failed to marshal trace payload: %w", err)
 	}
 
-	key := traceEntryKey(traceID, s.nextSeq.Add(1))
+	seq := s.nextSeq.Add(1)
+	key := traceEntryKey(traceID, seq)
+
+	if err := s.ensureCapacity(); err != nil {
+		return err
+	}
+
 	if err := s.db.Set(key[:], data, pebble.NoSync); err != nil {
 		return fmt.Errorf("pebble Set error: %w", err)
 	}
@@ -181,4 +217,33 @@ func traceEntryKey(traceID pcommon.TraceID, seq uint64) (key [traceIDBytes + 1 +
 	key[traceIDBytes] = traceIDSeparator
 	binary.BigEndian.PutUint64(key[traceIDBytes+1:], seq)
 	return key
+}
+
+func (s *storage) monitorDiskUsage(ctx context.Context) {
+	ticker := time.NewTicker(sizeCheckInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			s.updateDiskUsage()
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (s *storage) updateDiskUsage() {
+	s.lastObservedSize.Store(s.diskUsage())
+}
+
+func (s *storage) ensureCapacity() error {
+	if s.maxSize == 0 {
+		return nil
+	}
+	lastObservedSize := s.lastObservedSize.Load()
+	if lastObservedSize > s.maxSize {
+		return fmt.Errorf("%w: last observed database size %d exceeds configured limit %d", errStorageLimitReached, lastObservedSize, s.maxSize)
+	}
+	return nil
 }

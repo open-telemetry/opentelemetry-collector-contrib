@@ -296,6 +296,7 @@ exporter/datadogexporter/integrationtest: exporter/datadogexporter
 pkg/datadog: exporter/datadogexporter/integrationtest
 extension/datadogextension: pkg/datadog
 connector/datadogconnector: extension/datadogextension
+exporter/datadogexporter: internal/datadog
 
 # Trigger each module's delegation target
 .PHONY: for-all-target

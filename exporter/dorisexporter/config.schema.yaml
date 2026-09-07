@@ -46,9 +46,14 @@ properties:
     description: ReplicationNum is the number of replicas of the table; ignored if create_schema is false.
     type: integer
     x-customType: int32
+  retry_on_failure:
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  table:
+    description: TableNames is the table name for logs, traces and metrics.
+    $ref: table
   timezone:
     description: Timezone is the timezone of the doris.
     type: string
@@ -57,5 +62,3 @@ properties:
     type: string
 allOf:
   - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
-  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
-  - $ref: table

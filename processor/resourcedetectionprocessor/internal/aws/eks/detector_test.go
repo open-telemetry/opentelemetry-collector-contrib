@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
@@ -184,15 +185,16 @@ func TestIsEKS(t *testing.T) {
 
 func TestDetectFromIMDS(t *testing.T) {
 	tests := []struct {
-		name           string
-		imdsMeta       imds.InstanceIdentityDocument
-		apiMeta        apiprovider.InstanceMetadata
-		hostname       string
-		apiErr         error
-		imdsErr        error
-		expectedError  bool
-		errMsg         string
-		expectedOutput map[string]any
+		name                  string
+		imdsMeta              imds.InstanceIdentityDocument
+		apiMeta               apiprovider.InstanceMetadata
+		hostname              string
+		apiErr                error
+		imdsErr               error
+		failOnMissingMetadata bool
+		expectedError         bool
+		errMsg                string
+		expectedOutput        map[string]any
 	}{
 		{
 			name: "Success",
@@ -216,12 +218,23 @@ func TestDetectFromIMDS(t *testing.T) {
 			},
 		},
 		{
-			name:          "IMDS Failure",
+			name:                  "IMDS Failure - fail_on_missing_metadata",
+			imdsMeta:              imds.InstanceIdentityDocument{},
+			apiMeta:               apiprovider.InstanceMetadata{},
+			hostname:              "hostname.ip-192-168-1-1.us-west-2.compute.internal",
+			imdsErr:               errors.New("fail"),
+			failOnMissingMetadata: true,
+			expectedError:         true,
+		},
+		{
+			// Default config: a detector must not report success and failure at once, so
+			// the error is swallowed and only what was gathered is returned.
+			name:          "IMDS Failure - suppressed",
 			imdsMeta:      imds.InstanceIdentityDocument{},
 			apiMeta:       apiprovider.InstanceMetadata{},
 			hostname:      "hostname.ip-192-168-1-1.us-west-2.compute.internal",
 			imdsErr:       errors.New("fail"),
-			expectedError: true,
+			expectedError: false,
 		},
 		{
 			name: "API Failure - Partial Result",
@@ -238,11 +251,29 @@ func TestDetectFromIMDS(t *testing.T) {
 			},
 			hostname:      "hostname.ip-192-168-1-1.us-west-2.compute.internal",
 			apiErr:        errors.New("fail"),
-			expectedError: true,
+			expectedError: false,
 			expectedOutput: map[string]any{
 				"host.id":   "i-123",
 				"host.name": "hostname.ip-192-168-1-1.us-west-2.compute.internal",
 			},
+		},
+		{
+			name: "API Failure - fail_on_missing_metadata",
+			imdsMeta: imds.InstanceIdentityDocument{
+				InstanceID:       "i-123",
+				AvailabilityZone: "us-west-2a",
+				Region:           "us-west-2",
+				AccountID:        "acc",
+				ImageID:          "ami-123",
+				InstanceType:     "t3.medium",
+			},
+			apiMeta: apiprovider.InstanceMetadata{
+				ClusterName: "cluster",
+			},
+			hostname:              "hostname.ip-192-168-1-1.us-west-2.compute.internal",
+			apiErr:                errors.New("fail"),
+			failOnMissingMetadata: true,
+			expectedError:         true,
 		},
 		{
 			name: "API Failure - Missing Region/InstanceID",
@@ -256,18 +287,34 @@ func TestDetectFromIMDS(t *testing.T) {
 				ClusterName: "cluster",
 			},
 			hostname:      "hostname.ip-192-168-1-1.us-west-2.compute.internal",
-			expectedError: true,
-			errMsg:        "can't get K8s Instance Metadata; node name is empty",
+			expectedError: false,
 			expectedOutput: map[string]any{
 				"host.id":   "",
 				"host.name": "hostname.ip-192-168-1-1.us-west-2.compute.internal",
 			},
+		},
+		{
+			name: "API Failure - Missing Region/InstanceID - fail_on_missing_metadata",
+			imdsMeta: imds.InstanceIdentityDocument{
+				AvailabilityZone: "us-west-2a",
+				AccountID:        "acc",
+				ImageID:          "ami-123",
+				InstanceType:     "t3.medium",
+			},
+			apiMeta: apiprovider.InstanceMetadata{
+				ClusterName: "cluster",
+			},
+			hostname:              "hostname.ip-192-168-1-1.us-west-2.compute.internal",
+			failOnMissingMetadata: true,
+			expectedError:         true,
+			errMsg:                "can't get K8s Instance Metadata; node name is empty",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := &detector{
+				logger:       zaptest.NewLogger(t),
 				imdsProvider: &mockIMDSProvider{meta: tt.imdsMeta, hostname: tt.hostname, err: tt.imdsErr},
 				apiProvider:  &mockAPIProvider{apiMeta: tt.apiMeta, apiErr: tt.apiErr},
 				rb: metadata.NewResourceBuilder(metadata.ResourceAttributesConfig{
@@ -275,35 +322,41 @@ func TestDetectFromIMDS(t *testing.T) {
 					HostName:       metadata.ResourceAttributeConfig{Enabled: true},
 					HostID:         metadata.ResourceAttributeConfig{Enabled: true},
 				}),
-				ra: metadata.ResourceAttributesConfig{K8sClusterName: metadata.ResourceAttributeConfig{Enabled: true}},
+				ra:                    metadata.ResourceAttributesConfig{K8sClusterName: metadata.ResourceAttributeConfig{Enabled: true}},
+				failOnMissingMetadata: tt.failOnMissingMetadata,
 			}
 			res, schema, err := d.detectFromIMDS(t.Context())
 			if tt.expectedError {
-				assert.Error(t, err)
+				require.Error(t, err)
 				if tt.errMsg != "" {
 					assert.ErrorContains(t, err, tt.errMsg)
 				}
+				assert.Empty(t, schema)
+				assert.Equal(t, 0, res.Attributes().Len())
+				return
 			}
+			require.NoError(t, err)
+			assert.Contains(t, schema, "https://opentelemetry.io/schemas/")
 			if len(tt.expectedOutput) > 0 {
 				assert.Equal(t, tt.expectedOutput, res.Attributes().AsRaw())
 			} else {
 				assert.Equal(t, 0, res.Attributes().Len())
 			}
-			assert.Contains(t, schema, "https://opentelemetry.io/schemas/")
 		})
 	}
 }
 
 func TestDetectFromAPI(t *testing.T) {
 	tests := []struct {
-		name           string
-		nodeName       string
-		k8sMeta        apiprovider.InstanceMetadata
-		apiMeta        apiprovider.InstanceMetadata
-		k8sErr         error
-		apiErr         error
-		expectedError  bool
-		expectedOutput map[string]any
+		name                  string
+		nodeName              string
+		k8sMeta               apiprovider.InstanceMetadata
+		apiMeta               apiprovider.InstanceMetadata
+		k8sErr                error
+		apiErr                error
+		failOnMissingMetadata bool
+		expectedError         bool
+		expectedOutput        map[string]any
 	}{
 		{
 			name:     "Success",
@@ -346,8 +399,42 @@ func TestDetectFromAPI(t *testing.T) {
 				InstanceType:     "t3.medium",
 				ClusterName:      "cluster",
 			},
+			k8sErr:                errors.New("fail"),
+			failOnMissingMetadata: true,
+			expectedError:         true,
+		},
+		{
+			name:     "K8s Metadata Error - suppressed",
+			nodeName: "i-123",
+			k8sMeta: apiprovider.InstanceMetadata{
+				InstanceID:       "i-123",
+				AvailabilityZone: "us-west-2a",
+				Region:           "us-west-2",
+			},
+			apiMeta: apiprovider.InstanceMetadata{
+				InstanceID:       "i-123",
+				AvailabilityZone: "us-west-2a",
+				Region:           "us-west-2",
+				AccountID:        "acc",
+				ImageID:          "ami-123",
+				InstanceType:     "t3.medium",
+				ClusterName:      "cluster",
+			},
 			k8sErr:        errors.New("fail"),
-			expectedError: true,
+			expectedError: false,
+		},
+		{
+			name:     "API Metadata Error - fail_on_missing_metadata",
+			nodeName: "i-123",
+			k8sMeta: apiprovider.InstanceMetadata{
+				InstanceID:       "i-123",
+				AvailabilityZone: "us-west-2a",
+				Region:           "us-west-2",
+			},
+			apiMeta:               apiprovider.InstanceMetadata{},
+			apiErr:                errors.New("fail"),
+			failOnMissingMetadata: true,
+			expectedError:         true,
 		},
 		{
 			name:     "API Metadata Error - Partial Result K8s Metadata",
@@ -359,7 +446,7 @@ func TestDetectFromAPI(t *testing.T) {
 			},
 			apiMeta:       apiprovider.InstanceMetadata{},
 			apiErr:        errors.New("fail"),
-			expectedError: true,
+			expectedError: false,
 			expectedOutput: map[string]any{
 				"host.id": "i-123",
 			},
@@ -368,6 +455,7 @@ func TestDetectFromAPI(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := &detector{
+				logger: zaptest.NewLogger(t),
 				apiProvider: &mockAPIProvider{
 					k8sMeta:  tt.k8sMeta,
 					apiMeta:  tt.apiMeta,
@@ -380,12 +468,17 @@ func TestDetectFromAPI(t *testing.T) {
 					HostName:       metadata.ResourceAttributeConfig{Enabled: true},
 					HostID:         metadata.ResourceAttributeConfig{Enabled: true},
 				}),
+				failOnMissingMetadata: tt.failOnMissingMetadata,
 			}
 			res, schema, err := d.detectFromAPI(t.Context())
-			assert.Contains(t, schema, "https://opentelemetry.io/schemas/")
 			if tt.expectedError {
-				assert.Error(t, err)
+				require.Error(t, err)
+				assert.Empty(t, schema)
+				assert.Equal(t, 0, res.Attributes().Len())
+				return
 			}
+			require.NoError(t, err)
+			assert.Contains(t, schema, "https://opentelemetry.io/schemas/")
 			if len(tt.expectedOutput) > 0 {
 				assert.Equal(t, tt.expectedOutput, res.Attributes().AsRaw())
 			} else {
@@ -501,4 +594,51 @@ func TestDetect(t *testing.T) {
 			assert.Equal(t, tt.expectedOutput, res.Attributes().AsRaw())
 		})
 	}
+}
+
+func TestDetectFailOnMissingMetadata(t *testing.T) {
+	cfg := Config{
+		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+	}
+	isEKSErr := errors.New("cluster version unavailable")
+
+	set := processor.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zaptest.NewLogger(t),
+		},
+	}
+
+	det := &detector{
+		cfg:    cfg,
+		logger: set.Logger,
+		// apiProvider returns an error from ClusterVersion, causing isEKS() to fail.
+		// KUBERNETES_SERVICE_HOST must be set so isEKS() reaches ClusterVersion().
+		apiProvider: &mockAPIProvider{
+			clusterVersionErr: isEKSErr,
+			oidcIssuerErr:     errors.New("no oidc"),
+		},
+		imdsProvider: &mockIMDSProvider{},
+		ra:           cfg.ResourceAttributes,
+		rb:           metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		utils: &mockDetectorUtils{
+			cfg:    cfg,
+			logger: set.Logger,
+		},
+	}
+
+	t.Setenv(kubernetesServiceHostEnvVar, "1")
+
+	t.Run("err != nil and FailOnMissingMetadata=false suppresses error", func(t *testing.T) {
+		res, schema, err := det.Detect(t.Context())
+		assert.NoError(t, err)
+		assert.Empty(t, schema)
+		assert.Equal(t, 0, res.Attributes().Len())
+	})
+
+	t.Run("err != nil and FailOnMissingMetadata=true returns error", func(t *testing.T) {
+		det.failOnMissingMetadata = true
+		_, _, err := det.Detect(t.Context())
+		assert.ErrorContains(t, err, "eks metadata unavailable")
+		assert.ErrorContains(t, err, isEKSErr.Error())
+	})
 }

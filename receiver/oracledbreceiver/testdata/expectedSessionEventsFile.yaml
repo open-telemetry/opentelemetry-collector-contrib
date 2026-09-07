@@ -28,6 +28,9 @@ resourceLogs:
               - key: oracledb.wait.count
                 value:
                   intValue: "1500"
+              - key: oracledb.wait.timeouts
+                value:
+                  intValue: "12"
               - key: oracledb.wait.duration
                 value:
                   doubleValue: 25.5
@@ -36,7 +39,7 @@ resourceLogs:
                   stringValue: ORCL
             body: {}
             eventName: db.server.session.wait_sample
-            timeUnixNano: "1783934168387678000"
+            timeUnixNano: "1785268070763719000"
           - attributes:
               - key: oracledb.sid
                 value:
@@ -53,6 +56,9 @@ resourceLogs:
               - key: oracledb.wait.count
                 value:
                   intValue: "800"
+              - key: oracledb.wait.timeouts
+                value:
+                  intValue: "5"
               - key: oracledb.wait.duration
                 value:
                   doubleValue: 12.3
@@ -61,7 +67,7 @@ resourceLogs:
                   stringValue: ORCL
             body: {}
             eventName: db.server.session.wait_sample
-            timeUnixNano: "1783934168387678000"
+            timeUnixNano: "1785268070763719000"
           - attributes:
               - key: oracledb.sid
                 value:
@@ -78,6 +84,9 @@ resourceLogs:
               - key: oracledb.wait.count
                 value:
                   intValue: "50"
+              - key: oracledb.wait.timeouts
+                value:
+                  intValue: "0"
               - key: oracledb.wait.duration
                 value:
                   doubleValue: 1.5
@@ -86,7 +95,7 @@ resourceLogs:
                   stringValue: ""
             body: {}
             eventName: db.server.session.wait_sample
-            timeUnixNano: "1783934168387678000"
+            timeUnixNano: "1785268070763719000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
           version: latest

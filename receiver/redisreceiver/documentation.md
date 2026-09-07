@@ -469,6 +469,42 @@ Redis server mode
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | mode | Redis server mode | Str: ``cluster``, ``sentinel``, ``standalone`` | Recommended | - |
 
+### redis.pubsub.channel.status
+
+Number of pub/sub channels
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {channel} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| redis.pubsub.channel.state | The type of pub/sub channel | Str: ``active``, ``shard`` | Recommended | - |
+
+### redis.pubsub.connection.count
+
+Number of clients subscribed to pub/sub channels or patterns (available in Redis 7.2+)
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {client} | Sum | Int | Cumulative | false | Development |
+
+### redis.pubsub.pattern.status
+
+Number of pub/sub patterns
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {pattern} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| redis.pubsub.pattern.state | The state of pub/sub patterns | Str: ``active`` | Recommended | - |
+
 ### redis.replication.replica_offset
 
 Offset for redis replica

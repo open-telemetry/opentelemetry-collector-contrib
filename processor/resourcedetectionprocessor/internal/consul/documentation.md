@@ -8,6 +8,16 @@
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| cloud.region | The cloud.region | Any Str | true | - | - |
-| host.id | The host.id | Any Str | true | - | - |
-| host.name | The hostname | Any Str | true | - | - |
+| cloud.region | The cloud.region | Any Str | true | [cloud.region](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-region) | - |
+| host.id | The host.id | Any Str | true | [host.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-id) | - |
+| host.name | The hostname | Any Str | true | [host.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-name) | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `processor.resourcedetection.consul.prefixMetaAttributes` | alpha | When enabled, Consul node metadata is emitted as `consul.meta.<key>` resource attributes instead of `<key>`. | v0.159.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49988) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

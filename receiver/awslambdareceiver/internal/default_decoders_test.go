@@ -75,6 +75,13 @@ func TestDefaultCWLogsDecoder_NewLogsDecoder(t *testing.T) {
 			},
 			expectedPath: filepath.Join("testdata", "default_cw_decoder_expected.yaml"),
 		},
+		{
+			name: "CloudWatch logs JSON with subscription filters",
+			input: func() io.Reader {
+				return bytes.NewReader([]byte(`{"owner":"111222333444","logGroup":"/test/log-group","logStream":"test-stream","messageType":"DATA_MESSAGE","subscriptionFilters":["otel-sd-v1__orders-api"],"logEvents":[{"id":"1","timestamp":1700000000000,"message":"some text"}]}`))
+			},
+			expectedPath: filepath.Join("testdata", "default_cw_decoder_subscription_filters_expected.yaml"),
+		},
 	}
 
 	for _, tt := range tests {

@@ -193,11 +193,13 @@ func (exporter *logzioExporter) export(ctx context.Context, url string, request 
 	if respStatus != nil {
 		formattedErr = fmt.Errorf(
 			"error exporting items, request to %s responded with HTTP Status Code %d, Message=%s, Details=%v",
-			url, resp.StatusCode, respStatus.Message, respStatus.Details)
+			url, resp.StatusCode, respStatus.Message, respStatus.Details,
+		)
 	} else {
 		formattedErr = fmt.Errorf(
 			"error exporting items, request to %s responded with HTTP Status Code %d",
-			url, resp.StatusCode)
+			url, resp.StatusCode,
+		)
 	}
 
 	// Check if the server is overwhelmed.

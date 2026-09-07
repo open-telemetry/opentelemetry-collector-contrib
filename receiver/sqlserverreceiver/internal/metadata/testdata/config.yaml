@@ -28,6 +28,8 @@ all_set:
       enabled: true
     sqlserver.cpu.count:
       enabled: true
+    sqlserver.cpu.utilization:
+      enabled: true
     sqlserver.cursor.count:
       enabled: true
       attributes: ["cursor.state"]
@@ -62,12 +64,23 @@ all_set:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
+    sqlserver.disk.io:
+      enabled: true
+      attributes: ["disk.io.direction","sqlserver.file.path.prefix"]
+    sqlserver.disk.operations:
+      enabled: true
+      attributes: ["disk.io.direction","sqlserver.file.path.prefix"]
     sqlserver.error.rate:
       enabled: true
     sqlserver.extent.operation.rate:
       enabled: true
     sqlserver.ghost_record.skipped.rate:
       enabled: true
+    sqlserver.host.memory.limit:
+      enabled: true
+    sqlserver.host.memory.usage:
+      enabled: true
+      attributes: ["system.memory.state"]
     sqlserver.index.fragmentation:
       enabled: true
       attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
@@ -274,6 +287,8 @@ reaggregate_set:
       enabled: true
     sqlserver.cpu.count:
       enabled: true
+    sqlserver.cpu.utilization:
+      enabled: true
     sqlserver.cursor.count:
       enabled: true
       attributes: []
@@ -308,12 +323,23 @@ reaggregate_set:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
+    sqlserver.disk.io:
+      enabled: true
+      attributes: []
+    sqlserver.disk.operations:
+      enabled: true
+      attributes: []
     sqlserver.error.rate:
       enabled: true
     sqlserver.extent.operation.rate:
       enabled: true
     sqlserver.ghost_record.skipped.rate:
       enabled: true
+    sqlserver.host.memory.limit:
+      enabled: true
+    sqlserver.host.memory.usage:
+      enabled: true
+      attributes: []
     sqlserver.index.fragmentation:
       enabled: true
       attributes: []
@@ -520,6 +546,8 @@ none_set:
       enabled: false
     sqlserver.cpu.count:
       enabled: false
+    sqlserver.cpu.utilization:
+      enabled: false
     sqlserver.cursor.count:
       enabled: false
       attributes: ["cursor.state"]
@@ -554,12 +582,23 @@ none_set:
       enabled: false
     sqlserver.deadlock.rate:
       enabled: false
+    sqlserver.disk.io:
+      enabled: false
+      attributes: ["disk.io.direction","sqlserver.file.path.prefix"]
+    sqlserver.disk.operations:
+      enabled: false
+      attributes: ["disk.io.direction","sqlserver.file.path.prefix"]
     sqlserver.error.rate:
       enabled: false
     sqlserver.extent.operation.rate:
       enabled: false
     sqlserver.ghost_record.skipped.rate:
       enabled: false
+    sqlserver.host.memory.limit:
+      enabled: false
+    sqlserver.host.memory.usage:
+      enabled: false
+      attributes: ["system.memory.state"]
     sqlserver.index.fragmentation:
       enabled: false
       attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]

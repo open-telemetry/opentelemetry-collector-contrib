@@ -136,11 +136,14 @@ func mockArrowProducer(ctc *commonTestCase) func() arrowRecord.ProducerAPI {
 		prod := arrowRecord.NewProducer()
 
 		mock.EXPECT().BatchArrowRecordsFromTraces(gomock.Any()).AnyTimes().DoAndReturn(
-			copyBatch(prod.BatchArrowRecordsFromTraces))
+			copyBatch(prod.BatchArrowRecordsFromTraces),
+		)
 		mock.EXPECT().BatchArrowRecordsFromLogs(gomock.Any()).AnyTimes().DoAndReturn(
-			copyBatch(prod.BatchArrowRecordsFromLogs))
+			copyBatch(prod.BatchArrowRecordsFromLogs),
+		)
 		mock.EXPECT().BatchArrowRecordsFromMetrics(gomock.Any()).AnyTimes().DoAndReturn(
-			copyBatch(prod.BatchArrowRecordsFromMetrics))
+			copyBatch(prod.BatchArrowRecordsFromMetrics),
+		)
 		mock.EXPECT().Close().Times(1).Return(nil)
 		return mock
 	}

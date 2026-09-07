@@ -28,10 +28,6 @@ resource_attributes:
     description: The open mode of the Oracle database (e.g. "READ WRITE", "READ ONLY", "MOUNTED").
     enabled: true
     type: string
-  oracle.db.pdb:
-    description: The pluggable database (PDB) name associated with the connection.
-    enabled: true
-    type: string
   oracle.db.role:
     description: The database role of the Oracle instance (e.g. "PRIMARY", "PHYSICAL STANDBY").
     enabled: true
@@ -105,12 +101,22 @@ attributes:
   network.peer.port:
     description: TCP port used by the peer client.
     type: int
+  oracle.db.pdb:
+    description: The name of the pluggable database (PDB) the data point belongs to. Emit one data point per PDB on CDB-root connections and one per direct-PDB connection; empty otherwise. When disabled, per-PDB collection is skipped and each metric emits a single instance-wide data point.
+    type: string
+    requirement_level: opt_in
   oracle.db.service:
     description: The Oracle service name associated with the database connection.
     type: string
   oracledb.application_wait_time:
     description: The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta).
     type: double
+  oracledb.asm.disk.name:
+    description: The name of the ASM disk.
+    type: string
+  oracledb.asm.disk_group.name:
+    description: The name of the ASM diskgroup.
+    type: string
   oracledb.blocking.blocker.root_sid:
     description: The session ID (SID) of the root/head blocker at the top of the blocking chain. Empty string when there is no blocking.
     type: string
@@ -226,7 +232,7 @@ attributes:
     description: "Plan load time in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS"
     type: string
   oracledb.plan_hash_value:
-    description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
+    description: Numeric representation of the execution plan.
     type: string
   oracledb.procedure_execution_count:
     description: The number of times the stored procedure has been executed, derived from the minimum statement execution count across all statements in the procedure (reporting delta). Please note, this is best effort and may not be accurate in some scenarios. Use with caution.
@@ -333,6 +339,11 @@ attributes:
   oracledb.status:
     description: Execution state or result of a database query or session.
     type: string
+  oracledb.tablespace.state:
+    description: Tablespace state as reported by Oracle (e.g. online, offline, read only)
+    type: string
+    enum: [online, offline, read only]
+    requirement_level: recommended
   oracledb.transaction.type:
     description: The type of user transaction.
     type: string
@@ -341,11 +352,14 @@ attributes:
     description: The total time (in seconds) a query spent waiting for user I/O operations—such as reading or writing data to disk or network file systems (reporting delta).
     type: double
   oracledb.wait.count:
-    description: Total number of waits for the wait event across all sessions.
+    description: Number of times the session has waited on the wait event.
     type: int
   oracledb.wait.duration:
     description: Total time waited in seconds for the wait event.
     type: double
+  oracledb.wait.timeouts:
+    description: Number of the session's waits on the wait event that timed out.
+    type: int
   oracledb.wait_class:
     description: The category of wait events a query or session is currently experiencing in Oracle Database.
     type: string
@@ -423,6 +437,7 @@ events:
       - oracledb.event
       - oracledb.wait_class
       - oracledb.wait.count
+      - oracledb.wait.timeouts
       - oracledb.wait.duration
       - db.namespace
   db.server.top_query:
@@ -464,6 +479,49 @@ events:
       - oracledb.plan.first_load
       - oracledb.plan.last_load
 metrics:
+  oracledb.asm.disk.errors:
+    attributes: [oracledb.asm.disk_group.name, oracledb.asm.disk.name, disk.io.direction]
+    description: Count of I/O errors on an ASM disk.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{error}"
+  oracledb.asm.disk_group.capacity:
+    attributes: [oracledb.asm.disk_group.name]
+    description: Total space in an ASM diskgroup.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: By
+  oracledb.asm.disk_group.free:
+    attributes: [oracledb.asm.disk_group.name]
+    description: Free space in an ASM diskgroup.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: By
+  oracledb.asm.disk_group.offline_disks:
+    attributes: [oracledb.asm.disk_group.name]
+    description: Count of disks currently offline within an ASM diskgroup.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: "{disk}"
+  oracledb.asm.disk_group.usable_free:
+    attributes: [oracledb.asm.disk_group.name]
+    description: Free space that can safely be used for files after accounting for ASM redundancy and required mirror recovery capacity.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: By
   oracledb.buffer.inspected:
     description: Number of buffers inspected from the end of the LRU queue while a process searched for a reusable buffer, grouped by buffer state.
     enabled: false
@@ -502,6 +560,7 @@ metrics:
     gauge:
       value_type: double
     unit: "{change}/s"
+    attributes: [oracle.db.pdb]
   oracledb.buffer_cache.block.gets:
     description: Number of current-mode block gets satisfied from the buffer cache. Distinct from oracledb.db_block_gets, which counts all current-mode block gets requested regardless of where they are satisfied.
     enabled: false
@@ -513,6 +572,8 @@ metrics:
       input_type: string
     unit: "{get}"
   oracledb.buffer_cache.utilization:
+    attributes:
+      - oracle.db.pdb
     description: Fraction of logical reads served from the buffer cache without physical I/O, as computed by Oracle V$SYSMETRIC (% (LogRead - PhyRead)/LogRead).
     enabled: false
     stability: development
@@ -560,6 +621,8 @@ metrics:
       input_type: string
     unit: "{checkpoint}"
   oracledb.consistent_gets:
+    attributes:
+      - oracle.db.pdb
     description: Number of times a consistent read was requested for a block from the buffer cache.
     enabled: false
     stability: development
@@ -570,6 +633,8 @@ metrics:
       input_type: string
     unit: "{gets}"
   oracledb.cpu.usage.rate:
+    attributes:
+      - oracle.db.pdb
     description: CPU consumption rate, in CPU-seconds used per second.
     enabled: false
     stability: development
@@ -577,6 +642,8 @@ metrics:
       value_type: double
     unit: "1"
   oracledb.cpu_time:
+    attributes:
+      - oracle.db.pdb
     description: Cumulative CPU time, in seconds
     enabled: true
     stability: development
@@ -604,6 +671,8 @@ metrics:
       input_type: string
     unit: "{cursor}"
   oracledb.cursor.cache.utilization:
+    attributes:
+      - oracle.db.pdb
     description: Percentage of cursor executions that reused a cursor in the session cursor cache.
     enabled: false
     stability: development
@@ -625,6 +694,7 @@ metrics:
     gauge:
       value_type: double
     unit: "{cursor}/s"
+    attributes: [oracle.db.pdb]
   oracledb.data_dictionary.hit_ratio:
     description: Data dictionary cache hit ratio from v$rowcache.
     enabled: false
@@ -633,6 +703,8 @@ metrics:
       value_type: double
     unit: "%"
   oracledb.database.cpu.utilization:
+    attributes:
+      - oracle.db.pdb
     description: Fraction of total database time spent on CPU, as computed by Oracle V$SYSMETRIC (% Cpu/DB_Time).
     enabled: false
     stability: development
@@ -640,6 +712,8 @@ metrics:
       value_type: double
     unit: "%"
   oracledb.database.wait.utilization:
+    attributes:
+      - oracle.db.pdb
     description: Fraction of total database time spent waiting on I/O, locks, or latches, as computed by Oracle V$SYSMETRIC (% Wait/DB_Time).
     enabled: false
     stability: development
@@ -657,6 +731,8 @@ metrics:
     unit: s
     attributes: [oracledb.session.type]
   oracledb.db_block_gets:
+    attributes:
+      - oracle.db.pdb
     description: Number of times a current block was requested from the buffer cache.
     enabled: false
     stability: development
@@ -667,6 +743,8 @@ metrics:
       input_type: string
     unit: "{gets}"
   oracledb.ddl_statements_parallelized:
+    attributes:
+      - oracle.db.pdb
     description: Number of DDL statements that were executed in parallel
     enabled: false
     stability: development
@@ -693,6 +771,8 @@ metrics:
       input_type: string
     unit: "{locks}"
   oracledb.dml_statements_parallelized:
+    attributes:
+      - oracle.db.pdb
     description: Number of DML statements that were executed in parallel
     enabled: false
     stability: development
@@ -709,6 +789,7 @@ metrics:
     gauge:
       value_type: double
     unit: "{deadlock}/s"
+    attributes: [oracle.db.pdb]
   oracledb.enqueue.operations:
     description: Total count of enqueue (lock) operations.
     enabled: false
@@ -727,7 +808,10 @@ metrics:
     gauge:
       value_type: double
     unit: "{timeout}/s"
+    attributes: [oracle.db.pdb]
   oracledb.enqueue_deadlocks:
+    attributes:
+      - oracle.db.pdb
     description: Total number of deadlocks between table or row locks in different sessions.
     enabled: true
     stability: development
@@ -770,6 +854,8 @@ metrics:
       input_type: string
     unit: "{resources}"
   oracledb.exchange_deadlocks:
+    attributes:
+      - oracle.db.pdb
     description: Number of times that a process detected a potential deadlock when exchanging two buffers and raised an internal, restartable error. Index scans are the only operations that perform exchanges.
     enabled: true
     stability: development
@@ -782,6 +868,7 @@ metrics:
   oracledb.execution.utilization:
     attributes:
       - oracledb.parse.type
+      - oracle.db.pdb
     description: Fraction of executions that did not require a parse, as computed by Oracle V$SYSMETRIC (% (ExecWOParse/TotalExec)). High values indicate good cursor reuse.
     enabled: false
     stability: development
@@ -789,6 +876,8 @@ metrics:
       value_type: double
     unit: "%"
   oracledb.executions:
+    attributes:
+      - oracle.db.pdb
     description: Total number of calls (user and recursive) that executed SQL statements
     enabled: true
     stability: development
@@ -805,6 +894,7 @@ metrics:
     gauge:
       value_type: double
     unit: "{execution}/s"
+    attributes: [oracle.db.pdb]
   oracledb.gc.current_block.time:
     attributes:
       - network.io.direction
@@ -817,6 +907,8 @@ metrics:
       value_type: double
     unit: s
   oracledb.hard_parses:
+    attributes:
+      - oracle.db.pdb
     description: Number of hard parses
     enabled: true
     stability: development
@@ -833,6 +925,7 @@ metrics:
     gauge:
       value_type: double
     unit: "{parse}/s"
+    attributes: [oracle.db.pdb]
   oracledb.host.cpu.usage.rate:
     description: Host CPU consumption rate across all cores, in CPU-seconds used per second.
     enabled: false
@@ -841,6 +934,8 @@ metrics:
       value_type: double
     unit: "1"
   oracledb.host.cpu.utilization:
+    attributes:
+      - oracle.db.pdb
     description: Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idle+Busy)).
     enabled: false
     stability: development
@@ -893,6 +988,8 @@ metrics:
       input_type: string
     unit: By
   oracledb.library_cache.utilization:
+    attributes:
+      - oracle.db.pdb
     description: Fraction of library cache pin requests that found the object already cached, as computed by Oracle V$SYSMETRIC (% Hits/Pins).
     enabled: false
     stability: development
@@ -912,6 +1009,7 @@ metrics:
     attributes: [disk.io.direction]
   oracledb.lock.time:
     attributes:
+      - oracle.db.pdb
       - oracledb.session.type
     description: Cumulative time spent on transaction lock activity.
     enabled: false
@@ -922,6 +1020,8 @@ metrics:
       value_type: double
     unit: s
   oracledb.logical_reads:
+    attributes:
+      - oracle.db.pdb
     description: Number of logical reads
     enabled: true
     stability: development
@@ -938,7 +1038,10 @@ metrics:
     gauge:
       value_type: double
     unit: "{read}/s"
+    attributes: [oracle.db.pdb]
   oracledb.logons:
+    attributes:
+      - oracle.db.pdb
     description: Number of logon operations
     enabled: false
     stability: development
@@ -955,6 +1058,7 @@ metrics:
     gauge:
       value_type: double
     unit: "{logon}/s"
+    attributes: [oracle.db.pdb]
   oracledb.os.swaps:
     description: Number of OS swap operations.
     enabled: false
@@ -966,6 +1070,8 @@ metrics:
       input_type: string
     unit: "{swap}"
   oracledb.parallel_operations_downgraded_1_to_25_pct:
+    attributes:
+      - oracle.db.pdb
     description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers
     enabled: false
     stability: development
@@ -976,6 +1082,8 @@ metrics:
       input_type: string
     unit: "{executions}"
   oracledb.parallel_operations_downgraded_25_to_50_pct:
+    attributes:
+      - oracle.db.pdb
     description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 25-50% because of insufficient parallel execution servers
     enabled: false
     stability: development
@@ -986,6 +1094,8 @@ metrics:
       input_type: string
     unit: "{executions}"
   oracledb.parallel_operations_downgraded_50_to_75_pct:
+    attributes:
+      - oracle.db.pdb
     description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 50-75% because of insufficient parallel execution servers
     enabled: false
     stability: development
@@ -996,6 +1106,8 @@ metrics:
       input_type: string
     unit: "{executions}"
   oracledb.parallel_operations_downgraded_75_to_99_pct:
+    attributes:
+      - oracle.db.pdb
     description: Number of times parallel execution was requested and the degree of parallelism was reduced down to 75-99% because of insufficient parallel execution servers
     enabled: false
     stability: development
@@ -1006,6 +1118,8 @@ metrics:
       input_type: string
     unit: "{executions}"
   oracledb.parallel_operations_downgraded_to_serial:
+    attributes:
+      - oracle.db.pdb
     description: Number of times parallel execution was requested but execution was serial because of insufficient parallel execution servers
     enabled: false
     stability: development
@@ -1016,6 +1130,8 @@ metrics:
       input_type: string
     unit: "{executions}"
   oracledb.parallel_operations_not_downgraded:
+    attributes:
+      - oracle.db.pdb
     description: Number of times parallel execution was executed at the requested degree of parallelism
     enabled: false
     stability: development
@@ -1046,6 +1162,7 @@ metrics:
   oracledb.parse.rate:
     attributes:
       - oracledb.parse.result
+      - oracle.db.pdb
     description: Rate of parse operations per second broken down by result, as computed by Oracle V$SYSMETRIC (e.g., Parse Failure Count Per Sec).
     enabled: false
     stability: development
@@ -1053,6 +1170,8 @@ metrics:
       value_type: double
     unit: "{parses}/s"
   oracledb.parse.utilization:
+    attributes:
+      - oracle.db.pdb
     description: Fraction of parse calls that were soft parses, as computed by Oracle V$SYSMETRIC (% SoftParses/TotalParses). High values indicate good cursor reuse.
     enabled: false
     stability: development
@@ -1060,6 +1179,8 @@ metrics:
       value_type: double
     unit: "%"
   oracledb.parse_calls:
+    attributes:
+      - oracle.db.pdb
     description: Total number of parse calls.
     enabled: true
     stability: development
@@ -1077,6 +1198,8 @@ metrics:
       value_type: double
     unit: "%"
   oracledb.pga_memory:
+    attributes:
+      - oracle.db.pdb
     description: Session PGA (Program Global Area) memory
     enabled: true
     stability: development
@@ -1087,6 +1210,7 @@ metrics:
       input_type: string
     unit: By
   oracledb.physical_io.cache_writes:
+    attributes: [oracle.db.pdb]
     description: Number of physical writes from the buffer cache to disk by DBWR. Sourced from v$sysstat name physical writes from cache.
     enabled: false
     stability: development
@@ -1106,7 +1230,7 @@ metrics:
       value_type: int
       input_type: string
     unit: "{requests}"
-    attributes: [disk.io.direction, disk.io.block_size]
+    attributes: [disk.io.direction, disk.io.block_size, oracle.db.pdb]
   oracledb.physical_io.requests.rate:
     description: Rate of physical I/O requests issued to storage.
     enabled: false
@@ -1114,7 +1238,7 @@ metrics:
     gauge:
       value_type: double
     unit: "{request}/s"
-    attributes: [disk.io.direction]
+    attributes: [disk.io.direction, oracle.db.pdb]
   oracledb.physical_io.transferred:
     description: Total physical I/O bytes transferred between Oracle and storage. Sums across all data files. Sourced from v$sysstat names physical read/write bytes (disk.io.type=buffered) and physical read/write total bytes (disk.io.type=total).
     enabled: false
@@ -1125,7 +1249,7 @@ metrics:
       value_type: int
       input_type: string
     unit: By
-    attributes: [disk.io.direction, disk.io.type]
+    attributes: [disk.io.direction, disk.io.type, oracle.db.pdb]
   oracledb.physical_io.transferred.rate:
     description: Rate of physical I/O bytes transferred between Oracle and storage.
     enabled: false
@@ -1133,7 +1257,7 @@ metrics:
     gauge:
       value_type: double
     unit: By/s
-    attributes: [disk.io.direction]
+    attributes: [disk.io.direction, oracle.db.pdb]
   oracledb.physical_operations.rate:
     description: Rate of physical read and write operations performed by the database.
     enabled: false
@@ -1141,8 +1265,10 @@ metrics:
     gauge:
       value_type: double
     unit: "{operation}/s"
-    attributes: [disk.io.direction]
+    attributes: [disk.io.direction, oracle.db.pdb]
   oracledb.physical_read_io_requests:
+    attributes:
+      - oracle.db.pdb
     description: Number of read requests for application activity
     enabled: false
     stability: development
@@ -1153,6 +1279,8 @@ metrics:
       input_type: string
     unit: "{requests}"
   oracledb.physical_reads:
+    attributes:
+      - oracle.db.pdb
     description: Number of physical reads
     enabled: true
     stability: development
@@ -1163,6 +1291,8 @@ metrics:
       input_type: string
     unit: "{reads}"
   oracledb.physical_reads_direct:
+    attributes:
+      - oracle.db.pdb
     description: Number of reads directly from disk, bypassing the buffer cache
     enabled: false
     stability: development
@@ -1173,6 +1303,8 @@ metrics:
       input_type: string
     unit: "{reads}"
   oracledb.physical_write_io_requests:
+    attributes:
+      - oracle.db.pdb
     description: Number of write requests for application activity
     enabled: false
     stability: development
@@ -1183,6 +1315,8 @@ metrics:
       input_type: string
     unit: "{requests}"
   oracledb.physical_writes:
+    attributes:
+      - oracle.db.pdb
     description: Number of physical writes
     enabled: false
     stability: development
@@ -1193,6 +1327,8 @@ metrics:
       input_type: string
     unit: "{writes}"
   oracledb.physical_writes_direct:
+    attributes:
+      - oracle.db.pdb
     description: Number of writes directly to disk, bypassing the buffer cache
     enabled: false
     stability: development
@@ -1219,6 +1355,8 @@ metrics:
       input_type: string
     unit: "{processes}"
   oracledb.queries_parallelized:
+    attributes:
+      - oracle.db.pdb
     description: Number of SELECT statements executed in parallel
     enabled: false
     stability: development
@@ -1306,6 +1444,7 @@ metrics:
     gauge:
       value_type: double
     unit: By/s
+    attributes: [oracle.db.pdb]
   oracledb.redo.time:
     description: Time spent in each phase of the redo pipeline.
     enabled: false
@@ -1317,6 +1456,8 @@ metrics:
     unit: s
     attributes: [oracledb.redo.type]
   oracledb.redo_allocation.utilization:
+    attributes:
+      - oracle.db.pdb
     description: Fraction of redo allocations that succeeded without space contention, as computed by Oracle V$SYSMETRIC (% (#Redo - RedoSpaceReq)/#Redo).
     enabled: false
     stability: development
@@ -1351,8 +1492,10 @@ metrics:
     gauge:
       value_type: double
     unit: "{session}"
-    attributes: [session_status]
+    attributes: [session_status, oracle.db.pdb]
   oracledb.session.stored_procedure.memory:
+    attributes:
+      - oracle.db.pdb
     description: Memory currently allocated for stored procedures in the session.
     enabled: false
     stability: development
@@ -1363,6 +1506,7 @@ metrics:
   oracledb.session.wait.time:
     attributes:
       - oracledb.session.wait.state
+      - oracle.db.pdb
     description: Cumulative time sessions spent in waits.
     enabled: false
     stability: development
@@ -1374,6 +1518,7 @@ metrics:
   oracledb.session.waits:
     attributes:
       - oracledb.session.wait.state
+      - oracle.db.pdb
     description: Cumulative number of waits across sessions.
     enabled: false
     stability: development
@@ -1395,6 +1540,7 @@ metrics:
     attributes:
       - session_type
       - session_status
+      - oracle.db.pdb
     description: Count of active sessions.
     enabled: true
     stability: development
@@ -1419,6 +1565,8 @@ metrics:
       value_type: int
     unit: By
   oracledb.shared_pool.utilization:
+    attributes:
+      - oracle.db.pdb
     description: Fraction of the shared pool that is currently free, as computed by Oracle V$SYSMETRIC (% Free/Total). Low values indicate shared pool pressure.
     enabled: false
     stability: development
@@ -1451,6 +1599,7 @@ metrics:
   oracledb.sort.ratio:
     attributes:
       - oracledb.sort.type
+      - oracle.db.pdb
     description: Fraction of sorts performed in memory vs disk, as computed by Oracle V$SYSMETRIC (% MemSort/(MemSort + DiskSort)). Low values indicate PGA memory pressure.
     enabled: false
     stability: development
@@ -1468,6 +1617,8 @@ metrics:
       input_type: string
     unit: "{row}"
   oracledb.sql_service.response.duration:
+    attributes:
+      - oracle.db.pdb
     description: Average SQL service response time in seconds, converted from centiseconds as reported by Oracle V$SYSMETRIC (CentiSeconds Per Call).
     enabled: false
     stability: development
@@ -1484,7 +1635,7 @@ metrics:
       value_type: int
       input_type: string
     unit: By
-    attributes: [network.io.direction, destination.type]
+    attributes: [network.io.direction, destination.type, oracle.db.pdb]
   oracledb.storage.usage:
     description: Used database storage size from dba_data_files and dba_free_space.
     enabled: false
@@ -1520,9 +1671,43 @@ metrics:
     gauge:
       value_type: double
     unit: "{process}"
+  oracledb.tablespace.limit:
+    attributes:
+      - tablespace_name
+      - oracle.db.pdb
+    description: Maximum autoextend size of tablespace in bytes. Returns 0 for temporary tablespaces and tablespaces without autoextend enabled.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: By
+  oracledb.tablespace.status:
+    attributes:
+      - tablespace_name
+      - oracledb.tablespace.state
+      - oracle.db.pdb
+    description: Current status of tablespaces, broken down by state. A timeseries is produced for every possible value of oracledb.tablespace.state; the value is 1 for a tablespace's current state, and 0 for all other states.
+    enabled: false
+    stability: development
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    unit: "{tablespace}"
+  oracledb.tablespace.utilization:
+    attributes:
+      - tablespace_name
+      - oracle.db.pdb
+    description: Fraction of tablespace currently in use, expressed as a value between 0 and 1.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "1"
   oracledb.tablespace_size.limit:
     attributes:
       - tablespace_name
+      - oracle.db.pdb
     description: Maximum size of tablespace in bytes, -1 if unlimited.
     enabled: true
     stability: development
@@ -1532,6 +1717,7 @@ metrics:
   oracledb.tablespace_size.usage:
     attributes:
       - tablespace_name
+      - oracle.db.pdb
     description: Used tablespace in bytes.
     enabled: true
     stability: development
@@ -1539,6 +1725,8 @@ metrics:
       value_type: int
     unit: By
   oracledb.transaction.response.time:
+    attributes:
+      - oracle.db.pdb
     description: Average response time per transaction.
     enabled: false
     stability: development
@@ -1546,6 +1734,8 @@ metrics:
       value_type: double
     unit: s
   oracledb.transaction.rollbacks:
+    attributes:
+      - oracle.db.pdb
     description: Total number of transactions rolled back.
     enabled: false
     stability: development
@@ -1570,7 +1760,7 @@ metrics:
     gauge:
       value_type: double
     unit: "{transaction}/s"
-    attributes: [oracledb.transaction.type]
+    attributes: [oracledb.transaction.type, oracle.db.pdb]
   oracledb.transactions.usage:
     description: Current count of active transactions.
     enabled: true
@@ -1580,6 +1770,8 @@ metrics:
       input_type: string
     unit: "{transactions}"
   oracledb.user_commits:
+    attributes:
+      - oracle.db.pdb
     description: Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate.
     enabled: true
     stability: development
@@ -1590,6 +1782,8 @@ metrics:
       input_type: string
     unit: "{commits}"
   oracledb.user_rollbacks:
+    attributes:
+      - oracle.db.pdb
     description: Number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions
     enabled: true
     stability: development

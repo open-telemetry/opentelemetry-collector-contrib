@@ -19,7 +19,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+	)
 }
 
 // createDefaultConfig creates the default exporter configuration

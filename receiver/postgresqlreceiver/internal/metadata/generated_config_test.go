@@ -82,7 +82,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlDatabaseLocks: PostgresqlDatabaseLocksMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []PostgresqlDatabaseLocksMetricAttributeKey{PostgresqlDatabaseLocksMetricAttributeKeyRelation, PostgresqlDatabaseLocksMetricAttributeKeyMode, PostgresqlDatabaseLocksMetricAttributeKeyLockType},
+						EnabledAttributes:   []PostgresqlDatabaseLocksMetricAttributeKey{PostgresqlDatabaseLocksMetricAttributeKeyRelation, PostgresqlDatabaseLocksMetricAttributeKeyMode, PostgresqlDatabaseLocksMetricAttributeKeyLockType, PostgresqlDatabaseLocksMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlDbSize: PostgresqlDbSizeMetricConfig{
 						Enabled:             true,
@@ -118,6 +118,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []PostgresqlQueryConflictsMetricAttributeKey{PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType, PostgresqlQueryConflictsMetricAttributeKeyDbNamespace},
+					},
+					PostgresqlQueryExecutionTime: PostgresqlQueryExecutionTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlQueryExecutionTimeMetricAttributeKey{PostgresqlQueryExecutionTimeMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlReplicationDataDelay: PostgresqlReplicationDataDelayMetricConfig{
 						Enabled:             true,
@@ -300,7 +305,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlDatabaseLocks: PostgresqlDatabaseLocksMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []PostgresqlDatabaseLocksMetricAttributeKey{PostgresqlDatabaseLocksMetricAttributeKeyRelation, PostgresqlDatabaseLocksMetricAttributeKeyMode, PostgresqlDatabaseLocksMetricAttributeKeyLockType},
+						EnabledAttributes:   []PostgresqlDatabaseLocksMetricAttributeKey{PostgresqlDatabaseLocksMetricAttributeKeyRelation, PostgresqlDatabaseLocksMetricAttributeKeyMode, PostgresqlDatabaseLocksMetricAttributeKeyLockType, PostgresqlDatabaseLocksMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlDbSize: PostgresqlDbSizeMetricConfig{
 						Enabled:             false,
@@ -336,6 +341,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []PostgresqlQueryConflictsMetricAttributeKey{PostgresqlQueryConflictsMetricAttributeKeyPostgresqlConflictType, PostgresqlQueryConflictsMetricAttributeKeyDbNamespace},
+					},
+					PostgresqlQueryExecutionTime: PostgresqlQueryExecutionTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlQueryExecutionTimeMetricAttributeKey{PostgresqlQueryExecutionTimeMetricAttributeKeyDbNamespace},
 					},
 					PostgresqlReplicationDataDelay: PostgresqlReplicationDataDelayMetricConfig{
 						Enabled:             false,
@@ -463,7 +473,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(PostgresqlBackendsMetricConfig{}, PostgresqlBgwriterBuffersAllocatedMetricConfig{}, PostgresqlBgwriterBuffersWritesMetricConfig{}, PostgresqlBgwriterCheckpointCountMetricConfig{}, PostgresqlBgwriterDurationMetricConfig{}, PostgresqlBgwriterMaxwrittenMetricConfig{}, PostgresqlBlksHitMetricConfig{}, PostgresqlBlksReadMetricConfig{}, PostgresqlBlocksReadMetricConfig{}, PostgresqlCommitsMetricConfig{}, PostgresqlConnectionMaxMetricConfig{}, PostgresqlDatabaseCountMetricConfig{}, PostgresqlDatabaseLocksMetricConfig{}, PostgresqlDbSizeMetricConfig{}, PostgresqlDeadlocksMetricConfig{}, PostgresqlFunctionCallsMetricConfig{}, PostgresqlIndexScansMetricConfig{}, PostgresqlIndexSizeMetricConfig{}, PostgresqlOperationsMetricConfig{}, PostgresqlQueryConflictsMetricConfig{}, PostgresqlReplicationDataDelayMetricConfig{}, PostgresqlRollbacksMetricConfig{}, PostgresqlRowsMetricConfig{}, PostgresqlSequentialScansMetricConfig{}, PostgresqlTableCountMetricConfig{}, PostgresqlTableSizeMetricConfig{}, PostgresqlTableVacuumCountMetricConfig{}, PostgresqlTempIoMetricConfig{}, PostgresqlTempFilesMetricConfig{}, PostgresqlTupDeletedMetricConfig{}, PostgresqlTupFetchedMetricConfig{}, PostgresqlTupInsertedMetricConfig{}, PostgresqlTupReturnedMetricConfig{}, PostgresqlTupUpdatedMetricConfig{}, PostgresqlVectorInsertDurationMetricConfig{}, PostgresqlVectorInsertRowsMetricConfig{}, PostgresqlVectorSearchCallsMetricConfig{}, PostgresqlVectorSearchDurationMetricConfig{}, PostgresqlVectorSearchRowsReturnedMetricConfig{}, PostgresqlWalAgeMetricConfig{}, PostgresqlWalDelayMetricConfig{}, PostgresqlWalLagMetricConfig{}, PostgresqlDatabaseNameResourceAttributeConfig{}, PostgresqlIndexNameResourceAttributeConfig{}, PostgresqlSchemaNameResourceAttributeConfig{}, PostgresqlTableNameResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(PostgresqlBackendsMetricConfig{}, PostgresqlBgwriterBuffersAllocatedMetricConfig{}, PostgresqlBgwriterBuffersWritesMetricConfig{}, PostgresqlBgwriterCheckpointCountMetricConfig{}, PostgresqlBgwriterDurationMetricConfig{}, PostgresqlBgwriterMaxwrittenMetricConfig{}, PostgresqlBlksHitMetricConfig{}, PostgresqlBlksReadMetricConfig{}, PostgresqlBlocksReadMetricConfig{}, PostgresqlCommitsMetricConfig{}, PostgresqlConnectionMaxMetricConfig{}, PostgresqlDatabaseCountMetricConfig{}, PostgresqlDatabaseLocksMetricConfig{}, PostgresqlDbSizeMetricConfig{}, PostgresqlDeadlocksMetricConfig{}, PostgresqlFunctionCallsMetricConfig{}, PostgresqlIndexScansMetricConfig{}, PostgresqlIndexSizeMetricConfig{}, PostgresqlOperationsMetricConfig{}, PostgresqlQueryConflictsMetricConfig{}, PostgresqlQueryExecutionTimeMetricConfig{}, PostgresqlReplicationDataDelayMetricConfig{}, PostgresqlRollbacksMetricConfig{}, PostgresqlRowsMetricConfig{}, PostgresqlSequentialScansMetricConfig{}, PostgresqlTableCountMetricConfig{}, PostgresqlTableSizeMetricConfig{}, PostgresqlTableVacuumCountMetricConfig{}, PostgresqlTempIoMetricConfig{}, PostgresqlTempFilesMetricConfig{}, PostgresqlTupDeletedMetricConfig{}, PostgresqlTupFetchedMetricConfig{}, PostgresqlTupInsertedMetricConfig{}, PostgresqlTupReturnedMetricConfig{}, PostgresqlTupUpdatedMetricConfig{}, PostgresqlVectorInsertDurationMetricConfig{}, PostgresqlVectorInsertRowsMetricConfig{}, PostgresqlVectorSearchCallsMetricConfig{}, PostgresqlVectorSearchDurationMetricConfig{}, PostgresqlVectorSearchRowsReturnedMetricConfig{}, PostgresqlWalAgeMetricConfig{}, PostgresqlWalDelayMetricConfig{}, PostgresqlWalLagMetricConfig{}, PostgresqlDatabaseNameResourceAttributeConfig{}, PostgresqlIndexNameResourceAttributeConfig{}, PostgresqlSchemaNameResourceAttributeConfig{}, PostgresqlTableNameResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -569,7 +579,7 @@ func TestPostgresqlDatabaseLocksMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []PostgresqlDatabaseLocksMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric postgresql.database.locks doesn't have an attribute invalid, valid attributes: [relation, mode, lock_type]")
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.database.locks doesn't have an attribute invalid, valid attributes: [relation, mode, lock_type, db.namespace]")
 
 	cfg = DefaultMetricsConfig().PostgresqlDatabaseLocks
 	cfg.AggregationStrategy = "invalid"
@@ -656,6 +666,18 @@ func TestPostgresqlQueryConflictsMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "metric postgresql.query.conflicts doesn't have an attribute invalid, valid attributes: [postgresql.conflict.type, db.namespace]")
 
 	cfg = DefaultMetricsConfig().PostgresqlQueryConflicts
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlQueryExecutionTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlQueryExecutionTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlQueryExecutionTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.query.execution.time doesn't have an attribute invalid, valid attributes: [db.namespace]")
+
+	cfg = DefaultMetricsConfig().PostgresqlQueryExecutionTime
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }

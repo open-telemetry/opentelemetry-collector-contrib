@@ -30,9 +30,9 @@ type V1Compatibility struct {
 
 // Config defines configuration for the InfluxDB exporter.
 type Config struct {
-	ClientConfig              confighttp.ClientConfig                                  `mapstructure:",squash"`
-	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	ClientConfig  confighttp.ClientConfig                                  `mapstructure:",squash"`
+	QueueSettings configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	BackOffConfig configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 
 	// Org is the InfluxDB organization name of the destination bucket.
 	Org string `mapstructure:"org"`

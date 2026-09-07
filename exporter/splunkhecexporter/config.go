@@ -57,9 +57,9 @@ type HecTelemetry struct {
 
 // Config defines configuration for Splunk exporter.
 type Config struct {
-	ClientConfig              confighttp.ClientConfig                                  `mapstructure:",squash"`
-	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	ClientConfig  confighttp.ClientConfig                                  `mapstructure:",squash"`
+	QueueSettings configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	BackOffConfig configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 
 	// LogDataEnabled can be used to disable sending logs by the exporter.
 	LogDataEnabled bool `mapstructure:"log_data_enabled"`

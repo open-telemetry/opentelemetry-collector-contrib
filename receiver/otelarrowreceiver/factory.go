@@ -31,7 +31,8 @@ func NewFactory() receiver.Factory {
 		createDefaultConfig,
 		receiver.WithTraces(createTraces, metadata.TracesStability),
 		receiver.WithMetrics(createMetrics, metadata.MetricsStability),
-		receiver.WithLogs(createLog, metadata.LogsStability))
+		receiver.WithLogs(createLog, metadata.LogsStability),
+	)
 }
 
 // createDefaultConfig creates the default configuration for receiver.

@@ -35,7 +35,7 @@ all_set:
       enabled: true
     postgresql.database.locks:
       enabled: true
-      attributes: ["relation","mode","lock_type"]
+      attributes: ["relation","mode","lock_type","db.namespace"]
     postgresql.db_size:
       enabled: true
       attributes: ["db.namespace"]
@@ -57,6 +57,9 @@ all_set:
     postgresql.query.conflicts:
       enabled: true
       attributes: ["postgresql.conflict.type","db.namespace"]
+    postgresql.query.execution.time:
+      enabled: true
+      attributes: ["db.namespace"]
     postgresql.replication.data_delay:
       enabled: true
       attributes: ["replication_client"]
@@ -204,6 +207,9 @@ reaggregate_set:
     postgresql.query.conflicts:
       enabled: true
       attributes: []
+    postgresql.query.execution.time:
+      enabled: true
+      attributes: []
     postgresql.replication.data_delay:
       enabled: true
       attributes: []
@@ -329,7 +335,7 @@ none_set:
       enabled: false
     postgresql.database.locks:
       enabled: false
-      attributes: ["relation","mode","lock_type"]
+      attributes: ["relation","mode","lock_type","db.namespace"]
     postgresql.db_size:
       enabled: false
       attributes: ["db.namespace"]
@@ -351,6 +357,9 @@ none_set:
     postgresql.query.conflicts:
       enabled: false
       attributes: ["postgresql.conflict.type","db.namespace"]
+    postgresql.query.execution.time:
+      enabled: false
+      attributes: ["db.namespace"]
     postgresql.replication.data_delay:
       enabled: false
       attributes: ["replication_client"]

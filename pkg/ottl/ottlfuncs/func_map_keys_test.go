@@ -117,29 +117,41 @@ func Test_mapKeys_lambda_type_error(t *testing.T) {
 	assert.ErrorContains(t, err, "lambda expression must return a value of type string")
 }
 
-func Test_createMapKeysFunction(t *testing.T) {
-	fCtx := ottl.FunctionContext{}
-	keyMapper := ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
-		k := resolveBinding("k")
-		return k.(string), nil
+func Test_MapKeysFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewMapKeysFactory[any]()
+		assert.Equal(t, "MapKeys", factory.Name())
 	})
-	source := ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
-			return pcommon.NewMap(), nil
-		},
-	}
 
-	t.Run("valid args", func(t *testing.T) {
-		fn, err := createMapKeysFunction[any](fCtx, &MapKeysArguments[any]{
-			Source:    source,
-			KeyMapper: keyMapper,
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewMapKeysFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &MapKeysArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Source", "KeyMapper"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewMapKeysFactory[any]()
+		args := factory.CreateDefaultArguments()
+		mapKeysArgs, ok := args.(*MapKeysArguments[any])
+		require.True(t, ok)
+		mapKeysArgs.Source = ottl.StandardPMapGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return pcommon.NewMap(), nil
+			},
+		}
+		mapKeysArgs.KeyMapper = ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			return resolveBinding("k").(string), nil
 		})
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
 		require.NoError(t, err)
-		require.NotNil(t, fn)
+		assert.NotNil(t, fn)
 	})
 
-	t.Run("invalid args type", func(t *testing.T) {
-		_, err := createMapKeysFunction[any](fCtx, &struct{}{})
-		assert.EqualError(t, err, "MapKeysFactory args must be of type *MapKeysArguments[K]")
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createMapKeysFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "MapKeysFactory args must be of type *MapKeysArguments[K]")
 	})
 }

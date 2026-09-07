@@ -6,10 +6,29 @@ package drainprocessor // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 )
+
+// MaskingRule declares a regex whose matches in the log body are substituted
+// with the literal token "<name>" before the body is fed to the Drain tree.
+type MaskingRule struct {
+	// Name is the mask token used in place of matches. It appears verbatim
+	// inside angle brackets in derived templates (e.g. "<ip>") and as the
+	// suffix of the corresponding extracted-parameter attribute key
+	// ("<ParameterKeyPrefix>.<Name>"). Must be non-empty, must not contain
+	// "<", ">", or whitespace, and must not equal "*" (reserved for
+	// Drain's own wildcard).
+	Name string `mapstructure:"name"`
+
+	// Pattern is a Go regular expression (RE2 syntax). Each match in the
+	// working copy of the body is replaced with "<Name>". Capture groups
+	// are permitted but ignored — the whole match is replaced.
+	Pattern string `mapstructure:"pattern"`
+}
 
 // Config defines configuration for the drain processor.
 type Config struct {
@@ -48,16 +67,35 @@ type Config struct {
 	// template string to. Default: "log.record.template".
 	TemplateAttribute string `mapstructure:"template_attribute"`
 
-	// ExtractParameters, when true, writes the body tokens at <*> positions of
-	// the matched template as a slice attribute on the log record. The
-	// attribute is only set when at least one parameter is extracted. Default:
-	// false.
-	ExtractParameters bool `mapstructure:"extract_parameters"`
+	// MaskingRules are regex substitutions applied to a working copy of the
+	// body before it is fed to the Drain tree. Rules apply in declaration
+	// order; each rule runs on the output of the previous rule. Matched
+	// substrings become literal mask tokens in derived templates (e.g.
+	// "<ip>"), improving tree stability on high-cardinality values. When
+	// non-empty, each masked position is written to a dynamic attribute
+	// keyed as "<ParameterKeyPrefix>.<name>".
+	MaskingRules []MaskingRule `mapstructure:"masking_rules"`
 
-	// ParamsAttribute is the log record attribute key for the extracted
-	// parameter slice. Only consulted when ExtractParameters is true. Default:
-	// "log.record.template.params".
-	ParamsAttribute string `mapstructure:"params_attribute"`
+	// ParameterKeyPrefix is the attribute-key prefix for extracted named
+	// parameters. Each masked position writes an attribute at
+	// "<ParameterKeyPrefix>.<mask name>" with the raw body value. Matches
+	// the OpenTelemetry semantic-convention pattern used by
+	// http.request.header.<key> and db.query.parameter.<key>. Only
+	// consulted when MaskingRules is non-empty. Default:
+	// "log.record.template.parameter".
+	ParameterKeyPrefix string `mapstructure:"parameter_key_prefix"`
+
+	// EmitWildcards, when true, writes a positional string slice attribute
+	// containing the body tokens at each Drain <*> position in template
+	// order. Independent of MaskingRules: enable this to see raw variable
+	// values without configuring any masks, or in combination with
+	// MaskingRules to capture positions no rule named. Default: false.
+	EmitWildcards bool `mapstructure:"emit_wildcards"`
+
+	// WildcardsAttribute is the log record attribute key for the wildcards
+	// slice. Only consulted when EmitWildcards is true. Default:
+	// "log.record.template.wildcards".
+	WildcardsAttribute string `mapstructure:"wildcards_attribute"`
 
 	// SeedTemplates is a list of pre-known template strings to train on at
 	// startup before any live logs arrive. Improves template stability across
@@ -65,7 +103,8 @@ type Config struct {
 	SeedTemplates []string `mapstructure:"seed_templates"`
 
 	// SeedLogs is a list of raw example log lines to train on at startup.
-	// Drain derives templates from these lines itself.
+	// Drain derives templates from these lines itself. Masking rules apply
+	// to seed logs the same way they apply to live records.
 	SeedLogs []string `mapstructure:"seed_logs"`
 
 	// WarmupMinClusters is the number of distinct clusters that must be observed
@@ -106,6 +145,30 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.SaveInterval > 0 && cfg.Storage == nil {
 		return errors.New("save_interval requires storage to be set")
+	}
+	for i, r := range cfg.MaskingRules {
+		if err := validateMaskingRule(r); err != nil {
+			return fmt.Errorf("masking_rules[%d]: %w", i, err)
+		}
+	}
+	return nil
+}
+
+func validateMaskingRule(r MaskingRule) error {
+	if r.Name == "" {
+		return errors.New("name must not be empty")
+	}
+	if r.Name == "*" {
+		return errors.New(`name must not be "*" (reserved for Drain's wildcard)`)
+	}
+	if strings.ContainsAny(r.Name, "<> \t\n\r") {
+		return fmt.Errorf("name %q must not contain angle brackets or whitespace", r.Name)
+	}
+	if r.Pattern == "" {
+		return errors.New("pattern must not be empty")
+	}
+	if _, err := regexp.Compile(r.Pattern); err != nil {
+		return fmt.Errorf("pattern %q is not a valid regexp: %w", r.Pattern, err)
 	}
 	return nil
 }

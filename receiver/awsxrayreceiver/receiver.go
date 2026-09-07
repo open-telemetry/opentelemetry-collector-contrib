@@ -44,10 +44,10 @@ func newReceiver(config *Config,
 	set receiver.Settings,
 ) (receiver.Traces, error) {
 	set.Logger.Info("Going to listen on endpoint for X-Ray segments",
-		zap.String(udppoller.Transport, config.Endpoint))
+		zap.String(udppoller.Transport, config.AddrConfig.Endpoint))
 	poller, err := udppoller.New(&udppoller.Config{
-		Transport:          string(config.Transport),
-		Endpoint:           config.Endpoint,
+		Transport:          string(config.AddrConfig.Transport),
+		Endpoint:           config.AddrConfig.Endpoint,
 		NumOfPollerToStart: maxPollerCount,
 	}, set)
 	if err != nil {
@@ -55,7 +55,7 @@ func newReceiver(config *Config,
 	}
 
 	set.Logger.Info("Listening on endpoint for X-Ray segments",
-		zap.String(udppoller.Transport, config.Endpoint))
+		zap.String(udppoller.Transport, config.AddrConfig.Endpoint))
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
