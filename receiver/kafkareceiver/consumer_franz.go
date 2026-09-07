@@ -56,7 +56,8 @@ type franzConsumer struct {
 	consumeMessage   consumeMessageFunc
 
 	mu             sync.RWMutex
-	started        chan struct{}
+	startAttempted bool        // set on first Start() call; prevents retry after failure
+	started        chan struct{} // closed when Start() succeeds; signals triggerShutdown
 	consumerClosed chan struct{}
 	closing        chan struct{}
 
@@ -144,10 +145,12 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 	select {
 	case <-c.closing:
 		return errors.New("franz kafka consumer already shut down")
-	case <-c.started:
-		return errors.New("franz kafka consumer already started")
 	default:
 	}
+	if c.startAttempted {
+		return errors.New("franz kafka consumer already started")
+	}
+	c.startAttempted = true
 
 	// Report "Starting" as soon as Start() is called.
 	c.host = host
