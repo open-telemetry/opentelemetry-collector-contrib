@@ -254,5 +254,4 @@ LEFT OUTER JOIN @PCounters AS pc1
 	AND pc1.[counter_name] LIKE '%base'
 WHERE
 	pc.[counter_name] NOT LIKE '% base'
-
 OPTION(RECOMPILE)

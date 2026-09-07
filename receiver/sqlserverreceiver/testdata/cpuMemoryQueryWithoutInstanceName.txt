@@ -22,6 +22,4 @@ FROM (
 	ORDER BY timestamp DESC
 ) y
 CROSS JOIN sys.dm_os_sys_memory m
-WHERE 1=1
-
 OPTION(RECOMPILE)

@@ -333,7 +333,6 @@ LEFT OUTER JOIN @PCounters AS pc1
 	AND pc1.[counter_name] LIKE '%base'
 WHERE
 	pc.[counter_name] NOT LIKE '% base'
-
 OPTION(RECOMPILE)
 `
 
@@ -1040,8 +1039,7 @@ ws.wait_type NOT IN (
 	N'XE_DISPATCHER_WAIT', N'XE_LIVE_TARGET_TVF', N'XE_TIMER_EVENT',
 	N'SOS_WORK_DISPATCHER','RESERVED_MEMORY_ALLOCATION_EXT')
 AND waiting_tasks_count > 0
-AND wait_time_ms > 100
-;
+AND wait_time_ms > 100;
 
 ELSE
 	SELECT
@@ -1092,8 +1090,7 @@ ELSE
 		N'XE_DISPATCHER_WAIT', N'XE_LIVE_TARGET_TVF', N'XE_TIMER_EVENT',
 		N'SOS_WORK_DISPATCHER','RESERVED_MEMORY_ALLOCATION_EXT')
 	AND waiting_tasks_count > 0
-	AND wait_time_ms > 100
-;
+	AND wait_time_ms > 100;
 `
 
 // sqlServerWorkerThreadsQuery queries sys.dm_os_schedulers for worker thread counts.
@@ -1117,7 +1114,6 @@ SELECT
 FROM sys.dm_os_schedulers s
 CROSS JOIN sys.dm_os_sys_info si
 WHERE s.status = 'VISIBLE ONLINE'
-
 GROUP BY si.max_workers_count
 OPTION(RECOMPILE)
 `
@@ -1276,8 +1272,7 @@ BEGIN
 		END
 	END CATCH
 
-	SELECT * FROM #IndexPhysStats
-	;
+	SELECT * FROM #IndexPhysStats;
 	DROP TABLE #IndexPhysStats;
 END
 `
@@ -1312,8 +1307,6 @@ FROM (
 	ORDER BY timestamp DESC
 ) y
 CROSS JOIN sys.dm_os_sys_memory m
-WHERE 1=1
-
 OPTION(RECOMPILE)
 `
 
@@ -1366,8 +1359,6 @@ SELECT
 	,SUM(vfs.num_of_bytes_written) AS [write_bytes]
 FROM sys.dm_io_virtual_file_stats(NULL, NULL) vfs'
 + @JoinClause + N'
-WHERE 1=1
-
 GROUP BY CASE
 		WHEN mf.physical_name LIKE ''[A-Z]:\%'' THEN LEFT(mf.physical_name, 3)
 		WHEN mf.physical_name LIKE ''\\_%\_%\%'' THEN LEFT(mf.physical_name,
