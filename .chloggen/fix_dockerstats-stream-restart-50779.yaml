@@ -19,8 +19,6 @@ subtext: |
   When stream_stats is enabled, a container with a healthcheck was looked up again on each scrape.
   That closed its open stats stream and opened a new one, and logged a warning each time.
   The stream is now left open if one is already running.
-  
-  
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
 # Optional: The change log or logs in which this entry should be included.
