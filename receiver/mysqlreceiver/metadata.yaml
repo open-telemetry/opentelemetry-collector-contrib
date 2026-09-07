@@ -186,6 +186,12 @@ attributes:
   mysql.events_waits_current.timer_wait:
     description: Timing information for the event, indicating elapsed time the event waited in seconds.
     type: double
+  mysql.myisam.key_cache.operation.type:
+    name_override: operation
+    description: The MyISAM key cache operation type.
+    type: string
+    enum: [read, write]
+    requirement_level: recommended
   mysql.query_plan:
     description: The query plan for the statement, if available.
     type: string
@@ -525,6 +531,13 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [disk.io.direction]
+  mysql.innodb.history_list.length:
+    enabled: false
+    description: The length of the InnoDB history list.
+    stability: development
+    unit: "{transactions}"
+    gauge:
+      value_type: int
   mysql.innodb.operation.pending:
     enabled: false
     description: The number of pending InnoDB data file operations.
@@ -536,6 +549,43 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [operations]
+  mysql.innodb.row_lock.wait.count:
+    enabled: false
+    description: The number of InnoDB row lock waits currently pending.
+    stability: development
+    unit: "{wait}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: []
+  mysql.innodb.row_lock.wait.duration.avg:
+    enabled: false
+    description: The average InnoDB row lock wait duration since server startup or last status reset.
+    stability: development
+    unit: s
+    gauge:
+      value_type: double
+  mysql.innodb.row_lock.wait.duration.max:
+    enabled: false
+    description: The maximum InnoDB row lock wait duration since server startup or last status reset.
+    stability: development
+    unit: s
+    gauge:
+      value_type: double
+  mysql.innodb.transaction.active.count:
+    enabled: false
+    description: The number of active InnoDB transactions.
+    stability: development
+    unit: "{transaction}"
+    gauge:
+      value_type: int
+  mysql.innodb.transaction.active.duration.max:
+    enabled: false
+    description: The duration of the longest running active InnoDB transaction.
+    stability: development
+    unit: s
+    gauge:
+      value_type: int
   mysql.joins:
     enabled: false
     description: The number of joins that perform table scans.
@@ -579,6 +629,44 @@ metrics:
       input_type: string
       monotonic: false
       aggregation_temporality: cumulative
+  mysql.myisam.key_cache.block.unused:
+    enabled: false
+    description: The number of unused MyISAM key cache blocks.
+    stability: development
+    unit: "{block}"
+    gauge:
+      value_type: int
+      input_type: string
+  mysql.myisam.key_cache.block.used.max:
+    enabled: false
+    description: The maximum number of MyISAM key cache blocks simultaneously in use since the server started or status counters were reset.
+    stability: development
+    unit: "{block}"
+    gauge:
+      value_type: int
+      input_type: string
+  mysql.myisam.key_cache.disk.operation:
+    enabled: false
+    description: The number of physical MyISAM key cache disk operations.
+    stability: development
+    unit: "{operation}"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [mysql.myisam.key_cache.operation.type]
+  mysql.myisam.key_cache.request:
+    enabled: false
+    description: The number of logical MyISAM key cache requests.
+    stability: development
+    unit: "{request}"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [mysql.myisam.key_cache.operation.type]
   mysql.mysqlx_connections:
     enabled: true
     description: The number of mysqlx connections.

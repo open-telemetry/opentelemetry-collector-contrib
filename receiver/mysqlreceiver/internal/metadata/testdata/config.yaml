@@ -45,9 +45,21 @@ all_set:
     mysql.innodb.data_file.io:
       enabled: true
       attributes: ["disk.io.direction"]
+    mysql.innodb.history_list.length:
+      enabled: true
     mysql.innodb.operation.pending:
       enabled: true
       attributes: ["operation"]
+    mysql.innodb.row_lock.wait.count:
+      enabled: true
+    mysql.innodb.row_lock.wait.duration.avg:
+      enabled: true
+    mysql.innodb.row_lock.wait.duration.max:
+      enabled: true
+    mysql.innodb.transaction.active.count:
+      enabled: true
+    mysql.innodb.transaction.active.duration.max:
+      enabled: true
     mysql.joins:
       enabled: true
       attributes: ["kind"]
@@ -59,6 +71,16 @@ all_set:
       attributes: ["operation"]
     mysql.max_used_connections:
       enabled: true
+    mysql.myisam.key_cache.block.unused:
+      enabled: true
+    mysql.myisam.key_cache.block.used.max:
+      enabled: true
+    mysql.myisam.key_cache.disk.operation:
+      enabled: true
+      attributes: ["operation"]
+    mysql.myisam.key_cache.request:
+      enabled: true
+      attributes: ["operation"]
     mysql.mysqlx_connections:
       enabled: true
       attributes: ["status"]
@@ -215,9 +237,21 @@ reaggregate_set:
     mysql.innodb.data_file.io:
       enabled: true
       attributes: []
+    mysql.innodb.history_list.length:
+      enabled: true
     mysql.innodb.operation.pending:
       enabled: true
       attributes: []
+    mysql.innodb.row_lock.wait.count:
+      enabled: true
+    mysql.innodb.row_lock.wait.duration.avg:
+      enabled: true
+    mysql.innodb.row_lock.wait.duration.max:
+      enabled: true
+    mysql.innodb.transaction.active.count:
+      enabled: true
+    mysql.innodb.transaction.active.duration.max:
+      enabled: true
     mysql.joins:
       enabled: true
       attributes: []
@@ -229,6 +263,16 @@ reaggregate_set:
       attributes: []
     mysql.max_used_connections:
       enabled: true
+    mysql.myisam.key_cache.block.unused:
+      enabled: true
+    mysql.myisam.key_cache.block.used.max:
+      enabled: true
+    mysql.myisam.key_cache.disk.operation:
+      enabled: true
+      attributes: []
+    mysql.myisam.key_cache.request:
+      enabled: true
+      attributes: []
     mysql.mysqlx_connections:
       enabled: true
       attributes: []
@@ -385,9 +429,21 @@ none_set:
     mysql.innodb.data_file.io:
       enabled: false
       attributes: ["disk.io.direction"]
+    mysql.innodb.history_list.length:
+      enabled: false
     mysql.innodb.operation.pending:
       enabled: false
       attributes: ["operation"]
+    mysql.innodb.row_lock.wait.count:
+      enabled: false
+    mysql.innodb.row_lock.wait.duration.avg:
+      enabled: false
+    mysql.innodb.row_lock.wait.duration.max:
+      enabled: false
+    mysql.innodb.transaction.active.count:
+      enabled: false
+    mysql.innodb.transaction.active.duration.max:
+      enabled: false
     mysql.joins:
       enabled: false
       attributes: ["kind"]
@@ -399,6 +455,16 @@ none_set:
       attributes: ["operation"]
     mysql.max_used_connections:
       enabled: false
+    mysql.myisam.key_cache.block.unused:
+      enabled: false
+    mysql.myisam.key_cache.block.used.max:
+      enabled: false
+    mysql.myisam.key_cache.disk.operation:
+      enabled: false
+      attributes: ["operation"]
+    mysql.myisam.key_cache.request:
+      enabled: false
+      attributes: ["operation"]
     mysql.mysqlx_connections:
       enabled: false
       attributes: ["status"]

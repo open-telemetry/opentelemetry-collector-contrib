@@ -396,8 +396,8 @@ func TestClientConfig(t *testing.T) {
 
 	useSecureClientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	useSecureClientConfig.MaxIdleConns = 0
-	useSecureClientConfig.IdleConnTimeout = 0
+	useSecureClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	useSecureClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	useSecureClientConfig.ForceAttemptHTTP2 = false
 	useSecureClientConfig.Endpoint = endpoint
 	useSecureClientConfig.TLS = configtls.ClientConfig{
@@ -406,8 +406,8 @@ func TestClientConfig(t *testing.T) {
 
 	headersClientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	headersClientConfig.MaxIdleConns = 0
-	headersClientConfig.IdleConnTimeout = 0
+	headersClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	headersClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	headersClientConfig.ForceAttemptHTTP2 = false
 	headersClientConfig.Endpoint = endpoint
 	headersClientConfig.Headers = configopaque.MapList{
@@ -417,8 +417,8 @@ func TestClientConfig(t *testing.T) {
 
 	caCertClientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	caCertClientConfig.MaxIdleConns = 0
-	caCertClientConfig.IdleConnTimeout = 0
+	caCertClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	caCertClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	caCertClientConfig.ForceAttemptHTTP2 = false
 	caCertClientConfig.Endpoint = endpoint
 	caCertClientConfig.TLS = configtls.ClientConfig{
@@ -429,8 +429,8 @@ func TestClientConfig(t *testing.T) {
 
 	certPemFileErrorClientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	certPemFileErrorClientConfig.MaxIdleConns = 0
-	certPemFileErrorClientConfig.IdleConnTimeout = 0
+	certPemFileErrorClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	certPemFileErrorClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	certPemFileErrorClientConfig.ForceAttemptHTTP2 = false
 	certPemFileErrorClientConfig.Endpoint = endpoint
 	certPemFileErrorClientConfig.TLS = configtls.ClientConfig{

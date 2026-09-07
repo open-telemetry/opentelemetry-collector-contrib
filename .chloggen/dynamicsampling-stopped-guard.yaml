@@ -1,9 +1,0 @@
-change_type: bug_fix
-
-component: processor/dynamic_sampling
-
-note: Re-read the stopped flag before forwarding evicted and late traces so a concurrent shutdown is honoured
-
-issues: [49311]
-
-change_logs: [user]

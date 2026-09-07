@@ -160,6 +160,7 @@ pkg/pdatatest pkg/pdatatest
 pkg/pdatautil pkg/pdatautil
 pkg/resourcetotelemetry pkg/resourcetotelemetry
 pkg/sampling pkg/sampling
+pkg/semconvtest pkg/semconvtest
 pkg/stanza pkg/stanza
 pkg/stanza/fileconsumer pkg/stanza/fileconsumer
 pkg/stanza/operator/input/journald pkg/stanza/operator/input/journald
@@ -180,6 +181,7 @@ pkg/translator/zipkin pkg/translator/zipkin
 pkg/winperfcounters pkg/winperfcounters
 pkg/xk8stest pkg/xk8stest
 pkg/xstreamencoding pkg/xstreamencoding
+processor/adaptivetailsamplingprocessor processor/adaptivetailsampling
 processor/attributesprocessor processor/attributes
 processor/awsecsattributesprocessor processor/awsecsattributes
 processor/cardinalityguardianprocessor processor/cardinalityguardian
@@ -188,7 +190,6 @@ processor/cumulativetodeltaprocessor processor/cumulativetodelta
 processor/deltatocumulativeprocessor processor/deltatocumulative
 processor/deltatorateprocessor processor/deltatorate
 processor/drainprocessor processor/drain
-processor/dynamicsamplingprocessor processor/dynamicsampling
 processor/filterprocessor processor/filter
 processor/genainormalizerprocessor processor/genainormalizer
 processor/geoipprocessor processor/geoip
@@ -222,7 +223,9 @@ processor/resourcedetectionprocessor/internal/tencent/cvm processor/resourcedete
 processor/resourcedetectionprocessor/internal/upcloud processor/resourcedetection/internal/upcloud
 processor/resourcedetectionprocessor/internal/vultr processor/resourcedetection/internal/vultr
 processor/resourceprocessor processor/resource
+processor/rollingspanlatencyprocessor processor/rollingspanlatency
 processor/schemaprocessor processor/schema
+processor/signingprocessor processor/signing
 processor/spanprocessor processor/span
 processor/spanpruningprocessor processor/spanpruning
 processor/sumologicprocessor processor/sumologic

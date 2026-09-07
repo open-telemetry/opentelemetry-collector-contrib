@@ -1,6 +1,6 @@
 name: "First time contributor"
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] - no PR code is checked out or executed
     types:
       - opened
       - ready_for_review
@@ -11,7 +11,7 @@ jobs:
   welcome_first_contributor:
     permissions:
       pull-requests: write # required by the workflow to post the welcome comment
-    uses: open-telemetry/shared-workflows/.github/workflows/first-time-pr.yml@8079110d7e793bd38b1a5219ef8f8280dab9139e # v0.7.0
+    uses: open-telemetry/shared-workflows/.github/workflows/first-time-pr.yml@dde3047a8f219c296772c17936b9d02bb7447af5 # v0.12.0
     with:
       label: "first-time contributor"
       custom_message: |
@@ -20,7 +20,7 @@ jobs:
         - Raise technical or Collector-specific questions in [#otel-collector-dev](https://cloud-native.slack.com/archives/C07CCCMRXBK) or a [Collector SIG meeting](https://github.com/open-telemetry/community?tab=readme-ov-file#sig-collector).
 
   draft_if_multiple_prs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       pull-requests: write
       contents: write
