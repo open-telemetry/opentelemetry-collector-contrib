@@ -226,23 +226,23 @@ func TestSuccessfulScrape(t *testing.T) {
 				assert.NoError(t, err)
 				var expectedFile string
 				switch scraper.sqlQuery {
-				case getSQLServerAvailabilityGroupQuery(scraper.config.InstanceName):
+				case getSQLServerAvailabilityGroupQuery():
 					expectedFile = filepath.Join("testdata", "expectedAvailabilityGroupMetrics.yaml")
-				case getSQLServerDatabaseIOQuery(scraper.config.InstanceName):
+				case getSQLServerDatabaseIOQuery():
 					expectedFile = filepath.Join("testdata", "expectedDatabaseIO.yaml")
-				case getSQLServerPerformanceCounterQuery(scraper.config.InstanceName):
+				case getSQLServerPerformanceCounterQuery():
 					expectedFile = filepath.Join("testdata", "expectedPerfCounters.yaml")
-				case getSQLServerPropertiesQuery(scraper.config.InstanceName):
+				case getSQLServerPropertiesQuery():
 					expectedFile = filepath.Join("testdata", "expectedProperties.yaml")
-				case getSQLServerWaitStatsQuery(scraper.config.InstanceName):
+				case getSQLServerWaitStatsQuery():
 					expectedFile = filepath.Join("testdata", "expectedWaitStats.yaml")
-				case getSQLServerIndexPhysicalStatsQuery(scraper.config.InstanceName):
+				case getSQLServerIndexPhysicalStatsQuery():
 					expectedFile = filepath.Join("testdata", "expectedIndexPhysicalMetrics.yaml")
-				case getSQLServerWorkerThreadsQuery(scraper.config.InstanceName):
+				case getSQLServerWorkerThreadsQuery():
 					expectedFile = filepath.Join("testdata", "expectedWorkerThreads.yaml")
-				case getSQLServerCPUMemoryQuery(scraper.config.InstanceName):
+				case getSQLServerCPUMemoryQuery():
 					expectedFile = filepath.Join("testdata", "expectedCPUMemory.yaml")
-				case getSQLServerDiskIOQuery(scraper.config.InstanceName):
+				case getSQLServerDiskIOQuery():
 					expectedFile = filepath.Join("testdata", "expectedDiskIO.yaml")
 				}
 
@@ -479,27 +479,27 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 	var err error
 
 	switch mc.SQL {
-	case getSQLServerAvailabilityGroupQuery(mc.instanceName):
+	case getSQLServerAvailabilityGroupQuery():
 		queryResults, err = readFile("availabilityGroupQueryData.txt")
-	case getSQLServerDatabaseIOQuery(mc.instanceName):
+	case getSQLServerDatabaseIOQuery():
 		queryResults, err = readFile("database_io_scraped_data.txt")
-	case getSQLServerPerformanceCounterQuery(mc.instanceName):
+	case getSQLServerPerformanceCounterQuery():
 		queryResults, err = readFile("perfCounterQueryData.txt")
-	case getSQLServerPropertiesQuery(mc.instanceName):
+	case getSQLServerPropertiesQuery():
 		fixture := "propertyQueryData.txt"
 		if mc.propertiesFixtureFile != "" {
 			fixture = mc.propertiesFixtureFile
 		}
 		queryResults, err = readFile(fixture)
-	case getSQLServerWaitStatsQuery(mc.instanceName):
+	case getSQLServerWaitStatsQuery():
 		queryResults, err = readFile("waitStatsQueryData.txt")
-	case getSQLServerWorkerThreadsQuery(mc.instanceName):
+	case getSQLServerWorkerThreadsQuery():
 		queryResults, err = readFile("workerThreadsQueryData.txt")
-	case getSQLServerIndexPhysicalStatsQuery(mc.instanceName):
+	case getSQLServerIndexPhysicalStatsQuery():
 		queryResults, err = readFile("indexPhysicalQueryData.txt")
-	case getSQLServerCPUMemoryQuery(mc.instanceName):
+	case getSQLServerCPUMemoryQuery():
 		queryResults, err = readFile("cpuMemoryQueryData.txt")
-	case getSQLServerDiskIOQuery(mc.instanceName):
+	case getSQLServerDiskIOQuery():
 		queryResults, err = readFile("diskIOQueryData.txt")
 	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
@@ -1306,7 +1306,7 @@ func TestRecordWorkerThreadMetrics(t *testing.T) {
 
 	var workerScraper *sqlServerScraperHelper
 	for _, s := range scrapers {
-		if s.sqlQuery == getSQLServerWorkerThreadsQuery(cfg.InstanceName) {
+		if s.sqlQuery == getSQLServerWorkerThreadsQuery() {
 			workerScraper = s
 			break
 		}
@@ -1429,7 +1429,7 @@ func TestRecordCPUMemoryMetrics(t *testing.T) {
 
 	var cpuMemScraper *sqlServerScraperHelper
 	for _, s := range scrapers {
-		if s.sqlQuery == getSQLServerCPUMemoryQuery(cfg.InstanceName) {
+		if s.sqlQuery == getSQLServerCPUMemoryQuery() {
 			cpuMemScraper = s
 			break
 		}
@@ -1518,7 +1518,7 @@ func TestRecordDiskIOMetrics(t *testing.T) {
 
 	var diskScraper *sqlServerScraperHelper
 	for _, s := range scrapers {
-		if s.sqlQuery == getSQLServerDiskIOQuery(cfg.InstanceName) {
+		if s.sqlQuery == getSQLServerDiskIOQuery() {
 			diskScraper = s
 			break
 		}

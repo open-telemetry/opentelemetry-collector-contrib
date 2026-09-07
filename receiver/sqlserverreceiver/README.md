@@ -77,8 +77,11 @@ sqlserver:
 The following settings are optional:
 - `collection_interval` (default = `10s`): The interval at which metrics should be emitted by this receiver.
 - `instance_name` (optional): The instance name identifies the specific SQL Server instance being monitored.
-  If unspecified, metrics will be scraped from all instances. If configured, the `computer_name` must also be set
-  when running on Windows.
+  It is only used when collecting Windows performance counters, where it selects the
+  `MSSQL$<instance_name>` counter objects and sets the `sqlserver.instance.name` and
+  `sqlserver.computer.name` resource attributes; `computer_name` must also be set in that case.
+  It has no effect when the receiver connects directly to SQL Server, because such a connection is
+  already scoped to a single instance and only exposes data from that instance.
 
 Direct connection options (optional, but all must be specified to enable):
 - `username`: The username used to connect to the SQL Server instance.
