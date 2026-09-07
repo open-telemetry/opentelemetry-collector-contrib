@@ -2732,6 +2732,124 @@ func TestSupervisor_setAgentDescription(t *testing.T) {
 	assert.Equal(t, expectedAgentDescription, updatedAgentDescription)
 }
 
+func TestSupervisor_updateOwnTelemetryDataTLS(t *testing.T) {
+	settings := &protobufs.TelemetryConnectionSettings{
+		DestinationEndpoint: "https://example.com:4318",
+		Tls: &protobufs.TLSConnectionSettings{
+			InsecureSkipVerify:       true,
+			IncludeSystemCaCertsPool: true,
+			MinVersion:               "1.2",
+			MaxVersion:               "1.3",
+			CipherSuites: []string{
+				"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+			},
+		},
+	}
+
+	data := (&Supervisor{}).updateOwnTelemetryData(
+		map[string]any{},
+		"Metrics",
+		settings,
+	)
+
+	assert.Equal(t, settings.Tls, data["MetricsTLS"])
+}
+
+func TestSupervisor_setupOwnTelemetryTLS(t *testing.T) {
+	testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+
+	s := Supervisor{
+		telemetrySettings:              newNopTelemetrySettings(),
+		agentConfigOwnTelemetrySection: &atomic.Value{},
+		cfgState:                       &atomic.Value{},
+		persistentState:                &persistentState{InstanceID: testUUID},
+		pidProvider:                    staticPIDProvider(1234),
+		config: config.Supervisor{
+			Storage: config.Storage{
+				Directory: t.TempDir(),
+			},
+		},
+	}
+
+	require.NoError(t, s.createTemplates())
+
+	agentDesc := &atomic.Value{}
+	agentDesc.Store(&protobufs.AgentDescription{
+		IdentifyingAttributes: []*protobufs.KeyValue{
+			{
+				Key: "service.name",
+				Value: &protobufs.AnyValue{
+					Value: &protobufs.AnyValue_StringValue{
+						StringValue: "otelcol",
+					},
+				},
+			},
+		},
+	})
+	s.agentDescription = agentDesc
+
+	cert := &protobufs.TLSCertificate{
+		Cert:       []byte("-----BEGIN CERTIFICATE-----\ntest-cert\n-----END CERTIFICATE-----"),
+		PrivateKey: []byte("-----BEGIN PRIVATE KEY-----\ntest-key\n-----END PRIVATE KEY-----"),
+	}
+
+	tlsSettings := &protobufs.TLSConnectionSettings{
+		CaPemContents:            "-----BEGIN CERTIFICATE-----\ntest-ca\n-----END CERTIFICATE-----",
+		InsecureSkipVerify:       true,
+		IncludeSystemCaCertsPool: true,
+		MinVersion:               "1.2",
+		MaxVersion:               "1.3",
+		CipherSuites: []string{
+			"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+		},
+	}
+
+	configChanged := s.setupOwnTelemetry(t.Context(), &protobufs.ConnectionSettingsOffers{
+		OwnMetrics: &protobufs.TelemetryConnectionSettings{
+			DestinationEndpoint: "https://127.0.0.1:4318",
+			Tls:                 tlsSettings,
+			Certificate:         cert,
+		},
+	})
+
+	assert.True(t, configChanged)
+
+	got := s.agentConfigOwnTelemetrySection.Load().(string)
+	got = strings.ReplaceAll(got, "\r\n", "\n")
+
+	expected := `
+service:
+  telemetry:
+    metrics:
+      readers:
+        - periodic:
+            exporter:
+              otlp:
+                protocol: http/protobuf
+                endpoint: https://127.0.0.1:4318
+                tls:
+                  ca_pem: |
+                    -----BEGIN CERTIFICATE-----
+                    test-ca
+                    -----END CERTIFICATE-----
+                  cert_pem: |
+                    -----BEGIN CERTIFICATE-----
+                    test-cert
+                    -----END CERTIFICATE-----
+                  key_pem: |
+                    -----BEGIN PRIVATE KEY-----
+                    test-key
+                    -----END PRIVATE KEY-----
+                  insecure_skip_verify: true
+                  include_system_ca_certs_pool: true
+                  min_version: "1.2"
+                  max_version: "1.3"
+                  cipher_suites:
+                    - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+`
+	assert.Equal(t, expected, got)
+}
+
 type staticPIDProvider int
 
 func (s staticPIDProvider) PID() int {
