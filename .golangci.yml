@@ -117,6 +117,13 @@ linters:
         path: internal/datadog/hostmetadata/internal/gcp/
         text: SA1019
 
+      # Same deprecated github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp
+      # package used here. Suppressed for now; revisit with a proper migration.
+      - linters:
+          - staticcheck
+        path: processor/resourcedetectionprocessor/internal/gcp/
+        text: SA1019
+
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45002
       - linters:
           - revive
