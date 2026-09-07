@@ -106,6 +106,10 @@ func convertFieldValue(otelKey string, v any) any {
 //   - Maps well-known fields to their OTel semantic convention attribute/resource names
 //   - Puts remaining fields in entry.Attributes with "journald." prefix on their field names
 func mapJournalEntryAttributes(e *entry.Entry, body map[string]any) {
+	// Clear the raw journal record set by NewEntry; it is only used there so that
+	// EXPR-based attributes/resource config can reference journal fields via `body`.
+	e.Body = nil
+
 	for k, v := range body {
 		switch k {
 		case "MESSAGE":
