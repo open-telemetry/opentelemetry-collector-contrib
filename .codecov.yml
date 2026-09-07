@@ -569,6 +569,10 @@ component_management:
     name: processor_resource
     paths:
     - processor/resourceprocessor/**
+  - component_id: processor_rollingspanlatency
+    name: processor_rollingspanlatency
+    paths:
+    - processor/rollingspanlatencyprocessor/**
   - component_id: processor_schema
     name: processor_schema
     paths:
