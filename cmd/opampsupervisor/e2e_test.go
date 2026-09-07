@@ -1460,6 +1460,14 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 
 			waitForSupervisorConnection(server.supervisorConnected, true)
 
+			// Wait for the agent to become healthy before sending remote config,
+			// so the config change does not trigger an unnecessary restart cycle
+			// on slow platforms (e.g. Windows ARM).
+			require.Eventually(t, func() bool {
+				h, ok := healthReport.Load().(*protobufs.ComponentHealth)
+				return ok && h != nil && h.Healthy
+			}, 15*time.Second, 200*time.Millisecond, "Agent did not become healthy before sending remote config")
+
 			cfg, hash := createBadCollectorConf(t)
 
 			server.sendToSupervisor(&protobufs.ServerToAgent{
@@ -1482,7 +1490,7 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 				}
 
 				return false
-			}, 5*time.Second, 500*time.Millisecond, "Collector was not started with remote config")
+			}, 15*time.Second, 500*time.Millisecond, "Collector was not started with remote config")
 
 			unhealthyTimeout := supervisorCfg.Agent.BootstrapTimeout + 2*time.Second
 			require.Eventually(t, func() bool {
@@ -3214,6 +3222,14 @@ func TestSupervisorOpAmpServerPort(t *testing.T) {
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
+	// Wait for the agent to send an initial effective config before pushing remote config,
+	// so the config change does not trigger an unnecessary restart cycle
+	// on slow platforms (e.g. Windows ARM).
+	require.Eventually(t, func() bool {
+		cfg, ok := agentConfig.Load().(string)
+		return ok && cfg != ""
+	}, 15*time.Second, 200*time.Millisecond, "Agent did not send initial effective config")
+
 	cfg, hash, inputFile, outputFile := createSimplePipelineCollectorConf(t)
 
 	server.sendToSupervisor(&protobufs.ServerToAgent{
@@ -3237,7 +3253,7 @@ func TestSupervisorOpAmpServerPort(t *testing.T) {
 		}
 
 		return false
-	}, 5*time.Second, 500*time.Millisecond, "Collector was not started with remote config")
+	}, 15*time.Second, 500*time.Millisecond, "Collector was not started with remote config")
 
 	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
 	require.NotZero(t, n, "Could not write to input file")
