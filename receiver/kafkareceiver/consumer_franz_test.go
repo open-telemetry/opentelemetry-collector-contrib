@@ -1400,7 +1400,7 @@ func TestStartFailureShutdownDoesNotBlock(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to load TLS config")
 
 	// Shutdown should not block, even though Start failed.
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 	defer cancel()
 	err = consumer.Shutdown(ctx)
 	require.NoError(t, err)
