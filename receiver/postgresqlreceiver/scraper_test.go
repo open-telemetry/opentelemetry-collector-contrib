@@ -1411,6 +1411,46 @@ func TestScrapeTopQueries(t *testing.T) {
 	assert.Equal(t, float64(12), planTime)
 }
 
+// A database dropped while its stats linger in pg_stat_statements surfaces a row
+// with a NULL datname and therefore no db.namespace attribute. collectTopQuery
+// must skip such a row rather than panic on the string type assertion. See #45713.
+func TestScrapeTopQueriesSkipsNilDatabase(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{}
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	defer db.Close()
+
+	factory := mockSimpleClientFactory{db: db}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
+
+	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
+	require.NoError(t, scraperErr)
+
+	cols := []string{
+		"calls", "datname", "shared_blks_dirtied", "shared_blks_hit",
+		"shared_blks_read", "shared_blks_written", "temp_blks_read",
+		"temp_blks_written", "query", "queryid", "rolname", "rows",
+		"total_exec_time", "total_plan_time",
+	}
+	// queryid is present so the earlier queryid guard passes; datname is NULL, so
+	// the row scanner omits db.namespace and the nil guard under test must fire.
+	rows := sqlmock.NewRows(cols).AddRow(
+		"123", nil, "1", "1", "1", "1", "1", "1",
+		"select 1", "999", "master", "1", "1", "1",
+	)
+	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(rows)
+
+	actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
+	require.NoError(t, err)
+	assert.Equal(t, 0, actualLogs.LogRecordCount(), "row with nil db.namespace must be skipped, not emitted")
+}
+
 func TestIsExplainableQuery(t *testing.T) {
 	testCases := []struct {
 		name     string
