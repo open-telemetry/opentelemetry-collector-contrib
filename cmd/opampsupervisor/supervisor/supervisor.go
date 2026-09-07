@@ -232,6 +232,11 @@ type Supervisor struct {
 	passthroughLogMu     sync.Mutex
 }
 
+func indentLines(s, prefix string) string {
+	s = strings.TrimRight(s, "\n")
+	return prefix + strings.ReplaceAll(s, "\n", "\n"+prefix)
+}
+
 func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
 	s := &Supervisor{
 		pidProvider:                    defaultPIDProvider{},
@@ -494,7 +499,11 @@ func (s *Supervisor) createTemplates() error {
 	if s.opampextensionTemplate, err = template.New("opampextension").Parse(opampextensionTpl); err != nil {
 		return err
 	}
-	if s.ownTelemetryTemplate, err = template.New("owntelemetry").Parse(ownTelemetryTpl); err != nil {
+	if s.ownTelemetryTemplate, err = template.New("owntelemetry").
+		Funcs(template.FuncMap{
+			"indentLines": indentLines,
+		}).
+		Parse(ownTelemetryTpl); err != nil {
 		return err
 	}
 
@@ -1749,6 +1758,15 @@ func (*Supervisor) updateOwnTelemetryData(data map[string]any, signal string, se
 	if settings.Headers != nil {
 		data[fmt.Sprintf("%sHeaders", signal)] = settings.Headers.Headers
 	}
+
+	if settings.Tls != nil {
+		data[fmt.Sprintf("%sTLS", signal)] = settings.Tls
+	}
+
+	if settings.Certificate != nil {
+		data[fmt.Sprintf("%sCertificate", signal)] = settings.Certificate
+	}
+
 	return data
 }
 
