@@ -144,8 +144,8 @@ func normalize(m pmetric.Metrics, opts writeOptions) *document {
 				mAgg := sAgg.metrics[n]
 				metricAssert := mAgg.assertion
 				dpList := make([]datapointAssertion, 0, len(mAgg.datapoints))
-				for _, dp := range mAgg.datapoints {
-					dpList = append(dpList, dp)
+				for k := range mAgg.datapoints {
+					dpList = append(dpList, mAgg.datapoints[k])
 				}
 				sort.Slice(dpList, func(i, j int) bool {
 					return canonKey(dpList[i].Attributes) < canonKey(dpList[j].Attributes)

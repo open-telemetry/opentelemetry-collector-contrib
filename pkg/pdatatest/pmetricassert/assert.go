@@ -190,9 +190,10 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 	var missing, unexpected []string
 	var valErrs []error
 
-	for _, edp := range expected {
-		idx := findMatchingAttributes(edp.Attributes, edp.AttributeMode, matched, len(actual), func(i int) map[string]any {
-			return actual[i].Attributes
+	for i := range expected {
+		edp := &expected[i]
+		idx := findMatchingAttributes(edp.Attributes, edp.AttributeMode, matched, len(actual), func(k int) map[string]any {
+			return actual[k].Attributes
 		})
 		if idx < 0 {
 			missing = append(missing, canonKey(edp.Attributes))
@@ -200,13 +201,13 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 		}
 		matched[idx] = true
 
-		if err := compareDatapointValues(edp, actual[idx]); err != nil {
+		if err := compareDatapointValues(*edp, actual[idx]); err != nil {
 			valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), err))
 		}
 	}
-	for i, adp := range actual {
+	for i := range actual {
 		if !matched[i] {
-			unexpected = append(unexpected, canonKey(adp.Attributes))
+			unexpected = append(unexpected, canonKey(actual[i].Attributes))
 		}
 	}
 	if len(missing) == 0 && len(unexpected) == 0 && len(valErrs) == 0 {
