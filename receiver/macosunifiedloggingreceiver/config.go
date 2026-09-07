@@ -98,7 +98,6 @@ var validOperators = []string{
 	"BEGINSWITH",
 	"CONTAINS",
 	"ENDSWITH",
-	"IN",
 	"LIKE",
 	"MATCHES",
 }
