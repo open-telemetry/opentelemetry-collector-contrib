@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.47.0
-	github.com/SAP/go-hdb v1.18.0
+	github.com/SAP/go-hdb v1.18.2
 	github.com/docker/go-connections v0.7.0 // indirect
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/lib/pq v1.12.3
@@ -174,7 +174,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.46.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/crypto v0.55.0 // indirect
+	golang.org/x/crypto v0.56.0 // indirect
 	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa // indirect
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/net v0.58.0 // indirect
