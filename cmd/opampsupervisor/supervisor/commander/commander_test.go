@@ -75,6 +75,37 @@ func TestWaitForOutputDrainCapturesFinalPassthroughLine(t *testing.T) {
 	require.Equal(t, []string{"final error line"}, lines)
 }
 
+func TestOpenAgentLogFileAppendsAfterExternalTruncate(t *testing.T) {
+	// Regression test for the pre-fix behavior: opening agent.log with a plain
+	// os.Create/os.OpenFile keeps writes anchored at the offset the file had
+	// when it was opened. If an external tool truncates the file for
+	// copytruncate-style rotation (e.g. the default policy on BOSH stemcells),
+	// the next write from the still-open handle used to land at that stale
+	// offset, padding the gap with NUL bytes and making the file's size snap
+	// right back up instead of staying rotated. openAgentLogFile must instead
+	// force every write to the file's current end-of-file, so that after an
+	// external truncate the next write starts the file clean.
+	path := filepath.Join(t.TempDir(), "agent.log")
+
+	f, err := openAgentLogFile(path)
+	require.NoError(t, err)
+	defer f.Close()
+
+	_, err = f.WriteString("before rotation\n")
+	require.NoError(t, err)
+
+	// Simulate an external copytruncate-style rotation: some other process
+	// truncates the file in place while our handle stays open.
+	require.NoError(t, os.Truncate(path, 0))
+
+	_, err = f.WriteString("after rotation\n")
+	require.NoError(t, err)
+
+	got, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.Equal(t, "after rotation\n", string(got), "write after external truncate should land at the new end-of-file, not the stale pre-truncate offset")
+}
+
 func TestStopKillsUnresponsiveProcess(t *testing.T) {
 	cmdr, err := NewCommander(
 		zap.NewNop(),

@@ -51,12 +51,14 @@ func sysProcAttrs() *syscall.SysProcAttr {
 // rotation actually reclaims space.
 func openAgentLogFile(path string) (*os.File, error) {
 	// A FILE_APPEND_DATA-only handle cannot truncate on open, so truncate first
-	// through a throwaway read/write handle to match O_TRUNC on Unix.
+	// through a throwaway write-only handle to match O_TRUNC on Unix.
 	trunc, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
 	if err != nil {
 		return nil, err
 	}
-	trunc.Close()
+	if err := trunc.Close(); err != nil {
+		return nil, fmt.Errorf("closing truncation handle for %s: %w", path, err)
+	}
 
 	pathp, err := windows.UTF16PtrFromString(path)
 	if err != nil {
