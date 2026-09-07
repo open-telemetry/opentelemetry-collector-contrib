@@ -31,7 +31,7 @@ resourceLogs:
               - key: postgresql.pid
                 value:
                   intValue: "1450"
-              - key: postgresql.backend_start
+              - key: postgresql.backend.connection.start
                 value:
                   stringValue: ""
               - key: postgresql.application_name

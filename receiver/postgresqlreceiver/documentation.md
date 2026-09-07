@@ -675,7 +675,7 @@ query sample
 | user.name | Name of the user logged into this backend. | Any Str | - |
 | postgresql.state | Current overall state of this backend | Any Str | - |
 | postgresql.pid | Process ID of this backend. | Any Int | - |
-| postgresql.backend_start | UTC timestamp (RFC3339) when this backend was started. | Any Str | - |
+| postgresql.backend.connection.start | UTC timestamp (RFC3339) when this backend was started. | Any Str | - |
 | postgresql.application_name | Name of the application that is connected to this backend. | Any Str | - |
 | network.peer.address | IP address of the client connected to this backend. | Any Str | - |
 | network.peer.port | TCP port number that the client is using for communication with this backend. | Any Int | - |

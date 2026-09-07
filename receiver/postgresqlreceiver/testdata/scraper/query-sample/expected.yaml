@@ -25,7 +25,7 @@ resourceLogs:
               - key: postgresql.pid
                 value:
                   intValue: "1450"
-              - key: postgresql.backend_start
+              - key: postgresql.backend.connection.start
                 value:
                   stringValue: "2025-02-10T09:15:00Z"
               - key: postgresql.application_name
