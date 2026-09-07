@@ -266,7 +266,7 @@ func TestPersistContainerDoesNotRestartStream(t *testing.T) {
 		zap.New(observed),
 	)
 	require.NoError(t, err)
-	defer cli.Close()
+	defer cli.Close() // ensure cleanup even if test fails
 
 	container := &ctypes.InspectResponse{
 		ID:     containerID,
@@ -287,6 +287,8 @@ func TestPersistContainerDoesNotRestartStream(t *testing.T) {
 	}
 
 	assert.Equal(t, int32(1), streamOpens.Load(), "stats stream should be opened exactly once")
+	require.NoError(t, cli.Close())
+	// Ensure no warnings about stream errors were logged during the test.
 	for _, l := range logs.All() {
 		assert.NotContains(t, l.Message, "Error reading stats stream")
 	}
