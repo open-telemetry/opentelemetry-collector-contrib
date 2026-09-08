@@ -467,13 +467,32 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name: "hostname fails",
 			fields: fields{metadataProvider: &mockMetadata{
-				retIDDoc:       imds.InstanceIdentityDocument{},
+				retIDDoc: imds.InstanceIdentityDocument{
+					Region:           "us-west-2",
+					AccountID:        "account1234",
+					AvailabilityZone: "us-west-2a",
+					InstanceID:       "i-abcd1234",
+					ImageID:          "abcdef",
+					InstanceType:     "c4.xlarge",
+				},
 				retHostname:    "",
 				retErrHostname: errors.New("hostname failed"),
 				isAvailable:    true,
 			}},
-			args:    args{ctx: t.Context()},
-			want:    pcommon.NewResource(),
+			args: args{ctx: t.Context()},
+			want: func() pcommon.Resource {
+				res := pcommon.NewResource()
+				attr := res.Attributes()
+				attr.PutStr("cloud.account.id", "account1234")
+				attr.PutStr("cloud.provider", "aws")
+				attr.PutStr("cloud.platform", "aws_ec2")
+				attr.PutStr("cloud.region", "us-west-2")
+				attr.PutStr("cloud.availability_zone", "us-west-2a")
+				attr.PutStr("host.id", "i-abcd1234")
+				attr.PutStr("host.image.id", "abcdef")
+				attr.PutStr("host.type", "c4.xlarge")
+				return res
+			}(),
 			wantErr: false,
 		},
 		{

@@ -107,15 +107,6 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", nil
 	}
 
-	hostname, err := d.metadataProvider.Hostname(ctx)
-	if err != nil {
-		d.logger.Debug("EC2 hostname unavailable", zap.Error(err))
-		if d.failOnMissingMetadata {
-			return pcommon.NewResource(), "", fmt.Errorf("failed getting hostname: %w", err)
-		}
-		return pcommon.NewResource(), "", nil
-	}
-
 	d.rb.SetCloudProvider(conventions.CloudProviderAWS.Value.AsString())
 	d.rb.SetCloudPlatform(conventions.CloudPlatformAWSEC2.Value.AsString())
 	d.rb.SetCloudRegion(meta.Region)
@@ -124,6 +115,16 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	d.rb.SetHostID(meta.InstanceID)
 	d.rb.SetHostImageID(meta.ImageID)
 	d.rb.SetHostType(meta.InstanceType)
+
+	hostname, err := d.metadataProvider.Hostname(ctx)
+	if err != nil {
+		d.logger.Debug("EC2 hostname unavailable", zap.Error(err))
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting hostname: %w", err)
+		}
+		return d.rb.Emit(), conventions.SchemaURL, nil
+	}
+
 	d.rb.SetHostName(hostname)
 	res := d.rb.Emit()
 
