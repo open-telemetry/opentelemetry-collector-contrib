@@ -1,0 +1,15 @@
+display_name: SNMP Trap Receiver
+type: snmptrap
+scope_name: otelcol/snmptrapreceiver
+
+description: |
+  Listens for SNMP traps and informs over UDP and converts each PDU into an
+  OpenTelemetry log. MIB name enrichment is best-effort via gosmi; unresolved
+  OIDs stay numeric so receive works without a dictionary.
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+  codeowners:
+    active: [Mesverrum]
