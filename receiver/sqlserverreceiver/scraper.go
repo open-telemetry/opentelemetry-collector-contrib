@@ -44,7 +44,6 @@ type sqlServerScraperHelper struct {
 	id                     component.ID
 	config                 *Config
 	sqlQuery               string
-	instanceName           string
 	clientProviderFunc     sqlquery.ClientProviderFunc
 	dbProviderFunc         sqlquery.DbProviderFunc
 	logger                 *zap.Logger
