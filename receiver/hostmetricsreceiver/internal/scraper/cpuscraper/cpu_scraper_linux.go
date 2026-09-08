@@ -103,14 +103,15 @@ func recordTickUtilization(now pcommon.Timestamp, prev, curr cputicks.Stat, mb *
 		recordZeroUtilization(now, curr.CPU, mb)
 		return
 	}
-	mb.RecordSystemCPUUtilizationDataPoint(now, precision.Ratio(curr.User-prev.User, deltaTotal), curr.CPU, metadata.AttributeStateUser)
-	mb.RecordSystemCPUUtilizationDataPoint(now, precision.Ratio(curr.System-prev.System, deltaTotal), curr.CPU, metadata.AttributeStateSystem)
-	mb.RecordSystemCPUUtilizationDataPoint(now, precision.Ratio(curr.Idle-prev.Idle, deltaTotal), curr.CPU, metadata.AttributeStateIdle)
-	mb.RecordSystemCPUUtilizationDataPoint(now, precision.Ratio(curr.Irq-prev.Irq, deltaTotal), curr.CPU, metadata.AttributeStateInterrupt)
-	mb.RecordSystemCPUUtilizationDataPoint(now, precision.Ratio(curr.Nice-prev.Nice, deltaTotal), curr.CPU, metadata.AttributeStateNice)
-	mb.RecordSystemCPUUtilizationDataPoint(now, precision.Ratio(curr.Softirq-prev.Softirq, deltaTotal), curr.CPU, metadata.AttributeStateSoftirq)
-	mb.RecordSystemCPUUtilizationDataPoint(now, precision.Ratio(curr.Steal-prev.Steal, deltaTotal), curr.CPU, metadata.AttributeStateSteal)
-	mb.RecordSystemCPUUtilizationDataPoint(now, precision.Ratio(curr.Iowait-prev.Iowait, deltaTotal), curr.CPU, metadata.AttributeStateWait)
+	total := float64(deltaTotal)
+	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.User-prev.User)/total, curr.CPU, metadata.AttributeStateUser)
+	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.System-prev.System)/total, curr.CPU, metadata.AttributeStateSystem)
+	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.Idle-prev.Idle)/total, curr.CPU, metadata.AttributeStateIdle)
+	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.Irq-prev.Irq)/total, curr.CPU, metadata.AttributeStateInterrupt)
+	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.Nice-prev.Nice)/total, curr.CPU, metadata.AttributeStateNice)
+	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.Softirq-prev.Softirq)/total, curr.CPU, metadata.AttributeStateSoftirq)
+	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.Steal-prev.Steal)/total, curr.CPU, metadata.AttributeStateSteal)
+	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.Iowait-prev.Iowait)/total, curr.CPU, metadata.AttributeStateWait)
 }
 
 func recordZeroUtilization(now pcommon.Timestamp, cpuName string, mb *metadata.MetricsBuilder) {
