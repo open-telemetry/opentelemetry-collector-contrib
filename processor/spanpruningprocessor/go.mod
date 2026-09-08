@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanp
 go 1.26.0
 
 require (
-	github.com/gobwas/glob v0.2.3
+	github.com/gobwas/glob v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.160.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.160.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.160.0
