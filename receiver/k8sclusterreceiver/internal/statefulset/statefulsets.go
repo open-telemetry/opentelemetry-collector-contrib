@@ -27,9 +27,10 @@ func Transform(statefulset *appsv1.StatefulSet) *appsv1.StatefulSet {
 			Replicas: statefulset.Spec.Replicas,
 		},
 		Status: appsv1.StatefulSetStatus{
-			ReadyReplicas:   statefulset.Status.ReadyReplicas,
-			CurrentReplicas: statefulset.Status.CurrentReplicas,
-			UpdatedReplicas: statefulset.Status.UpdatedReplicas,
+			ReadyReplicas:     statefulset.Status.ReadyReplicas,
+			CurrentReplicas:   statefulset.Status.CurrentReplicas,
+			UpdatedReplicas:   statefulset.Status.UpdatedReplicas,
+			AvailableReplicas: statefulset.Status.AvailableReplicas,
 		},
 	}
 }
@@ -46,6 +47,7 @@ func RecordMetrics(mb *metadata.MetricsBuilder, ss *appsv1.StatefulSet, ts pcomm
 	eb.RecordK8sStatefulsetReadyPodsDataPoint(ts, int64(ss.Status.ReadyReplicas))
 	eb.RecordK8sStatefulsetCurrentPodsDataPoint(ts, int64(ss.Status.CurrentReplicas))
 	eb.RecordK8sStatefulsetUpdatedPodsDataPoint(ts, int64(ss.Status.UpdatedReplicas))
+	eb.RecordK8sStatefulsetPodAvailableDataPoint(ts, int64(ss.Status.AvailableReplicas))
 	eb.Emit()
 }
 

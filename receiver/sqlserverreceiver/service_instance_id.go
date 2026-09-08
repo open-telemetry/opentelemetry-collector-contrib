@@ -20,23 +20,26 @@ func isLocalhost(host string) bool {
 	return strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback()
 }
 
-// computeServiceInstanceID computes the service.instance.id based on the configuration
-// Format: <host>:<port>
+// computeServiceInstanceID computes the service.instance.id based on the configuration.
+// Datasource format precedence: <host>\<instance>, then <host>:<port> (default 1433).
 // Special handling:
 // - localhost/127.0.0.1 are replaced with os.Hostname()
-// - Port 0 defaults to 1433
+// - Port 0 defaults to 1433 when no named instance is specified
 func computeServiceInstanceID(cfg *Config) (string, error) {
 	var host string
+	var instance string
 	var port int
 
 	// Parse connection details based on configuration priority
 	switch {
 	case cfg.DataSource != "":
-		h, p, err := parseDataSource(cfg.DataSource)
+		config, err := parseDataSource(cfg.DataSource)
 		if err != nil {
 			return "", fmt.Errorf("failed to parse datasource: %w", err)
 		}
-		host, port = h, p
+		host = config.Host
+		instance = config.Instance
+		port = int(config.Port)
 	case cfg.Server != "":
 		host, port = cfg.Server, int(cfg.Port)
 	case cfg.ComputerName != "":
@@ -60,6 +63,16 @@ func computeServiceInstanceID(cfg *Config) (string, error) {
 		host = hostname
 	}
 
+	if cfg.DataSource != "" {
+		if instance != "" {
+			return fmt.Sprintf(`%s\%s`, host, instance), nil
+		}
+		if port == 0 {
+			port = defaultSQLServerPort
+		}
+		return fmt.Sprintf("%s:%d", host, port), nil
+	}
+
 	// Apply default port if not specified
 	if port == 0 {
 		port = defaultSQLServerPort
@@ -68,24 +81,18 @@ func computeServiceInstanceID(cfg *Config) (string, error) {
 	return fmt.Sprintf("%s:%d", host, port), nil
 }
 
-// parseDataSource extracts server and port from SQL Server connection string
-// Uses the microsoft/go-mssqldb library's built-in parser for accurate parsing
-func parseDataSource(dataSource string) (string, int, error) {
+// parseDataSource extracts SQL Server connection details without replacing an omitted port.
+// Uses the microsoft/go-mssqldb library's built-in parser for accurate parsing.
+func parseDataSource(dataSource string) (msdsn.Config, error) {
 	if dataSource == "" {
-		return "", 0, errors.New("datasource is empty")
+		return msdsn.Config{}, errors.New("datasource is empty")
 	}
 
 	// Parse the connection string using the go-mssqldb library
 	config, err := msdsn.Parse(dataSource)
 	if err != nil {
-		return "", 0, fmt.Errorf("failed to parse datasource: %w", err)
+		return msdsn.Config{}, fmt.Errorf("failed to parse datasource: %w", err)
 	}
 
-	// Apply default port if not specified
-	port := int(config.Port)
-	if port == 0 {
-		port = defaultSQLServerPort
-	}
-
-	return config.Host, port, nil
+	return config, nil
 }

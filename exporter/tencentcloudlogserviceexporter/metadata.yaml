@@ -9,9 +9,3 @@ status:
   codeowners:
     active: [wgliang]
     emeritus: [yiyang5055]
-
-# TODO: Update the exporter to pass the tests
-tests:
-  skip_lifecycle: true
-  goleak:
-    skip: true

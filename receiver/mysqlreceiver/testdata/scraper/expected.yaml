@@ -661,6 +661,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: By
+          - description: The length of the InnoDB history list.
+            gauge:
+              dataPoints:
+                - asInt: "251"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: mysql.innodb.history_list.length
+            unit: "{transactions}"
           - description: The number of pending InnoDB data file operations.
             name: mysql.innodb.operation.pending
             sum:
@@ -712,6 +720,22 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: mysql.innodb.row_lock.wait.duration.max
+            unit: s
+          - description: The number of active InnoDB transactions.
+            gauge:
+              dataPoints:
+                - asInt: "3"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: mysql.innodb.transaction.active.count
+            unit: "{transaction}"
+          - description: The duration of the longest running active InnoDB transaction.
+            gauge:
+              dataPoints:
+                - asInt: "17"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: mysql.innodb.transaction.active.duration.max
             unit: s
           - description: The number of joins that perform table scans.
             name: mysql.joins

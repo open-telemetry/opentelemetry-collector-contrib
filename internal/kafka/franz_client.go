@@ -164,12 +164,7 @@ func NewFranzConsumerGroup(
 		opts = append(opts, kgo.InstanceID(consumerCfg.GroupInstanceID))
 	}
 
-	// Configure rebalance strategy
-	if consumerCfg.GroupRebalanceStrategy != "" {
-		logger.Warn("group_rebalance_strategy is deprecated, use group_rebalance_strategies instead")
-	}
 	balancerOpt, err := balancerOptFromStrategies(
-		consumerCfg.GroupRebalanceStrategy,
 		consumerCfg.GroupRebalanceStrategies,
 		host,
 	)
@@ -217,19 +212,11 @@ func NewFranzClusterAdminClient(
 // singular strategy and the strategies list are mutually exclusive (enforced by
 // ConsumerConfig.Validate).
 func balancerOptFromStrategies(
-	strategy configkafka.GroupRebalanceStrategy,
 	strategies []configkafka.GroupRebalanceStrategy,
 	host component.Host,
 ) (kgo.Opt, error) {
-	if strategy == "" && len(strategies) == 0 {
-		return nil, nil
-	}
 	if len(strategies) == 0 {
-		balancer, err := balancerFromStrategy(strategy, "group_rebalance_strategy", host)
-		if err != nil {
-			return nil, err
-		}
-		return kgo.Balancers(balancer), nil
+		return nil, nil
 	}
 
 	balancers, err := balancersFromStrategies(strategies, host)

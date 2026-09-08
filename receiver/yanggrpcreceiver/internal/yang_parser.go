@@ -14,11 +14,6 @@ import (
 	"strings"
 )
 
-// Helper function to create int64 pointers
-func int64Ptr(v int64) *int64 {
-	return &v
-}
-
 // YANGDataType represents the YANG data type information
 type YANGDataType struct {
 	Type        string           `json:"type"`        // uint8, uint16, uint32, uint64, int8, int16, int32, int64, string, boolean, decimal64, etc.
@@ -146,10 +141,10 @@ func (p *YANGParser) LoadBuiltinModules() {
 			"/cpu-usage/cpu-utilization/cpu-usage-processes/name": {Type: "string", Description: "Process name"},
 
 			// CPU utilization percentages - based on your screenshot showing uint8, 0-255 range, percent units
-			"/cpu-usage/cpu-utilization/five-seconds":      {Type: "uint8", Units: "percent", Range: &YANGRange{Min: int64Ptr(0), Max: int64Ptr(255)}, Description: "CPU busy percentage in last 5-seconds"},
-			"/cpu-usage/cpu-utilization/five-seconds-intr": {Type: "uint8", Units: "percent", Range: &YANGRange{Min: int64Ptr(0), Max: int64Ptr(255)}, Description: "CPU interrupt percentage in last 5-seconds"},
-			"/cpu-usage/cpu-utilization/one-minute":        {Type: "uint8", Units: "percent", Range: &YANGRange{Min: int64Ptr(0), Max: int64Ptr(255)}, Description: "CPU busy percentage in last minute"},
-			"/cpu-usage/cpu-utilization/five-minutes":      {Type: "uint8", Units: "percent", Range: &YANGRange{Min: int64Ptr(0), Max: int64Ptr(255)}, Description: "CPU busy percentage in last 5-minutes"},
+			"/cpu-usage/cpu-utilization/five-seconds":      {Type: "uint8", Units: "percent", Range: &YANGRange{Min: new(int64(0)), Max: new(int64(255))}, Description: "CPU busy percentage in last 5-seconds"},
+			"/cpu-usage/cpu-utilization/five-seconds-intr": {Type: "uint8", Units: "percent", Range: &YANGRange{Min: new(int64(0)), Max: new(int64(255))}, Description: "CPU interrupt percentage in last 5-seconds"},
+			"/cpu-usage/cpu-utilization/one-minute":        {Type: "uint8", Units: "percent", Range: &YANGRange{Min: new(int64(0)), Max: new(int64(255))}, Description: "CPU busy percentage in last minute"},
+			"/cpu-usage/cpu-utilization/five-minutes":      {Type: "uint8", Units: "percent", Range: &YANGRange{Min: new(int64(0)), Max: new(int64(255))}, Description: "CPU busy percentage in last 5-minutes"},
 		},
 		Description: "Process CPU utilization operational data for Cisco IOS XE devices",
 	}

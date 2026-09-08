@@ -111,7 +111,7 @@ func (r ResourceMetricsUnmarshaler) UnmarshalMetrics(buf []byte) (pmetric.Metric
 	case unmarshaler.FormatUnknown:
 		return pmetric.NewMetrics(), nil
 	default:
-		return pmetric.NewMetrics(), fmt.Errorf("unrecognized batch format: %q", batchFormat)
+		return pmetric.NewMetrics(), fmt.Errorf("unrecognized batch format: %d", batchFormat)
 	}
 
 	m := pmetric.NewMetrics()

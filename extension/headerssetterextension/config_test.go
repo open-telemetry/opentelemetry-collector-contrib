@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -33,32 +34,32 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				HeadersConfig: []HeaderConfig{
 					{
-						Key:         stringp("X-Scope-OrgID"),
+						Key:         new("X-Scope-OrgID"),
 						Action:      INSERT,
-						FromContext: stringp("tenant_id"),
+						FromContext: new("tenant_id"),
 						Value:       nil,
 					},
 					{
-						Key:          stringp("X-Scope-OrgID"),
+						Key:          new("X-Scope-OrgID"),
 						Action:       INSERT,
-						FromContext:  stringp("tenant_id"),
-						DefaultValue: opaquep("some_id"),
+						FromContext:  new("tenant_id"),
+						DefaultValue: new(configopaque.String("some_id")),
 						Value:        nil,
 					},
 					{
-						Key:         stringp("User-ID"),
+						Key:         new("User-ID"),
 						Action:      UPDATE,
-						FromContext: stringp("user_id"),
+						FromContext: new("user_id"),
 						Value:       nil,
 					},
 
 					{
-						Key:         stringp("User-ID"),
+						Key:         new("User-ID"),
 						FromContext: nil,
-						Value:       stringp("user_id"),
+						Value:       new("user_id"),
 					},
 					{
-						Key:    stringp("User-ID"),
+						Key:    new("User-ID"),
 						Action: DELETE,
 					},
 				},
@@ -73,8 +74,8 @@ func TestLoadConfig(t *testing.T) {
 				}(),
 				HeadersConfig: []HeaderConfig{
 					{
-						Key:    stringp("X-Custom-Header"),
-						Value:  stringp("custom-value"),
+						Key:    new("X-Custom-Header"),
+						Value:  new("custom-value"),
 						Action: UPSERT,
 					},
 				},
@@ -112,9 +113,9 @@ func TestValidateConfig(t *testing.T) {
 			"header value from config property",
 			[]HeaderConfig{
 				{
-					Key:    stringp("name"),
+					Key:    new("name"),
 					Action: INSERT,
-					Value:  stringp("from config"),
+					Value:  new("from config"),
 				},
 			},
 			nil,
@@ -123,9 +124,9 @@ func TestValidateConfig(t *testing.T) {
 			"header value from context",
 			[]HeaderConfig{
 				{
-					Key:         stringp("name"),
+					Key:         new("name"),
 					Action:      INSERT,
-					FromContext: stringp("from config"),
+					FromContext: new("from config"),
 				},
 			},
 			nil,
@@ -135,7 +136,7 @@ func TestValidateConfig(t *testing.T) {
 			[]HeaderConfig{
 				{
 					Action: INSERT,
-					Value:  stringp("test"),
+					Value:  new("test"),
 				},
 			},
 			errMissingHeader,
@@ -145,7 +146,7 @@ func TestValidateConfig(t *testing.T) {
 			[]HeaderConfig{
 				{
 					Action:      INSERT,
-					FromContext: stringp("test"),
+					FromContext: new("test"),
 				},
 			},
 			errMissingHeader,
@@ -154,10 +155,10 @@ func TestValidateConfig(t *testing.T) {
 			"header value from context and value",
 			[]HeaderConfig{
 				{
-					Key:         stringp("name"),
+					Key:         new("name"),
 					Action:      INSERT,
-					Value:       stringp("from config"),
-					FromContext: stringp("from context"),
+					Value:       new("from config"),
+					FromContext: new("from context"),
 				},
 			},
 			errConflictingSources,
@@ -166,7 +167,7 @@ func TestValidateConfig(t *testing.T) {
 			"header value source is missing",
 			[]HeaderConfig{
 				{
-					Key:    stringp("name"),
+					Key:    new("name"),
 					Action: INSERT,
 				},
 			},
@@ -176,10 +177,10 @@ func TestValidateConfig(t *testing.T) {
 			"header value source is missing snd default value set",
 			[]HeaderConfig{
 				{
-					Key:          stringp("name"),
+					Key:          new("name"),
 					Action:       INSERT,
-					FromContext:  stringp("from context"),
-					DefaultValue: opaquep("default"),
+					FromContext:  new("from context"),
+					DefaultValue: new(configopaque.String("default")),
 				},
 			},
 			nil,
@@ -188,7 +189,7 @@ func TestValidateConfig(t *testing.T) {
 			"delete header action",
 			[]HeaderConfig{
 				{
-					Key:    stringp("name"),
+					Key:    new("name"),
 					Action: DELETE,
 				},
 			},
@@ -198,9 +199,9 @@ func TestValidateConfig(t *testing.T) {
 			"insert header action",
 			[]HeaderConfig{
 				{
-					Key:    stringp("name"),
+					Key:    new("name"),
 					Action: INSERT,
-					Value:  stringp("from config"),
+					Value:  new("from config"),
 				},
 			},
 			nil,
@@ -209,8 +210,8 @@ func TestValidateConfig(t *testing.T) {
 			"missing header action",
 			[]HeaderConfig{
 				{
-					Key:   stringp("name"),
-					Value: stringp("from config"),
+					Key:   new("name"),
+					Value: new("from config"),
 				},
 			},
 			nil,

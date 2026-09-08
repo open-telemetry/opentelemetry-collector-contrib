@@ -35,6 +35,7 @@ jobs:
         with:
           client-id: ${{ vars.OTELBOT_CLIENT_ID }}
           private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
+          permission-pull-requests: write
       - name: Prepare to update dependencies
         run: |
           exec > >(tee log.out) 2>&1

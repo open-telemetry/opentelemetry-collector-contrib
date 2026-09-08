@@ -33,8 +33,8 @@ func TestValidateConfig(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	missingEndpointServerConfig.WriteTimeout = 0
 	missingEndpointServerConfig.ReadHeaderTimeout = 0
-	missingEndpointServerConfig.IdleTimeout = 0
-	missingEndpointServerConfig.KeepAlivesEnabled = false
+	missingEndpointServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	missingEndpointServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	missingEndpointServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "",
@@ -44,8 +44,8 @@ func TestValidateConfig(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	readTimeoutServerConfig.WriteTimeout = 0
 	readTimeoutServerConfig.ReadHeaderTimeout = 0
-	readTimeoutServerConfig.IdleTimeout = 0
-	readTimeoutServerConfig.KeepAlivesEnabled = false
+	readTimeoutServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	readTimeoutServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	readTimeoutServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -55,8 +55,8 @@ func TestValidateConfig(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	writeTimeoutServerConfig.WriteTimeout = 0
 	writeTimeoutServerConfig.ReadHeaderTimeout = 0
-	writeTimeoutServerConfig.IdleTimeout = 0
-	writeTimeoutServerConfig.KeepAlivesEnabled = false
+	writeTimeoutServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	writeTimeoutServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	writeTimeoutServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -66,8 +66,8 @@ func TestValidateConfig(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	requiredHeaderKeyServerConfig.WriteTimeout = 0
 	requiredHeaderKeyServerConfig.ReadHeaderTimeout = 0
-	requiredHeaderKeyServerConfig.IdleTimeout = 0
-	requiredHeaderKeyServerConfig.KeepAlivesEnabled = false
+	requiredHeaderKeyServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	requiredHeaderKeyServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	requiredHeaderKeyServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "",
@@ -77,8 +77,8 @@ func TestValidateConfig(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	requiredHeaderValueServerConfig.WriteTimeout = 0
 	requiredHeaderValueServerConfig.ReadHeaderTimeout = 0
-	requiredHeaderValueServerConfig.IdleTimeout = 0
-	requiredHeaderValueServerConfig.KeepAlivesEnabled = false
+	requiredHeaderValueServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	requiredHeaderValueServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	requiredHeaderValueServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "",
@@ -88,8 +88,8 @@ func TestValidateConfig(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	multipleInvalidServerConfig.WriteTimeout = 0
 	multipleInvalidServerConfig.ReadHeaderTimeout = 0
-	multipleInvalidServerConfig.IdleTimeout = 0
-	multipleInvalidServerConfig.KeepAlivesEnabled = false
+	multipleInvalidServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	multipleInvalidServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	multipleInvalidServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "",
@@ -244,8 +244,8 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	zeroBodySizeServerConfig.WriteTimeout = 0
 	zeroBodySizeServerConfig.ReadHeaderTimeout = 0
-	zeroBodySizeServerConfig.IdleTimeout = 0
-	zeroBodySizeServerConfig.KeepAlivesEnabled = false
+	zeroBodySizeServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	zeroBodySizeServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	zeroBodySizeServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -256,8 +256,8 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	smallBodySizeServerConfig.WriteTimeout = 0
 	smallBodySizeServerConfig.ReadHeaderTimeout = 0
-	smallBodySizeServerConfig.IdleTimeout = 0
-	smallBodySizeServerConfig.KeepAlivesEnabled = false
+	smallBodySizeServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	smallBodySizeServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	smallBodySizeServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -268,8 +268,8 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	exact64KBBodySizeServerConfig.WriteTimeout = 0
 	exact64KBBodySizeServerConfig.ReadHeaderTimeout = 0
-	exact64KBBodySizeServerConfig.IdleTimeout = 0
-	exact64KBBodySizeServerConfig.KeepAlivesEnabled = false
+	exact64KBBodySizeServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	exact64KBBodySizeServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	exact64KBBodySizeServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -280,8 +280,8 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	greaterBodySizeServerConfig.WriteTimeout = 0
 	greaterBodySizeServerConfig.ReadHeaderTimeout = 0
-	greaterBodySizeServerConfig.IdleTimeout = 0
-	greaterBodySizeServerConfig.KeepAlivesEnabled = false
+	greaterBodySizeServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	greaterBodySizeServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	greaterBodySizeServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -292,8 +292,8 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	wayGreaterBodySizeServerConfig.WriteTimeout = 0
 	wayGreaterBodySizeServerConfig.ReadHeaderTimeout = 0
-	wayGreaterBodySizeServerConfig.IdleTimeout = 0
-	wayGreaterBodySizeServerConfig.KeepAlivesEnabled = false
+	wayGreaterBodySizeServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	wayGreaterBodySizeServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	wayGreaterBodySizeServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -366,8 +366,8 @@ func TestLoadConfig(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	expectServerConfig.WriteTimeout = 0
 	expectServerConfig.ReadHeaderTimeout = 0
-	expectServerConfig.IdleTimeout = 0
-	expectServerConfig.KeepAlivesEnabled = false
+	expectServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	expectServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	expectServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:8080",

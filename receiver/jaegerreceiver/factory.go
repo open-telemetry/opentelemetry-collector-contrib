@@ -42,8 +42,8 @@ func createDefaultConfig() component.Config {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	thriftHTTPServerConfig.WriteTimeout = 0
 	thriftHTTPServerConfig.ReadHeaderTimeout = 0
-	thriftHTTPServerConfig.IdleTimeout = 0
-	thriftHTTPServerConfig.KeepAlivesEnabled = false
+	thriftHTTPServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	thriftHTTPServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	thriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  defaultHTTPEndpoint,
 		Transport: confignet.TransportTypeTCP,
