@@ -1,7 +1,5 @@
 cloud.google.com/go/compute/metadata v0.9.0 h1:pDUj4QMoPejqq20dK0Pg2N4yG9zIkYGdBtwLoEkH9Zs=
 cloud.google.com/go/compute/metadata v0.9.0/go.mod h1:E0bWwX5wTnLPedCKqk3pJmVgCBSM6qQI1yTBdEb3C10=
-github.com/DataDog/agent-payload/v5 v5.0.209 h1:VthYhodp1FRrf2HSk0bxyLiNt1xbqMHCf+whsdOkt3Y=
-github.com/DataDog/agent-payload/v5 v5.0.209/go.mod h1:z6tbYIJQWWQa3ozmZdit7jR3ROOKhgs/va4tNLu80mI=
 github.com/DataDog/agent-payload/v5 v5.0.210 h1:yLEYo1V20zPeh1bENaUApCtdaTdZP8WOvYWZQX9A7Yw=
 github.com/DataDog/agent-payload/v5 v5.0.210/go.mod h1:z6tbYIJQWWQa3ozmZdit7jR3ROOKhgs/va4tNLu80mI=
 github.com/DataDog/datadog-agent/comp/api/api/def v0.82.0 h1:iAwKiCC3hBIv9bXIy47DR4i0mqN6PRmEXKG+qq/w+N4=
@@ -212,8 +210,6 @@ github.com/DataDog/datadog-agent/pkg/util/winutil v0.82.0 h1:GNkQKDB74AVn6Lx2RMA
 github.com/DataDog/datadog-agent/pkg/util/winutil v0.82.0/go.mod h1:CsvyEUaUYCTsOfwwvKEgUoO5AJTtP1NkhI4mbVExoPQ=
 github.com/DataDog/datadog-agent/pkg/version v0.82.0 h1:tkD1P8dwuyqbgEX+rPtg8Q5ydeWF3iTez1V3CM7kzXY=
 github.com/DataDog/datadog-agent/pkg/version v0.82.0/go.mod h1:T+xREOMQTABUA7MAA25PMeD3pkuvHFU5UD3hBpfBVUc=
-github.com/DataDog/datadog-api-client-go/v2 v2.64.0 h1:RKgtwwMqqRS11VY5+ufZuBau51h87R9npbzOkRIZ0ak=
-github.com/DataDog/datadog-api-client-go/v2 v2.64.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
 github.com/DataDog/datadog-api-client-go/v2 v2.65.0 h1:OBrsv4NJXJZO7YbVBeNZqb/OJ5iDG0My6vXYh2jDshA=
 github.com/DataDog/datadog-api-client-go/v2 v2.65.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
 github.com/DataDog/datadog-go/v5 v5.9.1 h1:jOxw/TaxGWok8RIxbpqn2p3RzSnQr/m3Q6TgaHqqOU0=
