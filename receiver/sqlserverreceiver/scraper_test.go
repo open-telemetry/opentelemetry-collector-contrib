@@ -308,14 +308,13 @@ func TestSuccessfulScrape(t *testing.T) {
 				defer assert.NoError(t, scraper.Shutdown(t.Context()))
 
 				scraper.client = mockClient{
-					instanceName:          scraper.config.InstanceName,
 					SQL:                   scraper.sqlQuery,
 					maxQuerySampleCount:   1000,
 					lookbackTime:          20,
 					propertiesFixtureFile: test.propertiesFixtureFile,
 				}
 
-				if scraper.sqlQuery == getSQLServerPerformanceCounterQuery(scraper.config.InstanceName) {
+				if scraper.sqlQuery == getSQLServerPerformanceCounterQuery() {
 					scrapeTimes := []time.Time{
 						time.Unix(100, 0),
 						time.Unix(101, 0),
@@ -925,8 +924,7 @@ func TestScrapeInvalidQuery(t *testing.T) {
 		defer assert.NoError(t, scraper.Shutdown(t.Context()))
 
 		scraper.client = mockClient{
-			instanceName: scraper.config.InstanceName,
-			SQL:          "Invalid SQL query",
+			SQL: "Invalid SQL query",
 		}
 
 		actualMetrics, err := scraper.ScrapeMetrics(t.Context())
@@ -1024,7 +1022,6 @@ var (
 
 type mockClient struct {
 	SQL                 string
-	instanceName        string
 	maxQuerySampleCount uint
 	lookbackTime        uint
 	topQueryCount       uint
@@ -1230,7 +1227,6 @@ func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testi
 	const procedureExecutionCount = "procedure_execution_count"
 
 	scraper.client = mockClient{
-		instanceName:        scraper.config.InstanceName,
 		SQL:                 scraper.sqlQuery,
 		maxQuerySampleCount: 1000,
 		lookbackTime:        20,
@@ -1324,7 +1320,6 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, procedureExecutionCount, 0)
 
 	scraper.client = mockClient{
-		instanceName:        scraper.config.InstanceName,
 		SQL:                 scraper.sqlQuery,
 		maxQuerySampleCount: 1000,
 		lookbackTime:        20,
@@ -1581,7 +1576,6 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 
 	scraper.client = mockInvalidClient{
 		mockClient: mockClient{
-			instanceName:        scraper.config.InstanceName,
 			SQL:                 scraper.sqlQuery,
 			maxQuerySampleCount: 1000,
 			lookbackTime:        20,
@@ -1597,14 +1591,13 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 func TestRecordDatabaseSampleQuery(t *testing.T) {
 	tests := map[string]struct {
 		expectedFile string
-		mockClient   func(instance, sql string) sqlquery.DbClient
+		mockClient   func(sql string) sqlquery.DbClient
 		errors       bool
 	}{
 		"valid data": {
 			expectedFile: "expectedRecordDatabaseSampleQuery.yaml",
-			mockClient: func(instance, sql string) sqlquery.DbClient {
+			mockClient: func(sql string) sqlquery.DbClient {
 				return mockClient{
-					instanceName:    instance,
 					SQL:             sql,
 					maxRowsPerQuery: 100,
 				}
@@ -1613,10 +1606,9 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 		},
 		"invalid data": {
 			expectedFile: "expectedRecordDatabaseSampleQueryWithInvalidData.yaml",
-			mockClient: func(instance, sql string) sqlquery.DbClient {
+			mockClient: func(sql string) sqlquery.DbClient {
 				return mockInvalidClient{
 					mockClient{
-						instanceName:    instance,
 						SQL:             sql,
 						maxRowsPerQuery: 100,
 					},
@@ -1645,7 +1637,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			scraper := scrapers[0]
 			assert.NotNil(t, scraper.cache)
 
-			scraper.client = tc.mockClient(scraper.instanceName, scraper.sqlQuery)
+			scraper.client = tc.mockClient(scraper.sqlQuery)
 
 			actualLogs, err := scraper.ScrapeLogs(t.Context())
 			if tc.errors {
@@ -1952,7 +1944,6 @@ func TestMultiStatementProcNoDuplicateRows(t *testing.T) {
 
 	scraper.client = mockMultiStatementProcClient{
 		mockClient: mockClient{
-			instanceName:        scraper.config.InstanceName,
 			SQL:                 scraper.sqlQuery,
 			maxQuerySampleCount: 1000,
 			lookbackTime:        20,
@@ -2172,7 +2163,6 @@ func TestRecordDatabaseSampleQueryUsesResourceBuilderForLogs(t *testing.T) {
 
 	scraper := scrapers[0]
 	scraper.client = mockClient{
-		instanceName:    scraper.config.InstanceName,
 		SQL:             scraper.sqlQuery,
 		maxRowsPerQuery: 100,
 	}
@@ -2236,7 +2226,6 @@ func TestRecordDatabaseQueryTextAndPlanUsesResourceBuilderForLogs(t *testing.T) 
 	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalGrant, 1)
 
 	scraper.client = mockClient{
-		instanceName:        scraper.config.InstanceName,
 		SQL:                 scraper.sqlQuery,
 		maxQuerySampleCount: 1000,
 		lookbackTime:        20,
@@ -2304,8 +2293,7 @@ func TestRecordWorkerThreadMetrics(t *testing.T) {
 	}()
 
 	workerScraper.client = mockClient{
-		instanceName: workerScraper.config.InstanceName,
-		SQL:          workerScraper.sqlQuery,
+		SQL: workerScraper.sqlQuery,
 	}
 
 	actualMetrics, err := workerScraper.ScrapeMetrics(t.Context())
@@ -2360,8 +2348,7 @@ func TestRecordDatabaseStatusMetricsUsesResourceBuilderForMetrics(t *testing.T) 
 
 	scraper := scrapers[0]
 	scraper.client = mockClient{
-		instanceName: scraper.config.InstanceName,
-		SQL:          scraper.sqlQuery,
+		SQL: scraper.sqlQuery,
 	}
 
 	actualMetrics, err := scraper.ScrapeMetrics(t.Context())
@@ -2423,8 +2410,7 @@ func TestRecordCPUMemoryMetrics(t *testing.T) {
 	defer assert.NoError(t, cpuMemScraper.Shutdown(t.Context()))
 
 	cpuMemScraper.client = mockClient{
-		instanceName: cpuMemScraper.config.InstanceName,
-		SQL:          cpuMemScraper.sqlQuery,
+		SQL: cpuMemScraper.sqlQuery,
 	}
 
 	actualMetrics, err := cpuMemScraper.ScrapeMetrics(t.Context())
@@ -2512,8 +2498,7 @@ func TestRecordDiskIOMetrics(t *testing.T) {
 	defer assert.NoError(t, diskScraper.Shutdown(t.Context()))
 
 	diskScraper.client = mockClient{
-		instanceName: diskScraper.config.InstanceName,
-		SQL:          diskScraper.sqlQuery,
+		SQL: diskScraper.sqlQuery,
 	}
 
 	actualMetrics, err := diskScraper.ScrapeMetrics(t.Context())
