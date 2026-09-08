@@ -20,14 +20,7 @@ import (
 )
 
 // collectExemplars extracts Prometheus exemplars from a writev2 request and
-// groups them into ExemplarSlices keyed by metric identity.
-//
-// Exemplars are grouped by a hash composed of:
-//   - instrumentation scope name
-//   - instrumentation scope version
-//   - metric name
-//   - metric type
-//   - a hash of the remaining data labels
+// groups them into ExemplarSlices keyed by the series that carried them.
 //
 // TODO:
 //
@@ -148,7 +141,3 @@ type exemplarKey string
 func makeExemplarKey(ls labels.Labels) exemplarKey {
 	return exemplarKey(ls.Bytes(nil))
 }
-
-// sep is a byte that is not valid UTF-8, used as a field separator to prevent
-// hash collisions between different field boundary combinations (e.g. "ab"+"c" vs "a"+"bc").
-var sep = []byte{0xff}
