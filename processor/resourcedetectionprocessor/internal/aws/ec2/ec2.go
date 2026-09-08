@@ -100,12 +100,20 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	meta, err := d.metadataProvider.Get(ctx)
 	if err != nil {
-		return pcommon.NewResource(), "", fmt.Errorf("failed getting identity document: %w", err)
+		d.logger.Debug("EC2 instance identity document unavailable", zap.Error(err))
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting identity document: %w", err)
+		}
+		return pcommon.NewResource(), "", nil
 	}
 
 	hostname, err := d.metadataProvider.Hostname(ctx)
 	if err != nil {
-		return pcommon.NewResource(), "", fmt.Errorf("failed getting hostname: %w", err)
+		d.logger.Debug("EC2 hostname unavailable", zap.Error(err))
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting hostname: %w", err)
+		}
+		return pcommon.NewResource(), "", nil
 	}
 
 	d.rb.SetCloudProvider(conventions.CloudProviderAWS.Value.AsString())
