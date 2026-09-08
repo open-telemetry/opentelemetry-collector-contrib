@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.160.1-0.20260903163450-cc4b33fc673f
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.160.1-0.20260903163450-cc4b33fc673f
 	go.uber.org/zap v1.28.0
-	golang.org/x/oauth2 v0.36.0
+	golang.org/x/oauth2 v0.37.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260630182238-925bb5da69e7
 )
 
