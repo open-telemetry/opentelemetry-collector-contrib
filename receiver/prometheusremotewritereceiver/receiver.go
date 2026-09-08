@@ -614,8 +614,8 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		case -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8:
 			histogramType = "exponential"
 		default:
-			// Kept from #48027: operators asked for the detail at debug level, and the error
-			// carries the same information back to the sender.
+			// The debug detail is what operators asked for in #48027, and the error carries
+			// the same information back to the sender.
 			prw.settings.Logger.Debug(
 				"Dropping histogram with invalid schema",
 				zapcore.Field{Key: "metric_name", Type: zapcore.StringType, String: metricName},
