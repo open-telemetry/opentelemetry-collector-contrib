@@ -232,13 +232,6 @@ $defs:
                 - "kind"
             default:
               - "kind"
-      mysql.health:
-        description: "MysqlHealthMetricConfig provides config for the mysql.health metric."
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
       mysql.index.io.wait.count:
         description: "MysqlIndexIoWaitCountMetricConfig provides config for the mysql.index.io.wait.count metric."
         type: object
@@ -786,6 +779,13 @@ $defs:
                 - "operation"
             default:
               - "operation"
+      mysql.server.healthy:
+        description: "MysqlServerHealthyMetricConfig provides config for the mysql.server.healthy metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       mysql.session.active.count:
         description: "MysqlSessionActiveCountMetricConfig provides config for the mysql.session.active.count metric."
         type: object

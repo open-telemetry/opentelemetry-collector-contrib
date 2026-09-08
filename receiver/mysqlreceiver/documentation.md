@@ -424,16 +424,6 @@ The number of currently open files.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Int | Development |
 
-### mysql.health
-
-The health status of the MySQL server.
-
-A value of '1' indicates healthy and '0' indicates unhealthy.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | Development |
-
 ### mysql.innodb.data_file.io
 
 The total bytes read from and written to InnoDB data files.
@@ -674,6 +664,16 @@ This field is an indication of how “late” the replica is.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | false | Development |
+
+### mysql.server.healthy
+
+The health status of the MySQL server.
+
+A value of '1' indicates healthy and '0' indicates unhealthy.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
 
 ### mysql.session.active.count
 

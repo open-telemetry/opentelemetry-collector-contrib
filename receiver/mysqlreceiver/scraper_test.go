@@ -414,7 +414,7 @@ func TestScrapeHealthRecordsConnectionStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.MetricsBuilderConfig.Metrics.MysqlHealth.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.MysqlServerHealthy.Enabled = true
 			mock := &mockClient{checkDBAvailabilityErr: tt.checkDBAvailabilityErr}
 
 			scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
@@ -424,7 +424,7 @@ func TestScrapeHealthRecordsConnectionStatus(t *testing.T) {
 			scraper.scrapeHealth(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
 
 			assert.Equal(t, 1, mock.checkDBAvailabilityCallCount)
-			assert.Equal(t, []intMetricDataPoint{{value: tt.wantValue}}, intMetricDataPointsByName(t, scraper.mb.Emit(), "mysql.health"))
+			assert.Equal(t, []intMetricDataPoint{{value: tt.wantValue}}, intMetricDataPointsByName(t, scraper.mb.Emit(), "mysql.server.healthy"))
 		})
 	}
 }

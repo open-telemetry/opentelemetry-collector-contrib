@@ -1199,9 +1199,6 @@ var MetricsInfo = metricsInfo{
 		Name:       "mysql.handlers",
 		Attributes: []string{"handler"},
 	},
-	MysqlHealth: metricInfo{
-		Name: "mysql.health",
-	},
 	MysqlIndexIoWaitCount: metricInfo{
 		Name:       "mysql.index.io.wait.count",
 		Attributes: []string{"io_waits_operations", "table_name", "schema", "index_name"},
@@ -1325,6 +1322,9 @@ var MetricsInfo = metricsInfo{
 		Name:       "mysql.row_operations",
 		Attributes: []string{"row_operations"},
 	},
+	MysqlServerHealthy: metricInfo{
+		Name: "mysql.server.healthy",
+	},
 	MysqlSessionActiveCount: metricInfo{
 		Name: "mysql.session.active.count",
 	},
@@ -1413,7 +1413,6 @@ type metricsInfo struct {
 	MysqlDoubleWrites                       metricInfo
 	MysqlFileOpen                           metricInfo
 	MysqlHandlers                           metricInfo
-	MysqlHealth                             metricInfo
 	MysqlIndexIoWaitCount                   metricInfo
 	MysqlIndexIoWaitTime                    metricInfo
 	MysqlInnodbDataFileIo                   metricInfo
@@ -1449,6 +1448,7 @@ type metricsInfo struct {
 	MysqlReplicaTimeBehindSource            metricInfo
 	MysqlRowLocks                           metricInfo
 	MysqlRowOperations                      metricInfo
+	MysqlServerHealthy                      metricInfo
 	MysqlSessionActiveCount                 metricInfo
 	MysqlSorts                              metricInfo
 	MysqlStatementEventCount                metricInfo
@@ -2492,56 +2492,6 @@ func (m *metricMysqlHandlers) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlHandlers(cfg MysqlHandlersMetricConfig) metricMysqlHandlers {
 	m := metricMysqlHandlers{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricMysqlHealth struct {
-	data     pmetric.Metric          // data buffer for generated metric.
-	config   MysqlHealthMetricConfig // metric config provided by user.
-	capacity int                     // max observed number of data points added to the metric.
-}
-
-// init fills mysql.health metric with initial data.
-func (m *metricMysqlHealth) init() {
-	m.data.SetName("mysql.health")
-	m.data.SetDescription("The health status of the MySQL server.")
-	m.data.SetUnit("1")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricMysqlHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMysqlHealth) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMysqlHealth) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricMysqlHealth(cfg MysqlHealthMetricConfig) metricMysqlHealth {
-	m := metricMysqlHealth{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5073,6 +5023,56 @@ func newMetricMysqlRowOperations(cfg MysqlRowOperationsMetricConfig) metricMysql
 	return m
 }
 
+type metricMysqlServerHealthy struct {
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   MysqlServerHealthyMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.server.healthy metric with initial data.
+func (m *metricMysqlServerHealthy) init() {
+	m.data.SetName("mysql.server.healthy")
+	m.data.SetDescription("The health status of the MySQL server.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlServerHealthy) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlServerHealthy) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlServerHealthy) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlServerHealthy(cfg MysqlServerHealthyMetricConfig) metricMysqlServerHealthy {
+	m := metricMysqlServerHealthy{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlSessionActiveCount struct {
 	data     pmetric.Metric                      // data buffer for generated metric.
 	config   MysqlSessionActiveCountMetricConfig // metric config provided by user.
@@ -6728,7 +6728,6 @@ type MetricsBuilder struct {
 	metricMysqlDoubleWrites                       metricMysqlDoubleWrites
 	metricMysqlFileOpen                           metricMysqlFileOpen
 	metricMysqlHandlers                           metricMysqlHandlers
-	metricMysqlHealth                             metricMysqlHealth
 	metricMysqlIndexIoWaitCount                   metricMysqlIndexIoWaitCount
 	metricMysqlIndexIoWaitTime                    metricMysqlIndexIoWaitTime
 	metricMysqlInnodbDataFileIo                   metricMysqlInnodbDataFileIo
@@ -6764,6 +6763,7 @@ type MetricsBuilder struct {
 	metricMysqlReplicaTimeBehindSource            metricMysqlReplicaTimeBehindSource
 	metricMysqlRowLocks                           metricMysqlRowLocks
 	metricMysqlRowOperations                      metricMysqlRowOperations
+	metricMysqlServerHealthy                      metricMysqlServerHealthy
 	metricMysqlSessionActiveCount                 metricMysqlSessionActiveCount
 	metricMysqlSorts                              metricMysqlSorts
 	metricMysqlStatementEventCount                metricMysqlStatementEventCount
@@ -6821,7 +6821,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlDoubleWrites:                       newMetricMysqlDoubleWrites(mbc.Metrics.MysqlDoubleWrites),
 		metricMysqlFileOpen:                           newMetricMysqlFileOpen(mbc.Metrics.MysqlFileOpen),
 		metricMysqlHandlers:                           newMetricMysqlHandlers(mbc.Metrics.MysqlHandlers),
-		metricMysqlHealth:                             newMetricMysqlHealth(mbc.Metrics.MysqlHealth),
 		metricMysqlIndexIoWaitCount:                   newMetricMysqlIndexIoWaitCount(mbc.Metrics.MysqlIndexIoWaitCount),
 		metricMysqlIndexIoWaitTime:                    newMetricMysqlIndexIoWaitTime(mbc.Metrics.MysqlIndexIoWaitTime),
 		metricMysqlInnodbDataFileIo:                   newMetricMysqlInnodbDataFileIo(mbc.Metrics.MysqlInnodbDataFileIo),
@@ -6857,6 +6856,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlReplicaTimeBehindSource:            newMetricMysqlReplicaTimeBehindSource(mbc.Metrics.MysqlReplicaTimeBehindSource),
 		metricMysqlRowLocks:                           newMetricMysqlRowLocks(mbc.Metrics.MysqlRowLocks),
 		metricMysqlRowOperations:                      newMetricMysqlRowOperations(mbc.Metrics.MysqlRowOperations),
+		metricMysqlServerHealthy:                      newMetricMysqlServerHealthy(mbc.Metrics.MysqlServerHealthy),
 		metricMysqlSessionActiveCount:                 newMetricMysqlSessionActiveCount(mbc.Metrics.MysqlSessionActiveCount),
 		metricMysqlSorts:                              newMetricMysqlSorts(mbc.Metrics.MysqlSorts),
 		metricMysqlStatementEventCount:                newMetricMysqlStatementEventCount(mbc.Metrics.MysqlStatementEventCount),
@@ -6997,7 +6997,6 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlDoubleWrites.emit(ils.Metrics())
 	mb.metricMysqlFileOpen.emit(ils.Metrics())
 	mb.metricMysqlHandlers.emit(ils.Metrics())
-	mb.metricMysqlHealth.emit(ils.Metrics())
 	mb.metricMysqlIndexIoWaitCount.emit(ils.Metrics())
 	mb.metricMysqlIndexIoWaitTime.emit(ils.Metrics())
 	mb.metricMysqlInnodbDataFileIo.emit(ils.Metrics())
@@ -7033,6 +7032,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlReplicaTimeBehindSource.emit(ils.Metrics())
 	mb.metricMysqlRowLocks.emit(ils.Metrics())
 	mb.metricMysqlRowOperations.emit(ils.Metrics())
+	mb.metricMysqlServerHealthy.emit(ils.Metrics())
 	mb.metricMysqlSessionActiveCount.emit(ils.Metrics())
 	mb.metricMysqlSorts.emit(ils.Metrics())
 	mb.metricMysqlStatementEventCount.emit(ils.Metrics())
@@ -7201,11 +7201,6 @@ func (mb *MetricsBuilder) RecordMysqlHandlersDataPoint(ts pcommon.Timestamp, inp
 	}
 	mb.metricMysqlHandlers.recordDataPoint(mb.startTime, ts, val, handlerAttributeValue.String())
 	return nil
-}
-
-// RecordMysqlHealthDataPoint adds a data point to mysql.health metric.
-func (mb *MetricsBuilder) RecordMysqlHealthDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMysqlHealth.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMysqlIndexIoWaitCountDataPoint adds a data point to mysql.index.io.wait.count metric.
@@ -7496,6 +7491,11 @@ func (mb *MetricsBuilder) RecordMysqlRowOperationsDataPoint(ts pcommon.Timestamp
 	}
 	mb.metricMysqlRowOperations.recordDataPoint(mb.startTime, ts, val, rowOperationsAttributeValue.String())
 	return nil
+}
+
+// RecordMysqlServerHealthyDataPoint adds a data point to mysql.server.healthy metric.
+func (mb *MetricsBuilder) RecordMysqlServerHealthyDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlServerHealthy.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMysqlSessionActiveCountDataPoint adds a data point to mysql.session.active.count metric.

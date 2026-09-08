@@ -277,15 +277,15 @@ func (m *mySQLScraper) scrapeQuerySampleFunc(ctx context.Context) (plog.Logs, er
 }
 
 func (m *mySQLScraper) scrapeHealth(now pcommon.Timestamp) {
-	if !m.config.MetricsBuilderConfig.Metrics.MysqlHealth.Enabled {
+	if !m.config.MetricsBuilderConfig.Metrics.MysqlServerHealthy.Enabled {
 		return
 	}
 
 	if err := m.sqlclient.checkDBAvailability(); err != nil {
-		m.mb.RecordMysqlHealthDataPoint(now, 0)
+		m.mb.RecordMysqlServerHealthyDataPoint(now, 0)
 		return
 	}
-	m.mb.RecordMysqlHealthDataPoint(now, 1)
+	m.mb.RecordMysqlServerHealthyDataPoint(now, 1)
 }
 
 func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {

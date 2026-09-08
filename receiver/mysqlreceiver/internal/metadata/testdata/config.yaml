@@ -36,8 +36,6 @@ all_set:
     mysql.handlers:
       enabled: true
       attributes: ["kind"]
-    mysql.health:
-      enabled: true
     mysql.index.io.wait.count:
       enabled: true
       attributes: ["operation","table","schema","index"]
@@ -126,6 +124,8 @@ all_set:
     mysql.row_operations:
       enabled: true
       attributes: ["operation"]
+    mysql.server.healthy:
+      enabled: true
     mysql.session.active.count:
       enabled: true
     mysql.sorts:
@@ -234,8 +234,6 @@ reaggregate_set:
     mysql.handlers:
       enabled: true
       attributes: []
-    mysql.health:
-      enabled: true
     mysql.index.io.wait.count:
       enabled: true
       attributes: []
@@ -324,6 +322,8 @@ reaggregate_set:
     mysql.row_operations:
       enabled: true
       attributes: []
+    mysql.server.healthy:
+      enabled: true
     mysql.session.active.count:
       enabled: true
     mysql.sorts:
@@ -432,8 +432,6 @@ none_set:
     mysql.handlers:
       enabled: false
       attributes: ["kind"]
-    mysql.health:
-      enabled: false
     mysql.index.io.wait.count:
       enabled: false
       attributes: ["operation","table","schema","index"]
@@ -522,6 +520,8 @@ none_set:
     mysql.row_operations:
       enabled: false
       attributes: ["operation"]
+    mysql.server.healthy:
+      enabled: false
     mysql.session.active.count:
       enabled: false
     mysql.sorts:
