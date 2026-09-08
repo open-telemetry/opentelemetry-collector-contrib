@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.329.0
 	github.com/hashicorp/consul/api v1.33.4
 	github.com/moby/moby/api v1.56.0
-	github.com/moby/moby/client v0.5.1
+	github.com/moby/moby/client v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.160.0
 	github.com/shirou/gopsutil/v4 v4.26.8
 	github.com/stretchr/testify v1.12.1
