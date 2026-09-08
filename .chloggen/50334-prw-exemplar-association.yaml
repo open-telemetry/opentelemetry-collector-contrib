@@ -4,7 +4,7 @@ component: receiver/prometheus_remote_write
 
 note: Attach exemplars to the series that sent them, once, and to the data point the conversion appended.
 
-issues: [50334]
+issues: [50334, 50546]
 
 subtext: |
   Exemplars were keyed by a few fields, and the attribute hash among them came
