@@ -5,13 +5,18 @@ package awsfirehosereceiver
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -228,4 +233,43 @@ type unmarshalLogsFunc func([]byte) (plog.Logs, error)
 
 func (f unmarshalLogsFunc) UnmarshalLogs(data []byte) (plog.Logs, error) {
 	return f(data)
+}
+
+// TestLogsConsumer_CWLogsSingleGzipLayer verifies that a CloudWatch Logs
+// subscription record delivered by Firehose is ingested.
+//
+// CloudWatch Logs subscription filters deliver records as
+// base64(gzip(<subscription JSON>)) -- exactly one gzip layer. The receiver
+// gunzips the record after base64-decoding it, so the unmarshaler must accept
+// the already-decompressed payload.
+func TestLogsConsumer_CWLogsSingleGzipLayer(t *testing.T) {
+	subscriptionRecord, err := os.ReadFile(
+		filepath.Join("internal", "unmarshaler", "cwlog", "testdata", "single_record"),
+	)
+	require.NoError(t, err)
+
+	cfg := createDefaultConfig().(*Config)
+	sink := new(consumertest.LogsSink)
+	r, err := newLogsReceiver(cfg, receivertest.NewNopSettings(metadata.Type), sink)
+	require.NoError(t, err)
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, r.Shutdown(t.Context()))
+	})
+
+	body, err := json.Marshal(testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
+		testFirehoseRecordFromBytes(newGzipRecord(t, subscriptionRecord)),
+	}))
+	require.NoError(t, err)
+
+	got := httptest.NewRecorder()
+	r.(*firehoseReceiver).ServeHTTP(got, newTestRequest(body))
+
+	var gotResponse firehoseResponse
+	require.NoError(t, json.Unmarshal(got.Body.Bytes(), &gotResponse))
+	require.Empty(t, gotResponse.ErrorMessage)
+	require.Equal(t, http.StatusOK, got.Code)
+
+	require.Len(t, sink.AllLogs(), 1)
+	require.Equal(t, 2, sink.AllLogs()[0].LogRecordCount())
 }
