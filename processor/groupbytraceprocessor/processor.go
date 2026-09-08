@@ -180,24 +180,34 @@ func (sp *groupByTraceProcessor) onTraceReceived(trace tracesWithID, worker *eve
 func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, worker *eventMachineWorker) error {
 	traceID := trace.id
 
-	// Insert all spans from this batch into the span-level index.
+	// Insert all spans from this batch into the span-level index, remembering
+	// which spans arrived so that only those have to be classified below.
+	var arrived []pcommon.SpanID
 	rss := trace.td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
 		for j := 0; j < rs.ScopeSpans().Len(); j++ {
 			ss := rs.ScopeSpans().At(j)
 			for k := 0; k < ss.Spans().Len(); k++ {
-				if err := sp.subSt.insertSpan(traceID, rs.Resource(), ss.Scope(), ss.Spans().At(k)); err != nil {
+				span := ss.Spans().At(k)
+				if err := sp.subSt.insertSpan(traceID, rs.Resource(), ss.Scope(), span); err != nil {
 					return fmt.Errorf("couldn't insert span: %w", err)
 				}
+				arrived = append(arrived, span.SpanID())
 			}
 		}
 	}
 
-	// Discover local roots in the now-updated index.
+	// Discover local roots among the spans that just arrived. Spans already in the
+	// index don't need re-checking: a span can stop being a local root, once a
+	// parent in the same service shows up in a later batch, but it can never start
+	// being one, because the only thing that removes a parent from the index
+	// removes that parent's descendants along with it. Demotions are caught when
+	// the timer fires, so re-scanning the whole trace on every batch would only
+	// make handling a batch cost more the longer the trace has been buffered.
 	// No trace-level timer is started; orphan spans are handled by ring-buffer
 	// overflow (dropped) and shutdown drain.
-	roots := sp.subSt.localRoots(traceID)
+	roots := sp.subSt.localRoots(traceID, arrived)
 	for _, rootSpanID := range roots {
 		id := subtraceID{traceID: traceID, spanID: rootSpanID}
 		if worker.subtraceBuffer.contains(id) {
@@ -317,18 +327,21 @@ func (sp *groupByTraceProcessor) onSubtraceExpired(id subtraceID, worker *eventM
 }
 
 func (sp *groupByTraceProcessor) markSubtraceAsReleased(id subtraceID, fire func(...event)) error {
-	members, err := sp.subSt.getSubtrace(id.traceID, id.spanID)
+	// Retrieving and removing the spans in a single operation is what keeps a
+	// concurrent release of an overlapping subtrace from emitting them twice.
+	members, err := sp.subSt.deleteSubtrace(id.traceID, id.spanID)
 	if err != nil {
 		return fmt.Errorf("couldn't retrieve subtrace: %w", err)
 	}
 	if len(members) == 0 {
+		// Either the spans are already gone, or this span stopped being a local
+		// root after its timer was scheduled, in which case its spans are released
+		// along with the local root they now belong to.
+		sp.logger.Debug("subtrace expired with no spans to release",
+			zap.Stringer("traceID", id.traceID), zap.Stringer("spanID", id.spanID))
 		return nil
 	}
-	assembled := assemble(members)
-	fire(
-		event{typ: subtraceReleased, payload: assembled},
-		event{typ: subtraceRemoved, payload: id},
-	)
+	fire(event{typ: subtraceReleased, payload: assemble(members)})
 	return nil
 }
 

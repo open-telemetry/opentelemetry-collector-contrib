@@ -17,6 +17,19 @@ func newTestSubtraceStorage() *subtraceMemoryStorage {
 	return newSubtraceMemoryStorage(nil)
 }
 
+// allLocalRoots classifies every span buffered for a trace, which is what these
+// tests want to assert about. The processor only ever classifies the spans that
+// just arrived, so it passes a narrower candidate list.
+func allLocalRoots(st *subtraceMemoryStorage, traceID pcommon.TraceID) []pcommon.SpanID {
+	st.RLock()
+	candidates := make([]pcommon.SpanID, 0, len(st.traces[traceID]))
+	for spanID := range st.traces[traceID] {
+		candidates = append(candidates, spanID)
+	}
+	st.RUnlock()
+	return st.localRoots(traceID, candidates)
+}
+
 func insertTestSpan(t *testing.T, st *subtraceMemoryStorage, traceID pcommon.TraceID, spanID, parentID pcommon.SpanID, svcName string) {
 	t.Helper()
 	r := pcommon.NewResource()
@@ -37,7 +50,7 @@ func TestSubtraceStorage_SingleSpan_LocalRoot(t *testing.T) {
 	sid := makeSpanID(1)
 	insertTestSpan(t, st, tid, sid, pcommon.NewSpanIDEmpty(), "svc-a")
 
-	roots := st.localRoots(tid)
+	roots := allLocalRoots(st, tid)
 	require.Len(t, roots, 1)
 	assert.Equal(t, sid, roots[0])
 }
@@ -66,7 +79,7 @@ func TestSubtraceStorage_MultiService_DisjointSubtraces(t *testing.T) {
 	require.NoError(t, st.insertSpan(tid, r, sc, sp))
 	insertTestSpan(t, st, tid, childB, rootB, "svc-b")
 
-	roots := st.localRoots(tid)
+	roots := allLocalRoots(st, tid)
 	assert.Len(t, roots, 2)
 
 	membersA, err := st.getSubtrace(tid, rootA)
@@ -162,7 +175,7 @@ func TestSubtraceStorage_ABCBCallChain_FourSubtraces(t *testing.T) {
 	insertTestSpan(t, st, tid, rootC, rootB1, "svc-c")
 	insertTestSpan(t, st, tid, rootB2, rootC, "svc-b")
 
-	roots := st.localRoots(tid)
+	roots := allLocalRoots(st, tid)
 	require.Len(t, roots, 4)
 
 	rootSet := make(map[pcommon.SpanID]bool, len(roots))
@@ -187,8 +200,35 @@ func TestSubtraceStorage_ConcurrentInsertAndLocalRoots(t *testing.T) {
 	}
 	for range 5 {
 		wg.Go(func() {
-			_ = st.localRoots(tid)
+			_ = allLocalRoots(st, tid)
 		})
 	}
 	wg.Wait()
+}
+
+// TestSubtraceStorage_DeleteSubtrace_SkipsDemotedRoot verifies that a span which
+// was a local root when its timer was scheduled, but stopped being one once its
+// parent arrived, is left in place for the parent's subtrace to release.
+func TestSubtraceStorage_DeleteSubtrace_SkipsDemotedRoot(t *testing.T) {
+	st := newTestSubtraceStorage()
+	tid := makeTraceID(1)
+	rootID := makeSpanID(1)
+	childID := makeSpanID(2)
+
+	// The child arrives first, so its parent is missing and it looks like a root.
+	insertTestSpan(t, st, tid, childID, rootID, "svc-a")
+	require.Equal(t, []pcommon.SpanID{childID}, allLocalRoots(st, tid))
+
+	// The parent arrives, demoting the child.
+	insertTestSpan(t, st, tid, rootID, pcommon.NewSpanIDEmpty(), "svc-a")
+	require.Equal(t, []pcommon.SpanID{rootID}, allLocalRoots(st, tid))
+
+	demoted, err := st.deleteSubtrace(tid, childID)
+	require.NoError(t, err)
+	assert.Empty(t, demoted, "a demoted root must not claim any spans")
+
+	released, err := st.deleteSubtrace(tid, rootID)
+	require.NoError(t, err)
+	assert.Equal(t, map[pcommon.SpanID]bool{rootID: true, childID: true}, spanIDSet(released))
+	assert.Empty(t, st.traceIDs())
 }

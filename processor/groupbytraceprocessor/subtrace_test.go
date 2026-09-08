@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -37,7 +38,7 @@ func newBS(spanID, parentID pcommon.SpanID, flags uint32, serviceName string) bu
 	s.SetSpanID(spanID)
 	s.SetParentSpanID(parentID)
 	s.SetFlags(flags)
-	return bufferedSpan{resource: r, scope: pcommon.NewInstrumentationScope(), span: s}
+	return newBufferedSpan(r, pcommon.NewInstrumentationScope(), s)
 }
 
 // empty parent --> always local root
@@ -82,14 +83,14 @@ func TestIsLocalRoot_SameServiceNameAndInstance(t *testing.T) {
 	s := ptrace.NewSpan()
 	s.SetSpanID(makeSpanID(6))
 	s.SetParentSpanID(parentID)
-	child := bufferedSpan{resource: r, scope: pcommon.NewInstrumentationScope(), span: s}
+	child := newBufferedSpan(r, pcommon.NewInstrumentationScope(), s)
 
 	pr := pcommon.NewResource()
 	pr.Attributes().PutStr("service.name", "svc-a")
 	pr.Attributes().PutStr("service.instance.id", "inst-1")
 	ps := ptrace.NewSpan()
 	ps.SetSpanID(parentID)
-	parentBS := bufferedSpan{resource: pr, scope: pcommon.NewInstrumentationScope(), span: ps}
+	parentBS := newBufferedSpan(pr, pcommon.NewInstrumentationScope(), ps)
 
 	index := map[pcommon.SpanID]bufferedSpan{parentID: parentBS}
 	assert.False(t, isLocalRoot(child, index))
@@ -104,14 +105,14 @@ func TestIsLocalRoot_DifferentInstance(t *testing.T) {
 	s := ptrace.NewSpan()
 	s.SetSpanID(makeSpanID(7))
 	s.SetParentSpanID(parentID)
-	child := bufferedSpan{resource: r, scope: pcommon.NewInstrumentationScope(), span: s}
+	child := newBufferedSpan(r, pcommon.NewInstrumentationScope(), s)
 
 	pr := pcommon.NewResource()
 	pr.Attributes().PutStr("service.name", "svc-a")
 	pr.Attributes().PutStr("service.instance.id", "inst-1")
 	ps := ptrace.NewSpan()
 	ps.SetSpanID(parentID)
-	parentBS := bufferedSpan{resource: pr, scope: pcommon.NewInstrumentationScope(), span: ps}
+	parentBS := newBufferedSpan(pr, pcommon.NewInstrumentationScope(), ps)
 
 	index := map[pcommon.SpanID]bufferedSpan{parentID: parentBS}
 	assert.True(t, isLocalRoot(child, index))
@@ -208,7 +209,7 @@ func TestAssemble_CoalescesSameResourceScope(t *testing.T) {
 
 	var members []bufferedSpan
 	for i := byte(1); i <= 3; i++ {
-		members = append(members, bufferedSpan{resource: r, scope: sc, span: makeSpan(i)})
+		members = append(members, newBufferedSpan(r, sc, makeSpan(i)))
 	}
 
 	td := assemble(members)
@@ -250,10 +251,34 @@ func TestAssemble_SeparatesDistinctResources(t *testing.T) {
 	makeSpanBS := func(r pcommon.Resource, id byte) bufferedSpan {
 		s := ptrace.NewSpan()
 		s.SetSpanID(makeSpanID(id))
-		return bufferedSpan{resource: r, scope: sc, span: s}
+		return newBufferedSpan(r, sc, s)
 	}
 
 	members := []bufferedSpan{makeSpanBS(r1, 1), makeSpanBS(r2, 2)}
 	td := assemble(members)
 	assert.Equal(t, 2, td.ResourceSpans().Len())
+}
+
+// Scope name and version are distinct parts of the grouping key, so a name that
+// happens to contain the separator can't be confused with a versioned scope.
+func TestAssemble_SeparatesAmbiguousScopeNameAndVersion(t *testing.T) {
+	r := pcommon.NewResource()
+	r.Attributes().PutStr("service.name", "svc-a")
+
+	sc1 := pcommon.NewInstrumentationScope()
+	sc1.SetName("lib@2")
+
+	sc2 := pcommon.NewInstrumentationScope()
+	sc2.SetName("lib")
+	sc2.SetVersion("2")
+
+	makeSpanBS := func(sc pcommon.InstrumentationScope, id byte) bufferedSpan {
+		s := ptrace.NewSpan()
+		s.SetSpanID(makeSpanID(id))
+		return newBufferedSpan(r, sc, s)
+	}
+
+	td := assemble([]bufferedSpan{makeSpanBS(sc1, 1), makeSpanBS(sc2, 2)})
+	require.Equal(t, 1, td.ResourceSpans().Len())
+	assert.Equal(t, 2, td.ResourceSpans().At(0).ScopeSpans().Len())
 }

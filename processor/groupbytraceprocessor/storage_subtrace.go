@@ -18,16 +18,14 @@ type subtraceStorage interface {
 	// insertSpan deep-copies and indexes one span together with its resource and scope.
 	insertSpan(pcommon.TraceID, pcommon.Resource, pcommon.InstrumentationScope, ptrace.Span) error
 
-	// localRoots returns the span IDs of all local root spans currently buffered
-	// for the given trace.
-	localRoots(pcommon.TraceID) []pcommon.SpanID
-
-	// getSubtrace returns all bufferedSpans whose ancestor chain reaches rootID
-	// without crossing another local-root boundary. Read-only; does not delete.
-	getSubtrace(pcommon.TraceID, pcommon.SpanID) ([]bufferedSpan, error)
+	// localRoots returns which of the given candidate span IDs are local root
+	// spans, given everything currently buffered for the trace. Candidates that
+	// are no longer buffered are skipped.
+	localRoots(pcommon.TraceID, []pcommon.SpanID) []pcommon.SpanID
 
 	// deleteSubtrace removes the spans that belong to rootID's subtrace and
-	// returns them.
+	// returns them. It is a no-op returning no spans if rootID is no longer a
+	// local root, since those spans belong to another subtrace.
 	deleteSubtrace(pcommon.TraceID, pcommon.SpanID) ([]bufferedSpan, error)
 
 	// getRemainder returns all spans still buffered for a trace (those not yet
@@ -68,20 +66,7 @@ func (s *subtraceMemoryStorage) insertSpan(
 	scope pcommon.InstrumentationScope,
 	span ptrace.Span,
 ) error {
-	// Deep-copy all three fields so each bufferedSpan is self-contained and the
-	// caller can recycle its pdata objects. Because spans are indexed flat by
-	// SpanID rather than grouped by resource/scope, spans that share a resource
-	// or scope each get their own independent copy.
-	rCopy := pcommon.NewResource()
-	resource.CopyTo(rCopy)
-
-	sCopy := pcommon.NewInstrumentationScope()
-	scope.CopyTo(sCopy)
-
-	spCopy := ptrace.NewSpan()
-	span.CopyTo(spCopy)
-
-	bs := bufferedSpan{resource: rCopy, scope: sCopy, span: spCopy}
+	bs := newBufferedSpan(resource, scope, span)
 
 	s.Lock()
 	defer s.Unlock()
@@ -89,11 +74,11 @@ func (s *subtraceMemoryStorage) insertSpan(
 	if _, ok := s.traces[traceID]; !ok {
 		s.traces[traceID] = make(map[pcommon.SpanID]bufferedSpan)
 	}
-	s.traces[traceID][spCopy.SpanID()] = bs
+	s.traces[traceID][bs.span.SpanID()] = bs
 	return nil
 }
 
-func (s *subtraceMemoryStorage) localRoots(traceID pcommon.TraceID) []pcommon.SpanID {
+func (s *subtraceMemoryStorage) localRoots(traceID pcommon.TraceID, candidates []pcommon.SpanID) []pcommon.SpanID {
 	s.RLock()
 	defer s.RUnlock()
 
@@ -103,14 +88,19 @@ func (s *subtraceMemoryStorage) localRoots(traceID pcommon.TraceID) []pcommon.Sp
 	}
 
 	var roots []pcommon.SpanID
-	for spanID, bs := range index {
-		if isLocalRoot(bs, index) {
+	for _, spanID := range candidates {
+		bs, ok := index[spanID]
+		if ok && isLocalRoot(bs, index) {
 			roots = append(roots, spanID)
 		}
 	}
 	return roots
 }
 
+// getSubtrace returns all bufferedSpans whose ancestor chain reaches rootID
+// without crossing another local-root boundary. Read-only: it neither deletes
+// nor checks that rootID is still a local root, so it reports what rootID would
+// claim rather than what it is entitled to.
 func (s *subtraceMemoryStorage) getSubtrace(traceID pcommon.TraceID, rootID pcommon.SpanID) ([]bufferedSpan, error) {
 	s.RLock()
 	defer s.RUnlock()
@@ -119,31 +109,32 @@ func (s *subtraceMemoryStorage) getSubtrace(traceID pcommon.TraceID, rootID pcom
 	if !ok {
 		return nil, nil
 	}
-
-	var members []bufferedSpan
-	for spanID, bs := range index {
-		if spanID == rootID || reaches(spanID, rootID, index) {
-			members = append(members, bs)
-		}
-	}
-	return members, nil
+	return subtraceMembers(rootID, index), nil
 }
 
 func (s *subtraceMemoryStorage) deleteSubtrace(traceID pcommon.TraceID, rootID pcommon.SpanID) ([]bufferedSpan, error) {
-	members, err := s.getSubtrace(traceID, rootID)
-	if err != nil || len(members) == 0 {
-		return members, err
-	}
-
+	// Collect and remove under a single write lock: if the read and the delete
+	// were separate, two concurrent releases of overlapping subtraces could both
+	// observe, and therefore both emit, the same spans.
 	s.Lock()
 	defer s.Unlock()
 
 	index, ok := s.traces[traceID]
 	if !ok {
-		return members, nil
+		return nil, nil
 	}
-	for _, bs := range members {
-		delete(index, bs.span.SpanID())
+
+	// The span may have stopped being a local root since its timer was scheduled,
+	// e.g. because its parent arrived in a later batch. Leave its spans in place
+	// so they are released with the subtrace they actually belong to.
+	bs, ok := index[rootID]
+	if !ok || !isLocalRoot(bs, index) {
+		return nil, nil
+	}
+
+	members := subtraceMembers(rootID, index)
+	for _, m := range members {
+		delete(index, m.span.SpanID())
 	}
 	if len(index) == 0 {
 		delete(s.traces, traceID)

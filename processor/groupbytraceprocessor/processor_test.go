@@ -628,16 +628,7 @@ func TestSubtrace_HappyPath_TwoServices(t *testing.T) {
 	svcA := map[pcommon.SpanID]bool{rootA: true, childA: true}
 	svcB := map[pcommon.SpanID]bool{rootB: true, childB: true}
 	for _, b := range batches {
-		ids := map[pcommon.SpanID]bool{}
-		for i := 0; i < b.ResourceSpans().Len(); i++ {
-			rs := b.ResourceSpans().At(i)
-			for j := 0; j < rs.ScopeSpans().Len(); j++ {
-				ss := rs.ScopeSpans().At(j)
-				for k := 0; k < ss.Spans().Len(); k++ {
-					ids[ss.Spans().At(k).SpanID()] = true
-				}
-			}
-		}
+		ids := batchSpanIDs(b)
 		assert.True(t, maps.Equal(ids, svcA) || maps.Equal(ids, svcB),
 			"batch span IDs %v matched neither svc-a %v nor svc-b %v", ids, svcA, svcB)
 	}
@@ -690,31 +681,29 @@ func TestSubtrace_IsRemoteCleared_TwoServices(t *testing.T) {
 	svcA := map[pcommon.SpanID]bool{rootA: true, childA: true}
 	svcB := map[pcommon.SpanID]bool{rootB: true, childB: true}
 	for _, b := range batches {
-		ids := map[pcommon.SpanID]bool{}
-		for i := 0; i < b.ResourceSpans().Len(); i++ {
-			rs := b.ResourceSpans().At(i)
-			for j := 0; j < rs.ScopeSpans().Len(); j++ {
-				ss := rs.ScopeSpans().At(j)
-				for k := 0; k < ss.Spans().Len(); k++ {
-					ids[ss.Spans().At(k).SpanID()] = true
-				}
-			}
-		}
+		ids := batchSpanIDs(b)
 		assert.True(t, maps.Equal(ids, svcA) || maps.Equal(ids, svcB),
 			"batch span IDs %v matched neither svc-a %v nor svc-b %v", ids, svcA, svcB)
 	}
 }
 
+// TestSubtrace_LocalRootArrivesLate covers the common case of a child span being
+// exported before its parent. The child is provisionally classified as a local
+// root and gets its own timer; once the parent arrives it is no longer a root,
+// so the whole service must still be emitted as a single batch rather than
+// splitting, or worse, emitting the child in both batches.
 func TestSubtrace_LocalRootArrivesLate(t *testing.T) {
 	traceID := makeTraceID(2)
 	rootID := makeSpanID(1)
 	childID := makeSpanID(2)
 
+	const waitDuration = 300 * time.Millisecond
+
 	sink := new(consumertest.TracesSink)
 	cfg := Config{
 		NumTraces:    100,
 		NumWorkers:   1,
-		WaitDuration: 50 * time.Millisecond,
+		WaitDuration: waitDuration,
 		EmitStrategy: EmitStrategyService,
 	}
 	p := newSubtraceProcessor(t, cfg, sink)
@@ -726,14 +715,27 @@ func TestSubtrace_LocalRootArrivesLate(t *testing.T) {
 	tdChild.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetParentSpanID(rootID)
 	require.NoError(t, p.ConsumeTraces(t.Context(), tdChild))
 
+	// Hold the root back so the child's timer is guaranteed to fire first. Sending
+	// them back to back would leave it up to the scheduler which release runs
+	// first, and the child releasing first is the case worth pinning down.
+	time.Sleep(waitDuration / 2)
+
 	// Now send the root.
 	tdRoot := buildServiceTrace(traceID, "svc-a", rootID)
 	require.NoError(t, p.ConsumeTraces(t.Context(), tdRoot))
 
-	// After wait duration, at least one flush should happen (root starts its own timer).
 	require.Eventually(t, func() bool {
-		return sink.SpanCount() >= 1
+		return sink.SpanCount() == 2
 	}, 5*time.Second, 5*time.Millisecond)
+
+	// The child's timer must neither emit it on its own nor emit it a second time.
+	assert.Never(t, func() bool {
+		return sink.SpanCount() != 2
+	}, 500*time.Millisecond, 10*time.Millisecond)
+
+	batches := sink.AllTraces()
+	require.Len(t, batches, 1, "root and child belong to the same service and must arrive in one batch")
+	assert.Equal(t, map[pcommon.SpanID]bool{rootID: true, childID: true}, batchSpanIDs(batches[0]))
 }
 
 func TestSubtrace_SpansSplitAcrossCalls(t *testing.T) {
@@ -746,7 +748,7 @@ func TestSubtrace_SpansSplitAcrossCalls(t *testing.T) {
 	cfg := Config{
 		NumTraces:    100,
 		NumWorkers:   1,
-		WaitDuration: 50 * time.Millisecond,
+		WaitDuration: 200 * time.Millisecond,
 		EmitStrategy: EmitStrategyService,
 	}
 	p := newSubtraceProcessor(t, cfg, sink)
@@ -765,8 +767,15 @@ func TestSubtrace_SpansSplitAcrossCalls(t *testing.T) {
 
 	// After the wait duration, all 3 spans should arrive in one batch.
 	require.Eventually(t, func() bool {
-		return sink.SpanCount() >= 3
+		return sink.SpanCount() == 3
 	}, 5*time.Second, 5*time.Millisecond)
+	assert.Never(t, func() bool {
+		return sink.SpanCount() != 3
+	}, 500*time.Millisecond, 10*time.Millisecond)
+
+	batches := sink.AllTraces()
+	require.Len(t, batches, 1)
+	assert.Equal(t, map[pcommon.SpanID]bool{rootID: true, child1: true, child2: true}, batchSpanIDs(batches[0]))
 }
 
 func TestSubtrace_ShutdownDrain_OrphanSpans(t *testing.T) {

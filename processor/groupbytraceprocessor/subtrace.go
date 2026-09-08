@@ -19,12 +19,58 @@ type subtraceID struct {
 	spanID  pcommon.SpanID // the local root span of this subtrace
 }
 
+// scopeKey identifies an instrumentation scope for grouping purposes. The parts
+// are kept separate rather than concatenated so that, for instance, the scope
+// named "lib@2" with no version can't collide with "lib" at version "2".
+type scopeKey struct {
+	name     string
+	version  string
+	attrHash string
+}
+
 // bufferedSpan holds a deep copy of a single span together with its resource
 // and instrumentation scope, enabling span-level indexing.
 type bufferedSpan struct {
 	resource pcommon.Resource
 	scope    pcommon.InstrumentationScope
 	span     ptrace.Span
+
+	// Keys derived from the resource and scope above. They are computed once,
+	// when the span is buffered, because the copies are never mutated afterwards
+	// and because these keys are hot: local root detection compares serviceID for
+	// every span that arrives, and assemble groups on the resource and scope keys.
+	serviceID   string
+	resourceKey string
+	scopeKey    scopeKey
+}
+
+// newBufferedSpan deep-copies the resource, scope and span so the result is
+// self-contained and the caller can recycle its pdata objects, then derives the
+// keys used to classify and group the span. Because spans are indexed flat by
+// SpanID rather than grouped by resource/scope, spans that share a resource or
+// scope each get their own independent copy.
+func newBufferedSpan(resource pcommon.Resource, scope pcommon.InstrumentationScope, span ptrace.Span) bufferedSpan {
+	rCopy := pcommon.NewResource()
+	resource.CopyTo(rCopy)
+
+	sCopy := pcommon.NewInstrumentationScope()
+	scope.CopyTo(sCopy)
+
+	spCopy := ptrace.NewSpan()
+	span.CopyTo(spCopy)
+
+	return bufferedSpan{
+		resource:    rCopy,
+		scope:       sCopy,
+		span:        spCopy,
+		serviceID:   serviceIdentity(rCopy),
+		resourceKey: hashMapAttrs(rCopy.Attributes()),
+		scopeKey: scopeKey{
+			name:     sCopy.Name(),
+			version:  sCopy.Version(),
+			attrHash: hashMapAttrs(sCopy.Attributes()),
+		},
+	}
 }
 
 const (
@@ -55,7 +101,7 @@ func isLocalRoot(bs bufferedSpan, index map[pcommon.SpanID]bufferedSpan) bool {
 	if !ok {
 		return true
 	}
-	return serviceIdentity(bs.resource) != serviceIdentity(parent.resource)
+	return bs.serviceID != parent.serviceID
 }
 
 // serviceIdentity returns a string that uniquely identifies the service for a
@@ -78,11 +124,24 @@ func serviceIdentity(r pcommon.Resource) string {
 	return namespace + "|" + name.AsString() + "|" + id
 }
 
-// hashMapAttrs returns a deterministic hash of all resource attributes, used
-// as a fallback service identity when service.name is absent.
+// hashMapAttrs returns a deterministic hash of an attribute map, used as a
+// fallback service identity when service.name is absent and as a grouping key
+// for resources and scopes.
 func hashMapAttrs(attrs pcommon.Map) string {
 	h := pdatautil.MapHash(attrs)
 	return hex.EncodeToString(h[:])
+}
+
+// subtraceMembers returns every span in index that belongs to the subtrace
+// rooted at rootID, including the root itself.
+func subtraceMembers(rootID pcommon.SpanID, index map[pcommon.SpanID]bufferedSpan) []bufferedSpan {
+	var members []bufferedSpan
+	for spanID, bs := range index {
+		if spanID == rootID || reaches(spanID, rootID, index) {
+			members = append(members, bs)
+		}
+	}
+	return members
 }
 
 // reaches reports whether the span identified by spanID is a member of the
@@ -122,25 +181,23 @@ func reaches(spanID, targetRootID pcommon.SpanID, index map[pcommon.SpanID]buffe
 func assemble(members []bufferedSpan) ptrace.Traces {
 	td := ptrace.NewTraces()
 
-	// Use string keys to group by (resource hash, scope hash).
-	type rsKey struct{ resource, scope string }
+	type rsKey struct {
+		resource string
+		scope    scopeKey
+	}
 	rsMap := map[rsKey]ptrace.ScopeSpans{}
 	rsIndex := map[string]ptrace.ResourceSpans{}
 
 	for _, bs := range members {
-		rk := hashResource(bs.resource)
-		sk := hashScope(bs.scope)
-		key := rsKey{rk, sk}
+		key := rsKey{resource: bs.resourceKey, scope: bs.scopeKey}
 
 		ss, found := rsMap[key]
 		if !found {
-			var rs ptrace.ResourceSpans
-			if existing, ok := rsIndex[rk]; ok {
-				rs = existing
-			} else {
+			rs, ok := rsIndex[bs.resourceKey]
+			if !ok {
 				rs = td.ResourceSpans().AppendEmpty()
 				bs.resource.CopyTo(rs.Resource())
-				rsIndex[rk] = rs
+				rsIndex[bs.resourceKey] = rs
 			}
 			ss = rs.ScopeSpans().AppendEmpty()
 			bs.scope.CopyTo(ss.Scope())
@@ -152,16 +209,4 @@ func assemble(members []bufferedSpan) ptrace.Traces {
 	}
 
 	return td
-}
-
-// hashResource returns a string key for a resource, used for grouping.
-func hashResource(r pcommon.Resource) string {
-	h := pdatautil.MapHash(r.Attributes())
-	return hex.EncodeToString(h[:])
-}
-
-// hashScope returns a string key for an instrumentation scope, used for grouping.
-func hashScope(s pcommon.InstrumentationScope) string {
-	h := pdatautil.MapHash(s.Attributes())
-	return s.Name() + "@" + s.Version() + "|" + hex.EncodeToString(h[:])
 }
