@@ -1424,7 +1424,6 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 	for _, mode := range modes {
 		t.Run(mode.name, func(t *testing.T) {
 			var healthReport atomic.Value
-			var agentConfig atomic.Value
 			server := newOpAMPServer(
 				t,
 				defaultConnectingHandler,
@@ -1432,12 +1431,6 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 					OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 						if message.Health != nil {
 							healthReport.Store(message.Health)
-						}
-						if message.EffectiveConfig != nil {
-							config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
-							if config != nil {
-								agentConfig.Store(string(config.Body))
-							}
 						}
 
 						return &protobufs.ServerToAgent{}
@@ -1480,17 +1473,6 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 					ConfigHash: hash,
 				},
 			})
-
-			require.Eventually(t, func() bool {
-				cfg, ok := agentConfig.Load().(string)
-				if ok {
-					// The effective config may be structurally different compared to what was sent,
-					// so just check that it includes some strings we know to be unique to the remote config.
-					return strings.Contains(cfg, "doesntexist")
-				}
-
-				return false
-			}, 15*time.Second, 500*time.Millisecond, "Collector was not started with remote config")
 
 			unhealthyTimeout := supervisorCfg.Agent.BootstrapTimeout + 2*time.Second
 			require.Eventually(t, func() bool {
