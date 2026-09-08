@@ -53,6 +53,7 @@ const (
 	attributeName          = "name"
 	attributeResourceGroup = "resource_group"
 	attributeResourceType  = "type"
+	attributeTimeGrain     = "timegrain"
 	metadataPrefix         = "metadata_"
 	tagPrefix              = "tags_"
 	truncateTimeGrain      = time.Minute
@@ -671,6 +672,7 @@ func (s *azureScraper) loadMetricsValues(ctx context.Context, subscriptionID, re
 						name := tagPrefix + tagName
 						attributes[name] = value
 					}
+					attributes[attributeTimeGrain] = &compositeKey.timeGrain
 
 					var metricName string
 					if metric.Name != nil && metric.Name.Value != nil {
