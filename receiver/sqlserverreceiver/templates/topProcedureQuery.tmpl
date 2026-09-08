@@ -5,6 +5,11 @@ IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
     RETURN
 END
 
+IF COL_LENGTH('sys.dm_exec_procedure_stats','total_spills') IS NULL BEGIN
+    RAISERROR ('sys.dm_exec_procedure_stats.total_spills is not available on this build. db.server.top_procedure requires SQL Server 2017 CU3 or later.',11,1)
+    RETURN
+END
+
 SELECT TOP (@maxSampleCount)
     DB_NAME(ps.database_id) AS database_name,
     OBJECT_SCHEMA_NAME(ps.object_id, ps.database_id) AS schema_name,

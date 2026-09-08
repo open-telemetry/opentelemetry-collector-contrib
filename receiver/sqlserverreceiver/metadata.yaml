@@ -274,7 +274,7 @@ attributes:
     requirement_level: recommended
     enum: [guided, misguided]
   # Stored Procedures
-  sqlserver.procedure.avg_elapsed_time:
+  sqlserver.procedure.avg_duration:
     description: Average elapsed time per execution over the collection interval, in seconds. Computed as the elapsed time delta divided by the execution count delta.
     type: double
     requirement_level: recommended
@@ -282,11 +282,11 @@ attributes:
     description: ISO 8601 timestamp of the last execution of the procedure.
     type: string
     requirement_level: recommended
-  sqlserver.procedure.max_elapsed_time:
+  sqlserver.procedure.max_duration:
     description: Longest elapsed time for a single execution of the procedure, in seconds. Reported as-is from sys.dm_exec_procedure_stats and covers the whole period the plan has been cached, so unlike the other durations it is not a delta.
     type: double
     requirement_level: recommended
-  sqlserver.procedure.min_elapsed_time:
+  sqlserver.procedure.min_duration:
     description: Shortest elapsed time for a single execution of the procedure, in seconds. Reported as-is from sys.dm_exec_procedure_stats and covers the whole period the plan has been cached, so unlike the other durations it is not a delta.
     type: double
     requirement_level: recommended
@@ -294,8 +294,8 @@ attributes:
     description: Schema of the stored procedure.
     type: string
     requirement_level: recommended
-  sqlserver.procedure.total_spills:
-    description: Total tempdb spills caused by the procedure, reported in delta value.
+  sqlserver.procedure.tempdb.spilled_pages:
+    description: Pages spilled to tempdb by the procedure over the collection interval, reported as a delta.
     type: int
     requirement_level: recommended
   sqlserver.procedure_execution_count:
@@ -548,10 +548,10 @@ events:
       - sqlserver.total_logical_reads
       - sqlserver.total_logical_writes
       - sqlserver.total_physical_reads
-      - sqlserver.procedure.total_spills
-      - sqlserver.procedure.avg_elapsed_time
-      - sqlserver.procedure.max_elapsed_time
-      - sqlserver.procedure.min_elapsed_time
+      - sqlserver.procedure.tempdb.spilled_pages
+      - sqlserver.procedure.avg_duration
+      - sqlserver.procedure.max_duration
+      - sqlserver.procedure.min_duration
       - sqlserver.procedure.last_execution_time
 
   db.server.top_query:

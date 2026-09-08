@@ -23,7 +23,7 @@ subtext: |
   `collection_interval` (default `60s`) rather than the receiver's global one, which also sets the
   window the deltas cover. Correlates with `db.server.top_query` and `db.server.query_sample`
   through the `sqlserver.procedure_id` attribute. Requires `VIEW ANY DEFINITION`, and reports
-  `sqlserver.procedure.total_spills` only on SQL Server 2016 SP2 and later.
+  `sqlserver.procedure.tempdb.spilled_pages` only on SQL Server 2017 CU3 or later.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

@@ -61,16 +61,16 @@ resourceLogs:
               - key: sqlserver.total_physical_reads
                 value:
                   intValue: "20"
-              - key: sqlserver.procedure.total_spills
+              - key: sqlserver.procedure.tempdb.spilled_pages
                 value:
                   intValue: "4"
-              - key: sqlserver.procedure.avg_elapsed_time
+              - key: sqlserver.procedure.avg_duration
                 value:
                   doubleValue: 0.06
-              - key: sqlserver.procedure.max_elapsed_time
+              - key: sqlserver.procedure.max_duration
                 value:
                   doubleValue: 8.5
-              - key: sqlserver.procedure.min_elapsed_time
+              - key: sqlserver.procedure.min_duration
                 value:
                   doubleValue: 0.0012
               - key: sqlserver.procedure.last_execution_time
@@ -113,16 +113,16 @@ resourceLogs:
               - key: sqlserver.total_physical_reads
                 value:
                   intValue: "5"
-              - key: sqlserver.procedure.total_spills
+              - key: sqlserver.procedure.tempdb.spilled_pages
                 value:
                   intValue: "0"
-              - key: sqlserver.procedure.avg_elapsed_time
+              - key: sqlserver.procedure.avg_duration
                 value:
                   doubleValue: 0.04
-              - key: sqlserver.procedure.max_elapsed_time
+              - key: sqlserver.procedure.max_duration
                 value:
                   doubleValue: 0.15
-              - key: sqlserver.procedure.min_elapsed_time
+              - key: sqlserver.procedure.min_duration
                 value:
                   doubleValue: 0.0009
               - key: sqlserver.procedure.last_execution_time

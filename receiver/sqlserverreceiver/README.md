@@ -54,10 +54,9 @@ When configured to directly connect to the SQL Server instance, the user must ha
    (`master`, `tempdb`, `model`, `msdb`) are never reported.
 
 > [!NOTE]
-> `db.server.top_procedure` reads `total_spills` from `sys.dm_exec_procedure_stats`, a
-> column added in SQL Server 2016 SP2 and 2017. On earlier builds the query fails with
-> `Invalid column name 'total_spills'` and the event reports nothing; the other events are
-> unaffected.
+> `db.server.top_procedure` requires SQL Server 2017 CU3 or later, where
+> `sys.dm_exec_procedure_stats.total_spills` became available. On older builds the event
+> reports nothing and logs an error; the other events are unaffected.
 
 ## Configuration
 
