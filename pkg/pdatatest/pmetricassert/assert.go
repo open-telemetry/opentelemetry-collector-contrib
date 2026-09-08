@@ -6,6 +6,7 @@ package pmetricassert // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"errors"
 	"fmt"
+	"math"
 	"regexp"
 	"slices"
 	"sort"
@@ -224,6 +225,12 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 	return errors.Join(errs...)
 }
 
+// roundTo matches how pmetrictest's IgnoreMetricFloatPrecision rounds.
+func roundTo(v float64, n int) float64 {
+	factor := math.Pow(10, float64(n))
+	return math.Round(v*factor) / factor
+}
+
 func compareDatapointValues(expected, actual datapointAssertion) error {
 	var errs []error
 	if expected.IntValue != nil {
@@ -234,9 +241,15 @@ func compareDatapointValues(expected, actual datapointAssertion) error {
 		}
 	}
 	if expected.DoubleValue != nil {
-		if actual.DoubleValue == nil {
+		switch {
+		case actual.DoubleValue == nil:
 			errs = append(errs, errors.New("missing expected double_value"))
-		} else if *expected.DoubleValue != *actual.DoubleValue {
+		case expected.DoublePrecision != nil:
+			digits := *expected.DoublePrecision
+			if roundTo(*expected.DoubleValue, digits) != roundTo(*actual.DoubleValue, digits) {
+				errs = append(errs, fmt.Errorf("double_value mismatch at %d decimal places: expected %v, got %v", digits, *expected.DoubleValue, *actual.DoubleValue))
+			}
+		case *expected.DoubleValue != *actual.DoubleValue:
 			errs = append(errs, fmt.Errorf("double_value mismatch: expected %v, got %v", *expected.DoubleValue, *actual.DoubleValue))
 		}
 	}
