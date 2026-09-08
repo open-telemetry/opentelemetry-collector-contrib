@@ -57,8 +57,10 @@ func addCause(seg *awsxray.Segment, span ptrace.Span) {
 			attrs := evt.Attributes()
 			attrs.EnsureCapacity(8)
 
-			// ID is a required field
-			attrs.PutStr(awsxray.AWSXrayExceptionIDAttribute, *excp.ID)
+			// ID is documented as required by X-Ray, but AWS's own documentation
+			// (https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-errors)
+			// shows it as optional, and some agents omit it, so fall back gracefully instead of panicking.
+			addString(excp.ID, awsxray.AWSXrayExceptionIDAttribute, attrs)
 			addString(excp.Message, string(conventions.ExceptionMessageKey), attrs)
 			addString(excp.Type, string(conventions.ExceptionTypeKey), attrs)
 			addBool(excp.Remote, awsxray.AWSXrayExceptionRemoteAttribute, attrs)
