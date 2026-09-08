@@ -91,7 +91,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.83.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.83.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.83.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.83.0-devel.0.20260714134811-fee4bbf7ff73 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.83.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.83.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.83.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/template v0.83.0 // indirect
@@ -100,9 +100,9 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace/log v0.83.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/stats v0.83.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.83.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.82.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.83.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.83.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/quantile v0.82.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/quantile v0.83.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.83.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.83.0 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.65.0 // indirect
