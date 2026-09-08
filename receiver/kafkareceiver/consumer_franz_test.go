@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
@@ -973,6 +974,89 @@ func TestLostDiscardsQueuedBatches(t *testing.T) {
 		close(staleDone)
 	}()
 	waitSignal(t, staleDone, "worker did not stop")
+}
+
+// TestLostLeavesRestOfBatchToNextOwner runs the revoke callback in independent
+// mode. lost() cancels the partition context while a batch is in flight, waits
+// for the worker, then commits the marked offsets. Only processed records may be
+// committed, the rest of the batch belongs to the next owner.
+func TestLostLeavesRestOfBatchToNextOwner(t *testing.T) {
+	const topic = "otlp_spans"
+	const records = 20
+
+	traces := testdata.GenerateTraces(1)
+	data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+	require.NoError(t, err)
+
+	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
+	cfg.ConsumerConfig.GroupID = t.Name()
+	cfg.PartitionProcessing.Independent = true
+	cfg.ConsumerConfig.AutoCommit = configkafka.AutoCommitConfig{
+		Enable: true, Interval: time.Hour,
+	}
+	// Fetch every record at once, so the whole batch is in flight when the
+	// partition is revoked.
+	cfg.ConsumerConfig.MinFetchSize = int32(len(data) * records)
+
+	var consumed atomic.Int64
+	consuming := make(chan struct{}, 1)
+	settings, _, logs := mustNewSettings(t)
+	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
+		return func(ctx context.Context, _ *kgo.Record, _ attribute.Set) error {
+			if consumed.Add(1) == 1 {
+				notify(consuming)
+				// Block until the revocation cancels us, like an exporter
+				// waiting on a slow downstream.
+				<-ctx.Done()
+			}
+			return ctx.Err()
+		}, nil
+	}
+
+	c, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, consumeFn)
+	require.NoError(t, err)
+	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, c.Shutdown(t.Context())) }()
+
+	rs := make([]*kgo.Record, 0, records)
+	for range records {
+		rs = append(rs, &kgo.Record{Topic: topic, Value: data})
+	}
+	require.NoError(t, kafkaClient.ProduceSync(t.Context(), rs...).FirstErr())
+
+	waitSignal(t, consuming, "first record was not consumed")
+
+	// The worker must hold the whole batch. If the fetch split it instead,
+	// lost() would discard the remainder from the mailbox and the revoke would
+	// have nothing left to stop.
+	require.Equal(t, int64(records), queuedRecords(logs),
+		"the whole batch must be in flight when the partition is revoked")
+
+	// The callback franz-go calls on a revocation. It cancels the partition
+	// context, waits for the worker, and commits.
+	c.lost(t.Context(), nil, map[string][]int32{topic: {0}}, false)
+
+	assert.Equal(t, int64(1), consumed.Load(),
+		"the batch loop must stop at the revocation")
+
+	offsets, err := kadm.NewClient(kafkaClient).FetchOffsets(t.Context(), t.Name())
+	require.NoError(t, err)
+	offset, _ := offsets.Lookup(topic, 0)
+	assert.Equal(t, int64(1), offset.At,
+		"committing past the in-flight record drops the rest of the batch")
+}
+
+// queuedRecords reports how many records the poll loop handed to the partition
+// worker, from the debug line dispatchPartitionBatches logs per batch.
+func queuedRecords(logs *observer.ObservedLogs) int64 {
+	var total int64
+	entries := logs.FilterMessage("queued fetched records").All()
+	for i := range entries {
+		if count, ok := entries[i].ContextMap()["count"].(int64); ok {
+			total += count
+		}
+	}
+	return total
 }
 
 // TestResumePartitionsAfterRebalance verifies that partitions paused due to

@@ -1,0 +1,19 @@
+change_type: bug_fix
+
+component: receiver/kafka
+
+note: Stop processing a fetched batch once the partition is revoked, instead of marking and dropping the rest of it
+
+issues: [50753]
+
+subtext: |
+  A rebalance cancels the partition context and then waits for the in-flight
+  batch, but the loop kept going through the remaining records. With the default
+  `message_marking.after: false` each one was marked and then failed on the
+  cancelled context, and those marks were committed, so the next owner never got
+  them. `message_marking.after: true` with `on_error: true` lost them the same
+  way. The loop now stops at the revocation and leaves the
+  rest of the batch to the next owner. Receiver shutdown is excluded, because no
+  other member takes those records over.
+
+change_logs: [user]

@@ -73,6 +73,27 @@ func (p *pc) cancelContext(err error) {
 	p.cancel(err)
 }
 
+// revoked reports whether a revocation, not receiver shutdown, cancelled the
+// partition consumer. Both cancel p.ctx, but only a revocation gives the
+// partition to another member, which redelivers what is left unmarked.
+//
+// p.ctx is checked first. triggerShutdown closes closing before it closes the
+// client, and closing the client cancels p.ctx, so whoever sees p.ctx done also
+// sees closing closed.
+func (p *pc) revoked(closing <-chan struct{}) bool {
+	select {
+	case <-p.ctx.Done():
+	default:
+		return false
+	}
+	select {
+	case <-closing:
+		return false
+	default:
+		return true
+	}
+}
+
 // addPauseReason records why fetching must remain paused.
 func (p *pc) addPauseReason(reason partitionPauseReason) {
 	p.pauseReasons.Or(uint32(reason))
@@ -170,6 +191,21 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 	fatalIsPermanent := false
 	var lastProcessed *kgo.Record
 	for _, msg := range p.Records {
+		// Stop before marking once the partition is revoked. lost() commits the
+		// marks, so a record marked here is never redelivered even though nothing
+		// processed it. It also keeps the wait in lost() down to the in-flight
+		// record instead of the whole batch, and that wait has to fit in the
+		// re-balance timeout. Shutdown cancels the same context, but no one takes
+		// the rest over, so finish the batch in that case.
+		//
+		// break, not return, so processed records still get their After mark and
+		// lag telemetry below.
+		if pc.revoked(c.closing) {
+			pc.logger.Debug("leaving remaining records to the next partition owner",
+				zap.Int64("offset", msg.Offset),
+			)
+			break
+		}
 		if !c.config.MessageMarking.After {
 			c.markCommitRecords(pc, p.Topic, p.Partition, msg)
 		}
