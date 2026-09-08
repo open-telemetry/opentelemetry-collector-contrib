@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -139,6 +140,208 @@ func isExplainableQuery(query string) bool {
 	return ok
 }
 
+// typedLiteralTypeNames is the allowlist of type names repaired in the "TYPENAME $N" position,
+// longest spelling first so a multi-word name beats the prefix it starts with. Anything unlisted,
+// including aliases such as int and bool and any user-defined type, stays unrepaired.
+const typedLiteralTypeNames = `timestamptz|timestamp\s+with\s+time\s+zone|timestamp\s+without\s+time\s+zone|timestamp|` +
+	`timetz|time\s+with\s+time\s+zone|time\s+without\s+time\s+zone|time|interval|date|` +
+	`double\s+precision|numeric|decimal|real|smallint|integer|bigint|boolean|` +
+	`uuid|jsonb|json|xml|bytea|inet|cidr|macaddr|money|bit\s+varying|bit|` +
+	`character\s+varying|character|varchar|text`
+
+// pg_stat_statements substitutes "$N" over the byte ranges of the constants it jumbled without
+// re-parsing, so a parameter can land where the grammar accepts none. Both constructs below fail
+// PREPARE with 42601; both rewrites skip protectedSpans, so a "$N" that is only text is untouched.
+var (
+	// EXTRACT's field argument cannot be a parameter, so the emitted EXTRACT($1 FROM x) is
+	// invalid; pg_catalog.extract($1, x) is the call the parser itself builds and does take one.
+	// Only the text through FROM is replaced, so the original closing paren still terminates the
+	// call. EXTRACT($2 FROM $1) is rewritten but fails with 42725: untyped args pick no overload.
+	extractParamPattern = regexp.MustCompile(`(?i)\bEXTRACT\s*\(\s*(\$\d+)\s+FROM\s+`)
+
+	// TYPENAME 'value' requires a literal, so "interval '1 day'" normalizes to the invalid
+	// "interval $1". CAST is used rather than "::" because only it takes a multi-word type name or
+	// an interval qualifier; the trailing group accepts only interval keywords so it cannot swallow
+	// a following AND, OR or alias. Required whitespace leaves "interval_col" and "timestamp(3) $1".
+	typedLiteralParamPattern = regexp.MustCompile(`(?i)\b(` + typedLiteralTypeNames + `)\s+(\$\d+)\b` +
+		`((?:\s+(?:YEAR|MONTH|DAY|HOUR|MINUTE|SECOND)(?:\s+TO\s+(?:MONTH|DAY|HOUR|MINUTE|SECOND))?)?)`)
+)
+
+// repairNormalizedQuery rewrites the parameter placements that pg_stat_statements can emit but
+// PostgreSQL cannot parse. Queries that do not contain them are returned unchanged.
+//
+// The EXTRACT repair targets pg_catalog.extract (PostgreSQL 14+) rather than date_part, whose
+// double precision return would fail to prepare wherever the result feeds a numeric-only function
+// or operator such as round(x, n) or %. No version gate is needed: before 14 EXTRACT returned
+// double precision, so such a query would not have parsed and cannot have been recorded.
+func repairNormalizedQuery(query string) string {
+	query = replaceOutsideProtected(query, extractParamPattern, "pg_catalog.extract(${1}, ")
+	query = replaceOutsideProtected(query, typedLiteralParamPattern, "CAST(${2} AS ${1}${3})")
+	return query
+}
+
+// replaceOutsideProtected applies re the way ReplaceAllString would, except that a match beginning
+// inside a protectedSpans range is left alone. Spans are recomputed per call.
+func replaceOutsideProtected(query string, re *regexp.Regexp, repl string) string {
+	matches := re.FindAllStringSubmatchIndex(query, -1)
+	if len(matches) == 0 {
+		return query
+	}
+
+	spans := protectedSpans(query)
+	var out []byte
+	last := 0
+	for _, m := range matches {
+		if isProtectedOffset(spans, m[0]) {
+			continue
+		}
+		out = append(out, query[last:m[0]]...)
+		out = re.ExpandString(out, repl, query, m)
+		last = m[1]
+	}
+	if out == nil {
+		return query
+	}
+	return string(append(out, query[last:]...))
+}
+
+// isProtectedOffset reports whether offset falls inside one of the spans, which protectedSpans
+// returns ordered and non-overlapping.
+func isProtectedOffset(spans [][2]int, offset int) bool {
+	for _, s := range spans {
+		if offset < s[0] {
+			return false
+		}
+		if offset < s[1] {
+			return true
+		}
+	}
+	return false
+}
+
+// protectedSpans reports the byte ranges a repair must not rewrite: string literals, quoted
+// identifiers, dollar-quoted strings and comments, which pg_stat_statements preserves verbatim, so
+// a "$1" inside one is text. Unterminated constructs protect to the end; over-protecting only
+// skips a repair, while under-protecting corrupts SQL that prepares today.
+func protectedSpans(query string) [][2]int {
+	var spans [][2]int
+	for i := 0; i < len(query); {
+		end, ok := protectedSpanAt(query, i)
+		if !ok {
+			i++
+			continue
+		}
+		spans = append(spans, [2]int{i, end})
+		i = end
+	}
+	return spans
+}
+
+// protectedSpanAt reports the end of the protected region starting at i, or false when nothing
+// protected starts there.
+func protectedSpanAt(query string, i int) (int, bool) {
+	switch {
+	case query[i] == '\'':
+		return endOfQuoted(query, i, escapesWithBackslash(query, i)), true
+	case query[i] == '"':
+		return endOfQuoted(query, i, false), true
+	case strings.HasPrefix(query[i:], "--"):
+		if nl := strings.IndexByte(query[i:], '\n'); nl != -1 {
+			return i + nl, true
+		}
+		return len(query), true
+	case strings.HasPrefix(query[i:], "/*"):
+		return endOfBlockComment(query, i), true
+	case query[i] == '$':
+		tag, ok := dollarQuoteTag(query, i)
+		if !ok {
+			return 0, false
+		}
+		return endOfDollarQuoted(query, i, tag), true
+	default:
+		return 0, false
+	}
+}
+
+// endOfQuoted returns the index just past the quote that closes the run opening at start, or
+// len(query) when it is unterminated.
+func endOfQuoted(query string, start int, backslashEscapes bool) int {
+	quote := query[start]
+	for i := start + 1; i < len(query); {
+		switch {
+		case backslashEscapes && query[i] == '\\':
+			i += 2
+		case query[i] != quote:
+			i++
+		// A doubled quote is an escaped quote, so it continues the run rather than closing it.
+		case i+1 < len(query) && query[i+1] == quote:
+			i += 2
+		default:
+			return i + 1
+		}
+	}
+	return len(query)
+}
+
+// escapesWithBackslash reports whether the literal opening at start is an E'...' string, the only
+// form where a backslash escapes the next byte. The E must not be the tail of a longer word.
+func escapesWithBackslash(query string, start int) bool {
+	if start == 0 || (query[start-1] != 'E' && query[start-1] != 'e') {
+		return false
+	}
+	return start < 2 || !isIdentifierByte(query[start-2])
+}
+
+// endOfBlockComment returns the index just past the "*/" that closes the comment opening at
+// start, or len(query) when it is unterminated. Block comments nest, hence the depth counter.
+func endOfBlockComment(query string, start int) int {
+	depth := 0
+	for i := start; i+1 < len(query); {
+		switch query[i : i+2] {
+		case "/*":
+			depth++
+			i += 2
+		case "*/":
+			depth--
+			if depth == 0 {
+				return i + 2
+			}
+			i += 2
+		default:
+			i++
+		}
+	}
+	return len(query)
+}
+
+// dollarQuoteTag returns the full delimiter, both dollar signs included, of the dollar-quoted
+// string at start. A tag is empty or an identifier not starting with a digit, so "$1" is not one.
+func dollarQuoteTag(query string, start int) (string, bool) {
+	for i := start + 1; i < len(query); i++ {
+		if query[i] == '$' {
+			return query[start : i+1], true
+		}
+		if !isIdentifierByte(query[i]) || (i == start+1 && query[i] >= '0' && query[i] <= '9') {
+			return "", false
+		}
+	}
+	return "", false
+}
+
+// endOfDollarQuoted returns the index just past the closing tag of the dollar-quoted string
+// opening at start, or len(query) when it is unterminated.
+func endOfDollarQuoted(query string, start int, tag string) int {
+	body := start + len(tag)
+	if offset := strings.Index(query[body:], tag); offset != -1 {
+		return body + offset + len(tag)
+	}
+	return len(query)
+}
+
+func isIdentifierByte(b byte) bool {
+	return b == '_' || b >= '0' && b <= '9' || b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z'
+}
+
 // explainQuery implements client.
 //
 // The real parameter count comes from pg_prepared_statements, not from counting "$N"
@@ -155,6 +358,14 @@ func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID stri
 	if !isExplainableQuery(query) {
 		logger.Debug("skipping EXPLAIN for non-explainable query", zap.String("queryID", queryID))
 		return "", nil
+	}
+
+	if repaired := repairNormalizedQuery(query); repaired != query {
+		logger.Debug("repaired normalized query before EXPLAIN",
+			zap.String("queryID", queryID),
+			zap.String("normalizedQuery", query),
+			zap.String("preparedQuery", repaired))
+		query = repaired
 	}
 
 	normalizedQueryID := strings.ReplaceAll(queryID, "-", "_")
@@ -181,7 +392,8 @@ func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID stri
 
 	prepareDb := sqlquery.NewDbClient(sqlquery.ConnWrapper{Conn: conn}, setPlanCacheMode+prepareStatement, logger, sqlquery.TelemetryConfig{})
 	if _, err = prepareDb.QueryRows(ctx); err != nil {
-		logger.Error("failed to prepare statement for EXPLAIN", zap.Error(err), zap.String("queryID", queryID))
+		// A syntax error's character position refers to the repaired text, not the caller's.
+		logger.Error("failed to prepare statement for EXPLAIN", zap.Error(err), zap.String("queryID", queryID), zap.String("preparedQuery", query))
 		return "", err
 	}
 
