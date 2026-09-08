@@ -56,15 +56,20 @@ func WithString(s string) HashOption {
 	}
 }
 
+type mapEntry struct {
+	key   string
+	value pcommon.Value
+}
+
 type hashWriter struct {
-	byteBuf []byte
-	keysBuf []string
+	byteBuf    []byte
+	entriesBuf []mapEntry
 }
 
 func newHashWriter() *hashWriter {
 	return &hashWriter{
-		byteBuf: make([]byte, 0, 512),
-		keysBuf: make([]string, 0, 16),
+		byteBuf:    make([]byte, 0, 512),
+		entriesBuf: make([]mapEntry, 0, 16),
 	}
 }
 
@@ -123,30 +128,28 @@ func ValueHash(v pcommon.Value) [16]byte {
 }
 
 func (hw *hashWriter) writeMapHash(m pcommon.Map) {
-	// For each recursive call into this function we want to preserve the previous buffer state
-	// while also adding new keys to the buffer. nextIndex is the index of the first new key
-	// added to the buffer for this call of the function.
-	// This also works for the first non-recursive call of this function because the buffer is always empty
-	// on the first call due to it being cleared of any added keys at then end of the function.
-	nextIndex := len(hw.keysBuf)
+	// Preserve entries from outer calls while adding the entries for this map. This is
+	// necessary because writeValueHash recursively calls writeMapHash for nested maps.
+	nextIndex := len(hw.entriesBuf)
 
-	for k := range m.All() {
-		hw.keysBuf = append(hw.keysBuf, k)
+	for k, v := range m.All() {
+		hw.entriesBuf = append(hw.entriesBuf, mapEntry{key: k, value: v})
 	}
 
-	// Get only the newly added keys from the buffer by slicing the buffer from nextIndex to the end
-	workingKeySet := hw.keysBuf[nextIndex:]
-
-	sort.Strings(workingKeySet)
-	for _, k := range workingKeySet {
-		v, _ := m.Get(k)
+	// Sort the key/value pairs together. Capturing the value during the initial traversal
+	// avoids calling Map.Get for every sorted key; Map.Get is a linear scan.
+	workingEntries := hw.entriesBuf[nextIndex:]
+	sort.Slice(workingEntries, func(i, j int) bool {
+		return workingEntries[i].key < workingEntries[j].key
+	})
+	for _, entry := range workingEntries {
 		hw.byteBuf = append(hw.byteBuf, keyPrefix...)
-		hw.byteBuf = append(hw.byteBuf, k...)
-		hw.writeValueHash(v)
+		hw.byteBuf = append(hw.byteBuf, entry.key...)
+		hw.writeValueHash(entry.value)
 	}
 
-	// Remove all keys that were added to the buffer during this call of the function
-	hw.keysBuf = hw.keysBuf[:nextIndex]
+	// Remove all entries that were added to the buffer during this call of the function.
+	hw.entriesBuf = hw.entriesBuf[:nextIndex]
 }
 
 func (hw *hashWriter) writeValueHash(v pcommon.Value) {
