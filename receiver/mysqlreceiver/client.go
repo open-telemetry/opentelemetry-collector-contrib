@@ -502,20 +502,25 @@ func (c *mySQLClient) getInnodbTransactionStats() (innodbTransactionStats, error
 // InnoDB redo log metrics on MySQL versions before the structured global status
 // variables were introduced.
 func (c *mySQLClient) getInnodbRedoLogStatsFromLogStatus() (innodbRedoLogStats, error) {
-	q := "SELECT current_lsn, checkpoint_lsn, current_lsn - checkpoint_lsn " +
-		"FROM (" +
-		"SELECT " +
-		"COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(STORAGE_ENGINES, '$.InnoDB.LSN')) AS SIGNED), 0) AS current_lsn, " +
-		"COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(STORAGE_ENGINES, '$.InnoDB.LSN_checkpoint')) AS SIGNED), 0) AS checkpoint_lsn " +
-		"FROM performance_schema.log_status" +
-		") AS innodb_redo_log_status"
-	var stats innodbRedoLogStats
-	err := c.client.QueryRow(q).Scan(
-		&stats.currentLSN,
-		&stats.checkpointLSN,
-		&stats.checkpointAge,
-	)
-	return stats, err
+	q := "SELECT " +
+		"CAST(JSON_UNQUOTE(JSON_EXTRACT(STORAGE_ENGINES, '$.InnoDB.LSN')) AS SIGNED), " +
+		"CAST(JSON_UNQUOTE(JSON_EXTRACT(STORAGE_ENGINES, '$.InnoDB.LSN_checkpoint')) AS SIGNED) " +
+		"FROM performance_schema.log_status"
+	var currentLSN, checkpointLSN sql.NullInt64
+	if err := c.client.QueryRow(q).Scan(&currentLSN, &checkpointLSN); err != nil {
+		return innodbRedoLogStats{}, err
+	}
+	if !currentLSN.Valid {
+		return innodbRedoLogStats{}, errors.New("missing InnoDB redo log current LSN in performance_schema.log_status")
+	}
+	if !checkpointLSN.Valid {
+		return innodbRedoLogStats{}, errors.New("missing InnoDB redo log checkpoint LSN in performance_schema.log_status")
+	}
+	return innodbRedoLogStats{
+		currentLSN:    currentLSN.Int64,
+		checkpointLSN: checkpointLSN.Int64,
+		checkpointAge: currentLSN.Int64 - checkpointLSN.Int64,
+	}, nil
 }
 
 // getTableStats queries the db for information_schema table size metrics.

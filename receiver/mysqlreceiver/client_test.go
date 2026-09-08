@@ -480,32 +480,66 @@ func TestGetInnodbTransactionStats(t *testing.T) {
 }
 
 func TestGetInnodbRedoLogStatsFromLogStatus(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
+	tests := []struct {
+		name              string
+		currentLSN        driver.Value
+		checkpointLSN     driver.Value
+		wantCurrentLSN    int64
+		wantCheckpointLSN int64
+		wantCheckpointAge int64
+		wantErr           string
+	}{
+		{
+			name:              "records redo log stats",
+			currentLSN:        25012145208,
+			checkpointLSN:     25012145199,
+			wantCurrentLSN:    25012145208,
+			wantCheckpointLSN: 25012145199,
+			wantCheckpointAge: 9,
+		},
+		{
+			name:          "missing current LSN",
+			checkpointLSN: 25012145199,
+			wantErr:       "missing InnoDB redo log current LSN in performance_schema.log_status",
+		},
+		{
+			name:       "missing checkpoint LSN",
+			currentLSN: 25012145208,
+			wantErr:    "missing InnoDB redo log checkpoint LSN in performance_schema.log_status",
+		},
+	}
 
-	query := "SELECT current_lsn, checkpoint_lsn, current_lsn - checkpoint_lsn " +
-		"FROM (" +
-		"SELECT " +
-		"COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(STORAGE_ENGINES, '$.InnoDB.LSN')) AS SIGNED), 0) AS current_lsn, " +
-		"COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(STORAGE_ENGINES, '$.InnoDB.LSN_checkpoint')) AS SIGNED), 0) AS checkpoint_lsn " +
-		"FROM performance_schema.log_status" +
-		") AS innodb_redo_log_status"
-	mock.ExpectQuery(regexp.QuoteMeta(query)).
-		WillReturnRows(sqlmock.NewRows([]string{
-			"current_lsn",
-			"checkpoint_lsn",
-			"checkpoint_age",
-		}).AddRow(25012145208, 25012145199, 9))
+	query := "SELECT " +
+		"CAST(JSON_UNQUOTE(JSON_EXTRACT(STORAGE_ENGINES, '$.InnoDB.LSN')) AS SIGNED), " +
+		"CAST(JSON_UNQUOTE(JSON_EXTRACT(STORAGE_ENGINES, '$.InnoDB.LSN_checkpoint')) AS SIGNED) " +
+		"FROM performance_schema.log_status"
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
 
-	c := &mySQLClient{client: db}
-	got, err := c.getInnodbRedoLogStatsFromLogStatus()
-	require.NoError(t, err)
-	require.NoError(t, mock.ExpectationsWereMet())
+			mock.ExpectQuery(regexp.QuoteMeta(query)).
+				WillReturnRows(sqlmock.NewRows([]string{
+					"current_lsn",
+					"checkpoint_lsn",
+				}).AddRow(tt.currentLSN, tt.checkpointLSN))
 
-	assert.Equal(t, int64(25012145208), got.currentLSN)
-	assert.Equal(t, int64(25012145199), got.checkpointLSN)
-	assert.Equal(t, int64(9), got.checkpointAge)
+			c := &mySQLClient{client: db}
+			got, err := c.getInnodbRedoLogStatsFromLogStatus()
+			require.NoError(t, mock.ExpectationsWereMet())
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				assert.Empty(t, got)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantCurrentLSN, got.currentLSN)
+			assert.Equal(t, tt.wantCheckpointLSN, got.checkpointLSN)
+			assert.Equal(t, tt.wantCheckpointAge, got.checkpointAge)
+		})
+	}
 }
 
 // TestGetDBVersionCaching verifies that a cached version is returned on subsequent
