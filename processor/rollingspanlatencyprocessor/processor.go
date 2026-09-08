@@ -25,15 +25,16 @@ const (
 )
 
 type rollingSpanLatencyProcessor struct {
-	next         consumer.Traces
-	logger       *zap.Logger
-	telemetry    *metadata.TelemetryBuilder
-	statsMap     map[string]*spanStats
-	nowFn        func() time.Time
-	cancelEvict  context.CancelFunc
-	config       *Config
-	droppedTotal atomic.Int64
-	statsMu      sync.RWMutex
+	next             consumer.Traces
+	logger           *zap.Logger
+	telemetry        *metadata.TelemetryBuilder
+	statsMap         map[string]*spanStats
+	nowFn            func() time.Time
+	cancelEvict      context.CancelFunc
+	config           *Config
+	droppedTotal     atomic.Int64
+	lastReportedDrop int64
+	statsMu          sync.RWMutex
 }
 
 // buildKey returns a composite stats-map key from an ordered slice of resource
@@ -136,13 +137,18 @@ func (p *rollingSpanLatencyProcessor) evict(now time.Time) {
 	p.statsMu.Unlock()
 
 	evicted := before - after
+	// dropped_keys_total is a cumulative monotonic counter, so it must never
+	// be reset here — only diffed against the last-reported value for the
+	// per-sweep log field.
 	dropped := p.droppedTotal.Load()
+	sinceLastSweep := dropped - p.lastReportedDrop
+	p.lastReportedDrop = dropped
 
 	if evicted > 0 {
 		fields := []zap.Field{
 			zap.Int("evicted", evicted),
 			zap.Int("remaining", after),
-			zap.Int64("dropped_since_last_sweep", dropped),
+			zap.Int64("dropped_since_last_sweep", sinceLastSweep),
 		}
 		// Churn warning: evicted count exceeded the configured ratio of the
 		// post-eviction map size. This indicates keys are turning over rapidly,
@@ -155,9 +161,6 @@ func (p *rollingSpanLatencyProcessor) evict(now time.Time) {
 			p.logger.Debug("evicted stale span baselines", fields...)
 		}
 	}
-
-	// Reset the per-interval drop counter now that we've reported it.
-	p.droppedTotal.Store(0)
 }
 
 func (p *rollingSpanLatencyProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
@@ -183,16 +186,24 @@ func (p *rollingSpanLatencyProcessor) ConsumeTraces(ctx context.Context, td ptra
 }
 
 func (p *rollingSpanLatencyProcessor) processSpan(span ptrace.Span, resourceVals []string) {
-	key := buildKey(resourceVals, span.Name())
-	durationNs := float64(span.EndTimestamp() - span.StartTimestamp())
-	if durationNs <= 0 {
+	// EndTimestamp/StartTimestamp are unsigned; comparing before subtracting
+	// avoids wrapping a malformed end-before-start span into a huge positive
+	// "duration".
+	if span.EndTimestamp() <= span.StartTimestamp() {
 		return
 	}
-	// Use the span's own end timestamp so spans within the same batch each
-	// advance the EWMA clock correctly. A batch-shared wall-clock time would
-	// give dt=0 for all but the first span, collapsing alpha to 0 and
-	// leaving variance near-zero.
-	now := time.Unix(0, int64(span.EndTimestamp()))
+	durationNs := float64(span.EndTimestamp() - span.StartTimestamp())
+
+	key := buildKey(resourceVals, span.Name())
+	// Use the collector's processing time, not the span's own event-time
+	// timestamp, as the EWMA clock. Event timestamps can arrive out of order
+	// or share an identical value across a batch, either of which would
+	// otherwise produce a negative or zero decay step and corrupt the
+	// baseline (negative variance -> NaN stddev). Sharing this same clock
+	// with evict() also means a baseline's idle time reflects when the
+	// collector last observed it, not when the span itself claims to have
+	// ended.
+	now := p.nowFn()
 
 	stats := p.getOrCreateStats(key)
 	if stats == nil {
