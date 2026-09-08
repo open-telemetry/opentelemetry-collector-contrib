@@ -52,6 +52,15 @@ cpu0 1 2 3 4 5 6 7 8 9 10
 			},
 		},
 		{
+			name: "extra unknown columns beyond ten are ignored",
+			content: `cpu  1 2 3 4 5 6 7 8 9 10 11 99
+cpu0 1 2 3 4 5 6 7 8 9 10 11 99
+`,
+			want: []Stat{
+				{CPU: "cpu0", User: 1, Nice: 2, System: 3, Idle: 4, Iowait: 5, Irq: 6, Softirq: 7, Steal: 8, Guest: 9, GuestNice: 10},
+			},
+		},
+		{
 			name:    "aggregate cpu line skipped",
 			content: "cpu  100 200 300 400 50 60 70 80 90 10\nintr 123 456\n",
 			want:    []Stat{},
