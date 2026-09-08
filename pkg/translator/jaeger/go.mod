@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger-idl v0.11.1
+	github.com/jaegertracing/jaeger-idl v0.11.4
 	github.com/kr/pretty v0.3.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.160.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.160.0
