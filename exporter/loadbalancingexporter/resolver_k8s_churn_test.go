@@ -206,33 +206,35 @@ func TestK8sHandlerOnDeleteRemovesValidSubset(t *testing.T) {
 		"pod-a should be removed on delete even though the tombstone slice had a hostnameless endpoint")
 }
 
-func TestK8sHandlerOnDeleteHandlesTombstones(t *testing.T) {
+func TestK8sHandlerOnDeleteHandlesTombstone(t *testing.T) {
+	_, tb := getTelemetryAssets(t)
+	res, err := newK8sResolver(
+		fake.NewClientset(),
+		zap.NewNop(),
+		"lb",
+		[]int32{4317},
+		defaultListWatchTimeout,
+		false,
+		tb,
+	)
+	require.NoError(t, err)
+
 	endpointSlice := mkSlice(epNoHostname("10.0.0.1"))
-	tests := []struct {
-		name      string
-		tombstone any
-	}{
-		{
-			name:      "value",
-			tombstone: cache.DeletedFinalStateUnknown{Obj: endpointSlice},
-		},
-		{
-			name:      "pointer",
-			tombstone: &cache.DeletedFinalStateUnknown{Obj: endpointSlice},
-		},
-	}
+	res.handler.OnAdd(endpointSlice, false)
+	require.Equal(t, []string{"10.0.0.1:4317"}, res.Endpoints())
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			h, store := newTestHandler(t, false)
-			h.OnAdd(endpointSlice, false)
-			require.ElementsMatch(t, []string{"10.0.0.1"}, storeKeys(store))
+	callbackCalls := 0
+	var resolved []string
+	res.onChange(func(endpoints []string) {
+		callbackCalls++
+		resolved = endpoints
+	})
 
-			h.OnDelete(tt.tombstone)
+	res.handler.OnDelete(cache.DeletedFinalStateUnknown{Obj: endpointSlice})
 
-			assert.Empty(t, storeKeys(store))
-		})
-	}
+	require.Equal(t, 1, callbackCalls)
+	assert.Empty(t, resolved)
+	assert.Empty(t, res.Endpoints())
 }
 
 // TestK8sResolverIPChurnDoesNotLeak is a regression guard confirming the

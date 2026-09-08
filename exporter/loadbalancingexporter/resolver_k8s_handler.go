@@ -123,9 +123,6 @@ func (h handler) OnDelete(obj any) {
 	case cache.DeletedFinalStateUnknown:
 		h.OnDelete(object.Obj)
 		return
-	case *cache.DeletedFinalStateUnknown:
-		h.OnDelete(object.Obj)
-		return
 	case *discoveryv1.EndpointSlice:
 		if object != nil {
 			ok, endpoints = convertToEndpoints(h.returnNames, object)
