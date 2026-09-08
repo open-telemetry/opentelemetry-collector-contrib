@@ -23,8 +23,10 @@ subtext: |
   `service.instance.id` already resolves its host, and both attributes now share one resolution path.
   `host.name` is unchanged.
 
-  A target whose port is absent or unparseable now resolves `service.instance.id` to
-  `<host>:1521/<service>` instead of `unknown:1521/<service>`.
+  A target whose port is absent or unparseable now resolves `service.instance.id` to `host:1521/service`
+  instead of `unknown:1521/service`. Connection strings with no parseable host at all, such as TNS
+  descriptors, still report `unknown:1521/service` and omit `server.address`, since the instance's
+  location cannot be determined.
 
   To stop emitting the server attributes, disable them via `resource_attributes.server.address.enabled: false`
   and `resource_attributes.server.port.enabled: false`.

@@ -2367,7 +2367,13 @@ func resolveServerEndpoint(hostName string, logger *zap.Logger) (string, int64) 
 
 	host = strings.Trim(strings.TrimSpace(host), "[]")
 
-	if host == "" || strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback() {
+	if host == "" {
+		logger.Warn("Could not determine the Oracle host from the connection string; server.address will not be reported",
+			zap.String("hostName", hostName))
+		return "", port
+	}
+
+	if strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback() {
 		hostname, hostnameErr := os.Hostname()
 		if hostnameErr != nil {
 			logger.Warn("Failed resolving loopback to machine hostname for server.address", zap.Error(hostnameErr))

@@ -2540,7 +2540,9 @@ func TestResolveServerEndpoint(t *testing.T) {
 		{name: "bare IPv6 loopback", hostName: "::1", expectedHost: localhostName, expectedPort: 1521},
 		{name: "bracketed IPv6 with port is not loopback", hostName: "[2001:db8::1]:1521", expectedHost: "2001:db8::1", expectedPort: 1521},
 		{name: "bare IPv6 is not loopback", hostName: "2001:db8::1", expectedHost: "2001:db8::1", expectedPort: 1521},
-		{name: "empty target", hostName: "", expectedHost: localhostName, expectedPort: 1521},
+		// An undetermined host is not co-located knowledge, so it is left unset rather than resolved.
+		{name: "empty target", hostName: "", expectedHost: "", expectedPort: 1521},
+		{name: "blank target", hostName: "   ", expectedHost: "", expectedPort: 1521},
 		{name: "port zero defaults", hostName: "oraclehost:0", expectedHost: "oraclehost", expectedPort: 1521},
 		{name: "empty port defaults", hostName: "oraclehost:", expectedHost: "oraclehost", expectedPort: 1521},
 		{name: "non numeric port defaults", hostName: "oraclehost:notaport", expectedHost: "oraclehost", expectedPort: 1521},
@@ -2551,6 +2553,32 @@ func TestResolveServerEndpoint(t *testing.T) {
 			host, port := resolveServerEndpoint(test.hostName, zap.NewNop())
 			assert.Equal(t, test.expectedHost, host)
 			assert.Equal(t, test.expectedPort, port)
+		})
+	}
+}
+
+const undeterminedHostWarning = "Could not determine the Oracle host from the connection string; server.address will not be reported"
+
+func TestResolveServerEndpointWarnsOnUndeterminedHost(t *testing.T) {
+	core, logs := observer.New(zapcore.WarnLevel)
+
+	host, port := resolveServerEndpoint("", zap.New(core))
+
+	assert.Empty(t, host)
+	assert.Equal(t, defaultOraclePort, port)
+	assert.Equal(t, 1, logs.FilterMessage(undeterminedHostWarning).Len())
+}
+
+func TestResolveServerEndpointDoesNotWarnOnDeterminedHost(t *testing.T) {
+	for _, hostName := range []string{"oraclehost:1521", "oraclehost", "localhost:1521", "127.0.0.1", "::1"} {
+		t.Run(hostName, func(t *testing.T) {
+			core, logs := observer.New(zapcore.WarnLevel)
+
+			host, _ := resolveServerEndpoint(hostName, zap.New(core))
+
+			assert.NotEmpty(t, host)
+			assert.Equal(t, 0, logs.FilterMessage(undeterminedHostWarning).Len(),
+				"a parseable host must not be reported as undetermined")
 		})
 	}
 }
@@ -2582,7 +2610,8 @@ func TestServiceInstanceID(t *testing.T) {
 		// A non-loopback IPv6 host is not re-bracketed by constructInstanceID; unchanged from before.
 		{name: "non loopback IPv6 with port", instanceString: "[2001:db8::1]:1521/XE", expected: "2001:db8::1:1521/XE"},
 		{name: "host without service", instanceString: "127.0.0.1:1521", expected: localhostName + ":1521"},
-		{name: "empty instance string", instanceString: "", expected: localhostName + ":1521"},
+		// An undetermined host keeps the pre-existing "unknown" placeholder.
+		{name: "empty instance string", instanceString: "", expected: "unknown:1521"},
 	}
 
 	for _, test := range tests {

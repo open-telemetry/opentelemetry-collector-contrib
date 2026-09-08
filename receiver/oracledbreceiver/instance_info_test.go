@@ -6,6 +6,7 @@ package oracledbreceiver
 import (
 	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -556,6 +557,52 @@ func TestSetupResourceBuilder_EmptyServerAddressNotEmitted(t *testing.T) {
 	serverPort, ok := res.Attributes().Get("server.port")
 	require.True(t, ok, "server.port should always be emitted")
 	assert.Equal(t, defaultOraclePort, serverPort.Int())
+}
+
+// TestSetupResourceBuilder_UndeterminedHostNotEmitted walks the same path newScraper takes, from the
+// configured datasource through resolveInstanceIdentity, for datasources url.Parse cannot read.
+func TestSetupResourceBuilder_UndeterminedHostNotEmitted(t *testing.T) {
+	datasources := map[string]string{
+		"TNS descriptor":                         "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=XE)))",
+		"Easy Connect without the oracle prefix": "otel/password@localhost:51521/XE",
+	}
+
+	for name, datasource := range datasources {
+		t.Run(name, func(t *testing.T) {
+			hostName, hostNameErr := getHostName(datasource)
+			require.NoError(t, hostNameErr)
+			instanceName, instanceNameErr := getInstanceName(datasource)
+			require.NoError(t, instanceNameErr)
+
+			serverAddress, serverPort, serviceInstanceID := resolveInstanceIdentity(hostName, instanceName, zap.NewNop())
+
+			cfg := metadata.NewDefaultMetricsBuilderConfig()
+			scrpr := oracleScraper{
+				mb:                   metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+				metricsBuilderConfig: cfg,
+				instanceName:         instanceName,
+				hostName:             hostName,
+				serverAddress:        serverAddress,
+				serverPort:           serverPort,
+				serviceInstanceID:    serviceInstanceID,
+			}
+
+			res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
+
+			address, hasServerAddress := res.Attributes().Get("server.address")
+			assert.False(t, hasServerAddress,
+				"server.address should not be emitted when the datasource cannot be parsed, got %q", address.Str())
+
+			port, ok := res.Attributes().Get("server.port")
+			require.True(t, ok, "server.port should always be emitted")
+			assert.Equal(t, defaultOraclePort, port.Int())
+
+			instanceID, ok := res.Attributes().Get("service.instance.id")
+			require.True(t, ok)
+			assert.True(t, strings.HasPrefix(instanceID.Str(), "unknown:1521"),
+				"an unparseable datasource must not identify the collector host, got %q", instanceID.Str())
+		})
+	}
 }
 
 func TestSetupResourceBuilder_AllMetadataFields(t *testing.T) {

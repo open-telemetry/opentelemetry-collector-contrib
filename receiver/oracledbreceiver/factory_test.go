@@ -83,9 +83,10 @@ func TestResolveServerEndpointFromDataSource(t *testing.T) {
 		{name: "container hostname is left alone", datasource: "oracle://otel:password@ora-docker:1521/XE", expectedAddress: "ora-docker", expectedPort: 1521},
 		{name: "docker host gateway is left alone", datasource: "oracle://otel:password@host.docker.internal:1521/XE", expectedAddress: "host.docker.internal", expectedPort: 1521},
 		{name: "remote host without port", datasource: "oracle://otel:password@example.com/XE", expectedAddress: "example.com", expectedPort: 1521},
-		// url.Parse reads neither form, so the host is undetermined and never reported as empty.
-		{name: "TNS descriptor", datasource: "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=XE)))", expectedAddress: localhostName, expectedPort: 1521},
-		{name: "Easy Connect without the oracle prefix", datasource: "otel/password@localhost:51521/XE", expectedAddress: localhostName, expectedPort: 1521},
+		// url.Parse reads neither form, so the host stays undetermined and must not be reported
+		// as the collector's own hostname.
+		{name: "TNS descriptor", datasource: "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=XE)))", expectedAddress: "", expectedPort: 1521},
+		{name: "Easy Connect without the oracle prefix", datasource: "otel/password@localhost:51521/XE", expectedAddress: "", expectedPort: 1521},
 	}
 
 	for _, test := range tests {
@@ -121,8 +122,14 @@ func TestServerEndpointAndInstanceIDAgree(t *testing.T) {
 
 			address, port, instanceID := resolveInstanceIdentity(hostName, instanceName, zap.NewNop())
 
-			assert.True(t, strings.HasPrefix(instanceID, address+":"+strconv.FormatInt(port, 10)),
-				"service.instance.id %q must start with the resolved endpoint %s:%d", instanceID, address, port)
+			// An undetermined host is omitted from server.address but still carries the
+			// pre-existing "unknown" placeholder in service.instance.id.
+			expectedHost := address
+			if expectedHost == "" {
+				expectedHost = "unknown"
+			}
+			assert.True(t, strings.HasPrefix(instanceID, expectedHost+":"+strconv.FormatInt(port, 10)),
+				"service.instance.id %q must start with the resolved endpoint %s:%d", instanceID, expectedHost, port)
 		})
 	}
 }
