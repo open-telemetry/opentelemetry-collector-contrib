@@ -31,6 +31,9 @@ resourceMetrics:
                     - key: tags_tagName2
                       value:
                         stringValue: tagValue2
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -54,6 +57,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: group1
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -77,6 +83,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: group1
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -103,6 +112,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: group1
+                    - key: timegrain
+                      value:
+                        stringValue: PT1H
                     - key: type
                       value:
                         stringValue: type1
@@ -132,6 +144,9 @@ resourceMetrics:
                     - key: tags_tagName2
                       value:
                         stringValue: tagValue2
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -161,6 +176,9 @@ resourceMetrics:
                     - key: tags_tagName2
                       value:
                         stringValue: tagValue2
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -187,6 +205,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: group1
+                    - key: timegrain
+                      value:
+                        stringValue: PT1H
                     - key: type
                       value:
                         stringValue: type1
@@ -216,6 +237,9 @@ resourceMetrics:
                     - key: tags_tagName2
                       value:
                         stringValue: tagValue2
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -245,6 +269,9 @@ resourceMetrics:
                     - key: tags_tagName2
                       value:
                         stringValue: tagValue2
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -274,6 +301,9 @@ resourceMetrics:
                     - key: tags_tagName2
                       value:
                         stringValue: tagValue2
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -303,6 +333,9 @@ resourceMetrics:
                     - key: tags_tagName2
                       value:
                         stringValue: tagValue2
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -332,6 +365,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: group1
+                    - key: timegrain
+                      value:
+                        stringValue: PT1H
                     - key: type
                       value:
                         stringValue: type1
@@ -358,6 +394,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: group1
+                    - key: timegrain
+                      value:
+                        stringValue: PT1H
                     - key: type
                       value:
                         stringValue: type1
@@ -387,6 +426,9 @@ resourceMetrics:
                     - key: tags_tagName2
                       value:
                         stringValue: tagValue2
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -416,6 +458,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: group1
+                    - key: timegrain
+                      value:
+                        stringValue: PT1H
                     - key: type
                       value:
                         stringValue: type1
@@ -445,6 +490,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: group1
+                    - key: timegrain
+                      value:
+                        stringValue: PT1H
                     - key: type
                       value:
                         stringValue: type1
@@ -474,6 +522,9 @@ resourceMetrics:
                     - key: tags_tagName2
                       value:
                         stringValue: tagValue2
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -503,6 +554,9 @@ resourceMetrics:
                     - key: tags_tagName2
                       value:
                         stringValue: tagValue2
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -529,6 +583,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: group1
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -558,6 +615,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: group1
+                    - key: timegrain
+                      value:
+                        stringValue: PT1H
                     - key: type
                       value:
                         stringValue: type1
@@ -587,6 +647,9 @@ resourceMetrics:
                     - key: tags_tagName2
                       value:
                         stringValue: tagValue2
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -616,6 +679,9 @@ resourceMetrics:
                     - key: tags_tagName2
                       value:
                         stringValue: tagValue2
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -639,6 +705,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: group1
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -665,6 +734,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: group1
+                    - key: timegrain
+                      value:
+                        stringValue: PT1H
                     - key: type
                       value:
                         stringValue: type1
@@ -688,6 +760,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: group1
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -717,6 +792,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: group1
+                    - key: timegrain
+                      value:
+                        stringValue: PT1H
                     - key: type
                       value:
                         stringValue: type1
@@ -743,6 +821,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: group1
+                    - key: timegrain
+                      value:
+                        stringValue: PT1H
                     - key: type
                       value:
                         stringValue: type1
@@ -772,6 +853,9 @@ resourceMetrics:
                     - key: tags_tagName2
                       value:
                         stringValue: tagValue2
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -801,6 +885,9 @@ resourceMetrics:
                     - key: tags_tagName2
                       value:
                         stringValue: tagValue2
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -830,6 +917,9 @@ resourceMetrics:
                     - key: tags_tagName2
                       value:
                         stringValue: tagValue2
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -853,6 +943,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: group1
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1
@@ -892,6 +985,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: group1
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: type1

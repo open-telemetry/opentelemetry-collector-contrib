@@ -1,0 +1,15 @@
+change_type: enhancement
+
+component: receiver/azuremonitor
+
+note: Emit the `timegrain` datapoint attribute on the ARM collection path, matching the batch API path
+
+issues: [50847]
+
+subtext: |
+  Datapoints collected through the batch API carried a `timegrain` attribute while
+  the same metrics collected through the ARM API did not, so a consumer could not
+  tell a PT1M series from a PT1H one on that path. Both scrapers now attach the
+  attribute from the same composite key.
+
+change_logs: [user]
