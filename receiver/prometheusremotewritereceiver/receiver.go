@@ -117,6 +117,10 @@ func createMetricIdentity(res identity.Resource, metricName, unit string, si sco
 	}
 }
 
+// sep is a byte that is not valid UTF-8, used as a field separator to prevent
+// hash collisions between different field boundary combinations (e.g. "ab"+"c" vs "a"+"bc").
+var sep = []byte{0xff}
+
 // Hash generates a unique hash for the metric identity using the identity library's hasher
 // as a foundation, extended with scope and metric fields.
 func (mi metricIdentity) Hash() uint64 {
@@ -660,8 +664,8 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			// Reference to this behavior: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model-producer-recommendations
 			histMetric.SetDescription(description)
 		}
-		// A metric holds one data point per series, so this histogram's exemplars belong to the
-		// data point the conversion appends below.
+		// One metric holds the data points of every series with its identity, so only the point
+		// the conversion appends below is known to be this histogram's.
 		var (
 			exemplarSlice pmetric.ExemplarSlice
 			appended      bool
