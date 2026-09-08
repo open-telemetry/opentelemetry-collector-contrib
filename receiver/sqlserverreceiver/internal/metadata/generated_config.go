@@ -3836,10 +3836,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		ServerAddress: ServerAddressResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		ServerPort: ServerPortResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		ServiceInstanceID: ServiceInstanceIDResourceAttributeConfig{
 			Enabled: true,

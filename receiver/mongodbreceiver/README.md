@@ -12,7 +12,7 @@ This receiver fetches stats from a MongoDB instance using the
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fmongodb%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fmongodb) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fmongodb%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fmongodb) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_mongodb)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_mongodb&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@justinianvoss22](https://www.github.com/justinianvoss22), [@dyl10s](https://www.github.com/dyl10s), [@ishleenk17](https://www.github.com/ishleenk17) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@justinianvoss22](https://www.github.com/justinianvoss22), [@dyl10s](https://www.github.com/dyl10s), [@ishleenk17](https://www.github.com/ishleenk17), [@shrenikjain38](https://www.github.com/shrenikjain38) \| Seeking more code owners! |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -297,9 +297,11 @@ The default Kerberos service name is `mongodb`. Users can authenticate with an e
 
 ## Metrics
 
-The following metric are available with versions:
+The following metrics are version-gated:
 
-- `mongodb.extent.count` < 4.4 with mmapv1 storage engine
+- `mongodb.extent.count` — MongoDB `< 4.4` with the MMAPv1 storage engine only.
+- `mongodb.wt.log.write`, `mongodb.wt.log.operation.count`, `mongodb.wt.log.sync.time`, `mongodb.wt.fsync.count`, and `mongodb.wt.concurrent_transaction.ticket.in_use` — require the WiredTiger storage engine (the default since MongoDB 3.2; MMAPv1, the previous default, was removed in 4.2). No data points are emitted on other storage engines, such as the Enterprise-only inMemory engine.
+- `mongodb.wt.concurrent_transaction.ticket.in_use` is additionally read from `serverStatus.wiredTiger.concurrentTransactions.{read,write}.out` on MongoDB `< 8.0`, and from `serverStatus.queues.execution.{read,write}.out` on MongoDB `8.0+` (the field was renamed in 8.0). The receiver probes both paths and uses whichever is present, so the same metric emits across all supported versions.
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 

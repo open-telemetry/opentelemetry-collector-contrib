@@ -314,41 +314,61 @@ func Test_find_mapper_error(t *testing.T) {
 	assert.ErrorContains(t, err, "mapper failed")
 }
 
-func Test_createFindFunction(t *testing.T) {
-	fCtx := ottl.FunctionContext{}
-	predicate := ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
-		return true, nil
-	})
+func Test_FindFactory(t *testing.T) {
 	source := ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return pcommon.NewMap(), nil
 		},
 	}
-
-	t.Run("valid args", func(t *testing.T) {
-		fn, err := createFindFunction[any](fCtx, &FindArguments[any]{
-			Source:    source,
-			Predicate: predicate,
-		})
-		require.NoError(t, err)
-		require.NotNil(t, fn)
+	predicate := ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+		return true, nil
 	})
 
-	t.Run("valid args with mapper", func(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewFindFactory[any]()
+		assert.Equal(t, "Find", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewFindFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &FindArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Source", "Predicate", "Mapper"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewFindFactory[any]()
+		args := factory.CreateDefaultArguments()
+		findArgs, ok := args.(*FindArguments[any])
+		require.True(t, ok)
+		findArgs.Source = source
+		findArgs.Predicate = predicate
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("function creation with mapper", func(t *testing.T) {
 		mapper := ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 			return "mapped", nil
 		})
-		fn, err := createFindFunction[any](fCtx, &FindArguments[any]{
-			Source:    source,
-			Predicate: predicate,
-			Mapper:    ottl.NewTestingOptional(mapper),
-		})
+		factory := NewFindFactory[any]()
+		args := factory.CreateDefaultArguments()
+		findArgs, ok := args.(*FindArguments[any])
+		require.True(t, ok)
+		findArgs.Source = source
+		findArgs.Predicate = predicate
+		findArgs.Mapper = ottl.NewTestingOptional(mapper)
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
 		require.NoError(t, err)
-		require.NotNil(t, fn)
+		assert.NotNil(t, fn)
 	})
 
-	t.Run("invalid args type", func(t *testing.T) {
-		_, err := createFindFunction[any](fCtx, &struct{}{})
-		assert.EqualError(t, err, "FindFactory args must be of type *FindArguments[K]")
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createFindFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "FindFactory args must be of type *FindArguments[K]")
 	})
 }

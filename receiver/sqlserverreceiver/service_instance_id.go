@@ -21,10 +21,9 @@ func isLocalhost(host string) bool {
 }
 
 // resolveConfiguredHostPort resolves the target host and port from the
-// configuration. It is the single source of truth for host/port resolution in
-// this receiver, used to dial the endpoint (reachability probe), to identify the
-// target (service.instance.id), and to stamp the host.name / server.address /
-// server.port resource attributes.
+// configuration. It is used by the connection-health scraper to dial the
+// endpoint (reachability probe) and, via resolveResourceHostPort, to stamp its
+// host.name / server.address / server.port resource attributes.
 //
 // Source priority: DataSource takes precedence over the discrete Server/Port
 // fields, which take precedence over ComputerName (Windows performance-counter
@@ -32,12 +31,19 @@ func isLocalhost(host string) bool {
 //
 // It performs no localhost rewriting and returns the host exactly as configured.
 // Callers that want the collector's identity (service.instance.id) layer the
-// localhost->os.Hostname rewrite on top via computeServiceInstanceID.
+// localhost->os.Hostname rewrite on top via resolveResourceHostPort.
 func resolveConfiguredHostPort(cfg *Config) (host string, port int, err error) {
 	switch {
 	case cfg.DataSource != "":
-		// parseDataSource already applies the default port.
-		return parseDataSource(cfg.DataSource)
+		config, parseErr := parseDataSource(cfg.DataSource)
+		if parseErr != nil {
+			return "", 0, parseErr
+		}
+		port = int(config.Port)
+		if port == 0 {
+			port = defaultSQLServerPort
+		}
+		return config.Host, port, nil
 	case cfg.Server != "":
 		port = int(cfg.Port)
 		if port == 0 {
@@ -48,15 +54,15 @@ func resolveConfiguredHostPort(cfg *Config) (host string, port int, err error) {
 		// Windows Performance Counter mode with remote computer: use ComputerName as host.
 		return cfg.ComputerName, defaultSQLServerPort, nil
 	default:
-		// No server specified: no dial target. computeServiceInstanceID rewrites
+		// No server specified: no dial target. resolveResourceHostPort rewrites
 		// the empty host to os.Hostname for identity purposes.
 		return "", defaultSQLServerPort, nil
 	}
 }
 
-// resolveResourceHostPort resolves the host and port to report as identifying
-// resource attributes: host.name, server.address, server.port, and (via
-// computeServiceInstanceID) service.instance.id.
+// resolveResourceHostPort resolves the host and port that the connection-health
+// scraper reports as identifying resource attributes: host.name, server.address,
+// and server.port.
 //
 // It layers a localhost/empty -> os.Hostname rewrite on top of
 // resolveConfiguredHostPort so that every attribute the receiver reports as the
@@ -82,38 +88,79 @@ func resolveResourceHostPort(cfg *Config) (host string, port int, err error) {
 	return host, port, nil
 }
 
-// computeServiceInstanceID computes the service.instance.id based on the configuration
-// Format: <host>:<port>
+// computeServiceInstanceID computes the service.instance.id based on the configuration.
+// Datasource format precedence: <host>\<instance>, then <host>:<port> (default 1433).
 // Special handling:
 // - localhost/127.0.0.1 are replaced with os.Hostname()
-// - Port 0 defaults to 1433
+// - Port 0 defaults to 1433 when no named instance is specified
 func computeServiceInstanceID(cfg *Config) (string, error) {
-	host, port, err := resolveResourceHostPort(cfg)
-	if err != nil {
-		return "", err
+	var host string
+	var instance string
+	var port int
+
+	// Parse connection details based on configuration priority
+	switch {
+	case cfg.DataSource != "":
+		config, err := parseDataSource(cfg.DataSource)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse datasource: %w", err)
+		}
+		host = config.Host
+		instance = config.Instance
+		port = int(config.Port)
+	case cfg.Server != "":
+		host, port = cfg.Server, int(cfg.Port)
+	case cfg.ComputerName != "":
+		// Windows Performance Counter mode with remote computer: use ComputerName as host
+		host, port = cfg.ComputerName, defaultSQLServerPort
+	default:
+		// No server specified, use hostname with default port
+		hostname, err := os.Hostname()
+		if err != nil {
+			return "", err
+		}
+		host, port = hostname, defaultSQLServerPort
+	}
+
+	// Replace localhost with actual hostname
+	if isLocalhost(host) || host == "" {
+		hostname, err := os.Hostname()
+		if err != nil {
+			return "", err
+		}
+		host = hostname
+	}
+
+	if cfg.DataSource != "" {
+		if instance != "" {
+			return fmt.Sprintf(`%s\%s`, host, instance), nil
+		}
+		if port == 0 {
+			port = defaultSQLServerPort
+		}
+		return fmt.Sprintf("%s:%d", host, port), nil
+	}
+
+	// Apply default port if not specified
+	if port == 0 {
+		port = defaultSQLServerPort
 	}
 
 	return fmt.Sprintf("%s:%d", host, port), nil
 }
 
-// parseDataSource extracts server and port from SQL Server connection string
-// Uses the microsoft/go-mssqldb library's built-in parser for accurate parsing
-func parseDataSource(dataSource string) (string, int, error) {
+// parseDataSource extracts SQL Server connection details without replacing an omitted port.
+// Uses the microsoft/go-mssqldb library's built-in parser for accurate parsing.
+func parseDataSource(dataSource string) (msdsn.Config, error) {
 	if dataSource == "" {
-		return "", 0, errors.New("datasource is empty")
+		return msdsn.Config{}, errors.New("datasource is empty")
 	}
 
 	// Parse the connection string using the go-mssqldb library
 	config, err := msdsn.Parse(dataSource)
 	if err != nil {
-		return "", 0, fmt.Errorf("failed to parse datasource: %w", err)
+		return msdsn.Config{}, fmt.Errorf("failed to parse datasource: %w", err)
 	}
 
-	// Apply default port if not specified
-	port := int(config.Port)
-	if port == 0 {
-		port = defaultSQLServerPort
-	}
-
-	return config.Host, port, nil
+	return config, nil
 }

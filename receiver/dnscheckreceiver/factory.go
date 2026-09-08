@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	collectorscraper "go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dnscheckreceiver/internal/metadata"
@@ -40,21 +41,17 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	config := cfg.(*Config)
-	_ = config
-	_ = settings
-	_ = consumer
-	return &noopMetricsReceiver{}, nil
-}
 
-// noopMetricsReceiver is a minimal receiver to satisfy component lifecycle tests.
-type noopMetricsReceiver struct{}
+	scrp := newScraper(config, settings)
+	s, err := collectorscraper.NewMetrics(scrp.scrape)
+	if err != nil {
+		return nil, err
+	}
 
-func (r *noopMetricsReceiver) Start(_ context.Context, _ component.Host) error {
-	_ = r
-	return nil
-}
-
-func (r *noopMetricsReceiver) Shutdown(_ context.Context) error {
-	_ = r
-	return nil
+	return scraperhelper.NewMetricsController(
+		&config.ControllerConfig,
+		settings,
+		consumer,
+		scraperhelper.AddMetricsScraper(metadata.Type, s),
+	)
 }

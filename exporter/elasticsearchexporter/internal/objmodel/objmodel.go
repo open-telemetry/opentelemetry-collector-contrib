@@ -36,7 +36,7 @@ import (
 	"io"
 	"maps"
 	"math"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -132,6 +132,18 @@ func (doc *Document) DynamicTemplates() map[string]string {
 	return doc.dynamicTemplates
 }
 
+// Grow increases the field-slice capacity so at least n more fields can be
+// appended without another allocation. It matches slices.Grow.
+func (doc *Document) Grow(n int) {
+	doc.fields = slices.Grow(doc.fields, n)
+}
+
+// Reset truncates fields and drops dynamic templates. Capacity is kept.
+func (doc *Document) Reset() {
+	doc.fields = doc.fields[:0]
+	doc.dynamicTemplates = nil
+}
+
 // AddTimestamp adds a raw timestamp value to the Document.
 func (doc *Document) AddTimestamp(key string, ts pcommon.Timestamp) {
 	doc.Add(key, TimestampValue(ts.AsTime()))
@@ -220,8 +232,8 @@ func (doc *Document) AddLinks(key string, links ptrace.SpanLinkSlice) {
 }
 
 func (doc *Document) sort() {
-	sort.SliceStable(doc.fields, func(i, j int) bool {
-		return doc.fields[i].key < doc.fields[j].key
+	slices.SortStableFunc(doc.fields, func(a, b field) int {
+		return strings.Compare(a.key, b.key)
 	})
 
 	for i := range doc.fields {

@@ -6,24 +6,13 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/confmap"
-)
-
-// DnscheckDurationMetricAttributeKey specifies the key of an attribute for the dnscheck.duration metric.
-type DnscheckDurationMetricAttributeKey string
-
-const (
-	DnscheckDurationMetricAttributeKeyDNSDomain     DnscheckDurationMetricAttributeKey = "dns.domain"
-	DnscheckDurationMetricAttributeKeyDNSRecordType DnscheckDurationMetricAttributeKey = "dns.record.type"
-	DnscheckDurationMetricAttributeKeyDNSServer     DnscheckDurationMetricAttributeKey = "dns.server"
+	"go.opentelemetry.io/collector/filter"
 )
 
 // DnscheckDurationMetricConfig provides config for the dnscheck.duration metric.
 type DnscheckDurationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []DnscheckDurationMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *DnscheckDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -40,32 +29,11 @@ func (ms *DnscheckDurationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *DnscheckDurationMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case DnscheckDurationMetricAttributeKeyDNSDomain, DnscheckDurationMetricAttributeKeyDNSRecordType, DnscheckDurationMetricAttributeKeyDNSServer:
-		default:
-			return fmt.Errorf("metric dnscheck.duration doesn't have an attribute %v, valid attributes: [dns.domain, dns.record.type, dns.server]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
 // DnscheckErrorMetricAttributeKey specifies the key of an attribute for the dnscheck.error metric.
 type DnscheckErrorMetricAttributeKey string
 
 const (
-	DnscheckErrorMetricAttributeKeyDNSDomain     DnscheckErrorMetricAttributeKey = "dns.domain"
-	DnscheckErrorMetricAttributeKeyDNSRecordType DnscheckErrorMetricAttributeKey = "dns.record.type"
-	DnscheckErrorMetricAttributeKeyDNSServer     DnscheckErrorMetricAttributeKey = "dns.server"
-	DnscheckErrorMetricAttributeKeyErrorMessage  DnscheckErrorMetricAttributeKey = "error.message"
+	DnscheckErrorMetricAttributeKeyErrorMessage DnscheckErrorMetricAttributeKey = "error.message"
 )
 
 // DnscheckErrorMetricConfig provides config for the dnscheck.error metric.
@@ -94,9 +62,9 @@ func (ms *DnscheckErrorMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *DnscheckErrorMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case DnscheckErrorMetricAttributeKeyDNSDomain, DnscheckErrorMetricAttributeKeyDNSRecordType, DnscheckErrorMetricAttributeKeyDNSServer, DnscheckErrorMetricAttributeKeyErrorMessage:
+		case DnscheckErrorMetricAttributeKeyErrorMessage:
 		default:
-			return fmt.Errorf("metric dnscheck.error doesn't have an attribute %v, valid attributes: [dns.domain, dns.record.type, dns.server, error.message]", val)
+			return fmt.Errorf("metric dnscheck.error doesn't have an attribute %v, valid attributes: [error.message]", val)
 		}
 	}
 
@@ -113,12 +81,9 @@ func (ms *DnscheckErrorMetricConfig) Validate() error {
 type DnscheckStatusMetricAttributeKey string
 
 const (
-	DnscheckStatusMetricAttributeKeyDNSDomain         DnscheckStatusMetricAttributeKey = "dns.domain"
 	DnscheckStatusMetricAttributeKeyDNSRcode          DnscheckStatusMetricAttributeKey = "dns.rcode"
-	DnscheckStatusMetricAttributeKeyDNSRecordType     DnscheckStatusMetricAttributeKey = "dns.record.type"
 	DnscheckStatusMetricAttributeKeyDNSResolvedAllIps DnscheckStatusMetricAttributeKey = "dns.resolved.all.ips"
 	DnscheckStatusMetricAttributeKeyDNSResolvedIP     DnscheckStatusMetricAttributeKey = "dns.resolved.ip"
-	DnscheckStatusMetricAttributeKeyDNSServer         DnscheckStatusMetricAttributeKey = "dns.server"
 )
 
 // DnscheckStatusMetricConfig provides config for the dnscheck.status metric.
@@ -147,9 +112,9 @@ func (ms *DnscheckStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *DnscheckStatusMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case DnscheckStatusMetricAttributeKeyDNSDomain, DnscheckStatusMetricAttributeKeyDNSRcode, DnscheckStatusMetricAttributeKeyDNSRecordType, DnscheckStatusMetricAttributeKeyDNSResolvedAllIps, DnscheckStatusMetricAttributeKeyDNSResolvedIP, DnscheckStatusMetricAttributeKeyDNSServer:
+		case DnscheckStatusMetricAttributeKeyDNSRcode, DnscheckStatusMetricAttributeKeyDNSResolvedAllIps, DnscheckStatusMetricAttributeKeyDNSResolvedIP:
 		default:
-			return fmt.Errorf("metric dnscheck.status doesn't have an attribute %v, valid attributes: [dns.domain, dns.rcode, dns.record.type, dns.resolved.all.ips, dns.resolved.ip, dns.server]", val)
+			return fmt.Errorf("metric dnscheck.status doesn't have an attribute %v, valid attributes: [dns.rcode, dns.resolved.all.ips, dns.resolved.ip]", val)
 		}
 	}
 
@@ -172,31 +137,78 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		DnscheckDuration: DnscheckDurationMetricConfig{
-			Enabled:             true,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []DnscheckDurationMetricAttributeKey{DnscheckDurationMetricAttributeKeyDNSDomain, DnscheckDurationMetricAttributeKeyDNSRecordType, DnscheckDurationMetricAttributeKeyDNSServer},
+			Enabled: true,
 		},
 		DnscheckError: DnscheckErrorMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []DnscheckErrorMetricAttributeKey{DnscheckErrorMetricAttributeKeyDNSDomain, DnscheckErrorMetricAttributeKeyDNSRecordType, DnscheckErrorMetricAttributeKeyDNSServer, DnscheckErrorMetricAttributeKeyErrorMessage},
+			EnabledAttributes:   []DnscheckErrorMetricAttributeKey{DnscheckErrorMetricAttributeKeyErrorMessage},
 		},
 		DnscheckStatus: DnscheckStatusMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []DnscheckStatusMetricAttributeKey{DnscheckStatusMetricAttributeKeyDNSDomain, DnscheckStatusMetricAttributeKeyDNSRcode, DnscheckStatusMetricAttributeKeyDNSRecordType, DnscheckStatusMetricAttributeKeyDNSResolvedAllIps, DnscheckStatusMetricAttributeKeyDNSResolvedIP, DnscheckStatusMetricAttributeKeyDNSServer},
+			EnabledAttributes:   []DnscheckStatusMetricAttributeKey{DnscheckStatusMetricAttributeKeyDNSRcode, DnscheckStatusMetricAttributeKeyDNSResolvedAllIps, DnscheckStatusMetricAttributeKeyDNSResolvedIP},
+		},
+	}
+}
+
+// ResourceAttributeConfig provides common config for a particular resource attribute.
+type ResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesConfig provides config for dns_check resource attributes.
+type ResourceAttributesConfig struct {
+	DNSDomain     ResourceAttributeConfig `mapstructure:"dns.domain"`
+	DNSRecordType ResourceAttributeConfig `mapstructure:"dns.record.type"`
+	DNSServer     ResourceAttributeConfig `mapstructure:"dns.server"`
+}
+
+func DefaultResourceAttributesConfig() ResourceAttributesConfig {
+	return ResourceAttributesConfig{
+		DNSDomain: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		DNSRecordType: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		DNSServer: ResourceAttributeConfig{
+			Enabled: true,
 		},
 	}
 }
 
 // MetricsBuilderConfig is a configuration for dns_check metrics builder.
 type MetricsBuilderConfig struct {
-	Metrics MetricsConfig `mapstructure:"metrics"`
+	Metrics            MetricsConfig            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
 func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		Metrics: DefaultMetricsConfig(),
+		Metrics:            DefaultMetricsConfig(),
+		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
 

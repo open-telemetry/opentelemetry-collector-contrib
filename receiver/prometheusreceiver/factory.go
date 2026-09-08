@@ -32,8 +32,8 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	taClientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	taClientConfig.MaxIdleConns = 0
-	taClientConfig.IdleConnTimeout = 0
+	taClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	taClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	taClientConfig.ForceAttemptHTTP2 = false
 	return &Config{
 		PrometheusConfig: &PromConfig{

@@ -170,14 +170,14 @@ func TestNumericTagFilterOptionalBounds(t *testing.T) {
 	}{
 		{
 			name:  "only min set - value above min",
-			min:   ptr(int64(100)),
+			min:   new(int64(100)),
 			max:   nil,
 			value: 200,
 			want:  samplingpolicy.Sampled,
 		},
 		{
 			name:  "only min set - value below min",
-			min:   ptr(int64(100)),
+			min:   new(int64(100)),
 			max:   nil,
 			value: 50,
 			want:  samplingpolicy.NotSampled,
@@ -185,34 +185,34 @@ func TestNumericTagFilterOptionalBounds(t *testing.T) {
 		{
 			name:  "only max set - value below max",
 			min:   nil,
-			max:   ptr(int64(100)),
+			max:   new(int64(100)),
 			value: 50,
 			want:  samplingpolicy.Sampled,
 		},
 		{
 			name:  "only max set - value above max",
 			min:   nil,
-			max:   ptr(int64(100)),
+			max:   new(int64(100)),
 			value: 200,
 			want:  samplingpolicy.NotSampled,
 		},
 		{
 			name:  "both set - value in range",
-			min:   ptr(int64(100)),
-			max:   ptr(int64(200)),
+			min:   new(int64(100)),
+			max:   new(int64(200)),
 			value: 150,
 			want:  samplingpolicy.Sampled,
 		},
 		{
 			name:  "both set - value out of range",
-			min:   ptr(int64(100)),
-			max:   ptr(int64(200)),
+			min:   new(int64(100)),
+			max:   new(int64(200)),
 			value: 50,
 			want:  samplingpolicy.NotSampled,
 		},
 		{
 			name:        "inverted match - only min set - value above min",
-			min:         ptr(int64(100)),
+			min:         new(int64(100)),
 			max:         nil,
 			value:       200,
 			invertMatch: true,
@@ -221,7 +221,7 @@ func TestNumericTagFilterOptionalBounds(t *testing.T) {
 		{
 			name:        "inverted match - only max set - value below max",
 			min:         nil,
-			max:         ptr(int64(100)),
+			max:         new(int64(100)),
 			value:       50,
 			invertMatch: true,
 			want:        samplingpolicy.NotSampled,
@@ -257,11 +257,6 @@ func TestNumericTagFilterNilBounds(t *testing.T) {
 
 	filter = NewNumericAttributeFilter(settings, "example", &minBound, &maxBound, false)
 	assert.NotNil(t, filter, "filter should not be nil when both bounds are set")
-}
-
-// helper function to create int64 pointer
-func ptr(i int64) *int64 {
-	return &i
 }
 
 func newTraceIntAttrs(nodeAttrs map[string]any, spanAttrKey string, spanAttrValue int64) *samplingpolicy.TraceData {

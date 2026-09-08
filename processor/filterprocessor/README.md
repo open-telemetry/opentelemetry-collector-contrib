@@ -437,3 +437,17 @@ In general, understand your data before using the filter processor.
 
 - When using the Filter Processor make sure you understand the look of your incoming data and test the configuration thoroughly. In general, use as specific a configuration as possible to lower the risk of the wrong data being dropped.
 - [Orphaned Telemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#orphaned-telemetry): The processor allows dropping spans. Dropping a span may lead to orphaned spans if the dropped span is a parent. Dropping a span may lead to orphaned logs if the log references the dropped span.
+
+## Available Benchmarks
+
+The filter processor is tested as part of the project's load tests, with the results being
+publicly available on the benchmarks
+[page](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests).
+There you can find the CPU and memory usage of the processor evaluating a representative set of OTTL
+conditions against each signal at 10,000 items/second:
+
+- Traces: [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessortraces-cpu-percentage) and [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessortraces-ram-mib)
+- Metrics: [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessormetrics-cpu-percentage) and [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessormetrics-ram-mib)
+- Logs: [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessorlogs-cpu-percentage) and [memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#filterprocessorlogs-ram-mib)
+
+Refer to the [test](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/testbed/tests/filter_processor_test.go) for more information about the setup.

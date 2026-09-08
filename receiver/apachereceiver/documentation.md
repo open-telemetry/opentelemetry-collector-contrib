@@ -12,6 +12,28 @@ metrics:
     enabled: false
 ```
 
+### apache.connection.active
+
+The number of active connections currently attached to the HTTP server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {connection} | Sum | Int | Cumulative | false | Development |
+
+### apache.connection.status
+
+The number of connections in different asynchronous states reported by Apache's server-status.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| apache.connection.state | The asynchronous connection state reported by Apache's server-status. | Str: ``writing``, ``keepalive``, ``closing`` | Recommended | - |
+
 ### apache.connections.async
 
 The number of connections in different asynchronous states reported by Apache's server-status.
@@ -81,6 +103,14 @@ The average server load during the last 5 minutes.
 | ---- | ----------- | ---------- | --------- |
 | % | Gauge | Double | Development |
 
+### apache.request.count
+
+The number of requests serviced by the HTTP server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {request} | Sum | Int | Cumulative | true | Development |
+
 ### apache.request.time
 
 Total time spent on handling requests.
@@ -129,13 +159,45 @@ The amount of time that the server has been running in seconds.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | true | Development |
 
+### apache.worker.active
+
+The number of busy workers currently attached to the HTTP server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {worker} | Sum | Int | Cumulative | false | Development |
+
+### apache.worker.idle
+
+The number of idle workers currently attached to the HTTP server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {worker} | Sum | Int | Cumulative | false | Development |
+
 ### apache.worker.limit
 
 The maximum number of worker slots configured for the HTTP server, derived from the scoreboard length.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {worker} | Gauge | Int | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {worker} | Sum | Int | Cumulative | false | Development |
+
+### apache.worker.status
+
+The number of workers in each state.
+
+The [apache scoreboard](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION) is an encoded representation of the state of all the server's workers. This metric decodes the scoreboard and presents a count of workers in each state.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| apache.worker.state | The state of a worker. | Str: ``open``, ``waiting``, ``starting``, ``reading``, ``sending``, ``keepalive``, ``dnslookup``, ``closing``, ``logging``, ``finishing``, ``idle_cleanup``, ``unknown`` | Recommended | - |
 
 ### apache.workers
 
@@ -183,3 +245,14 @@ Average number of bytes transmitted per second since the server was started, as 
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
 | apache.server.name | The name of the Apache HTTP server. | Any Str | true | - | - |
 | apache.server.port | The port of the Apache HTTP server. | Any Str | true | - | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.apache.disableOldFormatMetrics` | alpha | When enabled, the receiver no longer emits the original metric and attribute names (e.g. apache.requests, apache.scoreboard, and the mode/level/state attributes). Requires receiver.apache.enableNewFormatMetrics to also be enabled. | v0.159.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47327) |
+| `receiver.apache.enableNewFormatMetrics` | alpha | When enabled, the receiver emits the new, consistently named metrics and attributes (e.g. apache.request.count, apache.worker.status, cpu.mode) alongside the original ones. See the migration guide linked from the component README for the full mapping. | v0.159.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47327) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

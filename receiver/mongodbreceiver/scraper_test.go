@@ -558,8 +558,8 @@ func TestReceiverMetricsDisabled(t *testing.T) {
 
 	// disable all metrics
 	v := reflect.ValueOf(&scraperCfg.MetricsBuilderConfig.Metrics).Elem()
-	for i := 0; i < v.NumField(); i++ {
-		v.Field(i).FieldByName("Enabled").SetBool(false)
+	for _, field := range v.Fields() {
+		field.FieldByName("Enabled").SetBool(false)
 	}
 
 	fc := &fakeClient{}

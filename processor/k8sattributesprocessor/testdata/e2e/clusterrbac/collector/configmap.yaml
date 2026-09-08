@@ -23,6 +23,9 @@ data:
           - from: deployment
             key: workload
             tag_name: simple-deployment-workload-annotation
+          - from: replicaset
+            key: workload
+            tag_name: simple-replicaset-workload-annotation
           - from: statefulset
             key: workload
             tag_name: simple-statefulset-workload-annotation
@@ -32,6 +35,9 @@ data:
           - from: job
             key: workload
             tag_name: simple-job-workload-annotation
+          - from: cronjob
+            key: workload
+            tag_name: simple-cronjob-workload-annotation
           labels:
           - from: pod
             key: app
@@ -62,7 +68,7 @@ data:
           - container.id
           - container.image.name
           - container.image.repo_digests
-          - container.image.tag
+          - container.image.tags
         pod_association:
         - sources:
           - from: connection

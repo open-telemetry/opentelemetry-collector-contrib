@@ -111,6 +111,12 @@ attributes:
   oracledb.application_wait_time:
     description: The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta).
     type: double
+  oracledb.asm.disk.name:
+    description: The name of the ASM disk.
+    type: string
+  oracledb.asm.disk_group.name:
+    description: The name of the ASM diskgroup.
+    type: string
   oracledb.blocking.blocker.root_sid:
     description: The session ID (SID) of the root/head blocker at the top of the blocking chain. Empty string when there is no blocking.
     type: string
@@ -226,7 +232,7 @@ attributes:
     description: "Plan load time in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS"
     type: string
   oracledb.plan_hash_value:
-    description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
+    description: Numeric representation of the execution plan.
     type: string
   oracledb.procedure_execution_count:
     description: The number of times the stored procedure has been executed, derived from the minimum statement execution count across all statements in the procedure (reporting delta). Please note, this is best effort and may not be accurate in some scenarios. Use with caution.
@@ -333,6 +339,11 @@ attributes:
   oracledb.status:
     description: Execution state or result of a database query or session.
     type: string
+  oracledb.tablespace.state:
+    description: Tablespace state as reported by Oracle (e.g. online, offline, read only)
+    type: string
+    enum: [online, offline, read only]
+    requirement_level: recommended
   oracledb.transaction.type:
     description: The type of user transaction.
     type: string
@@ -468,6 +479,49 @@ events:
       - oracledb.plan.first_load
       - oracledb.plan.last_load
 metrics:
+  oracledb.asm.disk.errors:
+    attributes: [oracledb.asm.disk_group.name, oracledb.asm.disk.name, disk.io.direction]
+    description: Count of I/O errors on an ASM disk.
+    enabled: false
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{error}"
+  oracledb.asm.disk_group.capacity:
+    attributes: [oracledb.asm.disk_group.name]
+    description: Total space in an ASM diskgroup.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: By
+  oracledb.asm.disk_group.free:
+    attributes: [oracledb.asm.disk_group.name]
+    description: Free space in an ASM diskgroup.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: By
+  oracledb.asm.disk_group.offline_disks:
+    attributes: [oracledb.asm.disk_group.name]
+    description: Count of disks currently offline within an ASM diskgroup.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: "{disk}"
+  oracledb.asm.disk_group.usable_free:
+    attributes: [oracledb.asm.disk_group.name]
+    description: Free space that can safely be used for files after accounting for ASM redundancy and required mirror recovery capacity.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: By
   oracledb.buffer.inspected:
     description: Number of buffers inspected from the end of the LRU queue while a process searched for a reusable buffer, grouped by buffer state.
     enabled: false
@@ -1617,6 +1671,39 @@ metrics:
     gauge:
       value_type: double
     unit: "{process}"
+  oracledb.tablespace.limit:
+    attributes:
+      - tablespace_name
+      - oracle.db.pdb
+    description: Maximum autoextend size of tablespace in bytes. Returns 0 for temporary tablespaces and tablespaces without autoextend enabled.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: int
+    unit: By
+  oracledb.tablespace.status:
+    attributes:
+      - tablespace_name
+      - oracledb.tablespace.state
+      - oracle.db.pdb
+    description: Current status of tablespaces, broken down by state. A timeseries is produced for every possible value of oracledb.tablespace.state; the value is 1 for a tablespace's current state, and 0 for all other states.
+    enabled: false
+    stability: development
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    unit: "{tablespace}"
+  oracledb.tablespace.utilization:
+    attributes:
+      - tablespace_name
+      - oracle.db.pdb
+    description: Fraction of tablespace currently in use, expressed as a value between 0 and 1.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "1"
   oracledb.tablespace_size.limit:
     attributes:
       - tablespace_name

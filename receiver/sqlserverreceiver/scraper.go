@@ -333,20 +333,30 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetSqlserverComputerName(row[computerNameKey])
 	rb.SetSqlserverInstanceName(row[instanceNameKey])
 
-	hostName, port, err := resolveResourceHostPort(s.config)
-	if err != nil {
-		s.logger.Warn("Failed to resolve host/port for resource attributes, using fallback", zap.Error(err))
+	hostName := s.config.Server
+	serverAddress := s.config.Server
+	serverPort := int64(s.config.Port)
+
+	if s.config.DataSource != "" {
+		config, err := parseDataSource(s.config.DataSource)
+		if err != nil {
+			s.logger.Warn("Failed to parse datasource for host.name attribute, using fallback", zap.Error(err))
+		} else {
+			hostName = config.Host
+			serverAddress = config.Host
+			serverPort = int64(config.Port)
+			if serverPort == 0 {
+				serverPort = defaultSQLServerPort
+			}
+		}
 	}
 
 	rb.SetHostName(hostName)
 	rb.SetServiceInstanceID(s.serviceInstanceID)
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
-
-	if !metadata.ReceiverSqlserverRemoveServerResourceAttributeFeatureGate.IsEnabled() {
-		rb.SetServerAddress(hostName)
-		rb.SetServerPort(int64(port))
-	}
+	rb.SetServerAddress(serverAddress)
+	rb.SetServerPort(serverPort)
 
 	return rb
 }
@@ -1638,31 +1648,32 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	timestamp := pcommon.NewTimestampFromTime(now)
 	s.lastExecutionTimestamp = now
 
-	// Resolve the reported host/port once for the event's server.address /
-	// server.port attributes, using the same resolver as the resource attributes
-	// so the record-level and resource-level values agree (DataSource parsing,
-	// default port, and localhost -> os.Hostname rewrite all applied).
-	serverAddress, serverPort, resolveErr := resolveResourceHostPort(s.config)
-	if resolveErr != nil {
-		s.logger.Warn("Failed to resolve host/port for top query event attributes, using fallback", zap.Error(resolveErr))
-	}
-
 	for i, row := range rows {
 		// reporting human-readable query hash and query hash plan
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 		procID := row[storedProcedureID]
 
+		trimmedQueryText := strings.TrimSpace(row[queryText])
+		if trimmedQueryText == "" || strings.HasPrefix(trimmedQueryText, "--") {
+			s.logger.Debug(fmt.Sprintf("skipping empty or comment-only SQL statement: %v", row[queryText]))
+			continue
+		}
+
 		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
 			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
-				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
+				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement, skipping event: %v, error: %v", statement, err))
 				return "", nil
 			}
 
 			return obfuscated, nil
 		})
+
+		if queryTextVal.(string) == "" {
+			continue
+		}
 
 		databaseNameVal := row[databaseName]
 
@@ -1751,8 +1762,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			rowsReturnedVal.(int64),
 			totalElapsedTimeVal,
 			totalGrantVal.(int64),
-			serverAddress,
-			int64(serverPort),
 			dbSystemNameVal,
 			procExecCountVal.(int64),
 			row[storedProcedureID],
@@ -2081,17 +2090,28 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
+		trimmedStatementText := strings.TrimSpace(row[statementText])
+		if row[command] != "IDLE_BLOCKER" && (trimmedStatementText == "" || strings.HasPrefix(trimmedStatementText, "--")) {
+			s.logger.Debug(fmt.Sprintf("skipping empty or comment-only SQL statement: %v", row[statementText]))
+			continue
+		}
+
 		clientPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		dbNamespaceVal := row[dbName]
 		queryTextVal := s.retrieveValue(row, statementText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
 			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
-				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
+				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement, skipping event: %v, error: %v", statement, err))
 				return "", nil
 			}
 			return obfuscated, nil
 		}).(string)
+
+		if queryTextVal == "" && row[command] != "IDLE_BLOCKER" {
+			continue
+		}
+
 		networkPeerAddressVal := row[clientAddress]
 		networkPeerPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		blockSessionIDVal := s.retrieveValue(row, blockingSessionID, &errs, retrieveInt).(int64)

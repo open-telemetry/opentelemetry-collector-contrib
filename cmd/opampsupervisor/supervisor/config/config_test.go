@@ -45,8 +45,8 @@ func TestValidate(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	defaultHealthCheckServerConfig.WriteTimeout = 0
 	defaultHealthCheckServerConfig.ReadHeaderTimeout = 0
-	defaultHealthCheckServerConfig.IdleTimeout = 0
-	defaultHealthCheckServerConfig.KeepAlivesEnabled = false
+	defaultHealthCheckServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	defaultHealthCheckServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	defaultHealthCheckServerConfig.NetAddr = confignet.AddrConfig{Transport: confignet.TransportTypeTCP}
 	defaultHealthCheck := HealthCheck{
 		ServerConfig: defaultHealthCheckServerConfig,
@@ -56,8 +56,8 @@ func TestValidate(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	invalidPortServerConfig.WriteTimeout = 0
 	invalidPortServerConfig.ReadHeaderTimeout = 0
-	invalidPortServerConfig.IdleTimeout = 0
-	invalidPortServerConfig.KeepAlivesEnabled = false
+	invalidPortServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	invalidPortServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	invalidPortServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:-1",
@@ -635,28 +635,6 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErrorFunc: simpleError("unsupported verifier type"),
 		},
-		{
-			name: "Package with unsupported verifier type (cosign not yet supported)",
-			config: Supervisor{
-				Server: OpAMPServer{
-					Endpoint: "wss://localhost:9090/opamp",
-					TLS:      tlsConfig,
-				},
-				Agent: Agent{
-					Executable:              "${file_path}",
-					OrphanDetectionInterval: 5 * time.Second,
-					ConfigApplyTimeout:      2 * time.Second,
-					BootstrapTimeout:        5 * time.Second,
-					Package: AgentPackage{
-						Verifier: Verifier{Type: "cosign"},
-					},
-				},
-				Capabilities: Capabilities{AcceptsRemoteConfig: true},
-				Storage:      Storage{Directory: "/etc/opamp-supervisor/storage"},
-				HealthCheck:  defaultHealthCheck,
-			},
-			expectedErrorFunc: simpleError("unsupported verifier type"),
-		},
 	}
 
 	// create some fake files for validating agent config
@@ -787,8 +765,8 @@ func TestSupervisor_TopLevelValidate(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{Endpoint: "localhost:99999"}
 	cfg.HealthCheck = HealthCheck{
 		ServerConfig: serverConfig,
@@ -990,6 +968,18 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses,
 		},
 		{
+			name:         "AcceptsRemoteConfig enables ReportsRemoteConfig",
+			capabilities: Capabilities{AcceptsRemoteConfig: true},
+			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
+				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig,
+		},
+		{
+			name:                      "Deprecated ReportsRemoteConfig has no effect",
+			capabilities:              Capabilities{ReportsRemoteConfig: true},
+			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
+		},
+		{
 			name: "Many capabilities",
 			capabilities: Capabilities{
 				AcceptsRemoteConfig:            true,
@@ -1117,6 +1107,8 @@ agent:
   passthrough_logs: true
   automatic_config_rollback: true
   collector_crash_log_snippet_kib: 100
+  package:
+    agent_binary: custom-otelcol
 
 telemetry:
   logs:
@@ -1168,7 +1160,10 @@ telemetry:
 						CollectorCrashLogSnippetKiB: 100,
 						AutomaticConfigRollback:     true,
 						ValidateConfig:              DefaultSupervisor().Agent.ValidateConfig,
-						Package:                     DefaultSupervisor().Agent.Package,
+						Package: AgentPackage{
+							AgentBinary: "custom-otelcol",
+							Verifier:    DefaultSupervisor().Agent.Package.Verifier,
+						},
 					},
 					Telemetry: Telemetry{
 						Logs: Logs{

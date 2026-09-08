@@ -6,16 +6,16 @@ package hetzner // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"errors"
-	"fmt"
 
-	hcloudmeta "github.com/hetznercloud/hcloud-go/v2/hcloud/metadata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	hetznerdetector "go.opentelemetry.io/contrib/detectors/hetzner"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/hetzner/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
 )
 
 const (
@@ -25,16 +25,18 @@ const (
 
 var _ internal.Detector = (*Detector)(nil)
 
-// newHcloudClient is overridden in tests to point the client at a fake server.
-var newHcloudClient = func() *hcloudmeta.Client {
-	return hcloudmeta.NewClient()
+// newResourceDetector is overridden in tests to substitute a fake SDK detector.
+var newResourceDetector = func() sdkresource.Detector {
+	return hetznerdetector.NewResourceDetector()
 }
 
-// Detector is a Hetzner metadata detector.
+// Detector is a Hetzner metadata detector. Detection is delegated to the
+// upstream SDK detector so that the attributes reported here match the ones the
+// collector's own telemetry reports.
 type Detector struct {
-	client                *hcloudmeta.Client
+	detector              sdkresource.Detector
 	logger                *zap.Logger
-	rb                    *metadata.ResourceBuilder
+	resourceAttributes    metadata.ResourceAttributesConfig
 	failOnMissingMetadata bool
 }
 
@@ -43,65 +45,36 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissi
 	cfg := dcfg.(Config)
 
 	return &Detector{
-		client:                newHcloudClient(),
+		detector:              newResourceDetector(),
 		logger:                p.Logger,
-		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		resourceAttributes:    cfg.ResourceAttributes,
 		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones.
 func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
-	// Quick check: if not running in Hetzner Cloud, return empty.
-	if !d.client.IsHcloudServerWithContext(ctx) {
+	// Detection runs unfiltered so that an empty result answers "is this process on a Hetzner
+	// Cloud server?"; the configured attributes are applied afterwards. A partial result still
+	// came from a reachable metadata service, so the bridge keeps what it did return.
+	// fail_on_missing_metadata covers an unusable metadata service, not individual fields
+	// absent from its response.
+	res, schemaURL, err := sdkbridge.Detect(ctx, d.detector)
+	if err != nil {
+		d.logger.Debug("Hetzner metadata unavailable", zap.Error(err))
+		return pcommon.NewResource(), "", err
+	}
+
+	// The SDK detector returns an empty resource when not running on a Hetzner
+	// Cloud server.
+	if res.Attributes().Len() == 0 {
 		d.logger.Debug("Hetzner detector: not running on a Hetzner Cloud server")
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errors.New("hetzner metadata unavailable")
+		}
 		return pcommon.NewResource(), "", nil
 	}
 
-	var errs []error
-
-	id, err := d.client.InstanceIDWithContext(ctx)
-	if err != nil {
-		d.logger.Debug("Hetzner detector: instance ID retrieval failed", zap.Error(err))
-		if d.failOnMissingMetadata {
-			errs = append(errs, err)
-		}
-	}
-
-	hostname, err := d.client.HostnameWithContext(ctx)
-	if err != nil {
-		d.logger.Debug("Hetzner detector: hostname retrieval failed", zap.Error(err))
-		if d.failOnMissingMetadata {
-			errs = append(errs, err)
-		}
-	}
-
-	region, err := d.client.RegionWithContext(ctx)
-	if err != nil {
-		d.logger.Debug("Hetzner detector: region retrieval failed", zap.Error(err))
-		if d.failOnMissingMetadata {
-			errs = append(errs, err)
-		}
-	}
-
-	availabilityZone, err := d.client.AvailabilityZoneWithContext(ctx)
-	if err != nil {
-		d.logger.Debug("Hetzner detector: availability zone retrieval failed", zap.Error(err))
-		if d.failOnMissingMetadata {
-			errs = append(errs, err)
-		}
-	}
-
-	if len(errs) > 0 {
-		return pcommon.NewResource(), "", errors.Join(errs...)
-	}
-
-	d.rb.SetCloudProvider(conventions.CloudProviderHetzner.Value.AsString())
-	d.rb.SetCloudPlatform(conventions.CloudPlatformHetznerCloudServer.Value.AsString())
-	d.rb.SetHostID(fmt.Sprintf("%d", id))
-	d.rb.SetHostName(hostname)
-	d.rb.SetCloudRegion(region)
-	d.rb.SetCloudAvailabilityZone(availabilityZone)
-
-	return d.rb.Emit(), conventions.SchemaURL, nil
+	sdkbridge.RemoveDisabledAttributes(res, d.resourceAttributes)
+	return res, schemaURL, nil
 }

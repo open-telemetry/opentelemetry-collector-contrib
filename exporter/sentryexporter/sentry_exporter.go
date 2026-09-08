@@ -559,8 +559,7 @@ func (s *endpointState) routeByProject(ctx context.Context, logger *zap.Logger, 
 		}
 
 		if err := send(ctx, logger, data, endpoint); err != nil {
-			var httpErr *sentryHTTPError
-			if errors.As(err, &httpErr) {
+			if httpErr, ok := errors.AsType[*sentryHTTPError](err); ok {
 				if httpErr.statusCode == http.StatusForbidden && strings.Contains(httpErr.body, "event submission rejected with_reason: ProjectId") {
 					logger.Warn("Project may have been deleted, removing from cache and retrying",
 						zap.String("project", key.slug),

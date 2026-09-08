@@ -105,6 +105,15 @@ GRANT SELECT ON DBA_TABLESPACE_USAGE_METRICS TO <username>;
 GRANT SELECT ON V_$SGAINFO TO <username>;
 ```
 
+### ASM metrics
+
+Grants required for ASM metrics.
+
+```sql
+GRANT SELECT ON V_$ASM_DISKGROUP_STAT TO <username>;
+GRANT SELECT ON V_$ASM_DISK_STAT TO <username>;
+```
+
 ### Per-PDB metrics (CDB multitenant deployments)
 
 When connected to a CDB root (Oracle 12c+), the receiver can collect per-PDB metrics
@@ -117,6 +126,7 @@ GRANT SELECT ON V_$CON_SYSMETRIC TO <username> CONTAINER=ALL;
 GRANT SELECT ON V_$CONTAINERS TO <username> CONTAINER=ALL;
 GRANT SELECT ON CDB_TABLESPACE_USAGE_METRICS TO <username> CONTAINER=ALL;
 GRANT SELECT ON CDB_TABLESPACES TO <username> CONTAINER=ALL;
+GRANT SELECT ON CDB_DATA_FILES TO <username> CONTAINER=ALL;  -- only needed for oracledb.tablespace.limit
 ```
 
 Users who already hold `SELECT_CATALOG_ROLE` (commonly granted to monitoring

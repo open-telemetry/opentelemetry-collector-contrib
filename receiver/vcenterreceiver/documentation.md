@@ -812,6 +812,26 @@ metrics:
     enabled: true
 ```
 
+### vcenter.host.memory.active
+
+The amount of memory the host's powered-on VMs are actively using.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| MiBy | Sum | Int | Cumulative | false | Development |
+
+### vcenter.host.memory.ballooned
+
+The amount of guest physical memory reclaimed from the host's VMs via the balloon driver.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| MiBy | Sum | Int | Cumulative | false | Development |
+
 ### vcenter.host.memory.capacity
 
 Total memory  capacity of the host system.
@@ -819,6 +839,16 @@ Total memory  capacity of the host system.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | MiBy | Sum | Double | Cumulative | false | Development |
+
+### vcenter.host.memory.granted
+
+The amount of machine memory that is granted to the powered-on VMs on the host.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| MiBy | Sum | Int | Cumulative | false | Development |
 
 ### vcenter.vm.cpu.time
 

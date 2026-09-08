@@ -7,7 +7,6 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -205,20 +204,48 @@ const (
 	sessionCountCDBSQL      = "select s.status, s.type, c.name as PDB_NAME, count(*) as VALUE FROM v$session s, v$containers c WHERE s.con_id = c.con_id(+) GROUP BY s.status, s.type, c.name"
 	systemResourceLimitsSQL = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
 	tablespaceUsageSQL      = `
-		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE
+		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE, ts.STATUS
 		FROM DBA_TABLESPACE_USAGE_METRICS um INNER JOIN DBA_TABLESPACES ts
 		ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
+	// tablespaceUsageWithMaxSQL extends tablespaceUsageSQL with autoextend max size from DBA_DATA_FILES.
+	tablespaceUsageWithMaxSQL = `
+		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE, ts.STATUS,
+		       NVL(mxb.MAX_BYTES, 0) as MAX_BYTES
+		FROM DBA_TABLESPACE_USAGE_METRICS um
+		INNER JOIN DBA_TABLESPACES ts ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME
+		LEFT JOIN (SELECT TABLESPACE_NAME, SUM(NVL(MAXBYTES, 0)) as MAX_BYTES FROM DBA_DATA_FILES GROUP BY TABLESPACE_NAME) mxb
+		    ON um.TABLESPACE_NAME = mxb.TABLESPACE_NAME`
 	// tablespaceUsageCDBSQL extends tablespaceUsageSQL for CDB root, using CDB_ views to cover all PDBs.
 	tablespaceUsageCDBSQL = `
-		SELECT c.name AS PDB_NAME, t.TABLESPACE_NAME, m.USED_SPACE, m.TABLESPACE_SIZE, t.BLOCK_SIZE
+		SELECT c.name AS PDB_NAME, t.TABLESPACE_NAME, m.USED_SPACE, m.TABLESPACE_SIZE, t.BLOCK_SIZE, t.STATUS
 		FROM CDB_TABLESPACE_USAGE_METRICS m, CDB_TABLESPACES t, v$containers c
 		WHERE m.con_id(+) = t.con_id AND t.con_id = c.con_id AND m.TABLESPACE_NAME(+) = t.TABLESPACE_NAME`
+	// tablespaceUsageCDBWithMaxSQL extends tablespaceUsageCDBSQL with autoextend max size from CDB_DATA_FILES.
+	// Uses ANSI join syntax throughout (Oracle rejects mixing old-style (+) outer joins with ANSI joins).
+	tablespaceUsageCDBWithMaxSQL = `
+		SELECT c.name AS PDB_NAME, t.TABLESPACE_NAME, m.USED_SPACE, m.TABLESPACE_SIZE, t.BLOCK_SIZE, t.STATUS,
+		       NVL(mxb.MAX_BYTES, 0) as MAX_BYTES
+		FROM CDB_TABLESPACES t
+		JOIN v$containers c ON t.con_id = c.con_id
+		LEFT JOIN CDB_TABLESPACE_USAGE_METRICS m ON m.con_id = t.con_id AND m.TABLESPACE_NAME = t.TABLESPACE_NAME
+		LEFT JOIN (SELECT TABLESPACE_NAME, CON_ID, SUM(NVL(MAXBYTES, 0)) as MAX_BYTES FROM CDB_DATA_FILES GROUP BY TABLESPACE_NAME, CON_ID) mxb
+		    ON t.TABLESPACE_NAME = mxb.TABLESPACE_NAME AND t.con_id = mxb.CON_ID`
 	// statsCDBSQL extends statsSQL for CDB root using v$con_sysstat (a Container Data Object)
 	// which returns per-PDB rows with correct CON_IDs; v$sysstat always returns CON_ID=0 from CDB root.
 	statsCDBSQL = `
 		SELECT s.name AS NAME, s.value AS VALUE, c.name AS PDB_NAME
 		FROM v$con_sysstat s
 		JOIN v$containers c ON s.con_id = c.con_id`
+	// asmDiskgroupSQL and asmDiskSQL are queried from the regular RDBMS connection (no +ASM instance
+	// connection required) and return zero rows, not an error, on instances that don't use ASM.
+	asmDiskgroupSQL = `
+		SELECT NAME, TOTAL_MB, FREE_MB, USABLE_FILE_MB, OFFLINE_DISKS
+		FROM V$ASM_DISKGROUP_STAT`
+	asmDiskSQL = `
+		SELECT dg.NAME AS DISKGROUP_NAME, d.NAME AS DISK_NAME,
+		       d.READ_ERRS, d.WRITE_ERRS
+		FROM V$ASM_DISK_STAT d
+		JOIN V$ASM_DISKGROUP_STAT dg ON d.GROUP_NUMBER = dg.GROUP_NUMBER`
 	dataDictHitRatioSQL = "SELECT (1-(SUM(getmisses)/SUM(gets))) * 100 as DATA_DICTIONARY_HIT_RATIO FROM v$rowcache WHERE getmisses + gets <> 0"
 	osStatSQL           = "SELECT STAT_NAME, VALUE FROM v$osstat WHERE STAT_NAME IN ('LOAD', 'NUM_CPUS', 'PHYSICAL_MEMORY_BYTES')"
 	recycleBinSizeSQL   = "SELECT nvl(SUM(SPACE*(SELECT value FROM v$parameter WHERE name = 'db_block_size')),0) as RECYCLE_BIN_SIZE_BYTES FROM dba_recyclebin"
@@ -229,16 +256,25 @@ const (
 	osStatNameNumCPUs        = "NUM_CPUS"
 	osStatNamePhysicalMemory = "PHYSICAL_MEMORY_BYTES"
 
-	colAllocatedDBSize     = "ALLOCATED_DB_SIZE"
-	colDataDictHitRatio    = "DATA_DICTIONARY_HIT_RATIO"
-	colMetricName          = "METRIC_NAME"
-	colName                = "NAME"
-	colOSStatName          = "STAT_NAME"
-	colRecycleBinSizeBytes = "RECYCLE_BIN_SIZE_BYTES"
-	colSGAInfoBytes        = "BYTES"
-	colSGAInfoName         = "NAME"
-	colUsedDBSize          = "USED_DB_SIZE"
-	colValue               = "VALUE"
+	colAllocatedDBSize      = "ALLOCATED_DB_SIZE"
+	colASMDiskgroupName     = "NAME"
+	colASMFreeMB            = "FREE_MB"
+	colASMTotalMB           = "TOTAL_MB"
+	colASMUsableFreeMB      = "USABLE_FILE_MB"
+	colASMOfflineDisks      = "OFFLINE_DISKS"
+	colASMDiskDiskgroupName = "DISKGROUP_NAME"
+	colASMDiskName          = "DISK_NAME"
+	colASMDiskReadErrs      = "READ_ERRS"
+	colASMDiskWriteErrs     = "WRITE_ERRS"
+	colDataDictHitRatio     = "DATA_DICTIONARY_HIT_RATIO"
+	colMetricName           = "METRIC_NAME"
+	colName                 = "NAME"
+	colOSStatName           = "STAT_NAME"
+	colRecycleBinSizeBytes  = "RECYCLE_BIN_SIZE_BYTES"
+	colSGAInfoBytes         = "BYTES"
+	colSGAInfoName          = "NAME"
+	colUsedDBSize           = "USED_DB_SIZE"
+	colValue                = "VALUE"
 
 	// sgaMaxSize is the row name routed to oracledb.sga.limit; other rows
 	// are looked up in sgaComponentNames.
@@ -334,6 +370,8 @@ type oracleScraper struct {
 	recycleBinSizeClient     dbClient
 	sgaInfoClient            dbClient
 	storageUsageClient       dbClient
+	asmDiskgroupClient       dbClient
+	asmDiskClient            dbClient
 	sysmetricClient          dbClient
 	sysmetricCDBClient       dbClient
 	db                       *sql.DB
@@ -400,6 +438,22 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
 
+// buildTablespaceSQL selects the tablespace query variant for the connection type,
+// including the DBA_DATA_FILES/CDB_DATA_FILES join only when needed.
+func (s *oracleScraper) buildTablespaceSQL() string {
+	withMax := s.metricsBuilderConfig.Metrics.OracledbTablespaceLimit.Enabled
+	switch {
+	case s.isCDBRoot && withMax:
+		return tablespaceUsageCDBWithMaxSQL
+	case s.isCDBRoot:
+		return tablespaceUsageCDBSQL
+	case withMax:
+		return tablespaceUsageWithMaxSQL
+	default:
+		return tablespaceUsageSQL
+	}
+}
+
 func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	s.startTime = pcommon.NewTimestampFromTime(time.Now())
 	var err error
@@ -429,12 +483,11 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 		s.logger.Info("oracledbreceiver: connected to CDB root; using CDB-aware queries for per-PDB metrics")
 		s.statsClient = s.clientProviderFunc(s.db, statsCDBSQL, s.logger)
 		s.sessionCountClient = s.clientProviderFunc(s.db, sessionCountCDBSQL, s.logger)
-		s.tablespaceUsageClient = s.clientProviderFunc(s.db, tablespaceUsageCDBSQL, s.logger)
 	} else {
 		s.statsClient = s.clientProviderFunc(s.db, statsSQL, s.logger)
 		s.sessionCountClient = s.clientProviderFunc(s.db, sessionCountSQL, s.logger)
-		s.tablespaceUsageClient = s.clientProviderFunc(s.db, tablespaceUsageSQL, s.logger)
 	}
+	s.tablespaceUsageClient = s.clientProviderFunc(s.db, s.buildTablespaceSQL(), s.logger)
 	s.systemResourceLimitsClient = s.clientProviderFunc(s.db, systemResourceLimitsSQL, s.logger)
 	s.samplesQueryClient = s.clientProviderFunc(s.db, samplesQuery, s.logger)
 	s.sessionEventClient = s.clientProviderFunc(s.db, sessionEventQuery, s.logger)
@@ -443,6 +496,8 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	s.recycleBinSizeClient = s.clientProviderFunc(s.db, recycleBinSizeSQL, s.logger)
 	s.sgaInfoClient = s.clientProviderFunc(s.db, sgaInfoSQL, s.logger)
 	s.storageUsageClient = s.clientProviderFunc(s.db, storageUsageSQL, s.logger)
+	s.asmDiskgroupClient = s.clientProviderFunc(s.db, asmDiskgroupSQL, s.logger)
+	s.asmDiskClient = s.clientProviderFunc(s.db, asmDiskSQL, s.logger)
 	s.sysmetricClient = s.clientProviderFunc(s.db, sysmetricSQL, s.logger)
 	if s.isCDBRoot {
 		s.sysmetricCDBClient = s.clientProviderFunc(s.db, sysmetricCDBSQL, s.logger)
@@ -1087,11 +1142,11 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	if s.metricsBuilderConfig.Metrics.OracledbTablespaceSizeUsage.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbTablespaceSizeLimit.Enabled {
-		tablespaceQueryName := tablespaceUsageSQL
-		if s.isCDBRoot {
-			tablespaceQueryName = tablespaceUsageCDBSQL
-		}
+		s.metricsBuilderConfig.Metrics.OracledbTablespaceSizeLimit.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbTablespaceUtilization.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbTablespaceStatus.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbTablespaceLimit.Enabled {
+		tablespaceQueryName := s.buildTablespaceSQL()
 		rows, err := s.tablespaceUsageClient.metricRows(ctx)
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", tablespaceQueryName, err))
@@ -1133,6 +1188,27 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				} else {
 					s.mb.RecordOracledbTablespaceSizeLimitDataPoint(now, tablespaceSizeBlockCount*blockSize, tablespaceName, pdbName)
 				}
+
+				if s.metricsBuilderConfig.Metrics.OracledbTablespaceUtilization.Enabled && tablespaceSizeBlockCount > 0 {
+					utilization := float64(usedSpaceBlockCount) / float64(tablespaceSizeBlockCount)
+					s.mb.RecordOracledbTablespaceUtilizationDataPoint(now, utilization, tablespaceName, pdbName)
+				}
+
+				if s.metricsBuilderConfig.Metrics.OracledbTablespaceStatus.Enabled {
+					state := strings.ToLower(strings.TrimSpace(row["STATUS"]))
+					if tablespaceState, ok := metadata.MapAttributeOracledbTablespaceState[state]; ok {
+						s.mb.RecordOracledbTablespaceStatusDataPoint(now, 1, tablespaceName, tablespaceState, pdbName)
+					}
+				}
+
+				if s.metricsBuilderConfig.Metrics.OracledbTablespaceLimit.Enabled {
+					maxBytes, err := strconv.ParseInt(row["MAX_BYTES"], 10, 64)
+					if err != nil {
+						scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbTablespaceLimit, value was %s: %w", row["MAX_BYTES"], err))
+						continue
+					}
+					s.mb.RecordOracledbTablespaceLimitDataPoint(now, maxBytes, tablespaceName, pdbName)
+				}
 			}
 		}
 	}
@@ -1149,6 +1225,8 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.collectSGAInfo(ctx, &scrapeErrors)
 	}
 	s.collectStorageUsage(ctx, &scrapeErrors)
+	s.collectASMDiskgroupMetrics(ctx, &scrapeErrors)
+	s.collectASMDiskMetrics(ctx, &scrapeErrors)
 	s.collectSysMetrics(ctx, &scrapeErrors)
 
 	rb := s.setupResourceBuilder(s.mb.NewResourceBuilder())
@@ -1302,6 +1380,89 @@ func (s *oracleScraper) collectStorageUsage(ctx context.Context, scrapeErrors *[
 		if s.metricsBuilderConfig.Metrics.OracledbStorageUtilization.Enabled && allocatedBytes > 0 {
 			utilization := usedBytes / allocatedBytes
 			s.mb.RecordOracledbStorageUtilizationDataPoint(now, utilization)
+		}
+	}
+}
+
+// collectASMDiskgroupMetrics collects Automatic Storage Management diskgroup capacity and health
+// metrics. Returns zero rows, not an error, on instances that don't use ASM.
+func (s *oracleScraper) collectASMDiskgroupMetrics(ctx context.Context, scrapeErrors *[]error) {
+	if !s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupFree.Enabled &&
+		!s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupCapacity.Enabled &&
+		!s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupUsableFree.Enabled &&
+		!s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupOfflineDisks.Enabled {
+		return
+	}
+	now := pcommon.NewTimestampFromTime(time.Now())
+	rows, err := s.asmDiskgroupClient.metricRows(ctx)
+	if err != nil {
+		*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing %s: %w", asmDiskgroupSQL, err))
+		return
+	}
+	for _, row := range rows {
+		diskgroupName := row[colASMDiskgroupName]
+
+		if s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupFree.Enabled {
+			freeMB, err := strconv.ParseInt(row[colASMFreeMB], 10, 64)
+			if err != nil {
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbAsmDiskGroupFree, value was %s: %w", row[colASMFreeMB], err))
+			} else {
+				s.mb.RecordOracledbAsmDiskGroupFreeDataPoint(now, freeMB*1024*1024, diskgroupName)
+			}
+		}
+
+		if s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupCapacity.Enabled {
+			totalMB, err := strconv.ParseInt(row[colASMTotalMB], 10, 64)
+			if err != nil {
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbAsmDiskGroupCapacity, value was %s: %w", row[colASMTotalMB], err))
+			} else {
+				s.mb.RecordOracledbAsmDiskGroupCapacityDataPoint(now, totalMB*1024*1024, diskgroupName)
+			}
+		}
+
+		if s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupUsableFree.Enabled {
+			usableFreeMB, err := strconv.ParseInt(row[colASMUsableFreeMB], 10, 64)
+			if err != nil {
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbAsmDiskGroupUsableFree, value was %s: %w", row[colASMUsableFreeMB], err))
+			} else {
+				s.mb.RecordOracledbAsmDiskGroupUsableFreeDataPoint(now, usableFreeMB*1024*1024, diskgroupName)
+			}
+		}
+
+		if s.metricsBuilderConfig.Metrics.OracledbAsmDiskGroupOfflineDisks.Enabled {
+			offlineDisks, err := strconv.ParseInt(row[colASMOfflineDisks], 10, 64)
+			if err != nil {
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbAsmDiskGroupOfflineDisks, value was %s: %w", row[colASMOfflineDisks], err))
+			} else {
+				s.mb.RecordOracledbAsmDiskGroupOfflineDisksDataPoint(now, offlineDisks, diskgroupName)
+			}
+		}
+	}
+}
+
+// collectASMDiskMetrics collects Automatic Storage Management disk-level health metrics. Returns
+// zero rows, not an error, on instances that don't use ASM.
+func (s *oracleScraper) collectASMDiskMetrics(ctx context.Context, scrapeErrors *[]error) {
+	if !s.metricsBuilderConfig.Metrics.OracledbAsmDiskErrors.Enabled {
+		return
+	}
+	now := pcommon.NewTimestampFromTime(time.Now())
+	rows, err := s.asmDiskClient.metricRows(ctx)
+	if err != nil {
+		*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing %s: %w", asmDiskSQL, err))
+		return
+	}
+	for _, row := range rows {
+		diskgroupName := row[colASMDiskDiskgroupName]
+		diskName := row[colASMDiskName]
+
+		if s.metricsBuilderConfig.Metrics.OracledbAsmDiskErrors.Enabled {
+			if err := s.mb.RecordOracledbAsmDiskErrorsDataPoint(now, row[colASMDiskReadErrs], diskgroupName, diskName, metadata.AttributeDiskIoDirectionRead); err != nil {
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to record OracledbAsmDiskErrors (read), value was %s: %w", row[colASMDiskReadErrs], err))
+			}
+			if err := s.mb.RecordOracledbAsmDiskErrorsDataPoint(now, row[colASMDiskWriteErrs], diskgroupName, diskName, metadata.AttributeDiskIoDirectionWrite); err != nil {
+				*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to record OracledbAsmDiskErrors (write), value was %s: %w", row[colASMDiskWriteErrs], err))
+			}
 		}
 	}
 }
@@ -1736,7 +1897,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 				commandType:   commandType,
 				firstLoadTime: row[firstLoadTimeAttr],
 				lastLoadTime:  row[lastLoadTimeAttr],
-				planHashValue: hex.EncodeToString([]byte(row[planHashValueAttr])),
+				planHashValue: row[planHashValueAttr],
 				service:       row[serviceAttr],
 				dbNamespace:   row[dbNamespaceAttr],
 			}
@@ -1916,7 +2077,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 			continue
 		}
 
-		queryPlanHashVal := hex.EncodeToString([]byte(row[planHashValue]))
+		queryPlanHashVal := row[planHashValue]
 
 		queryDuration, err := strconv.ParseFloat(row[duration], 64)
 		if err != nil {

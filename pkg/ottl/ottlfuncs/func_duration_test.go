@@ -192,3 +192,39 @@ func Test_DurationError(t *testing.T) {
 		})
 	}
 }
+
+func Test_DurationFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewDurationFactory[any]()
+		assert.Equal(t, "Duration", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewDurationFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &DurationArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Duration"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewDurationFactory[any]()
+		args := factory.CreateDefaultArguments()
+		durationArgs, ok := args.(*DurationArguments[any])
+		require.True(t, ok)
+		durationArgs.Duration = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "1h", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createDurationFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "DurationFactory args must be of type *DurationArguments[K]")
+	})
+}

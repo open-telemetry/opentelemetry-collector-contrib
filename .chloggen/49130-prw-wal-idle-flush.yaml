@@ -1,9 +1,0 @@
-change_type: bug_fix
-
-component: exporter/prometheus_remote_write
-
-note: Flush buffered WAL entries when the exporter is idle so data is not stalled until the next write.
-
-issues: [49130]
-
-change_logs: [user]
