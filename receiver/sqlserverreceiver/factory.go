@@ -62,7 +62,7 @@ func createDefaultConfig() component.Config {
 			TopQueryCount:       250,
 			CollectionInterval:  time.Minute,
 		},
-		ProcedureMetrics: ProcedureMetrics{
+		TopProcedureCollection: TopProcedureCollection{
 			MaxProcedureSampleCount: 1000,
 			TopProcedureCount:       250,
 			CollectionInterval:      time.Minute,
@@ -123,8 +123,8 @@ func setupLogQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerQueryTextAndPlanQuery())
 	}
 
-	if cfg.LogsBuilderConfig.Events.DbServerProcedureMetrics.Enabled {
-		queries = append(queries, getSQLServerProcedureMetricsQuery(cfg.InstanceName))
+	if cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled {
+		queries = append(queries, getSQLServerTopProcedureQuery(cfg.InstanceName))
 	}
 
 	return queries
@@ -348,10 +348,10 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlSe
 			cache = newCache(1)
 		}
 
-		if query == getSQLServerProcedureMetricsQuery(cfg.InstanceName) {
+		if query == getSQLServerTopProcedureQuery(cfg.InstanceName) {
 			// every candidate row caches 7 counters, and multiply by 2 so that a procedure
 			// dropping out of one scrape's sample still has its previous values on the next.
-			cache = newCache(int(cfg.ProcedureMetrics.MaxProcedureSampleCount * 7 * 2))
+			cache = newCache(int(cfg.TopProcedureCollection.MaxProcedureSampleCount * 7 * 2))
 		}
 
 		sqlServerScraper := newSQLServerScraper(id, query,

@@ -394,7 +394,7 @@ type mockClient struct {
 	// Instance column shape.
 	propertiesFixtureFile string
 	// procedureFixtureFile, when set, overrides the fixture returned for the stored
-	// procedure metrics query.
+	// top procedure query.
 	procedureFixtureFile string
 }
 
@@ -509,8 +509,8 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQuerySamplesQuery():
 		queryResults, err = readFile("recordDatabaseSampleQueryData.txt")
-	case getSQLServerProcedureMetricsQuery(mc.instanceName):
-		fixture := "procedureMetricsQueryData.txt"
+	case getSQLServerTopProcedureQuery(mc.instanceName):
+		fixture := "topProcedureQueryData.txt"
 		if mc.procedureFixtureFile != "" {
 			fixture = mc.procedureFixtureFile
 		}
@@ -1599,9 +1599,9 @@ func TestIsDiskIOQueryEnabled(t *testing.T) {
 	assert.True(t, isDiskIOQueryEnabled(metrics))
 }
 
-// newProcedureMetricsScraper builds a logs scraper with only the procedure metrics
-// event enabled, so scrapers[0] is always the procedure metrics scraper.
-func newProcedureMetricsScraper(t *testing.T) *sqlServerScraperHelper {
+// newTopProcedureScraper builds a logs scraper with only the top procedure
+// event enabled, so scrapers[0] is always the top procedure scraper.
+func newTopProcedureScraper(t *testing.T) *sqlServerScraperHelper {
 	t.Helper()
 
 	cfg := createDefaultConfig().(*Config)
@@ -1611,7 +1611,7 @@ func newProcedureMetricsScraper(t *testing.T) *sqlServerScraperHelper {
 	cfg.Server = "0.0.0.0"
 	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
 	configureAllScraperMetricsAndEvents(cfg, false)
-	cfg.LogsBuilderConfig.Events.DbServerProcedureMetrics.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled = true
 	require.NoError(t, cfg.Validate())
 
 	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
@@ -1627,7 +1627,7 @@ func newProcedureMetricsScraper(t *testing.T) *sqlServerScraperHelper {
 }
 
 // seedProcedureCache primes the delta cache so the next scrape produces deltas rather
-// than only seeding. Mirrors the key layout used by recordDatabaseProcedureMetrics; the
+// than only seeding. Mirrors the key layout used by recordDatabaseTopProcedure; the
 // fixture's procedures all live in database 5.
 func seedProcedureCache(scraper *sqlServerScraperHelper, procedureID string, values map[string]int64) {
 	const fixtureDatabaseID = "5"
@@ -1636,8 +1636,8 @@ func seedProcedureCache(scraper *sqlServerScraperHelper, procedureID string, val
 	}
 }
 
-func TestProcedureMetricsQuery(t *testing.T) {
-	scraper := newProcedureMetricsScraper(t)
+func TestTopProcedureQuery(t *testing.T) {
+	scraper := newTopProcedureScraper(t)
 
 	seedProcedureCache(scraper, "1234567", map[string]int64{
 		"execution_count":      1000,
@@ -1661,7 +1661,7 @@ func TestProcedureMetricsQuery(t *testing.T) {
 	actualLogs, err := scraper.ScrapeLogs(t.Context())
 	require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "expectedProcedureMetricsQuery.yaml")
+	expectedFile := filepath.Join("testdata", "expectedTopProcedureQuery.yaml")
 	// Uncomment line below to re-generate expected logs.
 	// golden.WriteLogs(t, expectedFile, actualLogs)
 	expectedLogs, err := golden.ReadLogs(expectedFile)
@@ -1669,12 +1669,12 @@ func TestProcedureMetricsQuery(t *testing.T) {
 	require.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp()))
 
 	records := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	assert.Equal(t, "db.server.procedure_metrics", records.At(0).EventName())
+	assert.Equal(t, "db.server.top_procedure", records.At(0).EventName())
 }
 
 // The first scrape has nothing to diff against, so it must only prime the cache.
-func TestProcedureMetricsFirstScrapeSeedsCacheOnly(t *testing.T) {
-	scraper := newProcedureMetricsScraper(t)
+func TestTopProcedureFirstScrapeSeedsCacheOnly(t *testing.T) {
+	scraper := newTopProcedureScraper(t)
 
 	actualLogs, err := scraper.ScrapeLogs(t.Context())
 	require.NoError(t, err)
@@ -1685,7 +1685,7 @@ func TestProcedureMetricsFirstScrapeSeedsCacheOnly(t *testing.T) {
 }
 
 // A scrape arriving before the interval elapses is skipped even when it has data to report.
-func TestProcedureMetricsRespectsCollectionInterval(t *testing.T) {
+func TestTopProcedureRespectsCollectionInterval(t *testing.T) {
 	seed := func(scraper *sqlServerScraperHelper) {
 		seedProcedureCache(scraper, "1234567", map[string]int64{
 			"execution_count":      1000,
@@ -1699,8 +1699,8 @@ func TestProcedureMetricsRespectsCollectionInterval(t *testing.T) {
 	}
 
 	t.Run("skipped within the interval", func(t *testing.T) {
-		scraper := newProcedureMetricsScraper(t)
-		scraper.config.ProcedureMetrics.CollectionInterval = time.Minute
+		scraper := newTopProcedureScraper(t)
+		scraper.config.TopProcedureCollection.CollectionInterval = time.Minute
 		seed(scraper)
 		scraper.lastExecutionTimestamp = time.Now()
 
@@ -1710,8 +1710,8 @@ func TestProcedureMetricsRespectsCollectionInterval(t *testing.T) {
 	})
 
 	t.Run("runs once the interval has elapsed", func(t *testing.T) {
-		scraper := newProcedureMetricsScraper(t)
-		scraper.config.ProcedureMetrics.CollectionInterval = time.Minute
+		scraper := newTopProcedureScraper(t)
+		scraper.config.TopProcedureCollection.CollectionInterval = time.Minute
 		seed(scraper)
 		scraper.lastExecutionTimestamp = time.Now().Add(-2 * time.Minute)
 
@@ -1723,8 +1723,8 @@ func TestProcedureMetricsRespectsCollectionInterval(t *testing.T) {
 
 // A procedure that has not executed since the last scrape has a zero execution delta
 // and must be dropped rather than emitted with empty counters.
-func TestProcedureMetricsSkipsUnexecutedProcedures(t *testing.T) {
-	scraper := newProcedureMetricsScraper(t)
+func TestTopProcedureSkipsUnexecutedProcedures(t *testing.T) {
+	scraper := newTopProcedureScraper(t)
 
 	// Seed with the fixture's own cumulative values so every delta is zero.
 	seedProcedureCache(scraper, "1234567", map[string]int64{
@@ -1754,9 +1754,9 @@ func TestProcedureMetricsSkipsUnexecutedProcedures(t *testing.T) {
 // Procedures must be ranked by elapsed time accrued since the last scrape, not by the
 // cumulative total the query orders on. usp_UpdateInventory has the smaller lifetime
 // total but the larger delta here, so it is the one that survives a top count of 1.
-func TestProcedureMetricsRanksByElapsedTimeDelta(t *testing.T) {
-	scraper := newProcedureMetricsScraper(t)
-	scraper.config.ProcedureMetrics.TopProcedureCount = 1
+func TestTopProcedureRanksByElapsedTimeDelta(t *testing.T) {
+	scraper := newTopProcedureScraper(t)
+	scraper.config.TopProcedureCollection.TopProcedureCount = 1
 
 	seedProcedureCache(scraper, "1234567", map[string]int64{
 		"execution_count":      1499,

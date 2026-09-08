@@ -487,27 +487,6 @@ attributes:
   # attributes for events
   ## common
 events:
-  db.server.procedure_metrics:
-    enabled: false
-    description: Aggregated performance metrics for stored procedures, read from sys.dm_exec_procedure_stats with delta computation on the cumulative counters. Correlates with db.server.top_query and db.server.query_sample via sqlserver.procedure_id.
-    attributes:
-      - db.system.name
-      - db.namespace
-      - sqlserver.procedure_id
-      - sqlserver.procedure_name
-      - sqlserver.procedure.schema_name
-      - sqlserver.procedure_execution_count
-      - sqlserver.total_worker_time
-      - sqlserver.total_elapsed_time
-      - sqlserver.total_logical_reads
-      - sqlserver.total_logical_writes
-      - sqlserver.total_physical_reads
-      - sqlserver.procedure.total_spills
-      - sqlserver.procedure.avg_elapsed_time
-      - sqlserver.procedure.max_elapsed_time
-      - sqlserver.procedure.min_elapsed_time
-      - sqlserver.procedure.last_execution_time
-
   db.server.query_sample:
     enabled: false
     description: query sample
@@ -553,6 +532,27 @@ events:
       - user.name
       - sqlserver.procedure_id
       - sqlserver.procedure_name
+
+  db.server.top_procedure:
+    enabled: false
+    description: Aggregated performance metrics for the top stored procedures by elapsed time, read from sys.dm_exec_procedure_stats with delta computation on the cumulative counters. Correlates with db.server.top_query and db.server.query_sample via sqlserver.procedure_id.
+    attributes:
+      - db.system.name
+      - db.namespace
+      - sqlserver.procedure_id
+      - sqlserver.procedure_name
+      - sqlserver.procedure.schema_name
+      - sqlserver.procedure_execution_count
+      - sqlserver.total_worker_time
+      - sqlserver.total_elapsed_time
+      - sqlserver.total_logical_reads
+      - sqlserver.total_logical_writes
+      - sqlserver.total_physical_reads
+      - sqlserver.procedure.total_spills
+      - sqlserver.procedure.avg_elapsed_time
+      - sqlserver.procedure.max_elapsed_time
+      - sqlserver.procedure.min_elapsed_time
+      - sqlserver.procedure.last_execution_time
 
   db.server.top_query:
     enabled: false

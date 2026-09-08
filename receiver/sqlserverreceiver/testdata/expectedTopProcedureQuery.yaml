@@ -77,7 +77,7 @@ resourceLogs:
                 value:
                   stringValue: "2026-09-08T10:15:30.0000000+00:00"
             body: {}
-            eventName: db.server.procedure_metrics
+            eventName: db.server.top_procedure
             timeUnixNano: "1788809290013353000"
           - attributes:
               - key: db.system.name
@@ -129,7 +129,7 @@ resourceLogs:
                 value:
                   stringValue: "2026-09-08T10:15:31.0000000+00:00"
             body: {}
-            eventName: db.server.procedure_metrics
+            eventName: db.server.top_procedure
             timeUnixNano: "1788809290013353000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver

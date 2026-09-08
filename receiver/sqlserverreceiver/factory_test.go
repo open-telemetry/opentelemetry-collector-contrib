@@ -51,7 +51,7 @@ func TestFactory(t *testing.T) {
 					QuerySample: QuerySample{
 						MaxRowsPerQuery: 100,
 					},
-					ProcedureMetrics: ProcedureMetrics{
+					TopProcedureCollection: TopProcedureCollection{
 						MaxProcedureSampleCount: 1000,
 						TopProcedureCount:       250,
 						CollectionInterval:      time.Minute,

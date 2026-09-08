@@ -40,10 +40,10 @@ type ConnectionPool struct {
 	_ struct{}
 }
 
-// ProcedureMetrics configures the collection of stored procedure statistics. Candidate
+// TopProcedureCollection configures the collection of stored procedure statistics. Candidate
 // rows are fetched up to MaxProcedureSampleCount, then the TopProcedureCount procedures
 // with the largest elapsed-time delta over the interval are reported.
-type ProcedureMetrics struct {
+type TopProcedureCollection struct {
 	MaxProcedureSampleCount uint `mapstructure:"max_procedure_sample_count"`
 	TopProcedureCount       uint `mapstructure:"top_procedure_count"`
 	// CollectionInterval throttles the query and sets the window the deltas cover.
@@ -79,7 +79,7 @@ type Config struct {
 
 	QuerySample QuerySample `mapstructure:"query_sample_collection"`
 
-	ProcedureMetrics ProcedureMetrics `mapstructure:"procedure_metrics_collection"`
+	TopProcedureCollection TopProcedureCollection `mapstructure:"top_procedure_collection"`
 
 	// ConnectionPool tunes the shared database connection pool used by all
 	// scrapers of this receiver.
@@ -122,25 +122,25 @@ func (cfg *Config) Validate() error {
 		return errors.New("`top_query_collection.collection_interval` must not be less than 0")
 	}
 
-	if cfg.ProcedureMetrics.MaxProcedureSampleCount > 10000 {
+	if cfg.TopProcedureCollection.MaxProcedureSampleCount > 10000 {
 		return errors.New("`max_procedure_sample_count` must be between 1 and 10000")
 	}
 
-	if cfg.ProcedureMetrics.TopProcedureCount > cfg.ProcedureMetrics.MaxProcedureSampleCount {
+	if cfg.TopProcedureCollection.TopProcedureCount > cfg.TopProcedureCollection.MaxProcedureSampleCount {
 		return errors.New("`top_procedure_count` must be less than or equal to `max_procedure_sample_count`")
 	}
 
-	if cfg.ProcedureMetrics.CollectionInterval < 0 {
-		return errors.New("`procedure_metrics_collection.collection_interval` must not be less than 0")
+	if cfg.TopProcedureCollection.CollectionInterval < 0 {
+		return errors.New("`top_procedure_collection.collection_interval` must not be less than 0")
 	}
 
 	// Zero counts would leave the event silently reporting nothing, so they are only
 	// rejected when the event that reads them is actually enabled.
-	if cfg.LogsBuilderConfig.Events.DbServerProcedureMetrics.Enabled {
-		if cfg.ProcedureMetrics.MaxProcedureSampleCount < 1 {
+	if cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled {
+		if cfg.TopProcedureCollection.MaxProcedureSampleCount < 1 {
 			return errors.New("`max_procedure_sample_count` must be between 1 and 10000")
 		}
-		if cfg.ProcedureMetrics.TopProcedureCount < 1 {
+		if cfg.TopProcedureCollection.TopProcedureCount < 1 {
 			return errors.New("`top_procedure_count` must be greater than 0")
 		}
 	}

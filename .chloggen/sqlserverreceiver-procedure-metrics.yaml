@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/sqlserver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add the `db.server.procedure_metrics` event, reporting aggregated stored procedure statistics.
+note: Add the `db.server.top_procedure` event, reporting aggregated stored procedure statistics.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50799]
@@ -18,7 +18,7 @@ issues: [50799]
 subtext: |
   Read from `sys.dm_exec_procedure_stats` with per-scrape deltas on the cumulative counters, and
   ranked by the elapsed time each procedure accrued since the previous scrape. Disabled by default;
-  configure via the new `procedure_metrics_collection` block (`max_procedure_sample_count`,
+  configure via the new `top_procedure_collection` block (`max_procedure_sample_count`,
   `top_procedure_count`, `collection_interval`). The event is throttled by its own
   `collection_interval` (default `60s`) rather than the receiver's global one, which also sets the
   window the deltas cover. Correlates with `db.server.top_query` and `db.server.query_sample`

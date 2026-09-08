@@ -162,14 +162,14 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	case getSQLServerQuerySamplesQuery():
 		isQuerySample = true
 		resources, err = s.recordDatabaseSampleQuery(ctx)
-	case getSQLServerProcedureMetricsQuery(s.config.InstanceName):
-		if int(math.Ceil(time.Since(s.lastExecutionTimestamp).Seconds())) < int(s.config.ProcedureMetrics.CollectionInterval.Seconds()) {
-			s.logger.Debug("Skipping the collection of procedure metrics because the current time has not yet exceeded the last execution time plus the specified collection interval")
+	case getSQLServerTopProcedureQuery(s.config.InstanceName):
+		if int(math.Ceil(time.Since(s.lastExecutionTimestamp).Seconds())) < int(s.config.TopProcedureCollection.CollectionInterval.Seconds()) {
+			s.logger.Debug("Skipping the collection of top procedures because the current time has not yet exceeded the last execution time plus the specified collection interval")
 			return plog.NewLogs(), nil
 		}
-		resources, err = s.recordDatabaseProcedureMetrics(ctx)
+		resources, err = s.recordDatabaseTopProcedure(ctx)
 		if err != nil {
-			s.logger.Error("ProcedureMetrics: scrape failed", zap.Error(err))
+			s.logger.Error("TopProcedure: scrape failed", zap.Error(err))
 		}
 	default:
 		return plog.Logs{}, fmt.Errorf("Attempted to get logs from unsupported query: %s", s.sqlQuery)
@@ -2320,7 +2320,7 @@ func (s *sqlServerScraperHelper) recordDiskIOMetrics(ctx context.Context) error 
 	return errors.Join(errs...)
 }
 
-func (s *sqlServerScraperHelper) recordDatabaseProcedureMetrics(ctx context.Context) (pcommon.Resource, error) {
+func (s *sqlServerScraperHelper) recordDatabaseTopProcedure(ctx context.Context) (pcommon.Resource, error) {
 	const (
 		colDatabaseName     = "database_name"
 		colSchemaName       = "schema_name"
@@ -2352,7 +2352,7 @@ func (s *sqlServerScraperHelper) recordDatabaseProcedureMetrics(ctx context.Cont
 	}
 
 	rows, err := s.client.QueryRows(ctx,
-		sql.Named("maxSampleCount", s.config.ProcedureMetrics.MaxProcedureSampleCount))
+		sql.Named("maxSampleCount", s.config.TopProcedureCollection.MaxProcedureSampleCount))
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			return pcommon.NewResource(), fmt.Errorf("sqlServerScraperHelper failed getting rows: %w", err)
@@ -2405,8 +2405,8 @@ func (s *sqlServerScraperHelper) recordDatabaseProcedureMetrics(ctx context.Cont
 	sort.SliceStable(candidates, func(i, j int) bool {
 		return candidates[i].deltas[colTotalElapsedTime] > candidates[j].deltas[colTotalElapsedTime]
 	})
-	if len(candidates) > int(s.config.ProcedureMetrics.TopProcedureCount) {
-		candidates = candidates[:s.config.ProcedureMetrics.TopProcedureCount]
+	if len(candidates) > int(s.config.TopProcedureCollection.TopProcedureCount) {
+		candidates = candidates[:s.config.TopProcedureCollection.TopProcedureCount]
 	}
 
 	var resources pcommon.Resource
@@ -2440,7 +2440,7 @@ func (s *sqlServerScraperHelper) recordDatabaseProcedureMetrics(ctx context.Cont
 			resourcesAdded = true
 		}
 
-		s.lb.RecordDbServerProcedureMetricsEvent(
+		s.lb.RecordDbServerTopProcedureEvent(
 			context.Background(),
 			timestamp,
 			dbSystemNameVal,

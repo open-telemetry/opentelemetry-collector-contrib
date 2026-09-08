@@ -3463,17 +3463,17 @@ func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
 
 // EventsConfig provides config for sqlserver events.
 type EventsConfig struct {
-	DbServerProcedureMetrics EventConfig `mapstructure:"db.server.procedure_metrics"`
-	DbServerQuerySample      EventConfig `mapstructure:"db.server.query_sample"`
-	DbServerTopQuery         EventConfig `mapstructure:"db.server.top_query"`
+	DbServerQuerySample  EventConfig `mapstructure:"db.server.query_sample"`
+	DbServerTopProcedure EventConfig `mapstructure:"db.server.top_procedure"`
+	DbServerTopQuery     EventConfig `mapstructure:"db.server.top_query"`
 }
 
 func DefaultEventsConfig() EventsConfig {
 	return EventsConfig{
-		DbServerProcedureMetrics: EventConfig{
+		DbServerQuerySample: EventConfig{
 			Enabled: false,
 		},
-		DbServerQuerySample: EventConfig{
+		DbServerTopProcedure: EventConfig{
 			Enabled: false,
 		},
 		DbServerTopQuery: EventConfig{

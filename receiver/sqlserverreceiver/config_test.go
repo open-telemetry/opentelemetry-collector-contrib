@@ -115,7 +115,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
-				ProcedureMetrics: ProcedureMetrics{
+				TopProcedureCollection: TopProcedureCollection{
 					MaxProcedureSampleCount: 100000,
 				},
 			},
@@ -126,7 +126,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
-				ProcedureMetrics: ProcedureMetrics{
+				TopProcedureCollection: TopProcedureCollection{
 					MaxProcedureSampleCount: 100,
 					TopProcedureCount:       200,
 				},
@@ -138,8 +138,8 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
-				LogsBuilderConfig:    procedureMetricsEnabledLogsConfig(),
-				ProcedureMetrics: ProcedureMetrics{
+				LogsBuilderConfig:    topProcedureEnabledLogsConfig(),
+				TopProcedureCollection: TopProcedureCollection{
 					MaxProcedureSampleCount: 1000,
 					TopProcedureCount:       0,
 				},
@@ -147,12 +147,12 @@ func TestValidate(t *testing.T) {
 			expectedSuccess: false,
 		},
 		{
-			desc: "valid procedure metrics config with the event enabled",
+			desc: "valid top procedure config with the event enabled",
 			cfg: &Config{
 				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
-				LogsBuilderConfig:    procedureMetricsEnabledLogsConfig(),
-				ProcedureMetrics: ProcedureMetrics{
+				LogsBuilderConfig:    topProcedureEnabledLogsConfig(),
+				TopProcedureCollection: TopProcedureCollection{
 					MaxProcedureSampleCount: 1000,
 					TopProcedureCount:       250,
 					CollectionInterval:      time.Minute,
@@ -161,12 +161,12 @@ func TestValidate(t *testing.T) {
 			expectedSuccess: true,
 		},
 		{
-			desc: "config with negative procedure metrics collection interval",
+			desc: "config with negative top procedure collection interval",
 			cfg: &Config{
 				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
-				LogsBuilderConfig:    procedureMetricsEnabledLogsConfig(),
-				ProcedureMetrics: ProcedureMetrics{
+				LogsBuilderConfig:    topProcedureEnabledLogsConfig(),
+				TopProcedureCollection: TopProcedureCollection{
 					MaxProcedureSampleCount: 1000,
 					TopProcedureCount:       250,
 					CollectionInterval:      -1 * time.Second,
@@ -353,8 +353,8 @@ func TestLoadConfig(t *testing.T) {
 	})
 }
 
-func procedureMetricsEnabledLogsConfig() metadata.LogsBuilderConfig {
+func topProcedureEnabledLogsConfig() metadata.LogsBuilderConfig {
 	cfg := metadata.DefaultLogsBuilderConfig()
-	cfg.Events.DbServerProcedureMetrics.Enabled = true
+	cfg.Events.DbServerTopProcedure.Enabled = true
 	return cfg
 }
