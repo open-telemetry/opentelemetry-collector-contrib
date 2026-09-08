@@ -21,47 +21,47 @@ func TestQueryContents(t *testing.T) {
 		{
 			name:                     "Test database IO query",
 			getQuery:                 getSQLServerDatabaseIOQuery,
-			expectedQueryValFilename: "databaseIOQueryWithoutInstanceName.txt",
+			expectedQueryValFilename: "databaseIOQuery.txt",
 		},
 		{
 			name:                     "Test perf counter query",
 			getQuery:                 getSQLServerPerformanceCounterQuery,
-			expectedQueryValFilename: "perfCounterQueryWithoutInstanceName.txt",
+			expectedQueryValFilename: "perfCounterQuery.txt",
 		},
 		{
 			name:                     "Test properties query",
 			getQuery:                 getSQLServerPropertiesQuery,
-			expectedQueryValFilename: "propertyQueryWithoutInstanceName.txt",
+			expectedQueryValFilename: "propertyQuery.txt",
 		},
 		{
 			name:                     "Test wait stats query",
 			getQuery:                 getSQLServerWaitStatsQuery,
-			expectedQueryValFilename: "waitStatsQueryWithoutInstanceName.txt",
+			expectedQueryValFilename: "waitStatsQuery.txt",
 		},
 		{
 			name:                     "Test worker threads query",
 			getQuery:                 getSQLServerWorkerThreadsQuery,
-			expectedQueryValFilename: "workerThreadsQueryWithoutInstanceName.txt",
+			expectedQueryValFilename: "workerThreadsQuery.txt",
 		},
 		{
 			name:                     "Test index physical stats query",
 			getQuery:                 getSQLServerIndexPhysicalStatsQuery,
-			expectedQueryValFilename: "indexPhysicalQueryWithoutInstanceName.txt",
+			expectedQueryValFilename: "indexPhysicalQuery.txt",
 		},
 		{
 			name:                     "Test availability group query",
 			getQuery:                 getSQLServerAvailabilityGroupQuery,
-			expectedQueryValFilename: "availabilityGroupQueryWithoutInstanceName.txt",
+			expectedQueryValFilename: "availabilityGroupQuery.txt",
 		},
 		{
 			name:                     "Test CPU memory query",
 			getQuery:                 getSQLServerCPUMemoryQuery,
-			expectedQueryValFilename: "cpuMemoryQueryWithoutInstanceName.txt",
+			expectedQueryValFilename: "cpuMemoryQuery.txt",
 		},
 		{
 			name:                     "Test disk IO query",
 			getQuery:                 getSQLServerDiskIOQuery,
-			expectedQueryValFilename: "diskIOQueryWithoutInstanceName.txt",
+			expectedQueryValFilename: "diskIOQuery.txt",
 		},
 	}
 
