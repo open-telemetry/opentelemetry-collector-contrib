@@ -163,6 +163,10 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 		isQuerySample = true
 		resources, err = s.recordDatabaseSampleQuery(ctx)
 	case getSQLServerProcedureMetricsQuery(s.config.InstanceName):
+		if int(math.Ceil(time.Since(s.lastExecutionTimestamp).Seconds())) < int(s.config.ProcedureMetrics.CollectionInterval.Seconds()) {
+			s.logger.Debug("Skipping the collection of procedure metrics because the current time has not yet exceeded the last execution time plus the specified collection interval")
+			return plog.NewLogs(), nil
+		}
 		resources, err = s.recordDatabaseProcedureMetrics(ctx)
 		if err != nil {
 			s.logger.Error("ProcedureMetrics: scrape failed", zap.Error(err))
@@ -2407,7 +2411,10 @@ func (s *sqlServerScraperHelper) recordDatabaseProcedureMetrics(ctx context.Cont
 
 	var resources pcommon.Resource
 	var resourcesAdded bool
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	now := time.Now()
+	timestamp := pcommon.NewTimestampFromTime(now)
+	// Set even on a seeding scrape so the next run's delta window matches the interval.
+	s.lastExecutionTimestamp = now
 
 	for _, candidate := range candidates {
 		row, deltas := candidate.row, candidate.deltas

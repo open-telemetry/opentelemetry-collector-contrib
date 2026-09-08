@@ -46,6 +46,8 @@ type ConnectionPool struct {
 type ProcedureMetrics struct {
 	MaxProcedureSampleCount uint `mapstructure:"max_procedure_sample_count"`
 	TopProcedureCount       uint `mapstructure:"top_procedure_count"`
+	// CollectionInterval throttles the query and sets the window the deltas cover.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -126,6 +128,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.ProcedureMetrics.TopProcedureCount > cfg.ProcedureMetrics.MaxProcedureSampleCount {
 		return errors.New("`top_procedure_count` must be less than or equal to `max_procedure_sample_count`")
+	}
+
+	if cfg.ProcedureMetrics.CollectionInterval < 0 {
+		return errors.New("`procedure_metrics_collection.collection_interval` must not be less than 0")
 	}
 
 	// Zero counts would leave the event silently reporting nothing, so they are only

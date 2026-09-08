@@ -54,6 +54,7 @@ func TestFactory(t *testing.T) {
 					ProcedureMetrics: ProcedureMetrics{
 						MaxProcedureSampleCount: 1000,
 						TopProcedureCount:       250,
+						CollectionInterval:      time.Minute,
 					},
 					MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 					LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),

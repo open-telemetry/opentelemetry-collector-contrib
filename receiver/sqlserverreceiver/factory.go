@@ -65,6 +65,7 @@ func createDefaultConfig() component.Config {
 		ProcedureMetrics: ProcedureMetrics{
 			MaxProcedureSampleCount: 1000,
 			TopProcedureCount:       250,
+			CollectionInterval:      time.Minute,
 		},
 	}
 }

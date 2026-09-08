@@ -90,6 +90,7 @@ sqlserver:
   procedure_metrics_collection:                # this collection exports aggregated stored procedure statistics as logs
     max_procedure_sample_count: 1000           # maximum number of procedures to consider as candidates in a single run.
     top_procedure_count: 250                   # The maximum number of procedures to report in a single run.
+    collection_interval: 60s                   # collection interval for procedure metrics collection specifically
 ```
 
 The following settings are optional:
@@ -103,6 +104,13 @@ The following settings are optional:
   - `top_procedure_count` (default = `250`): How many of those candidates to report, chosen by the
     elapsed time each procedure accrued since the previous run. Must not exceed
     `max_procedure_sample_count`.
+  - `collection_interval` (default = `60s`): The interval at which procedure metrics should be
+    emitted by this receiver, independently of the global `collection_interval`. As with
+    `top_query_collection.collection_interval`, this only guarantees the event is collected at most
+    once per interval: the scraper still runs on the global interval and skips the collection until
+    this much time has passed since the last one, so a value below the global interval has no
+    effect. It also sets the window the reported deltas cover, so raising it rolls the counters up
+    over a longer period.
 
 Direct connection options (optional, but all must be specified to enable):
 - `username`: The username used to connect to the SQL Server instance.

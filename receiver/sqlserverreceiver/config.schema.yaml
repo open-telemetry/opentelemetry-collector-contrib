@@ -21,6 +21,20 @@ $defs:
         description: MaxOpen is the maximum number of open connections to the database. Zero means unlimited.
         x-pointer: true
         type: integer
+  procedure_metrics:
+    description: ProcedureMetrics configures the collection of stored procedure statistics. Candidate rows are fetched up to MaxProcedureSampleCount, then the TopProcedureCount procedures with the largest elapsed-time delta over the interval are reported.
+    type: object
+    properties:
+      collection_interval:
+        description: CollectionInterval throttles the query and sets the window the deltas cover.
+        type: string
+        format: duration
+      max_procedure_sample_count:
+        type: integer
+        x-customType: uint
+      top_procedure_count:
+        type: integer
+        x-customType: uint
   query_sample:
     type: object
     properties:
@@ -60,6 +74,8 @@ properties:
   port:
     type: integer
     x-customType: uint
+  procedure_metrics_collection:
+    $ref: procedure_metrics
   query_sample_collection:
     $ref: query_sample
   server:

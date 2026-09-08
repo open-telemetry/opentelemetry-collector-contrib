@@ -155,9 +155,24 @@ func TestValidate(t *testing.T) {
 				ProcedureMetrics: ProcedureMetrics{
 					MaxProcedureSampleCount: 1000,
 					TopProcedureCount:       250,
+					CollectionInterval:      time.Minute,
 				},
 			},
 			expectedSuccess: true,
+		},
+		{
+			desc: "config with negative procedure metrics collection interval",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				LogsBuilderConfig:    procedureMetricsEnabledLogsConfig(),
+				ProcedureMetrics: ProcedureMetrics{
+					MaxProcedureSampleCount: 1000,
+					TopProcedureCount:       250,
+					CollectionInterval:      -1 * time.Second,
+				},
+			},
+			expectedSuccess: false,
 		},
 		{
 			desc: "config with invalid LookbackTime",

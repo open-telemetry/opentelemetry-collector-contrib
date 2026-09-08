@@ -1680,6 +1680,45 @@ func TestProcedureMetricsFirstScrapeSeedsCacheOnly(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 0, actualLogs.ResourceLogs().Len(), "first scrape should only seed the cache")
 	assert.Positive(t, scraper.cache.Len(), "first scrape should have cached the procedure counters")
+	assert.True(t, scraper.lastExecutionTimestamp.After(time.Unix(0, 0)),
+		"a seeding scrape should still record its execution time")
+}
+
+// A scrape arriving before the interval elapses is skipped even when it has data to report.
+func TestProcedureMetricsRespectsCollectionInterval(t *testing.T) {
+	seed := func(scraper *sqlServerScraperHelper) {
+		seedProcedureCache(scraper, "1234567", map[string]int64{
+			"execution_count":      1000,
+			"total_worker_time":    30_000_000,
+			"total_elapsed_time":   60_000_000,
+			"total_physical_reads": 100,
+			"total_logical_reads":  400_000,
+			"total_logical_writes": 500,
+			"total_spills":         20,
+		})
+	}
+
+	t.Run("skipped within the interval", func(t *testing.T) {
+		scraper := newProcedureMetricsScraper(t)
+		scraper.config.ProcedureMetrics.CollectionInterval = time.Minute
+		seed(scraper)
+		scraper.lastExecutionTimestamp = time.Now()
+
+		actualLogs, err := scraper.ScrapeLogs(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, 0, actualLogs.ResourceLogs().Len(), "scrape within the collection interval should be skipped")
+	})
+
+	t.Run("runs once the interval has elapsed", func(t *testing.T) {
+		scraper := newProcedureMetricsScraper(t)
+		scraper.config.ProcedureMetrics.CollectionInterval = time.Minute
+		seed(scraper)
+		scraper.lastExecutionTimestamp = time.Now().Add(-2 * time.Minute)
+
+		actualLogs, err := scraper.ScrapeLogs(t.Context())
+		require.NoError(t, err)
+		assert.Positive(t, actualLogs.ResourceLogs().Len(), "scrape after the collection interval should run")
+	})
 }
 
 // A procedure that has not executed since the last scrape has a zero execution delta
