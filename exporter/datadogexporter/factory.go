@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline"
+	upstreamdatadogconfig "github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/datadogconfig"
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter"
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata"
@@ -160,6 +161,52 @@ func defaultClientConfig() confighttp.ClientConfig {
 	return client
 }
 
+// toUpstreamAPIConfig converts our fork of the Datadog config into the
+// upstream datadog-agent type expected by the serializer exporter.
+func toUpstreamAPIConfig(cfg datadogconfig.APIConfig) upstreamdatadogconfig.APIConfig {
+	return upstreamdatadogconfig.APIConfig{
+		Key:              cfg.Key,
+		Site:             cfg.Site,
+		FailOnInvalidKey: cfg.FailOnInvalidKey,
+	}
+}
+
+// toUpstreamMetricsConfig converts our fork of the Datadog config into the
+// upstream datadog-agent type expected by the serializer exporter.
+func toUpstreamMetricsConfig(cfg datadogconfig.MetricsConfig) upstreamdatadogconfig.MetricsConfig {
+	return upstreamdatadogconfig.MetricsConfig{
+		DeltaTTL:      cfg.DeltaTTL,
+		TCPAddrConfig: cfg.TCPAddrConfig,
+		ExporterConfig: upstreamdatadogconfig.MetricsExporterConfig{
+			ResourceAttributesAsTags:           cfg.ExporterConfig.ResourceAttributesAsTags,
+			InstrumentationScopeMetadataAsTags: cfg.ExporterConfig.InstrumentationScopeMetadataAsTags,
+		},
+		HistConfig: upstreamdatadogconfig.HistogramConfig{
+			Mode:             upstreamdatadogconfig.HistogramMode(cfg.HistConfig.Mode),
+			SendCountSum:     cfg.HistConfig.SendCountSum,
+			SendAggregations: cfg.HistConfig.SendAggregations,
+		},
+		SumConfig: upstreamdatadogconfig.SumConfig{
+			CumulativeMonotonicMode:        upstreamdatadogconfig.CumulativeMonotonicSumMode(cfg.SumConfig.CumulativeMonotonicMode),
+			InitialCumulativeMonotonicMode: upstreamdatadogconfig.InitialValueMode(cfg.SumConfig.InitialCumulativeMonotonicMode),
+		},
+		SummaryConfig: upstreamdatadogconfig.SummaryConfig{
+			Mode: upstreamdatadogconfig.SummaryMode(cfg.SummaryConfig.Mode),
+		},
+	}
+}
+
+// toUpstreamHostMetadataConfig converts our fork of the Datadog config into
+// the upstream datadog-agent type expected by the serializer exporter.
+func toUpstreamHostMetadataConfig(cfg datadogconfig.HostMetadataConfig) upstreamdatadogconfig.HostMetadataConfig {
+	return upstreamdatadogconfig.HostMetadataConfig{
+		Enabled:        cfg.Enabled,
+		HostnameSource: upstreamdatadogconfig.HostnameSource(cfg.HostnameSource),
+		Tags:           cfg.Tags,
+		ReporterPeriod: cfg.ReporterPeriod,
+	}
+}
+
 // createDefaultConfig creates the default exporter configuration
 func (*factory) createDefaultConfig() component.Config {
 	return datadogconfig.CreateDefaultConfig()
@@ -304,7 +351,7 @@ func (f *factory) createMetricsExporter(
 		sf := serializerexporter.NewFactoryForOSSExporter(metadata.Type, statsIn)
 		ex := &serializerexporter.ExporterConfig{
 			Metrics: serializerexporter.MetricsConfig{
-				Metrics: cfg.Metrics,
+				Metrics: toUpstreamMetricsConfig(cfg.Metrics),
 			},
 			TimeoutConfig: exporterhelper.TimeoutConfig{
 				Timeout: cfg.ClientConfig.Timeout,
@@ -312,7 +359,7 @@ func (f *factory) createMetricsExporter(
 			ClientConfig:     cfg.ClientConfig.TLS,
 			QueueBatchConfig: cfg.QueueSettings,
 			RetryConfig:      cfg.BackOffConfig,
-			API:              cfg.API,
+			API:              toUpstreamAPIConfig(cfg.API),
 			HostProvider: func(ctx context.Context) (string, error) {
 				h, err2 := hostProvider.Source(ctx)
 				if err2 != nil {
@@ -330,7 +377,7 @@ func (f *factory) createMetricsExporter(
 				}
 				return nil
 			},
-			HostMetadata: cfg.HostMetadata,
+			HostMetadata: toUpstreamHostMetadataConfig(cfg.HostMetadata),
 		}
 		return sf.CreateMetrics(ctx, set, ex)
 	default:
