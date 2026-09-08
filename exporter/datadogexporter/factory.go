@@ -182,7 +182,8 @@ func toUpstreamMetricsConfig(cfg datadogconfig.MetricsConfig) upstreamdatadogcon
 			InstrumentationScopeMetadataAsTags: cfg.ExporterConfig.InstrumentationScopeMetadataAsTags,
 		},
 		HistConfig: upstreamdatadogconfig.HistogramConfig{
-			Mode:             upstreamdatadogconfig.HistogramMode(cfg.HistConfig.Mode),
+			Mode: upstreamdatadogconfig.HistogramMode(cfg.HistConfig.Mode),
+			//nolint:staticcheck // SA1019: preserving the deprecated field's value across the config fork boundary
 			SendCountSum:     cfg.HistConfig.SendCountSum,
 			SendAggregations: cfg.HistConfig.SendAggregations,
 		},
