@@ -438,7 +438,11 @@ func TestDetector_Detect(t *testing.T) {
 			failOnMissingMetadata: true,
 		},
 		{
-			name: "get fails",
+			// Regression test for clusters where the metadata service provides the EC2-compatible "meta-data" tree, but not the
+			// AWS-specific "dynamic/instance-identity" tree. Examples are clusters based on OpenStack Nova, like
+			// T Cloud Public/ECS. The instance ID probe succeeds and then the identity document lookup fails. Without
+			// fail_on_missing_metadata, this must not result in a startup error.
+			name: "get fails (identity document)",
 			fields: fields{metadataProvider: &mockMetadata{
 				retIDDoc:    imds.InstanceIdentityDocument{},
 				retErrIDDoc: errors.New("get failed"),
@@ -446,7 +450,19 @@ func TestDetector_Detect(t *testing.T) {
 			}},
 			args:    args{ctx: t.Context()},
 			want:    pcommon.NewResource(),
-			wantErr: true,
+			wantErr: false,
+		},
+		{
+			name: "get fails (identity document), with fail_on_missing_metadata",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc:    imds.InstanceIdentityDocument{},
+				retErrIDDoc: errors.New("get failed"),
+				isAvailable: true,
+			}},
+			args:                  args{ctx: t.Context()},
+			want:                  pcommon.NewResource(),
+			wantErr:               true,
+			failOnMissingMetadata: true,
 		},
 		{
 			name: "hostname fails",
@@ -458,7 +474,20 @@ func TestDetector_Detect(t *testing.T) {
 			}},
 			args:    args{ctx: t.Context()},
 			want:    pcommon.NewResource(),
-			wantErr: true,
+			wantErr: false,
+		},
+		{
+			name: "hostname fails, with fail_on_missing_metadata",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc:       imds.InstanceIdentityDocument{},
+				retHostname:    "",
+				retErrHostname: errors.New("hostname failed"),
+				isAvailable:    true,
+			}},
+			args:                  args{ctx: t.Context()},
+			want:                  pcommon.NewResource(),
+			wantErr:               true,
+			failOnMissingMetadata: true,
 		},
 	}
 	for _, tt := range tests {
