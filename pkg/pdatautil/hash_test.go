@@ -4,6 +4,7 @@
 package pdatautil
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -294,7 +295,6 @@ func TestValueHash(t *testing.T) {
 						assert.NotEqual(t, ValueHash(tt.values[i]), ValueHash(tt.values[j]),
 							"values %d %v and %d %v must have different hashes", i, tt.values[i].AsRaw(), j, tt.values[j].AsRaw())
 					}
-				}
 			}
 		})
 	}
@@ -362,6 +362,23 @@ func BenchmarkMapHashEightItems(b *testing.B) {
 
 	for b.Loop() {
 		MapHash(m)
+	}
+}
+
+func BenchmarkMapHashWideMap(b *testing.B) {
+	for _, size := range []int{32, 128, 512} {
+		b.Run(fmt.Sprintf("%d_items", size), func(b *testing.B) {
+			m := pcommon.NewMap()
+			for i := 0; i < size; i++ {
+				m.PutInt(fmt.Sprintf("key-%04d", i), int64(i))
+			}
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				MapHash(m)
+			}
+		})
 	}
 }
 
