@@ -17,8 +17,8 @@ subtext: |
   fail with HTTP 404. OpenStack Nova based clusters behave this way, so a collector configured with the `ec2` detector and
   `fail_on_missing_metadata: false` failed to start on those hosts rather than skipping the detector.
 
-  With this change all three lookups behave consistently: when `fail_on_missing_metadata` is `false` the
-  detector logs at debug level and returns an empty resource. When it is `true` the error is returned as
-  before.
+  With this change all three lookups now honor the flag. When `fail_on_missing_metadata` is `false`, the
+  detector logs at debug level and returns what it was able to detect. When it is `true` the error is returned
+  as before.
 
 change_logs: [user]
