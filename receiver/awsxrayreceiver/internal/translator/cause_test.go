@@ -113,8 +113,6 @@ func TestConvertStackFramesToStackTraceStrNoErrorMessage(t *testing.T) {
 }
 
 func TestAddCauseExceptionWithoutID(t *testing.T) {
-	// Per https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-errors
-	// the exception `id` is not guaranteed to be present, so addCause must not panic when it's missing.
 	seg := &awsxray.Segment{
 		Cause: &awsxray.CauseData{
 			Type: awsxray.CauseTypeObject,
