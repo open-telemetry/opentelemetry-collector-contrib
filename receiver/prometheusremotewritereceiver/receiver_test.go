@@ -4183,9 +4183,6 @@ func TestExponentialHistogramSpanExpansionIsBounded(t *testing.T) {
 	assert.Less(t, after.TotalAlloc-before.TotalAlloc, uint64(8<<20))
 }
 
-// assertExponentialHistogramInvariants checks the two rules the OTLP data model states for an
-// exponential histogram data point: the count equals zero_count plus the bucket populations, and
-// the sum is absent when the count is zero.
 func TestFloatFlavorHistogramsAreDropped(t *testing.T) {
 	// The compatibility mapping requires float flavored native histograms to be dropped, for the
 	// custom bucket schema as well as the standard one.
@@ -4304,6 +4301,9 @@ func TestHistogramWithUnrepresentablePopulationIsDropped(t *testing.T) {
 	assert.Equal(t, 0, stats.Histograms, "a dropped histogram is not written")
 }
 
+// assertExponentialHistogramInvariants checks the two rules the OTLP data model states for an
+// exponential histogram data point: the count equals zero_count plus the bucket populations, and
+// the sum is absent when the count is zero.
 func assertExponentialHistogramInvariants(t *testing.T, md pmetric.Metrics) {
 	t.Helper()
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
