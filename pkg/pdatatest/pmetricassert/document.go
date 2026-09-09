@@ -8,9 +8,18 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
+	"strconv"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
+
+// The decimal-place count is part of the key, so it is matched by prefix.
+const doubleValuePrecisionPrefix = "double_value/precision"
+
+// A float64 cannot distinguish more than ~15 decimal places.
+const maxDoublePrecision = 15
 
 // documentVersion is the schema version emitted by WriteAssertionFile.
 // Readers accept this exact value; bumps must be backwards compatible or
@@ -201,16 +210,18 @@ type metricAssertion struct {
 }
 
 type datapointAssertion struct {
-	Attributes     map[string]any `yaml:"attributes,omitempty"`
-	AttributeMode  attributeMode  `yaml:"-"`
-	IntValue       *int64         `yaml:"int_value,omitempty"`
-	DoubleValue    *float64       `yaml:"double_value,omitempty"`
-	Count          *uint64        `yaml:"count,omitempty"`
-	Sum            *float64       `yaml:"sum,omitempty"`
-	ExplicitBounds *[]float64     `yaml:"explicit_bounds,omitempty"`
-	BucketCounts   []uint64       `yaml:"bucket_counts,omitempty"`
-	Min            *float64       `yaml:"min,omitempty"`
-	Max            *float64       `yaml:"max,omitempty"`
+	Attributes    map[string]any `yaml:"attributes,omitempty"`
+	AttributeMode attributeMode  `yaml:"-"`
+	IntValue      *int64         `yaml:"int_value,omitempty"`
+	DoubleValue   *float64       `yaml:"double_value,omitempty"`
+	// Set by `double_value/precision<n>`; nil compares exactly.
+	DoublePrecision *int       `yaml:"-"`
+	Count           *uint64    `yaml:"count,omitempty"`
+	Sum             *float64   `yaml:"sum,omitempty"`
+	ExplicitBounds  *[]float64 `yaml:"explicit_bounds,omitempty"`
+	BucketCounts    []uint64   `yaml:"bucket_counts,omitempty"`
+	Min             *float64   `yaml:"min,omitempty"`
+	Max             *float64   `yaml:"max,omitempty"`
 }
 
 // UnmarshalYAML implements custom unmarshaling to support `attributes/include`
@@ -252,6 +263,9 @@ func (d *datapointAssertion) UnmarshalYAML(node *yaml.Node) error {
 			return fmt.Errorf("datapoint assertion: decode double_value: %w", err)
 		}
 		d.DoubleValue = &dv
+	}
+	if err := d.decodeDoublePrecision(raw); err != nil {
+		return err
 	}
 	if v, ok := raw["count"]; ok {
 		var c uint64
@@ -295,6 +309,45 @@ func (d *datapointAssertion) UnmarshalYAML(node *yaml.Node) error {
 		}
 		d.Max = &maxVal
 	}
+	return nil
+}
+
+// decodeDoublePrecision resolves `double_value/precision<n>` into DoubleValue
+// plus DoublePrecision.
+func (d *datapointAssertion) decodeDoublePrecision(raw map[string]yaml.Node) error {
+	var keys []string
+	for key := range raw {
+		if strings.HasPrefix(key, doubleValuePrecisionPrefix) {
+			keys = append(keys, key)
+		}
+	}
+	if len(keys) == 0 {
+		return nil
+	}
+	sort.Strings(keys) // map order is random; keep the error stable
+	if len(keys) > 1 {
+		return fmt.Errorf("datapoint assertion: cannot specify more than one precision operator, got %v", keys)
+	}
+	key := keys[0]
+	if d.DoubleValue != nil {
+		return fmt.Errorf("datapoint assertion: cannot specify both %q and %q", "double_value", key)
+	}
+
+	digits, err := strconv.Atoi(strings.TrimPrefix(key, doubleValuePrecisionPrefix))
+	if err != nil {
+		return fmt.Errorf("datapoint assertion: %q must end in a decimal place count, e.g. %s3", key, doubleValuePrecisionPrefix)
+	}
+	if digits < 0 || digits > maxDoublePrecision {
+		return fmt.Errorf("datapoint assertion: %q is out of range, want 0 to %d", key, maxDoublePrecision)
+	}
+
+	var dv float64
+	node := raw[key]
+	if err := node.Decode(&dv); err != nil {
+		return fmt.Errorf("datapoint assertion: decode %s: %w", key, err)
+	}
+	d.DoubleValue = &dv
+	d.DoublePrecision = &digits
 	return nil
 }
 
