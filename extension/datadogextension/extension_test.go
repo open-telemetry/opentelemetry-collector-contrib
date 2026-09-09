@@ -13,7 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
+	defaultforwarderimpl "github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder/impl"
+	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	"github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/metrics/event"
 	"github.com/DataDog/datadog-agent/pkg/metrics/servicecheck"
@@ -27,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -69,6 +71,21 @@ func TestNewExtension(t *testing.T) {
 		require.Error(t, err)
 		assert.Equal(t, "host error", err.Error())
 	})
+
+	t.Run("config hostname skips source provider", func(t *testing.T) {
+		cfgWithHostname := &Config{
+			API:      datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			Hostname: "my-configured-host",
+		}
+		// Provider returns an error; if it were called the test would fail.
+		hostProvider := &mockSourceProvider{err: errors.New("provider should not be called")}
+		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		ext, err := newExtension(t.Context(), cfgWithHostname, set, hostProvider, uuidProvider)
+		require.NoError(t, err)
+		assert.False(t, hostProvider.called, "source provider must not be called when hostname is set in config")
+		assert.Equal(t, "my-configured-host", ext.info.host.Identifier)
+		assert.Equal(t, "config", ext.info.hostnameSource)
+	})
 }
 
 func TestExtensionLifecycle(t *testing.T) {
@@ -76,16 +93,16 @@ func TestExtensionLifecycle(t *testing.T) {
 		set := extension.Settings{TelemetrySettings: componenttest.NewNopTelemetrySettings()}
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		serverConfig := confighttp.NewDefaultServerConfig()
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-				},
-				Path: "/test-path",
+				ServerConfig: serverConfig,
+				Path:         "/test-path",
 			},
 		}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -154,16 +171,16 @@ func TestNotifyConfig(t *testing.T) {
 		}
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		serverConfig := confighttp.NewDefaultServerConfig()
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-				},
-				Path: "/test-path",
+				ServerConfig: serverConfig,
+				Path:         "/test-path",
 			},
 		}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -207,16 +224,16 @@ func TestCollectorResourceAttributesArePopulated(t *testing.T) {
 	}
 	hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 	uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
 	cfg := &Config{
 		API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 		HTTPConfig: &httpserver.Config{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeTCP,
-					Endpoint:  "localhost:0",
-				},
-			},
-			Path: "/test-path",
+			ServerConfig: serverConfig,
+			Path:         "/test-path",
 		},
 	}
 
@@ -254,16 +271,16 @@ func TestCollectorResourceAttributesWithMultipleKeys(t *testing.T) {
 	}
 	hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 	uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
 	cfg := &Config{
 		API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 		HTTPConfig: &httpserver.Config{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeTCP,
-					Endpoint:  "localhost:0",
-				},
-			},
-			Path: "/test-path",
+			ServerConfig: serverConfig,
+			Path:         "/test-path",
 		},
 	}
 
@@ -313,16 +330,16 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		}
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		serverConfig := confighttp.NewDefaultServerConfig()
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-				},
-				Path: "/test-path",
+				ServerConfig: serverConfig,
+				Path:         "/test-path",
 			},
 		}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -355,16 +372,16 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		}
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		serverConfig := confighttp.NewDefaultServerConfig()
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-				},
-				Path: "/test-path",
+				ServerConfig: serverConfig,
+				Path:         "/test-path",
 			},
 		}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -395,16 +412,16 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 		}
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		serverConfig := confighttp.NewDefaultServerConfig()
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-				},
-				Path: "/test-path",
+				ServerConfig: serverConfig,
+				Path:         "/test-path",
 			},
 		}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -481,16 +498,16 @@ func TestExtension_DeploymentTypeInPayload(t *testing.T) {
 			}
 			hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 			uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+			serverConfig := confighttp.NewDefaultServerConfig()
+			serverConfig.NetAddr = confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  "localhost:0",
+			}
 			cfg := &Config{
 				API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:0",
-						},
-					},
-					Path: "/test-path",
+					ServerConfig: serverConfig,
+					Path:         "/test-path",
 				},
 				DeploymentType: tt.deploymentType,
 			}
@@ -534,16 +551,16 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		}
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		serverConfig := confighttp.NewDefaultServerConfig()
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-				},
-				Path: "/test-path",
+				ServerConfig: serverConfig,
+				Path:         "/test-path",
 			},
 		}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -592,16 +609,16 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		}
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		serverConfig := confighttp.NewDefaultServerConfig()
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-				},
-				Path: "/test-path",
+				ServerConfig: serverConfig,
+				Path:         "/test-path",
 			},
 		}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -652,16 +669,16 @@ func TestPeriodicPayloadSending(t *testing.T) {
 		}
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		serverConfig := confighttp.NewDefaultServerConfig()
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-				},
-				Path: "/test-path",
+				ServerConfig: serverConfig,
+				Path:         "/test-path",
 			},
 		}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -719,16 +736,16 @@ func TestNotifyConfigConcurrentAccess(t *testing.T) {
 		}
 		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+		serverConfig := confighttp.NewDefaultServerConfig()
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-				},
-				Path: "/test-path",
+				ServerConfig: serverConfig,
+				Path:         "/test-path",
 			},
 		}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -791,15 +808,39 @@ func TestNotifyConfigConcurrentAccess(t *testing.T) {
 	})
 }
 
+func TestBuildAgentConfigPropagatesTLSSetting(t *testing.T) {
+	t.Run("insecure_skip_verify true propagates to skip_ssl_validation", func(t *testing.T) {
+		clientConfig := confighttp.NewDefaultClientConfig()
+		clientConfig.ForceAttemptHTTP2 = false
+		clientConfig.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
+		cfg := &Config{
+			API:          datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+			ClientConfig: clientConfig,
+		}
+		agentCfg := buildAgentConfig(cfg).(pkgconfigmodel.Config)
+		assert.True(t, agentCfg.GetBool("skip_ssl_validation"))
+	})
+
+	t.Run("insecure_skip_verify false leaves skip_ssl_validation false", func(t *testing.T) {
+		cfg := &Config{
+			API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+		}
+		agentCfg := buildAgentConfig(cfg).(pkgconfigmodel.Config)
+		assert.False(t, agentCfg.GetBool("skip_ssl_validation"))
+	})
+}
+
 // Mock providers for testing
 var _ source.Provider = (*mockSourceProvider)(nil)
 
 type mockSourceProvider struct {
 	source source.Source
 	err    error
+	called bool
 }
 
 func (m *mockSourceProvider) Source(_ context.Context) (source.Source, error) {
+	m.called = true
 	if m.err != nil {
 		return source.Source{}, m.err
 	}
@@ -829,7 +870,7 @@ func (m *mockSerializer) Start() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.startCalled = true
-	m.state = defaultforwarder.Started
+	m.state = defaultforwarderimpl.Started
 	return nil
 }
 
@@ -837,7 +878,7 @@ func (m *mockSerializer) Stop() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.stopCalled = true
-	m.state = defaultforwarder.Stopped
+	m.state = defaultforwarderimpl.Stopped
 }
 
 func (*mockSerializer) SendSeriesWithMetadata(_ metrics.Series) error {
@@ -897,6 +938,10 @@ func (*mockSerializer) SendOrchestratorManifests([]types.ProcessMessageBody, str
 	return nil
 }
 
+func (*mockSerializer) SendAgentShutdownEvent(context.Context, *event.Event) error {
+	return nil
+}
+
 // Mock serializer that fails SendPayload for testing error paths
 type mockFailingSerializer struct {
 	mockSerializer
@@ -951,9 +996,14 @@ func TestExtensionLivenessMetric(t *testing.T) {
 	t.Run("sends liveness metric with configured hostname", func(t *testing.T) {
 		// Create tracking mock serializer
 		mockSerializer := &trackingMockSerializer{}
-		mockSerializer.state = defaultforwarder.Started
+		mockSerializer.state = defaultforwarderimpl.Started
 
 		// Create extension with test config
+		serverConfig := confighttp.NewDefaultServerConfig()
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{
 				Key:  "test-api-key-1234567890123456",
@@ -961,13 +1011,8 @@ func TestExtensionLivenessMetric(t *testing.T) {
 			},
 			Hostname: "test-hostname-configured",
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-				},
-				Path: "/test-path",
+				ServerConfig: serverConfig,
+				Path:         "/test-path",
 			},
 		}
 
@@ -1028,9 +1073,14 @@ func TestExtensionLivenessMetric(t *testing.T) {
 	t.Run("sends liveness metric with inferred hostname", func(t *testing.T) {
 		// Create tracking mock serializer
 		mockSerializer := &trackingMockSerializer{}
-		mockSerializer.state = defaultforwarder.Started
+		mockSerializer.state = defaultforwarderimpl.Started
 
 		// Create extension without configured hostname
+		serverConfig := confighttp.NewDefaultServerConfig()
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{
 				Key:  "test-api-key-1234567890123456",
@@ -1038,13 +1088,8 @@ func TestExtensionLivenessMetric(t *testing.T) {
 			},
 			// No Hostname set - will be inferred
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-				},
-				Path: "/test-path",
+				ServerConfig: serverConfig,
+				Path:         "/test-path",
 			},
 		}
 
@@ -1101,9 +1146,14 @@ func TestExtensionLivenessMetric(t *testing.T) {
 	t.Run("liveness metric sent periodically", func(t *testing.T) {
 		// Create tracking mock serializer
 		mockSerializer := &trackingMockSerializer{}
-		mockSerializer.state = defaultforwarder.Started
+		mockSerializer.state = defaultforwarderimpl.Started
 
 		// Create extension
+		serverConfig := confighttp.NewDefaultServerConfig()
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:0",
+		}
 		cfg := &Config{
 			API: datadogconfig.APIConfig{
 				Key:  "test-api-key-1234567890123456",
@@ -1111,13 +1161,8 @@ func TestExtensionLivenessMetric(t *testing.T) {
 			},
 			Hostname: "test-hostname",
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-				},
-				Path: "/test-path",
+				ServerConfig: serverConfig,
+				Path:         "/test-path",
 			},
 		}
 

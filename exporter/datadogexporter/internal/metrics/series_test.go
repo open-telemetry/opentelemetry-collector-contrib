@@ -62,6 +62,23 @@ func TestDefaultMetrics(t *testing.T) {
 	assert.ElementsMatch(t, []string{"version:1.0", "command:otelcontribcol"}, ms[0].Tags)
 }
 
+func TestFargateMetrics(t *testing.T) {
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+		Command: "otelcontribcol",
+	}
+
+	ms := FargateMetrics(uint64(2e9), TagsFromBuildInfo(buildInfo))
+
+	assert.Equal(t, "otel.datadog_exporter.metrics.running.fargate", ms[0].Metric)
+	assert.Len(t, ms, 1)
+	assert.Equal(t, int64(2), *ms[0].Points[0].Timestamp)
+	assert.Equal(t, 1.0, *ms[0].Points[0].Value)
+	// Assert hostname tag is empty
+	assert.Empty(t, *ms[0].Resources[0].Name)
+	assert.ElementsMatch(t, []string{"version:1.0", "command:otelcontribcol"}, ms[0].Tags)
+}
+
 func TestDefaultMetricsWithRuntimeMetrics(t *testing.T) {
 	buildInfo := component.BuildInfo{
 		Version: "1.0",

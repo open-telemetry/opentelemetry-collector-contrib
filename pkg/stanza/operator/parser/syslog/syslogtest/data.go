@@ -61,6 +61,166 @@ func CreateCases(basicConfig func() *syslog.Config) ([]Case, error) {
 
 	cases := []Case{
 		{
+			"NoneProtocol",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `my custom syslog message without any timestamp`,
+			},
+			&entry.Entry{
+				Severity:     entry.Default,
+				SeverityText: "",
+				Attributes: map[string]any{
+					"message": `my custom syslog message without any timestamp`,
+				},
+				Body: `my custom syslog message without any timestamp`,
+			},
+			true,
+			true,
+		},
+		{
+			"NoneProtocolOctetCounting",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				cfg.EnableOctetCounting = true
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `46 my custom syslog message without any timestamp`,
+			},
+			&entry.Entry{
+				Severity:     entry.Default,
+				SeverityText: "",
+				Attributes: map[string]any{
+					"message": `my custom syslog message without any timestamp`,
+				},
+				Body: `46 my custom syslog message without any timestamp`,
+			},
+			true,
+			false,
+		},
+		{
+			"NoneProtocolOctetCountingNoSpace",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				cfg.EnableOctetCounting = true
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `46<13>raw message left intact`,
+			},
+			&entry.Entry{
+				Severity:     entry.Default,
+				SeverityText: "",
+				Attributes: map[string]any{
+					"message": `46<13>raw message left intact`,
+				},
+				Body: `46<13>raw message left intact`,
+			},
+			false,
+			false,
+		},
+		{
+			"NoneProtocolPriHeader",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `<34>my raw message with a pri header`,
+			},
+			&entry.Entry{
+				Severity:     entry.Error2,
+				SeverityText: "crit",
+				Attributes: map[string]any{
+					"message":       `<34>my raw message with a pri header`,
+					"priority":      34,
+					"facility":      4,
+					"facility_text": "auth",
+				},
+				Body: `<34>my raw message with a pri header`,
+			},
+			true,
+			true,
+		},
+		{
+			"NoneProtocolOctetCountingPriHeader",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				cfg.EnableOctetCounting = true
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `33 <34>raw message with a pri header`,
+			},
+			&entry.Entry{
+				Severity:     entry.Error2,
+				SeverityText: "crit",
+				Attributes: map[string]any{
+					"message":       `<34>raw message with a pri header`,
+					"priority":      34,
+					"facility":      4,
+					"facility_text": "auth",
+				},
+				Body: `33 <34>raw message with a pri header`,
+			},
+			true,
+			false,
+		},
+		{
+			// A leading token that looks like a PRI but is out of the valid 0-191
+			// range is not decoded; the message is passed through untouched.
+			"NoneProtocolInvalidPriHeader",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `<999>this is not a valid pri header`,
+			},
+			&entry.Entry{
+				Severity:     entry.Default,
+				SeverityText: "",
+				Attributes: map[string]any{
+					"message": `<999>this is not a valid pri header`,
+				},
+				Body: `<999>this is not a valid pri header`,
+			},
+			true,
+			true,
+		},
+		{
+			// A PRI-like token that does not start the message is not decoded; only a
+			// leading PRI header is recognized, so the message is passed through untouched.
+			"NoneProtocolPriHeaderNotAtStart",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `prefix <34> rest of message`,
+			},
+			&entry.Entry{
+				Severity:     entry.Default,
+				SeverityText: "",
+				Attributes: map[string]any{
+					"message": `prefix <34> rest of message`,
+				},
+				Body: `prefix <34> rest of message`,
+			},
+			true,
+			true,
+		},
+		{
 			"RFC3164SkipPriAbsent",
 			func() *syslog.Config {
 				cfg := basicConfig()

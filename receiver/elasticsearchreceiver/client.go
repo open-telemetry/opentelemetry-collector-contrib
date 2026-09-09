@@ -34,6 +34,7 @@ type elasticsearchClient interface {
 	IndexStats(ctx context.Context, indices []string) (*model.IndexStats, error)
 	ClusterMetadata(ctx context.Context) (*model.ClusterMetadataResponse, error)
 	ClusterStats(ctx context.Context, nodes []string) (*model.ClusterStats, error)
+	MasterNode(ctx context.Context) (*model.MasterNodeResponse, error)
 }
 
 // defaultElasticsearchClient is the main implementation of elasticsearchClient.
@@ -49,12 +50,12 @@ type defaultElasticsearchClient struct {
 var _ elasticsearchClient = (*defaultElasticsearchClient)(nil)
 
 func newElasticsearchClient(ctx context.Context, settings component.TelemetrySettings, c Config, h component.Host) (*defaultElasticsearchClient, error) {
-	client, err := c.ToClient(ctx, h.GetExtensions(), settings)
+	client, err := c.ClientConfig.ToClient(ctx, h.GetExtensions(), settings)
 	if err != nil {
 		return nil, err
 	}
 
-	endpoint, err := url.Parse(c.Endpoint)
+	endpoint, err := url.Parse(c.ClientConfig.Endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -192,6 +193,17 @@ func (c *defaultElasticsearchClient) ClusterMetadata(ctx context.Context) (*mode
 		c.version, _ = version.NewVersion(versionResponse.Version.Number)
 	}
 	return &versionResponse, err
+}
+
+func (c defaultElasticsearchClient) MasterNode(ctx context.Context) (*model.MasterNodeResponse, error) {
+	body, err := c.doRequest(ctx, "_cluster/state/master_node")
+	if err != nil {
+		return nil, err
+	}
+
+	masterNode := model.MasterNodeResponse{}
+	err = json.Unmarshal(body, &masterNode)
+	return &masterNode, err
 }
 
 func (c defaultElasticsearchClient) ClusterStats(ctx context.Context, nodes []string) (*model.ClusterStats, error) {

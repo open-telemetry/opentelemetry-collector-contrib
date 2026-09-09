@@ -19,7 +19,7 @@ data:
           - key: instance_type
             value: "t3.micro"
             action: upsert
-      resourcedetection:
+      resource_detection:
         detectors: [consul]
         timeout: 2s
         override: false
@@ -54,6 +54,6 @@ data:
             - hostmetrics
           processors:
             - resource
-            - resourcedetection
+            - resource_detection
           exporters:
             - otlp

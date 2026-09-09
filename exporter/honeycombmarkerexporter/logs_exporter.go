@@ -55,7 +55,7 @@ func newHoneycombLogsExporter(set exporter.Settings, config *Config) (*honeycomb
 	telemetrySettings := set.TelemetrySettings
 	markers := make([]marker, len(config.Markers))
 	for i, m := range config.Markers {
-		matchLogConditions, err := filterottl.NewBoolExprForLog(m.Rules.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, telemetrySettings)
+		matchLogConditions, err := filterottl.NewBoolExprForLogWithPathContextNames(m.Rules.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, telemetrySettings)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse log conditions: %w", err)
 		}
@@ -106,8 +106,18 @@ func (e *honeycombLogsExporter) exportMarkers(ctx context.Context, ld plog.Logs)
 }
 
 func (e *honeycombLogsExporter) sendMarker(ctx context.Context, m marker, logRecord plog.LogRecord) error {
-	requestMap := map[string]string{
+	requestMap := map[string]any{
 		"type": m.Type,
+	}
+
+	timestamp := logRecord.Timestamp()
+
+	if timestamp == 0 {
+		timestamp = logRecord.ObservedTimestamp()
+	}
+
+	if timestamp != 0 {
+		requestMap["start_time"] = timestamp.AsTime().Unix()
 	}
 
 	messageValue, found := logRecord.Attributes().Get(m.MessageKey)

@@ -148,6 +148,9 @@ func getTraceAgentCfg(logger *zap.Logger, cfg datadogconfig.TracesConnectorConfi
 	if !metadata.DatadogEnableReceiveResourceSpansV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_receive_resource_spans_v2"] = struct{}{}
 	}
+	if !metadata.DatadogEnableScopeConventionFeatureGate.IsEnabled() {
+		acfg.Features["disable_otel_scope_convention"] = struct{}{}
+	}
 	if !metadata.DatadogEnableOperationAndResourceNameV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_operation_and_resource_name_logic_v2"] = struct{}{}
 		logger.Info("Please enable feature gate datadog.EnableOperationAndResourceNameV2 for improved operation and resource name logic. The v1 logic will be deprecated in the future - if you have Datadog monitors or alerts set on operation/resource names, you may need to migrate them to the new convention. See the migration guide at https://docs.datadoghq.com/opentelemetry/guide/migrate/migrate_operation_names/")
@@ -161,11 +164,11 @@ func getTraceAgentCfg(logger *zap.Logger, cfg datadogconfig.TracesConnectorConfi
 var _ component.Component = (*traceToMetricConnector)(nil) // testing that the connectorImp properly implements the type Component interface
 
 // Start implements the component.Component interface.
-func (c *traceToMetricConnector) Start(_ context.Context, _ component.Host) error {
+func (c *traceToMetricConnector) Start(ctx context.Context, _ component.Host) error {
 	c.logger.Info("Starting datadogconnector")
 	c.concentrator.Start()
 	c.wg.Add(1)
-	go c.run()
+	go c.run(ctx)
 	c.isStarted = true
 	return nil
 }
@@ -203,7 +206,7 @@ func (c *traceToMetricConnector) ConsumeTraces(_ context.Context, traces ptrace.
 
 // run awaits incoming stats resulting from the agent's ingestion, converts them
 // to metrics and flushes them using the configured metrics exporter.
-func (c *traceToMetricConnector) run() {
+func (c *traceToMetricConnector) run(ctx context.Context) {
 	defer c.wg.Done()
 	for {
 		select {
@@ -221,8 +224,6 @@ func (c *traceToMetricConnector) run() {
 				c.logger.Error("Failed to convert stats to metrics", zap.Error(err))
 				continue
 			}
-			// APM stats as metrics
-			ctx := context.TODO()
 
 			// send metrics to the consumer or next component in pipeline
 			if err := c.metricsConsumer.ConsumeMetrics(ctx, mx); err != nil {

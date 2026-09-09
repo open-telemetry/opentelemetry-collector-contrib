@@ -11,7 +11,8 @@ status:
     alpha: [metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [Aneurysm9, axw]
+    active: [Aneurysm9]
+    emeritus: [axw]
 
 tests:
   config:

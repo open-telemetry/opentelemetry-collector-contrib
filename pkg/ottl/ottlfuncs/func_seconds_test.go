@@ -76,3 +76,39 @@ func Test_Seconds(t *testing.T) {
 		})
 	}
 }
+
+func Test_SecondsFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewSecondsFactory[any]()
+		assert.Equal(t, "Seconds", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewSecondsFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &SecondsArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Duration"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewSecondsFactory[any]()
+		args := factory.CreateDefaultArguments()
+		secondsArgs, ok := args.(*SecondsArguments[any])
+		require.True(t, ok)
+		secondsArgs.Duration = &ottl.StandardDurationGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return time.Second, nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createSecondsFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "SecondsFactory args must be of type *SecondsArguments[K]")
+	})
+}

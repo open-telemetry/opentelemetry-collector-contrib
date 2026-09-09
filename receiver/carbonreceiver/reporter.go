@@ -75,7 +75,8 @@ func (r *reporter) OnMetricsProcessed(
 		r.logger.Debug(
 			"Carbon receiver failed to push metrics into pipeline",
 			zap.Int("numReceivedMetricPoints", numReceivedMetricPoints),
-			zap.Error(err))
+			zap.Error(err),
+		)
 	}
 
 	r.obsrecv.EndMetricsOp(ctx, "carbon", numReceivedMetricPoints, err)

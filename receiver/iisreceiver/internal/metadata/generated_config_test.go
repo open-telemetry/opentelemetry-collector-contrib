@@ -150,6 +150,42 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestIisNetworkFileCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().IisNetworkFileCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []IisNetworkFileCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric iis.network.file.count doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().IisNetworkFileCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestIisNetworkIoMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().IisNetworkIo
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []IisNetworkIoMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric iis.network.io doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().IisNetworkIo
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestIisRequestCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().IisRequestCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []IisRequestCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric iis.request.count doesn't have an attribute invalid, valid attributes: [request]")
+
+	cfg = DefaultMetricsConfig().IisRequestCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

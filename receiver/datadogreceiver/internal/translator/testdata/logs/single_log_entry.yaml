@@ -1,25 +1,28 @@
 resourceLogs:
-  - scopeLogs:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: test-host
+        - key: deployment.environment.name
+          value:
+            stringValue: prod
+        - key: service.version
+          value:
+            stringValue: "1.0"
+        - key: service.name
+          value:
+            stringValue: test-service
+    scopeLogs:
       - logRecords:
           - attributes:
-              - key: status
-                value:
-                  stringValue: info
-              - key: timestamp
-                value:
-                  intValue: 1234567890
-              - key: hostname
-                value:
-                  stringValue: test-host
-              - key: service
-                value:
-                  stringValue: test-service
-              - key: ddsource
+              - key: datadog.ddsource
                 value:
                   stringValue: test-source
-              - key: ddtags
-                value:
-                  stringValue: env:prod,version:1.0
             body:
               stringValue: Test log message
-            timeUnixNano: "1736889934967986176"
+            observedTimeUnixNano: "1700000000000000000"
+            severityNumber: 9
+            severityText: info
+            timeUnixNano: "1234567890000000"
+        scope: {}

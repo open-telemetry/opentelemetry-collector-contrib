@@ -6,6 +6,22 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_processor_schema.translated
+
+Number of schema translations
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {translations} | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| from_schema_url | The schema URL the signal arrived with | Any Str | - |
+| migration_from_schema_url | The migration from version boundary (only present when migration is active) | Any Str | - |
+| to_schema_url | The target schema URL the signal was translated to | Any Str | - |
+
 ### otelcol_processor_schema_cache.hits
 
 Number of schema cache hits

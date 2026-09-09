@@ -67,13 +67,16 @@ func newLogsReceiver(params rcvr.Settings, cfg *Config, consumer consumer.Logs) 
 		id:                params.ID,
 	}
 
-	serverConfig := confighttp.ServerConfig{
-		NetAddr: confignet.AddrConfig{
-			Endpoint:  recv.cfg.Endpoint,
-			Transport: "tcp",
-		},
-		ReadHeaderTimeout: 20 * time.Second,
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  recv.cfg.Endpoint,
+		Transport: "tcp",
 	}
+	serverConfig.ReadHeaderTimeout = 20 * time.Second
 
 	if tlsConfig := recv.cfg.TLS; tlsConfig != nil {
 		serverConfig.TLS = configoptional.Some(*tlsConfig)
@@ -174,11 +177,25 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 			return
 		}
 		defer reader.Close()
-		// Read the decompressed response body
-		payload, err = io.ReadAll(reader)
+		// Read the decompressed response body. MaxBytesReader above bounds the
+		// compressed bytes only, so the decompressed stream needs its own limit:
+		// a small gzip payload can otherwise expand without bound. Read one byte
+		// past the limit so exceeding it can be distinguished from meeting it.
+		var decompressed io.Reader = reader
+		if l.cfg.MaxRequestBodySize > 0 {
+			decompressed = io.LimitReader(reader, l.cfg.MaxRequestBodySize+1)
+		}
+		payload, err = io.ReadAll(decompressed)
 		if err != nil {
 			rw.WriteHeader(http.StatusUnprocessableEntity)
 			l.logger.Debug("Got payload with gzip, but failed to read", zap.Error(err))
+			return
+		}
+		if l.cfg.MaxRequestBodySize > 0 && int64(len(payload)) > l.cfg.MaxRequestBodySize {
+			rw.WriteHeader(http.StatusUnprocessableEntity)
+			l.logger.Debug("Got gzip payload whose decompressed size exceeds max_request_body_size, dropping...",
+				zap.Int64("max_request_body_size", l.cfg.MaxRequestBodySize),
+				zap.String("remote", req.RemoteAddr))
 			return
 		}
 	} else {
@@ -371,6 +388,13 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 					attrs.PutDouble(attrName, v)
 				case bool:
 					attrs.PutBool(attrName, v)
+				case []any:
+					if err := attrs.PutEmptySlice(attrName).FromRaw(v); err != nil {
+						l.logger.Warn("unable to translate field to attribute, unsupported array value",
+							zap.String("field", field),
+							zap.Any("value", v),
+							zap.Error(err))
+					}
 				case map[string]any:
 					// Flatten the map and add each field with a prefixed key
 					flattened := make(map[string]any)
@@ -387,6 +411,13 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 							attrs.PutDouble(k, v)
 						case bool:
 							attrs.PutBool(k, v)
+						case []any:
+							if err := attrs.PutEmptySlice(k).FromRaw(v); err != nil {
+								l.logger.Warn("unable to translate flattened field to attribute, unsupported array value",
+									zap.String("field", k),
+									zap.Any("value", v),
+									zap.Error(err))
+							}
 						default:
 							l.logger.Warn("unable to translate flattened field to attribute, unsupported type",
 								zap.String("field", k),

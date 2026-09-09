@@ -14,10 +14,14 @@ data:
       health_check:
         endpoint: 0.0.0.0:13133
     processors:
-      resourcedetection:
+      resource_detection:
         detectors: [oraclecloud]
         timeout: 2s
         override: false
+        oraclecloud:
+          resource_attributes:
+            cloud.resource_id:
+              enabled: true
     receivers:
       hostmetrics:
         collection_interval: 1s
@@ -34,6 +38,6 @@ data:
           receivers:
             - hostmetrics
           processors:
-            - resourcedetection
+            - resource_detection
           exporters:
             - otlp

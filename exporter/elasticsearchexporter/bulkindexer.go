@@ -92,17 +92,17 @@ func bulkIndexerConfig(client elastictransport.Interface, config *Config, requir
 		}
 	}
 	var compressionLevel int
-	if config.Compression == configcompression.TypeGzip {
-		compressionLevel = int(config.CompressionParams.Level)
+	if config.ClientConfig.Compression == configcompression.TypeGzip {
+		compressionLevel = int(config.ClientConfig.CompressionParams.Level)
 	}
 	return docappender.BulkIndexerConfig{
 		Client:                  client,
 		MaxDocumentRetries:      maxDocRetries,
 		Pipeline:                config.Pipeline,
-		RetryOnDocumentStatus:   config.Retry.RetryOnStatus,
+		RetryOnDocumentStatus:   config.Retry.RetryOnDocumentStatus,
 		RequireDataStream:       requireDataStream,
 		CompressionLevel:        compressionLevel,
-		PopulateFailedDocsInput: config.LogFailedDocsInput,
+		PopulateFailedDocsInput: config.TelemetrySettings.LogFailedDocsInput,
 		IncludeSourceOnError:    bulkIndexerIncludeSourceOnError(config.IncludeSourceOnError),
 		QueryParams:             getQueryParamsFromEndpoint(config, logger),
 		FilterPath:              config.BulkResponseFilterPath,
@@ -158,7 +158,6 @@ func newSyncBulkIndexer(
 	return &syncBulkIndexer{
 		config:                 bulkIndexerConfig(client, config, false, logger),
 		maxFlushBytes:          maxFlushBytes,
-		flushTimeout:           config.Timeout,
 		retryConfig:            config.Retry,
 		metadataKeys:           config.MetadataKeys,
 		telemetryBuilder:       tb,
@@ -173,7 +172,6 @@ func newSyncBulkIndexer(
 type syncBulkIndexer struct {
 	config                 docappender.BulkIndexerConfig
 	maxFlushBytes          int64
-	flushTimeout           time.Duration
 	retryConfig            RetrySettings
 	metadataKeys           []string
 	telemetryBuilder       *metadata.TelemetryBuilder
@@ -252,7 +250,6 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 		if err := flushBulkIndexer(
 			ctx,
 			s.bi,
-			s.s.flushTimeout,
 			s.s.retryConfig.RetryOnStatus,
 			s.s.metadataKeys,
 			s.s.telemetryBuilder,
@@ -290,7 +287,6 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 func flushBulkIndexer(
 	ctx context.Context,
 	bi *docappender.BulkIndexer,
-	timeout time.Duration,
 	retryOnStatus []int,
 	tMetaKeys []string,
 	tb *metadata.TelemetryBuilder,
@@ -302,11 +298,6 @@ func flushBulkIndexer(
 	itemsCount := bi.Items()
 	if itemsCount == 0 {
 		return nil
-	}
-	if timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, timeout)
-		defer cancel()
 	}
 
 	// Create context with attempt counter to track http requests
@@ -520,10 +511,10 @@ func getErrorHint(mode MappingMode, index, errorType string) string {
 }
 
 func newFailedDocsInputLogger(logger *zap.Logger, config *Config) *zap.Logger {
-	if !config.LogFailedDocsInput {
+	if !config.TelemetrySettings.LogFailedDocsInput {
 		return zap.NewNop()
 	}
-	return logger.WithOptions(logging.WithRateLimit(config.LogFailedDocsInputRateLimit))
+	return logger.WithOptions(logging.WithRateLimit(config.TelemetrySettings.LogFailedDocsInputRateLimit))
 }
 
 type bulkIndexers struct {

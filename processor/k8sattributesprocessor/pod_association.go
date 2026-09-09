@@ -6,10 +6,11 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 import (
 	"context"
 	"net"
+	"strings"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -96,6 +97,27 @@ func extractPodIDNoAssociations(ctx context.Context, attrs pcommon.Map) kube.Pod
 	}
 
 	return kube.PodIdentifier{}
+}
+
+// buildPodIdentifierString returns a low-cardinality string representing which sources
+// were used to build the PodIdentifier, formatted as "from" or "from/name" for each
+// non-empty slot, joined by "+". Actual identifier values are intentionally excluded
+// to avoid unbounded metric cardinality.
+// Examples: "connection", "resource_attribute/k8s.pod.ip",
+// "resource_attribute/k8s.pod.uid+resource_attribute/container.id"
+func buildPodIdentifierString(id kube.PodIdentifier) string {
+	var parts []string
+	for _, attr := range id {
+		if attr.Source.From == "" {
+			break
+		}
+		if attr.Source.Name != "" {
+			parts = append(parts, attr.Source.From+"/"+attr.Source.Name)
+		} else {
+			parts = append(parts, attr.Source.From)
+		}
+	}
+	return strings.Join(parts, "+")
 }
 
 func stringAttributeFromMap(attrs pcommon.Map, key string) string {

@@ -34,6 +34,7 @@ type fakeClient struct {
 	DaemonSets         map[string]*kube.DaemonSet
 	ReplicaSets        map[string]*kube.ReplicaSet
 	Jobs               map[string]*kube.Job
+	CronJobs           map[string]*kube.CronJob
 	StopCh             chan struct{}
 	stopOnce           sync.Once
 	stopWg             sync.WaitGroup
@@ -45,7 +46,7 @@ func selectors() (labels.Selector, fields.Selector) {
 }
 
 // newFakeClient instantiates a new FakeClient object and satisfies the ClientProvider type
-func newFakeClient(_ component.TelemetrySettings, _ k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformersFactoryList, _ bool, _ time.Duration) (kube.Client, error) {
+func newFakeClient(_ component.TelemetrySettings, _ k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformersFactoryList, _ bool, _, _, _ time.Duration) (kube.Client, error) {
 	cs := fake.NewClientset()
 
 	ls, fs := selectors()
@@ -101,6 +102,11 @@ func (f *fakeClient) GetReplicaSet(replicaSetUID string) (*kube.ReplicaSet, bool
 
 func (f *fakeClient) GetJob(jobUID string) (*kube.Job, bool) {
 	j, ok := f.Jobs[jobUID]
+	return j, ok
+}
+
+func (f *fakeClient) GetCronJob(cronJobUID string) (*kube.CronJob, bool) {
+	j, ok := f.CronJobs[cronJobUID]
 	return j, ok
 }
 

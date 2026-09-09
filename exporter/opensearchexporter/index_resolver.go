@@ -31,7 +31,14 @@ func newIndexResolver(defaultPrefix, defaultDataset, defaultNamespace string) *i
 
 // getDefaultIndexName provides default index naming for backward compatibility
 func (r *indexResolver) getDefaultIndexName() string {
-	return strings.Join([]string{r.defaultPrefix, r.defaultDataset, r.defaultNamespace}, "-")
+	parts := []string{r.defaultPrefix}
+	if r.defaultDataset != "" {
+		parts = append(parts, r.defaultDataset)
+	}
+	if r.defaultNamespace != "" {
+		parts = append(parts, r.defaultNamespace)
+	}
+	return strings.Join(parts, "-")
 }
 
 // extractPlaceholderKeys extracts unique placeholder keys from the index pattern
@@ -96,13 +103,13 @@ func (r *indexResolver) resolveIndexName(indexPattern, fallback string, itemAttr
 	}
 	indexName := r.placeholderPattern.ReplaceAllStringFunc(indexPattern, func(match string) string {
 		key := r.placeholderPattern.FindStringSubmatch(match)[1]
-		if val, ok := itemAttributes[key]; ok && val != "" {
+		if val, ok := itemAttributes[key]; ok && isSafeIndexSegment(val) {
 			return val
 		}
-		if val, ok := scopeAttributes[key]; ok && val != "" {
+		if val, ok := scopeAttributes[key]; ok && isSafeIndexSegment(val) {
 			return val
 		}
-		if val, ok := resourceAttributes[key]; ok && val != "" {
+		if val, ok := resourceAttributes[key]; ok && isSafeIndexSegment(val) {
 			return val
 		}
 		if fallback != "" {
@@ -120,6 +127,18 @@ func (*indexResolver) calculateTimeSuffix(timeFormat string, timestamp time.Time
 		return "-" + timestamp.Format(convertGoTimeFormat(timeFormat))
 	}
 	return ""
+}
+
+// isSafeIndexSegment reports whether an attribute value can be substituted into
+// an index name. It rejects only values that would target a different index than
+// intended: empty values, a leading dot (system indices, e.g. `.kibana`), and any
+// `..` sequence. Values that are invalid to OpenSearch (uppercase, spaces,
+// forbidden characters) are left to OpenSearch to reject at index time so the
+// failure stays visible rather than silently rerouting to the fallback index.
+func isSafeIndexSegment(val string) bool {
+	return val != "" &&
+		!strings.HasPrefix(val, ".") &&
+		!strings.Contains(val, "..")
 }
 
 // convertGoTimeFormat converts a Java-style date format to Go's time format

@@ -650,7 +650,7 @@ func (ms *FlinkTaskRecordCountMetricConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-// MetricsConfig provides config for flinkmetrics metrics.
+// MetricsConfig provides config for flink_metrics metrics.
 type MetricsConfig struct {
 	FlinkJobCheckpointCount           FlinkJobCheckpointCountMetricConfig           `mapstructure:"flink.job.checkpoint.count"`
 	FlinkJobCheckpointInProgress      FlinkJobCheckpointInProgressMetricConfig      `mapstructure:"flink.job.checkpoint.in_progress"`
@@ -805,7 +805,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for flinkmetrics resource attributes.
+// ResourceAttributesConfig provides config for flink_metrics resource attributes.
 type ResourceAttributesConfig struct {
 	FlinkJobName       ResourceAttributeConfig `mapstructure:"flink.job.name"`
 	FlinkResourceType  ResourceAttributeConfig `mapstructure:"flink.resource.type"`
@@ -838,7 +838,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for flinkmetrics metrics builder.
+// MetricsBuilderConfig is a configuration for flink_metrics metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

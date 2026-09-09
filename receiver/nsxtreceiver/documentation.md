@@ -54,7 +54,7 @@ The size of the node's memory cache.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| KBy | Sum | Int | Cumulative | false | Development |
+| kBy | Sum | Int | Cumulative | false | Development |
 
 ### nsxt.node.memory.usage
 
@@ -62,7 +62,7 @@ The memory usage of the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| KBy | Sum | Int | Cumulative | false | Development |
+| kBy | Sum | Int | Cumulative | false | Development |
 
 ### nsxt.node.network.io
 
@@ -95,9 +95,9 @@ The number of packets which have flowed through the network interface on the nod
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| device.id | The name of the network interface. | Any Str | true | - |
-| nsxt.node.id | The ID of the NSX Node. | Any Str | true | - |
-| nsxt.node.name | The name of the NSX Node. | Any Str | true | - |
-| nsxt.node.type | The type of NSX Node. | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| device.id | The name of the network interface. | Any Str | true | - | - |
+| nsxt.node.id | The ID of the NSX Node. | Any Str | true | - | - |
+| nsxt.node.name | The name of the NSX Node. | Any Str | true | - | - |
+| nsxt.node.type | The type of NSX Node. | Any Str | true | - | - |

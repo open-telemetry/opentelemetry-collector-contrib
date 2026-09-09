@@ -81,3 +81,12 @@ azure_event_hub/blob_checkpoint_store_with_storage:
   blob_checkpoint_store:
     connection: DefaultEndpointsProtocol=https;AccountName=myaccount;AccountKey=mykey;EndpointSuffix=core.windows.net
     container_name: eventhub-checkpoints
+
+azure_event_hub/encoding:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+  encoding: azure_encoding
+
+azure_event_hub/format_and_encoding:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+  format: raw
+  encoding: azure_encoding

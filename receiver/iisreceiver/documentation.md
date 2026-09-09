@@ -144,7 +144,7 @@ The amount of time the server has been up.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| iis.application_pool | The application pool, which is associated with worker processes of one or more applications. | Any Str | true | - |
-| iis.site | The site of the web server. | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| iis.application_pool | The application pool, which is associated with worker processes of one or more applications. | Any Str | true | - | - |
+| iis.site | The site of the web server. | Any Str | true | - | - |

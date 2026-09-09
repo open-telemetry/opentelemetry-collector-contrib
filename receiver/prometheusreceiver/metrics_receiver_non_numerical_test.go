@@ -71,14 +71,52 @@ func TestStaleNaNs(t *testing.T) {
 }
 
 func verifyStaleNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
-	verifyNumTotalScrapeResults(t, td, resourceMetrics)
-	for i := range totalScrapes {
-		if i%2 == 0 {
-			verifyStaleNaNsSuccessfulScrape(t, td, resourceMetrics[i], i+1)
-		} else {
-			verifyStaleNaNsFailedScrape(t, td, resourceMetrics[i], i+1)
+	// Drop scrape results that contain only the default scrape metrics.
+	// The receiver emits such entries when a scrape itself fails with no
+	// previously-seen data (e.g. scrape_timeout under load, or once the
+	// expected scrape count is reached but the scrape manager has fired
+	// again before shutdown). They are unrelated to the alternating
+	// success/failure pattern this test validates and would otherwise
+	// race with it on slow CI runners.
+	filtered := resourceMetrics[:0:0]
+	for _, rm := range resourceMetrics {
+		hasAppMetric := false
+		for _, m := range getMetrics(rm) {
+			if !isDefaultMetrics(m) && !isExtraScrapeMetrics(m) {
+				hasAppMetric = true
+				break
+			}
+		}
+		if hasAppMetric {
+			filtered = append(filtered, rm)
 		}
 	}
+	// Trim to the expected count in case the snapshot caught extra real
+	// scrapes appended after the expected count was reached.
+	if len(filtered) > totalScrapes {
+		filtered = filtered[:totalScrapes]
+	}
+	resourceMetrics = filtered
+
+	verifyNumTotalScrapeResults(t, td, resourceMetrics)
+	successfulScrapes := 0
+	failedScrapes := 0
+	for i, rm := range resourceMetrics {
+		allMetrics := getMetrics(rm)
+		upValue := getUpValue(allMetrics)
+		switch upValue {
+		case 1:
+			successfulScrapes++
+			verifyStaleNaNsSuccessfulScrape(t, td, rm, i+1)
+		case 0:
+			failedScrapes++
+			verifyStaleNaNsFailedScrape(t, td, rm, i+1)
+		default:
+			t.Errorf("Scrape %d has invalid up value: %v", i+1, upValue)
+		}
+	}
+	assert.Equal(t, totalScrapes/2, successfulScrapes, "Expected %d successful scrapes", totalScrapes/2)
+	assert.Equal(t, totalScrapes/2, failedScrapes, "Expected %d failed scrapes", totalScrapes/2)
 }
 
 func verifyStaleNaNsSuccessfulScrape(t *testing.T, td *testData, resourceMetric pmetric.ResourceMetrics, iteration int) {

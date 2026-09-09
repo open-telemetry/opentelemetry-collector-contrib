@@ -12,7 +12,7 @@ components:
         - service_graph
     exporter:
         - file
-        - loadbalancing
+        - load_balancing
         - otelarrow
     extension:
         - ack
@@ -31,9 +31,9 @@ components:
         - pprof
     processor:
         - attributes
-        - cumulativetodelta
-        - deltatocumulative
-        - deltatorate
+        - cumulative_to_delta
+        - delta_to_cumulative
+        - delta_to_rate
         - drain
         - filter
         - groupbyattrs
@@ -46,7 +46,7 @@ components:
         - redaction
         - remotetap
         - resource
-        - resourcedetection
+        - resource_detection
         - tail_sampling
         - transform
     receiver:

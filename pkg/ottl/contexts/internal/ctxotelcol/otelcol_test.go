@@ -16,7 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
+	featureMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 )
 
 func TestContextClientMetadata(t *testing.T) {
@@ -57,6 +57,10 @@ func TestContextClientMetadata(t *testing.T) {
 		contentType, ok := result.Get("content-type")
 		require.True(t, ok)
 		require.Equal(t, []any{"application/json"}, contentType.Slice().AsRaw())
+
+		// setter is read-only; setting nil returns an error
+		err = getter.Set(ctx, testContext{}, nil)
+		require.Error(t, err)
 	})
 
 	t.Run("access specific metadata key", func(t *testing.T) {
@@ -66,7 +70,7 @@ func TestContextClientMetadata(t *testing.T) {
 				N: "metadata",
 				KeySlice: []ottl.Key[testContext]{
 					&pathtest.Key[testContext]{
-						S: ottltest.Strp("auth"),
+						S: new("auth"),
 					},
 				},
 			},
@@ -80,6 +84,10 @@ func TestContextClientMetadata(t *testing.T) {
 		result, ok := val.(pcommon.Slice)
 		require.True(t, ok)
 		assert.Equal(t, []any{"Bearer token123"}, result.AsRaw())
+
+		// setter is read-only; setting nil returns an error
+		err = getter.Set(ctx, testContext{}, nil)
+		require.Error(t, err)
 	})
 
 	t.Run("access non-existent metadata key", func(t *testing.T) {
@@ -89,7 +97,7 @@ func TestContextClientMetadata(t *testing.T) {
 				N: "metadata",
 				KeySlice: []ottl.Key[testContext]{
 					&pathtest.Key[testContext]{
-						S: ottltest.Strp("non-existent"),
+						S: new("non-existent"),
 					},
 				},
 			},
@@ -101,6 +109,10 @@ func TestContextClientMetadata(t *testing.T) {
 		val, err := getter.Get(ctx, testContext{})
 		require.NoError(t, err)
 		assert.Nil(t, val)
+
+		// setter is read-only; setting nil returns an error
+		err = getter.Set(ctx, testContext{}, nil)
+		require.Error(t, err)
 	})
 
 	t.Run("access empty metadata key", func(t *testing.T) {
@@ -110,7 +122,7 @@ func TestContextClientMetadata(t *testing.T) {
 				N: "metadata",
 				KeySlice: []ottl.Key[testContext]{
 					&pathtest.Key[testContext]{
-						S: ottltest.Strp("empty-key"),
+						S: new("empty-key"),
 					},
 				},
 			},
@@ -122,6 +134,10 @@ func TestContextClientMetadata(t *testing.T) {
 		val, err := getter.Get(ctx, testContext{})
 		require.NoError(t, err)
 		assert.Nil(t, val)
+
+		// setter is read-only; setting nil returns an error
+		err = getter.Set(ctx, testContext{}, nil)
+		require.Error(t, err)
 	})
 
 	t.Run("access metadata key with multiple values", func(t *testing.T) {
@@ -131,7 +147,7 @@ func TestContextClientMetadata(t *testing.T) {
 				N: "metadata",
 				KeySlice: []ottl.Key[testContext]{
 					&pathtest.Key[testContext]{
-						S: ottltest.Strp("multi-values"),
+						S: new("multi-values"),
 					},
 				},
 			},
@@ -145,6 +161,10 @@ func TestContextClientMetadata(t *testing.T) {
 		result, ok := val.(pcommon.Slice)
 		require.True(t, ok)
 		assert.Equal(t, []any{"value1", "value2"}, result.AsRaw())
+
+		// setter is read-only; setting nil returns an error
+		err = getter.Set(ctx, testContext{}, nil)
+		require.Error(t, err)
 	})
 
 	t.Run("access metadata key with multiple values by index", func(t *testing.T) {
@@ -154,10 +174,10 @@ func TestContextClientMetadata(t *testing.T) {
 				N: "metadata",
 				KeySlice: []ottl.Key[testContext]{
 					&pathtest.Key[testContext]{
-						S: ottltest.Strp("multi-values"),
+						S: new("multi-values"),
 					},
 					&pathtest.Key[testContext]{
-						I: ottltest.Intp(0),
+						I: new(int64(0)),
 					},
 				},
 			},
@@ -171,6 +191,10 @@ func TestContextClientMetadata(t *testing.T) {
 		result, ok := val.(string)
 		require.True(t, ok)
 		assert.Equal(t, "value1", result)
+
+		// setter is read-only; setting nil returns an error
+		err = getter.Set(ctx, testContext{}, nil)
+		require.Error(t, err)
 	})
 
 	t.Run("cannot set entire metadata", func(t *testing.T) {
@@ -191,6 +215,10 @@ func TestContextClientMetadata(t *testing.T) {
 		err = getter.Set(ctx, testContext{}, newMetadata)
 		require.Error(t, err)
 		assert.Equal(t, `"otelcol.client.metadata" is read-only and cannot be modified`, err.Error())
+
+		// setter is read-only; setting nil also returns an error
+		err = getter.Set(ctx, testContext{}, nil)
+		require.Error(t, err)
 	})
 
 	t.Run("cannot set specific metadata key", func(t *testing.T) {
@@ -200,7 +228,7 @@ func TestContextClientMetadata(t *testing.T) {
 				N: "metadata",
 				KeySlice: []ottl.Key[testContext]{
 					&pathtest.Key[testContext]{
-						S: ottltest.Strp("auth"),
+						S: new("auth"),
 					},
 				},
 			},
@@ -212,6 +240,10 @@ func TestContextClientMetadata(t *testing.T) {
 		err = getter.Set(ctx, testContext{}, "new-value")
 		require.Error(t, err)
 		assert.Equal(t, `"otelcol.client.metadata" is read-only and cannot be modified`, err.Error())
+
+		// setter is read-only; setting nil also returns an error
+		err = getter.Set(ctx, testContext{}, nil)
+		require.Error(t, err)
 	})
 
 	t.Run("error when accessing metadata key without keys", func(t *testing.T) {
@@ -221,6 +253,10 @@ func TestContextClientMetadata(t *testing.T) {
 		_, err := getter.Get(ctx, testContext{})
 		require.Error(t, err)
 		assert.Equal(t, "cannot get map value without keys", err.Error())
+
+		// setter is read-only; setting nil returns an error
+		err = getter.Set(ctx, testContext{}, nil)
+		require.Error(t, err)
 	})
 
 	t.Run("no client in context", func(t *testing.T) {
@@ -242,6 +278,10 @@ func TestContextClientMetadata(t *testing.T) {
 		// Should return empty pcommon.Map when no client is in context
 		emptyMap := pcommon.NewMap()
 		assert.Equal(t, emptyMap, val)
+
+		// setter is read-only; setting nil returns an error
+		err = getter.Set(emptyCtx, testContext{}, nil)
+		require.Error(t, err)
 	})
 }
 
@@ -266,6 +306,10 @@ func TestContextClientAddr(t *testing.T) {
 	err = getter.Set(ctx, testContext{}, "ignored")
 	require.Error(t, err)
 	assert.Equal(t, `"otelcol.client.addr" is read-only and cannot be modified`, err.Error())
+
+	// setter is read-only; setting nil also returns an error
+	err = getter.Set(ctx, testContext{}, nil)
+	require.Error(t, err)
 }
 
 func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
@@ -305,6 +349,10 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 		err = getter.Set(ctx, testContext{}, map[string]string{"k": "v"})
 		require.Error(t, err)
 		assert.Equal(t, `"otelcol.client.auth.attributes" is read-only and cannot be modified`, err.Error())
+
+		// setter is read-only; setting nil also returns an error
+		err = getter.Set(ctx, testContext{}, nil)
+		require.Error(t, err)
 	})
 
 	t.Run("specific attribute key present", func(t *testing.T) {
@@ -315,7 +363,7 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 				NextPath: &pathtest.Path[testContext]{
 					N: "attributes",
 					KeySlice: []ottl.Key[testContext]{
-						&pathtest.Key[testContext]{S: ottltest.Strp("subject")},
+						&pathtest.Key[testContext]{S: new("subject")},
 					},
 				},
 			},
@@ -325,6 +373,10 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 		val, err := getter.Get(ctx, testContext{})
 		require.NoError(t, err)
 		assert.Equal(t, "user-123", val)
+
+		// setter is read-only; setting nil returns an error
+		err = getter.Set(ctx, testContext{}, nil)
+		require.Error(t, err)
 	})
 
 	t.Run("specific attribute key present with index", func(t *testing.T) {
@@ -335,8 +387,8 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 				NextPath: &pathtest.Path[testContext]{
 					N: "attributes",
 					KeySlice: []ottl.Key[testContext]{
-						&pathtest.Key[testContext]{S: ottltest.Strp("roles")},
-						&pathtest.Key[testContext]{I: ottltest.Intp(1)},
+						&pathtest.Key[testContext]{S: new("roles")},
+						&pathtest.Key[testContext]{I: new(int64(1))},
 					},
 				},
 			},
@@ -346,6 +398,10 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 		val, err := getter.Get(ctx, testContext{})
 		require.NoError(t, err)
 		assert.Equal(t, "user", val)
+
+		// setter is read-only; setting nil returns an error
+		err = getter.Set(ctx, testContext{}, nil)
+		require.Error(t, err)
 	})
 
 	t.Run("specific attribute key missing returns empty string", func(t *testing.T) {
@@ -356,7 +412,7 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 				NextPath: &pathtest.Path[testContext]{
 					N: "attributes",
 					KeySlice: []ottl.Key[testContext]{
-						&pathtest.Key[testContext]{S: ottltest.Strp("missing")},
+						&pathtest.Key[testContext]{S: new("missing")},
 					},
 				},
 			},
@@ -366,6 +422,10 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 		val, err := getter.Get(ctx, testContext{})
 		require.NoError(t, err)
 		assert.Empty(t, val)
+
+		// setter is read-only; setting nil returns an error
+		err = getter.Set(ctx, testContext{}, nil)
+		require.Error(t, err)
 	})
 
 	t.Run("attributes key without keys error", func(t *testing.T) {
@@ -373,6 +433,10 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 		_, err := getter.Get(ctx, testContext{})
 		require.Error(t, err)
 		assert.Equal(t, "cannot get map value without keys", err.Error())
+
+		// setter is read-only; setting nil returns an error
+		err = getter.Set(ctx, testContext{}, nil)
+		require.Error(t, err)
 	})
 }
 
@@ -412,6 +476,10 @@ func TestContextGrpcMetadata(t *testing.T) {
 		err = getter.Set(ctxWithMD, testContext{}, metadata.MD{})
 		require.Error(t, err)
 		assert.Equal(t, `"otelcol.grpc.metadata" is read-only and cannot be modified`, err.Error())
+
+		// setter is read-only; setting nil also returns an error
+		err = getter.Set(ctxWithMD, testContext{}, nil)
+		require.Error(t, err)
 	})
 
 	t.Run("get specific grpc metadata key values", func(t *testing.T) {
@@ -420,7 +488,7 @@ func TestContextGrpcMetadata(t *testing.T) {
 			NextPath: &pathtest.Path[testContext]{
 				N: "metadata",
 				KeySlice: []ottl.Key[testContext]{
-					&pathtest.Key[testContext]{S: ottltest.Strp("k1")},
+					&pathtest.Key[testContext]{S: new("k1")},
 				},
 			},
 		}
@@ -435,6 +503,10 @@ func TestContextGrpcMetadata(t *testing.T) {
 		err = getter.Set(ctxWithMD, testContext{}, []string{"x"})
 		require.Error(t, err)
 		assert.Equal(t, `"otelcol.grpc.metadata" is read-only and cannot be modified`, err.Error())
+
+		// setter is read-only; setting nil also returns an error
+		err = getter.Set(ctxWithMD, testContext{}, nil)
+		require.Error(t, err)
 	})
 
 	t.Run("grpc metadata key missing returns nil", func(t *testing.T) {
@@ -443,7 +515,7 @@ func TestContextGrpcMetadata(t *testing.T) {
 			NextPath: &pathtest.Path[testContext]{
 				N: "metadata",
 				KeySlice: []ottl.Key[testContext]{
-					&pathtest.Key[testContext]{S: ottltest.Strp("missing")},
+					&pathtest.Key[testContext]{S: new("missing")},
 				},
 			},
 		}
@@ -452,6 +524,10 @@ func TestContextGrpcMetadata(t *testing.T) {
 		val, err := getter.Get(ctxWithMD, testContext{})
 		require.NoError(t, err)
 		assert.Nil(t, val)
+
+		// setter is read-only; setting nil returns an error
+		err = getter.Set(ctxWithMD, testContext{}, nil)
+		require.Error(t, err)
 	})
 
 	t.Run("grpc metadata without keys error", func(t *testing.T) {
@@ -459,6 +535,10 @@ func TestContextGrpcMetadata(t *testing.T) {
 		_, err := getter.Get(ctxWithMD, testContext{})
 		require.Error(t, err)
 		assert.Equal(t, "cannot get map value without keys", err.Error())
+
+		// setter is read-only; setting nil returns an error
+		err = getter.Set(ctxWithMD, testContext{}, nil)
+		require.Error(t, err)
 	})
 
 	t.Run("no grpc metadata in context returns Map", func(t *testing.T) {
@@ -473,16 +553,20 @@ func TestContextGrpcMetadata(t *testing.T) {
 		val, err := getter.Get(t.Context(), testContext{})
 		require.NoError(t, err)
 		require.Equal(t, pcommon.NewMap(), val.(pcommon.Map))
+
+		// setter is read-only; setting nil returns an error
+		err = getter.Set(t.Context(), testContext{}, nil)
+		require.Error(t, err)
 	})
 }
 
 func Test_enableOTelColContextFeatureGate(t *testing.T) {
-	original := enableOTelColContext.IsEnabled()
+	original := featureMetadata.OttlContextsEnableOTelColContextFeatureGate.IsEnabled()
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(enableOTelColContext.ID(), original))
+		require.NoError(t, featuregate.GlobalRegistry().Set(featureMetadata.OttlContextsEnableOTelColContextFeatureGate.ID(), original))
 	}()
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(enableOTelColContext.ID(), false))
+	require.NoError(t, featuregate.GlobalRegistry().Set(featureMetadata.OttlContextsEnableOTelColContextFeatureGate.ID(), false))
 	_, err := PathGetSetter(&pathtest.Path[testContext]{})
 	assert.Equal(t, errOTelColContextDisabled, err)
 }

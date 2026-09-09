@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
@@ -30,7 +30,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				TraceStatements: []common.ContextStatements{
 					{
 						Context: "span",
@@ -95,7 +95,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "with_conditions"),
 			expected: &Config{
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				TraceStatements: []common.ContextStatements{
 					{
 						Context:    "span",
@@ -178,15 +178,15 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "bad_syntax_multi_signal"),
 			errors: []error{
-				errors.New("unexpected token \"where\""),
-				errors.New("unexpected token \"attributes\""),
-				errors.New("unexpected token \"none\""),
+				errors.New("invalid syntax at 1:18 near `where attr`"),
+				errors.New("invalid syntax at 1:18 near `attributes`"),
+				errors.New("invalid syntax at 1:18 near `none"),
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "structured_configuration_with_path_context"),
 			expected: &Config{
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				TraceStatements: []common.ContextStatements{
 					{
 						Context:    "span",
@@ -216,7 +216,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "structured_configuration_with_inferred_context"),
 			expected: &Config{
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				TraceStatements: []common.ContextStatements{
 					{
 						Statements: []string{
@@ -254,7 +254,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "flat_configuration"),
 			expected: &Config{
-				ErrorMode: ottl.PropagateError,
+				ErrorMode: ottl.IgnoreError,
 				TraceStatements: []common.ContextStatements{
 					{
 						Statements: []string{
@@ -335,6 +335,35 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "shared_cache"),
+			expected: &Config{
+				ErrorMode: ottl.IgnoreError,
+				TraceStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["copy"], resource.attributes["name"])`},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+				ProfileStatements: []common.ContextStatements{},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.Name(), func(t *testing.T) {
@@ -349,7 +378,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				err = xconfmap.Validate(cfg)
+				err = confmap.Validate(cfg)
 				assert.Error(t, err)
 
 				if len(tt.errors) > 0 {
@@ -358,7 +387,7 @@ func TestLoadConfig(t *testing.T) {
 					}
 				}
 			} else {
-				require.NoError(t, xconfmap.Validate(cfg))
+				require.NoError(t, confmap.Validate(cfg))
 				assert.EqualExportedValues(t, tt.expected, cfg)
 				assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 			}
@@ -404,4 +433,26 @@ func Test_MixedConfigurationStyles(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "mixed_configuration_styles").String())
 	require.NoError(t, err)
 	assert.ErrorContains(t, sub.Unmarshal(cfg), "configuring multiple configuration styles is not supported")
+}
+
+func Test_EmptyStatementListItem(t *testing.T) {
+	t.Parallel()
+
+	for _, fieldName := range []string{
+		"trace_statements",
+		"metric_statements",
+		"log_statements",
+		"profile_statements",
+	} {
+		t.Run(fieldName, func(t *testing.T) {
+			t.Parallel()
+
+			cfg := NewFactory().CreateDefaultConfig()
+			conf := confmap.NewFromStringMap(map[string]any{
+				fieldName: []any{nil},
+			})
+
+			require.ErrorContains(t, conf.Unmarshal(cfg), "invalid "+fieldName+" item: empty statement list items are not supported")
+		})
+	}
 }

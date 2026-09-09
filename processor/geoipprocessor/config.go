@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 )
 
@@ -47,6 +48,22 @@ type Config struct {
 
 	// An array of attribute names, which are used for the IP address lookup
 	Attributes []attribute.Key `mapstructure:"attributes"`
+
+	// ErrorMode determines how the processor reacts to errors that occur while
+	// looking up geolocation data for an IP address.
+	// The supported values are `ignore`, `silent`, and `propagate`.
+	//   - `ignore`: errors are logged and processing continues.
+	//   - `silent`: errors are not logged and processing continues.
+	//   - `propagate`: errors are logged and returned, halting processing.
+	// The default value is `propagate` to preserve existing behavior.
+	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
+
+	// providerFactories is the snapshot of GeoIPProviderFactory instances that this Config
+	// resolves provider keys against during Unmarshal and processor creation. It is populated
+	// by createDefaultConfig from defaultProviderFactories. Keeping the registry on the Config
+	// (rather than as mutable package state) lets tests inject mock providers without racing
+	// with concurrent reads.
+	providerFactories map[string]provider.GeoIPProviderFactory `mapstructure:"-"`
 }
 
 var (
@@ -79,6 +96,13 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		return nil
 	}
 
+	// Fall back to the built-in factories for Configs constructed directly (i.e. without going
+	// through createDefaultConfig). The normal collector pipeline always calls
+	// createDefaultConfig first, so this branch is reserved for ad-hoc callers.
+	if cfg.providerFactories == nil {
+		cfg.providerFactories = defaultProviderFactories
+	}
+
 	// load the non-dynamic config normally
 	err := componentParser.Unmarshal(cfg, confmap.WithIgnoreUnused())
 	if err != nil {
@@ -96,7 +120,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 
 	// loop through all defined providers and load their configuration
 	for key := range providersSection.ToStringMap() {
-		factory, ok := getProviderFactory(key)
+		factory, ok := cfg.providerFactories[key]
 		if !ok {
 			return fmt.Errorf("invalid provider key: %s", key)
 		}

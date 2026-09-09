@@ -13,7 +13,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 // Mock implementations for AttributeContext and dependencies
@@ -188,6 +187,10 @@ func TestAccessAttributes_Setter_InvalidValue(t *testing.T) {
 	// Pass a value that is not a ctxutil.Map
 	err := getSetter.Setter(t.Context(), ctx, "not_a_map")
 	assert.Error(t, err)
+
+	// Passing nil clears the attributes to empty via ctxutil.GetMap, so it must not error.
+	err = getSetter.Setter(t.Context(), ctx, nil)
+	require.NoError(t, err)
 }
 
 func TestAccessAttributesKey_Getter(t *testing.T) {
@@ -213,7 +216,7 @@ func TestAccessAttributesKey_Getter(t *testing.T) {
 		path := pathtest.Path[*mockAttributeContext]{
 			KeySlice: []ottl.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
-					S: ottltest.Strp("key1"),
+					S: new("key1"),
 				},
 			},
 		}
@@ -227,7 +230,7 @@ func TestAccessAttributesKey_Getter(t *testing.T) {
 		path := pathtest.Path[*mockAttributeContext]{
 			KeySlice: []ottl.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
-					S: ottltest.Strp("foo"),
+					S: new("foo"),
 				},
 			},
 		}
@@ -285,7 +288,7 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 		path := pathtest.Path[*mockAttributeContext]{
 			KeySlice: []ottl.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
-					S: ottltest.Strp("key1"),
+					S: new("key1"),
 				},
 			},
 		}
@@ -330,7 +333,7 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 		path := pathtest.Path[*mockAttributeContext]{
 			KeySlice: []ottl.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
-					S: ottltest.Strp("foo"),
+					S: new("foo"),
 				},
 			},
 		}
@@ -376,6 +379,21 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 		assert.True(t, foundUpdatedFoo, "Should find updated 'foo' attribute with new value")
 	})
 
+	t.Run("nil-value", func(t *testing.T) {
+		path := pathtest.Path[*mockAttributeContext]{
+			KeySlice: []ottl.Key[*mockAttributeContext]{
+				&pathtest.Key[*mockAttributeContext]{
+					S: new("foo"),
+				},
+			},
+		}
+		getSetter := AccessAttributesKey[*mockAttributeContext](path.Keys(), mockAttributeSource)
+		// Keyed access routes through ctxutil.SetValue, which accepts nil and
+		// sets an empty value, so nil must not error.
+		err := getSetter.Setter(t.Context(), ctx, nil)
+		require.NoError(t, err)
+	})
+
 	t.Run("insert-new-key", func(t *testing.T) {
 		// Capture original shared table state
 		originalAttrTableLen := attrTable.Len()
@@ -404,7 +422,7 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 		path := pathtest.Path[*mockAttributeContext]{
 			KeySlice: []ottl.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
-					S: ottltest.Strp("bazinga"),
+					S: new("bazinga"),
 				},
 			},
 		}

@@ -16,9 +16,9 @@ import (
 func TestLogsDecoderRouter_GetDecoder(t *testing.T) {
 	t.Parallel()
 
-	defaultDecoder := internal.NewDefaultS3LogsDecoder()
-	vpcDecoder := internal.NewDefaultS3LogsDecoder()
-	ctDecoder := internal.NewDefaultS3LogsDecoder()
+	defaultDecoder := internal.NewDefaultBlobDecoder()
+	vpcDecoder := internal.NewDefaultBlobDecoder()
+	ctDecoder := internal.NewDefaultBlobDecoder()
 
 	tests := []struct {
 		name           string
@@ -124,8 +124,8 @@ func TestLogsDecoderRouter_GetDecoder(t *testing.T) {
 func TestLogsDecoderRouter_PatternPriority(t *testing.T) {
 	t.Parallel()
 
-	vpcDecoder := internal.NewDefaultS3LogsDecoder()
-	catchallDecoder := internal.NewDefaultS3LogsDecoder()
+	vpcDecoder := internal.NewDefaultBlobDecoder()
+	catchallDecoder := internal.NewDefaultBlobDecoder()
 
 	// Formats passed in already sorted (as sortedEncodings() would return).
 	encodings := []S3Encoding{

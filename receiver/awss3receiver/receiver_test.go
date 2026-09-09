@@ -265,8 +265,10 @@ func Test_receiveBytes_traces(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var traceConsumed bool
 			tracesConsumer, _ := consumer.NewTraces(func(_ context.Context, td ptrace.Traces) error {
 				t.Helper()
+				traceConsumed = true
 				if !tt.wantTrace {
 					t.Errorf("receiveBytes() received unexpected trace")
 				} else {
@@ -291,6 +293,9 @@ func Test_receiveBytes_traces(t *testing.T) {
 			}
 			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
 				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantTrace && !traceConsumed {
+				t.Errorf("receiveBytes() expected trace to be consumed, none received")
 			}
 		})
 	}
@@ -444,10 +449,12 @@ func Test_receiveBytes_metrics(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var metricConsumed bool
 			tracesConsumer, _ := consumer.NewMetrics(func(_ context.Context, md pmetric.Metrics) error {
 				t.Helper()
+				metricConsumed = true
 				if !tt.wantMetric {
-					t.Errorf("receiveBytes() received unexpected trace")
+					t.Errorf("receiveBytes() received unexpected metric")
 				} else {
 					require.Equal(t, testMetric, md)
 				}
@@ -470,6 +477,9 @@ func Test_receiveBytes_metrics(t *testing.T) {
 			}
 			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
 				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantMetric && !metricConsumed {
+				t.Errorf("receiveBytes() expected metric to be consumed, none received")
 			}
 		})
 	}
@@ -623,10 +633,12 @@ func Test_receiveBytes_logs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var logConsumed bool
 			tracesConsumer, _ := consumer.NewLogs(func(_ context.Context, ld plog.Logs) error {
 				t.Helper()
+				logConsumed = true
 				if !tt.wantMetric {
-					t.Errorf("receiveBytes() received unexpected trace")
+					t.Errorf("receiveBytes() received unexpected log")
 				} else {
 					require.Equal(t, testLog, ld)
 				}
@@ -649,6 +661,9 @@ func Test_receiveBytes_logs(t *testing.T) {
 			}
 			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
 				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantMetric && !logConsumed {
+				t.Errorf("receiveBytes() expected log to be consumed, none received")
 			}
 		})
 	}

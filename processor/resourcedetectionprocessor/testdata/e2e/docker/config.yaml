@@ -7,7 +7,7 @@ extensions:
   health_check:
     endpoint: 0.0.0.0:13133
 processors:
-  resourcedetection:
+  resource_detection:
     detectors: [docker]
     timeout: 2s
     override: false
@@ -33,6 +33,6 @@ service:
       receivers:
         - hostmetrics
       processors:
-        - resourcedetection
+        - resource_detection
       exporters:
         - otlp

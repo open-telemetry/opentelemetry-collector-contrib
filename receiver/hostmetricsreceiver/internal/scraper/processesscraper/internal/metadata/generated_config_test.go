@@ -61,6 +61,17 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestSystemProcessesCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemProcessesCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemProcessesCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.processes.count doesn't have an attribute invalid, valid attributes: [status]")
+
+	cfg = DefaultMetricsConfig().SystemProcessesCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

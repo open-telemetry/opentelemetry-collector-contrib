@@ -25,5 +25,9 @@ func getNewDropPolicy(settings component.TelemetrySettings, config *DropCfg, pol
 
 // Return instance of and sub-policy
 func getDropSubPolicyEvaluator(settings component.TelemetrySettings, cfg *AndSubPolicyCfg, policyExtensions map[string]samplingpolicy.Extension) (samplingpolicy.Evaluator, error) {
+	if cfg.Type == Not {
+		return getNewNotPolicy(settings, &cfg.NotCfg, policyExtensions)
+	}
+
 	return getSharedPolicyEvaluator(settings, &cfg.sharedPolicyCfg, policyExtensions)
 }

@@ -27,6 +27,11 @@ import (
 )
 
 func TestConfig_Validate(t *testing.T) {
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
 	tests := []struct {
 		name    string
 		config  Config
@@ -40,13 +45,8 @@ func TestConfig_Validate(t *testing.T) {
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 			},
 			wantErr: nil,
@@ -59,13 +59,8 @@ func TestConfig_Validate(t *testing.T) {
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 			},
 			wantErr: datadogconfig.ErrEmptyEndpoint,
@@ -78,13 +73,8 @@ func TestConfig_Validate(t *testing.T) {
 					Key:  "",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 			},
 			wantErr: datadogconfig.ErrUnsetAPIKey,
@@ -107,13 +97,8 @@ func TestConfig_Validate(t *testing.T) {
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 				DeploymentType: "gateway",
 			},
@@ -127,13 +112,8 @@ func TestConfig_Validate(t *testing.T) {
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 				DeploymentType: "daemonset",
 			},
@@ -147,13 +127,8 @@ func TestConfig_Validate(t *testing.T) {
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 				DeploymentType: "unknown",
 			},
@@ -167,13 +142,8 @@ func TestConfig_Validate(t *testing.T) {
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 				DeploymentType: "invalid-mode",
 			},
@@ -187,13 +157,8 @@ func TestConfig_Validate(t *testing.T) {
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 				DeploymentType: "",
 			},
@@ -216,14 +181,15 @@ func TestConfig_Validate(t *testing.T) {
 
 func TestExtensionWithProxyConfig(t *testing.T) {
 	// Create config with proxy settings
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.ProxyURL = "http://proxy.example.com:8080"
+	clientConfig.Timeout = 30 * time.Second
+	clientConfig.TLS = configtls.ClientConfig{
+		InsecureSkipVerify: true,
+	}
 	cfg := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			ProxyURL: "http://proxy.example.com:8080",
-			Timeout:  30 * time.Second,
-			TLS: configtls.ClientConfig{
-				InsecureSkipVerify: true,
-			},
-		},
+		ClientConfig: clientConfig,
 		API: datadogconfig.APIConfig{
 			Key:              "test-api-key-12345",
 			Site:             "datadoghq.com",
@@ -266,19 +232,19 @@ func TestExtensionWithProxyConfig(t *testing.T) {
 }
 
 func TestConfig_DeploymentTypeDefault(t *testing.T) {
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
 	cfg := Config{
 		API: datadogconfig.APIConfig{
 			Site: datadogconfig.DefaultSite,
 			Key:  "1234567890abcdef1234567890abcdef",
 		},
 		HTTPConfig: &httpserver.Config{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeTCP,
-					Endpoint:  "localhost:8080",
-				},
-			},
-			Path: "/metadata",
+			ServerConfig: serverConfig,
+			Path:         "/metadata",
 		},
 		DeploymentType: "",
 	}
@@ -289,19 +255,19 @@ func TestConfig_DeploymentTypeDefault(t *testing.T) {
 }
 
 func TestConfig_InstallationMethodDefault(t *testing.T) {
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
 	cfg := Config{
 		API: datadogconfig.APIConfig{
 			Site: datadogconfig.DefaultSite,
 			Key:  "1234567890abcdef1234567890abcdef",
 		},
 		HTTPConfig: &httpserver.Config{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeTCP,
-					Endpoint:  "localhost:8080",
-				},
-			},
-			Path: "/metadata",
+			ServerConfig: serverConfig,
+			Path:         "/metadata",
 		},
 	}
 
@@ -328,19 +294,19 @@ func TestConfig_InstallationMethodValidValues(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			serverConfig := confighttp.NewDefaultServerConfig()
+			serverConfig.NetAddr = confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  "localhost:8080",
+			}
 			cfg := Config{
 				API: datadogconfig.APIConfig{
 					Site: datadogconfig.DefaultSite,
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 				InstallationMethod: tt.installationMethod,
 			}
@@ -391,19 +357,19 @@ func TestConfig_DeploymentTypeValidValues(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			serverConfig := confighttp.NewDefaultServerConfig()
+			serverConfig.NetAddr = confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  "localhost:8080",
+			}
 			cfg := Config{
 				API: datadogconfig.APIConfig{
 					Site: datadogconfig.DefaultSite,
 					Key:  "1234567890abcdef1234567890abcdef",
 				},
 				HTTPConfig: &httpserver.Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:8080",
-						},
-					},
-					Path: "/metadata",
+					ServerConfig: serverConfig,
+					Path:         "/metadata",
 				},
 				DeploymentType: tt.deploymentType,
 			}
@@ -421,19 +387,19 @@ func TestConfig_DeploymentTypeValidValues(t *testing.T) {
 
 func TestConfig_GatewayTopologyFields(t *testing.T) {
 	baseConfig := func() Config {
+		serverConfig := confighttp.NewDefaultServerConfig()
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:8080",
+		}
 		return Config{
 			API: datadogconfig.APIConfig{
 				Site: datadogconfig.DefaultSite,
 				Key:  "1234567890abcdef1234567890abcdef",
 			},
 			HTTPConfig: &httpserver.Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:8080",
-					},
-				},
-				Path: "/metadata",
+				ServerConfig: serverConfig,
+				Path:         "/metadata",
 			},
 		}
 	}

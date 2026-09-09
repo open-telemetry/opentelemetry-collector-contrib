@@ -182,6 +182,23 @@ func TestSanitizeSpanNameFullyRedacted(t *testing.T) {
 	}
 }
 
+func TestHTTPAttributeKeys(t *testing.T) {
+	// This list is intentionally hard-coded so that any change to the semconv
+	// constants (or an accidental edit to httpAttributeKeys) is caught here.
+	expected := []string{
+		"http.route",
+		"http.request.method",
+		"http.request.method_original",
+		"http.response.status_code",
+		"url.full",
+		"http.scheme",
+		"http.target",
+		"http.method",
+		"http.url",
+	}
+	assert.Equal(t, expected, httpAttributeKeys)
+}
+
 func TestWasFullyRedacted(t *testing.T) {
 	tests := []struct {
 		name     string

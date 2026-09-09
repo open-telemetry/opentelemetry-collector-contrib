@@ -223,7 +223,7 @@ func TestSyncMetadata(t *testing.T) {
 			wantMetadataUpdate: nil,
 			wantLogs: []string{
 				"Not found any host attributes. Host metadata synchronization skipped. " +
-					"Make sure that \"resourcedetection\" processor is enabled in the pipeline with one of " +
+					"Make sure that \"resource_detection\" processor is enabled in the pipeline with one of " +
 					"the cloud provider detectors or environment variable detector setting \"host.name\" attribute",
 			},
 		},

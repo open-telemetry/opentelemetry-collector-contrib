@@ -1,0 +1,62 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: k8s.node.name
+          value:
+            stringValue: test-node
+        - key: k8s.object.kind
+          value:
+            stringValue: Pod
+        - key: k8s.object.name
+          value:
+            stringValue: test-pod
+        - key: k8s.object.uid
+          value:
+            stringValue: "fb799e35-7187-4a02-a07d-0f1fa4153b99"
+        - key: k8s.object.fieldpath
+          value:
+            stringValue: ""
+        - key: k8s.object.api_version
+          value:
+            stringValue: v1
+        - key: k8s.object.resource_version
+          value:
+            stringValue: ""
+    scopeLogs:
+      - scope:
+          name: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver"
+        logRecords:
+          - body:
+              stringValue: "Test event for k8seventsreceiver e2e testing"
+            severityNumber: 9
+            severityText: Normal
+            attributes:
+              - key: k8s.event.reason
+                value:
+                  stringValue: TestEvent
+              - key: k8s.event.action
+                value:
+                  stringValue: ""
+              - key: k8s.event.start_time
+                value:
+                  stringValue: "placeholder"
+              - key: k8s.event.name
+                value:
+                  stringValue: test-k8sevents-receiver
+              - key: k8s.event.uid
+                value:
+                  stringValue: "placeholder"
+              - key: k8s.namespace.name
+                value:
+                  stringValue: test-k8sevents-e2e
+              - key: k8s.event.reporting_controller
+                value:
+                  stringValue: ""
+              - key: k8s.event.reporting_instance
+                value:
+                  stringValue: ""
+              - key: k8s.event.count
+                value:
+                  intValue: "1"
+            traceId: ""
+            spanId: ""

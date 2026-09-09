@@ -13,6 +13,7 @@ all_set:
       enabled: true
     zookeeper.follower.count:
       enabled: true
+      attributes: ["state"]
     zookeeper.fsync.exceeded_threshold.count:
       enabled: true
     zookeeper.latency.avg:
@@ -23,6 +24,48 @@ all_set:
       enabled: true
     zookeeper.packet.count:
       enabled: true
+      attributes: ["direction"]
+    zookeeper.request.active:
+      enabled: true
+    zookeeper.ruok:
+      enabled: true
+    zookeeper.sync.pending:
+      enabled: true
+    zookeeper.watch.count:
+      enabled: true
+    zookeeper.znode.count:
+      enabled: true
+  resource_attributes:
+    server.state:
+      enabled: true
+    zk.version:
+      enabled: true
+reaggregate_set:
+  metrics:
+    zookeeper.connection.active:
+      enabled: true
+    zookeeper.data_tree.ephemeral_node.count:
+      enabled: true
+    zookeeper.data_tree.size:
+      enabled: true
+    zookeeper.file_descriptor.limit:
+      enabled: true
+    zookeeper.file_descriptor.open:
+      enabled: true
+    zookeeper.follower.count:
+      enabled: true
+      attributes: []
+    zookeeper.fsync.exceeded_threshold.count:
+      enabled: true
+    zookeeper.latency.avg:
+      enabled: true
+    zookeeper.latency.max:
+      enabled: true
+    zookeeper.latency.min:
+      enabled: true
+    zookeeper.packet.count:
+      enabled: true
+      attributes: []
     zookeeper.request.active:
       enabled: true
     zookeeper.ruok:
@@ -52,6 +95,7 @@ none_set:
       enabled: false
     zookeeper.follower.count:
       enabled: false
+      attributes: ["state"]
     zookeeper.fsync.exceeded_threshold.count:
       enabled: false
     zookeeper.latency.avg:
@@ -62,6 +106,7 @@ none_set:
       enabled: false
     zookeeper.packet.count:
       enabled: false
+      attributes: ["direction"]
     zookeeper.request.active:
       enabled: false
     zookeeper.ruok:

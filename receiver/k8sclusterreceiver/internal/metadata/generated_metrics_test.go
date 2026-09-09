@@ -67,9 +67,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["K8sServiceEndpointCount"] = mb.metricK8sServiceEndpointCount.config.AggregationStrategy
-			aggMap["OpenshiftAppliedclusterquotaLimit"] = mb.metricOpenshiftAppliedclusterquotaLimit.config.AggregationStrategy
-			aggMap["OpenshiftAppliedclusterquotaUsed"] = mb.metricOpenshiftAppliedclusterquotaUsed.config.AggregationStrategy
+			aggMap["k8s.service.endpoint.count"] = mb.metricK8sServiceEndpointCount.config.AggregationStrategy
+			aggMap["openshift.appliedclusterquota.limit"] = mb.metricOpenshiftAppliedclusterquotaLimit.config.AggregationStrategy
+			aggMap["openshift.appliedclusterquota.used"] = mb.metricOpenshiftAppliedclusterquotaUsed.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -95,35 +95,27 @@ func TestMetricsBuilder(t *testing.T) {
 			ebK8sPersistentvolumeclaim := mb.ForK8sPersistentvolumeclaim(NewK8sPersistentvolumeclaimEntity("k8s.persistentvolumeclaim.uid-val"))
 			ebK8sHpa := mb.ForK8sHpa(NewK8sHpaEntity("k8s.hpa.uid-val"))
 			ebOpenshiftClusterquota := mb.ForOpenshiftClusterquota(NewOpenshiftClusterquotaEntity("openshift.clusterquota.uid-val"))
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sContainer.RecordK8sContainerCPULimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sContainer.RecordK8sContainerCPURequestDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sContainer.RecordK8sContainerEphemeralstorageLimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sContainer.RecordK8sContainerEphemeralstorageRequestDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sContainer.RecordK8sContainerMemoryLimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sContainer.RecordK8sContainerMemoryRequestDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sContainer.RecordK8sContainerReadyDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sContainer.RecordK8sContainerRestartsDataPoint(ts, 1)
@@ -133,79 +125,60 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			ebK8sContainer.RecordK8sContainerStatusStateDataPoint(ts, 1, AttributeK8sContainerStatusStateTerminated)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sContainer.RecordK8sContainerStorageLimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sContainer.RecordK8sContainerStorageRequestDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sCronjob.RecordK8sCronjobActiveJobsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sDaemonset.RecordK8sDaemonsetCurrentScheduledNodesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sDaemonset.RecordK8sDaemonsetDesiredScheduledNodesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sDaemonset.RecordK8sDaemonsetMisscheduledNodesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sDaemonset.RecordK8sDaemonsetReadyNodesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sDeployment.RecordK8sDeploymentAvailableDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sDeployment.RecordK8sDeploymentDesiredDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sHpa.RecordK8sHpaCurrentReplicasDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sHpa.RecordK8sHpaDesiredReplicasDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sHpa.RecordK8sHpaMaxReplicasDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sHpa.RecordK8sHpaMinReplicasDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sJob.RecordK8sJobActivePodsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sJob.RecordK8sJobDesiredSuccessfulPodsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sJob.RecordK8sJobFailedPodsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sJob.RecordK8sJobMaxParallelPodsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sJob.RecordK8sJobSuccessfulPodsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sNamespace.RecordK8sNamespacePhaseDataPoint(ts, 1)
@@ -227,34 +200,27 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			ebK8sPersistentvolumeclaim.RecordK8sPersistentvolumeclaimStorageRequestDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sPod.RecordK8sPodPhaseDataPoint(ts, 1)
 
 			allMetricsCount++
 			ebK8sPod.RecordK8sPodStatusReasonDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sReplicaset.RecordK8sReplicasetAvailableDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sReplicaset.RecordK8sReplicasetDesiredDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sReplicationcontroller.RecordK8sReplicationControllerAvailableDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sReplicationcontroller.RecordK8sReplicationControllerDesiredDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sResourcequota.RecordK8sResourceQuotaHardLimitDataPoint(ts, 1, "resource-val")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sResourcequota.RecordK8sResourceQuotaUsedDataPoint(ts, 1, "resource-val")
@@ -267,41 +233,36 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			ebK8sService.RecordK8sServiceLoadBalancerIngressCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sStatefulset.RecordK8sStatefulsetCurrentPodsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sStatefulset.RecordK8sStatefulsetDesiredPodsDataPoint(ts, 1)
 
+			allMetricsCount++
+			ebK8sStatefulset.RecordK8sStatefulsetPodAvailableDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sStatefulset.RecordK8sStatefulsetReadyPodsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebK8sStatefulset.RecordK8sStatefulsetUpdatedPodsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebOpenshiftClusterquota.RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts, 1, "k8s.namespace.name-val", "resource-val")
 			if tt.name == "reaggregate_set" {
 				ebOpenshiftClusterquota.RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts, 3, "k8s.namespace.name-val-2", "resource-val")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebOpenshiftClusterquota.RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts, 1, "k8s.namespace.name-val", "resource-val")
 			if tt.name == "reaggregate_set" {
 				ebOpenshiftClusterquota.RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts, 3, "k8s.namespace.name-val-2", "resource-val")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebOpenshiftClusterquota.RecordOpenshiftClusterquotaLimitDataPoint(ts, 1, "resource-val")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			ebOpenshiftClusterquota.RecordOpenshiftClusterquotaUsedDataPoint(ts, 1, "resource-val")
@@ -1041,6 +1002,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "Number of desired pods in the stateful set (the `spec.replicas` field)", mi.Description())
 					assert.Equal(t, "{pod}", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.statefulset.pod.available":
+					assert.False(t, validatedMetrics["k8s.statefulset.pod.available"], "Found a duplicate in the metrics slice: k8s.statefulset.pod.available")
+					validatedMetrics["k8s.statefulset.pod.available"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of available pods per stateful set (the `status.availableReplicas` field). A pod is available once it has been `Ready` for at least `spec.minReadySeconds`.", mi.Description())
+					assert.Equal(t, "{pod}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

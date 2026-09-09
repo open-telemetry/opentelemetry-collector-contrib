@@ -1,6 +1,0 @@
-change_type: enhancement
-component: receiver/k8s_cluster
-note: Enable the re-aggregation feature for the k8s_cluster receiver
-issues: [46361]
-subtext:
-change_logs: [user]

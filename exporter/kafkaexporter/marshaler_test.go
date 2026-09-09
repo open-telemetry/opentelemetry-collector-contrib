@@ -30,10 +30,16 @@ func TestGetLogsMarshaler(t *testing.T) {
 			return []byte("overridden"), nil
 		}),
 	})
-	messages, err := m.MarshalLogs(plog.NewLogs())
-	require.NoError(t, err)
-	require.Len(t, messages, 1)
-	assert.Equal(t, "overridden", string(messages[0].Value))
+	var values [][]byte
+	collectLogs := func(m marshaler.LogsMarshaler) {
+		values = values[:0]
+		require.NoError(t, m.MarshalLogs(plog.NewLogs(), func(_, v []byte) {
+			values = append(values, v)
+		}))
+	}
+	collectLogs(m)
+	require.Len(t, values, 1)
+	assert.Equal(t, "overridden", string(values[0]))
 
 	// Verify named extensions are supported.
 	m = mustGetLogsMarshaler(t, "otlp_proto/alice", extensionsHost{
@@ -41,13 +47,12 @@ func TestGetLogsMarshaler(t *testing.T) {
 			return []byte("bob"), nil
 		}),
 	})
-	messages, err = m.MarshalLogs(plog.NewLogs())
-	require.NoError(t, err)
-	require.Len(t, messages, 1)
-	assert.Equal(t, "bob", string(messages[0].Value))
+	collectLogs(m)
+	require.Len(t, values, 1)
+	assert.Equal(t, "bob", string(values[0]))
 
 	// Specifying an extension for a different type should fail fast.
-	m, err = getLogsMarshaler("otlp_proto", extensionsHost{
+	m, err := getLogsMarshaler("otlp_proto", extensionsHost{
 		component.MustNewID("otlp_proto"): struct{ component.Component }{},
 	})
 	require.EqualError(t, err, `extension "otlp_proto" is not a logs marshaler`)
@@ -64,13 +69,15 @@ func TestGetMetricsMarshaler(t *testing.T) {
 			return []byte("overridden"), nil
 		}),
 	})
-	messages, err := m.MarshalMetrics(pmetric.NewMetrics())
-	require.NoError(t, err)
-	require.Len(t, messages, 1)
-	assert.Equal(t, "overridden", string(messages[0].Value))
+	var values [][]byte
+	require.NoError(t, m.MarshalMetrics(pmetric.NewMetrics(), func(_, v []byte) {
+		values = append(values, v)
+	}))
+	require.Len(t, values, 1)
+	assert.Equal(t, "overridden", string(values[0]))
 
 	// Specifying an extension for a different type should fail fast.
-	m, err = getMetricsMarshaler("otlp_proto", extensionsHost{
+	m, err := getMetricsMarshaler("otlp_proto", extensionsHost{
 		component.MustNewID("otlp_proto"): struct{ component.Component }{},
 	})
 	require.EqualError(t, err, `extension "otlp_proto" is not a metrics marshaler`)
@@ -91,13 +98,15 @@ func TestGetTracesMarshaler(t *testing.T) {
 			return []byte("overridden"), nil
 		}),
 	})
-	messages, err := m.MarshalTraces(ptrace.NewTraces())
-	require.NoError(t, err)
-	require.Len(t, messages, 1)
-	assert.Equal(t, "overridden", string(messages[0].Value))
+	var values [][]byte
+	require.NoError(t, m.MarshalTraces(ptrace.NewTraces(), func(_, v []byte) {
+		values = append(values, v)
+	}))
+	require.Len(t, values, 1)
+	assert.Equal(t, "overridden", string(values[0]))
 
 	// Specifying an extension for a different type should fail fast.
-	m, err = getTracesMarshaler("otlp_proto", extensionsHost{
+	m, err := getTracesMarshaler("otlp_proto", extensionsHost{
 		component.MustNewID("otlp_proto"): struct{ component.Component }{},
 	})
 	require.EqualError(t, err, `extension "otlp_proto" is not a traces marshaler`)
@@ -115,10 +124,16 @@ func TestGetProfilesMarshaler(t *testing.T) {
 			return []byte("overridden"), nil
 		}),
 	})
-	messages, err := m.MarshalProfiles(pprofile.NewProfiles())
-	require.NoError(t, err)
-	require.Len(t, messages, 1)
-	assert.Equal(t, "overridden", string(messages[0].Value))
+	var values [][]byte
+	collectProfiles := func(m marshaler.ProfilesMarshaler) {
+		values = values[:0]
+		require.NoError(t, m.MarshalProfiles(pprofile.NewProfiles(), func(_, v []byte) {
+			values = append(values, v)
+		}))
+	}
+	collectProfiles(m)
+	require.Len(t, values, 1)
+	assert.Equal(t, "overridden", string(values[0]))
 
 	// Verify named extensions are supported.
 	m = mustGetProfilesMarshaler(t, "otlp_proto/alice", extensionsHost{
@@ -126,13 +141,12 @@ func TestGetProfilesMarshaler(t *testing.T) {
 			return []byte("bob"), nil
 		}),
 	})
-	messages, err = m.MarshalProfiles(pprofile.NewProfiles())
-	require.NoError(t, err)
-	require.Len(t, messages, 1)
-	assert.Equal(t, "bob", string(messages[0].Value))
+	collectProfiles(m)
+	require.Len(t, values, 1)
+	assert.Equal(t, "bob", string(values[0]))
 
 	// Specifying an extension for a different type should fail fast.
-	m, err = getProfilesMarshaler("otlp_proto", extensionsHost{
+	m, err := getProfilesMarshaler("otlp_proto", extensionsHost{
 		component.MustNewID("otlp_proto"): struct{ component.Component }{},
 	})
 	require.EqualError(t, err, `extension "otlp_proto" is not a profiles marshaler`)

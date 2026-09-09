@@ -11,10 +11,15 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logparsingfuncs"
 )
 
 func Test_LogFunctions(t *testing.T) {
 	expected := ottlfuncs.StandardFuncs[*ottllog.TransformContext]()
+	expected["ParseCEF"] = logparsingfuncs.NewParseCEFFactory()
+	expected["ParseCLF"] = logparsingfuncs.NewParseCLFFactory()
+	expected["ParseELF"] = logparsingfuncs.NewParseELFFactory()
+	expected["ParseLEEF"] = logparsingfuncs.NewParseLEEFFactory()
 	actual := LogFunctions()
 	require.Len(t, actual, len(expected))
 	for k := range actual {

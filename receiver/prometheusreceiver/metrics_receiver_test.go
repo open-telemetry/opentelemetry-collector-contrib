@@ -1471,6 +1471,107 @@ func TestCoreMetricsEndToEnd(t *testing.T) {
 	testComponent(t, targets, nil)
 }
 
+func TestBucketlessHistogramNHCBConversion(t *testing.T) {
+	tests := []struct {
+		name                   string
+		alwaysScrapeClassic    bool
+		expectedHistogramCount int
+	}{
+		{
+			name:                   "classic histogram not retained",
+			alwaysScrapeClassic:    false,
+			expectedHistogramCount: 1,
+		},
+		{
+			name:                   "classic histogram retained",
+			alwaysScrapeClassic:    true,
+			expectedHistogramCount: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			targets := []*testData{
+				{
+					name: "bucketless-histogram",
+					pages: []mockPrometheusResponse{
+						{
+							code: 200,
+							data: `
+# HELP demo_seconds A histogram without explicit buckets.
+# TYPE demo_seconds histogram
+demo_seconds_sum 123.5
+demo_seconds_count 42
+`,
+						},
+					},
+					validateFunc: func(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
+						verifyNumValidScrapeResults(t, td, resourceMetrics)
+						require.NotEmpty(t, resourceMetrics)
+						require.Equal(t, expectedScrapeMetricCount+tt.expectedHistogramCount, metricsCount(resourceMetrics[0]))
+
+						histogramCount := 0
+						for _, metric := range getMetrics(resourceMetrics[0]) {
+							if metric.Name() != "demo_seconds" {
+								continue
+							}
+							require.Equal(t, pmetric.MetricTypeHistogram, metric.Type())
+							require.Equal(t, 1, metric.Histogram().DataPoints().Len())
+							compareHistogram(42, 123.5, nil, []uint64{42})(t, metric.Histogram().DataPoints().At(0))
+							histogramCount++
+						}
+						require.Equal(t, tt.expectedHistogramCount, histogramCount)
+					},
+				},
+			}
+
+			testComponent(t, targets, nil, func(cfg *PromConfig) {
+				enabled := true
+				alwaysScrapeClassic := tt.alwaysScrapeClassic
+				for _, scrapeConfig := range cfg.ScrapeConfigs {
+					scrapeConfig.ConvertClassicHistogramsToNHCB = &enabled
+					scrapeConfig.AlwaysScrapeClassicHistograms = &alwaysScrapeClassic
+				}
+			})
+		})
+	}
+}
+
+func TestSumOnlyHistogramNHCBConversion(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "sum-only-histogram",
+			pages: []mockPrometheusResponse{
+				{
+					code: 200,
+					data: `
+# HELP demo_seconds A histogram without a count.
+# TYPE demo_seconds histogram
+demo_seconds_sum 123.5
+`,
+				},
+			},
+			validateFunc: func(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
+				verifyNumValidScrapeResults(t, td, resourceMetrics)
+				require.NotEmpty(t, resourceMetrics)
+				require.Equal(t, expectedScrapeMetricCount, metricsCount(resourceMetrics[0]))
+				for _, metric := range getMetrics(resourceMetrics[0]) {
+					require.NotEqual(t, "demo_seconds", metric.Name())
+				}
+			},
+		},
+	}
+
+	testComponent(t, targets, nil, func(cfg *PromConfig) {
+		enabled := true
+		alwaysScrapeClassic := false
+		for _, scrapeConfig := range cfg.ScrapeConfigs {
+			scrapeConfig.ConvertClassicHistogramsToNHCB = &enabled
+			scrapeConfig.AlwaysScrapeClassicHistograms = &alwaysScrapeClassic
+		}
+	})
+}
+
 // metric type is defined as 'untyped' in the first metric
 // and, type hint is missing in the 2nd metric
 var untypedMetrics = `

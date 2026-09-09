@@ -3,7 +3,6 @@
 
 Receives data via gRPC in OTel/STEF format.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |

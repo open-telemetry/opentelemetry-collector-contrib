@@ -1,0 +1,17 @@
+server:
+  endpoint: ws://{{.url}}/v1/opamp
+  auth: oauth2client
+
+storage:
+  directory: '{{.storage_dir}}'
+
+agent:
+  executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
+
+extensions:
+  oauth2client:
+    client_id: {{.client_id}}
+    client_secret: {{.client_secret}}
+    token_url: {{.token_url}}
+    grant_type: client_credentials
+    scopes: ["opamp"]

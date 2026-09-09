@@ -4,7 +4,6 @@
 The Kubelet Stats Receiver pulls node, pod, container, and volume metrics from the API server on a kubelet
 and sends it down the metric pipeline for further processing.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
@@ -69,7 +68,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [kubeletstats]
+      receivers: [kubelet_stats]
       exporters: [file]
 ```
 
@@ -103,7 +102,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [kubeletstats]
+      receivers: [kubelet_stats]
       exporters: [file]
 ```
 
@@ -149,7 +148,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [kubeletstats]
+      receivers: [kubelet_stats]
       exporters: [file]
 ```
 
@@ -171,7 +170,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [kubeletstats]
+      receivers: [kubelet_stats]
       exporters: [file]
 ```
 

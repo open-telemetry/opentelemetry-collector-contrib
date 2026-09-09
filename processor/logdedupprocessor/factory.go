@@ -46,7 +46,7 @@ func createLogsProcessor(_ context.Context, settings processor.Settings, cfg com
 	if len(processorCfg.Conditions) == 0 {
 		processor.conditions = nil
 	} else {
-		conditions, err := filterottl.NewBoolExprForLog(
+		conditions, err := filterottl.NewBoolExprForLogWithPathContextNames(
 			processorCfg.Conditions,
 			filterottl.StandardLogFuncs(),
 			ottl.PropagateError,

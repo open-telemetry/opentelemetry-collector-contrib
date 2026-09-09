@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/connector/xconnector"
@@ -61,6 +60,7 @@ func TestConnectorWithTraces(t *testing.T) {
 				"x-dynamic-attrs": {"db.system"},
 			},
 		},
+		{name: "path_context"},
 	}
 
 	for _, tc := range testCases {
@@ -449,7 +449,7 @@ func setupConnector(
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(&cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	return factory.(xconnector.Factory), settings, cfg
 }
@@ -526,7 +526,7 @@ func TestErrorMode(t *testing.T) {
 							Description: "Test sum",
 							Sum: configoptional.Some(config.Sum{
 								// Will fail on invalid attribute
-								Value: `Int(attributes["invalid_numeric"])`,
+								Value: `Int(span.attributes["invalid_numeric"])`,
 							}),
 						},
 					},
@@ -578,7 +578,7 @@ func TestErrorMode(t *testing.T) {
 							Name:        "test.sum",
 							Description: "Test sum",
 							Sum: configoptional.Some(config.Sum{
-								Value: `Int(attributes["invalid_numeric"])`,
+								Value: `Int(log.attributes["invalid_numeric"])`,
 							}),
 						},
 					},

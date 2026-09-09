@@ -374,22 +374,28 @@ var MetricsInfo = metricsInfo{
 		Name: "aerospike.namespace.memory.free",
 	},
 	AerospikeNamespaceMemoryUsage: metricInfo{
-		Name: "aerospike.namespace.memory.usage",
+		Name:       "aerospike.namespace.memory.usage",
+		Attributes: []string{"namespace_component"},
 	},
 	AerospikeNamespaceQueryCount: metricInfo{
-		Name: "aerospike.namespace.query.count",
+		Name:       "aerospike.namespace.query.count",
+		Attributes: []string{"query_type", "index_type", "query_result"},
 	},
 	AerospikeNamespaceScanCount: metricInfo{
-		Name: "aerospike.namespace.scan.count",
+		Name:       "aerospike.namespace.scan.count",
+		Attributes: []string{"scan_type", "scan_result"},
 	},
 	AerospikeNamespaceTransactionCount: metricInfo{
-		Name: "aerospike.namespace.transaction.count",
+		Name:       "aerospike.namespace.transaction.count",
+		Attributes: []string{"transaction_type", "transaction_result"},
 	},
 	AerospikeNodeConnectionCount: metricInfo{
-		Name: "aerospike.node.connection.count",
+		Name:       "aerospike.node.connection.count",
+		Attributes: []string{"connection_type", "connection_op"},
 	},
 	AerospikeNodeConnectionOpen: metricInfo{
-		Name: "aerospike.node.connection.open",
+		Name:       "aerospike.node.connection.open",
+		Attributes: []string{"connection_type"},
 	},
 	AerospikeNodeMemoryFree: metricInfo{
 		Name: "aerospike.node.memory.free",
@@ -417,7 +423,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricAerospikeNamespaceDiskAvailable struct {

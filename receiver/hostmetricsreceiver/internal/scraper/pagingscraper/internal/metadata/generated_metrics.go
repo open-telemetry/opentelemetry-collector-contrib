@@ -104,16 +104,20 @@ var MapAttributeType = map[string]AttributeType{
 
 var MetricsInfo = metricsInfo{
 	SystemPagingFaults: metricInfo{
-		Name: "system.paging.faults",
+		Name:       "system.paging.faults",
+		Attributes: []string{"type"},
 	},
 	SystemPagingOperations: metricInfo{
-		Name: "system.paging.operations",
+		Name:       "system.paging.operations",
+		Attributes: []string{"direction", "type"},
 	},
 	SystemPagingUsage: metricInfo{
-		Name: "system.paging.usage",
+		Name:       "system.paging.usage",
+		Attributes: []string{"device", "state"},
 	},
 	SystemPagingUtilization: metricInfo{
-		Name: "system.paging.utilization",
+		Name:       "system.paging.utilization",
+		Attributes: []string{"device", "state"},
 	},
 }
 
@@ -125,7 +129,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricSystemPagingFaults struct {

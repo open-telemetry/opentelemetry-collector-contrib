@@ -10,7 +10,7 @@ receivers:
     attributes:
       type: <<your-logzio-type>>
 processors:
-  resourcedetection/system:
+  resource_detection/system:
     detectors: [ "system" ]
     system:
       hostname_sources: [ "os" ]
@@ -22,7 +22,7 @@ service:
   pipelines:
     logs:
       receivers: [file_log]
-      processors: [ resourcedetection/system ]
+      processors: [ resource_detection/system ]
       exporters: [logzio/logs]
   telemetry:
     logs:

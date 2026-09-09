@@ -1,5 +1,9 @@
 resourceLogs:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: service.instance.id
+          value:
+            stringValue: localhost:5432
     scopeLogs:
       - logRecords:
           - attributes:
@@ -48,9 +52,30 @@ resourceLogs:
               - key: postgresql.total_exec_time
                 value:
                   doubleValue: 1.2
+              - key: postgresql.blocking.pids
+                value:
+                  stringValue: '{}'
+              - key: postgresql.blocking.start_time
+                value:
+                  stringValue: ""
+              - key: postgresql.blocking.wait_duration
+                value:
+                  intValue: "0"
+              - key: postgresql.blocking.lock.mode
+                value:
+                  stringValue: ""
+              - key: postgresql.blocking.lock.type
+                value:
+                  stringValue: ""
+              - key: postgresql.blocking.lock.relation
+                value:
+                  stringValue: ""
+              - key: postgresql.blocking.transaction.start_time
+                value:
+                  stringValue: ""
             body: {}
             eventName: db.server.query_sample
-            timeUnixNano: "1758612388939691000"
+            timeUnixNano: "1781255872205847000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest

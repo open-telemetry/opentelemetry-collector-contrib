@@ -34,12 +34,12 @@ func newTracesExporter(_ context.Context, cfg component.Config, set exporter.Set
 }
 
 func (e *tracesExporter) start(ctx context.Context, host component.Host) error {
-	client, err := e.config.ToClient(ctx, host.GetExtensions(), e.settings)
+	client, err := e.config.ClientConfig.ToClient(ctx, host.GetExtensions(), e.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create http client: %w", err)
 	}
 
-	authHeader, _ := e.config.Headers.Get("Authorization")
+	authHeader, _ := e.config.ClientConfig.Headers.Get("Authorization")
 	authParams := utils.AuthParams{
 		AccessID:    e.config.APIToken.AccessID,
 		AccessKey:   string(e.config.APIToken.AccessKey),
@@ -47,7 +47,7 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) error {
 	}
 
 	ctx, e.cancel = context.WithCancel(ctx)
-	e.sender, err = traces.NewSender(ctx, e.config.Endpoint, client, authParams, e.settings.Logger)
+	e.sender, err = traces.NewSender(ctx, e.config.ClientConfig.Endpoint, client, authParams, e.settings.Logger)
 	if err != nil {
 		return err
 	}

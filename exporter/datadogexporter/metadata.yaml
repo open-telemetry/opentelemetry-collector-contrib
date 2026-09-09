@@ -46,4 +46,3 @@ tests:
   expect_consumer_error: true
   goleak:
     setup: "setupTestMain(m)"
-    skip: true

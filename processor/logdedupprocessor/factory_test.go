@@ -57,6 +57,46 @@ func TestCreateLogs(t *testing.T) {
 			},
 		},
 		{
+			name: "valid path-context log condition",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				ExcludeFields:     []string{},
+				Conditions:        []string{`log.attributes["ID"] == 1`},
+			},
+		},
+		{
+			name: "valid path-context resource condition",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				ExcludeFields:     []string{},
+				Conditions:        []string{`resource.attributes["service.name"] == "my-service"`},
+			},
+		},
+		{
+			name: "valid path-context body condition",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				ExcludeFields:     []string{},
+				Conditions:        []string{`log.body == "x"`},
+			},
+		},
+		{
+			name: "valid mixed legacy and path-context conditions",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				ExcludeFields:     []string{},
+				Conditions:        []string{`attributes["ID"] == 1`, `log.attributes["ID"] == 2`},
+			},
+		},
+		{
 			name: "invalid condition",
 			cfg: &Config{
 				LogCountAttribute: defaultLogCountAttribute,
@@ -64,6 +104,17 @@ func TestCreateLogs(t *testing.T) {
 				Timezone:          defaultTimezone,
 				ExcludeFields:     []string{},
 				Conditions:        []string{"x"},
+			},
+			expectedErr: "invalid condition",
+		},
+		{
+			name: "invalid context name",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				ExcludeFields:     []string{},
+				Conditions:        []string{`span.attributes["x"] == 1`},
 			},
 			expectedErr: "invalid condition",
 		},

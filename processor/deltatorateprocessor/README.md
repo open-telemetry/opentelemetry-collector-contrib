@@ -3,7 +3,6 @@
 
 The Delta to Rate Processor (`deltatorateprocessor`) converts delta sum metrics to rate metrics. This rate is a gauge. 
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
@@ -25,8 +24,8 @@ Configuration is specified through a list of metrics. The processor uses metric 
 
 ```yaml
 processors:
-    # processor name: deltatorate
-    deltatorate:
+    # processor name: delta_to_rate
+    delta_to_rate:
 
         # list the delta sum metrics to calculate the rate. This is a required field.
         metrics:

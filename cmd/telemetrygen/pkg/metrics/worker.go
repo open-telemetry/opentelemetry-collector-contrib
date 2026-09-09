@@ -268,7 +268,11 @@ func (w *worker) flushBuffer(exporter sdkmetric.Exporter) {
 	}
 
 	if err := exporter.Export(context.Background(), &merged); err != nil {
-		w.logger.Error("failed to export batch", zap.Error(err), zap.Int("count", len(w.metricBuffer)))
+		if w.allowFailures {
+			w.logger.Error("exporter failed, continuing due to --allow-export-failures", zap.Error(err), zap.Int("count", len(w.metricBuffer)))
+		} else {
+			w.logger.Fatal("failed to export batch", zap.Error(err), zap.Int("count", len(w.metricBuffer)))
+		}
 	} else {
 		w.logger.Debug("exported batch", zap.Int("count", len(w.metricBuffer)))
 	}

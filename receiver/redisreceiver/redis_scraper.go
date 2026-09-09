@@ -36,10 +36,10 @@ const redisMaxDbs = 16 // Maximum possible number of redis databases
 
 func newRedisScraper(cfg *Config, settings receiver.Settings) (scraper.Metrics, error) {
 	opts := &redis.Options{
-		Addr:     cfg.Endpoint,
+		Addr:     cfg.AddrConfig.Endpoint,
 		Username: cfg.Username,
 		Password: string(cfg.Password),
-		Network:  string(cfg.Transport),
+		Network:  string(cfg.AddrConfig.Transport),
 		// Avoid background goroutines that trigger goleak in tests and on shutdown races.
 		MaintNotificationsConfig: &maintnotifications.Config{
 			Mode: maintnotifications.ModeDisabled,

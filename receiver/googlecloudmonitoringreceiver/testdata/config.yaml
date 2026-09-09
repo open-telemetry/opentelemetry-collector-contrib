@@ -12,3 +12,10 @@ googlecloudmonitoring/endpoint:
   endpoint: monitoring.example.com:443
   metrics_list:
     - metric_name: "compute.googleapis.com/instance/cpu/usage_time"
+
+googlecloudmonitoring/sovereign:
+  collection_interval: 2m
+  project_id: my-sovereign-project-id
+  universe_domain: monitoring.example.com
+  metrics_list:
+    - metric_name: "compute.googleapis.com/instance/cpu/usage_time"

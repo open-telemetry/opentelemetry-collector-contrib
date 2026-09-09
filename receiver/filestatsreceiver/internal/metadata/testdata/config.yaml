@@ -5,6 +5,7 @@ all_set:
       enabled: true
     file.count:
       enabled: true
+      attributes: ["file.include"]
     file.ctime:
       enabled: true
       attributes: ["file.permissions"]
@@ -23,6 +24,7 @@ reaggregate_set:
       enabled: true
     file.count:
       enabled: true
+      attributes: []
     file.ctime:
       enabled: true
       attributes: []
@@ -41,6 +43,7 @@ none_set:
       enabled: false
     file.count:
       enabled: false
+      attributes: ["file.include"]
     file.ctime:
       enabled: false
       attributes: ["file.permissions"]

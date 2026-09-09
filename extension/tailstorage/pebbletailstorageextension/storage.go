@@ -1,12 +1,19 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package pebbletailstorageextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension"
 
 import (
+	"context"
 	"encoding/binary"
+	"errors"
+	"fmt"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/cockroachdb/pebble/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -20,76 +27,136 @@ const (
 
 	// storageVersion is a version to support evolution.
 	storageVersion = "v0"
+
+	sizeCheckInterval = time.Second
 )
 
+var errStorageLimitReached = errors.New("pebble tail storage size limit reached")
+
 type storage struct {
-	db          *pebble.DB
-	logger      *zap.Logger
-	nextSeq     atomic.Uint64
-	unmarshaler ptrace.Unmarshaler
-	marshaler   ptrace.Marshaler
+	db               *pebble.DB
+	logger           *zap.Logger
+	maxSize          uint64
+	nextSeq          atomic.Uint64
+	lastObservedSize atomic.Uint64
+	unmarshaler      ptrace.Unmarshaler
+	marshaler        ptrace.Marshaler
+
+	diskUsage            func() uint64
+	stopSizeMonitor      context.CancelFunc
+	sizeMonitorWaitGroup sync.WaitGroup
 }
 
-func newStorage(storageDir string, logger *zap.Logger) (*storage, error) {
+func newStorage(ctx context.Context, cfg *Config, logger *zap.Logger) (*storage, error) {
 	if logger == nil {
 		logger = zap.NewNop()
 	}
 
-	db, err := newPebbleDB(filepath.Join(storageDir, storageVersion), logger)
+	db, created, err := newPebbleDB(filepath.Join(cfg.Directory, storageVersion), logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &storage{
+	s := &storage{
 		db:          db,
 		logger:      logger,
+		maxSize:     uint64(cfg.MaxStorageSizeMiB) << 20,
 		marshaler:   &ptrace.ProtoMarshaler{},
 		unmarshaler: &ptrace.ProtoUnmarshaler{},
-	}, nil
+	}
+	s.diskUsage = func() uint64 {
+		return s.db.Metrics().DiskSpaceUsage()
+	}
+
+	if !created {
+		// Persistence across restarts is not supported.
+		// Enforce this at startup to prevent users from relying on persistence.
+		logger.Warn("existing database found; dropping all data as persistence across restarts is not supported")
+		if err := s.drop(ctx); err != nil {
+			return nil, err
+		}
+	}
+
+	if s.maxSize > 0 {
+		s.updateDiskUsage()
+		monitorCtx, cancel := context.WithCancel(context.Background())
+		s.stopSizeMonitor = cancel
+		s.sizeMonitorWaitGroup.Go(func() {
+			s.monitorDiskUsage(monitorCtx)
+		})
+	}
+
+	return s, nil
+}
+
+func (s *storage) drop(ctx context.Context) error {
+	var lo, hi [traceIDBytes + 1]byte
+	lo[len(lo)-1] = traceIDSeparator
+	for i := range hi {
+		if i == len(hi)-1 {
+			hi[i] = traceIDSeparator + 1 // +1 to include the greatest trace ID with trace ID separator
+			break
+		}
+		hi[i] = 0xff
+	}
+	if err := s.db.DeleteRange(lo[:], hi[:], pebble.NoSync); err != nil {
+		return err
+	}
+	if err := s.db.Compact(ctx, lo[:], hi[:], true); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *storage) Close() error {
+	if s.stopSizeMonitor != nil {
+		s.stopSizeMonitor()
+		s.sizeMonitorWaitGroup.Wait()
+	}
 	return s.db.Close()
 }
 
-func (s *storage) Append(traceID pcommon.TraceID, rss ptrace.ResourceSpans) {
-	td := ptrace.NewTraces()
-	rs := td.ResourceSpans().AppendEmpty()
-	rss.MoveTo(rs)
-
+func (s *storage) Append(traceID pcommon.TraceID, td ptrace.Traces) error {
 	data, err := s.marshaler.MarshalTraces(td)
 	if err != nil {
-		s.logger.Warn("failed to marshal trace payload for tail storage", zap.Error(err))
-		return
+		return fmt.Errorf("failed to marshal trace payload: %w", err)
 	}
 
-	key := traceEntryKey(traceID, s.nextSeq.Add(1))
-	if err := s.db.Set(key[:], data, pebble.NoSync); err != nil {
-		s.logger.Warn("failed to append trace payload to tail storage", zap.Error(err))
+	seq := s.nextSeq.Add(1)
+	key := traceEntryKey(traceID, seq)
+
+	if err := s.ensureCapacity(); err != nil {
+		return err
 	}
+
+	if err := s.db.Set(key[:], data, pebble.NoSync); err != nil {
+		return fmt.Errorf("pebble Set error: %w", err)
+	}
+	return nil
 }
 
-func (s *storage) Take(traceID pcommon.TraceID) (ptrace.Traces, bool) {
+func (s *storage) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
 	prefix := tracePrefix(traceID)
 	out := s.readByTracePrefix(prefix[:])
 	if out.ResourceSpans().Len() == 0 {
-		return ptrace.NewTraces(), false
+		return out, nil
 	}
 	end := tracePrefixUpperBound(prefix)
 	if err := s.db.DeleteRange(prefix[:], end[:], pebble.NoSync); err != nil {
-		s.logger.Warn("failed to delete taken trace payload range from tail storage", zap.Error(err))
+		return ptrace.NewTraces(), fmt.Errorf("pebble DeleteRange error: %w", err)
 	}
-	return out, true
+	return out, nil
 }
 
-func (s *storage) Delete(traceID pcommon.TraceID) {
+func (s *storage) Delete(traceID pcommon.TraceID) error {
 	prefix := tracePrefix(traceID)
 	// Delete all entries for the trace in one range operation instead of
 	// iterating keys and deleting one-by-one.
 	end := tracePrefixUpperBound(prefix)
 	if err := s.db.DeleteRange(prefix[:], end[:], pebble.NoSync); err != nil {
-		s.logger.Warn("failed to delete trace payload range from tail storage", zap.Error(err))
+		return fmt.Errorf("pebble DeleteRange error: %w", err)
 	}
+	return nil
 }
 
 func (s *storage) readByTracePrefix(prefix []byte) ptrace.Traces {
@@ -150,4 +217,33 @@ func traceEntryKey(traceID pcommon.TraceID, seq uint64) (key [traceIDBytes + 1 +
 	key[traceIDBytes] = traceIDSeparator
 	binary.BigEndian.PutUint64(key[traceIDBytes+1:], seq)
 	return key
+}
+
+func (s *storage) monitorDiskUsage(ctx context.Context) {
+	ticker := time.NewTicker(sizeCheckInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			s.updateDiskUsage()
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (s *storage) updateDiskUsage() {
+	s.lastObservedSize.Store(s.diskUsage())
+}
+
+func (s *storage) ensureCapacity() error {
+	if s.maxSize == 0 {
+		return nil
+	}
+	lastObservedSize := s.lastObservedSize.Load()
+	if lastObservedSize > s.maxSize {
+		return fmt.Errorf("%w: last observed database size %d exceeds configured limit %d", errStorageLimitReached, lastObservedSize, s.maxSize)
+	}
+	return nil
 }

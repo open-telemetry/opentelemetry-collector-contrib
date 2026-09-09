@@ -153,6 +153,14 @@ func (r *awss3Receiver) receiveBytes(ctx context.Context, key string, data []byt
 				err = closeErr
 			}
 		}()
+		// Strip the compression suffix so the downstream format
+		// detection sees the underlying marshaler's suffix (.json /
+		// .binpb). Matches the .gz branch; without it, a file written
+		// by awss3exporter with compression: zstd (e.g. foo.binpb.zst)
+		// loops back through processReceivedData with key still ending
+		// in .zst, falls through every format check, and is dropped
+		// with "Unsupported file format" (#47802).
+		key = strings.TrimSuffix(key, ".zst")
 		data, err = io.ReadAll(decompressedReader)
 		if err != nil {
 			return err

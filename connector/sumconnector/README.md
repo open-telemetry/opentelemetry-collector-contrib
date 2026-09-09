@@ -69,7 +69,7 @@ The sum connector has three required configuration settings and numerous optiona
 
 #### Optional Settings
 
-- `conditions`: [OTTL syntax](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/LANGUAGE.md) can be used to provide conditions for processing incoming telemetry. Conditions are ORed together, so if any condition is met the attribute's value will be included in the resulting sum.
+- `conditions`: [OTTL syntax](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/LANGUAGE.md) can be used to provide conditions for processing incoming telemetry. Conditions are ORed together, so if any condition is met the attribute's value will be included in the resulting sum. Conditions support OTTL path context names (e.g. `span.attributes["x"]`, `resource.attributes["x"]`, `log.attributes["x"]`, `metric.name`). Paths without an explicit context are interpreted in the context of the enclosing block. It is recommended to switch to the new syntax to avoid breaking changes in the future.
 - `attributes`: Declaration of attributes to include. Any of these attributes found will generate a separate sum for each set of unique combination of attribute values and output as its own datapoint in the metric time series.
   - `key`: (required for `attributes`) the attribute name to match against
   - `default_value`: (optional for `attributes`) a default value for the attribute when no matches are found. The `default_value` value can be of type string, integer, or float.

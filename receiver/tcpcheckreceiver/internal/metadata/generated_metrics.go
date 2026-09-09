@@ -59,13 +59,16 @@ var MapAttributeErrorCode = map[string]AttributeErrorCode{
 
 var MetricsInfo = metricsInfo{
 	TcpcheckDuration: metricInfo{
-		Name: "tcpcheck.duration",
+		Name:       "tcpcheck.duration",
+		Attributes: []string{"tcpcheck.endpoint"},
 	},
 	TcpcheckError: metricInfo{
-		Name: "tcpcheck.error",
+		Name:       "tcpcheck.error",
+		Attributes: []string{"tcpcheck.endpoint", "error.code"},
 	},
 	TcpcheckStatus: metricInfo{
-		Name: "tcpcheck.status",
+		Name:       "tcpcheck.status",
+		Attributes: []string{"tcpcheck.endpoint"},
 	},
 }
 
@@ -76,7 +79,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricTcpcheckDuration struct {

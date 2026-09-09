@@ -24,17 +24,11 @@ For instance, if using the existing end-to-end test, the general dataflow can be
   * `PerfTestDataProvider` - Implementation of the `DataProvider` for use in performance tests. Tracing IDs are based on the incremented batch and data items counters.
   * `GoldenDataProvider` - Implementation of `DataProvider` for use in correctness tests. Provides data from the "Golden" dataset generated using pairwise combinatorial testing techniques.
 * `DataSender` - Sends data to the collector instance under test.
-  * `JaegerGRPCDataSender` - Implementation of `DataSender` which sends to `jaeger` receiver.
-  * `OCTraceDataSender` - Implementation of `DataSender` which sends to `opencensus` receiver.
-  * `OCMetricsDataSender` - Implementation of `DataSender` which sends to `opencensus` receiver.
-  * `OTLPTraceDataSender` - Implementation of `DataSender` which sends to `otlp_grpc` receiver.
-  * `OTLPMetricsDataSender` - Implementation of `DataSender` which sends to `otlp_grpc` receiver.
-  * `ZipkinDataSender` - Implementation of `DataSender` which sends to `zipkin` receiver.
+  * `OTLPTraceDataSender`, `OTLPMetricsDataSender`, `OTLPLogsDataSender` - OTLP/gRPC and OTLP/HTTP variants live in the `testbed/testbed` package.
+  * All other senders live in their own sub-package under `testbed/datasenders/<component>datasender`, e.g. `jaegerdatasender.NewJaegerGRPCDataSender` (`jaeger` receiver) or `zipkindatasender.NewZipkinDataSender` (`zipkin` receiver). See `testbed/datasenders/` for the full set.
 * `DataReceiver` - Receives data from the collector instance under test and stores it for use in test assertions.
-  * `OCDataReceiver` - Implementation of `DataReceiver` which receives data from `opencensus` exporter.
-  * `JaegerDataReceiver` - Implementation of `DataReceiver` which receives data from `jaeger` exporter.
-  * `OTLPDataReceiver` - Implementation of `DataReceiver` which receives data from `otlp` exporter.
-  * `ZipkinDataReceiver` - Implementation of `DataReceiver` which receives data from `zipkin` exporter.
+  * `OTLPDataReceiver`, `OTLPHTTPDataReceiver` - live in the `testbed/testbed` package.
+  * All other receivers live in their own sub-package under `testbed/datareceivers/<component>datareceiver`, e.g. `jaegerdatareceiver.NewJaegerDataReceiver` or `zipkindatareceiver.NewZipkinDataReceiver`. See `testbed/datareceivers/` for the full set.
 * `OtelcolRunner` - Configures, starts and stops one or more instances of otelcol which will be the subject of testing being executed.
   * `ChildProcess` - Implementation of `OtelcolRunner` runs a single otelcol as a child process on the same machine as the test executor.
   * `InProcessCollector` - Implementation of `OtelcolRunner` runs a single otelcol as a go routine within the same process as the test executor.
@@ -46,6 +40,13 @@ For instance, if using the existing end-to-end test, the general dataflow can be
   * `CorrectnessResults` - Implementation of `TestResultsSummary` with fields suitable for reporting data translation correctness test results.
 
 ## Adding New Receiver and/or Exporters to the testbed
+
+New `DataSender` and `DataReceiver` implementations live in their own sub-package
+under `testbed/datasenders/<component>datasender` and
+`testbed/datareceivers/<component>datareceiver`. Connector helpers follow the
+same pattern under `testbed/dataconnectors/<component>dataconnector`. Keeping
+one component per package means each test binary only compiles the senders,
+receivers, and connectors it actually exercises.
 
 Generally, when designing a test for new exporter and receiver components, developers should mainly focus on designing and implementing the components with yellow background in the diagram above as the other components are implemented by the testbed framework:
 
@@ -76,8 +77,8 @@ Generally, when designing a test for new exporter and receiver components, devel
     	}{
     		{
     			"NewExporterOrReceiver",
-    			testbed.NewXXXDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-    			testbed.NewXXXDataReceiver(testutil.GetAvailablePort(t)),
+    			xxxdatasender.NewXXXDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+    			xxxdatareceiver.NewXXXDataReceiver(testutil.GetAvailablePort(t)),
     			testbed.ResourceSpec{
     				ExpectedMaxCPU: XX,
     				ExpectedMaxRAM: XX,

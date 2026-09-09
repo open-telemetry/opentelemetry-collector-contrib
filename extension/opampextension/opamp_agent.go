@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -33,7 +34,6 @@ import (
 	"go.opentelemetry.io/collector/service/hostcapabilities"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
-	expmaps "golang.org/x/exp/maps"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
@@ -406,8 +406,7 @@ func (o *opampAgent) createAgentDescription() error {
 	}
 
 	// Sort the non identifying attributes to give them a stable order for tests
-	keys := expmaps.Keys(nonIdentifyingAttributeMap)
-	sort.Strings(keys)
+	keys := slices.Sorted(maps.Keys(nonIdentifyingAttributeMap))
 
 	nonIdent := make([]*protobufs.KeyValue, 0, len(nonIdentifyingAttributeMap))
 	for _, k := range keys {
@@ -503,18 +502,20 @@ func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {
 }
 
 func getOSDescription(logger *zap.Logger) string {
-	info, err := host.Info()
+	// Use PlatformInformation instead of host.Info so Windows containers without
+	// MachineGuid can still report os.description.
+	platform, _, version, err := host.PlatformInformation()
 	if err != nil {
-		logger.Error("failed getting host info", zap.Error(err))
+		logger.Error("failed getting platform information", zap.Error(err))
 		return runtime.GOOS
 	}
 	switch runtime.GOOS {
 	case "darwin":
-		return "macOS " + info.PlatformVersion
+		return "macOS " + version
 	case "linux":
-		return cases.Title(language.English).String(info.Platform) + " " + info.PlatformVersion
+		return cases.Title(language.English).String(platform) + " " + version
 	case "windows":
-		return info.Platform + " " + info.PlatformVersion
+		return platform + " " + version
 	default:
 		return runtime.GOOS
 	}
@@ -666,6 +667,13 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 		unsubscribeFunc()
 		o.statusSubscriptionWg.Done()
 	}()
+
+	var (
+		lastStatus componentstatus.Status
+		lastErr    string
+		currentErr string
+	)
+
 	for {
 		select {
 		case <-o.lifetimeCtx.Done():
@@ -678,6 +686,18 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 			if statusUpdate == nil || statusUpdate.Status() == componentstatus.StatusNone {
 				continue
 			}
+
+			currentStatus := statusUpdate.Status()
+			if statusUpdate.Err() != nil {
+				currentErr = statusUpdate.Err().Error()
+			}
+
+			if currentStatus == lastStatus && currentErr == lastErr {
+				continue
+			}
+
+			lastStatus = currentStatus
+			lastErr = currentErr
 
 			componentHealth := convertComponentHealth(statusUpdate)
 

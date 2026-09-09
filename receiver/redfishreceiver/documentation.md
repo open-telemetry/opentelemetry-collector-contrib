@@ -193,7 +193,7 @@ Measures the reading of a chassis temperature.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| °C | Gauge | Int | Development |
+| Cel | Gauge | Int | Development |
 
 #### Attributes
 
@@ -234,7 +234,7 @@ Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| host.name | System host name. | Any Str | true | - |
-| url.full | Full URL of Redfish API endpoint. | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| host.name | System host name. | Any Str | true | - | - |
+| url.full | Full URL of Redfish API endpoint. | Any Str | true | - | - |

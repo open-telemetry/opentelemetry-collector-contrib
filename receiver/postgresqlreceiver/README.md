@@ -3,7 +3,6 @@
 
 This receiver queries the PostgreSQL [statistics collector](https://www.postgresql.org/docs/13/monitoring-stats.html).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: logs   |
@@ -11,7 +10,7 @@ This receiver queries the PostgreSQL [statistics collector](https://www.postgres
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fpostgresql%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fpostgresql) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fpostgresql%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fpostgresql) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_postgresql)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_postgresql&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@antonblock](https://www.github.com/antonblock), [@ishleenk17](https://www.github.com/ishleenk17), [@Caleb-Hurshman](https://www.github.com/Caleb-Hurshman) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@antonblock](https://www.github.com/antonblock), [@ishleenk17](https://www.github.com/ishleenk17), [@Caleb-Hurshman](https://www.github.com/Caleb-Hurshman), [@ebrdarSplunk](https://www.github.com/ebrdarSplunk), [@XSAM](https://www.github.com/XSAM), [@akshays-19](https://www.github.com/akshays-19), [@sv-splunk](https://www.github.com/sv-splunk), [@splunk-shanu](https://www.github.com/splunk-shanu) \| Seeking more code owners! |
 | Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -49,23 +48,68 @@ The monitoring user must be granted `SELECT` on `pg_stat_database`.
 > otelcol-contrib --feature-gates=receiver.postgresql.separateSchemaAttr
 > ```
 >
+> **Note:** This gate is mutually exclusive with `receiver.postgresql.useOTelSemconv`. Both cannot be
+> enabled at the same time.
+>
 > See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559 for more details.
 
 ## Configuration
 
-The following settings are required to create a database connection:
+The following setting is required to create a database connection:
 
 - `username`
-- `password`
+
+Exactly one of the following credential settings is also required:
+
+- `password`: A static PostgreSQL password.
+- `db_auth`: The component ID of a database authentication provider extension. The provider supplies the password, and can optionally override `username`, whenever the receiver opens a connection. `db_auth` and `password` are mutually exclusive.
+
+For example, a provider extension must be declared, referenced from the receiver,
+and enabled in `service.extensions`:
+
+```yaml
+extensions:
+  aws_iam_db_auth:
+    region: us-east-2
+
+receivers:
+  postgresql:
+    endpoint: my-database.example.com:5432
+    username: monitor
+    db_auth: aws_iam_db_auth
+
+service:
+  extensions: [aws_iam_db_auth]
+  pipelines:
+    metrics:
+      receivers: [postgresql]
+```
+
+The selected provider extension must be included in the Collector distribution.
+Provider-wide settings, such as the region above, belong to the extension;
+`endpoint` and `username` are passed to it by the receiver for each credential
+request.
 
 The following settings are optional:
 
 - `endpoint` (default = `localhost:5432`): The endpoint of the PostgreSQL server. Whether using TCP or Unix sockets, this value should be `host:port`. If `transport` is set to `unix`, the endpoint will internally be translated from `host:port` to `/host.s.PGSQL.port`
 - `transport` (default = `tcp`): The transport protocol being used to connect to PostgreSQL. Available options are `tcp` and `unix`.
 
-- `databases` (default = `[]`): The list of databases for which the receiver will attempt to collect statistics. If an empty list is provided, the receiver will attempt to collect statistics for all non-template databases.
+- `databases` (default = `[]`): The list of databases for which the receiver will attempt to collect statistics. If an empty list is provided, the receiver will attempt to collect statistics for all non-template databases. This list applies to metrics only; the query sample and top query collectors ignore it and are filtered solely by `exclude_databases`.
 
-- `exclude_databases` (default = `[]`): List of databases which will be excluded when collecting statistics.
+- `exclude_databases` (default = `[]`): List of databases excluded from statistics, query samples, and top queries. Excluded databases are filtered out of every collection query and the receiver opens no per-database connection to them. Exception: the receiver always connects to the default `postgres` database for discovery and server-level queries, even if it is listed here.
+
+> [!NOTE]
+> Managed PostgreSQL services create internal databases that no customer credential can connect to. The receiver discovers them like any other database and logs a connection error on every scrape. If you use one of these services, add its internal databases to `exclude_databases`:
+>
+> | Service | Databases to exclude |
+> |---|---|
+> | Amazon RDS / Aurora PostgreSQL | `rdsadmin` |
+> | Azure Database for PostgreSQL | `azure_maintenance` |
+> | Google Cloud SQL | `cloudsqladmin` |
+> | Google AlloyDB | `alloydbadmin`, `alloydbmetadata` |
+>
+> Example: `exclude_databases: [rdsadmin]`
 
 The following settings are also optional and nested under `tls` to help configure client transport security
 
@@ -94,6 +138,16 @@ to grant the user you are using `pg_monitor`. Take the example from `testdata/in
 ```sql
 GRANT pg_monitor TO otelu;
 ```
+
+To correlate query samples with traces, set the PostgreSQL [`application_name`](https://www.postgresql.org/docs/current/runtime-config-logging.html#GUC-APPLICATION-NAME)
+for the client connection to a valid [W3C `traceparent`](https://www.w3.org/TR/trace-context/#traceparent-header) value before running the query:
+
+```sql
+SET application_name = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
+```
+
+When query sample collection observes a valid `traceparent` in `application_name`, the receiver sets the trace ID and span ID on the emitted
+`db.server.query_sample` log record. This enables correlation between the query sample and the originating trace.
 
 The following options are available:
 - `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 
@@ -129,6 +183,64 @@ separately. This could lead some resources usage and limit this will reduce the 
 This defines the cache's size for query plan.
 - `query_plan_cache_ttl`: (optional, default=1h). How long before the query plan cache got expired. Example values: `1m`, `1h`. 
 - `collection_interval`: (optional, default=60s). This receiver can collect top_query metrics on an interval. If not provided then the global collection_interval takes effect. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+
+### Vector Metrics
+
+The receiver can report [pgvector](https://github.com/pgvector/pgvector) similarity-search and insert activity
+through a set of opt-in metrics.
+
+Prerequisites:
+
+- PostgreSQL 13 or later.
+- The [pgvector](https://github.com/pgvector/pgvector) extension installed in each scanned database. The `l1`,
+  `hamming`, and `jaccard` distance functions additionally require pgvector 0.7.0 or later.
+- The `pg_stat_statements` extension (version 1.8+) installed and enabled in each scanned database (see below).
+
+#### Search metrics
+
+Three metrics report similarity-search activity
+
+- `postgresql.vector.search.calls`: the cumulative number of vector search executions.
+- `postgresql.vector.search.duration`: the cumulative execution time (in seconds) of vector searches.
+- `postgresql.vector.search.rows_returned`: the cumulative number of rows returned by vector searches.
+
+> [!NOTE]
+> The distance function is inferred from the query text alone, so the receiver cannot tell which
+> operator implementation is actually invoked. If the `pg_trgm` extension is also installed, its
+> text-similarity `<->` operator is indistinguishable from pgvector's L2 `<->` operator, so queries
+> such as `ORDER BY text_col <-> 'abc'` may be counted under the `l2` distance function.
+
+#### Insert metrics
+
+These metrics report write activity against pgvector tables
+
+- `postgresql.vector.insert.rows`: the cumulative number of vectors inserted.
+- `postgresql.vector.insert.duration`: the cumulative execution time (in seconds) of those inserts.
+
+All of these metrics are disabled by default. Enable the ones you need via:
+
+```yaml
+receivers:
+  postgresql:
+    metrics:
+      postgresql.vector.search.calls:
+        enabled: true
+      postgresql.vector.search.duration:
+        enabled: true
+      postgresql.vector.search.rows_returned:
+        enabled: true
+      postgresql.vector.insert.rows:
+        enabled: true
+      postgresql.vector.insert.duration:
+        enabled: true
+```
+
+The `pg_stat_statements` extension must be created in every database you want these metrics collected from:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+```
+
 ### Example Configuration
 
 ```yaml
@@ -176,6 +288,14 @@ When this feature gate is enabled, the following optional settings are available
 
 Those settings and their defaults are further documented in the [`sql/database`](https://pkg.go.dev/database/sql#DB) package.
 
+The connection pool composes with a `db_auth` block (e.g. AWS IAM). The
+credential is re-resolved on every new connection the pool opens, so a short-lived
+token (an RDS IAM token lives ~15 minutes) is re-minted as the pool grows or
+replaces connections, and a connection is never opened with an expired token.
+Connections already established stay valid for their lifetime — IAM authenticates
+only at connection open, not per query — so tune `max_lifetime` to bound how long
+a connection lives before it must reconnect with a fresh token.
+
 ### Example Configuration
 
 ```yaml
@@ -192,6 +312,19 @@ receivers:
       max_open: 5
 ```
 
+## OpenTelemetry semantic conventions feature gate
+
+The feature gate `receiver.postgresql.useOTelSemconv` (alpha, disabled by default) controls the resource model used by this receiver:
+
+- **Gate disabled (default):** Legacy per-entity resource model. Each database, table, and index emits metrics under a separate resource with `postgresql.database.name`, `postgresql.table.name`, `postgresql.index.name`, and `postgresql.schema.name` as resource attributes. `service.instance.id` is in `host:port` format.
+- **Gate enabled:** Single resource per server. All metrics are emitted under one resource with `server.address`, `server.port`, and `service.instance.id` (UUID v5) as resource attributes, aligning with OpenTelemetry semantic conventions. Metric-level attributes `db.namespace`, `db.collection.name`, and `postgresql.index.name` are present on applicable metrics.
+
+This gate is mutually exclusive with `receiver.postgresql.separateSchemaAttr` — both cannot be enabled simultaneously.
+
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
+
+> [!NOTE]
+> The optional `postgresql.query.execution.time` metric requires the `pg_stat_statements` extension to be
+> installed and enabled.

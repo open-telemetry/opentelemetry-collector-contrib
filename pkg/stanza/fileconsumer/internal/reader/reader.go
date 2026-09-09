@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"sync"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -37,6 +38,15 @@ type Metadata struct {
 	TokenLenState    tokenlen.State
 	FileType         string
 	TruncateSkipping bool
+
+	// LastObservedPath and LastObservedMtime are used by the
+	// skip_unmodified_files config option to skip re-opening and
+	// re-fingerprinting a file whose path+mtime is unchanged since the last
+	// observation. They are populated on a best-effort basis by the manager
+	// when the option is enabled and are safe to leave at their zero values
+	// (the option-off code path does not read them).
+	LastObservedPath  string
+	LastObservedMtime time.Time
 }
 
 // Reader manages a single file
@@ -59,6 +69,7 @@ type Reader struct {
 	needsUpdateFingerprint bool
 	compression            string
 	acquireFSLock          bool
+	fileCacheAdvise        bool
 	maxBatchSize           int
 	// decompressedBytesToSkip tracks the number of bytes in a decompressed stream
 	// that have already been consumed. When a plaintext file is compressed,
@@ -103,6 +114,10 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		}
 	default:
 		r.reader = r.file
+	}
+
+	if r.fileCacheAdvise && r.FileType != gzipExtension {
+		r.fadviseFile()
 	}
 
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {
@@ -220,7 +235,7 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 	r.headerReader = nil
 	r.HeaderFinalized = true
 
-	// Reset position in file to r.Offest after the header scanner might have moved it past a content token.
+	// Reset position in file to r.Offset after the header scanner might have moved it past a content token.
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {
 		r.set.Logger.Error("failed to seek post-header", zap.Error(err))
 		return true

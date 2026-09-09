@@ -4,7 +4,6 @@
 The Kafka Metrics Receiver collects kafka metrics (brokers, topics, partitions, consumer groups) from a kafka server,
 and converts them into otlp.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
@@ -22,9 +21,10 @@ and converts them into otlp.
 
 ## Prerequisites
 
-This receiver supports Kafka versions:
-  -  2.X
-  -  3.X
+This receiver supports Kafka versions 2.x, 3.x and 4.x (including KRaft mode).
+
+> **Note:** Compatibility is determined by the underlying Kafka protocol support in the driver (e.g., `franz-go` or `sarama`). Basic metrics collection remains compatible with Kafka 4.x brokers.
+>
 
 ## Feature gates
 
@@ -38,11 +38,6 @@ Feature gates can be enabled using the `--feature-gates` flag:
 
 ## Getting Started
 
-> [!NOTE]
-> You can opt out of using the [`franz-go`](https://github.com/twmb/franz-go) client by disabling the feature gate
-> `receiver.kafkametricsreceiver.UseFranzGo` when you run the OpenTelemetry Collector. See the following page
-> for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
-
 Required settings (no defaults):
 
 - `scrapers`: any combination of the following scrapers can be enabled.
@@ -55,6 +50,7 @@ Metrics collected by the associated scraper are listed in [metadata.yaml](metada
 Optional Settings (with defaults):
 
 - `cluster_alias`: Alias name of the cluster. Adds `kafka.cluster.alias` resource attribute.
+- The cluster's unique ID can be auto-discovered from cluster metadata and emitted as the `kafka.cluster.id` resource attribute. It is disabled by default; enable it via `resource_attributes.kafka.cluster.id.enabled: true`.
 - `protocol_version` (default = 2.1.0): Kafka protocol version
 - `brokers` (default = localhost:9092): the list of brokers to read from.
 - `resolve_canonical_bootstrap_servers_only` (default = false): whether to resolve then reverse-lookup broker IPs during startup.

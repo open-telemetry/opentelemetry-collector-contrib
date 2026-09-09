@@ -892,12 +892,12 @@ func TestE2EAzureDetector(t *testing.T) {
 	}, 3*time.Minute, 1*time.Second)
 }
 
-// TestE2EK8sNodeDetector tests the k8snode detector by querying the K8s API server
-// to retrieve node metadata and verifying that the k8s.node.name and k8s.node.uid
-// resource attributes are correctly detected and attached to metrics.
-func TestE2EK8sNodeDetector(t *testing.T) {
+// TestE2EAzureAppServiceDetector tests the Azure App Service detector by setting the
+// environment variables Azure App Service injects and verifying that the resource
+// attributes are attached to metrics.
+func TestE2EAzureAppServiceDetector(t *testing.T) {
 	var expected pmetric.Metrics
-	expectedFile := filepath.Join("testdata", "e2e", "k8snode", "expected.yaml")
+	expectedFile := filepath.Join("testdata", "e2e", "azureappservice", "expected.yaml")
 	expected, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
@@ -910,7 +910,7 @@ func TestE2EK8sNodeDetector(t *testing.T) {
 	startEntries := len(metricsConsumer.AllMetrics())
 
 	testID := uuid.NewString()[:8]
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "k8snode", "collector"), map[string]string{}, "")
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "azureappservice", "collector"), map[string]string{}, "")
 
 	defer func() {
 		for _, obj := range collectorObjs {
@@ -925,21 +925,7 @@ func TestE2EK8sNodeDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		metrics := metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1]
-
-		// Verify that k8snode detector populated the dynamic attributes (not empty)
-		require.Greater(tt, metrics.ResourceMetrics().Len(), 0, "expected at least one resource metric")
-		resourceAttrs := metrics.ResourceMetrics().At(0).Resource().Attributes()
-
-		nodeName, found := resourceAttrs.Get("k8s.node.name")
-		require.True(tt, found, "k8s.node.name attribute should be present")
-		require.NotEmpty(tt, nodeName.Str(), "k8s.node.name should not be empty")
-
-		nodeUID, found := resourceAttrs.Get("k8s.node.uid")
-		require.True(tt, found, "k8s.node.uid attribute should be present")
-		require.NotEmpty(tt, nodeUID.Str(), "k8s.node.uid should not be empty")
-
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metrics,
+		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
 			pmetrictest.IgnoreTimestamp(),
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreScopeVersion(),
@@ -949,12 +935,91 @@ func TestE2EK8sNodeDetector(t *testing.T) {
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
-
-			pmetrictest.ChangeResourceAttributeValue("k8s.node.name", replaceWithStar),
-			pmetrictest.ChangeResourceAttributeValue("k8s.node.uid", replaceWithStar),
 		),
 		)
 	}, 3*time.Minute, 1*time.Second)
+}
+
+// TestE2EK8sAPIDetector tests the k8s_api detector by querying the K8s API server
+// to retrieve node and cluster metadata and verifying that k8s.node.name, k8s.node.uid,
+// and k8s.cluster.uid are correctly detected and attached to metrics.
+// It also verifies that the deprecated `k8snode` detector name produces identical output.
+func TestE2EK8sAPIDetector(t *testing.T) {
+	tests := []struct {
+		name        string
+		testdataDir string
+	}{
+		{name: "k8s_api", testdataDir: "k8s_api"},
+		{name: "k8snode (deprecated)", testdataDir: "k8snode"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			expectedFile := filepath.Join("testdata", "e2e", tc.testdataDir, "expected.yaml")
+			expected, err := golden.ReadMetrics(expectedFile)
+			require.NoError(t, err)
+
+			k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+			require.NoError(t, err)
+
+			metricsConsumer := new(consumertest.MetricsSink)
+			shutdownSink := startUpSink(t, metricsConsumer)
+			defer shutdownSink()
+			startEntries := len(metricsConsumer.AllMetrics())
+
+			testID := uuid.NewString()[:8]
+			collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", tc.testdataDir, "collector"), map[string]string{}, "")
+
+			defer func() {
+				for _, obj := range collectorObjs {
+					require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+				}
+			}()
+
+			wantEntries := 10
+			waitForData(t, metricsConsumer, startEntries, wantEntries)
+
+			// Uncomment to regenerate golden file
+			// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
+
+			require.EventuallyWithT(t, func(tt *assert.CollectT) {
+				metrics := metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1]
+
+				// Verify that the detector populated the dynamic attributes (not empty)
+				require.Greater(tt, metrics.ResourceMetrics().Len(), 0, "expected at least one resource metric")
+				resourceAttrs := metrics.ResourceMetrics().At(0).Resource().Attributes()
+
+				nodeName, found := resourceAttrs.Get("k8s.node.name")
+				require.True(tt, found, "k8s.node.name attribute should be present")
+				require.NotEmpty(tt, nodeName.Str(), "k8s.node.name should not be empty")
+
+				nodeUID, found := resourceAttrs.Get("k8s.node.uid")
+				require.True(tt, found, "k8s.node.uid attribute should be present")
+				require.NotEmpty(tt, nodeUID.Str(), "k8s.node.uid should not be empty")
+
+				clusterUID, found := resourceAttrs.Get("k8s.cluster.uid")
+				require.True(tt, found, "k8s.cluster.uid attribute should be present")
+				require.NotEmpty(tt, clusterUID.Str(), "k8s.cluster.uid should not be empty")
+
+				assert.NoError(tt, pmetrictest.CompareMetrics(expected, metrics,
+					pmetrictest.IgnoreTimestamp(),
+					pmetrictest.IgnoreStartTimestamp(),
+					pmetrictest.IgnoreScopeVersion(),
+					pmetrictest.IgnoreResourceMetricsOrder(),
+					pmetrictest.IgnoreMetricsOrder(),
+					pmetrictest.IgnoreScopeMetricsOrder(),
+					pmetrictest.IgnoreMetricDataPointsOrder(),
+					pmetrictest.IgnoreMetricValues(),
+					pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+
+					pmetrictest.ChangeResourceAttributeValue("k8s.node.name", replaceWithStar),
+					pmetrictest.ChangeResourceAttributeValue("k8s.node.uid", replaceWithStar),
+					pmetrictest.ChangeResourceAttributeValue("k8s.cluster.uid", replaceWithStar),
+				),
+				)
+			}, 3*time.Minute, 1*time.Second)
+		})
+	}
 }
 
 // TestE2EAKSDetector tests the AKS detector by deploying a metadata-server
@@ -977,6 +1042,54 @@ func TestE2EAKSDetector(t *testing.T) {
 
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "aks", "collector"), map[string]string{}, "")
+
+	defer func() {
+		for _, obj := range collectorObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+		}
+	}()
+
+	wantEntries := 10
+	waitForData(t, metricsConsumer, startEntries, wantEntries)
+
+	// Uncomment to regenerate golden file
+	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
+
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreScopeVersion(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+		),
+		)
+	}, 3*time.Minute, 1*time.Second)
+}
+
+// TestE2EAzureContainerAppsDetector tests the Azure Container Apps detector by setting the
+// environment variables Azure Container Apps injects and verifying that the resource
+// attributes are correctly detected and attached to metrics.
+func TestE2EAzureContainerAppsDetector(t *testing.T) {
+	var expected pmetric.Metrics
+	expectedFile := filepath.Join("testdata", "e2e", "azurecontainerapps", "expected.yaml")
+	expected, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	require.NoError(t, err)
+
+	metricsConsumer := new(consumertest.MetricsSink)
+	shutdownSink := startUpSink(t, metricsConsumer)
+	defer shutdownSink()
+	startEntries := len(metricsConsumer.AllMetrics())
+
+	testID := uuid.NewString()[:8]
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "azurecontainerapps", "collector"), map[string]string{}, "")
 
 	defer func() {
 		for _, obj := range collectorObjs {

@@ -67,8 +67,8 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SystemdServiceCPUTime"] = mb.metricSystemdServiceCPUTime.config.AggregationStrategy
-			aggMap["SystemdUnitState"] = mb.metricSystemdUnitState.config.AggregationStrategy
+			aggMap["systemd.service.cpu.time"] = mb.metricSystemdServiceCPUTime.config.AggregationStrategy
+			aggMap["systemd.unit.state"] = mb.metricSystemdUnitState.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -77,17 +77,21 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemdServiceCPUTimeDataPoint(ts, 1, AttributeCPUModeSystem)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemdServiceCPUTimeDataPoint(ts, 3, AttributeCPUModeUser)
 			}
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemdServiceMemoryUsageDataPoint(ts, 1)
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemdServiceMemoryUsageMaxDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordSystemdServiceRestartsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemdUnitStateDataPoint(ts, 1, AttributeSystemdUnitActiveStateActive)
@@ -173,6 +177,34 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("cpu.mode")
 						assert.False(t, ok)
 					}
+				case "systemd.service.memory.usage":
+					assert.False(t, validatedMetrics["systemd.service.memory.usage"], "Found a duplicate in the metrics slice: systemd.service.memory.usage")
+					validatedMetrics["systemd.service.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes of memory in use by this service.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "systemd.service.memory.usage.max":
+					assert.False(t, validatedMetrics["systemd.service.memory.usage.max"], "Found a duplicate in the metrics slice: systemd.service.memory.usage.max")
+					validatedMetrics["systemd.service.memory.usage.max"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Maximum memory used by this service, in bytes.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "systemd.service.restarts":
 					assert.False(t, validatedMetrics["systemd.service.restarts"], "Found a duplicate in the metrics slice: systemd.service.restarts")
 					validatedMetrics["systemd.service.restarts"] = true

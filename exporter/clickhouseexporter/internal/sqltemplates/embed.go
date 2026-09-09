@@ -82,6 +82,14 @@ var TracesInsert string
 //go:embed traces_json_insert.sql
 var TracesJSONInsert string
 
+// PROFILES
+
+//go:embed profiles_table.sql
+var ProfilesCreateTable string
+
+//go:embed profiles_insert.sql
+var ProfilesInsert string
+
 // METRICS
 
 //go:embed metrics_gauge_table.sql

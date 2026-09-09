@@ -23,6 +23,10 @@ func (nopTranslation) SupportedVersion(_ *Version) bool {
 	return false
 }
 
+func (nopTranslation) TargetSchemaURL() string {
+	return ""
+}
+
 func (nopTranslation) ApplyAllResourceChanges(_ alias.Resource, _ string) error {
 	return nil
 }

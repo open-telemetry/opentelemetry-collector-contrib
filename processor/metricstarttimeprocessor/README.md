@@ -6,7 +6,6 @@ time for metric points with a cumulative aggregation temporality. It is
 commonly used with the `prometheus` receiver, which usually produces metric
 points without a start time.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |

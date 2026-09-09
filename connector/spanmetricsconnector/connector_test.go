@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gobwas/glob"
 	"github.com/jonboulle/clockwork"
 	"github.com/lightstep/go-expohisto/structure"
 	"github.com/stretchr/testify/assert"
@@ -30,6 +31,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc/metadata"
 
+	spanmetricsmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 )
@@ -303,7 +305,8 @@ func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataP
 			tb,
 			sampleDuration.Seconds()*float64(numCumulativeConsumptions),
 			dp.Sum(),
-			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.")
+			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.",
+		)
 		assert.NotZero(tb, dp.Timestamp(), "Timestamp should be set")
 
 		// Verify bucket counts.
@@ -342,7 +345,8 @@ func verifyExponentialHistogramDataPoints(tb testing.TB, dps pmetric.Exponential
 			tb,
 			sampleDuration.Seconds()*float64(numCumulativeConsumptions),
 			dp.Sum(),
-			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.")
+			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.",
+		)
 		assert.Equal(tb, uint64(numCumulativeConsumptions), dp.Count())
 		assert.Equal(tb, []uint64{uint64(numCumulativeConsumptions)}, dp.Positive().BucketCounts().AsRaw())
 		assert.NotZero(tb, dp.Timestamp(), "Timestamp should be set")
@@ -402,7 +406,8 @@ func buildBadSampleTrace() ptrace.Traces {
 	// Flipping timestamp for a bad duration
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(now))
 	span.SetStartTimestamp(
-		pcommon.NewTimestampFromTime(now.Add(sampleDuration)))
+		pcommon.NewTimestampFromTime(now.Add(sampleDuration)),
+	)
 	return badTrace
 }
 
@@ -433,7 +438,8 @@ func buildSampleTrace() ptrace.Traces {
 					spanID:     [8]byte{0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10},
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(
 		serviceSpans{
 			serviceName: "service-b",
@@ -446,7 +452,8 @@ func buildSampleTrace() ptrace.Traces {
 					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(serviceSpans{}, traces.ResourceSpans().AppendEmpty())
 	return traces
 }
@@ -467,7 +474,8 @@ func appendTraceWithUnsetStatusCode(traces ptrace.Traces) ptrace.Traces {
 					spanID:     [8]byte{0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28},
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 	return traces
 }
 
@@ -491,7 +499,8 @@ func initSpan(span span, s ptrace.Span) {
 	now := time.Now()
 	s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
 	s.SetEndTimestamp(
-		pcommon.NewTimestampFromTime(now.Add(sampleDuration)))
+		pcommon.NewTimestampFromTime(now.Add(sampleDuration)),
+	)
 
 	s.Attributes().PutStr(stringAttrName, "stringAttrValue")
 	s.Attributes().PutInt(intAttrName, 99)
@@ -510,6 +519,57 @@ func initSpan(span span, s ptrace.Span) {
 	e := s.Events().AppendEmpty()
 	e.SetName("exception")
 	e.Attributes().PutStr(exceptionTypeAttrName, "NullPointerException")
+}
+
+func setSpanAttributeValue(traces ptrace.Traces, key, value string) {
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		scopeSpans := traces.ResourceSpans().At(i).ScopeSpans()
+		for j := 0; j < scopeSpans.Len(); j++ {
+			spans := scopeSpans.At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				spans.At(k).Attributes().PutStr(key, value)
+			}
+		}
+	}
+}
+
+func hasDataPointWithStringAttrValue(metrics pmetric.Metrics, value string) bool {
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		scopeMetrics := metrics.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			metricSlice := scopeMetrics.At(j).Metrics()
+			for k := 0; k < metricSlice.Len(); k++ {
+				metric := metricSlice.At(k)
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
+					dps := metric.Sum().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						attr, ok := dps.At(l).Attributes().Get(stringAttrName)
+						if ok && attr.Str() == value {
+							return true
+						}
+					}
+				case pmetric.MetricTypeHistogram:
+					dps := metric.Histogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						attr, ok := dps.At(l).Attributes().Get(stringAttrName)
+						if ok && attr.Str() == value {
+							return true
+						}
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					dps := metric.ExponentialHistogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						attr, ok := dps.At(l).Attributes().Get(stringAttrName)
+						if ok && attr.Str() == value {
+							return true
+						}
+					}
+				}
+			}
+		}
+	}
+	return false
 }
 
 func disabledExemplarsConfig() ExemplarsConfig {
@@ -582,7 +642,7 @@ func newConnectorImp(defaultNullValue *string, histogramConfig func() HistogramC
 			{Name: arrayAttrName, Default: nil},
 			{Name: nullAttrName, Default: defaultNullValue},
 			// Add a default value for an attribute that doesn't exist in a span
-			{Name: notInSpanAttrName0, Default: stringp("defaultNotInSpanAttrVal")},
+			{Name: notInSpanAttrName0, Default: new("defaultNotInSpanAttrVal")},
 			// Leave the default value unset to test that this dimension should not be added to the metric.
 			{Name: notInSpanAttrName1, Default: nil},
 			// Add a resource attribute to test "process" attributes like IP, host, region, cluster, etc.
@@ -602,10 +662,6 @@ func newConnectorImp(defaultNullValue *string, histogramConfig func() HistogramC
 	return c, nil
 }
 
-func stringp(str string) *string {
-	return &str
-}
-
 func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -614,11 +670,11 @@ func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
 
 	span0 := ptrace.NewSpan()
 	span0.SetName("c")
-	k0 := c.buildKey("ab", span0, nil, pcommon.NewMap(), false)
+	k0 := c.buildKey("ab", span0, dimensionList{}, dimensionList{}, pcommon.NewMap(), false)
 
 	span1 := ptrace.NewSpan()
 	span1.SetName("bc")
-	k1 := c.buildKey("a", span1, nil, pcommon.NewMap(), false)
+	k1 := c.buildKey("a", span1, dimensionList{}, dimensionList{}, pcommon.NewMap(), false)
 
 	assert.NotEqual(t, k0, k1)
 	assert.Equal(t, metrics.Key("ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k0)
@@ -634,7 +690,7 @@ func TestBuildKeyExcludeDimensionsAll(t *testing.T) {
 
 	span0 := ptrace.NewSpan()
 	span0.SetName("spanName")
-	k0 := c.buildKey("serviceName", span0, nil, pcommon.NewMap(), false)
+	k0 := c.buildKey("serviceName", span0, dimensionList{}, dimensionList{}, pcommon.NewMap(), false)
 	assert.Equal(t, metrics.Key(""), k0)
 }
 
@@ -647,7 +703,7 @@ func TestBuildKeyExcludeWrongDimensions(t *testing.T) {
 
 	span0 := ptrace.NewSpan()
 	span0.SetName("spanName")
-	k0 := c.buildKey("serviceName", span0, nil, pcommon.NewMap(), false)
+	k0 := c.buildKey("serviceName", span0, dimensionList{}, dimensionList{}, pcommon.NewMap(), false)
 	assert.Equal(t, metrics.Key("serviceName"), k0)
 }
 
@@ -660,7 +716,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	defaultFoo := pcommon.NewValueStr("bar")
 	for _, tc := range []struct {
 		name            string
-		optionalDims    []pdatautil.Dimension
+		optionalDims    dimensionList
 		resourceAttrMap map[string]any
 		spanAttrMap     map[string]any
 		wantKey         string
@@ -671,50 +727,98 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name: "neither span nor resource contains key, dim provides default",
-			optionalDims: []pdatautil.Dimension{
+			optionalDims: dimensionList{nameDimensions: []pdatautil.Dimension{
 				{Name: "foo", Value: &defaultFoo},
-			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000bar",
+			}},
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000foo:bar",
 		},
 		{
 			name: "neither span nor resource contains key, dim provides no default",
-			optionalDims: []pdatautil.Dimension{
+			optionalDims: dimensionList{nameDimensions: []pdatautil.Dimension{
 				{Name: "foo"},
-			},
+			}},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET",
 		},
 		{
 			name: "span attribute contains dimension",
-			optionalDims: []pdatautil.Dimension{
+			optionalDims: dimensionList{nameDimensions: []pdatautil.Dimension{
 				{Name: "foo"},
-			},
+			}},
 			spanAttrMap: map[string]any{
 				"foo": 99,
 			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000foo:99",
 		},
 		{
 			name: "resource attribute contains dimension",
-			optionalDims: []pdatautil.Dimension{
+			optionalDims: dimensionList{nameDimensions: []pdatautil.Dimension{
 				{Name: "foo"},
-			},
+			}},
 			resourceAttrMap: map[string]any{
 				"foo": 99,
 			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000foo:99",
 		},
 		{
 			name: "both span and resource attribute contains dimension, should prefer span attribute",
-			optionalDims: []pdatautil.Dimension{
+			optionalDims: dimensionList{nameDimensions: []pdatautil.Dimension{
 				{Name: "foo"},
-			},
+			}},
 			spanAttrMap: map[string]any{
 				"foo": 100,
 			},
 			resourceAttrMap: map[string]any{
 				"foo": 99,
 			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000100",
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000foo:100",
+		},
+		{
+			name: "name and glob dimensions match attributes at both span and resource",
+			optionalDims: dimensionList{
+				nameDimensions: []pdatautil.Dimension{{Name: "http.method"}},
+				globDimensions: []glob.Glob{glob.MustCompile("db.*")},
+			},
+			spanAttrMap: map[string]any{
+				"http.method": "GET",
+				"http.status": "200",
+				"db.system":   "postgres",
+			},
+			resourceAttrMap: map[string]any{
+				"db.name": "users",
+			},
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000http.method:GET\u0000db.system:postgres\u0000db.name:users",
+		},
+		{
+			name:         "span attribute wins over resource attribute on the same glob-matched key",
+			optionalDims: dimensionList{globDimensions: []glob.Glob{glob.MustCompile("env")}},
+			spanAttrMap: map[string]any{
+				"env": "prod",
+			},
+			resourceAttrMap: map[string]any{
+				"env": "dev",
+			},
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000env:prod",
+		},
+		{
+			name:         "no matching attribute: glob contributes nothing",
+			optionalDims: dimensionList{globDimensions: []glob.Glob{glob.MustCompile("db.*")}},
+			spanAttrMap: map[string]any{
+				"http.method": "GET",
+			},
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET",
+		},
+		{
+			name: "two globs match signle attribute, single value added",
+			optionalDims: dimensionList{
+				globDimensions: []glob.Glob{
+					glob.MustCompile("db.*"),
+					glob.MustCompile("*.name"),
+				},
+			},
+			spanAttrMap: map[string]any{
+				"db.name": "users",
+			},
+			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000db.name:users",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -723,8 +827,166 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			span0 := ptrace.NewSpan()
 			assert.NoError(t, span0.Attributes().FromRaw(tc.spanAttrMap))
 			span0.SetName("c")
-			key := c.buildKey("ab", span0, tc.optionalDims, resAttr, false)
+			key := c.buildKey("ab", span0, dimensionList{}, tc.optionalDims, resAttr, false)
 			assert.Equal(t, metrics.Key(tc.wantKey), key)
+		})
+	}
+}
+
+func TestBuildAttributesWithDimensions(t *testing.T) {
+	tests := []struct {
+		name               string
+		spanAttrMap        map[string]any
+		resourceAttrMap    map[string]any
+		dimensions         dimensionList
+		optionalDimensions dimensionList
+		want               map[string]string
+	}{
+		{
+			name:        "no additional dimensions - common attributes only",
+			spanAttrMap: map[string]any{},
+			resourceAttrMap: map[string]any{
+				"http.method": "GET",
+				"http.status": 200,
+				"db.name":     "test",
+				"db.system":   "postgres",
+				"env":         "dev",
+			},
+			dimensions:         dimensionList{},
+			optionalDimensions: dimensionList{},
+			want: map[string]string{
+				serviceNameKey:       "test_service",
+				spanNameKey:          "test_span",
+				spanKindKey:          "SPAN_KIND_INTERNAL",
+				statusCodeKey:        "STATUS_CODE_UNSET",
+				collectorInstanceKey: instanceID,
+			},
+		},
+		{
+			name:        "named dimension added",
+			spanAttrMap: map[string]any{},
+			resourceAttrMap: map[string]any{
+				"http.method": "GET",
+				"http.status": 200,
+				"db.name":     "test",
+				"db.system":   "postgres",
+				"env":         "dev",
+			},
+			dimensions: dimensionList{
+				nameDimensions: []pdatautil.Dimension{{Name: "http.method"}},
+			},
+			optionalDimensions: dimensionList{},
+			want: map[string]string{
+				serviceNameKey:       "test_service",
+				spanNameKey:          "test_span",
+				spanKindKey:          "SPAN_KIND_INTERNAL",
+				statusCodeKey:        "STATUS_CODE_UNSET",
+				collectorInstanceKey: instanceID,
+				"http.method":        "GET",
+			},
+		},
+		{
+			name:        "named dimension and glob dimensions added",
+			spanAttrMap: map[string]any{},
+			resourceAttrMap: map[string]any{
+				"http.method": "GET",
+				"http.status": 200,
+				"db.name":     "test",
+				"db.system":   "postgres",
+				"env":         "dev",
+			},
+			dimensions: dimensionList{
+				nameDimensions: []pdatautil.Dimension{{Name: "http.method"}},
+				globDimensions: []glob.Glob{glob.MustCompile("db.*")},
+			},
+			optionalDimensions: dimensionList{},
+			want: map[string]string{
+				serviceNameKey:       "test_service",
+				spanNameKey:          "test_span",
+				spanKindKey:          "SPAN_KIND_INTERNAL",
+				statusCodeKey:        "STATUS_CODE_UNSET",
+				collectorInstanceKey: instanceID,
+				"http.method":        "GET",
+				"db.name":            "test",
+				"db.system":          "postgres",
+			},
+		},
+		{
+			name:        "both common and optional dimensions are added",
+			spanAttrMap: map[string]any{},
+			resourceAttrMap: map[string]any{
+				"http.method": "GET",
+				"http.status": 200,
+				"db.name":     "test",
+				"db.system":   "postgres",
+				"env":         "dev",
+			},
+			dimensions: dimensionList{
+				nameDimensions: []pdatautil.Dimension{{Name: "http.method"}},
+				globDimensions: []glob.Glob{glob.MustCompile("db.*")},
+			},
+			optionalDimensions: dimensionList{
+				nameDimensions: []pdatautil.Dimension{{Name: "http.status"}},
+				globDimensions: []glob.Glob{glob.MustCompile("env")},
+			},
+			want: map[string]string{
+				serviceNameKey:       "test_service",
+				spanNameKey:          "test_span",
+				spanKindKey:          "SPAN_KIND_INTERNAL",
+				statusCodeKey:        "STATUS_CODE_UNSET",
+				collectorInstanceKey: instanceID,
+				"http.method":        "GET",
+				"http.status":        "200",
+				"db.name":            "test",
+				"db.system":          "postgres",
+				"env":                "dev",
+			},
+		},
+		{
+			name: "span attributes precede resource attributes",
+			spanAttrMap: map[string]any{
+				"env": "prod",
+			},
+			resourceAttrMap: map[string]any{
+				"http.method": "GET",
+				"http.status": 200,
+				"db.name":     "test",
+				"db.system":   "postgres",
+				"env":         "dev",
+			},
+			dimensions: dimensionList{
+				nameDimensions: []pdatautil.Dimension{{Name: "env"}},
+			},
+			optionalDimensions: dimensionList{},
+			want: map[string]string{
+				serviceNameKey:       "test_service",
+				spanNameKey:          "test_span",
+				spanKindKey:          "SPAN_KIND_INTERNAL",
+				statusCodeKey:        "STATUS_CODE_UNSET",
+				collectorInstanceKey: instanceID,
+				"env":                "prod",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &connectorImp{config: Config{}, instanceID: instanceID}
+
+			span := ptrace.NewSpan()
+			span.SetName("test_span")
+			span.SetKind(ptrace.SpanKindInternal)
+			assert.NoError(t, span.Attributes().FromRaw(tt.spanAttrMap))
+			resAttr := pcommon.NewMap()
+			assert.NoError(t, resAttr.FromRaw(tt.resourceAttrMap))
+
+			attrs := p.buildAttributes("test_service", span, resAttr, tt.dimensions, tt.optionalDimensions, pcommon.NewInstrumentationScope(), false)
+			assert.Equal(t, len(tt.want), attrs.Len())
+			for k, v := range tt.want {
+				val, ok := attrs.Get(k)
+				assert.True(t, ok)
+				assert.Equal(t, v, val.AsString())
+			}
 		})
 	}
 }
@@ -868,9 +1130,9 @@ func TestConsumeMetricsErrors(t *testing.T) {
 
 func TestConsumeTraces(t *testing.T) {
 	// enable it
-	require.NoError(t, featuregate.GlobalRegistry().Set(excludeResourceMetrics.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsExcludeResourceMetricsFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(legacyMetricNamesFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsLegacyMetricNamesFeatureGate.ID(), false))
 	}()
 
 	t.Parallel()
@@ -1009,14 +1271,14 @@ func TestConsumeTraces(t *testing.T) {
 
 			mcon := &consumertest.MetricsSink{}
 			mockClock := clockwork.NewFakeClock()
-			p, err := newConnectorImp(stringp("defaultNullValue"), tc.histogramConfig, tc.exemplarConfig, disabledEventsConfig, tc.aggregationTemporality, 0, []string{}, 1000, mockClock, false)
+			p, err := newConnectorImp(new("defaultNullValue"), tc.histogramConfig, tc.exemplarConfig, disabledEventsConfig, tc.aggregationTemporality, 0, []string{}, 1000, mockClock, false)
 			require.NoError(t, err)
 			// Override the default no-op consumer with metrics sink for testing.
 			p.metricsConsumer = mcon
 			if tc.statusCodeFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(useOtelStatusCodeAttribute.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.SpanmetricsStatusCodeConventionUseOtelPrefixFeatureGate.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(useOtelStatusCodeAttribute.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.SpanmetricsStatusCodeConventionUseOtelPrefixFeatureGate.ID(), false))
 				}()
 			}
 
@@ -1046,7 +1308,7 @@ func TestConsumeTraces(t *testing.T) {
 func TestCallsMetricsInitialise(t *testing.T) {
 	traces := buildSampleTrace()
 
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+	p, err := newConnectorImp(new("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
 	require.NoError(t, err)
 
 	ctx := metadata.NewIncomingContext(t.Context(), nil)
@@ -1080,7 +1342,7 @@ func TestCallsMetricsInitialise(t *testing.T) {
 }
 
 func TestResourceMetricsCache(t *testing.T) {
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+	p, err := newConnectorImp(new("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
 	require.NoError(t, err)
 
 	// Test
@@ -1117,7 +1379,7 @@ func TestResourceMetricsCache(t *testing.T) {
 }
 
 func TestResourceMetricsExpiration(t *testing.T) {
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Millisecond, []string{}, 1000, clockwork.NewFakeClock(), false)
+	p, err := newConnectorImp(new("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Millisecond, []string{}, 1000, clockwork.NewFakeClock(), false)
 	require.NoError(t, err)
 
 	// Test
@@ -1137,12 +1399,45 @@ func TestResourceMetricsExpiration(t *testing.T) {
 	assert.Equal(t, 2, p.resourceMetrics.Len())
 }
 
+func TestSeriesExpiration(t *testing.T) {
+	mockClock := clockwork.NewFakeClock()
+	p, err := newConnectorImp(new("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, mockClock, false)
+	require.NoError(t, err)
+	p.config.SeriesExpiration = time.Millisecond
+
+	ctx := metadata.NewIncomingContext(t.Context(), nil)
+
+	tracesA := buildSampleTrace()
+	setSpanAttributeValue(tracesA, stringAttrName, "A")
+
+	tracesB := buildSampleTrace()
+	setSpanAttributeValue(tracesB, stringAttrName, "B")
+
+	require.NoError(t, p.ConsumeTraces(ctx, tracesA))
+	exported := p.buildMetrics()
+	assert.True(t, hasDataPointWithStringAttrValue(exported, "A"))
+	assert.False(t, hasDataPointWithStringAttrValue(exported, "B"))
+	p.resetState()
+
+	mockClock.Advance(time.Millisecond)
+
+	require.NoError(t, p.ConsumeTraces(ctx, tracesB))
+	exported = p.buildMetrics()
+	assert.True(t, hasDataPointWithStringAttrValue(exported, "A"))
+	assert.True(t, hasDataPointWithStringAttrValue(exported, "B"))
+	p.resetState()
+
+	exported = p.buildMetrics()
+	assert.False(t, hasDataPointWithStringAttrValue(exported, "A"))
+	assert.True(t, hasDataPointWithStringAttrValue(exported, "B"))
+}
+
 func TestResourceMetricsKeyAttributes(t *testing.T) {
 	resourceMetricsKeyAttributes := []string{
 		"service.name",
 	}
 
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, resourceMetricsKeyAttributes, 1000, clockwork.NewFakeClock(), false)
+	p, err := newConnectorImp(new("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, resourceMetricsKeyAttributes, 1000, clockwork.NewFakeClock(), false)
 	require.NoError(t, err)
 
 	// Test
@@ -1214,10 +1509,10 @@ func TestAddResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Save and restore the feature gate state
-			previousValue := excludeResourceMetrics.IsEnabled()
-			require.NoError(t, featuregate.GlobalRegistry().Set(excludeResourceMetrics.ID(), tt.featureGateEnabled))
+			previousValue := spanmetricsmetadata.ConnectorSpanmetricsExcludeResourceMetricsFeatureGate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsExcludeResourceMetricsFeatureGate.ID(), tt.featureGateEnabled))
 			defer func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(excludeResourceMetrics.ID(), previousValue))
+				require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsExcludeResourceMetricsFeatureGate.ID(), previousValue))
 			}()
 
 			// Create a custom config with AddResourceAttributes
@@ -1284,7 +1579,7 @@ func TestAddResourceAttributesConfig(t *testing.T) {
 
 func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	// Prepare
-	conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+	conn, err := newConnectorImp(new("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
 	require.NoError(b, err)
 
 	traces := buildSampleTrace()
@@ -1302,11 +1597,11 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 		featureGateEnabled bool
 	}{
 		{
-			dsc:                fmt.Sprintf("%s enabled", legacyMetricNamesFeatureGateID),
+			dsc:                fmt.Sprintf("%s enabled", spanmetricsmetadata.ConnectorSpanmetricsLegacyMetricNamesFeatureGate.ID()),
 			featureGateEnabled: true,
 		},
 		{
-			dsc:                fmt.Sprintf("%s disabled", legacyMetricNamesFeatureGateID),
+			dsc:                fmt.Sprintf("%s disabled", spanmetricsmetadata.ConnectorSpanmetricsLegacyMetricNamesFeatureGate.ID()),
 			featureGateEnabled: false,
 		},
 	}
@@ -1315,13 +1610,13 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.dsc, func(t *testing.T) {
 			// Set feature gate value
-			previousValue := legacyMetricNamesFeatureGate.IsEnabled()
-			require.NoError(t, featuregate.GlobalRegistry().Set(legacyMetricNamesFeatureGate.ID(), tc.featureGateEnabled))
+			previousValue := spanmetricsmetadata.ConnectorSpanmetricsLegacyMetricNamesFeatureGate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsLegacyMetricNamesFeatureGate.ID(), tc.featureGateEnabled))
 			defer func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(legacyMetricNamesFeatureGate.ID(), previousValue))
+				require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsLegacyMetricNamesFeatureGate.ID(), previousValue))
 			}()
 
-			p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false, excludeDimensions...)
+			p, err := newConnectorImp(new("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false, excludeDimensions...)
 			require.NoError(t, err)
 			traces := buildSampleTrace()
 
@@ -1380,7 +1675,8 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 					statusCode: ptrace.StatusCodeOk,
 				},
 			},
-		}, traces0.ResourceSpans().AppendEmpty())
+		}, traces0.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(
 		serviceSpans{
 			serviceName: "service-b",
@@ -1391,7 +1687,8 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 					statusCode: ptrace.StatusCodeError,
 				},
 			},
-		}, traces0.ResourceSpans().AppendEmpty())
+		}, traces0.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(
 		serviceSpans{
 			serviceName: "service-c",
@@ -1402,7 +1699,8 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 					statusCode: ptrace.StatusCodeError,
 				},
 			},
-		}, traces0.ResourceSpans().AppendEmpty())
+		}, traces0.ResourceSpans().AppendEmpty(),
+	)
 
 	// This trace does not have service-a, and may not result in an attempt to publish metrics for
 	// service-a because service-a may be removed from the metricsKeyCache's evicted list.
@@ -1418,7 +1716,8 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 					statusCode: ptrace.StatusCodeError,
 				},
 			},
-		}, traces1.ResourceSpans().AppendEmpty())
+		}, traces1.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(
 		serviceSpans{
 			serviceName: "service-c",
@@ -1429,7 +1728,8 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 					statusCode: ptrace.StatusCodeError,
 				},
 			},
-		}, traces1.ResourceSpans().AppendEmpty())
+		}, traces1.ResourceSpans().AppendEmpty(),
+	)
 
 	mcon := &consumertest.MetricsSink{}
 
@@ -1445,7 +1745,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 
 	// Note: default dimension key cache size is 2.
 	mockClock := clockwork.NewFakeClock()
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, mockClock, false)
+	p, err := newConnectorImp(new("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, mockClock, false)
 	require.NoError(t, err)
 	// Override the default no-op consumer with metrics sink for testing.
 	p.metricsConsumer = mcon
@@ -1501,7 +1801,8 @@ func TestConnectorConsumeTracesExpiredMetrics(t *testing.T) {
 					statusCode: ptrace.StatusCodeOk,
 				},
 			},
-		}, traces0.ResourceSpans().AppendEmpty())
+		}, traces0.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(
 		serviceSpans{
 			serviceName: "service-b",
@@ -1512,7 +1813,8 @@ func TestConnectorConsumeTracesExpiredMetrics(t *testing.T) {
 					statusCode: ptrace.StatusCodeError,
 				},
 			},
-		}, traces0.ResourceSpans().AppendEmpty())
+		}, traces0.ResourceSpans().AppendEmpty(),
+	)
 
 	traces1 := ptrace.NewTraces()
 
@@ -1526,13 +1828,14 @@ func TestConnectorConsumeTracesExpiredMetrics(t *testing.T) {
 					statusCode: ptrace.StatusCodeOk,
 				},
 			},
-		}, traces1.ResourceSpans().AppendEmpty())
+		}, traces1.ResourceSpans().AppendEmpty(),
+	)
 
 	mcon := &consumertest.MetricsSink{}
 
 	// Creating a connector with a very short metricsTTL to ensure that the metrics are expired.
 	mockClock := clockwork.NewFakeClock()
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Nanosecond, []string{}, 1000, mockClock, false)
+	p, err := newConnectorImp(new("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Nanosecond, []string{}, 1000, mockClock, false)
 	require.NoError(t, err)
 	// Override the default no-op consumer with metrics sink for testing.
 	p.metricsConsumer = mcon
@@ -1738,12 +2041,12 @@ func TestSpanMetrics_Events(t *testing.T) {
 	}{
 		{
 			name:                    "events disabled",
-			eventsConfig:            EventsConfig{Enabled: false, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
+			eventsConfig:            EventsConfig{Enabled: false, Dimensions: []Dimension{{Name: "exception.type", Default: new("NullPointerException")}}},
 			shouldEventsMetricExist: false,
 		},
 		{
 			name:                    "events enabled",
-			eventsConfig:            EventsConfig{Enabled: true, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
+			eventsConfig:            EventsConfig{Enabled: true, Dimensions: []Dimension{{Name: "exception.type", Default: new("NullPointerException")}}},
 			shouldEventsMetricExist: true,
 		},
 	}
@@ -1808,7 +2111,7 @@ func TestExemplarsAreDiscardedAfterFlushing(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p, err := newConnectorImp(stringp("defaultNullValue"), tt.histogramConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+			p, err := newConnectorImp(new("defaultNullValue"), tt.histogramConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
 			p.metricsConsumer = &consumertest.MetricsSink{}
 			require.NoError(t, err)
 
@@ -1826,7 +2129,8 @@ func TestExemplarsAreDiscardedAfterFlushing(t *testing.T) {
 							spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
 						},
 					},
-				}, traces.ResourceSpans().AppendEmpty())
+				}, traces.ResourceSpans().AppendEmpty(),
+			)
 
 			// Test
 			ctx := metadata.NewIncomingContext(t.Context(), nil)
@@ -1854,7 +2158,8 @@ func TestExemplarsAreDiscardedAfterFlushing(t *testing.T) {
 							spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
 						},
 					},
-				}, traces.ResourceSpans().AppendEmpty())
+				}, traces.ResourceSpans().AppendEmpty(),
+			)
 
 			err = p.ConsumeTraces(ctx, traces)
 			require.NoError(t, err)
@@ -1910,9 +2215,9 @@ func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetri
 
 func TestTimestampsForUninterruptedStream(t *testing.T) {
 	// enable it
-	require.NoError(t, featuregate.GlobalRegistry().Set(excludeResourceMetrics.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsExcludeResourceMetricsFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(legacyMetricNamesFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsLegacyMetricNamesFeatureGate.ID(), false))
 	}()
 
 	tests := []struct {
@@ -1942,7 +2247,7 @@ func TestTimestampsForUninterruptedStream(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.temporality, func(t *testing.T) {
 			mockClock := newAlwaysIncreasingClock()
-			p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{}, 1000, mockClock, false)
+			p, err := newConnectorImp(new("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{}, 1000, mockClock, false)
 			require.NoError(t, err)
 			p.metricsConsumer = &consumertest.MetricsSink{}
 
@@ -1970,7 +2275,8 @@ func TestTimestampsForUninterruptedStream(t *testing.T) {
 							spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
 						},
 					},
-				}, unrelatedTraces.ResourceSpans().AppendEmpty())
+				}, unrelatedTraces.ResourceSpans().AppendEmpty(),
+			)
 			err = p.ConsumeTraces(ctx, unrelatedTraces)
 			require.NoError(t, err)
 			p.exportMetrics(ctx)
@@ -2037,7 +2343,7 @@ func verifyAndCollectCommonTimestamps(t *testing.T, m pmetric.Metrics) (start, t
 func TestDeltaTimestampCacheExpiry(t *testing.T) {
 	timestampCacheSize := 1
 	mockClock := newAlwaysIncreasingClock()
-	p, err := newConnectorImp(stringp("defaultNullValue"), exponentialHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, delta, 0, []string{}, timestampCacheSize, mockClock, false)
+	p, err := newConnectorImp(new("defaultNullValue"), exponentialHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, delta, 0, []string{}, timestampCacheSize, mockClock, false)
 	require.NoError(t, err)
 	p.metricsConsumer = &consumertest.MetricsSink{}
 
@@ -2057,7 +2363,8 @@ func TestDeltaTimestampCacheExpiry(t *testing.T) {
 					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
 				},
 			},
-		}, serviceATrace1.ResourceSpans().AppendEmpty())
+		}, serviceATrace1.ResourceSpans().AppendEmpty(),
+	)
 	err = p.ConsumeTraces(ctx, serviceATrace1)
 	require.NoError(t, err)
 	p.exportMetrics(ctx)
@@ -2076,7 +2383,8 @@ func TestDeltaTimestampCacheExpiry(t *testing.T) {
 					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
 				},
 			},
-		}, serviceBTrace1.ResourceSpans().AppendEmpty())
+		}, serviceBTrace1.ResourceSpans().AppendEmpty(),
+	)
 	err = p.ConsumeTraces(ctx, serviceBTrace1)
 	require.NoError(t, err)
 	p.exportMetrics(ctx)
@@ -2095,7 +2403,8 @@ func TestDeltaTimestampCacheExpiry(t *testing.T) {
 					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
 				},
 			},
-		}, serviceATrace2.ResourceSpans().AppendEmpty())
+		}, serviceATrace2.ResourceSpans().AppendEmpty(),
+	)
 	err = p.ConsumeTraces(ctx, serviceATrace2)
 	require.NoError(t, err)
 	p.exportMetrics(ctx)
@@ -2110,8 +2419,8 @@ func TestSeparateDimensions(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Namespace = ""
 	cfg.Dimensions = []Dimension{{Name: stringAttrName, Default: nil}}
-	cfg.CallsDimensions = []Dimension{{Name: intAttrName, Default: stringp("0")}}
-	cfg.Histogram.Dimensions = []Dimension{{Name: doubleAttrName, Default: stringp("0.0")}}
+	cfg.CallsDimensions = []Dimension{{Name: intAttrName, Default: new("0")}}
+	cfg.Histogram.Dimensions = []Dimension{{Name: doubleAttrName, Default: new("0.0")}}
 	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock(), instanceID)
 	require.NoError(t, err)
 	err = c.ConsumeTraces(t.Context(), buildSampleTrace())
@@ -2257,7 +2566,7 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 			span.SetName("test_span")
 			span.SetKind(ptrace.SpanKindInternal)
 
-			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope, false)
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), dimensionList{}, dimensionList{}, tt.instrumentationScope, false)
 
 			// +1 for the sampling.method attribute when enabled
 			assert.Equal(t, len(tt.want)+1, attrs.Len())
@@ -2562,17 +2871,17 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &connectorImp{config: tt.config, instanceID: instanceID}
 			if !tt.includeCollectorInstanceID {
-				require.NoError(t, featuregate.GlobalRegistry().Set(includeCollectorInstanceID.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsIncludeCollectorInstanceIDFeatureGate.ID(), false))
 			}
 			defer func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(includeCollectorInstanceID.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsIncludeCollectorInstanceIDFeatureGate.ID(), true))
 			}()
 
 			span := ptrace.NewSpan()
 			span.SetName("test_span")
 			span.SetKind(ptrace.SpanKindInternal)
 
-			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope, false)
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), dimensionList{}, dimensionList{}, tt.instrumentationScope, false)
 
 			// +1 for the sampling.method attribute that's always added
 			assert.Equal(t, len(tt.want)+1, attrs.Len())
@@ -2628,7 +2937,7 @@ func TestBuildAttributes_AdjustedCount(t *testing.T) {
 			span.SetName("test_span")
 			span.SetKind(ptrace.SpanKindInternal)
 
-			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, pcommon.NewInstrumentationScope(), tt.isAdjustedCount)
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), dimensionList{}, dimensionList{}, pcommon.NewInstrumentationScope(), tt.isAdjustedCount)
 
 			val, ok := attrs.Get(metricAttrSamplingMethod)
 			assert.Equal(t, tt.expectAttribute, ok, "sampling.method attribute presence")
@@ -3209,7 +3518,8 @@ func buildSampleTraceWithMixedTracestate() ptrace.Traces {
 					tracestate: "invalid-state",
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 	return traces
 }
 
@@ -3239,7 +3549,8 @@ func buildSampleTraceWithTracestate(tracestate string) ptrace.Traces {
 					tracestate: tracestate,
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(
 		serviceSpans{
 			serviceName: "service-b",
@@ -3253,7 +3564,8 @@ func buildSampleTraceWithTracestate(tracestate string) ptrace.Traces {
 					tracestate: tracestate,
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(serviceSpans{}, traces.ResourceSpans().AppendEmpty())
 	return traces
 }
@@ -3281,7 +3593,8 @@ func buildLargeSampleTraceWithTracestate(numSpans int, tracestate string) ptrace
 		serviceSpans{
 			serviceName: "service-a",
 			spans:       spans,
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 
 	return traces
 }
@@ -3320,7 +3633,7 @@ func BenchmarkConnectorConsumeTraces_WithTracestate(b *testing.B) {
 
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
-			conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+			conn, err := newConnectorImp(new("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
 			require.NoError(b, err)
 
 			traces := buildSampleTraceWithTracestate(bm.tracestate)
@@ -3348,7 +3661,7 @@ func BenchmarkConnectorConsumeTraces_WithTracestate_LargeTrace(b *testing.B) {
 	for _, sc := range spanCounts {
 		for _, ts := range tracestates {
 			b.Run(fmt.Sprintf("Spans_%d/%s", sc, ts.name), func(b *testing.B) {
-				conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+				conn, err := newConnectorImp(new("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
 				require.NoError(b, err)
 
 				traces := buildLargeSampleTraceWithTracestate(sc, ts.value)
@@ -3381,7 +3694,7 @@ func BenchmarkConnectorConsumeTraces_WithTracestate_Parallel(b *testing.B) {
 
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
-			conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+			conn, err := newConnectorImp(new("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
 			require.NoError(b, err)
 
 			ctx := metadata.NewIncomingContext(b.Context(), nil)
@@ -3416,7 +3729,7 @@ func BenchmarkConnectorConsumeTraces_WithTracestate_ExponentialHistogram(b *test
 
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
-			conn, err := newConnectorImp(stringp("defaultNullValue"), exponentialHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+			conn, err := newConnectorImp(new("defaultNullValue"), exponentialHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
 			require.NoError(b, err)
 
 			traces := buildSampleTraceWithTracestate(bm.tracestate)
@@ -3457,7 +3770,8 @@ func buildTraceWithDifferentTracestates() ptrace.Traces {
 					tracestate: "ot=th:8;rv:abcd02", // Different rv value
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 
 	// Service B: 1 span with yet another different tracestate
 	initServiceSpans(
@@ -3473,7 +3787,8 @@ func buildTraceWithDifferentTracestates() ptrace.Traces {
 					tracestate: "ot=th:8;rv:abcd03", // Different rv value
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 
 	initServiceSpans(serviceSpans{}, traces.ResourceSpans().AppendEmpty())
 	return traces
@@ -3483,7 +3798,7 @@ func buildTraceWithDifferentTracestates() ptrace.Traces {
 // with adjusted count cache hits for traces with the same tracestate and misses for traces with different tracestates.
 func BenchmarkConnectorConsumeTraces_AdjustedCountCache(b *testing.B) {
 	b.Run("CacheHit", func(b *testing.B) {
-		conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+		conn, err := newConnectorImp(new("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
 		require.NoError(b, err)
 
 		traces := buildSampleTraceWithTracestate("ot=th:8;rv:abcd01")
@@ -3497,7 +3812,7 @@ func BenchmarkConnectorConsumeTraces_AdjustedCountCache(b *testing.B) {
 	})
 
 	b.Run("CacheMiss", func(b *testing.B) {
-		conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+		conn, err := newConnectorImp(new("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
 		require.NoError(b, err)
 
 		traces := buildTraceWithDifferentTracestates()

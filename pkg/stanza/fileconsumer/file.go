@@ -47,6 +47,11 @@ type Manager struct {
 	pollsToArchive int
 	onTruncate     string
 
+	// skipUnmodifiedFiles, when set via the skip_unmodified_files config
+	// option, skips files whose path+mtime are unchanged since the previous
+	// poll: no open, no fingerprint, no read.
+	skipUnmodifiedFiles bool
+
 	telemetryBuilder *metadata.TelemetryBuilder
 
 	unreadable map[string]struct{}
@@ -81,6 +86,16 @@ func (m *Manager) Start(persister operator.Persister) error {
 	m.startPoller(ctx)
 
 	return nil
+}
+
+func (m *Manager) instantiateTracker(ctx context.Context, persister operator.Persister) {
+	var t tracker.Tracker
+	if m.noTracking {
+		t = tracker.NewNoStateTracker(m.set, m.maxBatchFiles)
+	} else {
+		t = tracker.NewFileTracker(ctx, m.set, m.maxBatchFiles, m.pollsToArchive, persister)
+	}
+	m.tracker = t
 }
 
 // Stop will stop the file monitoring process
@@ -183,6 +198,63 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, int64(0-m.tracker.EndConsume()))
 }
 
+// makeReader take a file path, then creates reader,
+// discarding any that have a duplicate fingerprint to other files that have already
+// been read this polling interval
+func (m *Manager) makeReaders(ctx context.Context, paths []string) {
+	skipByMtime := m.skipUnmodifiedFiles
+	for _, path := range paths {
+		var statMtime time.Time
+		haveMtime := false
+		if skipByMtime {
+			// os.Stat (not Lstat) so symlinks resolve to the same file that
+			// the subsequent os.Open would target; otherwise a modification to
+			// the symlink target wouldn't invalidate the skip.
+			if info, err := os.Stat(path); err == nil {
+				statMtime = info.ModTime()
+				haveMtime = true
+				if m.tracker.TryReuseByPathMtime(path, statMtime) {
+					// Reader metadata promoted to knownFiles[0]; no open/fingerprint/read this poll.
+					continue
+				}
+			}
+			// Stat failure falls through to the regular open path, which will surface the real error.
+		}
+		fp, file := m.makeFingerprint(path)
+		if fp == nil {
+			continue
+		}
+
+		// Exclude duplicate paths with the same content. This can happen when files are
+		// being rotated with copy/truncate strategy. (After copy, prior to truncate.)
+		if r := m.tracker.GetCurrentFile(fp); r != nil {
+			m.set.Logger.Debug("Skipping duplicate file", zap.String("path", file.Name()))
+			// re-add the reader as Match() removes duplicates
+			m.tracker.Add(r)
+			if err := file.Close(); err != nil {
+				m.set.Logger.Debug("problem closing file", zap.Error(err))
+			}
+			continue
+		}
+
+		r, err := m.newReader(ctx, file, fp)
+		if err != nil {
+			m.set.Logger.Error("Failed to create reader", zap.Error(err))
+			continue
+		}
+
+		if r != nil {
+			if skipByMtime {
+				stampLastObserved(r.Metadata, path, statMtime, haveMtime, file)
+			}
+			m.tracker.Add(r)
+			continue
+		}
+		m.tracker.AddUnmatched(file, fp)
+	}
+	m.handleUnmatchedFiles(ctx)
+}
+
 // makeFingerprint opens `path` and computes a fingerprint for the file
 // and contains logic to only log file permission errors once per file per startup
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
@@ -234,104 +306,23 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 	return fp, file
 }
 
-// makeReader take a file path, then creates reader,
-// discarding any that have a duplicate fingerprint to other files that have already
-// been read this polling interval
-func (m *Manager) makeReaders(ctx context.Context, paths []string) {
-	for _, path := range paths {
-		fp, file := m.makeFingerprint(path)
-		if fp == nil {
-			continue
-		}
-
-		// Exclude duplicate paths with the same content. This can happen when files are
-		// being rotated with copy/truncate strategy. (After copy, prior to truncate.)
-		if r := m.tracker.GetCurrentFile(fp); r != nil {
-			m.set.Logger.Debug("Skipping duplicate file", zap.String("path", file.Name()))
-			// re-add the reader as Match() removes duplicates
-			m.tracker.Add(r)
-			if err := file.Close(); err != nil {
-				m.set.Logger.Debug("problem closing file", zap.Error(err))
-			}
-			continue
-		}
-
-		r, err := m.newReader(ctx, file, fp)
-		if err != nil {
-			m.set.Logger.Error("Failed to create reader", zap.Error(err))
-			continue
-		}
-
-		if r != nil {
-			m.tracker.Add(r)
-			continue
-		}
-		m.tracker.AddUnmatched(file, fp)
+// stampLastObserved populates LastObservedPath and LastObservedMtime on the
+// reader metadata so a future poll can skip this file via
+// skip_unmodified_files if mtime is unchanged. When haveMtime is
+// false the file is stat'd as a fallback; stat errors here are intentionally
+// swallowed (missing stamps just fall through to the regular open path on the
+// next poll).
+func stampLastObserved(md *reader.Metadata, path string, mtime time.Time, haveMtime bool, file *os.File) {
+	if md == nil {
+		return
 	}
-	m.handleUnmatchedFiles(ctx)
-}
-
-func (m *Manager) handleUnmatchedFiles(ctx context.Context) {
-	// Notes:
-	// 1. fp[i] is the fingerprint of file[i], and matchedMetadata[i] (if present) is the corresponding metadata retrieved from the archive.
-	// 2. If matchedMetadata[i] is not nil, a match for file[i] was found in the archive — use this metadata to create the reader.
-	//    If matchedMetadata[i] is nil, no match was found — create a new reader from scratch.
-	files, fps, matchedMetadata := m.tracker.LookupArchive(ctx)
-
-	for i, md := range matchedMetadata {
-		file := files[i]
-		fp := fps[i]
-
-		var reader *reader.Reader
-		var err error
-
-		if md != nil {
-			// Check if stored offset exceeds current file size
-			if info, statErr := file.Stat(); statErr == nil && md.Offset > info.Size() {
-				// Stored offset exceeds current file size
-				switch m.onTruncate {
-				case OnTruncateReadWholeFile:
-					m.set.Logger.Debug("Stored offset exceeds current file size. Resetting offset to 0",
-						zap.String("path", file.Name()),
-						zap.Int64("stored_offset", md.Offset),
-						zap.Int64("current_file_size", info.Size()),
-					)
-					md.Offset = 0
-				case OnTruncateReadNew:
-					m.set.Logger.Debug("Stored offset exceeds current file size. Storing new offset",
-						zap.String("path", file.Name()),
-						zap.Int64("stored_offset", md.Offset),
-						zap.Int64("current_file_size", info.Size()),
-						zap.Int64("new_offset", info.Size()),
-					)
-					md.Offset = info.Size()
-				case OnTruncateIgnore:
-					// Keep the old offset - no data will be read until file grows past the original offset
-					m.set.Logger.Debug("Stored offset exceeds current file size. Keeping original offset",
-						zap.String("path", file.Name()),
-						zap.Int64("stored_offset", md.Offset),
-						zap.Int64("current_file_size", info.Size()),
-					)
-				}
-			}
-			reader, err = m.readerFactory.NewReaderFromMetadata(file, md)
-			if m.tracker.Name() != tracker.NoStateTracker {
-				m.set.Logger.Info("File found in archive. Started watching file again", zap.String("path", file.Name()))
-			}
-		} else {
-			if m.tracker.Name() != tracker.NoStateTracker {
-				m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
-			}
-			reader, err = m.readerFactory.NewReader(file, fp)
-		}
-
-		if err != nil {
-			m.set.Logger.Error("Failed to create reader", zap.Error(err))
-			continue
-		}
-
-		m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
-		m.tracker.Add(reader)
+	md.LastObservedPath = path
+	if haveMtime {
+		md.LastObservedMtime = mtime
+		return
+	}
+	if info, err := file.Stat(); err == nil {
+		md.LastObservedMtime = info.ModTime()
 	}
 }
 
@@ -343,12 +334,14 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 				m.set.Logger.Debug(
 					"File has been rotated(truncated)",
 					zap.String("original_path", oldReader.GetFileName()),
-					zap.String("rotated_path", file.Name()))
+					zap.String("rotated_path", file.Name()),
+				)
 			} else {
 				m.set.Logger.Debug(
 					"File has been rotated(moved)",
 					zap.String("original_path", oldReader.GetFileName()),
-					zap.String("rotated_path", file.Name()))
+					zap.String("rotated_path", file.Name()),
+				)
 			}
 		}
 		// Close old reader and adjust offset if needed.
@@ -425,12 +418,69 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 	return nil, nil
 }
 
-func (m *Manager) instantiateTracker(ctx context.Context, persister operator.Persister) {
-	var t tracker.Tracker
-	if m.noTracking {
-		t = tracker.NewNoStateTracker(m.set, m.maxBatchFiles)
-	} else {
-		t = tracker.NewFileTracker(ctx, m.set, m.maxBatchFiles, m.pollsToArchive, persister)
+func (m *Manager) handleUnmatchedFiles(ctx context.Context) {
+	// Notes:
+	// 1. fp[i] is the fingerprint of file[i], and matchedMetadata[i] (if present) is the corresponding metadata retrieved from the archive.
+	// 2. If matchedMetadata[i] is not nil, a match for file[i] was found in the archive — use this metadata to create the reader.
+	//    If matchedMetadata[i] is nil, no match was found — create a new reader from scratch.
+	files, fps, matchedMetadata := m.tracker.LookupArchive(ctx)
+
+	for i, md := range matchedMetadata {
+		file := files[i]
+		fp := fps[i]
+
+		var reader *reader.Reader
+		var err error
+
+		if md != nil {
+			// Check if stored offset exceeds current file size
+			if info, statErr := file.Stat(); statErr == nil && md.Offset > info.Size() {
+				// Stored offset exceeds current file size
+				switch m.onTruncate {
+				case OnTruncateReadWholeFile:
+					m.set.Logger.Debug("Stored offset exceeds current file size. Resetting offset to 0",
+						zap.String("path", file.Name()),
+						zap.Int64("stored_offset", md.Offset),
+						zap.Int64("current_file_size", info.Size()),
+					)
+					md.Offset = 0
+				case OnTruncateReadNew:
+					m.set.Logger.Debug("Stored offset exceeds current file size. Storing new offset",
+						zap.String("path", file.Name()),
+						zap.Int64("stored_offset", md.Offset),
+						zap.Int64("current_file_size", info.Size()),
+						zap.Int64("new_offset", info.Size()),
+					)
+					md.Offset = info.Size()
+				case OnTruncateIgnore:
+					// Keep the old offset - no data will be read until file grows past the original offset
+					m.set.Logger.Debug("Stored offset exceeds current file size. Keeping original offset",
+						zap.String("path", file.Name()),
+						zap.Int64("stored_offset", md.Offset),
+						zap.Int64("current_file_size", info.Size()),
+					)
+				}
+			}
+			reader, err = m.readerFactory.NewReaderFromMetadata(file, md)
+			if m.tracker.Name() != tracker.NoStateTracker {
+				m.set.Logger.Info("File found in archive. Started watching file again", zap.String("path", file.Name()))
+			}
+		} else {
+			if m.tracker.Name() != tracker.NoStateTracker {
+				m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
+			}
+			reader, err = m.readerFactory.NewReader(file, fp)
+		}
+
+		if err != nil {
+			m.set.Logger.Error("Failed to create reader", zap.Error(err))
+			continue
+		}
+
+		if m.skipUnmodifiedFiles {
+			stampLastObserved(reader.Metadata, file.Name(), time.Time{}, false, file)
+		}
+		m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
+		m.tracker.Add(reader)
 	}
-	m.tracker = t
 }

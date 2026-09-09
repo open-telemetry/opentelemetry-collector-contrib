@@ -412,9 +412,9 @@
       },
       "discovery": {
         "cluster_state_queue": {
-          "total": 0,
-          "pending": 0,
-          "committed": 0
+          "total": 8,
+          "pending": 3,
+          "committed": 5
         },
         "published_cluster_states": {
           "full_states": 2,

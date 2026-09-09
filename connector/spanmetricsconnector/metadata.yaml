@@ -12,5 +12,37 @@ status:
     emeritus: [albertteoh]
     seeking_new: true
 
+feature_gates:
+  - id: connector.spanmetrics.excludeResourceMetrics
+    description: When enabled, connector will exclude all resource attributes.
+    stage: alpha
+    from_version: v0.137.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103
+
+  - id: connector.spanmetrics.includeCollectorInstanceID
+    description: When enabled, connector add collector.instance.id to default dimensions.
+    stage: beta
+    from_version: v0.136.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40400
+    
+  - id: connector.spanmetrics.legacyMetricNames
+    description: When enabled, connector uses legacy metric names.
+    # Alpha because we want it disabled by default.
+    stage: alpha
+    from_version: v0.109.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33227
+
+  - id: connector.spanmetrics.useSecondAsDefaultMetricsUnit
+    description: When enabled, connector use second as default unit for duration metrics.
+    stage: alpha
+    from_version: v0.137.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42462
+
+  - id: spanmetrics.statusCodeConvention.useOtelPrefix
+    description: When enabled, generated metrics will use `otel.status_code=ERROR` instead of `status.code=STATUS_CODE_ERROR`
+    stage: alpha
+    from_version: v0.141.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43000
+
 tests:
   config:

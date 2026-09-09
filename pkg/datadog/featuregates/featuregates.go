@@ -8,9 +8,11 @@ import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/in
 // Re-exported from generated code for backward compatibility.
 var (
 	ReceiveResourceSpansV2FeatureGate          = metadata.DatadogEnableReceiveResourceSpansV2FeatureGate
+	ScopeConventionFeatureGate                 = metadata.DatadogEnableScopeConventionFeatureGate
 	OperationAndResourceNameV2FeatureGate      = metadata.DatadogEnableOperationAndResourceNameV2FeatureGate
 	MetricRemappingDisabledFeatureGate         = metadata.ExporterDatadogexporterMetricremappingdisabledFeatureGate
 	DisableMetricRemappingFeatureGate          = metadata.ExporterDatadogexporterDisableAllMetricRemappingFeatureGate
 	AttributeSliceMultiTagExportingFeatureGate = metadata.ExporterDatadogexporterEnableAttributeSliceMultiTagExportingFeatureGate
 	InferIntervalDeltaFeatureGate              = metadata.ExporterDatadogexporterInferIntervalForDeltaMetricsFeatureGate
+	AddUnitsFeatureGate                        = metadata.ExporterDatadogexporterAddUnitsFeatureGate
 )

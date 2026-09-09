@@ -67,38 +67,38 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SnowflakeBillingCloudServiceTotal"] = mb.metricSnowflakeBillingCloudServiceTotal.config.AggregationStrategy
-			aggMap["SnowflakeBillingTotalCreditTotal"] = mb.metricSnowflakeBillingTotalCreditTotal.config.AggregationStrategy
-			aggMap["SnowflakeBillingVirtualWarehouseTotal"] = mb.metricSnowflakeBillingVirtualWarehouseTotal.config.AggregationStrategy
-			aggMap["SnowflakeBillingWarehouseCloudServiceTotal"] = mb.metricSnowflakeBillingWarehouseCloudServiceTotal.config.AggregationStrategy
-			aggMap["SnowflakeBillingWarehouseTotalCreditTotal"] = mb.metricSnowflakeBillingWarehouseTotalCreditTotal.config.AggregationStrategy
-			aggMap["SnowflakeBillingWarehouseVirtualWarehouseTotal"] = mb.metricSnowflakeBillingWarehouseVirtualWarehouseTotal.config.AggregationStrategy
-			aggMap["SnowflakeDatabaseBytesScannedAvg"] = mb.metricSnowflakeDatabaseBytesScannedAvg.config.AggregationStrategy
-			aggMap["SnowflakeDatabaseQueryCount"] = mb.metricSnowflakeDatabaseQueryCount.config.AggregationStrategy
-			aggMap["SnowflakeLoginsTotal"] = mb.metricSnowflakeLoginsTotal.config.AggregationStrategy
-			aggMap["SnowflakePipeCreditsUsedTotal"] = mb.metricSnowflakePipeCreditsUsedTotal.config.AggregationStrategy
-			aggMap["SnowflakeQueryBlocked"] = mb.metricSnowflakeQueryBlocked.config.AggregationStrategy
-			aggMap["SnowflakeQueryBytesDeletedAvg"] = mb.metricSnowflakeQueryBytesDeletedAvg.config.AggregationStrategy
-			aggMap["SnowflakeQueryBytesSpilledLocalAvg"] = mb.metricSnowflakeQueryBytesSpilledLocalAvg.config.AggregationStrategy
-			aggMap["SnowflakeQueryBytesSpilledRemoteAvg"] = mb.metricSnowflakeQueryBytesSpilledRemoteAvg.config.AggregationStrategy
-			aggMap["SnowflakeQueryBytesWrittenAvg"] = mb.metricSnowflakeQueryBytesWrittenAvg.config.AggregationStrategy
-			aggMap["SnowflakeQueryCompilationTimeAvg"] = mb.metricSnowflakeQueryCompilationTimeAvg.config.AggregationStrategy
-			aggMap["SnowflakeQueryDataScannedCacheAvg"] = mb.metricSnowflakeQueryDataScannedCacheAvg.config.AggregationStrategy
-			aggMap["SnowflakeQueryExecuted"] = mb.metricSnowflakeQueryExecuted.config.AggregationStrategy
-			aggMap["SnowflakeQueryExecutionTimeAvg"] = mb.metricSnowflakeQueryExecutionTimeAvg.config.AggregationStrategy
-			aggMap["SnowflakeQueryPartitionsScannedAvg"] = mb.metricSnowflakeQueryPartitionsScannedAvg.config.AggregationStrategy
-			aggMap["SnowflakeQueryQueuedOverload"] = mb.metricSnowflakeQueryQueuedOverload.config.AggregationStrategy
-			aggMap["SnowflakeQueryQueuedProvision"] = mb.metricSnowflakeQueryQueuedProvision.config.AggregationStrategy
-			aggMap["SnowflakeQueuedOverloadTimeAvg"] = mb.metricSnowflakeQueuedOverloadTimeAvg.config.AggregationStrategy
-			aggMap["SnowflakeQueuedProvisioningTimeAvg"] = mb.metricSnowflakeQueuedProvisioningTimeAvg.config.AggregationStrategy
-			aggMap["SnowflakeQueuedRepairTimeAvg"] = mb.metricSnowflakeQueuedRepairTimeAvg.config.AggregationStrategy
-			aggMap["SnowflakeRowsDeletedAvg"] = mb.metricSnowflakeRowsDeletedAvg.config.AggregationStrategy
-			aggMap["SnowflakeRowsInsertedAvg"] = mb.metricSnowflakeRowsInsertedAvg.config.AggregationStrategy
-			aggMap["SnowflakeRowsProducedAvg"] = mb.metricSnowflakeRowsProducedAvg.config.AggregationStrategy
-			aggMap["SnowflakeRowsUnloadedAvg"] = mb.metricSnowflakeRowsUnloadedAvg.config.AggregationStrategy
-			aggMap["SnowflakeRowsUpdatedAvg"] = mb.metricSnowflakeRowsUpdatedAvg.config.AggregationStrategy
-			aggMap["SnowflakeSessionIDCount"] = mb.metricSnowflakeSessionIDCount.config.AggregationStrategy
-			aggMap["SnowflakeTotalElapsedTimeAvg"] = mb.metricSnowflakeTotalElapsedTimeAvg.config.AggregationStrategy
+			aggMap["snowflake.billing.cloud_service.total"] = mb.metricSnowflakeBillingCloudServiceTotal.config.AggregationStrategy
+			aggMap["snowflake.billing.total_credit.total"] = mb.metricSnowflakeBillingTotalCreditTotal.config.AggregationStrategy
+			aggMap["snowflake.billing.virtual_warehouse.total"] = mb.metricSnowflakeBillingVirtualWarehouseTotal.config.AggregationStrategy
+			aggMap["snowflake.billing.warehouse.cloud_service.total"] = mb.metricSnowflakeBillingWarehouseCloudServiceTotal.config.AggregationStrategy
+			aggMap["snowflake.billing.warehouse.total_credit.total"] = mb.metricSnowflakeBillingWarehouseTotalCreditTotal.config.AggregationStrategy
+			aggMap["snowflake.billing.warehouse.virtual_warehouse.total"] = mb.metricSnowflakeBillingWarehouseVirtualWarehouseTotal.config.AggregationStrategy
+			aggMap["snowflake.database.bytes_scanned.avg"] = mb.metricSnowflakeDatabaseBytesScannedAvg.config.AggregationStrategy
+			aggMap["snowflake.database.query.count"] = mb.metricSnowflakeDatabaseQueryCount.config.AggregationStrategy
+			aggMap["snowflake.logins.total"] = mb.metricSnowflakeLoginsTotal.config.AggregationStrategy
+			aggMap["snowflake.pipe.credits_used.total"] = mb.metricSnowflakePipeCreditsUsedTotal.config.AggregationStrategy
+			aggMap["snowflake.query.blocked"] = mb.metricSnowflakeQueryBlocked.config.AggregationStrategy
+			aggMap["snowflake.query.bytes_deleted.avg"] = mb.metricSnowflakeQueryBytesDeletedAvg.config.AggregationStrategy
+			aggMap["snowflake.query.bytes_spilled.local.avg"] = mb.metricSnowflakeQueryBytesSpilledLocalAvg.config.AggregationStrategy
+			aggMap["snowflake.query.bytes_spilled.remote.avg"] = mb.metricSnowflakeQueryBytesSpilledRemoteAvg.config.AggregationStrategy
+			aggMap["snowflake.query.bytes_written.avg"] = mb.metricSnowflakeQueryBytesWrittenAvg.config.AggregationStrategy
+			aggMap["snowflake.query.compilation_time.avg"] = mb.metricSnowflakeQueryCompilationTimeAvg.config.AggregationStrategy
+			aggMap["snowflake.query.data_scanned_cache.avg"] = mb.metricSnowflakeQueryDataScannedCacheAvg.config.AggregationStrategy
+			aggMap["snowflake.query.executed"] = mb.metricSnowflakeQueryExecuted.config.AggregationStrategy
+			aggMap["snowflake.query.execution_time.avg"] = mb.metricSnowflakeQueryExecutionTimeAvg.config.AggregationStrategy
+			aggMap["snowflake.query.partitions_scanned.avg"] = mb.metricSnowflakeQueryPartitionsScannedAvg.config.AggregationStrategy
+			aggMap["snowflake.query.queued_overload"] = mb.metricSnowflakeQueryQueuedOverload.config.AggregationStrategy
+			aggMap["snowflake.query.queued_provision"] = mb.metricSnowflakeQueryQueuedProvision.config.AggregationStrategy
+			aggMap["snowflake.queued_overload_time.avg"] = mb.metricSnowflakeQueuedOverloadTimeAvg.config.AggregationStrategy
+			aggMap["snowflake.queued_provisioning_time.avg"] = mb.metricSnowflakeQueuedProvisioningTimeAvg.config.AggregationStrategy
+			aggMap["snowflake.queued_repair_time.avg"] = mb.metricSnowflakeQueuedRepairTimeAvg.config.AggregationStrategy
+			aggMap["snowflake.rows_deleted.avg"] = mb.metricSnowflakeRowsDeletedAvg.config.AggregationStrategy
+			aggMap["snowflake.rows_inserted.avg"] = mb.metricSnowflakeRowsInsertedAvg.config.AggregationStrategy
+			aggMap["snowflake.rows_produced.avg"] = mb.metricSnowflakeRowsProducedAvg.config.AggregationStrategy
+			aggMap["snowflake.rows_unloaded.avg"] = mb.metricSnowflakeRowsUnloadedAvg.config.AggregationStrategy
+			aggMap["snowflake.rows_updated.avg"] = mb.metricSnowflakeRowsUpdatedAvg.config.AggregationStrategy
+			aggMap["snowflake.session_id.count"] = mb.metricSnowflakeSessionIDCount.config.AggregationStrategy
+			aggMap["snowflake.total_elapsed_time.avg"] = mb.metricSnowflakeTotalElapsedTimeAvg.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -143,14 +143,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeBillingWarehouseVirtualWarehouseTotalDataPoint(ts, 3, "warehouse_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeDatabaseBytesScannedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeDatabaseBytesScannedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeDatabaseQueryCountDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
@@ -169,14 +167,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakePipeCreditsUsedTotalDataPoint(ts, 3, "pipe_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryBlockedDataPoint(ts, 1, "warehouse_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryBlockedDataPoint(ts, 3, "warehouse_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryBytesDeletedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
@@ -195,14 +191,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryCompilationTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
@@ -215,14 +209,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryDataScannedCacheAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryExecutedDataPoint(ts, 1, "warehouse_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryExecutedDataPoint(ts, 3, "warehouse_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryExecutionTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
@@ -235,35 +227,30 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryPartitionsScannedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryQueuedOverloadDataPoint(ts, 1, "warehouse_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryQueuedOverloadDataPoint(ts, 3, "warehouse_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryQueuedProvisionDataPoint(ts, 1, "warehouse_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryQueuedProvisionDataPoint(ts, 3, "warehouse_name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
@@ -309,15 +296,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSnowflakeStorageFailsafeBytesTotalDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeStorageStageBytesTotalDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeStorageStorageBytesTotalDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")

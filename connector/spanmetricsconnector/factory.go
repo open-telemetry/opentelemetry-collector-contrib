@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
@@ -23,53 +22,8 @@ import (
 )
 
 const (
-	DefaultNamespace                           = "traces.span.metrics"
-	legacyMetricNamesFeatureGateID             = "connector.spanmetrics.legacyMetricNames"
-	includeCollectorInstanceIDFeatureGateID    = "connector.spanmetrics.includeCollectorInstanceID"
-	useSecondAsDefaultMetricsUnitFeatureGateID = "connector.spanmetrics.useSecondAsDefaultMetricsUnit"
-	excludeResourceMetricsFeatureGate          = "connector.spanmetrics.excludeResourceMetrics"
+	DefaultNamespace = "traces.span.metrics"
 )
-
-var (
-	legacyMetricNamesFeatureGate  *featuregate.Gate
-	includeCollectorInstanceID    *featuregate.Gate
-	useSecondAsDefaultMetricsUnit *featuregate.Gate
-	excludeResourceMetrics        *featuregate.Gate
-	useOtelStatusCodeAttribute    *featuregate.Gate
-)
-
-func init() {
-	// TODO: Remove this feature gate when the legacy metric names are removed.
-	legacyMetricNamesFeatureGate = featuregate.GlobalRegistry().MustRegister(
-		legacyMetricNamesFeatureGateID,
-		featuregate.StageAlpha, // Alpha because we want it disabled by default.
-		featuregate.WithRegisterDescription("When enabled, connector uses legacy metric names."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33227"),
-	)
-	includeCollectorInstanceID = featuregate.GlobalRegistry().MustRegister(
-		includeCollectorInstanceIDFeatureGateID,
-		featuregate.StageBeta,
-		featuregate.WithRegisterDescription("When enabled, connector add collector.instance.id to default dimensions."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40400"),
-	)
-	useSecondAsDefaultMetricsUnit = featuregate.GlobalRegistry().MustRegister(
-		useSecondAsDefaultMetricsUnitFeatureGateID,
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("When enabled, connector use second as default unit for duration metrics."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42462"),
-	)
-	excludeResourceMetrics = featuregate.GlobalRegistry().MustRegister(
-		excludeResourceMetricsFeatureGate,
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("When enabled, connector will exclude all resource attributes."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103"),
-	)
-	useOtelStatusCodeAttribute = featuregate.GlobalRegistry().MustRegister(
-		"spanmetrics.statusCodeConvention.useOtelPrefix",
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("When enabled, generated metrics will use `otel.status_code=ERROR` instead of `status.code=STATUS_CODE_ERROR`"),
-	)
-}
 
 // NewFactory creates a factory for the spanmetrics connector.
 func NewFactory() connector.Factory {
@@ -87,7 +41,7 @@ func createDefaultConfig() component.Config {
 		ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 		MetricsFlushInterval:     60 * time.Second,
 		Histogram: HistogramConfig{Disable: false, Unit: func() metrics.Unit {
-			if useSecondAsDefaultMetricsUnit.IsEnabled() {
+			if metadata.ConnectorSpanmetricsUseSecondAsDefaultMetricsUnitFeatureGate.IsEnabled() {
 				return metrics.Seconds
 			}
 

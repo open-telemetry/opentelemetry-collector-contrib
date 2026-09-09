@@ -11,8 +11,6 @@ status:
   codeowners:
     active: [adrielp, crobert-1, TylerHelmuth]
 
-reaggregation_enabled: true
-
 feature_gates:
   - id: receiver.githubreceiver.UseCheckRunID
     description: >-

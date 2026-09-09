@@ -1,0 +1,6 @@
+metrics_transform:
+  transforms:
+    - include: old_name.*
+      match_type: regexp
+      action: combine # missing new_name
+      aggregation_type: sum

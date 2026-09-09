@@ -5,11 +5,8 @@ package prometheusremotewritereceiver // import "github.com/open-telemetry/opent
 
 import (
 	"encoding/hex"
-	"fmt"
-	"strings"
 	"time"
 
-	"github.com/cespare/xxhash/v2"
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/schema"
@@ -19,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
@@ -69,6 +68,7 @@ func collectExemplars(
 			ScopeVersion: scopeVersion,
 			MetricName:   metadata.Name,
 			MetricType:   ts.Metadata.Type,
+			AttrsHash:    pdatautil.MapHash(extractAttributes(ls)),
 		}
 
 		slice, ok := result[key.hash()]
@@ -87,8 +87,8 @@ func collectExemplars(
 			exemplar.SetTimestamp(pcommon.Timestamp(ex.Timestamp * int64(time.Millisecond)))
 			exemplar.SetDoubleValue(ex.Value)
 
-			setTraceAndSpan(exemplar, promExemplar.Labels)
-			copyExemplarAttributes(exemplar.FilteredAttributes(), promExemplar.Labels)
+			traceIDSet, spanIDSet := setTraceAndSpan(exemplar, promExemplar.Labels)
+			copyExemplarAttributes(exemplar.FilteredAttributes(), promExemplar.Labels, traceIDSet, spanIDSet)
 			stats.Exemplars++
 		}
 
@@ -111,35 +111,51 @@ func extractScopeFromLabels(settings receiver.Settings, ls labels.Labels) (strin
 	return name, version
 }
 
-// setTraceAndSpan extracts trace ID and span ID from exemplar labels
-// and sets them on the provided Exemplar.
+// setTraceAndSpan converts the hex-encoded trace and span ID labels and reports
+// which ones it consumed, so the caller can keep a rejected value as a filtered
+// attribute.
 //
-// The function expects hexadecimal-encoded IDs using Prometheus
-// exemplar label keys and silently ignores invalid values.
-func setTraceAndSpan(exemplar pmetric.Exemplar, labels labels.Labels) {
+// Only valid IDs are converted: the label must decode to exactly the
+// OpenTelemetry ID width and must not be all zero. Anything else is left for the
+// caller rather than zero padded or truncated.
+func setTraceAndSpan(exemplar pmetric.Exemplar, labels labels.Labels) (traceIDSet, spanIDSet bool) {
 	if tid := labels.Get(prometheus.ExemplarTraceIDKey); tid != "" {
 		var t [16]byte
-		if b, err := hex.DecodeString(tid); err == nil {
-			copy(t[:], b)
-			exemplar.SetTraceID(pcommon.TraceID(t))
+		if len(tid) == hex.EncodedLen(len(t)) {
+			if b, err := hex.DecodeString(tid); err == nil {
+				copy(t[:], b)
+				// all-zero is the "unset" sentinel: setting it would drop the label for nothing
+				if traceID := pcommon.TraceID(t); !traceID.IsEmpty() {
+					exemplar.SetTraceID(traceID)
+					traceIDSet = true
+				}
+			}
 		}
 	}
 	if sid := labels.Get(prometheus.ExemplarSpanIDKey); sid != "" {
 		var s [8]byte
-		if b, err := hex.DecodeString(sid); err == nil {
-			copy(s[:], b)
-			exemplar.SetSpanID(pcommon.SpanID(s))
+		if len(sid) == hex.EncodedLen(len(s)) {
+			if b, err := hex.DecodeString(sid); err == nil {
+				copy(s[:], b)
+				if spanID := pcommon.SpanID(s); !spanID.IsEmpty() {
+					exemplar.SetSpanID(spanID)
+					spanIDSet = true
+				}
+			}
 		}
 	}
+	return traceIDSet, spanIDSet
 }
 
-// copyExemplarAttributes copies all labels into the destination attribute map
-// except for trace ID and span ID labels, which are handled separately.
-//
-// The destination map is typically the exemplar's filtered attributes.
-func copyExemplarAttributes(dest pcommon.Map, labels labels.Labels) {
+// copyExemplarAttributes copies all labels into dest, skipping the trace and span
+// ID labels only when setTraceAndSpan converted them. A rejected label is copied
+// like any other, so the value the sender wrote is not lost.
+func copyExemplarAttributes(dest pcommon.Map, labels labels.Labels, traceIDSet, spanIDSet bool) {
 	for k, v := range labels.Map() {
-		if k == prometheus.ExemplarTraceIDKey || k == prometheus.ExemplarSpanIDKey {
+		if k == prometheus.ExemplarTraceIDKey && traceIDSet {
+			continue
+		}
+		if k == prometheus.ExemplarSpanIDKey && spanIDSet {
 			continue
 		}
 		dest.PutStr(k, v)
@@ -151,14 +167,23 @@ type exemplarKey struct {
 	ScopeVersion string
 	MetricName   string
 	MetricType   writev2.Metadata_MetricType
+	AttrsHash    [16]byte // hash of data labels (excludes job, instance, __name__, otel_scope_*)
 }
 
+// sep is a byte that is not valid UTF-8, used as a field separator to prevent
+// hash collisions between different field boundary combinations (e.g. "ab"+"c" vs "a"+"bc").
+var sep = []byte{0xff}
+
 func (k exemplarKey) hash() uint64 {
-	const sep = "\xff"
-	return xxhash.Sum64String(strings.Join([]string{
-		k.ScopeName,
-		k.ScopeVersion,
-		k.MetricName,
-		fmt.Sprintf("%d", k.MetricType),
-	}, sep))
+	h := identity.Resource{}.Hash()
+	h.Write([]byte(k.ScopeName))
+	h.Write(sep)
+	h.Write([]byte(k.ScopeVersion))
+	h.Write(sep)
+	h.Write([]byte(k.MetricName))
+	h.Write(sep)
+	h.Write([]byte(k.MetricType.String()))
+	h.Write(sep)
+	h.Write(k.AttrsHash[:])
+	return h.Sum64()
 }

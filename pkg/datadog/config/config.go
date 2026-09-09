@@ -73,7 +73,7 @@ type TagsConfig struct {
 
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	confighttp.ClientConfig   `mapstructure:",squash"`                                 // squash ensures fields are correctly decoded in embedded struct.
+	ClientConfig              confighttp.ClientConfig                                  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
@@ -176,18 +176,6 @@ func (c *Config) Validate() error {
 
 	if c.HostMetadata.ReporterPeriod < 5*time.Minute {
 		return errors.New("reporter_period must be 5 minutes or higher")
-	}
-
-	return nil
-}
-
-// StaticAPIKey Check checks if api::key is either empty or contains invalid (non-hex) characters
-// It does not validate online; this is handled on startup.
-//
-// Deprecated: [v0.136.0] Do not use, will be removed on the next minor version
-func StaticAPIKeyCheck(key string) error {
-	if key == "" {
-		return ErrUnsetAPIKey
 	}
 
 	return nil

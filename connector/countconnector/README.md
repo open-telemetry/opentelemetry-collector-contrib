@@ -93,8 +93,8 @@ connectors:
       my.prod.event.count:
         description: The number of span events from my prod environment.
         conditions:
-          - 'attributes["env"] == "prod"'
-          - 'name == "prodevent"'
+          - 'spanevent.attributes["env"] == "prod"'
+          - 'spanevent.name == "prodevent"'
 ```
 
 #### Attributes

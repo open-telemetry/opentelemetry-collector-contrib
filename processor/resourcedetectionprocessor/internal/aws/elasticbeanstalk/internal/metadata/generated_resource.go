@@ -42,6 +42,20 @@ func (rb *ResourceBuilder) SetDeploymentEnvironment(val string) {
 	}
 }
 
+// SetDeploymentEnvironmentName sets provided value as "deployment.environment.name" attribute.
+func (rb *ResourceBuilder) SetDeploymentEnvironmentName(val string) {
+	if rb.config.DeploymentEnvironmentName.Enabled {
+		rb.res.Attributes().PutStr("deployment.environment.name", val)
+	}
+}
+
+// SetDeploymentID sets provided value as "deployment.id" attribute.
+func (rb *ResourceBuilder) SetDeploymentID(val string) {
+	if rb.config.DeploymentID.Enabled {
+		rb.res.Attributes().PutStr("deployment.id", val)
+	}
+}
+
 // SetServiceInstanceID sets provided value as "service.instance.id" attribute.
 func (rb *ResourceBuilder) SetServiceInstanceID(val string) {
 	if rb.config.ServiceInstanceID.Enabled {

@@ -15,6 +15,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/customottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
@@ -31,9 +32,21 @@ func testMetricDef(
 ) MetricDef[*ottlspan.TransformContext] {
 	t.Helper()
 
-	parser, err := ottlspan.NewParser(
-		customottl.SpanFuncs(),
-		componenttest.NewNopTelemetrySettings(),
+	settings := componenttest.NewNopTelemetrySettings()
+	ottlParser, err := ottlspan.NewParser(customottl.SpanFuncs(), settings, ottlspan.EnablePathContextNames())
+	require.NoError(t, err)
+	pc, err := ottl.NewParserCollection(
+		settings,
+		ottl.EnableParserCollectionModifiedPathsLogging[*ottl.ValueExpression[*ottlspan.TransformContext]](true),
+		ottl.WithParserCollectionContext(
+			ottlspan.ContextName,
+			&ottlParser,
+			ottl.WithValueExpressionConverter[*ottlspan.TransformContext, *ottl.ValueExpression[*ottlspan.TransformContext]](
+				func(_ *ottl.ParserCollection[*ottl.ValueExpression[*ottlspan.TransformContext]], _ ottl.ValueExpressionsGetter, parsed []*ottl.ValueExpression[*ottlspan.TransformContext]) (*ottl.ValueExpression[*ottlspan.TransformContext], error) {
+					return parsed[0], nil
+				},
+			),
+		),
 	)
 	require.NoError(t, err)
 
@@ -44,7 +57,7 @@ func testMetricDef(
 		Sum:                       configoptional.Some(config.Sum{Value: "1"}),
 	}
 	var md MetricDef[*ottlspan.TransformContext]
-	require.NoError(t, md.FromMetricInfo(mi, parser, componenttest.NewNopTelemetrySettings()))
+	require.NoError(t, md.FromMetricInfo(mi, pc, ottlspan.ContextName, nil))
 	return md
 }
 

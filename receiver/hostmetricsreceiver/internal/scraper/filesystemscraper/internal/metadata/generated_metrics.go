@@ -52,13 +52,16 @@ var MapAttributeState = map[string]AttributeState{
 
 var MetricsInfo = metricsInfo{
 	SystemFilesystemInodesUsage: metricInfo{
-		Name: "system.filesystem.inodes.usage",
+		Name:       "system.filesystem.inodes.usage",
+		Attributes: []string{"device", "mode", "mountpoint", "type", "state"},
 	},
 	SystemFilesystemUsage: metricInfo{
-		Name: "system.filesystem.usage",
+		Name:       "system.filesystem.usage",
+		Attributes: []string{"device", "mode", "mountpoint", "type", "state"},
 	},
 	SystemFilesystemUtilization: metricInfo{
-		Name: "system.filesystem.utilization",
+		Name:       "system.filesystem.utilization",
+		Attributes: []string{"device", "mode", "mountpoint", "type"},
 	},
 }
 
@@ -69,7 +72,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricSystemFilesystemInodesUsage struct {

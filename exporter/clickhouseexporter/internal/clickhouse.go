@@ -25,10 +25,13 @@ func DatabaseFromDSN(dsn string) (string, error) {
 }
 
 // NewClickhouseClientFromOptions creates a new ClickHouse client from a clickhouse.Options struct.
-func NewClickhouseClientFromOptions(opt *clickhouse.Options) (driver.Conn, error) {
-	// Always connect to default database since configured database may not exist yet.
-	// TODO: only do this if createSchema is true
-	opt.Auth.Database = DefaultDatabase
+// When createSchema is true, connects to the default database since the configured database may
+// not exist yet (it will be created by the schema DDL). When false, connects directly to the
+// configured database.
+func NewClickhouseClientFromOptions(opt *clickhouse.Options, createSchema bool) (driver.Conn, error) {
+	if createSchema {
+		opt.Auth.Database = DefaultDatabase
+	}
 
 	conn, err := clickhouse.Open(opt)
 	if err != nil {
@@ -44,9 +47,9 @@ func GenerateTTLExpr(ttl time.Duration, timeField string) string {
 		switch {
 		case ttl%(24*time.Hour) == 0:
 			return fmt.Sprintf(`TTL %s + toIntervalDay(%d)`, timeField, ttl/(24*time.Hour))
-		case ttl%(time.Hour) == 0:
+		case ttl%time.Hour == 0:
 			return fmt.Sprintf(`TTL %s + toIntervalHour(%d)`, timeField, ttl/time.Hour)
-		case ttl%(time.Minute) == 0:
+		case ttl%time.Minute == 0:
 			return fmt.Sprintf(`TTL %s + toIntervalMinute(%d)`, timeField, ttl/time.Minute)
 		default:
 			return fmt.Sprintf(`TTL %s + toIntervalSecond(%d)`, timeField, ttl/time.Second)

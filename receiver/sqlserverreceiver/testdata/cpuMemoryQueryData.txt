@@ -1,0 +1,11 @@
+[
+  {
+    "measurement": "sqlserver_cpu_memory",
+    "sql_instance": "testhost",
+    "computer_name": "testhost",
+    "cpu_utilization": "0.425",
+    "memory_limit_bytes": "17179869184",
+    "memory_used_bytes": "8589934592",
+    "memory_free_bytes": "8589934592"
+  }
+]

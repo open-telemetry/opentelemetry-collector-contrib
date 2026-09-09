@@ -48,39 +48,39 @@ type timingInfo struct {
 	responseStart atomic.Int64
 }
 
-// getDurations calculates the duration for each phase in milliseconds
-func (t *timingInfo) getDurations() (dnsMs, tcpMs, tlsMs, requestMs, responseMs int64) {
+// getDurations returns the duration for each phase in nanoseconds.
+func (t *timingInfo) getDurations() (dnsNs, tcpNs, tlsNs, requestNs, responseNs int64) {
 	dnsStartNs := t.dnsStart.Load()
 	dnsEndNs := t.dnsEnd.Load()
 	if dnsStartNs != 0 && dnsEndNs != 0 {
-		dnsMs = (dnsEndNs - dnsStartNs) / int64(time.Millisecond)
+		dnsNs = dnsEndNs - dnsStartNs
 	}
 
 	connectStartNs := t.connectStart.Load()
 	connectEndNs := t.connectEnd.Load()
 	if connectStartNs != 0 && connectEndNs != 0 {
-		tcpMs = (connectEndNs - connectStartNs) / int64(time.Millisecond)
+		tcpNs = connectEndNs - connectStartNs
 	}
 
 	tlsStartNs := t.tlsStart.Load()
 	tlsEndNs := t.tlsEnd.Load()
 	if tlsStartNs != 0 && tlsEndNs != 0 {
-		tlsMs = (tlsEndNs - tlsStartNs) / int64(time.Millisecond)
+		tlsNs = tlsEndNs - tlsStartNs
 	}
 
 	writeStartNs := t.writeStart.Load()
 	writeEndNs := t.writeEnd.Load()
 	if writeStartNs != 0 && writeEndNs != 0 {
-		requestMs = (writeEndNs - writeStartNs) / int64(time.Millisecond)
+		requestNs = writeEndNs - writeStartNs
 	}
 
 	readStartNs := t.readStart.Load()
 	readEndNs := t.readEnd.Load()
 	if readStartNs != 0 && readEndNs != 0 {
-		responseMs = (readEndNs - readStartNs) / int64(time.Millisecond)
+		responseNs = readEndNs - readStartNs
 	}
 
-	return dnsMs, tcpMs, tlsMs, requestMs, responseMs
+	return dnsNs, tcpNs, tlsNs, requestNs, responseNs
 }
 
 type httpcheckScraper struct {
@@ -202,9 +202,9 @@ func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err 
 	var expandedTargets []*targetConfig
 
 	for _, target := range h.cfg.Targets {
-		if target.Timeout == 0 {
+		if target.ClientConfig.Timeout == 0 {
 			// Set a reasonable timeout to prevent hanging requests
-			target.Timeout = 30 * time.Second
+			target.ClientConfig.Timeout = 30 * time.Second
 		}
 
 		// Create a unified list of endpoints
@@ -212,13 +212,13 @@ func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err 
 		if len(target.Endpoints) > 0 {
 			allEndpoints = append(allEndpoints, target.Endpoints...) // Add all endpoints
 		}
-		if target.Endpoint != "" {
-			allEndpoints = append(allEndpoints, target.Endpoint) // Add single endpoint
+		if target.ClientConfig.Endpoint != "" {
+			allEndpoints = append(allEndpoints, target.ClientConfig.Endpoint) // Add single endpoint
 		}
 
 		// Process each endpoint in the unified list
 		for _, endpoint := range allEndpoints {
-			client, clientErr := target.ToClient(ctx, host.GetExtensions(), h.settings)
+			client, clientErr := target.ClientConfig.ToClient(ctx, host.GetExtensions(), h.settings)
 			if clientErr != nil {
 				h.settings.Logger.Error("failed to initialize HTTP client", zap.String("endpoint", endpoint), zap.Error(clientErr))
 				err = multierr.Append(err, clientErr)
@@ -227,7 +227,7 @@ func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err 
 
 			// Clone the target and assign the specific endpoint
 			targetClone := *target
-			targetClone.Endpoint = endpoint
+			targetClone.ClientConfig.Endpoint = endpoint
 
 			h.clients = append(h.clients, client)
 			expandedTargets = append(expandedTargets, &targetClone) // Add the cloned target to expanded targets
@@ -296,7 +296,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			req, err := http.NewRequestWithContext(
 				httptrace.WithClientTrace(ctx, trace),
 				h.cfg.Targets[targetIndex].Method,
-				h.cfg.Targets[targetIndex].Endpoint,
+				h.cfg.Targets[targetIndex].ClientConfig.Endpoint,
 				requestBody,
 			)
 			if err != nil {
@@ -305,7 +305,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			}
 
 			// Add headers to the request
-			for key, value := range h.cfg.Targets[targetIndex].Headers.Iter {
+			for key, value := range h.cfg.Targets[targetIndex].ClientConfig.Headers.Iter {
 				req.Header.Set(key, value.String()) // Convert configopaque.String to string
 			}
 
@@ -349,24 +349,12 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 
 			mux.Lock()
 
-			// Check if TLS metric is enabled and this is an HTTPS endpoint
-			if h.cfg.Metrics.HttpcheckTLSCertRemaining.Enabled && resp != nil && resp.TLS != nil {
-				// Extract TLS info directly from the HTTP response
-				issuer, commonName, sans, timeLeft := extractTLSInfo(resp.TLS)
-				if issuer != "" || commonName != "" || len(sans) > 0 {
-					h.mb.RecordHttpcheckTLSCertRemainingDataPoint(
-						now,
-						timeLeft,
-						h.cfg.Targets[targetIndex].Endpoint,
-						issuer,
-						commonName,
-						sans,
-					)
-				}
-			}
+			// TLS cert-remaining is recorded once below alongside the
+			// timing-breakdown metrics; the duplicate record here would
+			// emit the same data point twice per scrape.
 			// Record timing breakdown metrics
-			dnsMs, tcpMs, tlsMs, requestMs, responseMs := timing.getDurations()
-			endpoint := h.cfg.Targets[targetIndex].Endpoint
+			dnsNs, tcpNs, tlsNs, requestNs, responseNs := timing.getDurations()
+			endpoint := h.cfg.Targets[targetIndex].ClientConfig.Endpoint
 
 			h.mb.RecordHttpcheckDurationDataPoint(
 				now,
@@ -394,14 +382,14 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 
 			// Record detailed timing metrics if enabled
 			// Always record timing metrics regardless of value for enabled metrics
-			h.mb.RecordHttpcheckDNSLookupDurationDataPoint(now, dnsMs, endpoint)
-			h.mb.RecordHttpcheckClientConnectionDurationDataPoint(now, tcpMs, endpoint, "tcp")
-			h.mb.RecordHttpcheckTLSHandshakeDurationDataPoint(now, tlsMs, endpoint)
-			h.mb.RecordHttpcheckClientRequestDurationDataPoint(now, requestMs, endpoint)
-			h.mb.RecordHttpcheckResponseDurationDataPoint(now, responseMs, endpoint)
+			h.mb.RecordHttpcheckDNSLookupDurationDataPoint(now, dnsNs, endpoint)
+			h.mb.RecordHttpcheckClientConnectionDurationDataPoint(now, tcpNs, endpoint, "tcp")
+			h.mb.RecordHttpcheckTLSHandshakeDurationDataPoint(now, tlsNs, endpoint)
+			h.mb.RecordHttpcheckClientRequestDurationDataPoint(now, requestNs, endpoint)
+			h.mb.RecordHttpcheckResponseDurationDataPoint(now, responseNs, endpoint)
 
 			// Check if TLS metric is enabled and this is an HTTPS endpoint
-			if h.cfg.Metrics.HttpcheckTLSCertRemaining.Enabled && resp != nil && resp.TLS != nil {
+			if h.cfg.MetricsBuilderConfig.Metrics.HttpcheckTLSCertRemaining.Enabled && resp != nil && resp.TLS != nil {
 				// Extract TLS info directly from the HTTP response
 				issuer, commonName, sans, timeLeft := extractTLSInfo(resp.TLS)
 				if issuer != "" || commonName != "" || len(sans) > 0 {
@@ -443,7 +431,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 					h.mb.RecordHttpcheckStatusDataPoint(
 						now,
 						int64(0),
-						h.cfg.Targets[targetIndex].Endpoint,
+						h.cfg.Targets[targetIndex].ClientConfig.Endpoint,
 						int64(0), // Use 0 as status code when the class doesn't match
 						req.Method,
 						class,

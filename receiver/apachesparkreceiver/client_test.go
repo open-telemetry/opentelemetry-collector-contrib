@@ -486,7 +486,7 @@ func TestJobStats(t *testing.T) {
 func createTestClient(t *testing.T, baseEndpoint string) client {
 	t.Helper()
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = baseEndpoint
+	cfg.ClientConfig.Endpoint = baseEndpoint
 
 	testClient, err := newApacheSparkClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)

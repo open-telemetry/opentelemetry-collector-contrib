@@ -1,0 +1,94 @@
+version: 1
+signal: metrics
+resources:
+    - attributes:
+        ip: 1.2.2.1
+      scopes:
+        - name: MyTestInstrument
+          version: 1.2.3
+          metrics:
+            - name: delta.histogram.test
+              type: histogram
+              temporality: delta
+              datapoints:
+                - attributes:
+                    client.address: 1.2.3.4
+                    geo.city_name: Boxford
+                    geo.continent.code: EU
+                    geo.continent_name: Europe
+                    geo.country.iso_code: GB
+                    geo.country_name: United Kingdom
+                    geo.location.lat: 1234
+                    geo.location.lon: 5678
+                    geo.postal_code: OX1
+                    geo.region.iso_code: WBK
+                    geo.region_name: West Berkshire
+                    geo.timezone: Europe/London
+                  count: 0
+                  explicit_bounds:
+                    - 0.01
+                    - 0.1
+                    - 1
+                    - 10
+                    - 100
+                  bucket_counts:
+                    - 9
+                    - 12
+                    - 17
+                    - 8
+                    - 34
+            - name: storage.amplitude
+              type: sum
+              unit: "1"
+              temporality: cumulative
+              monotonic: false
+              datapoints:
+                - attributes:
+                    a: AAAA
+                    client.address: 1.2.3.4
+                    geo.city_name: Boxford
+                    geo.continent.code: EU
+                    geo.continent_name: Europe
+                    geo.country.iso_code: GB
+                    geo.country_name: United Kingdom
+                    geo.location.lat: 1234
+                    geo.location.lon: 5678
+                    geo.postal_code: OX1
+                    geo.region.iso_code: WBK
+                    geo.region_name: West Berkshire
+                    geo.timezone: Europe/London
+                  value: 0
+            - name: summary.test
+              type: summary
+              datapoints:
+                - attributes:
+                    client.address: 1.2.3.4
+                    geo.city_name: Boxford
+                    geo.continent.code: EU
+                    geo.continent_name: Europe
+                    geo.country.iso_code: GB
+                    geo.country_name: United Kingdom
+                    geo.location.lat: 1234
+                    geo.location.lon: 5678
+                    geo.postal_code: OX1
+                    geo.region.iso_code: WBK
+                    geo.region_name: West Berkshire
+                    geo.timezone: Europe/London
+            - name: test.gauge
+              type: gauge
+              datapoints:
+                - attributes:
+                    aaa: bbb
+                    client.address: 1.2.3.4
+                    geo.city_name: Boxford
+                    geo.continent.code: EU
+                    geo.continent_name: Europe
+                    geo.country.iso_code: GB
+                    geo.country_name: United Kingdom
+                    geo.location.lat: 1234
+                    geo.location.lon: 5678
+                    geo.postal_code: OX1
+                    geo.region.iso_code: WBK
+                    geo.region_name: West Berkshire
+                    geo.timezone: Europe/London
+                  value: 345

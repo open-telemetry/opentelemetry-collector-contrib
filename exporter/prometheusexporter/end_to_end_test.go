@@ -57,14 +57,19 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	defer cancel()
 
 	// 2. Create the Prometheus metrics exporter that'll receive and verify the metrics produced.
+	serverConfig := confighttp.NewDefaultServerConfig()
+	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:8787",
+	}
 	exporterCfg := &Config{
-		Namespace: "test",
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  "localhost:8787",
-			},
-		},
+		Namespace:        "test",
+		ServerConfig:     serverConfig,
 		SendTimestamps:   true,
 		MetricExpiration: 2 * time.Hour,
 	}
@@ -105,7 +110,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	// 4. Scrape from the Prometheus receiver to ensure that we export summary metrics
 	wg.Wait()
 
-	res, err := http.Get("http://" + exporterCfg.NetAddr.Endpoint + "/metrics")
+	res, err := http.Get("http://" + exporterCfg.ServerConfig.NetAddr.Endpoint + "/metrics")
 	require.NoError(t, err, "Failed to scrape from the exporter")
 	prometheusExporterScrape, err := io.ReadAll(res.Body)
 	res.Body.Close()
@@ -164,7 +169,6 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	require.Empty(t, prometheusExporterScrape, "Left-over unmatched Prometheus scrape content: %q\n", prometheusExporterScrape)
 }
 
-//nolint:gosec // the following triggers G101: Potential hardcoded credentials
 const dropWizardResponse = `
 # HELP jvm_memory_pool_bytes_used Used bytes of a given JVM memory pool.
 # TYPE jvm_memory_pool_bytes_used gauge

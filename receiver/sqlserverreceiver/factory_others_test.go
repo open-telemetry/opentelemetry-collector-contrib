@@ -31,18 +31,18 @@ func TestFactoryOtherOS(t *testing.T) {
 				cfg.Server = "0.0.0.0"
 				cfg.Port = 1433
 				cfg.InstanceName = "instanceName"
-				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
 				require.NoError(t, cfg.Validate())
 
 				require.True(t, cfg.isDirectDBConnectionEnabled)
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
 				params := receivertest.NewNopSettings(metadata.Type)
-				scrapers, err := setupScrapers(params, cfg)
+				scrapers, _, err := setupScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
 
-				sqlScrapers := setupSQLServerScrapers(params, cfg)
+				sqlScrapers, _ := setupSQLServerScrapers(params, cfg)
 				require.NotEmpty(t, sqlScrapers)
 
 				databaseIOScraperFound := false
@@ -81,20 +81,20 @@ func TestFactoryOtherOS(t *testing.T) {
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
 				params := receivertest.NewNopSettings(metadata.Type)
-				scrapers, err := setupLogsScrapers(params, cfg)
+				scrapers, _, err := setupLogsScrapers(params, cfg)
 				require.NoError(t, err)
 				require.Empty(t, scrapers)
 
-				sqlScrapers := setupSQLServerLogsScrapers(params, cfg)
+				sqlScrapers, _ := setupSQLServerLogsScrapers(params, cfg)
 				require.Empty(t, sqlScrapers)
 
 				cfg.InstanceName = "instanceName"
-				cfg.Events.DbServerTopQuery.Enabled = true
-				scrapers, err = setupLogsScrapers(params, cfg)
+				cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+				scrapers, _, err = setupLogsScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
 
-				sqlScrapers = setupSQLServerLogsScrapers(params, cfg)
+				sqlScrapers, _ = setupSQLServerLogsScrapers(params, cfg)
 				require.NotEmpty(t, sqlScrapers)
 
 				q := getSQLServerQueryTextAndPlanQuery()

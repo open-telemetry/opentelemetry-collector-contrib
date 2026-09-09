@@ -30,21 +30,21 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
-	assert.Equal(t, "https://faro.example.com/collect", cfg.(*Config).Endpoint)
+	assert.Equal(t, "https://faro.example.com/collect", cfg.(*Config).ClientConfig.Endpoint)
 }
 
 func TestValidateConfig(t *testing.T) {
+	emptyEndpointClientConfig := confighttp.NewDefaultClientConfig()
+	emptyEndpointClientConfig.Endpoint = ""
 	cfg := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "",
-		},
+		ClientConfig: emptyEndpointClientConfig,
 	}
 	assert.Error(t, cfg.Validate())
 
+	validEndpointClientConfig := confighttp.NewDefaultClientConfig()
+	validEndpointClientConfig.Endpoint = "https://faro.example.com/collect"
 	cfg = &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "https://faro.example.com/collect",
-		},
+		ClientConfig: validEndpointClientConfig,
 	}
 	assert.NoError(t, cfg.Validate())
 }

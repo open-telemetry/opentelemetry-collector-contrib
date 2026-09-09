@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -46,6 +47,7 @@ type logsReceiver struct {
 	doneChan                      chan bool
 	storageID                     *component.ID
 	cloudwatchCheckpointPersister *cloudwatchCheckpointPersister
+	accountID                     string
 }
 
 type client interface {
@@ -57,6 +59,8 @@ type streamNames struct {
 	group string
 	names []*string
 }
+
+var nowFunc = time.Now
 
 func (sn *streamNames) request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
 	base := &cloudwatchlogs.FilterLogEventsInput{
@@ -134,6 +138,10 @@ func newLogsReceiver(cfg *Config, settings receiver.Settings, consumer consumer.
 		} else {
 			startTime = parsedTime
 		}
+	}
+
+	if cfg.Logs.InitialLookback != 0 {
+		startTime = nowFunc().Add(-cfg.Logs.InitialLookback)
 	}
 
 	return &logsReceiver{
@@ -216,7 +224,7 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 func (l *logsReceiver) poll(ctx context.Context) error {
 	var errs error
 	currentGroups := make(map[string]bool)
-	endTime := time.Now()
+	endTime := nowFunc()
 	for _, r := range l.groupRequests {
 		groupName := r.groupName()
 		currentGroups[groupName] = true
@@ -305,8 +313,7 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 			input := pc.request(l.maxEventsPerRequest, *nextToken, &startTime, &endTime)
 			resp, err := l.client.FilterLogEvents(ctx, input)
 			if err != nil {
-				var resourceNotFoundException *types.ResourceNotFoundException
-				if errors.As(err, &resourceNotFoundException) {
+				if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
 					l.settings.Logger.Warn("log group no longer exists, skipping",
 						zap.String("logGroup", logGroup),
 						zap.Error(err))
@@ -315,7 +322,7 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 				return nextStartTime, fmt.Errorf("failed to retrieve logs from log group %s: %w", logGroup, err)
 			}
 
-			observedTime := pcommon.NewTimestampFromTime(time.Now())
+			observedTime := pcommon.NewTimestampFromTime(nowFunc())
 			logs := l.processEvents(observedTime, logGroup, resp)
 			if logs.LogRecordCount() > 0 {
 				if err = l.consumer.ConsumeLogs(ctx, logs); err != nil {
@@ -326,12 +333,15 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 				}
 				// the next timestamp should be 1 more millisecond than the last log
 				nextStartTime = time.UnixMilli(*resp.Events[len(resp.Events)-1].Timestamp + 1)
-			} else {
-				// Skip the time range in case there are no logs
-				nextStartTime = endTime
 			}
 			nextToken = resp.NextToken
 		}
+	}
+
+	// If no events were observed across any page of this window, advance to
+	// endTime so we don't repeatedly re-scan the same empty range.
+	if nextStartTime.Equal(startTime) {
+		nextStartTime = endTime
 	}
 
 	return nextStartTime, nil
@@ -376,6 +386,9 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 			resourceAttributes := resourceLogs.Resource().Attributes()
 			resourceAttributes.PutStr("aws.region", l.region)
 			resourceAttributes.PutStr("cloudwatch.log.group.name", logGroupName)
+			if l.accountID != "" {
+				resourceAttributes.PutStr("cloud.account.id", l.accountID)
+			}
 			if logStreamName != "" {
 				resourceAttributes.PutStr("cloudwatch.log.stream", logStreamName)
 			}
@@ -490,5 +503,12 @@ func (l *logsReceiver) ensureSession() error {
 
 	cfg, err := config.LoadDefaultConfig(context.Background(), cfgOptions...)
 	l.client = cloudwatchlogs.NewFromConfig(cfg)
+
+	stsClient := sts.NewFromConfig(cfg)
+	stsResult, _ := stsClient.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{})
+	if stsClient != nil && *stsResult.Account != "" {
+		l.accountID = *stsResult.Account
+	}
+
 	return err
 }

@@ -56,7 +56,7 @@ func createTracesToMetrics(
 		}
 		if len(info.Conditions) > 0 {
 			// Error checked in Config.Validate()
-			condition, _ := filterottl.NewBoolExprForSpan(info.Conditions, filterottl.StandardSpanFuncs(), ottl.PropagateError, set.TelemetrySettings)
+			condition, _ := filterottl.NewBoolExprForSpanWithPathContextNames(info.Conditions, filterottl.StandardSpanFuncs(), ottl.PropagateError, set.TelemetrySettings)
 			md.condition = condition
 		}
 		spanMetricDefs[name] = md
@@ -71,7 +71,7 @@ func createTracesToMetrics(
 		}
 		if len(info.Conditions) > 0 {
 			// Error checked in Config.Validate()
-			condition, _ := filterottl.NewBoolExprForSpanEvent(info.Conditions, filterottl.StandardSpanEventFuncs(), ottl.PropagateError, set.TelemetrySettings)
+			condition, _ := filterottl.NewBoolExprForSpanEventWithPathContextNames(info.Conditions, filterottl.StandardSpanEventFuncs(), ottl.PropagateError, set.TelemetrySettings)
 			md.condition = condition
 		}
 		spanEventMetricDefs[name] = md
@@ -101,7 +101,7 @@ func createMetricsToMetrics(
 		}
 		if len(info.Conditions) > 0 {
 			// Error checked in Config.Validate()
-			condition, _ := filterottl.NewBoolExprForMetric(info.Conditions, filterottl.StandardMetricFuncs(), ottl.PropagateError, set.TelemetrySettings)
+			condition, _ := filterottl.NewBoolExprForMetricWithPathContextNames(info.Conditions, filterottl.StandardMetricFuncs(), ottl.PropagateError, set.TelemetrySettings)
 			md.condition = condition
 		}
 		metricMetricDefs[name] = md
@@ -116,7 +116,7 @@ func createMetricsToMetrics(
 		}
 		if len(info.Conditions) > 0 {
 			// Error checked in Config.Validate()
-			condition, _ := filterottl.NewBoolExprForDataPoint(info.Conditions, filterottl.StandardDataPointFuncs(), ottl.PropagateError, set.TelemetrySettings)
+			condition, _ := filterottl.NewBoolExprForDataPointWithPathContextNames(info.Conditions, filterottl.StandardDataPointFuncs(), ottl.PropagateError, set.TelemetrySettings)
 			md.condition = condition
 		}
 		dataPointMetricDefs[name] = md
@@ -147,7 +147,7 @@ func createLogsToMetrics(
 		}
 		if len(info.Conditions) > 0 {
 			// Error checked in Config.Validate()
-			condition, _ := filterottl.NewBoolExprForLog(info.Conditions, filterottl.StandardLogFuncs(), ottl.PropagateError, set.TelemetrySettings)
+			condition, _ := filterottl.NewBoolExprForLogWithPathContextNames(info.Conditions, filterottl.StandardLogFuncs(), ottl.PropagateError, set.TelemetrySettings)
 			md.condition = condition
 		}
 		metricDefs[name] = md

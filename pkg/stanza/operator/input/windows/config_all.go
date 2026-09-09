@@ -51,10 +51,16 @@ type Config struct {
 	PollInterval        time.Duration `mapstructure:"poll_interval,omitempty"`
 	MaxEventsPerPoll    int           `mapstructure:"max_events_per_poll,omitempty"`
 	// WaitTimeout is the maximum duration to wait for new events before performing a
-	// safety-net poll in event-driven mode (see stanza.windows.eventDrivenScraping
-	// feature gate). Under normal conditions the subscription signal fires immediately, so
-	// this value is rarely reached. Defaults to 5s. Ignored when the feature gate is not enabled.
-	WaitTimeout              time.Duration   `mapstructure:"wait_timeout,omitempty"`
+	// safety-net poll in event-driven mode (see EventDrivenScraping config option
+	// and the stanza.windows.eventDrivenScraping feature gate). Under normal conditions
+	// the subscription signal fires immediately, so this value is rarely reached.
+	// Defaults to 5s. Ignored when event-driven scraping is not enabled.
+	WaitTimeout time.Duration `mapstructure:"wait_timeout,omitempty"`
+	// EventDrivenScraping controls whether the windows input wakes on Windows API signals
+	// instead of polling on a fixed interval. When enabled, the input behaves the same as
+	// when the stanza.windows.eventDrivenScraping feature gate is enabled. Event-driven
+	// scraping is enabled when either this option or the feature gate is set.
+	EventDrivenScraping      bool            `mapstructure:"event_driven_scraping,omitempty"`
 	Raw                      bool            `mapstructure:"raw,omitempty"`
 	EventDataFormat          EventDataFormat `mapstructure:"event_data_format,omitempty"`
 	IncludeLogRecordOriginal bool            `mapstructure:"include_log_record_original,omitempty"`
@@ -62,6 +68,7 @@ type Config struct {
 	ExcludeProviders         []string        `mapstructure:"exclude_providers,omitempty"`
 	Remote                   RemoteConfig    `mapstructure:"remote,omitempty"`
 	Query                    *string         `mapstructure:"query,omitempty"`
+	Path                     *string         `mapstructure:"path,omitempty"`
 }
 
 // RemoteConfig is the configuration for a remote server.

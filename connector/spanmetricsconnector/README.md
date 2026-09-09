@@ -123,12 +123,13 @@ The following settings can be optionally configured:
   - `exponential`:
     - `max_size` (default: `160`) the maximum number of buckets per positive or negative number range.
 - `dimensions`: the list of dimensions to add to `traces.span.metrics.calls`, `traces.span.metrics.duration` and `traces.span.metrics.event` metrics with the default dimensions defined above.
-  Each additional dimension is defined with a `name` which is looked up in the span's collection of attributes or
-  resource attributes (AKA process tags) such as `ip`, `host.name` or `region`.
-  
-  If the `name`d attribute is missing in the span, the optional provided `default` is used.
-  
-  If no `default` is provided, this dimension will be **omitted** from the metric.
+  Each list entry must set **exactly one** of:
+  1. `name` which is looked up in the span's collection of attributes or resource attributes (AKA process tags) such as `ip`, `host.name` or `region`.
+
+     If the `name`d attribute is missing in the span, the optional provided `default` is used.
+
+     If no `default` is provided, this dimension will be **omitted** from the metric.
+  2. `glob`: a glob pattern with '.' treated as a separator. Every span or resource attribute whose key matches the pattern is emitted as its own dimension.
 - `calls_dimensions`: additional attributes to add as dimensions to the `traces.span.metrics.calls` metric, 
   which will be included _on top of_ the common and configured `dimensions` for span attributes and resource attributes.
 - `exclude_dimensions`: the list of dimensions to be excluded from the default set of dimensions. Use to exclude unneeded data from metrics. 
@@ -140,7 +141,8 @@ The following settings can be optionally configured:
   One of either `AGGREGATION_TEMPORALITY_CUMULATIVE` or `AGGREGATION_TEMPORALITY_DELTA`.
 - `namespace` (default: `traces.span.metrics`): Defines the namespace of the generated metrics. If `namespace` provided, generated metric name will be added `namespace.` prefix.
 - `metrics_flush_interval` (default: `60s`): Defines the flush interval of the generated metrics.
-- `metrics_expiration` (default: `0`): Defines the expiration time as `time.Duration`, after which, if no new spans are received, metrics will no longer be exported. Setting to `0` means the metrics will never expire (default behavior).
+- `metrics_expiration` (default: `0`): Defines the expiration time as `time.Duration`, after which, if no new spans are received, metrics will no longer be exported. Setting to `0` means the metrics will never expire.
+- `series_expiration` (default: `0`): Defines the expiration time as `time.Duration` for individual metric series. When set, stale dimension combinations are removed on a later flush even if the parent metric and resource continue receiving other spans. Setting to `0` disables per-series expiration.
 - `metric_timestamp_cache_size` (default `1000`): Only relevant for delta temporality span metrics. Controls the size of the cache used to keep track of a metric's TimestampUnixNano the last time it was flushed. When a metric is evicted from the cache, its next data point will indicate a "reset" in the series. Downstream components converting from delta to cumulative, like `prometheusexporter`, may handle these resets by setting cumulative counters back to 0.
 - `exemplars`:  Use to configure how to attach exemplars to metrics.
   - `enabled` (default: `false`): enabling will add spans as Exemplars to all metrics. Exemplars are only kept for one flush interval.rom the cache, its next data point will indicate a "reset" in the series. Downstream components converting from delta to cumulative, like `prometheusexporter`, may handle these resets by setting cumulative counters back to 0.
@@ -183,15 +185,18 @@ connectors:
       - name: http.method
         default: GET
       - name: http.status_code
+      - glob: "k8s.*.name" # match single namespace between 'k8s' and 'name' ('k8s.cluster.name', not 'k8s.cluster.label.name')
+      - glob: "db.**.name" # match any number of namespaces between 'db' and 'name'
     calls_dimensions:
       - name: http.url
         default: /ping
     exemplars:
       enabled: true
     exclude_dimensions: ['status.code']
-    aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"    
+    aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
     metrics_flush_interval: 15s
     metrics_expiration: 5m
+    series_expiration: 5m
     events:
       enabled: true
       dimensions:
@@ -222,7 +227,7 @@ For some functionality of the exporters, e.g. like generation of the `target_inf
 incoming spans resource scope attributes must contain `service.name` and `service.instance.id`
 attributes.
 
-Let's look at the example of using the `spanmetrics` connector with the `prometheusremotewrite` exporter:
+Let's look at the example of using the `spanmetrics` connector with the `prometheus_remote_write` exporter:
 
 ```yaml
 receivers:
@@ -232,7 +237,7 @@ receivers:
       grpc:
 
 exporters:
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: http://localhost:9090/api/v1/write
     target_info:
       enabled: true
@@ -248,7 +253,7 @@ service:
       exporters: [span_metrics]
     metrics:
       receivers: [span_metrics]
-      exporters: [prometheusremotewrite]
+      exporters: [prometheus_remote_write]
 ```
 
 This configures the `spanmetrics` connector to generate metrics from received spans and export the

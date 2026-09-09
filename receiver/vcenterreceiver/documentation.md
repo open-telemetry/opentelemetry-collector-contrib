@@ -812,6 +812,26 @@ metrics:
     enabled: true
 ```
 
+### vcenter.host.memory.active
+
+The amount of memory the host's powered-on VMs are actively using.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| MiBy | Sum | Int | Cumulative | false | Development |
+
+### vcenter.host.memory.ballooned
+
+The amount of guest physical memory reclaimed from the host's VMs via the balloon driver.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| MiBy | Sum | Int | Cumulative | false | Development |
+
 ### vcenter.host.memory.capacity
 
 Total memory  capacity of the host system.
@@ -819,6 +839,16 @@ Total memory  capacity of the host system.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | MiBy | Sum | Double | Cumulative | false | Development |
+
+### vcenter.host.memory.granted
+
+The amount of machine memory that is granted to the powered-on VMs on the host.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| MiBy | Sum | Int | Cumulative | false | Development |
 
 ### vcenter.vm.cpu.time
 
@@ -881,20 +911,20 @@ As measured over the most recent 20s interval.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| vcenter.cluster.name | The name of the vCenter cluster. | Any Str | true | - |
-| vcenter.datacenter.name | The name of the vCenter datacenter. | Any Str | true | - |
-| vcenter.datastore.name | The name of the vCenter datastore. | Any Str | true | - |
-| vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true | - |
-| vcenter.resource_pool.inventory_path | The inventory path of the resource pool. | Any Str | true | - |
-| vcenter.resource_pool.name | The name of the resource pool. | Any Str | true | - |
-| vcenter.virtual_app.inventory_path | The inventory path of the vApp. | Any Str | true | - |
-| vcenter.virtual_app.name | The name of the vApp. | Any Str | true | - |
-| vcenter.vm.id | The instance UUID of the virtual machine. | Any Str | true | - |
-| vcenter.vm.name | The name of the virtual machine. | Any Str | true | - |
-| vcenter.vm_template.id | The instance UUID of the virtual machine template. | Any Str | true | - |
-| vcenter.vm_template.name | The name of the virtual machine template. | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| vcenter.cluster.name | The name of the vCenter cluster. | Any Str | true | - | - |
+| vcenter.datacenter.name | The name of the vCenter datacenter. | Any Str | true | - | - |
+| vcenter.datastore.name | The name of the vCenter datastore. | Any Str | true | - | - |
+| vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true | - | - |
+| vcenter.resource_pool.inventory_path | The inventory path of the resource pool. | Any Str | true | - | - |
+| vcenter.resource_pool.name | The name of the resource pool. | Any Str | true | - | - |
+| vcenter.virtual_app.inventory_path | The inventory path of the vApp. | Any Str | true | - | - |
+| vcenter.virtual_app.name | The name of the vApp. | Any Str | true | - | - |
+| vcenter.vm.id | The instance UUID of the virtual machine. | Any Str | true | - | - |
+| vcenter.vm.name | The name of the virtual machine. | Any Str | true | - | - |
+| vcenter.vm_template.id | The instance UUID of the virtual machine template. | Any Str | true | - | - |
+| vcenter.vm_template.name | The name of the virtual machine template. | Any Str | true | - | - |
 
 ## Feature Gates
 
@@ -902,6 +932,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `receiver.vcenter.resourcePoolMemoryUsageAttribute` | alpha | Enables the memory usage type attribute for the vcenter.resource_pool.memory.usage metric | v0.104.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/33741) |
+| `receiver.vcenter.resourcePoolMemoryUsageAttribute` | beta | Enables the memory usage type attribute for the vcenter.resource_pool.memory.usage metric | v0.153.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/33741) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

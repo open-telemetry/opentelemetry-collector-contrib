@@ -3,7 +3,6 @@
 
 The Pure Storage FlashArray Receiver receives metrics from the Pure Storage FlashArray.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |

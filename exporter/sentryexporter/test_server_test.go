@@ -100,6 +100,16 @@ func (ts *testServer) recorded(method, path string) []testServerRequest {
 	return out
 }
 
+func (ts *testServer) recordedCount() int {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	n := 0
+	for _, reqs := range ts.requests {
+		n += len(reqs)
+	}
+	return n
+}
+
 func mustJSON(v any) []byte {
 	b, err := json.Marshal(v)
 	if err != nil {

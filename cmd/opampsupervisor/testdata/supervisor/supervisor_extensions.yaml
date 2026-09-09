@@ -1,0 +1,11 @@
+server:
+  endpoint: ws://{{.url}}/v1/opamp
+
+storage:
+  directory: '{{.storage_dir}}'
+
+agent:
+  executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
+
+extensions:
+  nop:

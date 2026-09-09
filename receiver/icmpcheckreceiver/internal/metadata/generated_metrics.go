@@ -46,7 +46,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricPingLossRatio struct {
@@ -113,14 +114,14 @@ func (m *metricPingRttAvg) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricPingRttAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricPingRttAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -163,14 +164,14 @@ func (m *metricPingRttMax) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricPingRttMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricPingRttMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -213,14 +214,14 @@ func (m *metricPingRttMin) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricPingRttMin) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricPingRttMin) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -263,14 +264,14 @@ func (m *metricPingRttStddev) init() {
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricPingRttStddev) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricPingRttStddev) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -470,22 +471,22 @@ func (mb *MetricsBuilder) RecordPingLossRatioDataPoint(ts pcommon.Timestamp, val
 }
 
 // RecordPingRttAvgDataPoint adds a data point to ping.rtt.avg metric.
-func (mb *MetricsBuilder) RecordPingRttAvgDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordPingRttAvgDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricPingRttAvg.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPingRttMaxDataPoint adds a data point to ping.rtt.max metric.
-func (mb *MetricsBuilder) RecordPingRttMaxDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordPingRttMaxDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricPingRttMax.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPingRttMinDataPoint adds a data point to ping.rtt.min metric.
-func (mb *MetricsBuilder) RecordPingRttMinDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordPingRttMinDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricPingRttMin.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPingRttStddevDataPoint adds a data point to ping.rtt.stddev metric.
-func (mb *MetricsBuilder) RecordPingRttStddevDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordPingRttStddevDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricPingRttStddev.recordDataPoint(mb.startTime, ts, val)
 }
 

@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // ParsedRequest holds the decoded invoke payload and trigger metadata for a single binding.
@@ -28,6 +29,17 @@ type Consumer interface {
 func AddMetadataToLogs(logs *plog.Logs, attrs map[string]string) {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		res := logs.ResourceLogs().At(i).Resource()
+		for k, v := range attrs {
+			res.Attributes().PutStr(k, v)
+		}
+	}
+}
+
+// AddMetadataToMetrics sets the given attributes on every resource in metrics.
+// Shared by consumers that attach trigger metadata to metric resources.
+func AddMetadataToMetrics(metrics *pmetric.Metrics, attrs map[string]string) {
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		res := metrics.ResourceMetrics().At(i).Resource()
 		for k, v := range attrs {
 			res.Attributes().PutStr(k, v)
 		}

@@ -10,6 +10,7 @@ import (
 	"maps"
 	"net/url"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -63,8 +64,8 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 		return err
 	}
 
-	soapClient := soap.NewClient(sdkURL, vc.cfg.Insecure)
-	tlsCfg, err := vc.cfg.LoadTLSConfig(ctx)
+	soapClient := soap.NewClient(sdkURL, vc.cfg.ClientConfig.Insecure)
+	tlsCfg, err := vc.cfg.ClientConfig.LoadTLSConfig(ctx)
 	if err != nil {
 		return err
 	}
@@ -241,6 +242,7 @@ func (vc *vcenterClient) VMs(ctx context.Context, containerMoRef vt.ManagedObjec
 		"summary.quickStats.swappedMemory",
 		"summary.quickStats.ssdSwappedMemory",
 		"summary.quickStats.overallCpuUsage",
+		"summary.quickStats.overallCpuReadiness",
 		"summary.overallStatus",
 		"summary.config.memorySizeMB",
 		"summary.storage.committed",
@@ -299,8 +301,7 @@ func (vc *vcenterClient) VAppInventoryListObjects(
 			continue
 		}
 
-		var notFoundErr *find.NotFoundError
-		if !errors.As(err, &notFoundErr) {
+		if _, ok := errors.AsType[*find.NotFoundError](err); !ok {
 			return nil, fmt.Errorf("unable to retrieve vApps with InventoryLists for datacenter %s: %w", dc.InventoryPath, err)
 		}
 	}
@@ -326,22 +327,87 @@ func (vc *vcenterClient) PerfMetricsQuery(
 		return &perfMetricsQueryResult{}, nil
 	}
 	vc.pm.Sort = true
-	sample, err := vc.pm.SampleByName(ctx, spec, names, objs)
-	if err != nil {
-		return nil, err
-	}
-	result, err := vc.pm.ToMetricSeries(ctx, sample)
-	if err != nil {
-		return nil, err
+	batchSize := vc.batchSizeForMetrics(len(names))
+	if batchSize <= 0 || batchSize >= len(objs) {
+		batchSize = max(len(objs), 1)
 	}
 
 	resultsByRef := map[string]*performance.EntityMetric{}
-	for i := range result {
-		resultsByRef[result[i].Entity.Value] = &result[i]
+	for batchChunk := range slices.Chunk(objs, batchSize) {
+		batch := slices.Clone(batchChunk)
+		for len(batch) > 0 {
+			sample, err := vc.pm.SampleByName(ctx, spec, names, batch)
+			if err == nil {
+				result, metricErr := vc.pm.ToMetricSeries(ctx, sample)
+				if metricErr != nil {
+					return nil, metricErr
+				}
+
+				for i := range result {
+					resultsByRef[result[i].Entity.Value] = &result[i]
+				}
+				break
+			}
+
+			// Try to find if a specific object caused the batch to fail
+			var f *soap.Fault
+			for faultErr := err; faultErr != nil; faultErr = errors.Unwrap(faultErr) {
+				if soap.IsSoapFault(faultErr) {
+					f = soap.ToSoapFault(faultErr)
+					break
+				}
+			}
+
+			if f != nil && f.Detail.Fault != nil {
+				if notFound, ok := f.Detail.Fault.(*vt.ManagedObjectNotFound); ok {
+					vc.logger.Debug("Object not found during perf metric query, removing from batch and retrying", zap.String("obj", notFound.Obj.Value))
+					batch = slices.DeleteFunc(batch, func(ref vt.ManagedObjectReference) bool {
+						return ref.Value == notFound.Obj.Value
+					})
+					continue
+				}
+			}
+
+			// Batch query failed for an unhandled reason -- fall back to querying objects one at a time.
+			var errs []error
+			for _, obj := range batch {
+				singleSample, singleErr := vc.pm.SampleByName(ctx, spec, names, []vt.ManagedObjectReference{obj})
+				if singleErr != nil {
+					errs = append(errs, fmt.Errorf("failed to collect perf metric for object %s: %w", obj.Value, singleErr))
+					continue
+				}
+
+				singleResult, singleErr := vc.pm.ToMetricSeries(ctx, singleSample)
+				if singleErr != nil {
+					errs = append(errs, fmt.Errorf("failed to convert perf metric for object %s: %w", obj.Value, singleErr))
+					continue
+				}
+
+				for i := range singleResult {
+					resultsByRef[singleResult[i].Entity.Value] = &singleResult[i]
+				}
+			}
+			if len(errs) > 0 {
+				vc.logger.Debug("Batch perf metrics query failed, fell back to single queries with errors", zap.Error(errors.Join(errs...)))
+			}
+			break
+		}
 	}
+
 	return &perfMetricsQueryResult{
 		resultsByRef: resultsByRef,
 	}, nil
+}
+
+func (vc *vcenterClient) batchSizeForMetrics(numMetrics int) int {
+	if vc.cfg == nil {
+		return 0
+	}
+	limit := vc.cfg.MaxQueryMetrics
+	if limit <= 0 || numMetrics == 0 {
+		return 0
+	}
+	return limit / numMetrics
 }
 
 // vSANQueryResults contains all returned vSAN metric related data
@@ -536,6 +602,14 @@ func (vc *vcenterClient) convertVSANResultToMetricResults(vSANResult types.VsanP
 	metricResults := vSANMetricResults{
 		UUID:          uuid,
 		MetricDetails: []*vSANMetricDetails{},
+	}
+
+	// The vSAN performance API returns an empty SampleInfo when an entity has no
+	// recent performance data (e.g. a freshly provisioned cluster or a vSAN
+	// performance service that is temporarily unavailable). Skip such entities
+	// instead of failing the whole scrape cycle trying to parse an empty timestamp.
+	if strings.TrimSpace(vSANResult.SampleInfo) == "" {
+		return &metricResults, nil
 	}
 
 	// Parse all timestamps

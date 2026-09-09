@@ -3,51 +3,113 @@ all_set:
   metrics:
     httpcheck.client.connection.duration:
       enabled: true
+      attributes: ["http.url","network.transport"]
     httpcheck.client.request.duration:
       enabled: true
+      attributes: ["http.url"]
     httpcheck.dns.lookup.duration:
       enabled: true
+      attributes: ["http.url"]
     httpcheck.duration:
       enabled: true
+      attributes: ["http.url"]
     httpcheck.error:
       enabled: true
+      attributes: ["http.url","error.message"]
     httpcheck.response.duration:
       enabled: true
+      attributes: ["http.url"]
     httpcheck.response.size:
       enabled: true
+      attributes: ["http.url"]
     httpcheck.status:
       enabled: true
+      attributes: ["http.url","http.status_code","http.method","http.status_class"]
     httpcheck.tls.cert_remaining:
       enabled: true
+      attributes: ["http.url","http.tls.issuer","http.tls.cn","http.tls.san"]
     httpcheck.tls.handshake.duration:
       enabled: true
+      attributes: ["http.url"]
     httpcheck.validation.failed:
       enabled: true
+      attributes: ["http.url","validation.type"]
     httpcheck.validation.passed:
       enabled: true
+      attributes: ["http.url","validation.type"]
+reaggregate_set:
+  metrics:
+    httpcheck.client.connection.duration:
+      enabled: true
+      attributes: []
+    httpcheck.client.request.duration:
+      enabled: true
+      attributes: []
+    httpcheck.dns.lookup.duration:
+      enabled: true
+      attributes: []
+    httpcheck.duration:
+      enabled: true
+      attributes: []
+    httpcheck.error:
+      enabled: true
+      attributes: []
+    httpcheck.response.duration:
+      enabled: true
+      attributes: []
+    httpcheck.response.size:
+      enabled: true
+      attributes: []
+    httpcheck.status:
+      enabled: true
+      attributes: []
+    httpcheck.tls.cert_remaining:
+      enabled: true
+      attributes: []
+    httpcheck.tls.handshake.duration:
+      enabled: true
+      attributes: []
+    httpcheck.validation.failed:
+      enabled: true
+      attributes: []
+    httpcheck.validation.passed:
+      enabled: true
+      attributes: []
 none_set:
   metrics:
     httpcheck.client.connection.duration:
       enabled: false
+      attributes: ["http.url","network.transport"]
     httpcheck.client.request.duration:
       enabled: false
+      attributes: ["http.url"]
     httpcheck.dns.lookup.duration:
       enabled: false
+      attributes: ["http.url"]
     httpcheck.duration:
       enabled: false
+      attributes: ["http.url"]
     httpcheck.error:
       enabled: false
+      attributes: ["http.url","error.message"]
     httpcheck.response.duration:
       enabled: false
+      attributes: ["http.url"]
     httpcheck.response.size:
       enabled: false
+      attributes: ["http.url"]
     httpcheck.status:
       enabled: false
+      attributes: ["http.url","http.status_code","http.method","http.status_class"]
     httpcheck.tls.cert_remaining:
       enabled: false
+      attributes: ["http.url","http.tls.issuer","http.tls.cn","http.tls.san"]
     httpcheck.tls.handshake.duration:
       enabled: false
+      attributes: ["http.url"]
     httpcheck.validation.failed:
       enabled: false
+      attributes: ["http.url","validation.type"]
     httpcheck.validation.passed:
       enabled: false
+      attributes: ["http.url","validation.type"]

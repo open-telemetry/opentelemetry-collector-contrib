@@ -115,10 +115,12 @@ var MetricsInfo = metricsInfo{
 		Name: "system.memory.linux.hugepages.surplus",
 	},
 	SystemMemoryLinuxHugepagesUsage: metricInfo{
-		Name: "system.memory.linux.hugepages.usage",
+		Name:       "system.memory.linux.hugepages.usage",
+		Attributes: []string{"system.memory.linux.hugepages.state"},
 	},
 	SystemMemoryLinuxHugepagesUtilization: metricInfo{
-		Name: "system.memory.linux.hugepages.utilization",
+		Name:       "system.memory.linux.hugepages.utilization",
+		Attributes: []string{"system.memory.linux.hugepages.state"},
 	},
 	SystemMemoryLinuxShared: metricInfo{
 		Name: "system.memory.linux.shared",
@@ -127,10 +129,12 @@ var MetricsInfo = metricsInfo{
 		Name: "system.memory.page_size",
 	},
 	SystemMemoryUsage: metricInfo{
-		Name: "system.memory.usage",
+		Name:       "system.memory.usage",
+		Attributes: []string{"state"},
 	},
 	SystemMemoryUtilization: metricInfo{
-		Name: "system.memory.utilization",
+		Name:       "system.memory.utilization",
+		Attributes: []string{"state"},
 	},
 }
 
@@ -151,7 +155,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricSystemLinuxMemoryAvailable struct {

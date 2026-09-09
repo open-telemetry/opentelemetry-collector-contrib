@@ -62,6 +62,7 @@ func (factory) createLogsProcessor(
 		schemaProcessor.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(schemaProcessor.start),
+		processorhelper.WithShutdown(schemaProcessor.shutdown),
 	)
 }
 
@@ -83,6 +84,7 @@ func (factory) createMetricsProcessor(
 		schemaProcessor.processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(schemaProcessor.start),
+		processorhelper.WithShutdown(schemaProcessor.shutdown),
 	)
 }
 
@@ -104,5 +106,6 @@ func (factory) createTracesProcessor(
 		schemaProcessor.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(schemaProcessor.start),
+		processorhelper.WithShutdown(schemaProcessor.shutdown),
 	)
 }

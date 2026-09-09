@@ -193,7 +193,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.indexer.throughput
-            unit: By/s
+            unit: 'By/s'
           - description: Gauge tracking the average IOPs used per instance
             gauge:
               dataPoints:

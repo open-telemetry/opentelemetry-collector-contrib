@@ -21,6 +21,20 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetRabbitmqExchangeName sets provided value as "rabbitmq.exchange.name" attribute.
+func (rb *ResourceBuilder) SetRabbitmqExchangeName(val string) {
+	if rb.config.RabbitmqExchangeName.Enabled {
+		rb.res.Attributes().PutStr("rabbitmq.exchange.name", val)
+	}
+}
+
+// SetRabbitmqExchangeType sets provided value as "rabbitmq.exchange.type" attribute.
+func (rb *ResourceBuilder) SetRabbitmqExchangeType(val string) {
+	if rb.config.RabbitmqExchangeType.Enabled {
+		rb.res.Attributes().PutStr("rabbitmq.exchange.type", val)
+	}
+}
+
 // SetRabbitmqNodeName sets provided value as "rabbitmq.node.name" attribute.
 func (rb *ResourceBuilder) SetRabbitmqNodeName(val string) {
 	if rb.config.RabbitmqNodeName.Enabled {

@@ -46,15 +46,15 @@ func (s *Syncer) Sync(md pmetric.Metrics) {
 }
 
 func (s *Syncer) syncOnResource(res pcommon.Resource) {
-	// If resourcedetection processor is enabled, all the metrics should have resource attributes
+	// If resource_detection processor is enabled, all the metrics should have resource attributes
 	// that can be used to update host metadata.
 	// Based of this assumption we check just one ResourceMetrics object,
 	hostID, ok := splunk.ResourceToHostID(res)
 	if !ok {
-		// if no attributes found, we assume that resourcedetection is not enabled or
+		// if no attributes found, we assume that resource_detection is not enabled or
 		// it doesn't set right attributes, and we do not retry.
 		s.logger.Error("Not found any host attributes. Host metadata synchronization skipped. " +
-			"Make sure that \"resourcedetection\" processor is enabled in the pipeline with one of " +
+			"Make sure that \"resource_detection\" processor is enabled in the pipeline with one of " +
 			"the cloud provider detectors or environment variable detector setting \"host.name\" attribute")
 		return
 	}

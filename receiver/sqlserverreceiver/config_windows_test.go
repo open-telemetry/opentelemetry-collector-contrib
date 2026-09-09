@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
@@ -75,9 +75,9 @@ func TestValidateWindows(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			if tc.expectedSuccess {
-				require.NoError(t, xconfmap.Validate(tc.cfg))
+				require.NoError(t, confmap.Validate(tc.cfg))
 			} else {
-				require.Error(t, xconfmap.Validate(tc.cfg))
+				require.Error(t, confmap.Validate(tc.cfg))
 			}
 		})
 	}

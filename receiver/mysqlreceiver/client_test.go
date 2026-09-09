@@ -5,9 +5,12 @@ package mysqlreceiver
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"regexp"
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	// registers the mysql driver for TestFetchDBVersionTimeout
 	_ "github.com/go-sql-driver/mysql"
 	version "github.com/hashicorp/go-version"
@@ -173,6 +176,22 @@ func TestExplainQueryEarlyExits(t *testing.T) {
 	})
 }
 
+// TestExplainQueryConnFailure verifies that explainQuery returns "" and does not
+// panic when the underlying *sql.DB cannot provide a connection (e.g. the DB is
+// already closed). This exercises the new Conn() error path introduced to ensure
+// USE and EXPLAIN execute on the same connection.
+func TestExplainQueryConnFailure(t *testing.T) {
+	db, err := sql.Open("mysql", "root:@tcp(127.0.0.1:3306)/")
+	require.NoError(t, err)
+	require.NoError(t, db.Close()) // close immediately so Conn() will fail
+
+	c := &mySQLClient{client: db}
+	logger := zap.NewNop()
+
+	result := c.explainQuery("SELECT * FROM t", "SELECT * FROM t", "myschema", "digest1", logger)
+	assert.Empty(t, result)
+}
+
 // mustParseVersion is a test helper that parses a semver string and fails the test if parsing fails.
 func mustParseVersion(t *testing.T, v string) *version.Version {
 	t.Helper()
@@ -189,66 +208,77 @@ func TestDBVersionCapabilities(t *testing.T) {
 		dv                          dbVersion
 		wantSupportsQuerySampleText bool
 		wantSupportsReplicaStatus   bool
+		wantSupportsProcesslist     bool
 	}{
 		{
 			name:                        "MySQL 8.0.27",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.27")},
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   true,
+			wantSupportsProcesslist:     true,
 		},
 		{
 			name:                        "MySQL 8.0.3 (minimum for query_sample_text)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.3")},
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
 			name:                        "MySQL 8.0.2 (below query_sample_text minimum)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.2")},
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
 			name:                        "MySQL 8.0.0 (below query_sample_text minimum)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.0")},
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
-			name:                        "MySQL 8.0.22 (minimum for SHOW REPLICA STATUS)",
+			name:                        "MySQL 8.0.22 (minimum for SHOW REPLICA STATUS and processlist)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.22")},
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   true,
+			wantSupportsProcesslist:     true,
 		},
 		{
 			name:                        "MySQL 8.0.21 (below SHOW REPLICA STATUS minimum)",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.21")},
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
 			name:                        "MySQL 5.7.44",
 			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "5.7.44")},
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
 			name:                        "MariaDB 10.11.6",
 			dv:                          dbVersion{product: dbProductMariaDB, version: mustParseVersion(t, "10.11.6")},
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
 			name:                        "MariaDB 11.4.2",
 			dv:                          dbVersion{product: dbProductMariaDB, version: mustParseVersion(t, "11.4.2")},
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 		{
 			name:                        "zero value (version unknown)",
 			dv:                          dbVersion{},
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
 		},
 	}
 
@@ -256,6 +286,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.wantSupportsQuerySampleText, tt.dv.supportsQuerySampleText(), "supportsQuerySampleText()")
 			assert.Equal(t, tt.wantSupportsReplicaStatus, tt.dv.supportsReplicaStatus(), "supportsReplicaStatus()")
+			assert.Equal(t, tt.wantSupportsProcesslist, tt.dv.supportsProcesslist(), "supportsProcesslist()")
 		})
 	}
 }
@@ -314,6 +345,179 @@ func TestReplicaStatusQuery(t *testing.T) {
 			assert.Equal(t, tt.wantQuery, q)
 		})
 	}
+}
+
+func TestGetReplicaStatusStatsNormalizesColumnSpellings(t *testing.T) {
+	tests := []struct {
+		name                  string
+		supportsReplicaStatus bool
+		query                 string
+		columns               []string
+		values                []driver.Value
+		wantReplicaIORunning  string
+		wantReplicaSQLRunning string
+		wantChannelName       string
+	}{
+		{
+			name:                  "replica column spellings",
+			supportsReplicaStatus: true,
+			query:                 "SHOW REPLICA STATUS",
+			columns:               []string{"Replica_IO_Running", "Replica_SQL_Running", "Channel_Name"},
+			values:                []driver.Value{"Yes", "No", "source_a"},
+			wantReplicaIORunning:  "Yes",
+			wantReplicaSQLRunning: "No",
+			wantChannelName:       "source_a",
+		},
+		{
+			name:                  "slave column spellings",
+			supportsReplicaStatus: false,
+			query:                 "SHOW SLAVE STATUS",
+			columns:               []string{"Slave_IO_Running", "Slave_SQL_Running", "Channel_Name"},
+			values:                []driver.Value{"Connecting", "Yes", "source_b"},
+			wantReplicaIORunning:  "Connecting",
+			wantReplicaSQLRunning: "Yes",
+			wantChannelName:       "source_b",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+
+			mock.ExpectQuery(regexp.QuoteMeta(tt.query)).
+				WillReturnRows(sqlmock.NewRows(tt.columns).AddRow(tt.values...))
+
+			c := &mySQLClient{client: db}
+			got, err := c.getReplicaStatusStats(tt.supportsReplicaStatus)
+			require.NoError(t, err)
+			require.NoError(t, mock.ExpectationsWereMet())
+			require.Len(t, got, 1)
+
+			assert.Equal(t, tt.wantReplicaIORunning, got[0].replicaIORunning)
+			assert.Equal(t, tt.wantReplicaSQLRunning, got[0].replicaSQLRunning)
+			assert.Equal(t, tt.wantChannelName, got[0].channelName)
+		})
+	}
+}
+
+func TestGetInnodbTransactionStats(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	query := "SELECT " +
+		"COALESCE((SELECT count FROM information_schema.innodb_metrics WHERE name = 'trx_rseg_history_len'), 0), " +
+		"COUNT(*), " +
+		"COALESCE(MAX(TIMESTAMPDIFF(SECOND, trx_started, NOW())), 0) " +
+		"FROM information_schema.innodb_trx"
+	mock.ExpectQuery(regexp.QuoteMeta(query)).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"history_list_length",
+			"active_transactions",
+			"max_active_transaction_duration",
+		}).AddRow(251, 3, 17))
+
+	c := &mySQLClient{client: db}
+	got, err := c.getInnodbTransactionStats()
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+
+	assert.Equal(t, int64(251), got.historyListLength)
+	assert.Equal(t, int64(3), got.activeTransactions)
+	assert.Equal(t, int64(17), got.maxActiveTransactionDuration)
+}
+
+func TestCheckDBAvailability(t *testing.T) {
+	tests := []struct {
+		name     string
+		result   int
+		queryErr error
+		wantErr  string
+	}{
+		{
+			name:   "available",
+			result: 1,
+		},
+		{
+			name:    "unexpected result",
+			result:  0,
+			wantErr: "unexpected database availability query result: 0",
+		},
+		{
+			name:     "query error",
+			queryErr: assert.AnError,
+			wantErr:  assert.AnError.Error(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+
+			query := "/* otel-collector-ignore */ SELECT 1 FROM DUAL"
+			expectation := mock.ExpectQuery(regexp.QuoteMeta(query))
+			if tt.queryErr != nil {
+				expectation.WillReturnError(tt.queryErr)
+			} else {
+				expectation.WillReturnRows(sqlmock.NewRows([]string{"availability"}).AddRow(tt.result))
+			}
+
+			c := &mySQLClient{client: db}
+			err = c.checkDBAvailability()
+			if tt.wantErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, err, tt.wantErr)
+			}
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestGetQueryExecutionTime(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	query := "SELECT COALESCE(SUM(SUM_TIMER_WAIT), 0) / 1000000000000.0 " +
+		"FROM performance_schema.events_statements_summary_by_digest"
+	mock.ExpectQuery(regexp.QuoteMeta(query)).
+		WillReturnRows(sqlmock.NewRows([]string{"execution_time"}).AddRow(12.345))
+
+	c := &mySQLClient{client: db}
+	got, err := c.getQueryExecutionTime()
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+
+	assert.Equal(t, 12.345, got)
+}
+
+func TestGetActiveSessionCount(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	query := "/* otel-collector-ignore */ SELECT COUNT(*) " +
+		"FROM performance_schema.threads " +
+		"WHERE PROCESSLIST_STATE IS NOT NULL " +
+		"AND TRIM(PROCESSLIST_STATE) != '' " +
+		"AND PROCESSLIST_COMMAND NOT IN ('Sleep', 'Daemon') " +
+		"AND PROCESSLIST_ID != CONNECTION_ID() " +
+		"AND COALESCE(PROCESSLIST_INFO, '') != '' " +
+		"AND COALESCE(PROCESSLIST_INFO, '') NOT LIKE '/* otel-collector-ignore */%'"
+	mock.ExpectQuery(regexp.QuoteMeta(query)).
+		WillReturnRows(sqlmock.NewRows([]string{"active_session_count"}).AddRow(7))
+
+	c := &mySQLClient{client: db}
+	got, err := c.getActiveSessionCount()
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+
+	assert.Equal(t, int64(7), got)
 }
 
 // TestGetDBVersionCaching verifies that a cached version is returned on subsequent
@@ -402,5 +606,17 @@ func TestDBVersionHelperMethods(t *testing.T) {
 	t.Run("productString zero value defaults to MySQL", func(t *testing.T) {
 		// Zero value has product=dbProductMySQL (iota 0); productString must return "MySQL".
 		assert.Equal(t, "MySQL", dbVersion{}.productString())
+	})
+	t.Run("systemName MySQL", func(t *testing.T) {
+		// Expected values are hardcoded (not sourced from the semconv package) because
+		// depguard disallows importing semconv in test files; this keeps the test an
+		// independent check on the values systemName maps to.
+		assert.Equal(t, "mysql", dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.27")}.systemName())
+	})
+	t.Run("systemName MariaDB", func(t *testing.T) {
+		assert.Equal(t, "mariadb", dbVersion{product: dbProductMariaDB, version: mustParseVersion(t, "10.11.6")}.systemName())
+	})
+	t.Run("systemName zero value defaults to mysql", func(t *testing.T) {
+		assert.Equal(t, "mysql", dbVersion{}.systemName())
 	})
 }

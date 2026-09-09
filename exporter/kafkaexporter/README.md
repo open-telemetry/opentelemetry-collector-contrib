@@ -7,7 +7,8 @@
 | Distributions | [core], [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fkafka%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fkafka) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fkafka%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fkafka) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_kafka)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_kafka&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@pavolloffay](https://www.github.com/pavolloffay), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy), [@axw](https://www.github.com/axw), [@paulojmdias](https://www.github.com/paulojmdias) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@pavolloffay](https://www.github.com/pavolloffay), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy), [@paulojmdias](https://www.github.com/paulojmdias) |
+| Emeritus      | [@axw](https://www.github.com/axw) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -38,17 +39,21 @@ The following settings can be optionally configured:
   - `topic` (default = otlp\_logs): The name of the Kafka topic to which logs will be exported.
   - `encoding` (default = otlp\_proto): The encoding for logs. See [Supported encodings](#supported-encodings).
   - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
+  - `message_key_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the Kafka record key for log messages. If the metadata key is absent or empty, the record key is left nil. Mutually exclusive with `partition_logs_by_resource_attributes` and `partition_logs_by_trace_id`. See [Message Key](#message-key) for details.
 - `metrics`
   - `topic` (default = otlp\_metrics): The name of the Kafka topic to publish metrics to.
   - `encoding` (default = otlp\_proto): The encoding for metrics. See [Supported encodings](#supported-encodings).
   - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
+  - `message_key_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the Kafka record key for metric messages. If the metadata key is absent or empty, the record key is left nil. Mutually exclusive with `partition_metrics_by_resource_attributes`. See [Message Key](#message-key) for details.
 - `traces`
   - `topic` (default = otlp\_spans): The name of the Kafka topic to publish traces to.
   - `encoding` (default = otlp\_proto): The encoding for traces. See [Supported encodings](#supported-encodings).
   - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
+  - `message_key_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the Kafka record key for trace messages. If the metadata key is absent or empty, the record key is left nil. Mutually exclusive with `partition_traces_by_id`. See [Message Key](#message-key) for details.
 - `topic_from_attribute` (default = ""): Specify the resource attribute whose value should be used as the message's topic. See [Destination Topic](#destination-topic) below for more details.
 - `include_metadata_keys` (default = []): Specifies a list of metadata keys to propagate as Kafka message headers. If one or more keys aren't found in the metadata, they are ignored. When `sending_queue::batch` is enabled, `sending_queue::batch::partition::metadata_keys` must be configured and include all values configured in `include_metadata_keys`.
 - `record_headers` (default = {}): Specifies a map of key/value pairs to set as static headers on every outgoing Kafka record.
+- `signal_header` (default = false): Adds an `otelcol.signal` header (`logs`, `metrics`, `traces`, or `profiles`) to every record. See [Shared signal topic](#shared-signal-topic).
 - `partition_traces_by_id` (default = false): configures the exporter to include the trace ID as the message key in trace messages sent to kafka. *Please note:* this setting does not have any effect on Jaeger encoding exporters since Jaeger exporters include trace ID as the message key by default.
 - `partition_metrics_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in metric messages sent to kafka.
 - `partition_logs_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in log messages sent to kafka.
@@ -63,17 +68,14 @@ The following settings can be optionally configured:
   - `extension`: The component ID of a custom partitioner extension. When set, partitioning is delegated to the specified extension.
 - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options. Set to `tls: insecure: false` explicitly when using `AWS_MSK_IAM_OAUTHBEARER` as the authentication method.
 - `auth`
-  - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
-    - `username`: The username to use.
-    - `password`: The password to use
   - `sasl`
     - `username`: The username to use.
     - `password`: The password to use
-    - `mechanism`: The SASL mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM_OAUTHBEARER, or PLAIN)
+    - `mechanism`: The SASL mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER, or PLAIN)
     - `version` (default = 0): The SASL protocol version to use (0 or 1)
     - `aws_msk`
       - `region`: AWS Region in case of AWS_MSK_IAM_OAUTHBEARER mechanism
-  - `tls` (Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
+    - `oauthbearer_token_source`: The component ID of an authenticator extension that provides OAuth2 tokens (e.g. `oauth2client` or `azure_auth`). Required when `mechanism` is `OAUTHBEARER`; the extension must be listed under `service.extensions`.
   - `kerberos`
     - `service_name`: Kerberos service name
     - `realm`: Kerberos realm
@@ -84,13 +86,7 @@ The following settings can be optionally configured:
     - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
     - `disable_fast_negotiation`: Disable PA-FX-FAST negotiation (Pre-Authentication Framework - Fast). Some common Kerberos implementations do not support PA-FX-FAST negotiation. This is set to `false` by default.
 - `metadata`
-  - `full` (default = true): Whether to maintain a full set of metadata. When
-    disabled, the client does not make the initial request to broker at the
-    startup.
   - `refresh_interval` (default = 10m): The refreshInterval controls the frequency at which cluster metadata is refreshed in the background.
-  - `retry`
-    - `max` (default = 3): The number of retries to get metadata
-    - `backoff` (default = 250ms): How long to wait between metadata retries
 - `timeout` (default = 5s): Time to wait per individual attempt to produce data to Kafka.
 - `retry_on_failure`
   - `enabled` (default = true)
@@ -108,6 +104,7 @@ The following settings can be optionally configured:
     - `requests_per_second` is the average number of requests per seconds.
 - `producer`
   - `max_message_bytes` (default = 1000000) the maximum permitted size of a message in bytes, calculated before compression.
+  - `max_broker_write_bytes` (default = 104857600) the maximum bytes the producer will write to a broker in a single request. Must be greater than or equal to `max_message_bytes`. Increase this when raising `max_message_bytes` above 100 MiB.
   - `required_acks` (default = 1) controls when a message is regarded as transmitted. <https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#acks>
   - `compression` (default = 'none') the compression used when producing messages to kafka. The options are: `none`, `gzip`, `snappy`, `lz4`, and `zstd` <https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#compression-type>
   - `compression_params`
@@ -129,6 +126,37 @@ The following settings can be optionally configured:
   - `flush_max_messages` (default = 10000) The maximum number of messages the producer will send in a single broker request.
   - `allow_auto_topic_creation` (default = true) whether the broker is allowed to automatically create topics when they are referenced but do not already exist.
   - `linger`: (default = `10ms`) How long individual topic partitions will linger waiting for more records before triggering a request to be built.
+
+### Shared signal topic
+
+To send more than one signal to the same topic, set each signal's `topic` to that topic and enable
+`signal_header`:
+
+```yaml
+exporters:
+  kafka:
+    signal_header: true
+    logs:
+      topic: otlp
+    metrics:
+      topic: otlp
+    traces:
+      topic: otlp
+    profiles:
+      topic: otlp
+```
+
+You MUST turn the header on before you share topics. Existing receivers ignore unknown headers, so
+the current per-signal topics keep working. Do not write mixed signals to a receiver that does not
+have `signal_header` enabled.
+
+A shared topic is a good fit when you are partition-constrained or running at low throughput, or
+when you already isolate with templated topics and do not want another topic per signal. Keep
+separate topics when you need independent retention, access control, or failure isolation, or when
+you want to scale consumers per signal.
+
+`otelcol.signal` cannot be set in `record_headers` or `include_metadata_keys` while this option is
+enabled.
 
 ### Supported encodings
 
@@ -164,6 +192,41 @@ exporters:
       another-header: "another-value"
 ```
 
+### SASL/OAUTHBEARER (OAuth2 token source)
+
+The `OAUTHBEARER` mechanism delegates token acquisition and refresh to an authenticator
+extension referenced by `oauthbearer_token_source`, such as
+[`oauth2clientauth`](../../extension/oauth2clientauthextension/README.md):
+
+```yaml
+extensions:
+  oauth2client:
+    client_id: someclientid
+    client_secret: someclientsecret
+    token_url: https://example.com/oauth2/default/v1/token
+
+exporters:
+  kafka:
+    brokers: ["localhost:9092"]
+    tls:
+      insecure: false
+    auth:
+      sasl:
+        mechanism: OAUTHBEARER
+        oauthbearer_token_source: oauth2client
+
+service:
+  extensions: [oauth2client]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [kafka]
+```
+
+The [`azureauth`](../../extension/azureauthextension/README.md) extension can also be used
+as a token source, which supports managed identity, workload identity, and service principal
+for authenticating against Azure Event Hubs.
+
 ## Destination Topic
 
 The destination topic can be defined in a few different ways and takes priority in the following order:
@@ -173,9 +236,19 @@ The destination topic can be defined in a few different ways and takes priority 
 3. If a prior component in the collector pipeline sets the topic on the context via the `topic.WithTopic` function (from the `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic` package), the value set in the context is used.
 4. Finally, the `<signal>::topic` configuration is used for the signal-specific destination topic.
 
+## Message Key
+
+The Kafka record key can be set in the following ways, in order of precedence:
+
+1. When `<signal>::message_key_from_metadata_key` is configured and the named metadata key is present and non-empty, its value is used as the record key. This is intended to be used together with an upstream processor that evaluates OTTL expressions and stores the result in request metadata.
+2. When one of the `partition_*` flags is set (`partition_traces_by_id`, `partition_metrics_by_resource_attributes`, `partition_logs_by_resource_attributes`, or `partition_logs_by_trace_id`), the record key is derived from the signal data. These flags are mutually exclusive with `message_key_from_metadata_key` for the same signal.
+3. For Jaeger encodings (`jaeger_proto`, `jaeger_json`), the marshaler always keys records by the trace ID.
+4. Otherwise the record key is nil and the configured `record_partitioner` strategy determines which partition receives the record.
+
+
 ## Partitioning Kafka Records
 
-The exporter supports multiple strategies to control how records are distributed across kafka partitions within a topic. 
+The exporter supports multiple strategies to control how records are distributed across kafka partitions within a topic.
 
 Available strategies for partitioning are `sticky_key`, `sticky`, `round_robin`, `least_backup` and `extension`
 
@@ -190,7 +263,7 @@ exporters:
       - localhost:9092
     record_partitioner:
       extension: my_custom_partitioner
-  
+
 extensions:
   my_custom_partitioner:
     # your extension-specific configuration here

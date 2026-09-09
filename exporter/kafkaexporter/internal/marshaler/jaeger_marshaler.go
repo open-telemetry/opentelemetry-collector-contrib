@@ -23,18 +23,16 @@ type JaegerProtoSpanMarshaler struct{}
 
 type JaegerJSONSpanMarshaler struct{}
 
-func (JaegerProtoSpanMarshaler) MarshalTraces(traces ptrace.Traces) ([]Message, error) {
-	return marshalJaeger(traces, marshalJaegerSpanProto)
+func (JaegerProtoSpanMarshaler) MarshalTraces(traces ptrace.Traces, yield func(key, value []byte)) error {
+	return marshalJaeger(traces, yield, marshalJaegerSpanProto)
 }
 
-func (JaegerJSONSpanMarshaler) MarshalTraces(traces ptrace.Traces) ([]Message, error) {
-	return marshalJaeger(traces, marshalJaegerSpanJSON)
+func (JaegerJSONSpanMarshaler) MarshalTraces(traces ptrace.Traces, yield func(key, value []byte)) error {
+	return marshalJaeger(traces, yield, marshalJaegerSpanJSON)
 }
 
-func marshalJaeger(traces ptrace.Traces, marshal marshalJaegerSpanFunc) ([]Message, error) {
+func marshalJaeger(traces ptrace.Traces, yield func(key, value []byte), marshal marshalJaegerSpanFunc) error {
 	batches := jaeger.ProtoFromTraces(traces)
-	var messages []Message
-
 	var errs error
 	for _, batch := range batches {
 		for _, span := range batch.Spans {
@@ -45,11 +43,10 @@ func marshalJaeger(traces ptrace.Traces, marshal marshalJaegerSpanFunc) ([]Messa
 				errs = multierr.Append(errs, err)
 				continue
 			}
-			key := []byte(span.TraceID.String())
-			messages = append(messages, Message{Key: key, Value: bts})
+			yield([]byte(span.TraceID.String()), bts)
 		}
 	}
-	return messages, errs
+	return errs
 }
 
 type marshalJaegerSpanFunc func(*jaegerproto.Span) ([]byte, error)

@@ -30,6 +30,21 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	oCfg := cfg.(*Config)
 	assert.Equal(t, 5, oCfg.MinSpansToAggregate)
 	assert.Equal(t, "aggregation.", oCfg.AggregationAttributePrefix)
+	assert.False(t, oCfg.EnableOutlierAnalysis)
+	assert.Equal(t, OutlierMethodIQR, oCfg.OutlierAnalysis.Method)
+	assert.Equal(t, 1.5, oCfg.OutlierAnalysis.IQRMultiplier)
+	assert.Equal(t, 3.0, oCfg.OutlierAnalysis.MADMultiplier)
+	assert.Equal(t, 7, oCfg.OutlierAnalysis.MinGroupSize)
+	assert.Equal(t, 0.75, oCfg.OutlierAnalysis.CorrelationMinOccurrence)
+	assert.Equal(t, 0.25, oCfg.OutlierAnalysis.CorrelationMaxNormalOccurrence)
+	assert.Equal(t, 5, oCfg.OutlierAnalysis.MaxCorrelatedAttributes)
+	assert.False(t, oCfg.OutlierAnalysis.PreserveOutliers)
+	assert.Equal(t, 2, oCfg.OutlierAnalysis.MaxPreservedOutliers)
+	assert.False(t, oCfg.OutlierAnalysis.PreserveOnlyWithCorrelation)
+	assert.Equal(t, 0.1, oCfg.OutlierAnalysis.MinOutlierThresholdPercent)
+
+	oCfg.EnableOutlierAnalysis = true
+	assert.NoError(t, oCfg.Validate())
 }
 
 func TestFactory_CreateTracesProcessor(t *testing.T) {

@@ -26,4 +26,3 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34824
 tests:
   config:
-  skip_lifecycle: true

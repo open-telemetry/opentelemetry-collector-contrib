@@ -18,9 +18,6 @@
     "cpu.user": null
   },
   {
-    "cpu.utilization_per_core": null
-  },
-  {
     "cpu.wait": null
   },
   {

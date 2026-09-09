@@ -3,17 +3,30 @@
 package metadata
 
 import (
+	"fmt"
+	"slices"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// SaphanaAlertCountMetricAttributeKey specifies the key of an attribute for the saphana.alert.count metric.
+type SaphanaAlertCountMetricAttributeKey string
+
+const (
+	SaphanaAlertCountMetricAttributeKeyAlertRating SaphanaAlertCountMetricAttributeKey = "rating"
+)
+
+// SaphanaAlertCountMetricConfig provides config for the saphana.alert.count metric.
+type SaphanaAlertCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaAlertCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SaphanaAlertCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -27,191 +40,2138 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+func (ms *SaphanaAlertCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaAlertCountMetricAttributeKeyAlertRating:
+		default:
+			return fmt.Errorf("metric saphana.alert.count doesn't have an attribute %v, valid attributes: [rating]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaBackupLatestMetricConfig provides config for the saphana.backup.latest metric.
+type SaphanaBackupLatestMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SaphanaBackupLatestMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SaphanaColumnMemoryUsedMetricAttributeKey specifies the key of an attribute for the saphana.column.memory.used metric.
+type SaphanaColumnMemoryUsedMetricAttributeKey string
+
+const (
+	SaphanaColumnMemoryUsedMetricAttributeKeyColumnMemoryType    SaphanaColumnMemoryUsedMetricAttributeKey = "type"
+	SaphanaColumnMemoryUsedMetricAttributeKeyColumnMemorySubtype SaphanaColumnMemoryUsedMetricAttributeKey = "subtype"
+)
+
+// SaphanaColumnMemoryUsedMetricConfig provides config for the saphana.column.memory.used metric.
+type SaphanaColumnMemoryUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaColumnMemoryUsedMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaColumnMemoryUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaColumnMemoryUsedMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaColumnMemoryUsedMetricAttributeKeyColumnMemoryType, SaphanaColumnMemoryUsedMetricAttributeKeyColumnMemorySubtype:
+		default:
+			return fmt.Errorf("metric saphana.column.memory.used doesn't have an attribute %v, valid attributes: [type, subtype]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaComponentMemoryUsedMetricAttributeKey specifies the key of an attribute for the saphana.component.memory.used metric.
+type SaphanaComponentMemoryUsedMetricAttributeKey string
+
+const (
+	SaphanaComponentMemoryUsedMetricAttributeKeyComponent SaphanaComponentMemoryUsedMetricAttributeKey = "component"
+)
+
+// SaphanaComponentMemoryUsedMetricConfig provides config for the saphana.component.memory.used metric.
+type SaphanaComponentMemoryUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaComponentMemoryUsedMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaComponentMemoryUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaComponentMemoryUsedMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaComponentMemoryUsedMetricAttributeKeyComponent:
+		default:
+			return fmt.Errorf("metric saphana.component.memory.used doesn't have an attribute %v, valid attributes: [component]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaConnectionCountMetricAttributeKey specifies the key of an attribute for the saphana.connection.count metric.
+type SaphanaConnectionCountMetricAttributeKey string
+
+const (
+	SaphanaConnectionCountMetricAttributeKeyConnectionStatus SaphanaConnectionCountMetricAttributeKey = "status"
+)
+
+// SaphanaConnectionCountMetricConfig provides config for the saphana.connection.count metric.
+type SaphanaConnectionCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaConnectionCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaConnectionCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaConnectionCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaConnectionCountMetricAttributeKeyConnectionStatus:
+		default:
+			return fmt.Errorf("metric saphana.connection.count doesn't have an attribute %v, valid attributes: [status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaCPUUsedMetricAttributeKey specifies the key of an attribute for the saphana.cpu.used metric.
+type SaphanaCPUUsedMetricAttributeKey string
+
+const (
+	SaphanaCPUUsedMetricAttributeKeyCPUType SaphanaCPUUsedMetricAttributeKey = "type"
+)
+
+// SaphanaCPUUsedMetricConfig provides config for the saphana.cpu.used metric.
+type SaphanaCPUUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaCPUUsedMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaCPUUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaCPUUsedMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaCPUUsedMetricAttributeKeyCPUType:
+		default:
+			return fmt.Errorf("metric saphana.cpu.used doesn't have an attribute %v, valid attributes: [type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaDiskSizeCurrentMetricAttributeKey specifies the key of an attribute for the saphana.disk.size.current metric.
+type SaphanaDiskSizeCurrentMetricAttributeKey string
+
+const (
+	SaphanaDiskSizeCurrentMetricAttributeKeyPath              SaphanaDiskSizeCurrentMetricAttributeKey = "path"
+	SaphanaDiskSizeCurrentMetricAttributeKeyDiskUsageType     SaphanaDiskSizeCurrentMetricAttributeKey = "usage_type"
+	SaphanaDiskSizeCurrentMetricAttributeKeyDiskStateUsedFree SaphanaDiskSizeCurrentMetricAttributeKey = "state"
+)
+
+// SaphanaDiskSizeCurrentMetricConfig provides config for the saphana.disk.size.current metric.
+type SaphanaDiskSizeCurrentMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaDiskSizeCurrentMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaDiskSizeCurrentMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaDiskSizeCurrentMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaDiskSizeCurrentMetricAttributeKeyPath, SaphanaDiskSizeCurrentMetricAttributeKeyDiskUsageType, SaphanaDiskSizeCurrentMetricAttributeKeyDiskStateUsedFree:
+		default:
+			return fmt.Errorf("metric saphana.disk.size.current doesn't have an attribute %v, valid attributes: [path, usage_type, state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaHostMemoryCurrentMetricAttributeKey specifies the key of an attribute for the saphana.host.memory.current metric.
+type SaphanaHostMemoryCurrentMetricAttributeKey string
+
+const (
+	SaphanaHostMemoryCurrentMetricAttributeKeyMemoryStateUsedFree SaphanaHostMemoryCurrentMetricAttributeKey = "state"
+)
+
+// SaphanaHostMemoryCurrentMetricConfig provides config for the saphana.host.memory.current metric.
+type SaphanaHostMemoryCurrentMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaHostMemoryCurrentMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaHostMemoryCurrentMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaHostMemoryCurrentMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaHostMemoryCurrentMetricAttributeKeyMemoryStateUsedFree:
+		default:
+			return fmt.Errorf("metric saphana.host.memory.current doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaHostSwapCurrentMetricAttributeKey specifies the key of an attribute for the saphana.host.swap.current metric.
+type SaphanaHostSwapCurrentMetricAttributeKey string
+
+const (
+	SaphanaHostSwapCurrentMetricAttributeKeyHostSwapState SaphanaHostSwapCurrentMetricAttributeKey = "state"
+)
+
+// SaphanaHostSwapCurrentMetricConfig provides config for the saphana.host.swap.current metric.
+type SaphanaHostSwapCurrentMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaHostSwapCurrentMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaHostSwapCurrentMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaHostSwapCurrentMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaHostSwapCurrentMetricAttributeKeyHostSwapState:
+		default:
+			return fmt.Errorf("metric saphana.host.swap.current doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaInstanceCodeSizeMetricConfig provides config for the saphana.instance.code_size metric.
+type SaphanaInstanceCodeSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SaphanaInstanceCodeSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SaphanaInstanceMemoryCurrentMetricAttributeKey specifies the key of an attribute for the saphana.instance.memory.current metric.
+type SaphanaInstanceMemoryCurrentMetricAttributeKey string
+
+const (
+	SaphanaInstanceMemoryCurrentMetricAttributeKeyMemoryStateUsedFree SaphanaInstanceMemoryCurrentMetricAttributeKey = "state"
+)
+
+// SaphanaInstanceMemoryCurrentMetricConfig provides config for the saphana.instance.memory.current metric.
+type SaphanaInstanceMemoryCurrentMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaInstanceMemoryCurrentMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaInstanceMemoryCurrentMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaInstanceMemoryCurrentMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaInstanceMemoryCurrentMetricAttributeKeyMemoryStateUsedFree:
+		default:
+			return fmt.Errorf("metric saphana.instance.memory.current doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaInstanceMemorySharedAllocatedMetricConfig provides config for the saphana.instance.memory.shared.allocated metric.
+type SaphanaInstanceMemorySharedAllocatedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SaphanaInstanceMemorySharedAllocatedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SaphanaInstanceMemoryUsedPeakMetricConfig provides config for the saphana.instance.memory.used.peak metric.
+type SaphanaInstanceMemoryUsedPeakMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SaphanaInstanceMemoryUsedPeakMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SaphanaLicenseExpirationTimeMetricConfig provides config for the saphana.license.expiration.time metric.
+type SaphanaLicenseExpirationTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SaphanaLicenseExpirationTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SaphanaLicenseLimitMetricConfig provides config for the saphana.license.limit metric.
+type SaphanaLicenseLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SaphanaLicenseLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SaphanaLicensePeakMetricConfig provides config for the saphana.license.peak metric.
+type SaphanaLicensePeakMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SaphanaLicensePeakMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SaphanaNetworkRequestAverageTimeMetricConfig provides config for the saphana.network.request.average_time metric.
+type SaphanaNetworkRequestAverageTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SaphanaNetworkRequestAverageTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SaphanaNetworkRequestCountMetricAttributeKey specifies the key of an attribute for the saphana.network.request.count metric.
+type SaphanaNetworkRequestCountMetricAttributeKey string
+
+const (
+	SaphanaNetworkRequestCountMetricAttributeKeyActivePendingRequestState SaphanaNetworkRequestCountMetricAttributeKey = "state"
+)
+
+// SaphanaNetworkRequestCountMetricConfig provides config for the saphana.network.request.count metric.
+type SaphanaNetworkRequestCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaNetworkRequestCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaNetworkRequestCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaNetworkRequestCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaNetworkRequestCountMetricAttributeKeyActivePendingRequestState:
+		default:
+			return fmt.Errorf("metric saphana.network.request.count doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaNetworkRequestFinishedCountMetricAttributeKey specifies the key of an attribute for the saphana.network.request.finished.count metric.
+type SaphanaNetworkRequestFinishedCountMetricAttributeKey string
+
+const (
+	SaphanaNetworkRequestFinishedCountMetricAttributeKeyInternalExternalRequestType SaphanaNetworkRequestFinishedCountMetricAttributeKey = "type"
+)
+
+// SaphanaNetworkRequestFinishedCountMetricConfig provides config for the saphana.network.request.finished.count metric.
+type SaphanaNetworkRequestFinishedCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaNetworkRequestFinishedCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaNetworkRequestFinishedCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaNetworkRequestFinishedCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaNetworkRequestFinishedCountMetricAttributeKeyInternalExternalRequestType:
+		default:
+			return fmt.Errorf("metric saphana.network.request.finished.count doesn't have an attribute %v, valid attributes: [type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaReplicationAverageTimeMetricAttributeKey specifies the key of an attribute for the saphana.replication.average_time metric.
+type SaphanaReplicationAverageTimeMetricAttributeKey string
+
+const (
+	SaphanaReplicationAverageTimeMetricAttributeKeyPrimaryHost     SaphanaReplicationAverageTimeMetricAttributeKey = "primary"
+	SaphanaReplicationAverageTimeMetricAttributeKeySecondaryHost   SaphanaReplicationAverageTimeMetricAttributeKey = "secondary"
+	SaphanaReplicationAverageTimeMetricAttributeKeyPort            SaphanaReplicationAverageTimeMetricAttributeKey = "port"
+	SaphanaReplicationAverageTimeMetricAttributeKeyReplicationMode SaphanaReplicationAverageTimeMetricAttributeKey = "mode"
+)
+
+// SaphanaReplicationAverageTimeMetricConfig provides config for the saphana.replication.average_time metric.
+type SaphanaReplicationAverageTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaReplicationAverageTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaReplicationAverageTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaReplicationAverageTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaReplicationAverageTimeMetricAttributeKeyPrimaryHost, SaphanaReplicationAverageTimeMetricAttributeKeySecondaryHost, SaphanaReplicationAverageTimeMetricAttributeKeyPort, SaphanaReplicationAverageTimeMetricAttributeKeyReplicationMode:
+		default:
+			return fmt.Errorf("metric saphana.replication.average_time doesn't have an attribute %v, valid attributes: [primary, secondary, port, mode]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaReplicationBacklogSizeMetricAttributeKey specifies the key of an attribute for the saphana.replication.backlog.size metric.
+type SaphanaReplicationBacklogSizeMetricAttributeKey string
+
+const (
+	SaphanaReplicationBacklogSizeMetricAttributeKeyPrimaryHost     SaphanaReplicationBacklogSizeMetricAttributeKey = "primary"
+	SaphanaReplicationBacklogSizeMetricAttributeKeySecondaryHost   SaphanaReplicationBacklogSizeMetricAttributeKey = "secondary"
+	SaphanaReplicationBacklogSizeMetricAttributeKeyPort            SaphanaReplicationBacklogSizeMetricAttributeKey = "port"
+	SaphanaReplicationBacklogSizeMetricAttributeKeyReplicationMode SaphanaReplicationBacklogSizeMetricAttributeKey = "mode"
+)
+
+// SaphanaReplicationBacklogSizeMetricConfig provides config for the saphana.replication.backlog.size metric.
+type SaphanaReplicationBacklogSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaReplicationBacklogSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaReplicationBacklogSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaReplicationBacklogSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaReplicationBacklogSizeMetricAttributeKeyPrimaryHost, SaphanaReplicationBacklogSizeMetricAttributeKeySecondaryHost, SaphanaReplicationBacklogSizeMetricAttributeKeyPort, SaphanaReplicationBacklogSizeMetricAttributeKeyReplicationMode:
+		default:
+			return fmt.Errorf("metric saphana.replication.backlog.size doesn't have an attribute %v, valid attributes: [primary, secondary, port, mode]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaReplicationBacklogTimeMetricAttributeKey specifies the key of an attribute for the saphana.replication.backlog.time metric.
+type SaphanaReplicationBacklogTimeMetricAttributeKey string
+
+const (
+	SaphanaReplicationBacklogTimeMetricAttributeKeyPrimaryHost     SaphanaReplicationBacklogTimeMetricAttributeKey = "primary"
+	SaphanaReplicationBacklogTimeMetricAttributeKeySecondaryHost   SaphanaReplicationBacklogTimeMetricAttributeKey = "secondary"
+	SaphanaReplicationBacklogTimeMetricAttributeKeyPort            SaphanaReplicationBacklogTimeMetricAttributeKey = "port"
+	SaphanaReplicationBacklogTimeMetricAttributeKeyReplicationMode SaphanaReplicationBacklogTimeMetricAttributeKey = "mode"
+)
+
+// SaphanaReplicationBacklogTimeMetricConfig provides config for the saphana.replication.backlog.time metric.
+type SaphanaReplicationBacklogTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaReplicationBacklogTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaReplicationBacklogTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaReplicationBacklogTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaReplicationBacklogTimeMetricAttributeKeyPrimaryHost, SaphanaReplicationBacklogTimeMetricAttributeKeySecondaryHost, SaphanaReplicationBacklogTimeMetricAttributeKeyPort, SaphanaReplicationBacklogTimeMetricAttributeKeyReplicationMode:
+		default:
+			return fmt.Errorf("metric saphana.replication.backlog.time doesn't have an attribute %v, valid attributes: [primary, secondary, port, mode]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaRowStoreMemoryUsedMetricAttributeKey specifies the key of an attribute for the saphana.row_store.memory.used metric.
+type SaphanaRowStoreMemoryUsedMetricAttributeKey string
+
+const (
+	SaphanaRowStoreMemoryUsedMetricAttributeKeyRowMemoryType SaphanaRowStoreMemoryUsedMetricAttributeKey = "type"
+)
+
+// SaphanaRowStoreMemoryUsedMetricConfig provides config for the saphana.row_store.memory.used metric.
+type SaphanaRowStoreMemoryUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaRowStoreMemoryUsedMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaRowStoreMemoryUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaRowStoreMemoryUsedMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaRowStoreMemoryUsedMetricAttributeKeyRowMemoryType:
+		default:
+			return fmt.Errorf("metric saphana.row_store.memory.used doesn't have an attribute %v, valid attributes: [type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaSchemaMemoryUsedCurrentMetricAttributeKey specifies the key of an attribute for the saphana.schema.memory.used.current metric.
+type SaphanaSchemaMemoryUsedCurrentMetricAttributeKey string
+
+const (
+	SaphanaSchemaMemoryUsedCurrentMetricAttributeKeySchema           SaphanaSchemaMemoryUsedCurrentMetricAttributeKey = "schema"
+	SaphanaSchemaMemoryUsedCurrentMetricAttributeKeySchemaMemoryType SaphanaSchemaMemoryUsedCurrentMetricAttributeKey = "type"
+)
+
+// SaphanaSchemaMemoryUsedCurrentMetricConfig provides config for the saphana.schema.memory.used.current metric.
+type SaphanaSchemaMemoryUsedCurrentMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaSchemaMemoryUsedCurrentMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaSchemaMemoryUsedCurrentMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaSchemaMemoryUsedCurrentMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaSchemaMemoryUsedCurrentMetricAttributeKeySchema, SaphanaSchemaMemoryUsedCurrentMetricAttributeKeySchemaMemoryType:
+		default:
+			return fmt.Errorf("metric saphana.schema.memory.used.current doesn't have an attribute %v, valid attributes: [schema, type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaSchemaMemoryUsedMaxMetricAttributeKey specifies the key of an attribute for the saphana.schema.memory.used.max metric.
+type SaphanaSchemaMemoryUsedMaxMetricAttributeKey string
+
+const (
+	SaphanaSchemaMemoryUsedMaxMetricAttributeKeySchema SaphanaSchemaMemoryUsedMaxMetricAttributeKey = "schema"
+)
+
+// SaphanaSchemaMemoryUsedMaxMetricConfig provides config for the saphana.schema.memory.used.max metric.
+type SaphanaSchemaMemoryUsedMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaSchemaMemoryUsedMaxMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaSchemaMemoryUsedMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaSchemaMemoryUsedMaxMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaSchemaMemoryUsedMaxMetricAttributeKeySchema:
+		default:
+			return fmt.Errorf("metric saphana.schema.memory.used.max doesn't have an attribute %v, valid attributes: [schema]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaSchemaOperationCountMetricAttributeKey specifies the key of an attribute for the saphana.schema.operation.count metric.
+type SaphanaSchemaOperationCountMetricAttributeKey string
+
+const (
+	SaphanaSchemaOperationCountMetricAttributeKeySchema              SaphanaSchemaOperationCountMetricAttributeKey = "schema"
+	SaphanaSchemaOperationCountMetricAttributeKeySchemaOperationType SaphanaSchemaOperationCountMetricAttributeKey = "type"
+)
+
+// SaphanaSchemaOperationCountMetricConfig provides config for the saphana.schema.operation.count metric.
+type SaphanaSchemaOperationCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaSchemaOperationCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaSchemaOperationCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaSchemaOperationCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaSchemaOperationCountMetricAttributeKeySchema, SaphanaSchemaOperationCountMetricAttributeKeySchemaOperationType:
+		default:
+			return fmt.Errorf("metric saphana.schema.operation.count doesn't have an attribute %v, valid attributes: [schema, type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaSchemaRecordCompressedCountMetricAttributeKey specifies the key of an attribute for the saphana.schema.record.compressed.count metric.
+type SaphanaSchemaRecordCompressedCountMetricAttributeKey string
+
+const (
+	SaphanaSchemaRecordCompressedCountMetricAttributeKeySchema SaphanaSchemaRecordCompressedCountMetricAttributeKey = "schema"
+)
+
+// SaphanaSchemaRecordCompressedCountMetricConfig provides config for the saphana.schema.record.compressed.count metric.
+type SaphanaSchemaRecordCompressedCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaSchemaRecordCompressedCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaSchemaRecordCompressedCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaSchemaRecordCompressedCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaSchemaRecordCompressedCountMetricAttributeKeySchema:
+		default:
+			return fmt.Errorf("metric saphana.schema.record.compressed.count doesn't have an attribute %v, valid attributes: [schema]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaSchemaRecordCountMetricAttributeKey specifies the key of an attribute for the saphana.schema.record.count metric.
+type SaphanaSchemaRecordCountMetricAttributeKey string
+
+const (
+	SaphanaSchemaRecordCountMetricAttributeKeySchema           SaphanaSchemaRecordCountMetricAttributeKey = "schema"
+	SaphanaSchemaRecordCountMetricAttributeKeySchemaRecordType SaphanaSchemaRecordCountMetricAttributeKey = "type"
+)
+
+// SaphanaSchemaRecordCountMetricConfig provides config for the saphana.schema.record.count metric.
+type SaphanaSchemaRecordCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaSchemaRecordCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaSchemaRecordCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaSchemaRecordCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaSchemaRecordCountMetricAttributeKeySchema, SaphanaSchemaRecordCountMetricAttributeKeySchemaRecordType:
+		default:
+			return fmt.Errorf("metric saphana.schema.record.count doesn't have an attribute %v, valid attributes: [schema, type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaServiceCodeSizeMetricAttributeKey specifies the key of an attribute for the saphana.service.code_size metric.
+type SaphanaServiceCodeSizeMetricAttributeKey string
+
+const (
+	SaphanaServiceCodeSizeMetricAttributeKeyService SaphanaServiceCodeSizeMetricAttributeKey = "service"
+)
+
+// SaphanaServiceCodeSizeMetricConfig provides config for the saphana.service.code_size metric.
+type SaphanaServiceCodeSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaServiceCodeSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaServiceCodeSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaServiceCodeSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaServiceCodeSizeMetricAttributeKeyService:
+		default:
+			return fmt.Errorf("metric saphana.service.code_size doesn't have an attribute %v, valid attributes: [service]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaServiceCountMetricAttributeKey specifies the key of an attribute for the saphana.service.count metric.
+type SaphanaServiceCountMetricAttributeKey string
+
+const (
+	SaphanaServiceCountMetricAttributeKeyServiceStatus SaphanaServiceCountMetricAttributeKey = "status"
+)
+
+// SaphanaServiceCountMetricConfig provides config for the saphana.service.count metric.
+type SaphanaServiceCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaServiceCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaServiceCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaServiceCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaServiceCountMetricAttributeKeyServiceStatus:
+		default:
+			return fmt.Errorf("metric saphana.service.count doesn't have an attribute %v, valid attributes: [status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaServiceMemoryCompactorsAllocatedMetricAttributeKey specifies the key of an attribute for the saphana.service.memory.compactors.allocated metric.
+type SaphanaServiceMemoryCompactorsAllocatedMetricAttributeKey string
+
+const (
+	SaphanaServiceMemoryCompactorsAllocatedMetricAttributeKeyService SaphanaServiceMemoryCompactorsAllocatedMetricAttributeKey = "service"
+)
+
+// SaphanaServiceMemoryCompactorsAllocatedMetricConfig provides config for the saphana.service.memory.compactors.allocated metric.
+type SaphanaServiceMemoryCompactorsAllocatedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaServiceMemoryCompactorsAllocatedMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaServiceMemoryCompactorsAllocatedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaServiceMemoryCompactorsAllocatedMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaServiceMemoryCompactorsAllocatedMetricAttributeKeyService:
+		default:
+			return fmt.Errorf("metric saphana.service.memory.compactors.allocated doesn't have an attribute %v, valid attributes: [service]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaServiceMemoryCompactorsFreeableMetricAttributeKey specifies the key of an attribute for the saphana.service.memory.compactors.freeable metric.
+type SaphanaServiceMemoryCompactorsFreeableMetricAttributeKey string
+
+const (
+	SaphanaServiceMemoryCompactorsFreeableMetricAttributeKeyService SaphanaServiceMemoryCompactorsFreeableMetricAttributeKey = "service"
+)
+
+// SaphanaServiceMemoryCompactorsFreeableMetricConfig provides config for the saphana.service.memory.compactors.freeable metric.
+type SaphanaServiceMemoryCompactorsFreeableMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaServiceMemoryCompactorsFreeableMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaServiceMemoryCompactorsFreeableMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaServiceMemoryCompactorsFreeableMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaServiceMemoryCompactorsFreeableMetricAttributeKeyService:
+		default:
+			return fmt.Errorf("metric saphana.service.memory.compactors.freeable doesn't have an attribute %v, valid attributes: [service]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaServiceMemoryEffectiveLimitMetricAttributeKey specifies the key of an attribute for the saphana.service.memory.effective_limit metric.
+type SaphanaServiceMemoryEffectiveLimitMetricAttributeKey string
+
+const (
+	SaphanaServiceMemoryEffectiveLimitMetricAttributeKeyService SaphanaServiceMemoryEffectiveLimitMetricAttributeKey = "service"
+)
+
+// SaphanaServiceMemoryEffectiveLimitMetricConfig provides config for the saphana.service.memory.effective_limit metric.
+type SaphanaServiceMemoryEffectiveLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaServiceMemoryEffectiveLimitMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaServiceMemoryEffectiveLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaServiceMemoryEffectiveLimitMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaServiceMemoryEffectiveLimitMetricAttributeKeyService:
+		default:
+			return fmt.Errorf("metric saphana.service.memory.effective_limit doesn't have an attribute %v, valid attributes: [service]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaServiceMemoryHeapCurrentMetricAttributeKey specifies the key of an attribute for the saphana.service.memory.heap.current metric.
+type SaphanaServiceMemoryHeapCurrentMetricAttributeKey string
+
+const (
+	SaphanaServiceMemoryHeapCurrentMetricAttributeKeyService             SaphanaServiceMemoryHeapCurrentMetricAttributeKey = "service"
+	SaphanaServiceMemoryHeapCurrentMetricAttributeKeyMemoryStateUsedFree SaphanaServiceMemoryHeapCurrentMetricAttributeKey = "state"
+)
+
+// SaphanaServiceMemoryHeapCurrentMetricConfig provides config for the saphana.service.memory.heap.current metric.
+type SaphanaServiceMemoryHeapCurrentMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaServiceMemoryHeapCurrentMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaServiceMemoryHeapCurrentMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaServiceMemoryHeapCurrentMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaServiceMemoryHeapCurrentMetricAttributeKeyService, SaphanaServiceMemoryHeapCurrentMetricAttributeKeyMemoryStateUsedFree:
+		default:
+			return fmt.Errorf("metric saphana.service.memory.heap.current doesn't have an attribute %v, valid attributes: [service, state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaServiceMemoryLimitMetricAttributeKey specifies the key of an attribute for the saphana.service.memory.limit metric.
+type SaphanaServiceMemoryLimitMetricAttributeKey string
+
+const (
+	SaphanaServiceMemoryLimitMetricAttributeKeyService SaphanaServiceMemoryLimitMetricAttributeKey = "service"
+)
+
+// SaphanaServiceMemoryLimitMetricConfig provides config for the saphana.service.memory.limit metric.
+type SaphanaServiceMemoryLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaServiceMemoryLimitMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaServiceMemoryLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaServiceMemoryLimitMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaServiceMemoryLimitMetricAttributeKeyService:
+		default:
+			return fmt.Errorf("metric saphana.service.memory.limit doesn't have an attribute %v, valid attributes: [service]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaServiceMemorySharedCurrentMetricAttributeKey specifies the key of an attribute for the saphana.service.memory.shared.current metric.
+type SaphanaServiceMemorySharedCurrentMetricAttributeKey string
+
+const (
+	SaphanaServiceMemorySharedCurrentMetricAttributeKeyService             SaphanaServiceMemorySharedCurrentMetricAttributeKey = "service"
+	SaphanaServiceMemorySharedCurrentMetricAttributeKeyMemoryStateUsedFree SaphanaServiceMemorySharedCurrentMetricAttributeKey = "state"
+)
+
+// SaphanaServiceMemorySharedCurrentMetricConfig provides config for the saphana.service.memory.shared.current metric.
+type SaphanaServiceMemorySharedCurrentMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaServiceMemorySharedCurrentMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaServiceMemorySharedCurrentMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaServiceMemorySharedCurrentMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaServiceMemorySharedCurrentMetricAttributeKeyService, SaphanaServiceMemorySharedCurrentMetricAttributeKeyMemoryStateUsedFree:
+		default:
+			return fmt.Errorf("metric saphana.service.memory.shared.current doesn't have an attribute %v, valid attributes: [service, state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaServiceMemoryUsedMetricAttributeKey specifies the key of an attribute for the saphana.service.memory.used metric.
+type SaphanaServiceMemoryUsedMetricAttributeKey string
+
+const (
+	SaphanaServiceMemoryUsedMetricAttributeKeyService               SaphanaServiceMemoryUsedMetricAttributeKey = "service"
+	SaphanaServiceMemoryUsedMetricAttributeKeyServiceMemoryUsedType SaphanaServiceMemoryUsedMetricAttributeKey = "type"
+)
+
+// SaphanaServiceMemoryUsedMetricConfig provides config for the saphana.service.memory.used metric.
+type SaphanaServiceMemoryUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaServiceMemoryUsedMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaServiceMemoryUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaServiceMemoryUsedMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaServiceMemoryUsedMetricAttributeKeyService, SaphanaServiceMemoryUsedMetricAttributeKeyServiceMemoryUsedType:
+		default:
+			return fmt.Errorf("metric saphana.service.memory.used doesn't have an attribute %v, valid attributes: [service, type]", val)
+		}
+	}
+	if !slices.Contains(ms.EnabledAttributes, SaphanaServiceMemoryUsedMetricAttributeKeyServiceMemoryUsedType) {
+		return fmt.Errorf("type is a required attribute for saphana.service.memory.used metric and must be included")
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaServiceStackSizeMetricAttributeKey specifies the key of an attribute for the saphana.service.stack_size metric.
+type SaphanaServiceStackSizeMetricAttributeKey string
+
+const (
+	SaphanaServiceStackSizeMetricAttributeKeyService SaphanaServiceStackSizeMetricAttributeKey = "service"
+)
+
+// SaphanaServiceStackSizeMetricConfig provides config for the saphana.service.stack_size metric.
+type SaphanaServiceStackSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaServiceStackSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaServiceStackSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaServiceStackSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaServiceStackSizeMetricAttributeKeyService:
+		default:
+			return fmt.Errorf("metric saphana.service.stack_size doesn't have an attribute %v, valid attributes: [service]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaServiceThreadCountMetricAttributeKey specifies the key of an attribute for the saphana.service.thread.count metric.
+type SaphanaServiceThreadCountMetricAttributeKey string
+
+const (
+	SaphanaServiceThreadCountMetricAttributeKeyThreadStatus SaphanaServiceThreadCountMetricAttributeKey = "status"
+)
+
+// SaphanaServiceThreadCountMetricConfig provides config for the saphana.service.thread.count metric.
+type SaphanaServiceThreadCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaServiceThreadCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaServiceThreadCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaServiceThreadCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaServiceThreadCountMetricAttributeKeyThreadStatus:
+		default:
+			return fmt.Errorf("metric saphana.service.thread.count doesn't have an attribute %v, valid attributes: [status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaTransactionBlockedMetricConfig provides config for the saphana.transaction.blocked metric.
+type SaphanaTransactionBlockedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SaphanaTransactionBlockedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SaphanaTransactionCountMetricAttributeKey specifies the key of an attribute for the saphana.transaction.count metric.
+type SaphanaTransactionCountMetricAttributeKey string
+
+const (
+	SaphanaTransactionCountMetricAttributeKeyTransactionType SaphanaTransactionCountMetricAttributeKey = "type"
+)
+
+// SaphanaTransactionCountMetricConfig provides config for the saphana.transaction.count metric.
+type SaphanaTransactionCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaTransactionCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaTransactionCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaTransactionCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaTransactionCountMetricAttributeKeyTransactionType:
+		default:
+			return fmt.Errorf("metric saphana.transaction.count doesn't have an attribute %v, valid attributes: [type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaUptimeMetricConfig provides config for the saphana.uptime metric.
+type SaphanaUptimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SaphanaUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SaphanaVolumeOperationCountMetricAttributeKey specifies the key of an attribute for the saphana.volume.operation.count metric.
+type SaphanaVolumeOperationCountMetricAttributeKey string
+
+const (
+	SaphanaVolumeOperationCountMetricAttributeKeyPath                SaphanaVolumeOperationCountMetricAttributeKey = "path"
+	SaphanaVolumeOperationCountMetricAttributeKeyDiskUsageType       SaphanaVolumeOperationCountMetricAttributeKey = "usage_type"
+	SaphanaVolumeOperationCountMetricAttributeKeyVolumeOperationType SaphanaVolumeOperationCountMetricAttributeKey = "type"
+)
+
+// SaphanaVolumeOperationCountMetricConfig provides config for the saphana.volume.operation.count metric.
+type SaphanaVolumeOperationCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaVolumeOperationCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaVolumeOperationCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaVolumeOperationCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaVolumeOperationCountMetricAttributeKeyPath, SaphanaVolumeOperationCountMetricAttributeKeyDiskUsageType, SaphanaVolumeOperationCountMetricAttributeKeyVolumeOperationType:
+		default:
+			return fmt.Errorf("metric saphana.volume.operation.count doesn't have an attribute %v, valid attributes: [path, usage_type, type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaVolumeOperationSizeMetricAttributeKey specifies the key of an attribute for the saphana.volume.operation.size metric.
+type SaphanaVolumeOperationSizeMetricAttributeKey string
+
+const (
+	SaphanaVolumeOperationSizeMetricAttributeKeyPath                SaphanaVolumeOperationSizeMetricAttributeKey = "path"
+	SaphanaVolumeOperationSizeMetricAttributeKeyDiskUsageType       SaphanaVolumeOperationSizeMetricAttributeKey = "usage_type"
+	SaphanaVolumeOperationSizeMetricAttributeKeyVolumeOperationType SaphanaVolumeOperationSizeMetricAttributeKey = "type"
+)
+
+// SaphanaVolumeOperationSizeMetricConfig provides config for the saphana.volume.operation.size metric.
+type SaphanaVolumeOperationSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaVolumeOperationSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaVolumeOperationSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaVolumeOperationSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaVolumeOperationSizeMetricAttributeKeyPath, SaphanaVolumeOperationSizeMetricAttributeKeyDiskUsageType, SaphanaVolumeOperationSizeMetricAttributeKeyVolumeOperationType:
+		default:
+			return fmt.Errorf("metric saphana.volume.operation.size doesn't have an attribute %v, valid attributes: [path, usage_type, type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SaphanaVolumeOperationTimeMetricAttributeKey specifies the key of an attribute for the saphana.volume.operation.time metric.
+type SaphanaVolumeOperationTimeMetricAttributeKey string
+
+const (
+	SaphanaVolumeOperationTimeMetricAttributeKeyPath                SaphanaVolumeOperationTimeMetricAttributeKey = "path"
+	SaphanaVolumeOperationTimeMetricAttributeKeyDiskUsageType       SaphanaVolumeOperationTimeMetricAttributeKey = "usage_type"
+	SaphanaVolumeOperationTimeMetricAttributeKeyVolumeOperationType SaphanaVolumeOperationTimeMetricAttributeKey = "type"
+)
+
+// SaphanaVolumeOperationTimeMetricConfig provides config for the saphana.volume.operation.time metric.
+type SaphanaVolumeOperationTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SaphanaVolumeOperationTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SaphanaVolumeOperationTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SaphanaVolumeOperationTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SaphanaVolumeOperationTimeMetricAttributeKeyPath, SaphanaVolumeOperationTimeMetricAttributeKeyDiskUsageType, SaphanaVolumeOperationTimeMetricAttributeKeyVolumeOperationType:
+		default:
+			return fmt.Errorf("metric saphana.volume.operation.time doesn't have an attribute %v, valid attributes: [path, usage_type, type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for saphana metrics.
 type MetricsConfig struct {
-	SaphanaAlertCount                       MetricConfig `mapstructure:"saphana.alert.count"`
-	SaphanaBackupLatest                     MetricConfig `mapstructure:"saphana.backup.latest"`
-	SaphanaColumnMemoryUsed                 MetricConfig `mapstructure:"saphana.column.memory.used"`
-	SaphanaComponentMemoryUsed              MetricConfig `mapstructure:"saphana.component.memory.used"`
-	SaphanaConnectionCount                  MetricConfig `mapstructure:"saphana.connection.count"`
-	SaphanaCPUUsed                          MetricConfig `mapstructure:"saphana.cpu.used"`
-	SaphanaDiskSizeCurrent                  MetricConfig `mapstructure:"saphana.disk.size.current"`
-	SaphanaHostMemoryCurrent                MetricConfig `mapstructure:"saphana.host.memory.current"`
-	SaphanaHostSwapCurrent                  MetricConfig `mapstructure:"saphana.host.swap.current"`
-	SaphanaInstanceCodeSize                 MetricConfig `mapstructure:"saphana.instance.code_size"`
-	SaphanaInstanceMemoryCurrent            MetricConfig `mapstructure:"saphana.instance.memory.current"`
-	SaphanaInstanceMemorySharedAllocated    MetricConfig `mapstructure:"saphana.instance.memory.shared.allocated"`
-	SaphanaInstanceMemoryUsedPeak           MetricConfig `mapstructure:"saphana.instance.memory.used.peak"`
-	SaphanaLicenseExpirationTime            MetricConfig `mapstructure:"saphana.license.expiration.time"`
-	SaphanaLicenseLimit                     MetricConfig `mapstructure:"saphana.license.limit"`
-	SaphanaLicensePeak                      MetricConfig `mapstructure:"saphana.license.peak"`
-	SaphanaNetworkRequestAverageTime        MetricConfig `mapstructure:"saphana.network.request.average_time"`
-	SaphanaNetworkRequestCount              MetricConfig `mapstructure:"saphana.network.request.count"`
-	SaphanaNetworkRequestFinishedCount      MetricConfig `mapstructure:"saphana.network.request.finished.count"`
-	SaphanaReplicationAverageTime           MetricConfig `mapstructure:"saphana.replication.average_time"`
-	SaphanaReplicationBacklogSize           MetricConfig `mapstructure:"saphana.replication.backlog.size"`
-	SaphanaReplicationBacklogTime           MetricConfig `mapstructure:"saphana.replication.backlog.time"`
-	SaphanaRowStoreMemoryUsed               MetricConfig `mapstructure:"saphana.row_store.memory.used"`
-	SaphanaSchemaMemoryUsedCurrent          MetricConfig `mapstructure:"saphana.schema.memory.used.current"`
-	SaphanaSchemaMemoryUsedMax              MetricConfig `mapstructure:"saphana.schema.memory.used.max"`
-	SaphanaSchemaOperationCount             MetricConfig `mapstructure:"saphana.schema.operation.count"`
-	SaphanaSchemaRecordCompressedCount      MetricConfig `mapstructure:"saphana.schema.record.compressed.count"`
-	SaphanaSchemaRecordCount                MetricConfig `mapstructure:"saphana.schema.record.count"`
-	SaphanaServiceCodeSize                  MetricConfig `mapstructure:"saphana.service.code_size"`
-	SaphanaServiceCount                     MetricConfig `mapstructure:"saphana.service.count"`
-	SaphanaServiceMemoryCompactorsAllocated MetricConfig `mapstructure:"saphana.service.memory.compactors.allocated"`
-	SaphanaServiceMemoryCompactorsFreeable  MetricConfig `mapstructure:"saphana.service.memory.compactors.freeable"`
-	SaphanaServiceMemoryEffectiveLimit      MetricConfig `mapstructure:"saphana.service.memory.effective_limit"`
-	SaphanaServiceMemoryHeapCurrent         MetricConfig `mapstructure:"saphana.service.memory.heap.current"`
-	SaphanaServiceMemoryLimit               MetricConfig `mapstructure:"saphana.service.memory.limit"`
-	SaphanaServiceMemorySharedCurrent       MetricConfig `mapstructure:"saphana.service.memory.shared.current"`
-	SaphanaServiceMemoryUsed                MetricConfig `mapstructure:"saphana.service.memory.used"`
-	SaphanaServiceStackSize                 MetricConfig `mapstructure:"saphana.service.stack_size"`
-	SaphanaServiceThreadCount               MetricConfig `mapstructure:"saphana.service.thread.count"`
-	SaphanaTransactionBlocked               MetricConfig `mapstructure:"saphana.transaction.blocked"`
-	SaphanaTransactionCount                 MetricConfig `mapstructure:"saphana.transaction.count"`
-	SaphanaUptime                           MetricConfig `mapstructure:"saphana.uptime"`
-	SaphanaVolumeOperationCount             MetricConfig `mapstructure:"saphana.volume.operation.count"`
-	SaphanaVolumeOperationSize              MetricConfig `mapstructure:"saphana.volume.operation.size"`
-	SaphanaVolumeOperationTime              MetricConfig `mapstructure:"saphana.volume.operation.time"`
+	SaphanaAlertCount                       SaphanaAlertCountMetricConfig                       `mapstructure:"saphana.alert.count"`
+	SaphanaBackupLatest                     SaphanaBackupLatestMetricConfig                     `mapstructure:"saphana.backup.latest"`
+	SaphanaColumnMemoryUsed                 SaphanaColumnMemoryUsedMetricConfig                 `mapstructure:"saphana.column.memory.used"`
+	SaphanaComponentMemoryUsed              SaphanaComponentMemoryUsedMetricConfig              `mapstructure:"saphana.component.memory.used"`
+	SaphanaConnectionCount                  SaphanaConnectionCountMetricConfig                  `mapstructure:"saphana.connection.count"`
+	SaphanaCPUUsed                          SaphanaCPUUsedMetricConfig                          `mapstructure:"saphana.cpu.used"`
+	SaphanaDiskSizeCurrent                  SaphanaDiskSizeCurrentMetricConfig                  `mapstructure:"saphana.disk.size.current"`
+	SaphanaHostMemoryCurrent                SaphanaHostMemoryCurrentMetricConfig                `mapstructure:"saphana.host.memory.current"`
+	SaphanaHostSwapCurrent                  SaphanaHostSwapCurrentMetricConfig                  `mapstructure:"saphana.host.swap.current"`
+	SaphanaInstanceCodeSize                 SaphanaInstanceCodeSizeMetricConfig                 `mapstructure:"saphana.instance.code_size"`
+	SaphanaInstanceMemoryCurrent            SaphanaInstanceMemoryCurrentMetricConfig            `mapstructure:"saphana.instance.memory.current"`
+	SaphanaInstanceMemorySharedAllocated    SaphanaInstanceMemorySharedAllocatedMetricConfig    `mapstructure:"saphana.instance.memory.shared.allocated"`
+	SaphanaInstanceMemoryUsedPeak           SaphanaInstanceMemoryUsedPeakMetricConfig           `mapstructure:"saphana.instance.memory.used.peak"`
+	SaphanaLicenseExpirationTime            SaphanaLicenseExpirationTimeMetricConfig            `mapstructure:"saphana.license.expiration.time"`
+	SaphanaLicenseLimit                     SaphanaLicenseLimitMetricConfig                     `mapstructure:"saphana.license.limit"`
+	SaphanaLicensePeak                      SaphanaLicensePeakMetricConfig                      `mapstructure:"saphana.license.peak"`
+	SaphanaNetworkRequestAverageTime        SaphanaNetworkRequestAverageTimeMetricConfig        `mapstructure:"saphana.network.request.average_time"`
+	SaphanaNetworkRequestCount              SaphanaNetworkRequestCountMetricConfig              `mapstructure:"saphana.network.request.count"`
+	SaphanaNetworkRequestFinishedCount      SaphanaNetworkRequestFinishedCountMetricConfig      `mapstructure:"saphana.network.request.finished.count"`
+	SaphanaReplicationAverageTime           SaphanaReplicationAverageTimeMetricConfig           `mapstructure:"saphana.replication.average_time"`
+	SaphanaReplicationBacklogSize           SaphanaReplicationBacklogSizeMetricConfig           `mapstructure:"saphana.replication.backlog.size"`
+	SaphanaReplicationBacklogTime           SaphanaReplicationBacklogTimeMetricConfig           `mapstructure:"saphana.replication.backlog.time"`
+	SaphanaRowStoreMemoryUsed               SaphanaRowStoreMemoryUsedMetricConfig               `mapstructure:"saphana.row_store.memory.used"`
+	SaphanaSchemaMemoryUsedCurrent          SaphanaSchemaMemoryUsedCurrentMetricConfig          `mapstructure:"saphana.schema.memory.used.current"`
+	SaphanaSchemaMemoryUsedMax              SaphanaSchemaMemoryUsedMaxMetricConfig              `mapstructure:"saphana.schema.memory.used.max"`
+	SaphanaSchemaOperationCount             SaphanaSchemaOperationCountMetricConfig             `mapstructure:"saphana.schema.operation.count"`
+	SaphanaSchemaRecordCompressedCount      SaphanaSchemaRecordCompressedCountMetricConfig      `mapstructure:"saphana.schema.record.compressed.count"`
+	SaphanaSchemaRecordCount                SaphanaSchemaRecordCountMetricConfig                `mapstructure:"saphana.schema.record.count"`
+	SaphanaServiceCodeSize                  SaphanaServiceCodeSizeMetricConfig                  `mapstructure:"saphana.service.code_size"`
+	SaphanaServiceCount                     SaphanaServiceCountMetricConfig                     `mapstructure:"saphana.service.count"`
+	SaphanaServiceMemoryCompactorsAllocated SaphanaServiceMemoryCompactorsAllocatedMetricConfig `mapstructure:"saphana.service.memory.compactors.allocated"`
+	SaphanaServiceMemoryCompactorsFreeable  SaphanaServiceMemoryCompactorsFreeableMetricConfig  `mapstructure:"saphana.service.memory.compactors.freeable"`
+	SaphanaServiceMemoryEffectiveLimit      SaphanaServiceMemoryEffectiveLimitMetricConfig      `mapstructure:"saphana.service.memory.effective_limit"`
+	SaphanaServiceMemoryHeapCurrent         SaphanaServiceMemoryHeapCurrentMetricConfig         `mapstructure:"saphana.service.memory.heap.current"`
+	SaphanaServiceMemoryLimit               SaphanaServiceMemoryLimitMetricConfig               `mapstructure:"saphana.service.memory.limit"`
+	SaphanaServiceMemorySharedCurrent       SaphanaServiceMemorySharedCurrentMetricConfig       `mapstructure:"saphana.service.memory.shared.current"`
+	SaphanaServiceMemoryUsed                SaphanaServiceMemoryUsedMetricConfig                `mapstructure:"saphana.service.memory.used"`
+	SaphanaServiceStackSize                 SaphanaServiceStackSizeMetricConfig                 `mapstructure:"saphana.service.stack_size"`
+	SaphanaServiceThreadCount               SaphanaServiceThreadCountMetricConfig               `mapstructure:"saphana.service.thread.count"`
+	SaphanaTransactionBlocked               SaphanaTransactionBlockedMetricConfig               `mapstructure:"saphana.transaction.blocked"`
+	SaphanaTransactionCount                 SaphanaTransactionCountMetricConfig                 `mapstructure:"saphana.transaction.count"`
+	SaphanaUptime                           SaphanaUptimeMetricConfig                           `mapstructure:"saphana.uptime"`
+	SaphanaVolumeOperationCount             SaphanaVolumeOperationCountMetricConfig             `mapstructure:"saphana.volume.operation.count"`
+	SaphanaVolumeOperationSize              SaphanaVolumeOperationSizeMetricConfig              `mapstructure:"saphana.volume.operation.size"`
+	SaphanaVolumeOperationTime              SaphanaVolumeOperationTimeMetricConfig              `mapstructure:"saphana.volume.operation.time"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SaphanaAlertCount: MetricConfig{
+		SaphanaAlertCount: SaphanaAlertCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaAlertCountMetricAttributeKey{SaphanaAlertCountMetricAttributeKeyAlertRating},
+		},
+		SaphanaBackupLatest: SaphanaBackupLatestMetricConfig{
 			Enabled: true,
 		},
-		SaphanaBackupLatest: MetricConfig{
+		SaphanaColumnMemoryUsed: SaphanaColumnMemoryUsedMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaColumnMemoryUsedMetricAttributeKey{SaphanaColumnMemoryUsedMetricAttributeKeyColumnMemoryType, SaphanaColumnMemoryUsedMetricAttributeKeyColumnMemorySubtype},
+		},
+		SaphanaComponentMemoryUsed: SaphanaComponentMemoryUsedMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaComponentMemoryUsedMetricAttributeKey{SaphanaComponentMemoryUsedMetricAttributeKeyComponent},
+		},
+		SaphanaConnectionCount: SaphanaConnectionCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaConnectionCountMetricAttributeKey{SaphanaConnectionCountMetricAttributeKeyConnectionStatus},
+		},
+		SaphanaCPUUsed: SaphanaCPUUsedMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaCPUUsedMetricAttributeKey{SaphanaCPUUsedMetricAttributeKeyCPUType},
+		},
+		SaphanaDiskSizeCurrent: SaphanaDiskSizeCurrentMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaDiskSizeCurrentMetricAttributeKey{SaphanaDiskSizeCurrentMetricAttributeKeyPath, SaphanaDiskSizeCurrentMetricAttributeKeyDiskUsageType, SaphanaDiskSizeCurrentMetricAttributeKeyDiskStateUsedFree},
+		},
+		SaphanaHostMemoryCurrent: SaphanaHostMemoryCurrentMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaHostMemoryCurrentMetricAttributeKey{SaphanaHostMemoryCurrentMetricAttributeKeyMemoryStateUsedFree},
+		},
+		SaphanaHostSwapCurrent: SaphanaHostSwapCurrentMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaHostSwapCurrentMetricAttributeKey{SaphanaHostSwapCurrentMetricAttributeKeyHostSwapState},
+		},
+		SaphanaInstanceCodeSize: SaphanaInstanceCodeSizeMetricConfig{
 			Enabled: true,
 		},
-		SaphanaColumnMemoryUsed: MetricConfig{
+		SaphanaInstanceMemoryCurrent: SaphanaInstanceMemoryCurrentMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaInstanceMemoryCurrentMetricAttributeKey{SaphanaInstanceMemoryCurrentMetricAttributeKeyMemoryStateUsedFree},
+		},
+		SaphanaInstanceMemorySharedAllocated: SaphanaInstanceMemorySharedAllocatedMetricConfig{
 			Enabled: true,
 		},
-		SaphanaComponentMemoryUsed: MetricConfig{
+		SaphanaInstanceMemoryUsedPeak: SaphanaInstanceMemoryUsedPeakMetricConfig{
 			Enabled: true,
 		},
-		SaphanaConnectionCount: MetricConfig{
+		SaphanaLicenseExpirationTime: SaphanaLicenseExpirationTimeMetricConfig{
 			Enabled: true,
 		},
-		SaphanaCPUUsed: MetricConfig{
+		SaphanaLicenseLimit: SaphanaLicenseLimitMetricConfig{
 			Enabled: true,
 		},
-		SaphanaDiskSizeCurrent: MetricConfig{
+		SaphanaLicensePeak: SaphanaLicensePeakMetricConfig{
 			Enabled: true,
 		},
-		SaphanaHostMemoryCurrent: MetricConfig{
+		SaphanaNetworkRequestAverageTime: SaphanaNetworkRequestAverageTimeMetricConfig{
 			Enabled: true,
 		},
-		SaphanaHostSwapCurrent: MetricConfig{
+		SaphanaNetworkRequestCount: SaphanaNetworkRequestCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaNetworkRequestCountMetricAttributeKey{SaphanaNetworkRequestCountMetricAttributeKeyActivePendingRequestState},
+		},
+		SaphanaNetworkRequestFinishedCount: SaphanaNetworkRequestFinishedCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaNetworkRequestFinishedCountMetricAttributeKey{SaphanaNetworkRequestFinishedCountMetricAttributeKeyInternalExternalRequestType},
+		},
+		SaphanaReplicationAverageTime: SaphanaReplicationAverageTimeMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SaphanaReplicationAverageTimeMetricAttributeKey{SaphanaReplicationAverageTimeMetricAttributeKeyPrimaryHost, SaphanaReplicationAverageTimeMetricAttributeKeySecondaryHost, SaphanaReplicationAverageTimeMetricAttributeKeyPort, SaphanaReplicationAverageTimeMetricAttributeKeyReplicationMode},
+		},
+		SaphanaReplicationBacklogSize: SaphanaReplicationBacklogSizeMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaReplicationBacklogSizeMetricAttributeKey{SaphanaReplicationBacklogSizeMetricAttributeKeyPrimaryHost, SaphanaReplicationBacklogSizeMetricAttributeKeySecondaryHost, SaphanaReplicationBacklogSizeMetricAttributeKeyPort, SaphanaReplicationBacklogSizeMetricAttributeKeyReplicationMode},
+		},
+		SaphanaReplicationBacklogTime: SaphanaReplicationBacklogTimeMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaReplicationBacklogTimeMetricAttributeKey{SaphanaReplicationBacklogTimeMetricAttributeKeyPrimaryHost, SaphanaReplicationBacklogTimeMetricAttributeKeySecondaryHost, SaphanaReplicationBacklogTimeMetricAttributeKeyPort, SaphanaReplicationBacklogTimeMetricAttributeKeyReplicationMode},
+		},
+		SaphanaRowStoreMemoryUsed: SaphanaRowStoreMemoryUsedMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaRowStoreMemoryUsedMetricAttributeKey{SaphanaRowStoreMemoryUsedMetricAttributeKeyRowMemoryType},
+		},
+		SaphanaSchemaMemoryUsedCurrent: SaphanaSchemaMemoryUsedCurrentMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaSchemaMemoryUsedCurrentMetricAttributeKey{SaphanaSchemaMemoryUsedCurrentMetricAttributeKeySchema, SaphanaSchemaMemoryUsedCurrentMetricAttributeKeySchemaMemoryType},
+		},
+		SaphanaSchemaMemoryUsedMax: SaphanaSchemaMemoryUsedMaxMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaSchemaMemoryUsedMaxMetricAttributeKey{SaphanaSchemaMemoryUsedMaxMetricAttributeKeySchema},
+		},
+		SaphanaSchemaOperationCount: SaphanaSchemaOperationCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaSchemaOperationCountMetricAttributeKey{SaphanaSchemaOperationCountMetricAttributeKeySchema, SaphanaSchemaOperationCountMetricAttributeKeySchemaOperationType},
+		},
+		SaphanaSchemaRecordCompressedCount: SaphanaSchemaRecordCompressedCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaSchemaRecordCompressedCountMetricAttributeKey{SaphanaSchemaRecordCompressedCountMetricAttributeKeySchema},
+		},
+		SaphanaSchemaRecordCount: SaphanaSchemaRecordCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaSchemaRecordCountMetricAttributeKey{SaphanaSchemaRecordCountMetricAttributeKeySchema, SaphanaSchemaRecordCountMetricAttributeKeySchemaRecordType},
+		},
+		SaphanaServiceCodeSize: SaphanaServiceCodeSizeMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaServiceCodeSizeMetricAttributeKey{SaphanaServiceCodeSizeMetricAttributeKeyService},
+		},
+		SaphanaServiceCount: SaphanaServiceCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaServiceCountMetricAttributeKey{SaphanaServiceCountMetricAttributeKeyServiceStatus},
+		},
+		SaphanaServiceMemoryCompactorsAllocated: SaphanaServiceMemoryCompactorsAllocatedMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaServiceMemoryCompactorsAllocatedMetricAttributeKey{SaphanaServiceMemoryCompactorsAllocatedMetricAttributeKeyService},
+		},
+		SaphanaServiceMemoryCompactorsFreeable: SaphanaServiceMemoryCompactorsFreeableMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaServiceMemoryCompactorsFreeableMetricAttributeKey{SaphanaServiceMemoryCompactorsFreeableMetricAttributeKeyService},
+		},
+		SaphanaServiceMemoryEffectiveLimit: SaphanaServiceMemoryEffectiveLimitMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaServiceMemoryEffectiveLimitMetricAttributeKey{SaphanaServiceMemoryEffectiveLimitMetricAttributeKeyService},
+		},
+		SaphanaServiceMemoryHeapCurrent: SaphanaServiceMemoryHeapCurrentMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaServiceMemoryHeapCurrentMetricAttributeKey{SaphanaServiceMemoryHeapCurrentMetricAttributeKeyService, SaphanaServiceMemoryHeapCurrentMetricAttributeKeyMemoryStateUsedFree},
+		},
+		SaphanaServiceMemoryLimit: SaphanaServiceMemoryLimitMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaServiceMemoryLimitMetricAttributeKey{SaphanaServiceMemoryLimitMetricAttributeKeyService},
+		},
+		SaphanaServiceMemorySharedCurrent: SaphanaServiceMemorySharedCurrentMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaServiceMemorySharedCurrentMetricAttributeKey{SaphanaServiceMemorySharedCurrentMetricAttributeKeyService, SaphanaServiceMemorySharedCurrentMetricAttributeKeyMemoryStateUsedFree},
+		},
+		SaphanaServiceMemoryUsed: SaphanaServiceMemoryUsedMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaServiceMemoryUsedMetricAttributeKey{SaphanaServiceMemoryUsedMetricAttributeKeyService, SaphanaServiceMemoryUsedMetricAttributeKeyServiceMemoryUsedType},
+		},
+		SaphanaServiceStackSize: SaphanaServiceStackSizeMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaServiceStackSizeMetricAttributeKey{SaphanaServiceStackSizeMetricAttributeKeyService},
+		},
+		SaphanaServiceThreadCount: SaphanaServiceThreadCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaServiceThreadCountMetricAttributeKey{SaphanaServiceThreadCountMetricAttributeKeyThreadStatus},
+		},
+		SaphanaTransactionBlocked: SaphanaTransactionBlockedMetricConfig{
 			Enabled: true,
 		},
-		SaphanaInstanceCodeSize: MetricConfig{
+		SaphanaTransactionCount: SaphanaTransactionCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaTransactionCountMetricAttributeKey{SaphanaTransactionCountMetricAttributeKeyTransactionType},
+		},
+		SaphanaUptime: SaphanaUptimeMetricConfig{
 			Enabled: true,
 		},
-		SaphanaInstanceMemoryCurrent: MetricConfig{
-			Enabled: true,
+		SaphanaVolumeOperationCount: SaphanaVolumeOperationCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaVolumeOperationCountMetricAttributeKey{SaphanaVolumeOperationCountMetricAttributeKeyPath, SaphanaVolumeOperationCountMetricAttributeKeyDiskUsageType, SaphanaVolumeOperationCountMetricAttributeKeyVolumeOperationType},
 		},
-		SaphanaInstanceMemorySharedAllocated: MetricConfig{
-			Enabled: true,
+		SaphanaVolumeOperationSize: SaphanaVolumeOperationSizeMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaVolumeOperationSizeMetricAttributeKey{SaphanaVolumeOperationSizeMetricAttributeKeyPath, SaphanaVolumeOperationSizeMetricAttributeKeyDiskUsageType, SaphanaVolumeOperationSizeMetricAttributeKeyVolumeOperationType},
 		},
-		SaphanaInstanceMemoryUsedPeak: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaLicenseExpirationTime: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaLicenseLimit: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaLicensePeak: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaNetworkRequestAverageTime: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaNetworkRequestCount: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaNetworkRequestFinishedCount: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaReplicationAverageTime: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaReplicationBacklogSize: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaReplicationBacklogTime: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaRowStoreMemoryUsed: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaSchemaMemoryUsedCurrent: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaSchemaMemoryUsedMax: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaSchemaOperationCount: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaSchemaRecordCompressedCount: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaSchemaRecordCount: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaServiceCodeSize: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaServiceCount: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaServiceMemoryCompactorsAllocated: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaServiceMemoryCompactorsFreeable: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaServiceMemoryEffectiveLimit: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaServiceMemoryHeapCurrent: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaServiceMemoryLimit: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaServiceMemorySharedCurrent: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaServiceMemoryUsed: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaServiceStackSize: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaServiceThreadCount: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaTransactionBlocked: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaTransactionCount: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaUptime: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaVolumeOperationCount: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaVolumeOperationSize: MetricConfig{
-			Enabled: true,
-		},
-		SaphanaVolumeOperationTime: MetricConfig{
-			Enabled: true,
+		SaphanaVolumeOperationTime: SaphanaVolumeOperationTimeMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SaphanaVolumeOperationTimeMetricAttributeKey{SaphanaVolumeOperationTimeMetricAttributeKeyPath, SaphanaVolumeOperationTimeMetricAttributeKeyDiskUsageType, SaphanaVolumeOperationTimeMetricAttributeKeyVolumeOperationType},
 		},
 	}
 }

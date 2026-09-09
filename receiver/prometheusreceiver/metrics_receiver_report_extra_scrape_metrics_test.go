@@ -49,25 +49,25 @@ func TestReportExtraScrapeMetrics(t *testing.T) {
 	}{
 		{
 			name:        "global_true",
-			globalExtra: boolPtr(true),
+			globalExtra: new(true),
 			scrapeExtra: nil,
 			expectExtra: true,
 		},
 		{
 			name:        "scrape_true",
-			globalExtra: boolPtr(false),
-			scrapeExtra: boolPtr(true),
+			globalExtra: new(false),
+			scrapeExtra: new(true),
 			expectExtra: true,
 		},
 		{
 			name:        "scrape_false_overrides_global",
-			globalExtra: boolPtr(true),
-			scrapeExtra: boolPtr(false),
+			globalExtra: new(true),
+			scrapeExtra: new(false),
 			expectExtra: false,
 		},
 		{
 			name:        "global_false",
-			globalExtra: boolPtr(false),
+			globalExtra: new(false),
 			scrapeExtra: nil,
 			expectExtra: false,
 		},
@@ -125,7 +125,7 @@ func testScraperMetrics(t *testing.T, targets []*testData, globalExtra, scrapeEx
 			scrapes := pResults[name]
 			if !target.validateScrapes {
 				scrapes = getValidScrapes(t, pResults[name], target)
-				assert.GreaterOrEqual(t, 1, len(scrapes))
+				assert.GreaterOrEqual(t, len(scrapes), 1)
 				if expectExtraScrapeMetrics {
 					// scrapes has 2 prom metrics + 5 internal scraper metrics + 3 internal extra scraper metrics = 10
 					// scrape_sample_limit, scrape_timeout_seconds, scrape_body_size_bytes
@@ -222,8 +222,4 @@ func verifyMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 	}
 
 	doCompare(t, "scrape-reportExtraScrapeMetrics-1", wantAttributes, m1, e1)
-}
-
-func boolPtr(value bool) *bool {
-	return &value
 }

@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	farotranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/faroreceiver/internal/metadata"
 )
 
 const faroPath = "/"
@@ -40,7 +41,7 @@ func newFaroReceiver(cfg *Config, set *receiver.Settings) (*faroReceiver, error)
 	}
 
 	transport := "http"
-	if cfg.TLS.HasValue() {
+	if cfg.ServerConfig.TLS.HasValue() {
 		transport = "https"
 	}
 
@@ -49,6 +50,11 @@ func newFaroReceiver(cfg *Config, set *receiver.Settings) (*faroReceiver, error)
 		Transport:              transport,
 		ReceiverCreateSettings: *set,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	r.telemetryBuilder, err = metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +71,8 @@ type faroReceiver struct {
 	nextTraces consumer.Traces
 	nextLogs   consumer.Logs
 
-	obsrepHTTP *receiverhelper.ObsReport
+	obsrepHTTP       *receiverhelper.ObsReport
+	telemetryBuilder *metadata.TelemetryBuilder
 
 	settings *receiver.Settings
 }
@@ -102,14 +109,14 @@ func (r *faroReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		return nil
 	}
 
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.NetAddr.Endpoint))
+	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.ServerConfig.NetAddr.Endpoint))
 
 	httpMux := http.NewServeMux()
 	httpMux.HandleFunc(faroPath, func(resp http.ResponseWriter, req *http.Request) {
 		r.handleFaroRequest(resp, req)
 	})
 	var err error
-	if r.serverHTTP, err = r.cfg.ToServer(
+	if r.serverHTTP, err = r.cfg.ServerConfig.ToServer(
 		ctx,
 		host.GetExtensions(),
 		r.settings.TelemetrySettings,
@@ -120,7 +127,7 @@ func (r *faroReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		return err
 	}
 
-	listener, err := r.cfg.ToListener(ctx)
+	listener, err := r.cfg.ServerConfig.ToListener(ctx)
 	if err != nil {
 		r.settings.Logger.Error("Failed to create faro receiver listener", zap.Error(err))
 		return err
@@ -169,10 +176,16 @@ func (r *faroReceiver) handleFaroRequest(resp http.ResponseWriter, req *http.Req
 		return
 	}
 
+	ctx := req.Context()
+	r.telemetryBuilder.FaroLogIngested.Add(ctx, int64(len(payload.Logs)))
+	r.telemetryBuilder.FaroMeasurementIngested.Add(ctx, int64(len(payload.Measurements)))
+	r.telemetryBuilder.FaroExceptionIngested.Add(ctx, int64(len(payload.Exceptions)))
+	r.telemetryBuilder.FaroEventIngested.Add(ctx, int64(len(payload.Events)))
+
 	var errors []string
 
 	if r.nextTraces != nil {
-		traces, translatorErr := farotranslator.TranslateToTraces(req.Context(), payload)
+		traces, translatorErr := farotranslator.TranslateToTraces(ctx, payload)
 		switch {
 		case translatorErr != nil:
 			errors = append(errors, fmt.Sprintf("failed to translate traces: %v", translatorErr))
@@ -180,7 +193,7 @@ func (r *faroReceiver) handleFaroRequest(resp http.ResponseWriter, req *http.Req
 			r.settings.Logger.Debug("Faro traces are nil, skipping")
 		default:
 			spanCount := traces.SpanCount()
-			obsCtx := r.obsrepHTTP.StartTracesOp(req.Context())
+			obsCtx := r.obsrepHTTP.StartTracesOp(ctx)
 			consumeErr := r.nextTraces.ConsumeTraces(obsCtx, traces)
 			r.obsrepHTTP.EndTracesOp(obsCtx, "json", spanCount, consumeErr)
 			if consumeErr != nil {
@@ -194,7 +207,7 @@ func (r *faroReceiver) handleFaroRequest(resp http.ResponseWriter, req *http.Req
 	}
 
 	if r.nextLogs != nil {
-		logs, translatorErr := farotranslator.TranslateToLogs(req.Context(), payload)
+		logs, translatorErr := farotranslator.TranslateToLogs(ctx, payload)
 		switch {
 		case translatorErr != nil:
 			errors = append(errors, fmt.Sprintf("failed to translate logs: %v", translatorErr))
@@ -202,7 +215,7 @@ func (r *faroReceiver) handleFaroRequest(resp http.ResponseWriter, req *http.Req
 			r.settings.Logger.Debug("Faro logs are nil, skipping")
 		default:
 			logRecordCount := logs.LogRecordCount()
-			obsCtx := r.obsrepHTTP.StartLogsOp(req.Context())
+			obsCtx := r.obsrepHTTP.StartLogsOp(ctx)
 			consumeErr := r.nextLogs.ConsumeLogs(obsCtx, logs)
 			r.obsrepHTTP.EndLogsOp(obsCtx, "json", logRecordCount, consumeErr)
 			if consumeErr != nil {

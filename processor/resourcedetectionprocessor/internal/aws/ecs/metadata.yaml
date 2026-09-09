@@ -1,69 +1,96 @@
 type: resourcedetectionprocessor/ecs
+sem_conv_version: 1.40.0
 
 parent: resourcedetection
 
 resource_attributes:
   aws.ecs.cluster.arn:
+    semantic_convention:
+      ref: aws.md#aws-ecs-cluster-arn
     description: The aws.ecs.cluster.arn
     type: string
     enabled: true
   aws.ecs.launchtype:
+    semantic_convention:
+      ref: aws.md#aws-ecs-launchtype
     description: The aws.ecs.launchtype
     type: string
     enabled: true
   aws.ecs.task.arn:
+    semantic_convention:
+      ref: aws.md#aws-ecs-task-arn
     description: The aws.ecs.task.arn
     type: string
     enabled: true
   aws.ecs.task.family:
+    semantic_convention:
+      ref: aws.md#aws-ecs-task-family
     description: The aws.ecs.task.family
     type: string
     enabled: true
   aws.ecs.task.id:
+    semantic_convention:
+      ref: aws.md#aws-ecs-task-id
     description: The aws.ecs.task.id
     type: string
     enabled: true
   aws.ecs.task.revision:
+    semantic_convention:
+      ref: aws.md#aws-ecs-task-revision
     description: The aws.ecs.task.revision
     type: string
     enabled: true
   aws.log.group.arns:
+    semantic_convention:
+      ref: aws.md#aws-log-group-arns
     description: The aws.log.group.arns
     type: slice
     enabled: true
   aws.log.group.names:
+    semantic_convention:
+      ref: aws.md#aws-log-group-names
     description: The aws.log.group.names
     type: slice
     enabled: true
   aws.log.stream.arns:
+    semantic_convention:
+      ref: aws.md#aws-log-stream-arns
     description: The aws.log.stream.arns
     type: slice
     enabled: true
   aws.log.stream.names:
+    semantic_convention:
+      ref: aws.md#aws-log-stream-names
     description: The aws.log.stream.names
     type: slice
     enabled: true
   cloud.account.id:
+    semantic_convention:
+      ref: cloud.md#cloud-account-id
     description: The cloud.account.id
     type: string
     enabled: true
   cloud.availability_zone:
+    semantic_convention:
+      ref: cloud.md#cloud-availability-zone
     description: The cloud.availability_zone
     type: string
     enabled: true
   cloud.platform:
+    semantic_convention:
+      ref: cloud.md#cloud-platform
     description: The cloud.platform
     type: string
     enabled: true
   cloud.provider:
+    semantic_convention:
+      ref: cloud.md#cloud-provider
     description: The cloud.provider
     type: string
     enabled: true
   cloud.region:
+    semantic_convention:
+      ref: cloud.md#cloud-region
     description: The cloud.region
     type: string
     enabled: true
-
-tests:
-  skip_lifecycle: true
-  skip_shutdown: true

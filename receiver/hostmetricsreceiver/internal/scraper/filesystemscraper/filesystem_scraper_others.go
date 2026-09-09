@@ -20,16 +20,19 @@ func (s *filesystemsScraper) recordFileSystemUsageMetric(now pcommon.Timestamp, 
 			now, int64(deviceUsage.usage.Used),
 			deviceUsage.partition.Device, getMountMode(deviceUsage.partition.Opts),
 			deviceUsage.partition.Mountpoint, deviceUsage.partition.Fstype,
-			metadata.AttributeStateUsed)
+			metadata.AttributeStateUsed,
+		)
 		s.mb.RecordSystemFilesystemUsageDataPoint(
 			now, int64(deviceUsage.usage.Free),
 			deviceUsage.partition.Device, getMountMode(deviceUsage.partition.Opts),
 			deviceUsage.partition.Mountpoint, deviceUsage.partition.Fstype,
-			metadata.AttributeStateFree)
+			metadata.AttributeStateFree,
+		)
 		s.mb.RecordSystemFilesystemUtilizationDataPoint(
 			now, precision.Ratio(deviceUsage.usage.Used, deviceUsage.usage.Used+deviceUsage.usage.Free),
 			deviceUsage.partition.Device, getMountMode(deviceUsage.partition.Opts),
-			deviceUsage.partition.Mountpoint, deviceUsage.partition.Fstype)
+			deviceUsage.partition.Mountpoint, deviceUsage.partition.Fstype,
+		)
 	}
 }
 

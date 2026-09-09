@@ -41,6 +41,10 @@ const (
 	// OpenTelemetry attribute name for Azure HTTP Response Duration,
 	// this is server-side duration of operation, excluding network time
 	attributeAzureResponseDuration = "azure.response.duration"
+
+	// OpenTelemetry attribute name for the schema version of the Storage log,
+	// from the top-level `schemaVersion` field
+	attributeAzureStorageSchemaVersion = "azure.storage.schema_version"
 )
 
 // ------------------------------------------------------------
@@ -144,10 +148,12 @@ type azureStorageBlobLog struct {
 	Identity *azureIdentityStorage `json:"identity"`
 
 	// Additional fields in common schema
-	StatusCode *json.Number `json:"statusCode"` // int
-	StatusText *string      `json:"statusText"`
-	URI        *string      `json:"uri"`
-	Protocol   *string      `json:"protocol"`
+	StatusCode    *json.Number `json:"statusCode"` // int
+	StatusText    *string      `json:"statusText"`
+	URI           *string      `json:"uri"`
+	Protocol      *string      `json:"protocol"`
+	SchemaVersion *string      `json:"schemaVersion"`
+	ResourceType  *string      `json:"resourceType"`
 
 	Properties struct {
 		AccountName        string      `json:"accountName"`
@@ -188,6 +194,8 @@ func (r *azureStorageBlobLog) PutCommonAttributes(attrs pcommon.Map, body pcommo
 	if r.URI != nil {
 		unmarshaler.AttrPutURLParsed(attrs, *r.URI)
 	}
+	unmarshaler.AttrPutStrPtrIf(attrs, attributeAzureStorageSchemaVersion, r.SchemaVersion)
+	unmarshaler.AttrPutStrPtrIf(attrs, attributeAzureResourceType, r.ResourceType)
 }
 
 func (r *azureStorageBlobLog) PutProperties(attrs pcommon.Map, _ pcommon.Value) error {

@@ -114,7 +114,7 @@ receivers:
             - targets: [%q]
 
 exporters:
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: %q
     tls:
       insecure: true
@@ -123,7 +123,7 @@ service:
   pipelines:
     metrics:
       receivers: [prometheus]
-      exporters: [prometheusremotewrite]`, serverURL.Host, prweServer.URL)
+      exporters: [prometheus_remote_write]`, serverURL.Host, prweServer.URL)
 
 	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
 	require.NoError(t, err)

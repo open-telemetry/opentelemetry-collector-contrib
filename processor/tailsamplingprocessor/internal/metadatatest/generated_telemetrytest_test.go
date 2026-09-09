@@ -19,7 +19,9 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
+	tb.ProcessorTailSamplingCountBytesSampled.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingCountSpansSampled.Add(context.Background(), 1)
+	tb.ProcessorTailSamplingCountSpansWithUnparseableTracestate.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingCountTracesSampled.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingEarlyReleasesFromCacheDecision.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingGlobalCountTracesSampled.Add(context.Background(), 1)
@@ -33,7 +35,13 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ProcessorTailSamplingSamplingTraceRemovalAge.Record(context.Background(), 1)
 	tb.ProcessorTailSamplingSamplingTracesOnMemory.Record(context.Background(), 1)
 	tb.ProcessorTailSamplingTracesDroppedTooLarge.Add(context.Background(), 1)
+	AssertEqualProcessorTailSamplingCountBytesSampled(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorTailSamplingCountSpansSampled(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorTailSamplingCountSpansWithUnparseableTracestate(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorTailSamplingCountTracesSampled(t, testTel,

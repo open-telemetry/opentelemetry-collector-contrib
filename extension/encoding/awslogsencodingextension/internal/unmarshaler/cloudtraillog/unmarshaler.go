@@ -367,7 +367,8 @@ func (u *CloudTrailLogUnmarshaler) fromCloudWatch(reader *bufio.Reader) (encodin
 				},
 				func() int64 {
 					return 0
-				}),
+				},
+			),
 			nil
 	}
 
@@ -503,7 +504,16 @@ func (u *CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *C
 	attrs.PutStr("aws.cloudtrail.event_version", record.EventVersion)
 	attrs.PutStr("aws.cloudtrail.event_id", record.EventID)
 
-	if record.EventName != "" {
+	// When emitting v1.40.0 conventions, the deprecated rpc.service value (the
+	// CloudTrail eventSource) is folded into a fully-qualified rpc.method
+	// (e.g. "ec2.amazonaws.com/StartInstances") as the semconv rpc.service
+	// deprecation requires, rather than being dropped along with rpc.service.
+	// Otherwise the bare eventName is emitted as rpc.method.
+	if metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.IsEnabled() {
+		if method := fullyQualifiedRPCMethod(record.EventSource, record.EventName); method != "" {
+			attrs.PutStr(string(conventions.RPCMethodKey), method)
+		}
+	} else if record.EventName != "" {
 		attrs.PutStr(string(conventions.RPCMethodKey), record.EventName)
 	}
 
@@ -676,7 +686,7 @@ func enrichWithSessionContext(attrs pcommon.Map, sessionContext *SessionContext)
 }
 
 // defaultAttributes is the legacy helper to add UserIdentity elements
-// todo : remove when feature gate constants.CloudTrailEnableUserIdentityPrefixID is deprecated
+// todo : remove when feature gate extension.awslogsencoding.cloudtrail.enable.user.identity.prefix is deprecated
 func defaultAttributes(attrs pcommon.Map, record *CloudTrailRecord) {
 	if record.UserIdentity.AccountID != "" {
 		attrs.PutStr("aws.user_identity.account_id", record.UserIdentity.AccountID)
@@ -710,7 +720,7 @@ func defaultAttributes(attrs pcommon.Map, record *CloudTrailRecord) {
 }
 
 // withUserIdentityPrefix is a helper to add UserIdentity details with aws.user_identity prefix.
-// todo : remove when feature gate constants.CloudTrailEnableUserIdentityPrefixID is deprecated & move to caller
+// todo : remove when feature gate extension.awslogsencoding.cloudtrail.enable.user.identity.prefix is deprecated & move to caller
 func withUserIdentityPrefix(attrs pcommon.Map, record *CloudTrailRecord) {
 	if record.UserIdentity.AccountID != "" {
 		attrs.PutStr("aws.user_identity.account_id", record.UserIdentity.AccountID)
@@ -741,6 +751,25 @@ func withUserIdentityPrefix(attrs pcommon.Map, record *CloudTrailRecord) {
 	if record.UserIdentity.Type != "" {
 		attrs.PutStr("aws.user_identity.principal.type", record.UserIdentity.Type)
 	}
+}
+
+// fullyQualifiedRPCMethod builds a fully-qualified rpc.method value from the
+// CloudTrail eventSource and eventName. Per the semconv v1.40.0 deprecation of
+// rpc.service, the service (eventSource) is carried in rpc.method as a
+// fully-qualified name (e.g. "ec2.amazonaws.com/StartInstances"). This preserves
+// the service information in rpc.method so it remains available once rpc.service
+// is no longer emitted (i.e. when DontEmitV0RPCConventions is enabled); until
+// then rpc.service may still be emitted separately. When eventSource is empty the
+// bare eventName is returned, and when eventName is empty an empty string is
+// returned so no rpc.method attribute is emitted.
+func fullyQualifiedRPCMethod(eventSource, eventName string) string {
+	if eventName == "" {
+		return ""
+	}
+	if eventSource == "" {
+		return eventName
+	}
+	return eventSource + "/" + eventName
 }
 
 // extract the version number from a TLS version string (e.g. "TLSv1.2" becomes "1.2")

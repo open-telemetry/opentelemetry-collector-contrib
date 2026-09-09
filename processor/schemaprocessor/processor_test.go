@@ -5,7 +5,6 @@ package schemaprocessor
 
 import (
 	"context"
-	_ "embed"
 	"errors"
 	"fmt"
 	"strings"
@@ -13,11 +12,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap/zaptest"
@@ -30,6 +32,75 @@ type dummySchemaProvider struct {
 }
 
 type errorSchemaProvider struct{}
+
+type testStorageClient struct {
+	closeErr error
+	closed   bool
+}
+
+func (*testStorageClient) Get(context.Context, string) ([]byte, error) {
+	return nil, nil
+}
+
+func (*testStorageClient) Set(context.Context, string, []byte) error {
+	return nil
+}
+
+func (*testStorageClient) Delete(context.Context, string) error {
+	return nil
+}
+
+func (*testStorageClient) Batch(context.Context, ...*storage.Operation) error {
+	return nil
+}
+
+func (c *testStorageClient) Close(context.Context) error {
+	c.closed = true
+	return c.closeErr
+}
+
+type testStorageExtension struct {
+	client storage.Client
+	getErr error
+	called bool
+}
+
+func (*testStorageExtension) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (*testStorageExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+func (e *testStorageExtension) GetClient(_ context.Context, _ component.Kind, _ component.ID, _ string) (storage.Client, error) {
+	e.called = true
+
+	if e.getErr != nil {
+		return nil, e.getErr
+	}
+
+	return e.client, nil
+}
+
+type testComponent struct{}
+
+func (testComponent) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (testComponent) Shutdown(context.Context) error {
+	return nil
+}
+
+type testHost struct {
+	component.Host
+	extensions map[component.ID]component.Component
+}
+
+func (h *testHost) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
+}
 
 func (*errorSchemaProvider) Retrieve(_ context.Context, _ string) (string, error) {
 	return "", errors.New("provider error")
@@ -44,6 +115,23 @@ versions:%s`, transformations)
 
 	data = strings.TrimSpace(data)
 	return data, nil
+}
+
+func newTestSchemaProcessorWithMigration(t *testing.T, transformations, targetVersion string, migration []MigrationEntry) *schemaProcessor {
+	cfg := &Config{
+		Targets:   []string{fmt.Sprintf("http://opentelemetry.io/schemas/%s", targetVersion)},
+		Migration: migration,
+	}
+	telSettings := componenttest.NewNopTelemetrySettings()
+	telSettings.Logger = zaptest.NewLogger(t)
+	trans, err := newSchemaProcessor(t.Context(), cfg, processor.Settings{
+		TelemetrySettings: telSettings,
+	})
+	require.NoError(t, err, "Must not error when creating default schemaProcessor")
+	trans.manager.AddProvider(&dummySchemaProvider{
+		transformations: transformations,
+	})
+	return trans
 }
 
 func newTestSchemaProcessor(t *testing.T, transformations, targerVerion string) *schemaProcessor {
@@ -67,6 +155,104 @@ func TestSchemaProcessorStart(t *testing.T) {
 
 	trans := newTestSchemaProcessor(t, "", "1.9.0")
 	assert.NoError(t, trans.start(t.Context(), componenttest.NewNopHost()))
+}
+
+func TestSchemaProcessorStartWithStorage(t *testing.T) {
+	t.Parallel()
+
+	storageID := component.MustNewIDWithName("file_storage", "test")
+
+	client := &testStorageClient{}
+
+	ext := &testStorageExtension{
+		client: client,
+	}
+
+	host := &testHost{
+		Host: componenttest.NewNopHost(),
+		extensions: map[component.ID]component.Component{
+			storageID: ext,
+		},
+	}
+
+	trans := newTestSchemaProcessor(t, "", "1.9.0")
+	trans.config.StorageID = &storageID
+
+	err := trans.start(t.Context(), host)
+
+	require.NoError(t, err)
+	assert.True(t, ext.called)
+	assert.Same(t, client, trans.storageClient)
+
+	require.NoError(t, trans.shutdown(t.Context()))
+	assert.True(t, client.closed)
+}
+
+func TestSchemaProcessorStartStorageError(t *testing.T) {
+	t.Parallel()
+
+	storageID := component.MustNewIDWithName("file_storage", "test")
+	expectedErr := errors.New("get client failed")
+
+	ext := &testStorageExtension{
+		getErr: expectedErr,
+	}
+
+	host := &testHost{
+		Host: componenttest.NewNopHost(),
+		extensions: map[component.ID]component.Component{
+			storageID: ext,
+		},
+	}
+
+	trans := newTestSchemaProcessor(t, "", "1.9.0")
+	trans.config.StorageID = &storageID
+
+	err := trans.start(t.Context(), host)
+
+	require.ErrorIs(t, err, expectedErr)
+	assert.Nil(t, trans.storageClient)
+	assert.True(t, ext.called)
+}
+
+func TestSchemaProcessorShutdown(t *testing.T) {
+	t.Parallel()
+
+	t.Run("without storage client", func(t *testing.T) {
+		trans := newTestSchemaProcessor(t, "", "1.9.0")
+
+		err := trans.shutdown(t.Context())
+
+		require.NoError(t, err)
+	})
+
+	t.Run("closes storage client", func(t *testing.T) {
+		client := &testStorageClient{}
+
+		trans := newTestSchemaProcessor(t, "", "1.9.0")
+		trans.storageClient = client
+
+		err := trans.shutdown(t.Context())
+
+		require.NoError(t, err)
+		assert.True(t, client.closed)
+	})
+
+	t.Run("returns storage client close error", func(t *testing.T) {
+		expectedErr := errors.New("close failed")
+
+		client := &testStorageClient{
+			closeErr: expectedErr,
+		}
+
+		trans := newTestSchemaProcessor(t, "", "1.9.0")
+		trans.storageClient = client
+
+		err := trans.shutdown(t.Context())
+
+		require.ErrorIs(t, err, expectedErr)
+		assert.True(t, client.closed)
+	})
 }
 
 func TestSchemaProcessorProcessing(t *testing.T) {
@@ -120,6 +306,106 @@ func TestSchemaProcessorProcessing(t *testing.T) {
 		out, err := trans.processLogs(t.Context(), in)
 		assert.NoError(t, err, "Must not error when processing metrics")
 		assert.Equal(t, in, out, "Must return the same data")
+	})
+}
+
+func TestMigrationModePreservesAttributes(t *testing.T) {
+	t.Parallel()
+
+	// Schema renames service_version -> service.version in version 1.9.0.
+	// Version 1.8.0 must be present so the translator recognizes it.
+	transformations := `
+  1.9.0:
+    all:
+      changes:
+        - rename_attributes:
+            attribute_map:
+              service_version: service.version
+  1.8.0:`
+
+	t.Run("upgrade with migration preserves both attributes", func(t *testing.T) {
+		trans := newTestSchemaProcessorWithMigration(t, transformations, "1.9.0",
+			[]MigrationEntry{{Target: "http://opentelemetry.io/schemas/1.9.0", From: "http://opentelemetry.io/schemas/1.8.0"}})
+
+		in := plog.NewLogs()
+		rl := in.ResourceLogs().AppendEmpty()
+		rl.SetSchemaUrl("http://opentelemetry.io/schemas/1.8.0")
+		rl.Resource().Attributes().PutStr("service_version", "v1.0")
+
+		out, err := trans.processLogs(t.Context(), in)
+		require.NoError(t, err)
+
+		attrs := out.ResourceLogs().At(0).Resource().Attributes()
+		// Both old and new attribute names should be present
+		oldVal, oldExists := attrs.Get("service_version")
+		newVal, newExists := attrs.Get("service.version")
+		assert.True(t, oldExists, "original attribute should be preserved")
+		assert.True(t, newExists, "renamed attribute should be added")
+		assert.Equal(t, "v1.0", oldVal.Str())
+		assert.Equal(t, "v1.0", newVal.Str())
+	})
+
+	t.Run("upgrade without migration only has new attribute", func(t *testing.T) {
+		trans := newTestSchemaProcessor(t, transformations, "1.9.0")
+
+		in := plog.NewLogs()
+		rl := in.ResourceLogs().AppendEmpty()
+		rl.SetSchemaUrl("http://opentelemetry.io/schemas/1.8.0")
+		rl.Resource().Attributes().PutStr("service_version", "v1.0")
+
+		out, err := trans.processLogs(t.Context(), in)
+		require.NoError(t, err)
+
+		attrs := out.ResourceLogs().At(0).Resource().Attributes()
+		_, oldExists := attrs.Get("service_version")
+		newVal, newExists := attrs.Get("service.version")
+		assert.False(t, oldExists, "original attribute should be removed")
+		assert.True(t, newExists, "renamed attribute should be present")
+		assert.Equal(t, "v1.0", newVal.Str())
+	})
+
+	t.Run("both attributes already exist are preserved", func(t *testing.T) {
+		trans := newTestSchemaProcessorWithMigration(t, transformations, "1.9.0",
+			[]MigrationEntry{{Target: "http://opentelemetry.io/schemas/1.9.0", From: "http://opentelemetry.io/schemas/1.8.0"}})
+
+		in := plog.NewLogs()
+		rl := in.ResourceLogs().AppendEmpty()
+		rl.SetSchemaUrl("http://opentelemetry.io/schemas/1.8.0")
+		rl.Resource().Attributes().PutStr("service_version", "v1.0")
+		rl.Resource().Attributes().PutStr("service.version", "v2.0")
+
+		out, err := trans.processLogs(t.Context(), in)
+		require.NoError(t, err)
+
+		attrs := out.ResourceLogs().At(0).Resource().Attributes()
+		oldVal, _ := attrs.Get("service_version")
+		newVal, _ := attrs.Get("service.version")
+		assert.Equal(t, "v1.0", oldVal.Str(), "original value preserved")
+		assert.Equal(t, "v2.0", newVal.Str(), "existing target value preserved")
+	})
+
+	t.Run("downgrade with migration preserves both attributes", func(t *testing.T) {
+		// Target is 1.8.0 (downgrade), signal arrives at 1.9.0.
+		// Revision 1.9.0 renamed service_version -> service.version.
+		// Rollback should undo that rename but copy mode preserves both.
+		trans := newTestSchemaProcessorWithMigration(t, transformations, "1.8.0",
+			[]MigrationEntry{{Target: "http://opentelemetry.io/schemas/1.8.0", From: "http://opentelemetry.io/schemas/1.9.0"}})
+
+		in := plog.NewLogs()
+		rl := in.ResourceLogs().AppendEmpty()
+		rl.SetSchemaUrl("http://opentelemetry.io/schemas/1.9.0")
+		rl.Resource().Attributes().PutStr("service.version", "v1.0")
+
+		out, err := trans.processLogs(t.Context(), in)
+		require.NoError(t, err)
+
+		attrs := out.ResourceLogs().At(0).Resource().Attributes()
+		oldVal, oldExists := attrs.Get("service.version")
+		newVal, newExists := attrs.Get("service_version")
+		assert.True(t, oldExists, "original attribute should be preserved")
+		assert.True(t, newExists, "rolled-back attribute should be added")
+		assert.Equal(t, "v1.0", oldVal.Str())
+		assert.Equal(t, "v1.0", newVal.Str())
 	})
 }
 
@@ -235,5 +521,177 @@ func TestFailedCounters(t *testing.T) {
 			[]metricdata.DataPoint[int64]{{Value: 1}},
 			metricdatatest.IgnoreTimestamp())
 		require.NoError(t, testTel.Shutdown(t.Context()))
+	})
+}
+
+func TestTranslatedCounter(t *testing.T) {
+	t.Parallel()
+
+	transformations := `
+  1.9.0:
+    all:
+      changes:
+        - rename_attributes:
+            attribute_map:
+              service_version: service.version
+  1.8.0:`
+
+	t.Run("records from and to schema URLs", func(t *testing.T) {
+		testTel := componenttest.NewTelemetry()
+		set := metadatatest.NewSettings(testTel)
+		set.Logger = zaptest.NewLogger(t)
+		cfg := &Config{
+			Targets: []string{"http://opentelemetry.io/schemas/1.9.0"},
+		}
+		proc, err := newSchemaProcessor(t.Context(), cfg, set)
+		require.NoError(t, err)
+		proc.manager.AddProvider(&dummySchemaProvider{transformations: transformations})
+
+		in := plog.NewLogs()
+		rl := in.ResourceLogs().AppendEmpty()
+		rl.SetSchemaUrl("http://opentelemetry.io/schemas/1.8.0")
+		rl.Resource().Attributes().PutStr("service_version", "v1.0")
+
+		_, err = proc.processLogs(t.Context(), in)
+		require.NoError(t, err)
+
+		metadatatest.AssertEqualProcessorSchemaTranslated(t, testTel,
+			[]metricdata.DataPoint[int64]{{
+				Value: 1,
+				Attributes: attribute.NewSet(
+					attribute.String("from_schema_url", "http://opentelemetry.io/schemas/1.8.0"),
+					attribute.String("to_schema_url", "http://opentelemetry.io/schemas/1.9.0"),
+				),
+			}},
+			metricdatatest.IgnoreTimestamp())
+		require.NoError(t, testTel.Shutdown(t.Context()))
+	})
+
+	t.Run("includes migration_from_schema_url when migration is active", func(t *testing.T) {
+		testTel := componenttest.NewTelemetry()
+		set := metadatatest.NewSettings(testTel)
+		set.Logger = zaptest.NewLogger(t)
+		cfg := &Config{
+			Targets:   []string{"http://opentelemetry.io/schemas/1.9.0"},
+			Migration: []MigrationEntry{{Target: "http://opentelemetry.io/schemas/1.9.0", From: "http://opentelemetry.io/schemas/1.8.0"}},
+		}
+		proc, err := newSchemaProcessor(t.Context(), cfg, set)
+		require.NoError(t, err)
+		proc.manager.AddProvider(&dummySchemaProvider{transformations: transformations})
+
+		in := plog.NewLogs()
+		rl := in.ResourceLogs().AppendEmpty()
+		rl.SetSchemaUrl("http://opentelemetry.io/schemas/1.8.0")
+		rl.Resource().Attributes().PutStr("service_version", "v1.0")
+
+		_, err = proc.processLogs(t.Context(), in)
+		require.NoError(t, err)
+
+		metadatatest.AssertEqualProcessorSchemaTranslated(t, testTel,
+			[]metricdata.DataPoint[int64]{{
+				Value: 1,
+				Attributes: attribute.NewSet(
+					attribute.String("from_schema_url", "http://opentelemetry.io/schemas/1.8.0"),
+					attribute.String("to_schema_url", "http://opentelemetry.io/schemas/1.9.0"),
+					attribute.String("migration_from_schema_url", "http://opentelemetry.io/schemas/1.8.0"),
+				),
+			}},
+			metricdatatest.IgnoreTimestamp())
+		require.NoError(t, testTel.Shutdown(t.Context()))
+	})
+}
+
+func TestGetStorageClient(t *testing.T) {
+	t.Parallel()
+
+	storageID := component.MustNewIDWithName("file_storage", "test")
+	componentID := component.MustNewIDWithName("schemaprocessor", "test")
+
+	t.Run("storage extension not found", func(t *testing.T) {
+		host := componenttest.NewNopHost()
+
+		client, err := getStorageClient(
+			t.Context(),
+			host,
+			storageID,
+			componentID,
+		)
+
+		require.Error(t, err)
+		assert.Nil(t, client)
+		assert.Contains(t, err.Error(), "storage extension")
+		assert.Contains(t, err.Error(), "not found")
+	})
+
+	t.Run("extension is not a storage extension", func(t *testing.T) {
+		host := &testHost{
+			Host: componenttest.NewNopHost(),
+			extensions: map[component.ID]component.Component{
+				storageID: testComponent{},
+			},
+		}
+
+		client, err := getStorageClient(
+			t.Context(),
+			host,
+			storageID,
+			componentID,
+		)
+
+		require.Error(t, err)
+		assert.Nil(t, client)
+		assert.Contains(t, err.Error(), "is not a storage extension")
+	})
+
+	t.Run("GetClient returns error", func(t *testing.T) {
+		expectedErr := errors.New("get client failed")
+
+		ext := &testStorageExtension{
+			getErr: expectedErr,
+		}
+
+		host := &testHost{
+			Host: componenttest.NewNopHost(),
+			extensions: map[component.ID]component.Component{
+				storageID: ext,
+			},
+		}
+
+		client, err := getStorageClient(
+			t.Context(),
+			host,
+			storageID,
+			componentID,
+		)
+
+		require.ErrorIs(t, err, expectedErr)
+		assert.Nil(t, client)
+		assert.True(t, ext.called)
+	})
+
+	t.Run("success", func(t *testing.T) {
+		expectedClient := &testStorageClient{}
+
+		ext := &testStorageExtension{
+			client: expectedClient,
+		}
+
+		host := &testHost{
+			Host: componenttest.NewNopHost(),
+			extensions: map[component.ID]component.Component{
+				storageID: ext,
+			},
+		}
+
+		client, err := getStorageClient(
+			t.Context(),
+			host,
+			storageID,
+			componentID,
+		)
+
+		require.NoError(t, err)
+		assert.Same(t, expectedClient, client)
+		assert.True(t, ext.called)
 	})
 }

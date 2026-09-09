@@ -158,8 +158,8 @@ func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, stats *contain
 }
 
 func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, stats *containerStats) {
-	r.mb.RecordContainerNetworkIoUsageRxBytesDataPoint(now, int64(stats.NetOutput))
-	r.mb.RecordContainerNetworkIoUsageTxBytesDataPoint(now, int64(stats.NetInput))
+	r.mb.RecordContainerNetworkIoUsageRxBytesDataPoint(now, int64(stats.NetInput))
+	r.mb.RecordContainerNetworkIoUsageTxBytesDataPoint(now, int64(stats.NetOutput))
 }
 
 func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, stats *containerStats) {

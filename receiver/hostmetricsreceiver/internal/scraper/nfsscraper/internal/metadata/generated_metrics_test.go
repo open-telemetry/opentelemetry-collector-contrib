@@ -58,15 +58,15 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["NfsClientNetCount"] = mb.metricNfsClientNetCount.config.AggregationStrategy
-			aggMap["NfsClientOperationCount"] = mb.metricNfsClientOperationCount.config.AggregationStrategy
-			aggMap["NfsClientProcedureCount"] = mb.metricNfsClientProcedureCount.config.AggregationStrategy
-			aggMap["NfsServerIo"] = mb.metricNfsServerIo.config.AggregationStrategy
-			aggMap["NfsServerNetCount"] = mb.metricNfsServerNetCount.config.AggregationStrategy
-			aggMap["NfsServerOperationCount"] = mb.metricNfsServerOperationCount.config.AggregationStrategy
-			aggMap["NfsServerProcedureCount"] = mb.metricNfsServerProcedureCount.config.AggregationStrategy
-			aggMap["NfsServerRepcacheRequests"] = mb.metricNfsServerRepcacheRequests.config.AggregationStrategy
-			aggMap["NfsServerRPCCount"] = mb.metricNfsServerRPCCount.config.AggregationStrategy
+			aggMap["nfs.client.net.count"] = mb.metricNfsClientNetCount.config.AggregationStrategy
+			aggMap["nfs.client.operation.count"] = mb.metricNfsClientOperationCount.config.AggregationStrategy
+			aggMap["nfs.client.procedure.count"] = mb.metricNfsClientProcedureCount.config.AggregationStrategy
+			aggMap["nfs.server.io"] = mb.metricNfsServerIo.config.AggregationStrategy
+			aggMap["nfs.server.net.count"] = mb.metricNfsServerNetCount.config.AggregationStrategy
+			aggMap["nfs.server.operation.count"] = mb.metricNfsServerOperationCount.config.AggregationStrategy
+			aggMap["nfs.server.procedure.count"] = mb.metricNfsServerProcedureCount.config.AggregationStrategy
+			aggMap["nfs.server.repcache.requests"] = mb.metricNfsServerRepcacheRequests.config.AggregationStrategy
+			aggMap["nfs.server.rpc.count"] = mb.metricNfsServerRPCCount.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -75,94 +75,78 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNfsClientNetCountDataPoint(ts, 1, AttributeNetworkTransportUdp)
+			mb.RecordNfsClientNetCountDataPoint(ts, 1, AttributeNetworkTransportUDP)
 			if tt.name == "reaggregate_set" {
-				mb.RecordNfsClientNetCountDataPoint(ts, 3, AttributeNetworkTransportTcp)
+				mb.RecordNfsClientNetCountDataPoint(ts, 3, AttributeNetworkTransportTCP)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsClientNetTCPConnectionAcceptedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsClientOperationCountDataPoint(ts, 1, 15, "nfs.operation.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordNfsClientOperationCountDataPoint(ts, 3, 16, "nfs.operation.name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsClientProcedureCountDataPoint(ts, 1, 15, "onc_rpc.procedure.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordNfsClientProcedureCountDataPoint(ts, 3, 16, "onc_rpc.procedure.name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsClientRPCAuthrefreshCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsClientRPCCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsClientRPCRetransmitCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsServerFhStaleCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsServerIoDataPoint(ts, 1, AttributeNetworkIoDirectionTransmit)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNfsServerIoDataPoint(ts, 3, AttributeNetworkIoDirectionReceive)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNfsServerNetCountDataPoint(ts, 1, AttributeNetworkTransportUdp)
+			mb.RecordNfsServerNetCountDataPoint(ts, 1, AttributeNetworkTransportUDP)
 			if tt.name == "reaggregate_set" {
-				mb.RecordNfsServerNetCountDataPoint(ts, 3, AttributeNetworkTransportTcp)
+				mb.RecordNfsServerNetCountDataPoint(ts, 3, AttributeNetworkTransportTCP)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsServerNetTCPConnectionAcceptedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsServerOperationCountDataPoint(ts, 1, 15, "nfs.operation.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordNfsServerOperationCountDataPoint(ts, 3, 16, "nfs.operation.name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsServerProcedureCountDataPoint(ts, 1, 15, "onc_rpc.procedure.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordNfsServerProcedureCountDataPoint(ts, 3, 16, "onc_rpc.procedure.name-val-2")
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsServerRepcacheRequestsDataPoint(ts, 1, AttributeNfsServerRepcacheStatusHit)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNfsServerRepcacheRequestsDataPoint(ts, 3, AttributeNfsServerRepcacheStatusMiss)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsServerRPCCountDataPoint(ts, 1, AttributeErrorTypeFormat)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNfsServerRPCCountDataPoint(ts, 3, AttributeErrorTypeAuth)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsServerThreadCountDataPoint(ts, 1)

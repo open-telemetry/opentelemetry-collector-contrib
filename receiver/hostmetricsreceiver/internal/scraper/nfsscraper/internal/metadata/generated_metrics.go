@@ -81,16 +81,16 @@ type AttributeNetworkTransport int
 
 const (
 	_ AttributeNetworkTransport = iota
-	AttributeNetworkTransportUdp
-	AttributeNetworkTransportTcp
+	AttributeNetworkTransportUDP
+	AttributeNetworkTransportTCP
 )
 
 // String returns the string representation of the AttributeNetworkTransport.
 func (av AttributeNetworkTransport) String() string {
 	switch av {
-	case AttributeNetworkTransportUdp:
+	case AttributeNetworkTransportUDP:
 		return "udp"
-	case AttributeNetworkTransportTcp:
+	case AttributeNetworkTransportTCP:
 		return "tcp"
 	}
 	return ""
@@ -98,8 +98,8 @@ func (av AttributeNetworkTransport) String() string {
 
 // MapAttributeNetworkTransport is a helper map of string to AttributeNetworkTransport attribute value.
 var MapAttributeNetworkTransport = map[string]AttributeNetworkTransport{
-	"udp": AttributeNetworkTransportUdp,
-	"tcp": AttributeNetworkTransportTcp,
+	"udp": AttributeNetworkTransportUDP,
+	"tcp": AttributeNetworkTransportTCP,
 }
 
 // AttributeNfsServerRepcacheStatus specifies the value nfs.server.repcache.status attribute.
@@ -134,16 +134,19 @@ var MapAttributeNfsServerRepcacheStatus = map[string]AttributeNfsServerRepcacheS
 
 var MetricsInfo = metricsInfo{
 	NfsClientNetCount: metricInfo{
-		Name: "nfs.client.net.count",
+		Name:       "nfs.client.net.count",
+		Attributes: []string{"network.transport"},
 	},
 	NfsClientNetTCPConnectionAccepted: metricInfo{
 		Name: "nfs.client.net.tcp.connection.accepted",
 	},
 	NfsClientOperationCount: metricInfo{
-		Name: "nfs.client.operation.count",
+		Name:       "nfs.client.operation.count",
+		Attributes: []string{"onc_rpc.version", "nfs.operation.name"},
 	},
 	NfsClientProcedureCount: metricInfo{
-		Name: "nfs.client.procedure.count",
+		Name:       "nfs.client.procedure.count",
+		Attributes: []string{"onc_rpc.version", "onc_rpc.procedure.name"},
 	},
 	NfsClientRPCAuthrefreshCount: metricInfo{
 		Name: "nfs.client.rpc.authrefresh.count",
@@ -158,25 +161,31 @@ var MetricsInfo = metricsInfo{
 		Name: "nfs.server.fh.stale.count",
 	},
 	NfsServerIo: metricInfo{
-		Name: "nfs.server.io",
+		Name:       "nfs.server.io",
+		Attributes: []string{"network.io.direction"},
 	},
 	NfsServerNetCount: metricInfo{
-		Name: "nfs.server.net.count",
+		Name:       "nfs.server.net.count",
+		Attributes: []string{"network.transport"},
 	},
 	NfsServerNetTCPConnectionAccepted: metricInfo{
 		Name: "nfs.server.net.tcp.connection.accepted",
 	},
 	NfsServerOperationCount: metricInfo{
-		Name: "nfs.server.operation.count",
+		Name:       "nfs.server.operation.count",
+		Attributes: []string{"onc_rpc.version", "nfs.operation.name"},
 	},
 	NfsServerProcedureCount: metricInfo{
-		Name: "nfs.server.procedure.count",
+		Name:       "nfs.server.procedure.count",
+		Attributes: []string{"onc_rpc.version", "onc_rpc.procedure.name"},
 	},
 	NfsServerRepcacheRequests: metricInfo{
-		Name: "nfs.server.repcache.requests",
+		Name:       "nfs.server.repcache.requests",
+		Attributes: []string{"nfs.server.repcache.status"},
 	},
 	NfsServerRPCCount: metricInfo{
-		Name: "nfs.server.rpc.count",
+		Name:       "nfs.server.rpc.count",
+		Attributes: []string{"error.type"},
 	},
 	NfsServerThreadCount: metricInfo{
 		Name: "nfs.server.thread.count",
@@ -203,7 +212,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricNfsClientNetCount struct {

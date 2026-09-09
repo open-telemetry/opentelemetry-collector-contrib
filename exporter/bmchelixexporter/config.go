@@ -13,7 +13,7 @@ import (
 
 // Config struct is used to store the configuration of the exporter
 type Config struct {
-	confighttp.ClientConfig `mapstructure:",squash"`
+	ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
 	// APIKey authenticates requests to BMC Helix Operations Management.
 	// Connect to BMC Helix Operations Management, go to the Administration > Repository page, and
 	// click on the Copy API Key button to get your API Key.
@@ -29,13 +29,13 @@ type Config struct {
 
 // validate the configuration
 func (c *Config) Validate() error {
-	if c.Endpoint == "" {
+	if c.ClientConfig.Endpoint == "" {
 		return errors.New("endpoint is required")
 	}
 	if c.APIKey == "" {
 		return errors.New("api key is required")
 	}
-	if c.Timeout <= 0 {
+	if c.ClientConfig.Timeout <= 0 {
 		return errors.New("timeout must be a positive integer")
 	}
 

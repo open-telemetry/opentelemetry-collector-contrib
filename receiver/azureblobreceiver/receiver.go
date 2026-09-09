@@ -19,18 +19,20 @@ import (
 )
 
 type logsDataConsumer interface {
-	consumeLogsJSON(ctx context.Context, json []byte) error
+	consumeLogs(ctx context.Context, data []byte) error
 	setNextLogsConsumer(nextLogsConsumer consumer.Logs)
 }
 
 type tracesDataConsumer interface {
-	consumeTracesJSON(ctx context.Context, json []byte) error
+	consumeTraces(ctx context.Context, data []byte) error
 	setNextTracesConsumer(nextracesConsumer consumer.Traces)
 }
 
 type blobReceiver struct {
 	blobEventHandler   eventHandler
 	logger             *zap.Logger
+	logsEncoding       string
+	tracesEncoding     string
 	logsUnmarshaler    plog.Unmarshaler
 	tracesUnmarshaler  ptrace.Unmarshaler
 	nextLogsConsumer   consumer.Logs
@@ -38,10 +40,28 @@ type blobReceiver struct {
 	obsrecv            *receiverhelper.ObsReport
 }
 
-func (b *blobReceiver) Start(ctx context.Context, _ component.Host) error {
-	err := b.blobEventHandler.run(ctx)
+func (b *blobReceiver) Start(ctx context.Context, host component.Host) error {
+	// Unmarshalers are resolved here rather than at construction because
+	// extension-based encodings are only available once the host's extensions
+	// have been started.
+	if err := b.resolveUnmarshalers(host); err != nil {
+		return err
+	}
 
-	return err
+	return b.blobEventHandler.run(ctx)
+}
+
+// resolveUnmarshalers resolves the configured logs and traces encodings into
+// unmarshalers, looking up encoding extensions from the host as needed.
+func (b *blobReceiver) resolveUnmarshalers(host component.Host) error {
+	var err error
+	if b.logsUnmarshaler, err = newLogsUnmarshaler(b.logsEncoding, host); err != nil {
+		return err
+	}
+	if b.tracesUnmarshaler, err = newTracesUnmarshaler(b.tracesEncoding, host); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (b *blobReceiver) Shutdown(ctx context.Context) error {
@@ -58,14 +78,14 @@ func (b *blobReceiver) setNextTracesConsumer(nextTracesConsumer consumer.Traces)
 	b.blobEventHandler.setTracesDataConsumer(b)
 }
 
-func (b *blobReceiver) consumeLogsJSON(ctx context.Context, json []byte) error {
+func (b *blobReceiver) consumeLogs(ctx context.Context, data []byte) error {
 	if b.nextLogsConsumer == nil {
 		return nil
 	}
 
 	logsContext := b.obsrecv.StartLogsOp(ctx)
 
-	logs, err := b.logsUnmarshaler.UnmarshalLogs(json)
+	logs, err := b.logsUnmarshaler.UnmarshalLogs(data)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal logs: %w", err)
 	}
@@ -77,14 +97,14 @@ func (b *blobReceiver) consumeLogsJSON(ctx context.Context, json []byte) error {
 	return err
 }
 
-func (b *blobReceiver) consumeTracesJSON(ctx context.Context, json []byte) error {
+func (b *blobReceiver) consumeTraces(ctx context.Context, data []byte) error {
 	if b.nextTracesConsumer == nil {
 		return nil
 	}
 
 	tracesContext := b.obsrecv.StartTracesOp(ctx)
 
-	traces, err := b.tracesUnmarshaler.UnmarshalTraces(json)
+	traces, err := b.tracesUnmarshaler.UnmarshalTraces(data)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal traces: %w", err)
 	}
@@ -97,7 +117,7 @@ func (b *blobReceiver) consumeTracesJSON(ctx context.Context, json []byte) error
 }
 
 // Returns a new instance of the log receiver
-func newReceiver(set receiver.Settings, eventHandler eventHandler) (component.Component, error) {
+func newReceiver(set receiver.Settings, eventHandler eventHandler, logsEncoding, tracesEncoding string) (component.Component, error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "event",
@@ -107,13 +127,67 @@ func newReceiver(set receiver.Settings, eventHandler eventHandler) (component.Co
 		return nil, err
 	}
 
-	blobReceiver := &blobReceiver{
-		blobEventHandler:  eventHandler,
-		logger:            set.Logger,
-		logsUnmarshaler:   &plog.JSONUnmarshaler{},
-		tracesUnmarshaler: &ptrace.JSONUnmarshaler{},
-		obsrecv:           obsrecv,
-	}
+	return &blobReceiver{
+		blobEventHandler: eventHandler,
+		logger:           set.Logger,
+		logsEncoding:     logsEncoding,
+		tracesEncoding:   tracesEncoding,
+		obsrecv:          obsrecv,
+	}, nil
+}
 
-	return blobReceiver, nil
+// newLogsUnmarshaler resolves encoding into a plog.Unmarshaler. Built-in
+// encodings are handled directly; any other value is treated as the ID of an
+// encoding extension looked up from the host.
+func newLogsUnmarshaler(encoding string, host component.Host) (plog.Unmarshaler, error) {
+	switch encoding {
+	case EncodingOTLPJSON:
+		return &plog.JSONUnmarshaler{}, nil
+	case EncodingOTLPProto:
+		return &plog.ProtoUnmarshaler{}, nil
+	}
+	ext, err := encodingExtension(encoding, host)
+	if err != nil {
+		return nil, fmt.Errorf("logs.%w", err)
+	}
+	unmarshaler, ok := ext.(plog.Unmarshaler)
+	if !ok {
+		return nil, fmt.Errorf("logs.encoding extension %q is not a logs unmarshaler", encoding)
+	}
+	return unmarshaler, nil
+}
+
+// newTracesUnmarshaler resolves encoding into a ptrace.Unmarshaler. Built-in
+// encodings are handled directly; any other value is treated as the ID of an
+// encoding extension looked up from the host.
+func newTracesUnmarshaler(encoding string, host component.Host) (ptrace.Unmarshaler, error) {
+	switch encoding {
+	case EncodingOTLPJSON:
+		return &ptrace.JSONUnmarshaler{}, nil
+	case EncodingOTLPProto:
+		return &ptrace.ProtoUnmarshaler{}, nil
+	}
+	ext, err := encodingExtension(encoding, host)
+	if err != nil {
+		return nil, fmt.Errorf("traces.%w", err)
+	}
+	unmarshaler, ok := ext.(ptrace.Unmarshaler)
+	if !ok {
+		return nil, fmt.Errorf("traces.encoding extension %q is not a traces unmarshaler", encoding)
+	}
+	return unmarshaler, nil
+}
+
+// encodingExtension resolves the encoding extension referenced by encoding from
+// the host's extensions.
+func encodingExtension(encoding string, host component.Host) (component.Component, error) {
+	var id component.ID
+	if err := id.UnmarshalText([]byte(encoding)); err != nil {
+		return nil, fmt.Errorf("encoding %q is not a valid encoding extension ID: %w", encoding, err)
+	}
+	ext, ok := host.GetExtensions()[id]
+	if !ok {
+		return nil, fmt.Errorf("encoding extension %q not found", id)
+	}
+	return ext, nil
 }

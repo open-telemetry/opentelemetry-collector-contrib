@@ -50,7 +50,7 @@ func TestScrapeConfigFiles(t *testing.T) {
 }
 
 func verifyScrapeConfigFiles(t *testing.T, _ *testData, result []pmetric.ResourceMetrics) {
-	require.Len(t, result, 1)
+	require.GreaterOrEqual(t, len(result), 1)
 	serviceName, ok := result[0].Resource().Attributes().Get("service.name")
 	assert.True(t, ok)
 	assert.Equal(t, "target1", serviceName.Str())

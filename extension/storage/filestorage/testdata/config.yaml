@@ -5,6 +5,7 @@ file_storage:
   directory: .
 file_storage/all_settings:
   directory: .
+  max_size: 268435456
   compaction:
     directory: .
     on_start: true

@@ -58,11 +58,11 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["NtpFrequencyOffset"] = mb.metricNtpFrequencyOffset.config.AggregationStrategy
-			aggMap["NtpTimeCorrection"] = mb.metricNtpTimeCorrection.config.AggregationStrategy
-			aggMap["NtpTimeLastOffset"] = mb.metricNtpTimeLastOffset.config.AggregationStrategy
-			aggMap["NtpTimeRmsOffset"] = mb.metricNtpTimeRmsOffset.config.AggregationStrategy
-			aggMap["NtpTimeRootDelay"] = mb.metricNtpTimeRootDelay.config.AggregationStrategy
+			aggMap["ntp.frequency.offset"] = mb.metricNtpFrequencyOffset.config.AggregationStrategy
+			aggMap["ntp.time.correction"] = mb.metricNtpTimeCorrection.config.AggregationStrategy
+			aggMap["ntp.time.last_offset"] = mb.metricNtpTimeLastOffset.config.AggregationStrategy
+			aggMap["ntp.time.rms_offset"] = mb.metricNtpTimeRmsOffset.config.AggregationStrategy
+			aggMap["ntp.time.root_delay"] = mb.metricNtpTimeRootDelay.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -77,21 +77,18 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordNtpFrequencyOffsetDataPoint(ts, 3, AttributeLeapStatusInsertSecond)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNtpSkewDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordNtpStratumDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNtpTimeCorrectionDataPoint(ts, 1, AttributeLeapStatusNormal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNtpTimeCorrectionDataPoint(ts, 3, AttributeLeapStatusInsertSecond)
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNtpTimeLastOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
@@ -153,7 +150,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "The frequency is the rate by which the system s clock would be wrong if chronyd was not correcting it.", mi.Description())
-						assert.Equal(t, "ppm", mi.Unit())
+						assert.Equal(t, "[ppm]", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -168,7 +165,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "The frequency is the rate by which the system s clock would be wrong if chronyd was not correcting it.", mi.Description())
-						assert.Equal(t, "ppm", mi.Unit())
+						assert.Equal(t, "[ppm]", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -192,7 +189,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "This is the estimated error bound on the frequency.", mi.Description())
-					assert.Equal(t, "ppm", mi.Unit())
+					assert.Equal(t, "[ppm]", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -217,7 +214,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "The number of seconds difference between the system's clock and the reference clock", mi.Description())
-						assert.Equal(t, "seconds", mi.Unit())
+						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -232,7 +229,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "The number of seconds difference between the system's clock and the reference clock", mi.Description())
-						assert.Equal(t, "seconds", mi.Unit())
+						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -257,7 +254,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "The estimated local offset on the last clock update", mi.Description())
-						assert.Equal(t, "seconds", mi.Unit())
+						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -272,7 +269,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "The estimated local offset on the last clock update", mi.Description())
-						assert.Equal(t, "seconds", mi.Unit())
+						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -297,7 +294,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "the long term average of the offset value", mi.Description())
-						assert.Equal(t, "seconds", mi.Unit())
+						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -312,7 +309,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "the long term average of the offset value", mi.Description())
-						assert.Equal(t, "seconds", mi.Unit())
+						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -337,7 +334,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "This is the total of the network path delays to the stratum-1 system from which the system is ultimately synchronised.", mi.Description())
-						assert.Equal(t, "seconds", mi.Unit())
+						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
@@ -352,7 +349,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 						assert.Equal(t, "This is the total of the network path delays to the stratum-1 system from which the system is ultimately synchronised.", mi.Description())
-						assert.Equal(t, "seconds", mi.Unit())
+						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())

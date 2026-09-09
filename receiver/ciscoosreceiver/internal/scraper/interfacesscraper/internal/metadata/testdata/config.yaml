@@ -3,14 +3,43 @@ all_set:
   metrics:
     system.network.errors:
       enabled: true
+      attributes: ["network.io.direction","network.interface.description","network.interface.mac","network.interface.name","network.interface.speed"]
     system.network.interface.status:
       enabled: true
+      attributes: ["network.interface.description","network.interface.mac","network.interface.name","network.interface.speed"]
     system.network.io:
       enabled: true
+      attributes: ["network.io.direction","network.interface.description","network.interface.mac","network.interface.name","network.interface.speed"]
     system.network.packet.count:
       enabled: true
+      attributes: ["network.packet.type","network.interface.description","network.interface.mac","network.interface.name","network.interface.speed"]
     system.network.packet.dropped:
       enabled: true
+      attributes: ["network.io.direction","network.interface.description","network.interface.mac","network.interface.name","network.interface.speed"]
+  resource_attributes:
+    host.ip:
+      enabled: true
+    hw.type:
+      enabled: true
+    os.name:
+      enabled: true
+reaggregate_set:
+  metrics:
+    system.network.errors:
+      enabled: true
+      attributes: []
+    system.network.interface.status:
+      enabled: true
+      attributes: []
+    system.network.io:
+      enabled: true
+      attributes: []
+    system.network.packet.count:
+      enabled: true
+      attributes: []
+    system.network.packet.dropped:
+      enabled: true
+      attributes: []
   resource_attributes:
     host.ip:
       enabled: true
@@ -22,14 +51,19 @@ none_set:
   metrics:
     system.network.errors:
       enabled: false
+      attributes: ["network.io.direction","network.interface.description","network.interface.mac","network.interface.name","network.interface.speed"]
     system.network.interface.status:
       enabled: false
+      attributes: ["network.interface.description","network.interface.mac","network.interface.name","network.interface.speed"]
     system.network.io:
       enabled: false
+      attributes: ["network.io.direction","network.interface.description","network.interface.mac","network.interface.name","network.interface.speed"]
     system.network.packet.count:
       enabled: false
+      attributes: ["network.packet.type","network.interface.description","network.interface.mac","network.interface.name","network.interface.speed"]
     system.network.packet.dropped:
       enabled: false
+      attributes: ["network.io.direction","network.interface.description","network.interface.mac","network.interface.name","network.interface.speed"]
   resource_attributes:
     host.ip:
       enabled: false

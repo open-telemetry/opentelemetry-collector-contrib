@@ -47,7 +47,7 @@ func TestProxyCreationFailed(t *testing.T) {
 	assert.NoError(t, err, "there should be address available")
 
 	sink := new(consumertest.TracesSink)
-	_, err = newReceiver(
+	rcvr, err := newReceiver(
 		&Config{
 			AddrConfig: confignet.AddrConfig{
 				Endpoint:  addr,
@@ -62,7 +62,8 @@ func TestProxyCreationFailed(t *testing.T) {
 		sink,
 		receivertest.NewNopSettings(metadata.Type),
 	)
-	assert.Error(t, err, "receiver creation should fail due to failure to create TCP proxy")
+	assert.NoError(t, err, "receiver should be created before proxy startup")
+	assert.Error(t, rcvr.Start(t.Context(), componenttest.NewNopHost()), "receiver start should fail due to failure to create TCP proxy")
 }
 
 func TestPollerCreationFailed(t *testing.T) {
@@ -367,7 +368,8 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", udppoller.Transport)),
+							attribute.String("transport", udppoller.Transport),
+						),
 						Value: accepted,
 					},
 				},
@@ -401,7 +403,8 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", udppoller.Transport)),
+							attribute.String("transport", udppoller.Transport),
+						),
 						Value: refused,
 					},
 				},

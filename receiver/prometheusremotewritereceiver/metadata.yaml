@@ -12,7 +12,7 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [dashpole, ArthurSens, perebaj]
+    active: [dashpole, ArthurSens, perebaj, himanshu130700]
 tests:
   config:
   goleak:

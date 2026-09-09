@@ -17,7 +17,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -44,6 +46,8 @@ type kubernetesprocessor struct {
 	podIgnore              kube.Excludes
 	waitForMetadata        bool
 	waitForMetadataTimeout time.Duration
+	watchSyncPeriod        time.Duration
+	podDeleteGracePeriod   time.Duration
 }
 
 func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, kubeClient kube.ClientProvider) error {
@@ -51,7 +55,7 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, kube.InformersFactoryList{}, kp.waitForMetadata, kp.waitForMetadataTimeout)
+		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, kube.InformersFactoryList{}, kp.waitForMetadata, kp.waitForMetadataTimeout, kp.watchSyncPeriod, kp.podDeleteGracePeriod)
 		if err != nil {
 			return err
 		}
@@ -69,28 +73,40 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 	}
 
 	if kp.rules.ContainerImageTag {
-		kp.logger.Warn(
-			"[WARNING] container.image.tag is being renamed to container.image.tags per Semantic Conventions. " +
-				"Consider switching to the new schema by enabling the processor.k8sattributes.EmitV1K8sConventions and " +
-				"processor.k8sattributes.DontEmitV0K8sConventions feature gates. " +
-				"See processor README section 'Semantic Conventions Compatibility' for details.",
-		)
+		if metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled() {
+			kp.logger.Warn(
+				"[WARNING] container.image.tag is configured but will NOT be emitted: " +
+					"the processor.k8sattributes.DontEmitV0K8sConventions feature gate is enabled, which disables legacy attributes. " +
+					"Switch your configuration to container.image.tags (plural) to continue receiving image tag data.",
+			)
+		} else {
+			kp.logger.Warn(
+				"[WARNING] container.image.tag is being renamed to container.image.tags per Semantic Conventions. " +
+					"Consider switching to the new schema by enabling the processor.k8sattributes.EmitV1K8sConventions and " +
+					"processor.k8sattributes.DontEmitV0K8sConventions feature gates. " +
+					"See processor README section 'Semantic Conventions Compatibility' for details.",
+			)
+		}
 	}
 	if len(kp.rules.Labels) > 0 {
-		kp.logger.Warn(
-			"[WARNING] Pod label extraction attributes are being renamed (e.g. k8s.pod.labels.<key> -> k8s.pod.label.<key>) per Semantic Conventions. " +
-				"Consider switching to the new schema by enabling the processor.k8sattributes.EmitV1K8sConventions and " +
-				"processor.k8sattributes.DontEmitV0K8sConventions feature gates. " +
-				"See processor README section 'Semantic Conventions Compatibility' for details.",
-		)
+		if !metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled() {
+			kp.logger.Warn(
+				"[WARNING] Pod label extraction attributes are being renamed (e.g. k8s.pod.labels.<key> -> k8s.pod.label.<key>) per Semantic Conventions. " +
+					"Consider switching to the new schema by enabling the processor.k8sattributes.EmitV1K8sConventions and " +
+					"processor.k8sattributes.DontEmitV0K8sConventions feature gates. " +
+					"See processor README section 'Semantic Conventions Compatibility' for details.",
+			)
+		}
 	}
 	if len(kp.rules.Annotations) > 0 {
-		kp.logger.Warn(
-			"[WARNING] Pod annotation extraction attributes are being renamed (e.g. k8s.pod.annotations.<key> -> k8s.pod.annotation.<key>) per Semantic Conventions. " +
-				"Consider switching to the new schema by enabling the processor.k8sattributes.EmitV1K8sConventions and " +
-				"processor.k8sattributes.DontEmitV0K8sConventions feature gates. " +
-				"See processor README section 'Semantic Conventions Compatibility' for details.",
-		)
+		if !metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled() {
+			kp.logger.Warn(
+				"[WARNING] Pod annotation extraction attributes are being renamed (e.g. k8s.pod.annotations.<key> -> k8s.pod.annotation.<key>) per Semantic Conventions. " +
+					"Consider switching to the new schema by enabling the processor.k8sattributes.EmitV1K8sConventions and " +
+					"processor.k8sattributes.DontEmitV0K8sConventions feature gates. " +
+					"See processor README section 'Semantic Conventions Compatibility' for details.",
+			)
+		}
 	}
 
 	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
@@ -139,7 +155,7 @@ func (kp *kubernetesprocessor) Shutdown(context.Context) error {
 func (kp *kubernetesprocessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
-		kp.processResource(ctx, rss.At(i).Resource())
+		kp.processResource(ctx, rss.At(i).Resource(), "traces")
 	}
 
 	return td, nil
@@ -149,7 +165,7 @@ func (kp *kubernetesprocessor) processTraces(ctx context.Context, td ptrace.Trac
 func (kp *kubernetesprocessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
-		kp.processResource(ctx, rm.At(i).Resource())
+		kp.processResource(ctx, rm.At(i).Resource(), "metrics")
 	}
 
 	return md, nil
@@ -159,7 +175,7 @@ func (kp *kubernetesprocessor) processMetrics(ctx context.Context, md pmetric.Me
 func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	rl := ld.ResourceLogs()
 	for i := 0; i < rl.Len(); i++ {
-		kp.processResource(ctx, rl.At(i).Resource())
+		kp.processResource(ctx, rl.At(i).Resource(), "logs")
 	}
 
 	return ld, nil
@@ -169,14 +185,15 @@ func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld plog.Logs) (p
 func (kp *kubernetesprocessor) processProfiles(ctx context.Context, pd pprofile.Profiles) (pprofile.Profiles, error) {
 	rp := pd.ResourceProfiles()
 	for i := 0; i < rp.Len(); i++ {
-		kp.processResource(ctx, rp.At(i).Resource())
+		kp.processResource(ctx, rp.At(i).Resource(), "profiles")
 	}
 
 	return pd, nil
 }
 
-// processResource adds Pod metadata tags to resource based on pod association configuration
-func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pcommon.Resource) {
+// processResource adds Pod metadata tags to resource based on pod association configuration.
+// signal is the OTLP signal type ("traces", "metrics", "logs", "profiles") used for telemetry.
+func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pcommon.Resource, signal string) {
 	podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
 	kp.logger.Debug("evaluating pod identifier", zap.Any("value", podIdentifierValue))
 
@@ -210,6 +227,18 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		kp.logger.Debug("no pod identifier found")
 	}
 
+	status := "success"
+	if !podFound {
+		status = "error"
+	}
+	kp.telemetry.K8sPodAssociation.Add(ctx, 1,
+		metric.WithAttributes(
+			attribute.String("status", status),
+			attribute.String("pod_identifier", buildPodIdentifierString(podIdentifierValue)),
+			attribute.String("otelcol.signal", signal),
+		),
+	)
+
 	namespace := getNamespace(pod, resource.Attributes())
 	if namespace != "" {
 		attrsToAdd := kp.getAttributesForPodsNamespace(namespace)
@@ -242,6 +271,14 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		}
 	}
 
+	replicaset := getReplicaSetUID(pod, resource.Attributes())
+	if replicaset != "" {
+		attrsToAdd := kp.getAttributesForPodsReplicaSet(replicaset)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+	}
+
 	statefulset := getStatefulSetUID(pod, resource.Attributes())
 	if statefulset != "" {
 		attrsToAdd := kp.getAttributesForPodsStatefulSet(statefulset)
@@ -261,6 +298,14 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 	job := getJobUID(pod, resource.Attributes())
 	if job != "" {
 		attrsToAdd := kp.getAttributesForPodsJob(job)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+	}
+
+	cronJob := getCronJobUID(pod, resource.Attributes())
+	if cronJob != "" {
+		attrsToAdd := kp.getAttributesForPodsCronJob(cronJob)
 		for key, val := range attrsToAdd {
 			setResourceAttribute(resource.Attributes(), key, val)
 		}
@@ -295,6 +340,13 @@ func getDeploymentUID(pod *kube.Pod, resAttrs pcommon.Map) string {
 	return stringAttributeFromMap(resAttrs, string(conventions.K8SDeploymentUIDKey))
 }
 
+func getReplicaSetUID(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.ReplicaSetUID != "" {
+		return pod.ReplicaSetUID
+	}
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SReplicaSetUIDKey))
+}
+
 func getStatefulSetUID(pod *kube.Pod, resAttrs pcommon.Map) string {
 	if pod != nil && pod.StatefulSetUID != "" {
 		return pod.StatefulSetUID
@@ -314,6 +366,13 @@ func getJobUID(pod *kube.Pod, resAttrs pcommon.Map) string {
 		return pod.JobUID
 	}
 	return stringAttributeFromMap(resAttrs, string(conventions.K8SJobUIDKey))
+}
+
+func getCronJobUID(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.CronJobUID != "" {
+		return pod.CronJobUID
+	}
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SCronJobUIDKey))
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
@@ -359,9 +418,11 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 		setResourceAttribute(attrs, containerImageTag, containerSpec.ImageTag)
 	}
 	if enableStable && len(containerSpec.ImageTags) > 0 {
-		sliceVal := attrs.PutEmptySlice(string(conventions.ContainerImageTagsKey))
-		for _, tag := range containerSpec.ImageTags {
-			sliceVal.AppendEmpty().SetStr(tag)
+		if _, found := attrs.Get(string(conventions.ContainerImageTagsKey)); !found {
+			sliceVal := attrs.PutEmptySlice(string(conventions.ContainerImageTagsKey))
+			for _, tag := range containerSpec.ImageTags {
+				sliceVal.AppendEmpty().SetStr(tag)
+			}
 		}
 	}
 	if containerSpec.ServiceInstanceID != "" {
@@ -424,6 +485,14 @@ func (kp *kubernetesprocessor) getAttributesForPodsDeployment(deploymentUID stri
 	return d.Attributes
 }
 
+func (kp *kubernetesprocessor) getAttributesForPodsReplicaSet(replicaSetUID string) map[string]string {
+	rs, ok := kp.kc.GetReplicaSet(replicaSetUID)
+	if !ok {
+		return nil
+	}
+	return rs.Attributes
+}
+
 func (kp *kubernetesprocessor) getAttributesForPodsStatefulSet(statefulsetUID string) map[string]string {
 	d, ok := kp.kc.GetStatefulSet(statefulsetUID)
 	if !ok {
@@ -442,6 +511,14 @@ func (kp *kubernetesprocessor) getAttributesForPodsDaemonSet(daemonsetUID string
 
 func (kp *kubernetesprocessor) getAttributesForPodsJob(jobUID string) map[string]string {
 	j, ok := kp.kc.GetJob(jobUID)
+	if !ok {
+		return nil
+	}
+	return j.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForPodsCronJob(cronJobUID string) map[string]string {
+	j, ok := kp.kc.GetCronJob(cronJobUID)
 	if !ok {
 		return nil
 	}

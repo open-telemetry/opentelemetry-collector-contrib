@@ -8,9 +8,9 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand/v2"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"golang.org/x/exp/rand"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
@@ -298,7 +298,7 @@ var randomAlgorithm distAlgorithm = func(count uint64,
 		// Distribute any remaining count
 		remainingCount := count - totalAllocated
 		for remainingCount > 0 {
-			randomBoundary := rand.Intn(end-start+1) + start
+			randomBoundary := rand.IntN(end-start+1) + start
 			(*bucketCountsDst)[randomBoundary]++
 			remainingCount--
 		}

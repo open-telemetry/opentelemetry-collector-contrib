@@ -25,5 +25,9 @@ func getNewAndPolicy(settings component.TelemetrySettings, config *AndCfg, polic
 
 // Return instance of and sub-policy
 func getAndSubPolicyEvaluator(settings component.TelemetrySettings, cfg *AndSubPolicyCfg, policyExtensions map[string]samplingpolicy.Extension) (samplingpolicy.Evaluator, error) {
+	if cfg.Type == Not {
+		return getNewNotPolicy(settings, &cfg.NotCfg, policyExtensions)
+	}
+
 	return getSharedPolicyEvaluator(settings, &cfg.sharedPolicyCfg, policyExtensions)
 }

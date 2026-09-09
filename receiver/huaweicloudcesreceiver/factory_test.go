@@ -34,8 +34,8 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	config := factory.CreateDefaultConfig()
 
 	rConfig := config.(*Config)
-	rConfig.CollectionInterval = 60 * time.Second
-	rConfig.InitialDelay = time.Second
+	rConfig.ControllerConfig.CollectionInterval = 60 * time.Second
+	rConfig.ControllerConfig.InitialDelay = time.Second
 
 	nextConsumer := new(consumertest.MetricsSink)
 	receiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), config, nextConsumer)

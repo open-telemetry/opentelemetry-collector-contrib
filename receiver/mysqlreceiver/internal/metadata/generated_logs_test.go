@@ -31,7 +31,12 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	lb := NewLogsBuilder(loadLogsBuilderConfig(t, "all_set"), settings)
 
 	rb := lb.NewResourceBuilder()
+	rb.SetDbSystemName("db.system.name-val")
+	rb.SetDbSystemVersion("db.system.version-val")
 	rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
+	rb.SetServiceInstanceID("service.instance.id-val")
+	rb.SetServiceName("service.name-val")
+	rb.SetServiceNamespace("service.namespace-val")
 	res := rb.Emit()
 
 	// append the first log record
@@ -129,13 +134,18 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 
 			allEventsCount++
-			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, AttributeDbSystemNameMysql, 23, "user.name-val", "db.namespace-val", "mysql.threads.processlist_command-val", "mysql.threads.processlist_state-val", "db.query.text-val", "mysql.events_statements_current.digest-val", "mysql.query_plan.hash-val", 14, "mysql.wait_type-val", "mysql.session.status-val", 16, 42.100000, 37.100000, "client.address-val", 11, "network.peer.address-val", 17)
+			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, AttributeDbSystemNameMysql, 23, "user.name-val", "db.namespace-val", "mysql.threads.processlist_command-val", "mysql.threads.processlist_state-val", "db.query.text-val", "mysql.events_statements_current.digest-val", "mysql.query_plan-val", "mysql.query_plan.hash-val", 14, "mysql.wait_type-val", "mysql.session.status-val", 16, 42.100000, 37.100000, "client.address-val", 11, "network.peer.address-val", 17)
 
 			allEventsCount++
 			lb.RecordDbServerTopQueryEvent(ctx, timestamp, AttributeDbSystemNameMysql, "db.query.text-val", "mysql.query_plan-val", "mysql.query_plan.hash-val", "mysql.events_statements_summary_by_digest.digest-val", 52, 56.100000)
 
 			rb := lb.NewResourceBuilder()
+			rb.SetDbSystemName("db.system.name-val")
+			rb.SetDbSystemVersion("db.system.version-val")
 			rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
+			rb.SetServiceInstanceID("service.instance.id-val")
+			rb.SetServiceName("service.name-val")
+			rb.SetServiceNamespace("service.namespace-val")
 			res := rb.Emit()
 			logs := lb.Emit(WithLogsResource(res))
 
@@ -189,6 +199,9 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("mysql.events_statements_current.digest")
 					assert.True(t, ok)
 					assert.Equal(t, "mysql.events_statements_current.digest-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("mysql.query_plan")
+					assert.True(t, ok)
+					assert.Equal(t, "mysql.query_plan-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("mysql.query_plan.hash")
 					assert.True(t, ok)
 					assert.Equal(t, "mysql.query_plan.hash-val", attrVal.Str())

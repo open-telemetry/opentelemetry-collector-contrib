@@ -170,11 +170,33 @@ func TestAddMetrics(t *testing.T) {
 				err: nil,
 			},
 			expected: map[string]any{
-				"ping.rtt.min":    int64(10),
-				"ping.rtt.max":    int64(20),
-				"ping.rtt.avg":    int64(15),
-				"ping.rtt.stddev": int64(5),
+				"ping.rtt.min":    float64(10),
+				"ping.rtt.max":    float64(20),
+				"ping.rtt.avg":    float64(15),
+				"ping.rtt.stddev": float64(5),
 				"ping.loss.ratio": 0.1,
+			},
+		},
+		{
+			name: "sub-millisecond RTT values",
+			given: pingResult{
+				targetHost: "example.com",
+				targetIP:   "192.168.1.1",
+				stats: &pingStats{
+					minRtt:    150 * time.Microsecond,
+					maxRtt:    750 * time.Microsecond,
+					avgRtt:    500 * time.Microsecond,
+					stdDevRtt: 100 * time.Microsecond,
+					lossRatio: 0.0,
+				},
+				err: nil,
+			},
+			expected: map[string]any{
+				"ping.rtt.min":    0.15,
+				"ping.rtt.max":    0.75,
+				"ping.rtt.avg":    0.5,
+				"ping.rtt.stddev": 0.1,
+				"ping.loss.ratio": 0.0,
 			},
 		},
 		{
@@ -199,13 +221,13 @@ func TestAddMetrics(t *testing.T) {
 				err: nil,
 			},
 			expected: map[string]any{
-				"ping.rtt.min":    int64(10),
-				"ping.rtt.max":    int64(20),
-				"ping.rtt.stddev": int64(5),
+				"ping.rtt.min":    float64(10),
+				"ping.rtt.max":    float64(20),
+				"ping.rtt.stddev": float64(5),
 			},
 			customizeConfig: func(cfg *Config) {
-				cfg.Metrics.PingRttAvg.Enabled = false
-				cfg.Metrics.PingLossRatio.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.PingRttAvg.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.PingLossRatio.Enabled = false
 			},
 		},
 		{
@@ -223,11 +245,11 @@ func TestAddMetrics(t *testing.T) {
 			},
 			expected: map[string]any{},
 			customizeConfig: func(cfg *Config) {
-				cfg.Metrics.PingRttMin.Enabled = false
-				cfg.Metrics.PingRttMax.Enabled = false
-				cfg.Metrics.PingRttAvg.Enabled = false
-				cfg.Metrics.PingLossRatio.Enabled = false
-				cfg.Metrics.PingRttStddev.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.PingRttMin.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.PingRttMax.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.PingRttAvg.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.PingLossRatio.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.PingRttStddev.Enabled = false
 			},
 		},
 	}

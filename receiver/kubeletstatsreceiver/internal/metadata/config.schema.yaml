@@ -109,6 +109,29 @@ $defs:
           enabled:
             type: boolean
             default: false
+      k8s.container.ephemeral_storage.usage:
+        description: "K8sContainerEphemeralStorageUsageMetricConfig provides config for the k8s.container.ephemeral_storage.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "fs.type"
+            default:
+              - "fs.type"
       k8s.container.memory.node.utilization:
         description: "K8sContainerMemoryNodeUtilizationMetricConfig provides config for the k8s.container.memory.node.utilization metric."
         type: object
@@ -214,6 +237,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "interface"
+                - "direction"
+            default:
+              - "interface"
+              - "direction"
       k8s.node.network.io:
         description: "K8sNodeNetworkIoMetricConfig provides config for the k8s.node.network.io metric."
         type: object
@@ -221,6 +262,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "interface"
+                - "direction"
+            default:
+              - "interface"
+              - "direction"
       k8s.node.system_container.cpu.time:
         description: "K8sNodeSystemContainerCPUTimeMetricConfig provides config for the k8s.node.system_container.cpu.time metric."
         type: object
@@ -382,6 +441,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "interface"
+                - "direction"
+            default:
+              - "interface"
+              - "direction"
       k8s.pod.network.io:
         description: "K8sPodNetworkIoMetricConfig provides config for the k8s.pod.network.io metric."
         type: object
@@ -389,6 +466,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "interface"
+                - "direction"
+            default:
+              - "interface"
+              - "direction"
       k8s.pod.uptime:
         description: "K8sPodUptimeMetricConfig provides config for the k8s.pod.uptime metric."
         type: object

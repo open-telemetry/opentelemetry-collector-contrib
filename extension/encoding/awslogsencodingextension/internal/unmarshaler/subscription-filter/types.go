@@ -42,3 +42,12 @@ type resourceGroupKey struct {
 	logGroup  string
 	logStream string
 }
+
+// cloudwatchLogsHeader holds only the envelope fields needed for routing;
+// it skips logEvents so peeks don't tokenize the bulk of the payload.
+type cloudwatchLogsHeader struct {
+	Owner       string `json:"owner"`
+	LogGroup    string `json:"logGroup"`
+	LogStream   string `json:"logStream"`
+	MessageType string `json:"messageType"`
+}

@@ -109,6 +109,11 @@ func accessTimestamps[K Context]() ottl.StandardGetSetter[K] {
 			return ts, nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
+			if val == nil {
+				// timestamps is a view over the repeated TimestampsUnixNano list, so nil clears it.
+				tCtx.GetProfileSample().TimestampsUnixNano().FromRaw(nil)
+				return nil
+			}
 			ts, err := ctxutil.ExpectType[[]time.Time](val)
 			if err != nil {
 				return err

@@ -22,6 +22,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/hostmetadata"
+	componentmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -124,7 +125,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 		},
 		logDataPoints:          se.config.LogDataPoints,
 		logger:                 se.logger,
-		accessTokenPassthrough: se.config.AccessTokenPassthrough,
+		accessTokenPassthrough: se.config.AccessTokenPassthroughConfig.AccessTokenPassthrough,
 		converter:              se.converter,
 		sendOTLPHistograms:     se.config.SendOTLPHistograms,
 	}
@@ -173,7 +174,8 @@ func (se *signalfxExporter) startDimensionClient(ctx context.Context) error {
 			Timeout:                 se.config.DimensionClient.Timeout,
 			DropTags:                se.config.DimensionClient.DropTags,
 			StripK8sLabelPrefix:     se.config.DimensionClient.StripK8sLabelPrefix,
-		})
+		},
+	)
 	dimClient.Start()
 	se.dimClient = dimClient
 	return nil
@@ -219,11 +221,11 @@ func (se *signalfxExporter) startLogs(ctx context.Context, host component.Host) 
 			zippers:   newGzipPool(),
 		},
 		logger:                 se.logger,
-		accessTokenPassthrough: se.config.AccessTokenPassthrough,
+		accessTokenPassthrough: se.config.AccessTokenPassthroughConfig.AccessTokenPassthrough,
 	}
 
 	// Initialize dimension client for entity event processing if entity events processing is enabled.
-	if entityEventsFeatureGate.IsEnabled() {
+	if componentmetadata.ExporterSignalfxConsumeEntityEventsFeatureGate.IsEnabled() {
 		if err := se.startDimensionClient(ctx); err != nil {
 			return err
 		}
@@ -233,9 +235,9 @@ func (se *signalfxExporter) startLogs(ctx context.Context, host component.Host) 
 }
 
 func (se *signalfxExporter) createClient(ctx context.Context, host component.Host) (*http.Client, error) {
-	se.config.TLS = se.config.IngestTLSs
+	se.config.ClientConfig.TLS = se.config.IngestTLSs
 
-	return se.config.ToClient(ctx, host.GetExtensions(), se.telemetrySettings)
+	return se.config.ClientConfig.ToClient(ctx, host.GetExtensions(), se.telemetrySettings)
 }
 
 func (se *signalfxExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
@@ -261,7 +263,7 @@ func (se *signalfxExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 			sl := ills.At(j)
 
 			// Process logs that represent entity events and skip regular event conversion
-			if entityEventsFeatureGate.IsEnabled() && isEntityEventScope(sl) {
+			if componentmetadata.ExporterSignalfxConsumeEntityEventsFeatureGate.IsEnabled() && isEntityEventScope(sl) {
 				err := se.processEntityEvents(sl.LogRecords())
 				if err != nil {
 					return fmt.Errorf("failed to process entity events: %w", err)
@@ -343,11 +345,11 @@ func buildHeaders(config *Config, version string) map[string]string {
 	// Add any custom headers from the config. They will override the pre-defined
 	// ones above in case of conflict, but, not the content encoding one since
 	// the latter one is defined according to the payload.
-	for k, v := range config.Headers.Iter {
+	for k, v := range config.ClientConfig.Headers.Iter {
 		headers[k] = string(v)
 	}
 	// we want to control how headers are set, overriding user headers with our passthrough.
-	config.Headers = nil
+	config.ClientConfig.Headers = nil
 
 	return headers
 }

@@ -11,10 +11,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-func ptr(i int) *int {
-	return &i
-}
-
 func Test_RawMarshaler(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -69,7 +65,7 @@ func Test_RawMarshaler(t *testing.T) {
 				lr := plog.NewLogRecord()
 				return lr
 			},
-			countExpected: ptr(0),
+			countExpected: new(0),
 			errorExpected: false,
 			marshaled:     []byte{},
 		},
@@ -117,7 +113,10 @@ func Test_RawMarshaler(t *testing.T) {
 			logs := plog.NewLogs()
 			lr := test.logRecord()
 			lr.MoveTo(logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty())
-			messages, err := r.MarshalLogs(logs)
+			var values [][]byte
+			err := r.MarshalLogs(logs, func(_, value []byte) {
+				values = append(values, value)
+			})
 			if test.errorExpected {
 				require.Error(t, err)
 			} else {
@@ -127,9 +126,9 @@ func Test_RawMarshaler(t *testing.T) {
 			if test.countExpected != nil {
 				countExpected = *test.countExpected
 			}
-			assert.Len(t, messages, countExpected)
+			assert.Len(t, values, countExpected)
 			if countExpected > 0 {
-				assert.Equal(t, test.marshaled, messages[0].Value)
+				assert.Equal(t, test.marshaled, values[0])
 			}
 		})
 	}

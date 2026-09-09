@@ -26,9 +26,9 @@ func createDefaultConfig() component.Config {
 }
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	ExtensionsSocket               string   `mapstructure:"extensions_socket"`
-	Queries                        []string `mapstructure:"queries"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ExtensionsSocket string                         `mapstructure:"extensions_socket"`
+	Queries          []string                       `mapstructure:"queries"`
 }
 
 func (c Config) Validate() error {

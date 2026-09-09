@@ -4,7 +4,6 @@
 The Libhoney Receiver will accept Trace and Logs signals that are emitted from applications that are
 instrumented using [Libhoney](https://docs.honeycomb.io/send-data/logs/structured/libhoney/) libraries.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: traces, logs   |

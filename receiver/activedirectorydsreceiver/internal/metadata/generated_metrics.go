@@ -211,7 +211,8 @@ var MapAttributeValueType = map[string]AttributeValueType{
 
 var MetricsInfo = metricsInfo{
 	ActiveDirectoryDsBindRate: metricInfo{
-		Name: "active_directory.ds.bind.rate",
+		Name:       "active_directory.ds.bind.rate",
+		Attributes: []string{"bind_type"},
 	},
 	ActiveDirectoryDsLdapBindLastSuccessfulTime: metricInfo{
 		Name: "active_directory.ds.ldap.bind.last_successful.time",
@@ -232,34 +233,41 @@ var MetricsInfo = metricsInfo{
 		Name: "active_directory.ds.notification.queued",
 	},
 	ActiveDirectoryDsOperationRate: metricInfo{
-		Name: "active_directory.ds.operation.rate",
+		Name:       "active_directory.ds.operation.rate",
+		Attributes: []string{"operation_type"},
 	},
 	ActiveDirectoryDsReplicationNetworkIo: metricInfo{
-		Name: "active_directory.ds.replication.network.io",
+		Name:       "active_directory.ds.replication.network.io",
+		Attributes: []string{"direction", "network_data_type"},
 	},
 	ActiveDirectoryDsReplicationObjectRate: metricInfo{
-		Name: "active_directory.ds.replication.object.rate",
+		Name:       "active_directory.ds.replication.object.rate",
+		Attributes: []string{"direction"},
 	},
 	ActiveDirectoryDsReplicationOperationPending: metricInfo{
 		Name: "active_directory.ds.replication.operation.pending",
 	},
 	ActiveDirectoryDsReplicationPropertyRate: metricInfo{
-		Name: "active_directory.ds.replication.property.rate",
+		Name:       "active_directory.ds.replication.property.rate",
+		Attributes: []string{"direction"},
 	},
 	ActiveDirectoryDsReplicationSyncObjectPending: metricInfo{
 		Name: "active_directory.ds.replication.sync.object.pending",
 	},
 	ActiveDirectoryDsReplicationSyncRequestCount: metricInfo{
-		Name: "active_directory.ds.replication.sync.request.count",
+		Name:       "active_directory.ds.replication.sync.request.count",
+		Attributes: []string{"sync_result"},
 	},
 	ActiveDirectoryDsReplicationValueRate: metricInfo{
-		Name: "active_directory.ds.replication.value.rate",
+		Name:       "active_directory.ds.replication.value.rate",
+		Attributes: []string{"direction", "value_type"},
 	},
 	ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: metricInfo{
 		Name: "active_directory.ds.security_descriptor_propagations_event.queued",
 	},
 	ActiveDirectoryDsSuboperationRate: metricInfo{
-		Name: "active_directory.ds.suboperation.rate",
+		Name:       "active_directory.ds.suboperation.rate",
+		Attributes: []string{"suboperation_type"},
 	},
 	ActiveDirectoryDsThreadCount: metricInfo{
 		Name: "active_directory.ds.thread.count",
@@ -288,7 +296,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricActiveDirectoryDsBindRate struct {
