@@ -87,6 +87,9 @@ func newSQLServerScraper(id component.ID,
 	if err != nil {
 		params.Logger.Warn("Failed to resolve server.address and server.port, using the configured values", zap.Error(err))
 		serverAddress, serverPort = cfg.Server, int(cfg.Port)
+		if serverPort == 0 {
+			serverPort = defaultSQLServerPort
+		}
 	}
 
 	return &sqlServerScraperHelper{
@@ -347,11 +350,11 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	hostName := s.config.Server
 
 	if s.config.DataSource != "" {
-		host, _, err := parseDataSource(s.config.DataSource)
+		config, err := parseDataSource(s.config.DataSource)
 		if err != nil {
 			s.logger.Warn("Failed to parse datasource for host.name attribute, using fallback", zap.Error(err))
 		} else {
-			hostName = host
+			hostName = config.Host
 		}
 	}
 
@@ -1765,8 +1768,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			rowsReturnedVal.(int64),
 			totalElapsedTimeVal,
 			totalGrantVal.(int64),
-			s.serverAddress,
-			s.serverPort,
 			dbSystemNameVal,
 			procExecCountVal.(int64),
 			row[storedProcedureID],

@@ -1475,11 +1475,11 @@ The returned type is int64.
 The input `value` types:
 
 - float64. Fraction is discharged (truncation towards zero).
-- string. Trying to parse an integer from string if it fails then nil will be returned.
+- string. Trying to parse an integer from string. If parsing fails, an error is returned.
 - bool. If `value` is true, then the function will return 1 otherwise 0.
 - int64. The function returns the `value` without changes.
 
-If `value` is another type or parsing failed nil is always returned.
+If `value` is `nil`, `nil` is returned. If `value` is an unsupported type or a string that cannot be parsed as an integer, an error is returned.
 
 The `value` is either a path expression to a telemetry field to retrieve or a literal.
 

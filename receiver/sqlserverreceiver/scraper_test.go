@@ -198,8 +198,6 @@ func TestSuccessfulScrape(t *testing.T) {
 			cfg.Port = 1433
 			cfg.Server = "0.0.0.0"
 			cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-			// server.address and server.port are intentionally not enabled here: the golden
-			// files include them, so this asserts they are emitted by default.
 			cfg.MetricsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
 			cfg.MetricsBuilderConfig.ResourceAttributes.ServiceNamespace.Enabled = true
 			cfg.LogsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
@@ -231,25 +229,24 @@ func TestSuccessfulScrape(t *testing.T) {
 				var expectedFile string
 				switch scraper.sqlQuery {
 				case getSQLServerAvailabilityGroupQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedAvailabilityGroupMetrics")
+					expectedFile = filepath.Join("testdata", "expectedAvailabilityGroupMetrics.yaml")
 				case getSQLServerDatabaseIOQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedDatabaseIO")
+					expectedFile = filepath.Join("testdata", "expectedDatabaseIO.yaml")
 				case getSQLServerPerformanceCounterQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedPerfCounters")
+					expectedFile = filepath.Join("testdata", "expectedPerfCounters.yaml")
 				case getSQLServerPropertiesQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedProperties")
+					expectedFile = filepath.Join("testdata", "expectedProperties.yaml")
 				case getSQLServerWaitStatsQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedWaitStats")
+					expectedFile = filepath.Join("testdata", "expectedWaitStats.yaml")
 				case getSQLServerIndexPhysicalStatsQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedIndexPhysicalMetrics")
+					expectedFile = filepath.Join("testdata", "expectedIndexPhysicalMetrics.yaml")
 				case getSQLServerWorkerThreadsQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedWorkerThreads")
+					expectedFile = filepath.Join("testdata", "expectedWorkerThreads.yaml")
 				case getSQLServerCPUMemoryQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedCPUMemory")
+					expectedFile = filepath.Join("testdata", "expectedCPUMemory.yaml")
 				case getSQLServerDiskIOQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedDiskIO")
+					expectedFile = filepath.Join("testdata", "expectedDiskIO.yaml")
 				}
-				expectedFile += ".yaml"
 
 				// Uncomment line below to re-generate expected metrics.
 				// golden.WriteMetrics(t, expectedFile, actualMetrics)
@@ -1325,19 +1322,6 @@ func TestRecordDatabaseQueryTextAndPlanUsesResourceBuilderForLogs(t *testing.T) 
 	serverPort, exists := resourceAttributes.Get("server.port")
 	assert.True(t, exists)
 	assert.Equal(t, int64(1434), serverPort.Int())
-
-	// The event carries its own server.address/server.port attributes; they must agree with the
-	// resource. `server` is unset in this datasource-only config, so reading it from the config
-	// rather than the resolved endpoint would leave them empty.
-	recordAttributes := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
-
-	eventServerAddress, exists := recordAttributes.Get("server.address")
-	assert.True(t, exists)
-	assert.Equal(t, "datasource-host.example.com", eventServerAddress.AsString())
-
-	eventServerPort, exists := recordAttributes.Get("server.port")
-	assert.True(t, exists)
-	assert.Equal(t, int64(1434), eventServerPort.Int())
 }
 
 func TestRecordWorkerThreadMetrics(t *testing.T) {

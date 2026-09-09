@@ -176,7 +176,8 @@ Top query collection enabled:
 When the receiver connects over loopback (for example `server: localhost` or `server: 127.0.0.1`),
 `server.address` reports the host name of the machine running the collector, because the monitored
 instance is co-located with it and `localhost` would otherwise be shared by every monitored host.
-`service.instance.id` uses the same resolution and is reported as `<server.address>:<server.port>`.
+`service.instance.id` resolves its host the same way, so it reports the collector host name rather than
+`localhost` for a loopback target.
 
 To stop emitting the server attributes, disable them individually:
 

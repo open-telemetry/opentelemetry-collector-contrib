@@ -20,28 +20,23 @@ func isLocalhost(host string) bool {
 	return strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback()
 }
 
-// resolveServerEndpoint determines the network location of the monitored SQL Server
-// instance, reported as the server.address and server.port resource attributes.
-// Special handling:
-// - localhost/127.0.0.1/::1 are replaced with os.Hostname()
-// - Port 0 defaults to 1433
+// resolveEndpoint parses the configured connection details into the host, named instance and port
+// that locate the monitored SQL Server instance. The named instance is only ever set when
+// connecting via a datasource; the port is returned as configured, so callers that need a concrete
+// port must apply defaultSQLServerPort themselves.
 //
-// A loopback target is only reachable when the server is co-located with the collector,
-// so the collector host's name is a more useful server identity than "localhost", which
-// would be shared by every monitored host.
-// See https://github.com/open-telemetry/semantic-conventions/issues/4026.
-func resolveServerEndpoint(cfg *Config) (string, int, error) {
-	var host string
-	var port int
-
-	// Parse connection details based on configuration priority
+// A loopback target (localhost, 127.0.0.1, ::1) or an unset host is replaced with the collector
+// host's name. Loopback is only reachable when the server is co-located with the collector, so the
+// collector host's name identifies the server better than "localhost", which every monitored host
+// would share. See https://github.com/open-telemetry/semantic-conventions/issues/4026.
+func resolveEndpoint(cfg *Config) (host, instance string, port int, err error) {
 	switch {
 	case cfg.DataSource != "":
-		h, p, err := parseDataSource(cfg.DataSource)
-		if err != nil {
-			return "", 0, fmt.Errorf("failed to parse datasource: %w", err)
+		config, parseErr := parseDataSource(cfg.DataSource)
+		if parseErr != nil {
+			return "", "", 0, fmt.Errorf("failed to parse datasource: %w", parseErr)
 		}
-		host, port = h, p
+		host, instance, port = config.Host, config.Instance, int(config.Port)
 	case cfg.Server != "":
 		host, port = cfg.Server, int(cfg.Port)
 	case cfg.ComputerName != "":
@@ -49,23 +44,34 @@ func resolveServerEndpoint(cfg *Config) (string, int, error) {
 		host, port = cfg.ComputerName, defaultSQLServerPort
 	default:
 		// No server specified, use hostname with default port
-		hostname, err := os.Hostname()
-		if err != nil {
-			return "", 0, err
+		hostname, hostErr := os.Hostname()
+		if hostErr != nil {
+			return "", "", 0, hostErr
 		}
 		host, port = hostname, defaultSQLServerPort
 	}
 
 	// Replace localhost with actual hostname
 	if isLocalhost(host) || host == "" {
-		hostname, err := os.Hostname()
-		if err != nil {
-			return "", 0, err
+		hostname, hostErr := os.Hostname()
+		if hostErr != nil {
+			return "", "", 0, hostErr
 		}
 		host = hostname
 	}
 
-	// Apply default port if not specified
+	return host, instance, port, nil
+}
+
+// resolveServerEndpoint determines the network location of the monitored SQL Server instance,
+// reported as the server.address and server.port resource attributes. The port defaults to 1433
+// when not configured, including for a named instance, whose port is negotiated at connect time.
+func resolveServerEndpoint(cfg *Config) (string, int, error) {
+	host, _, port, err := resolveEndpoint(cfg)
+	if err != nil {
+		return "", 0, err
+	}
+
 	if port == 0 {
 		port = defaultSQLServerPort
 	}
@@ -73,35 +79,38 @@ func resolveServerEndpoint(cfg *Config) (string, int, error) {
 	return host, port, nil
 }
 
-// computeServiceInstanceID computes the service.instance.id based on the configuration
-// Format: <host>:<port>, using the same endpoint resolution as server.address/server.port.
+// computeServiceInstanceID computes the service.instance.id based on the configuration.
+// Datasource format precedence: <host>\<instance>, then <host>:<port> (default 1433).
+// The host is resolved the same way as server.address.
 func computeServiceInstanceID(cfg *Config) (string, error) {
-	host, port, err := resolveServerEndpoint(cfg)
+	host, instance, port, err := resolveEndpoint(cfg)
 	if err != nil {
 		return "", err
+	}
+
+	if instance != "" {
+		return fmt.Sprintf(`%s\%s`, host, instance), nil
+	}
+
+	if port == 0 {
+		port = defaultSQLServerPort
 	}
 
 	return fmt.Sprintf("%s:%d", host, port), nil
 }
 
-// parseDataSource extracts server and port from SQL Server connection string
-// Uses the microsoft/go-mssqldb library's built-in parser for accurate parsing
-func parseDataSource(dataSource string) (string, int, error) {
+// parseDataSource extracts SQL Server connection details without replacing an omitted port.
+// Uses the microsoft/go-mssqldb library's built-in parser for accurate parsing.
+func parseDataSource(dataSource string) (msdsn.Config, error) {
 	if dataSource == "" {
-		return "", 0, errors.New("datasource is empty")
+		return msdsn.Config{}, errors.New("datasource is empty")
 	}
 
 	// Parse the connection string using the go-mssqldb library
 	config, err := msdsn.Parse(dataSource)
 	if err != nil {
-		return "", 0, fmt.Errorf("failed to parse datasource: %w", err)
+		return msdsn.Config{}, fmt.Errorf("failed to parse datasource: %w", err)
 	}
 
-	// Apply default port if not specified
-	port := int(config.Port)
-	if port == 0 {
-		port = defaultSQLServerPort
-	}
-
-	return config.Host, port, nil
+	return config, nil
 }
