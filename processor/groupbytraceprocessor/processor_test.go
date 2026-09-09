@@ -1286,3 +1286,132 @@ func TestSubtrace_TraceBackstopKeepsLiveSubtraces(t *testing.T) {
 	}, 5*time.Second, 5*time.Millisecond)
 	assert.Len(t, sink.AllTraces(), traces)
 }
+
+// TestSubtrace_UnclaimedSpansReleasedOnTimer covers spans that no subtrace timer
+// can ever collect. A same-service parent/child cycle leaves every span in the
+// cycle looking like a non-root, so no subtrace claims any of it. Those spans
+// must still leave on the wait_duration cadence, without needing the ring buffer
+// to overflow or the Collector to shut down.
+func TestSubtrace_UnclaimedSpansReleasedOnTimer(t *testing.T) {
+	cyclic := makeTraceID(50)
+	spanA := makeSpanID(1)
+	spanB := makeSpanID(2)
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{
+		// Far more capacity than the test uses, so nothing can be evicted.
+		NumTraces:    1000,
+		NumWorkers:   1,
+		WaitDuration: 100 * time.Millisecond,
+		EmitStrategy: EmitStrategyService,
+	}
+	p := newSubtraceProcessor(t, cfg, sink)
+
+	td := buildSpecTrace(cyclic, "svc-a",
+		spanSpec{id: spanA, parent: spanB},
+		spanSpec{id: spanB, parent: spanA},
+	)
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() == 2
+	}, 5*time.Second, 5*time.Millisecond, "unclaimed spans were never released")
+
+	batches := sink.AllTraces()
+	require.Len(t, batches, 1)
+	assert.Equal(t, map[pcommon.SpanID]bool{spanA: true, spanB: true}, batchSpanIDs(batches[0]))
+
+	// They were released, so storage is empty and shutdown has nothing to drain.
+	assert.Empty(t, p.subSt.traceIDs())
+	require.NoError(t, p.Shutdown(t.Context()))
+	assert.Equal(t, 2, sink.SpanCount())
+}
+
+// TestSubtrace_SweepLeavesPendingSubtracesAlone checks that the sweep only ever
+// takes spans no local root can reach. The sweep timer and the subtrace timers
+// both run on wait_duration, so a sweep that went by age instead of reachability
+// would split services apart depending on which timer won.
+func TestSubtrace_SweepLeavesPendingSubtracesAlone(t *testing.T) {
+	traceID := makeTraceID(51)
+	rootA := makeSpanID(1)
+	childA := makeSpanID(2)
+	rootB := makeSpanID(3)
+	childB := makeSpanID(4)
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{
+		NumTraces:    1000,
+		NumWorkers:   1,
+		WaitDuration: 50 * time.Millisecond,
+		EmitStrategy: EmitStrategyService,
+	}
+	p := newSubtraceProcessor(t, cfg, sink)
+	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildServiceTrace(traceID, "svc-a", rootA, childA)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildRemoteChildTrace(traceID, "svc-b", rootA, rootB, childB)))
+
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() == 4
+	}, 5*time.Second, 5*time.Millisecond)
+
+	// Let several sweep cycles run to make sure none of them emits anything extra.
+	assert.Never(t, func() bool {
+		return sink.SpanCount() != 4
+	}, 500*time.Millisecond, 10*time.Millisecond)
+
+	// Each service still arrives whole, in its own batch.
+	batches := sink.AllTraces()
+	require.Len(t, batches, 2)
+	svcA := map[pcommon.SpanID]bool{rootA: true, childA: true}
+	svcB := map[pcommon.SpanID]bool{rootB: true, childB: true}
+	for _, b := range batches {
+		ids := batchSpanIDs(b)
+		assert.True(t, maps.Equal(ids, svcA) || maps.Equal(ids, svcB),
+			"batch span IDs %v matched neither svc-a %v nor svc-b %v", ids, svcA, svcB)
+	}
+}
+
+// A trace that drains completely gives up its ring buffer slot, which stops the
+// sweep rescheduling itself forever for traces that are long gone. The slot
+// itself belongs to the event machine's worker goroutine, so this checks the
+// consequence instead: spans that arrive for the same trace afterwards must
+// still get swept, which only happens if the slot was released and the new batch
+// started a fresh sweep.
+func TestSubtrace_SweptAfterTraceDrainsAndReturns(t *testing.T) {
+	const waitDuration = 50 * time.Millisecond
+	traceID := makeTraceID(52)
+	spanA := makeSpanID(1)
+	spanB := makeSpanID(2)
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{
+		NumTraces:    1000,
+		NumWorkers:   1,
+		WaitDuration: waitDuration,
+		EmitStrategy: EmitStrategyService,
+	}
+	p := newSubtraceProcessor(t, cfg, sink)
+	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+	// A first, ordinary batch that drains via its subtrace timer.
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildServiceTrace(traceID, "svc-a", makeSpanID(9))))
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() == 1 && len(p.subSt.traceIDs()) == 0
+	}, 5*time.Second, 5*time.Millisecond)
+
+	// The sweep that observes the drained trace runs up to one wait_duration after
+	// it empties, so give the timer chain time to finish before sending more.
+	time.Sleep(3 * waitDuration)
+
+	// The same trace returns, now carrying spans no subtrace can claim.
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-a",
+		spanSpec{id: spanA, parent: spanB},
+		spanSpec{id: spanB, parent: spanA},
+	)))
+
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() == 3
+	}, 5*time.Second, 5*time.Millisecond, "unclaimed spans for a returning trace were never swept")
+	assert.Empty(t, p.subSt.traceIDs())
+}

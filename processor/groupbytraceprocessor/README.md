@@ -80,9 +80,11 @@ A span is classified as a local root when:
 
 ### Orphan spans
 
-Spans whose local root never arrives (e.g., the parent is in a different collector instance) are flushed on Collector shutdown. There is no separate fallback timer; overflow from the ring buffer will drop the oldest subtrace's spans without warning.
+A span whose parent never arrives (e.g., the parent is in a different Collector instance) is itself treated as a local root, under rule 3 above, so it forms a subtrace of its own and is released after `wait_duration` like any other.
 
-A span is only released when its chain of ancestors reaches a local root, so malformed input can leave spans with no subtrace to belong to: if a span's parent is one of its own descendants within the same service, nothing in the cycle looks like a local root and no timer is ever scheduled for it. To stop those spans from accumulating, trace IDs are tracked in a bounded buffer of their own, also sized by `num_traces`; when a trace is evicted from it, any spans still buffered for that trace are released to the next consumer as they stand, and counted in `otelcol_processor_groupbytrace_traces_evicted`.
+Spans can still end up belonging to no subtrace at all, because a span is only collected if its chain of ancestors reaches a local root. Malformed input in which a span's parent is one of its own descendants within the same service has no local root anywhere in the cycle, so no subtrace timer covers any of it. Every trace therefore also gets a sweep on the `wait_duration` cadence, which releases the spans that no local root can reach, in the same way a subtrace is released. Which spans those are is decided by reachability rather than by age, so a sweep never takes spans that a pending subtrace was about to collect. It reschedules itself while the trace still holds spans, and stops once the trace is empty.
+
+Trace IDs are also tracked in a bounded buffer of their own, sized by `num_traces`, so that no shape of input can make the processor hold more traces than that. When a trace is evicted from it, any spans still buffered for that trace are released to the next consumer as they stand, and counted in `otelcol_processor_groupbytrace_traces_evicted`. Overflow of the subtrace buffer instead drops the oldest subtrace's spans without warning, as it does in `emit_strategy: trace` mode.
 
 ## Metrics
 
@@ -101,7 +103,7 @@ The following metrics are recorded by this processor:
 * `otelcol_processor_groupbytrace_traces_evicted` represents the number of traces that have been evicted from the internal storage due to capacity problems. Ideally, this should be zero, or very close to zero at all times. If you keep getting items evicted, increase the `num_traces`.
 * `otelcol_processor_groupbytrace_incomplete_releases` represents the traces that have been marked as expired, but had been previously been removed. This might be the case when a span from a trace has been received in a batch while the trace existed in the in-memory storage, but has since been released/removed before the span could be added to the trace. This should always be very close to 0, and a high value might indicate a software bug.
 
-When `emit_strategy: service` is configured, the same metrics are emitted for subtraces: `otelcol_processor_groupbytrace_traces_released` counts released subtraces, `otelcol_processor_groupbytrace_spans_released` counts their spans, `otelcol_processor_groupbytrace_traces_evicted` counts evicted subtraces, whose spans are dropped, plus evicted traces that still held unclaimed spans, whose spans are released early, and `otelcol_processor_groupbytrace_incomplete_releases` counts expiry events that found no buffer entry.
+When `emit_strategy: service` is configured, the same metrics are emitted for subtraces: `otelcol_processor_groupbytrace_traces_released` counts released subtraces and sweeps of unclaimed spans, `otelcol_processor_groupbytrace_spans_released` counts their spans, `otelcol_processor_groupbytrace_traces_evicted` counts evicted subtraces, whose spans are dropped, plus evicted traces that still held unclaimed spans, whose spans are released early, and `otelcol_processor_groupbytrace_incomplete_releases` counts expiry events that found no buffer entry.
 
 A healthy system would have the same value for the metric `otelcol_processor_groupbytrace_spans_released` and for three events under `otelcol_processor_groupbytrace_event_latency_bucket`: `onTraceExpired`, `onTraceRemoved` and `onTraceReleased`.
 

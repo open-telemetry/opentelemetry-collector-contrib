@@ -156,6 +156,39 @@ func (idx *traceIndex) len() int {
 	return len(idx.spans)
 }
 
+// unclaimed returns the spans that no local root in the trace can collect.
+//
+// A subtrace only ever collects spans reachable downwards from its root, so a
+// span whose ancestry never arrives at a local root belongs to no subtrace and
+// no subtrace timer will ever release it. That happens for malformed input where
+// a span is its own ancestor: nothing in such a cycle qualifies as a local root,
+// so nothing claims any of it.
+//
+// This is deliberately defined by reachability rather than by age, so that
+// sweeping the result can never take spans a pending subtrace was about to
+// collect, no matter how the timers interleave.
+func (idx *traceIndex) unclaimed() []*bufferedSpan {
+	// Marking downwards from every local root costs one visit per span in total,
+	// because subtraces are disjoint by construction.
+	claimed := make(map[pcommon.SpanID]struct{}, len(idx.spans))
+	for spanID, bs := range idx.spans {
+		if !isLocalRoot(bs, idx) {
+			continue
+		}
+		for _, member := range subtraceMembers(spanID, idx) {
+			claimed[member.span.SpanID()] = struct{}{}
+		}
+	}
+
+	var unclaimed []*bufferedSpan
+	for spanID, bs := range idx.spans {
+		if _, ok := claimed[spanID]; !ok {
+			unclaimed = append(unclaimed, bs)
+		}
+	}
+	return unclaimed
+}
+
 const (
 	// spanFlagsContextHasIsRemoteMask is set when the IS_REMOTE flag is explicitly present.
 	spanFlagsContextHasIsRemoteMask uint32 = 0x00000100

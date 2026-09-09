@@ -29,6 +29,10 @@ type subtraceStorage interface {
 	// local root, since those spans belong to another subtrace.
 	deleteSubtrace(pcommon.TraceID, pcommon.SpanID) ([]*bufferedSpan, error)
 
+	// deleteUnclaimed removes and returns the spans of a trace that no local root
+	// can collect, along with how many spans are still buffered for it afterwards.
+	deleteUnclaimed(pcommon.TraceID) ([]*bufferedSpan, int, error)
+
 	// traceIDs returns all trace IDs currently held in storage.
 	traceIDs() []pcommon.TraceID
 
@@ -133,6 +137,27 @@ func (s *subtraceMemoryStorage) deleteSubtrace(traceID pcommon.TraceID, rootID p
 		delete(s.traces, traceID)
 	}
 	return members, nil
+}
+
+func (s *subtraceMemoryStorage) deleteUnclaimed(traceID pcommon.TraceID) ([]*bufferedSpan, int, error) {
+	// Collecting and removing under one write lock, as deleteSubtrace does, so a
+	// span cannot be classified as unclaimed and then be collected by a subtrace
+	// that runs before the removal lands.
+	s.Lock()
+	defer s.Unlock()
+
+	idx, ok := s.traces[traceID]
+	if !ok {
+		return nil, 0, nil
+	}
+
+	unclaimed := idx.unclaimed()
+	idx.remove(unclaimed)
+	remaining := idx.len()
+	if remaining == 0 {
+		delete(s.traces, traceID)
+	}
+	return unclaimed, remaining, nil
 }
 
 // getRemainder returns all spans still buffered for a trace, i.e. those not yet

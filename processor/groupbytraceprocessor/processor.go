@@ -179,16 +179,17 @@ func (sp *groupByTraceProcessor) onTraceReceived(trace tracesWithID, worker *eve
 func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, worker *eventMachineWorker) error {
 	traceID := trace.id
 
-	// Track the trace ID in the worker's trace ring buffer as a backstop. A span is
-	// only released once its ancestors reach a local root, and malformed input can
-	// leave spans that never do: if a span's parent is one of its own descendants
-	// in the same service, nothing in the cycle looks like a local root, so no
-	// timer is ever scheduled and num_traces has no purchase on it. Bounding the
-	// trace IDs too caps what can be held regardless of the shape of the spans.
+	// Track the trace ID in the worker's trace ring buffer and give it a sweep
+	// timer. A span is only released once its ancestors reach a local root, and
+	// malformed input can leave spans that never do: if a span's parent is one of
+	// its own descendants in the same service, nothing in the cycle looks like a
+	// local root, so no subtrace timer covers any of it. The sweep releases those
+	// spans on the same cadence subtraces use, and the ring buffer bounds how many
+	// traces can be held whatever shape the spans take.
 	//
-	// This can't start evicting traces that are still doing useful work. A trace
-	// with subtraces awaiting release holds one slot here but at least one in the
-	// subtrace buffer, so the pressure that would evict it here evicts its
+	// The buffer can't start evicting traces that are still doing useful work. A
+	// trace with subtraces awaiting release holds one slot here but at least one in
+	// the subtrace buffer, so the pressure that would evict it here evicts its
 	// subtraces first, and a trace whose subtraces all completed has nothing left
 	// to release.
 	if !worker.buffer.contains(traceID) {
@@ -198,6 +199,7 @@ func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, wor
 				payload: evicted,
 			})
 		}
+		sp.scheduleUnclaimedSweep(traceID, worker)
 	}
 
 	var arrived []pcommon.SpanID
@@ -225,8 +227,6 @@ func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, wor
 	// removes that parent's descendants along with it. Demotions are caught when
 	// the timer fires, so re-scanning the whole trace on every batch would only
 	// make handling a batch cost more the longer the trace has been buffered.
-	// No trace-level timer is started; orphan spans are handled by ring-buffer
-	// overflow (dropped) and shutdown drain.
 	roots := sp.subSt.localRoots(traceID, arrived)
 	for _, rootSpanID := range roots {
 		id := subtraceID{traceID: traceID, spanID: rootSpanID}
@@ -249,6 +249,10 @@ func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, wor
 }
 
 func (sp *groupByTraceProcessor) onTraceExpired(traceID pcommon.TraceID, worker *eventMachineWorker) error {
+	if sp.config.EmitStrategy == EmitStrategyService {
+		return sp.sweepUnclaimedSpans(traceID, worker)
+	}
+
 	sp.logger.Debug("processing expired", zap.Stringer("traceID", traceID))
 
 	if !worker.buffer.contains(traceID) {
@@ -330,6 +334,52 @@ func (sp *groupByTraceProcessor) onTraceRemoved(traceID pcommon.TraceID) error {
 		return fmt.Errorf("trace %q not found at the storage", traceID)
 	}
 
+	return nil
+}
+
+// scheduleUnclaimedSweep arranges for the trace's unclaimed spans to be swept
+// one wait_duration from now.
+func (sp *groupByTraceProcessor) scheduleUnclaimedSweep(traceID pcommon.TraceID, worker *eventMachineWorker) {
+	sp.logger.Debug("scheduled to sweep unclaimed spans", zap.Duration("duration", sp.config.WaitDuration))
+	time.AfterFunc(sp.config.WaitDuration, func() {
+		// if the event machine has stopped, it will just discard the event
+		worker.fire(event{
+			typ:     traceExpired,
+			payload: traceID,
+		})
+	})
+}
+
+// sweepUnclaimedSpans releases the spans of a trace that no local root can
+// collect, so that they leave on the same wait_duration cadence as everything
+// else instead of waiting for the ring buffer to overflow or the Collector to
+// shut down.
+//
+// Which spans those are is decided by reachability, not by age, so the sweep can
+// never take spans that a pending subtrace was about to collect, however the two
+// timers interleave. While the trace still holds spans the sweep reschedules
+// itself; once it is empty the trace gives up its buffer slot, and a later batch
+// for the same trace starts the cycle again.
+func (sp *groupByTraceProcessor) sweepUnclaimedSpans(traceID pcommon.TraceID, worker *eventMachineWorker) error {
+	unclaimed, remaining, err := sp.subSt.deleteUnclaimed(traceID)
+	if err != nil {
+		return fmt.Errorf("couldn't sweep unclaimed spans for trace %q: %w", traceID, err)
+	}
+
+	if len(unclaimed) > 0 {
+		sp.logger.Debug("releasing spans that no subtrace can claim",
+			zap.Stringer("traceID", traceID), zap.Int("spans", len(unclaimed)))
+		if err := sp.onSubtraceReleased(assemble(unclaimed)); err != nil {
+			return err
+		}
+	}
+
+	if remaining == 0 {
+		worker.buffer.delete(traceID)
+		return nil
+	}
+
+	sp.scheduleUnclaimedSweep(traceID, worker)
 	return nil
 }
 
