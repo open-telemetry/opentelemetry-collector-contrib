@@ -450,6 +450,32 @@ var MapAttributeSqlserverExtentOperationType = map[string]AttributeSqlserverExte
 	"deallocated": AttributeSqlserverExtentOperationTypeDeallocated,
 }
 
+// AttributeSqlserverHealthCheckType specifies the value sqlserver.health.check.type attribute.
+type AttributeSqlserverHealthCheckType int
+
+const (
+	_ AttributeSqlserverHealthCheckType = iota
+	AttributeSqlserverHealthCheckTypeReachable
+	AttributeSqlserverHealthCheckTypeQueryable
+)
+
+// String returns the string representation of the AttributeSqlserverHealthCheckType.
+func (av AttributeSqlserverHealthCheckType) String() string {
+	switch av {
+	case AttributeSqlserverHealthCheckTypeReachable:
+		return "reachable"
+	case AttributeSqlserverHealthCheckTypeQueryable:
+		return "queryable"
+	}
+	return ""
+}
+
+// MapAttributeSqlserverHealthCheckType is a helper map of string to AttributeSqlserverHealthCheckType attribute value.
+var MapAttributeSqlserverHealthCheckType = map[string]AttributeSqlserverHealthCheckType{
+	"reachable": AttributeSqlserverHealthCheckTypeReachable,
+	"queryable": AttributeSqlserverHealthCheckTypeQueryable,
+}
+
 // AttributeSqlserverLockBlockType specifies the value sqlserver.lock.block.type attribute.
 type AttributeSqlserverLockBlockType int
 
@@ -957,6 +983,10 @@ var MetricsInfo = metricsInfo{
 	SqlserverGhostRecordSkippedRate: metricInfo{
 		Name: "sqlserver.ghost_record.skipped.rate",
 	},
+	SqlserverHealth: metricInfo{
+		Name:       "sqlserver.health",
+		Attributes: []string{"sqlserver.health.check.type"},
+	},
 	SqlserverHostMemoryLimit: metricInfo{
 		Name: "sqlserver.host.memory.limit",
 	},
@@ -1222,6 +1252,7 @@ type metricsInfo struct {
 	SqlserverErrorRate                                    metricInfo
 	SqlserverExtentOperationRate                          metricInfo
 	SqlserverGhostRecordSkippedRate                       metricInfo
+	SqlserverHealth                                       metricInfo
 	SqlserverHostMemoryLimit                              metricInfo
 	SqlserverHostMemoryUsage                              metricInfo
 	SqlserverIndexFragmentation                           metricInfo
@@ -3386,6 +3417,58 @@ func (m *metricSqlserverGhostRecordSkippedRate) emit(metrics pmetric.MetricSlice
 
 func newMetricSqlserverGhostRecordSkippedRate(cfg SqlserverGhostRecordSkippedRateMetricConfig) metricSqlserverGhostRecordSkippedRate {
 	m := metricSqlserverGhostRecordSkippedRate{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverHealth struct {
+	data     pmetric.Metric              // data buffer for generated metric.
+	config   SqlserverHealthMetricConfig // metric config provided by user.
+	capacity int                         // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.health metric with initial data.
+func (m *metricSqlserverHealth) init() {
+	m.data.SetName("sqlserver.health")
+	m.data.SetDescription("The connection health of the SQL Server target, reported per check as 1 (healthy) or 0 (unhealthy).")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSqlserverHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverHealthCheckTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("sqlserver.health.check.type", sqlserverHealthCheckTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverHealth) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverHealth) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverHealth(cfg SqlserverHealthMetricConfig) metricSqlserverHealth {
+	m := metricSqlserverHealth{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -7773,6 +7856,7 @@ type MetricsBuilder struct {
 	metricSqlserverErrorRate                                    metricSqlserverErrorRate
 	metricSqlserverExtentOperationRate                          metricSqlserverExtentOperationRate
 	metricSqlserverGhostRecordSkippedRate                       metricSqlserverGhostRecordSkippedRate
+	metricSqlserverHealth                                       metricSqlserverHealth
 	metricSqlserverHostMemoryLimit                              metricSqlserverHostMemoryLimit
 	metricSqlserverHostMemoryUsage                              metricSqlserverHostMemoryUsage
 	metricSqlserverIndexFragmentation                           metricSqlserverIndexFragmentation
@@ -7898,6 +7982,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverErrorRate:                                    newMetricSqlserverErrorRate(mbc.Metrics.SqlserverErrorRate),
 		metricSqlserverExtentOperationRate:                          newMetricSqlserverExtentOperationRate(mbc.Metrics.SqlserverExtentOperationRate),
 		metricSqlserverGhostRecordSkippedRate:                       newMetricSqlserverGhostRecordSkippedRate(mbc.Metrics.SqlserverGhostRecordSkippedRate),
+		metricSqlserverHealth:                                       newMetricSqlserverHealth(mbc.Metrics.SqlserverHealth),
 		metricSqlserverHostMemoryLimit:                              newMetricSqlserverHostMemoryLimit(mbc.Metrics.SqlserverHostMemoryLimit),
 		metricSqlserverHostMemoryUsage:                              newMetricSqlserverHostMemoryUsage(mbc.Metrics.SqlserverHostMemoryUsage),
 		metricSqlserverIndexFragmentation:                           newMetricSqlserverIndexFragmentation(mbc.Metrics.SqlserverIndexFragmentation),
@@ -8124,6 +8209,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverErrorRate.emit(ils.Metrics())
 	mb.metricSqlserverExtentOperationRate.emit(ils.Metrics())
 	mb.metricSqlserverGhostRecordSkippedRate.emit(ils.Metrics())
+	mb.metricSqlserverHealth.emit(ils.Metrics())
 	mb.metricSqlserverHostMemoryLimit.emit(ils.Metrics())
 	mb.metricSqlserverHostMemoryUsage.emit(ils.Metrics())
 	mb.metricSqlserverIndexFragmentation.emit(ils.Metrics())
@@ -8406,6 +8492,11 @@ func (mb *MetricsBuilder) RecordSqlserverExtentOperationRateDataPoint(ts pcommon
 // RecordSqlserverGhostRecordSkippedRateDataPoint adds a data point to sqlserver.ghost_record.skipped.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverGhostRecordSkippedRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverGhostRecordSkippedRate.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverHealthDataPoint adds a data point to sqlserver.health metric.
+func (mb *MetricsBuilder) RecordSqlserverHealthDataPoint(ts pcommon.Timestamp, val int64, sqlserverHealthCheckTypeAttributeValue AttributeSqlserverHealthCheckType) {
+	mb.metricSqlserverHealth.recordDataPoint(mb.startTime, ts, val, sqlserverHealthCheckTypeAttributeValue.String())
 }
 
 // RecordSqlserverHostMemoryLimitDataPoint adds a data point to sqlserver.host.memory.limit metric.

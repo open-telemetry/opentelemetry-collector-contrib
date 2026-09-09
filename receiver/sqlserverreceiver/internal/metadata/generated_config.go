@@ -974,6 +974,26 @@ func (ms *SqlserverGhostRecordSkippedRateMetricConfig) Unmarshal(parser *confmap
 	return nil
 }
 
+// SqlserverHealthMetricConfig provides config for the sqlserver.health metric.
+type SqlserverHealthMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverHealthMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SqlserverHostMemoryLimitMetricConfig provides config for the sqlserver.host.memory.limit metric.
 type SqlserverHostMemoryLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -3001,6 +3021,7 @@ type MetricsConfig struct {
 	SqlserverErrorRate                                    SqlserverErrorRateMetricConfig                                    `mapstructure:"sqlserver.error.rate"`
 	SqlserverExtentOperationRate                          SqlserverExtentOperationRateMetricConfig                          `mapstructure:"sqlserver.extent.operation.rate"`
 	SqlserverGhostRecordSkippedRate                       SqlserverGhostRecordSkippedRateMetricConfig                       `mapstructure:"sqlserver.ghost_record.skipped.rate"`
+	SqlserverHealth                                       SqlserverHealthMetricConfig                                       `mapstructure:"sqlserver.health"`
 	SqlserverHostMemoryLimit                              SqlserverHostMemoryLimitMetricConfig                              `mapstructure:"sqlserver.host.memory.limit"`
 	SqlserverHostMemoryUsage                              SqlserverHostMemoryUsageMetricConfig                              `mapstructure:"sqlserver.host.memory.usage"`
 	SqlserverIndexFragmentation                           SqlserverIndexFragmentationMetricConfig                           `mapstructure:"sqlserver.index.fragmentation"`
@@ -3190,6 +3211,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SqlserverGhostRecordSkippedRate: SqlserverGhostRecordSkippedRateMetricConfig{
 			Enabled: false,
+		},
+		SqlserverHealth: SqlserverHealthMetricConfig{
+			Enabled: true,
 		},
 		SqlserverHostMemoryLimit: SqlserverHostMemoryLimitMetricConfig{
 			Enabled: false,

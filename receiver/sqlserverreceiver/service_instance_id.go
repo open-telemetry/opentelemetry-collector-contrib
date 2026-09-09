@@ -20,6 +20,74 @@ func isLocalhost(host string) bool {
 	return strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback()
 }
 
+// resolveConfiguredHostPort resolves the target host and port from the
+// configuration. It is used by the connection-health scraper to dial the
+// endpoint (reachability probe) and, via resolveResourceHostPort, to stamp its
+// host.name / server.address / server.port resource attributes.
+//
+// Source priority: DataSource takes precedence over the discrete Server/Port
+// fields, which take precedence over ComputerName (Windows performance-counter
+// mode). The default SQL Server port (1433) is applied when no port is resolved.
+//
+// It performs no localhost rewriting and returns the host exactly as configured.
+// Callers that want the collector's identity (service.instance.id) layer the
+// localhost->os.Hostname rewrite on top via resolveResourceHostPort.
+func resolveConfiguredHostPort(cfg *Config) (host string, port int, err error) {
+	switch {
+	case cfg.DataSource != "":
+		config, parseErr := parseDataSource(cfg.DataSource)
+		if parseErr != nil {
+			return "", 0, parseErr
+		}
+		port = int(config.Port)
+		if port == 0 {
+			port = defaultSQLServerPort
+		}
+		return config.Host, port, nil
+	case cfg.Server != "":
+		port = int(cfg.Port)
+		if port == 0 {
+			port = defaultSQLServerPort
+		}
+		return cfg.Server, port, nil
+	case cfg.ComputerName != "":
+		// Windows Performance Counter mode with remote computer: use ComputerName as host.
+		return cfg.ComputerName, defaultSQLServerPort, nil
+	default:
+		// No server specified: no dial target. resolveResourceHostPort rewrites
+		// the empty host to os.Hostname for identity purposes.
+		return "", defaultSQLServerPort, nil
+	}
+}
+
+// resolveResourceHostPort resolves the host and port that the connection-health
+// scraper reports as identifying resource attributes: host.name, server.address,
+// and server.port.
+//
+// It layers a localhost/empty -> os.Hostname rewrite on top of
+// resolveConfiguredHostPort so that every attribute the receiver reports as the
+// target's identity agrees on the same hostname. A resource attribute of
+// "localhost" is ambiguous across hosts, whereas the reachability probe's dial
+// target must stay raw (a loopback address is exactly what should be dialed for
+// a locally-configured server) -- that path calls resolveConfiguredHostPort
+// directly and must not use this function.
+func resolveResourceHostPort(cfg *Config) (host string, port int, err error) {
+	host, port, err = resolveConfiguredHostPort(cfg)
+	if err != nil {
+		return host, port, err
+	}
+
+	if isLocalhost(host) || host == "" {
+		hostname, hostErr := os.Hostname()
+		if hostErr != nil {
+			return host, port, hostErr
+		}
+		host = hostname
+	}
+
+	return host, port, nil
+}
+
 // computeServiceInstanceID computes the service.instance.id based on the configuration.
 // Datasource format precedence: <host>\<instance>, then <host>:<port> (default 1433).
 // Special handling:

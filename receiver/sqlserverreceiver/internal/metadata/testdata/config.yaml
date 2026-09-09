@@ -76,6 +76,8 @@ all_set:
       enabled: true
     sqlserver.ghost_record.skipped.rate:
       enabled: true
+    sqlserver.health:
+      enabled: true
     sqlserver.host.memory.limit:
       enabled: true
     sqlserver.host.memory.usage:
@@ -335,6 +337,8 @@ reaggregate_set:
       enabled: true
     sqlserver.ghost_record.skipped.rate:
       enabled: true
+    sqlserver.health:
+      enabled: true
     sqlserver.host.memory.limit:
       enabled: true
     sqlserver.host.memory.usage:
@@ -593,6 +597,8 @@ none_set:
     sqlserver.extent.operation.rate:
       enabled: false
     sqlserver.ghost_record.skipped.rate:
+      enabled: false
+    sqlserver.health:
       enabled: false
     sqlserver.host.memory.limit:
       enabled: false

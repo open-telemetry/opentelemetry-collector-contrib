@@ -77,7 +77,7 @@ func newSQLServerScraper(id component.ID,
 	serviceInstanceID, err := computeServiceInstanceID(cfg)
 	if err != nil {
 		params.Logger.Warn("Failed to compute service.instance.id", zap.Error(err))
-		serviceInstanceID = "unknown:1433"
+		serviceInstanceID = defaultServiceName
 	}
 
 	return &sqlServerScraperHelper{
@@ -1647,6 +1647,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	now := time.Now()
 	timestamp := pcommon.NewTimestampFromTime(now)
 	s.lastExecutionTimestamp = now
+
 	for i, row := range rows {
 		// reporting human-readable query hash and query hash plan
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
