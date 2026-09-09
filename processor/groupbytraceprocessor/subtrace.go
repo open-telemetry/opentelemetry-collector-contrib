@@ -102,11 +102,16 @@ type bufferedSpan struct {
 
 // newBufferedSpan deep-copies the span so the caller can recycle its pdata
 // objects. The context is shared as-is with the other spans reported under it.
-func newBufferedSpan(ctx spanContext, span ptrace.Span) bufferedSpan {
+//
+// The result is a pointer because bufferedSpan is large enough that storing it
+// in the span index by value, and copying it out again on every lookup, costs
+// more than the indirection: the index is walked once per span on insert and
+// once per hop when reassembling a subtrace.
+func newBufferedSpan(ctx spanContext, span ptrace.Span) *bufferedSpan {
 	spCopy := ptrace.NewSpan()
 	span.CopyTo(spCopy)
 
-	return bufferedSpan{spanContext: ctx, span: spCopy}
+	return &bufferedSpan{spanContext: ctx, span: spCopy}
 }
 
 const (
@@ -122,7 +127,7 @@ const (
 //   - the IS_REMOTE flag is set (parent is in another service), OR
 //   - its parent is not in the index (safe default: treat as local root), OR
 //   - its parent belongs to a different service identity.
-func isLocalRoot(bs bufferedSpan, index map[pcommon.SpanID]bufferedSpan) bool {
+func isLocalRoot(bs *bufferedSpan, index map[pcommon.SpanID]*bufferedSpan) bool {
 	if bs.span.ParentSpanID().IsEmpty() {
 		return true
 	}
@@ -170,8 +175,8 @@ func hashMapAttrs(attrs pcommon.Map) string {
 
 // subtraceMembers returns every span in index that belongs to the subtrace
 // rooted at rootID, including the root itself.
-func subtraceMembers(rootID pcommon.SpanID, index map[pcommon.SpanID]bufferedSpan) []bufferedSpan {
-	var members []bufferedSpan
+func subtraceMembers(rootID pcommon.SpanID, index map[pcommon.SpanID]*bufferedSpan) []*bufferedSpan {
+	var members []*bufferedSpan
 	for spanID, bs := range index {
 		if spanID == rootID || reaches(spanID, rootID, index) {
 			members = append(members, bs)
@@ -183,7 +188,7 @@ func subtraceMembers(rootID pcommon.SpanID, index map[pcommon.SpanID]bufferedSpa
 // reaches reports whether the span identified by spanID is a member of the
 // subtrace rooted at targetRootID. It walks up the parent chain, stopping when
 // it finds the target root or when it crosses another local-root boundary.
-func reaches(spanID, targetRootID pcommon.SpanID, index map[pcommon.SpanID]bufferedSpan) bool {
+func reaches(spanID, targetRootID pcommon.SpanID, index map[pcommon.SpanID]*bufferedSpan) bool {
 	cur, ok := index[spanID]
 	if !ok {
 		return false
@@ -214,7 +219,7 @@ func reaches(spanID, targetRootID pcommon.SpanID, index map[pcommon.SpanID]buffe
 
 // assemble reconstructs a ptrace.Traces from a slice of bufferedSpans,
 // coalescing spans that share the same (Resource, Scope) pair.
-func assemble(members []bufferedSpan) ptrace.Traces {
+func assemble(members []*bufferedSpan) ptrace.Traces {
 	td := ptrace.NewTraces()
 
 	type rsKey struct {

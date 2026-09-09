@@ -4,6 +4,8 @@
 package groupbytraceprocessor
 
 import (
+	"fmt"
+	"strconv"
 	"sync"
 	"testing"
 
@@ -100,7 +102,7 @@ func TestSubtraceStorage_MultiService_DisjointSubtraces(t *testing.T) {
 	assert.NotContains(t, idsB, childA)
 }
 
-func spanIDSet(spans []bufferedSpan) map[pcommon.SpanID]bool {
+func spanIDSet(spans []*bufferedSpan) map[pcommon.SpanID]bool {
 	m := make(map[pcommon.SpanID]bool, len(spans))
 	for _, bs := range spans {
 		m[bs.span.SpanID()] = true
@@ -233,4 +235,97 @@ func TestSubtraceStorage_DeleteSubtrace_SkipsDemotedRoot(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, map[pcommon.SpanID]bool{rootID: true, childID: true}, spanIDSet(released))
 	assert.Empty(t, st.traceIDs())
+}
+
+// buildBenchTrace builds a trace of spanCount spans spread evenly over
+// serviceCount services, returned as one batch per service so that the shape
+// matches how the spans would actually arrive. Each service has a local root
+// whose parent is the previous service's root, flagged remote, and its remaining
+// spans form a balanced tree beneath that root: real traces fan out rather than
+// forming one long chain, and the depth of the tree is what the ancestor walk
+// pays for.
+func buildBenchTrace(traceID pcommon.TraceID, serviceCount, spanCount int) []ptrace.Traces {
+	// Fanout of a typical service span: a handler calling a handful of clients.
+	const fanout = 8
+
+	spanID := func(i int) pcommon.SpanID {
+		var id pcommon.SpanID
+		id[0], id[1], id[2] = byte(i), byte(i>>8), 0xAA
+		return id
+	}
+
+	batches := make([]ptrace.Traces, 0, serviceCount)
+	perService := spanCount / serviceCount
+	next := 0
+	var previousRoot pcommon.SpanID
+
+	for svc := 0; svc < serviceCount; svc++ {
+		local := make([]pcommon.SpanID, perService)
+		for i := range local {
+			local[i] = spanID(next)
+			next++
+		}
+
+		specs := make([]spanSpec, 0, perService)
+		// The first service's root is the global root; the rest enter from the
+		// service before them.
+		specs = append(specs, spanSpec{id: local[0], parent: previousRoot, remote: svc > 0})
+		for i := 1; i < perService; i++ {
+			specs = append(specs, spanSpec{id: local[i], parent: local[(i-1)/fanout]})
+		}
+
+		batches = append(batches, buildSpecTrace(traceID, fmt.Sprintf("svc-%d", svc), specs...))
+		previousRoot = local[0]
+	}
+	return batches
+}
+
+// BenchmarkSubtraceIndexAndRelease measures everything the service strategy does
+// with a trace of a given size: indexing each span as its batch arrives,
+// classifying the spans that arrived with it, then walking and reassembling each
+// service's subtrace on release. Divide ns/op by spans/op for the per-span cost.
+func BenchmarkSubtraceIndexAndRelease(b *testing.B) {
+	const serviceCount = 4
+
+	for _, spanCount := range []int{40, 400, 4000} {
+		b.Run(strconv.Itoa(spanCount), func(b *testing.B) {
+			traceID := makeTraceID(1)
+			batches := buildBenchTrace(traceID, serviceCount, spanCount)
+
+			b.ReportAllocs()
+			for b.Loop() {
+				st := newSubtraceMemoryStorage(nil)
+
+				var roots []pcommon.SpanID
+				for _, td := range batches {
+					var arrived []pcommon.SpanID
+					for i := 0; i < td.ResourceSpans().Len(); i++ {
+						rs := td.ResourceSpans().At(i)
+						rctx := newResourceContext(rs.Resource())
+						for j := 0; j < rs.ScopeSpans().Len(); j++ {
+							ss := rs.ScopeSpans().At(j)
+							sctx := newSpanContext(rctx, ss.Scope())
+							for k := 0; k < ss.Spans().Len(); k++ {
+								span := ss.Spans().At(k)
+								if err := st.insertSpan(traceID, sctx, span); err != nil {
+									b.Fatal(err)
+								}
+								arrived = append(arrived, span.SpanID())
+							}
+						}
+					}
+					roots = append(roots, st.localRoots(traceID, arrived)...)
+				}
+
+				for _, root := range roots {
+					members, err := st.deleteSubtrace(traceID, root)
+					if err != nil {
+						b.Fatal(err)
+					}
+					assemble(members)
+				}
+			}
+			b.ReportMetric(float64(spanCount), "spans/op")
+		})
+	}
 }

@@ -29,7 +29,7 @@ func makeTraceID(b byte) pcommon.TraceID {
 
 // newBS creates a minimal bufferedSpan with the given span ID, parent span ID,
 // flags, and service name.
-func newBS(spanID, parentID pcommon.SpanID, flags uint32, serviceName string) bufferedSpan {
+func newBS(spanID, parentID pcommon.SpanID, flags uint32, serviceName string) *bufferedSpan {
 	r := pcommon.NewResource()
 	if serviceName != "" {
 		r.Attributes().PutStr("service.name", serviceName)
@@ -44,25 +44,25 @@ func newBS(spanID, parentID pcommon.SpanID, flags uint32, serviceName string) bu
 // empty parent --> always local root
 func TestIsLocalRoot_EmptyParent(t *testing.T) {
 	bs := newBS(makeSpanID(1), pcommon.NewSpanIDEmpty(), 0, "svc-a")
-	assert.True(t, isLocalRoot(bs, map[pcommon.SpanID]bufferedSpan{}))
+	assert.True(t, isLocalRoot(bs, map[pcommon.SpanID]*bufferedSpan{}))
 }
 
 // HAS_IS_REMOTE=1, IS_REMOTE=1 --> local root
 func TestIsLocalRoot_RemoteFlagSet(t *testing.T) {
 	bs := newBS(makeSpanID(2), makeSpanID(99), spanFlagsContextHasIsRemoteMask|spanFlagsContextIsRemoteMask, "svc-a")
-	assert.True(t, isLocalRoot(bs, map[pcommon.SpanID]bufferedSpan{}))
+	assert.True(t, isLocalRoot(bs, map[pcommon.SpanID]*bufferedSpan{}))
 }
 
 // HAS_IS_REMOTE=1, IS_REMOTE=0 --> safe default: local root
 func TestIsLocalRoot_LocalFlagClear(t *testing.T) {
 	bs := newBS(makeSpanID(3), makeSpanID(99), spanFlagsContextHasIsRemoteMask, "svc-a")
-	assert.True(t, isLocalRoot(bs, map[pcommon.SpanID]bufferedSpan{}))
+	assert.True(t, isLocalRoot(bs, map[pcommon.SpanID]*bufferedSpan{}))
 }
 
 // parent not in index --> safe default: local root
 func TestIsLocalRoot_ParentNotInIndex(t *testing.T) {
 	bs := newBS(makeSpanID(4), makeSpanID(99), 0, "svc-a")
-	assert.True(t, isLocalRoot(bs, map[pcommon.SpanID]bufferedSpan{}))
+	assert.True(t, isLocalRoot(bs, map[pcommon.SpanID]*bufferedSpan{}))
 }
 
 // parent in index, same service.name only --> NOT local root
@@ -70,7 +70,7 @@ func TestIsLocalRoot_SameServiceNameOnly(t *testing.T) {
 	parentID := makeSpanID(10)
 	child := newBS(makeSpanID(5), parentID, 0, "svc-a")
 	parent := newBS(parentID, pcommon.NewSpanIDEmpty(), 0, "svc-a")
-	index := map[pcommon.SpanID]bufferedSpan{parentID: parent}
+	index := map[pcommon.SpanID]*bufferedSpan{parentID: parent}
 	assert.False(t, isLocalRoot(child, index))
 }
 
@@ -92,7 +92,7 @@ func TestIsLocalRoot_SameServiceNameAndInstance(t *testing.T) {
 	ps.SetSpanID(parentID)
 	parentBS := newBufferedSpan(newSpanContext(newResourceContext(pr), pcommon.NewInstrumentationScope()), ps)
 
-	index := map[pcommon.SpanID]bufferedSpan{parentID: parentBS}
+	index := map[pcommon.SpanID]*bufferedSpan{parentID: parentBS}
 	assert.False(t, isLocalRoot(child, index))
 }
 
@@ -114,7 +114,7 @@ func TestIsLocalRoot_DifferentInstance(t *testing.T) {
 	ps.SetSpanID(parentID)
 	parentBS := newBufferedSpan(newSpanContext(newResourceContext(pr), pcommon.NewInstrumentationScope()), ps)
 
-	index := map[pcommon.SpanID]bufferedSpan{parentID: parentBS}
+	index := map[pcommon.SpanID]*bufferedSpan{parentID: parentBS}
 	assert.True(t, isLocalRoot(child, index))
 }
 
@@ -123,7 +123,7 @@ func TestIsLocalRoot_DifferentServiceName(t *testing.T) {
 	parentID := makeSpanID(10)
 	child := newBS(makeSpanID(8), parentID, 0, "svc-b")
 	parent := newBS(parentID, pcommon.NewSpanIDEmpty(), 0, "svc-a")
-	index := map[pcommon.SpanID]bufferedSpan{parentID: parent}
+	index := map[pcommon.SpanID]*bufferedSpan{parentID: parent}
 	assert.True(t, isLocalRoot(child, index))
 }
 
@@ -132,12 +132,12 @@ func TestIsLocalRoot_NoServiceNameSameAttrs(t *testing.T) {
 	parentID := makeSpanID(10)
 	child := newBS(makeSpanID(9), parentID, 0, "")
 	parent := newBS(parentID, pcommon.NewSpanIDEmpty(), 0, "")
-	index := map[pcommon.SpanID]bufferedSpan{parentID: parent}
+	index := map[pcommon.SpanID]*bufferedSpan{parentID: parent}
 	assert.False(t, isLocalRoot(child, index))
 }
 
-func buildIndex(spans ...bufferedSpan) map[pcommon.SpanID]bufferedSpan {
-	idx := make(map[pcommon.SpanID]bufferedSpan, len(spans))
+func buildIndex(spans ...*bufferedSpan) map[pcommon.SpanID]*bufferedSpan {
+	idx := make(map[pcommon.SpanID]*bufferedSpan, len(spans))
 	for _, bs := range spans {
 		idx[bs.span.SpanID()] = bs
 	}
@@ -191,7 +191,7 @@ func TestReaches_ParentNotInIndex(t *testing.T) {
 
 // Span not in index returns false immediately.
 func TestReaches_SpanNotInIndex(t *testing.T) {
-	assert.False(t, reaches(makeSpanID(42), makeSpanID(1), map[pcommon.SpanID]bufferedSpan{}))
+	assert.False(t, reaches(makeSpanID(42), makeSpanID(1), map[pcommon.SpanID]*bufferedSpan{}))
 }
 
 func TestAssemble_CoalescesSameResourceScope(t *testing.T) {
@@ -207,7 +207,7 @@ func TestAssemble_CoalescesSameResourceScope(t *testing.T) {
 		return s
 	}
 
-	var members []bufferedSpan
+	var members []*bufferedSpan
 	for i := byte(1); i <= 3; i++ {
 		members = append(members, newBufferedSpan(newSpanContext(newResourceContext(r), sc), makeSpan(i)))
 	}
@@ -248,13 +248,13 @@ func TestAssemble_SeparatesDistinctResources(t *testing.T) {
 	r2.Attributes().PutStr("service.name", "svc-b")
 	sc := pcommon.NewInstrumentationScope()
 
-	makeSpanBS := func(r pcommon.Resource, id byte) bufferedSpan {
+	makeSpanBS := func(r pcommon.Resource, id byte) *bufferedSpan {
 		s := ptrace.NewSpan()
 		s.SetSpanID(makeSpanID(id))
 		return newBufferedSpan(newSpanContext(newResourceContext(r), sc), s)
 	}
 
-	members := []bufferedSpan{makeSpanBS(r1, 1), makeSpanBS(r2, 2)}
+	members := []*bufferedSpan{makeSpanBS(r1, 1), makeSpanBS(r2, 2)}
 	td := assemble(members)
 	assert.Equal(t, 2, td.ResourceSpans().Len())
 }
@@ -272,13 +272,13 @@ func TestAssemble_SeparatesAmbiguousScopeNameAndVersion(t *testing.T) {
 	sc2.SetName("lib")
 	sc2.SetVersion("2")
 
-	makeSpanBS := func(sc pcommon.InstrumentationScope, id byte) bufferedSpan {
+	makeSpanBS := func(sc pcommon.InstrumentationScope, id byte) *bufferedSpan {
 		s := ptrace.NewSpan()
 		s.SetSpanID(makeSpanID(id))
 		return newBufferedSpan(newSpanContext(newResourceContext(r), sc), s)
 	}
 
-	td := assemble([]bufferedSpan{makeSpanBS(sc1, 1), makeSpanBS(sc2, 2)})
+	td := assemble([]*bufferedSpan{makeSpanBS(sc1, 1), makeSpanBS(sc2, 2)})
 	require.Equal(t, 1, td.ResourceSpans().Len())
 	assert.Equal(t, 2, td.ResourceSpans().At(0).ScopeSpans().Len())
 }

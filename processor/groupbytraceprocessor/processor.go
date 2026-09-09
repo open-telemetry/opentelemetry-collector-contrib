@@ -200,15 +200,10 @@ func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, wor
 		}
 	}
 
-	// Insert all spans from this batch into the span-level index, remembering
-	// which spans arrived so that only those have to be classified below.
 	var arrived []pcommon.SpanID
 	rss := trace.td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-		// Copying and hashing the resource is per-ResourceSpans work and the same for
-		// the scope is per-ScopeSpans work, so neither is repeated per span, and the
-		// resource is not repeated per scope either. The spans share both results.
 		rctx := newResourceContext(rs.Resource())
 		for j := 0; j < rs.ScopeSpans().Len(); j++ {
 			ss := rs.ScopeSpans().At(j)
