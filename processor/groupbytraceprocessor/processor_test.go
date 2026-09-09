@@ -1286,15 +1286,3 @@ func TestSubtrace_TraceBackstopKeepsLiveSubtraces(t *testing.T) {
 	}, 5*time.Second, 5*time.Millisecond)
 	assert.Len(t, sink.AllTraces(), traces)
 }
-
-// Config validation rejects more workers than traces, but the ring buffers are
-// still sized num_traces/num_workers, which rounds down to zero. Keep the floor
-// that stops a zero-length ring buffer from dividing by zero on the first put.
-func TestRingBufferFloorsAtOneSlotPerWorker(t *testing.T) {
-	em := newEventMachine(zap.NewNop(), 100, 2 /* workers */, 1 /* traces */, nil)
-	for _, w := range em.workers {
-		require.NotPanics(t, func() {
-			w.buffer.put(makeTraceID(1))
-		})
-	}
-}

@@ -41,7 +41,7 @@ func insertTestSpan(t *testing.T, st *subtraceMemoryStorage, traceID pcommon.Tra
 	sp.SetTraceID(traceID)
 	sp.SetSpanID(spanID)
 	sp.SetParentSpanID(parentID)
-	assert.NoError(t, st.insertSpan(traceID, r, sc, sp))
+	assert.NoError(t, st.insertSpan(traceID, newSpanContext(newResourceContext(r), sc), sp))
 }
 
 func TestSubtraceStorage_SingleSpan_LocalRoot(t *testing.T) {
@@ -76,7 +76,7 @@ func TestSubtraceStorage_MultiService_DisjointSubtraces(t *testing.T) {
 	sp.SetSpanID(rootB)
 	sp.SetParentSpanID(rootA)
 	sp.SetFlags(spanFlagsContextHasIsRemoteMask | spanFlagsContextIsRemoteMask)
-	require.NoError(t, st.insertSpan(tid, r, sc, sp))
+	require.NoError(t, st.insertSpan(tid, newSpanContext(newResourceContext(r), sc), sp))
 	insertTestSpan(t, st, tid, childB, rootB, "svc-b")
 
 	roots := allLocalRoots(st, tid)

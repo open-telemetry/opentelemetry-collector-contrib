@@ -28,49 +28,85 @@ type scopeKey struct {
 	attrHash string
 }
 
-// bufferedSpan holds a deep copy of a single span together with its resource
-// and instrumentation scope, enabling span-level indexing.
-type bufferedSpan struct {
+// resourceContext holds the resource a span was reported under, together with
+// the keys derived from it.
+//
+// Every span under one ResourceSpans shares all of this, whatever scope it came
+// from, so it is built once per resource and shared by that resource's spans
+// rather than being rebuilt for each scope or each span. The copy must not be
+// mutated afterwards: it backs every bufferedSpan that shares it, and the
+// derived keys would go stale.
+type resourceContext struct {
 	resource pcommon.Resource
-	scope    pcommon.InstrumentationScope
-	span     ptrace.Span
 
-	// Keys derived from the resource and scope above. They are computed once,
-	// when the span is buffered, because the copies are never mutated afterwards
-	// and because these keys are hot: local root detection compares serviceID for
-	// every span that arrives, and assemble groups on the resource and scope keys.
+	// serviceID is derived up front because it is hot: local root detection
+	// compares it for every span that arrives. resourceKey is what assemble
+	// groups resources on.
 	serviceID   string
 	resourceKey string
-	scopeKey    scopeKey
 }
 
-// newBufferedSpan deep-copies the resource, scope and span so the result is
-// self-contained and the caller can recycle its pdata objects, then derives the
-// keys used to classify and group the span. Because spans are indexed flat by
-// SpanID rather than grouped by resource/scope, spans that share a resource or
-// scope each get their own independent copy.
-func newBufferedSpan(resource pcommon.Resource, scope pcommon.InstrumentationScope, span ptrace.Span) bufferedSpan {
+// newResourceContext deep-copies the resource so the result is self-contained
+// and the caller can recycle its pdata objects, then derives the keys used to
+// classify and group the spans reported under it.
+func newResourceContext(resource pcommon.Resource) resourceContext {
 	rCopy := pcommon.NewResource()
 	resource.CopyTo(rCopy)
 
+	return resourceContext{
+		resource:    rCopy,
+		serviceID:   serviceIdentity(rCopy),
+		resourceKey: hashMapAttrs(rCopy.Attributes()),
+	}
+}
+
+// spanContext adds the instrumentation scope to a resourceContext, so that it
+// describes everything a span carries beyond the span itself.
+//
+// Every span in one ScopeSpans shares this, so it is built once per scope and
+// shared by that scope's spans. The same no-mutation rule as resourceContext
+// applies to the scope copy.
+type spanContext struct {
+	resourceContext
+
+	scope pcommon.InstrumentationScope
+
+	// scopeKey is what assemble groups scopes on, within a resource.
+	scopeKey scopeKey
+}
+
+// newSpanContext deep-copies the scope and pairs it with an already-built
+// resourceContext, which it shares as-is with the other scopes under that
+// resource.
+func newSpanContext(rctx resourceContext, scope pcommon.InstrumentationScope) spanContext {
 	sCopy := pcommon.NewInstrumentationScope()
 	scope.CopyTo(sCopy)
 
-	spCopy := ptrace.NewSpan()
-	span.CopyTo(spCopy)
-
-	return bufferedSpan{
-		resource:    rCopy,
-		scope:       sCopy,
-		span:        spCopy,
-		serviceID:   serviceIdentity(rCopy),
-		resourceKey: hashMapAttrs(rCopy.Attributes()),
+	return spanContext{
+		resourceContext: rctx,
+		scope:           sCopy,
 		scopeKey: scopeKey{
 			name:     sCopy.Name(),
 			version:  sCopy.Version(),
 			attrHash: hashMapAttrs(sCopy.Attributes()),
 		},
 	}
+}
+
+// bufferedSpan holds a deep copy of a single span together with the resource and
+// instrumentation scope it was reported under, enabling span-level indexing.
+type bufferedSpan struct {
+	spanContext
+	span ptrace.Span
+}
+
+// newBufferedSpan deep-copies the span so the caller can recycle its pdata
+// objects. The context is shared as-is with the other spans reported under it.
+func newBufferedSpan(ctx spanContext, span ptrace.Span) bufferedSpan {
+	spCopy := ptrace.NewSpan()
+	span.CopyTo(spCopy)
+
+	return bufferedSpan{spanContext: ctx, span: spCopy}
 }
 
 const (

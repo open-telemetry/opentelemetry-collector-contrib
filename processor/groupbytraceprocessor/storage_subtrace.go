@@ -15,8 +15,9 @@ import (
 // subtraceStorage persists spans at individual-span granularity, keyed by
 // (traceID, spanID). It is used exclusively when EmitStrategy == EmitStrategyService.
 type subtraceStorage interface {
-	// insertSpan deep-copies and indexes one span together with its resource and scope.
-	insertSpan(pcommon.TraceID, pcommon.Resource, pcommon.InstrumentationScope, ptrace.Span) error
+	// insertSpan deep-copies and indexes one span under the given context, which
+	// the caller builds once per (resource, scope) pair and reuses for its spans.
+	insertSpan(pcommon.TraceID, spanContext, ptrace.Span) error
 
 	// localRoots returns which of the given candidate span IDs are local root
 	// spans, given everything currently buffered for the trace. Candidates that
@@ -57,13 +58,8 @@ func newSubtraceMemoryStorage(telemetry *metadata.TelemetryBuilder) *subtraceMem
 	}
 }
 
-func (s *subtraceMemoryStorage) insertSpan(
-	traceID pcommon.TraceID,
-	resource pcommon.Resource,
-	scope pcommon.InstrumentationScope,
-	span ptrace.Span,
-) error {
-	bs := newBufferedSpan(resource, scope, span)
+func (s *subtraceMemoryStorage) insertSpan(traceID pcommon.TraceID, ctx spanContext, span ptrace.Span) error {
+	bs := newBufferedSpan(ctx, span)
 
 	s.Lock()
 	defer s.Unlock()
