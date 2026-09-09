@@ -38,10 +38,10 @@ This statement sets a new span attribute named `"test"` with a value of `"pass"`
 have an attribute named `"test"`. In this example, the **function** is `set`, which uses the second parameter to set the value of the first parameter, and the **condition** is `span.attributes["test"] == nil`.
 
 Within a statement you utilize OTTL Paths to access telemetry. The example uses the Path `span.attributes` to access
-the span's attributes. For each Open Telemetry Signal, OTTL has a Path to every field (plus some extras to help make
+the span's attributes. For each OpenTelemetry signal, OTTL has a Path to every field (plus some extras to help make
 interacting with the data easier).
 
-To see a list of available Paths for each Open Telemetry Signal, checkout the links below.
+To see a list of available Paths for each OpenTelemetry signal, check out the links below.
 
 | Telemetry               | OTTL Context                                                                                                                               |
 |-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
@@ -60,9 +60,9 @@ OTTL does not support cross-signal interactions at this time. That means you can
 set(span.attributes["log body"], log.body)
 ```
 
-See [OTTL Functions](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#ottl-functions) for a list of functions available for use in OTTL statements of most components.
+See [OTTL Functions](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#ottl-functions) for a list of functions available for use in OTTL statements in most components.
 
-To see more examples of OTTL statements, checkout the [Transform Processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/README.md#examples)
+To see more examples of OTTL statements, check out the [Transform Processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/README.md#examples)
 
 There is a lot more OTTL can do, like nested functions, arithmetic, indexing, and enums. To explore it further check out [OTTL's grammar doc](./LANGUAGE.md).
 
