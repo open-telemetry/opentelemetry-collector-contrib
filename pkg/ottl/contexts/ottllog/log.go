@@ -93,9 +93,9 @@ func WithCache(cache *pcommon.Map) TransformContextOption {
 	}
 }
 
-// NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
+// NewTransformContext returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
-func NewTransformContextPtr(resourceLogs plog.ResourceLogs, scopeLogs plog.ScopeLogs, logRecord plog.LogRecord, options ...TransformContextOption) *TransformContext {
+func NewTransformContext(resourceLogs plog.ResourceLogs, scopeLogs plog.ScopeLogs, logRecord plog.LogRecord, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
 	tCtx.resourceLogs = resourceLogs
 	tCtx.scopeLogs = scopeLogs
