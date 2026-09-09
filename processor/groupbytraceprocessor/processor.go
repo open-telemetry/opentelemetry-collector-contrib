@@ -108,12 +108,11 @@ func (sp *groupByTraceProcessor) Shutdown(ctx context.Context) error {
 	sp.eventMachine.shutdown()
 
 	if sp.subSt != nil {
-		// Flush remaining orphan spans that were never claimed by a subtrace timer.
-		tids := sp.subSt.traceIDs()
-		for _, tid := range tids {
-			members, _ := sp.subSt.deleteTrace(tid)
-			if len(members) > 0 {
-				if err := sp.nextConsumer.ConsumeTraces(ctx, assemble(members)); err != nil {
+		// Flush whatever is still buffered, rather than dropping it.
+		for _, id := range sp.subSt.subtraceIDs() {
+			calls, _ := sp.subSt.deleteSubtrace(id)
+			for _, call := range calls {
+				if err := sp.nextConsumer.ConsumeTraces(ctx, assemble(call)); err != nil {
 					sp.logger.Error("shutdown drain consume failed", zap.Error(err))
 				}
 			}
@@ -177,71 +176,42 @@ func (sp *groupByTraceProcessor) onTraceReceived(trace tracesWithID, worker *eve
 }
 
 func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, worker *eventMachineWorker) error {
-	traceID := trace.id
-
-	// Track the trace ID in the worker's trace ring buffer and give it a sweep
-	// timer. A span is only released once its ancestors reach a local root, and
-	// malformed input can leave spans that never do: if a span's parent is one of
-	// its own descendants in the same service, nothing in the cycle looks like a
-	// local root, so no subtrace timer covers any of it. The sweep releases those
-	// spans on the same cadence subtraces use, and the ring buffer bounds how many
-	// traces can be held whatever shape the spans take.
-	//
-	// The buffer can't start evicting traces that are still doing useful work. A
-	// trace with subtraces awaiting release holds one slot here but at least one in
-	// the subtrace buffer, so the pressure that would evict it here evicts its
-	// subtraces first, and a trace whose subtraces all completed has nothing left
-	// to release.
-	if !worker.buffer.contains(traceID) {
-		if evicted := worker.buffer.put(traceID); !evicted.IsEmpty() {
-			worker.fire(event{
-				typ:     traceRemoved,
-				payload: evicted,
-			})
-		}
-		sp.scheduleUnclaimedSweep(traceID, worker)
-	}
-
-	var arrived []pcommon.SpanID
 	rss := trace.td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
+		// Copying and hashing the resource is per-ResourceSpans work and the same
+		// for the scope is per-ScopeSpans work, so the spans share both results
+		// rather than rebuilding them one span at a time.
 		rctx := newResourceContext(rs.Resource())
+		id := subtraceID{traceID: trace.id, serviceID: rctx.serviceID}
+
 		for j := 0; j < rs.ScopeSpans().Len(); j++ {
 			ss := rs.ScopeSpans().At(j)
 			sctx := newSpanContext(rctx, ss.Scope())
 			for k := 0; k < ss.Spans().Len(); k++ {
-				span := ss.Spans().At(k)
-				if err := sp.subSt.insertSpan(traceID, sctx, span); err != nil {
+				if err := sp.subSt.insertSpan(id, sctx, ss.Spans().At(k)); err != nil {
 					return fmt.Errorf("couldn't insert span: %w", err)
 				}
-				arrived = append(arrived, span.SpanID())
 			}
 		}
-	}
 
-	// Work out which subtraces the spans that just arrived head, along with those
-	// headed by their direct children. A child has to be reconsidered because an
-	// arriving parent changes its answer: it may stop heading a subtrace at all,
-	// or move from its service's orphan group to heading one of its own when the
-	// parent turns out to belong to a different service. Nothing further down
-	// changes, since a grandchild's parent was already present, and spans
-	// elsewhere in the trace are untouched, so this stays proportional to the
-	// batch rather than to the trace.
-	candidates := append(arrived, sp.subSt.childrenOf(traceID, arrived)...)
-	for _, id := range sp.subSt.subtracesFor(traceID, candidates) {
+		// Which call each span belongs to is worked out when the subtrace is
+		// released, so buffering one is nothing more than recording where its spans
+		// go and starting its timer.
 		if worker.subtraceBuffer.contains(id) {
-			continue // already tracking this subtrace
+			continue // already waiting to be released
 		}
-		// Register in ring buffer; handle eviction.
 		if evicted, ok := worker.subtraceBuffer.put(id); ok {
 			sp.telemetryBuilder.ProcessorGroupbytraceTracesEvicted.Add(context.Background(), 1)
 			worker.fire(event{typ: subtraceRemoved, payload: evicted})
+			sp.logger.Info("subtrace evicted: in order to avoid this in the future, adjust the wait duration and/or number of traces to keep in memory",
+				zap.Stringer("traceID", evicted.traceID))
 		}
-		// Start the per-subtrace wait timer.
-		capturedID := id
+
 		sp.logger.Debug("scheduled to release subtrace", zap.Duration("duration", sp.config.WaitDuration))
+		capturedID := id
 		time.AfterFunc(sp.config.WaitDuration, func() {
+			// if the event machine has stopped, it will just discard the event
 			worker.fire(event{typ: subtraceExpired, payload: capturedID})
 		})
 	}
@@ -249,10 +219,6 @@ func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, wor
 }
 
 func (sp *groupByTraceProcessor) onTraceExpired(traceID pcommon.TraceID, worker *eventMachineWorker) error {
-	if sp.config.EmitStrategy == EmitStrategyService {
-		return sp.sweepUnclaimedSpans(traceID, worker)
-	}
-
 	sp.logger.Debug("processing expired", zap.Stringer("traceID", traceID))
 
 	if !worker.buffer.contains(traceID) {
@@ -321,10 +287,6 @@ func (sp *groupByTraceProcessor) onTraceReleased(rss []ptrace.ResourceSpans) err
 }
 
 func (sp *groupByTraceProcessor) onTraceRemoved(traceID pcommon.TraceID) error {
-	if sp.config.EmitStrategy == EmitStrategyService {
-		return sp.releaseTraceRemainder(traceID)
-	}
-
 	trace, err := sp.st.delete(traceID)
 	if err != nil {
 		return fmt.Errorf("couldn't delete trace %q from the storage: %w", traceID, err)
@@ -335,74 +297,6 @@ func (sp *groupByTraceProcessor) onTraceRemoved(traceID pcommon.TraceID) error {
 	}
 
 	return nil
-}
-
-// scheduleUnclaimedSweep arranges for the trace's unclaimed spans to be swept
-// one wait_duration from now.
-func (sp *groupByTraceProcessor) scheduleUnclaimedSweep(traceID pcommon.TraceID, worker *eventMachineWorker) {
-	sp.logger.Debug("scheduled to sweep unclaimed spans", zap.Duration("duration", sp.config.WaitDuration))
-	time.AfterFunc(sp.config.WaitDuration, func() {
-		// if the event machine has stopped, it will just discard the event
-		worker.fire(event{
-			typ:     traceExpired,
-			payload: traceID,
-		})
-	})
-}
-
-// sweepUnclaimedSpans releases the spans of a trace that no local root can
-// collect, so that they leave on the same wait_duration cadence as everything
-// else instead of waiting for the ring buffer to overflow or the Collector to
-// shut down.
-//
-// Which spans those are is decided by reachability, not by age, so the sweep can
-// never take spans that a pending subtrace was about to collect, however the two
-// timers interleave. While the trace still holds spans the sweep reschedules
-// itself; once it is empty the trace gives up its buffer slot, and a later batch
-// for the same trace starts the cycle again.
-func (sp *groupByTraceProcessor) sweepUnclaimedSpans(traceID pcommon.TraceID, worker *eventMachineWorker) error {
-	unclaimed, remaining, err := sp.subSt.deleteUnclaimed(traceID)
-	if err != nil {
-		return fmt.Errorf("couldn't sweep unclaimed spans for trace %q: %w", traceID, err)
-	}
-
-	if len(unclaimed) > 0 {
-		sp.logger.Debug("releasing spans that no subtrace can claim",
-			zap.Stringer("traceID", traceID), zap.Int("spans", len(unclaimed)))
-		if err := sp.onSubtraceReleased(assemble(unclaimed)); err != nil {
-			return err
-		}
-	}
-
-	if remaining == 0 {
-		worker.buffer.delete(traceID)
-		return nil
-	}
-
-	sp.scheduleUnclaimedSweep(traceID, worker)
-	return nil
-}
-
-// releaseTraceRemainder flushes whatever is still buffered for a trace that has
-// been evicted from the trace ring buffer. Anything left at this point is a span
-// no subtrace ever claimed, so it is emitted as it stands rather than discarded:
-// the eviction exists to stop the processor holding the span until shutdown.
-func (sp *groupByTraceProcessor) releaseTraceRemainder(traceID pcommon.TraceID) error {
-	members, err := sp.subSt.deleteTrace(traceID)
-	if err != nil {
-		return fmt.Errorf("couldn't delete trace %q from the storage: %w", traceID, err)
-	}
-	if len(members) == 0 {
-		// A trace whose subtraces all completed leaves nothing behind, which is the
-		// common case and not worth reporting.
-		return nil
-	}
-
-	sp.telemetryBuilder.ProcessorGroupbytraceTracesEvicted.Add(context.Background(), 1)
-	sp.logger.Info("releasing unclaimed spans early because their trace was evicted: in order to avoid this in the future, adjust the wait duration and/or number of traces to keep in memory",
-		zap.Stringer("traceID", traceID), zap.Int("spans", len(members)))
-
-	return sp.onSubtraceReleased(assemble(members))
 }
 
 func (sp *groupByTraceProcessor) addSpans(traceID pcommon.TraceID, trace ptrace.Traces) error {
@@ -424,21 +318,27 @@ func (sp *groupByTraceProcessor) onSubtraceExpired(id subtraceID, worker *eventM
 
 func (sp *groupByTraceProcessor) markSubtraceAsReleased(id subtraceID, fire func(...event)) error {
 	// Retrieving and removing the spans in a single operation is what keeps a
-	// concurrent release of an overlapping subtrace from emitting them twice.
-	members, err := sp.subSt.deleteSubtrace(id)
+	// concurrent release from emitting them twice.
+	calls, err := sp.subSt.deleteSubtrace(id)
 	if err != nil {
 		return fmt.Errorf("couldn't retrieve subtrace: %w", err)
 	}
-	if len(members) == 0 {
-		// Either the spans are already gone, or the root stopped being one after
-		// its timer was scheduled, in which case its spans are released along with
-		// the subtrace they now belong to.
+	if len(calls) == 0 {
+		// The spans are already gone, released by an earlier expiry or dropped
+		// when the subtrace was evicted.
 		sp.logger.Debug("subtrace expired with no spans to release",
-			zap.Stringer("traceID", id.traceID), zap.Stringer("spanID", id.spanID),
-			zap.String("serviceID", id.serviceID))
+			zap.Stringer("traceID", id.traceID), zap.String("serviceID", id.serviceID))
 		return nil
 	}
-	fire(event{typ: subtraceReleased, payload: assemble(members)})
+
+	// A service entered more than once in this trace releases one batch per call.
+	// Firing them together keeps a concurrent shutdown from taking some and
+	// leaving the rest.
+	events := make([]event, 0, len(calls))
+	for _, call := range calls {
+		events = append(events, event{typ: subtraceReleased, payload: assemble(call)})
+	}
+	fire(events...)
 	return nil
 }
 

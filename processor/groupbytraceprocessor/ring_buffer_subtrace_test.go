@@ -4,13 +4,21 @@
 package groupbytraceprocessor
 
 import (
+	"encoding/hex"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func makeSubtraceID(trace, span byte) subtraceID {
-	return subtraceID{traceID: makeTraceID(trace), spanID: makeSpanID(span)}
+	return subtraceID{traceID: makeTraceID(trace), serviceID: serviceName(makeSpanID(span))}
+}
+
+// serviceName turns a span ID into a distinct service identity, so the ring
+// buffer tests can keep using the ID helpers.
+func serviceName(id pcommon.SpanID) string {
+	return "svc-" + hex.EncodeToString(id[:])
 }
 
 func TestSubtraceRingBuffer_Capacity(t *testing.T) {

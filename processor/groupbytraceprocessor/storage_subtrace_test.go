@@ -5,7 +5,7 @@ package groupbytraceprocessor
 
 import (
 	"fmt"
-	"slices"
+	"strconv"
 	"sync"
 	"testing"
 
@@ -19,108 +19,6 @@ func newTestSubtraceStorage() *subtraceMemoryStorage {
 	return newSubtraceMemoryStorage(nil)
 }
 
-// allSubtraces classifies every span buffered for a trace, which is what these
-// tests want to assert about. The processor only ever classifies the spans that
-// just arrived and their children, so it passes a narrower candidate list.
-func allSubtraces(st *subtraceMemoryStorage, traceID pcommon.TraceID) []subtraceID {
-	st.RLock()
-	idx, ok := st.traces[traceID]
-	if !ok {
-		// The concurrency test races this against the first insert, so the trace
-		// may not exist yet.
-		st.RUnlock()
-		return nil
-	}
-	candidates := make([]pcommon.SpanID, 0, idx.len())
-	for spanID := range idx.spans {
-		candidates = append(candidates, spanID)
-	}
-	st.RUnlock()
-	return st.subtracesFor(traceID, candidates)
-}
-
-// allLocalRootIDs is allSubtraces reduced to the span IDs that head a subtrace
-// of their own, which is what the older assertions are phrased in terms of.
-func allLocalRootIDs(st *subtraceMemoryStorage, traceID pcommon.TraceID) []pcommon.SpanID {
-	var ids []pcommon.SpanID
-	for _, id := range allSubtraces(st, traceID) {
-		if !id.isOrphanGroup() {
-			ids = append(ids, id.spanID)
-		}
-	}
-	return ids
-}
-
-func insertTestSpan(t *testing.T, st *subtraceMemoryStorage, traceID pcommon.TraceID, spanID, parentID pcommon.SpanID, svcName string) {
-	t.Helper()
-	r := pcommon.NewResource()
-	if svcName != "" {
-		r.Attributes().PutStr("service.name", svcName)
-	}
-	sc := pcommon.NewInstrumentationScope()
-	sp := ptrace.NewSpan()
-	sp.SetTraceID(traceID)
-	sp.SetSpanID(spanID)
-	sp.SetParentSpanID(parentID)
-	assert.NoError(t, st.insertSpan(traceID, newSpanContext(newResourceContext(r), sc), sp))
-}
-
-func TestSubtraceStorage_SingleSpan_LocalRoot(t *testing.T) {
-	st := newTestSubtraceStorage()
-	tid := makeTraceID(1)
-	sid := makeSpanID(1)
-	insertTestSpan(t, st, tid, sid, pcommon.NewSpanIDEmpty(), "svc-a")
-
-	roots := allLocalRootIDs(st, tid)
-	require.Len(t, roots, 1)
-	assert.Equal(t, sid, roots[0])
-}
-
-func TestSubtraceStorage_MultiService_DisjointSubtraces(t *testing.T) {
-	st := newTestSubtraceStorage()
-	tid := makeTraceID(1)
-
-	rootA := makeSpanID(1)
-	childA := makeSpanID(2)
-	rootB := makeSpanID(3)
-	childB := makeSpanID(4)
-
-	// service A
-	insertTestSpan(t, st, tid, rootA, pcommon.NewSpanIDEmpty(), "svc-a")
-	insertTestSpan(t, st, tid, childA, rootA, "svc-a")
-	// service B (remote from A)
-	r := pcommon.NewResource()
-	r.Attributes().PutStr("service.name", "svc-b")
-	sc := pcommon.NewInstrumentationScope()
-	sp := ptrace.NewSpan()
-	sp.SetTraceID(tid)
-	sp.SetSpanID(rootB)
-	sp.SetParentSpanID(rootA)
-	sp.SetFlags(spanFlagsContextHasIsRemoteMask | spanFlagsContextIsRemoteMask)
-	require.NoError(t, st.insertSpan(tid, newSpanContext(newResourceContext(r), sc), sp))
-	insertTestSpan(t, st, tid, childB, rootB, "svc-b")
-
-	roots := allLocalRootIDs(st, tid)
-	assert.Len(t, roots, 2)
-
-	membersA, err := st.getSubtrace(subtraceID{traceID: tid, spanID: rootA})
-	require.NoError(t, err)
-	membersB, err := st.getSubtrace(subtraceID{traceID: tid, spanID: rootB})
-	require.NoError(t, err)
-
-	idsA := spanIDSet(membersA)
-	idsB := spanIDSet(membersB)
-	assert.Contains(t, idsA, rootA)
-	assert.Contains(t, idsA, childA)
-	assert.NotContains(t, idsA, rootB)
-	assert.NotContains(t, idsA, childB)
-
-	assert.Contains(t, idsB, rootB)
-	assert.Contains(t, idsB, childB)
-	assert.NotContains(t, idsB, rootA)
-	assert.NotContains(t, idsB, childA)
-}
-
 func spanIDSet(spans []*bufferedSpan) map[pcommon.SpanID]bool {
 	m := make(map[pcommon.SpanID]bool, len(spans))
 	for _, bs := range spans {
@@ -129,89 +27,142 @@ func spanIDSet(spans []*bufferedSpan) map[pcommon.SpanID]bool {
 	return m
 }
 
-func TestSubtraceStorage_DeleteSubtrace_LeavesRemainder(t *testing.T) {
+// insertTestSpan buffers one span for the given service.
+func insertTestSpan(t *testing.T, st *subtraceMemoryStorage, traceID pcommon.TraceID, spanID, parentID pcommon.SpanID, service string) {
+	t.Helper()
+	r := pcommon.NewResource()
+	if service != "" {
+		r.Attributes().PutStr("service.name", service)
+	}
+	rctx := newResourceContext(r)
+	sp := ptrace.NewSpan()
+	sp.SetTraceID(traceID)
+	sp.SetSpanID(spanID)
+	sp.SetParentSpanID(parentID)
+	id := subtraceID{traceID: traceID, serviceID: rctx.serviceID}
+	require.NoError(t, st.insertSpan(id, newSpanContext(rctx, pcommon.NewInstrumentationScope()), sp))
+}
+
+func subtraceIDFor(traceID pcommon.TraceID, service string) subtraceID {
+	r := pcommon.NewResource()
+	r.Attributes().PutStr("service.name", service)
+	return subtraceID{traceID: traceID, serviceID: serviceIdentity(r)}
+}
+
+func TestSubtraceStorage_BuffersPerService(t *testing.T) {
+	st := newTestSubtraceStorage()
+	tid := makeTraceID(1)
+
+	insertTestSpan(t, st, tid, makeSpanID(1), pcommon.NewSpanIDEmpty(), "svc-a")
+	insertTestSpan(t, st, tid, makeSpanID(2), makeSpanID(1), "svc-a")
+	insertTestSpan(t, st, tid, makeSpanID(3), makeSpanID(2), "svc-b")
+
+	assert.Len(t, st.subtraceIDs(), 2)
+
+	calls, err := st.deleteSubtrace(subtraceIDFor(tid, "svc-a"))
+	require.NoError(t, err)
+	require.Len(t, calls, 1)
+	assert.Equal(t, map[pcommon.SpanID]bool{makeSpanID(1): true, makeSpanID(2): true}, spanIDSet(calls[0]))
+
+	// svc-b is untouched, and its entry span is still recognisable as one even
+	// though the span it was called from has now been released.
+	remaining := st.subtraceIDs()
+	require.Len(t, remaining, 1)
+	assert.Equal(t, subtraceIDFor(tid, "svc-b"), remaining[0])
+}
+
+func TestSubtraceStorage_DeleteIsIdempotent(t *testing.T) {
+	st := newTestSubtraceStorage()
+	tid := makeTraceID(1)
+	insertTestSpan(t, st, tid, makeSpanID(1), pcommon.NewSpanIDEmpty(), "svc-a")
+
+	first, err := st.deleteSubtrace(subtraceIDFor(tid, "svc-a"))
+	require.NoError(t, err)
+	require.Len(t, first, 1)
+
+	second, err := st.deleteSubtrace(subtraceIDFor(tid, "svc-a"))
+	require.NoError(t, err)
+	assert.Empty(t, second)
+	assert.Empty(t, st.subtraceIDs())
+}
+
+func TestSubtraceStorage_DeleteUnknownSubtrace(t *testing.T) {
+	st := newTestSubtraceStorage()
+	calls, err := st.deleteSubtrace(subtraceIDFor(makeTraceID(9), "svc-a"))
+	require.NoError(t, err)
+	assert.Empty(t, calls)
+}
+
+// A service entered twice in a trace buffers under one ID and comes back as two
+// calls.
+func TestSubtraceStorage_ServiceEnteredTwice(t *testing.T) {
 	st := newTestSubtraceStorage()
 	tid := makeTraceID(1)
 	rootA := makeSpanID(1)
-	childA := makeSpanID(2)
-	rootB := makeSpanID(3)
+	entry1, entry2 := makeSpanID(2), makeSpanID(3)
+	viaC := makeSpanID(4)
 
 	insertTestSpan(t, st, tid, rootA, pcommon.NewSpanIDEmpty(), "svc-a")
-	insertTestSpan(t, st, tid, childA, rootA, "svc-a")
-	insertTestSpan(t, st, tid, rootB, pcommon.NewSpanIDEmpty(), "svc-b")
+	insertTestSpan(t, st, tid, entry1, rootA, "svc-b")
+	insertTestSpan(t, st, tid, viaC, entry1, "svc-c")
+	insertTestSpan(t, st, tid, entry2, viaC, "svc-b")
 
-	deleted, err := st.deleteSubtrace(subtraceID{traceID: tid, spanID: rootA})
+	calls, err := st.deleteSubtrace(subtraceIDFor(tid, "svc-b"))
 	require.NoError(t, err)
-	assert.Len(t, deleted, 2)
-
-	remainder, err := st.getRemainder(tid)
-	require.NoError(t, err)
-	require.Len(t, remainder, 1)
-	assert.Equal(t, rootB, remainder[0].span.SpanID())
-}
-
-func TestSubtraceStorage_GetRemainder(t *testing.T) {
-	st := newTestSubtraceStorage()
-	tid := makeTraceID(1)
-	insertTestSpan(t, st, tid, makeSpanID(1), pcommon.NewSpanIDEmpty(), "svc-a")
-	insertTestSpan(t, st, tid, makeSpanID(2), pcommon.NewSpanIDEmpty(), "svc-b")
-
-	// Delete one subtrace.
-	_, err := st.deleteSubtrace(subtraceID{traceID: tid, spanID: makeSpanID(1)})
-	require.NoError(t, err)
-
-	remainder, err := st.getRemainder(tid)
-	require.NoError(t, err)
-	assert.Len(t, remainder, 1)
-}
-
-func TestSubtraceStorage_DeleteTrace(t *testing.T) {
-	st := newTestSubtraceStorage()
-	tid := makeTraceID(1)
-	insertTestSpan(t, st, tid, makeSpanID(1), pcommon.NewSpanIDEmpty(), "svc-a")
-	insertTestSpan(t, st, tid, makeSpanID(2), makeSpanID(1), "svc-a")
-
-	removed, err := st.deleteTrace(tid)
-	require.NoError(t, err)
-	assert.Equal(t, map[pcommon.SpanID]bool{makeSpanID(1): true, makeSpanID(2): true}, spanIDSet(removed))
-
-	remainder, err := st.getRemainder(tid)
-	require.NoError(t, err)
-	assert.Empty(t, remainder)
-	assert.Empty(t, st.traceIDs())
-}
-
-// TestSubtraceStorage_ABCBCallChain_FourSubtraces verifies that the call chain
-// A --> B --> C --> B (service B is called twice) produces exactly four local roots and
-// therefore four distinct subtraces.
-func TestSubtraceStorage_ABCBCallChain_FourSubtraces(t *testing.T) {
-	st := newTestSubtraceStorage()
-	tid := makeTraceID(1)
-
-	rootA := makeSpanID(0x01)
-	rootB1 := makeSpanID(0x02) // B's first entry, called by A
-	rootC := makeSpanID(0x03)  // C's entry, called by B
-	rootB2 := makeSpanID(0x04) // B's second entry, called by C
-
-	insertTestSpan(t, st, tid, rootA, pcommon.NewSpanIDEmpty(), "svc-a")
-	insertTestSpan(t, st, tid, rootB1, rootA, "svc-b")
-	insertTestSpan(t, st, tid, rootC, rootB1, "svc-c")
-	insertTestSpan(t, st, tid, rootB2, rootC, "svc-b")
-
-	roots := allLocalRootIDs(st, tid)
-	require.Len(t, roots, 4)
-
-	rootSet := make(map[pcommon.SpanID]bool, len(roots))
-	for _, r := range roots {
-		rootSet[r] = true
+	require.Len(t, calls, 2, "two entries into svc-b are two calls")
+	for _, call := range calls {
+		assert.Len(t, call, 1)
 	}
-	assert.True(t, rootSet[rootA], "svc-a root should be a local root")
-	assert.True(t, rootSet[rootB1], "svc-b first entry should be a local root")
-	assert.True(t, rootSet[rootC], "svc-c root should be a local root")
-	assert.True(t, rootSet[rootB2], "svc-b second entry should be a local root")
 }
 
-func TestSubtraceStorage_ConcurrentInsertAndLocalRoots(t *testing.T) {
+// A span resubmitted under a different service must not end up buffered, and so
+// emitted, under both.
+func TestSubtraceStorage_ResubmittedUnderDifferentService(t *testing.T) {
+	st := newTestSubtraceStorage()
+	tid := makeTraceID(1)
+	spanID := makeSpanID(1)
+
+	insertTestSpan(t, st, tid, spanID, pcommon.NewSpanIDEmpty(), "svc-a")
+	insertTestSpan(t, st, tid, spanID, pcommon.NewSpanIDEmpty(), "svc-b")
+
+	require.Equal(t, []subtraceID{subtraceIDFor(tid, "svc-b")}, st.subtraceIDs())
+
+	calls, err := st.deleteSubtrace(subtraceIDFor(tid, "svc-b"))
+	require.NoError(t, err)
+	require.Len(t, calls, 1)
+	assert.Equal(t, map[pcommon.SpanID]bool{spanID: true}, spanIDSet(calls[0]))
+	assert.Empty(t, st.subtraceIDs())
+}
+
+// A span resubmitted with a different parent is placed by its new parent,
+// because parentage is only read when the subtrace is released.
+func TestSubtraceStorage_ResubmittedWithDifferentParent(t *testing.T) {
+	st := newTestSubtraceStorage()
+	tid := makeTraceID(1)
+	entry1, entry2, child := makeSpanID(1), makeSpanID(2), makeSpanID(3)
+	caller := makeSpanID(0x10)
+
+	insertTestSpan(t, st, tid, caller, pcommon.NewSpanIDEmpty(), "svc-a")
+	insertTestSpan(t, st, tid, entry1, caller, "svc-b")
+	insertTestSpan(t, st, tid, entry2, caller, "svc-b")
+	insertTestSpan(t, st, tid, child, entry1, "svc-b")
+	insertTestSpan(t, st, tid, child, entry2, "svc-b") // reparented
+
+	calls, err := st.deleteSubtrace(subtraceIDFor(tid, "svc-b"))
+	require.NoError(t, err)
+	require.Len(t, calls, 2)
+	for _, call := range calls {
+		ids := spanIDSet(call)
+		if ids[entry1] {
+			assert.NotContains(t, ids, child, "the child should have left its old parent's call")
+		}
+		if ids[entry2] {
+			assert.Contains(t, ids, child, "the child should travel with its new parent")
+		}
+	}
+}
+
+func TestSubtraceStorage_ConcurrentInsertAndDelete(t *testing.T) {
 	st := newTestSubtraceStorage()
 	tid := makeTraceID(1)
 
@@ -223,119 +174,20 @@ func TestSubtraceStorage_ConcurrentInsertAndLocalRoots(t *testing.T) {
 	}
 	for range 5 {
 		wg.Go(func() {
-			_ = allLocalRootIDs(st, tid)
+			_, _ = st.deleteSubtrace(subtraceIDFor(tid, "svc"))
 		})
 	}
+	wg.Go(func() { _ = st.subtraceIDs() })
 	wg.Wait()
-}
-
-// TestSubtraceStorage_DeleteSubtrace_SkipsDemotedRoot verifies that a span which
-// headed a subtrace when its timer was scheduled, but stopped heading one once
-// its parent arrived, is left in place for the parent's subtrace to release.
-func TestSubtraceStorage_DeleteSubtrace_SkipsDemotedRoot(t *testing.T) {
-	st := newTestSubtraceStorage()
-	tid := makeTraceID(1)
-	rootID := makeSpanID(1)
-	childID := makeSpanID(2)
-
-	// The child arrives first. Its parent is missing, so it joins its service's
-	// orphan group rather than heading a subtrace of its own.
-	insertTestSpan(t, st, tid, childID, rootID, "svc-a")
-	pending := allSubtraces(st, tid)
-	require.Len(t, pending, 1)
-	orphanGroup := pending[0]
-	require.True(t, orphanGroup.isOrphanGroup(), "a parentless span should join its service's orphan group")
-
-	// The parent arrives, so the child is no longer parentless.
-	insertTestSpan(t, st, tid, rootID, pcommon.NewSpanIDEmpty(), "svc-a")
-	require.Equal(t, []pcommon.SpanID{rootID}, allLocalRootIDs(st, tid))
-
-	// The orphan group's timer was already scheduled, but it has nothing left.
-	demoted, err := st.deleteSubtrace(orphanGroup)
-	require.NoError(t, err)
-	assert.Empty(t, demoted, "a demoted orphan must not be released on its own")
-
-	released, err := st.deleteSubtrace(subtraceID{traceID: tid, spanID: rootID})
-	require.NoError(t, err)
-	assert.Equal(t, map[pcommon.SpanID]bool{rootID: true, childID: true}, spanIDSet(released))
-	assert.Empty(t, st.traceIDs())
-}
-
-// Parentless spans of one service form a single group, and one of a different
-// service forms its own.
-func TestSubtraceStorage_OrphansGroupPerService(t *testing.T) {
-	st := newTestSubtraceStorage()
-	tid := makeTraceID(1)
-	missing := makeSpanID(99)
-
-	insertTestSpan(t, st, tid, makeSpanID(1), missing, "svc-a")
-	insertTestSpan(t, st, tid, makeSpanID(2), missing, "svc-a")
-	insertTestSpan(t, st, tid, makeSpanID(3), makeSpanID(98), "svc-a")
-	insertTestSpan(t, st, tid, makeSpanID(4), missing, "svc-b")
-
-	ids := allSubtraces(st, tid)
-	require.Len(t, ids, 2, "one orphan group per service, however many spans are in it")
-	for _, id := range ids {
-		require.True(t, id.isOrphanGroup())
-	}
-
-	byService := map[string][]*bufferedSpan{}
-	for _, id := range ids {
-		members, err := st.getSubtrace(id)
-		require.NoError(t, err)
-		byService[id.serviceID] = members
-	}
-
-	var sizes []int
-	for _, members := range byService {
-		sizes = append(sizes, len(members))
-	}
-	slices.Sort(sizes)
-	assert.Equal(t, []int{1, 3}, sizes, "svc-a's three parentless spans in one group, svc-b's one in another")
-}
-
-// A span whose late-arriving parent belongs to a different service leaves the
-// orphan group and heads a subtrace of its own.
-func TestSubtraceStorage_OrphanReparentedToOtherService(t *testing.T) {
-	st := newTestSubtraceStorage()
-	tid := makeTraceID(1)
-	parentID := makeSpanID(1)
-	movedID := makeSpanID(2)
-	stayID := makeSpanID(3)
-
-	insertTestSpan(t, st, tid, movedID, parentID, "svc-b")
-	insertTestSpan(t, st, tid, stayID, makeSpanID(99), "svc-b")
-	require.Len(t, allSubtraces(st, tid), 1, "both are parentless, so both are in one group")
-
-	// The parent arrives, and belongs to a different service.
-	insertTestSpan(t, st, tid, parentID, pcommon.NewSpanIDEmpty(), "svc-a")
-
-	ids := allSubtraces(st, tid)
-	require.Len(t, ids, 3, "svc-a's root, svc-b's re-parented entry span, and svc-b's remaining orphan")
-
-	for _, id := range ids {
-		members, err := st.getSubtrace(id)
-		require.NoError(t, err)
-		switch {
-		case id.spanID == parentID:
-			assert.Equal(t, map[pcommon.SpanID]bool{parentID: true}, spanIDSet(members))
-		case id.spanID == movedID:
-			assert.Equal(t, map[pcommon.SpanID]bool{movedID: true}, spanIDSet(members))
-		default:
-			assert.True(t, id.isOrphanGroup())
-			assert.Equal(t, map[pcommon.SpanID]bool{stayID: true}, spanIDSet(members),
-				"the re-parented span must have left the orphan group")
-		}
-	}
 }
 
 // buildBenchTrace builds a trace of spanCount spans spread evenly over
 // serviceCount services, returned as one batch per service so that the shape
-// matches how the spans would actually arrive. Each service has a local root
-// whose parent is the previous service's root, flagged remote, and its remaining
-// spans hang beneath that root as a balanced tree of the given fanout. A fanout
-// of 1 degenerates into a single chain, which is the deepest a trace of that
-// size can be.
+// matches how the spans would actually arrive. Each service has an entry span
+// whose parent is the previous service's entry span, and its remaining spans
+// hang beneath it as a balanced tree of the given fanout. A fanout of 1
+// degenerates into a single chain, which is the deepest a trace of that size
+// can be.
 func buildBenchTrace(traceID pcommon.TraceID, serviceCount, spanCount, fanout int) []ptrace.Traces {
 	spanID := func(i int) pcommon.SpanID {
 		var id pcommon.SpanID
@@ -346,9 +198,9 @@ func buildBenchTrace(traceID pcommon.TraceID, serviceCount, spanCount, fanout in
 	batches := make([]ptrace.Traces, 0, serviceCount)
 	perService := spanCount / serviceCount
 	next := 0
-	var previousRoot pcommon.SpanID
+	var previousEntry pcommon.SpanID
 
-	for svc := range serviceCount {
+	for svc := 0; svc < serviceCount; svc++ {
 		local := make([]pcommon.SpanID, perService)
 		for i := range local {
 			local[i] = spanID(next)
@@ -356,30 +208,27 @@ func buildBenchTrace(traceID pcommon.TraceID, serviceCount, spanCount, fanout in
 		}
 
 		specs := make([]spanSpec, 0, perService)
-		// The first service's root is the global root; the rest enter from the
-		// service before them.
-		specs = append(specs, spanSpec{id: local[0], parent: previousRoot, remote: svc > 0})
+		specs = append(specs, spanSpec{id: local[0], parent: previousEntry, remote: svc > 0})
 		for i := 1; i < perService; i++ {
 			specs = append(specs, spanSpec{id: local[i], parent: local[(i-1)/fanout]})
 		}
 
 		batches = append(batches, buildSpecTrace(traceID, fmt.Sprintf("svc-%d", svc), specs...))
-		previousRoot = local[0]
+		previousEntry = local[0]
 	}
 	return batches
 }
 
-// BenchmarkSubtraceIndexAndRelease measures everything the service strategy does
-// with a trace of a given size: indexing each span as its batch arrives,
-// classifying the spans that arrived with it, then collecting and reassembling
-// each service's subtrace on release. Divide ns/op by spans/op for the per-span
-// cost.
+// BenchmarkSubtraceBufferAndRelease measures everything the service strategy
+// does with a trace of a given size: buffering each span as its batch arrives,
+// then dividing each service's spans into calls and reassembling them on
+// release. Divide ns/op by spans/op for the per-span cost.
 //
-// The two shapes bracket what the collection walk has to cope with. "tree" is
+// The two shapes bracket what dividing into calls has to cope with. "tree" is
 // what ordinary instrumentation produces, a handler calling a handful of
 // clients. "chain" is one span per level, as a long sequential pipeline would
-// produce, and is the worst case for anything that has to traverse ancestry.
-func BenchmarkSubtraceIndexAndRelease(b *testing.B) {
+// produce.
+func BenchmarkSubtraceBufferAndRelease(b *testing.B) {
 	const serviceCount = 4
 
 	for _, shape := range []struct {
@@ -390,7 +239,7 @@ func BenchmarkSubtraceIndexAndRelease(b *testing.B) {
 		{name: "chain", fanout: 1},
 	} {
 		for _, spanCount := range []int{40, 400, 4000} {
-			b.Run(fmt.Sprintf("%s/%d", shape.name, spanCount), func(b *testing.B) {
+			b.Run(fmt.Sprintf("%s/%s", shape.name, strconv.Itoa(spanCount)), func(b *testing.B) {
 				traceID := makeTraceID(1)
 				batches := buildBenchTrace(traceID, serviceCount, spanCount, shape.fanout)
 
@@ -398,37 +247,80 @@ func BenchmarkSubtraceIndexAndRelease(b *testing.B) {
 				for b.Loop() {
 					st := newSubtraceMemoryStorage(nil)
 
-					var subtraces []subtraceID
+					var ids []subtraceID
 					for _, td := range batches {
-						var arrived []pcommon.SpanID
-						for i := 0; i < td.ResourceSpans().Len(); i++ {
-							rs := td.ResourceSpans().At(i)
-							rctx := newResourceContext(rs.Resource())
-							for j := 0; j < rs.ScopeSpans().Len(); j++ {
-								ss := rs.ScopeSpans().At(j)
-								sctx := newSpanContext(rctx, ss.Scope())
-								for k := 0; k < ss.Spans().Len(); k++ {
-									span := ss.Spans().At(k)
-									if err := st.insertSpan(traceID, sctx, span); err != nil {
-										b.Fatal(err)
-									}
-									arrived = append(arrived, span.SpanID())
-								}
+						rs := td.ResourceSpans().At(0)
+						rctx := newResourceContext(rs.Resource())
+						id := subtraceID{traceID: traceID, serviceID: rctx.serviceID}
+						ids = append(ids, id)
+
+						ss := rs.ScopeSpans().At(0)
+						sctx := newSpanContext(rctx, ss.Scope())
+						for k := 0; k < ss.Spans().Len(); k++ {
+							if err := st.insertSpan(id, sctx, ss.Spans().At(k)); err != nil {
+								b.Fatal(err)
 							}
 						}
-						subtraces = append(subtraces, st.subtracesFor(traceID, arrived)...)
 					}
 
-					for _, id := range subtraces {
-						members, err := st.deleteSubtrace(id)
+					for _, id := range ids {
+						calls, err := st.deleteSubtrace(id)
 						if err != nil {
 							b.Fatal(err)
 						}
-						assemble(members)
+						for _, call := range calls {
+							assemble(call)
+						}
 					}
 				}
 				b.ReportMetric(float64(spanCount), "spans/op")
 			})
 		}
 	}
+}
+
+// Services are released one at a time, usually the caller before the callee. A
+// span whose parent has already been released must still be recognised as an
+// entry span, or two calls into a service would collapse into one batch.
+func TestSubtraceStorage_EntrySurvivesParentRelease(t *testing.T) {
+	st := newTestSubtraceStorage()
+	tid := makeTraceID(1)
+	caller1, caller2 := makeSpanID(1), makeSpanID(2)
+	entry1, entry2 := makeSpanID(3), makeSpanID(4)
+
+	insertTestSpan(t, st, tid, caller1, pcommon.NewSpanIDEmpty(), "svc-a")
+	insertTestSpan(t, st, tid, caller2, caller1, "svc-a")
+	insertTestSpan(t, st, tid, entry1, caller1, "svc-b")
+	insertTestSpan(t, st, tid, entry2, caller2, "svc-b")
+
+	// svc-a goes first, taking both of svc-b's callers with it.
+	_, err := st.deleteSubtrace(subtraceIDFor(tid, "svc-a"))
+	require.NoError(t, err)
+
+	calls, err := st.deleteSubtrace(subtraceIDFor(tid, "svc-b"))
+	require.NoError(t, err)
+	require.Len(t, calls, 2, "both entry spans must survive their callers being released")
+}
+
+// Once nothing is buffered for a trace, the record of its span IDs goes too, so
+// that a long-lived trace ID doesn't accumulate them without limit.
+func TestSubtraceStorage_TraceForgottenWhenEmpty(t *testing.T) {
+	st := newTestSubtraceStorage()
+	tid := makeTraceID(1)
+
+	insertTestSpan(t, st, tid, makeSpanID(1), pcommon.NewSpanIDEmpty(), "svc-a")
+	insertTestSpan(t, st, tid, makeSpanID(2), makeSpanID(1), "svc-b")
+
+	_, err := st.deleteSubtrace(subtraceIDFor(tid, "svc-a"))
+	require.NoError(t, err)
+	st.RLock()
+	require.NotNil(t, st.traces[tid], "svc-b is still buffered, so the trace stays")
+	st.RUnlock()
+
+	_, err = st.deleteSubtrace(subtraceIDFor(tid, "svc-b"))
+	require.NoError(t, err)
+	st.RLock()
+	assert.Nil(t, st.traces[tid])
+	st.RUnlock()
+	assert.Empty(t, st.subtraceIDs())
 }

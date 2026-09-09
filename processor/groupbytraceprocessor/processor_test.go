@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -688,12 +687,12 @@ func TestSubtrace_IsRemoteCleared_TwoServices(t *testing.T) {
 	}
 }
 
-// TestSubtrace_LocalRootArrivesLate covers the common case of a child span being
+// TestSubtrace_ParentArrivesLate covers the common case of a child span being
 // exported before its parent. The child is provisionally classified as a local
 // root and gets its own timer; once the parent arrives it is no longer a root,
 // so the whole service must still be emitted as a single batch rather than
 // splitting, or worse, emitting the child in both batches.
-func TestSubtrace_LocalRootArrivesLate(t *testing.T) {
+func TestSubtrace_ParentArrivesLate(t *testing.T) {
 	traceID := makeTraceID(2)
 	rootID := makeSpanID(1)
 	childID := makeSpanID(2)
@@ -710,7 +709,7 @@ func TestSubtrace_LocalRootArrivesLate(t *testing.T) {
 	p := newSubtraceProcessor(t, cfg, sink)
 	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
 
-	// Send child first (parent not yet in index — child is misclassified as a root).
+	// Send child first (its parent is not buffered yet).
 	tdChild := buildServiceTrace(traceID, "svc-a", childID)
 	// Override the parent span ID to make child's parent = rootID (not in index yet).
 	tdChild.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetParentSpanID(rootID)
@@ -721,7 +720,7 @@ func TestSubtrace_LocalRootArrivesLate(t *testing.T) {
 	// first, and the child releasing first is the case worth pinning down.
 	time.Sleep(waitDuration / 2)
 
-	// Now send the root.
+	// Now send the parent.
 	tdRoot := buildServiceTrace(traceID, "svc-a", rootID)
 	require.NoError(t, p.ConsumeTraces(t.Context(), tdRoot))
 
@@ -729,7 +728,7 @@ func TestSubtrace_LocalRootArrivesLate(t *testing.T) {
 		return sink.SpanCount() == 2
 	}, 5*time.Second, 5*time.Millisecond)
 
-	// The child's timer must neither emit it on its own nor emit it a second time.
+	// The child must neither be emitted on its own nor emitted twice.
 	assert.Never(t, func() bool {
 		return sink.SpanCount() != 2
 	}, 500*time.Millisecond, 10*time.Millisecond)
@@ -799,7 +798,7 @@ func TestSubtrace_ShutdownDrain_OrphanSpans(t *testing.T) {
 
 	// Wait until the span is persisted in storage before shutting down.
 	require.Eventually(t, func() bool {
-		return len(p.subSt.traceIDs()) > 0
+		return len(p.subSt.subtraceIDs()) > 0
 	}, 2*time.Second, time.Millisecond)
 
 	// Shutdown before the timer fires — drain should emit the span.
@@ -830,7 +829,7 @@ func TestSubtrace_RingBufferEviction(t *testing.T) {
 	// We can't read the metric directly; just verify the processor doesn't crash.
 }
 
-func TestSubtrace_ShutdownWithLocalRoots(t *testing.T) {
+func TestSubtrace_ShutdownFlushesBufferedSpans(t *testing.T) {
 	traceID := makeTraceID(6)
 	rootID := makeSpanID(1)
 	childID := makeSpanID(2)
@@ -849,7 +848,7 @@ func TestSubtrace_ShutdownWithLocalRoots(t *testing.T) {
 
 	// Wait until spans are persisted in storage before shutting down.
 	require.Eventually(t, func() bool {
-		return len(p.subSt.traceIDs()) > 0
+		return len(p.subSt.subtraceIDs()) > 0
 	}, 2*time.Second, time.Millisecond)
 
 	// Shutdown before the wait_duration expires.
@@ -883,19 +882,19 @@ func TestSubtrace_Regression_TraceStrategy(t *testing.T) {
 	}, 5*time.Second, 5*time.Millisecond)
 }
 
-// TestSubtrace_Matrix_ThreeServices_MissingLocalRoot exercises a three-service
-// trace (svc-a -> svc-b -> svc-c) in which one of the three local root spans
-// never arrives. The span whose parent is the missing root becomes a local root
+// TestSubtrace_Matrix_ThreeServices_MissingEntrySpan exercises a three-service
+// trace (svc-a -> svc-b -> svc-c) in which one of the three entry span spans
+// never arrives. The span whose parent is the missing root becomes a entry span
 // itself, so every submitted span must still be emitted exactly once, grouped
 // by service. The matrix covers each of the three missing roots against every
 // arrival order of the three service batches.
-func TestSubtrace_Matrix_ThreeServices_MissingLocalRoot(t *testing.T) {
+func TestSubtrace_Matrix_ThreeServices_MissingEntrySpan(t *testing.T) {
 	traceID := makeTraceID(20)
 	rootA, childA := makeSpanID(1), makeSpanID(2)
 	rootB, childB := makeSpanID(3), makeSpanID(4)
 	rootC, childC := makeSpanID(5), makeSpanID(6)
 
-	// The complete trace: each service's local root comes first, and svc-b/svc-c
+	// The complete trace: each service's entry span comes first, and svc-b/svc-c
 	// enter through a remote child of the previous service's child span.
 	type service struct {
 		name  string
@@ -914,7 +913,7 @@ func TestSubtrace_Matrix_ThreeServices_MissingLocalRoot(t *testing.T) {
 			name := fmt.Sprintf("missing_root_%s/order_%d%d%d",
 				complete[missing].name, order[0], order[1], order[2])
 			t.Run(name, func(t *testing.T) {
-				// Drop the local root of the "missing" service.
+				// Drop the entry span of the "missing" service.
 				submitted := make([]service, len(complete))
 				for i, svc := range complete {
 					submitted[i] = service{name: svc.name, specs: svc.specs}
@@ -924,7 +923,7 @@ func TestSubtrace_Matrix_ThreeServices_MissingLocalRoot(t *testing.T) {
 				}
 
 				// Every service's submitted spans form exactly one expected batch:
-				// the orphaned child is its own local root once its parent is gone.
+				// the orphaned child is its own entry span once its parent is gone.
 				var expected []map[pcommon.SpanID]bool
 				expectedSpans := 0
 				for _, svc := range submitted {
@@ -1048,7 +1047,7 @@ func newSubtraceProcessor(t *testing.T, cfg Config, sink *consumertest.TracesSin
 
 // buildServiceTrace builds a ptrace.Traces with spans for a single service.
 // All spans share traceID. The server span (index 0) has an empty parent and
-// acts as the local root; subsequent spans are children of the server span.
+// acts as the entry span; subsequent spans are children of the server span.
 func buildServiceTrace(traceID pcommon.TraceID, serviceName string, spanIDs ...pcommon.SpanID) ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
@@ -1188,234 +1187,6 @@ func simpleTracesWithID(traceID pcommon.TraceID) ptrace.Traces {
 	return traces
 }
 
-// TestSubtrace_CyclicSpansAreBounded covers spans that no subtrace timer can
-// ever claim. A same-service parent/child cycle leaves every span in the cycle
-// looking like a non-root, so nothing releases them; without the trace-level
-// backstop they would sit in storage until shutdown with num_traces powerless to
-// bound them. Evicting the trace has to hand them to the next consumer rather
-// than discard them, since the processor is the only thing holding them.
-func TestSubtrace_CyclicSpansAreBounded(t *testing.T) {
-	const capacity = 2
-	cyclic := makeTraceID(20)
-	spanA := makeSpanID(1)
-	spanB := makeSpanID(2)
-
-	// A's parent is B and B's parent is A. Sending them together means neither is
-	// ever a local root; sending them apart makes the first one a local root that
-	// is demoted when the second arrives. Neither ends up claimed.
-	for _, tc := range []struct {
-		name     string
-		together bool
-	}{
-		{name: "same batch", together: true},
-		{name: "separate batches", together: false},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			sink := new(consumertest.TracesSink)
-			cfg := Config{
-				NumTraces:    capacity,
-				NumWorkers:   1,
-				WaitDuration: 10 * time.Second, // long enough that no timer fires
-				EmitStrategy: EmitStrategyService,
-			}
-			p := newSubtraceProcessor(t, cfg, sink)
-			defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
-
-			if tc.together {
-				td := buildServiceTrace(cyclic, "svc-a", spanA, spanB)
-				spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-				spans.At(0).SetParentSpanID(spanB)
-				spans.At(1).SetParentSpanID(spanA)
-				require.NoError(t, p.ConsumeTraces(t.Context(), td))
-			} else {
-				tdA := buildServiceTrace(cyclic, "svc-a", spanA)
-				tdA.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetParentSpanID(spanB)
-				require.NoError(t, p.ConsumeTraces(t.Context(), tdA))
-
-				tdB := buildServiceTrace(cyclic, "svc-a", spanB)
-				tdB.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetParentSpanID(spanA)
-				require.NoError(t, p.ConsumeTraces(t.Context(), tdB))
-			}
-
-			require.Eventually(t, func() bool {
-				return slices.Contains(p.subSt.traceIDs(), cyclic)
-			}, 2*time.Second, time.Millisecond)
-
-			// Push enough further traces through to wrap the trace ring buffer.
-			for i := byte(1); i <= capacity; i++ {
-				other := makeTraceID(30 + i)
-				require.NoError(t, p.ConsumeTraces(t.Context(), buildServiceTrace(other, "svc-b", makeSpanID(i))))
-			}
-
-			require.Eventually(t, func() bool {
-				return !slices.Contains(p.subSt.traceIDs(), cyclic)
-			}, 2*time.Second, time.Millisecond, "unclaimed spans were never reclaimed")
-
-			// Reclaiming them means forwarding them, not discarding them.
-			require.Eventually(t, func() bool {
-				return sink.SpanCount() == 2
-			}, 2*time.Second, time.Millisecond, "unclaimed spans were dropped instead of released")
-			require.Len(t, sink.AllTraces(), 1)
-			assert.Equal(t, map[pcommon.SpanID]bool{spanA: true, spanB: true}, batchSpanIDs(sink.AllTraces()[0]))
-		})
-	}
-}
-
-// TestSubtrace_TraceBackstopKeepsLiveSubtraces checks that the trace-level
-// backstop stays out of the way: a trace whose subtraces are still within their
-// wait duration must not be reclaimed just because other traces arrived.
-func TestSubtrace_TraceBackstopKeepsLiveSubtraces(t *testing.T) {
-	sink := new(consumertest.TracesSink)
-	cfg := Config{
-		NumTraces:    100,
-		NumWorkers:   1,
-		WaitDuration: 300 * time.Millisecond,
-		EmitStrategy: EmitStrategyService,
-	}
-	p := newSubtraceProcessor(t, cfg, sink)
-	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
-
-	const traces = 10
-	for i := byte(1); i <= traces; i++ {
-		td := buildServiceTrace(makeTraceID(40+i), "svc-a", makeSpanID(1), makeSpanID(2))
-		require.NoError(t, p.ConsumeTraces(t.Context(), td))
-	}
-
-	require.Eventually(t, func() bool {
-		return sink.SpanCount() == 2*traces
-	}, 5*time.Second, 5*time.Millisecond)
-	assert.Len(t, sink.AllTraces(), traces)
-}
-
-// TestSubtrace_UnclaimedSpansReleasedOnTimer covers spans that no subtrace timer
-// can ever collect. A same-service parent/child cycle leaves every span in the
-// cycle looking like a non-root, so no subtrace claims any of it. Those spans
-// must still leave on the wait_duration cadence, without needing the ring buffer
-// to overflow or the Collector to shut down.
-func TestSubtrace_UnclaimedSpansReleasedOnTimer(t *testing.T) {
-	cyclic := makeTraceID(50)
-	spanA := makeSpanID(1)
-	spanB := makeSpanID(2)
-
-	sink := new(consumertest.TracesSink)
-	cfg := Config{
-		// Far more capacity than the test uses, so nothing can be evicted.
-		NumTraces:    1000,
-		NumWorkers:   1,
-		WaitDuration: 100 * time.Millisecond,
-		EmitStrategy: EmitStrategyService,
-	}
-	p := newSubtraceProcessor(t, cfg, sink)
-
-	td := buildSpecTrace(cyclic, "svc-a",
-		spanSpec{id: spanA, parent: spanB},
-		spanSpec{id: spanB, parent: spanA},
-	)
-	require.NoError(t, p.ConsumeTraces(t.Context(), td))
-
-	require.Eventually(t, func() bool {
-		return sink.SpanCount() == 2
-	}, 5*time.Second, 5*time.Millisecond, "unclaimed spans were never released")
-
-	batches := sink.AllTraces()
-	require.Len(t, batches, 1)
-	assert.Equal(t, map[pcommon.SpanID]bool{spanA: true, spanB: true}, batchSpanIDs(batches[0]))
-
-	// They were released, so storage is empty and shutdown has nothing to drain.
-	assert.Empty(t, p.subSt.traceIDs())
-	require.NoError(t, p.Shutdown(t.Context()))
-	assert.Equal(t, 2, sink.SpanCount())
-}
-
-// TestSubtrace_SweepLeavesPendingSubtracesAlone checks that the sweep only ever
-// takes spans no local root can reach. The sweep timer and the subtrace timers
-// both run on wait_duration, so a sweep that went by age instead of reachability
-// would split services apart depending on which timer won.
-func TestSubtrace_SweepLeavesPendingSubtracesAlone(t *testing.T) {
-	traceID := makeTraceID(51)
-	rootA := makeSpanID(1)
-	childA := makeSpanID(2)
-	rootB := makeSpanID(3)
-	childB := makeSpanID(4)
-
-	sink := new(consumertest.TracesSink)
-	cfg := Config{
-		NumTraces:    1000,
-		NumWorkers:   1,
-		WaitDuration: 50 * time.Millisecond,
-		EmitStrategy: EmitStrategyService,
-	}
-	p := newSubtraceProcessor(t, cfg, sink)
-	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
-
-	require.NoError(t, p.ConsumeTraces(t.Context(), buildServiceTrace(traceID, "svc-a", rootA, childA)))
-	require.NoError(t, p.ConsumeTraces(t.Context(), buildRemoteChildTrace(traceID, "svc-b", rootA, rootB, childB)))
-
-	require.Eventually(t, func() bool {
-		return sink.SpanCount() == 4
-	}, 5*time.Second, 5*time.Millisecond)
-
-	// Let several sweep cycles run to make sure none of them emits anything extra.
-	assert.Never(t, func() bool {
-		return sink.SpanCount() != 4
-	}, 500*time.Millisecond, 10*time.Millisecond)
-
-	// Each service still arrives whole, in its own batch.
-	batches := sink.AllTraces()
-	require.Len(t, batches, 2)
-	svcA := map[pcommon.SpanID]bool{rootA: true, childA: true}
-	svcB := map[pcommon.SpanID]bool{rootB: true, childB: true}
-	for _, b := range batches {
-		ids := batchSpanIDs(b)
-		assert.True(t, maps.Equal(ids, svcA) || maps.Equal(ids, svcB),
-			"batch span IDs %v matched neither svc-a %v nor svc-b %v", ids, svcA, svcB)
-	}
-}
-
-// A trace that drains completely gives up its ring buffer slot, which stops the
-// sweep rescheduling itself forever for traces that are long gone. The slot
-// itself belongs to the event machine's worker goroutine, so this checks the
-// consequence instead: spans that arrive for the same trace afterwards must
-// still get swept, which only happens if the slot was released and the new batch
-// started a fresh sweep.
-func TestSubtrace_SweptAfterTraceDrainsAndReturns(t *testing.T) {
-	const waitDuration = 50 * time.Millisecond
-	traceID := makeTraceID(52)
-	spanA := makeSpanID(1)
-	spanB := makeSpanID(2)
-
-	sink := new(consumertest.TracesSink)
-	cfg := Config{
-		NumTraces:    1000,
-		NumWorkers:   1,
-		WaitDuration: waitDuration,
-		EmitStrategy: EmitStrategyService,
-	}
-	p := newSubtraceProcessor(t, cfg, sink)
-	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
-
-	// A first, ordinary batch that drains via its subtrace timer.
-	require.NoError(t, p.ConsumeTraces(t.Context(), buildServiceTrace(traceID, "svc-a", makeSpanID(9))))
-	require.Eventually(t, func() bool {
-		return sink.SpanCount() == 1 && len(p.subSt.traceIDs()) == 0
-	}, 5*time.Second, 5*time.Millisecond)
-
-	// The sweep that observes the drained trace runs up to one wait_duration after
-	// it empties, so give the timer chain time to finish before sending more.
-	time.Sleep(3 * waitDuration)
-
-	// The same trace returns, now carrying spans no subtrace can claim.
-	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-a",
-		spanSpec{id: spanA, parent: spanB},
-		spanSpec{id: spanB, parent: spanA},
-	)))
-
-	require.Eventually(t, func() bool {
-		return sink.SpanCount() == 3
-	}, 5*time.Second, 5*time.Millisecond, "unclaimed spans for a returning trace were never swept")
-	assert.Empty(t, p.subSt.traceIDs())
-}
-
 // Parentless spans of one service must be emitted as one batch, not one batch
 // per span. This is the shape produced when the service-entry span lives in
 // another Collector, or has already been released.
@@ -1457,54 +1228,6 @@ func TestSubtrace_ParentlessSiblingsGroupPerService(t *testing.T) {
 		assert.True(t, maps.Equal(ids, svcA) || maps.Equal(ids, svcB),
 			"batch span IDs %v matched neither svc-a %v nor svc-b %v", ids, svcA, svcB)
 	}
-}
-
-// When the parent of some grouped orphans finally arrives, those spans must move
-// out of the group and be emitted with the subtrace they now belong to, while
-// the orphans it does not account for stay grouped.
-func TestSubtrace_OrphanGroupSplitsWhenParentArrives(t *testing.T) {
-	const waitDuration = 400 * time.Millisecond
-	traceID := makeTraceID(61)
-	parentID := makeSpanID(1)
-	movedA, movedB := makeSpanID(2), makeSpanID(3)
-	stays := makeSpanID(4)
-
-	sink := new(consumertest.TracesSink)
-	cfg := Config{NumTraces: 1000, NumWorkers: 1, WaitDuration: waitDuration, EmitStrategy: EmitStrategyService}
-	p := newSubtraceProcessor(t, cfg, sink)
-	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
-
-	// Three parentless spans of svc-b: two share a parent that will arrive, one
-	// has a parent that never does.
-	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-b",
-		spanSpec{id: movedA, parent: parentID},
-		spanSpec{id: movedB, parent: parentID},
-		spanSpec{id: stays, parent: makeSpanID(99)},
-	)))
-
-	// The parent arrives, and belongs to a different service.
-	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-a",
-		spanSpec{id: parentID, parent: pcommon.NewSpanIDEmpty()},
-	)))
-
-	require.Eventually(t, func() bool {
-		return sink.SpanCount() == 4
-	}, 5*time.Second, 5*time.Millisecond)
-	assert.Never(t, func() bool {
-		return sink.SpanCount() != 4
-	}, 2*waitDuration, 10*time.Millisecond)
-
-	// svc-a's root alone; movedA and movedB each head their own svc-b subtrace now
-	// that their parent is in another service; the remaining orphan stays grouped.
-	got := map[pcommon.SpanID]bool{}
-	for _, b := range sink.AllTraces() {
-		ids := batchSpanIDs(b)
-		require.Len(t, ids, 1, "each of these belongs to a different subtrace")
-		for id := range ids {
-			got[id] = true
-		}
-	}
-	assert.Equal(t, map[pcommon.SpanID]bool{parentID: true, movedA: true, movedB: true, stays: true}, got)
 }
 
 // The same service reporting under two different resources, e.g. two pods, is
@@ -1761,7 +1484,7 @@ func TestSubtrace_ResubmittedSpanIsReparented(t *testing.T) {
 	p := newSubtraceProcessor(t, cfg, sink)
 	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
 
-	// Two separate services, each a local root of its own.
+	// Two separate services, each a entry span of its own.
 	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-a",
 		spanSpec{id: oldParent, parent: pcommon.NewSpanIDEmpty()})))
 	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-b",
@@ -1785,4 +1508,154 @@ func TestSubtrace_ResubmittedSpanIsReparented(t *testing.T) {
 			assert.False(t, ids[childID], "the resubmitted span should have left its old parent's subtrace")
 		}
 	}
+}
+
+// A service entered twice in one trace must be emitted as two batches, so that
+// a consumer never sees one batch standing for two calls.
+func TestSubtrace_ServiceEnteredTwiceEmitsSeparateBatches(t *testing.T) {
+	traceID := makeTraceID(70)
+	rootA := makeSpanID(1)
+	entryB1, entryB2 := makeSpanID(2), makeSpanID(4)
+	viaC := makeSpanID(3)
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{NumTraces: 1000, NumWorkers: 1, WaitDuration: 100 * time.Millisecond, EmitStrategy: EmitStrategyService}
+	p := newSubtraceProcessor(t, cfg, sink)
+	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+	// A -> B -> C -> B
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-a",
+		spanSpec{id: rootA, parent: pcommon.NewSpanIDEmpty()})))
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-b",
+		spanSpec{id: entryB1, parent: rootA, remote: true})))
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-c",
+		spanSpec{id: viaC, parent: entryB1, remote: true})))
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-b",
+		spanSpec{id: entryB2, parent: viaC, remote: true})))
+
+	require.Eventually(t, func() bool { return sink.SpanCount() == 4 }, 5*time.Second, 5*time.Millisecond)
+	assert.Never(t, func() bool { return sink.SpanCount() != 4 }, 400*time.Millisecond, 10*time.Millisecond)
+
+	batches := sink.AllTraces()
+	require.Len(t, batches, 4, "svc-b's two entries must not share a batch")
+	for _, b := range batches {
+		assert.Equal(t, 1, b.SpanCount())
+	}
+}
+
+// The two calls each keep their own descendants, even when the descendants
+// arrive before the entry spans that explain them.
+func TestSubtrace_ReEntryKeepsCallsSeparate(t *testing.T) {
+	traceID := makeTraceID(71)
+	rootA := makeSpanID(1)
+	entryB1, childB1 := makeSpanID(2), makeSpanID(3)
+	viaC := makeSpanID(4)
+	entryB2, childB2 := makeSpanID(5), makeSpanID(6)
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{NumTraces: 1000, NumWorkers: 1, WaitDuration: 250 * time.Millisecond, EmitStrategy: EmitStrategyService}
+	p := newSubtraceProcessor(t, cfg, sink)
+	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-a",
+		spanSpec{id: rootA, parent: pcommon.NewSpanIDEmpty()})))
+	// Both services' children arrive first, before anything explains them.
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-b",
+		spanSpec{id: childB1, parent: entryB1},
+		spanSpec{id: childB2, parent: entryB2})))
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-b",
+		spanSpec{id: entryB1, parent: rootA, remote: true})))
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-c",
+		spanSpec{id: viaC, parent: childB1, remote: true})))
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-b",
+		spanSpec{id: entryB2, parent: viaC, remote: true})))
+
+	require.Eventually(t, func() bool { return sink.SpanCount() == 6 }, 5*time.Second, 5*time.Millisecond)
+	assert.Never(t, func() bool { return sink.SpanCount() != 6 }, 500*time.Millisecond, 10*time.Millisecond)
+
+	// svc-a and svc-c one batch each; svc-b two, each with its own child.
+	batches := sink.AllTraces()
+	require.Len(t, batches, 4)
+	var svcBCalls []map[pcommon.SpanID]bool
+	for _, b := range batches {
+		svc, ok := b.ResourceSpans().At(0).Resource().Attributes().Get("service.name")
+		require.True(t, ok)
+		if svc.AsString() == "svc-b" {
+			svcBCalls = append(svcBCalls, batchSpanIDs(b))
+		}
+	}
+	require.Len(t, svcBCalls, 2)
+	for _, ids := range svcBCalls {
+		assert.True(t,
+			maps.Equal(ids, map[pcommon.SpanID]bool{entryB1: true, childB1: true}) ||
+				maps.Equal(ids, map[pcommon.SpanID]bool{entryB2: true, childB2: true}),
+			"svc-b call %v matched neither expected call", ids)
+	}
+}
+
+// Malformed input where a span is its own ancestor leaves nothing to head the
+// ring. It must still be released on the ordinary timer rather than held until
+// eviction or shutdown.
+func TestSubtrace_CycleReleasedOnTimer(t *testing.T) {
+	traceID := makeTraceID(72)
+	x, y := makeSpanID(1), makeSpanID(2)
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{NumTraces: 1000, NumWorkers: 1, WaitDuration: 80 * time.Millisecond, EmitStrategy: EmitStrategyService}
+	p := newSubtraceProcessor(t, cfg, sink)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-a",
+		spanSpec{id: x, parent: y},
+		spanSpec{id: y, parent: x})))
+
+	require.Eventually(t, func() bool { return sink.SpanCount() == 2 }, 5*time.Second, 5*time.Millisecond)
+	batches := sink.AllTraces()
+	require.Len(t, batches, 1)
+	assert.Equal(t, map[pcommon.SpanID]bool{x: true, y: true}, batchSpanIDs(batches[0]))
+
+	// Released, so storage is empty and shutdown has nothing left to drain.
+	assert.Empty(t, p.subSt.subtraceIDs())
+	require.NoError(t, p.Shutdown(t.Context()))
+	assert.Equal(t, 2, sink.SpanCount())
+}
+
+// Once a parent turns up, the spans it accounts for stop being treated as
+// parentless and are placed by it, while the rest keep their best-effort
+// grouping.
+func TestSubtrace_ParentArrivesForSomeParentlessSpans(t *testing.T) {
+	traceID := makeTraceID(73)
+	caller := makeSpanID(1)
+	placedA, placedB := makeSpanID(2), makeSpanID(3)
+	stillParentless := makeSpanID(4)
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{NumTraces: 1000, NumWorkers: 1, WaitDuration: 250 * time.Millisecond, EmitStrategy: EmitStrategyService}
+	p := newSubtraceProcessor(t, cfg, sink)
+	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+	// Three svc-b spans with no parent in the buffer yet.
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-b",
+		spanSpec{id: placedA, parent: caller},
+		spanSpec{id: placedB, parent: caller},
+		spanSpec{id: stillParentless, parent: makeSpanID(99)})))
+	// The caller arrives, from another service.
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-a",
+		spanSpec{id: caller, parent: pcommon.NewSpanIDEmpty()})))
+
+	require.Eventually(t, func() bool { return sink.SpanCount() == 4 }, 5*time.Second, 5*time.Millisecond)
+	assert.Never(t, func() bool { return sink.SpanCount() != 4 }, 500*time.Millisecond, 10*time.Millisecond)
+
+	// svc-a alone; placedA and placedB are now separate entry spans into svc-b;
+	// the span whose parent never arrived goes out on its own.
+	got := map[pcommon.SpanID]bool{}
+	for _, b := range sink.AllTraces() {
+		ids := batchSpanIDs(b)
+		require.Len(t, ids, 1, "each of these belongs to a different call")
+		for id := range ids {
+			got[id] = true
+		}
+	}
+	assert.Equal(t, map[pcommon.SpanID]bool{
+		caller: true, placedA: true, placedB: true, stillParentless: true,
+	}, got)
 }

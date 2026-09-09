@@ -17,8 +17,9 @@ const (
 	// releases them as one batch after wait_duration.
 	EmitStrategyTrace EmitStrategy = "trace"
 
-	// EmitStrategyService buffers spans per service subtree within a trace and
-	// releases each subtree separately after wait_duration.
+	// EmitStrategyService buffers the spans a trace passed through each service
+	// and releases them separately after wait_duration, one batch per call to a
+	// service.
 	EmitStrategyService EmitStrategy = "service"
 )
 

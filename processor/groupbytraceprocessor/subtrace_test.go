@@ -4,6 +4,7 @@
 package groupbytraceprocessor
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -27,215 +28,267 @@ func makeTraceID(b byte) pcommon.TraceID {
 	return id
 }
 
-// newBS creates a minimal bufferedSpan with the given span ID, parent span ID,
-// flags, and service name.
-func newBS(spanID, parentID pcommon.SpanID, flags uint32, serviceName string) *bufferedSpan {
+// callInput describes one span to hand to splitCalls.
+type callInput struct {
+	id     pcommon.SpanID
+	parent pcommon.SpanID
+	remote bool
+}
+
+// buildCallInput turns the given spans into the arguments splitCalls takes. Span
+// IDs listed in elsewhere stand for spans buffered under a different service in
+// the same trace, which is what makes an entry span distinguishable from a span
+// whose parent never arrived.
+func buildCallInput(service string, elsewhere []pcommon.SpanID, inputs ...callInput) (map[pcommon.SpanID]*bufferedSpan, map[pcommon.SpanID]string) {
 	r := pcommon.NewResource()
-	if serviceName != "" {
-		r.Attributes().PutStr("service.name", serviceName)
+	r.Attributes().PutStr("service.name", service)
+	ctx := newSpanContext(newResourceContext(r), pcommon.NewInstrumentationScope())
+
+	spans := map[pcommon.SpanID]*bufferedSpan{}
+	traceSpanIDs := map[pcommon.SpanID]string{}
+	for _, in := range inputs {
+		s := ptrace.NewSpan()
+		s.SetSpanID(in.id)
+		s.SetParentSpanID(in.parent)
+		if in.remote {
+			s.SetFlags(spanFlagsContextHasIsRemoteMask | spanFlagsContextIsRemoteMask)
+		}
+		spans[in.id] = newBufferedSpan(ctx, s)
+		traceSpanIDs[in.id] = service
 	}
-	s := ptrace.NewSpan()
-	s.SetSpanID(spanID)
-	s.SetParentSpanID(parentID)
-	s.SetFlags(flags)
-	return newBufferedSpan(newSpanContext(newResourceContext(r), pcommon.NewInstrumentationScope()), s)
+	for _, id := range elsewhere {
+		traceSpanIDs[id] = "other-service"
+	}
+	return spans, traceSpanIDs
 }
 
-// empty parent --> always local root
-func TestIsLocalRoot_EmptyParent(t *testing.T) {
-	bs := newBS(makeSpanID(1), pcommon.NewSpanIDEmpty(), 0, "svc-a")
-	assert.True(t, isLocalRoot(bs, newTraceIndex()))
+// callIDSets returns each call as a set of span IDs, ordered by size then by
+// lowest span ID so that assertions don't depend on map iteration order.
+func callIDSets(calls [][]*bufferedSpan) []map[pcommon.SpanID]bool {
+	sets := make([]map[pcommon.SpanID]bool, 0, len(calls))
+	for _, call := range calls {
+		sets = append(sets, spanIDSet(call))
+	}
+	slices.SortFunc(sets, func(a, b map[pcommon.SpanID]bool) int {
+		if len(a) != len(b) {
+			return len(a) - len(b)
+		}
+		idsA, idsB := sortedIDs(a), sortedIDs(b)
+		for i := range idsA {
+			if c := slices.Compare(idsA[i][:], idsB[i][:]); c != 0 {
+				return c
+			}
+		}
+		return 0
+	})
+	return sets
 }
 
-// HAS_IS_REMOTE=1, IS_REMOTE=1 --> local root
-func TestIsLocalRoot_RemoteFlagSet(t *testing.T) {
-	bs := newBS(makeSpanID(2), makeSpanID(99), spanFlagsContextHasIsRemoteMask|spanFlagsContextIsRemoteMask, "svc-a")
-	assert.True(t, isLocalRoot(bs, newTraceIndex()))
+func sortedIDs(set map[pcommon.SpanID]bool) []pcommon.SpanID {
+	ids := make([]pcommon.SpanID, 0, len(set))
+	for id := range set {
+		ids = append(ids, id)
+	}
+	slices.SortFunc(ids, func(a, b pcommon.SpanID) int { return slices.Compare(a[:], b[:]) })
+	return ids
 }
 
-// HAS_IS_REMOTE=1, IS_REMOTE=0 --> safe default: local root
-func TestIsLocalRoot_LocalFlagClear(t *testing.T) {
-	bs := newBS(makeSpanID(3), makeSpanID(99), spanFlagsContextHasIsRemoteMask, "svc-a")
-	assert.True(t, isLocalRoot(bs, newTraceIndex()))
+// A service entered once is one call, however deep the spans go.
+func TestSplitCalls_SingleCall(t *testing.T) {
+	root, mid, leaf := makeSpanID(1), makeSpanID(2), makeSpanID(3)
+	spans, ids := buildCallInput("svc-a", nil,
+		callInput{id: root},
+		callInput{id: mid, parent: root},
+		callInput{id: leaf, parent: mid},
+	)
+
+	assert.Equal(t, []map[pcommon.SpanID]bool{
+		{root: true, mid: true, leaf: true},
+	}, callIDSets(splitCalls(spans, ids)))
 }
 
-// parent not in index --> safe default: local root
-func TestIsLocalRoot_ParentNotInIndex(t *testing.T) {
-	bs := newBS(makeSpanID(4), makeSpanID(99), 0, "svc-a")
-	assert.True(t, isLocalRoot(bs, newTraceIndex()))
+// Siblings under one entry span stay in the same call.
+func TestSplitCalls_Siblings(t *testing.T) {
+	root, left, right := makeSpanID(1), makeSpanID(2), makeSpanID(3)
+	spans, ids := buildCallInput("svc-a", nil,
+		callInput{id: root},
+		callInput{id: left, parent: root},
+		callInput{id: right, parent: root},
+	)
+
+	assert.Equal(t, []map[pcommon.SpanID]bool{
+		{root: true, left: true, right: true},
+	}, callIDSets(splitCalls(spans, ids)))
 }
 
-// parent in index, same service.name only --> NOT local root
-func TestIsLocalRoot_SameServiceNameOnly(t *testing.T) {
-	parentID := makeSpanID(10)
-	child := newBS(makeSpanID(5), parentID, 0, "svc-a")
-	parent := newBS(parentID, pcommon.NewSpanIDEmpty(), 0, "svc-a")
-	index := buildIndex(parent)
-	assert.False(t, isLocalRoot(child, index))
+// A service entered twice in one trace yields two calls, each with its own
+// descendants. This is the case service-level grouping alone would merge.
+func TestSplitCalls_ServiceEnteredTwice(t *testing.T) {
+	callerA, callerB := makeSpanID(0x10), makeSpanID(0x11)
+	entry1, child1 := makeSpanID(1), makeSpanID(2)
+	entry2, child2 := makeSpanID(3), makeSpanID(4)
+
+	spans, ids := buildCallInput("svc-b", []pcommon.SpanID{callerA, callerB},
+		callInput{id: entry1, parent: callerA},
+		callInput{id: child1, parent: entry1},
+		callInput{id: entry2, parent: callerB},
+		callInput{id: child2, parent: entry2},
+	)
+
+	assert.Equal(t, []map[pcommon.SpanID]bool{
+		{entry1: true, child1: true},
+		{entry2: true, child2: true},
+	}, callIDSets(splitCalls(spans, ids)))
 }
 
-// parent in index, same name+instance --> NOT local root
-func TestIsLocalRoot_SameServiceNameAndInstance(t *testing.T) {
-	parentID := makeSpanID(10)
+// Two entry spans sharing one caller are still two separate calls.
+func TestSplitCalls_TwoEntriesOneCaller(t *testing.T) {
+	caller := makeSpanID(0x10)
+	entry1, entry2 := makeSpanID(1), makeSpanID(2)
+
+	spans, ids := buildCallInput("svc-b", []pcommon.SpanID{caller},
+		callInput{id: entry1, parent: caller},
+		callInput{id: entry2, parent: caller},
+	)
+
+	assert.Len(t, splitCalls(spans, ids), 2)
+}
+
+// A remote parent marks an entry span even when the parent is held under the
+// same service identity, which is a service calling another instance of itself.
+func TestSplitCalls_RemoteParentInSameService(t *testing.T) {
+	root, entry := makeSpanID(1), makeSpanID(2)
+	spans, ids := buildCallInput("svc-a", nil,
+		callInput{id: root},
+		callInput{id: entry, parent: root, remote: true},
+	)
+
+	assert.Equal(t, []map[pcommon.SpanID]bool{
+		{root: true},
+		{entry: true},
+	}, callIDSets(splitCalls(spans, ids)))
+}
+
+// Spans whose parent is nowhere in the trace can't be told apart, so they leave
+// together rather than one batch per span.
+func TestSplitCalls_ParentlessSpansStayTogether(t *testing.T) {
+	missing := makeSpanID(0x63)
+	a, b, c := makeSpanID(1), makeSpanID(2), makeSpanID(3)
+	spans, ids := buildCallInput("svc-a", nil,
+		callInput{id: a, parent: missing},
+		callInput{id: b, parent: missing},
+		callInput{id: c, parent: makeSpanID(0x64)},
+	)
+
+	assert.Equal(t, []map[pcommon.SpanID]bool{
+		{a: true, b: true, c: true},
+	}, callIDSets(splitCalls(spans, ids)))
+}
+
+// Parentless spans stay separate from a call that does have an entry span.
+func TestSplitCalls_ParentlessSpansSeparateFromKnownCall(t *testing.T) {
+	caller, missing := makeSpanID(0x10), makeSpanID(0x63)
+	entry, child, orphan := makeSpanID(1), makeSpanID(2), makeSpanID(3)
+
+	spans, ids := buildCallInput("svc-b", []pcommon.SpanID{caller},
+		callInput{id: entry, parent: caller},
+		callInput{id: child, parent: entry},
+		callInput{id: orphan, parent: missing},
+	)
+
+	assert.Equal(t, []map[pcommon.SpanID]bool{
+		{orphan: true},
+		{entry: true, child: true},
+	}, callIDSets(splitCalls(spans, ids)))
+}
+
+// Malformed input where a span is its own ancestor leaves a ring that nothing
+// heads. It must still be released rather than held forever.
+func TestSplitCalls_CycleIsStillReleased(t *testing.T) {
+	x, y := makeSpanID(1), makeSpanID(2)
+	spans, ids := buildCallInput("svc-a", nil,
+		callInput{id: x, parent: y},
+		callInput{id: y, parent: x},
+	)
+
+	assert.Equal(t, []map[pcommon.SpanID]bool{
+		{x: true, y: true},
+	}, callIDSets(splitCalls(spans, ids)))
+}
+
+// A cycle hanging off a genuine call is released alongside it, not lost.
+func TestSplitCalls_CycleBesideRealCall(t *testing.T) {
+	root, x, y := makeSpanID(1), makeSpanID(2), makeSpanID(3)
+	spans, ids := buildCallInput("svc-a", nil,
+		callInput{id: root},
+		callInput{id: x, parent: y},
+		callInput{id: y, parent: x},
+	)
+
+	calls := splitCalls(spans, ids)
+	assert.Equal(t, []map[pcommon.SpanID]bool{
+		{root: true},
+		{x: true, y: true},
+	}, callIDSets(calls))
+}
+
+func TestSplitCalls_Empty(t *testing.T) {
+	assert.Empty(t, splitCalls(map[pcommon.SpanID]*bufferedSpan{}, map[pcommon.SpanID]string{}))
+}
+
+// Every span goes into exactly one call, whatever the shape.
+func TestSplitCalls_PartitionsEverySpan(t *testing.T) {
+	caller, missing := makeSpanID(0x10), makeSpanID(0x63)
+	spans, ids := buildCallInput("svc-a", []pcommon.SpanID{caller},
+		callInput{id: makeSpanID(1)},
+		callInput{id: makeSpanID(2), parent: makeSpanID(1)},
+		callInput{id: makeSpanID(3), parent: caller},
+		callInput{id: makeSpanID(4), parent: missing},
+		callInput{id: makeSpanID(5), parent: makeSpanID(6)},
+		callInput{id: makeSpanID(6), parent: makeSpanID(5)},
+	)
+
+	seen := map[pcommon.SpanID]int{}
+	for _, call := range splitCalls(spans, ids) {
+		for _, bs := range call {
+			seen[bs.span.SpanID()]++
+		}
+	}
+	require.Len(t, seen, len(spans))
+	for id, n := range seen {
+		assert.Equal(t, 1, n, "span %v appeared in %d calls", id, n)
+	}
+}
+
+func serviceIDOf(t *testing.T, attrs map[string]string) string {
+	t.Helper()
 	r := pcommon.NewResource()
-	r.Attributes().PutStr("service.name", "svc-a")
-	r.Attributes().PutStr("service.instance.id", "inst-1")
-	s := ptrace.NewSpan()
-	s.SetSpanID(makeSpanID(6))
-	s.SetParentSpanID(parentID)
-	child := newBufferedSpan(newSpanContext(newResourceContext(r), pcommon.NewInstrumentationScope()), s)
-
-	pr := pcommon.NewResource()
-	pr.Attributes().PutStr("service.name", "svc-a")
-	pr.Attributes().PutStr("service.instance.id", "inst-1")
-	ps := ptrace.NewSpan()
-	ps.SetSpanID(parentID)
-	parentBS := newBufferedSpan(newSpanContext(newResourceContext(pr), pcommon.NewInstrumentationScope()), ps)
-
-	index := buildIndex(parentBS)
-	assert.False(t, isLocalRoot(child, index))
-}
-
-// parent in index, different instance, same name --> local root
-func TestIsLocalRoot_DifferentInstance(t *testing.T) {
-	parentID := makeSpanID(10)
-	r := pcommon.NewResource()
-	r.Attributes().PutStr("service.name", "svc-a")
-	r.Attributes().PutStr("service.instance.id", "inst-2")
-	s := ptrace.NewSpan()
-	s.SetSpanID(makeSpanID(7))
-	s.SetParentSpanID(parentID)
-	child := newBufferedSpan(newSpanContext(newResourceContext(r), pcommon.NewInstrumentationScope()), s)
-
-	pr := pcommon.NewResource()
-	pr.Attributes().PutStr("service.name", "svc-a")
-	pr.Attributes().PutStr("service.instance.id", "inst-1")
-	ps := ptrace.NewSpan()
-	ps.SetSpanID(parentID)
-	parentBS := newBufferedSpan(newSpanContext(newResourceContext(pr), pcommon.NewInstrumentationScope()), ps)
-
-	index := buildIndex(parentBS)
-	assert.True(t, isLocalRoot(child, index))
-}
-
-// parent in index, different service name --> local root
-func TestIsLocalRoot_DifferentServiceName(t *testing.T) {
-	parentID := makeSpanID(10)
-	child := newBS(makeSpanID(8), parentID, 0, "svc-b")
-	parent := newBS(parentID, pcommon.NewSpanIDEmpty(), 0, "svc-a")
-	index := buildIndex(parent)
-	assert.True(t, isLocalRoot(child, index))
-}
-
-// no service.name, same attribute map --> NOT local root (same hash)
-func TestIsLocalRoot_NoServiceNameSameAttrs(t *testing.T) {
-	parentID := makeSpanID(10)
-	child := newBS(makeSpanID(9), parentID, 0, "")
-	parent := newBS(parentID, pcommon.NewSpanIDEmpty(), 0, "")
-	index := buildIndex(parent)
-	assert.False(t, isLocalRoot(child, index))
-}
-
-func buildIndex(spans ...*bufferedSpan) *traceIndex {
-	idx := newTraceIndex()
-	for _, bs := range spans {
-		idx.insert(bs)
+	for k, v := range attrs {
+		r.Attributes().PutStr(k, v)
 	}
-	return idx
+	return serviceIdentity(r)
 }
 
-// memberIDs returns the span IDs of the subtrace rooted at rootID.
-func memberIDs(rootID pcommon.SpanID, idx *traceIndex) map[pcommon.SpanID]bool {
-	return spanIDSet(descendFrom(rootID, idx))
+// One service reporting from two pods is one service, so its spans group
+// together even though the resources differ.
+func TestServiceIdentity_IgnoresNonServiceAttributes(t *testing.T) {
+	a := serviceIDOf(t, map[string]string{"service.name": "svc-a", "k8s.pod.name": "pod-1"})
+	b := serviceIDOf(t, map[string]string{"service.name": "svc-a", "k8s.pod.name": "pod-2"})
+	assert.Equal(t, a, b)
 }
 
-// Membership extends to a direct child within the same service.
-func TestSubtraceMembers_DirectParent(t *testing.T) {
-	rootID := makeSpanID(1)
-	childID := makeSpanID(2)
-	root := newBS(rootID, pcommon.NewSpanIDEmpty(), 0, "svc-a")
-	child := newBS(childID, rootID, 0, "svc-a")
-	idx := buildIndex(root, child)
-	assert.Equal(t, map[pcommon.SpanID]bool{rootID: true, childID: true}, memberIDs(rootID, idx))
+func TestServiceIdentity_DistinguishesNamespaceAndInstance(t *testing.T) {
+	base := serviceIDOf(t, map[string]string{"service.name": "svc-a"})
+	assert.NotEqual(t, base, serviceIDOf(t, map[string]string{"service.name": "svc-b"}))
+	assert.NotEqual(t, base, serviceIDOf(t, map[string]string{"service.name": "svc-a", "service.namespace": "prod"}))
+	assert.NotEqual(t, base, serviceIDOf(t, map[string]string{"service.name": "svc-a", "service.instance.id": "i-1"}))
 }
 
-// Membership follows a multi-hop chain within the same service.
-func TestSubtraceMembers_MultiHop(t *testing.T) {
-	rootID := makeSpanID(1)
-	midID := makeSpanID(2)
-	leafID := makeSpanID(3)
-	root := newBS(rootID, pcommon.NewSpanIDEmpty(), 0, "svc-a")
-	mid := newBS(midID, rootID, 0, "svc-a")
-	leaf := newBS(leafID, midID, 0, "svc-a")
-	idx := buildIndex(root, mid, leaf)
-	assert.Equal(t, map[pcommon.SpanID]bool{rootID: true, midID: true, leafID: true}, memberIDs(rootID, idx))
-}
-
-// Membership branches out to every child, not just the first.
-func TestSubtraceMembers_Siblings(t *testing.T) {
-	rootID := makeSpanID(1)
-	leftID := makeSpanID(2)
-	rightID := makeSpanID(3)
-	root := newBS(rootID, pcommon.NewSpanIDEmpty(), 0, "svc-a")
-	left := newBS(leftID, rootID, 0, "svc-a")
-	right := newBS(rightID, rootID, 0, "svc-a")
-	idx := buildIndex(root, left, right)
-	assert.Equal(t, map[pcommon.SpanID]bool{rootID: true, leftID: true, rightID: true}, memberIDs(rootID, idx))
-}
-
-// Membership stops at a different local root, and that root's own subtrace does
-// not reach back up past its remote parent.
-func TestSubtraceMembers_StopsAtDifferentLocalRoot(t *testing.T) {
-	rootA := makeSpanID(1)
-	rootB := makeSpanID(2)
-	childB := makeSpanID(3)
-	a := newBS(rootA, pcommon.NewSpanIDEmpty(), 0, "svc-a")
-	b := newBS(rootB, rootA, spanFlagsContextHasIsRemoteMask|spanFlagsContextIsRemoteMask, "svc-b")
-	c := newBS(childB, rootB, 0, "svc-b")
-	idx := buildIndex(a, b, c)
-
-	assert.Equal(t, map[pcommon.SpanID]bool{rootA: true}, memberIDs(rootA, idx))
-	assert.Equal(t, map[pcommon.SpanID]bool{rootB: true, childB: true}, memberIDs(rootB, idx))
-}
-
-// A span whose parent never arrived is a local root, so it forms its own
-// subtrace rather than joining the missing parent's.
-func TestSubtraceMembers_ParentNotInIndex(t *testing.T) {
-	childID := makeSpanID(2)
-	missingID := makeSpanID(99)
-	child := newBS(childID, missingID, 0, "svc-a")
-	idx := buildIndex(child)
-
-	assert.Empty(t, descendFrom(missingID, idx))
-	assert.Equal(t, map[pcommon.SpanID]bool{childID: true}, memberIDs(childID, idx))
-}
-
-// A root that isn't in the index has no members.
-func TestSubtraceMembers_RootNotInIndex(t *testing.T) {
-	assert.Empty(t, descendFrom(makeSpanID(42), newTraceIndex()))
-}
-
-// TestSubtraceMembers_CyclicParents verifies that collection terminates instead
-// of looping forever when spans form a mutual parent cycle.
-func TestSubtraceMembers_CyclicParents(t *testing.T) {
-	aID := makeSpanID(0x0A)
-	bID := makeSpanID(0x0B)
-	// A's parent is B, B's parent is A — a cycle within the same service. Neither
-	// is a local root, so nothing claims them, but asking for either must still
-	// terminate.
-	a := newBS(aID, bID, 0, "svc-a")
-	b := newBS(bID, aID, 0, "svc-a")
-	idx := buildIndex(a, b)
-
-	done := make(chan map[pcommon.SpanID]bool, 1)
-	go func() { done <- memberIDs(aID, idx) }()
-	select {
-	case members := <-done:
-		// A is returned as the requested root; B is reachable from it as a child.
-		assert.Equal(t, map[pcommon.SpanID]bool{aID: true, bID: true}, members)
-	case <-time.After(5 * time.Second):
-		t.Fatal("descendFrom() did not terminate: infinite loop on cyclic parent references")
-	}
+// Without service.name the whole resource stands in as the identity.
+func TestServiceIdentity_FallsBackToResourceHash(t *testing.T) {
+	a := serviceIDOf(t, map[string]string{"host.name": "node-1"})
+	assert.Equal(t, a, serviceIDOf(t, map[string]string{"host.name": "node-1"}))
+	assert.NotEqual(t, a, serviceIDOf(t, map[string]string{"host.name": "node-2"}))
 }
 
 func TestAssemble_CoalescesSameResourceScope(t *testing.T) {
@@ -243,40 +296,32 @@ func TestAssemble_CoalescesSameResourceScope(t *testing.T) {
 	r.Attributes().PutStr("service.name", "svc-a")
 	sc := pcommon.NewInstrumentationScope()
 	sc.SetName("lib")
-
-	makeSpan := func(id byte) ptrace.Span {
-		s := ptrace.NewSpan()
-		s.SetSpanID(makeSpanID(id))
-		s.SetTraceID(makeTraceID(1))
-		return s
-	}
+	ctx := newSpanContext(newResourceContext(r), sc)
 
 	var members []*bufferedSpan
 	for i := byte(1); i <= 3; i++ {
-		members = append(members, newBufferedSpan(newSpanContext(newResourceContext(r), sc), makeSpan(i)))
+		s := ptrace.NewSpan()
+		s.SetSpanID(makeSpanID(i))
+		s.SetTraceID(makeTraceID(1))
+		members = append(members, newBufferedSpan(ctx, s))
 	}
 
 	td := assemble(members)
-	assert.Equal(t, 1, td.ResourceSpans().Len())
-	assert.Equal(t, 1, td.ResourceSpans().At(0).ScopeSpans().Len())
+	require.Equal(t, 1, td.ResourceSpans().Len())
+	require.Equal(t, 1, td.ResourceSpans().At(0).ScopeSpans().Len())
 	assert.Equal(t, 3, td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
 }
 
 func TestAssemble_SeparatesDistinctResources(t *testing.T) {
-	r1 := pcommon.NewResource()
-	r1.Attributes().PutStr("service.name", "svc-a")
-	r2 := pcommon.NewResource()
-	r2.Attributes().PutStr("service.name", "svc-b")
-	sc := pcommon.NewInstrumentationScope()
-
-	makeSpanBS := func(r pcommon.Resource, id byte) *bufferedSpan {
+	makeBS := func(service string, id byte) *bufferedSpan {
+		r := pcommon.NewResource()
+		r.Attributes().PutStr("service.name", service)
 		s := ptrace.NewSpan()
 		s.SetSpanID(makeSpanID(id))
-		return newBufferedSpan(newSpanContext(newResourceContext(r), sc), s)
+		return newBufferedSpan(newSpanContext(newResourceContext(r), pcommon.NewInstrumentationScope()), s)
 	}
 
-	members := []*bufferedSpan{makeSpanBS(r1, 1), makeSpanBS(r2, 2)}
-	td := assemble(members)
+	td := assemble([]*bufferedSpan{makeBS("svc-a", 1), makeBS("svc-b", 2)})
 	assert.Equal(t, 2, td.ResourceSpans().Len())
 }
 
@@ -285,21 +330,36 @@ func TestAssemble_SeparatesDistinctResources(t *testing.T) {
 func TestAssemble_SeparatesAmbiguousScopeNameAndVersion(t *testing.T) {
 	r := pcommon.NewResource()
 	r.Attributes().PutStr("service.name", "svc-a")
+	rctx := newResourceContext(r)
 
-	sc1 := pcommon.NewInstrumentationScope()
-	sc1.SetName("lib@2")
-
-	sc2 := pcommon.NewInstrumentationScope()
-	sc2.SetName("lib")
-	sc2.SetVersion("2")
-
-	makeSpanBS := func(sc pcommon.InstrumentationScope, id byte) *bufferedSpan {
+	makeBS := func(name, version string, id byte) *bufferedSpan {
+		sc := pcommon.NewInstrumentationScope()
+		sc.SetName(name)
+		sc.SetVersion(version)
 		s := ptrace.NewSpan()
 		s.SetSpanID(makeSpanID(id))
-		return newBufferedSpan(newSpanContext(newResourceContext(r), sc), s)
+		return newBufferedSpan(newSpanContext(rctx, sc), s)
 	}
 
-	td := assemble([]*bufferedSpan{makeSpanBS(sc1, 1), makeSpanBS(sc2, 2)})
+	td := assemble([]*bufferedSpan{makeBS("lib@2", "", 1), makeBS("lib", "2", 2)})
 	require.Equal(t, 1, td.ResourceSpans().Len())
 	assert.Equal(t, 2, td.ResourceSpans().At(0).ScopeSpans().Len())
+}
+
+// splitCalls must terminate on cyclic input rather than looping forever.
+func TestSplitCalls_TerminatesOnCycle(t *testing.T) {
+	spans, ids := buildCallInput("svc-a", nil,
+		callInput{id: makeSpanID(1), parent: makeSpanID(2)},
+		callInput{id: makeSpanID(2), parent: makeSpanID(3)},
+		callInput{id: makeSpanID(3), parent: makeSpanID(1)},
+	)
+
+	done := make(chan int, 1)
+	go func() { done <- len(splitCalls(spans, ids)) }()
+	select {
+	case n := <-done:
+		assert.Equal(t, 1, n)
+	case <-time.After(5 * time.Second):
+		t.Fatal("splitCalls() did not terminate on a cycle")
+	}
 }

@@ -49,7 +49,7 @@ processors:
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using the processor.
 
-The `num_traces` (default=1,000,000) property tells the processor what's the maximum number of traces to keep in the internal storage. A higher `num_traces` might incur in a higher memory usage. In `emit_strategy: service` mode it sizes two separate buffers, each holding up to `num_traces` entries: one tracking the service subtraces awaiting release, which is the limit that normally binds, and one tracking trace IDs, which is a backstop for spans that no subtrace ever claims (see [Orphan spans](#orphan-spans)). Note that in either mode it bounds a count of traces or subtraces, not a count of spans, so memory usage also scales with how many spans each one contains.
+The `num_traces` (default=1,000,000) property tells the processor what's the maximum number of traces to keep in the internal storage. A higher `num_traces` might incur in a higher memory usage. In `emit_strategy: service` mode it bounds the number of `(trace, service)` groups awaiting release rather than the number of traces. Note that in either mode it bounds a count of traces or subtraces, not a count of spans, so memory usage also scales with how many spans each one contains.
 
 The `wait_duration` (default=1s) property tells the processor for how long it should keep traces in the internal storage. Once a trace is kept for this duration, it's then released to the next consumer and removed from the internal storage. Spans from a trace that has been released will be kept for the entire duration again. In `emit_strategy: service` mode, this instead applies to subtraces.
 
@@ -61,34 +61,37 @@ The `emit_strategy` (default=`"trace"`) property controls the span-emission gran
 | Value | Behaviour |
 |-------|-----------|
 | `"trace"` (default) | Buffer all spans for a trace and release them together after `wait_duration`. |
-| `"service"` | Buffer spans per service subtree within a trace and release each subtree separately after `wait_duration`. |
+| `"service"` | Buffer the spans a trace passed through each service and release them separately after `wait_duration`, one batch per call to a service. |
 
 ## Subtrace Emit
 
-When `emit_strategy: service` is set, the processor groups spans at service granularity rather than trace granularity. Spans are grouped by service using a calculated "local root", which is a span whose parent context is invalid (empty parent span ID) or remote (propagated from another service). This is the service-entry span: the first span created by a service for a given request.
+When `emit_strategy: service` is set, the processor groups spans at service granularity rather than trace granularity: the spans a trace passed through one service are buffered together and released after `wait_duration`, independently of the rest of the trace.
 
 This is useful for reducing latency when a downstream consumer performs processing for all spans from a given service within a trace and it isn't necessary to wait for the full distributed trace to arrive. The `wait_duration` option can sometimes be lowered when using this mode, as spans from a single service in a trace can arrive before the full trace completes, particularly in traces that contain asynchronous operations.
 
-### Local-root detection
+Spans are buffered under `(trace, service)`, where the service is taken from `service.namespace`, `service.name` and `service.instance.id` on the span's resource, falling back to a hash of every resource attribute when `service.name` is absent. Other resource attributes are not part of the identity, so one service reporting from several pods stays a single group; the distinct resources are preserved within the released batch.
 
-A span is classified as a local root when:
+### Separating repeat calls
 
-1. Its parent span ID is empty (global root), or
-2. The `IS_REMOTE` flag is set in `Span.flags`, indicating the parent is in another service, or
-3. The parent span belongs to a different service identity (different `service.name`, `service.namespace`, or `service.instance.id`), or
-4. The parent span is not found in the current buffer and is therefore treated as a local root as a safe default (where the real local root is expected to arrive later).
+A trace can pass through the same service more than once, for example `A -> B -> C -> B`. Each of those is a separate call and is released as its own batch, so a batch never stands for two calls a consumer could otherwise have told apart.
 
-Rules 1 to 3 identify a particular span as the service's entry span, and it heads a subtrace of its own. Rule 4 is a guess rather than a statement about the trace, and there is nothing to tell one such span apart from another in the same service, so all of a service's spans matching only rule 4 are grouped together and released as one batch. Without that grouping, a service whose entry span is missing would have each of its spans emitted separately.
+Which spans belong to which call is worked out when the buffer is released, not as spans arrive, because until then the picture is incomplete: a span may turn up before its parent does. A span begins a call when
 
-If the parent does later arrive, the spans it accounts for leave that group: they are released with the subtrace their parent belongs to, or head a subtrace of their own if the parent turns out to be in a different service. A service's remaining parentless spans stay grouped.
+1. its parent span ID is empty, or
+2. the `IS_REMOTE` flag is set in `Span.flags`, which marks a service-entry span even when the parent carries the same service identity, or
+3. its parent is buffered under a different service, or is a span the trace has already released.
 
-### Orphan spans
+Everything else descends from one of those spans and travels with it.
 
-A span whose parent never arrives (e.g., the parent is in a different Collector instance) is itself treated as a local root, under rule 4 above, so it is released after `wait_duration` like any other span, grouped with the rest of its service's parentless spans.
+### Spans with no parent
 
-Spans can still end up belonging to no subtrace at all, because a span is only collected if its chain of ancestors reaches a local root. Malformed input in which a span's parent is one of its own descendants within the same service has no local root anywhere in the cycle, so no subtrace timer covers any of it. Every trace therefore also gets a sweep on the `wait_duration` cadence, which releases the spans that no local root can reach, in the same way a subtrace is released. Which spans those are is decided by reachability rather than by age, so a sweep never takes spans that a pending subtrace was about to collect. It reschedules itself while the trace still holds spans, and stops once the trace is empty.
+A span whose parent is nowhere in the trace, because it is in a different Collector instance or was never sent, gets best-effort handling: there is nothing to tell one such span apart from another in the same service, so they leave together in a single batch rather than one batch per span. That batch may therefore stand for more than one call, which is the price of the information not being there. The alternative loses the grouping altogether, and the point of releasing them is to clear the buffer without dropping data.
 
-Trace IDs are also tracked in a bounded buffer of their own, sized by `num_traces`, so that no shape of input can make the processor hold more traces than that. When a trace is evicted from it, any spans still buffered for that trace are released to the next consumer as they stand, and counted in `otelcol_processor_groupbytrace_traces_evicted`. Overflow of the subtrace buffer instead drops the oldest subtrace's spans without warning, as it does in `emit_strategy: trace` mode.
+Malformed input in which a span is its own ancestor leaves a ring of spans that nothing heads. Those are released along with the rest of their service, so no shape of input leaves spans buffered indefinitely.
+
+### Limits
+
+`num_traces` bounds how many `(trace, service)` groups are buffered at once. When that is exceeded the oldest group's spans are dropped without warning, as trace-level eviction does in `emit_strategy: trace` mode, and counted in `otelcol_processor_groupbytrace_traces_evicted`. Anything still buffered at shutdown is flushed to the next consumer rather than dropped.
 
 ## Metrics
 
@@ -107,7 +110,7 @@ The following metrics are recorded by this processor:
 * `otelcol_processor_groupbytrace_traces_evicted` represents the number of traces that have been evicted from the internal storage due to capacity problems. Ideally, this should be zero, or very close to zero at all times. If you keep getting items evicted, increase the `num_traces`.
 * `otelcol_processor_groupbytrace_incomplete_releases` represents the traces that have been marked as expired, but had been previously been removed. This might be the case when a span from a trace has been received in a batch while the trace existed in the in-memory storage, but has since been released/removed before the span could be added to the trace. This should always be very close to 0, and a high value might indicate a software bug.
 
-When `emit_strategy: service` is configured, the same metrics are emitted for subtraces: `otelcol_processor_groupbytrace_traces_released` counts released subtraces and sweeps of unclaimed spans, `otelcol_processor_groupbytrace_spans_released` counts their spans, `otelcol_processor_groupbytrace_traces_evicted` counts evicted subtraces, whose spans are dropped, plus evicted traces that still held unclaimed spans, whose spans are released early, and `otelcol_processor_groupbytrace_incomplete_releases` counts expiry events that found no buffer entry.
+When `emit_strategy: service` is configured, the same metrics are emitted for subtraces: `otelcol_processor_groupbytrace_traces_released` counts released calls, so a service entered twice in one trace counts twice, `otelcol_processor_groupbytrace_spans_released` counts their spans, `otelcol_processor_groupbytrace_traces_evicted` counts evicted `(trace, service)` groups, and `otelcol_processor_groupbytrace_incomplete_releases` counts expiry events that found no buffer entry.
 
 A healthy system would have the same value for the metric `otelcol_processor_groupbytrace_spans_released` and for three events under `otelcol_processor_groupbytrace_event_latency_bucket`: `onTraceExpired`, `onTraceRemoved` and `onTraceReleased`.
 
