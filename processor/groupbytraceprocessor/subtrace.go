@@ -31,12 +31,6 @@ type scopeKey struct {
 
 // resourceContext holds the resource a span was reported under, together with
 // the keys derived from it.
-//
-// Every span under one ResourceSpans shares all of this, whatever scope it came
-// from, so it is built once per resource and shared by that resource's spans
-// rather than being rebuilt for each scope or each span. The copy must not be
-// mutated afterwards: it backs every bufferedSpan that shares it, and the
-// derived keys would go stale.
 type resourceContext struct {
 	resource pcommon.Resource
 
@@ -63,10 +57,6 @@ func newResourceContext(resource pcommon.Resource) resourceContext {
 
 // spanContext adds the instrumentation scope to a resourceContext, so that it
 // describes everything a span carries beyond the span itself.
-//
-// Every span in one ScopeSpans shares this, so it is built once per scope and
-// shared by that scope's spans. The same no-mutation rule as resourceContext
-// applies to the scope copy.
 type spanContext struct {
 	resourceContext
 
@@ -103,11 +93,6 @@ type bufferedSpan struct {
 
 // newBufferedSpan deep-copies the span so the caller can recycle its pdata
 // objects. The context is shared as-is with the other spans reported under it.
-//
-// The result is a pointer because bufferedSpan is large enough that storing it
-// in the span index by value, and copying it out again on every lookup, costs
-// more than the indirection: the index is walked once per span on insert and
-// once per hop when reassembling a subtrace.
 func newBufferedSpan(ctx spanContext, span ptrace.Span) *bufferedSpan {
 	spCopy := ptrace.NewSpan()
 	span.CopyTo(spCopy)
@@ -117,11 +102,6 @@ func newBufferedSpan(ctx spanContext, span ptrace.Span) *bufferedSpan {
 
 // traceIndex holds every span buffered for one trace, keyed by span ID, plus a
 // parent-to-children mapping.
-//
-// The children mapping is what lets a subtrace be collected by walking down from
-// its local root. Walking up from every span in the trace instead costs
-// O(spans x depth) per local root, which for a deep trace, such as a long
-// sequential pipeline, degrades into quadratic behaviour.
 type traceIndex struct {
 	spans    map[pcommon.SpanID]*bufferedSpan
 	children map[pcommon.SpanID][]pcommon.SpanID
