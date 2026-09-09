@@ -111,8 +111,7 @@ func (sp *groupByTraceProcessor) Shutdown(ctx context.Context) error {
 		// Flush remaining orphan spans that were never claimed by a subtrace timer.
 		tids := sp.subSt.traceIDs()
 		for _, tid := range tids {
-			members, _ := sp.subSt.getRemainder(tid)
-			_ = sp.subSt.deleteTrace(tid)
+			members, _ := sp.subSt.deleteTrace(tid)
 			if len(members) > 0 {
 				if err := sp.nextConsumer.ConsumeTraces(ctx, assemble(members)); err != nil {
 					sp.logger.Error("shutdown drain consume failed", zap.Error(err))
@@ -179,6 +178,27 @@ func (sp *groupByTraceProcessor) onTraceReceived(trace tracesWithID, worker *eve
 
 func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, worker *eventMachineWorker) error {
 	traceID := trace.id
+
+	// Track the trace ID in the worker's trace ring buffer as a backstop. A span is
+	// only released once its ancestors reach a local root, and malformed input can
+	// leave spans that never do: if a span's parent is one of its own descendants
+	// in the same service, nothing in the cycle looks like a local root, so no
+	// timer is ever scheduled and num_traces has no purchase on it. Bounding the
+	// trace IDs too caps what can be held regardless of the shape of the spans.
+	//
+	// This can't start evicting traces that are still doing useful work. A trace
+	// with subtraces awaiting release holds one slot here but at least one in the
+	// subtrace buffer, so the pressure that would evict it here evicts its
+	// subtraces first, and a trace whose subtraces all completed has nothing left
+	// to release.
+	if !worker.buffer.contains(traceID) {
+		if evicted := worker.buffer.put(traceID); !evicted.IsEmpty() {
+			worker.fire(event{
+				typ:     traceRemoved,
+				payload: evicted,
+			})
+		}
+	}
 
 	// Insert all spans from this batch into the span-level index, remembering
 	// which spans arrived so that only those have to be classified below.
@@ -297,6 +317,10 @@ func (sp *groupByTraceProcessor) onTraceReleased(rss []ptrace.ResourceSpans) err
 }
 
 func (sp *groupByTraceProcessor) onTraceRemoved(traceID pcommon.TraceID) error {
+	if sp.config.EmitStrategy == EmitStrategyService {
+		return sp.releaseTraceRemainder(traceID)
+	}
+
 	trace, err := sp.st.delete(traceID)
 	if err != nil {
 		return fmt.Errorf("couldn't delete trace %q from the storage: %w", traceID, err)
@@ -307,6 +331,28 @@ func (sp *groupByTraceProcessor) onTraceRemoved(traceID pcommon.TraceID) error {
 	}
 
 	return nil
+}
+
+// releaseTraceRemainder flushes whatever is still buffered for a trace that has
+// been evicted from the trace ring buffer. Anything left at this point is a span
+// no subtrace ever claimed, so it is emitted as it stands rather than discarded:
+// the eviction exists to stop the processor holding the span until shutdown.
+func (sp *groupByTraceProcessor) releaseTraceRemainder(traceID pcommon.TraceID) error {
+	members, err := sp.subSt.deleteTrace(traceID)
+	if err != nil {
+		return fmt.Errorf("couldn't delete trace %q from the storage: %w", traceID, err)
+	}
+	if len(members) == 0 {
+		// A trace whose subtraces all completed leaves nothing behind, which is the
+		// common case and not worth reporting.
+		return nil
+	}
+
+	sp.telemetryBuilder.ProcessorGroupbytraceTracesEvicted.Add(context.Background(), 1)
+	sp.logger.Info("releasing unclaimed spans early because their trace was evicted: in order to avoid this in the future, adjust the wait duration and/or number of traces to keep in memory",
+		zap.Stringer("traceID", traceID), zap.Int("spans", len(members)))
+
+	return sp.onSubtraceReleased(assemble(members))
 }
 
 func (sp *groupByTraceProcessor) addSpans(traceID pcommon.TraceID, trace ptrace.Traces) error {

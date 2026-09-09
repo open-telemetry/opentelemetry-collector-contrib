@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -1185,4 +1186,115 @@ func simpleTracesWithID(traceID pcommon.TraceID) ptrace.Traces {
 	ils := rs.ScopeSpans().AppendEmpty()
 	ils.Spans().AppendEmpty().SetTraceID(traceID)
 	return traces
+}
+
+// TestSubtrace_CyclicSpansAreBounded covers spans that no subtrace timer can
+// ever claim. A same-service parent/child cycle leaves every span in the cycle
+// looking like a non-root, so nothing releases them; without the trace-level
+// backstop they would sit in storage until shutdown with num_traces powerless to
+// bound them. Evicting the trace has to hand them to the next consumer rather
+// than discard them, since the processor is the only thing holding them.
+func TestSubtrace_CyclicSpansAreBounded(t *testing.T) {
+	const capacity = 2
+	cyclic := makeTraceID(20)
+	spanA := makeSpanID(1)
+	spanB := makeSpanID(2)
+
+	// A's parent is B and B's parent is A. Sending them together means neither is
+	// ever a local root; sending them apart makes the first one a local root that
+	// is demoted when the second arrives. Neither ends up claimed.
+	for _, tc := range []struct {
+		name     string
+		together bool
+	}{
+		{name: "same batch", together: true},
+		{name: "separate batches", together: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			sink := new(consumertest.TracesSink)
+			cfg := Config{
+				NumTraces:    capacity,
+				NumWorkers:   1,
+				WaitDuration: 10 * time.Second, // long enough that no timer fires
+				EmitStrategy: EmitStrategyService,
+			}
+			p := newSubtraceProcessor(t, cfg, sink)
+			defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+			if tc.together {
+				td := buildServiceTrace(cyclic, "svc-a", spanA, spanB)
+				spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+				spans.At(0).SetParentSpanID(spanB)
+				spans.At(1).SetParentSpanID(spanA)
+				require.NoError(t, p.ConsumeTraces(t.Context(), td))
+			} else {
+				tdA := buildServiceTrace(cyclic, "svc-a", spanA)
+				tdA.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetParentSpanID(spanB)
+				require.NoError(t, p.ConsumeTraces(t.Context(), tdA))
+
+				tdB := buildServiceTrace(cyclic, "svc-a", spanB)
+				tdB.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetParentSpanID(spanA)
+				require.NoError(t, p.ConsumeTraces(t.Context(), tdB))
+			}
+
+			require.Eventually(t, func() bool {
+				return slices.Contains(p.subSt.traceIDs(), cyclic)
+			}, 2*time.Second, time.Millisecond)
+
+			// Push enough further traces through to wrap the trace ring buffer.
+			for i := byte(1); i <= capacity; i++ {
+				other := makeTraceID(30 + i)
+				require.NoError(t, p.ConsumeTraces(t.Context(), buildServiceTrace(other, "svc-b", makeSpanID(i))))
+			}
+
+			require.Eventually(t, func() bool {
+				return !slices.Contains(p.subSt.traceIDs(), cyclic)
+			}, 2*time.Second, time.Millisecond, "unclaimed spans were never reclaimed")
+
+			// Reclaiming them means forwarding them, not discarding them.
+			require.Eventually(t, func() bool {
+				return sink.SpanCount() == 2
+			}, 2*time.Second, time.Millisecond, "unclaimed spans were dropped instead of released")
+			require.Len(t, sink.AllTraces(), 1)
+			assert.Equal(t, map[pcommon.SpanID]bool{spanA: true, spanB: true}, batchSpanIDs(sink.AllTraces()[0]))
+		})
+	}
+}
+
+// TestSubtrace_TraceBackstopKeepsLiveSubtraces checks that the trace-level
+// backstop stays out of the way: a trace whose subtraces are still within their
+// wait duration must not be reclaimed just because other traces arrived.
+func TestSubtrace_TraceBackstopKeepsLiveSubtraces(t *testing.T) {
+	sink := new(consumertest.TracesSink)
+	cfg := Config{
+		NumTraces:    100,
+		NumWorkers:   1,
+		WaitDuration: 300 * time.Millisecond,
+		EmitStrategy: EmitStrategyService,
+	}
+	p := newSubtraceProcessor(t, cfg, sink)
+	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+	const traces = 10
+	for i := byte(1); i <= traces; i++ {
+		td := buildServiceTrace(makeTraceID(40+i), "svc-a", makeSpanID(1), makeSpanID(2))
+		require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	}
+
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() == 2*traces
+	}, 5*time.Second, 5*time.Millisecond)
+	assert.Len(t, sink.AllTraces(), traces)
+}
+
+// Config validation rejects more workers than traces, but the ring buffers are
+// still sized num_traces/num_workers, which rounds down to zero. Keep the floor
+// that stops a zero-length ring buffer from dividing by zero on the first put.
+func TestRingBufferFloorsAtOneSlotPerWorker(t *testing.T) {
+	em := newEventMachine(zap.NewNop(), 100, 2 /* workers */, 1 /* traces */, nil)
+	for _, w := range em.workers {
+		require.NotPanics(t, func() {
+			w.buffer.put(makeTraceID(1))
+		})
+	}
 }

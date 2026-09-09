@@ -28,15 +28,12 @@ type subtraceStorage interface {
 	// local root, since those spans belong to another subtrace.
 	deleteSubtrace(pcommon.TraceID, pcommon.SpanID) ([]bufferedSpan, error)
 
-	// getRemainder returns all spans still buffered for a trace (those not yet
-	// claimed by a subtrace timer). Used by the shutdown drain.
-	getRemainder(pcommon.TraceID) ([]bufferedSpan, error)
-
 	// traceIDs returns all trace IDs currently held in storage.
 	traceIDs() []pcommon.TraceID
 
-	// deleteTrace removes all remaining spans for a trace.
-	deleteTrace(pcommon.TraceID) error
+	// deleteTrace removes every span still buffered for a trace and returns them,
+	// so that spans no subtrace claimed can be flushed rather than lost.
+	deleteTrace(pcommon.TraceID) ([]bufferedSpan, error)
 
 	start() error
 	shutdown() error
@@ -142,6 +139,8 @@ func (s *subtraceMemoryStorage) deleteSubtrace(traceID pcommon.TraceID, rootID p
 	return members, nil
 }
 
+// getRemainder returns all spans still buffered for a trace, i.e. those not yet
+// claimed by a subtrace.
 func (s *subtraceMemoryStorage) getRemainder(traceID pcommon.TraceID) ([]bufferedSpan, error) {
 	s.RLock()
 	defer s.RUnlock()
@@ -168,11 +167,22 @@ func (s *subtraceMemoryStorage) traceIDs() []pcommon.TraceID {
 	return ids
 }
 
-func (s *subtraceMemoryStorage) deleteTrace(traceID pcommon.TraceID) error {
+func (s *subtraceMemoryStorage) deleteTrace(traceID pcommon.TraceID) ([]bufferedSpan, error) {
+	// Collecting and removing under one write lock keeps a span inserted alongside
+	// this call from being deleted without ever being returned to anyone.
 	s.Lock()
 	defer s.Unlock()
+
+	index, ok := s.traces[traceID]
+	if !ok {
+		return nil, nil
+	}
+	members := make([]bufferedSpan, 0, len(index))
+	for _, bs := range index {
+		members = append(members, bs)
+	}
 	delete(s.traces, traceID)
-	return nil
+	return members, nil
 }
 
 func (*subtraceMemoryStorage) start() error    { return nil }

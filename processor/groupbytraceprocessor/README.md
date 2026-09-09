@@ -49,7 +49,7 @@ processors:
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using the processor.
 
-The `num_traces` (default=1,000,000) property tells the processor what's the maximum number of traces to keep in the internal storage. A higher `num_traces` might incur in a higher memory usage. In `emit_strategy: service` mode, each slot tracks one service subtrace rather than one full trace.
+The `num_traces` (default=1,000,000) property tells the processor what's the maximum number of traces to keep in the internal storage. A higher `num_traces` might incur in a higher memory usage. In `emit_strategy: service` mode it sizes two separate buffers, each holding up to `num_traces` entries: one tracking the service subtraces awaiting release, which is the limit that normally binds, and one tracking trace IDs, which is a backstop for spans that no subtrace ever claims (see [Orphan spans](#orphan-spans)). Note that in either mode it bounds a count of traces or subtraces, not a count of spans, so memory usage also scales with how many spans each one contains.
 
 The `wait_duration` (default=1s) property tells the processor for how long it should keep traces in the internal storage. Once a trace is kept for this duration, it's then released to the next consumer and removed from the internal storage. Spans from a trace that has been released will be kept for the entire duration again. In `emit_strategy: service` mode, this instead applies to subtraces.
 
@@ -82,6 +82,8 @@ A span is classified as a local root when:
 
 Spans whose local root never arrives (e.g., the parent is in a different collector instance) are flushed on Collector shutdown. There is no separate fallback timer; overflow from the ring buffer will drop the oldest subtrace's spans without warning.
 
+A span is only released when its chain of ancestors reaches a local root, so malformed input can leave spans with no subtrace to belong to: if a span's parent is one of its own descendants within the same service, nothing in the cycle looks like a local root and no timer is ever scheduled for it. To stop those spans from accumulating, trace IDs are tracked in a bounded buffer of their own, also sized by `num_traces`; when a trace is evicted from it, any spans still buffered for that trace are released to the next consumer as they stand, and counted in `otelcol_processor_groupbytrace_traces_evicted`.
+
 ## Metrics
 
 The following metrics are recorded by this processor:
@@ -92,13 +94,14 @@ The following metrics are recorded by this processor:
   * `onTraceExpired` represents the number of traces that finished waiting in memory for spans to arrive
   * `onTraceReleased` represents the number of traces that have been marked as released to the next component
   * `onTraceRemoved` represents the number of traces that have been marked for removal from the internal storage
+  * `subtrace_expired`, `subtrace_released` and `subtrace_removed` are the `emit_strategy: service` equivalents of the three events above
 * `otelcol_processor_groupbytrace_num_events_in_queue` representing the state of the internal queue. Ideally, this number would be close to zero, but might have temporary spikes if the storage is slow.
 * `otelcol_processor_groupbytrace_num_traces_in_memory` representing the state of the internal trace storage, waiting for spans to arrive. It's common to have items in memory all the time if the processor has a continuous flow of data. The longer the `wait_duration`, the higher the amount of traces in memory should be, given enough traffic.
 * `otelcol_processor_groupbytrace_spans_released` and `otelcol_processor_groupbytrace_traces_released` represent the number of spans and traces effectively released to the next component.
 * `otelcol_processor_groupbytrace_traces_evicted` represents the number of traces that have been evicted from the internal storage due to capacity problems. Ideally, this should be zero, or very close to zero at all times. If you keep getting items evicted, increase the `num_traces`.
 * `otelcol_processor_groupbytrace_incomplete_releases` represents the traces that have been marked as expired, but had been previously been removed. This might be the case when a span from a trace has been received in a batch while the trace existed in the in-memory storage, but has since been released/removed before the span could be added to the trace. This should always be very close to 0, and a high value might indicate a software bug.
 
-When `emit_strategy: service` is configured, the same metrics are emitted for subtraces: `otelcol_processor_groupbytrace_traces_released` counts released subtraces, `otelcol_processor_groupbytrace_spans_released` counts their spans, `otelcol_processor_groupbytrace_traces_evicted` counts evicted subtraces, and `otelcol_processor_groupbytrace_incomplete_releases` counts expiry events that found no buffer entry.
+When `emit_strategy: service` is configured, the same metrics are emitted for subtraces: `otelcol_processor_groupbytrace_traces_released` counts released subtraces, `otelcol_processor_groupbytrace_spans_released` counts their spans, `otelcol_processor_groupbytrace_traces_evicted` counts evicted subtraces, whose spans are dropped, plus evicted traces that still held unclaimed spans, whose spans are released early, and `otelcol_processor_groupbytrace_incomplete_releases` counts expiry events that found no buffer entry.
 
 A healthy system would have the same value for the metric `otelcol_processor_groupbytrace_spans_released` and for three events under `otelcol_processor_groupbytrace_event_latency_bucket`: `onTraceExpired`, `onTraceRemoved` and `onTraceReleased`.
 

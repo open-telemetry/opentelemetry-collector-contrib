@@ -150,7 +150,9 @@ func TestSubtraceStorage_DeleteTrace(t *testing.T) {
 	insertTestSpan(t, st, tid, makeSpanID(1), pcommon.NewSpanIDEmpty(), "svc-a")
 	insertTestSpan(t, st, tid, makeSpanID(2), makeSpanID(1), "svc-a")
 
-	require.NoError(t, st.deleteTrace(tid))
+	removed, err := st.deleteTrace(tid)
+	require.NoError(t, err)
+	assert.Equal(t, map[pcommon.SpanID]bool{makeSpanID(1): true, makeSpanID(2): true}, spanIDSet(removed))
 
 	remainder, err := st.getRemainder(tid)
 	require.NoError(t, err)
