@@ -16,10 +16,11 @@ var OttlPanicDuplicateNameFeatureGate = featuregate.GlobalRegistry().MustRegiste
 
 var OttlContextsEnableOTelColContextFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"ottl.contexts.enableOTelColContext",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("Enable the `otelcol` context for OTTL. This allows users using `otelcol.*` paths in their OTTL statements and conditions."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46437"),
 	featuregate.WithRegisterFromVersion("v0.147.0"),
+	featuregate.WithRegisterToVersion("v0.161.0"),
 )
 
 var OttlFunctionsEnableLambdaFeatureGate = featuregate.GlobalRegistry().MustRegister(
