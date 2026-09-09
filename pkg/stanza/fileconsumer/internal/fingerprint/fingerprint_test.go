@@ -5,7 +5,6 @@ package fingerprint
 
 import (
 	"compress/gzip"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"math/rand/v2"
@@ -228,22 +227,13 @@ func TestStartsWith(t *testing.T) {
 // the file, while each iteration of the growing file represents
 // a possible state of the same file at a previous time.
 func TestStartsWith_FromFile(t *testing.T) {
-	r := rand.New(rand.NewPCG(112, 358))
+	// Use a fixed seed so that the generated content is the same on every run.
+	r := rand.NewChaCha8([32]byte{112})
 	fingerprintSize := 10
 	fileLength := 12 * fingerprintSize
 	fillRandomBytes := func(buf []byte) {
-		// TODO: when we upgrade to go1.23,
-		// use rand.ChaCha8.Read.
-		//
-		// NOTE: we can cheat here since know the
-		// buffer length is a multiple of 4, due to
-		// fileLength being a multiple of 12.
-		for i := range len(buf) / 4 {
-			binary.BigEndian.PutUint32(
-				buf[i*4:(i+1)*4],
-				r.Uint32(),
-			)
-		}
+		_, err := r.Read(buf)
+		require.NoError(t, err)
 	}
 
 	tempDir := t.TempDir()

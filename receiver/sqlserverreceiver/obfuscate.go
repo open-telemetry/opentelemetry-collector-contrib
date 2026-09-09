@@ -30,16 +30,28 @@ func newObfuscator(logger *zap.Logger) *obfuscator {
 		Obfuscator: obfuscate.NewObfuscator(obfuscate.Config{
 			SQL: obfuscate.SQLConfig{
 				DBMS: "mssql",
+				// ObfuscateAndNormalize routes obfuscation through the go-sqllexer
+				// engine, which is more tolerant than the legacy tokenizer: it does
+				// not error on statements that reduce to nothing after comments are
+				// stripped (returning an empty result instead of "result is empty"),
+				// so comment-only statements no longer spam error logs or drop the
+				// row. It also normalizes the output (collapsing whitespace and
+				// stripping comments/aliases), which yields more stable query
+				// signatures across semantically identical statements.
+				ObfuscationMode: obfuscate.ObfuscateAndNormalize,
 			},
 		}),
 		logger: logger,
 	}
 }
 
-// sanitizeSQL strips non-semantic Unicode format characters that can cause the
-// tokenizer to fail (e.g. a zero-width space U+200B in a query text makes the
-// DataDog tokenizer abort with "unexpected byte 8203"), even though they carry
-// no SQL semantics.
+// sanitizeSQL strips non-semantic Unicode format characters (Unicode category
+// Cf, e.g. a zero-width space U+200B) that carry no SQL semantics. Under the
+// ObfuscateAndNormalize engine these characters no longer cause a hard failure,
+// but they would otherwise survive into the obfuscated output as garbled bytes
+// and, worse, cause an otherwise-identical statement to obfuscate to a different
+// string. Stripping them keeps the obfuscated text clean and ensures the query
+// signature is stable regardless of stray invisible characters.
 func sanitizeSQL(sql string) string {
 	return strings.Map(func(r rune) rune {
 		if unicode.Is(unicode.Cf, r) {

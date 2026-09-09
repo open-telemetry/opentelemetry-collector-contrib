@@ -11,7 +11,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
-	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
+	"go.uber.org/zap"
 )
 
 const (
@@ -47,6 +48,36 @@ var MapAttributeContextSwitchType = map[string]AttributeContextSwitchType{
 	"voluntary":   AttributeContextSwitchTypeVoluntary,
 }
 
+// AttributeCPUMode specifies the value cpu.mode attribute.
+type AttributeCPUMode int
+
+const (
+	_ AttributeCPUMode = iota
+	AttributeCPUModeSystem
+	AttributeCPUModeUser
+	AttributeCPUModeIowait
+)
+
+// String returns the string representation of the AttributeCPUMode.
+func (av AttributeCPUMode) String() string {
+	switch av {
+	case AttributeCPUModeSystem:
+		return "system"
+	case AttributeCPUModeUser:
+		return "user"
+	case AttributeCPUModeIowait:
+		return "iowait"
+	}
+	return ""
+}
+
+// MapAttributeCPUMode is a helper map of string to AttributeCPUMode attribute value.
+var MapAttributeCPUMode = map[string]AttributeCPUMode{
+	"system": AttributeCPUModeSystem,
+	"user":   AttributeCPUModeUser,
+	"iowait": AttributeCPUModeIowait,
+}
+
 // AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
 
@@ -73,6 +104,32 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"write": AttributeDirectionWrite,
 }
 
+// AttributeDiskIoDirection specifies the value disk.io.direction attribute.
+type AttributeDiskIoDirection int
+
+const (
+	_ AttributeDiskIoDirection = iota
+	AttributeDiskIoDirectionRead
+	AttributeDiskIoDirectionWrite
+)
+
+// String returns the string representation of the AttributeDiskIoDirection.
+func (av AttributeDiskIoDirection) String() string {
+	switch av {
+	case AttributeDiskIoDirectionRead:
+		return "read"
+	case AttributeDiskIoDirectionWrite:
+		return "write"
+	}
+	return ""
+}
+
+// MapAttributeDiskIoDirection is a helper map of string to AttributeDiskIoDirection attribute value.
+var MapAttributeDiskIoDirection = map[string]AttributeDiskIoDirection{
+	"read":  AttributeDiskIoDirectionRead,
+	"write": AttributeDiskIoDirectionWrite,
+}
+
 // AttributePagingFaultType specifies the value paging_fault_type attribute.
 type AttributePagingFaultType int
 
@@ -97,6 +154,32 @@ func (av AttributePagingFaultType) String() string {
 var MapAttributePagingFaultType = map[string]AttributePagingFaultType{
 	"major": AttributePagingFaultTypeMajor,
 	"minor": AttributePagingFaultTypeMinor,
+}
+
+// AttributeProcessContextSwitchType specifies the value process.context_switch.type attribute.
+type AttributeProcessContextSwitchType int
+
+const (
+	_ AttributeProcessContextSwitchType = iota
+	AttributeProcessContextSwitchTypeInvoluntary
+	AttributeProcessContextSwitchTypeVoluntary
+)
+
+// String returns the string representation of the AttributeProcessContextSwitchType.
+func (av AttributeProcessContextSwitchType) String() string {
+	switch av {
+	case AttributeProcessContextSwitchTypeInvoluntary:
+		return "involuntary"
+	case AttributeProcessContextSwitchTypeVoluntary:
+		return "voluntary"
+	}
+	return ""
+}
+
+// MapAttributeProcessContextSwitchType is a helper map of string to AttributeProcessContextSwitchType attribute value.
+var MapAttributeProcessContextSwitchType = map[string]AttributeProcessContextSwitchType{
+	"involuntary": AttributeProcessContextSwitchTypeInvoluntary,
+	"voluntary":   AttributeProcessContextSwitchTypeVoluntary,
 }
 
 // AttributeState specifies the value state attribute.
@@ -129,22 +212,64 @@ var MapAttributeState = map[string]AttributeState{
 	"wait":   AttributeStateWait,
 }
 
+// AttributeSystemPagingFaultType specifies the value system.paging.fault.type attribute.
+type AttributeSystemPagingFaultType int
+
+const (
+	_ AttributeSystemPagingFaultType = iota
+	AttributeSystemPagingFaultTypeMajor
+	AttributeSystemPagingFaultTypeMinor
+)
+
+// String returns the string representation of the AttributeSystemPagingFaultType.
+func (av AttributeSystemPagingFaultType) String() string {
+	switch av {
+	case AttributeSystemPagingFaultTypeMajor:
+		return "major"
+	case AttributeSystemPagingFaultTypeMinor:
+		return "minor"
+	}
+	return ""
+}
+
+// MapAttributeSystemPagingFaultType is a helper map of string to AttributeSystemPagingFaultType attribute value.
+var MapAttributeSystemPagingFaultType = map[string]AttributeSystemPagingFaultType{
+	"major": AttributeSystemPagingFaultTypeMajor,
+	"minor": AttributeSystemPagingFaultTypeMinor,
+}
+
 var MetricsInfo = metricsInfo{
 	ProcessContextSwitches: metricInfo{
 		Name:       "process.context_switches",
 		Attributes: []string{"context_switch_type"},
 	},
+	ProcessContextSwitchesV1: metricInfo{
+		Name:       "process.context_switches",
+		Attributes: []string{"process.context_switch.type"},
+	},
 	ProcessCPUTime: metricInfo{
 		Name:       "process.cpu.time",
 		Attributes: []string{"state"},
+	},
+	ProcessCPUTimeV1: metricInfo{
+		Name:       "process.cpu.time",
+		Attributes: []string{"cpu.mode"},
 	},
 	ProcessCPUUtilization: metricInfo{
 		Name:       "process.cpu.utilization",
 		Attributes: []string{"state"},
 	},
+	ProcessCPUUtilizationV1: metricInfo{
+		Name:       "process.cpu.utilization",
+		Attributes: []string{"cpu.mode"},
+	},
 	ProcessDiskIo: metricInfo{
 		Name:       "process.disk.io",
 		Attributes: []string{"direction"},
+	},
+	ProcessDiskIoV1: metricInfo{
+		Name:       "process.disk.io",
+		Attributes: []string{"disk.io.direction"},
 	},
 	ProcessDiskOperations: metricInfo{
 		Name:       "process.disk.operations",
@@ -169,32 +294,53 @@ var MetricsInfo = metricsInfo{
 		Name:       "process.paging.faults",
 		Attributes: []string{"paging_fault_type"},
 	},
+	ProcessPagingFaultsV1: metricInfo{
+		Name:       "process.paging.faults",
+		Attributes: []string{"system.paging.fault.type"},
+	},
 	ProcessSignalsPending: metricInfo{
 		Name: "process.signals_pending",
+	},
+	ProcessThreadCountV1: metricInfo{
+		Name: "process.thread.count",
 	},
 	ProcessThreads: metricInfo{
 		Name: "process.threads",
 	},
+	ProcessUnixFileDescriptorCountV1: metricInfo{
+		Name: "process.unix.file_descriptor.count",
+	},
 	ProcessUptime: metricInfo{
 		Name: "process.uptime",
+	},
+	ProcessWindowsHandleCountV1: metricInfo{
+		Name: "process.windows.handle.count",
 	},
 }
 
 type metricsInfo struct {
-	ProcessContextSwitches     metricInfo
-	ProcessCPUTime             metricInfo
-	ProcessCPUUtilization      metricInfo
-	ProcessDiskIo              metricInfo
-	ProcessDiskOperations      metricInfo
-	ProcessHandles             metricInfo
-	ProcessMemoryUsage         metricInfo
-	ProcessMemoryUtilization   metricInfo
-	ProcessMemoryVirtual       metricInfo
-	ProcessOpenFileDescriptors metricInfo
-	ProcessPagingFaults        metricInfo
-	ProcessSignalsPending      metricInfo
-	ProcessThreads             metricInfo
-	ProcessUptime              metricInfo
+	ProcessContextSwitches           metricInfo
+	ProcessContextSwitchesV1         metricInfo
+	ProcessCPUTime                   metricInfo
+	ProcessCPUTimeV1                 metricInfo
+	ProcessCPUUtilization            metricInfo
+	ProcessCPUUtilizationV1          metricInfo
+	ProcessDiskIo                    metricInfo
+	ProcessDiskIoV1                  metricInfo
+	ProcessDiskOperations            metricInfo
+	ProcessHandles                   metricInfo
+	ProcessMemoryUsage               metricInfo
+	ProcessMemoryUtilization         metricInfo
+	ProcessMemoryVirtual             metricInfo
+	ProcessOpenFileDescriptors       metricInfo
+	ProcessPagingFaults              metricInfo
+	ProcessPagingFaultsV1            metricInfo
+	ProcessSignalsPending            metricInfo
+	ProcessThreadCountV1             metricInfo
+	ProcessThreads                   metricInfo
+	ProcessUnixFileDescriptorCountV1 metricInfo
+	ProcessUptime                    metricInfo
+	ProcessWindowsHandleCountV1      metricInfo
 }
 
 type metricInfo struct {
@@ -285,6 +431,63 @@ func (m *metricProcessContextSwitches) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessContextSwitches(cfg ProcessContextSwitchesMetricConfig) metricProcessContextSwitches {
 	m := metricProcessContextSwitches{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricProcessContextSwitchesV1 struct {
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   ProcessContextSwitchesV1MetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
+}
+
+// init fills process.context_switches@v1 metric with initial data.
+func (m *metricProcessContextSwitchesV1) init() {
+	m.data.SetName("process.context_switches")
+	m.data.SetDescription("Number of times the process has been context switched.")
+	m.data.SetUnit("{context_switch}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricProcessContextSwitchesV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, processContextSwitchTypeAttributeValue string, contextSwitchTypeAttributeValue string, emitLegacyAttrs bool) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("process.context_switch.type", processContextSwitchTypeAttributeValue)
+	if emitLegacyAttrs {
+		dp.Attributes().PutStr("type", contextSwitchTypeAttributeValue)
+	}
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessContextSwitchesV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessContextSwitchesV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricProcessContextSwitchesV1(cfg ProcessContextSwitchesV1MetricConfig) metricProcessContextSwitchesV1 {
+	m := metricProcessContextSwitchesV1{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -384,6 +587,63 @@ func newMetricProcessCPUTime(cfg ProcessCPUTimeMetricConfig) metricProcessCPUTim
 	return m
 }
 
+type metricProcessCPUTimeV1 struct {
+	data     pmetric.Metric               // data buffer for generated metric.
+	config   ProcessCPUTimeV1MetricConfig // metric config provided by user.
+	capacity int                          // max observed number of data points added to the metric.
+}
+
+// init fills process.cpu.time@v1 metric with initial data.
+func (m *metricProcessCPUTimeV1) init() {
+	m.data.SetName("process.cpu.time")
+	m.data.SetDescription("Total CPU seconds broken down by different CPU modes.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricProcessCPUTimeV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuModeAttributeValue string, stateAttributeValue string, emitLegacyAttrs bool) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("cpu.mode", cpuModeAttributeValue)
+	if emitLegacyAttrs {
+		dp.Attributes().PutStr("state", stateAttributeValue)
+	}
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessCPUTimeV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessCPUTimeV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricProcessCPUTimeV1(cfg ProcessCPUTimeV1MetricConfig) metricProcessCPUTimeV1 {
+	m := metricProcessCPUTimeV1{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricProcessCPUUtilization struct {
 	data          pmetric.Metric                    // data buffer for generated metric.
 	config        ProcessCPUUtilizationMetricConfig // metric config provided by user.
@@ -465,6 +725,61 @@ func (m *metricProcessCPUUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessCPUUtilization(cfg ProcessCPUUtilizationMetricConfig) metricProcessCPUUtilization {
 	m := metricProcessCPUUtilization{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricProcessCPUUtilizationV1 struct {
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   ProcessCPUUtilizationV1MetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
+}
+
+// init fills process.cpu.utilization@v1 metric with initial data.
+func (m *metricProcessCPUUtilizationV1) init() {
+	m.data.SetName("process.cpu.utilization")
+	m.data.SetDescription("Difference in process.cpu.time since the last measurement, divided by the elapsed time and number of CPUs available to the process. On the first scrape, no data point is emitted for this metric.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricProcessCPUUtilizationV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuModeAttributeValue string, stateAttributeValue string, emitLegacyAttrs bool) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("cpu.mode", cpuModeAttributeValue)
+	if emitLegacyAttrs {
+		dp.Attributes().PutStr("state", stateAttributeValue)
+	}
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessCPUUtilizationV1) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessCPUUtilizationV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricProcessCPUUtilizationV1(cfg ProcessCPUUtilizationV1MetricConfig) metricProcessCPUUtilizationV1 {
+	m := metricProcessCPUUtilizationV1{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -556,6 +871,63 @@ func (m *metricProcessDiskIo) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessDiskIo(cfg ProcessDiskIoMetricConfig) metricProcessDiskIo {
 	m := metricProcessDiskIo{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricProcessDiskIoV1 struct {
+	data     pmetric.Metric              // data buffer for generated metric.
+	config   ProcessDiskIoV1MetricConfig // metric config provided by user.
+	capacity int                         // max observed number of data points added to the metric.
+}
+
+// init fills process.disk.io@v1 metric with initial data.
+func (m *metricProcessDiskIoV1) init() {
+	m.data.SetName("process.disk.io")
+	m.data.SetDescription("Disk bytes transferred.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricProcessDiskIoV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string, directionAttributeValue string, emitLegacyAttrs bool) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("disk.io.direction", diskIoDirectionAttributeValue)
+	if emitLegacyAttrs {
+		dp.Attributes().PutStr("direction", directionAttributeValue)
+	}
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessDiskIoV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessDiskIoV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricProcessDiskIoV1(cfg ProcessDiskIoV1MetricConfig) metricProcessDiskIoV1 {
+	m := metricProcessDiskIoV1{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -818,7 +1190,7 @@ type metricProcessMemoryVirtual struct {
 // init fills process.memory.virtual metric with initial data.
 func (m *metricProcessMemoryVirtual) init() {
 	m.data.SetName("process.memory.virtual")
-	m.data.SetDescription("Virtual memory size.")
+	m.data.SetDescription("The amount of committed virtual memory.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1004,6 +1376,100 @@ func newMetricProcessPagingFaults(cfg ProcessPagingFaultsMetricConfig) metricPro
 	return m
 }
 
+type metricProcessPagingFaultsV1 struct {
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        ProcessPagingFaultsV1MetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+}
+
+// init fills process.paging.faults@v1 metric with initial data.
+func (m *metricProcessPagingFaultsV1) init() {
+	m.data.SetName("process.paging.faults")
+	m.data.SetDescription("Number of page faults the process has made.")
+	m.data.SetUnit("{fault}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricProcessPagingFaultsV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemPagingFaultTypeAttributeValue string, pagingFaultTypeAttributeValue string, emitLegacyAttrs bool) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, ProcessPagingFaultsV1MetricAttributeKeySystemPagingFaultType) {
+		dp.Attributes().PutStr("system.paging.fault.type", systemPagingFaultTypeAttributeValue)
+	}
+	if emitLegacyAttrs {
+		dp.Attributes().PutStr("type", pagingFaultTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessPagingFaultsV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessPagingFaultsV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricProcessPagingFaultsV1(cfg ProcessPagingFaultsV1MetricConfig) metricProcessPagingFaultsV1 {
+	m := metricProcessPagingFaultsV1{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricProcessSignalsPending struct {
 	data     pmetric.Metric                    // data buffer for generated metric.
 	config   ProcessSignalsPendingMetricConfig // metric config provided by user.
@@ -1048,6 +1514,58 @@ func (m *metricProcessSignalsPending) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessSignalsPending(cfg ProcessSignalsPendingMetricConfig) metricProcessSignalsPending {
 	m := metricProcessSignalsPending{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricProcessThreadCountV1 struct {
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   ProcessThreadCountV1MetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
+}
+
+// init fills process.thread.count@v1 metric with initial data.
+func (m *metricProcessThreadCountV1) init() {
+	m.data.SetName("process.thread.count")
+	m.data.SetDescription("Process threads count.")
+	m.data.SetUnit("{thread}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricProcessThreadCountV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessThreadCountV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessThreadCountV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricProcessThreadCountV1(cfg ProcessThreadCountV1MetricConfig) metricProcessThreadCountV1 {
+	m := metricProcessThreadCountV1{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -1108,6 +1626,58 @@ func newMetricProcessThreads(cfg ProcessThreadsMetricConfig) metricProcessThread
 	return m
 }
 
+type metricProcessUnixFileDescriptorCountV1 struct {
+	data     pmetric.Metric                               // data buffer for generated metric.
+	config   ProcessUnixFileDescriptorCountV1MetricConfig // metric config provided by user.
+	capacity int                                          // max observed number of data points added to the metric.
+}
+
+// init fills process.unix.file_descriptor.count@v1 metric with initial data.
+func (m *metricProcessUnixFileDescriptorCountV1) init() {
+	m.data.SetName("process.unix.file_descriptor.count")
+	m.data.SetDescription("Number of unix file descriptors in use by the process.")
+	m.data.SetUnit("{file_descriptor}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricProcessUnixFileDescriptorCountV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessUnixFileDescriptorCountV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessUnixFileDescriptorCountV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricProcessUnixFileDescriptorCountV1(cfg ProcessUnixFileDescriptorCountV1MetricConfig) metricProcessUnixFileDescriptorCountV1 {
+	m := metricProcessUnixFileDescriptorCountV1{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricProcessUptime struct {
 	data     pmetric.Metric            // data buffer for generated metric.
 	config   ProcessUptimeMetricConfig // metric config provided by user.
@@ -1158,30 +1728,90 @@ func newMetricProcessUptime(cfg ProcessUptimeMetricConfig) metricProcessUptime {
 	return m
 }
 
+type metricProcessWindowsHandleCountV1 struct {
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   ProcessWindowsHandleCountV1MetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
+}
+
+// init fills process.windows.handle.count@v1 metric with initial data.
+func (m *metricProcessWindowsHandleCountV1) init() {
+	m.data.SetName("process.windows.handle.count")
+	m.data.SetDescription("Number of handles held by the process.")
+	m.data.SetUnit("{handle}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricProcessWindowsHandleCountV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessWindowsHandleCountV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessWindowsHandleCountV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricProcessWindowsHandleCountV1(cfg ProcessWindowsHandleCountV1MetricConfig) metricProcessWindowsHandleCountV1 {
+	m := metricProcessWindowsHandleCountV1{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                           MetricsBuilderConfig // config of the metrics builder.
-	startTime                        pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                  int                  // maximum observed number of metrics per resource.
-	metricsBuffer                    pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                        component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter   map[string]filter.Filter
-	resourceAttributeExcludeFilter   map[string]filter.Filter
-	metricProcessContextSwitches     metricProcessContextSwitches
-	metricProcessCPUTime             metricProcessCPUTime
-	metricProcessCPUUtilization      metricProcessCPUUtilization
-	metricProcessDiskIo              metricProcessDiskIo
-	metricProcessDiskOperations      metricProcessDiskOperations
-	metricProcessHandles             metricProcessHandles
-	metricProcessMemoryUsage         metricProcessMemoryUsage
-	metricProcessMemoryUtilization   metricProcessMemoryUtilization
-	metricProcessMemoryVirtual       metricProcessMemoryVirtual
-	metricProcessOpenFileDescriptors metricProcessOpenFileDescriptors
-	metricProcessPagingFaults        metricProcessPagingFaults
-	metricProcessSignalsPending      metricProcessSignalsPending
-	metricProcessThreads             metricProcessThreads
-	metricProcessUptime              metricProcessUptime
+	config                                 MetricsBuilderConfig // config of the metrics builder.
+	startTime                              pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                        int                  // maximum observed number of metrics per resource.
+	metricsBuffer                          pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                              component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter         map[string]filter.Filter
+	resourceAttributeExcludeFilter         map[string]filter.Filter
+	metricProcessContextSwitches           metricProcessContextSwitches
+	metricProcessContextSwitchesV1         metricProcessContextSwitchesV1
+	metricProcessCPUTime                   metricProcessCPUTime
+	metricProcessCPUTimeV1                 metricProcessCPUTimeV1
+	metricProcessCPUUtilization            metricProcessCPUUtilization
+	metricProcessCPUUtilizationV1          metricProcessCPUUtilizationV1
+	metricProcessDiskIo                    metricProcessDiskIo
+	metricProcessDiskIoV1                  metricProcessDiskIoV1
+	metricProcessDiskOperations            metricProcessDiskOperations
+	metricProcessHandles                   metricProcessHandles
+	metricProcessMemoryUsage               metricProcessMemoryUsage
+	metricProcessMemoryUtilization         metricProcessMemoryUtilization
+	metricProcessMemoryVirtual             metricProcessMemoryVirtual
+	metricProcessOpenFileDescriptors       metricProcessOpenFileDescriptors
+	metricProcessPagingFaults              metricProcessPagingFaults
+	metricProcessPagingFaultsV1            metricProcessPagingFaultsV1
+	metricProcessSignalsPending            metricProcessSignalsPending
+	metricProcessThreadCountV1             metricProcessThreadCountV1
+	metricProcessThreads                   metricProcessThreads
+	metricProcessUnixFileDescriptorCountV1 metricProcessUnixFileDescriptorCountV1
+	metricProcessUptime                    metricProcessUptime
+	metricProcessWindowsHandleCountV1      metricProcessWindowsHandleCountV1
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -1203,26 +1833,34 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                           mbc,
-		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                    pmetric.NewMetrics(),
-		buildInfo:                        settings.BuildInfo,
-		metricProcessContextSwitches:     newMetricProcessContextSwitches(mbc.Metrics.ProcessContextSwitches),
-		metricProcessCPUTime:             newMetricProcessCPUTime(mbc.Metrics.ProcessCPUTime),
-		metricProcessCPUUtilization:      newMetricProcessCPUUtilization(mbc.Metrics.ProcessCPUUtilization),
-		metricProcessDiskIo:              newMetricProcessDiskIo(mbc.Metrics.ProcessDiskIo),
-		metricProcessDiskOperations:      newMetricProcessDiskOperations(mbc.Metrics.ProcessDiskOperations),
-		metricProcessHandles:             newMetricProcessHandles(mbc.Metrics.ProcessHandles),
-		metricProcessMemoryUsage:         newMetricProcessMemoryUsage(mbc.Metrics.ProcessMemoryUsage),
-		metricProcessMemoryUtilization:   newMetricProcessMemoryUtilization(mbc.Metrics.ProcessMemoryUtilization),
-		metricProcessMemoryVirtual:       newMetricProcessMemoryVirtual(mbc.Metrics.ProcessMemoryVirtual),
-		metricProcessOpenFileDescriptors: newMetricProcessOpenFileDescriptors(mbc.Metrics.ProcessOpenFileDescriptors),
-		metricProcessPagingFaults:        newMetricProcessPagingFaults(mbc.Metrics.ProcessPagingFaults),
-		metricProcessSignalsPending:      newMetricProcessSignalsPending(mbc.Metrics.ProcessSignalsPending),
-		metricProcessThreads:             newMetricProcessThreads(mbc.Metrics.ProcessThreads),
-		metricProcessUptime:              newMetricProcessUptime(mbc.Metrics.ProcessUptime),
-		resourceAttributeIncludeFilter:   make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:   make(map[string]filter.Filter),
+		config:                                 mbc,
+		startTime:                              pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                          pmetric.NewMetrics(),
+		buildInfo:                              settings.BuildInfo,
+		metricProcessContextSwitches:           newMetricProcessContextSwitches(mbc.Metrics.ProcessContextSwitches),
+		metricProcessContextSwitchesV1:         newMetricProcessContextSwitchesV1(mbc.Metrics.ProcessContextSwitchesV1),
+		metricProcessCPUTime:                   newMetricProcessCPUTime(mbc.Metrics.ProcessCPUTime),
+		metricProcessCPUTimeV1:                 newMetricProcessCPUTimeV1(mbc.Metrics.ProcessCPUTimeV1),
+		metricProcessCPUUtilization:            newMetricProcessCPUUtilization(mbc.Metrics.ProcessCPUUtilization),
+		metricProcessCPUUtilizationV1:          newMetricProcessCPUUtilizationV1(mbc.Metrics.ProcessCPUUtilizationV1),
+		metricProcessDiskIo:                    newMetricProcessDiskIo(mbc.Metrics.ProcessDiskIo),
+		metricProcessDiskIoV1:                  newMetricProcessDiskIoV1(mbc.Metrics.ProcessDiskIoV1),
+		metricProcessDiskOperations:            newMetricProcessDiskOperations(mbc.Metrics.ProcessDiskOperations),
+		metricProcessHandles:                   newMetricProcessHandles(mbc.Metrics.ProcessHandles),
+		metricProcessMemoryUsage:               newMetricProcessMemoryUsage(mbc.Metrics.ProcessMemoryUsage),
+		metricProcessMemoryUtilization:         newMetricProcessMemoryUtilization(mbc.Metrics.ProcessMemoryUtilization),
+		metricProcessMemoryVirtual:             newMetricProcessMemoryVirtual(mbc.Metrics.ProcessMemoryVirtual),
+		metricProcessOpenFileDescriptors:       newMetricProcessOpenFileDescriptors(mbc.Metrics.ProcessOpenFileDescriptors),
+		metricProcessPagingFaults:              newMetricProcessPagingFaults(mbc.Metrics.ProcessPagingFaults),
+		metricProcessPagingFaultsV1:            newMetricProcessPagingFaultsV1(mbc.Metrics.ProcessPagingFaultsV1),
+		metricProcessSignalsPending:            newMetricProcessSignalsPending(mbc.Metrics.ProcessSignalsPending),
+		metricProcessThreadCountV1:             newMetricProcessThreadCountV1(mbc.Metrics.ProcessThreadCountV1),
+		metricProcessThreads:                   newMetricProcessThreads(mbc.Metrics.ProcessThreads),
+		metricProcessUnixFileDescriptorCountV1: newMetricProcessUnixFileDescriptorCountV1(mbc.Metrics.ProcessUnixFileDescriptorCountV1),
+		metricProcessUptime:                    newMetricProcessUptime(mbc.Metrics.ProcessUptime),
+		metricProcessWindowsHandleCountV1:      newMetricProcessWindowsHandleCountV1(mbc.Metrics.ProcessWindowsHandleCountV1),
+		resourceAttributeIncludeFilter:         make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:         make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.ProcessCgroup.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["process.cgroup"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCgroup.MetricsInclude)
@@ -1254,6 +1892,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 	if mbc.ResourceAttributes.ProcessExecutablePath.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["process.executable.path"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessExecutablePath.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.ProcessLinuxCgroup.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["process.linux.cgroup"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessLinuxCgroup.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ProcessLinuxCgroup.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["process.linux.cgroup"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessLinuxCgroup.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.ProcessOwner.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["process.owner"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessOwner.MetricsInclude)
 	}
@@ -1271,6 +1915,204 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 	}
 	if mbc.ResourceAttributes.ProcessPid.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["process.pid"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessPid.MetricsExclude)
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if mb.metricProcessContextSwitches.config.Enabled && !mb.metricProcessContextSwitchesV1.config.enabledSetByUser {
+			mb.metricProcessContextSwitchesV1.config.Enabled = true
+			mb.metricProcessContextSwitchesV1.data = pmetric.NewMetric()
+			mb.metricProcessContextSwitchesV1.init()
+		}
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if mb.metricProcessContextSwitches.config.Enabled && mb.metricProcessContextSwitchesV1.config.Enabled {
+			var disable bool
+			if mb.metricProcessContextSwitches.data.Type() != mb.metricProcessContextSwitchesV1.data.Type() {
+				// Disable legacy metric if legacy and latest have same name but different types
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `process.context_switches` disabled: same emitted name as `process.context_switches@v1` with different type; only latest will be emitted")
+			}
+			if !slices.Equal(MetricsInfo.ProcessContextSwitches.Attributes, MetricsInfo.ProcessContextSwitchesV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `process.context_switches` disabled: same emitted name as `process.context_switches@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.ProcessContextSwitches.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.ProcessContextSwitchesV1.Attributes))
+			}
+			if disable {
+				mb.metricProcessContextSwitches.config.Enabled = false
+			}
+		}
+	} else {
+		if mb.metricProcessContextSwitchesV1.config.Enabled {
+			mb.metricProcessContextSwitchesV1.config.Enabled = false
+			settings.Logger.Warn("[WARNING] metric `process.context_switches@v1` requires feature gate `scraper.process.EmitV1SystemConventions` to be enabled, metric has been disabled")
+		}
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if mb.metricProcessCPUTime.config.Enabled && !mb.metricProcessCPUTimeV1.config.enabledSetByUser {
+			mb.metricProcessCPUTimeV1.config.Enabled = true
+			mb.metricProcessCPUTimeV1.data = pmetric.NewMetric()
+			mb.metricProcessCPUTimeV1.init()
+		}
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if mb.metricProcessCPUTime.config.Enabled && mb.metricProcessCPUTimeV1.config.Enabled {
+			var disable bool
+			if mb.metricProcessCPUTime.data.Type() != mb.metricProcessCPUTimeV1.data.Type() {
+				// Disable legacy metric if legacy and latest have same name but different types
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `process.cpu.time` disabled: same emitted name as `process.cpu.time@v1` with different type; only latest will be emitted")
+			}
+			if !slices.Equal(MetricsInfo.ProcessCPUTime.Attributes, MetricsInfo.ProcessCPUTimeV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `process.cpu.time` disabled: same emitted name as `process.cpu.time@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.ProcessCPUTime.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.ProcessCPUTimeV1.Attributes))
+			}
+			if disable {
+				mb.metricProcessCPUTime.config.Enabled = false
+			}
+		}
+	} else {
+		if mb.metricProcessCPUTimeV1.config.Enabled {
+			mb.metricProcessCPUTimeV1.config.Enabled = false
+			settings.Logger.Warn("[WARNING] metric `process.cpu.time@v1` requires feature gate `scraper.process.EmitV1SystemConventions` to be enabled, metric has been disabled")
+		}
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if mb.metricProcessCPUUtilization.config.Enabled && !mb.metricProcessCPUUtilizationV1.config.enabledSetByUser {
+			mb.metricProcessCPUUtilizationV1.config.Enabled = true
+			mb.metricProcessCPUUtilizationV1.data = pmetric.NewMetric()
+			mb.metricProcessCPUUtilizationV1.init()
+		}
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if mb.metricProcessCPUUtilization.config.Enabled && mb.metricProcessCPUUtilizationV1.config.Enabled {
+			var disable bool
+			if mb.metricProcessCPUUtilization.data.Type() != mb.metricProcessCPUUtilizationV1.data.Type() {
+				// Disable legacy metric if legacy and latest have same name but different types
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `process.cpu.utilization` disabled: same emitted name as `process.cpu.utilization@v1` with different type; only latest will be emitted")
+			}
+			if !slices.Equal(MetricsInfo.ProcessCPUUtilization.Attributes, MetricsInfo.ProcessCPUUtilizationV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `process.cpu.utilization` disabled: same emitted name as `process.cpu.utilization@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.ProcessCPUUtilization.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.ProcessCPUUtilizationV1.Attributes))
+			}
+			if disable {
+				mb.metricProcessCPUUtilization.config.Enabled = false
+			}
+		}
+	} else {
+		if mb.metricProcessCPUUtilizationV1.config.Enabled {
+			mb.metricProcessCPUUtilizationV1.config.Enabled = false
+			settings.Logger.Warn("[WARNING] metric `process.cpu.utilization@v1` requires feature gate `scraper.process.EmitV1SystemConventions` to be enabled, metric has been disabled")
+		}
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if mb.metricProcessDiskIo.config.Enabled && !mb.metricProcessDiskIoV1.config.enabledSetByUser {
+			mb.metricProcessDiskIoV1.config.Enabled = true
+			mb.metricProcessDiskIoV1.data = pmetric.NewMetric()
+			mb.metricProcessDiskIoV1.init()
+		}
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if mb.metricProcessDiskIo.config.Enabled && mb.metricProcessDiskIoV1.config.Enabled {
+			var disable bool
+			if mb.metricProcessDiskIo.data.Type() != mb.metricProcessDiskIoV1.data.Type() {
+				// Disable legacy metric if legacy and latest have same name but different types
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `process.disk.io` disabled: same emitted name as `process.disk.io@v1` with different type; only latest will be emitted")
+			}
+			if !slices.Equal(MetricsInfo.ProcessDiskIo.Attributes, MetricsInfo.ProcessDiskIoV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `process.disk.io` disabled: same emitted name as `process.disk.io@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.ProcessDiskIo.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.ProcessDiskIoV1.Attributes))
+			}
+			if disable {
+				mb.metricProcessDiskIo.config.Enabled = false
+			}
+		}
+	} else {
+		if mb.metricProcessDiskIoV1.config.Enabled {
+			mb.metricProcessDiskIoV1.config.Enabled = false
+			settings.Logger.Warn("[WARNING] metric `process.disk.io@v1` requires feature gate `scraper.process.EmitV1SystemConventions` to be enabled, metric has been disabled")
+		}
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if mb.metricProcessHandles.config.Enabled && !mb.metricProcessWindowsHandleCountV1.config.enabledSetByUser {
+			mb.metricProcessWindowsHandleCountV1.config.Enabled = true
+			mb.metricProcessWindowsHandleCountV1.data = pmetric.NewMetric()
+			mb.metricProcessWindowsHandleCountV1.init()
+		}
+	}
+	if !ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricProcessWindowsHandleCountV1.config.Enabled {
+		mb.metricProcessWindowsHandleCountV1.config.Enabled = false
+		settings.Logger.Warn("[WARNING] metric `process.windows.handle.count@v1` requires feature gate `scraper.process.EmitV1SystemConventions` to be enabled, metric has been disabled")
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if mb.metricProcessOpenFileDescriptors.config.Enabled && !mb.metricProcessUnixFileDescriptorCountV1.config.enabledSetByUser {
+			mb.metricProcessUnixFileDescriptorCountV1.config.Enabled = true
+			mb.metricProcessUnixFileDescriptorCountV1.data = pmetric.NewMetric()
+			mb.metricProcessUnixFileDescriptorCountV1.init()
+		}
+	}
+	if !ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricProcessUnixFileDescriptorCountV1.config.Enabled {
+		mb.metricProcessUnixFileDescriptorCountV1.config.Enabled = false
+		settings.Logger.Warn("[WARNING] metric `process.unix.file_descriptor.count@v1` requires feature gate `scraper.process.EmitV1SystemConventions` to be enabled, metric has been disabled")
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if mb.metricProcessPagingFaults.config.Enabled && !mb.metricProcessPagingFaultsV1.config.enabledSetByUser {
+			mb.metricProcessPagingFaultsV1.config.Enabled = true
+			mb.metricProcessPagingFaultsV1.data = pmetric.NewMetric()
+			mb.metricProcessPagingFaultsV1.init()
+		}
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if mb.metricProcessPagingFaults.config.Enabled && mb.metricProcessPagingFaultsV1.config.Enabled {
+			var disable bool
+			if mb.metricProcessPagingFaults.data.Type() != mb.metricProcessPagingFaultsV1.data.Type() {
+				// Disable legacy metric if legacy and latest have same name but different types
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `process.paging.faults` disabled: same emitted name as `process.paging.faults@v1` with different type; only latest will be emitted")
+			}
+			if !slices.Equal(MetricsInfo.ProcessPagingFaults.Attributes, MetricsInfo.ProcessPagingFaultsV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `process.paging.faults` disabled: same emitted name as `process.paging.faults@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.ProcessPagingFaults.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.ProcessPagingFaultsV1.Attributes))
+			}
+			if disable {
+				mb.metricProcessPagingFaults.config.Enabled = false
+			}
+		}
+	} else {
+		if mb.metricProcessPagingFaultsV1.config.Enabled {
+			mb.metricProcessPagingFaultsV1.config.Enabled = false
+			settings.Logger.Warn("[WARNING] metric `process.paging.faults@v1` requires feature gate `scraper.process.EmitV1SystemConventions` to be enabled, metric has been disabled")
+		}
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if mb.metricProcessThreads.config.Enabled && !mb.metricProcessThreadCountV1.config.enabledSetByUser {
+			mb.metricProcessThreadCountV1.config.Enabled = true
+			mb.metricProcessThreadCountV1.data = pmetric.NewMetric()
+			mb.metricProcessThreadCountV1.init()
+		}
+	}
+	if !ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricProcessThreadCountV1.config.Enabled {
+		mb.metricProcessThreadCountV1.config.Enabled = false
+		settings.Logger.Warn("[WARNING] metric `process.thread.count@v1` requires feature gate `scraper.process.EmitV1SystemConventions` to be enabled, metric has been disabled")
 	}
 
 	for _, op := range options {
@@ -1343,9 +2185,13 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricProcessContextSwitches.emit(ils.Metrics())
+	mb.metricProcessContextSwitchesV1.emit(ils.Metrics())
 	mb.metricProcessCPUTime.emit(ils.Metrics())
+	mb.metricProcessCPUTimeV1.emit(ils.Metrics())
 	mb.metricProcessCPUUtilization.emit(ils.Metrics())
+	mb.metricProcessCPUUtilizationV1.emit(ils.Metrics())
 	mb.metricProcessDiskIo.emit(ils.Metrics())
+	mb.metricProcessDiskIoV1.emit(ils.Metrics())
 	mb.metricProcessDiskOperations.emit(ils.Metrics())
 	mb.metricProcessHandles.emit(ils.Metrics())
 	mb.metricProcessMemoryUsage.emit(ils.Metrics())
@@ -1353,9 +2199,13 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricProcessMemoryVirtual.emit(ils.Metrics())
 	mb.metricProcessOpenFileDescriptors.emit(ils.Metrics())
 	mb.metricProcessPagingFaults.emit(ils.Metrics())
+	mb.metricProcessPagingFaultsV1.emit(ils.Metrics())
 	mb.metricProcessSignalsPending.emit(ils.Metrics())
+	mb.metricProcessThreadCountV1.emit(ils.Metrics())
 	mb.metricProcessThreads.emit(ils.Metrics())
+	mb.metricProcessUnixFileDescriptorCountV1.emit(ils.Metrics())
 	mb.metricProcessUptime.emit(ils.Metrics())
+	mb.metricProcessWindowsHandleCountV1.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -1388,23 +2238,47 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordProcessContextSwitchesDataPoint adds a data point to process.context_switches metric.
-func (mb *MetricsBuilder) RecordProcessContextSwitchesDataPoint(ts pcommon.Timestamp, val int64, contextSwitchTypeAttributeValue AttributeContextSwitchType) {
-	mb.metricProcessContextSwitches.recordDataPoint(mb.startTime, ts, val, contextSwitchTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordProcessContextSwitchesDataPoint(ts pcommon.Timestamp, val int64, contextSwitchTypeAttributeValue AttributeContextSwitchType, processContextSwitchTypeAttributeValue AttributeProcessContextSwitchType) {
+	// Dual-schema emission controlled by feature gates
+	if !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+		mb.metricProcessContextSwitches.recordDataPoint(mb.startTime, ts, val, contextSwitchTypeAttributeValue.String())
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		mb.metricProcessContextSwitchesV1.recordDataPoint(mb.startTime, ts, val, processContextSwitchTypeAttributeValue.String(), contextSwitchTypeAttributeValue.String(), true)
+	}
 }
 
 // RecordProcessCPUTimeDataPoint adds a data point to process.cpu.time metric.
-func (mb *MetricsBuilder) RecordProcessCPUTimeDataPoint(ts pcommon.Timestamp, val float64, stateAttributeValue AttributeState) {
-	mb.metricProcessCPUTime.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
+func (mb *MetricsBuilder) RecordProcessCPUTimeDataPoint(ts pcommon.Timestamp, val float64, stateAttributeValue AttributeState, cpuModeAttributeValue AttributeCPUMode) {
+	// Dual-schema emission controlled by feature gates
+	if !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+		mb.metricProcessCPUTime.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		mb.metricProcessCPUTimeV1.recordDataPoint(mb.startTime, ts, val, cpuModeAttributeValue.String(), stateAttributeValue.String(), true)
+	}
 }
 
 // RecordProcessCPUUtilizationDataPoint adds a data point to process.cpu.utilization metric.
-func (mb *MetricsBuilder) RecordProcessCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, stateAttributeValue AttributeState) {
-	mb.metricProcessCPUUtilization.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
+func (mb *MetricsBuilder) RecordProcessCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64, stateAttributeValue AttributeState, cpuModeAttributeValue AttributeCPUMode) {
+	// Dual-schema emission controlled by feature gates
+	if !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+		mb.metricProcessCPUUtilization.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		mb.metricProcessCPUUtilizationV1.recordDataPoint(mb.startTime, ts, val, cpuModeAttributeValue.String(), stateAttributeValue.String(), true)
+	}
 }
 
 // RecordProcessDiskIoDataPoint adds a data point to process.disk.io metric.
-func (mb *MetricsBuilder) RecordProcessDiskIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricProcessDiskIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (mb *MetricsBuilder) RecordProcessDiskIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection, diskIoDirectionAttributeValue AttributeDiskIoDirection) {
+	// Dual-schema emission controlled by feature gates
+	if !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+		mb.metricProcessDiskIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		mb.metricProcessDiskIoV1.recordDataPoint(mb.startTime, ts, val, diskIoDirectionAttributeValue.String(), directionAttributeValue.String(), true)
+	}
 }
 
 // RecordProcessDiskOperationsDataPoint adds a data point to process.disk.operations metric.
@@ -1414,7 +2288,13 @@ func (mb *MetricsBuilder) RecordProcessDiskOperationsDataPoint(ts pcommon.Timest
 
 // RecordProcessHandlesDataPoint adds a data point to process.handles metric.
 func (mb *MetricsBuilder) RecordProcessHandlesDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessHandles.recordDataPoint(mb.startTime, ts, val)
+	// Dual-schema emission controlled by feature gates
+	if !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+		mb.metricProcessHandles.recordDataPoint(mb.startTime, ts, val)
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		mb.metricProcessWindowsHandleCountV1.recordDataPoint(mb.startTime, ts, val)
+	}
 }
 
 // RecordProcessMemoryUsageDataPoint adds a data point to process.memory.usage metric.
@@ -1434,12 +2314,24 @@ func (mb *MetricsBuilder) RecordProcessMemoryVirtualDataPoint(ts pcommon.Timesta
 
 // RecordProcessOpenFileDescriptorsDataPoint adds a data point to process.open_file_descriptors metric.
 func (mb *MetricsBuilder) RecordProcessOpenFileDescriptorsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessOpenFileDescriptors.recordDataPoint(mb.startTime, ts, val)
+	// Dual-schema emission controlled by feature gates
+	if !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+		mb.metricProcessOpenFileDescriptors.recordDataPoint(mb.startTime, ts, val)
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		mb.metricProcessUnixFileDescriptorCountV1.recordDataPoint(mb.startTime, ts, val)
+	}
 }
 
 // RecordProcessPagingFaultsDataPoint adds a data point to process.paging.faults metric.
-func (mb *MetricsBuilder) RecordProcessPagingFaultsDataPoint(ts pcommon.Timestamp, val int64, pagingFaultTypeAttributeValue AttributePagingFaultType) {
-	mb.metricProcessPagingFaults.recordDataPoint(mb.startTime, ts, val, pagingFaultTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordProcessPagingFaultsDataPoint(ts pcommon.Timestamp, val int64, pagingFaultTypeAttributeValue AttributePagingFaultType, systemPagingFaultTypeAttributeValue AttributeSystemPagingFaultType) {
+	// Dual-schema emission controlled by feature gates
+	if !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+		mb.metricProcessPagingFaults.recordDataPoint(mb.startTime, ts, val, pagingFaultTypeAttributeValue.String())
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		mb.metricProcessPagingFaultsV1.recordDataPoint(mb.startTime, ts, val, systemPagingFaultTypeAttributeValue.String(), pagingFaultTypeAttributeValue.String(), true)
+	}
 }
 
 // RecordProcessSignalsPendingDataPoint adds a data point to process.signals_pending metric.
@@ -1449,7 +2341,13 @@ func (mb *MetricsBuilder) RecordProcessSignalsPendingDataPoint(ts pcommon.Timest
 
 // RecordProcessThreadsDataPoint adds a data point to process.threads metric.
 func (mb *MetricsBuilder) RecordProcessThreadsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessThreads.recordDataPoint(mb.startTime, ts, val)
+	// Dual-schema emission controlled by feature gates
+	if !ScraperProcessDontEmitV0SystemConventionsFeatureGate.IsEnabled() {
+		mb.metricProcessThreads.recordDataPoint(mb.startTime, ts, val)
+	}
+	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		mb.metricProcessThreadCountV1.recordDataPoint(mb.startTime, ts, val)
+	}
 }
 
 // RecordProcessUptimeDataPoint adds a data point to process.uptime metric.

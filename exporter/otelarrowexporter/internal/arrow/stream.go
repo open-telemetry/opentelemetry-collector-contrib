@@ -196,13 +196,16 @@ func (s *Stream) run(ctx context.Context, dc doneCancel, streamClient StreamClie
 
 	// the result from read() is processed after cancel and wait,
 	// so we can set s.client = nil in case of a delayed Unimplemented.
-	err = s.read(ctx)
+	// TODO: SA4023(related information): the lhs of the comparison is the 1st return value of this function call
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50420
+	err = s.read(ctx) //nolint:staticcheck
 
 	// Wait for the writer to ensure that all waiters are known.
 	dc.cancel()
 	ww.Wait()
 
-	if err != nil {
+	// TODO: SA4023: this comparison is always true
+	if err != nil { //nolint:staticcheck
 		// This branch is reached with an unimplemented status
 		// with or without the WaitForReady flag.
 		if status, ok := status.FromError(err); ok && status.Code() == codes.Unimplemented {
@@ -358,7 +361,7 @@ func (s *Stream) encodeAndSend(wri writeItem, hdrsBuf *bytes.Buffer, hdrsEnc *hp
 
 // read repeatedly reads a batch status and releases the consumers waiting for
 // a response.
-func (s *Stream) read(_ context.Context) error {
+func (s *Stream) read(_ context.Context) error { //nolint:staticcheck
 	// Note we do not use the context, the stream context might
 	// cancel a call to Recv() but the call to processBatchStatus
 	// is non-blocking.

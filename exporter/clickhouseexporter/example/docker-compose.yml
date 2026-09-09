@@ -30,7 +30,7 @@ services:
       - otel-clickhouse
 
   clickhouse:
-    image: clickhouse/clickhouse-server:latest
+    image: clickhouse/clickhouse-server:26.8.2@sha256:fa394da808cc53f76d0344429421d6c422a6ee85fe7450135c0e3cff4df9bcbb
     ports:
       - "9000:9000"
       - "8123:8123"
@@ -43,7 +43,7 @@ services:
       - CLICKHOUSE_PASSWORD=default
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.2@sha256:3fd54ae1214669f8355f065ec9f6445d5279a3d77095ab048ca045685272429b
     volumes:
       - ./grafana.ini:/etc/grafana/grafana.ini
       - ./datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
@@ -57,7 +57,7 @@ services:
 
   # Log generator
   flog:
-    image: mingrammer/flog:0.4.3
+    image: mingrammer/flog:0.4.3@sha256:44180f8610fab7d4c29ff233a79e19cf28bd425c1737aa59c72c1f66613fdf41
     # Output fake log in JSON format
     command: [ "--format=json", "--loop", "--delay=100ms"]
     networks:

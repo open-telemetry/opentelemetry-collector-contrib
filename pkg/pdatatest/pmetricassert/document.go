@@ -8,21 +8,43 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
+	"strconv"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
+
+// The decimal-place count is part of the key, so it is matched by prefix.
+const doubleValuePrecisionPrefix = "double_value/precision"
+
+// A float64 cannot distinguish more than ~15 decimal places.
+const maxDoublePrecision = 15
 
 // documentVersion is the schema version emitted by WriteAssertionFile.
 // Readers accept this exact value; bumps must be backwards compatible or
 // accompanied by a migration.
 const documentVersion = 1
 
+// attributeMode controls how an attribute map assertion is evaluated.
+type attributeMode int
+
+const (
+	// attributeModeExact requires actual attributes to match expected
+	// attributes exactly — no missing and no extra keys.
+	attributeModeExact attributeMode = iota
+	// attributeModeInclude requires every expected key/value to be present
+	// in the actual attributes but allows additional keys.
+	attributeModeInclude
+)
+
 // document is the YAML-serializable form of a metrics assertion snapshot.
 //
 // The schema implements the identity-only subset of the grammar proposed in
 // issue #48079: default-exact matching, order-insensitive collections,
-// identity fields only. Operator-suffix extensions (/include, /count, ...)
-// are tracked as follow-ups.
+// identity fields only. Attribute maps support /include mode.
+// Operator-suffix extensions (/exclude, /count, /approx, ...) are tracked
+// as follow-ups.
 type document struct {
 	Version   int                 `yaml:"version"`
 	Signal    string              `yaml:"signal"`
@@ -30,8 +52,44 @@ type document struct {
 }
 
 type resourceAssertion struct {
-	Attributes map[string]any   `yaml:"attributes,omitempty"`
-	Scopes     []scopeAssertion `yaml:"scopes"`
+	Attributes    map[string]any   `yaml:"attributes,omitempty"`
+	AttributeMode attributeMode    `yaml:"-"`
+	Scopes        []scopeAssertion `yaml:"scopes"`
+}
+
+// UnmarshalYAML implements custom unmarshaling to support `attributes/include`
+// as an alternative to `attributes`. When `attributes/include` is used the
+// AttributeMode is set to attributeModeInclude; specifying both keys is an error.
+func (r *resourceAssertion) UnmarshalYAML(node *yaml.Node) error {
+	// Decode into a raw map to detect operator-suffixed keys.
+	var raw map[string]yaml.Node
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	if inc, ok := raw["attributes/include"]; ok {
+		if _, dup := raw["attributes"]; dup {
+			return errors.New("resource assertion: cannot specify both 'attributes' and 'attributes/include'")
+		}
+		var attrs map[string]any
+		if err := inc.Decode(&attrs); err != nil {
+			return fmt.Errorf("resource assertion: decode attributes/include: %w", err)
+		}
+		r.Attributes = attrs
+		r.AttributeMode = attributeModeInclude
+	} else if exact, ok := raw["attributes"]; ok {
+		var attrs map[string]any
+		if err := exact.Decode(&attrs); err != nil {
+			return fmt.Errorf("resource assertion: decode attributes: %w", err)
+		}
+		r.Attributes = attrs
+		r.AttributeMode = attributeModeExact
+	}
+	if scopesNode, ok := raw["scopes"]; ok {
+		if err := scopesNode.Decode(&r.Scopes); err != nil {
+			return fmt.Errorf("resource assertion: decode scopes: %w", err)
+		}
+	}
+	return nil
 }
 
 type scopeAssertion struct {
@@ -152,14 +210,145 @@ type metricAssertion struct {
 }
 
 type datapointAssertion struct {
-	Attributes     map[string]any `yaml:"attributes,omitempty"`
-	Value          any            `yaml:"value,omitempty"`
-	Count          *uint64        `yaml:"count,omitempty"`
-	Sum            *float64       `yaml:"sum,omitempty"`
-	ExplicitBounds *[]float64     `yaml:"explicit_bounds,omitempty"`
-	BucketCounts   []uint64       `yaml:"bucket_counts,omitempty"`
-	Min            *float64       `yaml:"min,omitempty"`
-	Max            *float64       `yaml:"max,omitempty"`
+	Attributes    map[string]any `yaml:"attributes,omitempty"`
+	AttributeMode attributeMode  `yaml:"-"`
+	IntValue      *int64         `yaml:"int_value,omitempty"`
+	DoubleValue   *float64       `yaml:"double_value,omitempty"`
+	// Set by `double_value/precision<n>`; nil compares exactly.
+	DoublePrecision *int       `yaml:"-"`
+	Count           *uint64    `yaml:"count,omitempty"`
+	Sum             *float64   `yaml:"sum,omitempty"`
+	ExplicitBounds  *[]float64 `yaml:"explicit_bounds,omitempty"`
+	BucketCounts    []uint64   `yaml:"bucket_counts,omitempty"`
+	Min             *float64   `yaml:"min,omitempty"`
+	Max             *float64   `yaml:"max,omitempty"`
+}
+
+// UnmarshalYAML implements custom unmarshaling to support `attributes/include`
+// as an alternative to `attributes` on datapoint assertions.
+func (d *datapointAssertion) UnmarshalYAML(node *yaml.Node) error {
+	var raw map[string]yaml.Node
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	if inc, ok := raw["attributes/include"]; ok {
+		if _, dup := raw["attributes"]; dup {
+			return errors.New("datapoint assertion: cannot specify both 'attributes' and 'attributes/include'")
+		}
+		var attrs map[string]any
+		if err := inc.Decode(&attrs); err != nil {
+			return fmt.Errorf("datapoint assertion: decode attributes/include: %w", err)
+		}
+		d.Attributes = attrs
+		d.AttributeMode = attributeModeInclude
+	} else if exact, ok := raw["attributes"]; ok {
+		var attrs map[string]any
+		if err := exact.Decode(&attrs); err != nil {
+			return fmt.Errorf("datapoint assertion: decode attributes: %w", err)
+		}
+		d.Attributes = attrs
+		d.AttributeMode = attributeModeExact
+	}
+	// Decode optional value fields.
+	if v, ok := raw["int_value"]; ok {
+		var iv int64
+		if err := v.Decode(&iv); err != nil {
+			return fmt.Errorf("datapoint assertion: decode int_value: %w", err)
+		}
+		d.IntValue = &iv
+	}
+	if v, ok := raw["double_value"]; ok {
+		var dv float64
+		if err := v.Decode(&dv); err != nil {
+			return fmt.Errorf("datapoint assertion: decode double_value: %w", err)
+		}
+		d.DoubleValue = &dv
+	}
+	if err := d.decodeDoublePrecision(raw); err != nil {
+		return err
+	}
+	if v, ok := raw["count"]; ok {
+		var c uint64
+		if err := v.Decode(&c); err != nil {
+			return fmt.Errorf("datapoint assertion: decode count: %w", err)
+		}
+		d.Count = &c
+	}
+	if v, ok := raw["sum"]; ok {
+		var s float64
+		if err := v.Decode(&s); err != nil {
+			return fmt.Errorf("datapoint assertion: decode sum: %w", err)
+		}
+		d.Sum = &s
+	}
+	if v, ok := raw["explicit_bounds"]; ok {
+		var eb []float64
+		if err := v.Decode(&eb); err != nil {
+			return fmt.Errorf("datapoint assertion: decode explicit_bounds: %w", err)
+		}
+		d.ExplicitBounds = &eb
+	}
+	if v, ok := raw["bucket_counts"]; ok {
+		var bc []uint64
+		if err := v.Decode(&bc); err != nil {
+			return fmt.Errorf("datapoint assertion: decode bucket_counts: %w", err)
+		}
+		d.BucketCounts = bc
+	}
+	if v, ok := raw["min"]; ok {
+		var minVal float64
+		if err := v.Decode(&minVal); err != nil {
+			return fmt.Errorf("datapoint assertion: decode min: %w", err)
+		}
+		d.Min = &minVal
+	}
+	if v, ok := raw["max"]; ok {
+		var maxVal float64
+		if err := v.Decode(&maxVal); err != nil {
+			return fmt.Errorf("datapoint assertion: decode max: %w", err)
+		}
+		d.Max = &maxVal
+	}
+	return nil
+}
+
+// decodeDoublePrecision resolves `double_value/precision<n>` into DoubleValue
+// plus DoublePrecision.
+func (d *datapointAssertion) decodeDoublePrecision(raw map[string]yaml.Node) error {
+	var keys []string
+	for key := range raw {
+		if strings.HasPrefix(key, doubleValuePrecisionPrefix) {
+			keys = append(keys, key)
+		}
+	}
+	if len(keys) == 0 {
+		return nil
+	}
+	sort.Strings(keys) // map order is random; keep the error stable
+	if len(keys) > 1 {
+		return fmt.Errorf("datapoint assertion: cannot specify more than one precision operator, got %v", keys)
+	}
+	key := keys[0]
+	if d.DoubleValue != nil {
+		return fmt.Errorf("datapoint assertion: cannot specify both %q and %q", "double_value", key)
+	}
+
+	digits, err := strconv.Atoi(strings.TrimPrefix(key, doubleValuePrecisionPrefix))
+	if err != nil {
+		return fmt.Errorf("datapoint assertion: %q must end in a decimal place count, e.g. %s3", key, doubleValuePrecisionPrefix)
+	}
+	if digits < 0 || digits > maxDoublePrecision {
+		return fmt.Errorf("datapoint assertion: %q is out of range, want 0 to %d", key, maxDoublePrecision)
+	}
+
+	var dv float64
+	node := raw[key]
+	if err := node.Decode(&dv); err != nil {
+		return fmt.Errorf("datapoint assertion: decode %s: %w", key, err)
+	}
+	d.DoubleValue = &dv
+	d.DoublePrecision = &digits
+	return nil
 }
 
 func readDocument(path string) (*document, error) {
@@ -231,7 +420,8 @@ func compactShorthand(doc *document) {
 
 func isEmptyDatapointAssertion(dp datapointAssertion) bool {
 	return len(dp.Attributes) == 0 &&
-		dp.Value == nil &&
+		dp.IntValue == nil &&
+		dp.DoubleValue == nil &&
 		dp.Count == nil &&
 		dp.Sum == nil &&
 		dp.ExplicitBounds == nil &&

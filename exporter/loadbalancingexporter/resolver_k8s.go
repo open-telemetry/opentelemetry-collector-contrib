@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -161,15 +160,15 @@ func (r *k8sResolver) start(_ context.Context) error {
 		// Create the epsListWatcher now that we have a client
 		epsSelector := fmt.Sprintf("kubernetes.io/service-name=%s", r.svcName)
 		r.epsListWatcher = &cache.ListWatch{
-			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+			ListWithContextFunc: func(ctx context.Context, options metav1.ListOptions) (runtime.Object, error) {
 				options.LabelSelector = epsSelector
-				options.TimeoutSeconds = ptr.To[int64](int64(r.lwTimeout.Seconds()))
-				return r.client.DiscoveryV1().EndpointSlices(r.svcNs).List(context.Background(), options)
+				options.TimeoutSeconds = new(int64(r.lwTimeout.Seconds()))
+				return r.client.DiscoveryV1().EndpointSlices(r.svcNs).List(ctx, options)
 			},
-			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
 				options.LabelSelector = epsSelector
-				options.TimeoutSeconds = ptr.To[int64](int64(r.lwTimeout.Seconds()))
-				return r.client.DiscoveryV1().EndpointSlices(r.svcNs).Watch(context.Background(), options)
+				options.TimeoutSeconds = new(int64(r.lwTimeout.Seconds()))
+				return r.client.DiscoveryV1().EndpointSlices(r.svcNs).Watch(ctx, options)
 			},
 		}
 

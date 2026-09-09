@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -43,8 +42,8 @@ func TestPrometheusExporter(t *testing.T) {
 				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 				serverConfig.WriteTimeout = 0
 				serverConfig.ReadHeaderTimeout = 0
-				serverConfig.IdleTimeout = 0
-				serverConfig.KeepAlivesEnabled = false
+				serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+				serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 				serverConfig.NetAddr = confignet.AddrConfig{
 					Transport: "tcp",
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
@@ -67,8 +66,8 @@ func TestPrometheusExporter(t *testing.T) {
 				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 				serverConfig.WriteTimeout = 0
 				serverConfig.ReadHeaderTimeout = 0
-				serverConfig.IdleTimeout = 0
-				serverConfig.KeepAlivesEnabled = false
+				serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+				serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 				serverConfig.NetAddr = confignet.AddrConfig{
 					Transport: "tcp",
 					Endpoint:  "localhost:88999",
@@ -121,8 +120,8 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  addr,
@@ -143,8 +142,8 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		ServerConfig:     serverConfig,
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
-		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
-			Enabled: true,
+		ResourceConstantLabels: resourcetotelemetry.Settings{
+			Included: []string{"*"},
 		},
 	}
 	factory := NewFactory()
@@ -208,8 +207,8 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  addr,
@@ -290,8 +289,8 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  addr,
@@ -366,8 +365,8 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  addr,
@@ -443,8 +442,8 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  addr,
@@ -458,8 +457,8 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 		ServerConfig:     serverConfig,
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
-		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
-			Enabled: true,
+		ResourceConstantLabels: resourcetotelemetry.Settings{
+			Included: []string{"*"},
 		},
 	}
 
@@ -711,9 +710,7 @@ this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os=
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set feature gate state for this test
-			originalState := metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate.IsEnabled()
-			testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate, tt.featureGateEnabled)
-			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate, originalState)
+			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate, tt.featureGateEnabled)()
 
 			// Configure the exporter
 			addr := testutil.GetAvailableLocalAddress(t)
@@ -722,8 +719,8 @@ this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os=
 			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 			serverConfig.WriteTimeout = 0
 			serverConfig.ReadHeaderTimeout = 0
-			serverConfig.IdleTimeout = 0
-			serverConfig.KeepAlivesEnabled = false
+			serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+			serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 			serverConfig.NetAddr = confignet.AddrConfig{
 				Transport: "tcp",
 				Endpoint:  addr,
@@ -792,16 +789,16 @@ func TestPrometheusExporter_BackgroundCleanup(t *testing.T) {
 		c.metricFamilies.Store("stale_metric", metricFamily{
 			lastSeen: time.Now().Add(-10 * time.Minute),
 			mf: &io_prometheus_client.MetricFamily{
-				Name: proto.String("stale_metric"),
-				Help: proto.String("should be cleaned up"),
+				Name: new("stale_metric"),
+				Help: new("should be cleaned up"),
 				Type: &gaugeType,
 			},
 		})
 		c.metricFamilies.Store("fresh_metric", metricFamily{
 			lastSeen: time.Now().Add(time.Hour),
 			mf: &io_prometheus_client.MetricFamily{
-				Name: proto.String("fresh_metric"),
-				Help: proto.String("should remain"),
+				Name: new("fresh_metric"),
+				Help: new("should remain"),
 				Type: &gaugeType,
 			},
 		})
@@ -835,4 +832,99 @@ func TestPrometheusExporter_BackgroundCleanup(t *testing.T) {
 		_, ok = a.registeredMetrics.Load("fresh_acc_key")
 		assert.True(t, ok, "fresh_accumulated should not have been evicted")
 	})
+}
+
+func TestPrometheusExporterResourceConstantLabels(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr.Endpoint = addr
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+
+	cfg := &Config{
+		ServerConfig:           serverConfig,
+		SendTimestamps:         true,
+		MetricExpiration:       120 * time.Minute,
+		ResourceConstantLabels: resourcetotelemetry.Settings{Included: []string{"k8s.pod.*", "selected.attr"}},
+	}
+
+	factory := NewFactory()
+	set := exportertest.NewNopSettings(metadata.Type)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, exp.Shutdown(t.Context()))
+	}()
+
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+
+	md := testdata.GenerateMetricsOneMetric()
+	res := md.ResourceMetrics().At(0).Resource()
+	res.Attributes().PutStr("k8s.pod.name", "my-pod-123")
+	res.Attributes().PutStr("selected.attr", "my-val")
+	res.Attributes().PutStr("ignored.attr", "should-be-ignored")
+
+	require.NoError(t, exp.ConsumeMetrics(t.Context(), md))
+
+	rsp, err := http.Get("http://" + addr + "/metrics")
+	require.NoError(t, err)
+	defer rsp.Body.Close()
+	assert.Equal(t, http.StatusOK, rsp.StatusCode)
+
+	blob, err := io.ReadAll(rsp.Body)
+	require.NoError(t, err)
+
+	body := string(blob)
+	assert.Contains(t, body, `k8s_pod_name="my-pod-123"`)
+	assert.Contains(t, body, `selected_attr="my-val"`)
+	assert.NotContains(t, body, `ignored_attr="should-be-ignored"`)
+}
+
+func TestPrometheusExporterDisableResourceToTelemetryConversion(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate, true)()
+
+	addr := testutil.GetAvailableLocalAddress(t)
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr.Endpoint = addr
+	serverConfig.WriteTimeout = 0
+	serverConfig.ReadHeaderTimeout = 0
+	serverConfig.IdleTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
+
+	cfg := &Config{
+		ServerConfig:     serverConfig,
+		SendTimestamps:   true,
+		MetricExpiration: 120 * time.Minute,
+		//nolint:staticcheck // test deprecated field
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
+			Enabled: true,
+		},
+	}
+
+	factory := NewFactory()
+	set := exportertest.NewNopSettings(metadata.Type)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, exp.Shutdown(t.Context()))
+	}()
+
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+
+	md := testdata.GenerateMetricsOneMetric()
+	require.NoError(t, exp.ConsumeMetrics(t.Context(), md))
+
+	rsp, err := http.Get("http://" + addr + "/metrics")
+	require.NoError(t, err)
+	defer rsp.Body.Close()
+	assert.Equal(t, http.StatusOK, rsp.StatusCode)
+
+	blob, err := io.ReadAll(rsp.Body)
+	require.NoError(t, err)
+
+	body := string(blob)
+	// With the feature gate enabled, ResourceToTelemetrySettings is ignored, so resource_attr should not appear on the counter metric.
+	assert.NotContains(t, body, `resource_attr="resource-attr-val-1"`)
 }

@@ -8,7 +8,7 @@
 
 name: 'Generate PR from changelog'
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] - PR files are read as data by trusted base-branch code
     types:
       - opened
       - edited
@@ -20,7 +20,7 @@ jobs:
     permissions:
       pull-requests: write
       contents: read
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     if: >-
       github.actor != 'dependabot[bot]'
       && github.repository_owner == 'open-telemetry'
@@ -30,6 +30,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Generate PR title and body from changelog
         run: ./.github/workflows/scripts/generate-pr-from-changelog.sh

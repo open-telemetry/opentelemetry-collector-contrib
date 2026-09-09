@@ -9,6 +9,6 @@
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
 | azure.container_app.instance.id | The name of the Azure Container App replica | Any Str | true | - | - |
-| cloud.platform | The cloud.platform | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
-| cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
-| service.name | The name of the Azure Container App | Any Str | true | [service.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/service.md#service-name) | - |
+| cloud.platform | The cloud.platform | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
+| cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
+| service.name | The name of the Azure Container App | Any Str | true | [service.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/service.md#service-name) | - |

@@ -1,9 +1,0 @@
-change_type: bug_fix
-
-component: receiver/prometheus
-
-note: Prevent the Prometheus receiver from dropping classic histograms without explicit bucket boundaries when `convert_classic_histograms_to_nhcb` is enabled and classic histograms are not retained.
-
-issues: [49893]
-
-change_logs: [user]

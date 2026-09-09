@@ -11,6 +11,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -188,5 +189,25 @@ func TestConsumeTimeSeriesUnits(t *testing.T) {
 	require.Len(t, consumer.ms, 4)
 	for _, m := range consumer.ms {
 		assert.Nil(t, m.Unit)
+	}
+}
+
+func TestToDataType(t *testing.T) {
+	consumer := NewConsumer(nil)
+	for _, tt := range []struct {
+		name string
+		in   metrics.DataType
+		want datadogV2.MetricIntakeType
+	}{
+		{"count", metrics.Count, datadogV2.METRICINTAKETYPE_COUNT},
+		{"gauge", metrics.Gauge, datadogV2.METRICINTAKETYPE_GAUGE},
+		// Rate is reachable when an OTLP delta-sum datapoint carries the
+		// datadog.metric.as_type=rate attribute; before this case existed it fell
+		// through to METRICINTAKETYPE_UNSPECIFIED and the metric was silently dropped.
+		{"rate", metrics.Rate, datadogV2.METRICINTAKETYPE_RATE},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, consumer.toDataType(tt.in))
+		})
 	}
 }

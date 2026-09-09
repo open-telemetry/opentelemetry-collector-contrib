@@ -32,7 +32,7 @@ var ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate = featur
 
 var ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"extension.encoding.awslogsencoding.EmitV1RPCConventions",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, CloudTrail log unmarshaler emits rpc.system.name (semconv v1.40.0) instead of the deprecated rpc.system (semconv v1.38.0)."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47549"),
 	featuregate.WithRegisterFromVersion("v0.150.0"),

@@ -95,8 +95,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 func TestCreateMetrics_CustomConfig(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Timeout = 2 * time.Second
 	clientConfig.Headers = configopaque.MapList{
@@ -660,9 +660,36 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	require.NoError(t, err)
 
 	md := getMetrics(metrics)
-	require.Equal(t, 46, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, 45, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
 	require.Empty(t, dps)
+}
+
+func TestDefaultExcludesKubeletMemoryMetrics(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	require.NoError(t, setDefaultExcludes(cfg))
+
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), nil, cfg.ExcludeMetrics, cfg.IncludeMetrics, "", false, true)
+	require.NoError(t, err)
+
+	var metrics []map[string]string
+	for _, prefix := range []string{"container", "k8s.node", "k8s.pod"} {
+		for _, suffix := range []string{"available", "major_page_faults", "page_faults", "rss", "usage", "working_set"} {
+			metrics = append(metrics, map[string]string{prefix + ".memory." + suffix: ""})
+		}
+	}
+
+	dps := converter.MetricsToSignalFxV2(getMetrics(metrics))
+	metricNames := make([]string, 0, len(dps))
+	for _, dp := range dps {
+		metricNames = append(metricNames, dp.Metric)
+	}
+	require.ElementsMatch(t, []string{
+		"container.memory.rss",
+		"container.memory.usage",
+		"container.memory.working_set",
+	}, metricNames)
 }
 
 // Benchmark test for default translation rules on an example hostmetrics dataset.

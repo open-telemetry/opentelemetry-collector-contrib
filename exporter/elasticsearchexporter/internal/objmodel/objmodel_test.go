@@ -5,6 +5,7 @@ package objmodel
 
 import (
 	"math"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -395,6 +396,59 @@ func TestValue_Serialize(t *testing.T) {
 			err := test.value.iterJSON(newJSONVisitor(&buf), false)
 			require.NoError(t, err)
 			assert.Equal(t, test.want, buf.String())
+		})
+	}
+}
+
+func TestDocument_Reset(t *testing.T) {
+	var doc Document
+	doc.Grow(8)
+	doc.AddInt("a", 1)
+	doc.AddDynamicTemplate("a", "histogram")
+	capBefore := cap(doc.fields)
+
+	doc.Reset()
+
+	require.Empty(t, doc.fields)
+	require.Equal(t, capBefore, cap(doc.fields))
+	require.Empty(t, doc.dynamicTemplates)
+
+	doc.AddInt("b", 2)
+	require.Len(t, doc.fields, 1)
+	require.Equal(t, "b", doc.fields[0].key)
+	require.Equal(t, capBefore, cap(doc.fields))
+}
+
+func TestDocument_Grow(t *testing.T) {
+	cases := []struct {
+		name string
+		n    int
+		adds int
+	}{
+		{
+			name: "zero",
+			n:    0,
+			adds: 0,
+		},
+		{
+			name: "prealloc then fill",
+			n:    8,
+			adds: 8,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var doc Document
+			doc.Grow(tc.n)
+			require.GreaterOrEqual(t, cap(doc.fields), tc.n)
+			require.Empty(t, doc.fields)
+
+			for i := range tc.adds {
+				doc.AddInt(strconv.Itoa(i), int64(i))
+			}
+			require.Len(t, doc.fields, tc.adds)
+			require.GreaterOrEqual(t, cap(doc.fields), tc.n)
 		})
 	}
 }

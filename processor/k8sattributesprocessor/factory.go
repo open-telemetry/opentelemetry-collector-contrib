@@ -47,8 +47,7 @@ func createDefaultConfig() component.Config {
 		APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 		Exclude:   defaultExcludes,
 		Extract: ExtractConfig{
-			Metadata:                     enabledAttributes(),
-			DeploymentNameFromReplicaSet: true,
+			Metadata: enabledAttributes(),
 		},
 		WaitForMetadataTimeout: 10 * time.Second,
 		WatchSyncPeriod:        5 * time.Minute,
@@ -278,7 +277,6 @@ func createProcessorOpts(cfg component.Config) []option {
 		withExtractLabels(oCfg.Extract.Labels...),
 		withExtractAnnotations(oCfg.Extract.Annotations...),
 		withOtelAnnotations(oCfg.Extract.OtelAnnotations),
-		withDeploymentNameFromReplicaSet(oCfg.Extract.DeploymentNameFromReplicaSet),
 		// filters
 		withFilterNode(oCfg.Filter.Node, oCfg.Filter.NodeFromEnvVar),
 		withFilterNamespace(oCfg.Filter.Namespace),

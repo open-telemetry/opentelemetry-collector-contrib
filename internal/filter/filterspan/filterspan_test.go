@@ -16,8 +16,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func createConfig(matchType filterset.MatchType) *filterset.Config {
@@ -725,7 +725,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.1.0"),
+							Version: new("0.1.0"),
 						},
 					},
 				},
@@ -741,11 +741,11 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("2.0.0"),
+							Version: new("2.0.0"),
 						},
 						{
 							Name:    "scope",
-							Version: ottltest.Strp(`1.1.0`),
+							Version: new(`1.1.0`),
 						},
 					},
 				},
@@ -761,7 +761,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.*"),
+							Version: new("0.*"),
 						},
 					},
 				},
@@ -777,11 +777,11 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("2.*"),
+							Version: new("2.*"),
 						},
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("^1\\\\.1.*"),
+							Version: new("^1\\\\.1.*"),
 						},
 					},
 				},
@@ -797,7 +797,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.1.0"),
+							Version: new("0.1.0"),
 						},
 					},
 				},
@@ -813,11 +813,11 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("2.0.0"),
+							Version: new("2.0.0"),
 						},
 						{
 							Name:    "scope",
-							Version: ottltest.Strp(`1.1.0`),
+							Version: new(`1.1.0`),
 						},
 					},
 				},
@@ -833,7 +833,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.*"),
+							Version: new("0.*"),
 						},
 					},
 				},
@@ -849,11 +849,11 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("2.*"),
+							Version: new("2.*"),
 						},
 						{
 							Name:    "scope",
-							Version: ottltest.Strp(`1\\.1.*`),
+							Version: new(`1\\.1.*`),
 						},
 					},
 				},
@@ -1168,7 +1168,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 					Libraries: []filterconfig.InstrumentationLibrary{
 						{
 							Name:    "scope",
-							Version: ottltest.Strp("0.1.0"),
+							Version: new("0.1.0"),
 						},
 					},
 					Resources: []filterconfig.Attribute{
@@ -1255,8 +1255,8 @@ func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 	}
 
 	for _, tt := range testCases {
-		origVal := useOTTLBridge.IsEnabled()
-		err := featuregate.GlobalRegistry().Set("filter.filterspan.useOTTLBridge", true)
+		origVal := metadata.FilterFilterspanUseOTTLBridgeFeatureGate.IsEnabled()
+		err := featuregate.GlobalRegistry().Set(metadata.FilterFilterspanUseOTTLBridgeFeatureGate.ID(), true)
 		assert.NoError(b, err)
 
 		skipExpr, err := NewSkipExpr(tt.mc)
@@ -1285,7 +1285,7 @@ func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 			}
 		})
 
-		err = featuregate.GlobalRegistry().Set("filter.filterspan.useOTTLBridge", origVal)
+		err = featuregate.GlobalRegistry().Set(metadata.FilterFilterspanUseOTTLBridgeFeatureGate.ID(), origVal)
 		assert.NoError(b, err)
 	}
 }
