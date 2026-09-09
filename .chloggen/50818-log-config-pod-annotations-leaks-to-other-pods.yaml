@@ -1,6 +1,6 @@
 change_type: bug_fix
 
-component: receiver/receivercreator
+component: receiver/receiver_creator
 
 note: Log configuration annotations are no longer applied to subsequently discovered pods
 
