@@ -71,7 +71,6 @@ require (
 	github.com/hashicorp/go-metrics v0.6.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
-	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/serf v0.10.4 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
