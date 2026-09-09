@@ -420,10 +420,16 @@ func TestScrapesProcedureMetricsLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
 	assert.Equal(t, 1, logsCol1.ResourceLogs().At(0).ScopeLogs().Len(), "Collection should run when lastProcedureMetricsTimestamp is not available")
 	assert.False(t, scrpr.lastProcedureMetricsTimestamp.IsZero(), "A value should be set for lastProcedureMetricsTimestamp after a successful collection")
 
-	// 50s into a 60s interval: past where the old vsqlRefreshLag bug fired early.
-	scrpr.lastProcedureMetricsTimestamp = scrpr.lastProcedureMetricsTimestamp.Add(-50 * time.Second)
+	// calculateLookbackSeconds adds vsqlRefreshLag, so the gate opens 10s early: 30s elapsed
+	// reports 40s against a 60s interval and must still skip.
+	scrpr.lastProcedureMetricsTimestamp = scrpr.lastProcedureMetricsTimestamp.Add(-30 * time.Second)
+	skippedFrom := scrpr.lastProcedureMetricsTimestamp
 	logsCol2, err := scrpr.scrapeLogs(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, 0, logsCol2.ResourceLogs().Len(),
 		"procedure_metrics should not be collected until %s elapsed", scrpr.procedureMetricsCfg.CollectionInterval)
+	// Emitting nothing is also what a collection with zero deltas looks like, so assert the
+	// timestamp did not move: only a collection that actually ran advances it.
+	assert.Equal(t, skippedFrom, scrpr.lastProcedureMetricsTimestamp,
+		"a skipped scrape must not advance lastProcedureMetricsTimestamp")
 }

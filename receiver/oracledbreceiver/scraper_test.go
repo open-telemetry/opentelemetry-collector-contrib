@@ -1659,7 +1659,6 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 				return nil
 			},
 		}, {
-			// Nothing was active in the lookback window: a normal condition, not a scrape error.
 			name: "No metrics collected",
 			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
 				return &fakeDbClient{
