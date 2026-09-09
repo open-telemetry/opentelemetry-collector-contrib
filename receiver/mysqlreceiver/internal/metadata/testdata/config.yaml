@@ -111,6 +111,8 @@ all_set:
       enabled: true
     mysql.query.count:
       enabled: true
+    mysql.query.execution.time:
+      enabled: true
     mysql.query.slow.count:
       enabled: true
     mysql.replica.sql_delay:
@@ -128,6 +130,10 @@ all_set:
     mysql.row_operations:
       enabled: true
       attributes: ["operation"]
+    mysql.server.healthy:
+      enabled: true
+    mysql.session.active.count:
+      enabled: true
     mysql.sorts:
       enabled: true
       attributes: ["kind"]
@@ -309,6 +315,8 @@ reaggregate_set:
       enabled: true
     mysql.query.count:
       enabled: true
+    mysql.query.execution.time:
+      enabled: true
     mysql.query.slow.count:
       enabled: true
     mysql.replica.sql_delay:
@@ -326,6 +334,10 @@ reaggregate_set:
     mysql.row_operations:
       enabled: true
       attributes: []
+    mysql.server.healthy:
+      enabled: true
+    mysql.session.active.count:
+      enabled: true
     mysql.sorts:
       enabled: true
       attributes: []
@@ -507,6 +519,8 @@ none_set:
       enabled: false
     mysql.query.count:
       enabled: false
+    mysql.query.execution.time:
+      enabled: false
     mysql.query.slow.count:
       enabled: false
     mysql.replica.sql_delay:
@@ -524,6 +538,10 @@ none_set:
     mysql.row_operations:
       enabled: false
       attributes: ["operation"]
+    mysql.server.healthy:
+      enabled: false
+    mysql.session.active.count:
+      enabled: false
     mysql.sorts:
       enabled: false
       attributes: ["kind"]
