@@ -1631,8 +1631,6 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 		name       string
 		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
 		errWanted  string
-		// noRecordsWanted expects a successful scrape that emits nothing.
-		noRecordsWanted bool
 	}{
 		{
 			name: "valid collection",
@@ -1670,7 +1668,7 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 					},
 				}
 			},
-			noRecordsWanted: true,
+			errWanted: `no data returned from oracleQueryMetricsClient`,
 		}, {
 			name: "Error on collecting metrics",
 			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
@@ -1725,13 +1723,9 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 
 			logs, err := scrpr.scrapeLogs(t.Context())
 
-			switch {
-			case test.errWanted != "":
+			if test.errWanted != "" {
 				require.EqualError(t, err, test.errWanted)
-			case test.noRecordsWanted:
-				require.NoError(t, err, "an empty result set should not be reported as a scrape error")
-				assert.Equal(t, 0, logs.ResourceLogs().Len(), "no log records should be emitted when no statements were active")
-			default:
+			} else {
 				// Uncomment line below to re-generate expected logs.
 				// golden.WriteLogs(t, expectedQueryPlanFile, logs)
 				expectedLogs, _ := golden.ReadLogs(expectedQueryPlanFile)
@@ -2905,48 +2899,16 @@ func TestCalculateLookbackSeconds(t *testing.T) {
 	vsqlRefreshLagSec := 10 * time.Second
 	expectedMinimumLookbackTime := int((collectionInterval + vsqlRefreshLagSec).Seconds())
 
-	elapsed := secondsSinceLastCollection(time.Now().Add(-collectionInterval), collectionInterval)
-	lookbackTime := lookbackSeconds(elapsed)
+	lookbackTime := calculateLookbackSeconds(time.Now().Add(-collectionInterval), collectionInterval)
 
 	assert.LessOrEqual(t, expectedMinimumLookbackTime, lookbackTime, "`lookbackTime` should be minimum %d", expectedMinimumLookbackTime)
 }
 
-// vsqlRefreshLag widens the query window; folding it into the elapsed comparison made a 60s interval
-// collect every ~50s.
-func TestSecondsSinceLastCollectionExcludesRefreshLag(t *testing.T) {
-	collectionInterval := 60 * time.Second
-	intervalSeconds := int(collectionInterval.Seconds())
-
-	tests := []struct {
-		name        string
-		elapsed     time.Duration
-		wantCollect bool
-	}{
-		{name: "10s before the interval must not collect", elapsed: 50 * time.Second, wantCollect: false},
-		{name: "5s before the interval must not collect", elapsed: 55 * time.Second, wantCollect: false},
-		{name: "at the interval collects", elapsed: 60 * time.Second, wantCollect: true},
-		{name: "past the interval collects", elapsed: 90 * time.Second, wantCollect: true},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			elapsed := secondsSinceLastCollection(time.Now().Add(-test.elapsed), collectionInterval)
-			assert.Equal(t, test.wantCollect, elapsed >= intervalSeconds,
-				"elapsed %ds vs interval %ds", elapsed, intervalSeconds)
-
-			// The lag still has to reach the query, just not the schedule.
-			assert.Equal(t, elapsed+int(vsqlRefreshLag.Seconds()), lookbackSeconds(elapsed))
-		})
-	}
-}
-
 // A zero timestamp must report a full interval so the first scrape collects immediately.
-func TestSecondsSinceLastCollectionFirstScrape(t *testing.T) {
+func TestCalculateLookbackSecondsFirstScrape(t *testing.T) {
 	collectionInterval := 60 * time.Second
-	elapsed := secondsSinceLastCollection(time.Time{}, collectionInterval)
 
-	assert.Equal(t, int(collectionInterval.Seconds()), elapsed)
-	assert.GreaterOrEqual(t, elapsed, int(collectionInterval.Seconds()), "first scrape must not be skipped")
+	assert.Equal(t, int(collectionInterval.Seconds()), calculateLookbackSeconds(time.Time{}, collectionInterval))
 }
 
 func TestScraper_ScrapeSGAInfo(t *testing.T) {

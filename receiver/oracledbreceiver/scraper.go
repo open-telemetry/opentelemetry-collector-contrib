@@ -1855,11 +1855,11 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 
 	if s.logsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		currentCollectionTime := time.Now()
-		elapsedSeconds := secondsSinceLastCollection(s.lastExecutionTimestamp, s.topQueryCollectCfg.CollectionInterval)
-		if elapsedSeconds < int(s.topQueryCollectCfg.CollectionInterval.Seconds()) {
+		lookbackTimeCounter := calculateLookbackSeconds(s.lastExecutionTimestamp, s.topQueryCollectCfg.CollectionInterval)
+		if lookbackTimeCounter < int(s.topQueryCollectCfg.CollectionInterval.Seconds()) {
 			s.logger.Debug("Skipping the collection of top queries because collection interval has not yet elapsed.")
 		} else {
-			topNCollectionErrors := s.collectTopNMetricData(ctx, logs, currentCollectionTime, lookbackSeconds(elapsedSeconds))
+			topNCollectionErrors := s.collectTopNMetricData(ctx, logs, currentCollectionTime, lookbackTimeCounter)
 			if topNCollectionErrors != nil {
 				scrapeErrors = append(scrapeErrors, topNCollectionErrors)
 			}
@@ -1883,11 +1883,11 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 
 	if s.logsBuilderConfig.Events.DbServerTopProcedure.Enabled {
 		currentCollectionTime := time.Now()
-		elapsedSeconds := secondsSinceLastCollection(s.lastProcedureMetricsTimestamp, s.procedureMetricsCfg.CollectionInterval)
-		if elapsedSeconds < int(s.procedureMetricsCfg.CollectionInterval.Seconds()) {
+		lookbackTimeCounter := calculateLookbackSeconds(s.lastProcedureMetricsTimestamp, s.procedureMetricsCfg.CollectionInterval)
+		if lookbackTimeCounter < int(s.procedureMetricsCfg.CollectionInterval.Seconds()) {
 			s.logger.Debug("Skipping the collection of procedure metrics because collection interval has not yet elapsed.")
 		} else {
-			procedureCollectionErrors := s.collectProcedureMetrics(ctx, logs, currentCollectionTime, lookbackSeconds(elapsedSeconds))
+			procedureCollectionErrors := s.collectProcedureMetrics(ctx, logs, currentCollectionTime, lookbackTimeCounter)
 			if procedureCollectionErrors != nil {
 				scrapeErrors = append(scrapeErrors, procedureCollectionErrors)
 			}
@@ -1907,9 +1907,8 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 	if metricError != nil {
 		return fmt.Errorf("error executing oracleQueryMetricsSQL: %w", metricError)
 	}
-	// Nothing was active in the lookback window; normal on an idle instance, so not a scrape error.
 	if len(metricRows) == 0 {
-		return nil
+		return errors.New("no data returned from oracleQueryMetricsClient")
 	}
 
 	metricNames := s.getTopNMetricNames()
@@ -2595,16 +2594,11 @@ func constructInstanceID(host, port, service string) string {
 // PS: https://docs.oracle.com/en/database/oracle/oracle-database/21/refrn/V-SQL.html
 const vsqlRefreshLag = 10 * time.Second
 
-// secondsSinceLastCollection excludes vsqlRefreshLag on purpose: the lag widens the query window, and folding
-// it in here made a configured 60s interval fire every ~50s. A zero timestamp reports a full interval.
-func secondsSinceLastCollection(lastTimestamp time.Time, collectionInterval time.Duration) int {
+// calculateLookbackSeconds reports how far back the query window should reach. The vsqlRefreshLag
+// buffer is included so rows whose V$SQL entry lagged the previous scrape are still picked up.
+func calculateLookbackSeconds(lastTimestamp time.Time, collectionInterval time.Duration) int {
 	if lastTimestamp.IsZero() {
 		return int(collectionInterval.Seconds())
 	}
-	return int(math.Ceil(time.Since(lastTimestamp).Seconds()))
-}
-
-// lookbackSeconds widens the window so rows whose V$SQL entry lagged the previous scrape are still picked up.
-func lookbackSeconds(elapsedSeconds int) int {
-	return elapsedSeconds + int(vsqlRefreshLag.Seconds())
+	return int(math.Ceil(time.Now().Add(vsqlRefreshLag).Sub(lastTimestamp).Seconds()))
 }
