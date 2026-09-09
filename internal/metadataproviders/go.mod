@@ -4,12 +4,12 @@ go 1.26.0
 
 require (
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/aws/aws-sdk-go-v2 v1.45.1
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.19.1
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.325.1
+	github.com/aws/aws-sdk-go-v2 v1.46.0
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.19.2
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.329.0
 	github.com/hashicorp/consul/api v1.33.4
-	github.com/moby/moby/api v1.55.0
-	github.com/moby/moby/client v0.5.1
+	github.com/moby/moby/api v1.56.0
+	github.com/moby/moby/client v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.160.0
 	github.com/shirou/gopsutil/v4 v4.26.8
 	github.com/stretchr/testify v1.12.1
@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.46.0
 	go.uber.org/goleak v1.3.0
 	go.yaml.in/yaml/v3 v3.0.5
-	golang.org/x/sync v0.22.0
+	golang.org/x/sync v0.23.0
 	k8s.io/api v0.37.0
 	k8s.io/apimachinery v0.37.0
 	k8s.io/client-go v0.37.0
@@ -26,10 +26,10 @@ require (
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.1 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.1 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.2 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.19 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.2 // indirect
 	github.com/aws/smithy-go v1.28.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect

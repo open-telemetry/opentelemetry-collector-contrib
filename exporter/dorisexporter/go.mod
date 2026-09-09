@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	// https://github.com/go-sql-driver/mysql/issues/1602; https://github.com/apache/doris/pull/32177
-	github.com/go-sql-driver/mysql v1.10.0
+	github.com/go-sql-driver/mysql v1.10.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.160.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.66.1-0.20260903163450-cc4b33fc673f
@@ -86,7 +86,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.46.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/crypto v0.55.0 // indirect
+	golang.org/x/crypto v0.56.0 // indirect
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
