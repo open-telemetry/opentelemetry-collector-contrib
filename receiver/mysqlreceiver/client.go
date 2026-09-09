@@ -8,6 +8,7 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
+	"errors"
 	"fmt"
 	"net"
 	"regexp"
@@ -17,8 +18,9 @@ import (
 	"time"
 
 	// registers the mysql driver
-	"github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/hashicorp/go-version"
+	"go.opentelemetry.io/collector/component"
 	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
 	"go.uber.org/zap"
 )
@@ -114,6 +116,7 @@ type client interface {
 	getDBVersion() dbVersion
 	getGlobalStats() (map[string]string, error)
 	getInnodbStats() (map[string]string, error)
+	getInnodbTransactionStats() (innodbTransactionStats, error)
 	getTableStats() ([]tableStats, error)
 	getTableIoWaitsStats() ([]tableIoWaitsStats, error)
 	getIndexIoWaitsStats() ([]indexIoWaitsStats, error)
@@ -132,7 +135,6 @@ type client interface {
 }
 
 type mySQLClient struct {
-	connStr                        string
 	client                         *sql.DB
 	statementEventsDigestTextLimit int
 	statementEventsLimit           int
@@ -169,6 +171,12 @@ type tableStats struct {
 	averageRowLength int64
 	dataLength       int64
 	indexLength      int64
+}
+
+type innodbTransactionStats struct {
+	historyListLength            int64
+	activeTransactions           int64
+	maxActiveTransactionDuration int64
 }
 
 type statementEventStats struct {
@@ -324,63 +332,35 @@ type topQuery struct {
 
 var _ client = (*mySQLClient)(nil)
 
+func newMySQLClientFromDB(db *sql.DB, stmtEvents StatementEventsConfig) *mySQLClient {
+	return &mySQLClient{
+		client:                         db,
+		statementEventsDigestTextLimit: stmtEvents.DigestTextLimit,
+		statementEventsLimit:           stmtEvents.Limit,
+		statementEventsTimeLimit:       stmtEvents.TimeLimit,
+	}
+}
+
 func newMySQLClient(conf *Config) (client, error) {
-	tls, err := conf.TLS.LoadTLSConfig(context.Background())
+	f, err := newClientFactory(conf, component.MustNewID("mysql"))
 	if err != nil {
 		return nil, err
 	}
-	tlsConfig := ""
-	if tls != nil {
-		err := mysql.RegisterTLSConfig("custom", tls)
-		if err != nil {
-			return nil, err
-		}
-		tlsConfig = "custom"
-	}
-
-	driverConf := mysql.Config{
-		User:                 conf.Username,
-		Passwd:               string(conf.Password),
-		Net:                  string(conf.AddrConfig.Transport),
-		Addr:                 conf.AddrConfig.Endpoint,
-		DBName:               conf.Database,
-		AllowNativePasswords: conf.AllowNativePasswords,
-		TLS:                  tls,
-		TLSConfig:            tlsConfig,
-	}
-	connStr := driverConf.FormatDSN()
-
-	return &mySQLClient{
-		connStr:                        connStr,
-		statementEventsDigestTextLimit: conf.StatementEvents.DigestTextLimit,
-		statementEventsLimit:           conf.StatementEvents.Limit,
-		statementEventsTimeLimit:       conf.StatementEvents.TimeLimit,
-	}, nil
+	return f.connect(context.Background())
 }
 
 func (c *mySQLClient) Connect() error {
-	clientDB, err := sql.Open("mysql", c.connStr)
-	if err != nil {
-		return fmt.Errorf("unable to connect to database: %w", err)
+	if c.client != nil {
+		c.populateDBVersion()
+		return nil
 	}
-	c.client = clientDB
+	return errors.New("mysql client has no database handle")
+}
 
-	// Version detection runs exactly once during Connect and is non-fatal.
-	// If the query fails (e.g. no database reachable at startup) or the
-	// version string cannot be parsed, dbVersion stays at its zero value,
-	// which selects the safe fallback template (MySQL <8 / MariaDB behavior)
-	// for the entire lifetime of this receiver instance. Any connection error
-	// encountered here will cause the receiver to operate with incorrect
-	// version information; it will not be retried.
-	//
-	// This is intentional: sql.Open is lazy and the component lifecycle test
-	// calls start() against 127.0.0.1:3306 with no live database. A hard
-	// failure here would break that test with no way to inject a mock client
-	// before Connect runs. Real connection errors surface on the first scrape.
+func (c *mySQLClient) populateDBVersion() {
 	if dbVer, verErr := c.fetchDBVersion(); verErr == nil {
 		c.dbVersion = dbVer
 	}
-	return nil
 }
 
 // fetchDBVersion queries the database for its version string and parses it
@@ -456,6 +436,22 @@ func (c *mySQLClient) getGlobalStats() (map[string]string, error) {
 func (c *mySQLClient) getInnodbStats() (map[string]string, error) {
 	q := "SELECT name, count FROM information_schema.innodb_metrics WHERE name LIKE '%buffer_pool_size%';"
 	return query(*c, q)
+}
+
+// getInnodbTransactionStats queries the db for InnoDB transaction metrics.
+func (c *mySQLClient) getInnodbTransactionStats() (innodbTransactionStats, error) {
+	q := "SELECT " +
+		"COALESCE((SELECT count FROM information_schema.innodb_metrics WHERE name = 'trx_rseg_history_len'), 0), " +
+		"COUNT(*), " +
+		"COALESCE(MAX(TIMESTAMPDIFF(SECOND, trx_started, NOW())), 0) " +
+		"FROM information_schema.innodb_trx"
+	var stats innodbTransactionStats
+	err := c.client.QueryRow(q).Scan(
+		&stats.historyListLength,
+		&stats.activeTransactions,
+		&stats.maxActiveTransactionDuration,
+	)
+	return stats, err
 }
 
 // getTableStats queries the db for information_schema table size metrics.

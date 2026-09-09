@@ -23,7 +23,7 @@ feature_gates:
     from_version: v0.73.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198
   - id: filelog.mtimeSortType
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, allows usage of `ordering_criteria.mode` = `mtime`.
     from_version: v0.89.0
