@@ -832,6 +832,7 @@ func TestScrapeQuerySampleSemconv(t *testing.T) {
 		querySampleColumnClientHostname:       "otel",
 		querySampleColumnClientPort:           "114514",
 		querySampleColumnQueryStart:           "2025-02-12T16:37:54.843+08:00",
+		querySampleColumnBackendStart:         "2025-02-10T09:15:00Z",
 		querySampleColumnQueryID:              "123131231231",
 		querySampleColumnPID:                  "1450",
 		querySampleColumnApplicationName:      "receiver",

@@ -33,7 +33,7 @@ resourceLogs:
                   intValue: "1450"
               - key: postgresql.backend.connection.start
                 value:
-                  stringValue: ""
+                  stringValue: "2025-02-10T09:15:00Z"
               - key: postgresql.application_name
                 value:
                   stringValue: receiver
