@@ -32,6 +32,6 @@ feature_gates:
 
   - id: "ottl.set.allowNil"
     description: When enabled, the set function passes nil values directly to the target.
-    stage: alpha
+    stage: beta
     from_version: v0.158.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49741
