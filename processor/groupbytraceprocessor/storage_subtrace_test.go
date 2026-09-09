@@ -5,7 +5,6 @@ package groupbytraceprocessor
 
 import (
 	"fmt"
-	"strconv"
 	"sync"
 	"testing"
 
@@ -24,8 +23,15 @@ func newTestSubtraceStorage() *subtraceMemoryStorage {
 // just arrived, so it passes a narrower candidate list.
 func allLocalRoots(st *subtraceMemoryStorage, traceID pcommon.TraceID) []pcommon.SpanID {
 	st.RLock()
-	candidates := make([]pcommon.SpanID, 0, len(st.traces[traceID]))
-	for spanID := range st.traces[traceID] {
+	idx, ok := st.traces[traceID]
+	if !ok {
+		// The concurrency test races this against the first insert, so the trace
+		// may not exist yet.
+		st.RUnlock()
+		return nil
+	}
+	candidates := make([]pcommon.SpanID, 0, idx.len())
+	for spanID := range idx.spans {
 		candidates = append(candidates, spanID)
 	}
 	st.RUnlock()
@@ -241,13 +247,10 @@ func TestSubtraceStorage_DeleteSubtrace_SkipsDemotedRoot(t *testing.T) {
 // serviceCount services, returned as one batch per service so that the shape
 // matches how the spans would actually arrive. Each service has a local root
 // whose parent is the previous service's root, flagged remote, and its remaining
-// spans form a balanced tree beneath that root: real traces fan out rather than
-// forming one long chain, and the depth of the tree is what the ancestor walk
-// pays for.
-func buildBenchTrace(traceID pcommon.TraceID, serviceCount, spanCount int) []ptrace.Traces {
-	// Fanout of a typical service span: a handler calling a handful of clients.
-	const fanout = 8
-
+// spans hang beneath that root as a balanced tree of the given fanout. A fanout
+// of 1 degenerates into a single chain, which is the deepest a trace of that
+// size can be.
+func buildBenchTrace(traceID pcommon.TraceID, serviceCount, spanCount, fanout int) []ptrace.Traces {
 	spanID := func(i int) pcommon.SpanID {
 		var id pcommon.SpanID
 		id[0], id[1], id[2] = byte(i), byte(i>>8), 0xAA
@@ -282,50 +285,64 @@ func buildBenchTrace(traceID pcommon.TraceID, serviceCount, spanCount int) []ptr
 
 // BenchmarkSubtraceIndexAndRelease measures everything the service strategy does
 // with a trace of a given size: indexing each span as its batch arrives,
-// classifying the spans that arrived with it, then walking and reassembling each
-// service's subtrace on release. Divide ns/op by spans/op for the per-span cost.
+// classifying the spans that arrived with it, then collecting and reassembling
+// each service's subtrace on release. Divide ns/op by spans/op for the per-span
+// cost.
+//
+// The two shapes bracket what the collection walk has to cope with. "tree" is
+// what ordinary instrumentation produces, a handler calling a handful of
+// clients. "chain" is one span per level, as a long sequential pipeline would
+// produce, and is the worst case for anything that has to traverse ancestry.
 func BenchmarkSubtraceIndexAndRelease(b *testing.B) {
 	const serviceCount = 4
 
-	for _, spanCount := range []int{40, 400, 4000} {
-		b.Run(strconv.Itoa(spanCount), func(b *testing.B) {
-			traceID := makeTraceID(1)
-			batches := buildBenchTrace(traceID, serviceCount, spanCount)
+	for _, shape := range []struct {
+		name   string
+		fanout int
+	}{
+		{name: "tree", fanout: 8},
+		{name: "chain", fanout: 1},
+	} {
+		for _, spanCount := range []int{40, 400, 4000} {
+			b.Run(fmt.Sprintf("%s/%d", shape.name, spanCount), func(b *testing.B) {
+				traceID := makeTraceID(1)
+				batches := buildBenchTrace(traceID, serviceCount, spanCount, shape.fanout)
 
-			b.ReportAllocs()
-			for b.Loop() {
-				st := newSubtraceMemoryStorage(nil)
+				b.ReportAllocs()
+				for b.Loop() {
+					st := newSubtraceMemoryStorage(nil)
 
-				var roots []pcommon.SpanID
-				for _, td := range batches {
-					var arrived []pcommon.SpanID
-					for i := 0; i < td.ResourceSpans().Len(); i++ {
-						rs := td.ResourceSpans().At(i)
-						rctx := newResourceContext(rs.Resource())
-						for j := 0; j < rs.ScopeSpans().Len(); j++ {
-							ss := rs.ScopeSpans().At(j)
-							sctx := newSpanContext(rctx, ss.Scope())
-							for k := 0; k < ss.Spans().Len(); k++ {
-								span := ss.Spans().At(k)
-								if err := st.insertSpan(traceID, sctx, span); err != nil {
-									b.Fatal(err)
+					var roots []pcommon.SpanID
+					for _, td := range batches {
+						var arrived []pcommon.SpanID
+						for i := 0; i < td.ResourceSpans().Len(); i++ {
+							rs := td.ResourceSpans().At(i)
+							rctx := newResourceContext(rs.Resource())
+							for j := 0; j < rs.ScopeSpans().Len(); j++ {
+								ss := rs.ScopeSpans().At(j)
+								sctx := newSpanContext(rctx, ss.Scope())
+								for k := 0; k < ss.Spans().Len(); k++ {
+									span := ss.Spans().At(k)
+									if err := st.insertSpan(traceID, sctx, span); err != nil {
+										b.Fatal(err)
+									}
+									arrived = append(arrived, span.SpanID())
 								}
-								arrived = append(arrived, span.SpanID())
 							}
 						}
+						roots = append(roots, st.localRoots(traceID, arrived)...)
 					}
-					roots = append(roots, st.localRoots(traceID, arrived)...)
-				}
 
-				for _, root := range roots {
-					members, err := st.deleteSubtrace(traceID, root)
-					if err != nil {
-						b.Fatal(err)
+					for _, root := range roots {
+						members, err := st.deleteSubtrace(traceID, root)
+						if err != nil {
+							b.Fatal(err)
+						}
+						assemble(members)
 					}
-					assemble(members)
 				}
-			}
-			b.ReportMetric(float64(spanCount), "spans/op")
-		})
+				b.ReportMetric(float64(spanCount), "spans/op")
+			})
+		}
 	}
 }

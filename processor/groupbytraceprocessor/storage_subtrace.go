@@ -44,8 +44,8 @@ var _ subtraceStorage = (*subtraceMemoryStorage)(nil)
 
 type subtraceMemoryStorage struct {
 	sync.RWMutex
-	// traces maps traceID → (spanID → bufferedSpan)
-	traces    map[pcommon.TraceID]map[pcommon.SpanID]*bufferedSpan
+	// traces maps traceID → the spans buffered for that trace
+	traces    map[pcommon.TraceID]*traceIndex
 	telemetry *metadata.TelemetryBuilder
 }
 
@@ -53,7 +53,7 @@ var _ subtraceStorage = (*subtraceMemoryStorage)(nil)
 
 func newSubtraceMemoryStorage(telemetry *metadata.TelemetryBuilder) *subtraceMemoryStorage {
 	return &subtraceMemoryStorage{
-		traces:    make(map[pcommon.TraceID]map[pcommon.SpanID]*bufferedSpan),
+		traces:    make(map[pcommon.TraceID]*traceIndex),
 		telemetry: telemetry,
 	}
 }
@@ -64,10 +64,12 @@ func (s *subtraceMemoryStorage) insertSpan(traceID pcommon.TraceID, ctx spanCont
 	s.Lock()
 	defer s.Unlock()
 
-	if _, ok := s.traces[traceID]; !ok {
-		s.traces[traceID] = make(map[pcommon.SpanID]*bufferedSpan)
+	idx, ok := s.traces[traceID]
+	if !ok {
+		idx = newTraceIndex()
+		s.traces[traceID] = idx
 	}
-	s.traces[traceID][bs.span.SpanID()] = bs
+	idx.insert(bs)
 	return nil
 }
 
@@ -75,34 +77,34 @@ func (s *subtraceMemoryStorage) localRoots(traceID pcommon.TraceID, candidates [
 	s.RLock()
 	defer s.RUnlock()
 
-	index, ok := s.traces[traceID]
+	idx, ok := s.traces[traceID]
 	if !ok {
 		return nil
 	}
 
 	var roots []pcommon.SpanID
 	for _, spanID := range candidates {
-		bs, ok := index[spanID]
-		if ok && isLocalRoot(bs, index) {
+		bs, ok := idx.spans[spanID]
+		if ok && isLocalRoot(bs, idx) {
 			roots = append(roots, spanID)
 		}
 	}
 	return roots
 }
 
-// getSubtrace returns all bufferedSpans whose ancestor chain reaches rootID
-// without crossing another local-root boundary. Read-only: it neither deletes
-// nor checks that rootID is still a local root, so it reports what rootID would
-// claim rather than what it is entitled to.
+// getSubtrace returns all bufferedSpans beneath rootID that are not separated
+// from it by another local root. Read-only: it neither deletes nor checks that
+// rootID is still a local root, so it reports what rootID would claim rather
+// than what it is entitled to.
 func (s *subtraceMemoryStorage) getSubtrace(traceID pcommon.TraceID, rootID pcommon.SpanID) ([]*bufferedSpan, error) {
 	s.RLock()
 	defer s.RUnlock()
 
-	index, ok := s.traces[traceID]
+	idx, ok := s.traces[traceID]
 	if !ok {
 		return nil, nil
 	}
-	return subtraceMembers(rootID, index), nil
+	return subtraceMembers(rootID, idx), nil
 }
 
 func (s *subtraceMemoryStorage) deleteSubtrace(traceID pcommon.TraceID, rootID pcommon.SpanID) ([]*bufferedSpan, error) {
@@ -112,7 +114,7 @@ func (s *subtraceMemoryStorage) deleteSubtrace(traceID pcommon.TraceID, rootID p
 	s.Lock()
 	defer s.Unlock()
 
-	index, ok := s.traces[traceID]
+	idx, ok := s.traces[traceID]
 	if !ok {
 		return nil, nil
 	}
@@ -120,16 +122,14 @@ func (s *subtraceMemoryStorage) deleteSubtrace(traceID pcommon.TraceID, rootID p
 	// The span may have stopped being a local root since its timer was scheduled,
 	// e.g. because its parent arrived in a later batch. Leave its spans in place
 	// so they are released with the subtrace they actually belong to.
-	bs, ok := index[rootID]
-	if !ok || !isLocalRoot(bs, index) {
+	bs, ok := idx.spans[rootID]
+	if !ok || !isLocalRoot(bs, idx) {
 		return nil, nil
 	}
 
-	members := subtraceMembers(rootID, index)
-	for _, m := range members {
-		delete(index, m.span.SpanID())
-	}
-	if len(index) == 0 {
+	members := subtraceMembers(rootID, idx)
+	idx.remove(members)
+	if idx.len() == 0 {
 		delete(s.traces, traceID)
 	}
 	return members, nil
@@ -141,13 +141,13 @@ func (s *subtraceMemoryStorage) getRemainder(traceID pcommon.TraceID) ([]*buffer
 	s.RLock()
 	defer s.RUnlock()
 
-	index, ok := s.traces[traceID]
+	idx, ok := s.traces[traceID]
 	if !ok {
 		return nil, nil
 	}
 
-	members := make([]*bufferedSpan, 0, len(index))
-	for _, bs := range index {
+	members := make([]*bufferedSpan, 0, idx.len())
+	for _, bs := range idx.spans {
 		members = append(members, bs)
 	}
 	return members, nil
@@ -169,12 +169,12 @@ func (s *subtraceMemoryStorage) deleteTrace(traceID pcommon.TraceID) ([]*buffere
 	s.Lock()
 	defer s.Unlock()
 
-	index, ok := s.traces[traceID]
+	idx, ok := s.traces[traceID]
 	if !ok {
 		return nil, nil
 	}
-	members := make([]*bufferedSpan, 0, len(index))
-	for _, bs := range index {
+	members := make([]*bufferedSpan, 0, idx.len())
+	for _, bs := range idx.spans {
 		members = append(members, bs)
 	}
 	delete(s.traces, traceID)

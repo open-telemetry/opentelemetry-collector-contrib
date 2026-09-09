@@ -5,6 +5,7 @@ package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"encoding/hex"
+	"slices"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -114,6 +115,67 @@ func newBufferedSpan(ctx spanContext, span ptrace.Span) *bufferedSpan {
 	return &bufferedSpan{spanContext: ctx, span: spCopy}
 }
 
+// traceIndex holds every span buffered for one trace, keyed by span ID, plus a
+// parent-to-children mapping.
+//
+// The children mapping is what lets a subtrace be collected by walking down from
+// its local root. Walking up from every span in the trace instead costs
+// O(spans x depth) per local root, which for a deep trace, such as a long
+// sequential pipeline, degrades into quadratic behaviour.
+type traceIndex struct {
+	spans    map[pcommon.SpanID]*bufferedSpan
+	children map[pcommon.SpanID][]pcommon.SpanID
+}
+
+func newTraceIndex() *traceIndex {
+	return &traceIndex{
+		spans:    make(map[pcommon.SpanID]*bufferedSpan),
+		children: make(map[pcommon.SpanID][]pcommon.SpanID),
+	}
+}
+
+// insert indexes bs, replacing any span already held under the same span ID.
+func (idx *traceIndex) insert(bs *bufferedSpan) {
+	spanID := bs.span.SpanID()
+	if _, replaced := idx.spans[spanID]; !replaced {
+		if parent := bs.span.ParentSpanID(); !parent.IsEmpty() {
+			idx.children[parent] = append(idx.children[parent], spanID)
+		}
+	}
+	idx.spans[spanID] = bs
+}
+
+// remove drops the given spans and every reference to them.
+func (idx *traceIndex) remove(spans []*bufferedSpan) {
+	for _, bs := range spans {
+		spanID := bs.span.SpanID()
+		delete(idx.spans, spanID)
+		delete(idx.children, spanID)
+
+		// Unlink from the parent as well, which matters when the parent outlives
+		// this span. Members removed together take their own entries with them, so
+		// this only ever prunes at the edge of the removed set.
+		parent := bs.span.ParentSpanID()
+		if parent.IsEmpty() {
+			continue
+		}
+		siblings, ok := idx.children[parent]
+		if !ok {
+			continue
+		}
+		siblings = slices.DeleteFunc(siblings, func(id pcommon.SpanID) bool { return id == spanID })
+		if len(siblings) == 0 {
+			delete(idx.children, parent)
+		} else {
+			idx.children[parent] = siblings
+		}
+	}
+}
+
+func (idx *traceIndex) len() int {
+	return len(idx.spans)
+}
+
 const (
 	// spanFlagsContextHasIsRemoteMask is set when the IS_REMOTE flag is explicitly present.
 	spanFlagsContextHasIsRemoteMask uint32 = 0x00000100
@@ -127,7 +189,7 @@ const (
 //   - the IS_REMOTE flag is set (parent is in another service), OR
 //   - its parent is not in the index (safe default: treat as local root), OR
 //   - its parent belongs to a different service identity.
-func isLocalRoot(bs *bufferedSpan, index map[pcommon.SpanID]*bufferedSpan) bool {
+func isLocalRoot(bs *bufferedSpan, idx *traceIndex) bool {
 	if bs.span.ParentSpanID().IsEmpty() {
 		return true
 	}
@@ -138,7 +200,7 @@ func isLocalRoot(bs *bufferedSpan, index map[pcommon.SpanID]*bufferedSpan) bool 
 	if flags&spanFlagsContextHasIsRemoteMask != 0 && flags&spanFlagsContextIsRemoteMask != 0 {
 		return true
 	}
-	parent, ok := index[bs.span.ParentSpanID()]
+	parent, ok := idx.spans[bs.span.ParentSpanID()]
 	if !ok {
 		return true
 	}
@@ -173,48 +235,47 @@ func hashMapAttrs(attrs pcommon.Map) string {
 	return hex.EncodeToString(h[:])
 }
 
-// subtraceMembers returns every span in index that belongs to the subtrace
-// rooted at rootID, including the root itself.
-func subtraceMembers(rootID pcommon.SpanID, index map[pcommon.SpanID]*bufferedSpan) []*bufferedSpan {
-	var members []*bufferedSpan
-	for spanID, bs := range index {
-		if spanID == rootID || reaches(spanID, rootID, index) {
-			members = append(members, bs)
-		}
-	}
-	return members
-}
-
-// reaches reports whether the span identified by spanID is a member of the
-// subtrace rooted at targetRootID. It walks up the parent chain, stopping when
-// it finds the target root or when it crosses another local-root boundary.
-func reaches(spanID, targetRootID pcommon.SpanID, index map[pcommon.SpanID]*bufferedSpan) bool {
-	cur, ok := index[spanID]
+// subtraceMembers returns every span that belongs to the subtrace rooted at
+// rootID, including the root itself.
+//
+// It descends from the root through the children index, stopping wherever it
+// meets another local root, since that span begins a subtrace of its own. The
+// cost is therefore proportional to the subtrace being collected rather than to
+// the whole trace.
+func subtraceMembers(rootID pcommon.SpanID, idx *traceIndex) []*bufferedSpan {
+	root, ok := idx.spans[rootID]
 	if !ok {
-		return false
+		return nil
 	}
-	visited := map[pcommon.SpanID]bool{spanID: true}
-	for {
-		if cur.span.SpanID() == targetRootID {
-			return true
+
+	members := []*bufferedSpan{root}
+	// Malformed input can make a span its own ancestor, which would otherwise
+	// send this walk round the cycle forever.
+	visited := map[pcommon.SpanID]bool{rootID: true}
+
+	pending := []pcommon.SpanID{rootID}
+	for len(pending) > 0 {
+		parent := pending[len(pending)-1]
+		pending = pending[:len(pending)-1]
+
+		for _, childID := range idx.children[parent] {
+			if visited[childID] {
+				continue
+			}
+			child, ok := idx.spans[childID]
+			if !ok {
+				continue
+			}
+			if isLocalRoot(child, idx) {
+				continue // begins its own subtrace
+			}
+			visited[childID] = true
+			members = append(members, child)
+			pending = append(pending, childID)
 		}
-		if isLocalRoot(cur, index) {
-			return false // hit a different subtree boundary
-		}
-		pid := cur.span.ParentSpanID()
-		if pid.IsEmpty() {
-			return false
-		}
-		if visited[pid] {
-			return false // cycle detected
-		}
-		visited[pid] = true
-		parent, ok := index[pid]
-		if !ok {
-			return false
-		}
-		cur = parent
 	}
+
+	return members
 }
 
 // assemble reconstructs a ptrace.Traces from a slice of bufferedSpans,

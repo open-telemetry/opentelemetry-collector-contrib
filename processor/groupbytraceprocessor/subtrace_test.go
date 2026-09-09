@@ -44,25 +44,25 @@ func newBS(spanID, parentID pcommon.SpanID, flags uint32, serviceName string) *b
 // empty parent --> always local root
 func TestIsLocalRoot_EmptyParent(t *testing.T) {
 	bs := newBS(makeSpanID(1), pcommon.NewSpanIDEmpty(), 0, "svc-a")
-	assert.True(t, isLocalRoot(bs, map[pcommon.SpanID]*bufferedSpan{}))
+	assert.True(t, isLocalRoot(bs, newTraceIndex()))
 }
 
 // HAS_IS_REMOTE=1, IS_REMOTE=1 --> local root
 func TestIsLocalRoot_RemoteFlagSet(t *testing.T) {
 	bs := newBS(makeSpanID(2), makeSpanID(99), spanFlagsContextHasIsRemoteMask|spanFlagsContextIsRemoteMask, "svc-a")
-	assert.True(t, isLocalRoot(bs, map[pcommon.SpanID]*bufferedSpan{}))
+	assert.True(t, isLocalRoot(bs, newTraceIndex()))
 }
 
 // HAS_IS_REMOTE=1, IS_REMOTE=0 --> safe default: local root
 func TestIsLocalRoot_LocalFlagClear(t *testing.T) {
 	bs := newBS(makeSpanID(3), makeSpanID(99), spanFlagsContextHasIsRemoteMask, "svc-a")
-	assert.True(t, isLocalRoot(bs, map[pcommon.SpanID]*bufferedSpan{}))
+	assert.True(t, isLocalRoot(bs, newTraceIndex()))
 }
 
 // parent not in index --> safe default: local root
 func TestIsLocalRoot_ParentNotInIndex(t *testing.T) {
 	bs := newBS(makeSpanID(4), makeSpanID(99), 0, "svc-a")
-	assert.True(t, isLocalRoot(bs, map[pcommon.SpanID]*bufferedSpan{}))
+	assert.True(t, isLocalRoot(bs, newTraceIndex()))
 }
 
 // parent in index, same service.name only --> NOT local root
@@ -70,7 +70,7 @@ func TestIsLocalRoot_SameServiceNameOnly(t *testing.T) {
 	parentID := makeSpanID(10)
 	child := newBS(makeSpanID(5), parentID, 0, "svc-a")
 	parent := newBS(parentID, pcommon.NewSpanIDEmpty(), 0, "svc-a")
-	index := map[pcommon.SpanID]*bufferedSpan{parentID: parent}
+	index := buildIndex(parent)
 	assert.False(t, isLocalRoot(child, index))
 }
 
@@ -92,7 +92,7 @@ func TestIsLocalRoot_SameServiceNameAndInstance(t *testing.T) {
 	ps.SetSpanID(parentID)
 	parentBS := newBufferedSpan(newSpanContext(newResourceContext(pr), pcommon.NewInstrumentationScope()), ps)
 
-	index := map[pcommon.SpanID]*bufferedSpan{parentID: parentBS}
+	index := buildIndex(parentBS)
 	assert.False(t, isLocalRoot(child, index))
 }
 
@@ -114,7 +114,7 @@ func TestIsLocalRoot_DifferentInstance(t *testing.T) {
 	ps.SetSpanID(parentID)
 	parentBS := newBufferedSpan(newSpanContext(newResourceContext(pr), pcommon.NewInstrumentationScope()), ps)
 
-	index := map[pcommon.SpanID]*bufferedSpan{parentID: parentBS}
+	index := buildIndex(parentBS)
 	assert.True(t, isLocalRoot(child, index))
 }
 
@@ -123,7 +123,7 @@ func TestIsLocalRoot_DifferentServiceName(t *testing.T) {
 	parentID := makeSpanID(10)
 	child := newBS(makeSpanID(8), parentID, 0, "svc-b")
 	parent := newBS(parentID, pcommon.NewSpanIDEmpty(), 0, "svc-a")
-	index := map[pcommon.SpanID]*bufferedSpan{parentID: parent}
+	index := buildIndex(parent)
 	assert.True(t, isLocalRoot(child, index))
 }
 
@@ -132,30 +132,35 @@ func TestIsLocalRoot_NoServiceNameSameAttrs(t *testing.T) {
 	parentID := makeSpanID(10)
 	child := newBS(makeSpanID(9), parentID, 0, "")
 	parent := newBS(parentID, pcommon.NewSpanIDEmpty(), 0, "")
-	index := map[pcommon.SpanID]*bufferedSpan{parentID: parent}
+	index := buildIndex(parent)
 	assert.False(t, isLocalRoot(child, index))
 }
 
-func buildIndex(spans ...*bufferedSpan) map[pcommon.SpanID]*bufferedSpan {
-	idx := make(map[pcommon.SpanID]*bufferedSpan, len(spans))
+func buildIndex(spans ...*bufferedSpan) *traceIndex {
+	idx := newTraceIndex()
 	for _, bs := range spans {
-		idx[bs.span.SpanID()] = bs
+		idx.insert(bs)
 	}
 	return idx
 }
 
-// Walk succeeds for a direct parent-child within same service.
-func TestReaches_DirectParent(t *testing.T) {
+// memberIDs returns the span IDs of the subtrace rooted at rootID.
+func memberIDs(rootID pcommon.SpanID, idx *traceIndex) map[pcommon.SpanID]bool {
+	return spanIDSet(subtraceMembers(rootID, idx))
+}
+
+// Membership extends to a direct child within the same service.
+func TestSubtraceMembers_DirectParent(t *testing.T) {
 	rootID := makeSpanID(1)
 	childID := makeSpanID(2)
 	root := newBS(rootID, pcommon.NewSpanIDEmpty(), 0, "svc-a")
 	child := newBS(childID, rootID, 0, "svc-a")
 	idx := buildIndex(root, child)
-	assert.True(t, reaches(childID, rootID, idx))
+	assert.Equal(t, map[pcommon.SpanID]bool{rootID: true, childID: true}, memberIDs(rootID, idx))
 }
 
-// Walk succeeds for multi-hop chain within same service.
-func TestReaches_MultiHop(t *testing.T) {
+// Membership follows a multi-hop chain within the same service.
+func TestSubtraceMembers_MultiHop(t *testing.T) {
 	rootID := makeSpanID(1)
 	midID := makeSpanID(2)
 	leafID := makeSpanID(3)
@@ -163,11 +168,24 @@ func TestReaches_MultiHop(t *testing.T) {
 	mid := newBS(midID, rootID, 0, "svc-a")
 	leaf := newBS(leafID, midID, 0, "svc-a")
 	idx := buildIndex(root, mid, leaf)
-	assert.True(t, reaches(leafID, rootID, idx))
+	assert.Equal(t, map[pcommon.SpanID]bool{rootID: true, midID: true, leafID: true}, memberIDs(rootID, idx))
 }
 
-// Walk stops at a different local root (crosses service boundary).
-func TestReaches_StopsAtDifferentLocalRoot(t *testing.T) {
+// Membership branches out to every child, not just the first.
+func TestSubtraceMembers_Siblings(t *testing.T) {
+	rootID := makeSpanID(1)
+	leftID := makeSpanID(2)
+	rightID := makeSpanID(3)
+	root := newBS(rootID, pcommon.NewSpanIDEmpty(), 0, "svc-a")
+	left := newBS(leftID, rootID, 0, "svc-a")
+	right := newBS(rightID, rootID, 0, "svc-a")
+	idx := buildIndex(root, left, right)
+	assert.Equal(t, map[pcommon.SpanID]bool{rootID: true, leftID: true, rightID: true}, memberIDs(rootID, idx))
+}
+
+// Membership stops at a different local root, and that root's own subtrace does
+// not reach back up past its remote parent.
+func TestSubtraceMembers_StopsAtDifferentLocalRoot(t *testing.T) {
 	rootA := makeSpanID(1)
 	rootB := makeSpanID(2)
 	childB := makeSpanID(3)
@@ -175,23 +193,49 @@ func TestReaches_StopsAtDifferentLocalRoot(t *testing.T) {
 	b := newBS(rootB, rootA, spanFlagsContextHasIsRemoteMask|spanFlagsContextIsRemoteMask, "svc-b")
 	c := newBS(childB, rootB, 0, "svc-b")
 	idx := buildIndex(a, b, c)
-	// c reaches rootB but not rootA
-	assert.True(t, reaches(childB, rootB, idx))
-	assert.False(t, reaches(childB, rootA, idx))
+
+	assert.Equal(t, map[pcommon.SpanID]bool{rootA: true}, memberIDs(rootA, idx))
+	assert.Equal(t, map[pcommon.SpanID]bool{rootB: true, childB: true}, memberIDs(rootB, idx))
 }
 
-// Walk fails when parent not in index.
-func TestReaches_ParentNotInIndex(t *testing.T) {
+// A span whose parent never arrived is a local root, so it forms its own
+// subtrace rather than joining the missing parent's.
+func TestSubtraceMembers_ParentNotInIndex(t *testing.T) {
 	childID := makeSpanID(2)
 	missingID := makeSpanID(99)
 	child := newBS(childID, missingID, 0, "svc-a")
 	idx := buildIndex(child)
-	assert.False(t, reaches(childID, missingID, idx))
+
+	assert.Empty(t, subtraceMembers(missingID, idx))
+	assert.Equal(t, map[pcommon.SpanID]bool{childID: true}, memberIDs(childID, idx))
 }
 
-// Span not in index returns false immediately.
-func TestReaches_SpanNotInIndex(t *testing.T) {
-	assert.False(t, reaches(makeSpanID(42), makeSpanID(1), map[pcommon.SpanID]*bufferedSpan{}))
+// A root that isn't in the index has no members.
+func TestSubtraceMembers_RootNotInIndex(t *testing.T) {
+	assert.Empty(t, subtraceMembers(makeSpanID(42), newTraceIndex()))
+}
+
+// TestSubtraceMembers_CyclicParents verifies that collection terminates instead
+// of looping forever when spans form a mutual parent cycle.
+func TestSubtraceMembers_CyclicParents(t *testing.T) {
+	aID := makeSpanID(0x0A)
+	bID := makeSpanID(0x0B)
+	// A's parent is B, B's parent is A — a cycle within the same service. Neither
+	// is a local root, so nothing claims them, but asking for either must still
+	// terminate.
+	a := newBS(aID, bID, 0, "svc-a")
+	b := newBS(bID, aID, 0, "svc-a")
+	idx := buildIndex(a, b)
+
+	done := make(chan map[pcommon.SpanID]bool, 1)
+	go func() { done <- memberIDs(aID, idx) }()
+	select {
+	case members := <-done:
+		// A is returned as the requested root; B is reachable from it as a child.
+		assert.Equal(t, map[pcommon.SpanID]bool{aID: true, bID: true}, members)
+	case <-time.After(5 * time.Second):
+		t.Fatal("subtraceMembers() did not terminate: infinite loop on cyclic parent references")
+	}
 }
 
 func TestAssemble_CoalescesSameResourceScope(t *testing.T) {
@@ -216,29 +260,6 @@ func TestAssemble_CoalescesSameResourceScope(t *testing.T) {
 	assert.Equal(t, 1, td.ResourceSpans().Len())
 	assert.Equal(t, 1, td.ResourceSpans().At(0).ScopeSpans().Len())
 	assert.Equal(t, 3, td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
-}
-
-// TestReaches_CyclicParents verifies that reaches() terminates instead of
-// looping forever when spans form a mutual parent cycle.
-func TestReaches_CyclicParents(t *testing.T) {
-	aID := makeSpanID(0x0A)
-	bID := makeSpanID(0x0B)
-	unreachableID := makeSpanID(0x0C) // not in the index, not the target
-	// A's parent is B, B's parent is A — a cycle within the same service.
-	a := newBS(aID, bID, 0, "svc-a")
-	b := newBS(bID, aID, 0, "svc-a")
-	idx := buildIndex(a, b)
-
-	// Searching for an ID that is neither A nor B forces the walker to loop
-	// through the A→B→A cycle. Without cycle detection this hangs forever.
-	done := make(chan bool, 1)
-	go func() { done <- reaches(aID, unreachableID, idx) }()
-	select {
-	case result := <-done:
-		assert.False(t, result)
-	case <-time.After(5 * time.Second):
-		t.Fatal("reaches() did not terminate: infinite loop on cyclic parent references")
-	}
 }
 
 func TestAssemble_SeparatesDistinctResources(t *testing.T) {
