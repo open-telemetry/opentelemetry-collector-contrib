@@ -212,10 +212,12 @@ metrics:
     enabled: false
     description: "Container cpu utilization as a ratio of the node's capacity"
     unit: "1"
-    stability: development
+    stability: deprecated
     gauge:
       value_type: double
     attributes: []
+    warnings:
+      if_enabled: This metric is deprecated and will be removed in a future release.
   k8s.container.cpu_limit_utilization:
     enabled: false
     description: "Container cpu utilization as a ratio of the container's limits"
@@ -246,10 +248,12 @@ metrics:
     enabled: false
     description: "Container memory utilization as a ratio of the node's capacity"
     unit: "1"
-    stability: development
+    stability: deprecated
     gauge:
       value_type: double
     attributes: []
+    warnings:
+      if_enabled: This metric is deprecated and will be removed in a future release.
   k8s.container.memory_limit_utilization:
     enabled: false
     description: "Container memory utilization as a ratio of the container's limits"
@@ -444,10 +448,12 @@ metrics:
     enabled: false
     description: "Pod cpu utilization as a ratio of the node's capacity"
     unit: "1"
-    stability: development
+    stability: deprecated
     gauge:
       value_type: double
     attributes: []
+    warnings:
+      if_enabled: This metric is deprecated and will be removed in a future release.
   k8s.pod.cpu.time:
     enabled: true
     description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
@@ -526,10 +532,12 @@ metrics:
     enabled: false
     description: "Pod memory utilization as a ratio of the node's capacity"
     unit: "1"
-    stability: development
+    stability: deprecated
     gauge:
       value_type: double
     attributes: []
+    warnings:
+      if_enabled: This metric is deprecated and will be removed in a future release.
   k8s.pod.memory.page_faults:
     enabled: true
     description: "Pod memory page_faults"
