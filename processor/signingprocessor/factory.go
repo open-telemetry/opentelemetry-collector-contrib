@@ -46,10 +46,14 @@ func createLogsProcessor(
 	return proc, nil
 }
 
-func newKeyMaterialProvider(_ context.Context, cfg *Config, logger *zap.Logger) (KeyMaterialProvider, error) {
+func newKeyMaterialProvider(ctx context.Context, cfg *Config, logger *zap.Logger) (KeyMaterialProvider, error) {
 	switch cfg.KeySource.Type {
 	case KeySourceK8sSecret:
-		return nil, fmt.Errorf("key_source.type %q not yet implemented", cfg.KeySource.Type)
+		logger.Info("Initializing key material provider from Kubernetes Secret",
+			zap.String("name", cfg.KeySource.K8sSecret.Name),
+			zap.String("namespace", cfg.KeySource.K8sSecret.Namespace),
+		)
+		return newK8sKeyMaterialProvider(ctx, cfg.KeySource.K8sSecret, logger)
 	case KeySourceEnv:
 		if cfg.Algorithm == AlgorithmHMACSHA256 {
 			logger.Info("Initializing HMAC key material provider from environment variable",
@@ -75,7 +79,10 @@ func newKeyMaterialProvider(_ context.Context, cfg *Config, logger *zap.Logger) 
 		}
 		return newFileKeyMaterialProvider(cfg.KeySource.File)
 	case KeySourceBao:
-		return nil, fmt.Errorf("key_source.type %q not yet implemented", cfg.KeySource.Type)
+		logger.Info("Initializing key material provider from OpenBao/Vault",
+			zap.String("secret_path", cfg.KeySource.Bao.SecretPath),
+		)
+		return newBaoKeyMaterialProvider(ctx, cfg.KeySource.Bao)
 	default:
 		return nil, fmt.Errorf("unknown key_source.type: %q", cfg.KeySource.Type)
 	}
