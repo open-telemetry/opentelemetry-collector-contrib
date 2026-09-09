@@ -58,9 +58,11 @@ func (e *rabbitmqExporter) start(ctx context.Context, host component.Host) error
 		DialConfig: rabbitmq.DialConfig{
 			URL:   e.config.Connection.Endpoint,
 			Vhost: e.config.Connection.VHost,
-			Auth: &amqp.PlainAuth{
-				Username: e.config.Connection.Auth.Plain.Username,
-				Password: e.config.Connection.Auth.Plain.Password,
+			Auth: func() amqp.Authentication {
+				return &amqp.PlainAuth{
+					Username: e.config.Connection.Auth.Plain.Username,
+					Password: e.config.Connection.Auth.Plain.Password,
+				}
 			},
 			ConnectionName:    e.connectionName,
 			ConnectionTimeout: e.config.Connection.ConnectionTimeout,
