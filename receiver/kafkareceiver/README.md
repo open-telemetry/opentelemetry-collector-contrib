@@ -31,8 +31,7 @@ headers to the downstream pipeline, giving access to the rest of the pipeline to
 > To enable this feature, prefix your topic with the `^` character. This is identical to how the `librdkafka`
 > client works.
 >
-> If you use the `^` prefix, in the deprecated `topic` setting, if **any** of the topics have the `^` prefix,
-> regex consuming will be enabled.
+> If **any** of the topics have the `^` prefix, regex consuming will be enabled.
 
 There are no required settings.
 
@@ -271,9 +270,6 @@ attributes with the prefix "kafka.header.", i.e.
 When using the `franz-go` client, you can consume from multiple topics using regex patterns
 and exclude specific topics from consumption. This is useful when you want to consume from
 a dynamic set of topics but need to filter out certain ones.
-
-**Note:** Both `topic` and `exclude_topic` must use regex patterns (prefix with `^`) for
-exclusion to work. This feature is only available with the franz-go client.
 
 ```yaml
 receivers:
