@@ -4,7 +4,7 @@
 change_type: new_component
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: natsexporter
+component: exporter/nats
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add the NATS exporter to export traces, metrics, and logs to a NATS server (skeleton; in development).

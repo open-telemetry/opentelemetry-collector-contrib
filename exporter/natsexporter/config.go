@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/multierr"
 )
@@ -73,7 +74,7 @@ type JetStreamConfig struct {
 
 // TokenConfig defines the configuration for token auth.
 type TokenConfig struct {
-	Token string `mapstructure:"token"`
+	Token configopaque.String `mapstructure:"token"`
 
 	// Prevent unkeyed literal initialization.
 	_ struct{}
@@ -81,8 +82,8 @@ type TokenConfig struct {
 
 // UserConfig defines the configuration for username/password auth.
 type UserConfig struct {
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
+	Username string              `mapstructure:"username"`
+	Password configopaque.String `mapstructure:"password"`
 
 	// Prevent unkeyed literal initialization.
 	_ struct{}
@@ -99,8 +100,8 @@ type NkeyConfig struct {
 
 // NkeyJWTConfig defines the configuration for NKey auth via JWT.
 type NkeyJWTConfig struct {
-	JWT  string `mapstructure:"jwt"`
-	Seed []byte `mapstructure:"seed"`
+	JWT  configopaque.String `mapstructure:"jwt"`
+	Seed []byte              `mapstructure:"seed"`
 
 	// Prevent unkeyed literal initialization.
 	_ struct{}
@@ -135,7 +136,14 @@ type Config struct {
 	// Endpoint is the NATS server URL.
 	Endpoint string `mapstructure:"endpoint"`
 
-	// Pedantic enables/disables NATS pedantic mode.
+	// Pedantic enables NATS pedantic mode, which makes the server strictly
+	// validate the subjects this connection publishes to. It defaults to false
+	// to mirror the NATS client default. Enabling it is useful here because
+	// signal subjects are produced from user-authored OTTL expressions: a
+	// malformed subject (e.g. an empty token, stray whitespace, or a wildcard)
+	// then surfaces as a publish error instead of being silently misrouted.
+	//
+	// See: https://docs.nats.io/reference/reference-protocols/nats-protocol#connect
 	Pedantic bool `mapstructure:"pedantic"`
 
 	// TLS holds the TLS configuration for the NATS client.
@@ -153,7 +161,7 @@ type Config struct {
 	Traces SignalConfig `mapstructure:"traces"`
 
 	// Auth holds the configuration for NATS auth.
-	Auth AuthConfig `mapstructure:",squash"`
+	Auth AuthConfig `mapstructure:"auth"`
 
 	// Prevent unkeyed literal initialization.
 	_ struct{}

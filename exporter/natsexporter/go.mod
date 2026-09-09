@@ -7,6 +7,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.66.0
 	go.opentelemetry.io/collector/component/componenttest v0.160.0
+	go.opentelemetry.io/collector/config/configopaque v1.66.0
 	go.opentelemetry.io/collector/config/configtls v1.66.0
 	go.opentelemetry.io/collector/confmap v1.66.0
 	go.opentelemetry.io/collector/exporter v1.66.0
@@ -42,7 +43,6 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.66.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.66.0 // indirect
 	go.opentelemetry.io/collector/config/configoptional v1.66.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.66.0 // indirect
 	go.opentelemetry.io/collector/consumer v1.66.0 // indirect

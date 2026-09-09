@@ -18,7 +18,7 @@ import (
 const (
 	defaultLogsSubject    = `"otel_logs"`
 	defaultMetricsSubject = `"otel_metrics"`
-	defaultTracesSubject  = `"otel_spans"`
+	defaultTracesSubject  = `"otel_traces"`
 )
 
 // NewFactory creates a factory for the NATS exporter.
@@ -35,7 +35,7 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		Endpoint: nats.DefaultURL,
-		Pedantic: true,
+		Pedantic: false,
 		TLS:      configtls.NewDefaultClientConfig(),
 		Logs:     SignalConfig{Subject: defaultLogsSubject},
 		Metrics:  SignalConfig{Subject: defaultMetricsSubject},

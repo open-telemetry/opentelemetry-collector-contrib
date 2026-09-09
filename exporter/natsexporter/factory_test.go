@@ -4,7 +4,6 @@
 package natsexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,15 +23,15 @@ func TestCreateExporters(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	set := exportertest.NewNopSettings(factory.Type())
 
-	le, err := factory.CreateLogs(context.Background(), set, cfg)
+	le, err := factory.CreateLogs(t.Context(), set, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, le)
 
-	me, err := factory.CreateMetrics(context.Background(), set, cfg)
+	me, err := factory.CreateMetrics(t.Context(), set, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, me)
 
-	te, err := factory.CreateTraces(context.Background(), set, cfg)
+	te, err := factory.CreateTraces(t.Context(), set, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, te)
 }
