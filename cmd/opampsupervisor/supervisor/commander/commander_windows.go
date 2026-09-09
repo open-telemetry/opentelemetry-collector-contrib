@@ -56,7 +56,7 @@ func openAgentLogFile(path string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := trunc.Close(); err != nil {
+	if err = trunc.Close(); err != nil {
 		return nil, fmt.Errorf("closing truncation handle for %s: %w", path, err)
 	}
 
