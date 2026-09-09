@@ -15,7 +15,7 @@ import (
 
 // Config defines configuration for kubernetes cluster receiver.
 type Config struct {
-	k8sconfig.APIConfig `mapstructure:",squash"`
+	APIConfig k8sconfig.APIConfig `mapstructure:",squash"`
 
 	// Collection interval for metrics.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
@@ -40,7 +40,7 @@ type Config struct {
 	MetadataCollectionInterval time.Duration `mapstructure:"metadata_collection_interval"`
 
 	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 
 	// Deprecated: This field is no longer supported, use cfg.Namespaces instead.
 	Namespace string `mapstructure:"namespace"`

@@ -6,9 +6,10 @@
 package httpserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
 
 import (
+	"context"
 	"errors"
 
-	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
+	defaultforwarderimpl "github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder/impl"
 	"github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/metrics/event"
 	"github.com/DataDog/datadog-agent/pkg/metrics/servicecheck"
@@ -80,8 +81,12 @@ func (*mockSerializer) SendOrchestratorManifests([]types.ProcessMessageBody, str
 	return nil
 }
 
+func (*mockSerializer) SendAgentShutdownEvent(context.Context, *event.Event) error {
+	return nil
+}
+
 func (m *mockSerializer) Start() error {
-	m.state = defaultforwarder.Started
+	m.state = defaultforwarderimpl.Started
 	return nil
 }
 
@@ -90,7 +95,7 @@ func (m *mockSerializer) State() uint32 {
 }
 
 func (m *mockSerializer) Stop() {
-	m.state = defaultforwarder.Stopped
+	m.state = defaultforwarderimpl.Stopped
 }
 
 // mockJSONErrorPayload implements marshaler.JSONMarshaler but always fails to marshal

@@ -1,0 +1,9 @@
+default:
+all_set:
+  metrics:
+    tcp_input_active_connections:
+      enabled: true
+none_set:
+  metrics:
+    tcp_input_active_connections:
+      enabled: false

@@ -134,7 +134,8 @@ func TestCreateProcessors(t *testing.T) {
 					t.Context(),
 					processortest.NewNopSettings(metadata.Type),
 					cfg,
-					consumertest.NewNop())
+					consumertest.NewNop(),
+				)
 				// Not implemented error
 				assert.Error(t, tErr)
 				assert.Nil(t, tp)
@@ -143,7 +144,8 @@ func TestCreateProcessors(t *testing.T) {
 					t.Context(),
 					processortest.NewNopSettings(metadata.Type),
 					cfg,
-					consumertest.NewNop())
+					consumertest.NewNop(),
+				)
 				if tt.succeed {
 					assert.NotNil(t, mp)
 					assert.NoError(t, mErr)
@@ -196,6 +198,27 @@ func TestFactory_validateConfiguration(t *testing.T) {
 
 	err = validateConfiguration(&v2)
 	assert.EqualError(t, err, "operation 1: missing required field \"new_value\" while \"action\" is add_label")
+}
+
+func TestBuildHelperConfig_SubmatchCaseCopied(t *testing.T) {
+	cfg := &Config{
+		Transforms: []transform{
+			{
+				MetricIncludeFilter: filterConfig{
+					Include:   "^(?P<label>.*)_total$",
+					MatchType: regexpMatchType,
+				},
+				Action:          Combine,
+				NewName:         "combined",
+				AggregationType: aggregateutil.Sum,
+				SubmatchCase:    "lower",
+			},
+		},
+	}
+	helpers, err := buildHelperConfig(cfg, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, helpers, 1)
+	assert.Equal(t, submatchCase("lower"), helpers[0].SubmatchCase)
 }
 
 func TestCreateProcessorsFilledData(t *testing.T) {

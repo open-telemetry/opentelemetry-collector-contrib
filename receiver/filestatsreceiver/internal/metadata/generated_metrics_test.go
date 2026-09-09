@@ -67,6 +67,7 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["file.count"] = mb.metricFileCount.config.AggregationStrategy
 			aggMap["file.ctime"] = mb.metricFileCtime.config.AggregationStrategy
 
 			expectedWarnings := 0
@@ -81,7 +82,10 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordFileAtimeDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordFileCountDataPoint(ts, 1)
+			mb.RecordFileCountDataPoint(ts, 1, "file.include-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordFileCountDataPoint(ts, 3, "file.include-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordFileCtimeDataPoint(ts, 1, "file.permissions-val")
@@ -101,6 +105,7 @@ func TestMetricsBuilder(t *testing.T) {
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricFileCount.aggDataPoints)
 				assert.Empty(t, mb.metricFileCtime.aggDataPoints)
 			}
 
@@ -144,17 +149,42 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "file.count":
-					assert.False(t, validatedMetrics["file.count"], "Found a duplicate in the metrics slice: file.count")
-					validatedMetrics["file.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of files matched", mi.Description())
-					assert.Equal(t, "{file}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["file.count"], "Found a duplicate in the metrics slice: file.count")
+						validatedMetrics["file.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The number of files matched", mi.Description())
+						assert.Equal(t, "{file}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+					} else {
+						assert.False(t, validatedMetrics["file.count"], "Found a duplicate in the metrics slice: file.count")
+						validatedMetrics["file.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The number of files matched", mi.Description())
+						assert.Equal(t, "{file}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["file.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("file.include")
+						assert.False(t, ok)
+					}
 				case "file.ctime":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["file.ctime"], "Found a duplicate in the metrics slice: file.ctime")

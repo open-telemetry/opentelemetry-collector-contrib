@@ -19,19 +19,19 @@ type Config struct {
 	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	BackoffConfig   configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 
-	confighttp.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	GeneratorURL            string                   `mapstructure:"generator_url"`
-	DefaultSeverity         string                   `mapstructure:"severity"`
-	SeverityAttribute       string                   `mapstructure:"severity_attribute"`
-	APIVersion              string                   `mapstructure:"api_version"`
-	EventLabels             []string                 `mapstructure:"event_labels"`
+	ClientConfig      confighttp.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	GeneratorURL      string                  `mapstructure:"generator_url"`
+	DefaultSeverity   string                  `mapstructure:"severity"`
+	SeverityAttribute string                  `mapstructure:"severity_attribute"`
+	APIVersion        string                  `mapstructure:"api_version"`
+	EventLabels       []string                `mapstructure:"event_labels"`
 }
 
 var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.Endpoint == "" {
+	if cfg.ClientConfig.Endpoint == "" {
 		return errors.New("endpoint must be non-empty")
 	}
 	if cfg.DefaultSeverity == "" {

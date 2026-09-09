@@ -5,6 +5,7 @@ package digitalocean // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	do "github.com/digitalocean/go-metadata"
@@ -31,19 +32,21 @@ var newDigitalOceanClient = func() *do.Client {
 
 // Detector is a DigitalOcean metadata detector.
 type Detector struct {
-	client *do.Client
-	logger *zap.Logger
-	rb     *metadata.ResourceBuilder
+	client                *do.Client
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
 // NewDetector creates a new DigitalOcean metadata detector.
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	return &Detector{
-		client: newDigitalOceanClient(),
-		logger: p.Logger,
-		rb:     metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		client:                newDigitalOceanClient(),
+		logger:                p.Logger,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
@@ -52,6 +55,12 @@ func (d *Detector) Detect(_ context.Context) (pcommon.Resource, string, error) {
 	md, err := d.client.Metadata()
 	if err != nil || md == nil {
 		d.logger.Debug("DigitalOcean detector: not running on DigitalOcean or metadata unavailable", zap.Error(err))
+		if d.failOnMissingMetadata {
+			if err == nil {
+				err = errors.New("digitalocean metadata is nil")
+			}
+			return pcommon.NewResource(), "", fmt.Errorf("digitalocean metadata unavailable: %w", err)
+		}
 		return pcommon.NewResource(), "", nil
 	}
 

@@ -7,7 +7,7 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fmysql%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fmysql) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fmysql%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fmysql) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_mysql)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_mysql&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@antonblock](https://www.github.com/antonblock), [@ishleenk17](https://www.github.com/ishleenk17) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@antonblock](https://www.github.com/antonblock), [@ishleenk17](https://www.github.com/ishleenk17), [@ebrdarSplunk](https://www.github.com/ebrdarSplunk), [@XSAM](https://www.github.com/XSAM), [@akshays-19](https://www.github.com/akshays-19), [@sv-splunk](https://www.github.com/sv-splunk), [@splunk-shanu](https://www.github.com/splunk-shanu) \| Seeking more code owners! |
 | Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -56,7 +56,26 @@ The following settings are optional:
   - `insecure_skip_verify`: (default = `false`) Set this to `true` to enable TLS but not verify the certificate.
   - `server_name_override`: This sets the ServerName in the TLSConfig.  
 - `username`: (default = `root`)
-- `password`: The password to the username.
+- `password`: A static MySQL password.
+- `db_auth`: Component ID of a `dbauth` provider extension (for example `aws_iam_db_auth`). Mutually exclusive with `password`. Requires TLS (`tls.insecure: false`). RDS MySQL/Aurora MySQL only. Cleartext password auth (`mysql_clear_password`) is enabled automatically for IAM tokens over TLS.
+
+```yaml
+extensions:
+  aws_iam_db_auth:
+    region: us-east-2
+
+receivers:
+  mysql:
+    endpoint: my-database.example.com:3306
+    username: monitor
+    db_auth: aws_iam_db_auth
+    tls:
+      insecure: false
+
+service:
+  extensions: [aws_iam_db_auth]
+```
+
 - `allow_native_passwords`: (default = `true`)
 - `database`: The database name. If not specified, metrics will be collected for all databases.
 

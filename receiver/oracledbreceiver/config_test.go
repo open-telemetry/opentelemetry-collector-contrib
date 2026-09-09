@@ -134,7 +134,7 @@ func TestParseConfig(t *testing.T) {
 	assert.Equal(t, "password", cfg.Password)
 	assert.Equal(t, "localhost:51521", cfg.Endpoint)
 	assert.Equal(t, "XE", cfg.Service)
-	settings := cfg.Metrics
+	settings := cfg.MetricsBuilderConfig.Metrics
 	assert.False(t, settings.OracledbTablespaceSizeUsage.Enabled)
 	assert.False(t, settings.OracledbExchangeDeadlocks.Enabled)
 }

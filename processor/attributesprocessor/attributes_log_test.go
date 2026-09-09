@@ -75,13 +75,14 @@ func TestLogProcessor_NilEmptyData(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 		{Key: "attribute1", Action: attraction.DELETE},
 	}
 
 	tp, err := factory.CreateLogs(
-		t.Context(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
+		t.Context(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop(),
+	)
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 	for _, tt := range testCases {
@@ -130,15 +131,15 @@ func TestAttributes_FilterLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "^[^i].*"}},
 		// Libraries: []filterconfig.InstrumentationLibrary{{Name: "^[^i].*"}},
 		Config: *createConfig(filterset.Regexp),
 	}
-	oCfg.Exclude = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Exclude = &filterconfig.MatchProperties{
 		Attributes: []filterconfig.Attribute{
 			{Key: "NoModification", Value: true},
 		},
@@ -196,14 +197,14 @@ func TestAttributes_FilterLogsByNameStrict(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "apply"}},
 		Config:    *createConfig(filterset.Strict),
 	}
-	oCfg.Exclude = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Exclude = &filterconfig.MatchProperties{
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "dont_apply"}},
 		Config:    *createConfig(filterset.Strict),
 	}
@@ -259,14 +260,14 @@ func TestAttributes_FilterLogsByNameRegexp(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "^apply.*"}},
 		Config:    *createConfig(filterset.Regexp),
 	}
-	oCfg.Exclude = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Exclude = &filterconfig.MatchProperties{
 		Resources: []filterconfig.Attribute{{Key: "name", Value: ".*dont_apply$"}},
 		Config:    *createConfig(filterset.Regexp),
 	}
@@ -322,7 +323,7 @@ func TestLogAttributes_Hash(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "user.email", Action: attraction.HASH},
 		{Key: "user.id", Action: attraction.HASH},
 		{Key: "user.balance", Action: attraction.HASH},
@@ -399,7 +400,7 @@ func TestLogAttributes_Convert(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "to.int", Action: attraction.CONVERT, ConvertedType: "int"},
 		{Key: "to.double", Action: attraction.CONVERT, ConvertedType: "double"},
 		{Key: "to.string", Action: attraction.CONVERT, ConvertedType: "string"},
@@ -555,10 +556,10 @@ func BenchmarkAttributes_FilterLogsByName(b *testing.B) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Config:    *createConfig(filterset.Regexp),
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "^apply.*"}},
 	}

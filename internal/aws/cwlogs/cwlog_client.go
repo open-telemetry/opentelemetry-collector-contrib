@@ -117,8 +117,7 @@ func (client *Client) PutLogEvents(ctx context.Context, input *cloudwatchlogs.Pu
 	for i := 0; i <= retryCnt; i++ {
 		response, err = client.svc.PutLogEvents(ctx, input)
 		if err != nil {
-			var ae smithy.APIError
-			if !errors.As(err, &ae) {
+			if _, ok := errors.AsType[smithy.APIError](err); !ok {
 				// Should never happen
 				client.logger.Error("unexpectedly cannot cast PutLogEvents error into smithy.APIError.", zap.Error(err))
 				return err
@@ -194,8 +193,7 @@ func (client *Client) CreateStream(ctx context.Context, logGroup, streamName *st
 	})
 	if err != nil {
 		client.logger.Debug("cwlog_client: creating stream fail", zap.Error(err))
-		var rnf *types.ResourceNotFoundException
-		if errors.As(err, &rnf) {
+		if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
 			// Create Log Group with tags if they exist and were specified in the config
 			_, err = client.svc.CreateLogGroup(ctx, &cloudwatchlogs.CreateLogGroupInput{
 				LogGroupName: logGroup,
@@ -209,8 +207,7 @@ func (client *Client) CreateStream(ctx context.Context, logGroup, streamName *st
 						RetentionInDays: &client.logRetention,
 					})
 					if err != nil {
-						var ae smithy.APIError
-						if errors.As(err, &ae) {
+						if _, ok := errors.AsType[smithy.APIError](err); ok {
 							client.logger.Debug("CreateLogStream / CreateLogGroup has errors related to log retention policy.", zap.String("LogGroupName", *logGroup), zap.String("LogStreamName", *streamName), zap.Error(err))
 							return err
 						}
@@ -225,8 +222,7 @@ func (client *Client) CreateStream(ctx context.Context, logGroup, streamName *st
 	}
 
 	if err != nil {
-		var rae *types.ResourceAlreadyExistsException
-		if errors.As(err, &rae) {
+		if _, ok := errors.AsType[*types.ResourceAlreadyExistsException](err); ok {
 			return nil
 		}
 		client.logger.Debug("CreateLogStream / CreateLogGroup has errors.", zap.String("LogGroupName", *logGroup), zap.String("LogStreamName", *streamName), zap.Error(err))

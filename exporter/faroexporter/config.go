@@ -17,9 +17,9 @@ import (
 
 // Config defines configuration settings for the Faro exporter.
 type Config struct {
-	confighttp.ClientConfig `mapstructure:",squash"`
-	QueueConfig             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	RetryConfig             configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	ClientConfig confighttp.ClientConfig                                  `mapstructure:",squash"`
+	QueueConfig  configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	RetryConfig  configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 }
 
 var (
@@ -29,7 +29,7 @@ var (
 
 func (c *Config) Validate() error {
 	var errs error
-	if c.Endpoint == "" {
+	if c.ClientConfig.Endpoint == "" {
 		errs = multierr.Append(errs, errors.New("endpoint is required"))
 	}
 	return errs

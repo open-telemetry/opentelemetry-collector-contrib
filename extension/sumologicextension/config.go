@@ -13,7 +13,7 @@ import (
 // Config has the configuration for the sumologic extension.
 type Config struct {
 	// squash ensures fields are correctly decoded in embedded struct.
-	confighttp.ClientConfig `mapstructure:",squash"`
+	ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
 
 	// Credentials contains Installation Token for Sumo Logic service.
 	// Please refer to https://help.sumologic.com/docs/manage/security/installation-tokens
@@ -75,6 +75,9 @@ type Config struct {
 	// For a list of possible values, refer to the "TZ" column in
 	// https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List.
 	TimeZone string `mapstructure:"time_zone"`
+
+	// FleetID is the ID of the fleet to assign this collector to during registration.
+	FleetID string `mapstructure:"fleet_id"`
 
 	// BackOff defines configuration of collector registration backoff algorithm
 	// Exponential algorithm is being used.

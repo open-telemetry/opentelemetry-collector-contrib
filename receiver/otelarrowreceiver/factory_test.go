@@ -29,7 +29,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.Protocols.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	creationSet := receivertest.NewNopSettings(metadata.Type)
 	tReceiver, err := factory.CreateTraces(t.Context(), creationSet, cfg, consumertest.NewNop())

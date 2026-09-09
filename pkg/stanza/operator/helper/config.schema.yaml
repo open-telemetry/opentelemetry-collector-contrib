@@ -8,7 +8,7 @@ $defs:
         additionalProperties:
           $ref: expr_string_config
   basic_config:
-    description: BasicConfig provides a basic implemention for an operator config.
+    description: BasicConfig provides a basic implementation for an operator config.
     type: object
     properties:
       id:

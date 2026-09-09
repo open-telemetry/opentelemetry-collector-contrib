@@ -1,4 +1,10 @@
-type: awsecsattributes
+display_name: AWS ECS Attributes Processor
+type: aws_ecs_attributes
+
+description: |
+  The `aws_ecs_attributes` processor enriches logs, metrics, traces and profiles with
+  AWS ECS metadata for daemonset-style deployments on EC2, where a single collector
+  runs per host and processes telemetry for all containers on that host.
 
 status:
   class: processor

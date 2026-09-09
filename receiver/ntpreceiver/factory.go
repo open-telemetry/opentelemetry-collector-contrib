@@ -39,7 +39,8 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, cfg co
 	rCfg := cfg.(*Config)
 	mp := newScraper(rCfg, settings)
 	s, err := scraper.NewMetrics(
-		mp.scrape)
+		mp.scrape,
+	)
 	if err != nil {
 		return nil, err
 	}

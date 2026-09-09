@@ -203,6 +203,13 @@ gomoddownload:
 gotest:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="test"
 
+# gotest-no-race runs only packages that contain //go:build !race test files,
+# without the race detector. Most modules will skip silently because they have
+# no such files, keeping the total CI cost small.
+.PHONY: gotest-no-race
+gotest-no-race:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-no-race"
+
 .PHONY: gotest-with-cover
 gotest-with-cover:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-cover"
@@ -296,6 +303,7 @@ exporter/datadogexporter/integrationtest: exporter/datadogexporter
 pkg/datadog: exporter/datadogexporter/integrationtest
 extension/datadogextension: pkg/datadog
 connector/datadogconnector: extension/datadogextension
+exporter/datadogexporter: internal/datadog
 
 # Trigger each module's delegation target
 .PHONY: for-all-target
@@ -700,6 +708,7 @@ multimod-verify:
 .PHONY: multimod-prerelease
 multimod-prerelease:
 	$(MULTIMOD) prerelease -s=true -b=false -v ./versions.yaml -m contrib-base
+	$(MULTIMOD) prerelease -s=true -b=false -v ./versions.yaml -m stable-base
 	$(MAKE) gotidy
 
 .PHONY: multimod-sync

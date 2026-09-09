@@ -79,7 +79,7 @@ type streamClientFactory func(conn *grpc.ClientConn) arrow.StreamClientFunc
 func newExporter(cfg component.Config, set exporter.Settings, streamClientFactory streamClientFactory, userAgent string, netReporter *netstats.NetworkReporter) (exp, error) {
 	oCfg := cfg.(*Config)
 
-	if oCfg.Endpoint == "" {
+	if oCfg.ClientConfig.Endpoint == "" {
 		return nil, errors.New("OTLP exporter config requires an Endpoint")
 	}
 
@@ -117,20 +117,20 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 		dialOpts = append(dialOpts, configgrpc.WithGrpcDialOption(opt))
 	}
 
-	if e.clientConn, err = e.config.ToClientConn(ctx, host.GetExtensions(), e.settings.TelemetrySettings, dialOpts...); err != nil {
+	if e.clientConn, err = e.config.ClientConfig.ToClientConn(ctx, host.GetExtensions(), e.settings.TelemetrySettings, dialOpts...); err != nil {
 		return err
 	}
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
 	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
 	headers := map[string]string{}
-	for k, v := range e.config.Headers.Iter {
+	for k, v := range e.config.ClientConfig.Headers.Iter {
 		headers[k] = string(v)
 	}
 	headerMetadata := metadata.New(headers)
 	e.metadata = metadata.Join(e.metadata, headerMetadata)
 	e.callOptions = []grpc.CallOption{
-		grpc.WaitForReady(e.config.WaitForReady),
+		grpc.WaitForReady(e.config.ClientConfig.WaitForReady),
 	}
 
 	if !e.config.Arrow.Disabled {
@@ -138,9 +138,9 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 		ctx := e.enhanceContext(context.Background())
 
 		var perRPCCreds credentials.PerRPCCredentials
-		if e.config.Auth.HasValue() {
+		if e.config.ClientConfig.Auth.HasValue() {
 			// Get the auth extension, we'll use it to enrich the request context.
-			authClient, err := e.config.Auth.Get().GetGRPCClientAuthenticator(ctx, host.GetExtensions())
+			authClient, err := e.config.ClientConfig.Auth.Get().GetGRPCClientAuthenticator(ctx, host.GetExtensions())
 			if err != nil {
 				return err
 			}
@@ -155,7 +155,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 
 		arrowCallOpts := e.callOptions
 
-		if e.config.Compression == configcompression.TypeZstd {
+		if e.config.ClientConfig.Compression == configcompression.TypeZstd {
 			// ignore the error below b/c Validate() was called
 			_ = zstd.SetEncoderConfig(e.config.Arrow.Zstd)
 			// use the configured compressor.

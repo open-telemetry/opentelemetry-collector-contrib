@@ -50,7 +50,7 @@ func TestDetect(t *testing.T) {
 	cfg.ResourceAttributes.ContainerImageName.Enabled = true
 	cfg.ResourceAttributes.ContainerName.Enabled = true
 
-	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 	detector.(*Detector).provider = md
 	res, schemaURL, err := detector.Detect(t.Context())
@@ -73,7 +73,7 @@ func TestDetectSkipsContainerInfoByDefault(t *testing.T) {
 	md.On("Hostname").Return("hostname", nil)
 	md.On("OSType").Return("darwin", nil)
 
-	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 	detector.(*Detector).provider = md
 	res, _, err := detector.Detect(t.Context())
@@ -94,7 +94,7 @@ func TestDetectSkipsDisabledResourceAttributes(t *testing.T) {
 	cfg.ResourceAttributes.HostName.Enabled = false
 	cfg.ResourceAttributes.OsType.Enabled = false
 
-	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
+	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 	detector.(*Detector).provider = md
 	res, _, err := detector.Detect(t.Context())

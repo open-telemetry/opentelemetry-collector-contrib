@@ -35,6 +35,10 @@ The following are ignored:
 - batch boundaries — multiple `ResourceMetrics` / `ScopeMetrics` / `Metric`
   entries with the same identity are normalized before comparison.
 
+Use `IncludeValues()` to write supported datapoint values, or
+`IncludeHistogramExplicitBounds()` to write histogram bounds without other
+histogram values.
+
 `WriteAssertionFile` expects semantically valid metrics. It normalizes valid
 metrics into an assertion snapshot; it is not a validator for producer output.
 
@@ -96,6 +100,26 @@ assertion, so omitting a key is the way to assert that it must not appear.
 `/exists: true` is the only supported value; any other value is a schema
 error.
 
+### Attribute include matcher
+
+Use `attributes/include` instead of `attributes` when you want to assert a
+subset of the attribute map. Every expected key must be present and match, but
+additional actual keys are allowed:
+
+```yaml
+attributes/include:
+  service.name: app
+  service.instance.id/exists: true
+```
+
+This is useful when the environment or component configuration adds extra
+attributes that the test does not care about. `/exists` can be combined with
+`/include`.
+
+`attributes/include` may be applied to both resource attributes and datapoint
+attributes. Specifying both `attributes` and `attributes/include` on the same
+element is an error.
+
 ### Attribute regex matcher
 
 Attribute keys can use the `/regex` suffix when the attribute value is a
@@ -110,6 +134,43 @@ attributes:
 Regex matchers are supported for resource attributes and datapoint attributes.
 The attribute map remains exact: unexpected attributes still fail the
 assertion.
+
+### Scope version matchers
+
+The scope `version` field accepts the same `/exists` and `/regex` operators as
+attributes, the assertion-file equivalent of `pmetrictest.IgnoreScopeVersion`.
+The scope `name` is always matched exactly.
+
+```yaml
+scopes:
+  - name: github.com/example/receiver
+    version/exists: true               # present, any value
+  - name: github.com/example/other
+    version/regex: 'v[0-9]+\.[0-9]+\.[0-9]+'  # full-string match
+```
+
+Use at most one of `version:`, `version/exists:`, or `version/regex:` per
+scope. `version/exists` accepts only `true`; any other value is a schema
+error.
+
+### Datapoint value precision matcher
+
+A `double_value` key can use the `/precision<n>` suffix when the value is a
+float whose trailing digits are not stable. Both sides are rounded to `n`
+decimal places before they are compared, matching `pmetrictest`'s
+`IgnoreMetricFloatPrecision`:
+
+```yaml
+datapoints:
+  - attributes:
+      state: user
+    double_value/precision3: 1.235
+```
+
+`n` must be between 0 and 15; beyond that a `float64` cannot distinguish the
+values. Use at most one of `double_value:` or `double_value/precision<n>:` per
+datapoint. The operator applies only to `double_value`, since integer values
+have no float precision to ignore.
 
 ### Shorthand: single empty-attribute datapoint
 
@@ -139,7 +200,8 @@ must contain at least one datapoint; see
 ## Roadmap
 
 This is the identity-only subset of the grammar in #48079. Operator-suffix
-extensions beyond attribute `/exists` and `/regex` (`/include`, `/exclude`,
-`/all`, `/count`, `/approx`, `/gt|gte|lt|lte`) and opt-in fields
+extensions beyond attribute `/exists`/`/regex`, `attributes/include`, and scope
+`version` `/exists`/`/regex` (`/exclude`, `/all`, `/count`, `/approx`,
+`/gt|gte|lt|lte`) and opt-in fields
 (`IncludeValues()`, `IncludeTimestamps()`, `IncludeExemplars()`, type-specific
 histogram fields) are tracked as follow-ups under that issue.

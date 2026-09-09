@@ -53,3 +53,39 @@ func Test_Day_Error(t *testing.T) {
 	assert.Nil(t, result)
 	assert.Error(t, err)
 }
+
+func Test_DayFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewDayFactory[any]()
+		assert.Equal(t, "Day", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewDayFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &DayArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Time"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewDayFactory[any]()
+		args := factory.CreateDefaultArguments()
+		dayArgs, ok := args.(*DayArguments[any])
+		require.True(t, ok)
+		dayArgs.Time = &ottl.StandardTimeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return time.Now(), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createDayFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "DayFactory args must be of type *DayArguments[K]")
+	})
+}

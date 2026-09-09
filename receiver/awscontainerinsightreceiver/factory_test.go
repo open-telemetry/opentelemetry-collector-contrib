@@ -19,9 +19,9 @@ import (
 func TestNewFactory(t *testing.T) {
 	// TestNewFactory checks the default behavior (feature gate disabled by default at StageAlpha)
 	// which should use the old type name for backward compatibility
-	originalValue := useNewTypeNameGate.IsEnabled()
+	originalValue := metadata.ReceiverAwscontainerinsightreceiverUseNewTypeNameFeatureGate.IsEnabled()
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), originalValue))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwscontainerinsightreceiverUseNewTypeNameFeatureGate.ID(), originalValue))
 	}()
 
 	c := NewFactory()
@@ -32,16 +32,16 @@ func TestNewFactory(t *testing.T) {
 
 func TestNewFactory_FeatureGateEnabled(t *testing.T) {
 	// Enable the feature gate
-	originalValue := useNewTypeNameGate.IsEnabled()
+	originalValue := metadata.ReceiverAwscontainerinsightreceiverUseNewTypeNameFeatureGate.IsEnabled()
 	defer func() {
 		if originalValue {
-			require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), true))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwscontainerinsightreceiverUseNewTypeNameFeatureGate.ID(), true))
 		} else {
-			require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), false))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwscontainerinsightreceiverUseNewTypeNameFeatureGate.ID(), false))
 		}
 	}()
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(useNewTypeNameGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwscontainerinsightreceiverUseNewTypeNameFeatureGate.ID(), true))
 
 	c := NewFactory()
 	assert.NotNil(t, c)

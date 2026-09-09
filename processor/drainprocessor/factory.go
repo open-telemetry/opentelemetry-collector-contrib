@@ -27,12 +27,14 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		TreeDepth:         4,
-		MergeThreshold:    0.4,
-		MaxNodeChildren:   100,
-		MaxClusters:       0,
-		TemplateAttribute: "log.record.template",
-		WarmupMinClusters: 0,
+		TreeDepth:          4,
+		MergeThreshold:     0.4,
+		MaxNodeChildren:    100,
+		MaxClusters:        0,
+		TemplateAttribute:  "log.record.template",
+		ParameterKeyPrefix: "log.record.template.parameter",
+		WildcardsAttribute: "log.record.template.wildcards",
+		WarmupMinClusters:  0,
 	}
 }
 

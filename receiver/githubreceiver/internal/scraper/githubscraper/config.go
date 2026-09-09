@@ -23,9 +23,9 @@ type RetryConfig struct {
 
 // Config relating to GitHub Metric Scraper.
 type Config struct {
-	confighttp.ClientConfig `mapstructure:",squash"`
+	ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
 	internal.ScraperConfig
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// ConcurrencyLimit limits the number of goroutines spawned by repository
 	// Default is 50
 	// Set to 0 for unlimited concurrency (not recommended)

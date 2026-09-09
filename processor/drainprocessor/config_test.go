@@ -70,6 +70,60 @@ func TestConfigValidate(t *testing.T) {
 			mutate:  func(c *Config) { c.WarmupMinClusters = 20 },
 			wantErr: false,
 		},
+		{
+			name:    "empty masking_rules slice is valid",
+			mutate:  func(c *Config) { c.MaskingRules = []MaskingRule{} },
+			wantErr: false,
+		},
+		{
+			name: "valid masking rule",
+			mutate: func(c *Config) {
+				c.MaskingRules = []MaskingRule{{Name: "ip", Pattern: `\d+\.\d+\.\d+\.\d+`}}
+			},
+			wantErr: false,
+		},
+		{
+			name: "masking rule empty name",
+			mutate: func(c *Config) {
+				c.MaskingRules = []MaskingRule{{Name: "", Pattern: `\d+`}}
+			},
+			wantErr: true,
+		},
+		{
+			name: "masking rule name is asterisk",
+			mutate: func(c *Config) {
+				c.MaskingRules = []MaskingRule{{Name: "*", Pattern: `\d+`}}
+			},
+			wantErr: true,
+		},
+		{
+			name: "masking rule name contains angle bracket",
+			mutate: func(c *Config) {
+				c.MaskingRules = []MaskingRule{{Name: "i<p", Pattern: `\d+`}}
+			},
+			wantErr: true,
+		},
+		{
+			name: "masking rule name contains whitespace",
+			mutate: func(c *Config) {
+				c.MaskingRules = []MaskingRule{{Name: "ip addr", Pattern: `\d+`}}
+			},
+			wantErr: true,
+		},
+		{
+			name: "masking rule empty pattern",
+			mutate: func(c *Config) {
+				c.MaskingRules = []MaskingRule{{Name: "ip", Pattern: ""}}
+			},
+			wantErr: true,
+		},
+		{
+			name: "masking rule invalid regex",
+			mutate: func(c *Config) {
+				c.MaskingRules = []MaskingRule{{Name: "ip", Pattern: `(`}}
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {

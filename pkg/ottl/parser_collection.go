@@ -638,7 +638,8 @@ func (pc *ParserCollection[R]) logModifications(originalStatements, modifiedStat
 			fields = append(fields, zap.Dict(
 				statementKey,
 				zap.String("original", original),
-				zap.String("modified", modifiedStatements[i])),
+				zap.String("modified", modifiedStatements[i]),
+			),
 			)
 		}
 	}

@@ -1,6 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Deprecated: use testbed instead
 package signalfxdatareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/signalfxdatareceiver"
 
 import (
@@ -14,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver" //nolint:staticcheck // SA1019
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 // SFxMetricsDataReceiver implements SignalFx format receiver.
+//
+// Deprecated: use testbed.BaseOTLPDataReceiver instead
 type SFxMetricsDataReceiver struct {
 	testbed.DataReceiverBase
 	receiver receiver.Metrics
@@ -29,6 +32,8 @@ var _ testbed.DataReceiver = (*SFxMetricsDataReceiver)(nil)
 
 // NewSFxMetricsDataReceiver creates a new SFxMetricsDataReceiver that will listen on the
 // specified port after Start is called.
+//
+// Deprecated: use testbed.NewOTLPDataReceiver(port int) instead
 func NewSFxMetricsDataReceiver(port int) *SFxMetricsDataReceiver {
 	return &SFxMetricsDataReceiver{DataReceiverBase: testbed.DataReceiverBase{Port: port}}
 }
@@ -39,8 +44,8 @@ func (sr *SFxMetricsDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	serverConfig.WriteTimeout = 0
 	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
+	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  fmt.Sprintf("127.0.0.1:%d", sr.Port),

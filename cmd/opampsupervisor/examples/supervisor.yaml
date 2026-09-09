@@ -12,11 +12,12 @@ capabilities:
   reports_own_traces: true
   reports_health: true
   accepts_remote_config: true
-  reports_remote_config: true
 
 agent:
   executable: /otelcontribcol
   passthrough_logs: true
+  # Set to a positive value to add collector log tail details to crash health reports.
+  collector_crash_log_snippet_kib: 0
 
   # This passes config files to the Collector.
   config_files: 

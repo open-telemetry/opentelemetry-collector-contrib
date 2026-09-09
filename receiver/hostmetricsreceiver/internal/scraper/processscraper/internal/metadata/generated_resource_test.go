@@ -18,6 +18,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetProcessCommandLine("process.command_line-val")
 			rb.SetProcessExecutableName("process.executable.name-val")
 			rb.SetProcessExecutablePath("process.executable.path-val")
+			rb.SetProcessLinuxCgroup("process.linux.cgroup-val")
 			rb.SetProcessOwner("process.owner-val")
 			rb.SetProcessParentPid(18)
 			rb.SetProcessPid(11)
@@ -29,7 +30,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 7, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 8, res.Attributes().Len())
+				assert.Equal(t, 9, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -60,6 +61,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "process.executable.path-val", processExecutablePathAttrVal.Str())
+			}
+			processLinuxCgroupAttrVal, ok := res.Attributes().Get("process.linux.cgroup")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "process.linux.cgroup-val", processLinuxCgroupAttrVal.Str())
 			}
 			processOwnerAttrVal, ok := res.Attributes().Get("process.owner")
 			assert.True(t, ok)

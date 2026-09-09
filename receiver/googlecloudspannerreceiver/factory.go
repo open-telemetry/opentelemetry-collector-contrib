@@ -30,7 +30,8 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType))
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 func createDefaultConfig() component.Config {

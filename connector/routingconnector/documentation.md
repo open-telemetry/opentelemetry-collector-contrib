@@ -8,6 +8,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `connector.routing.defaultErrorModeIgnore` | alpha | When enabled, the default error_mode is `ignore` instead of `propagate`. | v0.155.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48418) |
+| `connector.routing.defaultErrorModeIgnore` | beta | When enabled, the default error_mode is `ignore` instead of `propagate`. | v0.155.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48418) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -284,7 +284,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = configopaque.MapList{
+			cfg.ClientConfig.Headers = configopaque.MapList{
 				{Name: "foo", Value: "bah"},
 			}
 		})
@@ -307,7 +307,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = configopaque.MapList{
+			cfg.ClientConfig.Headers = configopaque.MapList{
 				{Name: "User-Agent", Value: "overridden"},
 			}
 		})
@@ -1101,7 +1101,7 @@ func TestDeprecatedConfigMappingModeIgnored(t *testing.T) {
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 		cfg.Mapping.Mode = "ecs"
 	})
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	f := NewFactory()
 	exp, err := f.CreateLogs(t.Context(), params, cfg)
@@ -3222,7 +3222,7 @@ func TestExporterAuth(t *testing.T) {
 	done := make(chan struct{}, 1)
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
-		cfg.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
+		cfg.ClientConfig.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
 	})
 	err := exporter.Start(t.Context(), &mockHost{
 		extensions: map[component.ID]component.Component{
@@ -3256,7 +3256,7 @@ func TestExporterBatcher(t *testing.T) {
 			MinSize:      8192,
 			MaxSize:      10000,
 		})
-		cfg.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
+		cfg.ClientConfig.Auth = configoptional.Some(configauth.Config{AuthenticatorID: testauthID})
 		cfg.Retry.Enabled = false
 	})
 	err := exporter.Start(t.Context(), &mockHost{
@@ -3294,7 +3294,7 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 	})
 	configSetupFn := func(cfg *Config) {
 		cfg.MetadataKeys = slices.Collect(metadata.Keys())
-		cfg.Auth = configoptional.Some(configauth.Config{
+		cfg.ClientConfig.Auth = configoptional.Some(configauth.Config{
 			AuthenticatorID: testCtxKey,
 		})
 		// Configure sending queue with batching enabled. Batching configuration are
@@ -3489,7 +3489,7 @@ func newUnstartedTestTracesExporter(t *testing.T, url string, fns ...func(*Confi
 		// Batch is configured by default so we can directly edit flush timeout
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	exp, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp
@@ -3513,7 +3513,7 @@ func newUnstartedTestProfilesExporter(t *testing.T, url string, fns ...func(*Con
 		// Batch is configured by default so we can directly edit flush timeout
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	exp, err := f.CreateProfiles(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp
@@ -3536,7 +3536,7 @@ func newUnstartedTestMetricsExporter(t *testing.T, url string, fns ...func(*Conf
 		// Batch is configured by default so we can directly edit flush timeout
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	exp, err := f.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp
@@ -3560,7 +3560,7 @@ func newUnstartedTestLogsExporter(t *testing.T, url string, fns ...func(*Config)
 		// Batch is defined as default configuration
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 	exp, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp
@@ -3742,4 +3742,75 @@ func actionGetValue(t *testing.T, actionJSON json.RawMessage, target string) str
 	vString, ok := v.(string)
 	require.True(t, ok, "the type of action.create.%s was not string", target)
 	return vString
+}
+
+func TestExporterTimeout_NoRetryOnTimeout(t *testing.T) {
+	var count atomic.Int32
+	done := make(chan struct{}, 1)
+	defer close(done)
+	server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, _ *http.Request) {
+		if count.Add(1) == 1 {
+			<-done
+		}
+		w.WriteHeader(http.StatusTeapot)
+	})
+
+	exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+		cfg.ClientConfig.Timeout = 50 * time.Millisecond
+		cfg.Retry.Enabled = true
+		cfg.Retry.MaxRetries = 1
+		cfg.Retry.InitialInterval = 1 * time.Millisecond
+		cfg.QueueBatchConfig.Get().Batch.Get().MinSize = 0
+		cfg.QueueBatchConfig.Get().WaitForResult = true
+	})
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.LogRecords().AppendEmpty()
+	logs.MarkReadOnly()
+	err := exporter.ConsumeLogs(t.Context(), logs)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Equal(t, int32(1), count.Load())
+}
+
+func TestExporterTimeout_Independent(t *testing.T) {
+	// Server responds with HTTP 429 for first few attempts.
+	// Ensure timeout is not shared across retries by
+	// checking the total time elapsed across attempts exceeds configured timeout
+	successfulOnAttempt := 3
+	var count atomic.Int32
+	server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, _ *http.Request) {
+		if int(count.Add(1)) < successfulOnAttempt {
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		w.WriteHeader(http.StatusTeapot)
+	})
+
+	timeout := 50 * time.Millisecond
+	exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+		cfg.ClientConfig.Timeout = timeout
+		cfg.Retry.Enabled = true
+		cfg.Retry.MaxRetries = 1000
+		// Since backoff uses equal jitter, the actual wait may be the configured interval / 2.
+		// Configure to 2 * timeout to offset that effect.
+		cfg.Retry.InitialInterval = 2 * timeout
+		cfg.Retry.MaxInterval = 2 * timeout
+
+		cfg.QueueBatchConfig.Get().Batch.Get().MinSize = 0
+		cfg.QueueBatchConfig.Get().WaitForResult = true
+	})
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.LogRecords().AppendEmpty()
+	logs.MarkReadOnly()
+
+	start := time.Now()
+	err := exporter.ConsumeLogs(t.Context(), logs)
+	var errFlushFailed docappender.ErrorFlushFailed
+	assert.ErrorAs(t, err, &errFlushFailed)
+	assert.ErrorContains(t, err, "418")
+	assert.Equal(t, int32(successfulOnAttempt), count.Load())
+	assert.GreaterOrEqual(t, time.Since(start), timeout)
 }

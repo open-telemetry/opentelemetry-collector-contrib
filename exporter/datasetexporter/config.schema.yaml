@@ -73,18 +73,22 @@ type: object
 properties:
   api_key:
     $ref: go.opentelemetry.io/collector/config/configopaque.string
+  buffer:
+    $ref: buffer_settings
   dataset_url:
     type: string
   debug:
     type: boolean
+  logs:
+    $ref: logs_settings
+  retry_on_failure:
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  server_host:
+    $ref: server_host_settings
   timeout:
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
-allOf:
-  - $ref: buffer_settings
-  - $ref: traces_settings
-  - $ref: logs_settings
-  - $ref: server_host_settings
-  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
+  traces:
+    $ref: traces_settings

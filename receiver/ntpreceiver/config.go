@@ -16,10 +16,10 @@ import (
 
 // Config is the configuration for the NSX receiver
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	Version                        int    `mapstructure:"version"`
-	Endpoint                       string `mapstructure:"endpoint"`
+	ControllerConfig     scraperhelper.ControllerConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	Version              int                            `mapstructure:"version"`
+	Endpoint             string                         `mapstructure:"endpoint"`
 }
 
 func (c *Config) Validate() error {
@@ -29,8 +29,8 @@ func (c *Config) Validate() error {
 		errs = append(errs, err)
 	}
 	// respect terms of service https://www.pool.ntp.org/tos.html
-	if c.CollectionInterval < 30*time.Minute {
-		errs = append(errs, fmt.Errorf("collection interval %v is less than minimum 30m", c.CollectionInterval))
+	if c.ControllerConfig.CollectionInterval < 30*time.Minute {
+		errs = append(errs, fmt.Errorf("collection interval %v is less than minimum 30m", c.ControllerConfig.CollectionInterval))
 	}
 	return errors.Join(errs...)
 }

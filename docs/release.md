@@ -41,6 +41,18 @@ For general information about all Collector repositories release procedures, see
    ⚠️
 
    - `make push-tags MODSET=contrib-base`
+   - `make push-tags MODSET=stable-base`
+
+   > **While `stable-base` has no modules:** leave `current-stable` and
+   > `candidate-stable` empty in the Prepare Release action and skip the
+   > `MODSET=stable-base` tag push. There is nothing to version until a component is
+   > promoted to stable.
+
+   > **First-time bootstrap for `stable-base`:** The very first release of the
+   > `stable-base` module set uses `current-stable=1.0.0` and
+   > `candidate-stable=1.0.0` in the Prepare Release action (the sed is a no-op;
+   > `multimod-prerelease` wires go.mod files to the v1 tag). From the next cycle
+   > onward it is a normal minor bump (e.g. `1.0.0` → `1.1.0`).
 
 4. Wait for the new tag build to pass successfully. A new `v0.85.0` release should be automatically
    created on Github by now, with the description containing the changelog for the new release.

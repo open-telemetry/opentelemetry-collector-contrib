@@ -444,11 +444,12 @@ func NewStatefulset(id string) *appsv1.StatefulSet {
 			Replicas: &desired,
 		},
 		Status: appsv1.StatefulSetStatus{
-			ReadyReplicas:   7,
-			CurrentReplicas: 5,
-			UpdatedReplicas: 3,
-			CurrentRevision: "current_revision",
-			UpdateRevision:  "update_revision",
+			ReadyReplicas:     7,
+			CurrentReplicas:   5,
+			UpdatedReplicas:   3,
+			AvailableReplicas: 6,
+			CurrentRevision:   "current_revision",
+			UpdateRevision:    "update_revision",
 		},
 	}
 }

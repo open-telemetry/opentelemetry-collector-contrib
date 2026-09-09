@@ -37,8 +37,15 @@ func New(first []byte) *Fingerprint {
 func NewFromFile(file *os.File, size int, decompressData bool, logger *zap.Logger) (*Fingerprint, error) {
 	buf := make([]byte, size)
 	if decompressData && compression.IsGzipFile(file, logger) {
+		fileInfo, err := file.Stat()
+		if err != nil {
+			return nil, fmt.Errorf("error getting file info: %w", err)
+		}
+
+		sectionReader := io.NewSectionReader(file, 0, fileInfo.Size())
+
 		// If the file is of compressed type, uncompress the data before creating its fingerprint
-		uncompressedData, err := gzip.NewReader(file)
+		uncompressedData, err := gzip.NewReader(sectionReader)
 		if err != nil {
 			return nil, fmt.Errorf("error uncompressing gzip file: %w", err)
 		}

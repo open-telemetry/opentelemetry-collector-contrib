@@ -36,6 +36,7 @@ func TestPathGetSetter(t *testing.T) {
 		newVal              any
 		modified            func(metric pmetric.Metric)
 		skipSetterTypeCheck bool
+		nilNoError          bool
 	}{
 		{
 			name: "metric name",
@@ -80,6 +81,7 @@ func TestPathGetSetter(t *testing.T) {
 			modified: func(_ pmetric.Metric) {
 			},
 			skipSetterTypeCheck: true, // metric type setter is a no-op
+			nilNoError:          true,
 		},
 		{
 			name: "metric aggregation_temporality",
@@ -104,7 +106,8 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "metric data points",
+			name:       "metric data points",
+			nilNoError: true,
 			path: &pathtest.Path[*testContext]{
 				N: "data_points",
 			},
@@ -119,10 +122,28 @@ func TestPathGetSetter(t *testing.T) {
 			path: &pathtest.Path[*testContext]{
 				N: "metadata",
 			},
-			orig:   pcommon.NewMap(),
-			newVal: newMetadata,
+			orig:       pcommon.NewMap(),
+			newVal:     newMetadata,
+			nilNoError: true,
 			modified: func(metric pmetric.Metric) {
 				newMetadata.CopyTo(metric.Metadata())
+			},
+		},
+		{
+			name: "metric metadata key",
+			path: &pathtest.Path[*testContext]{
+				N: "metadata",
+				KeySlice: []ottl.Key[*testContext]{
+					&pathtest.Key[*testContext]{
+						S: new("key"),
+					},
+				},
+			},
+			orig:       nil,
+			newVal:     "value",
+			nilNoError: true,
+			modified: func(metric pmetric.Metric) {
+				metric.Metadata().PutStr("key", "value")
 			},
 		},
 	}
@@ -143,6 +164,13 @@ func TestPathGetSetter(t *testing.T) {
 			// Verify that setting an invalid type returns an error
 			if !tt.skipSetterTypeCheck {
 				err = accessor.Set(t.Context(), newTestContext(metric), struct{}{})
+				require.Error(t, err)
+			}
+
+			err = accessor.Set(t.Context(), newTestContext(createTelemetry()), nil)
+			if tt.nilNoError {
+				require.NoError(t, err)
+			} else {
 				require.Error(t, err)
 			}
 

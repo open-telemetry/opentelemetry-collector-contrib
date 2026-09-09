@@ -45,6 +45,18 @@ func TestDetectWrapperFormat(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:    "newline delimiter JSON format with CRLF line endings",
+			input:   []byte("{\"foo\":\"bar\"}\r\n{\"baz\":\"qux\"}"),
+			want:    FormatNDJSON,
+			wantErr: false,
+		},
+		{
+			name:    "single JSON object with CRLF line ending",
+			input:   []byte("{\"foo\":\"bar\"}\r\n"),
+			want:    FormatNDJSON,
+			wantErr: false,
+		},
+		{
 			name:    "extra whitespaces",
 			input:   []byte("{\n  \"records\" :\r\n [ ] }"),
 			want:    FormatObjectRecords,

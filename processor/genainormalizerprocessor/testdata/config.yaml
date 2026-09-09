@@ -1,5 +1,6 @@
 # Full config exercising the supported source and its per-source fields.
 gen_ai_normalizer:
+  overwrite_schema_url: true
   sources:
     - name: openinference
       remove_originals: true

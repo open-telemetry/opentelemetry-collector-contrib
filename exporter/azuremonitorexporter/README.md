@@ -44,6 +44,8 @@ The following settings can be optionally configured:
   - `storage` (default = `none`): When set, enables persistence and uses the component specified as a storage extension for the persistent queue
 - `shutdown_timeout` (default = 1s): Timeout to wait for graceful shutdown. Once exceeded, the component will shut down forcibly, dropping any element in queue.
 - `custom_events_enabled` (default = `false`): Enables export log record to custom events when there's attribute `microsoft.custom_event.name` or `APPLICATION_INSIGHTS_EVENT_MARKER_ATTRIBUTE`.
+- `telemetry_mappings.traces.http.success.server_policy` (default = unset): Set to `otel` to export HTTP server spans with 4xx response codes with Application Insights request `Success=true`, matching OpenTelemetry HTTP semantic conventions. HTTP client dependencies are unaffected.
+- `telemetry_mappings.traces.http.success.additional_success_status_codes` (default = `[]`): Additional HTTP status codes to export with Application Insights `Success=true` for both HTTP server requests and HTTP client dependencies.
 
 ### Tag mappings (alpha)
 
@@ -66,7 +68,7 @@ Example — Azure Container Apps, where `service.instance.id` is set to a random
 
 ```yaml
 exporters:
-  azuremonitor:
+  azure_monitor:
     connection_string: "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/"
     tag_mappings:
       cloud_role_instance: [host.name, service.instance.id, unknown-instance]
@@ -81,7 +83,7 @@ Example:
 # It is highly recommended to use the connection string which includes the InstrumentationKey and IngestionEndpoint
 # This is the preferred method over using 'instrumentation_key' alone.
 exporters:
-  azuremonitor:
+  azure_monitor:
     connection_string: "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/"
 ```
 
@@ -92,7 +94,7 @@ exporters:
 # The use of 'instrumentation_key' alone is not recommended and will be deprecated in the future. It is advised to use the connection_string instead.
 # This example is provided primarily for existing configurations that have not yet transitioned to the connection string.
 exporters:
-  azuremonitor:
+  azure_monitor:
     instrumentation_key: b1cd0778-85fc-4677-a3fa-79d3c23e0efd
 ```
 
@@ -102,7 +104,7 @@ Ensure `APPLICATIONINSIGHTS_CONNECTION_STRING` is set in your environment, then 
 
 ```yaml
 exporters:
-  azuremonitor:
+  azure_monitor:
 ```
 
 ## Attribute mapping

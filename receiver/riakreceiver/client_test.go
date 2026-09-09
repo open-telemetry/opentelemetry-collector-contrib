@@ -73,7 +73,7 @@ func TestNewClient(t *testing.T) {
 
 				require.Equal(t, tc.cfg.Username, actualClient.creds.username)
 				require.Equal(t, string(tc.cfg.Password), actualClient.creds.password)
-				require.Equal(t, tc.cfg.Endpoint, actualClient.hostEndpoint)
+				require.Equal(t, tc.cfg.ClientConfig.Endpoint, actualClient.hostEndpoint)
 				require.Equal(t, zap.NewNop(), actualClient.logger)
 				require.NotNil(t, actualClient.client)
 			}
@@ -122,7 +122,7 @@ func TestGetStatsDetails(t *testing.T) {
 func createTestClient(t *testing.T, baseEndpoint string) client {
 	t.Helper()
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = baseEndpoint
+	cfg.ClientConfig.Endpoint = baseEndpoint
 
 	testClient, err := newClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), zap.NewNop())
 	require.NoError(t, err)

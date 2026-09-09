@@ -27,6 +27,7 @@ type TelemetryBuilder struct {
 	registrations                     []metric.Registration
 	ProcessorDrainClustersActive      metric.Int64Gauge
 	ProcessorDrainLogRecordsAnnotated metric.Int64Counter
+	ProcessorDrainMasksDuplicates     metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -67,6 +68,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ProcessorDrainLogRecordsAnnotated, err = builder.meter.Int64Counter(
 		"otelcol_processor_drain_log_records_annotated",
 		metric.WithDescription("Number of log records successfully annotated with a template. [Development]"),
+		metric.WithUnit("{records}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorDrainMasksDuplicates, err = builder.meter.Int64Counter(
+		"otelcol_processor_drain_masks_duplicates",
+		metric.WithDescription("Number of records where a mask name matched more than one position in the matched template. Incremented once per record per duplicated mask name; the losing values are discarded and first-match wins. [Development]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)

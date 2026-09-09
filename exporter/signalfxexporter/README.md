@@ -68,7 +68,7 @@ The following configuration options can also be configured:
   also appended to this list. Setting this option to `[]` will override all the default
   excludes.
 - `include_metrics`: List of filters to override exclusion of any metrics.
-  This option can be used to included metrics that are otherwise dropped by
+  This option can be used to include metrics that are otherwise dropped by
   default. See [default metrics](./internal/translation/default_metrics.yaml) for a list of metrics
   that are dropped by default. For example, the following configuration can be
   used to send through some of that are dropped by default.
@@ -77,9 +77,9 @@ The following configuration options can also be configured:
     # When sending in translated metrics.
     - metric_names: [cpu.interrupt, cpu.user, cpu.system]
     # When sending in metrics in OTel convention.
-    - metric_name: system.cpu.time
+    - metric_name: system.memory.usage
       dimensions:
-        state: [interrupt, user, system]
+        state: [inactive]
   ```
 - `log_data_points` (default = `false`): If the log level is set to `debug` 
   and this is true, all datapoints dispatched to Splunk Observability Cloud will be logged
@@ -199,9 +199,9 @@ exporters:
   signalfx:
     include_metrics:
       - metric_names: [cpu.interrupt, cpu.user, cpu.system]
-      - metric_name: system.cpu.time
+      - metric_name: system.memory.usage
         dimensions:
-          state: [interrupt, user, system]
+          state: [inactive]
 ```
 
 ## Translation Rules and Metric Transformations

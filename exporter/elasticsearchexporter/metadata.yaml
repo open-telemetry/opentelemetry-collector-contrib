@@ -8,7 +8,7 @@ status:
     development: [metrics, profiles]
   distributions: [contrib]
   codeowners:
-    active: [JaredTan95, carsonip, lahsivjar]
+    active: [JaredTan95, blakerouse, carsonip, lahsivjar]
 
 attributes:
   error.type:

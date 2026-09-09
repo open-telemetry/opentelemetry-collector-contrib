@@ -59,7 +59,8 @@ func buildSampleTrace() ptrace.Traces {
 					statusCode: ptrace.StatusCodeError,
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(
 		serviceSpans{
 			serviceName: "service-b",
@@ -70,7 +71,8 @@ func buildSampleTrace() ptrace.Traces {
 					statusCode: ptrace.StatusCodeError,
 				},
 			},
-		}, traces.ResourceSpans().AppendEmpty())
+		}, traces.ResourceSpans().AppendEmpty(),
+	)
 	initServiceSpans(serviceSpans{}, traces.ResourceSpans().AppendEmpty())
 	return traces
 }

@@ -72,7 +72,7 @@ type YANGConfig struct {
 
 // Config defines configuration for yanggrpc receiver.
 type Config struct {
-	configgrpc.ServerConfig `mapstructure:",squash"`
+	ServerConfig configgrpc.ServerConfig `mapstructure:",squash"`
 
 	// YANG contains YANG parser configuration
 	YANG YANGConfig `mapstructure:"yang"`

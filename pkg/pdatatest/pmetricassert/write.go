@@ -10,7 +10,8 @@ import (
 )
 
 type writeOptions struct {
-	includeValues bool
+	includeValues                  bool
+	includeHistogramExplicitBounds bool
 }
 
 // WriteOption configures the snapshot generation.
@@ -29,14 +30,26 @@ func IncludeValues() WriteOption {
 	return includeValuesOption{}
 }
 
+type includeHistogramExplicitBoundsOption struct{}
+
+func (includeHistogramExplicitBoundsOption) apply(o *writeOptions) {
+	o.includeHistogramExplicitBounds = true
+}
+
+// IncludeHistogramExplicitBounds opts into asserting each histogram datapoint's
+// exact explicit bounds without other histogram values.
+func IncludeHistogramExplicitBounds() WriteOption {
+	return includeHistogramExplicitBoundsOption{}
+}
+
 // WriteAssertionFile regenerates the default-strict assertion snapshot at path
 // from actual. It is intended to be called manually during test authoring,
 // analogous to golden.WriteMetrics, and removed before committing.
 //
-// Emitted snapshots capture identity fields only: resource attributes, scope
-// name/version, metric name/type/unit/temporality/monotonic, and the set of
-// datapoint attribute permutations. Values, timestamps, and exemplars are
-// omitted.
+// By default, emitted snapshots capture identity fields only: resource
+// attributes, scope name/version, metric name/type/unit/temporality/monotonic,
+// and the set of datapoint attribute permutations. Values, timestamps, and
+// exemplars are omitted.
 //
 // The input metrics must be semantically valid. WriteAssertionFile normalizes
 // valid metrics for assertion readability; it does not validate producer
