@@ -14,8 +14,9 @@ status:
 feature_gates:
   - id: "ottl.PanicDuplicateName"
     description: When enabled, the CreateFactoryMap panics if the name is duplicated.
-    stage: beta
+    stage: stable
     from_version: v0.141.0
+    to_version: v0.160.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/44630
 
   - id: "ottl.contexts.enableOTelColContext"
