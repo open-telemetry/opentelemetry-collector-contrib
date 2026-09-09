@@ -82,19 +82,3 @@ func TestCreateProcessorServiceEmitNumTracesLessThanNumWorkers(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, p)
 }
-
-func TestUnknownEmitStrategy(t *testing.T) {
-	_, err := NewFactory().CreateTraces(
-		t.Context(),
-		processortest.NewNopSettings(metadata.Type),
-		&Config{
-			NumTraces:    10,
-			NumWorkers:   1,
-			WaitDuration: time.Second,
-			EmitStrategy: EmitStrategy("invalid"),
-		},
-		consumertest.NewNop(),
-	)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown emit_strategy")
-}

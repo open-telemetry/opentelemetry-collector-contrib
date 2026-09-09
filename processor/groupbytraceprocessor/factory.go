@@ -6,7 +6,6 @@ package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -68,13 +67,6 @@ func createTracesProcessor(
 	}
 	if oCfg.DiscardOrphans {
 		return nil, errDiscardOrphansNotSupported
-	}
-	switch oCfg.EmitStrategy {
-	case EmitStrategyTrace, EmitStrategyService:
-		// valid
-	default:
-		return nil, fmt.Errorf("unknown emit_strategy %q: valid values are %q and %q",
-			oCfg.EmitStrategy, EmitStrategyTrace, EmitStrategyService)
 	}
 
 	processor := newGroupByTraceProcessor(params, nextConsumer, *oCfg)

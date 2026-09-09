@@ -51,3 +51,15 @@ type Config struct {
 	// Valid values: "trace" (default), "service".
 	EmitStrategy EmitStrategy `mapstructure:"emit_strategy"`
 }
+
+func (cfg *Config) Validate() error {
+	switch cfg.EmitStrategy {
+	case EmitStrategyTrace, EmitStrategyService:
+		// valid
+	default:
+		return fmt.Errorf("unknown emit_strategy %q: valid values are %q and %q",
+			cfg.EmitStrategy, EmitStrategyTrace, EmitStrategyService)
+	}
+
+	return nil
+}
