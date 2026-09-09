@@ -2175,6 +2175,347 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 	}
 }
 
+func Test_ProcessMetrics_SharedCache(t *testing.T) {
+	tests := []struct {
+		name       string
+		statements []common.ContextStatements
+		want       func(td pmetric.Metrics)
+	}{
+		{
+			name: "resource cache shared across groups",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(resource.attributes["result"], resource.cache["k"])`}, SharedCache: true},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).Resource().Attributes().PutStr("result", "pass")
+			},
+		},
+		{
+			name: "scope cache shared across groups",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(scope.attributes["result"], scope.cache["k"])`}, SharedCache: true},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes().PutStr("result", "pass")
+			},
+		},
+		{
+			name: "metric cache shared across groups",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(metric.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(metric.name, metric.cache["k"]) where metric.name == "operationA"`}, SharedCache: true},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("pass")
+			},
+		},
+		{
+			name: "datapoint cache shared across groups",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(datapoint.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(datapoint.attributes["result"], datapoint.cache["k"]) where metric.name == "operationA"`}, SharedCache: true},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("result", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("result", "pass")
+			},
+		},
+		{
+			name: "cache not shared with groups where SharedCache is false",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(metric.cache["k"], "fail")`}, SharedCache: true},
+				{Statements: []string{`set(metric.name, "pass") where metric.name == "operationA" and metric.cache["k"] == nil`}},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("pass")
+			},
+		},
+		{
+			name: "explicit context cache shared across groups",
+			statements: []common.ContextStatements{
+				{Context: common.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
+				{Context: common.Resource, Statements: []string{`set(attributes["result"], cache["k"])`}, SharedCache: true},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).Resource().Attributes().PutStr("result", "pass")
+			},
+		},
+		{
+			name: "higher-level cache is not visible from a lower-level context",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.cache["k"], "fail")`}, SharedCache: true},
+				{Statements: []string{`set(metric.description, "pass") where metric.cache["k"] == nil`}, SharedCache: true},
+			},
+			want: func(td pmetric.Metrics) {
+				for _, m := range td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().All() {
+					m.SetDescription("pass")
+				}
+			},
+		},
+		{
+			name: "lower-level cache is not visible from a higher-level context",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(metric.cache["k"], "fail")`}, SharedCache: true},
+				{Statements: []string{`set(resource.attributes["result"], "pass") where resource.cache["k"] == nil`}, SharedCache: true},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).Resource().Attributes().PutStr("result", "pass")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructMetrics()
+			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
+			require.NoError(t, err)
+
+			_, err = processor.ProcessMetrics(t.Context(), td)
+			require.NoError(t, err)
+
+			exTd := constructMetrics()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessMetrics_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
+	tests := []struct {
+		name       string
+		statements []common.ContextStatements
+		want       func(td pmetric.Metrics)
+	}{
+		{
+			name: "resource cache persists across resources",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.cache["k"], "seen") where resource.attributes["host.name"] == "host1"`}, SharedCache: true},
+				{Statements: []string{`set(resource.attributes["result"], "pass") where resource.cache["k"] == "seen"`}, SharedCache: true},
+			},
+			want: func(td pmetric.Metrics) {
+				for _, rm := range td.ResourceMetrics().All() {
+					rm.Resource().Attributes().PutStr("result", "pass")
+				}
+			},
+		},
+		{
+			name: "scope cache persists across scopes and resources",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1"`}, SharedCache: true},
+				{Statements: []string{`set(scope.attributes["result"], "pass") where scope.cache["k"] == "seen"`}, SharedCache: true},
+			},
+			want: func(td pmetric.Metrics) {
+				for _, rm := range td.ResourceMetrics().All() {
+					for _, sm := range rm.ScopeMetrics().All() {
+						sm.Scope().Attributes().PutStr("result", "pass")
+					}
+				}
+			},
+		},
+		{
+			name: "metric cache persists across scopes and resources",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(metric.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and metric.name == "operationA"`}, SharedCache: true},
+				{Statements: []string{`set(metric.description, "pass") where metric.cache["k"] == "seen"`}, SharedCache: true},
+			},
+			want: func(td pmetric.Metrics) {
+				forEachMetric(td, func(m pmetric.Metric) {
+					m.SetDescription("pass")
+				})
+			},
+		},
+		{
+			name: "datapoint cache persists across scopes and resources",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(datapoint.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and metric.name == "operationA" and datapoint.value_double == 1.0`}, SharedCache: true},
+				{Statements: []string{`set(datapoint.attributes["result"], "pass") where datapoint.cache["k"] == "seen"`}, SharedCache: true},
+			},
+			want: func(td pmetric.Metrics) {
+				forEachDataPoint(td, func(dp pmetric.NumberDataPoint) {
+					dp.Attributes().PutStr("result", "pass")
+				})
+			},
+		},
+		{
+			name: "exemplar cache persists across scopes and resources",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(exemplar.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and metric.name == "operationA" and exemplar.double_value == 1.0`}, SharedCache: true},
+				{Statements: []string{`set(exemplar.filtered_attributes["result"], "pass") where exemplar.cache["k"] == "seen"`}, SharedCache: true},
+			},
+			want: func(td pmetric.Metrics) {
+				forEachDataPoint(td, func(dp pmetric.NumberDataPoint) {
+					for _, e := range dp.Exemplars().All() {
+						e.FilteredAttributes().PutStr("result", "pass")
+					}
+				})
+			},
+		},
+		{
+			name: "datapoint cache persists across scopes and resources within a single group",
+			statements: []common.ContextStatements{
+				{Statements: []string{
+					`set(datapoint.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and metric.name == "operationA" and datapoint.value_double == 1.0`,
+					`set(datapoint.attributes["result"], "pass") where datapoint.cache["k"] == "seen"`,
+				}, SharedCache: true},
+			},
+			want: func(td pmetric.Metrics) {
+				forEachDataPoint(td, func(dp pmetric.NumberDataPoint) {
+					dp.Attributes().PutStr("result", "pass")
+				})
+			},
+		},
+		{
+			name: "cache does not persist across datapoints when SharedCache is false",
+			statements: []common.ContextStatements{
+				{Statements: []string{
+					`set(datapoint.cache["k"], "seen") where datapoint.value_double == 1.0`,
+					`set(datapoint.attributes["result"], "pass") where datapoint.cache["k"] == "seen"`,
+				}},
+			},
+			want: func(td pmetric.Metrics) {
+				forEachDataPoint(td, func(dp pmetric.NumberDataPoint) {
+					if dp.DoubleValue() == 1.0 {
+						dp.Attributes().PutStr("result", "pass")
+					}
+				})
+			},
+		},
+		{
+			name: "cache does not persist across resources when SharedCache is false",
+			statements: []common.ContextStatements{
+				{Statements: []string{
+					`set(resource.cache["k"], "seen") where resource.attributes["host.name"] == "host1"`,
+					`set(resource.attributes["result"], "pass") where resource.cache["k"] == "seen"`,
+				}},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).Resource().Attributes().PutStr("result", "pass")
+			},
+		},
+		{
+			name: "cache does not persist across scopes when SharedCache is false",
+			statements: []common.ContextStatements{
+				{Statements: []string{
+					`set(scope.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1"`,
+					`set(scope.attributes["result"], "pass") where scope.cache["k"] == "seen"`,
+				}},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes().PutStr("result", "pass")
+			},
+		},
+		{
+			name: "cache does not persist across metrics when SharedCache is false",
+			statements: []common.ContextStatements{
+				{Statements: []string{
+					`set(metric.cache["k"], "seen") where metric.name == "operationA"`,
+					`set(metric.description, "pass") where metric.cache["k"] == "seen"`,
+				}},
+			},
+			want: func(td pmetric.Metrics) {
+				forEachMetric(td, func(m pmetric.Metric) {
+					if m.Name() == "operationA" {
+						m.SetDescription("pass")
+					}
+				})
+			},
+		},
+		{
+			name: "cache does not persist across exemplars when SharedCache is false",
+			statements: []common.ContextStatements{
+				{Statements: []string{
+					`set(exemplar.cache["k"], "seen") where exemplar.double_value == 1.0`,
+					`set(exemplar.filtered_attributes["result"], "pass") where exemplar.cache["k"] == "seen"`,
+				}},
+			},
+			want: func(td pmetric.Metrics) {
+				forEachDataPoint(td, func(dp pmetric.NumberDataPoint) {
+					for _, e := range dp.Exemplars().All() {
+						if e.DoubleValue() == 1.0 {
+							e.FilteredAttributes().PutStr("result", "pass")
+						}
+					}
+				})
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructMetricsMultipleResourcesScopes()
+			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
+			require.NoError(t, err)
+
+			_, err = processor.ProcessMetrics(t.Context(), td)
+			require.NoError(t, err)
+
+			exTd := constructMetricsMultipleResourcesScopes()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessMetrics_SharedCacheCrossContextAccess(t *testing.T) {
+	tests := []struct {
+		name       string
+		statements []common.ContextStatements
+		wantErr    string
+	}{
+		{
+			name: "resource cache from an inferred metric context",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(metric.description, resource.cache["k"])`}, SharedCache: true},
+			},
+			wantErr: `access to cache must be performed using the same context, please replace "resource.cache[k]" with "metric.cache[k]"`,
+		},
+		{
+			name: "scope cache from an inferred datapoint context",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(datapoint.attributes["result"], scope.cache["k"])`}, SharedCache: true},
+			},
+			wantErr: `access to cache must be performed using the same context, please replace "scope.cache[k]" with "datapoint.cache[k]"`,
+		},
+		{
+			name: "metric cache from an inferred datapoint context",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(metric.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(datapoint.attributes["result"], metric.cache["k"])`}, SharedCache: true},
+			},
+			wantErr: `access to cache must be performed using the same context, please replace "metric.cache[k]" with "datapoint.cache[k]"`,
+		},
+		{
+			name: "datapoint cache from an inferred exemplar context",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(datapoint.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(exemplar.filtered_attributes["result"], datapoint.cache["k"])`}, SharedCache: true},
+			},
+			wantErr: `access to cache must be performed using the same context, please replace "datapoint.cache[k]" with "exemplar.cache[k]"`,
+		},
+		{
+			name: "resource cache from an explicit datapoint context",
+			statements: []common.ContextStatements{
+				{Context: common.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
+				{Context: common.DataPoint, Statements: []string{`set(attributes["result"], resource.cache["k"])`}, SharedCache: true},
+			},
+			wantErr: `access to cache must be performed using the same context, please replace "resource.cache[k]" with "datapoint.cache[k]"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
+			require.ErrorContains(t, err, tt.wantErr)
+		})
+	}
+}
+
 func Test_ProcessMetrics_InferredContextFromConditions(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -2490,6 +2831,60 @@ func Test_ProcessMetrics_RelaxedMetricNames(t *testing.T) {
 			assert.Equal(t, tt.renamed, gotName, "OTTL must assign the new name byte-identically; statement was: %s", statement)
 		})
 	}
+}
+
+func constructMetricsMultipleResourcesScopes() pmetric.Metrics {
+	td := pmetric.NewMetrics()
+	for _, host := range []string{"host1", "host2"} {
+		rm := td.ResourceMetrics().AppendEmpty()
+		rm.SetSchemaUrl("test_schema_url")
+		rm.Resource().Attributes().PutStr("host.name", host)
+		for _, scopeName := range []string{"scope1", "scope2"} {
+			sm := rm.ScopeMetrics().AppendEmpty()
+			sm.SetSchemaUrl("test_schema_url")
+			sm.Scope().SetName(scopeName)
+			fillSumMetric(sm.Metrics().AppendEmpty(), "operationA")
+			fillSumMetric(sm.Metrics().AppendEmpty(), "operationB")
+		}
+	}
+	return td
+}
+
+func fillSumMetric(m pmetric.Metric, name string) {
+	m.SetName(name)
+	sum := m.SetEmptySum()
+	for _, value := range []float64{1.0, 2.0} {
+		dataPoint := sum.DataPoints().AppendEmpty()
+		dataPoint.SetStartTimestamp(StartTimestamp)
+		dataPoint.SetDoubleValue(value)
+		dataPoint.Attributes().PutStr("attr1", "test1")
+		exemplar := dataPoint.Exemplars().AppendEmpty()
+		exemplar.SetTimestamp(StartTimestamp)
+		exemplar.SetDoubleValue(value)
+		exemplar.FilteredAttributes().PutStr("exemplar.attr", "value1")
+	}
+}
+
+// forEachMetric runs fn against every metric of the metrics returned by
+// constructMetricsMultipleResourcesScopes.
+func forEachMetric(td pmetric.Metrics, fn func(pmetric.Metric)) {
+	for _, rm := range td.ResourceMetrics().All() {
+		for _, sm := range rm.ScopeMetrics().All() {
+			for _, m := range sm.Metrics().All() {
+				fn(m)
+			}
+		}
+	}
+}
+
+// forEachDataPoint runs fn against every data point of the metrics returned by
+// constructMetricsMultipleResourcesScopes.
+func forEachDataPoint(td pmetric.Metrics, fn func(pmetric.NumberDataPoint)) {
+	forEachMetric(td, func(m pmetric.Metric) {
+		for _, dp := range m.Sum().DataPoints().All() {
+			fn(dp)
+		}
+	})
 }
 
 func constructMetrics() pmetric.Metrics {

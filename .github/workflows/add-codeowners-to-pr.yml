@@ -1,6 +1,6 @@
 name: 'Add code owners to a PR'
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] - only trusted base-branch code is executed
     types:
       - opened
       - synchronize

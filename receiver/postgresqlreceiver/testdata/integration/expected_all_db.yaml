@@ -116,6 +116,37 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{databases}'
+          - description: The number of database locks, including those held by the receiver's own connections.
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: lock_type
+                      value:
+                        stringValue: transactionid
+                    - key: mode
+                      value:
+                        stringValue: ExclusiveLock
+                    - key: relation
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: lock_type
+                      value:
+                        stringValue: virtualxid
+                    - key: mode
+                      value:
+                        stringValue: ExclusiveLock
+                    - key: relation
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.database.locks
+            unit: '{lock}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
@@ -156,7 +187,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
-          - description: The number of database locks.
+          - description: The number of database locks, including those held by the receiver's own connections.
             gauge:
               dataPoints:
                 - asInt: "1"
@@ -374,7 +405,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
-          - description: The number of database locks.
+          - description: The number of database locks, including those held by the receiver's own connections.
             gauge:
               dataPoints:
                 - asInt: "1"
@@ -614,7 +645,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
-          - description: The number of database locks.
+          - description: The number of database locks, including those held by the receiver's own connections.
             gauge:
               dataPoints:
                 - asInt: "1"

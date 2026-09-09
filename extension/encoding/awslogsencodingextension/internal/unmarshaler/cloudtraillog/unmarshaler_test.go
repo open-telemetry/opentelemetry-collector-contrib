@@ -435,12 +435,14 @@ func TestRPCAttributeFeatureGates(t *testing.T) {
 		wantSystem     bool
 		wantService    bool
 		wantSystemName bool
+		wantMethod     string
 	}{
 		{
 			name:           "default: only v0 attributes",
 			wantSystem:     true,
 			wantService:    true,
 			wantSystemName: false,
+			wantMethod:     "TestAction",
 		},
 		{
 			name:           "emit v1: both old and new",
@@ -448,6 +450,7 @@ func TestRPCAttributeFeatureGates(t *testing.T) {
 			wantSystem:     true,
 			wantService:    true,
 			wantSystemName: true,
+			wantMethod:     "test.amazonaws.com/TestAction",
 		},
 		{
 			name:           "emit v1 and dont emit v0: only new",
@@ -456,6 +459,7 @@ func TestRPCAttributeFeatureGates(t *testing.T) {
 			wantSystem:     false,
 			wantService:    false,
 			wantSystemName: true,
+			wantMethod:     "test.amazonaws.com/TestAction",
 		},
 	}
 
@@ -465,7 +469,7 @@ func TestRPCAttributeFeatureGates(t *testing.T) {
 			require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), tt.emitV1))
 			require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), tt.dontEmitV0))
 			t.Cleanup(func() {
-				require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), false))
+				require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), true))
 				require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), false))
 			})
 
@@ -476,10 +480,54 @@ func TestRPCAttributeFeatureGates(t *testing.T) {
 			_, hasSystem := attrs.Get("rpc.system")
 			_, hasService := attrs.Get("rpc.service")
 			_, hasSystemName := attrs.Get("rpc.system.name")
+			method, hasMethod := attrs.Get("rpc.method")
 
 			require.Equal(t, tt.wantSystem, hasSystem, "rpc.system")
 			require.Equal(t, tt.wantService, hasService, "rpc.service")
 			require.Equal(t, tt.wantSystemName, hasSystemName, "rpc.system.name")
+			require.Equal(t, tt.wantMethod != "", hasMethod, "rpc.method presence")
+			if tt.wantMethod != "" {
+				require.Equal(t, tt.wantMethod, method.Str(), "rpc.method")
+			}
+		})
+	}
+}
+
+func TestFullyQualifiedRPCMethod(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		eventSource string
+		eventName   string
+		want        string
+	}{
+		{
+			name:        "source and name are qualified",
+			eventSource: "ec2.amazonaws.com",
+			eventName:   "StartInstances",
+			want:        "ec2.amazonaws.com/StartInstances",
+		},
+		{
+			name:      "empty source falls back to bare name",
+			eventName: "StartInstances",
+			want:      "StartInstances",
+		},
+		{
+			name:        "empty name omits method",
+			eventSource: "ec2.amazonaws.com",
+			want:        "",
+		},
+		{
+			name: "both empty omits method",
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tt.want, fullyQualifiedRPCMethod(tt.eventSource, tt.eventName))
 		})
 	}
 }

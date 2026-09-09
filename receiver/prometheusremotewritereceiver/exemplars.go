@@ -87,8 +87,8 @@ func collectExemplars(
 			exemplar.SetTimestamp(pcommon.Timestamp(ex.Timestamp * int64(time.Millisecond)))
 			exemplar.SetDoubleValue(ex.Value)
 
-			setTraceAndSpan(exemplar, promExemplar.Labels)
-			copyExemplarAttributes(exemplar.FilteredAttributes(), promExemplar.Labels)
+			traceIDSet, spanIDSet := setTraceAndSpan(exemplar, promExemplar.Labels)
+			copyExemplarAttributes(exemplar.FilteredAttributes(), promExemplar.Labels, traceIDSet, spanIDSet)
 			stats.Exemplars++
 		}
 
@@ -111,35 +111,51 @@ func extractScopeFromLabels(settings receiver.Settings, ls labels.Labels) (strin
 	return name, version
 }
 
-// setTraceAndSpan extracts trace ID and span ID from exemplar labels
-// and sets them on the provided Exemplar.
+// setTraceAndSpan converts the hex-encoded trace and span ID labels and reports
+// which ones it consumed, so the caller can keep a rejected value as a filtered
+// attribute.
 //
-// The function expects hexadecimal-encoded IDs using Prometheus
-// exemplar label keys and silently ignores invalid values.
-func setTraceAndSpan(exemplar pmetric.Exemplar, labels labels.Labels) {
+// Only valid IDs are converted: the label must decode to exactly the
+// OpenTelemetry ID width and must not be all zero. Anything else is left for the
+// caller rather than zero padded or truncated.
+func setTraceAndSpan(exemplar pmetric.Exemplar, labels labels.Labels) (traceIDSet, spanIDSet bool) {
 	if tid := labels.Get(prometheus.ExemplarTraceIDKey); tid != "" {
 		var t [16]byte
-		if b, err := hex.DecodeString(tid); err == nil {
-			copy(t[:], b)
-			exemplar.SetTraceID(pcommon.TraceID(t))
+		if len(tid) == hex.EncodedLen(len(t)) {
+			if b, err := hex.DecodeString(tid); err == nil {
+				copy(t[:], b)
+				// all-zero is the "unset" sentinel: setting it would drop the label for nothing
+				if traceID := pcommon.TraceID(t); !traceID.IsEmpty() {
+					exemplar.SetTraceID(traceID)
+					traceIDSet = true
+				}
+			}
 		}
 	}
 	if sid := labels.Get(prometheus.ExemplarSpanIDKey); sid != "" {
 		var s [8]byte
-		if b, err := hex.DecodeString(sid); err == nil {
-			copy(s[:], b)
-			exemplar.SetSpanID(pcommon.SpanID(s))
+		if len(sid) == hex.EncodedLen(len(s)) {
+			if b, err := hex.DecodeString(sid); err == nil {
+				copy(s[:], b)
+				if spanID := pcommon.SpanID(s); !spanID.IsEmpty() {
+					exemplar.SetSpanID(spanID)
+					spanIDSet = true
+				}
+			}
 		}
 	}
+	return traceIDSet, spanIDSet
 }
 
-// copyExemplarAttributes copies all labels into the destination attribute map
-// except for trace ID and span ID labels, which are handled separately.
-//
-// The destination map is typically the exemplar's filtered attributes.
-func copyExemplarAttributes(dest pcommon.Map, labels labels.Labels) {
+// copyExemplarAttributes copies all labels into dest, skipping the trace and span
+// ID labels only when setTraceAndSpan converted them. A rejected label is copied
+// like any other, so the value the sender wrote is not lost.
+func copyExemplarAttributes(dest pcommon.Map, labels labels.Labels, traceIDSet, spanIDSet bool) {
 	for k, v := range labels.Map() {
-		if k == prometheus.ExemplarTraceIDKey || k == prometheus.ExemplarSpanIDKey {
+		if k == prometheus.ExemplarTraceIDKey && traceIDSet {
+			continue
+		}
+		if k == prometheus.ExemplarSpanIDKey && spanIDSet {
 			continue
 		}
 		dest.PutStr(k, v)

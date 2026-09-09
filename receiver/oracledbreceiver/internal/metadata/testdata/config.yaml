@@ -1,6 +1,21 @@
 default:
 all_set:
   metrics:
+    oracledb.asm.disk.errors:
+      enabled: true
+      attributes: ["oracledb.asm.disk_group.name","oracledb.asm.disk.name","disk.io.direction"]
+    oracledb.asm.disk_group.capacity:
+      enabled: true
+      attributes: ["oracledb.asm.disk_group.name"]
+    oracledb.asm.disk_group.free:
+      enabled: true
+      attributes: ["oracledb.asm.disk_group.name"]
+    oracledb.asm.disk_group.offline_disks:
+      enabled: true
+      attributes: ["oracledb.asm.disk_group.name"]
+    oracledb.asm.disk_group.usable_free:
+      enabled: true
+      attributes: ["oracledb.asm.disk_group.name"]
     oracledb.buffer.inspected:
       enabled: true
       attributes: ["oracledb.buffer.state"]
@@ -376,6 +391,21 @@ all_set:
       enabled: true
 reaggregate_set:
   metrics:
+    oracledb.asm.disk.errors:
+      enabled: true
+      attributes: []
+    oracledb.asm.disk_group.capacity:
+      enabled: true
+      attributes: []
+    oracledb.asm.disk_group.free:
+      enabled: true
+      attributes: []
+    oracledb.asm.disk_group.offline_disks:
+      enabled: true
+      attributes: []
+    oracledb.asm.disk_group.usable_free:
+      enabled: true
+      attributes: []
     oracledb.buffer.inspected:
       enabled: true
       attributes: []
@@ -751,6 +781,21 @@ reaggregate_set:
       enabled: true
 none_set:
   metrics:
+    oracledb.asm.disk.errors:
+      enabled: false
+      attributes: ["oracledb.asm.disk_group.name","oracledb.asm.disk.name","disk.io.direction"]
+    oracledb.asm.disk_group.capacity:
+      enabled: false
+      attributes: ["oracledb.asm.disk_group.name"]
+    oracledb.asm.disk_group.free:
+      enabled: false
+      attributes: ["oracledb.asm.disk_group.name"]
+    oracledb.asm.disk_group.offline_disks:
+      enabled: false
+      attributes: ["oracledb.asm.disk_group.name"]
+    oracledb.asm.disk_group.usable_free:
+      enabled: false
+      attributes: ["oracledb.asm.disk_group.name"]
     oracledb.buffer.inspected:
       enabled: false
       attributes: ["oracledb.buffer.state"]

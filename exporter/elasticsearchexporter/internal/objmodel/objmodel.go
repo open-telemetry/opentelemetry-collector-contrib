@@ -35,7 +35,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"maps"
-	"math"
 	"slices"
 	"strings"
 	"time"
@@ -130,6 +129,18 @@ func (doc *Document) AddDynamicTemplate(path, template string) {
 
 func (doc *Document) DynamicTemplates() map[string]string {
 	return doc.dynamicTemplates
+}
+
+// Grow increases the field-slice capacity so at least n more fields can be
+// appended without another allocation. It matches slices.Grow.
+func (doc *Document) Grow(n int) {
+	doc.fields = slices.Grow(doc.fields, n)
+}
+
+// Reset truncates fields and drops dynamic templates. Capacity is kept.
+func (doc *Document) Reset() {
+	doc.fields = doc.fields[:0]
+	doc.dynamicTemplates = nil
 }
 
 // AddTimestamp adds a raw timestamp value to the Document.
@@ -331,17 +342,13 @@ func (doc *Document) writeJSONFlat(w *jsonwriter.Writer) {
 func (doc *Document) writeJSONDedot(w *jsonwriter.Writer) {
 	objPrefix := ""
 	level := 0
-	// first-field flag per nested object. 16 covers typical ECS/k8s dotted keys.
-	// Deeper nesting grows the slice on the heap.
-	var firstBuf [16]bool
-	firstBuf[0] = true
-	firstAtLevel := firstBuf[:1]
+	first := true
 
 	w.StartObject()
 
 	pop := func() {
 		w.EndObject()
-		firstAtLevel = firstAtLevel[:len(firstAtLevel)-1]
+		first = false
 		level--
 	}
 
@@ -388,18 +395,16 @@ func (doc *Document) writeJSONDedot(w *jsonwriter.Writer) {
 			}
 
 			fieldName := key[start : start+idx]
-			last := len(firstAtLevel) - 1
-			firstAtLevel[last] = w.Key(fieldName, firstAtLevel[last])
+			first = w.Key(fieldName, first)
 			w.StartObject()
-			firstAtLevel = append(firstAtLevel, true)
+			first = true
 			level++
 			objPrefix = key[:len(objPrefix)+idx+1]
 		}
 
 		// report value
 		fieldName := key[len(objPrefix):]
-		last := len(firstAtLevel) - 1
-		firstAtLevel[last] = w.Key(fieldName, firstAtLevel[last])
+		first = w.Key(fieldName, first)
 		fld.value.writeJSON(w, true)
 	}
 
@@ -518,11 +523,6 @@ func (v *Value) writeJSON(w *jsonwriter.Writer, dedot bool) {
 	case KindUInt:
 		w.Uint64Val(v.ui)
 	case KindDouble:
-		if math.IsNaN(v.dbl) || math.IsInf(v.dbl, 0) {
-			// NaN and Inf are undefined for JSON. Let's serialize to "null"
-			w.NullVal()
-			return
-		}
 		w.Float64Val(v.dbl)
 	case KindString:
 		w.JSONString(v.str)

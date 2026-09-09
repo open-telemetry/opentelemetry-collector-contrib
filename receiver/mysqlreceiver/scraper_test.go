@@ -6,6 +6,7 @@ package mysqlreceiver
 import (
 	"bufio"
 	"database/sql"
+	"errors"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -64,7 +65,10 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlCommands.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlFileOpen.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbDataFileIo.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbHistoryListLength.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbOperationPending.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbTransactionActiveCount.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbTransactionActiveDurationMax.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableOpen.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlThreadSlowLaunch.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRowLockWaitCount.Enabled = true
@@ -81,10 +85,16 @@ func TestScrape(t *testing.T) {
 		cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 		cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 
-		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		require.NoError(t, err)
 		scraper.sqlclient = &mockClient{
-			globalStatsFile:             "global_stats",
-			innodbStatsFile:             "innodb_stats",
+			globalStatsFile: "global_stats",
+			innodbStatsFile: "innodb_stats",
+			innodbTransactionStats: innodbTransactionStats{
+				historyListLength:            251,
+				activeTransactions:           3,
+				maxActiveTransactionDuration: 17,
+			},
 			tableIoWaitsFile:            "table_io_waits_stats",
 			indexIoWaitsFile:            "index_io_waits_stats",
 			tableStatsFile:              "table_stats",
@@ -151,7 +161,8 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitWriteCount.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitWriteTime.Enabled = true
 
-		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		require.NoError(t, err)
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats_partial",
 			innodbStatsFile:             "innodb_stats_empty",
@@ -181,6 +192,134 @@ func TestScrape(t *testing.T) {
 	})
 }
 
+func TestScrapeInnodbTransactionStatsDisabledDoesNotQuery(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](100, 0))
+	require.NoError(t, err)
+	client := &mockClient{
+		innodbTransactionStats: innodbTransactionStats{
+			historyListLength:            251,
+			activeTransactions:           3,
+			maxActiveTransactionDuration: 17,
+		},
+	}
+	scraper.sqlclient = client
+
+	errs := &scrapererror.ScrapeErrors{}
+	scraper.scrapeInnodbTransactionStats(pcommon.NewTimestampFromTime(time.Now()), errs)
+
+	require.NoError(t, errs.Combine())
+	assert.Equal(t, 0, client.innodbTransactionStatsCalls)
+	assert.Empty(t, emittedMetricNames(scraper.mb.Emit()))
+}
+
+func TestScrapeInnodbTransactionStatsRecordsOnlyEnabledMetric(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbTransactionActiveCount.Enabled = true
+	scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](100, 0))
+	require.NoError(t, err)
+	client := &mockClient{
+		innodbTransactionStats: innodbTransactionStats{
+			historyListLength:            251,
+			activeTransactions:           3,
+			maxActiveTransactionDuration: 17,
+		},
+	}
+	scraper.sqlclient = client
+
+	errs := &scrapererror.ScrapeErrors{}
+	scraper.scrapeInnodbTransactionStats(pcommon.NewTimestampFromTime(time.Now()), errs)
+
+	require.NoError(t, errs.Combine())
+	assert.Equal(t, 1, client.innodbTransactionStatsCalls)
+	md := scraper.mb.Emit()
+	assert.Equal(t, []string{"mysql.innodb.transaction.active.count"}, emittedMetricNames(md))
+	assert.Equal(t, int64(3), intGaugeValueByMetricName(t, md, "mysql.innodb.transaction.active.count"))
+}
+
+func TestScrapeInnodbTransactionStatsRecordsAllEnabledMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbHistoryListLength.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbTransactionActiveCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbTransactionActiveDurationMax.Enabled = true
+	scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](100, 0))
+	require.NoError(t, err)
+	client := &mockClient{
+		innodbTransactionStats: innodbTransactionStats{
+			historyListLength:            251,
+			activeTransactions:           3,
+			maxActiveTransactionDuration: 17,
+		},
+	}
+	scraper.sqlclient = client
+
+	errs := &scrapererror.ScrapeErrors{}
+	scraper.scrapeInnodbTransactionStats(pcommon.NewTimestampFromTime(time.Now()), errs)
+
+	require.NoError(t, errs.Combine())
+	assert.Equal(t, 1, client.innodbTransactionStatsCalls)
+	md := scraper.mb.Emit()
+	assert.ElementsMatch(t, []string{
+		"mysql.innodb.history_list.length",
+		"mysql.innodb.transaction.active.count",
+		"mysql.innodb.transaction.active.duration.max",
+	}, emittedMetricNames(md))
+	assert.Equal(t, int64(251), intGaugeValueByMetricName(t, md, "mysql.innodb.history_list.length"))
+	assert.Equal(t, int64(3), intGaugeValueByMetricName(t, md, "mysql.innodb.transaction.active.count"))
+	assert.Equal(t, int64(17), intGaugeValueByMetricName(t, md, "mysql.innodb.transaction.active.duration.max"))
+}
+
+func TestScrapeInnodbTransactionStatsQueryError(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MysqlInnodbHistoryListLength.Enabled = true
+	scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](100, 0))
+	require.NoError(t, err)
+	client := &mockClient{
+		innodbTransactionStatsErr: errors.New("query failed"),
+	}
+	scraper.sqlclient = client
+
+	errs := &scrapererror.ScrapeErrors{}
+	scraper.scrapeInnodbTransactionStats(pcommon.NewTimestampFromTime(time.Now()), errs)
+
+	require.Error(t, errs.Combine())
+	assert.Equal(t, 1, client.innodbTransactionStatsCalls)
+	assert.Empty(t, emittedMetricNames(scraper.mb.Emit()))
+}
+
+func emittedMetricNames(md pmetric.Metrics) []string {
+	var names []string
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		scopeMetrics := md.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			metrics := scopeMetrics.At(j).Metrics()
+			for k := 0; k < metrics.Len(); k++ {
+				names = append(names, metrics.At(k).Name())
+			}
+		}
+	}
+	return names
+}
+
+func intGaugeValueByMetricName(t *testing.T, md pmetric.Metrics, name string) int64 {
+	t.Helper()
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		scopeMetrics := md.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			metrics := scopeMetrics.At(j).Metrics()
+			for k := 0; k < metrics.Len(); k++ {
+				metric := metrics.At(k)
+				if metric.Name() == name {
+					require.Equal(t, 1, metric.Gauge().DataPoints().Len())
+					return metric.Gauge().DataPoints().At(0).IntValue()
+				}
+			}
+		}
+	}
+	t.Fatalf("metric %q not found", name)
+	return 0
+}
+
 func TestReplicaThreadRunningValue(t *testing.T) {
 	tests := []struct {
 		status string
@@ -205,7 +344,8 @@ func TestScrapeReplicaThreadRunningRecordsRowsByChannel(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaThreadRunning.Enabled = true
 
-	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	require.NoError(t, err)
 	scraper.sqlclient = &mockClient{
 		replicaStatusStats: []replicaStatusStats{
 			{replicaIORunning: "Yes", replicaSQLRunning: "Yes", channelName: "source_a"},
@@ -228,7 +368,8 @@ func TestScrapeGlobalStatsRecordsReplicaOpenTempTablesFromGlobalStatus(t *testin
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTableOpen.Enabled = true
 
-	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	require.NoError(t, err)
 	scraper.sqlclient = &mockClient{
 		globalStats: map[string]string{"Replica_open_temp_tables": "9"},
 	}
@@ -242,7 +383,8 @@ func TestScrapeGlobalStatsRecordsReplicaOpenTempTablesFromLegacyGlobalStatusName
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTableOpen.Enabled = true
 
-	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	require.NoError(t, err)
 	scraper.sqlclient = &mockClient{
 		globalStats: map[string]string{"Slave_open_temp_tables": "7"},
 	}
@@ -252,11 +394,42 @@ func TestScrapeGlobalStatsRecordsReplicaOpenTempTablesFromLegacyGlobalStatusName
 	assert.Equal(t, []int64{7}, replicaOpenTempTablesDataPoints(scraper.mb.Emit()))
 }
 
+func TestScrapeGlobalStatsRecordsMyisamKeyCacheMetricsWhenEnabled(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MysqlMyisamKeyCacheBlockUsedMax.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlMyisamKeyCacheBlockUnused.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlMyisamKeyCacheDiskOperation.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MysqlMyisamKeyCacheRequest.Enabled = true
+
+	scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	require.NoError(t, err)
+	scraper.sqlclient = &mockClient{
+		globalStatsFile: "global_stats",
+	}
+
+	errs := &scrapererror.ScrapeErrors{}
+	scraper.scrapeGlobalStats(pcommon.NewTimestampFromTime(time.Unix(0, 0)), errs)
+
+	require.NoError(t, errs.Combine())
+	metrics := scraper.mb.Emit()
+	assert.Equal(t, []intMetricDataPoint{{value: 288}}, intMetricDataPointsByName(t, metrics, "mysql.myisam.key_cache.block.used.max"))
+	assert.Equal(t, []intMetricDataPoint{{value: 287}}, intMetricDataPointsByName(t, metrics, "mysql.myisam.key_cache.block.unused"))
+	assert.ElementsMatch(t, []intMetricDataPoint{
+		{attributes: map[string]string{"operation": "read"}, value: 290},
+		{attributes: map[string]string{"operation": "write"}, value: 292},
+	}, intMetricDataPointsByName(t, metrics, "mysql.myisam.key_cache.disk.operation"))
+	assert.ElementsMatch(t, []intMetricDataPoint{
+		{attributes: map[string]string{"operation": "read"}, value: 289},
+		{attributes: map[string]string{"operation": "write"}, value: 291},
+	}, intMetricDataPointsByName(t, metrics, "mysql.myisam.key_cache.request"))
+}
+
 func TestScrapeReplicaStatusDoesNotRecordReplicaOpenTempTables(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTableOpen.Enabled = true
 
-	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	require.NoError(t, err)
 	scraper.sqlclient = &mockClient{
 		replicaStatusStats: []replicaStatusStats{{replicaIORunning: "Yes", replicaSQLRunning: "Yes"}},
 	}
@@ -308,6 +481,65 @@ func replicaThreadRunningDataPoints(t *testing.T, metrics pmetric.Metrics) []rep
 	return nil
 }
 
+type intMetricDataPoint struct {
+	attributes map[string]string
+	value      int64
+}
+
+func intMetricDataPointsByName(t *testing.T, metrics pmetric.Metrics, name string) []intMetricDataPoint {
+	t.Helper()
+
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		resourceMetrics := metrics.ResourceMetrics().At(i)
+		for j := 0; j < resourceMetrics.ScopeMetrics().Len(); j++ {
+			scopeMetrics := resourceMetrics.ScopeMetrics().At(j)
+			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
+				metric := scopeMetrics.Metrics().At(k)
+				if metric.Name() != name {
+					continue
+				}
+
+				switch metric.Type() {
+				case pmetric.MetricTypeGauge:
+					return intMetricDataPoints(metric.Gauge().DataPoints())
+				case pmetric.MetricTypeSum:
+					return intMetricDataPoints(metric.Sum().DataPoints())
+				default:
+					require.Failf(t, "unsupported metric type", "metric %q has type %s", name, metric.Type())
+				}
+			}
+		}
+	}
+
+	require.Failf(t, "metric not found", "metric %q not found", name)
+	return nil
+}
+
+func intMetricDataPoints(dataPoints pmetric.NumberDataPointSlice) []intMetricDataPoint {
+	got := make([]intMetricDataPoint, 0, dataPoints.Len())
+	for i := 0; i < dataPoints.Len(); i++ {
+		dp := dataPoints.At(i)
+		got = append(got, intMetricDataPoint{
+			attributes: stringAttributes(dp.Attributes()),
+			value:      dp.IntValue(),
+		})
+	}
+	return got
+}
+
+func stringAttributes(attributes pcommon.Map) map[string]string {
+	if attributes.Len() == 0 {
+		return nil
+	}
+
+	got := make(map[string]string, attributes.Len())
+	attributes.Range(func(k string, v pcommon.Value) bool {
+		got[k] = v.AsString()
+		return true
+	})
+	return got
+}
+
 func replicaOpenTempTablesDataPoints(metrics pmetric.Metrics) []int64 {
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		resourceMetrics := metrics.ResourceMetrics().At(i)
@@ -342,7 +574,8 @@ func TestScrapeBufferPoolPagesMiscOutOfBounds(t *testing.T) {
 	cfg.Password = "otel"
 	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 
-	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+	scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+	require.NoError(t, err)
 	scraper.sqlclient = &mockClient{
 		globalStatsFile:             "global_stats_oob",
 		innodbStatsFile:             "innodb_stats_empty",
@@ -428,7 +661,8 @@ func TestScrapeQuerySamplesTraceparent(t *testing.T) {
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 
 	t.Run("empty traceparent produces zero TraceID and SpanID", func(t *testing.T) {
-		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		require.NoError(t, err)
 		scraper.sqlclient = &mockClient{querySamplesFile: "query_samples_no_traceparent"}
 
 		logs, err := scraper.scrapeQuerySampleFunc(t.Context())
@@ -441,7 +675,8 @@ func TestScrapeQuerySamplesTraceparent(t *testing.T) {
 
 	t.Run("invalid traceparent logs warning and produces zero TraceID and SpanID", func(t *testing.T) {
 		core, logs := observer.New(zapcore.WarnLevel)
-		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		require.NoError(t, err)
 		scraper.logger = zap.New(core)
 		scraper.sqlclient = &mockClient{querySamplesFile: "query_samples_invalid_traceparent"}
 
@@ -456,7 +691,8 @@ func TestScrapeQuerySamplesTraceparent(t *testing.T) {
 
 	t.Run("bare IP processlistHost uses IP as address without logging an error", func(t *testing.T) {
 		core, observed := observer.New(zapcore.ErrorLevel)
-		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		require.NoError(t, err)
 		scraper.logger = zap.New(core)
 		scraper.sqlclient = &mockClient{querySamplesFile: "query_samples_bare_host"}
 
@@ -484,7 +720,8 @@ func TestScrapeQuerySamplesTraceparent(t *testing.T) {
 	})
 
 	t.Run("empty processlistHost produces empty address and zero port", func(t *testing.T) {
-		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		require.NoError(t, err)
 		scraper.sqlclient = &mockClient{querySamplesFile: "query_samples_empty_host"}
 
 		result, err := scraper.scrapeQuerySampleFunc(t.Context())
@@ -520,7 +757,8 @@ func TestScrapeTopQueryInterval(t *testing.T) {
 	mc := &mockClient{topQueriesFile: "top_queries"}
 
 	newScraper := func() *mySQLScraper {
-		s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		s, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		require.NoError(t, err)
 		s.sqlclient = mc
 		return s
 	}
@@ -572,7 +810,9 @@ func TestScrapeTopQueryInterval(t *testing.T) {
 func TestCacheAndDiff(t *testing.T) {
 	newScraper := func() *mySQLScraper {
 		cfg := createDefaultConfig().(*Config)
-		return newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		s, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		require.NoError(t, err)
+		return s
 	}
 
 	t.Run("first call returns not-cached and the value itself", func(t *testing.T) {
@@ -630,6 +870,9 @@ type mockClient struct {
 	globalStats                 map[string]string
 	globalStatsFile             string
 	innodbStatsFile             string
+	innodbTransactionStats      innodbTransactionStats
+	innodbTransactionStatsErr   error
+	innodbTransactionStatsCalls int
 	tableIoWaitsFile            string
 	indexIoWaitsFile            string
 	tableStatsFile              string
@@ -707,6 +950,14 @@ func (c *mockClient) getGlobalStats() (map[string]string, error) {
 
 func (c *mockClient) getInnodbStats() (map[string]string, error) {
 	return readFile(c.innodbStatsFile)
+}
+
+func (c *mockClient) getInnodbTransactionStats() (innodbTransactionStats, error) {
+	c.innodbTransactionStatsCalls++
+	if c.innodbTransactionStatsErr != nil {
+		return innodbTransactionStats{}, c.innodbTransactionStatsErr
+	}
+	return c.innodbTransactionStats, nil
 }
 
 func (c *mockClient) getTableStats() ([]tableStats, error) {
@@ -1047,7 +1298,8 @@ func TestQueryPlanCacheReuse(t *testing.T) {
 
 	makeScraper := func(t *testing.T, cfg *Config, spy *queryPlanSpyClient) *mySQLScraper {
 		t.Helper()
-		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		require.NoError(t, err)
 		scraper.sqlclient = spy
 		return scraper
 	}
@@ -1228,7 +1480,8 @@ func newTopQueryScraper(t *testing.T, mc *mockClient) *mySQLScraper {
 	cfg.LogsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
 	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemName.Enabled = true
 	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
-	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
+	s, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](100, 0))
+	require.NoError(t, err)
 	s.sqlclient = mc
 	s.detectedVersion = mc.getDBVersion()
 	return s
@@ -1307,7 +1560,8 @@ func TestScrapeQuerySamplesExplainPlan(t *testing.T) {
 	cfg.Password = "otel"
 	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
-	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
+	s, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](1), newTTLCache[string](100, 0))
+	require.NoError(t, err)
 	s.sqlclient = mc
 	s.detectedVersion = mc.getDBVersion()
 
@@ -1344,11 +1598,12 @@ func TestScrapeQuerySamplesCallsExplain(t *testing.T) {
 
 	v8 := mustDBVersion(t, "8.0.27")
 	mc := &mockClient{querySamplesFile: "query_samples", dbVersionOverride: &v8}
-	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), sharedCache)
+	s, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](1), sharedCache)
+	require.NoError(t, err)
 	s.sqlclient = mc
 	s.detectedVersion = mc.getDBVersion()
 
-	_, err := s.scrapeQuerySampleFunc(t.Context())
+	_, err = s.scrapeQuerySampleFunc(t.Context())
 	require.NoError(t, err)
 
 	assert.Equal(t, 1, mc.explainQueryCallCount,
@@ -1367,7 +1622,8 @@ func TestScrapeQuerySamplesExplainMySQL57(t *testing.T) {
 	cfg.Password = "otel"
 	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
-	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
+	s, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](1), newTTLCache[string](100, 0))
+	require.NoError(t, err)
 	s.sqlclient = mc
 	s.detectedVersion = mc.getDBVersion()
 
@@ -1392,7 +1648,8 @@ func TestScrapeQuerySamplesExplainMariaDB(t *testing.T) {
 	cfg.Password = "otel"
 	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
-	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
+	s, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](1), newTTLCache[string](100, 0))
+	require.NoError(t, err)
 	s.sqlclient = mc
 	s.detectedVersion = mc.getDBVersion()
 
@@ -1462,7 +1719,8 @@ func TestLogDetectedVersion(t *testing.T) {
 			logger := zap.New(core)
 
 			cfg := createDefaultConfig().(*Config)
-			s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
+			s, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](100, 0))
+			require.NoError(t, err)
 			s.logger = logger
 
 			var dbVer dbVersion
@@ -1510,7 +1768,8 @@ func TestScrapeQuerySampleFuncResourceAttributes(t *testing.T) {
 	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
 	cfg.LogsBuilderConfig.ResourceAttributes.DbSystemName.Enabled = true
 	cfg.LogsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
-	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
+	s, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](1), newTTLCache[string](100, 0))
+	require.NoError(t, err)
 	s.sqlclient = mc
 	s.detectedVersion = mc.getDBVersion()
 
