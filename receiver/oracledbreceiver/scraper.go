@@ -514,7 +514,7 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	s.useCDBDictionaryViews = s.instanceInfo.isCDB && !s.instanceInfo.connectedToPDB &&
 		s.hasCDBDictionaryGrants(ctx, s.clientProviderFunc(s.db, cdbDictionaryGrantsProbeSQL, s.logger))
 	if s.useCDBDictionaryViews {
-		s.logger.Info("oracledbreceiver: using container-qualified dictionary joins for event collection")
+		s.logger.Debug("oracledbreceiver: using container-qualified dictionary joins for event collection")
 	}
 	s.tablespaceUsageClient = s.clientProviderFunc(s.db, s.buildTablespaceSQL(), s.logger)
 	s.systemResourceLimitsClient = s.clientProviderFunc(s.db, systemResourceLimitsSQL, s.logger)
