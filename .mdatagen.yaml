@@ -784,11 +784,6 @@ exclusions:
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver
     lifecycle_test:
       enabled: false
-  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
-    feature_gates:
-      - name: receiver.sqlserver.RemoveServerResourceAttribute
-        validation:
-          enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
     feature_gates:
       - name: receiver.vcenter.resourcePoolMemoryUsageAttribute

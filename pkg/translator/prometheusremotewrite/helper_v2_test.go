@@ -128,9 +128,31 @@ func TestAddResourceTargetInfoV2(t *testing.T) {
 			resource:  resourceWithServiceAttrs,
 			timestamp: 0,
 		},
+		{
+			desc: "with resource, NoTranslation strategy preserves dots in attribute names",
+			resource: func() pcommon.Resource {
+				r := pcommon.NewResource()
+				r.Attributes().PutStr("service.name", "my_service")
+				r.Attributes().PutStr("service.instance.id", "my_id")
+				r.Attributes().PutStr("server.address", "oteljob")
+				r.Attributes().PutStr("server.port", "9464")
+				return r
+			}(),
+			timestamp: testdata.TestMetricStartTimestamp,
+			settings:  Settings{TranslationStrategy: "NoTranslation"},
+			wantLabels: []prompb.Label{
+				{Name: model.MetricNameLabel, Value: "target_info"},
+				{Name: model.InstanceLabel, Value: "my_id"},
+				{Name: model.JobLabel, Value: "my_service"},
+				{Name: "server.address", Value: "oteljob"},
+				{Name: "server.port", Value: "9464"},
+			},
+			wantLabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+			wantHelpRef:    11,
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			converter := newPrometheusConverterV2(Settings{})
+			converter := newPrometheusConverterV2(tc.settings)
 
 			err := converter.addResourceTargetInfoV2(tc.resource, tc.settings, tc.timestamp)
 			require.NoError(t, err)

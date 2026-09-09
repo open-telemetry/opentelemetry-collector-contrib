@@ -98,10 +98,15 @@ type Capabilities struct {
 	ReportsOwnLogs                 bool `mapstructure:"reports_own_logs"`
 	ReportsOwnTraces               bool `mapstructure:"reports_own_traces"`
 	ReportsHealth                  bool `mapstructure:"reports_health"`
-	ReportsRemoteConfig            bool `mapstructure:"reports_remote_config"`
 	ReportsAvailableComponents     bool `mapstructure:"reports_available_components"`
 	ReportsHeartbeat               bool `mapstructure:"reports_heartbeat"`
 	AcceptsPackages                bool `mapstructure:"accepts_packages"`
+
+	// Deprecated: ReportsRemoteConfig has no effect. AcceptsRemoteConfig enables both the
+	// AcceptsRemoteConfig and ReportsRemoteConfig OpAMP capabilities. This field will be
+	// removed in a future release.
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49763
+	ReportsRemoteConfig bool `mapstructure:"reports_remote_config"`
 }
 
 func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
@@ -127,12 +132,11 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnTraces
 	}
 
+	// AcceptsRemoteConfig enables both the AcceptsRemoteConfig and ReportsRemoteConfig
+	// OpAMP capabilities; accepting remote config without reporting its status is not useful.
 	if c.AcceptsRemoteConfig {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig
-	}
-
-	if c.ReportsRemoteConfig {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig |
+			protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
 	}
 
 	if c.AcceptsRestartCommand {
