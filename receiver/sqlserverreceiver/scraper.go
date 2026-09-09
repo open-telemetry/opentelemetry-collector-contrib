@@ -170,8 +170,34 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	if isQuerySample {
 		sanitizeQuerySampleOptionalAttributes(logs)
 	}
+	if s.config.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled {
+		removeQueryPlanFromTopQuery(logs)
+	}
 
 	return logs, err
+}
+
+// removeQueryPlanFromTopQuery drops sqlserver.query_plan from db.server.top_query records, so the
+// plan is carried only by db.server.query_plan. An execution plan can be a large XML payload, and
+// keeping it out of db.server.top_query means an oversized plan cannot take the lightweight query
+// statistics down with it. mdatagen always sets every attribute declared for an event, so the
+// attribute has to be removed after the fact rather than skipped while recording.
+//
+// A single scrape emits one resource with one scope, so the records are reached directly. The event
+// name must still be checked: db.server.query_plan records sit in the same scope and have to keep
+// their sqlserver.query_plan.
+func removeQueryPlanFromTopQuery(logs plog.Logs) {
+	resourceLogs := logs.ResourceLogs()
+	if resourceLogs.Len() == 0 {
+		return
+	}
+
+	logRecords := resourceLogs.At(0).ScopeLogs().At(0).LogRecords()
+	for i := 0; i < logRecords.Len(); i++ {
+		if logRecord := logRecords.At(i); logRecord.EventName() == "db.server.top_query" {
+			logRecord.Attributes().Remove("sqlserver.query_plan")
+		}
+	}
 }
 
 func sanitizeQuerySampleOptionalAttributes(logs plog.Logs) {
@@ -1756,6 +1782,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			logicalWritesVal.(int64),
 			physicalReadsVal.(int64),
 			queryHashVal,
+			queryPlanVal.(string),
 			queryPlanHashVal,
 			rowsReturnedVal.(int64),
 			totalElapsedTimeVal,

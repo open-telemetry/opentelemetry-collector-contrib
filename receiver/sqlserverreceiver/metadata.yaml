@@ -473,7 +473,7 @@ attributes:
 events:
   db.server.query_plan:
     enabled: false
-    description: query execution plan, decoupled from db.server.top_query to avoid oversized plan payloads dropping lightweight query statistics
+    description: query execution plan. When enabled, the plan is reported here instead of on db.server.top_query, so an oversized plan payload cannot drop the lightweight query statistics alongside it
     attributes:
       - sqlserver.query_hash
       - sqlserver.query_plan
@@ -537,6 +537,7 @@ events:
       - sqlserver.total_logical_writes
       - sqlserver.total_physical_reads
       - sqlserver.query_hash
+      - sqlserver.query_plan
       - sqlserver.query_plan_hash
       - sqlserver.total_rows
       - sqlserver.total_elapsed_time
