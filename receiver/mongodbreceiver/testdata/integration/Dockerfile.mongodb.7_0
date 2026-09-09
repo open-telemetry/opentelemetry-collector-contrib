@@ -1,4 +1,4 @@
-FROM mongo:7.0@sha256:b6421fd6d1c5ded6377b397d8983e2f82e2100dc5123332dcfda2065a472be5b
+FROM mongo:8.2@sha256:e0ce8c35124d4a9f9785532d1f268f39e9728ffa1cb38f46fa482436424c4bd3
 
 COPY scripts/setup.sh /setup.sh
 RUN chmod +x /setup.sh
