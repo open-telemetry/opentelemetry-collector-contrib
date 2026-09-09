@@ -86,8 +86,10 @@ Process and host information from journald becomes OpenTelemetry resource attrib
 
 - `_HOSTNAME` → `host.name`
 - `_PID` → `process.pid` (converted to int64)
-- `_COMM` → `process.executable.name`
-- `_EXE` → `process.executable.path`
+- `_EXE` → `process.executable.path`, and `process.executable.name` is derived from its
+  base name. `_COMM` is not used for `process.executable.name`, because a process can
+  change it at runtime and systemd truncates it to 15 characters; it is kept as
+  `journald._COMM`.
 - `_CMDLINE` → `process.command_line`
 
 #### Log Attributes
@@ -107,6 +109,11 @@ Code and syslog information becomes log attributes:
 #### Remaining Fields
 
 All other journald fields are preserved as log attributes with their original field names, prefixed with `journald.` (e.g. `journald._BOOT_ID`).
+
+A mapped field whose value does not fit the type required by its semantic convention
+attribute (e.g. a `CODE_LINE` that is not an integer) is not converted. Such a field keeps
+its original value under its `journald.` prefixed field name (e.g. `journald.CODE_LINE`),
+so that a typed attribute never holds a value of the wrong type.
 
 ### Operators
 
