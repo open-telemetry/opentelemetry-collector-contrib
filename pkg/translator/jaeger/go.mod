@@ -16,7 +16,7 @@ require (
 )
 
 require (
-	github.com/apache/thrift v0.23.1-0.20260429145742-d2acd3c49e58 // indirect
+	github.com/apache/thrift v0.24.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
