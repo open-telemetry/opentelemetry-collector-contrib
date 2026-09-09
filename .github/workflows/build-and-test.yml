@@ -179,7 +179,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [setup-environment, lint-matrix]
     steps:
       - name: Print result
@@ -279,7 +279,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
   checks:
     if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [setup-environment, checks-matrix]
     steps:
       - name: Print result
@@ -356,10 +356,28 @@ jobs:
             echo "Tests passed or were skipped. Continuing."
           fi
 
+  # Runs tests without the race detector so that test files guarded by
+  # //go:build !race are included. Most groups will find no !race packages
+  # and skip silently via test-no-race.
+  unittest-no-race:
+    needs: [setup-environment]
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-go-tools # zizmor: ignore
+        with:
+          go-version: oldstable
+      - name: Run Unit Tests Without Race Detector
+        run: make gotest-no-race
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
-    runs-on: ubuntu-24.04
-    needs: [setup-environment, unittest-matrix]
+    runs-on: ubuntu-slim
+    needs: [setup-environment, unittest-matrix, unittest-no-race]
     steps:
       - name: Print result
         run: echo ${{ needs.unittest-matrix.result }}
@@ -370,6 +388,21 @@ jobs:
             echo "All matrix jobs passed!"
           else
             echo "One or more matrix jobs failed."
+            false
+          fi
+      - name: Print no-race result
+        env:
+          NO_RACE_RESULT: ${{ needs.unittest-no-race.result }}
+        run: echo "${NO_RACE_RESULT}"
+      - name: Interpret no-race result
+        env:
+          NO_RACE_RESULT: ${{ needs.unittest-no-race.result }}
+        run: |
+          if [[ success == "${NO_RACE_RESULT}" || skipped == "${NO_RACE_RESULT}" ]]
+          then
+            echo "No-race job passed!"
+          else
+            echo "No-race job failed."
             false
           fi
   coverage:
@@ -458,7 +491,7 @@ jobs:
 
   integration-tests:
     if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [setup-environment, integration-tests-matrix, integration-sudo-tests-matrix]
     steps:
       - name: Print result
@@ -600,6 +633,9 @@ jobs:
             runner: ubuntu-24.04
           - os: aix
             arch: ppc64
+            runner: ubuntu-24.04
+          - os: solaris
+            arch: amd64
             runner: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

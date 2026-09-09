@@ -4,18 +4,21 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/postgresql
+component: receiver/datadog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Collect query plans for top queries that use `EXTRACT(field FROM ...)` or a typed literal such as `interval '1 day'` or `timestamp with time zone '2024-01-01'`
+note: Set a datapoint's `StartTimestamp` from the interval declared in the payload
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [50670]
+issues: [50640]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: The `EXTRACT` case requires PostgreSQL 14 or later.
+subtext: |
+  The window was derived from the previous datapoint's timestamp, so the first point of any stream
+  carried no `StartTimestamp` and downstream consumers could not infer an interval for it. Series
+  that declare no interval keep the previous behaviour.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
