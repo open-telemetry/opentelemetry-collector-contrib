@@ -3930,6 +3930,18 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 	})
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
+	if mbc.Metrics.K8sContainerCPUNodeUtilization.Enabled {
+		settings.Logger.Warn("[WARNING] `k8s.container.cpu.node.utilization` should not be enabled: This metric is deprecated and will be removed in a future release.")
+	}
+	if mbc.Metrics.K8sContainerMemoryNodeUtilization.Enabled {
+		settings.Logger.Warn("[WARNING] `k8s.container.memory.node.utilization` should not be enabled: This metric is deprecated and will be removed in a future release.")
+	}
+	if mbc.Metrics.K8sPodCPUNodeUtilization.Enabled {
+		settings.Logger.Warn("[WARNING] `k8s.pod.cpu.node.utilization` should not be enabled: This metric is deprecated and will be removed in a future release.")
+	}
+	if mbc.Metrics.K8sPodMemoryNodeUtilization.Enabled {
+		settings.Logger.Warn("[WARNING] `k8s.pod.memory.node.utilization` should not be enabled: This metric is deprecated and will be removed in a future release.")
+	}
 	if mbc.ResourceAttributes.AwsVolumeID.Enabled {
 		settings.Logger.Warn("[WARNING] `aws.volume.id` should not be enabled: This resource_attribute is deprecated and will be removed soon")
 	}
