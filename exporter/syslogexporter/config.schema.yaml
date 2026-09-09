@@ -8,7 +8,7 @@ properties:
     description: Syslog server address
     type: string
   network:
-    description: 'Network for syslog communication options: tcp, udp, unix'
+    description: 'Network for syslog communication options: tcp, udp, unix, unixgram'
     type: string
   port:
     description: Syslog server port (ignored for Unix sockets)

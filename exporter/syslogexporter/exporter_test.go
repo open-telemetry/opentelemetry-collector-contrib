@@ -26,8 +26,9 @@ import (
 )
 
 var (
-	expectedForm = "<165>1 2003-08-24T12:14:15Z 192.0.2.1 myproc 8710 - - It's time to make the do-nuts.\n"
-	originalForm = "<165>1 2003-08-24T05:14:15-07:00 192.0.2.1 myproc 8710 - - It's time to make the do-nuts."
+	expectedForm       = "<165>1 2003-08-24T12:14:15Z 192.0.2.1 myproc 8710 - - It's time to make the do-nuts.\n"
+	expectedDevLogForm = "<165>Aug 24 12:14:15  myproc: It's time to make the do-nuts.\n"
+	originalForm       = "<165>1 2003-08-24T05:14:15-07:00 192.0.2.1 myproc 8710 - - It's time to make the do-nuts."
 )
 
 type exporterTCPTest struct {
@@ -313,6 +314,43 @@ func TestUnixSocketExporterFail(t *testing.T) {
 	require.Nil(t, conn)
 	assert.ErrorContains(t, consumerErr, "dial unix invalid.sock: connect: no such file or directory")
 	assert.Equal(t, droppedLog, originalForm)
+}
+
+func TestUnixgramSocketExporterDevLog(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows (functionality Unix specific)")
+	}
+
+	// This test verifies that the exporter is capable of sending messages to a /dev/log socket.
+	cfg := createUnixSocketTestConfig(t)
+	cfg.Network = "unixgram"
+	cfg.Protocol = "rfc3164"
+
+	var err error
+
+	srv, err := net.ListenUnixgram("unixgram", &net.UnixAddr{Name: cfg.Endpoint, Net: "unixgram"})
+	require.NoError(t, err, "failed to start test syslog server")
+	defer srv.Close()
+
+	exp, err := initExporter(cfg, createExporterCreateSettings())
+	require.NoError(t, err, "Error building exporter")
+	require.NotNil(t, exp)
+
+	buffer := exampleLog(t)
+	// /dev/log messages do not have a hostname field.
+	buffer.Attributes().PutStr("hostname", "")
+	logs := logRecordsToLogs(buffer)
+	err = exp.pushLogsData(t.Context(), logs)
+
+	assert.NoError(t, err, "could not send message")
+	err = srv.SetDeadline(time.Now().Add(time.Second * 1))
+	require.NoError(t, err, "cannot set deadline")
+	// Call read once to verify the message was sent in a single datagram
+	b := make([]byte, 1024)
+	n, err := srv.Read(b)
+	require.NoError(t, err, "could not read message")
+	b = b[:n]
+	assert.Equal(t, expectedDevLogForm, string(b))
 }
 
 func TestTLSConfig(t *testing.T) {
