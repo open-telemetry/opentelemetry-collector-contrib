@@ -38,21 +38,25 @@ This statement sets a new span attribute named `"test"` with a value of `"pass"`
 have an attribute named `"test"`. In this example, the **function** is `set`, which uses the second parameter to set the value of the first parameter, and the **condition** is `span.attributes["test"] == nil`.
 
 Within a statement you utilize OTTL Paths to access telemetry. The example uses the Path `span.attributes` to access
-the span's attributes. For each Open Telemetry Signal, OTTL has a Path to every field (plus some extras to help make
-interacting with the data easier).
+the span's attributes. For each Open Telemetry Signal, OTTL has a Path to every field (plus some extras to
+help make interacting with the data easier).
 
-To see a list of available Paths for each Open Telemetry Signal, checkout the links below.
+To see a list of available Paths for each context, checkout the links below.
 
-| Telemetry               | OTTL Context                                                                                                                               |
-|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| `Resource`              | [Resource](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlresource/README.md)           |
-| `Instrumentation Scope` | [Instrumentation Scope](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlscope/README.md) |
-| `Span`                  | [Span](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan/README.md)                   |
-| `Span Event`            | [SpanEvent](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspanevent/README.md)         |
-| `Metric`                | [Metric](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlmetric/README.md)               |
-| `Datapoint`             | [DataPoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoint/README.md)         |
-| `Log`                   | [Log](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottllog/README.md)                     |
-| `Profile`               | [Profile](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlprofile/README.md)             |
+| Telemetry               | OTTL Context                                                                                                                                |
+|-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| `Resource`              | [Resource](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlresource/README.md)            |
+| `Instrumentation Scope` | [Instrumentation Scope](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlscope/README.md)  |
+| `Span`                  | [Span](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan/README.md)                    |
+| `Span Event`            | [SpanEvent](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspanevent/README.md)          |
+| `Metric`                | [Metric](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlmetric/README.md)                |
+| `Datapoint`             | [DataPoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoint/README.md)          |
+| `Exemplar`              | [Exemplar](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlexemplar/README.md)            |
+| `Log`                   | [Log](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottllog/README.md)                      |
+| `Profile`               | [Profile](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlprofile/README.md)              |
+| `Profile Sample`        | [Profile Sample](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlprofilesample/README.md) |
+
+For the complete list of contexts, see the [contexts documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/README.md).
 
 OTTL does not support cross-signal interactions at this time. That means you cannot write a statement like
 
