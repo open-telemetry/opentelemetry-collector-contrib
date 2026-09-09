@@ -1882,8 +1882,16 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 	}
 
 	if s.logsBuilderConfig.Events.DbServerTopProcedure.Enabled {
-		if err := s.collectProcedureMetricsIfDue(ctx, logs); err != nil {
-			scrapeErrors = append(scrapeErrors, err)
+		currentCollectionTime := time.Now()
+		lookbackTimeCounter := calculateLookbackSeconds(s.lastProcedureMetricsTimestamp, s.procedureMetricsCfg.CollectionInterval)
+		if lookbackTimeCounter < int(s.procedureMetricsCfg.CollectionInterval.Seconds()) {
+			s.logger.Debug("Skipping the collection of procedure metrics because collection interval has not yet elapsed.")
+		} else {
+			procedureCollectionErrors := s.collectProcedureMetrics(ctx, logs, currentCollectionTime, lookbackTimeCounter)
+			if procedureCollectionErrors != nil {
+				scrapeErrors = append(scrapeErrors, procedureCollectionErrors)
+			}
+			s.lastProcedureMetricsTimestamp = currentCollectionTime
 		}
 	}
 
@@ -2084,21 +2092,6 @@ func getProcedureResourceMetricNames() []string {
 
 func getProcedureMetricNames() []string {
 	return append(getProcedureResourceMetricNames(), queryExecutionMetric)
-}
-
-// collectProcedureMetricsIfDue collects only once the configured interval has elapsed. The timestamp
-// advances whenever the collection ran, error or not, so a failing scrape does not retry every tick.
-func (s *oracleScraper) collectProcedureMetricsIfDue(ctx context.Context, logs plog.Logs) error {
-	collectionTime := time.Now()
-	lookbackTimeSeconds := calculateLookbackSeconds(s.lastProcedureMetricsTimestamp, s.procedureMetricsCfg.CollectionInterval)
-	if lookbackTimeSeconds < int(s.procedureMetricsCfg.CollectionInterval.Seconds()) {
-		s.logger.Debug("Skipping the collection of procedure metrics because collection interval has not yet elapsed.")
-		return nil
-	}
-
-	err := s.collectProcedureMetrics(ctx, logs, collectionTime, lookbackTimeSeconds)
-	s.lastProcedureMetricsTimestamp = collectionTime
-	return err
 }
 
 func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.Logs, collectionTime time.Time, lookbackTimeSeconds int) error {
