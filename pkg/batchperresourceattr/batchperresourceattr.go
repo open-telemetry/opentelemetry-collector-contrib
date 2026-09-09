@@ -6,6 +6,7 @@ package batchperresourceattr // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/consumer"
@@ -39,19 +40,32 @@ func WithMetadataInjection() Option {
 }
 
 // injectAttrMetadata returns a new context with client.Metadata populated
-// from the given attribute map for the specified keys. Keys absent from the
-// map are omitted. If no keys are found the original context is returned.
+// from the given attribute map for the specified keys, merged into whatever
+// client.Info was already on ctx. Keys absent from the map are omitted. If
+// none of attrKeys are found on the resource, the original context is
+// returned unchanged.
 func injectAttrMetadata(ctx context.Context, attrs pcommon.Map, attrKeys []string) context.Context {
-	meta := map[string][]string{}
+	existing := client.FromContext(ctx)
+
+	keys := slices.Collect(existing.Metadata.Keys())
+	meta := make(map[string][]string, len(keys))
+	for _, k := range keys {
+		meta[k] = existing.Metadata.Get(k)
+	}
+
+	var injected bool
 	for _, k := range attrKeys {
 		if v, ok := attrs.Get(k); ok {
 			meta[k] = []string{v.Str()}
+			injected = true
 		}
 	}
-	if len(meta) == 0 {
+	if !injected {
 		return ctx
 	}
-	return client.NewContext(ctx, client.Info{Metadata: client.NewMetadata(meta)})
+
+	existing.Metadata = client.NewMetadata(meta)
+	return client.NewContext(ctx, existing)
 }
 
 type batchTraces struct {
