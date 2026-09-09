@@ -4,6 +4,7 @@
 package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 
 import (
+	"fmt"
 	"time"
 )
 
