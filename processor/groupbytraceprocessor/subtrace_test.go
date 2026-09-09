@@ -146,7 +146,7 @@ func buildIndex(spans ...*bufferedSpan) *traceIndex {
 
 // memberIDs returns the span IDs of the subtrace rooted at rootID.
 func memberIDs(rootID pcommon.SpanID, idx *traceIndex) map[pcommon.SpanID]bool {
-	return spanIDSet(subtraceMembers(rootID, idx))
+	return spanIDSet(descendFrom(rootID, idx))
 }
 
 // Membership extends to a direct child within the same service.
@@ -206,13 +206,13 @@ func TestSubtraceMembers_ParentNotInIndex(t *testing.T) {
 	child := newBS(childID, missingID, 0, "svc-a")
 	idx := buildIndex(child)
 
-	assert.Empty(t, subtraceMembers(missingID, idx))
+	assert.Empty(t, descendFrom(missingID, idx))
 	assert.Equal(t, map[pcommon.SpanID]bool{childID: true}, memberIDs(childID, idx))
 }
 
 // A root that isn't in the index has no members.
 func TestSubtraceMembers_RootNotInIndex(t *testing.T) {
-	assert.Empty(t, subtraceMembers(makeSpanID(42), newTraceIndex()))
+	assert.Empty(t, descendFrom(makeSpanID(42), newTraceIndex()))
 }
 
 // TestSubtraceMembers_CyclicParents verifies that collection terminates instead
@@ -234,7 +234,7 @@ func TestSubtraceMembers_CyclicParents(t *testing.T) {
 		// A is returned as the requested root; B is reachable from it as a child.
 		assert.Equal(t, map[pcommon.SpanID]bool{aID: true, bID: true}, members)
 	case <-time.After(5 * time.Second):
-		t.Fatal("subtraceMembers() did not terminate: infinite loop on cyclic parent references")
+		t.Fatal("descendFrom() did not terminate: infinite loop on cyclic parent references")
 	}
 }
 

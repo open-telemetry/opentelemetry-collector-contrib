@@ -220,16 +220,16 @@ func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, wor
 		}
 	}
 
-	// Discover local roots among the spans that just arrived. Spans already in the
-	// index don't need re-checking: a span can stop being a local root, once a
-	// parent in the same service shows up in a later batch, but it can never start
-	// being one, because the only thing that removes a parent from the index
-	// removes that parent's descendants along with it. Demotions are caught when
-	// the timer fires, so re-scanning the whole trace on every batch would only
-	// make handling a batch cost more the longer the trace has been buffered.
-	roots := sp.subSt.localRoots(traceID, arrived)
-	for _, rootSpanID := range roots {
-		id := subtraceID{traceID: traceID, spanID: rootSpanID}
+	// Work out which subtraces the spans that just arrived head, along with those
+	// headed by their direct children. A child has to be reconsidered because an
+	// arriving parent changes its answer: it may stop heading a subtrace at all,
+	// or move from its service's orphan group to heading one of its own when the
+	// parent turns out to belong to a different service. Nothing further down
+	// changes, since a grandchild's parent was already present, and spans
+	// elsewhere in the trace are untouched, so this stays proportional to the
+	// batch rather than to the trace.
+	candidates := append(arrived, sp.subSt.childrenOf(traceID, arrived)...)
+	for _, id := range sp.subSt.subtracesFor(traceID, candidates) {
 		if worker.subtraceBuffer.contains(id) {
 			continue // already tracking this subtrace
 		}
@@ -425,16 +425,17 @@ func (sp *groupByTraceProcessor) onSubtraceExpired(id subtraceID, worker *eventM
 func (sp *groupByTraceProcessor) markSubtraceAsReleased(id subtraceID, fire func(...event)) error {
 	// Retrieving and removing the spans in a single operation is what keeps a
 	// concurrent release of an overlapping subtrace from emitting them twice.
-	members, err := sp.subSt.deleteSubtrace(id.traceID, id.spanID)
+	members, err := sp.subSt.deleteSubtrace(id)
 	if err != nil {
 		return fmt.Errorf("couldn't retrieve subtrace: %w", err)
 	}
 	if len(members) == 0 {
-		// Either the spans are already gone, or this span stopped being a local
-		// root after its timer was scheduled, in which case its spans are released
-		// along with the local root they now belong to.
+		// Either the spans are already gone, or the root stopped being one after
+		// its timer was scheduled, in which case its spans are released along with
+		// the subtrace they now belong to.
 		sp.logger.Debug("subtrace expired with no spans to release",
-			zap.Stringer("traceID", id.traceID), zap.Stringer("spanID", id.spanID))
+			zap.Stringer("traceID", id.traceID), zap.Stringer("spanID", id.spanID),
+			zap.String("serviceID", id.serviceID))
 		return nil
 	}
 	fire(event{typ: subtraceReleased, payload: assemble(members)})
@@ -453,6 +454,6 @@ func (sp *groupByTraceProcessor) onSubtraceReleased(td ptrace.Traces) error {
 }
 
 func (sp *groupByTraceProcessor) onSubtraceRemoved(id subtraceID) error {
-	_, err := sp.subSt.deleteSubtrace(id.traceID, id.spanID)
+	_, err := sp.subSt.deleteSubtrace(id)
 	return err
 }

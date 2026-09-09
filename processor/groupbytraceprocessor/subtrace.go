@@ -13,11 +13,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
-// subtraceID is the composite key that uniquely identifies one service's subtrace
-// within a distributed trace.
+// subtraceID is the composite key that uniquely identifies one service's
+// subtrace within a distributed trace.
+//
+// Most subtraces are identified by their local root span. Spans whose parent
+// never made it into the buffer have no such span to point at, and there can be
+// any number of them, so those are grouped per service instead and identified by
+// serviceID with an empty spanID. Grouping them keeps a service's spans in one
+// batch instead of emitting each parentless span on its own.
 type subtraceID struct {
 	traceID pcommon.TraceID
-	spanID  pcommon.SpanID // the local root span of this subtrace
+	spanID  pcommon.SpanID // the local root span, or empty for an orphan group
+	// serviceID is set only for orphan groups, and is empty otherwise.
+	serviceID string
+}
+
+// isOrphanGroup reports whether the id refers to a service's parentless spans
+// rather than to a single local root.
+func (id subtraceID) isOrphanGroup() bool {
+	return id.spanID.IsEmpty()
 }
 
 // scopeKey identifies an instrumentation scope for grouping purposes. The parts
@@ -89,6 +103,13 @@ func newSpanContext(rctx resourceContext, scope pcommon.InstrumentationScope) sp
 type bufferedSpan struct {
 	spanContext
 	span ptrace.Span
+
+	// ownRootConfirmed records that this span was seen to head a subtrace of its
+	// own while its parent was still buffered. Once its parent is released the
+	// index can no longer tell "entered from another service" apart from "parent
+	// hasn't arrived yet", and without this the span would fall back to looking
+	// merely parentless. Only ever written under the storage write lock.
+	ownRootConfirmed bool
 }
 
 // newBufferedSpan deep-copies the span so the caller can recycle its pdata
@@ -117,38 +138,72 @@ func newTraceIndex() *traceIndex {
 // insert indexes bs, replacing any span already held under the same span ID.
 func (idx *traceIndex) insert(bs *bufferedSpan) {
 	spanID := bs.span.SpanID()
-	if _, replaced := idx.spans[spanID]; !replaced {
-		if parent := bs.span.ParentSpanID(); !parent.IsEmpty() {
-			idx.children[parent] = append(idx.children[parent], spanID)
+	parent := bs.span.ParentSpanID()
+
+	if previous, replaced := idx.spans[spanID]; replaced {
+		// A replacement usually repeats the span verbatim, in which case the child
+		// link already holds. If it names a different parent, though, leaving the
+		// old link in place would put the span in the wrong subtrace, so move it.
+		previousParent := previous.span.ParentSpanID()
+		if previousParent == parent {
+			idx.spans[spanID] = bs
+			return
 		}
+		idx.unlinkChild(previousParent, spanID)
+	}
+
+	if !parent.IsEmpty() {
+		idx.children[parent] = append(idx.children[parent], spanID)
 	}
 	idx.spans[spanID] = bs
 }
 
+// unlinkChild drops spanID from its parent's list of children.
+func (idx *traceIndex) unlinkChild(parent, spanID pcommon.SpanID) {
+	if parent.IsEmpty() {
+		return
+	}
+	siblings, ok := idx.children[parent]
+	if !ok {
+		return
+	}
+	siblings = slices.DeleteFunc(siblings, func(id pcommon.SpanID) bool { return id == spanID })
+	if len(siblings) == 0 {
+		delete(idx.children, parent)
+	} else {
+		idx.children[parent] = siblings
+	}
+}
+
 // remove drops the given spans and every reference to them.
 func (idx *traceIndex) remove(spans []*bufferedSpan) {
+	removed := make(map[pcommon.SpanID]struct{}, len(spans))
+	for _, bs := range spans {
+		removed[bs.span.SpanID()] = struct{}{}
+	}
+
 	for _, bs := range spans {
 		spanID := bs.span.SpanID()
+
+		// A child left behind by a removed parent was left behind because it heads
+		// a subtrace of its own; anything else would have been collected with it.
+		// Record that while the parent is still here to prove it.
+		for _, childID := range idx.children[spanID] {
+			if _, going := removed[childID]; going {
+				continue
+			}
+			if child, ok := idx.spans[childID]; ok {
+				child.ownRootConfirmed = true
+			}
+		}
+
 		delete(idx.spans, spanID)
 		delete(idx.children, spanID)
 
 		// Unlink from the parent as well, which matters when the parent outlives
 		// this span. Members removed together take their own entries with them, so
 		// this only ever prunes at the edge of the removed set.
-		parent := bs.span.ParentSpanID()
-		if parent.IsEmpty() {
-			continue
-		}
-		siblings, ok := idx.children[parent]
-		if !ok {
-			continue
-		}
-		siblings = slices.DeleteFunc(siblings, func(id pcommon.SpanID) bool { return id == spanID })
-		if len(siblings) == 0 {
-			delete(idx.children, parent)
-		} else {
-			idx.children[parent] = siblings
-		}
+		idx.unlinkChild(bs.span.ParentSpanID(), spanID)
 	}
 }
 
@@ -169,13 +224,15 @@ func (idx *traceIndex) len() int {
 // collect, no matter how the timers interleave.
 func (idx *traceIndex) unclaimed() []*bufferedSpan {
 	// Marking downwards from every local root costs one visit per span in total,
-	// because subtraces are disjoint by construction.
+	// because the subtree under each root is disjoint from every other. Orphan
+	// roots are marked individually rather than a group at a time for the same
+	// reason: the group is exactly the union of their subtrees.
 	claimed := make(map[pcommon.SpanID]struct{}, len(idx.spans))
 	for spanID, bs := range idx.spans {
 		if !isLocalRoot(bs, idx) {
 			continue
 		}
-		for _, member := range subtraceMembers(spanID, idx) {
+		for _, member := range descendFrom(spanID, idx) {
 			claimed[member.span.SpanID()] = struct{}{}
 		}
 	}
@@ -196,28 +253,69 @@ const (
 	spanFlagsContextIsRemoteMask uint32 = 0x00000200
 )
 
-// isLocalRoot returns true if bs is the service-entry span for its subtrace.
-// A span is a local root when:
+// rootKind describes whether, and how, a span heads a subtrace.
+type rootKind int
+
+const (
+	// notRoot: the span is collected as part of an ancestor's subtrace.
+	notRoot rootKind = iota
+	// ownRoot: the span is a service-entry span and heads a subtrace of its own.
+	ownRoot
+	// orphanRoot: the span looks like an entry span only because its parent is
+	// not buffered, so it is grouped with the service's other parentless spans
+	// rather than heading a subtrace by itself.
+	orphanRoot
+)
+
+// classifyRoot decides whether bs heads a subtrace. A span is a local root when:
 //   - its parent span ID is empty (global root), OR
 //   - the IS_REMOTE flag is set (parent is in another service), OR
-//   - its parent is not in the index (safe default: treat as local root), OR
-//   - its parent belongs to a different service identity.
-func isLocalRoot(bs *bufferedSpan, idx *traceIndex) bool {
+//   - its parent belongs to a different service identity, OR
+//   - its parent is not in the index (safe default: treat as a local root).
+//
+// The last of those is a guess rather than a statement about the trace, which is
+// why it is reported separately: the parent may still arrive, and until it does
+// there is nothing to distinguish one such span from another in the same
+// service.
+func classifyRoot(bs *bufferedSpan, idx *traceIndex) rootKind {
 	if bs.span.ParentSpanID().IsEmpty() {
-		return true
+		return ownRoot
 	}
 	flags := bs.span.Flags()
 	// If IS_REMOTE is set, consider it authoritative.
 	// If it is not set, default to treating this span as a local root if any of the
 	// remaining checks are met.
 	if flags&spanFlagsContextHasIsRemoteMask != 0 && flags&spanFlagsContextIsRemoteMask != 0 {
-		return true
+		return ownRoot
+	}
+	if bs.ownRootConfirmed {
+		return ownRoot
 	}
 	parent, ok := idx.spans[bs.span.ParentSpanID()]
 	if !ok {
-		return true
+		return orphanRoot
 	}
-	return bs.serviceID != parent.serviceID
+	if bs.serviceID != parent.serviceID {
+		return ownRoot
+	}
+	return notRoot
+}
+
+// isLocalRoot returns true if bs heads a subtrace, of either kind.
+func isLocalRoot(bs *bufferedSpan, idx *traceIndex) bool {
+	return classifyRoot(bs, idx) != notRoot
+}
+
+// subtraceIDFor returns the subtrace that bs heads, if it heads one.
+func subtraceIDFor(traceID pcommon.TraceID, bs *bufferedSpan, idx *traceIndex) (subtraceID, bool) {
+	switch classifyRoot(bs, idx) {
+	case ownRoot:
+		return subtraceID{traceID: traceID, spanID: bs.span.SpanID()}, true
+	case orphanRoot:
+		return subtraceID{traceID: traceID, serviceID: bs.serviceID}, true
+	case notRoot:
+	}
+	return subtraceID{}, false
 }
 
 // serviceIdentity returns a string that uniquely identifies the service for a
@@ -248,14 +346,34 @@ func hashMapAttrs(attrs pcommon.Map) string {
 	return hex.EncodeToString(h[:])
 }
 
-// subtraceMembers returns every span that belongs to the subtrace rooted at
+// subtraceMembers returns the spans belonging to the given subtrace, whether it
+// is headed by a single local root or is a service's group of parentless spans.
+func subtraceMembers(id subtraceID, idx *traceIndex) []*bufferedSpan {
+	if !id.isOrphanGroup() {
+		return descendFrom(id.spanID, idx)
+	}
+
+	// The group is whatever is currently parentless for this service. A span that
+	// has since acquired a parent is no longer an orphan root, so it drops out of
+	// the group here and is collected by the subtrace its parent belongs to.
+	var members []*bufferedSpan
+	for spanID, bs := range idx.spans {
+		if bs.serviceID != id.serviceID || classifyRoot(bs, idx) != orphanRoot {
+			continue
+		}
+		members = append(members, descendFrom(spanID, idx)...)
+	}
+	return members
+}
+
+// descendFrom returns every span that belongs to the subtrace rooted at
 // rootID, including the root itself.
 //
 // It descends from the root through the children index, stopping wherever it
 // meets another local root, since that span begins a subtrace of its own. The
 // cost is therefore proportional to the subtrace being collected rather than to
 // the whole trace.
-func subtraceMembers(rootID pcommon.SpanID, idx *traceIndex) []*bufferedSpan {
+func descendFrom(rootID pcommon.SpanID, idx *traceIndex) []*bufferedSpan {
 	root, ok := idx.spans[rootID]
 	if !ok {
 		return nil

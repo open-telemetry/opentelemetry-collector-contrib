@@ -75,12 +75,16 @@ A span is classified as a local root when:
 
 1. Its parent span ID is empty (global root), or
 2. The `IS_REMOTE` flag is set in `Span.flags`, indicating the parent is in another service, or
-3. The parent span is not found in the current buffer and is therefore treated as a local root as a safe default (where the real local root is expected to arrive later), or
-4. The parent span belongs to a different service identity (different `service.name`, `service.namespace`, or `service.instance.id`).
+3. The parent span belongs to a different service identity (different `service.name`, `service.namespace`, or `service.instance.id`), or
+4. The parent span is not found in the current buffer and is therefore treated as a local root as a safe default (where the real local root is expected to arrive later).
+
+Rules 1 to 3 identify a particular span as the service's entry span, and it heads a subtrace of its own. Rule 4 is a guess rather than a statement about the trace, and there is nothing to tell one such span apart from another in the same service, so all of a service's spans matching only rule 4 are grouped together and released as one batch. Without that grouping, a service whose entry span is missing would have each of its spans emitted separately.
+
+If the parent does later arrive, the spans it accounts for leave that group: they are released with the subtrace their parent belongs to, or head a subtrace of their own if the parent turns out to be in a different service. A service's remaining parentless spans stay grouped.
 
 ### Orphan spans
 
-A span whose parent never arrives (e.g., the parent is in a different Collector instance) is itself treated as a local root, under rule 3 above, so it forms a subtrace of its own and is released after `wait_duration` like any other.
+A span whose parent never arrives (e.g., the parent is in a different Collector instance) is itself treated as a local root, under rule 4 above, so it is released after `wait_duration` like any other span, grouped with the rest of its service's parentless spans.
 
 Spans can still end up belonging to no subtrace at all, because a span is only collected if its chain of ancestors reaches a local root. Malformed input in which a span's parent is one of its own descendants within the same service has no local root anywhere in the cycle, so no subtrace timer covers any of it. Every trace therefore also gets a sweep on the `wait_duration` cadence, which releases the spans that no local root can reach, in the same way a subtrace is released. Which spans those are is decided by reachability rather than by age, so a sweep never takes spans that a pending subtrace was about to collect. It reschedules itself while the trace still holds spans, and stops once the trace is empty.
 

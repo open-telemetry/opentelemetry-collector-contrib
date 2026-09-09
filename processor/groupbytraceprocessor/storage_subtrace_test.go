@@ -5,6 +5,7 @@ package groupbytraceprocessor
 
 import (
 	"fmt"
+	"slices"
 	"sync"
 	"testing"
 
@@ -18,10 +19,10 @@ func newTestSubtraceStorage() *subtraceMemoryStorage {
 	return newSubtraceMemoryStorage(nil)
 }
 
-// allLocalRoots classifies every span buffered for a trace, which is what these
+// allSubtraces classifies every span buffered for a trace, which is what these
 // tests want to assert about. The processor only ever classifies the spans that
-// just arrived, so it passes a narrower candidate list.
-func allLocalRoots(st *subtraceMemoryStorage, traceID pcommon.TraceID) []pcommon.SpanID {
+// just arrived and their children, so it passes a narrower candidate list.
+func allSubtraces(st *subtraceMemoryStorage, traceID pcommon.TraceID) []subtraceID {
 	st.RLock()
 	idx, ok := st.traces[traceID]
 	if !ok {
@@ -35,7 +36,19 @@ func allLocalRoots(st *subtraceMemoryStorage, traceID pcommon.TraceID) []pcommon
 		candidates = append(candidates, spanID)
 	}
 	st.RUnlock()
-	return st.localRoots(traceID, candidates)
+	return st.subtracesFor(traceID, candidates)
+}
+
+// allLocalRootIDs is allSubtraces reduced to the span IDs that head a subtrace
+// of their own, which is what the older assertions are phrased in terms of.
+func allLocalRootIDs(st *subtraceMemoryStorage, traceID pcommon.TraceID) []pcommon.SpanID {
+	var ids []pcommon.SpanID
+	for _, id := range allSubtraces(st, traceID) {
+		if !id.isOrphanGroup() {
+			ids = append(ids, id.spanID)
+		}
+	}
+	return ids
 }
 
 func insertTestSpan(t *testing.T, st *subtraceMemoryStorage, traceID pcommon.TraceID, spanID, parentID pcommon.SpanID, svcName string) {
@@ -58,7 +71,7 @@ func TestSubtraceStorage_SingleSpan_LocalRoot(t *testing.T) {
 	sid := makeSpanID(1)
 	insertTestSpan(t, st, tid, sid, pcommon.NewSpanIDEmpty(), "svc-a")
 
-	roots := allLocalRoots(st, tid)
+	roots := allLocalRootIDs(st, tid)
 	require.Len(t, roots, 1)
 	assert.Equal(t, sid, roots[0])
 }
@@ -87,12 +100,12 @@ func TestSubtraceStorage_MultiService_DisjointSubtraces(t *testing.T) {
 	require.NoError(t, st.insertSpan(tid, newSpanContext(newResourceContext(r), sc), sp))
 	insertTestSpan(t, st, tid, childB, rootB, "svc-b")
 
-	roots := allLocalRoots(st, tid)
+	roots := allLocalRootIDs(st, tid)
 	assert.Len(t, roots, 2)
 
-	membersA, err := st.getSubtrace(tid, rootA)
+	membersA, err := st.getSubtrace(subtraceID{traceID: tid, spanID: rootA})
 	require.NoError(t, err)
-	membersB, err := st.getSubtrace(tid, rootB)
+	membersB, err := st.getSubtrace(subtraceID{traceID: tid, spanID: rootB})
 	require.NoError(t, err)
 
 	idsA := spanIDSet(membersA)
@@ -127,7 +140,7 @@ func TestSubtraceStorage_DeleteSubtrace_LeavesRemainder(t *testing.T) {
 	insertTestSpan(t, st, tid, childA, rootA, "svc-a")
 	insertTestSpan(t, st, tid, rootB, pcommon.NewSpanIDEmpty(), "svc-b")
 
-	deleted, err := st.deleteSubtrace(tid, rootA)
+	deleted, err := st.deleteSubtrace(subtraceID{traceID: tid, spanID: rootA})
 	require.NoError(t, err)
 	assert.Len(t, deleted, 2)
 
@@ -144,7 +157,7 @@ func TestSubtraceStorage_GetRemainder(t *testing.T) {
 	insertTestSpan(t, st, tid, makeSpanID(2), pcommon.NewSpanIDEmpty(), "svc-b")
 
 	// Delete one subtrace.
-	_, err := st.deleteSubtrace(tid, makeSpanID(1))
+	_, err := st.deleteSubtrace(subtraceID{traceID: tid, spanID: makeSpanID(1)})
 	require.NoError(t, err)
 
 	remainder, err := st.getRemainder(tid)
@@ -185,7 +198,7 @@ func TestSubtraceStorage_ABCBCallChain_FourSubtraces(t *testing.T) {
 	insertTestSpan(t, st, tid, rootC, rootB1, "svc-c")
 	insertTestSpan(t, st, tid, rootB2, rootC, "svc-b")
 
-	roots := allLocalRoots(st, tid)
+	roots := allLocalRootIDs(st, tid)
 	require.Len(t, roots, 4)
 
 	rootSet := make(map[pcommon.SpanID]bool, len(roots))
@@ -210,37 +223,110 @@ func TestSubtraceStorage_ConcurrentInsertAndLocalRoots(t *testing.T) {
 	}
 	for range 5 {
 		wg.Go(func() {
-			_ = allLocalRoots(st, tid)
+			_ = allLocalRootIDs(st, tid)
 		})
 	}
 	wg.Wait()
 }
 
 // TestSubtraceStorage_DeleteSubtrace_SkipsDemotedRoot verifies that a span which
-// was a local root when its timer was scheduled, but stopped being one once its
-// parent arrived, is left in place for the parent's subtrace to release.
+// headed a subtrace when its timer was scheduled, but stopped heading one once
+// its parent arrived, is left in place for the parent's subtrace to release.
 func TestSubtraceStorage_DeleteSubtrace_SkipsDemotedRoot(t *testing.T) {
 	st := newTestSubtraceStorage()
 	tid := makeTraceID(1)
 	rootID := makeSpanID(1)
 	childID := makeSpanID(2)
 
-	// The child arrives first, so its parent is missing and it looks like a root.
+	// The child arrives first. Its parent is missing, so it joins its service's
+	// orphan group rather than heading a subtrace of its own.
 	insertTestSpan(t, st, tid, childID, rootID, "svc-a")
-	require.Equal(t, []pcommon.SpanID{childID}, allLocalRoots(st, tid))
+	pending := allSubtraces(st, tid)
+	require.Len(t, pending, 1)
+	orphanGroup := pending[0]
+	require.True(t, orphanGroup.isOrphanGroup(), "a parentless span should join its service's orphan group")
 
-	// The parent arrives, demoting the child.
+	// The parent arrives, so the child is no longer parentless.
 	insertTestSpan(t, st, tid, rootID, pcommon.NewSpanIDEmpty(), "svc-a")
-	require.Equal(t, []pcommon.SpanID{rootID}, allLocalRoots(st, tid))
+	require.Equal(t, []pcommon.SpanID{rootID}, allLocalRootIDs(st, tid))
 
-	demoted, err := st.deleteSubtrace(tid, childID)
+	// The orphan group's timer was already scheduled, but it has nothing left.
+	demoted, err := st.deleteSubtrace(orphanGroup)
 	require.NoError(t, err)
-	assert.Empty(t, demoted, "a demoted root must not claim any spans")
+	assert.Empty(t, demoted, "a demoted orphan must not be released on its own")
 
-	released, err := st.deleteSubtrace(tid, rootID)
+	released, err := st.deleteSubtrace(subtraceID{traceID: tid, spanID: rootID})
 	require.NoError(t, err)
 	assert.Equal(t, map[pcommon.SpanID]bool{rootID: true, childID: true}, spanIDSet(released))
 	assert.Empty(t, st.traceIDs())
+}
+
+// Parentless spans of one service form a single group, and one of a different
+// service forms its own.
+func TestSubtraceStorage_OrphansGroupPerService(t *testing.T) {
+	st := newTestSubtraceStorage()
+	tid := makeTraceID(1)
+	missing := makeSpanID(99)
+
+	insertTestSpan(t, st, tid, makeSpanID(1), missing, "svc-a")
+	insertTestSpan(t, st, tid, makeSpanID(2), missing, "svc-a")
+	insertTestSpan(t, st, tid, makeSpanID(3), makeSpanID(98), "svc-a")
+	insertTestSpan(t, st, tid, makeSpanID(4), missing, "svc-b")
+
+	ids := allSubtraces(st, tid)
+	require.Len(t, ids, 2, "one orphan group per service, however many spans are in it")
+	for _, id := range ids {
+		require.True(t, id.isOrphanGroup())
+	}
+
+	byService := map[string][]*bufferedSpan{}
+	for _, id := range ids {
+		members, err := st.getSubtrace(id)
+		require.NoError(t, err)
+		byService[id.serviceID] = members
+	}
+
+	var sizes []int
+	for _, members := range byService {
+		sizes = append(sizes, len(members))
+	}
+	slices.Sort(sizes)
+	assert.Equal(t, []int{1, 3}, sizes, "svc-a's three parentless spans in one group, svc-b's one in another")
+}
+
+// A span whose late-arriving parent belongs to a different service leaves the
+// orphan group and heads a subtrace of its own.
+func TestSubtraceStorage_OrphanReparentedToOtherService(t *testing.T) {
+	st := newTestSubtraceStorage()
+	tid := makeTraceID(1)
+	parentID := makeSpanID(1)
+	movedID := makeSpanID(2)
+	stayID := makeSpanID(3)
+
+	insertTestSpan(t, st, tid, movedID, parentID, "svc-b")
+	insertTestSpan(t, st, tid, stayID, makeSpanID(99), "svc-b")
+	require.Len(t, allSubtraces(st, tid), 1, "both are parentless, so both are in one group")
+
+	// The parent arrives, and belongs to a different service.
+	insertTestSpan(t, st, tid, parentID, pcommon.NewSpanIDEmpty(), "svc-a")
+
+	ids := allSubtraces(st, tid)
+	require.Len(t, ids, 3, "svc-a's root, svc-b's re-parented entry span, and svc-b's remaining orphan")
+
+	for _, id := range ids {
+		members, err := st.getSubtrace(id)
+		require.NoError(t, err)
+		switch {
+		case id.spanID == parentID:
+			assert.Equal(t, map[pcommon.SpanID]bool{parentID: true}, spanIDSet(members))
+		case id.spanID == movedID:
+			assert.Equal(t, map[pcommon.SpanID]bool{movedID: true}, spanIDSet(members))
+		default:
+			assert.True(t, id.isOrphanGroup())
+			assert.Equal(t, map[pcommon.SpanID]bool{stayID: true}, spanIDSet(members),
+				"the re-parented span must have left the orphan group")
+		}
+	}
 }
 
 // buildBenchTrace builds a trace of spanCount spans spread evenly over
@@ -312,7 +398,7 @@ func BenchmarkSubtraceIndexAndRelease(b *testing.B) {
 				for b.Loop() {
 					st := newSubtraceMemoryStorage(nil)
 
-					var roots []pcommon.SpanID
+					var subtraces []subtraceID
 					for _, td := range batches {
 						var arrived []pcommon.SpanID
 						for i := 0; i < td.ResourceSpans().Len(); i++ {
@@ -330,11 +416,11 @@ func BenchmarkSubtraceIndexAndRelease(b *testing.B) {
 								}
 							}
 						}
-						roots = append(roots, st.localRoots(traceID, arrived)...)
+						subtraces = append(subtraces, st.subtracesFor(traceID, arrived)...)
 					}
 
-					for _, root := range roots {
-						members, err := st.deleteSubtrace(traceID, root)
+					for _, id := range subtraces {
+						members, err := st.deleteSubtrace(id)
 						if err != nil {
 							b.Fatal(err)
 						}
