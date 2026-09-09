@@ -48,6 +48,8 @@ const (
 	// single-container query set.
 	containerGrantsProbeSQL     = "SELECT 1 FROM v$con_sysstat WHERE ROWNUM = 1"
 	containerGrantsProbeTimeout = 5 * time.Second
+	// A missing grant raises ORA-00942 at parse time, so this is a permission check, not a data check.
+	cdbDictionaryGrantsProbeSQL = "SELECT COUNT(*) FROM (SELECT 1 FROM CDB_PROCEDURES WHERE ROWNUM = 1 UNION ALL SELECT 1 FROM CDB_OBJECTS WHERE ROWNUM = 1)"
 
 	// V$SYSMETRIC metric_name values (group_id=2, 60-second interval)
 	sysmetricBufferCacheHitRatio      = "Buffer Cache Hit Ratio"
@@ -327,14 +329,10 @@ const (
 var (
 	//go:embed templates/oracleQuerySampleSql.tmpl
 	samplesQuery string
-	//go:embed templates/oracleQuerySampleCDBSql.tmpl
-	samplesCDBQuery string
 	//go:embed templates/oracleQuerySampleStatsSql.tmpl
 	samplesStatsQuery string
 	//go:embed templates/oracleQueryMetricsAndTextSql.tmpl
 	oracleQueryMetricsSQL string
-	//go:embed templates/oracleQueryMetricsAndTextCDBSql.tmpl
-	oracleQueryMetricsCDBSQL string
 	//go:embed templates/oracleQueryPlanSql.tmpl
 	oracleQueryPlanDataSQL string
 	//go:embed templates/oracleSessionEventSql.tmpl
@@ -345,6 +343,10 @@ var (
 	oracleProcedureMetricsCDBSQL string
 )
 
+// sgaComponentNames maps V$SGAINFO.NAME values to the snake_case enum keys
+// declared for oracledb.sga.component.name in metadata.yaml. Rows whose name
+// is not in this map are skipped so that sum(oracledb.sga.usage) stays
+// consistent with oracledb.sga.limit.
 var sgaComponentNames = map[string]metadata.AttributeOracledbSgaComponentName{
 	"Buffer Cache Size":        metadata.AttributeOracledbSgaComponentNameBufferCache,
 	"Data Transfer Cache Size": metadata.AttributeOracledbSgaComponentNameDataTransferCache,
@@ -368,7 +370,10 @@ type oracleScraper struct {
 	systemResourceLimitsClient dbClient
 	sessionCountClient         dbClient
 	// isCDBRoot is true when connected to a CDB root (Oracle 12c+); enables per-PDB queries.
-	isCDBRoot                bool
+	isCDBRoot bool
+	// useCDBDictionaryViews enables container-qualified dictionary joins in the event queries. Separate from
+	// isCDBRoot because the CDB_* dictionary views are granted separately from the per-PDB metric views.
+	useCDBDictionaryViews    bool
 	oracleQueryMetricsClient dbClient
 	oraclePlanDataClient     dbClient
 	samplesQueryClient       dbClient
@@ -454,6 +459,8 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
 
+// buildTablespaceSQL selects the tablespace query variant for the connection type,
+// including the DBA_DATA_FILES/CDB_DATA_FILES join only when needed.
 func (s *oracleScraper) buildTablespaceSQL() string {
 	withMax := s.metricsBuilderConfig.Metrics.OracledbTablespaceLimit.Enabled
 	switch {
@@ -469,24 +476,10 @@ func (s *oracleScraper) buildTablespaceSQL() string {
 }
 
 func (s *oracleScraper) buildProcedureMetricsSQL() string {
-	if s.isCDBRoot {
+	if s.useCDBDictionaryViews {
 		return oracleProcedureMetricsCDBSQL
 	}
 	return oracleProcedureMetricsSQL
-}
-
-func (s *oracleScraper) buildTopQuerySQL() string {
-	if s.isCDBRoot {
-		return oracleQueryMetricsCDBSQL
-	}
-	return oracleQueryMetricsSQL
-}
-
-func (s *oracleScraper) buildQuerySampleSQL() string {
-	if s.isCDBRoot {
-		return samplesCDBQuery
-	}
-	return samplesQuery
 }
 
 func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
@@ -522,9 +515,15 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 		s.statsClient = s.clientProviderFunc(s.db, statsSQL, s.logger)
 		s.sessionCountClient = s.clientProviderFunc(s.db, sessionCountSQL, s.logger)
 	}
+	// Granted separately from the per-PDB metric views probed above; without them the DBA_* variants still work.
+	s.useCDBDictionaryViews = s.instanceInfo.isCDB && !s.instanceInfo.connectedToPDB &&
+		s.hasCDBDictionaryGrants(ctx, s.clientProviderFunc(s.db, cdbDictionaryGrantsProbeSQL, s.logger))
+	if s.useCDBDictionaryViews {
+		s.logger.Debug("oracledbreceiver: using container-qualified dictionary joins for event collection")
+	}
 	s.tablespaceUsageClient = s.clientProviderFunc(s.db, s.buildTablespaceSQL(), s.logger)
 	s.systemResourceLimitsClient = s.clientProviderFunc(s.db, systemResourceLimitsSQL, s.logger)
-	s.samplesQueryClient = s.clientProviderFunc(s.db, s.buildQuerySampleSQL(), s.logger)
+	s.samplesQueryClient = s.clientProviderFunc(s.db, samplesQuery, s.logger)
 	s.sessionEventClient = s.clientProviderFunc(s.db, sessionEventQuery, s.logger)
 	s.dataDictHitRatioClient = s.clientProviderFunc(s.db, dataDictHitRatioSQL, s.logger)
 	s.osStatClient = s.clientProviderFunc(s.db, osStatSQL, s.logger)
@@ -1589,6 +1588,10 @@ func (s *oracleScraper) collectSysMetrics(ctx context.Context, scrapeErrors *[]e
 	}
 }
 
+// pdbNameForRow returns the PDB name to attach to a data point: the row's
+// PDB_NAME when present (per-PDB queries), the connection's PDB name for
+// direct-PDB connections, or empty otherwise. Ignored by Record* methods when
+// the oracle.db.pdb attribute is not enabled.
 func (s *oracleScraper) pdbNameForRow(row map[string]string) string {
 	if name := row["PDB_NAME"]; name != "" {
 		return name
@@ -1599,6 +1602,8 @@ func (s *oracleScraper) pdbNameForRow(row map[string]string) string {
 	return ""
 }
 
+// anySysmetricPdbAttrEnabled reports whether oracle.db.pdb is enabled on any
+// sysmetric-based metric.
 func (s *oracleScraper) anySysmetricPdbAttrEnabled() bool {
 	m := s.metricsBuilderConfig.Metrics
 	return hasPdbAttr(m.OracledbBufferCacheUtilization.EnabledAttributes) ||
@@ -1632,10 +1637,15 @@ func (s *oracleScraper) anySysmetricPdbAttrEnabled() bool {
 		hasPdbAttr(m.OracledbTransactionsRate.EnabledAttributes)
 }
 
+// hasPdbAttr reports whether the generated EnabledAttributes slice contains
+// the oracle.db.pdb key. Generic over the per-metric string-typed key alias.
 func hasPdbAttr[T ~string](keys []T) bool {
 	return slices.Contains(keys, T("oracle.db.pdb"))
 }
 
+// hasContainerGrants reports whether the user has the grants required for
+// per-PDB collection. Any error resolves to false and logs a warning that
+// points operators at the README.
 func (s *oracleScraper) hasContainerGrants(ctx context.Context, probe dbClient) bool {
 	probeCtx, cancel := context.WithTimeout(ctx, containerGrantsProbeTimeout)
 	defer cancel()
@@ -1647,6 +1657,19 @@ func (s *oracleScraper) hasContainerGrants(ctx context.Context, probe dbClient) 
 	return true
 }
 
+// hasCDBDictionaryGrants reports whether the cross-container dictionary views are readable; any error means no.
+func (s *oracleScraper) hasCDBDictionaryGrants(ctx context.Context, probe dbClient) bool {
+	probeCtx, cancel := context.WithTimeout(ctx, containerGrantsProbeTimeout)
+	defer cancel()
+	if _, err := probe.metricRows(probeCtx); err != nil {
+		s.logger.Warn("oracledbreceiver: CDB_PROCEDURES/CDB_OBJECTS not readable; falling back to DBA_* dictionary views, which cannot attribute PDB-owned objects from a CDB root. See the receiver README 'CDB-root connections' section.",
+			zap.Error(err))
+		return false
+	}
+	return true
+}
+
+// recordSysmetric records a single sysmetric data point based on the Oracle metric name.
 func (s *oracleScraper) recordSysmetric(now pcommon.Timestamp, metricName string, val float64, pdbName string) {
 	switch metricName {
 	case sysmetricBufferCacheHitRatio:
@@ -1832,11 +1855,11 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 
 	if s.logsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		currentCollectionTime := time.Now()
-		lookbackTimeCounter := s.calculateLookbackSeconds(s.lastExecutionTimestamp, s.topQueryCollectCfg.CollectionInterval)
-		if lookbackTimeCounter < int(s.topQueryCollectCfg.CollectionInterval.Seconds()) {
+		elapsedSeconds := secondsSinceLastCollection(s.lastExecutionTimestamp, s.topQueryCollectCfg.CollectionInterval)
+		if elapsedSeconds < int(s.topQueryCollectCfg.CollectionInterval.Seconds()) {
 			s.logger.Debug("Skipping the collection of top queries because collection interval has not yet elapsed.")
 		} else {
-			topNCollectionErrors := s.collectTopNMetricData(ctx, logs, currentCollectionTime, lookbackTimeCounter)
+			topNCollectionErrors := s.collectTopNMetricData(ctx, logs, currentCollectionTime, lookbackSeconds(elapsedSeconds))
 			if topNCollectionErrors != nil {
 				scrapeErrors = append(scrapeErrors, topNCollectionErrors)
 			}
@@ -1858,18 +1881,17 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 		}
 	}
 
-	if s.logsBuilderConfig.Events.DbServerProcedureMetrics.Enabled {
+	if s.logsBuilderConfig.Events.DbServerTopProcedure.Enabled {
 		currentCollectionTime := time.Now()
-		lookbackTimeCounter := s.calculateLookbackSeconds(s.lastProcedureMetricsTimestamp, s.procedureMetricsCfg.CollectionInterval)
-		if lookbackTimeCounter >= int(s.procedureMetricsCfg.CollectionInterval.Seconds()) {
-			procedureCollectionErrors := s.collectProcedureMetrics(ctx, logs, currentCollectionTime, lookbackTimeCounter)
+		elapsedSeconds := secondsSinceLastCollection(s.lastProcedureMetricsTimestamp, s.procedureMetricsCfg.CollectionInterval)
+		if elapsedSeconds < int(s.procedureMetricsCfg.CollectionInterval.Seconds()) {
+			s.logger.Debug("Skipping the collection of procedure metrics because collection interval has not yet elapsed.")
+		} else {
+			procedureCollectionErrors := s.collectProcedureMetrics(ctx, logs, currentCollectionTime, lookbackSeconds(elapsedSeconds))
 			if procedureCollectionErrors != nil {
-				s.logger.Error("Procedure metrics collection failed", zap.Error(procedureCollectionErrors))
 				scrapeErrors = append(scrapeErrors, procedureCollectionErrors)
 			}
 			s.lastProcedureMetricsTimestamp = currentCollectionTime
-		} else {
-			s.logger.Debug("Skipping the collection of procedure metrics because collection interval has not yet elapsed.")
 		}
 	}
 
@@ -1879,14 +1901,15 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Logs, collectionTime time.Time, lookbackTimeSeconds int) error {
 	var errs []error
 	// get metrics and query texts from DB
-	s.oracleQueryMetricsClient = s.clientProviderFunc(s.db, s.buildTopQuerySQL(), s.logger)
+	s.oracleQueryMetricsClient = s.clientProviderFunc(s.db, oracleQueryMetricsSQL, s.logger)
 	metricRows, metricError := s.oracleQueryMetricsClient.metricRows(ctx, lookbackTimeSeconds, s.topQueryCollectCfg.MaxQuerySampleCount)
 
 	if metricError != nil {
 		return fmt.Errorf("error executing oracleQueryMetricsSQL: %w", metricError)
 	}
+	// Nothing was active in the lookback window; normal on an idle instance, so not a scrape error.
 	if len(metricRows) == 0 {
-		return errors.New("no data returned from oracleQueryMetricsClient")
+		return nil
 	}
 
 	metricNames := s.getTopNMetricNames()
@@ -2055,30 +2078,39 @@ type procedureMetricCacheHit struct {
 	firstLoadTime  string
 	lastActiveTime string
 	metrics        map[string]int64
+	// executionCountTrusted is false when MIN(EXECUTIONS) did not advance; derived values are then suppressed.
+	executionCountTrusted bool
 }
 
-func getProcedureMetricNames() []string {
+// getProcedureResourceMetricNames returns the SUM()-based counters, where a negative delta means a cursor purge.
+func getProcedureResourceMetricNames() []string {
 	return []string{
-		queryExecutionMetric, cpuTimeMetric, elapsedTimeMetric, bufferGetsMetric,
+		cpuTimeMetric, elapsedTimeMetric, bufferGetsMetric,
 		queryDiskReadsMetric, queryDirectWritesMetric, rowsProcessedMetric,
 		physicalReadBytesMetric, physicalWriteBytesMetric,
 	}
 }
 
+func getProcedureMetricNames() []string {
+	return append(getProcedureResourceMetricNames(), queryExecutionMetric)
+}
+
 func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.Logs, collectionTime time.Time, lookbackTimeSeconds int) error {
 	var errs []error
-	// get aggregated procedure metrics from DB
+	// Pool is wider than the reported set: ranking happens below over deltas, not over lifetime totals in SQL.
 	s.oracleProcedureMetricsClient = s.clientProviderFunc(s.db, s.buildProcedureMetricsSQL(), s.logger)
-	metricRows, metricError := s.oracleProcedureMetricsClient.metricRows(ctx, lookbackTimeSeconds, s.procedureMetricsCfg.TopProcedureCount)
+	metricRows, metricError := s.oracleProcedureMetricsClient.metricRows(ctx, lookbackTimeSeconds, s.procedureMetricsCfg.MaxProcedureSampleCount)
 
 	if metricError != nil {
 		return fmt.Errorf("error executing oracleProcedureMetricsSQL: %w", metricError)
 	}
+	// Nothing was active in the lookback window; normal on an idle instance, so not a scrape error.
 	if len(metricRows) == 0 {
 		return nil
 	}
 
 	metricNames := getProcedureMetricNames()
+	resourceMetricNames := getProcedureResourceMetricNames()
 	var hits []procedureMetricCacheHit
 	for _, row := range metricRows {
 		newCacheVal := make(map[string]int64, len(metricNames))
@@ -2092,7 +2124,9 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 			}
 		}
 
-		cacheKey := fmt.Sprintf("%v:%v", row[objectIDAttr], row[dbNamespaceAttr])
+		// SERVICE is part of the row grain, so it must be in the key: one procedure driven through two services
+		// returns two rows per result set, and a coarser key diffs them against each other.
+		cacheKey := fmt.Sprintf("%v:%v:%v", row[objectIDAttr], row[dbNamespaceAttr], row[serviceAttr])
 		// if we have a cache hit and the procedure doesn't belong to top N, cache is updated anyway
 		// as a result, once it finally makes its way to the top N procedures, only the latest delta will be sent downstream
 		if oldCacheVal, ok := s.procedureMetricCache.Get(cacheKey); ok {
@@ -2111,7 +2145,7 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 			}
 
 			var possiblePurge bool
-			for _, columnName := range metricNames {
+			for _, columnName := range resourceMetricNames {
 				delta := newCacheVal[columnName] - oldCacheVal[columnName]
 
 				// if any of the deltas is less than zero, a cursor belonging to this procedure was likely purged from the shared pool
@@ -2123,8 +2157,14 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 				hit.metrics[columnName] = delta
 			}
 
-			// skip if possible purge or no new executions since last scrape
-			if !possiblePurge && hit.metrics[queryExecutionMetric] > 0 {
+			// MIN() across cached statements, not a cumulative counter: a new child cursor starts at 1 and pulls
+			// it down, which is not a purge. Clamped rather than discarding every metric for the procedure.
+			execDelta := newCacheVal[queryExecutionMetric] - oldCacheVal[queryExecutionMetric]
+			hit.executionCountTrusted = execDelta > 0
+			hit.metrics[queryExecutionMetric] = max(execDelta, 0)
+
+			// Gated on the resource counters; gating on the execution heuristic drops procedures that burned CPU.
+			if !possiblePurge && (hit.metrics[elapsedTimeMetric] > 0 || hit.metrics[cpuTimeMetric] > 0) {
 				hits = append(hits, hit)
 			}
 		}
@@ -2149,12 +2189,13 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 	for i := range hits {
 		hit := &hits[i]
 
+		// Suppressed when the execution count did not advance, rather than dividing by an untrustworthy count.
 		var avgElapsedTime float64
-		if hit.metrics[queryExecutionMetric] > 0 {
+		if hit.executionCountTrusted {
 			avgElapsedTime = asFloatInSeconds(hit.metrics[elapsedTimeMetric]) / float64(hit.metrics[queryExecutionMetric])
 		}
 
-		s.lb.RecordDbServerProcedureMetricsEvent(context.Background(),
+		s.lb.RecordDbServerTopProcedureEvent(context.Background(),
 			pcommon.NewTimestampFromTime(collectionTime),
 			dbSystemNameVal,
 			hit.dbNamespace,
@@ -2550,16 +2591,20 @@ func constructInstanceID(host, port, service string) string {
 	return fmt.Sprintf("%s:%s", host, port)
 }
 
-func (*oracleScraper) calculateLookbackSeconds(lastTimestamp time.Time, collectionInterval time.Duration) int {
+// vsqlRefreshLag is the buffer to account for v$sql maximum refresh latency (5 seconds) + 5 seconds to offset any collection delays.
+// PS: https://docs.oracle.com/en/database/oracle/oracle-database/21/refrn/V-SQL.html
+const vsqlRefreshLag = 10 * time.Second
+
+// secondsSinceLastCollection excludes vsqlRefreshLag on purpose: the lag widens the query window, and folding
+// it in here made a configured 60s interval fire every ~50s. A zero timestamp reports a full interval.
+func secondsSinceLastCollection(lastTimestamp time.Time, collectionInterval time.Duration) int {
 	if lastTimestamp.IsZero() {
 		return int(collectionInterval.Seconds())
 	}
+	return int(math.Ceil(time.Since(lastTimestamp).Seconds()))
+}
 
-	// vsqlRefreshLag is the buffer to account for v$sql maximum refresh latency (5 seconds) + 5 seconds to offset any collection delays.
-	// PS: https://docs.oracle.com/en/database/oracle/oracle-database/21/refrn/V-SQL.html
-	const vsqlRefreshLag = 10 * time.Second
-
-	return int(math.Ceil(time.Now().
-		Add(vsqlRefreshLag).
-		Sub(lastTimestamp).Seconds()))
+// lookbackSeconds widens the window so rows whose V$SQL entry lagged the previous scrape are still picked up.
+func lookbackSeconds(elapsedSeconds int) int {
+	return elapsedSeconds + int(vsqlRefreshLag.Seconds())
 }

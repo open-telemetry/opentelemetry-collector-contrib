@@ -7,22 +7,21 @@ change_type: bug_fix
 component: receiver/oracledb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Qualify dictionary joins by `CON_ID` on CDB-root connections so procedure metadata is attributed to the correct container.
+note: Collect `db.server.top_query` on its configured `collection_interval` instead of 10 seconds early, and stop reporting an idle instance as a scrape error.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [50797]
+issues: [50796]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  `DBA_*` views only expose the connected container while `V$` views report every container, and
-  object ids are unique only within a container. From a CDB root, `db.server.top_query` and
-  `db.server.query_sample` could therefore report a wrong or empty `oracledb.procedure_name` and
-  blocked-object owner/name, and merge procedure execution counts across PDBs. These events now read
-  `CDB_PROCEDURES`/`CDB_OBJECTS` matched on `CON_ID`, which requires granting SELECT on both views
-  with `CONTAINER=ALL` (already covered by `SELECT_CATALOG_ROLE`). Non-CDB and direct-PDB connections
-  are unchanged.
+  The 10-second `V$SQL` refresh buffer was added to the elapsed time before it was compared against
+  the configured interval, so a `collection_interval` of 60s collected roughly every 50s. The buffer
+  now only widens the query window, which is what it was meant to do, and no longer advances the
+  schedule. Separately, a scrape that returned no rows raised `no data returned from
+  oracleQueryMetricsClient`, logging an error with a stack trace on every interval of an idle
+  instance; an empty result set is now treated as the normal condition it is.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

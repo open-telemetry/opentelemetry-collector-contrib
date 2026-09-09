@@ -276,18 +276,6 @@ var cacheValue = map[string]int64{
 	"PROCEDURE_EXECUTIONS":    200413,
 }
 
-var procedureCacheValue = map[string]int64{
-	"EXECUTIONS":           200413,
-	"CPU_TIME":             29821063,
-	"ELAPSED_TIME":         38172810,
-	"BUFFER_GETS":          3808197,
-	"DISK_READS":           12,
-	"DIRECT_WRITES":        6,
-	"ROWS_PROCESSED":       200413,
-	"PHYSICAL_READ_BYTES":  300,
-	"PHYSICAL_WRITE_BYTES": 12,
-}
-
 const SQLPlanTable = "V$SQL_PLAN_STATISTICS_ALL"
 
 func TestScraper_Scrape(t *testing.T) {
@@ -1643,6 +1631,8 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 		name       string
 		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
 		errWanted  string
+		// noRecordsWanted expects a successful scrape that emits nothing.
+		noRecordsWanted bool
 	}{
 		{
 			name: "valid collection",
@@ -1671,6 +1661,7 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 				return nil
 			},
 		}, {
+			// Nothing was active in the lookback window: a normal condition, not a scrape error.
 			name: "No metrics collected",
 			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
 				return &fakeDbClient{
@@ -1679,7 +1670,7 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 					},
 				}
 			},
-			errWanted: `no data returned from oracleQueryMetricsClient`,
+			noRecordsWanted: true,
 		}, {
 			name: "Error on collecting metrics",
 			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
@@ -1734,9 +1725,13 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 
 			logs, err := scrpr.scrapeLogs(t.Context())
 
-			if test.errWanted != "" {
+			switch {
+			case test.errWanted != "":
 				require.EqualError(t, err, test.errWanted)
-			} else {
+			case test.noRecordsWanted:
+				require.NoError(t, err, "an empty result set should not be reported as a scrape error")
+				assert.Equal(t, 0, logs.ResourceLogs().Len(), "no log records should be emitted when no statements were active")
+			default:
 				// Uncomment line below to re-generate expected logs.
 				// golden.WriteLogs(t, expectedQueryPlanFile, logs)
 				expectedLogs, _ := golden.ReadLogs(expectedQueryPlanFile)
@@ -2805,304 +2800,6 @@ func TestScrapesTopNLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
 	}
 }
 
-func newProcedureMetricsScraper(t *testing.T, dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient, seed map[string]int64) *oracleScraper {
-	t.Helper()
-
-	logsCfg := metadata.DefaultLogsBuilderConfig()
-	logsCfg.ResourceAttributes.HostName.Enabled = true
-	logsCfg.Events.DbServerProcedureMetrics.Enabled = true
-	metricsCfg := metadata.NewDefaultMetricsBuilderConfig()
-
-	lruCache, err := lru.New[string, map[string]int64](500)
-	require.NoError(t, err)
-	if seed != nil {
-		lruCache.Add("98765:ORCLPDB1", seed)
-	}
-
-	scrpr := &oracleScraper{
-		logger: zap.NewNop(),
-		mb:     metadata.NewMetricsBuilder(metricsCfg, receivertest.NewNopSettings(metadata.Type)),
-		lb:     metadata.NewLogsBuilder(logsCfg, receivertest.NewNopSettings(metadata.Type)),
-		dbProviderFunc: func() (*sql.DB, error) {
-			return nil, nil
-		},
-		clientProviderFunc:   dbclientFn,
-		id:                   component.ID{},
-		metricsBuilderConfig: metricsCfg,
-		logsBuilderConfig:    logsCfg,
-		procedureMetricCache: lruCache,
-		procedureMetricsCfg:  ProcedureMetrics{TopProcedureCount: 250},
-		instanceName:         "oraclehost:1521/ORCL",
-		hostName:             "oraclehost:1521",
-		obfuscator:           newObfuscator(),
-		serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
-	}
-	return scrpr
-}
-
-func procedureMetricsDbClientFn(t *testing.T) func(db *sql.DB, s string, logger *zap.Logger) dbClient {
-	t.Helper()
-	return func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
-		var rows []metricRow
-		require.NoError(t, json.Unmarshal(readFile("oracleProcedureMetricsData.txt"), &rows))
-		return &fakeDbClient{Responses: [][]metricRow{rows}}
-	}
-}
-
-// TestBuildProcedureMetricsSQL verifies the CDB-root variant is selected when
-// connected to a CDB root. DBA_PROCEDURES only exposes the root container's
-// procedures, so a root connection must use CDB_PROCEDURES matched on CON_ID or
-// every PDB-owned procedure is silently dropped by the join.
-func TestBuildProcedureMetricsSQL(t *testing.T) {
-	tests := []struct {
-		name          string
-		isCDBRoot     bool
-		wantView      string
-		wantConIDJoin bool
-	}{
-		{name: "CDB root uses CDB_PROCEDURES", isCDBRoot: true, wantView: "CDB_PROCEDURES", wantConIDJoin: true},
-		{name: "non-root uses DBA_PROCEDURES", isCDBRoot: false, wantView: "DBA_PROCEDURES", wantConIDJoin: false},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			scrpr := oracleScraper{isCDBRoot: test.isCDBRoot}
-			got := scrpr.buildProcedureMetricsSQL()
-
-			assert.Contains(t, got, test.wantView)
-			if test.wantConIDJoin {
-				assert.Contains(t, got, "P.CON_ID    = S.CON_ID",
-					"CDB variant must match on CON_ID; object ids are only unique within a container")
-				assert.NotContains(t, got, "FROM   DBA_PROCEDURES")
-			} else {
-				assert.NotContains(t, got, "CDB_PROCEDURES")
-			}
-
-			// Both variants must keep the same bind parameter contract, since the
-			// caller passes (lookbackSeconds, topProcedureCount) positionally.
-			assert.Contains(t, got, "NUMTODSINTERVAL(:1, 'SECOND')")
-			assert.Contains(t, got, "FETCH FIRST :2 ROWS ONLY")
-		})
-	}
-}
-
-// TestCDBRootDictionaryJoinsMatchOnConID guards every dictionary join that
-// resolves an object id against the container it belongs to. Object ids are only
-// unique within a container, so from a CDB root a join on object id alone can
-// attribute a PDB row to an unrelated root object, and an aggregate grouped by
-// object id alone merges values across containers.
-func TestCDBRootDictionaryJoinsMatchOnConID(t *testing.T) {
-	tests := []struct {
-		name       string
-		build      func(s *oracleScraper) string
-		cdbViews   []string
-		nonCDBView string
-		// conIDJoins are substrings that must each appear in the CDB variant.
-		conIDJoins []string
-	}{
-		{
-			name:       "top query",
-			build:      func(s *oracleScraper) string { return s.buildTopQuerySQL() },
-			cdbViews:   []string{"CDB_PROCEDURES"},
-			nonCDBView: "DBA_PROCEDURES",
-			conIDJoins: []string{
-				"P.CON_ID    = S.CON_ID",
-				"PE.CON_ID     = S.CON_ID",
-				"GROUP BY PROGRAM_ID, CON_ID",
-			},
-		},
-		{
-			name:       "query sample",
-			build:      func(s *oracleScraper) string { return s.buildQuerySampleSQL() },
-			cdbViews:   []string{"CDB_PROCEDURES", "CDB_OBJECTS"},
-			nonCDBView: "DBA_PROCEDURES",
-			conIDJoins: []string{
-				"P.CON_ID    = S.CON_ID",
-				"O.CON_ID    = S.CON_ID",
-			},
-		},
-		{
-			name:       "procedure metrics",
-			build:      func(s *oracleScraper) string { return s.buildProcedureMetricsSQL() },
-			cdbViews:   []string{"CDB_PROCEDURES"},
-			nonCDBView: "DBA_PROCEDURES",
-			conIDJoins: []string{"P.CON_ID    = S.CON_ID"},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			cdbSQL := test.build(&oracleScraper{isCDBRoot: true})
-			for _, view := range test.cdbViews {
-				assert.Contains(t, cdbSQL, view, "CDB-root variant must read cross-container dictionary views")
-			}
-			for _, join := range test.conIDJoins {
-				assert.Contains(t, cdbSQL, join,
-					"CDB-root variant must qualify the join/grouping by CON_ID")
-			}
-
-			nonCDBSQL := test.build(&oracleScraper{isCDBRoot: false})
-			assert.Contains(t, nonCDBSQL, test.nonCDBView,
-				"non-root variant should keep the container-local dictionary view")
-			for _, view := range test.cdbViews {
-				assert.NotContains(t, nonCDBSQL, view)
-			}
-
-			// The two variants are interchangeable only if they take the same binds.
-			assert.Equal(t, strings.Count(nonCDBSQL, ":1"), strings.Count(cdbSQL, ":1"),
-				"variants must keep the same bind parameter contract")
-			assert.Equal(t, strings.Count(nonCDBSQL, ":2"), strings.Count(cdbSQL, ":2"),
-				"variants must keep the same bind parameter contract")
-		})
-	}
-}
-
-func TestScraper_ScrapeProcedureMetricsLogs(t *testing.T) {
-	tests := []struct {
-		name       string
-		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
-		errWanted  string
-		// noRecordsWanted expects a successful scrape that emits nothing.
-		noRecordsWanted bool
-	}{
-		{
-			name:       "valid collection",
-			dbclientFn: procedureMetricsDbClientFn(t),
-		}, {
-			// No PL/SQL program unit was active in the lookback window. This is a
-			// normal condition, not a scrape error.
-			name: "No metrics collected",
-			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
-				return &fakeDbClient{Responses: [][]metricRow{nil}}
-			},
-			noRecordsWanted: true,
-		}, {
-			name: "Error on collecting metrics",
-			dbclientFn: func(_ *sql.DB, _ string, _ *zap.Logger) dbClient {
-				return &fakeDbClient{
-					Responses: [][]metricRow{nil},
-					Err:       errors.New("Mock error"),
-				}
-			},
-			errWanted: "error executing oracleProcedureMetricsSQL: Mock error",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			scrpr := newProcedureMetricsScraper(t, test.dbclientFn, procedureCacheValue)
-
-			err := scrpr.start(t.Context(), componenttest.NewNopHost())
-			defer func() {
-				assert.NoError(t, scrpr.shutdown(t.Context()))
-			}()
-			require.NoError(t, err)
-
-			expectedProcedureMetricsFile := filepath.Join("testdata", "expectedProcedureMetricsFile.yaml")
-			assert.True(t, scrpr.lastProcedureMetricsTimestamp.IsZero(), "No value exists on lastProcedureMetricsTimestamp before any collection.")
-
-			logs, err := scrpr.scrapeLogs(t.Context())
-
-			if test.errWanted != "" {
-				require.EqualError(t, err, test.errWanted)
-				return
-			}
-
-			if test.noRecordsWanted {
-				require.NoError(t, err, "an empty result set should not be reported as a scrape error")
-				assert.Equal(t, 0, logs.ResourceLogs().Len(), "no log records should be emitted when no procedures were active")
-				return
-			}
-
-			// Uncomment line below to re-generate expected logs.
-			// golden.WriteLogs(t, expectedProcedureMetricsFile, logs)
-			expectedLogs, readErr := golden.ReadLogs(expectedProcedureMetricsFile)
-			require.NoError(t, readErr)
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreTimestamp()))
-			assert.Equal(t, "db.server.procedure_metrics", logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
-			assert.False(t, scrpr.lastProcedureMetricsTimestamp.IsZero(), "lastProcedureMetricsTimestamp hasn't set after a successful collection.")
-		})
-	}
-}
-
-// TestProcedureMetricsFirstScrapeSeedsCacheOnly verifies that the very first
-// scrape only populates the delta cache and emits nothing, since there is no
-// prior value to diff against.
-func TestProcedureMetricsFirstScrapeSeedsCacheOnly(t *testing.T) {
-	scrpr := newProcedureMetricsScraper(t, procedureMetricsDbClientFn(t), nil)
-
-	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		assert.NoError(t, scrpr.shutdown(t.Context()))
-	}()
-
-	logs, err := scrpr.scrapeLogs(t.Context())
-	require.NoError(t, err)
-	assert.Equal(t, 0, logs.ResourceLogs().Len(), "first scrape should only seed the cache")
-	assert.Equal(t, 1, scrpr.procedureMetricCache.Len(), "first scrape should have cached the procedure row")
-}
-
-// TestProcedureMetricsDiscardedWhenExecutionCountUnchanged verifies rows with a
-// zero execution-count delta are dropped rather than emitted as empty events.
-func TestProcedureMetricsDiscardedWhenExecutionCountUnchanged(t *testing.T) {
-	// Seed the cache with the same cumulative EXECUTIONS as the fixture row so
-	// the delta is zero.
-	unchanged := maps.Clone(procedureCacheValue)
-	unchanged["EXECUTIONS"] = 300413
-
-	scrpr := newProcedureMetricsScraper(t, procedureMetricsDbClientFn(t), unchanged)
-
-	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		assert.NoError(t, scrpr.shutdown(t.Context()))
-	}()
-
-	logs, err := scrpr.scrapeLogs(t.Context())
-	require.NoError(t, err)
-	assert.Equal(t, 0, logs.ResourceLogs().Len(), "no log records should be emitted when execution count delta is zero")
-}
-
-// TestProcedureMetricsDiscardedOnPossiblePurge verifies that a negative delta —
-// which indicates cursors were aged out of the shared pool — discards the row
-// instead of emitting a bogus negative value.
-func TestProcedureMetricsDiscardedOnPossiblePurge(t *testing.T) {
-	// Seed with cumulative values HIGHER than the fixture row, so deltas go negative.
-	purged := maps.Clone(procedureCacheValue)
-	purged["EXECUTIONS"] = 100
-	purged["BUFFER_GETS"] = 999999999
-
-	scrpr := newProcedureMetricsScraper(t, procedureMetricsDbClientFn(t), purged)
-
-	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		assert.NoError(t, scrpr.shutdown(t.Context()))
-	}()
-
-	logs, err := scrpr.scrapeLogs(t.Context())
-	require.NoError(t, err)
-	assert.Equal(t, 0, logs.ResourceLogs().Len(), "rows with a negative delta should be discarded as a possible cursor purge")
-}
-
-func TestScrapesProcedureMetricsLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
-	scrpr := newProcedureMetricsScraper(t, procedureMetricsDbClientFn(t), procedureCacheValue)
-	scrpr.procedureMetricsCfg.CollectionInterval = 1 * time.Minute
-
-	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		assert.NoError(t, scrpr.shutdown(t.Context()))
-	}()
-
-	assert.True(t, scrpr.lastProcedureMetricsTimestamp.IsZero(), "No value should be set for lastProcedureMetricsTimestamp before a successful collection")
-	logsCol1, _ := scrpr.scrapeLogs(t.Context())
-	assert.Equal(t, 1, logsCol1.ResourceLogs().At(0).ScopeLogs().Len(), "Collection should run when lastProcedureMetricsTimestamp is not available")
-	assert.False(t, scrpr.lastProcedureMetricsTimestamp.IsZero(), "A value should be set for lastProcedureMetricsTimestamp after a successful collection")
-
-	scrpr.lastProcedureMetricsTimestamp = scrpr.lastProcedureMetricsTimestamp.Add(-10 * time.Second)
-	logsCol2, err := scrpr.scrapeLogs(t.Context())
-	require.NoError(t, err)
-	assert.Equal(t, 0, logsCol2.ResourceLogs().Len(), "procedure_metrics should not be collected until %s elapsed.", scrpr.procedureMetricsCfg.CollectionInterval.String())
-}
-
 // TestObfuscateCacheHitsHandlesTruncatedSQL verifies that the obfuscator
 // successfully handles SQL with truncated string literals that may occur
 // when Oracle's CLOB display limit is reached.
@@ -3207,14 +2904,49 @@ func TestCalculateLookbackSeconds(t *testing.T) {
 	collectionInterval := 20 * time.Second
 	vsqlRefreshLagSec := 10 * time.Second
 	expectedMinimumLookbackTime := int((collectionInterval + vsqlRefreshLagSec).Seconds())
-	currentCollectionTime := time.Now()
 
-	scrpr := oracleScraper{
-		lastExecutionTimestamp: currentCollectionTime.Add(-collectionInterval),
-	}
-	lookbackTime := scrpr.calculateLookbackSeconds(scrpr.lastExecutionTimestamp, collectionInterval)
+	elapsed := secondsSinceLastCollection(time.Now().Add(-collectionInterval), collectionInterval)
+	lookbackTime := lookbackSeconds(elapsed)
 
 	assert.LessOrEqual(t, expectedMinimumLookbackTime, lookbackTime, "`lookbackTime` should be minimum %d", expectedMinimumLookbackTime)
+}
+
+// vsqlRefreshLag widens the query window; folding it into the elapsed comparison made a 60s interval
+// collect every ~50s.
+func TestSecondsSinceLastCollectionExcludesRefreshLag(t *testing.T) {
+	collectionInterval := 60 * time.Second
+	intervalSeconds := int(collectionInterval.Seconds())
+
+	tests := []struct {
+		name        string
+		elapsed     time.Duration
+		wantCollect bool
+	}{
+		{name: "10s before the interval must not collect", elapsed: 50 * time.Second, wantCollect: false},
+		{name: "5s before the interval must not collect", elapsed: 55 * time.Second, wantCollect: false},
+		{name: "at the interval collects", elapsed: 60 * time.Second, wantCollect: true},
+		{name: "past the interval collects", elapsed: 90 * time.Second, wantCollect: true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			elapsed := secondsSinceLastCollection(time.Now().Add(-test.elapsed), collectionInterval)
+			assert.Equal(t, test.wantCollect, elapsed >= intervalSeconds,
+				"elapsed %ds vs interval %ds", elapsed, intervalSeconds)
+
+			// The lag still has to reach the query, just not the schedule.
+			assert.Equal(t, elapsed+int(vsqlRefreshLag.Seconds()), lookbackSeconds(elapsed))
+		})
+	}
+}
+
+// A zero timestamp must report a full interval so the first scrape collects immediately.
+func TestSecondsSinceLastCollectionFirstScrape(t *testing.T) {
+	collectionInterval := 60 * time.Second
+	elapsed := secondsSinceLastCollection(time.Time{}, collectionInterval)
+
+	assert.Equal(t, int(collectionInterval.Seconds()), elapsed)
+	assert.GreaterOrEqual(t, elapsed, int(collectionInterval.Seconds()), "first scrape must not be skipped")
 }
 
 func TestScraper_ScrapeSGAInfo(t *testing.T) {

@@ -5,6 +5,10 @@ $defs:
       collection_interval:
         type: string
         format: duration
+      max_procedure_sample_count:
+        description: MaxProcedureSampleCount is the fetch limit; ranking happens over deltas, so it must exceed TopProcedureCount.
+        type: integer
+        x-customType: uint
       top_procedure_count:
         type: integer
         x-customType: uint
@@ -48,14 +52,14 @@ properties:
     type: string
   password:
     type: string
-  procedure_metrics_collection:
-    $ref: procedure_metrics
   query_sample_collection:
     $ref: query_sample
   service:
     type: string
   session_wait_event_collection:
     $ref: session_wait_event
+  top_procedure_collection:
+    $ref: procedure_metrics
   top_query_collection:
     $ref: top_query_collection
   username:

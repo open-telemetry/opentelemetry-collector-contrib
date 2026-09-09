@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/oracledb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add the `db.server.procedure_metrics` event, reporting aggregated stored procedure performance metrics.
+note: Add the `db.server.top_procedure` event, reporting aggregated stored procedure performance metrics.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50796]
@@ -17,9 +17,12 @@ issues: [50796]
 # Use pipe (|) for multiline entries.
 subtext: |
   Derived from `V$SQL` grouped by `PROGRAM_ID` and joined to `DBA_PROCEDURES`, with deltas computed
-  across scrapes. Disabled by default; configure via the new `procedure_metrics_collection` block
-  (`top_procedure_count`, `collection_interval`). Correlates with `db.server.top_query` and
-  `db.server.query_sample` through the `oracledb.procedure_id` attribute.
+  across scrapes. Disabled by default; configure via the new `top_procedure_collection` block
+  (`max_procedure_sample_count`, `top_procedure_count`, `collection_interval`). Rows are fetched up to
+  `max_procedure_sample_count` and ranked in the collector by elapsed-time delta, so a procedure that
+  is hot only in the current interval can reach the report even when its lifetime totals are modest.
+  Correlates with `db.server.top_query` and `db.server.query_sample` through the `oracledb.procedure_id`
+  attribute.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

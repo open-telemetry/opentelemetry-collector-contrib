@@ -141,8 +141,8 @@ upgrading without adding new grants continue to work unchanged.
 
 The following grants are required for event collection. All four event types
 (`db.server.query_sample`, `db.server.top_query`, `db.server.session.wait_sample`,
-`db.server.procedure_metrics`)
-are disabled by default and must be explicitly enabled in configuration.
+`db.server.top_procedure`) are disabled by default and must be explicitly enabled
+in configuration.
 
 #### All events (shared requirements)
 
@@ -194,7 +194,7 @@ Captures per-session wait event statistics from `V$SESSION_EVENT`:
 GRANT SELECT ON V_$SESSION_EVENT TO <username>;  -- Wait event names, counts, and durations
 ```
 
-#### `db.server.procedure_metrics`
+#### `db.server.top_procedure`
 
 Captures aggregated performance metrics for stored procedures, derived by grouping `V$SQL` by
 `PROGRAM_ID` and joining to `DBA_PROCEDURES`. Correlates with `db.server.top_query` and
@@ -205,52 +205,37 @@ GRANT SELECT ON V_$SQL TO <username>;            -- Aggregated procedure executi
 GRANT SELECT ON DBA_PROCEDURES TO <username>;    -- Stored procedure metadata (owner, name, type)
 ```
 
-On a non-CDB or direct-PDB connection, no additional grants are required beyond those for
-`db.server.query_sample` / `db.server.top_query`.
+Cumulative counters are converted to per-scrape deltas. Rows are fetched up to
+`max_procedure_sample_count`, ranked in the collector by elapsed-time delta, and truncated to
+`top_procedure_count`. The fetch limit is deliberately larger than the reported set: ranking on
+deltas over a wider pool is what lets a procedure that is hot only in the current interval —
+newly deployed, a month-end batch, something that just started misbehaving — reach the report
+even though its lifetime totals are modest.
 
-### CDB-root connections and container-scoped dictionary views
-
-`DBA_*` dictionary views only expose the container you are connected to, while the `V$` views
-report rows for **every** container. Object ids are only unique within a container, so from a
-CDB root a dictionary join on object id alone is not just incomplete — it can attribute a PDB
-row to an unrelated root object of the same id.
-
-The receiver detects a CDB-root connection and switches to the `CDB_*` equivalents, matching on
-`CON_ID` as well as the object id, for all three events:
-
-| Event | Affected lookup | Without the fix |
-|---|---|---|
-| `db.server.procedure_metrics` | `CDB_PROCEDURES` (inner join) | reports nothing at all |
-| `db.server.top_query` | `CDB_PROCEDURES`, plus `CON_ID` in the `PROCEDURE_EXECUTIONS` grouping | wrong or empty `procedure_name`; execution counts merged across PDBs |
-| `db.server.query_sample` | `CDB_PROCEDURES`, `CDB_OBJECTS` | wrong or empty `procedure_name` and blocked-object owner/name |
-
-> [!IMPORTANT]
-> On a CDB-root connection these container-wide grants are **required** for the three events
-> above, not optional:
->
-> ```sql
-> GRANT SELECT ON CDB_PROCEDURES TO <username> CONTAINER=ALL;
-> GRANT SELECT ON CDB_OBJECTS TO <username> CONTAINER=ALL;
-> ```
->
-> Unlike per-PDB *metrics*, which fall back to the single-container query set when grants are
-> missing, the event queries have no `DBA_*` fallback once a CDB root is detected. Without these
-> grants they fail with `ORA-00942: table or view does not exist` on every scrape, and the
-> receiver reports a scrape error instead of the event. This affects `db.server.top_query` and
-> `db.server.query_sample` as well, so existing CDB-root deployments must add the grants before
-> upgrading.
-
-Users holding `SELECT_CATALOG_ROLE` inherit these and need no explicit grant. Non-CDB and
-direct-PDB connections continue to use the `DBA_*` views and need nothing extra.
+A negative delta on any of the summed resource counters means a cursor aged out of the shared
+pool, so the row is discarded rather than emitted as a bogus value.
 
 > [!NOTE]
-> Oracle has no per-procedure statistics view equivalent to a single cumulative counter per
-> procedure, so `oracledb.procedure_execution_count` is derived as the *minimum* statement
-> execution count across the procedure's cached statements. This is best effort and may be
-> inaccurate in some scenarios (for example, when statements are aged out of the shared pool
-> independently, or when conditional branches inside the procedure execute at different rates).
-> Resource counters (CPU, elapsed time, reads, writes, rows) are summed across the procedure's
-> statements and are not subject to this caveat.
+> Oracle exposes no per-procedure cumulative execution counter, so
+> `oracledb.procedure_execution_count` is derived as the *minimum* statement execution count
+> across the procedure's cached statements. This is best effort: a newly loaded child cursor
+> starts at 1 and pulls the minimum down, and a statement in a branch that did not run holds it
+> flat. The receiver therefore treats this counter separately from the resource counters — it is
+> clamped to 0 instead of discarding the row, and `oracledb.procedure.avg_duration` is
+> reported as 0 whenever the execution delta did not advance, rather than dividing by a count
+> that cannot be relied on. Resource counters (CPU, elapsed time, reads, writes, rows) are
+> summed across the procedure's statements and are not subject to this caveat.
+
+On a CDB-root connection the receiver reads `CDB_PROCEDURES` matched on `CON_ID`, so PDB-owned
+procedures are attributed to the right container. That needs container-wide `SELECT`:
+
+```sql
+GRANT SELECT ON CDB_PROCEDURES TO <username> CONTAINER=ALL;
+```
+
+`SELECT_CATALOG_ROLE` already includes it. The grant is probed once at startup; without it the
+receiver warns and falls back to `DBA_PROCEDURES`, which from a CDB root reports root-container
+procedures only. Non-CDB and direct-PDB connections need nothing extra.
 
 #### Combined grant statement
 
@@ -265,9 +250,6 @@ GRANT SELECT ON V_$LOCK TO <username>;
 GRANT SELECT ON V_$CONTAINERS TO <username>;
 GRANT SELECT ON DBA_OBJECTS TO <username>;
 GRANT SELECT ON DBA_PROCEDURES TO <username>;
--- Required on CDB-root connections (see "CDB-root connections" above):
-GRANT SELECT ON CDB_PROCEDURES TO <username> CONTAINER=ALL;
-GRANT SELECT ON CDB_OBJECTS TO <username> CONTAINER=ALL;
 ```
 
 ## Enabling metrics.
@@ -307,7 +289,7 @@ receivers:
         enabled: true
       db.server.session.wait_sample:
         enabled: true
-      db.server.procedure_metrics:
+      db.server.top_procedure:
         enabled: true
     top_query_collection:                        # this collection exports the most expensive queries as logs
       max_query_sample_count: 1000               # maximum number of samples collected from db to filter the top N
@@ -319,7 +301,8 @@ receivers:
       allowed_comment_keys: [application]        # keys to extract from leading SQL comments (see SQL Comment Extraction below)
     session_wait_event_collection:               # this collection exports per-session wait event statistics from v$session_event as logs
       max_rows_per_query: 100                    # the maximum number of session wait event rows to be reported                 
-    procedure_metrics_collection:                # this collection exports aggregated stored procedure performance metrics as logs
+    top_procedure_collection:                # this collection exports aggregated stored procedure performance metrics as logs
+      max_procedure_sample_count: 1000           # maximum number of rows fetched from db to rank the top N by delta
       top_procedure_count: 250                   # The maximum number of procedures (N) for which the metrics would be reported
       collection_interval: 60s                   # collection interval for procedure metrics collection specifically
 ```
