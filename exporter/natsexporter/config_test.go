@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(component.MustNewType("nats"), "full"),
 			expected: &Config{
 				Endpoint: "nats://nats.example.com:4222",
-				Pedantic: false,
+				Pedantic: true,
 				JetStream: &JetStreamConfig{
 					Domain:         "hub",
 					PublishTimeout: 5 * time.Second,
@@ -67,6 +67,7 @@ func TestLoadConfig(t *testing.T) {
 			got := cfg.(*Config)
 			exp := tt.expected.(*Config)
 			assert.Equal(t, exp.Endpoint, got.Endpoint)
+			assert.Equal(t, exp.Pedantic, got.Pedantic)
 			assert.Equal(t, exp.JetStream, got.JetStream)
 			assert.Equal(t, exp.Logs, got.Logs)
 			assert.Equal(t, exp.Metrics, got.Metrics)

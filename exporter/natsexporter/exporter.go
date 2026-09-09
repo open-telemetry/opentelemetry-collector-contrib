@@ -30,22 +30,22 @@ func newExporter(set exporter.Settings, cfg *Config) *natsExporter {
 	}
 }
 
-func (e *natsExporter) start(_ context.Context, _ component.Host) error {
+func (*natsExporter) start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (e *natsExporter) shutdown(_ context.Context) error {
+func (*natsExporter) shutdown(_ context.Context) error {
 	return nil
 }
 
-func (e *natsExporter) pushLogs(_ context.Context, _ plog.Logs) error {
+func (*natsExporter) pushLogs(_ context.Context, _ plog.Logs) error {
 	return nil
 }
 
-func (e *natsExporter) pushMetrics(_ context.Context, _ pmetric.Metrics) error {
+func (*natsExporter) pushMetrics(_ context.Context, _ pmetric.Metrics) error {
 	return nil
 }
 
-func (e *natsExporter) pushTraces(_ context.Context, _ ptrace.Traces) error {
+func (*natsExporter) pushTraces(_ context.Context, _ ptrace.Traces) error {
 	return nil
 }
