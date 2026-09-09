@@ -509,6 +509,7 @@ func TestInputJournaldOtelAttributes(t *testing.T) {
 		// Unmapped fields stay in attributes with original names
 		assert.Equal(t, "c4fa36de06824d21835c05ff80c54468", e.Attributes["journald._BOOT_ID"])
 		assert.Equal(t, "journal", e.Attributes["journald._TRANSPORT"])
+		assert.Equal(t, "systemd", e.Attributes["journald._COMM"])
 	case <-time.After(time.Second):
 		require.FailNow(t, "Timed out waiting for entry to be read")
 	}

@@ -6,6 +6,7 @@
 package journald // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/journald"
 
 import (
+	"path"
 	"strconv"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -64,14 +65,13 @@ var attributeMapping = map[string]string{
 // resourceMapping maps journald field names to OTel semantic convention resource attribute names.
 // See: https://opentelemetry.io/docs/specs/semconv/registry/attributes/process/ and
 // https://opentelemetry.io/docs/specs/semconv/registry/attributes/host/
+// _COMM is deliberately not mapped here: it is the value of /proc/[pid]/comm, which does
+// not reliably match process.executable.name. It is kept as journald._COMM instead
 var resourceMapping = map[string]string{
 	"_HOSTNAME": "host.name",
 	"_PID":      "process.pid",
-	// _COMM is the base name of the executable as reported by /proc/[pid]/comm,
-	// which systemd truncates to 15 characters.
-	"_COMM":    "process.executable.name",
-	"_EXE":     "process.executable.path",
-	"_CMDLINE": "process.command_line",
+	"_EXE":      "process.executable.path",
+	"_CMDLINE":  "process.command_line",
 }
 
 // numericFields are OTel attribute/resource keys whose journald string values should be converted to int64.
@@ -82,21 +82,23 @@ var numericFields = map[string]bool{
 	"process.pid":          true,
 }
 
-// convertFieldValue converts a journald field value to the appropriate OTel type.
-// For known numeric fields, it attempts to parse the string as int64.
-func convertFieldValue(otelKey string, v any) any {
+// convertFieldValue converts a journald field value to the type required by the OTel
+// attribute it is mapped to. For known numeric fields the string value is parsed as int64.
+// It reports false when the value cannot be converted, in which case the caller must not
+// use the semantic convention key, so that a typed attribute never holds a wrong type.
+func convertFieldValue(otelKey string, v any) (any, bool) {
 	if !numericFields[otelKey] {
-		return v
+		return v, true
 	}
 	s, ok := v.(string)
 	if !ok {
-		return v
+		return nil, false
 	}
 	n, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
-		return v
+		return nil, false
 	}
-	return n
+	return n, true
 }
 
 // mapJournalEntryAttributes processes the parsed journald entry body and applies
@@ -104,7 +106,11 @@ func convertFieldValue(otelKey string, v any) any {
 //   - Sets entry.Body to the MESSAGE field value
 //   - Sets entry.Severity and entry.SeverityText from the PRIORITY field
 //   - Maps well-known fields to their OTel semantic convention attribute/resource names
+//   - Derives process.executable.name from the base name of _EXE
 //   - Puts remaining fields in entry.Attributes with "journald." prefix on their field names
+//
+// Fields whose value cannot be converted to the type required by the semantic convention
+// are kept unconverted under their "journald." prefixed field name instead.
 func mapJournalEntryAttributes(e *entry.Entry, body map[string]any) {
 	// Clear the raw journal record set by NewEntry; it is only used there so that
 	// EXPR-based attributes/resource config can reference journal fields via `body`.
@@ -125,21 +131,34 @@ func mapJournalEntryAttributes(e *entry.Entry, body map[string]any) {
 			}
 		default:
 			if attrKey, ok := attributeMapping[k]; ok {
-				if e.Attributes == nil {
-					e.Attributes = make(map[string]any)
+				if cv, ok := convertFieldValue(attrKey, v); ok {
+					if e.Attributes == nil {
+						e.Attributes = make(map[string]any)
+					}
+					e.Attributes[attrKey] = cv
+					continue
 				}
-				e.Attributes[attrKey] = convertFieldValue(attrKey, v)
 			} else if resKey, ok := resourceMapping[k]; ok {
-				if e.Resource == nil {
-					e.Resource = make(map[string]any)
+				if cv, ok := convertFieldValue(resKey, v); ok {
+					if e.Resource == nil {
+						e.Resource = make(map[string]any)
+					}
+					e.Resource[resKey] = cv
+					continue
 				}
-				e.Resource[resKey] = convertFieldValue(resKey, v)
-			} else {
-				if e.Attributes == nil {
-					e.Attributes = make(map[string]any)
-				}
-				e.Attributes["journald."+k] = v
 			}
+			// Unmapped field, or a value that does not fit the type required by the
+			// semantic convention: keep the original field name and value.
+			if e.Attributes == nil {
+				e.Attributes = make(map[string]any)
+			}
+			e.Attributes["journald."+k] = v
 		}
+	}
+
+	// process.executable.name is the base name of the target of /proc/[pid]/exe, which
+	// journald reports as _EXE.
+	if exe, ok := e.Resource["process.executable.path"].(string); ok && exe != "" {
+		e.Resource["process.executable.name"] = path.Base(exe)
 	}
 }

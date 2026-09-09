@@ -16,70 +16,82 @@ import (
 
 func TestConvertFieldValue(t *testing.T) {
 	tests := []struct {
-		name     string
-		otelKey  string
-		input    any
-		expected any
+		name       string
+		otelKey    string
+		input      any
+		expected   any
+		expectedOK bool
 	}{
 		{
-			name:     "numeric field with valid integer string",
-			otelKey:  "process.pid",
-			input:    "1234",
-			expected: int64(1234),
+			name:       "numeric field with valid integer string",
+			otelKey:    "process.pid",
+			input:      "1234",
+			expected:   int64(1234),
+			expectedOK: true,
 		},
 		{
-			name:     "numeric field with negative integer",
-			otelKey:  "syslog.pid",
-			input:    "-2",
-			expected: int64(-2),
+			name:       "numeric field with negative integer",
+			otelKey:    "syslog.pid",
+			input:      "-2",
+			expected:   int64(-2),
+			expectedOK: true,
 		},
 		{
-			name:     "numeric field with unparseable string falls back to string",
-			otelKey:  "code.lineno",
-			input:    "not-a-number",
-			expected: "not-a-number",
+			name:    "numeric field with unparseable string cannot be converted",
+			otelKey: "code.line.number",
+			input:   "not-a-number",
 		},
 		{
-			name:     "numeric field with non-string value passes through",
-			otelKey:  "syslog.pid",
-			input:    int64(42),
-			expected: int64(42),
+			name:    "numeric field with empty string cannot be converted",
+			otelKey: "syslog.facility.code",
+			input:   "",
 		},
 		{
-			name:     "non-numeric field returns value as-is",
-			otelKey:  "code.filepath",
-			input:    "/src/main.c",
-			expected: "/src/main.c",
+			name:    "numeric field with non-string value cannot be converted",
+			otelKey: "syslog.pid",
+			input:   int64(42),
 		},
 		{
-			name:     "non-numeric field with numeric string stays as string",
-			otelKey:  "host.name",
-			input:    "12345",
-			expected: "12345",
+			name:       "non-numeric field returns value as-is",
+			otelKey:    "code.file.path",
+			input:      "/src/main.c",
+			expected:   "/src/main.c",
+			expectedOK: true,
 		},
 		{
-			name:     "syslog.facility.code numeric conversion",
-			otelKey:  "syslog.facility.code",
-			input:    "3",
-			expected: int64(3),
+			name:       "non-numeric field with numeric string stays as string",
+			otelKey:    "host.name",
+			input:      "12345",
+			expected:   "12345",
+			expectedOK: true,
 		},
 		{
-			name:     "syslog.pid numeric conversion",
-			otelKey:  "syslog.pid",
-			input:    "9876",
-			expected: int64(9876),
+			name:       "syslog.facility.code numeric conversion",
+			otelKey:    "syslog.facility.code",
+			input:      "3",
+			expected:   int64(3),
+			expectedOK: true,
 		},
 		{
-			name:     "code.line.number numeric conversion",
-			otelKey:  "code.line.number",
-			input:    "42",
-			expected: int64(42),
+			name:       "syslog.pid numeric conversion",
+			otelKey:    "syslog.pid",
+			input:      "9876",
+			expected:   int64(9876),
+			expectedOK: true,
+		},
+		{
+			name:       "code.line.number numeric conversion",
+			otelKey:    "code.line.number",
+			input:      "42",
+			expected:   int64(42),
+			expectedOK: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := convertFieldValue(tt.otelKey, tt.input)
+			got, ok := convertFieldValue(tt.otelKey, tt.input)
+			assert.Equal(t, tt.expectedOK, ok)
 			assert.Equal(t, tt.expected, got)
 		})
 	}
@@ -226,12 +238,65 @@ func TestMapJournalEntryAttributes_KnownResourceAttributes(t *testing.T) {
 	assert.Equal(t, "/usr/bin/myapp --config /etc/myapp.conf", e.Resource["process.command_line"])
 	assert.NotContains(t, e.Resource, "service.name")
 
+	// _COMM is not mapped to a semantic convention attribute
+	assert.Equal(t, "myapp", e.Attributes["journald._COMM"])
+
 	// Original trusted field names must not appear in resource
 	assert.NotContains(t, e.Resource, "_HOSTNAME")
 	assert.NotContains(t, e.Resource, "_PID")
 	assert.NotContains(t, e.Resource, "_COMM")
 	assert.NotContains(t, e.Resource, "_EXE")
 	assert.NotContains(t, e.Resource, "_CMDLINE")
+}
+
+func TestMapJournalEntryAttributes_ExecutableNameDerivedFromExe(t *testing.T) {
+	// _COMM is the value of /proc/[pid]/comm: settable at runtime and truncated by
+	// systemd to 15 characters, so process.executable.name must come from _EXE instead.
+	e := entry.New()
+	body := map[string]any{
+		"_COMM": "my-very-long-na",
+		"_EXE":  "/usr/bin/my-very-long-name",
+	}
+	mapJournalEntryAttributes(e, body)
+
+	assert.Equal(t, "my-very-long-name", e.Resource["process.executable.name"])
+	assert.Equal(t, "/usr/bin/my-very-long-name", e.Resource["process.executable.path"])
+	assert.Equal(t, "my-very-long-na", e.Attributes["journald._COMM"])
+}
+
+func TestMapJournalEntryAttributes_NoExeNoExecutableName(t *testing.T) {
+	e := entry.New()
+	body := map[string]any{
+		"_COMM": "myapp",
+	}
+	mapJournalEntryAttributes(e, body)
+
+	assert.NotContains(t, e.Resource, "process.executable.name")
+	assert.NotContains(t, e.Resource, "process.executable.path")
+	assert.Equal(t, "myapp", e.Attributes["journald._COMM"])
+}
+
+func TestMapJournalEntryAttributes_UnconvertibleNumericFieldsKeepOriginalName(t *testing.T) {
+	e := entry.New()
+	body := map[string]any{
+		"CODE_LINE":       "not-a-number",
+		"SYSLOG_FACILITY": "",
+		"SYSLOG_PID":      []any{"1", "2"},
+		"_PID":            "1234x",
+	}
+	mapJournalEntryAttributes(e, body)
+
+	// No typed attribute may hold a value of the wrong type
+	assert.NotContains(t, e.Attributes, "code.line.number")
+	assert.NotContains(t, e.Attributes, "syslog.facility.code")
+	assert.NotContains(t, e.Attributes, "syslog.pid")
+	assert.NotContains(t, e.Resource, "process.pid")
+
+	// The original value is preserved under the "journald." prefixed field name
+	assert.Equal(t, "not-a-number", e.Attributes["journald.CODE_LINE"])
+	assert.Equal(t, "", e.Attributes["journald.SYSLOG_FACILITY"])
+	assert.Equal(t, []any{"1", "2"}, e.Attributes["journald.SYSLOG_PID"])
+	assert.Equal(t, "1234x", e.Attributes["journald._PID"])
 }
 
 func TestMapJournalEntryAttributes_UnmappedFieldsGoToAttributes(t *testing.T) {
@@ -338,6 +403,7 @@ func TestMapJournalEntryAttributes_FullEntry(t *testing.T) {
 
 	// Unmapped fields land in attributes with "journald." prefix
 	assert.Equal(t, "kernel", e.Attributes["journald._TRANSPORT"])
+	assert.Equal(t, "init", e.Attributes["journald._COMM"])
 	assert.Equal(t, "200", e.Attributes["journald.TID"])
 	assert.Equal(t, "deadbeef", e.Attributes["journald._BOOT_ID"])
 	assert.Equal(t, "s=abc;i=1", e.Attributes["journald.__CURSOR"])
