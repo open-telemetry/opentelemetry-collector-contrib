@@ -45,6 +45,9 @@ properties:
     type: array
     items:
       type: string
+  masking_string:
+    description: MaskingString is the string that replaces the values being redacted. If not set, the redacted values with be replaced with "****". If HashFunction is set, this value will not be used.
+    type: string
   redact_all_types:
     description: RedactAllTypes of attributes, including those that are not string, by converting to a string representation. By default only string values are redacted.
     type: boolean
@@ -54,6 +57,3 @@ properties:
   url_sanitizer:
     description: URLSanitization is a flag to sanitize URLs by removing UUIDs, timestamps, and other non-essential information
     $ref: ./internal/url.url_sanitization_config
-  masking_string:
-    description: MaskingString is the string that replaces the values being redacted. If not set, the redacted values with be replaced with "****". If HashFunction is set, this value will not be used.
-    type: string 
