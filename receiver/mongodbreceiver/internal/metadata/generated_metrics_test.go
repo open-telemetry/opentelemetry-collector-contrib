@@ -321,6 +321,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbWtcacheBytesReadDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
+			rb.SetDbSystemVersion("db.system.version-val")
 			rb.SetServerAddress("server.address-val")
 			rb.SetServerPort(11)
 			rb.SetServiceInstanceID("service.instance.id-val")

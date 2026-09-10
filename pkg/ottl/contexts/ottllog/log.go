@@ -31,7 +31,6 @@ var tcPool = sync.Pool{
 }
 
 // ContextName is the name of the context for logs.
-// Experimental: *NOTE* this constant is subject to change or removal in the future.
 const ContextName = ctxlog.Name
 
 var (
@@ -93,9 +92,9 @@ func WithCache(cache *pcommon.Map) TransformContextOption {
 	}
 }
 
-// NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
+// NewTransformContext returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
-func NewTransformContextPtr(resourceLogs plog.ResourceLogs, scopeLogs plog.ScopeLogs, logRecord plog.LogRecord, options ...TransformContextOption) *TransformContext {
+func NewTransformContext(resourceLogs plog.ResourceLogs, scopeLogs plog.ScopeLogs, logRecord plog.LogRecord, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
 	tCtx.resourceLogs = resourceLogs
 	tCtx.scopeLogs = scopeLogs
@@ -145,8 +144,6 @@ func (tCtx *TransformContext) GetResourceSchemaURLItem() ctxcommon.SchemaURLItem
 // EnablePathContextNames enables the support for path's context names on statements.
 // When this option is configured, all statement's paths must have a valid context prefix,
 // otherwise an error is reported.
-//
-// Experimental: *NOTE* this option is subject to change or removal in the future.
 func EnablePathContextNames() ottl.Option[*TransformContext] {
 	return func(p *ottl.Parser[*TransformContext]) {
 		ottl.WithPathContextNames[*TransformContext]([]string{

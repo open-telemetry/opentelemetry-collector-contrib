@@ -32,7 +32,6 @@ var tcPool = sync.Pool{
 }
 
 // ContextName is the name of the context for profiles.
-// Experimental: *NOTE* this constant is subject to change or removal in the future.
 const ContextName = ctxprofilesample.Name
 
 var (
@@ -67,9 +66,9 @@ func (tCtx *TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) er
 // TransformContextOption represents an option for configuring a TransformContext.
 type TransformContextOption func(*TransformContext)
 
-// NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
+// NewTransformContext returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
-func NewTransformContextPtr(resourceProfiles pprofile.ResourceProfiles, scopeProfiles pprofile.ScopeProfiles, profile pprofile.Profile, sample pprofile.Sample, dictionary pprofile.ProfilesDictionary, options ...TransformContextOption) *TransformContext {
+func NewTransformContext(resourceProfiles pprofile.ResourceProfiles, scopeProfiles pprofile.ScopeProfiles, profile pprofile.Profile, sample pprofile.Sample, dictionary pprofile.ProfilesDictionary, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
 	tCtx.sample = sample
 	tCtx.profile = profile
@@ -147,8 +146,6 @@ func NewParser(functions map[string]ottl.Factory[*TransformContext], telemetrySe
 // EnablePathContextNames enables the support for path's context names on statements.
 // When this option is configured, all statement's paths must have a valid context prefix,
 // otherwise an error is reported.
-//
-// Experimental: *NOTE* this option is subject to change or removal in the future.
 func EnablePathContextNames() ottl.Option[*TransformContext] {
 	return func(p *ottl.Parser[*TransformContext]) {
 		ottl.WithPathContextNames[*TransformContext]([]string{

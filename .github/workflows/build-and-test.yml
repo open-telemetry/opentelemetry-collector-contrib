@@ -179,7 +179,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [setup-environment, lint-matrix]
     steps:
       - name: Print result
@@ -279,7 +279,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
   checks:
     if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [setup-environment, checks-matrix]
     steps:
       - name: Print result
@@ -376,7 +376,7 @@ jobs:
 
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [setup-environment, unittest-matrix, unittest-no-race]
     steps:
       - name: Print result
@@ -491,7 +491,7 @@ jobs:
 
   integration-tests:
     if: ${{ github.actor != 'dependabot[bot]' && always() && ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'ci:full') }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [setup-environment, integration-tests-matrix, integration-sudo-tests-matrix]
     steps:
       - name: Print result
