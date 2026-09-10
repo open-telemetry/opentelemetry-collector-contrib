@@ -604,6 +604,24 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 				continue
 			}
 		}
+		if histogramType == "nhcb" && !value.IsStaleNaN(histogram.Sum) {
+			// The dense form is as long as the bounds, so what has to be checked is that the
+			// spans and deltas describe that shape. Prometheus runs the same check on every
+			// histogram it accepts over remote write; without it the conversion below stops
+			// where the bounds or the deltas run out and reports what it managed to read.
+			// The float flavor is refused above, so the integer conversion always succeeds.
+			if err := histogram.ToIntHistogram().Validate(); err != nil {
+				prw.settings.Logger.Error(
+					"Dropping Native Histogram that cannot be converted",
+					zapcore.Field{Key: "metric_name", Type: zapcore.StringType, String: metricName},
+					zapcore.Field{Key: "job", Type: zapcore.StringType, String: ls.Get("job")},
+					zapcore.Field{Key: "instance", Type: zapcore.StringType, String: ls.Get("instance")},
+					zapcore.Field{Key: "timestamp", Type: zapcore.Int64Type, Integer: histogram.Timestamp},
+					zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err},
+				)
+				continue
+			}
+		}
 
 		if hashedLabels == 0 {
 			rm, hashedLabels = prw.getOrCreateRM(ls, otelMetrics, modifiedRM)
