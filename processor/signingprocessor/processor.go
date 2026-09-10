@@ -296,15 +296,15 @@ func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, er
 		if !utf8.ValidString(s) {
 			return nil, errors.New("attribute string value contains invalid UTF-8")
 		}
-		return s, nil
+		return map[string]any{"stringValue": s}, nil
 	case pcommon.ValueTypeInt:
-		return strconv.FormatInt(v.Int(), 10), nil
+		return map[string]any{"intValue": strconv.FormatInt(v.Int(), 10)}, nil
 	case pcommon.ValueTypeDouble:
-		return v.Double(), nil
+		return map[string]any{"doubleValue": v.Double()}, nil
 	case pcommon.ValueTypeBool:
-		return v.Bool(), nil
+		return map[string]any{"boolValue": v.Bool()}, nil
 	case pcommon.ValueTypeBytes:
-		return base64.StdEncoding.EncodeToString(v.Bytes().AsRaw()), nil
+		return map[string]any{"bytesValue": base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())}, nil
 	case pcommon.ValueTypeSlice:
 		slice := make([]any, v.Slice().Len())
 		for i := 0; i < v.Slice().Len(); i++ {

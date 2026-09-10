@@ -103,28 +103,53 @@ processors:
 
 ### Per log record
 
-| Attribute | Type | Description |
-|---|---|---|
+| Attribute               | Type   | Description                                                                                                     |
+|-------------------------|--------|-----------------------------------------------------------------------------------------------------------------|
 | `audit.integrity.value` | string | Base64-encoded signature (or MAC for HMAC-SHA256) of the JCS-canonical payload, using the configured algorithm. |
 
 ### Per Resource (set once per ResourceLogs block)
 
-| Attribute | Type | Description |
-| --- | --- | --- |
-| `audit.integrity.algorithm` | string | JWA/IANA algorithm identifier matching the configured `algorithm` field (e.g. `RS256`, `ES256`, `EdDSA`, `HMAC-SHA256`). |
+| Attribute                     | Type   | Description                                                                                                                    |
+|-------------------------------|--------|--------------------------------------------------------------------------------------------------------------------------------|
+| `audit.integrity.algorithm`   | string | JWA/IANA algorithm identifier matching the configured `algorithm` field (e.g. `RS256`, `ES256`, `EdDSA`, `HMAC-SHA256`).       |
 | `audit.integrity.certificate` | string | Certificate reference: `sha256:<hex>` fingerprint or full base64 DER, depending on `certificate_ref`. Not set for HMAC-SHA256. |
 
 ## Signed payload
 
 The processor serialises the following log-record fields into a JSON object,
-canonicalises it with RFC 8785 (JCS), and hashes the result.  All
-`audit.integrity.*` attributes are excluded so the signature can be verified before
-those attributes are removed.
+canonicalises it with RFC 8785 (JCS), and signs the result. All
+`audit.integrity.*` attributes are excluded so the signature can be verified
+before those attributes are removed.
 
-```
-event_name, body, timestamp, observed_timestamp, severity_number, severity_text,
-trace_id, span_id, attributes (all except audit.integrity.*)
-```
+| Field                | JSON key             | Encoding                                       |
+|----------------------|----------------------|------------------------------------------------|
+| `EventName`          | `event_name`         | string; omitted if empty                       |
+| `Body` (string only) | `body`               | string; omitted if not a string value          |
+| `Timestamp`          | `timestamp`          | nanoseconds since Unix epoch as decimal string |
+| `ObservedTimestamp`  | `observed_timestamp` | nanoseconds since Unix epoch as decimal string |
+| `TraceID`            | `trace_id`           | lowercase hex string; omitted if all-zero      |
+| `SpanID`             | `span_id`            | lowercase hex string; omitted if all-zero      |
+| `Attributes`         | `attributes`         | object; see scalar encoding below              |
+
+### Attribute scalar encoding
+
+Attribute values are encoded as follows to keep every scalar type distinct in the
+signed payload. Each scalar is wrapped in a type-tagged single-key object
+(e.g. `{"intValue":"123"}`) so that values of different types never produce
+identical canonical JSON.
+
+| OTLP type | JSON encoding                                                     |
+|-----------|-------------------------------------------------------------------|
+| `string`  | `{"stringValue": <string>}`                                       |
+| `int`     | `{"intValue": "<decimal>"}` — quoted to preserve full int64 range |
+| `double`  | `{"doubleValue": <number>}`                                       |
+| `bool`    | `{"boolValue": <boolean>}`                                        |
+| `bytes`   | `{"bytesValue": "<base64>"}`                                      |
+| `slice`   | JSON array (elements encoded recursively; max nesting depth 128)  |
+| `map`     | JSON object (values encoded recursively; max nesting depth 128)   |
+
+Serialization fails with a hard error if the total pre-JCS JSON size exceeds
+2 MiB or the attribute nesting depth exceeds 128 levels.
 
 ## Example pipeline
 
