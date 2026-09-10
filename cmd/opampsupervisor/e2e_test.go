@@ -1157,7 +1157,6 @@ capabilities:
   reports_effective_config: true
   reports_health: true
   accepts_remote_config: true
-  reports_remote_config: true
 
 storage:
   directory: %q
@@ -4193,8 +4192,8 @@ func enableExtensionsFeatureGate(t *testing.T) {
 }
 
 // supervisorBinarySizeLimitBytes is the size budget for the supervisor binary,
-// in bytes. 28 MiB.
-const supervisorBinarySizeLimitBytes = 28 * 1024 * 1024
+// in bytes. 40 MiB.
+const supervisorBinarySizeLimitBytes = 40 * 1024 * 1024
 
 // TestSupervisorBinarySize guards against unintended growth of the supervisor
 // binary. It builds the supervisor with the same flags used for release

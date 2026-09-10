@@ -10,8 +10,8 @@ github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee h1:W5t00kpgFd
 github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/stretchr/testify v1.12.1 h1:EuwCh5fleGS7H32xRwO3wRGT7DxrDhLAT6FF8MpWDWE=
 github.com/stretchr/testify v1.12.1/go.mod h1:MDEgiDPPsNp5cuIrHPPCyornHKgEVbtFUmoNlxoYthg=
-go.opentelemetry.io/collector/client v1.66.0 h1:uLwmr3QejpA0upn8bBAeDjMofC5kgmoujZAUNxdRpl8=
-go.opentelemetry.io/collector/client v1.66.0/go.mod h1:pH/NTKb1jXgUYXvVnRZpYq/kiBse8hJJcQSkCns4dF8=
+go.opentelemetry.io/collector/client v1.66.1-0.20260903163450-cc4b33fc673f h1:zsTlCuarjOR6G7ARmsu2kKbtr9kwjplxpEiGQ1abHkg=
+go.opentelemetry.io/collector/client v1.66.1-0.20260903163450-cc4b33fc673f/go.mod h1:pH/NTKb1jXgUYXvVnRZpYq/kiBse8hJJcQSkCns4dF8=
 go.opentelemetry.io/collector/consumer v1.66.0 h1:YcL8Y7jn0b9ko8hWKHIpilYnKNtp6pxjdrSpKFR9O40=
 go.opentelemetry.io/collector/consumer v1.66.0/go.mod h1:CHUqFqerioBLb4usZEiHpzTKpEJH09a0CDyYECwQYFc=
 go.opentelemetry.io/collector/featuregate v1.66.0 h1:zy7JvvPanCVexGnZnMWR/htZ1BKWPEo1/vZKMuhZSQ0=
