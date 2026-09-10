@@ -1305,7 +1305,7 @@ query sample
 
 ### db.server.top_procedure
 
-Aggregated performance metrics for the top stored procedures by elapsed time, computed as deltas over the collection interval.
+Aggregated performance metrics for the top stored procedures by elapsed time, computed as deltas over the collection interval. Correlates with db.server.top_query and db.server.query_sample via sqlserver.procedure_id.
 
 #### Attributes
 
