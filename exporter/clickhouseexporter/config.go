@@ -286,6 +286,25 @@ func (cfg *Config) tableEngineString() string {
 	return fmt.Sprintf("%s(%s)", engine, params)
 }
 
+// traceIDTsTableEngineString generates the ENGINE string for the trace ID timestamp lookup
+// table, which requires an aggregating engine to collapse rows with the same TraceId.
+func (cfg *Config) traceIDTsTableEngineString() string {
+	engine := cfg.TableEngine.Name
+	params := cfg.TableEngine.Params
+
+	switch engine {
+	case "":
+		engine = "AggregatingMergeTree"
+		params = ""
+	case defaultTableEngineName:
+		engine = "AggregatingMergeTree"
+	case "ReplicatedMergeTree":
+		engine = "ReplicatedAggregatingMergeTree"
+	}
+
+	return fmt.Sprintf("%s(%s)", engine, params)
+}
+
 // database returns the preferred database for creating tables and inserting data.
 // The config option takes precedence over the DSN's settings.
 // Falls back to default if neither are set.
