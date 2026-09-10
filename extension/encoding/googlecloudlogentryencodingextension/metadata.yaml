@@ -18,7 +18,7 @@ status:
 
 feature_gates:
   - id: extension.encoding.googlecloudlogentryencoding.DontEmitV0RPCConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, audit log parser no longer emits the deprecated
       semconv v1.38.0 attributes rpc.jsonrpc.error_code and rpc.jsonrpc.error_message.
