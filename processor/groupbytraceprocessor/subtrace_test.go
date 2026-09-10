@@ -456,3 +456,73 @@ func TestAssemble_TakesOwnershipOfSpans(t *testing.T) {
 	// copied and must survive.
 	assert.Equal(t, map[string]any{"service.name": "svc-a"}, bs.resource.Attributes().AsRaw())
 }
+
+// A span deep under an entry span must be resolved to that entry's call, and
+// resolving it must not depend on the order spans happen to be visited in.
+func TestSplitCalls_DeepChainResolvesToOneCall(t *testing.T) {
+	const depth = 200
+	inputs := make([]callInput, 0, depth)
+	for i := 0; i < depth; i++ {
+		in := callInput{id: makeSpanID(byte(i + 1))}
+		if i > 0 {
+			in.parent = makeSpanID(byte(i))
+		}
+		inputs = append(inputs, in)
+	}
+	spans, ids := buildCallInput("svc-a", nil, inputs...)
+
+	calls := splitCalls(spans, ids)
+	require.Len(t, calls, 1)
+	assert.Len(t, calls[0], depth)
+}
+
+// Two deep chains under two separate entry spans must stay apart, which is what
+// memoising the walk has to get right when the chains are resolved in any order.
+func TestSplitCalls_TwoDeepChainsStaySeparate(t *testing.T) {
+	const depth = 100
+	callerOne, callerTwo := makeSpanID(0xF1), makeSpanID(0xF2)
+
+	inputs := make([]callInput, 0, 2*depth)
+	for i := 0; i < depth; i++ {
+		first := callInput{id: makeSpanID(byte(i + 1)), parent: makeSpanID(byte(i))}
+		second := callInput{id: makeSpanID(byte(i + 1 + depth)), parent: makeSpanID(byte(i + depth))}
+		if i == 0 {
+			first.parent, second.parent = callerOne, callerTwo
+		}
+		inputs = append(inputs, first, second)
+	}
+	spans, ids := buildCallInput("svc-b", []pcommon.SpanID{callerOne, callerTwo}, inputs...)
+
+	calls := splitCalls(spans, ids)
+	require.Len(t, calls, 2, "two entry spans means two calls, however deep each runs")
+	for _, call := range calls {
+		assert.Len(t, call, depth)
+	}
+	// And no span is in both.
+	seen := map[pcommon.SpanID]int{}
+	for _, call := range calls {
+		for _, bs := range call {
+			seen[bs.span.SpanID()]++
+		}
+	}
+	require.Len(t, seen, 2*depth)
+	for id, n := range seen {
+		assert.Equal(t, 1, n, "span %v appeared in %d calls", id, n)
+	}
+}
+
+// A chain that runs into a ring partway up belongs with the ring: no entry span
+// accounts for any of it.
+func TestSplitCalls_ChainIntoCycleIsUnreachable(t *testing.T) {
+	x, y := makeSpanID(1), makeSpanID(2)
+	hangingOff := makeSpanID(3)
+	spans, ids := buildCallInput("svc-a", nil,
+		callInput{id: x, parent: y},
+		callInput{id: y, parent: x},
+		callInput{id: hangingOff, parent: y},
+	)
+
+	calls := splitCalls(spans, ids)
+	require.Len(t, calls, 1)
+	assert.Equal(t, map[pcommon.SpanID]bool{x: true, y: true, hangingOff: true}, spanIDSet(calls[0]))
+}

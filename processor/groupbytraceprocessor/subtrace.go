@@ -169,13 +169,28 @@ func hashMapAttrs(attrs pcommon.Map) string {
 	return hex.EncodeToString(h[:])
 }
 
+// Sentinel call indices used while dividing a service's spans into calls.
+const (
+	// callInProgress marks a span whose call is currently being resolved. Meeting
+	// one means the walk has come back on itself.
+	callInProgress = -1
+	// callParentless collects the spans whose parent is nowhere in the trace.
+	callParentless = -2
+	// callUnreachable collects spans that no entry span can account for, which
+	// malformed input produces by making a span its own ancestor.
+	callUnreachable = -3
+)
+
 // splitCalls divides one service's buffered spans into separate calls, so that
 // a service entered more than once within a trace is not emitted as though it
 // were entered once.
 //
 // A span heads a call when its parent is not among the service's own spans, or
-// when it reports that the parent context was remote. Everything else descends
-// from one of those entry spans.
+// when it reports that the parent context was remote. Every other span belongs
+// to the call of whichever such span it descends from, which is found by walking
+// up from it. Each step of that walk is recorded, so a span is only ever
+// resolved once however many descendants it has, and the whole pass costs one
+// visit per span.
 //
 // Spans whose parent is nowhere in the trace get best-effort treatment: nothing
 // distinguishes one from another, so they leave together in a single call rather
@@ -187,61 +202,73 @@ func hashMapAttrs(attrs pcommon.Map) string {
 // it, and is what tells "entered from another service" apart from "the parent
 // never arrived".
 func splitCalls(serviceSpans map[pcommon.SpanID]*bufferedSpan, spanToService map[pcommon.SpanID]string) [][]*bufferedSpan {
-	children := make(map[pcommon.SpanID][]pcommon.SpanID)
-	var entries, parentless []pcommon.SpanID
+	callOf := make(map[pcommon.SpanID]int32, len(serviceSpans))
+	var calls [][]*bufferedSpan
 
-	for spanID, bs := range serviceSpans {
-		parent := bs.span.ParentSpanID()
-		if _, sameService := serviceSpans[parent]; sameService && !hasRemoteParent(bs) {
-			children[parent] = append(children[parent], spanID)
+	// path holds the spans walked over on the way to an answer, so that all of
+	// them can be given it at once. It is reused across walks.
+	var path []pcommon.SpanID
+
+	for spanID := range serviceSpans {
+		if _, resolved := callOf[spanID]; resolved {
 			continue
 		}
-		if _, elsewhere := spanToService[parent]; parent.IsEmpty() || elsewhere || hasRemoteParent(bs) {
-			entries = append(entries, spanID)
-		} else {
-			parentless = append(parentless, spanID)
-		}
-	}
 
-	// An entry span is never recorded as anyone's child, so descending from one
-	// can't wander into another call.
-	visited := make(map[pcommon.SpanID]struct{}, len(serviceSpans))
-	descend := func(roots []pcommon.SpanID) []*bufferedSpan {
-		var call []*bufferedSpan
-		pending := append([]pcommon.SpanID(nil), roots...)
-		for len(pending) > 0 {
-			spanID := pending[len(pending)-1]
-			pending = pending[:len(pending)-1]
-			if _, seen := visited[spanID]; seen {
+		path = path[:0]
+		var call int32
+		for cur := spanID; ; {
+			if idx, resolved := callOf[cur]; resolved {
+				// Coming back to a span still being resolved means the parent links
+				// form a ring, so nothing on this path descends from an entry span.
+				call = idx
+				if idx == callInProgress {
+					call = callUnreachable
+				}
+				break
+			}
+
+			bs := serviceSpans[cur]
+			parent := bs.span.ParentSpanID()
+			if _, sameService := serviceSpans[parent]; sameService && !hasRemoteParent(bs) {
+				callOf[cur] = callInProgress
+				path = append(path, cur)
+				cur = parent
 				continue
 			}
-			visited[spanID] = struct{}{}
-			call = append(call, serviceSpans[spanID])
-			pending = append(pending, children[spanID]...)
+
+			// cur heads a call, either its own or the parentless one.
+			_, elsewhere := spanToService[parent]
+			if parent.IsEmpty() || elsewhere || hasRemoteParent(bs) {
+				call = int32(len(calls))
+				calls = append(calls, nil)
+			} else {
+				call = callParentless
+			}
+			callOf[cur] = call
+			break
 		}
-		return call
+
+		for _, walked := range path {
+			callOf[walked] = call
+		}
 	}
 
-	var calls [][]*bufferedSpan
-	for _, entry := range entries {
-		if call := descend([]pcommon.SpanID{entry}); len(call) > 0 {
-			calls = append(calls, call)
+	var parentless, unreachable []*bufferedSpan
+	for spanID, bs := range serviceSpans {
+		switch call := callOf[spanID]; call {
+		case callParentless:
+			parentless = append(parentless, bs)
+		case callUnreachable, callInProgress:
+			unreachable = append(unreachable, bs)
+		default:
+			calls[call] = append(calls[call], bs)
 		}
 	}
-	if call := descend(parentless); len(call) > 0 {
-		calls = append(calls, call)
+	if len(parentless) > 0 {
+		calls = append(calls, parentless)
 	}
-
-	// Malformed input can make a span its own ancestor, leaving a ring that
-	// nothing heads. Release it rather than hold it forever.
-	var unreachable []pcommon.SpanID
-	for spanID := range serviceSpans {
-		if _, seen := visited[spanID]; !seen {
-			unreachable = append(unreachable, spanID)
-		}
-	}
-	if call := descend(unreachable); len(call) > 0 {
-		calls = append(calls, call)
+	if len(unreachable) > 0 {
+		calls = append(calls, unreachable)
 	}
 
 	return calls
