@@ -46,7 +46,9 @@ const (
 	// containerGrantsProbeSQL detects whether the user has the grants needed
 	// for per-PDB collection. On failure the receiver falls back to the
 	// single-container query set.
-	containerGrantsProbeSQL     = "SELECT 1 FROM v$con_sysstat WHERE ROWNUM = 1"
+	containerGrantsProbeSQL = "SELECT 1 FROM v$con_sysstat WHERE ROWNUM = 1"
+	// A missing grant raises ORA-00942 at parse time, so this is a permission check, not a data check.
+	cdbDictionaryGrantsProbeSQL = "SELECT COUNT(*) FROM (SELECT 1 FROM CDB_PROCEDURES WHERE ROWNUM = 1 UNION ALL SELECT 1 FROM CDB_OBJECTS WHERE ROWNUM = 1)"
 	containerGrantsProbeTimeout = 5 * time.Second
 
 	// V$SYSMETRIC metric_name values (group_id=2, 60-second interval)
@@ -323,10 +325,14 @@ const (
 var (
 	//go:embed templates/oracleQuerySampleSql.tmpl
 	samplesQuery string
+	//go:embed templates/oracleQuerySampleCDBSql.tmpl
+	samplesCDBQuery string
 	//go:embed templates/oracleQuerySampleStatsSql.tmpl
 	samplesStatsQuery string
 	//go:embed templates/oracleQueryMetricsAndTextSql.tmpl
 	oracleQueryMetricsSQL string
+	//go:embed templates/oracleQueryMetricsAndTextCDBSql.tmpl
+	oracleQueryMetricsCDBSQL string
 	//go:embed templates/oracleQueryPlanSql.tmpl
 	oracleQueryPlanDataSQL string
 	//go:embed templates/oracleSessionEventSql.tmpl
@@ -360,7 +366,10 @@ type oracleScraper struct {
 	systemResourceLimitsClient dbClient
 	sessionCountClient         dbClient
 	// isCDBRoot is true when connected to a CDB root (Oracle 12c+); enables per-PDB queries.
-	isCDBRoot                bool
+	isCDBRoot bool
+	// useCDBDictionaryViews enables container-qualified dictionary joins in the event queries. Separate from
+	// isCDBRoot because the per-PDB metric views and the cross-container dictionary views are granted separately.
+	useCDBDictionaryViews    bool
 	oracleQueryMetricsClient dbClient
 	oraclePlanDataClient     dbClient
 	samplesQueryClient       dbClient
@@ -454,6 +463,20 @@ func (s *oracleScraper) buildTablespaceSQL() string {
 	}
 }
 
+func (s *oracleScraper) buildTopQuerySQL() string {
+	if s.useCDBDictionaryViews {
+		return oracleQueryMetricsCDBSQL
+	}
+	return oracleQueryMetricsSQL
+}
+
+func (s *oracleScraper) buildQuerySampleSQL() string {
+	if s.useCDBDictionaryViews {
+		return samplesCDBQuery
+	}
+	return samplesQuery
+}
+
 func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	s.startTime = pcommon.NewTimestampFromTime(time.Now())
 	var err error
@@ -487,9 +510,15 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 		s.statsClient = s.clientProviderFunc(s.db, statsSQL, s.logger)
 		s.sessionCountClient = s.clientProviderFunc(s.db, sessionCountSQL, s.logger)
 	}
+	// Granted separately from the per-PDB metric views probed above; without them the DBA_* variants still work.
+	s.useCDBDictionaryViews = s.instanceInfo.isCDB && !s.instanceInfo.connectedToPDB &&
+		s.hasCDBDictionaryGrants(ctx, s.clientProviderFunc(s.db, cdbDictionaryGrantsProbeSQL, s.logger))
+	if s.useCDBDictionaryViews {
+		s.logger.Debug("oracledbreceiver: using container-qualified dictionary joins for event collection")
+	}
 	s.tablespaceUsageClient = s.clientProviderFunc(s.db, s.buildTablespaceSQL(), s.logger)
 	s.systemResourceLimitsClient = s.clientProviderFunc(s.db, systemResourceLimitsSQL, s.logger)
-	s.samplesQueryClient = s.clientProviderFunc(s.db, samplesQuery, s.logger)
+	s.samplesQueryClient = s.clientProviderFunc(s.db, s.buildQuerySampleSQL(), s.logger)
 	s.sessionEventClient = s.clientProviderFunc(s.db, sessionEventQuery, s.logger)
 	s.dataDictHitRatioClient = s.clientProviderFunc(s.db, dataDictHitRatioSQL, s.logger)
 	s.osStatClient = s.clientProviderFunc(s.db, osStatSQL, s.logger)
@@ -1623,6 +1652,18 @@ func (s *oracleScraper) hasContainerGrants(ctx context.Context, probe dbClient) 
 	return true
 }
 
+// hasCDBDictionaryGrants reports whether the cross-container dictionary views are readable; any error means no.
+func (s *oracleScraper) hasCDBDictionaryGrants(ctx context.Context, probe dbClient) bool {
+	probeCtx, cancel := context.WithTimeout(ctx, containerGrantsProbeTimeout)
+	defer cancel()
+	if _, err := probe.metricRows(probeCtx); err != nil {
+		s.logger.Warn("oracledbreceiver: CDB_PROCEDURES/CDB_OBJECTS not readable; falling back to DBA_* dictionary views, which cannot attribute PDB-owned objects from a CDB root. See the receiver README 'CDB-root connections' section.",
+			zap.Error(err))
+		return false
+	}
+	return true
+}
+
 // recordSysmetric records a single sysmetric data point based on the Oracle metric name.
 func (s *oracleScraper) recordSysmetric(now pcommon.Timestamp, metricName string, val float64, pdbName string) {
 	switch metricName {
@@ -1841,7 +1882,7 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Logs, collectionTime time.Time, lookbackTimeSeconds int) error {
 	var errs []error
 	// get metrics and query texts from DB
-	s.oracleQueryMetricsClient = s.clientProviderFunc(s.db, oracleQueryMetricsSQL, s.logger)
+	s.oracleQueryMetricsClient = s.clientProviderFunc(s.db, s.buildTopQuerySQL(), s.logger)
 	metricRows, metricError := s.oracleQueryMetricsClient.metricRows(ctx, lookbackTimeSeconds, s.topQueryCollectCfg.MaxQuerySampleCount)
 
 	if metricError != nil {
