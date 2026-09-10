@@ -26,7 +26,6 @@ var tcPool = sync.Pool{
 }
 
 // ContextName is the name of the context for resources.
-// Experimental: *NOTE* this constant is subject to change or removal in the future.
 const ContextName = ctxresource.Name
 
 var (
@@ -98,8 +97,6 @@ func (tCtx *TransformContext) GetResourceSchemaURLItem() ctxcommon.SchemaURLItem
 // EnablePathContextNames enables the support for path's context names on statements.
 // When this option is configured, all statement's paths must have a valid context prefix,
 // otherwise an error is reported.
-//
-// Experimental: *NOTE* this option is subject to change or removal in the future.
 func EnablePathContextNames() ottl.Option[*TransformContext] {
 	return func(p *ottl.Parser[*TransformContext]) {
 		ottl.WithPathContextNames[*TransformContext]([]string{
