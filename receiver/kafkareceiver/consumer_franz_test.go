@@ -1429,6 +1429,7 @@ func TestStartFailureShutdownDoesNotBlock(t *testing.T) {
 
 		ctx2, cancel2 := context.WithTimeout(t.Context(), 2*time.Second)
 		defer cancel2()
+		require.ErrorIs(t, consumer2.client.Ping(ctx2), kgo.ErrClientClosed)
 		err2 = consumer2.Shutdown(ctx2)
 		require.NoError(t, err2)
 		require.NoError(t, ctx2.Err(), "Shutdown should not timeout")
