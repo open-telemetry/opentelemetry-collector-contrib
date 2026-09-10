@@ -4144,6 +4144,86 @@ func invalidHistogramSeries(timestamp int64) writev2.TimeSeries {
 // TestRequestIsAllOrNothing covers the Remote-Write 2.0 rule that a receiver must not answer 2xx
 // when any data it understood was not written, and that the Written headers carry what was
 // actually written.
+func TestPayloadWithNothingToCarryItIsRejected(t *testing.T) {
+	// target_info is read for its labels and never becomes a metric, and an exemplar whose
+	// references cannot be read is looked at nowhere else. Both are shapes the receiver used to
+	// walk past, answering 204 while the data went missing and, for target_info, while its
+	// labels still reached the shared cache.
+	symbols := []string{
+		"", "__name__", "target_info", // 0, 1, 2
+		"job", "api", // 3, 4
+		"instance", "node-1", // 5, 6
+		"region", "us-east", // 7, 8
+		"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 9, 10
+		"test_metric", // 11
+	}
+	targetInfoRefs := []uint32{1, 2, 3, 4, 5, 6, 7, 8}
+
+	for _, tc := range []struct {
+		name   string
+		series writev2.TimeSeries
+		expect string
+	}{
+		{
+			name: "target_info carrying a histogram",
+			series: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: targetInfoRefs,
+				Histograms: []writev2.Histogram{{
+					Schema:         -53,
+					Count:          &writev2.Histogram_CountInt{CountInt: 1},
+					Sum:            1,
+					Timestamp:      1,
+					CustomValues:   []float64{1},
+					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
+					PositiveDeltas: []int64{1},
+				}},
+			},
+			expect: "carries histograms, which it has no data point for",
+		},
+		{
+			name: "target_info carrying an exemplar",
+			series: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: targetInfoRefs,
+				Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{9, 10}, Value: 1, Timestamp: 1}},
+			},
+			expect: "carries exemplars, which it has no data point for",
+		},
+		{
+			name: "an exemplar reference past the symbol table",
+			series: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+				LabelsRefs: []uint32{1, 11, 3, 4, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{9, 9999}, Value: 1, Timestamp: 1}},
+			},
+			expect: `exemplar of "test_metric" cannot be read`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			sink := &consumertest.MetricsSink{}
+			prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+
+			w := httptest.NewRecorder()
+			prwReceiver.handlePRW(w, writeRequest(t, &writev2.Request{
+				Symbols:    symbols,
+				Timeseries: []writev2.TimeSeries{tc.series},
+			}))
+
+			resp := w.Result()
+			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+			assert.Contains(t, w.Body.String(), tc.expect)
+			assert.Empty(t, sink.AllMetrics(), "nothing may reach the consumer")
+			assert.Equal(t, 0, prwReceiver.rmCache.Len(), "a rejected request teaches the cache nothing")
+			samples, histograms, exemplars := writtenHeaders(t, resp)
+			assert.Equal(t, "0", samples)
+			assert.Equal(t, "0", histograms)
+			assert.Equal(t, "0", exemplars)
+		})
+	}
+}
+
 func TestTargetInfoIsNotExemptFromRefValidation(t *testing.T) {
 	// A symbol reference is wire data whichever series carries it, so target_info is checked
 	// before it is read for resource attributes rather than after.

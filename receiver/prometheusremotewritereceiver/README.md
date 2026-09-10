@@ -93,11 +93,13 @@ In Prometheus Remote Write v2, this problem is solved since the time series are 
 
 ## Rejected data is reported as rejected
 
-A remote write request is translated as a whole. If any part of it cannot be written, including the histograms this receiver does not support, the request is answered with a non-2xx status, nothing is handed to the pipeline, and the `X-Prometheus-Remote-Write-*-Written` headers report zero. That follows the Remote-Write 2.0 rule that a receiver must not answer 2xx when data it understood was not written, and that the headers carry the number actually written.
+A remote write request is translated as a whole. If any part of it cannot be translated, including the histograms this receiver does not support, the request is answered with a non-2xx status, nothing is handed to the pipeline, and the `X-Prometheus-Remote-Write-*-Written` headers report zero. That follows the Remote-Write 2.0 rule that a receiver must not answer 2xx when data it understood was not written, and that the headers carry the number actually written.
 
 The same applies once the data reaches the rest of the collector: the counts are only reported after the next consumer has accepted the batch, and the resource attributes a request carries in `target_info` are only remembered once that has happened. A request that fails therefore leaves no trace for later requests to pick up. A request that succeeds only replaces what the cache holds for a target when it actually learned something from `target_info`, so a slow request cannot undo attributes another one committed while it was waiting.
 
 The counts are reported on every response once the request has been recognised as Remote-Write 2.0, including the ones that could not be decoded. A sender reading no header at all cannot tell that apart from a receiver that does not report them.
+
+What a written count means here is that the next consumer in the pipeline accepted the batch, which is as far as a receiver can see. If that consumer is a queue or a batcher, acceptance is not yet a durable write at whatever the pipeline ends in, and a fanout consumer that accepted the batch for some of its branches and refused it for others reports a single error, so this receiver takes that as nothing written rather than guessing a partial count.
 
 The body of a rejection describes the first series the receiver could not take, not every one of them. The whole request goes back either way, so the rest would tell a sender nothing it can act on separately, and a request made of thousands of invalid series would otherwise answer with an error larger than itself.
 

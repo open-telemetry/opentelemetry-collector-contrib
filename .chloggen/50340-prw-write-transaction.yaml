@@ -30,6 +30,10 @@ subtext: |
   translates to no data point at all stops before the consumer rather than
   handing it an empty batch, and translation stops at the first series it
   cannot take, so a request full of invalid ones no longer answers with an
-  error larger than itself.
+  error larger than itself. A target_info series carrying a histogram or an
+  exemplar is refused rather than read for its labels alone, since the branch
+  that reads it has no data point for either, and an exemplar whose label
+  references cannot be resolved is refused rather than skipped, since nothing
+  downstream looks at it again.
 
 change_logs: [user]
