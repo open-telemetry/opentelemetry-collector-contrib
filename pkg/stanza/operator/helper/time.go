@@ -133,7 +133,7 @@ func (t *TimeParser) setLocation() error {
 			return fmt.Errorf("failed to load location %s: %w", t.Location, err)
 		}
 		t.location = loc
-	case strings.HasSuffix(t.Layout, "Z"):
+	case strings.HasSuffix(t.Layout, "Z") && (t.LayoutType != StrptimeKey || !strings.HasSuffix(t.Layout, "%Z")):
 		// If a timestamp ends with 'Z', it should be interpreted at Zulu (UTC) time
 		t.location = time.UTC
 	default:

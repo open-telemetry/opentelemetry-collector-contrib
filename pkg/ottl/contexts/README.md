@@ -6,6 +6,22 @@ A Context must provide a struct that implements `ottl.TransformContext`.  A cont
 
 A Context's `PathExpressionParser` is what the OTTL will use to interpret a Path.  For the data model being represented, it should be able to handle any incoming path and return a `GetSetter` that will be able to accurately interact with the path's corresponding field.  It should return an error if the Path is not known.  The `GetSetter` functions will use the Context's implementation of `ottl.TransformContext` to interact with the correct item(s) during processing.
 
-A Context's `EnumParser` is what the OTTL will use to interpret an Enum Symbol.  For the data model being represented, it should be able to handle any incoming Enum Symbol and return the appropriate Enum value.  It should return an error if the Enum Symbol is not known.  
+A Context's `EnumParser` is what the OTTL will use to interpret an Enum Symbol.  For the data model being represented, it should be able to handle any incoming Enum Symbol and return the appropriate Enum value.  It should return an error if the Enum Symbol is not known.
 
-Context implementations for Traces, Metrics, and Logs are provided by this module.  It is recommended to use these contexts when using the OTTL to interact with OpenTelemetry traces, metrics, and logs. 
+## Provided Contexts
+
+This module provides the following Context implementations for OpenTelemetry data.  It is recommended to use these contexts when using the OTTL to interact with OpenTelemetry telemetry unless you have a specific need.  Check out each context to view the paths it supports.
+
+| Context                                         | Description                                                                                                                                                                            |
+|-------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [Resource](./ottlresource/README.md)            | OTLP resource data.                                                                                                                                                                    |
+| [Instrumentation Scope](./ottlscope/README.md)  | OTLP instrumentation scope data.                                                                                                                                                       |
+| [Span](./ottlspan/README.md)                    | OTLP span data.                                                                                                                                                                        |
+| [Span Event](./ottlspanevent/README.md)         | Individual OTLP span events.                                                                                                                                                           |
+| [Metric](./ottlmetric/README.md)                | OTLP metric data.                                                                                                                                                                      |
+| [DataPoint](./ottldatapoint/README.md)          | Individual OTLP metric data points.                                                                                                                                                    |
+| [Exemplar](./ottlexemplar/README.md)            | Individual OTLP metric exemplars.                                                                                                                                                      |
+| [Log](./ottllog/README.md)                      | OTLP log data.                                                                                                                                                                         |
+| [Profile](./ottlprofile/README.md)              | OTLP profile data.                                                                                                                                                                     |
+| [Profile Sample](./ottlprofilesample/README.md) | Individual samples within an OTLP profile.                                                                                                                                             |
+| [OTelCol](./ottlotelcol/README.md)              | Data passed through the Collector by its components (client details, request information, and incoming gRPC metadata). Requires the `ottl.contexts.enableOTelColContext` feature gate. |
