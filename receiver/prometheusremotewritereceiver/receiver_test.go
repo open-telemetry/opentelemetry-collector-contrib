@@ -222,11 +222,78 @@ func TestNHCBUnrepresentablePopulationIsDropped(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 0, stats.Histograms)
 
-	// The metric container is created before the buckets are converted, so it is still there,
-	// empty. That shape is the same for every late rejection and is tracked in #50340.
-	dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
-		Histogram().DataPoints()
-	assert.Equal(t, 0, dps.Len(), "a population that cannot be represented is not published")
+	// The bucket populations are summed before anything is built, so the refusal leaves no
+	// resource, scope or metric behind either.
+	assert.Equal(t, 0, metrics.ResourceMetrics().Len(),
+		"a population that cannot be represented is not published")
+}
+
+func TestMalformedNHCBIsNotTruncated(t *testing.T) {
+	// The dense form is as long as the bounds, so spans and deltas that describe a different
+	// shape have no translation. Reading as far as the shorter of the two and reporting what
+	// that produced would drop observations the sender wrote, with a count that agrees with
+	// the buckets and says nothing about what went missing.
+	for _, tc := range []struct {
+		name   string
+		bounds []float64
+		spans  []writev2.BucketSpan
+		deltas []int64
+		count  uint64
+	}{
+		{
+			name:   "more buckets than the bounds allow",
+			bounds: []float64{1},
+			spans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
+			deltas: []int64{1, 1, 1},
+			count:  6,
+		},
+		{
+			name:   "fewer deltas than the span declares",
+			bounds: []float64{1, 2},
+			spans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+			deltas: []int64{1},
+			count:  1,
+		},
+		{
+			name:   "offset past the last bucket",
+			bounds: []float64{1},
+			spans:  []writev2.BucketSpan{{Offset: 10, Length: 1}},
+			deltas: []int64{5},
+			count:  5,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Histograms: []writev2.Histogram{{
+							Schema:         -53,
+							Count:          &writev2.Histogram_CountInt{CountInt: tc.count},
+							Sum:            1,
+							Timestamp:      1,
+							CustomValues:   tc.bounds,
+							PositiveSpans:  tc.spans,
+							PositiveDeltas: tc.deltas,
+						}},
+					},
+				},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, 0, stats.Histograms, "a histogram that was not translated is not written")
+			assert.Equal(t, 0, metrics.ResourceMetrics().Len(),
+				"a shape with no translation leaves nothing behind")
+		})
+	}
 }
 
 func TestNHCBNegativeBucketPopulationIsDropped(t *testing.T) {
@@ -268,10 +335,8 @@ func TestNHCBNegativeBucketPopulationIsDropped(t *testing.T) {
 			})
 			require.NoError(t, err)
 			assert.Equal(t, 0, stats.Histograms)
-
-			dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
-				Histogram().DataPoints()
-			assert.Equal(t, 0, dps.Len(), "a negative bucket population is not published")
+			assert.Equal(t, 0, metrics.ResourceMetrics().Len(),
+				"a negative bucket population is not published")
 		})
 	}
 }
@@ -673,7 +738,7 @@ func TestTranslateV2(t *testing.T) {
 								Sum:            1,
 								Timestamp:      1,
 								CustomValues:   []float64{1.0},
-								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 4}},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
 								PositiveDeltas: []int64{1, 2},
 							},
 						},
@@ -1919,7 +1984,7 @@ func TestTranslateV2(t *testing.T) {
 								Sum:            1,
 								Timestamp:      1,
 								CustomValues:   []float64{1.0},
-								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 4}},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
 								PositiveDeltas: []int64{1, 2},
 							},
 						},
@@ -2653,7 +2718,7 @@ func TestTranslateV2(t *testing.T) {
 								Sum:            1,
 								Timestamp:      1,
 								CustomValues:   []float64{1.0},
-								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 4}},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
 								PositiveDeltas: []int64{1, 2},
 							},
 						},
@@ -2674,7 +2739,7 @@ func TestTranslateV2(t *testing.T) {
 								Sum:            1,
 								Timestamp:      1,
 								CustomValues:   []float64{1.0},
-								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 4}},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
 								PositiveDeltas: []int64{1, 2},
 							},
 						},
