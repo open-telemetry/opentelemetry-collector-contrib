@@ -10,8 +10,8 @@ signing/bad_hash:
   key_source:
     type: file
     file:
-      cert_file: /etc/otelcol/cert.pem
-      key_file:  /etc/otelcol/key.pem
+      certificate: /etc/otelcol/cert.pem
+      private_key: /etc/otelcol/key.pem
 
 # Invalid certificate_ref value.
 signing/bad_cert_ref:
@@ -19,35 +19,35 @@ signing/bad_cert_ref:
   key_source:
     type: file
     file:
-      cert_file: /etc/otelcol/cert.pem
-      key_file:  /etc/otelcol/key.pem
+      certificate: /etc/otelcol/cert.pem
+      private_key: /etc/otelcol/key.pem
 
-# file provider — missing cert_file.
+# file provider — missing certificate.
 signing/file_missing_cert:
   key_source:
     type: file
     file:
-      key_file: /etc/otelcol/key.pem
+      private_key: /etc/otelcol/key.pem
 
-# env provider — missing key_env_var.
+# env provider — missing private_key.
 signing/env_missing_key:
   key_source:
     type: env
     env:
-      cert_env_var: SIGNING_CERT_PEM
+      certificate: SIGNING_CERT_PEM
 
 # k8s_secret provider — missing secret name.
 signing/k8s_missing_name:
   key_source:
     type: k8s_secret
     k8s_secret:
-      cert_key: tls.crt
-      key_key:  tls.key
+      certificate: tls.crt
+      private_key: tls.key
 
 # bao provider — missing secret_path.
 signing/bao_missing_path:
   key_source:
     type: bao
     bao:
-      cert_field: certificate
-      key_field:  private_key
+      certificate: certificate
+      private_key: private_key

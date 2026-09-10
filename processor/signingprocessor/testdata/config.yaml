@@ -4,8 +4,8 @@ signing:
   key_source:
     type: file
     file:
-      cert_file: /etc/otelcol/signing-cert.pem
-      key_file:  /etc/otelcol/signing-key.pem
+      certificate: /etc/otelcol/signing-cert.pem
+      private_key: /etc/otelcol/signing-key.pem
 
 # RS512 variant with full certificate reference.
 signing/sha512_full:
@@ -14,26 +14,26 @@ signing/sha512_full:
   key_source:
     type: file
     file:
-      cert_file: /etc/otelcol/signing-cert.pem
-      key_file:  /etc/otelcol/signing-key.pem
+      certificate: /etc/otelcol/signing-cert.pem
+      private_key: /etc/otelcol/signing-key.pem
 
 # Environment-variable key material.
 signing/env:
   key_source:
     type: env
     env:
-      cert_env_var: SIGNING_CERT_PEM
-      key_env_var:  SIGNING_KEY_PEM
+      certificate: SIGNING_CERT_PEM
+      private_key: SIGNING_KEY_PEM
 
 # Kubernetes Secret key material.
 signing/k8s:
   key_source:
     type: k8s_secret
     k8s_secret:
-      name:      signing-secret
-      namespace: default
-      cert_key:  tls.crt
-      key_key:   tls.key
+      name:        signing-secret
+      namespace:   default
+      certificate: tls.crt
+      private_key: tls.key
 
 # OpenBao / Vault key material.
 signing/bao:
@@ -43,8 +43,8 @@ signing/bao:
       address:     https://bao.example.com
       mount_path:  secret
       secret_path: signing
-      cert_field:  certificate
-      key_field:   private_key
+      certificate: certificate
+      private_key: private_key
 
 # HMAC-SHA256 with key from environment variable.
 signing/hmac:
@@ -52,4 +52,4 @@ signing/hmac:
   key_source:
     type: env
     env:
-      hmac_key_env_var: SIGNING_HMAC_KEY
+      hmac_key: SIGNING_HMAC_KEY

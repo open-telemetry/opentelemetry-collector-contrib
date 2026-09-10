@@ -99,10 +99,10 @@ func TestK8sKeyMaterialProviderHappyPath(t *testing.T) {
 	}))
 
 	cfg := &K8sSecretConfig{
-		Name:      "signing-secret",
-		Namespace: "default",
-		CertKey:   "tls.crt",
-		KeyKey:    "tls.key",
+		Name:        "signing-secret",
+		Namespace:   "default",
+		Certificate: "tls.crt",
+		PrivateKey:  "tls.key",
 	}
 	prov, err := newK8sKeyMaterialProviderWithClient(t.Context(), client, cfg, zap.NewNop())
 	if err != nil {
@@ -125,10 +125,10 @@ func TestK8sKeyMaterialProviderCertFetchError(t *testing.T) {
 	}))
 
 	cfg := &K8sSecretConfig{
-		Name:      "signing-secret",
-		Namespace: "default",
-		CertKey:   "tls.crt",
-		KeyKey:    "tls.key",
+		Name:        "signing-secret",
+		Namespace:   "default",
+		Certificate: "tls.crt",
+		PrivateKey:  "tls.key",
 	}
 	_, err := newK8sKeyMaterialProviderWithClient(t.Context(), client, cfg, zap.NewNop())
 	if err == nil {
@@ -145,10 +145,10 @@ func TestK8sKeyMaterialProviderKeyFetchError(t *testing.T) {
 	}))
 
 	cfg := &K8sSecretConfig{
-		Name:      "signing-secret",
-		Namespace: "default",
-		CertKey:   "tls.crt",
-		KeyKey:    "tls.key",
+		Name:        "signing-secret",
+		Namespace:   "default",
+		Certificate: "tls.crt",
+		PrivateKey:  "tls.key",
 	}
 	_, err := newK8sKeyMaterialProviderWithClient(t.Context(), client, cfg, zap.NewNop())
 	if err == nil {
@@ -163,10 +163,10 @@ func TestK8sKeyMaterialProviderBadPEM(t *testing.T) {
 	}))
 
 	cfg := &K8sSecretConfig{
-		Name:      "signing-secret",
-		Namespace: "default",
-		CertKey:   "tls.crt",
-		KeyKey:    "tls.key",
+		Name:        "signing-secret",
+		Namespace:   "default",
+		Certificate: "tls.crt",
+		PrivateKey:  "tls.key",
 	}
 	_, err := newK8sKeyMaterialProviderWithClient(t.Context(), client, cfg, zap.NewNop())
 	if err == nil {
