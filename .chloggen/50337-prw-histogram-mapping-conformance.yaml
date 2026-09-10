@@ -21,6 +21,10 @@ subtext: |
   running bucket count below zero are refused rather than converted to a very
   large population, and a stale marker no longer carries the buckets its spans
   describe, since a data point that records nothing cannot hold observations.
+  Spans and deltas that describe a different shape from the bounds are refused
+  the way Prometheus refuses them, rather than read as far as the shorter of the
+  two, which dropped observations while leaving a count that agreed with the
+  buckets it did emit.
   The sum is now left unset when the count is zero, which OpenTelemetry
   requires.
 
