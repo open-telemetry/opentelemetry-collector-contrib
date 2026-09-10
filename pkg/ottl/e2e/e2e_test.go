@@ -411,7 +411,9 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], nil)`,
-			want:      func(*ottllog.TransformContext) {},
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmpty("test")
+			},
 		},
 		{
 			statement: `set(attributes["test"], "nil")`,
@@ -421,7 +423,9 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], attributes["unknown"])`,
-			want:      func(*ottllog.TransformContext) {},
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmpty("test")
+			},
 		},
 		{
 			statement: `set(attributes["foo"]["test"], "pass")`,
@@ -673,7 +677,7 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], Base64Decode("cGFzcw=="))`,
+			statement: `set(attributes["test"], Decode("cGFzcw==", "base64"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
@@ -1981,7 +1985,9 @@ func Test_e2e_ottl_features(t *testing.T) {
 		{
 			name:      "complex indexing not found",
 			statement: `set(attributes["test"], attributes["metadata"]["uid"])`,
-			want:      func(*ottllog.TransformContext) {},
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmpty("test")
+			},
 		},
 		{
 			name:      "map value",
@@ -2938,7 +2944,7 @@ func constructLogTransformContext() *ottllog.TransformContext {
 	s4.AppendEmpty().SetInt(42)
 	s4.AppendEmpty().SetBool(true)
 
-	return ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), logRecord)
+	return ottllog.NewTransformContext(rLogs, rLogs.ScopeLogs().At(0), logRecord)
 }
 
 func constructLogTransformContextEditors() *ottllog.TransformContext {
@@ -2991,7 +2997,7 @@ func constructLogTransformContextEditors() *ottllog.TransformContext {
 	s3.AppendEmpty().SetStr("bar")
 	s3.AppendEmpty().SetStr("baz")
 
-	return ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), logRecord)
+	return ottllog.NewTransformContext(rLogs, rLogs.ScopeLogs().At(0), logRecord)
 }
 
 func constructLogTransformContextValueExpressions() *ottllog.TransformContext {
@@ -3043,7 +3049,7 @@ func constructLogTransformContextValueExpressions() *ottllog.TransformContext {
 	thing2 := s2.AppendEmpty().SetEmptyMap()
 	thing2.PutStr("name", "bar")
 
-	return ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), logRecord)
+	return ottllog.NewTransformContext(rLogs, rLogs.ScopeLogs().At(0), logRecord)
 }
 
 func constructSpanTransformContext() *ottlspan.TransformContext {
@@ -3055,7 +3061,7 @@ func constructSpanTransformContext() *ottlspan.TransformContext {
 	span := ss.Spans().AppendEmpty()
 	fillSpanOne(span)
 
-	return ottlspan.NewTransformContextPtr(rs, ss, span)
+	return ottlspan.NewTransformContext(rs, ss, span)
 }
 
 func constructSpanEventTransformContext() *ottlspanevent.TransformContext {
@@ -3070,7 +3076,7 @@ func constructSpanEventTransformContext() *ottlspanevent.TransformContext {
 	ev1 := span.Events().AppendEmpty()
 	ev1.SetName("event-1")
 
-	return ottlspanevent.NewTransformContextPtr(rs, ss, span, ev1, ottlspanevent.WithEventIndex(0))
+	return ottlspanevent.NewTransformContext(rs, ss, span, ev1, ottlspanevent.WithEventIndex(0))
 }
 
 func newResourceLogs(tCtx *ottllog.TransformContext) plog.ResourceLogs {
@@ -3111,7 +3117,7 @@ func Benchmark_XML_Functions(b *testing.B) {
 		rLogs := plog.NewResourceLogs()
 		logRecord := rLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		logRecord.Body().SetStr(testXML)
-		return ottllog.NewTransformContextPtr(rLogs, rLogs.ScopeLogs().At(0), logRecord)
+		return ottllog.NewTransformContext(rLogs, rLogs.ScopeLogs().At(0), logRecord)
 	}
 
 	settings := componenttest.NewNopTelemetrySettings()
