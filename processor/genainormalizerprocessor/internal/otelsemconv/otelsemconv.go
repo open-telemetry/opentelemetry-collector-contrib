@@ -27,6 +27,10 @@ const SchemaURL = conventions.SchemaURL
 // defaultTarget names the semconv release whose types this processor enforces.
 // It must agree with the conventions import above and with SchemaURL;
 // TestDefaultTargetMatchesSchemaURL checks all three.
+//
+// SchemaURL and the operation-name enum values below come from that single
+// import, so selecting a different table here without also moving the import
+// would stamp spans with the wrong schema URL.
 const defaultTarget = "v1.40.0"
 
 // typesByTarget indexes the generated tables by semconv release. Weaver runs

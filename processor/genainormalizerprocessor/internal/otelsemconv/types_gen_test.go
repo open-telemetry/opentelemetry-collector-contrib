@@ -4,14 +4,10 @@
 package otelsemconv
 
 import (
-	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 // TestDefaultTargetMatchesSchemaURL checks that the conventions import (via
@@ -59,104 +55,46 @@ func TestTargetTypesCoversDeclaredKeys(t *testing.T) {
 	}
 }
 
-// TestTargetTypesMatchesSemconvConstructors derives the expected type for every
-// gen_ai.* attribute the semconv Go library exposes a typed constructor for, and
-// compares it against the generated table. The derivation is the same one the
-// package performed at init before the table was generated: read the
-// constructor's argument type, and take the key from the KeyValue it returns.
-//
-// Nothing here is hand-written, so the check is independent of the table rather
-// than a restatement of it.
-func TestTargetTypesMatchesSemconvConstructors(t *testing.T) {
-	for _, ctor := range []any{
-		conventions.GenAIAgentName,
-		conventions.GenAIConversationID,
-		conventions.GenAIRequestFrequencyPenalty,
-		conventions.GenAIRequestMaxTokens,
-		conventions.GenAIRequestModel,
-		conventions.GenAIRequestPresencePenalty,
-		conventions.GenAIRequestStopSequences,
-		conventions.GenAIRequestTemperature,
-		conventions.GenAIRequestTopK,
-		conventions.GenAIRequestTopP,
-		conventions.GenAIResponseFinishReasons,
-		conventions.GenAIResponseModel,
-		conventions.GenAIToolCallID,
-		conventions.GenAIToolDescription,
-		conventions.GenAIToolName,
-		conventions.GenAIUsageInputTokens,
-		conventions.GenAIUsageOutputTokens,
+// TestTargetTypesPinsDeclaredKeys pins the type of every key this package
+// exports. Expectations are written as literals rather than read from semconv,
+// so an attribute retyped upstream fails here instead of being followed
+// silently.
+func TestTargetTypesPinsDeclaredKeys(t *testing.T) {
+	for _, tc := range []struct {
+		key  string
+		want kind
+	}{
+		{GenAIAgentName, kindString},
+		{GenAIConversationID, kindString},
+		{GenAIRequestFrequencyPenalty, kindDouble},
+		{GenAIRequestMaxTokens, kindInt},
+		{GenAIRequestModel, kindString},
+		{GenAIRequestPresencePenalty, kindDouble},
+		{GenAIRequestStopSequences, kindStringSlice},
+		{GenAIRequestTemperature, kindDouble},
+		{GenAIRequestTopK, kindDouble},
+		{GenAIRequestTopP, kindDouble},
+		{GenAIResponseFinishReasons, kindStringSlice},
+		{GenAIResponseModel, kindString},
+		{GenAIToolCallID, kindString},
+		{GenAIToolDescription, kindString},
+		{GenAIToolName, kindString},
+		{GenAIUsageInputTokens, kindInt},
+		{GenAIUsageOutputTokens, kindInt},
+
+		// Document-shaped: registry type "any", passed through untouched.
+		{GenAIInputMessages, kindAny},
+		{GenAIOutputMessages, kindAny},
+		{GenAIToolCallArguments, kindAny},
+		{GenAIToolDefinitions, kindAny},
+
+		// Enums. No typed constructor in the semconv Go library, so these are
+		// checked against the registry rather than against a constructor.
+		{GenAIOperationName, kindString},
+		{GenAIProviderName, kindString},
 	} {
-		key, argType := describeConstructor(t, ctor)
-		t.Run(key, func(t *testing.T) {
-			got, ok := targetTypes[key]
-			require.Truef(t, ok, "%s has a typed constructor but is not in the %s table", key, defaultTarget)
-			assert.Equalf(t, kindOfGoType(t, argType), got, "%s", key)
-		})
-	}
-}
-
-// describeConstructor calls a semconv constructor with a zero value and reports
-// the attribute key it produces along with the type it accepts.
-func describeConstructor(t *testing.T, ctor any) (string, reflect.Type) {
-	t.Helper()
-	ft := reflect.TypeOf(ctor)
-	require.Equal(t, reflect.Func, ft.Kind())
-	require.Equal(t, 1, ft.NumIn())
-	require.Equal(t, 1, ft.NumOut())
-
-	in := ft.In(0)
-	var out []reflect.Value
-	if ft.IsVariadic() {
-		// A variadic ...T parameter arrives as []T; CallSlice passes it whole.
-		out = reflect.ValueOf(ctor).CallSlice([]reflect.Value{reflect.MakeSlice(in, 0, 0)})
-	} else {
-		out = reflect.ValueOf(ctor).Call([]reflect.Value{reflect.Zero(in)})
-	}
-	kv, ok := out[0].Interface().(attribute.KeyValue)
-	require.True(t, ok)
-	return string(kv.Key), in
-}
-
-// kindOfGoType maps a constructor argument type onto the kind the table should
-// carry for it.
-func kindOfGoType(t *testing.T, typ reflect.Type) kind {
-	t.Helper()
-	switch typ.Kind() {
-	case reflect.Int, reflect.Int64:
-		return kindInt
-	case reflect.Float64:
-		return kindDouble
-	case reflect.String:
-		return kindString
-	case reflect.Bool:
-		return kindBoolean
-	case reflect.Slice:
-		require.Equal(t, reflect.String, typ.Elem().Kind())
-		return kindStringSlice
-	}
-	t.Fatalf("unhandled constructor argument type %s", typ)
-	return kindAny
-}
-
-// TestTargetTypesForKeysWithoutConstructors covers the keys the semconv Go
-// library exposes only as a *Key constant, so there is no constructor to derive
-// a type from. These expectations are hand-written and read from the registry.
-//
-// gen_ai.operation.name and gen_ai.provider.name are the two keys whose
-// enforcement this table introduces: both are closed string enums in the
-// registry, and neither has a constructor, so they were previously unchecked.
-func TestTargetTypesForKeysWithoutConstructors(t *testing.T) {
-	for key, want := range map[string]kind{
-		GenAIInputMessages:     kindAny,
-		GenAIOutputMessages:    kindAny,
-		GenAIToolCallArguments: kindAny,
-		GenAIToolDefinitions:   kindAny,
-		GenAIOperationName:     kindString,
-		GenAIProviderName:      kindString,
-	} {
-		t.Run(key, func(t *testing.T) {
-			assert.Equal(t, want, targetTypes[key])
+		t.Run(tc.key, func(t *testing.T) {
+			assert.Equal(t, tc.want, targetTypes[tc.key])
 		})
 	}
 }
