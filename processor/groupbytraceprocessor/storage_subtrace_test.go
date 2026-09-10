@@ -201,7 +201,7 @@ func buildBenchTrace(traceID pcommon.TraceID, serviceCount, spanCount, fanout in
 	next := 0
 	var previousEntry pcommon.SpanID
 
-	for svc := 0; svc < serviceCount; svc++ {
+	for svc := range serviceCount {
 		local := make([]pcommon.SpanID, perService)
 		for i := range local {
 			local[i] = spanID(next)
