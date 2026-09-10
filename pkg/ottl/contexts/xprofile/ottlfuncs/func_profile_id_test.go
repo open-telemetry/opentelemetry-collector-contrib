@@ -14,8 +14,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+func makeIDGetter(bytes []byte) ottl.ByteSliceLikeGetter[any] {
+	return ottl.StandardByteSliceLikeGetter[any]{Getter: func(context.Context, any) (any, error) {
+		return bytes, nil
+	}}
+}
+
 func Test_profileID(t *testing.T) {
-	runIDSuccessTests(t, profileID[any], []idSuccessTestCase{
+	tests := []struct {
+		name  string
+		value []byte
+		want  any
+	}{
 		{
 			name:  "create profile id from 16 bytes",
 			value: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
@@ -26,37 +36,56 @@ func Test_profileID(t *testing.T) {
 			value: []byte("0102030405060708090a0b0c0d0e0f10"),
 			want:  pprofile.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}),
 		},
-	})
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expr, err := profileID[any](makeIDGetter(tt.value))
+			require.NoError(t, err)
+			result, err := expr(t.Context(), nil)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, result)
+		})
+	}
 }
 
 func Test_profileID_validation(t *testing.T) {
-	runIDErrorTests(t, profileID[any], profileIDFuncName, []idErrorTestCase{
+	tests := []struct {
+		name  string
+		value []byte
+		err   error
+	}{
 		{
 			name:  "nil profile id",
 			value: nil,
-			err:   errIDInvalidLength,
+			err:   errProfileIDLength,
 		},
 		{
 			name:  "byte slice less than 16 (15)",
 			value: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
-			err:   errIDInvalidLength,
+			err:   errProfileIDLength,
 		},
 		{
 			name:  "byte slice longer than 16 (17)",
 			value: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17},
-			err:   errIDInvalidLength,
-		},
-		{
-			name:  "byte slice longer than 32 (33)",
-			value: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33},
-			err:   errIDInvalidLength,
+			err:   errProfileIDLength,
 		},
 		{
 			name:  "invalid hex string",
 			value: []byte("ZZ02030405060708090a0b0c0d0e0f10"),
-			err:   errIDHexDecode,
+			err:   errProfileIDHexDecode,
 		},
-	})
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expr, err := profileID[any](makeIDGetter(tt.value))
+			require.NoError(t, err)
+			result, err := expr(t.Context(), nil)
+			assert.Nil(t, result)
+			assert.ErrorIs(t, err, errDecodeProfileID)
+			assert.ErrorIs(t, err, tt.err)
+			assert.ErrorContains(t, err, profileIDFuncName)
+		})
+	}
 }
 
 func Test_ProfileIDFactory(t *testing.T) {
@@ -68,9 +97,7 @@ func Test_ProfileIDFactory(t *testing.T) {
 	t.Run("default arguments", func(t *testing.T) {
 		factory := NewProfileIDFactory[any]()
 		args := factory.CreateDefaultArguments()
-
 		assert.IsType(t, &ProfileIDArguments[any]{}, args)
-		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

@@ -13,10 +13,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/internal/ctxprofilecommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/internal/ctxprofilecommon"
 )
 
 func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
@@ -211,7 +210,7 @@ func accessStringProfileID[K Context]() ottl.StandardGetSetter[K] {
 			if err != nil {
 				return err
 			}
-			id, err := ctxcommon.ParseProfileID(s)
+			id, err := ctxprofilecommon.ParseProfileID(s)
 			if err != nil {
 				return err
 			}

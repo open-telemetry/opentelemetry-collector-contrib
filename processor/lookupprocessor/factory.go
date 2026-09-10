@@ -17,6 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	xprofilefuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/source/csv"
@@ -122,7 +123,7 @@ func (f *lookupProcessorFactory) createLogsProcessor(
 	}
 
 	parser, err := ottllog.NewParser(
-		ottlfuncs.StandardConverters[*ottllog.TransformContext](),
+		xprofilefuncs.WithProfileConverters(ottlfuncs.StandardConverters[*ottllog.TransformContext]()),
 		set.TelemetrySettings,
 		ottllog.EnablePathContextNames(),
 	)
@@ -163,7 +164,7 @@ func (f *lookupProcessorFactory) createTracesProcessor(
 	}
 
 	parser, err := ottlspan.NewParser(
-		ottlfuncs.StandardConverters[*ottlspan.TransformContext](),
+		xprofilefuncs.WithProfileConverters(ottlfuncs.StandardConverters[*ottlspan.TransformContext]()),
 		set.TelemetrySettings,
 		ottlspan.EnablePathContextNames(),
 	)
@@ -204,7 +205,7 @@ func (f *lookupProcessorFactory) createMetricsProcessor(
 	}
 
 	parser, err := ottldatapoint.NewParser(
-		ottlfuncs.StandardConverters[*ottldatapoint.TransformContext](),
+		xprofilefuncs.WithProfileConverters(ottlfuncs.StandardConverters[*ottldatapoint.TransformContext]()),
 		set.TelemetrySettings,
 		ottldatapoint.EnablePathContextNames(),
 	)

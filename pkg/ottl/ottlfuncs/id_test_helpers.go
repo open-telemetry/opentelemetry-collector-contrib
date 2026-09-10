@@ -28,7 +28,7 @@ type idErrorTestCase struct {
 }
 
 // makeIDGetter creates a ByteSliceLikeGetter for testing purposes.
-// This is a shared helper used by TraceID, SpanID, and ProfileID tests.
+// This is a shared helper used by TraceID and SpanID tests.
 func makeIDGetter(bytes []byte) ottl.ByteSliceLikeGetter[any] {
 	return ottl.StandardByteSliceLikeGetter[any]{Getter: func(_ context.Context, _ any) (any, error) {
 		return bytes, nil
