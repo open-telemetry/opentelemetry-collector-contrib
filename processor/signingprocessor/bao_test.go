@@ -47,12 +47,12 @@ func newBaoTestServer(t *testing.T, statusCode int, body []byte) *httptest.Serve
 // cfg builds a BaoKeyConfig pointing at the given server address.
 func baoTestCfg(addr string) *BaoKeyConfig {
 	return &BaoKeyConfig{
-		Address:    addr,
-		Token:      "test-token",
-		MountPath:  "secret",
-		SecretPath: "signing",
-		CertField:  "certificate",
-		KeyField:   "private_key",
+		Address:     addr,
+		Token:       "test-token",
+		MountPath:   "secret",
+		SecretPath:  "signing",
+		Certificate: "certificate",
+		PrivateKey:  "private_key",
 	}
 }
 
@@ -196,8 +196,8 @@ func TestBaoProviderNonStringField(t *testing.T) {
 	}))
 	// Re-use baoTestCfg but swap the field names so cert points at the integer
 	cfg := baoTestCfg(srv.URL)
-	cfg.CertField = "private_key"
-	cfg.KeyField = "certificate"
+	cfg.Certificate = "private_key"
+	cfg.PrivateKey = "certificate"
 	// both are strings so this should succeed — test that non-string is rejected
 	srvBad := newBaoTestServer(t, http.StatusOK, baoResponse(map[string]any{
 		"certificate": 12345, // not a string

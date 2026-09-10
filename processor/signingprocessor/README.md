@@ -51,34 +51,34 @@ processors:
 
       # --- file provider ---
       file:
-        cert_file: /etc/otelcol/signing-cert.pem
-        key_file:  /etc/otelcol/signing-key.pem
+        certificate: /etc/otelcol/signing-cert.pem
+        private_key: /etc/otelcol/signing-key.pem
 
       # --- file provider — HMAC-SHA256 ---
       # file:
-      #   hmac_key_file: /etc/otelcol/hmac.key  # file content must be standard base64-encoded
+      #   hmac_key: /etc/otelcol/hmac.key  # file content must be standard base64-encoded
 
       # --- env provider — asymmetric ---
       # env:
-      #   cert_env_var: SIGNING_CERT_PEM   # PEM or base64-encoded PEM
-      #   key_env_var:  SIGNING_KEY_PEM
+      #   certificate: SIGNING_CERT_PEM   # PEM or base64-encoded PEM
+      #   private_key: SIGNING_KEY_PEM
 
       # --- env provider — HMAC-SHA256 ---
       # env:
-      #   hmac_key_env_var: SIGNING_HMAC_KEY   # value must be standard base64-encoded
+      #   hmac_key: SIGNING_HMAC_KEY   # value must be standard base64-encoded
 
       # --- Kubernetes Secret provider — asymmetric ---
       # k8s_secret:
-      #   name:      signing-secret
-      #   namespace: default              # optional, defaults to "default"
-      #   cert_key:  tls.crt
-      #   key_key:   tls.key
+      #   name:        signing-secret
+      #   namespace:   default              # optional, defaults to "default"
+      #   certificate: tls.crt
+      #   private_key: tls.key
 
       # --- Kubernetes Secret provider — HMAC-SHA256 ---
       # k8s_secret:
-      #   name:      signing-secret
+      #   name:     signing-secret
       #   namespace: default
-      #   hmac_key:  hmac.key                  # secret data value must be standard base64-encoded
+      #   hmac_key: hmac.key                  # secret data value must be standard base64-encoded
 
       # --- OpenBao / Vault provider — asymmetric ---
       # bao:
@@ -86,14 +86,14 @@ processors:
       #   token:       s.xxxx                    # optional, falls back to BAO_TOKEN
       #   mount_path:  secret                    # KV v2 mount point; default: "secret"
       #   secret_path: signing                   # path within the mount
-      #   cert_field:  certificate
-      #   key_field:   private_key
+      #   certificate: certificate
+      #   private_key: private_key
 
       # --- OpenBao / Vault provider — HMAC-SHA256 ---
       # bao:
-      #   mount_path:     secret
-      #   secret_path:    signing
-      #   hmac_key_field: hmac_key             # field value must be standard base64-encoded
+      #   mount_path:  secret
+      #   secret_path: signing
+      #   hmac_key:    hmac_key             # field value must be standard base64-encoded
 ```
 
 ## Key source providers
@@ -172,8 +172,8 @@ processors:
     key_source:
       type: file
       file:
-        cert_file: /etc/otelcol/cert.pem
-        key_file:  /etc/otelcol/key.pem
+        certificate: /etc/otelcol/cert.pem
+        private_key: /etc/otelcol/key.pem
 
 exporters:
   otlp:
