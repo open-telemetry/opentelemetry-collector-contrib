@@ -42,9 +42,6 @@ type groupByTraceProcessor struct {
 
 	// trace storage (used when EmitStrategy == EmitStrategyTrace)
 	st traceStorage
-
-	// subtrace storage (used when EmitStrategy == EmitStrategyService)
-	subSt subtraceStorage
 }
 
 var _ processor.Traces = (*groupByTraceProcessor)(nil)
@@ -97,8 +94,12 @@ func (sp *groupByTraceProcessor) Start(context.Context, component.Host) error {
 	sp.telemetryBuilder.ProcessorGroupbytraceIncompleteReleases.Add(context.Background(), 0)
 	sp.telemetryBuilder.ProcessorGroupbytraceConfNumTraces.Record(context.Background(), int64(sp.config.NumTraces))
 	sp.eventMachine.startInBackground()
-	if sp.subSt != nil {
-		return sp.subSt.start()
+	if sp.config.EmitStrategy == EmitStrategyService {
+		var errs error
+		for _, w := range sp.eventMachine.workers {
+			errs = multierr.Append(errs, w.subSt.start())
+		}
+		return errs
 	}
 	return sp.st.start()
 }
@@ -107,17 +108,21 @@ func (sp *groupByTraceProcessor) Start(context.Context, component.Host) error {
 func (sp *groupByTraceProcessor) Shutdown(ctx context.Context) error {
 	sp.eventMachine.shutdown()
 
-	if sp.subSt != nil {
+	if sp.config.EmitStrategy == EmitStrategyService {
 		// Flush whatever is still buffered, rather than dropping it.
-		for _, id := range sp.subSt.subtraceIDs() {
-			calls, _ := sp.subSt.deleteSubtrace(id)
-			for _, call := range calls {
-				if err := sp.nextConsumer.ConsumeTraces(ctx, assemble(call)); err != nil {
-					sp.logger.Error("shutdown drain consume failed", zap.Error(err))
+		var errs error
+		for _, w := range sp.eventMachine.workers {
+			for _, id := range w.subSt.subtraceIDs() {
+				calls, _ := w.subSt.deleteSubtrace(id)
+				for _, call := range calls {
+					if err := sp.nextConsumer.ConsumeTraces(ctx, assemble(call)); err != nil {
+						sp.logger.Error("shutdown drain consume failed", zap.Error(err))
+					}
 				}
 			}
+			errs = multierr.Append(errs, w.subSt.shutdown())
 		}
-		return sp.subSt.shutdown()
+		return errs
 	}
 
 	return sp.st.shutdown()
@@ -183,7 +188,7 @@ func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, wor
 		for _, ss := range rs.ScopeSpans().All() {
 			sctx := newSpanContext(rctx, ss.Scope())
 			for _, s := range ss.Spans().All() {
-				if err := sp.subSt.insertSpan(id, sctx, s); err != nil {
+				if err := worker.subSt.insertSpan(id, sctx, s); err != nil {
 					return fmt.Errorf("couldn't insert span: %w", err)
 				}
 			}
@@ -312,7 +317,7 @@ func (sp *groupByTraceProcessor) onSubtraceExpired(id subtraceID, worker *eventM
 	// Only the calls that have waited out wait_duration go now. A trace that came
 	// back to this service after the timer was set has a later deadline of its
 	// own, and keeps its place in the buffer until then.
-	due, nextArrival, err := sp.subSt.releaseDue(id, time.Now().Add(-sp.config.WaitDuration))
+	due, nextArrival, err := worker.subSt.releaseDue(id, time.Now().Add(-sp.config.WaitDuration))
 	if err != nil {
 		return fmt.Errorf("couldn't retrieve subtrace: %w", err)
 	}
@@ -347,6 +352,15 @@ func (sp *groupByTraceProcessor) onSubtraceExpired(id subtraceID, worker *eventM
 	return nil
 }
 
+// bufferedSubtraceIDs returns every subtrace buffered across all workers.
+func (sp *groupByTraceProcessor) bufferedSubtraceIDs() []subtraceID {
+	var ids []subtraceID
+	for _, w := range sp.eventMachine.workers {
+		ids = append(ids, w.subSt.subtraceIDs()...)
+	}
+	return ids
+}
+
 func (sp *groupByTraceProcessor) onSubtraceReleased(td ptrace.Traces) error {
 	sp.telemetryBuilder.ProcessorGroupbytraceSpansReleased.Add(context.Background(), int64(td.SpanCount()))
 	sp.telemetryBuilder.ProcessorGroupbytraceTracesReleased.Add(context.Background(), 1)
@@ -364,8 +378,8 @@ func (sp *groupByTraceProcessor) onSubtraceReleased(td ptrace.Traces) error {
 // early rather than being lost. The eviction is still counted in
 // traces_evicted, so a non-zero count continues to mean wait_duration or
 // num_traces wants adjusting.
-func (sp *groupByTraceProcessor) onSubtraceRemoved(id subtraceID) error {
-	calls, err := sp.subSt.deleteSubtrace(id)
+func (sp *groupByTraceProcessor) onSubtraceRemoved(id subtraceID, worker *eventMachineWorker) error {
+	calls, err := worker.subSt.deleteSubtrace(id)
 	if err != nil {
 		return fmt.Errorf("couldn't delete subtrace: %w", err)
 	}

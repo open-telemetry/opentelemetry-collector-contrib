@@ -112,7 +112,7 @@ type eventMachine struct {
 
 	onSubtraceExpired  func(id subtraceID, worker *eventMachineWorker) error
 	onSubtraceReleased func(td ptrace.Traces) error
-	onSubtraceRemoved  func(id subtraceID) error
+	onSubtraceRemoved  func(id subtraceID, worker *eventMachineWorker) error
 
 	onError func(event)
 
@@ -283,7 +283,7 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 			return
 		}
 		em.handleEventWithObservability(e.typ, func() error {
-			return em.onSubtraceRemoved(payload)
+			return em.onSubtraceRemoved(payload, w)
 		})
 	default:
 		em.logger.Info("unknown event type", zap.Stringer("event", e.typ))
@@ -394,6 +394,12 @@ type eventMachineWorker struct {
 
 	// subtraceBuffer holds the IDs for all in-flight subtraces (EmitStrategyService).
 	subtraceBuffer *subtraceRingBuffer
+
+	// subSt holds the spans buffered for this worker's subtraces
+	// (EmitStrategyService). Traces are routed to a worker by trace ID, so a
+	// worker is the only one to touch its own storage, and workers do not
+	// contend with each other for it.
+	subSt subtraceStorage
 
 	events chan event
 }

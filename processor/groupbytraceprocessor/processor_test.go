@@ -792,7 +792,7 @@ func TestSubtrace_ShutdownDrain_OrphanSpans(t *testing.T) {
 
 	// Wait until the span is persisted in storage before shutting down.
 	require.Eventually(t, func() bool {
-		return len(p.subSt.subtraceIDs()) > 0
+		return len(p.bufferedSubtraceIDs()) > 0
 	}, 2*time.Second, time.Millisecond)
 
 	// Shutdown before the timer fires; drain should emit the span.
@@ -836,7 +836,7 @@ func TestSubtrace_EvictedSubtracesAreReleasedNotDropped(t *testing.T) {
 	assert.Equal(t, evicted, spanIDsAcross(sink.AllTraces()))
 
 	// The rest are still buffered, waiting out their wait_duration.
-	assert.Len(t, p.subSt.subtraceIDs(), capacity)
+	assert.Len(t, p.bufferedSubtraceIDs(), capacity)
 
 	metadatatest.AssertEqualProcessorGroupbytraceTracesEvicted(t, tel,
 		[]metricdata.DataPoint[int64]{{Value: overflow}},
@@ -877,7 +877,7 @@ func TestSubtrace_ShutdownFlushesBufferedSpans(t *testing.T) {
 
 	// Wait until spans are persisted in storage before shutting down.
 	require.Eventually(t, func() bool {
-		return len(p.subSt.subtraceIDs()) > 0
+		return len(p.bufferedSubtraceIDs()) > 0
 	}, 2*time.Second, time.Millisecond)
 
 	// Shutdown before the wait_duration expires.
@@ -1066,13 +1066,12 @@ func newSubtraceProcessorWithSettings(t *testing.T, cfg Config, sink *consumerte
 	p := newGroupByTraceProcessor(set, sink, cfg)
 	require.NotNil(t, p)
 
-	subSt := newSubtraceMemoryStorage(p.telemetryBuilder)
-	p.subSt = subSt
 	p.eventMachine.onSubtraceExpired = p.onSubtraceExpired
 	p.eventMachine.onSubtraceReleased = p.onSubtraceReleased
 	p.eventMachine.onSubtraceRemoved = p.onSubtraceRemoved
 	for _, w := range p.eventMachine.workers {
 		w.subtraceBuffer = newSubtraceRingBuffer(cfg.NumTraces / cfg.NumWorkers)
+		w.subSt = newSubtraceMemoryStorage(p.telemetryBuilder)
 	}
 
 	require.NoError(t, p.Start(t.Context(), nil))
@@ -1646,7 +1645,7 @@ func TestSubtrace_CycleReleasedOnTimer(t *testing.T) {
 	assert.Equal(t, map[pcommon.SpanID]bool{x: true, y: true}, batchSpanIDs(batches[0]))
 
 	// Released, so storage is empty and shutdown has nothing left to drain.
-	assert.Empty(t, p.subSt.subtraceIDs())
+	assert.Empty(t, p.bufferedSubtraceIDs())
 	require.NoError(t, p.Shutdown(t.Context()))
 	assert.Equal(t, 2, sink.SpanCount())
 }

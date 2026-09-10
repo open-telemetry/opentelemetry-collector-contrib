@@ -82,3 +82,39 @@ func TestCreateProcessorServiceEmitNumTracesLessThanNumWorkers(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, p)
 }
+
+// Traces are routed to a worker by trace ID, so each worker keeps its own span
+// storage. Sharing one would put every worker behind a single lock for every
+// span buffered.
+func TestCreateProcessorServiceEmitGivesEachWorkerItsOwnStorage(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.NumTraces = 100
+	cfg.NumWorkers = 4
+	cfg.EmitStrategy = EmitStrategyService
+
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	workers := p.(*groupByTraceProcessor).eventMachine.workers
+	require.Len(t, workers, cfg.NumWorkers)
+
+	seen := map[subtraceStorage]bool{}
+	for i, w := range workers {
+		require.NotNil(t, w.subSt, "worker %d has no storage", i)
+		assert.False(t, seen[w.subSt], "worker %d shares its storage with another worker", i)
+		seen[w.subSt] = true
+	}
+}
+
+// The trace strategy has no per-worker span storage to allocate.
+func TestCreateProcessorTraceEmitHasNoSubtraceStorage(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.NumWorkers = 2
+
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	for i, w := range p.(*groupByTraceProcessor).eventMachine.workers {
+		assert.Nil(t, w.subSt, "worker %d allocated subtrace storage in trace mode", i)
+	}
+}
