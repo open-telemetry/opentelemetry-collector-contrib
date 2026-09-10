@@ -203,6 +203,8 @@ func TestScalarTypeCollision(t *testing.T) {
 	}
 }
 
+// TestTimestampSerializedAsString verifies that a nanosecond timestamp appears
+// in the canonical output as a quoted decimal string.
 func TestTimestampSerializedAsString(t *testing.T) {
 	p := &signingProcessor{config: &Config{}}
 
