@@ -5,6 +5,7 @@ package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"encoding/hex"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -95,6 +96,11 @@ func newSpanContext(rctx resourceContext, scope pcommon.InstrumentationScope) sp
 type bufferedSpan struct {
 	spanContext
 	span ptrace.Span
+
+	// arrivedAt is when the span was buffered. Each call to a service waits out
+	// wait_duration from its own first span, so a trace that comes back to a
+	// service much later doesn't inherit the earlier visit's deadline.
+	arrivedAt time.Time
 }
 
 // newBufferedSpan deep-copies the span so the caller can recycle its pdata
@@ -103,7 +109,20 @@ func newBufferedSpan(ctx spanContext, span ptrace.Span) *bufferedSpan {
 	spCopy := ptrace.NewSpan()
 	span.CopyTo(spCopy)
 
-	return &bufferedSpan{spanContext: ctx, span: spCopy}
+	return &bufferedSpan{spanContext: ctx, span: spCopy, arrivedAt: time.Now()}
+}
+
+// firstArrival returns when the earliest of the given spans was buffered. A
+// call's deadline runs from the first thing seen of it, which may be a child
+// that arrived before the entry span explaining it.
+func firstArrival(call []*bufferedSpan) time.Time {
+	var first time.Time
+	for _, bs := range call {
+		if first.IsZero() || bs.arrivedAt.Before(first) {
+			first = bs.arrivedAt
+		}
+	}
+	return first
 }
 
 const (

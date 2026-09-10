@@ -75,6 +75,8 @@ Spans are buffered under `(trace, service)`, where the service is taken from `se
 
 A trace can pass through the same service more than once, for example `A -> B -> C -> B`. Each of those is a separate call and is released as its own batch, so a batch never stands for two calls a consumer could otherwise have told apart.
 
+Each call waits out `wait_duration` from its own first span. A trace that comes back to a service some time after it first passed through therefore gets a full window for the later visit, instead of inheriting the deadline of the earlier one and being cut off partway.
+
 Which spans belong to which call is worked out when the buffer is released, not as spans arrive, because until then the picture is incomplete: a span may turn up before its parent does. A span begins a call when
 
 1. its parent span ID is empty, or
@@ -91,7 +93,7 @@ Malformed input in which a span is its own ancestor leaves a ring of spans that 
 
 ### Limits
 
-`num_traces` bounds how many `(trace, service)` groups are buffered at once. When that is exceeded the oldest group's spans are dropped without warning, as trace-level eviction does in `emit_strategy: trace` mode, and counted in `otelcol_processor_groupbytrace_traces_evicted`. Anything still buffered at shutdown is flushed to the next consumer rather than dropped.
+`num_traces` bounds how many `(trace, service)` groups are buffered at once, whatever number of separate calls a group holds. When that is exceeded the oldest group's spans are dropped without warning, as trace-level eviction does in `emit_strategy: trace` mode, and counted in `otelcol_processor_groupbytrace_traces_evicted`. Anything still buffered at shutdown is flushed to the next consumer rather than dropped.
 
 ## Metrics
 

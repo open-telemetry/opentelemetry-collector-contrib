@@ -1659,3 +1659,70 @@ func TestSubtrace_ParentArrivesForSomeParentlessSpans(t *testing.T) {
 		caller: true, placedA: true, placedB: true, stillParentless: true,
 	}, got)
 }
+
+// A trace can come back to a service long after it first passed through. The
+// later call must wait out its own wait_duration rather than inheriting the
+// deadline of the earlier one, or its spans would be cut off partway and split
+// across batches.
+func TestSubtrace_LaterCallGetsItsOwnWindow(t *testing.T) {
+	const waitDuration = 300 * time.Millisecond
+	traceID := makeTraceID(74)
+	rootA := makeSpanID(1)
+	entryB1, childB1 := makeSpanID(2), makeSpanID(3)
+	viaC := makeSpanID(4)
+	entryB2, childB2 := makeSpanID(5), makeSpanID(6)
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{NumTraces: 1000, NumWorkers: 1, WaitDuration: waitDuration, EmitStrategy: EmitStrategyService}
+	p := newSubtraceProcessor(t, cfg, sink)
+	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+	// svc-b's first call, which starts its timer.
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-a",
+		spanSpec{id: rootA, parent: pcommon.NewSpanIDEmpty()})))
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-b",
+		spanSpec{id: entryB1, parent: rootA, remote: true},
+		spanSpec{id: childB1, parent: entryB1})))
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-c",
+		spanSpec{id: viaC, parent: childB1, remote: true})))
+
+	// The trace returns to svc-b late in the first call's window.
+	time.Sleep(waitDuration * 2 / 3)
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-b",
+		spanSpec{id: entryB2, parent: viaC, remote: true})))
+
+	// The first call goes out on schedule, without the second.
+	require.Eventually(t, func() bool {
+		return svcSpanIDs(sink, "svc-b") != nil && len(svcSpanIDs(sink, "svc-b")) == 1
+	}, 5*time.Second, 5*time.Millisecond)
+	assert.Equal(t, map[pcommon.SpanID]bool{entryB1: true, childB1: true}, svcSpanIDs(sink, "svc-b")[0])
+
+	// A span belonging to the second call arrives after the first was released.
+	// It must still be waited for, because the second call's own window is open.
+	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-b",
+		spanSpec{id: childB2, parent: entryB2})))
+
+	require.Eventually(t, func() bool {
+		return len(svcSpanIDs(sink, "svc-b")) == 2
+	}, 5*time.Second, 5*time.Millisecond)
+	assert.Never(t, func() bool {
+		return len(svcSpanIDs(sink, "svc-b")) != 2
+	}, 2*waitDuration, 10*time.Millisecond)
+
+	calls := svcSpanIDs(sink, "svc-b")
+	assert.Equal(t, map[pcommon.SpanID]bool{entryB2: true, childB2: true}, calls[1],
+		"the second call must be released whole, not cut off at the first call's deadline")
+}
+
+// svcSpanIDs returns the span ID sets of the batches emitted for one service, in
+// the order they were emitted.
+func svcSpanIDs(sink *consumertest.TracesSink, service string) []map[pcommon.SpanID]bool {
+	var out []map[pcommon.SpanID]bool
+	for _, b := range sink.AllTraces() {
+		svc, ok := b.ResourceSpans().At(0).Resource().Attributes().Get("service.name")
+		if ok && svc.AsString() == service {
+			out = append(out, batchSpanIDs(b))
+		}
+	}
+	return out
+}

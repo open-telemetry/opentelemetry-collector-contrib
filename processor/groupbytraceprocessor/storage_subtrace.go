@@ -5,6 +5,7 @@ package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"sync"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -19,9 +20,15 @@ type subtraceStorage interface {
 	// span ID already held replaces the earlier copy, wherever it was held.
 	insertSpan(subtraceID, spanContext, ptrace.Span) error
 
-	// deleteSubtrace removes a service's buffered spans and returns them divided
-	// into separate calls, so that one batch never stands for two calls to the
-	// service that could be told apart.
+	// releaseDue removes and returns the service's calls whose first span arrived
+	// at or before cutoff, each as its own slice, together with the first arrival
+	// among the calls left behind. That time is zero when nothing is left, and is
+	// otherwise what the next release should be scheduled from.
+	releaseDue(subtraceID, time.Time) ([][]*bufferedSpan, time.Time, error)
+
+	// deleteSubtrace removes a service's buffered spans however recently they
+	// arrived, and returns them divided into separate calls. It is used where
+	// waiting any longer isn't an option: eviction and shutdown.
 	deleteSubtrace(subtraceID) ([][]*bufferedSpan, error)
 
 	// subtraceIDs returns every subtrace currently held.
@@ -100,28 +107,60 @@ func (s *subtraceMemoryStorage) insertSpan(id subtraceID, ctx spanContext, span 
 	return nil
 }
 
-func (s *subtraceMemoryStorage) deleteSubtrace(id subtraceID) ([][]*bufferedSpan, error) {
-	// Dividing into calls under the same write lock as the removal is what keeps a
-	// concurrent release from observing, and so emitting, the same spans twice.
+func (s *subtraceMemoryStorage) releaseDue(id subtraceID, cutoff time.Time) ([][]*bufferedSpan, time.Time, error) {
 	s.Lock()
 	defer s.Unlock()
+	return s.takeLocked(id, cutoff)
+}
 
+func (s *subtraceMemoryStorage) deleteSubtrace(id subtraceID) ([][]*bufferedSpan, error) {
+	s.Lock()
+	defer s.Unlock()
+	// A cutoff no arrival can be after takes everything.
+	calls, _, err := s.takeLocked(id, time.Now().Add(time.Hour))
+	return calls, err
+}
+
+// takeLocked divides a service's spans into calls and removes the ones due at
+// cutoff, returning them along with the first arrival among those left.
+//
+// Dividing into calls under the same write lock as the removal is what keeps a
+// concurrent release from observing, and so emitting, the same spans twice.
+func (s *subtraceMemoryStorage) takeLocked(id subtraceID, cutoff time.Time) ([][]*bufferedSpan, time.Time, error) {
 	tb, ok := s.traces[id.traceID]
 	if !ok {
-		return nil, nil
+		return nil, time.Time{}, nil
 	}
 	spans, ok := tb.services[id.serviceID]
 	if !ok {
-		return nil, nil
+		return nil, time.Time{}, nil
 	}
 
-	calls := splitCalls(spans, tb.spanIDs)
-
-	delete(tb.services, id.serviceID)
-	if len(tb.services) == 0 {
-		delete(s.traces, id.traceID)
+	var due [][]*bufferedSpan
+	var nextArrival time.Time
+	for _, call := range splitCalls(spans, tb.spanIDs) {
+		first := firstArrival(call)
+		if first.After(cutoff) {
+			// This call started later than the one whose timer just fired, so it
+			// has time left on its own.
+			if nextArrival.IsZero() || first.Before(nextArrival) {
+				nextArrival = first
+			}
+			continue
+		}
+		due = append(due, call)
+		for _, bs := range call {
+			delete(spans, bs.span.SpanID())
+		}
 	}
-	return calls, nil
+
+	if len(spans) == 0 {
+		delete(tb.services, id.serviceID)
+		if len(tb.services) == 0 {
+			delete(s.traces, id.traceID)
+		}
+	}
+	return due, nextArrival, nil
 }
 
 func (s *subtraceMemoryStorage) subtraceIDs() []subtraceID {

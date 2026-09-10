@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -322,5 +323,72 @@ func TestSubtraceStorage_TraceForgottenWhenEmpty(t *testing.T) {
 	st.RLock()
 	assert.Nil(t, st.traces[tid])
 	st.RUnlock()
+	assert.Empty(t, st.subtraceIDs())
+}
+
+// releaseDue hands back only the calls whose first span is old enough, and
+// reports when the next one becomes due.
+func TestSubtraceStorage_ReleaseDueHoldsBackLaterCalls(t *testing.T) {
+	st := newTestSubtraceStorage()
+	tid := makeTraceID(1)
+	caller1, caller2 := makeSpanID(1), makeSpanID(2)
+	early, late := makeSpanID(3), makeSpanID(4)
+
+	insertTestSpan(t, st, tid, caller1, pcommon.NewSpanIDEmpty(), "svc-a")
+	insertTestSpan(t, st, tid, caller2, caller1, "svc-a")
+	insertTestSpan(t, st, tid, early, caller1, "svc-b")
+
+	// Put a cutoff between the two arrivals.
+	time.Sleep(5 * time.Millisecond)
+	cutoff := time.Now()
+	time.Sleep(5 * time.Millisecond)
+
+	insertTestSpan(t, st, tid, late, caller2, "svc-b")
+
+	due, nextArrival, err := st.releaseDue(subtraceIDFor(tid, "svc-b"), cutoff)
+	require.NoError(t, err)
+	require.Len(t, due, 1, "only the call that started before the cutoff is due")
+	assert.Equal(t, map[pcommon.SpanID]bool{early: true}, spanIDSet(due[0]))
+	assert.False(t, nextArrival.IsZero(), "the later call's first arrival should be reported")
+	assert.True(t, nextArrival.After(cutoff))
+
+	// The later call is still buffered, and comes out once its own time is up.
+	due, nextArrival, err = st.releaseDue(subtraceIDFor(tid, "svc-b"), time.Now())
+	require.NoError(t, err)
+	require.Len(t, due, 1)
+	assert.Equal(t, map[pcommon.SpanID]bool{late: true}, spanIDSet(due[0]))
+	assert.True(t, nextArrival.IsZero(), "nothing left to wait for")
+}
+
+// A span arriving after its call's siblings does not reset that call's deadline.
+func TestSubtraceStorage_LateSpanDoesNotExtendItsCall(t *testing.T) {
+	st := newTestSubtraceStorage()
+	tid := makeTraceID(1)
+	entry, child := makeSpanID(1), makeSpanID(2)
+
+	insertTestSpan(t, st, tid, entry, pcommon.NewSpanIDEmpty(), "svc-a")
+	time.Sleep(5 * time.Millisecond)
+	cutoff := time.Now()
+	insertTestSpan(t, st, tid, child, entry, "svc-a")
+
+	// The call's deadline runs from its first span, so it is due even though the
+	// child arrived after the cutoff.
+	due, nextArrival, err := st.releaseDue(subtraceIDFor(tid, "svc-a"), cutoff)
+	require.NoError(t, err)
+	require.Len(t, due, 1)
+	assert.Equal(t, map[pcommon.SpanID]bool{entry: true, child: true}, spanIDSet(due[0]))
+	assert.True(t, nextArrival.IsZero())
+}
+
+// deleteSubtrace takes everything regardless of age, which is what eviction and
+// shutdown need.
+func TestSubtraceStorage_DeleteSubtraceIgnoresAge(t *testing.T) {
+	st := newTestSubtraceStorage()
+	tid := makeTraceID(1)
+	insertTestSpan(t, st, tid, makeSpanID(1), pcommon.NewSpanIDEmpty(), "svc-a")
+
+	calls, err := st.deleteSubtrace(subtraceIDFor(tid, "svc-a"))
+	require.NoError(t, err)
+	require.Len(t, calls, 1)
 	assert.Empty(t, st.subtraceIDs())
 }
