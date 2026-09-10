@@ -314,6 +314,102 @@ func TestExemplarsStayWithTheirSeries(t *testing.T) {
 	}
 }
 
+func TestExemplarsAreClaimedByOneMetricOnly(t *testing.T) {
+	// The key is the label set, so two metric identities built from the same labels look the
+	// same to the exemplar map. Whichever conversion attaches the exemplars consumes them, so
+	// the other cannot publish a second copy of what the sender wrote once.
+	symbols := []string{
+		"",
+		"__name__", "test_metric", // 1, 2
+		"job", "service-x/test", // 3, 4
+		"instance", "107cn001", // 5, 6
+		"seconds", "milliseconds", // 7, 8
+		"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 9, 10
+	}
+	labelRefs := []uint32{1, 2, 3, 4, 5, 6}
+	theExemplar := []writev2.Exemplar{{LabelsRefs: []uint32{9, 10}, Value: 1.5, Timestamp: 1}}
+
+	counter := func(unitRef uint32, exemplars []writev2.Exemplar) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER, UnitRef: unitRef},
+			LabelsRefs: labelRefs,
+			Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+			Exemplars:  exemplars,
+		}
+	}
+	info := func(exemplars []writev2.Exemplar) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_INFO},
+			LabelsRefs: labelRefs,
+			Samples:    []writev2.Sample{{Value: 1, Timestamp: 2}},
+			Exemplars:  exemplars,
+		}
+	}
+	histogram := func(exemplars []writev2.Exemplar) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+			LabelsRefs: labelRefs,
+			Histograms: []writev2.Histogram{{
+				Schema:         -53,
+				Count:          &writev2.Histogram_CountInt{CountInt: 1},
+				Sum:            1,
+				Timestamp:      1,
+				CustomValues:   []float64{1},
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
+				PositiveDeltas: []int64{1},
+			}},
+			Exemplars: exemplars,
+		}
+	}
+
+	for _, tc := range []struct {
+		name   string
+		series []writev2.TimeSeries
+	}{
+		{"two units", []writev2.TimeSeries{counter(7, theExemplar), counter(8, nil)}},
+		{"counter then info", []writev2.TimeSeries{counter(7, theExemplar), info(nil)}},
+		{"info then counter", []writev2.TimeSeries{info(theExemplar), counter(7, nil)}},
+		{"counter then histogram", []writev2.TimeSeries{counter(7, theExemplar), histogram(nil)}},
+		{"histogram then counter", []writev2.TimeSeries{histogram(theExemplar), counter(7, nil)}},
+		{"the same counter twice", []writev2.TimeSeries{counter(7, theExemplar), counter(7, nil)}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols:    symbols,
+				Timeseries: tc.series,
+			})
+			require.NoError(t, err)
+
+			attached := 0
+			rms := metrics.ResourceMetrics()
+			for i := 0; i < rms.Len(); i++ {
+				sms := rms.At(i).ScopeMetrics()
+				for j := 0; j < sms.Len(); j++ {
+					ms := sms.At(j).Metrics()
+					for k := 0; k < ms.Len(); k++ {
+						switch m := ms.At(k); m.Type() {
+						case pmetric.MetricTypeSum:
+							dps := m.Sum().DataPoints()
+							for d := 0; d < dps.Len(); d++ {
+								attached += dps.At(d).Exemplars().Len()
+							}
+						case pmetric.MetricTypeHistogram:
+							dps := m.Histogram().DataPoints()
+							for d := 0; d < dps.Len(); d++ {
+								attached += dps.At(d).Exemplars().Len()
+							}
+						}
+					}
+				}
+			}
+			assert.Equal(t, 1, attached, "the one exemplar the sender wrote is published once")
+			assert.Equal(t, 1, stats.Exemplars)
+		})
+	}
+}
+
 func TestHistogramExemplarsAttachToLabelledSeries(t *testing.T) {
 	// The exemplars are collected under a key that hashes the data labels, so the lookup has to
 	// hash them too. Without that, a histogram carrying any ordinary label never finds its own.
