@@ -2455,7 +2455,6 @@ func (s *sqlServerScraperHelper) recordDatabaseTopProcedure(ctx context.Context)
 			deltas[colTotalLogWrites],
 			deltas[colTotalPhysReads],
 			deltas[colTotalSpills],
-			totalElapsedTimeSec/float64(execCountDelta),
 			float64(maxElapsedTime.(int64))/1_000_000,
 			float64(minElapsedTime.(int64))/1_000_000,
 			row[colLastExecTime],

@@ -94,7 +94,7 @@ type eventDbServerTopProcedure struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerTopProcedure) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverProcedureIDAttributeValue string, sqlserverProcedureNameAttributeValue string, sqlserverProcedureSchemaNameAttributeValue string, sqlserverProcedureExecutionCountAttributeValue int64, sqlserverTotalWorkerTimeAttributeValue float64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverProcedureTempdbSpilledPagesAttributeValue int64, sqlserverProcedureAvgDurationAttributeValue float64, sqlserverProcedureMaxDurationAttributeValue float64, sqlserverProcedureMinDurationAttributeValue float64, sqlserverProcedureLastExecutionTimeAttributeValue string) {
+func (e *eventDbServerTopProcedure) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverProcedureIDAttributeValue string, sqlserverProcedureNameAttributeValue string, sqlserverSchemaNameAttributeValue string, sqlserverProcedureExecutionCountAttributeValue int64, sqlserverTotalWorkerTimeAttributeValue float64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverProcedureTempdbSpilledPagesAttributeValue int64, sqlserverProcedureMaxDurationAttributeValue float64, sqlserverProcedureMinDurationAttributeValue float64, sqlserverProcedureLastExecutionTimeAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
@@ -110,7 +110,7 @@ func (e *eventDbServerTopProcedure) recordEvent(ctx context.Context, timestamp p
 	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	dp.Attributes().PutStr("sqlserver.procedure_id", sqlserverProcedureIDAttributeValue)
 	dp.Attributes().PutStr("sqlserver.procedure_name", sqlserverProcedureNameAttributeValue)
-	dp.Attributes().PutStr("sqlserver.procedure.schema_name", sqlserverProcedureSchemaNameAttributeValue)
+	dp.Attributes().PutStr("sqlserver.schema.name", sqlserverSchemaNameAttributeValue)
 	dp.Attributes().PutInt("sqlserver.procedure_execution_count", sqlserverProcedureExecutionCountAttributeValue)
 	dp.Attributes().PutDouble("sqlserver.total_worker_time", sqlserverTotalWorkerTimeAttributeValue)
 	dp.Attributes().PutDouble("sqlserver.total_elapsed_time", sqlserverTotalElapsedTimeAttributeValue)
@@ -118,7 +118,6 @@ func (e *eventDbServerTopProcedure) recordEvent(ctx context.Context, timestamp p
 	dp.Attributes().PutInt("sqlserver.total_logical_writes", sqlserverTotalLogicalWritesAttributeValue)
 	dp.Attributes().PutInt("sqlserver.total_physical_reads", sqlserverTotalPhysicalReadsAttributeValue)
 	dp.Attributes().PutInt("sqlserver.procedure.tempdb.spilled_pages", sqlserverProcedureTempdbSpilledPagesAttributeValue)
-	dp.Attributes().PutDouble("sqlserver.procedure.avg_duration", sqlserverProcedureAvgDurationAttributeValue)
 	dp.Attributes().PutDouble("sqlserver.procedure.max_duration", sqlserverProcedureMaxDurationAttributeValue)
 	dp.Attributes().PutDouble("sqlserver.procedure.min_duration", sqlserverProcedureMinDurationAttributeValue)
 	dp.Attributes().PutStr("sqlserver.procedure.last_execution_time", sqlserverProcedureLastExecutionTimeAttributeValue)
@@ -367,8 +366,8 @@ func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, times
 }
 
 // RecordDbServerTopProcedureEvent adds a log record of db.server.top_procedure event.
-func (lb *LogsBuilder) RecordDbServerTopProcedureEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverProcedureIDAttributeValue string, sqlserverProcedureNameAttributeValue string, sqlserverProcedureSchemaNameAttributeValue string, sqlserverProcedureExecutionCountAttributeValue int64, sqlserverTotalWorkerTimeAttributeValue float64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverProcedureTempdbSpilledPagesAttributeValue int64, sqlserverProcedureAvgDurationAttributeValue float64, sqlserverProcedureMaxDurationAttributeValue float64, sqlserverProcedureMinDurationAttributeValue float64, sqlserverProcedureLastExecutionTimeAttributeValue string) {
-	lb.eventDbServerTopProcedure.recordEvent(ctx, timestamp, dbSystemNameAttributeValue, dbNamespaceAttributeValue, sqlserverProcedureIDAttributeValue, sqlserverProcedureNameAttributeValue, sqlserverProcedureSchemaNameAttributeValue, sqlserverProcedureExecutionCountAttributeValue, sqlserverTotalWorkerTimeAttributeValue, sqlserverTotalElapsedTimeAttributeValue, sqlserverTotalLogicalReadsAttributeValue, sqlserverTotalLogicalWritesAttributeValue, sqlserverTotalPhysicalReadsAttributeValue, sqlserverProcedureTempdbSpilledPagesAttributeValue, sqlserverProcedureAvgDurationAttributeValue, sqlserverProcedureMaxDurationAttributeValue, sqlserverProcedureMinDurationAttributeValue, sqlserverProcedureLastExecutionTimeAttributeValue)
+func (lb *LogsBuilder) RecordDbServerTopProcedureEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, sqlserverProcedureIDAttributeValue string, sqlserverProcedureNameAttributeValue string, sqlserverSchemaNameAttributeValue string, sqlserverProcedureExecutionCountAttributeValue int64, sqlserverTotalWorkerTimeAttributeValue float64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverProcedureTempdbSpilledPagesAttributeValue int64, sqlserverProcedureMaxDurationAttributeValue float64, sqlserverProcedureMinDurationAttributeValue float64, sqlserverProcedureLastExecutionTimeAttributeValue string) {
+	lb.eventDbServerTopProcedure.recordEvent(ctx, timestamp, dbSystemNameAttributeValue, dbNamespaceAttributeValue, sqlserverProcedureIDAttributeValue, sqlserverProcedureNameAttributeValue, sqlserverSchemaNameAttributeValue, sqlserverProcedureExecutionCountAttributeValue, sqlserverTotalWorkerTimeAttributeValue, sqlserverTotalElapsedTimeAttributeValue, sqlserverTotalLogicalReadsAttributeValue, sqlserverTotalLogicalWritesAttributeValue, sqlserverTotalPhysicalReadsAttributeValue, sqlserverProcedureTempdbSpilledPagesAttributeValue, sqlserverProcedureMaxDurationAttributeValue, sqlserverProcedureMinDurationAttributeValue, sqlserverProcedureLastExecutionTimeAttributeValue)
 }
 
 // RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.

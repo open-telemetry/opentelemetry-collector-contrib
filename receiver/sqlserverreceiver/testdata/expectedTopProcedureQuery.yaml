@@ -40,7 +40,7 @@ resourceLogs:
               - key: sqlserver.procedure_name
                 value:
                   stringValue: '[dbo].[usp_GetOrderDetails]'
-              - key: sqlserver.procedure.schema_name
+              - key: sqlserver.schema.name
                 value:
                   stringValue: dbo
               - key: sqlserver.procedure_execution_count
@@ -64,9 +64,6 @@ resourceLogs:
               - key: sqlserver.procedure.tempdb.spilled_pages
                 value:
                   intValue: "4"
-              - key: sqlserver.procedure.avg_duration
-                value:
-                  doubleValue: 0.06
               - key: sqlserver.procedure.max_duration
                 value:
                   doubleValue: 8.5
@@ -78,7 +75,7 @@ resourceLogs:
                   stringValue: "2026-09-08T10:15:30.0000000+00:00"
             body: {}
             eventName: db.server.top_procedure
-            timeUnixNano: "1788809290013353000"
+            timeUnixNano: "1789008772652315000"
           - attributes:
               - key: db.system.name
                 value:
@@ -92,7 +89,7 @@ resourceLogs:
               - key: sqlserver.procedure_name
                 value:
                   stringValue: '[sales].[usp_UpdateInventory]'
-              - key: sqlserver.procedure.schema_name
+              - key: sqlserver.schema.name
                 value:
                   stringValue: sales
               - key: sqlserver.procedure_execution_count
@@ -116,9 +113,6 @@ resourceLogs:
               - key: sqlserver.procedure.tempdb.spilled_pages
                 value:
                   intValue: "0"
-              - key: sqlserver.procedure.avg_duration
-                value:
-                  doubleValue: 0.04
               - key: sqlserver.procedure.max_duration
                 value:
                   doubleValue: 0.15
@@ -130,7 +124,7 @@ resourceLogs:
                   stringValue: "2026-09-08T10:15:31.0000000+00:00"
             body: {}
             eventName: db.server.top_procedure
-            timeUnixNano: "1788809290013353000"
+            timeUnixNano: "1789008772652315000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
