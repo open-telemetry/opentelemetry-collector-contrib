@@ -143,7 +143,7 @@ func TestLogsBuilder(t *testing.T) {
 			lb.RecordDbServerSessionWaitSampleEvent(ctx, timestamp, "oracledb.sid-val", "oracledb.serial-val", "oracledb.event-val", "oracledb.wait_class-val", 19, 22, 22.100000, "db.namespace-val")
 
 			allEventsCount++
-			lb.RecordDbServerTopProcedureEvent(ctx, timestamp, "db.system.name-val", "db.namespace-val", "db.server.name-val", "oracle.db.service-val", 21, "oracledb.procedure_name-val", "oracledb.procedure_type-val", "oracledb.procedure.schema_name-val", 34, 17.100000, 21.100000, 31.100000, 20, 19, 22, 23, 28, 29, "oracledb.procedure.first_load_time-val", "oracledb.procedure.last_active_time-val")
+			lb.RecordDbServerTopProcedureEvent(ctx, timestamp, "db.system.name-val", "db.namespace-val", "db.server.name-val", "oracle.db.service-val", 21, "oracledb.procedure_name-val", "oracledb.procedure_type-val", "oracledb.procedure.schema.name-val", 34, 17.100000, 21.100000, 20, 19, 22, 23, 28, 29, "oracledb.procedure.first_load_time-val", "oracledb.procedure.last_active_time-val")
 
 			allEventsCount++
 			lb.RecordDbServerTopQueryEvent(ctx, timestamp, "db.system.name-val", "db.server.name-val", "db.namespace-val", "oracle.db.service-val", "db.query.text-val", "oracledb.query_plan-val", "oracledb.sql_id-val", "oracledb.child_number-val", "oracledb.child_address-val", 30.100000, 20, 26.100000, 21, 30.100000, 17.100000, 21, 22, 19, 21.100000, 19, 28, 31, 29, 32, 23, 26.100000, 34, 21, "oracledb.procedure_name-val", "oracledb.procedure_type-val", "db.query.comment_tags-val", "oracledb.plan_hash_value-val", "oracledb.plan.first_load-val", "oracledb.plan.last_load-val")
@@ -372,9 +372,9 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("oracledb.procedure_type")
 					assert.True(t, ok)
 					assert.Equal(t, "oracledb.procedure_type-val", attrVal.Str())
-					attrVal, ok = lr.Attributes().Get("oracledb.procedure.schema_name")
+					attrVal, ok = lr.Attributes().Get("oracledb.procedure.schema.name")
 					assert.True(t, ok)
-					assert.Equal(t, "oracledb.procedure.schema_name-val", attrVal.Str())
+					assert.Equal(t, "oracledb.procedure.schema.name-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("oracledb.procedure_execution_count")
 					assert.True(t, ok)
 					assert.EqualValues(t, 34, attrVal.Int())
@@ -384,9 +384,6 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("oracledb.elapsed_time")
 					assert.True(t, ok)
 					assert.Equal(t, 21.100000, attrVal.Double())
-					attrVal, ok = lr.Attributes().Get("oracledb.procedure.avg_duration")
-					assert.True(t, ok)
-					assert.Equal(t, 31.100000, attrVal.Double())
 					attrVal, ok = lr.Attributes().Get("oracledb.buffer_gets")
 					assert.True(t, ok)
 					assert.EqualValues(t, 20, attrVal.Int())

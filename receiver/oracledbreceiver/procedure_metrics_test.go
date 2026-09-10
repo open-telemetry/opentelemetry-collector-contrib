@@ -19,6 +19,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -310,8 +312,6 @@ func TestProcedureMetricsNewChildCursorKeepsRow(t *testing.T) {
 		"an untrustworthy execution delta is clamped to 0, not emitted as negative")
 	assert.InDelta(t, elapsedDeltaSeconds, attrs["oracledb.elapsed_time"], 0.001,
 		"resource counters must still be reported")
-	assert.Zero(t, attrs["oracledb.procedure.avg_duration"],
-		"avg_elapsed_time must be suppressed when the execution count cannot be trusted")
 }
 
 // MIN(EXECUTIONS) can track a statement in a branch that did not run, so gating emission on it would drop a
@@ -331,8 +331,6 @@ func TestProcedureMetricsEmittedWhenExecutionCountStalls(t *testing.T) {
 	assert.Equal(t, int64(0), attrs["oracledb.procedure_execution_count"])
 	assert.InDelta(t, elapsedDeltaSeconds, attrs["oracledb.elapsed_time"], 0.001,
 		"a stalled execution count must not drop a procedure whose CPU and elapsed time moved")
-	assert.Zero(t, attrs["oracledb.procedure.avg_duration"],
-		"avg must be suppressed rather than divided by a zero execution delta")
 }
 
 // A procedure whose resource counters did not move must not be emitted as an empty event.
@@ -432,4 +430,27 @@ func TestScrapesProcedureMetricsLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
 	// timestamp did not move: only a collection that actually ran advances it.
 	assert.Equal(t, skippedFrom, scrpr.lastProcedureMetricsTimestamp,
 		"a skipped scrape must not advance lastProcedureMetricsTimestamp")
+}
+
+// A discarded interval is otherwise indistinguishable from "the procedure did not run", and one child
+// cursor aging out of the shared pool discards the whole procedure, so the count must be observable.
+func TestProcedureMetricsLogsDiscardedCount(t *testing.T) {
+	purged := maps.Clone(procedureCacheValue)
+	purged["BUFFER_GETS"] = 999999999 // negative resource delta -> possiblePurge
+
+	core, observed := observer.New(zapcore.DebugLevel)
+	scrpr := newProcedureMetricsScraper(t, procedureMetricsDbClientFn(t), purged)
+	scrpr.logger = zap.New(core)
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, scrpr.shutdown(t.Context()))
+	}()
+
+	_, err := scrpr.scrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	entries := observed.FilterMessage("Procedure cache hits").All()
+	require.Len(t, entries, 1, "a discarded interval must be reported once per scrape")
+	assert.Equal(t, int64(1), entries[0].ContextMap()["discarded-hit-count"])
+	assert.Equal(t, int64(0), entries[0].ContextMap()["hit-count"])
 }

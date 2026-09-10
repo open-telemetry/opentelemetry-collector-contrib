@@ -1785,11 +1785,10 @@ Aggregated performance metrics for the top stored procedures by elapsed time, de
 | oracledb.procedure_id | The identifier of the stored procedure or function being executed by the query. | Any Int | - |
 | oracledb.procedure_name | Name of the database object that a query is accessing. | Any Str | - |
 | oracledb.procedure_type | Type of the database object that a query is accessing. | Any Str | - |
-| oracledb.procedure.schema_name | The schema (owner) of the stored procedure or function. | Any Str | - |
+| oracledb.procedure.schema.name | The schema (owner) of the stored procedure or function. | Any Str | - |
 | oracledb.procedure_execution_count | The number of times the stored procedure has been executed, derived from the minimum statement execution count across all statements in the procedure (reporting delta). Please note, this is best effort and may not be accurate in some scenarios. Use with caution. | Any Int | - |
 | oracledb.cpu_time | Total time (in seconds) that the CPU spent actively processing a query, excluding time spent waiting (reporting delta). | Any Double | - |
 | oracledb.elapsed_time | The total time (in seconds) taken by a query from start to finish, including CPU time and all types of waits (reporting delta). | Any Double | - |
-| oracledb.procedure.avg_duration | Average elapsed time (in seconds) per procedure execution, computed as the elapsed time delta divided by the execution count delta for the aggregation interval. | Any Double | - |
 | oracledb.buffer_gets | Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta). | Any Int | - |
 | oracledb.disk_reads | The number of physical reads a query performs — that is, the number of data blocks read from disk (reporting delta). | Any Int | - |
 | oracledb.direct_writes | The number of direct path write operations, where data is written directly to disk from user memory (reporting delta). | Any Int | - |

@@ -221,9 +221,7 @@ pool, so the row is discarded rather than emitted as a bogus value.
 > across the procedure's cached statements. This is best effort: a newly loaded child cursor
 > starts at 1 and pulls the minimum down, and a statement in a branch that did not run holds it
 > flat. The receiver therefore treats this counter separately from the resource counters — it is
-> clamped to 0 instead of discarding the row, and `oracledb.procedure.avg_duration` is
-> reported as 0 whenever the execution delta did not advance, rather than dividing by a count
-> that cannot be relied on. Resource counters (CPU, elapsed time, reads, writes, rows) are
+> clamped to 0 instead of discarding the row. Resource counters (CPU, elapsed time, reads, writes, rows) are
 > summed across the procedure's statements and are not subject to this caveat.
 
 On a CDB-root connection the receiver reads `CDB_PROCEDURES` matched on `CON_ID`, so PDB-owned

@@ -234,16 +234,13 @@ attributes:
   oracledb.plan_hash_value:
     description: Numeric representation of the execution plan.
     type: string
-  oracledb.procedure.avg_duration:
-    description: Average elapsed time (in seconds) per procedure execution, computed as the elapsed time delta divided by the execution count delta for the aggregation interval.
-    type: double
   oracledb.procedure.first_load_time:
     description: "Earliest load time across the procedure's cached statements, in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS"
     type: string
   oracledb.procedure.last_active_time:
     description: "The most recent time any of the procedure's cached statements were active, in ISO 8601 format (UTC)."
     type: string
-  oracledb.procedure.schema_name:
+  oracledb.procedure.schema.name:
     description: The schema (owner) of the stored procedure or function.
     type: string
   oracledb.procedure_execution_count:
@@ -463,11 +460,10 @@ events:
       - oracledb.procedure_id
       - oracledb.procedure_name
       - oracledb.procedure_type
-      - oracledb.procedure.schema_name
+      - oracledb.procedure.schema.name
       - oracledb.procedure_execution_count
       - oracledb.cpu_time
       - oracledb.elapsed_time
-      - oracledb.procedure.avg_duration
       - oracledb.buffer_gets
       - oracledb.disk_reads
       - oracledb.direct_writes
