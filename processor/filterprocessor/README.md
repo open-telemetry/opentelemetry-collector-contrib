@@ -65,7 +65,7 @@ Within each `<signal>_conditions` list, only certain OTTL Contexts can be used. 
 [metric]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlmetric/README.md
 [datapoint]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottldatapoint/README.md
 [log]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottllog/README.md
-[profile]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlprofile/README.md
+[profile]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/xprofile/ottlprofile/README.md
 
 Telemetry is evaluated hierarchically, from higher to lower levels. The hierarchy may vary by signal type; examples include:
 

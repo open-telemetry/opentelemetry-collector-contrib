@@ -175,6 +175,7 @@ pkg/golden/                                                      @open-telemetry
 pkg/kafka/configkafka/                                           @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy @paulojmdias
 pkg/kafka/topic/                                                 @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 pkg/ottl/                                                        @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta @bogdandrutu
+pkg/ottl/contexts/xprofile/                                      @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta @bogdandrutu
 pkg/pdatatest/                                                   @open-telemetry/collector-contrib-approvers
 pkg/pdatautil/                                                   @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/resourcetotelemetry/                                         @open-telemetry/collector-contrib-approvers @mx-psi

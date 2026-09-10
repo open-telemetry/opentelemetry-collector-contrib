@@ -3,4 +3,4 @@
 
 // Package xprofile houses OTTL's profiles support outside of OTTL's stability
 // guarantees, versioned independently at 0.x.
-package xprofile // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xprofile"
+package xprofile // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile"
