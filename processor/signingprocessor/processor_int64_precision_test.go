@@ -175,6 +175,7 @@ func TestScalarTypeCollision(t *testing.T) {
 		})
 	}
 }
+
 func TestTimestampSerializedAsString(t *testing.T) {
 	p := &signingProcessor{config: &Config{}}
 
