@@ -198,7 +198,7 @@ func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, wor
 		if evicted, ok := worker.subtraceBuffer.put(id); ok {
 			sp.telemetryBuilder.ProcessorGroupbytraceTracesEvicted.Add(context.Background(), 1)
 			worker.fire(event{typ: subtraceRemoved, payload: evicted})
-			sp.logger.Info("subtrace evicted: in order to avoid this in the future, adjust the wait duration and/or number of traces to keep in memory",
+			sp.logger.Info("subtrace evicted and released early: in order to avoid this in the future, adjust the wait duration and/or number of traces to keep in memory",
 				zap.Stringer("traceID", evicted.traceID))
 		}
 
@@ -358,7 +358,21 @@ func (sp *groupByTraceProcessor) onSubtraceReleased(td ptrace.Traces) error {
 	return nil
 }
 
+// onSubtraceRemoved handles a subtrace pushed out of the ring buffer. Eviction
+// is there to bound how much the processor holds, and handing the spans to the
+// next consumer achieves that just as well as discarding them, so they go out
+// early rather than being lost. The eviction is still counted in
+// traces_evicted, so a non-zero count continues to mean wait_duration or
+// num_traces wants adjusting.
 func (sp *groupByTraceProcessor) onSubtraceRemoved(id subtraceID) error {
-	_, err := sp.subSt.deleteSubtrace(id)
-	return err
+	calls, err := sp.subSt.deleteSubtrace(id)
+	if err != nil {
+		return fmt.Errorf("couldn't delete subtrace: %w", err)
+	}
+	for _, call := range calls {
+		if err := sp.onSubtraceReleased(assemble(call)); err != nil {
+			return err
+		}
+	}
+	return nil
 }

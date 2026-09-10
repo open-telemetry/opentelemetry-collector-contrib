@@ -93,7 +93,7 @@ Malformed input in which a span is its own ancestor leaves a ring of spans that 
 
 ### Limits
 
-`num_traces` bounds how many `(trace, service)` groups are buffered at once, whatever number of separate calls a group holds. When that is exceeded the oldest group's spans are dropped without warning, as trace-level eviction does in `emit_strategy: trace` mode, and counted in `otelcol_processor_groupbytrace_traces_evicted`. Anything still buffered at shutdown is flushed to the next consumer rather than dropped.
+`num_traces` bounds how many `(trace, service)` groups are buffered at once, whatever number of separate calls a group holds. When that is exceeded the oldest group is released early rather than dropped: eviction is there to bound how much is held, and passing the spans on achieves that without losing them. Such evictions are counted in `otelcol_processor_groupbytrace_traces_evicted`, so a non-zero count still means `wait_duration` or `num_traces` wants adjusting. Note this differs from `emit_strategy: trace`, where an evicted trace's spans are discarded. Anything still buffered at shutdown is likewise flushed to the next consumer.
 
 ## Metrics
 
@@ -112,7 +112,7 @@ The following metrics are recorded by this processor:
 * `otelcol_processor_groupbytrace_traces_evicted` represents the number of traces that have been evicted from the internal storage due to capacity problems. Ideally, this should be zero, or very close to zero at all times. If you keep getting items evicted, increase the `num_traces`.
 * `otelcol_processor_groupbytrace_incomplete_releases` represents the traces that have been marked as expired, but had been previously been removed. This might be the case when a span from a trace has been received in a batch while the trace existed in the in-memory storage, but has since been released/removed before the span could be added to the trace. This should always be very close to 0, and a high value might indicate a software bug.
 
-When `emit_strategy: service` is configured, the same metrics are emitted for subtraces: `otelcol_processor_groupbytrace_traces_released` counts released calls, so a service entered twice in one trace counts twice, `otelcol_processor_groupbytrace_spans_released` counts their spans, `otelcol_processor_groupbytrace_traces_evicted` counts evicted `(trace, service)` groups, and `otelcol_processor_groupbytrace_incomplete_releases` counts expiry events that found no buffer entry.
+When `emit_strategy: service` is configured, the same metrics are emitted for subtraces: `otelcol_processor_groupbytrace_traces_released` counts released calls, so a service entered twice in one trace counts twice, `otelcol_processor_groupbytrace_spans_released` counts their spans, `otelcol_processor_groupbytrace_traces_evicted` counts `(trace, service)` groups evicted and released early, and `otelcol_processor_groupbytrace_incomplete_releases` counts expiry events that found no buffer entry.
 
 A healthy system would have the same value for the metric `otelcol_processor_groupbytrace_spans_released` and for three events under `otelcol_processor_groupbytrace_event_latency_bucket`: `onTraceExpired`, `onTraceRemoved` and `onTraceReleased`.
 

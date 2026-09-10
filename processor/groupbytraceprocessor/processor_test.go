@@ -22,10 +22,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/metadatatest"
 )
 
 func TestTraceIsDispatchedAfterDuration(t *testing.T) {
@@ -801,32 +804,70 @@ func TestSubtrace_ShutdownDrain_OrphanSpans(t *testing.T) {
 		return len(p.subSt.subtraceIDs()) > 0
 	}, 2*time.Second, time.Millisecond)
 
-	// Shutdown before the timer fires — drain should emit the span.
+	// Shutdown before the timer fires; drain should emit the span.
 	require.NoError(t, p.Shutdown(t.Context()))
 	assert.Equal(t, 1, sink.SpanCount())
 }
 
-func TestSubtrace_RingBufferEviction(t *testing.T) {
-	const capacity = 3
+// A subtrace pushed out of the ring buffer is released early rather than
+// dropped: eviction is there to bound how much the processor holds, which
+// passing the spans on does just as well as discarding them.
+func TestSubtrace_EvictedSubtracesAreReleasedNotDropped(t *testing.T) {
+	const (
+		capacity = 3
+		overflow = 2
+	)
+
+	tel := componenttest.NewTelemetry()
+	defer func() { assert.NoError(t, tel.Shutdown(t.Context())) }()
+
 	sink := new(consumertest.TracesSink)
 	cfg := Config{
-		NumTraces:    capacity,
-		NumWorkers:   1,
+		NumTraces:  capacity,
+		NumWorkers: 1,
+		// Long enough that nothing can be released by its own timer, so anything
+		// reaching the sink got there by eviction.
 		WaitDuration: 10 * time.Second,
 		EmitStrategy: EmitStrategyService,
 	}
-	p := newSubtraceProcessor(t, cfg, sink)
-	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+	p := newSubtraceProcessorWithSettings(t, cfg, sink, metadatatest.NewSettings(tel))
 
-	// Fill the buffer beyond capacity.
-	for i := byte(1); i <= byte(capacity+1); i++ {
-		tid := makeTraceID(i)
-		sid := makeSpanID(i)
-		require.NoError(t, p.ConsumeTraces(t.Context(), buildServiceTrace(tid, "svc", sid)))
+	evicted := map[pcommon.SpanID]bool{}
+	for i := byte(1); i <= byte(capacity+overflow); i++ {
+		spanID := makeSpanID(i)
+		require.NoError(t, p.ConsumeTraces(t.Context(), buildServiceTrace(makeTraceID(i), "svc", spanID)))
+		if int(i) <= overflow {
+			evicted[spanID] = true // the oldest entries are the ones pushed out
+		}
 	}
 
-	// The eviction metric should have been incremented at least once.
-	// We can't read the metric directly; just verify the processor doesn't crash.
+	// The evicted subtraces arrive without waiting for any timer.
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() == overflow
+	}, 5*time.Second, 5*time.Millisecond, "evicted spans never reached the next consumer")
+	assert.Equal(t, evicted, spanIDsAcross(sink.AllTraces()))
+
+	// The rest are still buffered, waiting out their wait_duration.
+	assert.Len(t, p.subSt.subtraceIDs(), capacity)
+
+	metadatatest.AssertEqualProcessorGroupbytraceTracesEvicted(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: overflow}},
+		metricdatatest.IgnoreTimestamp())
+
+	// Shutting down flushes the remainder, so nothing submitted is lost.
+	require.NoError(t, p.Shutdown(t.Context()))
+	assert.Equal(t, capacity+overflow, sink.SpanCount())
+}
+
+// spanIDsAcross returns the span IDs found in all of the given batches.
+func spanIDsAcross(batches []ptrace.Traces) map[pcommon.SpanID]bool {
+	ids := map[pcommon.SpanID]bool{}
+	for _, b := range batches {
+		for id := range batchSpanIDs(b) {
+			ids[id] = true
+		}
+	}
+	return ids
 }
 
 func TestSubtrace_ShutdownFlushesBufferedSpans(t *testing.T) {
@@ -1028,8 +1069,15 @@ func buildSpecTrace(traceID pcommon.TraceID, serviceName string, specs ...spanSp
 // The caller is responsible for calling Shutdown.
 func newSubtraceProcessor(t *testing.T, cfg Config, sink *consumertest.TracesSink) *groupByTraceProcessor {
 	t.Helper()
+	return newSubtraceProcessorWithSettings(t, cfg, sink, processortest.NewNopSettings(metadata.Type))
+}
+
+// newSubtraceProcessorWithSettings is newSubtraceProcessor with the processor
+// settings supplied, so that a test can read the recorded telemetry.
+func newSubtraceProcessorWithSettings(t *testing.T, cfg Config, sink *consumertest.TracesSink, set processor.Settings) *groupByTraceProcessor {
+	t.Helper()
 	cfg.EmitStrategy = EmitStrategyService
-	p := newGroupByTraceProcessor(processortest.NewNopSettings(metadata.Type), sink, cfg)
+	p := newGroupByTraceProcessor(set, sink, cfg)
 	require.NotNil(t, p)
 
 	subSt := newSubtraceMemoryStorage(p.telemetryBuilder)
