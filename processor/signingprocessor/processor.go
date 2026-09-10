@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"hash"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -221,11 +222,11 @@ func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error)
 	}
 
 	if lr.Timestamp() != 0 {
-		data["timestamp"] = lr.Timestamp().AsTime().UnixNano()
+		data["timestamp"] = strconv.FormatInt(lr.Timestamp().AsTime().UnixNano(), 10)
 	}
 
 	if lr.ObservedTimestamp() != 0 {
-		data["observed_timestamp"] = lr.ObservedTimestamp().AsTime().UnixNano()
+		data["observed_timestamp"] = strconv.FormatInt(lr.ObservedTimestamp().AsTime().UnixNano(), 10)
 	}
 
 	if lr.SeverityNumber() != 0 {
@@ -294,7 +295,7 @@ func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, er
 		}
 		return s, nil
 	case pcommon.ValueTypeInt:
-		return v.Int(), nil
+		return strconv.FormatInt(v.Int(), 10), nil
 	case pcommon.ValueTypeDouble:
 		return v.Double(), nil
 	case pcommon.ValueTypeBool:
