@@ -481,14 +481,19 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts, &stats)
 		case writev2.Metadata_METRIC_TYPE_COUNTER, writev2.Metadata_METRIC_TYPE_INFO, writev2.Metadata_METRIC_TYPE_STATESET:
 			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts, &stats)
-			key := makeExemplarKey(ls)
-			if ex, ok := exemplarMap[key]; ok && ex.Len() > 0 {
-				attrsHash := pdatautil.MapHash(extractAttributes(ls))
-				dataPoints := metric.Sum().DataPoints()
-				for i := 0; i < dataPoints.Len(); i++ {
-					if pdatautil.MapHash(dataPoints.At(i).Attributes()) == attrsHash {
-						ex.CopyTo(dataPoints.At(i).Exemplars())
-						break
+			// Consuming the entry stops a second metric identity built from the same labels,
+			// differing only by type or unit, from taking a copy of the same exemplars.
+			if len(exemplarMap) > 0 {
+				key := makeExemplarKey(ls)
+				if ex, ok := exemplarMap[key]; ok && ex.Len() > 0 {
+					attrsHash := pdatautil.MapHash(extractAttributes(ls))
+					dataPoints := metric.Sum().DataPoints()
+					for i := 0; i < dataPoints.Len(); i++ {
+						if pdatautil.MapHash(dataPoints.At(i).Attributes()) == attrsHash {
+							ex.CopyTo(dataPoints.At(i).Exemplars())
+							delete(exemplarMap, key)
+							break
+						}
 					}
 				}
 			}
