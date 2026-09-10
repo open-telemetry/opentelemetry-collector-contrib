@@ -32,7 +32,6 @@ var tcPool = sync.Pool{
 }
 
 // ContextName is the name of the context for span events.
-// Experimental: *NOTE* this constant is subject to change or removal in the future.
 const ContextName = ctxspanevent.Name
 
 var _ zapcore.ObjectMarshaler = (*TransformContext)(nil)
@@ -155,8 +154,6 @@ func (tCtx *TransformContext) GetEventIndex() (int64, error) {
 // EnablePathContextNames enables the support for path's context names on statements.
 // When this option is configured, all statement's paths must have a valid context prefix,
 // otherwise an error is reported.
-//
-// Experimental: *NOTE* this option is subject to change or removal in the future.
 func EnablePathContextNames() ottl.Option[*TransformContext] {
 	return func(p *ottl.Parser[*TransformContext]) {
 		ottl.WithPathContextNames[*TransformContext]([]string{

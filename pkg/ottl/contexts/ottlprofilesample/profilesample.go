@@ -32,7 +32,6 @@ var tcPool = sync.Pool{
 }
 
 // ContextName is the name of the context for profiles.
-// Experimental: *NOTE* this constant is subject to change or removal in the future.
 const ContextName = ctxprofilesample.Name
 
 var (
@@ -147,8 +146,6 @@ func NewParser(functions map[string]ottl.Factory[*TransformContext], telemetrySe
 // EnablePathContextNames enables the support for path's context names on statements.
 // When this option is configured, all statement's paths must have a valid context prefix,
 // otherwise an error is reported.
-//
-// Experimental: *NOTE* this option is subject to change or removal in the future.
 func EnablePathContextNames() ottl.Option[*TransformContext] {
 	return func(p *ottl.Parser[*TransformContext]) {
 		ottl.WithPathContextNames[*TransformContext]([]string{
