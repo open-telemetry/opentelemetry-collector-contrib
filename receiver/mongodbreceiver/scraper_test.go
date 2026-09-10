@@ -1692,3 +1692,43 @@ func TestCollectIndexStatsSkipsViews(t *testing.T) {
 	scraper.collectIndexStats(t.Context(), pcommon.NewTimestampFromTime(time.Now()), "fakedatabase", "someview", errs)
 	require.NoError(t, errs.Combine())
 }
+
+func TestResourceAttributeDbSystemVersion(t *testing.T) {
+	// Test the setResourceAttributes function directly
+	// Test with enabled db.system.version
+	cfg := metadata.DefaultResourceAttributesConfig()
+	cfg.DbSystemVersion.Enabled = true
+	rb := metadata.NewResourceBuilder(cfg)
+
+	mongo50, err := version.NewVersion("5.0.0")
+	require.NoError(t, err)
+
+	setResourceAttributes(rb, "localhost", 27017, mongo50)
+	res := rb.Emit()
+
+	dbSystemVersion, ok := res.Attributes().Get("db.system.version")
+	require.True(t, ok, "db.system.version should be present when enabled")
+	require.Equal(t, "5.0.0", dbSystemVersion.Str())
+
+	// Test with disabled db.system.version
+	cfg2 := metadata.DefaultResourceAttributesConfig()
+	cfg2.DbSystemVersion.Enabled = false
+	rb2 := metadata.NewResourceBuilder(cfg2)
+
+	setResourceAttributes(rb2, "localhost", 27017, mongo50)
+	res2 := rb2.Emit()
+
+	_, ok = res2.Attributes().Get("db.system.version")
+	require.False(t, ok, "db.system.version should not be present when disabled")
+
+	// Test with unknown version
+	cfg3 := metadata.DefaultResourceAttributesConfig()
+	cfg3.DbSystemVersion.Enabled = true
+	rb3 := metadata.NewResourceBuilder(cfg3)
+
+	setResourceAttributes(rb3, "localhost", 27017, nil)
+	res3 := rb3.Emit()
+
+	_, ok = res3.Attributes().Get("db.system.version")
+	require.False(t, ok, "db.system.version should not be present when version is unknown")
+}

@@ -2893,6 +2893,106 @@ func TestObfuscateCacheHitsHandlesTruncatedSQL(t *testing.T) {
 	assert.Equal(t, 0, warnLogs.Len(), "Expected no obfuscation failures")
 }
 
+// Object ids are unique only within a container, so from a CDB root a join on object id alone can attribute
+// a PDB row to an unrelated root object, and grouping by it alone merges values across containers.
+func TestCDBRootDictionaryJoinsMatchOnConID(t *testing.T) {
+	tests := []struct {
+		name       string
+		build      func(s *oracleScraper) string
+		cdbViews   []string
+		nonCDBView string
+		// conIDJoins are substrings that must each appear in the CDB variant.
+		conIDJoins []string
+	}{
+		{
+			name:       "top query",
+			build:      func(s *oracleScraper) string { return s.buildTopQuerySQL() },
+			cdbViews:   []string{"CDB_PROCEDURES"},
+			nonCDBView: "DBA_PROCEDURES",
+			conIDJoins: []string{
+				"P.CON_ID    = S.CON_ID",
+				"PE.CON_ID     = S.CON_ID",
+				"GROUP BY PROGRAM_ID, CON_ID",
+			},
+		},
+		{
+			name:       "query sample",
+			build:      func(s *oracleScraper) string { return s.buildQuerySampleSQL() },
+			cdbViews:   []string{"CDB_PROCEDURES", "CDB_OBJECTS"},
+			nonCDBView: "DBA_PROCEDURES",
+			conIDJoins: []string{
+				"P.CON_ID    = S.CON_ID",
+				"O.CON_ID    = S.CON_ID",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cdbSQL := test.build(&oracleScraper{useCDBDictionaryViews: true})
+			for _, view := range test.cdbViews {
+				assert.Contains(t, cdbSQL, view, "CDB-root variant must read cross-container dictionary views")
+			}
+			for _, join := range test.conIDJoins {
+				assert.Contains(t, cdbSQL, join,
+					"CDB-root variant must qualify the join/grouping by CON_ID")
+			}
+
+			nonCDBSQL := test.build(&oracleScraper{useCDBDictionaryViews: false})
+			assert.Contains(t, nonCDBSQL, test.nonCDBView,
+				"non-root variant should keep the container-local dictionary view")
+			for _, view := range test.cdbViews {
+				assert.NotContains(t, nonCDBSQL, view)
+			}
+
+			// The two variants are interchangeable only if they take the same binds.
+			assert.Equal(t, strings.Count(nonCDBSQL, ":1"), strings.Count(cdbSQL, ":1"),
+				"variants must keep the same bind parameter contract")
+			assert.Equal(t, strings.Count(nonCDBSQL, ":2"), strings.Count(cdbSQL, ":2"),
+				"variants must keep the same bind parameter contract")
+		})
+	}
+}
+
+// Without SELECT on CDB_PROCEDURES/CDB_OBJECTS a CDB root must degrade to the DBA_* variants rather than
+// failing every scrape with ORA-00942, so upgrades on granular grants keep working.
+func TestCDBDictionaryGrantsFallback(t *testing.T) {
+	tests := []struct {
+		name      string
+		probeErr  error
+		wantCDB   bool
+		wantWarns int
+	}{
+		{name: "grants present", probeErr: nil, wantCDB: true},
+		{name: "grants missing falls back", probeErr: errors.New("ORA-00942: table or view does not exist"), wantCDB: false, wantWarns: 1},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			core, observedLogs := observer.New(zapcore.WarnLevel)
+			scrpr := oracleScraper{logger: zap.New(core)}
+
+			got := scrpr.hasCDBDictionaryGrants(t.Context(), &fakeDbClient{
+				Responses: [][]metricRow{nil},
+				Err:       test.probeErr,
+			})
+
+			assert.Equal(t, test.wantCDB, got)
+			assert.Equal(t, test.wantWarns,
+				observedLogs.FilterMessageSnippet("falling back to DBA_* dictionary views").Len(),
+				"a missing grant must warn and point at the README")
+
+			// The fallback must actually change which views the event queries read.
+			scrpr.useCDBDictionaryViews = got
+			if test.wantCDB {
+				assert.Contains(t, scrpr.buildQuerySampleSQL(), "CDB_OBJECTS")
+			} else {
+				assert.Contains(t, scrpr.buildQuerySampleSQL(), "DBA_OBJECTS")
+			}
+		})
+	}
+}
+
 func TestCalculateLookbackSeconds(t *testing.T) {
 	collectionInterval := 20 * time.Second
 	vsqlRefreshLagSec := 10 * time.Second
