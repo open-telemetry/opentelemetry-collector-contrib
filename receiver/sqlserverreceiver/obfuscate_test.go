@@ -5,6 +5,7 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"encoding/xml"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -90,7 +91,7 @@ func TestObfuscateQueryPlan(t *testing.T) {
 	decoder := xml.NewDecoder(strings.NewReader(result))
 	for {
 		_, err := decoder.Token()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		require.NoError(t, err)
