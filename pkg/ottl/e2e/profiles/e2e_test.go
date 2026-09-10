@@ -260,11 +260,15 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], nil)`,
-			want:      func(_ *testing.T, _ *ottlprofile.TransformContext) {},
+			want: func(t *testing.T, tCtx *ottlprofile.TransformContext) {
+				putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), "test", pcommon.NewValueEmpty())
+			},
 		},
 		{
 			statement: `set(attributes["test"], attributes["unknown"])`,
-			want:      func(_ *testing.T, _ *ottlprofile.TransformContext) {},
+			want: func(t *testing.T, tCtx *ottlprofile.TransformContext) {
+				putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), "test", pcommon.NewValueEmpty())
+			},
 		},
 		{
 			statement: `set(attributes["foo"]["test"], "pass")`,
@@ -1359,7 +1363,9 @@ func Test_e2e_ottl_features(t *testing.T) {
 		{
 			name:      "complex indexing not found",
 			statement: `set(attributes["test"], attributes["metadata"]["uid"])`,
-			want:      func(_ *testing.T, _ *ottlprofile.TransformContext) {},
+			want: func(t *testing.T, tCtx *ottlprofile.TransformContext) {
+				putAttribute(t, tCtx.GetProfilesDictionary(), tCtx.GetProfile(), "test", pcommon.NewValueEmpty())
+			},
 		},
 		{
 			name:      "map value as input to function",

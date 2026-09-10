@@ -81,7 +81,7 @@ There is a lot more OTTL can do, like nested functions, arithmetic, indexing, an
 
 ### `ottl.set.allowNil`
 
-The `ottl.set.allowNil` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) changes the behavior of the `set` function when a `nil` value is evaluated. This gate is currently in `alpha`. 
+The `ottl.set.allowNil` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) changes the behavior of the `set` function when a `nil` value is evaluated. This gate is currently in `beta`. 
 
 Prior to this gate, passing `nil` to the `set` function (e.g., `set(attributes["key"], nil)`) was a no-op that preserved the existing target value. When this gate is enabled, `set` passes the `nil` value directly to the target's setter. How the `nil` value is handled depends entirely on the specific target's implementation; for example, it can be used to clear values in attribute maps, result in an error for strictly typed fields, or simply be ignored. Users relying on the old guaranteed no-op behavior should migrate their configurations to use conditional checks (e.g., `set(...) where field != nil`).
 
