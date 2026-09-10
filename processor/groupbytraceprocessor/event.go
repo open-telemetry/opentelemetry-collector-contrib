@@ -33,7 +33,7 @@ const (
 	// traceID to be removed
 	traceRemoved
 
-	// Subtrace events — only used when EmitStrategy == EmitStrategyService:
+	// Subtrace events. Only used when EmitStrategy == EmitStrategyService:
 
 	// subtraceID whose wait timer has fired
 	subtraceExpired
