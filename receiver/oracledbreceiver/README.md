@@ -55,6 +55,52 @@ receivers:
     username: otel
 ```
 
+### Kerberos Authentication
+
+By default the receiver authenticates with a username and password. To authenticate using
+Kerberos instead, set `auth_type` to `kerberos` and configure the `kerberos` block. When Kerberos
+is used with the [Secondary Configuration Option](#secondary-configuration-option), `username` and
+`password` are not required (the database user is derived from the Kerberos principal); `endpoint`
+and `service` are still required. Kerberos support is implemented in pure Go and does not require any
+external Oracle client libraries.
+
+- `auth_type` (default = `password`): Authentication method. One of `password` or `kerberos`.
+- `kerberos`: Kerberos configuration block. Required when `auth_type` is `kerberos`.
+  - `credential_type` (required): How the Kerberos client obtains credentials. One of:
+    - `keytab`: read the principal's key from a keytab file (`keytab_file` required). Best for
+      unattended collectors.
+    - `ccache`: reuse an existing ticket from a credential cache (`credential_cache` required).
+      The cache is re-read from disk when a cached ticket can no longer be used, so an external
+      process (for example `kinit` or SSSD) that refreshes the cache keeps the receiver working.
+    - `password`: derive the principal's key from a password (`password` required).
+  - `realm` (required): Kerberos realm of the principal (e.g. `EXAMPLE.COM`).
+  - `principal` (required): Client principal name, without the realm (e.g. `otel`).
+  - `config_file` (required): Path to the `krb5.conf` file.
+  - `keytab_file`: Path to the keytab file. Required when `credential_type` is `keytab`.
+  - `credential_cache`: Path to the credential cache. Required when `credential_type` is `ccache`.
+  - `password`: The principal's password. Required when `credential_type` is `password`.
+  - `disable_fast_negotiation` (default = `false`): Disable PA-FX-FAST pre-authentication. Set to
+    `true` when the KDC does not support FAST.
+
+The database user must be configured for external Kerberos authentication (for example,
+`CREATE USER "OTEL@EXAMPLE.COM" IDENTIFIED EXTERNALLY AS 'otel@EXAMPLE.COM';`) and the Oracle server
+must have Kerberos configured in its `sqlnet.ora`.
+
+Example (keytab):
+```yaml
+receivers:
+  oracledb:
+    endpoint: oracledb.example.com:1521
+    service: FREEPDB1
+    auth_type: kerberos
+    kerberos:
+      credential_type: keytab
+      realm: EXAMPLE.COM
+      principal: otel
+      config_file: /etc/krb5.conf
+      keytab_file: /etc/otel/otel.keytab
+```
+
 ### Optional Configuration Options
 
 - `collection_interval` (default = `10s`): The interval at which metrics should be emitted by this receiver.

@@ -100,6 +100,60 @@ func TestGetDataSource(t *testing.T) {
 			},
 			expected: nonDefaultDataSource,
 		},
+		{
+			name: "Kerberos auth renders data source without credentials and with AUTH TYPE",
+			config: &Config{
+				Endpoint: endpoint,
+				Service:  service,
+				AuthType: AuthTypeKerberos,
+				Kerberos: &KerberosConfig{
+					CredentialType: KerberosCredentialKeytab,
+					Realm:          "EXAMPLE.COM",
+					Principal:      "otel",
+					ConfigFile:     "/etc/krb5.conf",
+					KeytabFile:     "/etc/otel.keytab",
+				},
+			},
+			expected: "oracle://:@example1.com:1521/mydb1?AUTH TYPE=KERBEROS",
+		},
+		{
+			name: "Kerberos data source without query gets AUTH TYPE injected",
+			config: &Config{
+				DataSource: "oracle://host:1521/mydb",
+				AuthType:   AuthTypeKerberos,
+				Kerberos: &KerberosConfig{
+					CredentialType: KerberosCredentialKeytab,
+					Realm:          "EXAMPLE.COM",
+					Principal:      "otel",
+					ConfigFile:     "/etc/krb5.conf",
+					KeytabFile:     "/etc/otel.keytab",
+				},
+			},
+			expected: "oracle://host:1521/mydb?AUTH+TYPE=KERBEROS",
+		},
+		{
+			name: "Kerberos data source with additional options gets AUTH TYPE injected",
+			config: &Config{
+				DataSource: "oracle://host:1521/mydb?SSL=true",
+				AuthType:   AuthTypeKerberos,
+				Kerberos: &KerberosConfig{
+					CredentialType: KerberosCredentialKeytab,
+					Realm:          "EXAMPLE.COM",
+					Principal:      "otel",
+					ConfigFile:     "/etc/krb5.conf",
+					KeytabFile:     "/etc/otel.keytab",
+				},
+			},
+			expected: "oracle://host:1521/mydb?AUTH+TYPE=KERBEROS&SSL=true",
+		},
+		{
+			name: "Non-Kerberos data source is returned unchanged",
+			config: &Config{
+				DataSource: "oracle://host:1521/mydb?SSL=true",
+				AuthType:   AuthTypePassword,
+			},
+			expected: "oracle://host:1521/mydb?SSL=true",
+		},
 	}
 
 	for _, tc := range testCases {

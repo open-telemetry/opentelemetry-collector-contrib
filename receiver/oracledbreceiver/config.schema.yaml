@@ -1,4 +1,38 @@
 $defs:
+  auth_type:
+    description: AuthType selects how the receiver authenticates to the Oracle database.
+    type: string
+  kerberos_config:
+    description: KerberosConfig configures Kerberos (GSSAPI) authentication to the Oracle database. It applies only when the top-level `auth_type` is set to `kerberos`. The receiver acquires a Kerberos ticket-granting ticket from the configured credential source and presents an AP-REQ to the database over Oracle Net's advanced negotiation layer; no username/password is sent.
+    type: object
+    properties:
+      config_file:
+        description: ConfigFile is the path to the krb5.conf configuration file.
+        type: string
+      credential_cache:
+        description: CredentialCache is the path to the credential cache. Used when credential_type is `ccache`.
+        type: string
+      credential_type:
+        description: 'CredentialType selects how the Kerberos client obtains its credentials: `keytab`, `ccache`, or `password`.'
+        $ref: kerberos_credential_type
+      disable_fast_negotiation:
+        description: DisableFASTNegotiation disables PA-FX-FAST pre-authentication. Set to true when the KDC does not support FAST.
+        type: boolean
+      keytab_file:
+        description: KeytabFile is the path to the keytab file. Used when credential_type is `keytab`.
+        type: string
+      password:
+        description: Password is the principal's password. Used when credential_type is `password`.
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      principal:
+        description: Principal is the client principal name, without the realm (e.g. otel).
+        type: string
+      realm:
+        description: Realm is the Kerberos realm of the principal (e.g. EXAMPLE.COM).
+        type: string
+  kerberos_credential_type:
+    description: KerberosCredentialType selects how the Kerberos client obtains its credentials.
+    type: string
   query_sample:
     type: object
     properties:
@@ -33,10 +67,15 @@ $defs:
         x-customType: uint
 type: object
 properties:
+  auth_type:
+    $ref: auth_type
   datasource:
     type: string
   endpoint:
     type: string
+  kerberos:
+    x-pointer: true
+    $ref: kerberos_config
   password:
     type: string
   query_sample_collection:
