@@ -167,7 +167,7 @@ jobs:
 
   kubernetes-test:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     needs: [kubernetes-test-matrix]
     steps:
       - name: Print result

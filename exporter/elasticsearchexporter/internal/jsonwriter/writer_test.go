@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package otelserializer
+package jsonwriter
 
 import (
 	"bytes"
@@ -57,8 +57,8 @@ func TestFloat64Val(t *testing.T) {
 			buf.Grow(64)
 			buf.WriteString(`{"v":`)
 
-			w := newJSONWriter(&buf)
-			w.float64Val(tt.input)
+			w := New(&buf)
+			w.Float64Val(tt.input)
 			buf.WriteByte('}')
 
 			raw := buf.String()
@@ -70,6 +70,13 @@ func TestFloat64Val(t *testing.T) {
 			assert.Equal(t, tt.expected, got)
 		})
 	}
+}
+
+func TestJSONStringHTMLEscape(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(&buf)
+	w.JSONString("a&b<c>")
+	assert.Equal(t, `"a\u0026b\u003cc\u003e"`, buf.String())
 }
 
 func BenchmarkFloat64Val(b *testing.B) {
@@ -87,14 +94,14 @@ func BenchmarkFloat64Val(b *testing.B) {
 		b.Run(bb.name, func(b *testing.B) {
 			var buf bytes.Buffer
 			buf.Grow(64)
-			w := newJSONWriter(&buf)
+			w := New(&buf)
 
 			b.ReportAllocs()
 			b.ResetTimer()
 
 			for b.Loop() {
 				buf.Reset()
-				w.float64Val(bb.input)
+				w.Float64Val(bb.input)
 			}
 		})
 	}
