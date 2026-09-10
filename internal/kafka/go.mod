@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.66.1-0.20260903163450-cc4b33fc673f
 	go.opentelemetry.io/collector/extension v1.66.1-0.20260903163450-cc4b33fc673f
 	go.uber.org/goleak v1.3.0
-	golang.org/x/oauth2 v0.36.0
+	golang.org/x/oauth2 v0.37.0
 )
 
 require (

@@ -65,8 +65,8 @@ type weaverOptions struct {
 }
 
 // validateWeaverVersion rejects semver versions older than minWeaverVersion.
-// Tags that don't parse as semver (e.g. "latest", digests) are passed
-// through so Docker can resolve them.
+// Tags that don't parse as semver (e.g. "latest") are passed through so
+// Docker can resolve them.
 func validateWeaverVersion(version string) error {
 	if version == "" || version == "latest" {
 		return nil

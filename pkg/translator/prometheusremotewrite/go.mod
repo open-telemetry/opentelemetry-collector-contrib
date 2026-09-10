@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.160.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.160.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.160.0
-	github.com/prometheus/common v0.70.1
+	github.com/prometheus/common v0.71.0
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/prometheus/prometheus v0.314.0
 	github.com/stretchr/testify v1.12.1
