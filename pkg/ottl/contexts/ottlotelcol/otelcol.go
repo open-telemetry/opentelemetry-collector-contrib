@@ -43,8 +43,8 @@ func (tCtx *TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) er
 // TransformContextOption represents an option for configuring a TransformContext.
 type TransformContextOption func(*TransformContext)
 
-// NewTransformContextPtr creates a new TransformContext with the provided parameters.
-func NewTransformContextPtr(options ...TransformContextOption) *TransformContext {
+// NewTransformContext creates a new TransformContext with the provided parameters.
+func NewTransformContext(options ...TransformContextOption) *TransformContext {
 	tc := tcPool.Get().(*TransformContext)
 	for _, opt := range options {
 		opt(tc)
