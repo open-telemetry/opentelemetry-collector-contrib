@@ -39,7 +39,7 @@ type TransformContext struct {
 	resource      pcommon.Resource
 	cache         pcommon.Map
 	externalCache *pcommon.Map
-	schemaURLItem ctxcommon.SchemaURLItem
+	schemaURLItem ottl.SchemaURLItem
 }
 
 // MarshalLogObject serializes the TransformContext into a zapcore.ObjectEncoder for logging.
@@ -65,7 +65,7 @@ func WithCache(cache *pcommon.Map) TransformContextOption {
 
 // NewTransformContext returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
-func NewTransformContext(resource pcommon.Resource, schemaURLItem ctxcommon.SchemaURLItem, options ...TransformContextOption) *TransformContext {
+func NewTransformContext(resource pcommon.Resource, schemaURLItem ottl.SchemaURLItem, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
 	tCtx.resource = resource
 	tCtx.schemaURLItem = schemaURLItem
@@ -91,7 +91,7 @@ func (tCtx *TransformContext) GetResource() pcommon.Resource {
 }
 
 // GetResourceSchemaURLItem returns the schema URL item for the resource from the TransformContext.
-func (tCtx *TransformContext) GetResourceSchemaURLItem() ctxcommon.SchemaURLItem {
+func (tCtx *TransformContext) GetResourceSchemaURLItem() ottl.SchemaURLItem {
 	return tCtx.schemaURLItem
 }
 
