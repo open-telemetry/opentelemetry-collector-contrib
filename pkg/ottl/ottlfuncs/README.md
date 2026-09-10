@@ -854,9 +854,7 @@ Examples:
 
 - `Concat(["HTTP method is: ", span.attributes["http.method"]], "")`
 
-
 - `Concat(Split(span.attributes["request.id"], "-"), "")`
-
 
 - `Concat(log.attributes["values"], ",")`
 
