@@ -4,8 +4,10 @@
 package signingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/signingprocessor"
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type fileKeyMaterialProvider struct {
@@ -19,9 +21,12 @@ func newFileKeyMaterialProvider(cfg *FileKeyConfig) (KeyMaterialProvider, error)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read HMAC key file %q: %w", cfg.HMACKeyFile, err)
 		}
-		key := decodeIfBase64(normalizeLineEndings(data))
+		key, err := base64.StdEncoding.DecodeString(strings.TrimSpace(string(data)))
+		if err != nil {
+			return nil, fmt.Errorf("HMAC key file %q: content must be standard base64-encoded: %w", cfg.HMACKeyFile, err)
+		}
 		if len(key) == 0 {
-			return nil, fmt.Errorf("HMAC key file %q is empty", cfg.HMACKeyFile)
+			return nil, fmt.Errorf("HMAC key file %q is empty after base64 decoding", cfg.HMACKeyFile)
 		}
 		return &fileKeyMaterialProvider{baseKeyMaterialProvider{hmacKey: key}}, nil
 	}

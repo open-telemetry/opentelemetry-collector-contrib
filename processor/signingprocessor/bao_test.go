@@ -11,12 +11,18 @@ import (
 )
 
 // baoResponse builds the JSON body the openbao client expects for a KV v2 read.
-// The KV v2 wire format nests secret fields under data.data.
+// The KV v2 wire format nests secret fields under data.data; metadata follows
+// the real server shape (deletion_time empty string, destroyed false).
 func baoResponse(data map[string]any) []byte {
 	b, _ := json.Marshal(map[string]any{
 		"data": map[string]any{
-			"data":     data,
-			"metadata": map[string]any{"version": 1},
+			"data": data,
+			"metadata": map[string]any{
+				"version":       1,
+				"created_time":  "2024-01-01T00:00:00Z",
+				"deletion_time": "",
+				"destroyed":     false,
+			},
 		},
 	})
 	return b

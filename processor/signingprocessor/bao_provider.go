@@ -5,6 +5,7 @@ package signingprocessor // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 
@@ -63,9 +64,12 @@ func newBaoKeyMaterialProviderWithAddress(ctx context.Context, cfg *BaoKeyConfig
 		if hmacErr != nil {
 			return nil, fmt.Errorf("HMAC key field %q in secret %q: %w", cfg.HMACKeyField, cfg.SecretPath, hmacErr)
 		}
-		key := decodeIfBase64(normalizeLineEndings([]byte(raw)))
+		key, hmacErr := base64.StdEncoding.DecodeString(raw)
+		if hmacErr != nil {
+			return nil, fmt.Errorf("HMAC key field %q in secret %q: content must be standard base64-encoded: %w", cfg.HMACKeyField, cfg.SecretPath, hmacErr)
+		}
 		if len(key) == 0 {
-			return nil, fmt.Errorf("HMAC key field %q in secret %q is empty after decoding", cfg.HMACKeyField, cfg.SecretPath)
+			return nil, fmt.Errorf("HMAC key field %q in secret %q is empty after base64 decoding", cfg.HMACKeyField, cfg.SecretPath)
 		}
 		return &baoKeyMaterialProvider{baseKeyMaterialProvider{hmacKey: key}}, nil
 	}

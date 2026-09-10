@@ -4,6 +4,7 @@
 package signingprocessor
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -161,13 +162,14 @@ func TestConfigGetHashHMAC(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestHMACProviderFromEnv(t *testing.T) {
-	t.Setenv("TEST_HMAC_KEY", "super-secret-key")
+	secret := []byte("super-secret-key")
+	t.Setenv("TEST_HMAC_KEY", base64.StdEncoding.EncodeToString(secret))
 	prov, err := newEnvKeyMaterialProvider(&EnvKeyConfig{HMACKeyEnvVar: "TEST_HMAC_KEY"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if string(prov.GetHMACKey()) != "super-secret-key" {
-		t.Errorf("unexpected HMAC key: %q", string(prov.GetHMACKey()))
+	if !bytes.Equal(prov.GetHMACKey(), secret) {
+		t.Errorf("unexpected HMAC key: %q", prov.GetHMACKey())
 	}
 	if prov.GetPrivateKey() != nil {
 		t.Error("GetPrivateKey() should return nil for HMAC mode")
@@ -178,13 +180,14 @@ func TestHMACProviderFromEnv(t *testing.T) {
 }
 
 func TestHMACProviderFromFile(t *testing.T) {
-	f := writeTempFile(t, []byte("file-secret-key"))
+	secret := []byte("file-secret-key")
+	f := writeTempFile(t, []byte(base64.StdEncoding.EncodeToString(secret)))
 	prov, err := newFileKeyMaterialProvider(&FileKeyConfig{HMACKeyFile: f})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if string(prov.GetHMACKey()) != "file-secret-key" {
-		t.Errorf("unexpected HMAC key from file: %q", string(prov.GetHMACKey()))
+	if !bytes.Equal(prov.GetHMACKey(), secret) {
+		t.Errorf("unexpected HMAC key from file: %q", prov.GetHMACKey())
 	}
 }
 
@@ -208,8 +211,8 @@ func TestHMACProviderMissingFile(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestSignVerifyHMACSHA256(t *testing.T) {
-	secret := "test-hmac-secret-32-bytes-padded!"
-	t.Setenv("HMAC_TEST_KEY", secret)
+	secret := []byte("test-hmac-secret-32-bytes-padded!")
+	t.Setenv("HMAC_TEST_KEY", base64.StdEncoding.EncodeToString(secret))
 	prov, err := newEnvKeyMaterialProvider(&EnvKeyConfig{HMACKeyEnvVar: "HMAC_TEST_KEY"})
 	if err != nil {
 		t.Fatalf("create provider: %v", err)
@@ -246,7 +249,7 @@ func TestSignVerifyHMACSHA256(t *testing.T) {
 		t.Fatalf("serialize: %v", err)
 	}
 
-	mac := hmac.New(sha256.New, []byte(secret))
+	mac := hmac.New(sha256.New, secret)
 	mac.Write(payload)
 	if !hmac.Equal(sigBytes, mac.Sum(nil)) {
 		t.Error("HMAC verification failed")
@@ -259,7 +262,7 @@ func TestSignVerifyHMACSHA256(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestConsumeLogsHMACNoCertAttribute(t *testing.T) {
-	t.Setenv("HMAC_NO_CERT_KEY", "secret")
+	t.Setenv("HMAC_NO_CERT_KEY", base64.StdEncoding.EncodeToString([]byte("secret")))
 	prov, _ := newEnvKeyMaterialProvider(&EnvKeyConfig{HMACKeyEnvVar: "HMAC_NO_CERT_KEY"})
 	sink := &logSink{}
 
@@ -298,7 +301,8 @@ func TestConsumeLogsHMACNoCertAttribute(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestHMACTamperedPayloadDetected(t *testing.T) {
-	t.Setenv("HMAC_TAMPER_KEY", "tamper-test-secret")
+	secret := []byte("tamper-test-secret")
+	t.Setenv("HMAC_TAMPER_KEY", base64.StdEncoding.EncodeToString(secret))
 	prov, _ := newEnvKeyMaterialProvider(&EnvKeyConfig{HMACKeyEnvVar: "HMAC_TAMPER_KEY"})
 
 	p := &signingProcessor{
@@ -322,7 +326,7 @@ func TestHMACTamperedPayloadDetected(t *testing.T) {
 	lr.SetEventName("tampered.event")
 	tamperedPayload, _ := p.serializeLogRecord(lr)
 
-	mac := hmac.New(sha256.New, []byte("tamper-test-secret"))
+	mac := hmac.New(sha256.New, secret)
 	mac.Write(tamperedPayload)
 
 	if hmac.Equal(storedMAC, mac.Sum(nil)) {
