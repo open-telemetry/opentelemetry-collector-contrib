@@ -94,11 +94,14 @@ type FileKeyConfig struct {
 // BaoKeyConfig configures the OpenBao (Vault-compatible) key material source.
 // Address and Token are optional: if omitted, the client reads BAO_ADDR and
 // BAO_TOKEN (or any other supported BAO_* environment variables) automatically.
+// MountPath is the KV v2 engine mount point (default: "secret").
+// SecretPath is the path to the secret within that mount (e.g. "signing").
 // For asymmetric algorithms set CertField and KeyField.
 // For HMAC-SHA256 set HMACKeyField instead.
 type BaoKeyConfig struct {
 	Address    string `mapstructure:"address"`
 	Token      string `mapstructure:"token"`
+	MountPath  string `mapstructure:"mount_path"`
 	SecretPath string `mapstructure:"secret_path"`
 	// Asymmetric key fields
 	CertField string `mapstructure:"cert_field"`
