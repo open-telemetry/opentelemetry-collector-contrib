@@ -11,12 +11,14 @@ import (
 	openbao "github.com/openbao/openbao/api/v2"
 )
 
+const defaultBaoMountPath = "secret"
+
 type baoKeyMaterialProvider struct {
 	baseKeyMaterialProvider
 }
 
 // newBaoKeyMaterialProvider reads key material from an OpenBao (or Vault-compatible)
-// KV secret. For asymmetric algorithms the secret must contain the fields named by
+// KV v2 secret. For asymmetric algorithms the secret must contain the fields named by
 // cfg.CertField and cfg.KeyField (PEM-encoded strings). For HMAC-SHA256 it must
 // contain the field named by cfg.HMACKeyField (raw or base64-encoded bytes).
 func newBaoKeyMaterialProvider(ctx context.Context, cfg *BaoKeyConfig) (KeyMaterialProvider, error) {
@@ -42,17 +44,22 @@ func newBaoKeyMaterialProviderWithAddress(ctx context.Context, cfg *BaoKeyConfig
 		client.SetToken(cfg.Token)
 	}
 
-	secret, err := client.Logical().ReadWithContext(ctx, cfg.SecretPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read secret at %q: %w", cfg.SecretPath, err)
+	mountPath := cfg.MountPath
+	if mountPath == "" {
+		mountPath = defaultBaoMountPath
 	}
-	if secret == nil || secret.Data == nil {
-		return nil, fmt.Errorf("secret at %q is empty or does not exist", cfg.SecretPath)
+
+	kvSecret, err := client.KVv2(mountPath).Get(ctx, cfg.SecretPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read KV v2 secret at %q (mount: %q): %w", cfg.SecretPath, mountPath, err)
+	}
+	if kvSecret == nil || kvSecret.Data == nil {
+		return nil, fmt.Errorf("KV v2 secret at %q (mount: %q) is empty or does not exist", cfg.SecretPath, mountPath)
 	}
 
 	// HMAC mode: load only the symmetric key field
 	if cfg.HMACKeyField != "" {
-		raw, hmacErr := secretField(secret.Data, cfg.HMACKeyField)
+		raw, hmacErr := secretField(kvSecret.Data, cfg.HMACKeyField)
 		if hmacErr != nil {
 			return nil, fmt.Errorf("HMAC key field %q in secret %q: %w", cfg.HMACKeyField, cfg.SecretPath, hmacErr)
 		}
@@ -64,11 +71,11 @@ func newBaoKeyMaterialProviderWithAddress(ctx context.Context, cfg *BaoKeyConfig
 	}
 
 	// Asymmetric mode: load cert + private key fields
-	certPEM, err := secretField(secret.Data, cfg.CertField)
+	certPEM, err := secretField(kvSecret.Data, cfg.CertField)
 	if err != nil {
 		return nil, fmt.Errorf("certificate field %q in secret %q: %w", cfg.CertField, cfg.SecretPath, err)
 	}
-	keyPEM, err := secretField(secret.Data, cfg.KeyField)
+	keyPEM, err := secretField(kvSecret.Data, cfg.KeyField)
 	if err != nil {
 		return nil, fmt.Errorf("key field %q in secret %q: %w", cfg.KeyField, cfg.SecretPath, err)
 	}
