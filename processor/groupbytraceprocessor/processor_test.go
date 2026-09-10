@@ -656,10 +656,6 @@ func TestSubtrace_IsRemoteCleared_TwoServices(t *testing.T) {
 
 	tdA := buildServiceTrace(traceID, "svc-a", rootA, childA)
 
-	// Build svc-b where rootB's IS_REMOTE flag is explicitly cleared (HAS_IS_REMOTE=1,
-	// IS_REMOTE=0). isLocalRoot short-circuits on this flag combination and returns
-	// false, so rootB is not treated as a service-entry span. svc-b spans are therefore
-	// absorbed into svc-a's subtrace, and the whole trace is emitted as a single batch.
 	tdB := buildRemoteChildTrace(traceID, "svc-b", rootA, rootB, childB)
 	tdB.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetFlags(spanFlagsContextHasIsRemoteMask)
 
@@ -690,11 +686,6 @@ func TestSubtrace_IsRemoteCleared_TwoServices(t *testing.T) {
 	}
 }
 
-// TestSubtrace_ParentArrivesLate covers the common case of a child span being
-// exported before its parent. The child is provisionally classified as a local
-// root and gets its own timer; once the parent arrives it is no longer a root,
-// so the whole service must still be emitted as a single batch rather than
-// splitting, or worse, emitting the child in both batches.
 func TestSubtrace_ParentArrivesLate(t *testing.T) {
 	traceID := makeTraceID(2)
 	rootID := makeSpanID(1)
@@ -809,9 +800,6 @@ func TestSubtrace_ShutdownDrain_OrphanSpans(t *testing.T) {
 	assert.Equal(t, 1, sink.SpanCount())
 }
 
-// A subtrace pushed out of the ring buffer is released early rather than
-// dropped: eviction is there to bound how much the processor holds, which
-// passing the spans on does just as well as discarding them.
 func TestSubtrace_EvictedSubtracesAreReleasedNotDropped(t *testing.T) {
 	const (
 		capacity = 3
@@ -895,7 +883,6 @@ func TestSubtrace_ShutdownFlushesBufferedSpans(t *testing.T) {
 	// Shutdown before the wait_duration expires.
 	require.NoError(t, p.Shutdown(t.Context()))
 
-	// The shutdown drain should have emitted both spans.
 	assert.Equal(t, 2, sink.SpanCount())
 }
 
@@ -1278,8 +1265,9 @@ func TestSubtrace_ParentlessSiblingsGroupPerService(t *testing.T) {
 	}
 }
 
-// The same service reporting under two different resources, e.g. two pods, is
-// one service and so one subtrace, emitted as one batch holding both resources.
+// The service semconv attributes are used to determine service identity;
+// other attributes don't influence which service a set of spans is
+// associated with.
 func TestSubtrace_OneServiceAcrossResources(t *testing.T) {
 	traceID := makeTraceID(62)
 	rootID := makeSpanID(1)
@@ -1446,9 +1434,9 @@ func TestSubtrace_LongRunningTraceGroupsEachWave(t *testing.T) {
 
 	// Each wave lands after the previous release, so its spans are parentless:
 	// the root they hang off has already left the buffer.
-	for w := 0; w < waves; w++ {
+	for w := range waves {
 		specs := make([]spanSpec, 0, perWave)
-		for i := 0; i < perWave; i++ {
+		for i := range perWave {
 			specs = append(specs, spanSpec{id: spanIDAt(100 + w*perWave + i), parent: rootID})
 		}
 		require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-a", specs...)))
@@ -1504,12 +1492,10 @@ func TestSubtrace_MultipleWorkers(t *testing.T) {
 	// Every trace must be complete, and no span may cross a trace boundary.
 	perTrace := map[pcommon.TraceID]int{}
 	for _, b := range sink.AllTraces() {
-		for i := 0; i < b.ResourceSpans().Len(); i++ {
-			rs := b.ResourceSpans().At(i)
-			for j := 0; j < rs.ScopeSpans().Len(); j++ {
-				ss := rs.ScopeSpans().At(j)
-				for k := 0; k < ss.Spans().Len(); k++ {
-					perTrace[ss.Spans().At(k).TraceID()]++
+		for _, rs := range b.ResourceSpans().All() {
+			for _, ss := range rs.ScopeSpans().All() {
+				for _, s := range ss.Spans().All() {
+					perTrace[s.TraceID()]++
 				}
 			}
 		}
