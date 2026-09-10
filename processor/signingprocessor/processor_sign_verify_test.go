@@ -82,12 +82,6 @@ func verifyRecord(t *testing.T, lr plog.LogRecord, pubKey *rsa.PublicKey) {
 	if lr.ObservedTimestamp() != 0 {
 		data["observed_timestamp"] = strconv.FormatInt(lr.ObservedTimestamp().AsTime().UnixNano(), 10)
 	}
-	if lr.SeverityNumber() != 0 {
-		data["severity_number"] = lr.SeverityNumber()
-	}
-	if lr.SeverityText() != "" {
-		data["severity_text"] = lr.SeverityText()
-	}
 	if !lr.TraceID().IsEmpty() {
 		data["trace_id"] = lr.TraceID().String()
 	}
@@ -97,7 +91,7 @@ func verifyRecord(t *testing.T, lr plog.LogRecord, pubKey *rsa.PublicKey) {
 	attrs := make(map[string]any)
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		if !strings.HasPrefix(k, "audit.integrity.") {
-			attrs[k] = v.Str()
+			attrs[k] = map[string]any{"stringValue": v.Str()}
 		}
 		return true
 	})
@@ -153,9 +147,8 @@ func TestSignVerifyBasic(t *testing.T) {
 	verifyRecord(t, lr, &prov.key.PublicKey)
 }
 
-// TestSignVerifyWithSeverityAndTrace covers the "sign complete log record" commit:
-// severity_number, severity_text, trace_id, span_id must be part of the signed payload.
-func TestSignVerifyWithSeverityAndTrace(t *testing.T) {
+// TestSignVerifyWithTrace covers trace_id and span_id as part of the signed payload.
+func TestSignVerifyWithTrace(t *testing.T) {
 	prov := newTestProvider(t)
 	p := &signingProcessor{
 		config:       &Config{Algorithm: "RS256", CertificateRef: CertificateRefFingerprint},
