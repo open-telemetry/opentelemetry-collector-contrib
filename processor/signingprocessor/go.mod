@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/signi
 
 go 1.26.0
 
-toolchain go1.26.8
-
 require (
 	github.com/gowebpki/jcs v1.0.1
 	github.com/openbao/openbao/api/v2 v2.5.1
