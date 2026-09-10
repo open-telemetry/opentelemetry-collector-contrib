@@ -94,3 +94,11 @@ prometheus_remote_write/reserved_metadata_keys:
 prometheus_remote_write/negative_max_batch_size_bytes:
   endpoint: "localhost:8888"
   max_batch_size_bytes: -1
+
+prometheus_remote_write/resource_constant_labels:
+  endpoint: "localhost:8888"
+  resource_constant_labels:
+    included:
+      - "service*"
+    excluded:
+      - "service.attr1"

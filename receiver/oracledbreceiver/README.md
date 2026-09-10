@@ -193,6 +193,38 @@ Captures per-session wait event statistics from `V$SESSION_EVENT`:
 GRANT SELECT ON V_$SESSION_EVENT TO <username>;  -- Wait event names, counts, and durations
 ```
 
+### CDB-root connections and container-scoped dictionary views
+
+`DBA_*` dictionary views only expose the container you are connected to, while the `V$` views
+report rows for **every** container. Object ids are only unique within a container, so from a
+CDB root a dictionary join on object id alone is not just incomplete — it can attribute a PDB
+row to an unrelated root object that happens to share the id.
+
+When connected to a CDB root, the receiver therefore reads the `CDB_*` equivalents and matches
+on `CON_ID` as well as the object id:
+
+| Event | Affected lookup | Using `DBA_*` from a CDB root |
+|---|---|---|
+| `db.server.top_query` | `CDB_PROCEDURES`, plus `CON_ID` in the `PROCEDURE_EXECUTIONS` grouping | wrong or empty `procedure_name`; execution counts merged across PDBs |
+| `db.server.query_sample` | `CDB_PROCEDURES`, `CDB_OBJECTS` | wrong or empty `procedure_name` and blocked-object owner/name |
+
+This requires container-wide `SELECT` on both views:
+
+```sql
+GRANT SELECT ON CDB_PROCEDURES TO <username> CONTAINER=ALL;
+GRANT SELECT ON CDB_OBJECTS TO <username> CONTAINER=ALL;
+```
+
+Users holding `SELECT_CATALOG_ROLE` inherit these and need no explicit grant. Non-CDB and
+direct-PDB connections continue to use the `DBA_*` views and need nothing extra.
+
+> [!NOTE]
+> These grants are probed once at startup. If they are missing, the receiver logs a warning and
+> falls back to the `DBA_*` views, so events keep flowing with the container-attribution
+> limitation described above rather than failing with `ORA-00942`. This mirrors how per-PDB
+> metrics already degrade when their grants are absent — no upgrade requires new grants to keep
+> working.
+
 #### Combined grant statement
 
 For convenience, the complete set of grants required to enable all events:
@@ -206,6 +238,9 @@ GRANT SELECT ON V_$LOCK TO <username>;
 GRANT SELECT ON V_$CONTAINERS TO <username>;
 GRANT SELECT ON DBA_OBJECTS TO <username>;
 GRANT SELECT ON DBA_PROCEDURES TO <username>;
+-- Optional, CDB-root connections only (see "CDB-root connections" above):
+GRANT SELECT ON CDB_PROCEDURES TO <username> CONTAINER=ALL;
+GRANT SELECT ON CDB_OBJECTS TO <username> CONTAINER=ALL;
 ```
 
 ## Enabling metrics.

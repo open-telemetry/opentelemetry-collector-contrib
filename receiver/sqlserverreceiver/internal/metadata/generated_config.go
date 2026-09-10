@@ -3812,10 +3812,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		ServerAddress: ServerAddressResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		ServerPort: ServerPortResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		ServiceInstanceID: ServiceInstanceIDResourceAttributeConfig{
 			Enabled: true,
@@ -3882,11 +3882,6 @@ func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
-}
-
-// Deprecated: Use NewDefaultMetricsBuilderConfig.
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return NewDefaultMetricsBuilderConfig()
 }
 
 // LogsBuilderConfig is a configuration for sqlserver logs builder.
