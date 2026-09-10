@@ -191,6 +191,7 @@ require (
 	go.opentelemetry.io/collector/receiver v1.66.1-0.20260903163450-cc4b33fc673f // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.160.1-0.20260903163450-cc4b33fc673f // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.160.1-0.20260903163450-cc4b33fc673f // indirect
+	go.opentelemetry.io/contrib/detectors/azure/azurefunctions v0.18.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.70.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect

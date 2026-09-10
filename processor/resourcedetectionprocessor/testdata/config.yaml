@@ -26,6 +26,15 @@ resource_detection/azureappservice:
 resource_detection/azurecontainerapps:
   detectors: [env, azurecontainerapps]
 
+resource_detection/azurefunctions:
+  detectors: [env, azurefunctions]
+  timeout: 2s
+  override: false
+  azurefunctions:
+    resource_attributes:
+      faas.instance:
+        enabled: false
+
 resource_detection/gcp:
   detectors: [env, gcp]
   timeout: 2s
