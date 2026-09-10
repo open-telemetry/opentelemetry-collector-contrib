@@ -3,13 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datado
 go 1.26.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.209
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.82.3
-	github.com/DataDog/datadog-agent/pkg/proto v0.82.3
-	github.com/DataDog/datadog-agent/pkg/trace v0.82.3
-	github.com/DataDog/datadog-agent/pkg/trace/stats v0.82.3
-	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.82.3
-	github.com/DataDog/datadog-api-client-go/v2 v2.64.0
+	github.com/DataDog/agent-payload/v5 v5.0.210
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.83.0
+	github.com/DataDog/datadog-agent/pkg/proto v0.83.0
+	github.com/DataDog/datadog-agent/pkg/trace v0.83.0
+	github.com/DataDog/datadog-agent/pkg/trace/stats v0.83.0
+	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.83.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.65.0
 	github.com/DataDog/sketches-go v1.4.8
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/klauspost/compress v1.20.0
@@ -45,19 +45,19 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.82.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.83.0-devel.0.20260714134811-fee4bbf7ff73 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.83.0-devel.0.20260714134811-fee4bbf7ff73 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.82.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/template v0.82.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/log v0.82.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.82.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.82.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/quantile v0.82.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.82.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.82.3 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.83.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.83.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.83.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.83.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/template v0.83.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/log v0.83.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.83.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.83.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/quantile v0.83.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.83.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.83.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.9.1 // indirect
-	github.com/DataDog/go-sqllexer v0.2.3 // indirect
+	github.com/DataDog/go-sqllexer v0.2.4 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
 	github.com/DataDog/zstd v1.5.8-0.20260421145859-31a7e515a571 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
