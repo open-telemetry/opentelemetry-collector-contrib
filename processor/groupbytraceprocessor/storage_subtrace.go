@@ -117,7 +117,7 @@ func (s *subtraceMemoryStorage) deleteSubtrace(id subtraceID) ([][]*bufferedSpan
 	s.Lock()
 	defer s.Unlock()
 	// A cutoff no arrival can be after takes everything.
-	calls, _, err := s.takeLocked(id, time.Now().Add(time.Hour))
+	calls, _, err := s.takeLocked(id, time.Now().Add(time.Hour*1_000_000))
 	return calls, err
 }
 
