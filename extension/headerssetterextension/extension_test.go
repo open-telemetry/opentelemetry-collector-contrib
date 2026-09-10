@@ -107,7 +107,7 @@ var (
 					{
 						Key:         &headername,
 						Action:      INSERT,
-						FromContext: stringp("tenant"),
+						FromContext: new("tenant"),
 					},
 				},
 			},
@@ -124,7 +124,7 @@ var (
 					{
 						Key:    &headername,
 						Action: INSERT,
-						Value:  stringp("config value"),
+						Value:  new("config value"),
 					},
 				},
 			},
@@ -138,12 +138,12 @@ var (
 					{
 						Key:         &headername,
 						Action:      INSERT,
-						FromContext: stringp("tenant"),
+						FromContext: new("tenant"),
 					},
 					{
 						Key:         &anotherHeader,
 						Action:      INSERT,
-						FromContext: stringp("tenant"),
+						FromContext: new("tenant"),
 					},
 				},
 			},
@@ -161,7 +161,7 @@ var (
 					{
 						Key:         &headername,
 						Action:      INSERT,
-						FromContext: stringp(""),
+						FromContext: new(""),
 					},
 				},
 			},
@@ -175,7 +175,7 @@ var (
 					{
 						Key:    &headername,
 						Action: INSERT,
-						Value:  stringp(""),
+						Value:  new(""),
 					},
 				},
 			},
@@ -189,12 +189,12 @@ var (
 					{
 						Key:         &headername,
 						Action:      INSERT,
-						FromContext: stringp("tenant"),
+						FromContext: new("tenant"),
 					},
 					{
 						Key:         &anotherHeader,
 						Action:      INSERT,
-						FromContext: stringp("tenant_"),
+						FromContext: new("tenant_"),
 					},
 				},
 			},
@@ -212,7 +212,7 @@ var (
 					{
 						Key:         &headername,
 						Action:      INSERT,
-						FromContext: stringp("tenant_"),
+						FromContext: new("tenant_"),
 					},
 				},
 			},
@@ -229,8 +229,8 @@ var (
 					{
 						Key:          &headername,
 						Action:       INSERT,
-						FromContext:  stringp("tenant"),
-						DefaultValue: opaquep("default_tenant"),
+						FromContext:  new("tenant"),
+						DefaultValue: new(configopaque.String("default_tenant")),
 					},
 				},
 			},
@@ -247,8 +247,8 @@ var (
 					{
 						Key:          &headername,
 						Action:       INSERT,
-						FromContext:  stringp("tenant"),
-						DefaultValue: opaquep("default_tenant"),
+						FromContext:  new("tenant"),
+						DefaultValue: new(configopaque.String("default_tenant")),
 					},
 				},
 			},
@@ -261,14 +261,6 @@ var (
 		},
 	}
 )
-
-func stringp(str string) *string {
-	return &str
-}
-
-func opaquep(stro configopaque.String) *configopaque.String {
-	return &stro
-}
 
 func TestRoundTripper_FileSource(t *testing.T) {
 	dir := t.TempDir()
@@ -425,7 +417,7 @@ func TestFileSource_MultipleHeaders(t *testing.T) {
 	require.NoError(t, os.WriteFile(apiKeyFile, []byte("key123"), 0o600))
 	require.NoError(t, os.WriteFile(tokenFile, []byte("token456"), 0o600))
 
-	apiKeyHeader := "X-API-Key" //nolint:gosec // G101 - header name, not a credential
+	apiKeyHeader := "X-API-Key"
 	tokenHeader := "X-Token"
 	cfg := &Config{
 		HeadersConfig: []HeaderConfig{

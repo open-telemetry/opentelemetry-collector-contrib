@@ -38,7 +38,8 @@ func TestValidate(t *testing.T) {
 			expectedErr: errors.Join(
 				errMissingUsername,
 				errMissingPassword,
-				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`)),
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
+			),
 		},
 		{
 			desc: "missing password and invalid endpoint",

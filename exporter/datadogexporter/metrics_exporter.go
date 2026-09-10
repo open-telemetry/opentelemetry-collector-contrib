@@ -114,7 +114,8 @@ func newMetricsExporter(
 	apiClient := clientutil.CreateAPIClient(
 		params.BuildInfo,
 		cfg.Metrics.Endpoint,
-		cfg.ClientConfig)
+		cfg.ClientConfig,
+	)
 	go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 	exporter.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	if cfg.API.FailOnInvalidKey {

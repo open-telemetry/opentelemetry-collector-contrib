@@ -39,7 +39,8 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithTraces(createTracesReceiver, metadata.TracesStability),
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+	)
 }
 
 // CreateDefaultConfig creates the default configuration for Skywalking receiver.
@@ -48,8 +49,8 @@ func createDefaultConfig() component.Config {
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	httpServerConfig.WriteTimeout = 0
 	httpServerConfig.ReadHeaderTimeout = 0
-	httpServerConfig.IdleTimeout = 0
-	httpServerConfig.KeepAlivesEnabled = false
+	httpServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
+	httpServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	httpServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  defaultHTTPEndpoint,

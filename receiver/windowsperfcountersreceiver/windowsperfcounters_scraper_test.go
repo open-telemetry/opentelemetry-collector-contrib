@@ -353,6 +353,85 @@ func TestInitWatchers(t *testing.T) {
 	}
 }
 
+func TestInitWatchersWithIncludedAggregation(t *testing.T) {
+	requestedInstance := ""
+	s := &windowsPerfCountersScraper{
+		cfg: &Config{PerfCounters: []ObjectConfig{
+			{
+				Object:    "Processor",
+				Instances: []string{"*", defaultAggregationName},
+				Counters:  []CounterConfig{{Name: "% Processor Time"}},
+			},
+		}},
+		newWatcher: func(_, instance, _ string, _ ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
+			requestedInstance = instance
+			return &mockPerfCounter{path: `\Processor(*)\% Processor Time`}, nil
+		},
+	}
+
+	watchers, err := s.initWatchers()
+	require.NoError(t, err)
+	require.Len(t, watchers, 1)
+	assert.Equal(t, "*", requestedInstance)
+}
+
+func TestScraperIncludesAggregationInstance(t *testing.T) {
+	cfg := &Config{
+		MetricMetaData: map[string]MetricConfig{
+			"processor.time": {
+				Unit:  "%",
+				Gauge: GaugeMetric{},
+			},
+		},
+		PerfCounters: []ObjectConfig{
+			{
+				Object:    "Processor",
+				Instances: []string{"*", defaultAggregationName},
+				Counters: []CounterConfig{
+					{Name: "% Processor Time", MetricRep: MetricRep{Name: "processor.time"}},
+				},
+			},
+		},
+	}
+
+	scraper := newScraper(cfg, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, scraper.shutdown(t.Context()))
+	})
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		metrics, err := scraper.scrape(t.Context())
+		if !assert.NoError(c, err) {
+			return
+		}
+
+		foundAggregationInstance := false
+		resourceMetrics := metrics.ResourceMetrics()
+		for i := 0; i < resourceMetrics.Len(); i++ {
+			scopeMetrics := resourceMetrics.At(i).ScopeMetrics()
+			for j := 0; j < scopeMetrics.Len(); j++ {
+				metricSlice := scopeMetrics.At(j).Metrics()
+				for k := 0; k < metricSlice.Len(); k++ {
+					metric := metricSlice.At(k)
+					if metric.Name() != "processor.time" {
+						continue
+					}
+					dataPoints := metric.Gauge().DataPoints()
+					for l := 0; l < dataPoints.Len(); l++ {
+						instance, ok := dataPoints.At(l).Attributes().Get(instanceLabelName)
+						if ok && instance.Str() == defaultAggregationName {
+							foundAggregationInstance = true
+						}
+					}
+				}
+			}
+		}
+
+		assert.True(c, foundAggregationInstance)
+	}, 20*time.Second, time.Second)
+}
+
 func TestWatcherResetFailure(t *testing.T) {
 	const errMsg string = "failed to reset watcher"
 	mpc := mockPerfCounter{

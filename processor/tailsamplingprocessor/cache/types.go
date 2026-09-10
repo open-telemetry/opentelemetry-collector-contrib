@@ -8,6 +8,8 @@ import (
 )
 
 // Cache is a cache implementation for the tailsamplingprocessor's decision cache.
+// A cache instance injected into a processor configured with num_shards
+// greater than 1 is shared by all shards and must be safe for concurrent use.
 type Cache interface {
 	// Get returns the decision for the given id, and a boolean to indicate whether the key was found.
 	// Returning a zero value for DecisionMetadata is valid for caches that do not store metadata.

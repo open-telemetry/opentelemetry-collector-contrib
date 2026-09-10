@@ -325,6 +325,7 @@ func Test_IndexFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &IndexArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Value"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {

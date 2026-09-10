@@ -15,7 +15,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_newPathGetSetter(t *testing.T) {
@@ -134,7 +133,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				N: "metadata",
 				KeySlice: []ottl.Key[*TransformContext]{
 					&pathtest.Key[*TransformContext]{
-						S: ottltest.Strp("temp"),
+						S: new("temp"),
 					},
 				},
 			},
@@ -161,7 +160,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				N: "cache",
 				KeySlice: []ottl.Key[*TransformContext]{
 					&pathtest.Key[*TransformContext]{
-						S: ottltest.Strp("temp"),
+						S: new("temp"),
 					},
 				},
 			},
@@ -195,7 +194,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			metric := createTelemetry()
 
-			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			ctx := NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
 			defer ctx.Close()
 
 			got, err := accessor.Get(t.Context(), ctx)
@@ -222,7 +221,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	instrumentationScope := rm.ScopeMetrics().AppendEmpty().Scope()
 	instrumentationScope.SetName("instrumentation_scope")
 
-	ctx := NewTransformContextPtr(rm, rm.ScopeMetrics().At(0), pmetric.NewMetric())
+	ctx := NewTransformContext(rm, rm.ScopeMetrics().At(0), pmetric.NewMetric())
 	defer ctx.Close()
 
 	tests := []struct {
@@ -236,7 +235,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 				N: "attributes",
 				KeySlice: []ottl.Key[*TransformContext]{
 					&pathtest.Key[*TransformContext]{
-						S: ottltest.Strp("foo"),
+						S: new("foo"),
 					},
 				},
 			}},
@@ -246,7 +245,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			name: "resource with context",
 			path: &pathtest.Path[*TransformContext]{C: "resource", N: "attributes", KeySlice: []ottl.Key[*TransformContext]{
 				&pathtest.Key[*TransformContext]{
-					S: ottltest.Strp("foo"),
+					S: new("foo"),
 				},
 			}},
 			expected: "bar",
@@ -331,7 +330,7 @@ func Test_newPathGetSetter_RelaxedNames(t *testing.T) {
 			metric := pmetric.NewMetric()
 			metric.SetName("original")
 
-			ctx := NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			ctx := NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
 			defer ctx.Close()
 
 			err := accessor.Set(t.Context(), ctx, name)
@@ -389,7 +388,7 @@ func Test_ParseEnum(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := parseEnum((*ottl.EnumSymbol)(ottltest.Strp(tt.name)))
+			actual, err := parseEnum((*ottl.EnumSymbol)(new(tt.name)))
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, *actual)
 		})
@@ -403,7 +402,7 @@ func Test_ParseEnum_False(t *testing.T) {
 	}{
 		{
 			name:       "unknown enum symbol",
-			enumSymbol: (*ottl.EnumSymbol)(ottltest.Strp("not an enum")),
+			enumSymbol: (*ottl.EnumSymbol)(new("not an enum")),
 		},
 		{
 			name:       "nil enum symbol",

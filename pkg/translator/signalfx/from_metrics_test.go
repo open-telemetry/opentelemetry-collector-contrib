@@ -221,7 +221,8 @@ func Test_FromMetrics(t *testing.T) {
 						"k_r0": "v_r0",
 						"k_r1": "v_r1",
 					}, labelMap),
-					doubleVal),
+					doubleVal,
+				),
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
@@ -231,7 +232,8 @@ func Test_FromMetrics(t *testing.T) {
 						"k_r0": "v_r0",
 						"k_r1": "v_r1",
 					}, labelMap),
-					int64Val),
+					int64Val,
+				),
 			},
 		},
 		{

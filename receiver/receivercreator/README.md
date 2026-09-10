@@ -161,10 +161,6 @@ None
 |--------------------|-------------------|
 | k8s.namespace.name | \`namespace\`     |
 
-`type == "kafka.topics"`
-
-None
-
 See `redis/2` in [examples](#examples).
 
 
@@ -302,12 +298,6 @@ targeting it will have different variables available.
 | labels                | A key-value map of user-specified node metadata                      | Map with String key and value |
 | kubelet_endpoint_port | The node Status object's DaemonEndpoints.KubeletEndpoint.Port value  | Integer                       |
 
-### Kafka Topics
-| Variable              | Description                                                          | Data Type                     |
-|-----------------------|----------------------------------------------------------------------|-------------------------------|
-| type                  | `"kafka.topics"`                                                     | String                        |
-| id                    | ID of source endpoint                                                | String                        |
-
 ## Examples
 
 ```yaml
@@ -318,11 +308,6 @@ extensions:
     observe_services: true
     observe_ingresses: true
   host_observer:
-  kafkatopics_observer:
-    brokers: ["1.2.3.4:9093"]
-    protocol_version: 3.9.0
-    topic_regex: "^foo_topic[0-9]$"
-    topics_sync_interval: 5s
 
 receivers:
   receiver_creator/1:
@@ -452,20 +437,6 @@ receivers:
             - type: add
               field: attributes.log.template
               value: lazybox
-  receiver_creator/kafka:
-    watch_observers: [kafkatopics_observer]
-    receivers:
-      kafka:
-        rule: type == "kafka.topics"
-        config:
-          protocol_version: 3.9.0
-          topic: '`endpoint`'
-          encoding: text
-          brokers: ["1.2.3.4:9093"]
-          initial_offset: earliest
-          header_extraction:
-            extract_headers: true
-            headers: ["index", "source", "sourcetype", "host"]
 
 processors:
   exampleprocessor:
@@ -480,10 +451,10 @@ service:
       processors: [exampleprocessor]
       exporters: [exampleexporter]
     logs:
-      receivers: [receiver_creator/logs, receiver_creator/kafka]
+      receivers: [receiver_creator/logs]
       processors: [exampleprocessor]
       exporters: [exampleexporter]
-  extensions: [k8s_observer, host_observer, kafkatopics_observer]
+  extensions: [k8s_observer, host_observer]
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)

@@ -336,7 +336,7 @@ func TestReceiverStorageInitialization(t *testing.T) {
 	}{
 		{
 			name:                "storage configured",
-			storageID:           ptr(storagetest.NewStorageID("file_storage")),
+			storageID:           new(storagetest.NewStorageID("file_storage")),
 			expectStorageClient: true,
 		},
 		{
@@ -393,7 +393,7 @@ func TestStartWithStorageExtensionNotFound(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = corev1.AddToScheme(scheme)
 
-	storageID := ptr(storagetest.NewStorageID("file_storage"))
+	storageID := new(storagetest.NewStorageID("file_storage"))
 
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.Storage = storageID
@@ -415,10 +415,6 @@ func TestStartWithStorageExtensionNotFound(t *testing.T) {
 	err = r.Start(t.Context(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get storage client")
-}
-
-func ptr[T any](v T) *T {
-	return &v
 }
 
 // TestStartWatchersMultipleNamespaces tests watching multiple namespaces

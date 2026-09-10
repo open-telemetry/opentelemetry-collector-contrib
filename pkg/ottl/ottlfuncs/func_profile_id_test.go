@@ -4,9 +4,14 @@
 package ottlfuncs
 
 import (
+	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func Test_profileID(t *testing.T) {
@@ -51,5 +56,41 @@ func Test_profileID_validation(t *testing.T) {
 			value: []byte("ZZ02030405060708090a0b0c0d0e0f10"),
 			err:   errIDHexDecode,
 		},
+	})
+}
+
+func Test_ProfileIDFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewProfileIDFactory[any]()
+		assert.Equal(t, "ProfileID", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewProfileIDFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &ProfileIDArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewProfileIDFactory[any]()
+		args := factory.CreateDefaultArguments()
+		profileIDArgs, ok := args.(*ProfileIDArguments[any])
+		require.True(t, ok)
+		profileIDArgs.Target = ottl.StandardByteSliceLikeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return []byte("0102030405060708090a0b0c0d0e0f10"), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createProfileIDFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ProfileIDFactory args must be of type *ProfileIDArguments[K]")
 	})
 }

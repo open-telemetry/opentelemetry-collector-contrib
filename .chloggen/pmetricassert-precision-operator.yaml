@@ -1,0 +1,9 @@
+change_type: enhancement
+component: pkg/pdatatest
+note: Add a `double_value/precision<n>` operator to `pmetricassert`, comparing double datapoint values rounded to n decimal places
+issues: [48441]
+subtext: |
+  Mirrors `pmetrictest`'s `IgnoreMetricFloatPrecision` for assertion snapshots.
+  `n` must be between 0 and 15, and the operator cannot be combined with an
+  exact `double_value` on the same datapoint.
+change_logs: [user]

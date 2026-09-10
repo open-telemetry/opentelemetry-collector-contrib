@@ -144,7 +144,3 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-
-# TODO: Update the receiver to pass the tests
-tests:
-  skip_lifecycle: true

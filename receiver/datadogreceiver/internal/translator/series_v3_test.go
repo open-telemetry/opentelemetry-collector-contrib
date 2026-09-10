@@ -300,3 +300,28 @@ func TestHandleSeriesV3Payload_InvalidUTF8TagSanitized(t *testing.T) {
 	require.Len(t, series[0].Tags, 1)
 	assert.NotEmpty(t, series[0].Tags[0])
 }
+
+// TestTranslateSeriesV3Rate covers a v3 rate series through to OTLP. The v3
+// decoder emits the v2 series representation, so both endpoints translate via
+// TranslateSeriesV2.
+func TestTranslateSeriesV3Rate(t *testing.T) {
+	pl := buildMinimalV3Payload()
+	pl.MetricData.DictNameStr = v3StringDict("test.rate")
+	pl.MetricData.Types = []uint64{uint64(intakev3.MetricType_Rate) | uint64(intakev3.ValueType_Float64)}
+
+	mt := NewMetricsTranslator(component.BuildInfo{}, 0)
+	series, err := mt.HandleSeriesV3Payload(v3Request(t, pl))
+	require.NoError(t, err)
+	require.Len(t, series, 1)
+	require.Equal(t, gogen.MetricPayload_RATE, series[0].Type)
+
+	result := mt.TranslateSeriesV2(series)
+	requireMetricAndDataPointCounts(t, result, 1, 1)
+
+	metric := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	requireSum(t, metric, "test.rate", 1)
+
+	dp := metric.Sum().DataPoints().At(0)
+	requireAsTypeRate(t, dp)
+	assert.Equal(t, 420.0, dp.DoubleValue()) // value 42.0 scaled by the 10s interval
+}

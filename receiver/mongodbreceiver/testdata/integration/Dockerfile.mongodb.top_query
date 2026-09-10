@@ -1,4 +1,4 @@
-ARG MONGO_VERSION=7.0
+ARG MONGO_VERSION=7.0@sha256:b6421fd6d1c5ded6377b397d8983e2f82e2100dc5123332dcfda2065a472be5b
 FROM mongo:${MONGO_VERSION}
 
 COPY scripts/setup_top_query.sh /setup_top_query.sh

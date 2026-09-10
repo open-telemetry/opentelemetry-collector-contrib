@@ -933,7 +933,8 @@ func TestCreateDirectoryOption(t *testing.T) {
 		exp, err := createLogsExporter(
 			t.Context(),
 			exportertest.NewNopSettings(metadata.Type),
-			cfg)
+			cfg,
+		)
 		require.NoError(t, err)
 		err = exp.Start(t.Context(), componenttest.NewNopHost())
 		require.Error(t, err)
@@ -953,7 +954,8 @@ func TestCreateDirectoryOption(t *testing.T) {
 		exp, err := createLogsExporter(
 			t.Context(),
 			exportertest.NewNopSettings(metadata.Type),
-			cfg)
+			cfg,
+		)
 		require.NoError(t, err)
 		err = exp.Start(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err)

@@ -25,7 +25,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -166,25 +165,19 @@ func TestEmptyScrape(t *testing.T) {
 	// Disable all metrics manually that are enabled by default
 	configureAllScraperMetricsAndEvents(cfg, false)
 
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, _ := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.Empty(t, scrapers)
 }
 
 func TestSuccessfulScrape(t *testing.T) {
 	tests := []struct {
-		removeServerResourceAttributeFeatureGate bool
-		name                                     string
+		name string
 		// propertiesFixtureFile overrides the fixture returned for the server properties
 		// query. Empty means the default on-prem fixture (propertyQueryData.txt).
 		propertiesFixtureFile string
 	}{
 		{
-			name:                                     "TestSuccessfulScrape with removing server resource attribute feature gate on",
-			removeServerResourceAttributeFeatureGate: true,
-		},
-		{
-			name:                                     "TestSuccessfulScrape with removing server resource attribute feature gate off",
-			removeServerResourceAttributeFeatureGate: false,
+			name: "TestSuccessfulScrape",
 		},
 		{
 			// Azure SQL Managed Instance (EngineEdition 8) returns a reduced property column
@@ -199,15 +192,12 @@ func TestSuccessfulScrape(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			testutil.SetFeatureGateForTest(t, metadata.ReceiverSqlserverRemoveServerResourceAttributeFeatureGate, test.removeServerResourceAttributeFeatureGate)
 			cfg := createDefaultConfig().(*Config)
 			cfg.Username = "sa"
 			cfg.Password = "password"
 			cfg.Port = 1433
 			cfg.Server = "0.0.0.0"
 			cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-			cfg.MetricsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
-			cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 			cfg.MetricsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
 			cfg.MetricsBuilderConfig.ResourceAttributes.ServiceNamespace.Enabled = true
 			cfg.LogsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
@@ -216,8 +206,10 @@ func TestSuccessfulScrape(t *testing.T) {
 
 			configureAllScraperMetricsAndEvents(cfg, true)
 
-			scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+			scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 			assert.NotEmpty(t, scrapers)
+			// The receiver owns the shared pool; close it once the test is done.
+			t.Cleanup(func() { assert.NoError(t, provider.close()) })
 
 			for _, scraper := range scrapers {
 				err := scraper.Start(t.Context(), componenttest.NewNopHost())
@@ -234,32 +226,27 @@ func TestSuccessfulScrape(t *testing.T) {
 
 				actualMetrics, err := scraper.ScrapeMetrics(t.Context())
 				assert.NoError(t, err)
-				fileSuffix := ".yaml"
-				if test.removeServerResourceAttributeFeatureGate {
-					fileSuffix = "RemoveServerResourceAttributes.yaml"
-				}
 				var expectedFile string
 				switch scraper.sqlQuery {
 				case getSQLServerAvailabilityGroupQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedAvailabilityGroupMetrics")
+					expectedFile = filepath.Join("testdata", "expectedAvailabilityGroupMetrics.yaml")
 				case getSQLServerDatabaseIOQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedDatabaseIO")
+					expectedFile = filepath.Join("testdata", "expectedDatabaseIO.yaml")
 				case getSQLServerPerformanceCounterQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedPerfCounters")
+					expectedFile = filepath.Join("testdata", "expectedPerfCounters.yaml")
 				case getSQLServerPropertiesQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedProperties")
+					expectedFile = filepath.Join("testdata", "expectedProperties.yaml")
 				case getSQLServerWaitStatsQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedWaitStats")
+					expectedFile = filepath.Join("testdata", "expectedWaitStats.yaml")
 				case getSQLServerIndexPhysicalStatsQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedIndexPhysicalMetrics")
+					expectedFile = filepath.Join("testdata", "expectedIndexPhysicalMetrics.yaml")
 				case getSQLServerWorkerThreadsQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedWorkerThreads")
+					expectedFile = filepath.Join("testdata", "expectedWorkerThreads.yaml")
 				case getSQLServerCPUMemoryQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedCPUMemory")
+					expectedFile = filepath.Join("testdata", "expectedCPUMemory.yaml")
 				case getSQLServerDiskIOQuery(scraper.config.InstanceName):
-					expectedFile = filepath.Join("testdata", "expectedDiskIO")
+					expectedFile = filepath.Join("testdata", "expectedDiskIO.yaml")
 				}
-				expectedFile += fileSuffix
 
 				// Uncomment line below to re-generate expected metrics.
 				// golden.WriteMetrics(t, expectedFile, actualMetrics)
@@ -288,8 +275,10 @@ func TestScrapeInvalidQuery(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 
 	configureAllScraperMetricsAndEvents(cfg, true)
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
+	// The receiver owns the shared pool; close it once the test is done.
+	t.Cleanup(func() { assert.NoError(t, provider.close()) })
 
 	for _, scraper := range scrapers {
 		err := scraper.Start(t.Context(), componenttest.NewNopHost())
@@ -320,7 +309,7 @@ func TestScrapeCacheAndDiff(t *testing.T) {
 	configureAllScraperMetricsAndEvents(cfg, false)
 
 	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	scraper := scrapers[0]
@@ -350,17 +339,20 @@ func TestSortRows(t *testing.T) {
 	assert.Equal(
 		t,
 		[]sqlquery.StringMap{{"ghi": "56"}, {"def": "34"}, {"abc": "12"}},
-		sortRows([]sqlquery.StringMap{{"abc": "12"}, {"ghi": "56"}, {"def": "34"}}, []int64{1, 2, 2}, 3))
+		sortRows([]sqlquery.StringMap{{"abc": "12"}, {"ghi": "56"}, {"def": "34"}}, []int64{1, 2, 2}, 3),
+	)
 
 	assert.Equal(
 		t,
 		[]sqlquery.StringMap{{"ghi": "56"}, {"def": "34"}},
-		sortRows([]sqlquery.StringMap{{"abc": "12"}, {"ghi": "56"}, {"def": "34"}}, []int64{1, 2, 2}, 2))
+		sortRows([]sqlquery.StringMap{{"abc": "12"}, {"ghi": "56"}, {"def": "34"}}, []int64{1, 2, 2}, 2),
+	)
 
 	assert.Equal(
 		t,
 		[]sqlquery.StringMap{{"ghi": "56"}},
-		sortRows([]sqlquery.StringMap{{"abc": "12"}, {"ghi": "56"}, {"def": "34"}}, []int64{1, 2, 2}, 1))
+		sortRows([]sqlquery.StringMap{{"abc": "12"}, {"ghi": "56"}, {"def": "34"}}, []int64{1, 2, 2}, 1),
+	)
 
 	weights := make([]int64, 50)
 
@@ -567,7 +559,7 @@ func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testi
 	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
 
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	scraper := scrapers[0]
@@ -647,7 +639,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
 
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	scraper := scrapers[0]
@@ -709,7 +701,7 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 	configureAllScraperMetricsAndEvents(cfg, false)
 	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	scraper := scrapers[0]
@@ -798,7 +790,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			configureAllScraperMetricsAndEvents(cfg, false)
 			cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 
-			scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+			scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 			assert.NotNil(t, scrapers)
 
 			scraper := scrapers[0]
@@ -875,7 +867,7 @@ func setupQuerySampleScraper(t *testing.T, logger *zap.Logger) *sqlServerScraper
 		settings.Logger = logger
 	}
 
-	scrapers := setupSQLServerLogsScrapers(settings, cfg)
+	scrapers, _ := setupSQLServerLogsScrapers(settings, cfg)
 	assert.Len(t, scrapers, 1)
 	return scrapers[0]
 }
@@ -1051,7 +1043,7 @@ func TestMultiStatementProcNoDuplicateRows(t *testing.T) {
 	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
 
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	scraper := scrapers[0]
@@ -1116,9 +1108,11 @@ func TestMultiStatementProcNoDuplicateRows(t *testing.T) {
 
 func TestSetupResourceBuilder(t *testing.T) {
 	tests := []struct {
-		name             string
-		config           *Config
-		expectedHostName string
+		name                  string
+		config                *Config
+		expectedHostName      string
+		expectedServerAddress string
+		expectedServerPort    int64
 	}{
 		{
 			name: "with server configuration",
@@ -1129,7 +1123,9 @@ func TestSetupResourceBuilder(t *testing.T) {
 				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
 				return cfg
 			}(),
-			expectedHostName: "testserver.example.com",
+			expectedHostName:      "testserver.example.com",
+			expectedServerAddress: "testserver.example.com",
+			expectedServerPort:    1433,
 		},
 		{
 			name: "with datasource configuration",
@@ -1139,7 +1135,9 @@ func TestSetupResourceBuilder(t *testing.T) {
 				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
 				return cfg
 			}(),
-			expectedHostName: "datasource-host.example.com",
+			expectedHostName:      "datasource-host.example.com",
+			expectedServerAddress: "datasource-host.example.com",
+			expectedServerPort:    1434,
 		},
 		{
 			name: "with datasource default port",
@@ -1149,7 +1147,24 @@ func TestSetupResourceBuilder(t *testing.T) {
 				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
 				return cfg
 			}(),
-			expectedHostName: "datasource-host2.example.com",
+			expectedHostName:      "datasource-host2.example.com",
+			expectedServerAddress: "datasource-host2.example.com",
+			expectedServerPort:    defaultSQLServerPort,
+		},
+		{
+			// A loopback target is only reachable when the instance is co-located with the
+			// collector, so server.address reports the collector's host name instead.
+			name: "with loopback server configuration",
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Server = "localhost"
+				cfg.Port = 1433
+				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
+				return cfg
+			}(),
+			expectedHostName:      "localhost",
+			expectedServerAddress: getTestHostname(),
+			expectedServerPort:    1433,
 		},
 	}
 
@@ -1181,6 +1196,14 @@ func TestSetupResourceBuilder(t *testing.T) {
 			hostName, exists := resource.Attributes().Get("host.name")
 			assert.True(t, exists)
 			assert.Equal(t, tt.expectedHostName, hostName.AsString())
+
+			serverAddress, exists := resource.Attributes().Get("server.address")
+			assert.True(t, exists)
+			assert.Equal(t, tt.expectedServerAddress, serverAddress.AsString())
+
+			serverPort, exists := resource.Attributes().Get("server.port")
+			assert.True(t, exists)
+			assert.Equal(t, tt.expectedServerPort, serverPort.Int())
 		})
 	}
 }
@@ -1195,7 +1218,7 @@ func TestRecordDatabaseSampleQueryUsesResourceBuilderForLogs(t *testing.T) {
 	configureAllScraperMetricsAndEvents(cfg, false)
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.Len(t, scrapers, 1)
 
 	scraper := scrapers[0]
@@ -1238,7 +1261,7 @@ func TestRecordDatabaseQueryTextAndPlanUsesResourceBuilderForLogs(t *testing.T) 
 	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
 
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.Len(t, scrapers, 1)
 
 	scraper := scrapers[0]
@@ -1311,7 +1334,7 @@ func TestRecordWorkerThreadMetrics(t *testing.T) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverWorkerThreadCount.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.SqlserverWorkerRequestCount.Enabled = true
 
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotEmpty(t, scrapers)
 
 	var workerScraper *sqlServerScraperHelper
@@ -1325,7 +1348,11 @@ func TestRecordWorkerThreadMetrics(t *testing.T) {
 
 	err := workerScraper.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
-	defer assert.NoError(t, workerScraper.Shutdown(t.Context()))
+	defer func() {
+		assert.NoError(t, workerScraper.Shutdown(t.Context()))
+		// The receiver owns the shared pool; close it here in the test.
+		assert.NoError(t, provider.close())
+	}()
 
 	workerScraper.client = mockClient{
 		instanceName: workerScraper.config.InstanceName,
@@ -1379,7 +1406,7 @@ func TestRecordDatabaseStatusMetricsUsesResourceBuilderForMetrics(t *testing.T) 
 	configureAllScraperMetricsAndEvents(cfg, false)
 	cfg.MetricsBuilderConfig.Metrics.SqlserverCPUCount.Enabled = true
 
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, _ := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.Len(t, scrapers, 1)
 
 	scraper := scrapers[0]
@@ -1429,8 +1456,9 @@ func TestRecordCPUMemoryMetrics(t *testing.T) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverHostMemoryLimit.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.SqlserverHostMemoryUsage.Enabled = true
 
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotEmpty(t, scrapers)
+	defer func() { assert.NoError(t, provider.close()) }()
 
 	var cpuMemScraper *sqlServerScraperHelper
 	for _, s := range scrapers {
@@ -1517,8 +1545,9 @@ func TestRecordDiskIOMetrics(t *testing.T) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDiskOperations.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDiskIo.Enabled = true
 
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotEmpty(t, scrapers)
+	defer func() { assert.NoError(t, provider.close()) }()
 
 	var diskScraper *sqlServerScraperHelper
 	for _, s := range scrapers {

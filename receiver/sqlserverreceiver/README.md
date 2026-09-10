@@ -89,6 +89,19 @@ Direct connection options (optional, but all must be specified to enable):
 For finer control over the direct connection use the `datasource`, a.k.a. the "connection string", instead.
 Note: it can't be used in conjunction with the `username`, `password`, `server` and `port` options.
 
+When a direct connection is used, all scrapers created for a signal share a single database connection pool
+instead of each opening its own. The pool is scoped per receiver instance: if this receiver is used in both a
+metrics and a logs pipeline, the metrics and logs receivers each own a separate pool. The pool can be tuned
+with the `connection_pool` options (all optional):
+- `max_open` (default = number of scrapers): The maximum number of open connections to the database. `0` means unlimited.
+- `max_idle` (default = number of scrapers): The maximum number of idle connections kept in the pool.
+- `max_lifetime` (optional, example = `5m`, default = unset): The maximum amount of time a connection may be reused. `0` means connections are reused forever.
+- `max_idle_time` (optional, example = `1m`, default = unset): The maximum amount of time a connection may be idle before being closed. `0` means idle connections are not closed due to idle time.
+
+The defaults are derived from the number of enabled scrapers so that every scraper can query concurrently
+while keeping the total number of connections bounded. Most deployments do not need to set these; tune them
+only when connecting to an instance with strict connection limits or a large number of enabled scrapers.
+
 Windows-specific options:
 - `computer_name` (optional): The computer name identifies the SQL Server name or IP address of the computer being monitored.
   If specified, `instance_name` is also required to be defined. This option is ignored in non-Windows environments.
@@ -157,14 +170,24 @@ Top query collection enabled:
           max_rows_per_query: 1450
 ```
 
-## Feature Gate
+## Resource attributes
 
-A new feature gate was added in `v0.129.0` for removing the `server.address` and `server.port` 
-resource attributes, as they are not identified as resources attributes in the semantic conventions.
-To enable it, pass the following argument to the Collector:
+`server.address` and `server.port` identify the monitored SQL Server instance and are emitted by default.
+When the receiver connects over loopback (for example `server: localhost` or `server: 127.0.0.1`),
+`server.address` reports the host name of the machine running the collector, because the monitored
+instance is co-located with it and `localhost` would otherwise be shared by every monitored host.
+`service.instance.id` resolves its host the same way, so it reports the collector host name rather than
+`localhost` for a loopback target.
 
-```
---feature-gates=receiver.sqlserver.RemoveServerResourceAttribute
+To stop emitting the server attributes, disable them individually:
+
+```yaml
+sqlserver:
+  resource_attributes:
+    server.address:
+      enabled: false
+    server.port:
+      enabled: false
 ```
 
 ## Metrics

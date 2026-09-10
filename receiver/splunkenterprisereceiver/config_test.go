@@ -45,40 +45,40 @@ func TestEndpointCorrectness(t *testing.T) {
 
 	missingIdxEndpoint := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	missingIdxEndpoint.MaxIdleConns = 0
-	missingIdxEndpoint.IdleConnTimeout = 0
+	missingIdxEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	missingIdxEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	missingIdxEndpoint.ForceAttemptHTTP2 = false
 	missingIdxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
 	missingSHEndpoint := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	missingSHEndpoint.MaxIdleConns = 0
-	missingSHEndpoint.IdleConnTimeout = 0
+	missingSHEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	missingSHEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	missingSHEndpoint.ForceAttemptHTTP2 = false
 	missingSHEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
 	missingCMEndpoint := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	missingCMEndpoint.MaxIdleConns = 0
-	missingCMEndpoint.IdleConnTimeout = 0
+	missingCMEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	missingCMEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	missingCMEndpoint.ForceAttemptHTTP2 = false
 	missingCMEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
 	invalidIdxEndpoint := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	invalidIdxEndpoint.MaxIdleConns = 0
-	invalidIdxEndpoint.IdleConnTimeout = 0
+	invalidIdxEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	invalidIdxEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	invalidIdxEndpoint.ForceAttemptHTTP2 = false
 	invalidIdxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
 	invalidIdxEndpoint.Endpoint = "123.321.12.1:1"
 	badSchemeIdxEndpoint := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	badSchemeIdxEndpoint.MaxIdleConns = 0
-	badSchemeIdxEndpoint.IdleConnTimeout = 0
+	badSchemeIdxEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	badSchemeIdxEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	badSchemeIdxEndpoint.ForceAttemptHTTP2 = false
 	badSchemeIdxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
 	badSchemeIdxEndpoint.Endpoint = "gss://123.124.32.12:90"
 	missingAuthIdxEndpoint := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	missingAuthIdxEndpoint.MaxIdleConns = 0
-	missingAuthIdxEndpoint.IdleConnTimeout = 0
+	missingAuthIdxEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	missingAuthIdxEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	missingAuthIdxEndpoint.ForceAttemptHTTP2 = false
 	missingAuthIdxEndpoint.Endpoint = "https://123.123.32.2:2093"
 	tests := []struct {
@@ -131,8 +131,8 @@ func TestEndpointCorrectness(t *testing.T) {
 func TestCustomSearchConfigValidation(t *testing.T) {
 	validEndpoint := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	validEndpoint.MaxIdleConns = 0
-	validEndpoint.IdleConnTimeout = 0
+	validEndpoint.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	validEndpoint.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	validEndpoint.ForceAttemptHTTP2 = false
 	validEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
 	validEndpoint.Endpoint = "https://localhost:8089"

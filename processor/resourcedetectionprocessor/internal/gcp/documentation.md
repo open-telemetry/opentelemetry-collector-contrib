@@ -8,22 +8,22 @@
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| cloud.account.id | The cloud.account.id | Any Str | true | - | - |
-| cloud.availability_zone | The cloud.availability_zone | Any Str | true | - | - |
-| cloud.platform | The cloud.platform | Any Str | true | - | - |
-| cloud.provider | The cloud.provider | Any Str | true | - | - |
-| cloud.region | The cloud.region | Any Str | true | - | - |
-| faas.instance | The faas.instance | Any Str | true | - | - |
-| faas.name | faas.name | Any Str | true | - | - |
-| faas.version | The faas.version | Any Str | true | - | - |
-| gcp.cloud_run.job.execution | The Job execution name | Any Str | true | - | - |
-| gcp.cloud_run.job.task_index | The Job execution task index | Any Str | true | - | - |
-| gcp.gce.instance.hostname | The hostname of the GCE instance. | Any Str | false | - | - |
-| gcp.gce.instance.name | The name of the GCE instance. | Any Str | false | - | - |
-| gcp.gce.instance_group_manager.name | The name of an instanceGroupManager. | Any Str | true | - | - |
-| gcp.gce.instance_group_manager.region | The region of a regional instanceGroupManager. | Any Str | true | - | - |
-| gcp.gce.instance_group_manager.zone | The zone of a zonal instanceGroupManager. | Any Str | true | - | - |
-| host.id | The host.id | Any Str | true | - | - |
-| host.name | The host.name | Any Str | true | - | - |
-| host.type | The host.type | Any Str | true | - | - |
-| k8s.cluster.name | The k8s.cluster.name | Any Str | true | - | - |
+| cloud.account.id | The cloud.account.id | Any Str | true | [cloud.account.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-account-id) | - |
+| cloud.availability_zone | The cloud.availability_zone | Any Str | true | [cloud.availability_zone](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-availability-zone) | - |
+| cloud.platform | The cloud.platform | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
+| cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
+| cloud.region | The cloud.region | Any Str | true | [cloud.region](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-region) | - |
+| faas.instance | The faas.instance | Any Str | true | [faas.instance](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/faas.md#faas-instance) | - |
+| faas.name | faas.name | Any Str | true | [faas.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/faas.md#faas-name) | - |
+| faas.version | The faas.version | Any Str | true | [faas.version](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/faas.md#faas-version) | - |
+| gcp.cloud_run.job.execution | The Job execution name | Any Str | true | [gcp.cloud_run.job.execution](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/gcp.md#gcp-cloud-run-job-execution) | - |
+| gcp.cloud_run.job.task_index | The Job execution task index | Any Str | true | [gcp.cloud_run.job.task_index](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/gcp.md#gcp-cloud-run-job-task-index) | - |
+| gcp.gce.instance.hostname | The hostname of the GCE instance. | Any Str | false | [gcp.gce.instance.hostname](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/gcp.md#gcp-gce-instance-hostname) | - |
+| gcp.gce.instance.name | The name of the GCE instance. | Any Str | false | [gcp.gce.instance.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/gcp.md#gcp-gce-instance-name) | - |
+| gcp.gce.instance_group_manager.name | The name of an instanceGroupManager. | Any Str | true | [gcp.gce.instance_group_manager.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/gcp.md#gcp-gce-instance-group-manager-name) | - |
+| gcp.gce.instance_group_manager.region | The region of a regional instanceGroupManager. | Any Str | true | [gcp.gce.instance_group_manager.region](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/gcp.md#gcp-gce-instance-group-manager-region) | - |
+| gcp.gce.instance_group_manager.zone | The zone of a zonal instanceGroupManager. | Any Str | true | [gcp.gce.instance_group_manager.zone](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/gcp.md#gcp-gce-instance-group-manager-zone) | - |
+| host.id | The host.id | Any Str | true | [host.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-id) | - |
+| host.name | The host.name | Any Str | true | [host.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-name) | - |
+| host.type | The host.type | Any Str | true | [host.type](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-type) | - |
+| k8s.cluster.name | The k8s.cluster.name | Any Str | true | [k8s.cluster.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/k8s.md#k8s-cluster-name) | - |

@@ -57,6 +57,8 @@ type sqlServerScraperHelper struct {
 	lastExecutionTimestamp time.Time
 	obfuscator             *obfuscator
 	serviceInstanceID      string
+	serverAddress          string
+	serverPort             int64
 }
 
 var (
@@ -80,6 +82,16 @@ func newSQLServerScraper(id component.ID,
 		serviceInstanceID = "unknown:1433"
 	}
 
+	// Resolve the network location of the monitored instance for server.address and server.port.
+	serverAddress, serverPort, err := resolveServerEndpoint(cfg)
+	if err != nil {
+		params.Logger.Warn("Failed to resolve server.address and server.port, using the configured values", zap.Error(err))
+		serverAddress, serverPort = cfg.Server, int(cfg.Port)
+		if serverPort == 0 {
+			serverPort = defaultSQLServerPort
+		}
+	}
+
 	return &sqlServerScraperHelper{
 		id:                     id,
 		config:                 cfg,
@@ -92,8 +104,10 @@ func newSQLServerScraper(id component.ID,
 		lb:                     metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
 		cache:                  cache,
 		lastExecutionTimestamp: time.Unix(0, 0),
-		obfuscator:             newObfuscator(),
+		obfuscator:             newObfuscator(params.Logger),
 		serviceInstanceID:      serviceInstanceID,
+		serverAddress:          serverAddress,
+		serverPort:             int64(serverPort),
 	}
 }
 
@@ -102,6 +116,9 @@ func (s *sqlServerScraperHelper) ID() component.ID {
 }
 
 func (s *sqlServerScraperHelper) Start(context.Context, component.Host) error {
+	// The connection pool is owned by the receiver and shared across all
+	// scrapers. Fetch the shared pool (opened once by the provider) rather than
+	// opening a new one here.
 	var err error
 	s.db, err = s.dbProviderFunc()
 	if err != nil {
@@ -319,10 +336,9 @@ func isThreeNumericSegments(s string) bool {
 	return isDigits(s[:firstSep]) && isDigits(s[firstSep+1:secondSep]) && isDigits(s[secondSep+1:])
 }
 
-func (s *sqlServerScraperHelper) Shutdown(context.Context) error {
-	if s.db != nil {
-		return s.db.Close()
-	}
+func (*sqlServerScraperHelper) Shutdown(context.Context) error {
+	// The connection pool is owned and closed by the receiver, not the scraper,
+	// so that a single shared pool's lifecycle is not tied to any one scraper.
 	return nil
 }
 
@@ -332,17 +348,13 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetSqlserverInstanceName(row[instanceNameKey])
 
 	hostName := s.config.Server
-	serverAddress := s.config.Server
-	serverPort := int64(s.config.Port)
 
 	if s.config.DataSource != "" {
-		host, port, err := parseDataSource(s.config.DataSource)
+		config, err := parseDataSource(s.config.DataSource)
 		if err != nil {
 			s.logger.Warn("Failed to parse datasource for host.name attribute, using fallback", zap.Error(err))
 		} else {
-			hostName = host
-			serverAddress = host
-			serverPort = int64(port)
+			hostName = config.Host
 		}
 	}
 
@@ -350,11 +362,8 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetServiceInstanceID(s.serviceInstanceID)
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
-
-	if !metadata.ReceiverSqlserverRemoveServerResourceAttributeFeatureGate.IsEnabled() {
-		rb.SetServerAddress(serverAddress)
-		rb.SetServerPort(serverPort)
-	}
+	rb.SetServerAddress(s.serverAddress)
+	rb.SetServerPort(s.serverPort)
 
 	return rb
 }
@@ -1651,16 +1660,26 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 		procID := row[storedProcedureID]
 
+		trimmedQueryText := strings.TrimSpace(row[queryText])
+		if trimmedQueryText == "" || strings.HasPrefix(trimmedQueryText, "--") {
+			s.logger.Debug(fmt.Sprintf("skipping empty or comment-only SQL statement: %v", row[queryText]))
+			continue
+		}
+
 		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
 			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
-				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
+				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement, skipping event: %v, error: %v", statement, err))
 				return "", nil
 			}
 
 			return obfuscated, nil
 		})
+
+		if queryTextVal.(string) == "" {
+			continue
+		}
 
 		databaseNameVal := row[databaseName]
 
@@ -1749,8 +1768,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			rowsReturnedVal.(int64),
 			totalElapsedTimeVal,
 			totalGrantVal.(int64),
-			s.config.Server,
-			int64(s.config.Port),
 			dbSystemNameVal,
 			procExecCountVal.(int64),
 			row[storedProcedureID],
@@ -2079,17 +2096,28 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
+		trimmedStatementText := strings.TrimSpace(row[statementText])
+		if row[command] != "IDLE_BLOCKER" && (trimmedStatementText == "" || strings.HasPrefix(trimmedStatementText, "--")) {
+			s.logger.Debug(fmt.Sprintf("skipping empty or comment-only SQL statement: %v", row[statementText]))
+			continue
+		}
+
 		clientPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		dbNamespaceVal := row[dbName]
 		queryTextVal := s.retrieveValue(row, statementText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
 			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
-				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
+				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement, skipping event: %v, error: %v", statement, err))
 				return "", nil
 			}
 			return obfuscated, nil
 		}).(string)
+
+		if queryTextVal == "" && row[command] != "IDLE_BLOCKER" {
+			continue
+		}
+
 		networkPeerAddressVal := row[clientAddress]
 		networkPeerPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		blockSessionIDVal := s.retrieveValue(row, blockingSessionID, &errs, retrieveInt).(int64)

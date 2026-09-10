@@ -305,7 +305,8 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pcommon.NewValueInt(2)),
+				pcommon.NewValueInt(2),
+			),
 			sampled: true,
 		},
 		{
@@ -315,7 +316,8 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pcommon.NewValueDouble(1)),
+				pcommon.NewValueDouble(1),
+			),
 			sampled: true,
 		},
 		{
@@ -325,7 +327,8 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pcommon.NewValueStr("1")),
+				pcommon.NewValueStr("1"),
+			),
 			sampled: true,
 		},
 		{
@@ -335,7 +338,8 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pcommon.NewValueInt(0)),
+				pcommon.NewValueInt(0),
+			),
 		},
 		{
 			name: "must_not_sample_double",
@@ -344,7 +348,8 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pcommon.NewValueDouble(0)),
+				pcommon.NewValueDouble(0),
+			),
 		},
 		{
 			name: "must_not_sample_string",
@@ -353,7 +358,8 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pcommon.NewValueStr("0")),
+				pcommon.NewValueStr("0"),
+			),
 		},
 		{
 			name: "defer_sample_expect_not_sampled",
@@ -362,7 +368,8 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"no.sampling.priority",
-				pcommon.NewValueInt(2)),
+				pcommon.NewValueInt(2),
+			),
 		},
 		{
 			name: "defer_sample_expect_sampled",
@@ -371,7 +378,8 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"no.sampling.priority",
-				pcommon.NewValueInt(2)),
+				pcommon.NewValueInt(2),
+			),
 			sampled: true,
 		},
 	}

@@ -54,7 +54,8 @@ func createTracesProcessor(
 		cfg,
 		nextConsumer,
 		proc.processTraces,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }
 
 func createMetricsProcessor(
@@ -74,7 +75,8 @@ func createMetricsProcessor(
 		cfg,
 		nextConsumer,
 		proc.processMetrics,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }
 
 func createLogsProcessor(
@@ -94,7 +96,8 @@ func createLogsProcessor(
 		cfg,
 		nextConsumer,
 		proc.processLogs,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }
 
 func createProfilesProcessor(
@@ -114,5 +117,6 @@ func createProfilesProcessor(
 		cfg,
 		nextConsumer,
 		proc.processProfiles,
-		xprocessorhelper.WithCapabilities(processorCapabilities))
+		xprocessorhelper.WithCapabilities(processorCapabilities),
+	)
 }

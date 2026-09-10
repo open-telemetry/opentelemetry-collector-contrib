@@ -89,7 +89,7 @@ func createMetricsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	config := (cfg.(*Config))
+	config := cfg.(*Config)
 
 	routingKey := getRoutingKeyOrDefault(config, metricsRoutingKey)
 
@@ -116,7 +116,7 @@ func createLogsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	config := (cfg.(*Config))
+	config := cfg.(*Config)
 
 	routingKey := getRoutingKeyOrDefault(config, logsRoutingKey)
 	connectionName := defaultLogsConnectionName

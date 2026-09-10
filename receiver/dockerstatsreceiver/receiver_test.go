@@ -104,8 +104,10 @@ var (
 		cfg.ContainerNetworkIoUsageTxPackets.Enabled = true
 		cfg.ContainerPidsCount.Enabled = true
 		cfg.ContainerPidsLimit.Enabled = true
+		cfg.ContainerStateHealthStatus.Enabled = true
 		cfg.ContainerRestarts.Enabled = true
 		cfg.ContainerUptime.Enabled = true
+		cfg.ContainerStateStatus.Enabled = true
 		return cfg
 	}()
 
@@ -349,7 +351,8 @@ func TestScrapeV2(t *testing.T) {
 				defer mockDockerEngine.Close()
 
 				receiver := newMetricsReceiver(
-					receivertest.NewNopSettings(metadata.Type), tc.cfgBuilder.withEndpoint(mockDockerEngine.URL).build())
+					receivertest.NewNopSettings(metadata.Type), tc.cfgBuilder.withEndpoint(mockDockerEngine.URL).build(),
+				)
 				err := receiver.start(t.Context(), componenttest.NewNopHost())
 				require.NoError(t, err)
 				defer func() { require.NoError(t, receiver.shutdown(t.Context())) }()
@@ -397,7 +400,8 @@ func TestScrapeV2Streaming(t *testing.T) {
 			withMetrics(allMetricsEnabled).
 			withAPIVersion(dockerAPIVersion).
 			withStreamStats(true).
-			withEndpoint(mockDockerEngine.URL).build())
+			withEndpoint(mockDockerEngine.URL).build(),
+	)
 
 	err = receiver.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)

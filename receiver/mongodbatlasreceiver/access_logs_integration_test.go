@@ -51,7 +51,8 @@ func TestAccessLogsIntegration(t *testing.T) {
 				},
 			},
 		},
-		nil)
+		nil,
+	)
 	mockClient.On("GetAccessLogs", mock.Anything, testProjectID, testClusterName, mock.Anything).Return(accessLogs, nil)
 
 	sink := &consumertest.LogsSink{}
