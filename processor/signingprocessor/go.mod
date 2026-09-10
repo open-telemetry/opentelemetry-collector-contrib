@@ -2,6 +2,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/signi
 
 go 1.26.0
 
+toolchain go1.26.8
+
 require (
 	github.com/gowebpki/jcs v1.0.1
 	github.com/openbao/openbao/api/v2 v2.5.1
@@ -27,7 +29,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
