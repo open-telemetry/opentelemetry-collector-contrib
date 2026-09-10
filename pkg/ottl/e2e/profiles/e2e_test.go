@@ -1654,7 +1654,7 @@ func constructProfileTransformContext() *ottlprofile.TransformContext {
 
 	dic := pprofile.NewProfilesDictionary()
 	scopeProfiles := pprofile.NewScopeProfiles()
-	return ottlprofile.NewTransformContextPtr(resourceProfiles, scopeProfiles, profile.Transform(dic, scopeProfiles), dic)
+	return ottlprofile.NewTransformContext(resourceProfiles, scopeProfiles, profile.Transform(dic, scopeProfiles), dic)
 }
 
 func constructProfileTransformContextEditors() *ottlprofile.TransformContext {
@@ -1688,7 +1688,7 @@ func constructProfileTransformContextEditors() *ottlprofile.TransformContext {
 
 	dic := pprofile.NewProfilesDictionary()
 	scopeProfiles := pprofile.NewScopeProfiles()
-	return ottlprofile.NewTransformContextPtr(resourceProfiles, scopeProfiles, profile.Transform(dic, scopeProfiles), dic)
+	return ottlprofile.NewTransformContext(resourceProfiles, scopeProfiles, profile.Transform(dic, scopeProfiles), dic)
 }
 
 func constructProfileTransformContextValueExpressions() *ottlprofile.TransformContext {
@@ -1727,7 +1727,7 @@ func constructProfileTransformContextValueExpressions() *ottlprofile.TransformCo
 
 	dic := pprofile.NewProfilesDictionary()
 	scopeProfiles := pprofile.NewScopeProfiles()
-	return ottlprofile.NewTransformContextPtr(resourceProfiles, scopeProfiles, profile.Transform(dic, scopeProfiles), dic)
+	return ottlprofile.NewTransformContext(resourceProfiles, scopeProfiles, profile.Transform(dic, scopeProfiles), dic)
 }
 
 func newResourceProfiles(tCtx *ottlprofile.TransformContext) pprofile.ResourceProfiles {
