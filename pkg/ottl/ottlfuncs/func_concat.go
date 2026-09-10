@@ -27,10 +27,10 @@ func createConcatFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 		return nil, errors.New("ConcatFactory args must be of type *ConcatArguments[K]")
 	}
 
-	return concat(&args.Vals, args.Delimiter), nil
+	return concat(args.Vals, args.Delimiter), nil
 }
 
-func concat[K any](vals *ottl.SliceGetter[K, ottl.StringLikeGetter[K]], delimiter ottl.StringGetter[K]) ottl.ExprFunc[K] {
+func concat[K any](vals ottl.SliceGetter[K, ottl.StringLikeGetter[K]], delimiter ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		builder := strings.Builder{}
 		delimiterVal, err := delimiter.Get(ctx, tCtx)
