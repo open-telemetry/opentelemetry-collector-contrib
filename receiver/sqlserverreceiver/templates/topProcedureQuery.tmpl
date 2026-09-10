@@ -31,5 +31,6 @@ WHERE ps.database_id > 4
   AND ps.execution_count > 0
   AND DB_NAME(ps.database_id) IS NOT NULL
   AND OBJECT_NAME(ps.object_id, ps.database_id) IS NOT NULL
+  AND OBJECT_SCHEMA_NAME(ps.object_id, ps.database_id) IS NOT NULL
 %s
 ORDER BY ps.total_elapsed_time DESC

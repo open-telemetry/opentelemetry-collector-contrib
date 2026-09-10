@@ -279,11 +279,11 @@ attributes:
     type: string
     requirement_level: recommended
   sqlserver.procedure.max_duration:
-    description: Longest elapsed time for a single execution of the procedure, in seconds. Reported as-is from sys.dm_exec_procedure_stats and covers the whole period the plan has been cached, so unlike the other durations it is not a delta.
+    description: Longest elapsed time for a single execution of the procedure, in seconds. Covers the whole period the plan has been cached, so unlike the other durations it is not a delta.
     type: double
     requirement_level: recommended
   sqlserver.procedure.min_duration:
-    description: Shortest elapsed time for a single execution of the procedure, in seconds. Reported as-is from sys.dm_exec_procedure_stats and covers the whole period the plan has been cached, so unlike the other durations it is not a delta.
+    description: Shortest elapsed time for a single execution of the procedure, in seconds. Covers the whole period the plan has been cached, so unlike the other durations it is not a delta.
     type: double
     requirement_level: recommended
   sqlserver.procedure.tempdb.spilled_pages:
@@ -527,7 +527,7 @@ events:
 
   db.server.top_procedure:
     enabled: false
-    description: Aggregated performance metrics for the top stored procedures by elapsed time, read from sys.dm_exec_procedure_stats with delta computation on the cumulative counters. Correlates with db.server.top_query and db.server.query_sample via sqlserver.procedure_id.
+    description: Aggregated performance metrics for the top stored procedures by elapsed time, computed as deltas over the collection interval.
     attributes:
       - db.system.name
       - db.namespace

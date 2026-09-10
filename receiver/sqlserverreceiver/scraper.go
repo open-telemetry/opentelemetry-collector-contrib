@@ -168,9 +168,6 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 			return plog.NewLogs(), nil
 		}
 		resources, err = s.recordDatabaseTopProcedure(ctx)
-		if err != nil {
-			s.logger.Error("TopProcedure: scrape failed", zap.Error(err))
-		}
 	default:
 		return plog.Logs{}, fmt.Errorf("Attempted to get logs from unsupported query: %s", s.sqlQuery)
 	}

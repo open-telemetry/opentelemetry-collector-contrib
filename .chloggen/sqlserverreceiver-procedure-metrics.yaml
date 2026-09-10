@@ -16,8 +16,8 @@ issues: [50799]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Read from `sys.dm_exec_procedure_stats` with per-scrape deltas on the cumulative counters, and
-  ranked by the elapsed time each procedure accrued since the previous scrape. Disabled by default;
+  Reports per-scrape deltas on cumulative stored procedure statistics, ranked by the elapsed time
+  each procedure accrued since the previous scrape. Disabled by default;
   configure via the new `top_procedure_collection` block (`max_procedure_sample_count`,
   `top_procedure_count`, `collection_interval`). The event is throttled by its own
   `collection_interval` (default `60s`) rather than the receiver's global one, which also sets the

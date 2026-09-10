@@ -1305,7 +1305,7 @@ query sample
 
 ### db.server.top_procedure
 
-Aggregated performance metrics for the top stored procedures by elapsed time, read from sys.dm_exec_procedure_stats with delta computation on the cumulative counters. Correlates with db.server.top_query and db.server.query_sample via sqlserver.procedure_id.
+Aggregated performance metrics for the top stored procedures by elapsed time, computed as deltas over the collection interval.
 
 #### Attributes
 
@@ -1323,8 +1323,8 @@ Aggregated performance metrics for the top stored procedures by elapsed time, re
 | sqlserver.total_logical_writes | Total number of logical writes performed by executions of this plan since it was compiled, reported in delta value. | Any Int | - |
 | sqlserver.total_physical_reads | Total number of physical reads performed by executions of this plan since it was compiled, reported in delta value. | Any Int | - |
 | sqlserver.procedure.tempdb.spilled_pages | Pages spilled to tempdb by the procedure over the collection interval, reported as a delta. | Any Int | - |
-| sqlserver.procedure.max_duration | Longest elapsed time for a single execution of the procedure, in seconds. Reported as-is from sys.dm_exec_procedure_stats and covers the whole period the plan has been cached, so unlike the other durations it is not a delta. | Any Double | - |
-| sqlserver.procedure.min_duration | Shortest elapsed time for a single execution of the procedure, in seconds. Reported as-is from sys.dm_exec_procedure_stats and covers the whole period the plan has been cached, so unlike the other durations it is not a delta. | Any Double | - |
+| sqlserver.procedure.max_duration | Longest elapsed time for a single execution of the procedure, in seconds. Covers the whole period the plan has been cached, so unlike the other durations it is not a delta. | Any Double | - |
+| sqlserver.procedure.min_duration | Shortest elapsed time for a single execution of the procedure, in seconds. Covers the whole period the plan has been cached, so unlike the other durations it is not a delta. | Any Double | - |
 | sqlserver.procedure.last_execution_time | ISO 8601 timestamp of the last execution of the procedure. | Any Str | - |
 
 ### db.server.top_query
