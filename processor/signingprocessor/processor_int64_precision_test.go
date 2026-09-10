@@ -112,14 +112,69 @@ func TestMaxInt64SerializedAsString(t *testing.T) {
 		t.Fatalf("serialize: %v", err)
 	}
 
-	want := `"9223372036854775807"`
+	want := `"intValue":"9223372036854775807"`
 	if !strings.Contains(string(b), want) {
 		t.Errorf("canonical output does not contain quoted MaxInt64 %s; got: %s", want, b)
 	}
 }
 
-// TestTimestampSerializedAsString verifies that a nanosecond timestamp appears
-// in the canonical output as a quoted decimal string.
+// TestScalarTypeCollision verifies that same-looking values of different OTLP
+// scalar types produce distinct canonical bytes. Each scalar is wrapped in a
+// type-tagged object ({"intValue":…}, {"stringValue":…}, etc.) so the encoded
+// form is unique per type even when the raw value is identical.
+func TestScalarTypeCollision(t *testing.T) {
+	p := &signingProcessor{config: &Config{}}
+
+	cases := []struct {
+		name string
+		setA func(plog.LogRecord)
+		setB func(plog.LogRecord)
+	}{
+		{
+			name: "int vs string with same decimal representation",
+			setA: func(lr plog.LogRecord) { lr.Attributes().PutInt("k", 123) },
+			setB: func(lr plog.LogRecord) { lr.Attributes().PutStr("k", "123") },
+		},
+		{
+			name: "bytes vs string with same base64 representation",
+			setA: func(lr plog.LogRecord) { lr.Attributes().PutEmptyBytes("k").FromRaw([]byte("hello")) },
+			setB: func(lr plog.LogRecord) {
+				lr.Attributes().PutStr("k", "aGVsbG8=") // base64("hello")
+			},
+		},
+		{
+			name: "bool true vs string true",
+			setA: func(lr plog.LogRecord) { lr.Attributes().PutBool("k", true) },
+			setB: func(lr plog.LogRecord) { lr.Attributes().PutStr("k", "true") },
+		},
+		{
+			name: "double 1.0 vs string 1",
+			setA: func(lr plog.LogRecord) { lr.Attributes().PutDouble("k", 1.0) },
+			setB: func(lr plog.LogRecord) { lr.Attributes().PutStr("k", "1") },
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rA := plog.NewLogRecord()
+			tc.setA(rA)
+			rB := plog.NewLogRecord()
+			tc.setB(rB)
+
+			bA, err := p.serializeLogRecord(rA)
+			if err != nil {
+				t.Fatalf("serialize A: %v", err)
+			}
+			bB, err := p.serializeLogRecord(rB)
+			if err != nil {
+				t.Fatalf("serialize B: %v", err)
+			}
+			if bytes.Equal(bA, bB) {
+				t.Errorf("scalar type collision: %s and %s produced identical canonical bytes: %s", tc.name, tc.name, bA)
+			}
+		})
+	}
+}
 func TestTimestampSerializedAsString(t *testing.T) {
 	p := &signingProcessor{config: &Config{}}
 
