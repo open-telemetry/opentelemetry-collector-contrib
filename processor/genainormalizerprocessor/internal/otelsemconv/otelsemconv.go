@@ -36,6 +36,11 @@ const defaultTarget = "v1.40.0"
 // typesByTarget indexes the generated tables by semconv release. Weaver runs
 // once per release, so this index is hand-written.
 //
+// More than one entry is expected eventually. gen_ai.* was deprecated out of
+// semantic-conventions at v1.42.0 and moved to semantic-conventions-genai,
+// which has no releases, so the release this component targets and the semconv
+// version the repository mandates will not stay the same.
+//
 //nolint:gochecknoglobals // index over generated lookup tables
 var typesByTarget = map[string]map[string]kind{
 	"v1.40.0": typesV1_40_0,
