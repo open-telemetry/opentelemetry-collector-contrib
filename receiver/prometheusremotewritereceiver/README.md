@@ -107,7 +107,7 @@ Remote-Write 2.0 lets a series hold samples or histograms and never both, and th
 
 ### Custom bucket histograms
 
-Native Histograms with custom buckets are checked with Prometheus' own `Validate`, which is what a Prometheus server runs on every histogram it accepts over remote write, and whose failures it answers with 400. It covers the bucket bounds being finite, distinct and in increasing order, the implicit `+Inf` bound not being sent explicitly, the spans matching the bounds and the values, and the count matching the buckets. The compatibility specification defines exactly this shape, and OTLP requires the count to equal the sum of the bucket counts, so a histogram that fails any of these has no valid translation and is rejected.
+Native Histograms with custom buckets are checked with Prometheus' own `Validate`, which is what a Prometheus server runs on every histogram it accepts over remote write, and whose failures it answers with 400. It covers the bucket bounds being numbers, distinct and in increasing order, the implicit `+Inf` bound not being sent explicitly, the spans matching the bounds and the values, and the count matching the buckets. The compatibility specification defines exactly this shape, and OTLP requires the count to equal the sum of the bucket counts, so a histogram that fails any of these has no valid translation and is rejected.
 
 A histogram whose bucket populations add up past what a count can hold is rejected as well. That is the one check `Validate` cannot make, because it adds them with wrapping arithmetic.
 
