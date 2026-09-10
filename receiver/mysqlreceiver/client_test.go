@@ -209,6 +209,9 @@ func TestDBVersionCapabilities(t *testing.T) {
 		wantSupportsQuerySampleText bool
 		wantSupportsReplicaStatus   bool
 		wantSupportsProcesslist     bool
+		wantSupportsRedoLogStats    bool
+		wantRequiresBackupAdmin     bool
+		wantRedoLogStatsSource      innodbRedoLogStatsSource
 	}{
 		{
 			name:                        "MySQL 8.0.27",
@@ -216,6 +219,19 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   true,
 			wantSupportsProcesslist:     true,
+			wantSupportsRedoLogStats:    true,
+			wantRequiresBackupAdmin:     true,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceLogStatus,
+		},
+		{
+			name:                        "MySQL 8.0.30 (minimum for redo-log global status variables)",
+			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.30")},
+			wantSupportsQuerySampleText: true,
+			wantSupportsReplicaStatus:   true,
+			wantSupportsProcesslist:     true,
+			wantSupportsRedoLogStats:    true,
+			wantRequiresBackupAdmin:     false,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceGlobalStatus,
 		},
 		{
 			name:                        "MySQL 8.0.3 (minimum for query_sample_text)",
@@ -223,6 +239,25 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
+		},
+		{
+			name:                        "MySQL 8.0.11 (minimum for log_status)",
+			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.11")},
+			wantSupportsQuerySampleText: true,
+			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
+			wantSupportsRedoLogStats:    true,
+			wantRequiresBackupAdmin:     true,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceLogStatus,
+		},
+		{
+			name:                        "MySQL 8.0.10 (below log_status minimum)",
+			dv:                          dbVersion{product: dbProductMySQL, version: mustParseVersion(t, "8.0.10")},
+			wantSupportsQuerySampleText: true,
+			wantSupportsReplicaStatus:   false,
+			wantSupportsProcesslist:     false,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
 		},
 		{
 			name:                        "MySQL 8.0.2 (below query_sample_text minimum)",
@@ -230,6 +265,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
 		},
 		{
 			name:                        "MySQL 8.0.0 (below query_sample_text minimum)",
@@ -237,6 +273,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
 		},
 		{
 			name:                        "MySQL 8.0.22 (minimum for SHOW REPLICA STATUS and processlist)",
@@ -244,6 +281,9 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   true,
 			wantSupportsProcesslist:     true,
+			wantSupportsRedoLogStats:    true,
+			wantRequiresBackupAdmin:     true,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceLogStatus,
 		},
 		{
 			name:                        "MySQL 8.0.21 (below SHOW REPLICA STATUS minimum)",
@@ -251,6 +291,9 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: true,
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
+			wantSupportsRedoLogStats:    true,
+			wantRequiresBackupAdmin:     true,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceLogStatus,
 		},
 		{
 			name:                        "MySQL 5.7.44",
@@ -258,6 +301,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
 		},
 		{
 			name:                        "MariaDB 10.11.6",
@@ -265,6 +309,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
 		},
 		{
 			name:                        "MariaDB 11.4.2",
@@ -272,6 +317,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
 		},
 		{
 			name:                        "zero value (version unknown)",
@@ -279,6 +325,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsQuerySampleText: false,
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
+			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
 		},
 	}
 
@@ -287,6 +334,9 @@ func TestDBVersionCapabilities(t *testing.T) {
 			assert.Equal(t, tt.wantSupportsQuerySampleText, tt.dv.supportsQuerySampleText(), "supportsQuerySampleText()")
 			assert.Equal(t, tt.wantSupportsReplicaStatus, tt.dv.supportsReplicaStatus(), "supportsReplicaStatus()")
 			assert.Equal(t, tt.wantSupportsProcesslist, tt.dv.supportsProcesslist(), "supportsProcesslist()")
+			assert.Equal(t, tt.wantSupportsRedoLogStats, tt.dv.supportsInnodbRedoLogStats(), "supportsInnodbRedoLogStats()")
+			assert.Equal(t, tt.wantRequiresBackupAdmin, tt.dv.requiresBackupAdminForInnodbRedoLogStats(), "requiresBackupAdminForInnodbRedoLogStats()")
+			assert.Equal(t, tt.wantRedoLogStatsSource, tt.dv.innodbRedoLogStatsSource(), "innodbRedoLogStatsSource()")
 		})
 	}
 }
@@ -518,6 +568,69 @@ func TestGetActiveSessionCount(t *testing.T) {
 	require.NoError(t, mock.ExpectationsWereMet())
 
 	assert.Equal(t, int64(7), got)
+}
+
+func TestGetInnodbRedoLogStatsFromLogStatus(t *testing.T) {
+	tests := []struct {
+		name              string
+		currentLSN        driver.Value
+		checkpointLSN     driver.Value
+		wantCurrentLSN    int64
+		wantCheckpointLSN int64
+		wantCheckpointAge int64
+		wantErr           string
+	}{
+		{
+			name:              "records redo log stats",
+			currentLSN:        25012145208,
+			checkpointLSN:     25012145199,
+			wantCurrentLSN:    25012145208,
+			wantCheckpointLSN: 25012145199,
+			wantCheckpointAge: 9,
+		},
+		{
+			name:          "missing current LSN",
+			checkpointLSN: 25012145199,
+			wantErr:       "missing InnoDB redo log current LSN in performance_schema.log_status",
+		},
+		{
+			name:       "missing checkpoint LSN",
+			currentLSN: 25012145208,
+			wantErr:    "missing InnoDB redo log checkpoint LSN in performance_schema.log_status",
+		},
+	}
+
+	query := "SELECT " +
+		"CAST(JSON_UNQUOTE(JSON_EXTRACT(STORAGE_ENGINES, '$.InnoDB.LSN')) AS SIGNED), " +
+		"CAST(JSON_UNQUOTE(JSON_EXTRACT(STORAGE_ENGINES, '$.InnoDB.LSN_checkpoint')) AS SIGNED) " +
+		"FROM performance_schema.log_status"
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+
+			mock.ExpectQuery(regexp.QuoteMeta(query)).
+				WillReturnRows(sqlmock.NewRows([]string{
+					"current_lsn",
+					"checkpoint_lsn",
+				}).AddRow(tt.currentLSN, tt.checkpointLSN))
+
+			c := &mySQLClient{client: db}
+			got, err := c.getInnodbRedoLogStatsFromLogStatus()
+			require.NoError(t, mock.ExpectationsWereMet())
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				assert.Empty(t, got)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantCurrentLSN, got.currentLSN)
+			assert.Equal(t, tt.wantCheckpointLSN, got.checkpointLSN)
+			assert.Equal(t, tt.wantCheckpointAge, got.checkpointAge)
+		})
+	}
 }
 
 // TestGetDBVersionCaching verifies that a cached version is returned on subsequent
