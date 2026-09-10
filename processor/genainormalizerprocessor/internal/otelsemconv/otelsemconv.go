@@ -53,9 +53,7 @@ func enumValue(kv attribute.KeyValue) string {
 
 // GenAI attribute keys, grouped by subnamespace. Adding a new attribute is one
 // line: string(conventions.GenAIFooBarKey).
-//
-//nolint:gochecknoglobals // canonical key registry
-var (
+const (
 	// gen_ai.agent.*
 	GenAIAgentName = string(conventions.GenAIAgentNameKey)
 
