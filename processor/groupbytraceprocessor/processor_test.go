@@ -1486,9 +1486,10 @@ func TestSubtrace_MultipleWorkers(t *testing.T) {
 	}, 300*time.Millisecond, 10*time.Millisecond)
 	require.NoError(t, p.Shutdown(t.Context()))
 
-	// Every trace must be complete, and no span may cross a trace boundary.
+	// Every trace must be complete, and no batch may mix traces.
 	perTrace := map[pcommon.TraceID]int{}
 	for _, b := range sink.AllTraces() {
+		assert.Len(t, batchTraceIDs(b), 1, "a batch held spans from more than one trace")
 		for _, rs := range b.ResourceSpans().All() {
 			for _, ss := range rs.ScopeSpans().All() {
 				for _, s := range ss.Spans().All() {
@@ -1756,4 +1757,84 @@ func TestSubtrace_LaterCallGetsItsOwnWindow(t *testing.T) {
 	calls := svcSpanIDs()
 	assert.Equal(t, map[pcommon.SpanID]bool{entryB2: true, childB2: true}, calls[1],
 		"the second call must be released whole, not cut off at the first call's deadline")
+}
+
+// batchTraceIDs returns the set of trace IDs a batch holds spans for.
+func batchTraceIDs(td ptrace.Traces) map[pcommon.TraceID]bool {
+	ids := map[pcommon.TraceID]bool{}
+	for _, rs := range td.ResourceSpans().All() {
+		for _, ss := range rs.ScopeSpans().All() {
+			for _, s := range ss.Spans().All() {
+				ids[s.TraceID()] = true
+			}
+		}
+	}
+	return ids
+}
+
+func TestSubtrace_TracesWithReusedSpanIDsStaySeparate(t *testing.T) {
+	traceOne, traceTwo := makeTraceID(80), makeTraceID(81)
+	entry, child := makeSpanID(1), makeSpanID(2)
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{NumTraces: 1000, NumWorkers: 1, WaitDuration: 100 * time.Millisecond, EmitStrategy: EmitStrategyService}
+	p := newSubtraceProcessor(t, cfg, sink)
+	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+	for _, traceID := range []pcommon.TraceID{traceOne, traceTwo} {
+		require.NoError(t, p.ConsumeTraces(t.Context(), buildServiceTrace(traceID, "svc-a", entry, child)))
+	}
+
+	require.Eventually(t, func() bool { return sink.SpanCount() == 4 }, 5*time.Second, 5*time.Millisecond)
+	assert.Never(t, func() bool { return sink.SpanCount() != 4 }, 400*time.Millisecond, 10*time.Millisecond)
+
+	batches := sink.AllTraces()
+	require.Len(t, batches, 2, "one batch per trace, even sharing a service and span IDs")
+
+	seen := map[pcommon.TraceID]bool{}
+	for _, b := range batches {
+		ids := batchTraceIDs(b)
+		require.Len(t, ids, 1, "a batch held spans from more than one trace")
+		for traceID := range ids {
+			assert.False(t, seen[traceID], "trace %v emitted twice", traceID)
+			seen[traceID] = true
+		}
+		assert.Equal(t, map[pcommon.SpanID]bool{entry: true, child: true}, batchSpanIDs(b))
+	}
+	assert.Equal(t, map[pcommon.TraceID]bool{traceOne: true, traceTwo: true}, seen)
+}
+
+// The same, but both traces arrive in a single submission under one resource and
+// scope, which is what an upstream batch processor produces.
+func TestSubtrace_TracesInOneSubmissionStaySeparate(t *testing.T) {
+	traceOne, traceTwo := makeTraceID(82), makeTraceID(83)
+	entry, child := makeSpanID(1), makeSpanID(2)
+
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("service.name", "svc-a")
+	ss := rs.ScopeSpans().AppendEmpty()
+	for _, traceID := range []pcommon.TraceID{traceOne, traceTwo} {
+		for _, spec := range []spanSpec{{id: entry}, {id: child, parent: entry}} {
+			s := ss.Spans().AppendEmpty()
+			s.SetTraceID(traceID)
+			s.SetSpanID(spec.id)
+			s.SetParentSpanID(spec.parent)
+		}
+	}
+
+	sink := new(consumertest.TracesSink)
+	cfg := Config{NumTraces: 1000, NumWorkers: 1, WaitDuration: 100 * time.Millisecond, EmitStrategy: EmitStrategyService}
+	p := newSubtraceProcessor(t, cfg, sink)
+	defer func() { assert.NoError(t, p.Shutdown(t.Context())) }()
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	require.Eventually(t, func() bool { return sink.SpanCount() == 4 }, 5*time.Second, 5*time.Millisecond)
+	assert.Never(t, func() bool { return sink.SpanCount() != 4 }, 400*time.Millisecond, 10*time.Millisecond)
+
+	batches := sink.AllTraces()
+	require.Len(t, batches, 2)
+	for _, b := range batches {
+		assert.Len(t, batchTraceIDs(b), 1, "a batch held spans from more than one trace")
+	}
 }

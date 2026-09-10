@@ -392,3 +392,48 @@ func TestSubtraceStorage_DeleteSubtraceIgnoresAge(t *testing.T) {
 	require.Len(t, calls, 1)
 	assert.Empty(t, st.subtraceIDs())
 }
+
+func TestSubtraceStorage_SpanIDReusedAcrossTraces(t *testing.T) {
+	st := newTestSubtraceStorage()
+	traceOne, traceTwo := makeTraceID(1), makeTraceID(2)
+	spanID := makeSpanID(1)
+
+	insertTestSpan(t, st, traceOne, spanID, pcommon.NewSpanIDEmpty(), "svc-a")
+	insertTestSpan(t, st, traceTwo, spanID, pcommon.NewSpanIDEmpty(), "svc-a")
+
+	require.Len(t, st.subtraceIDs(), 2, "one subtrace per trace, not one shared")
+
+	calls, err := st.deleteSubtrace(subtraceIDFor(traceOne, "svc-a"))
+	require.NoError(t, err)
+	require.Len(t, calls, 1)
+	require.Len(t, calls[0], 1)
+	assert.Equal(t, traceOne, calls[0][0].span.TraceID())
+
+	// The other trace is untouched.
+	require.Equal(t, []subtraceID{subtraceIDFor(traceTwo, "svc-a")}, st.subtraceIDs())
+	calls, err = st.deleteSubtrace(subtraceIDFor(traceTwo, "svc-a"))
+	require.NoError(t, err)
+	require.Len(t, calls, 1)
+	require.Len(t, calls[0], 1)
+	assert.Equal(t, traceTwo, calls[0][0].span.TraceID())
+}
+
+// One trace's spans must never be treated as another's entry-span evidence.
+func TestSubtraceStorage_ParentInAnotherTraceIsNotFound(t *testing.T) {
+	st := newTestSubtraceStorage()
+	traceOne, traceTwo := makeTraceID(1), makeTraceID(2)
+	caller := makeSpanID(1)
+	entry, other := makeSpanID(2), makeSpanID(3)
+
+	// traceOne holds the only span carrying the caller's ID.
+	insertTestSpan(t, st, traceOne, caller, pcommon.NewSpanIDEmpty(), "svc-a")
+	// traceTwo has two spans naming it as parent. Since it isn't in traceTwo,
+	// they are parentless there and stay together.
+	insertTestSpan(t, st, traceTwo, entry, caller, "svc-b")
+	insertTestSpan(t, st, traceTwo, other, caller, "svc-b")
+
+	calls, err := st.deleteSubtrace(subtraceIDFor(traceTwo, "svc-b"))
+	require.NoError(t, err)
+	require.Len(t, calls, 1, "a parent in a different trace must not make these separate calls")
+	assert.Equal(t, map[pcommon.SpanID]bool{entry: true, other: true}, spanIDSet(calls[0]))
+}
