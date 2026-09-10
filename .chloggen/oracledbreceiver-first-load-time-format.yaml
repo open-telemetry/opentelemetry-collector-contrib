@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: receiver/oracledbreceiver
+
+note: Format `first_load_time` and `last_load_time` on `db.server.top_query` events as ISO 8601 UTC timestamps, consistent with `last_active_time`, instead of Oracle's native non-standard format.
+
+issues: [50882]
+
+subtext:
+
+change_logs: []
