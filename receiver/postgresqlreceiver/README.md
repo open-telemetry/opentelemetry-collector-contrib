@@ -321,6 +321,16 @@ The feature gate `receiver.postgresql.useOTelSemconv` (alpha, disabled by defaul
 
 This gate is mutually exclusive with `receiver.postgresql.separateSchemaAttr` — both cannot be enabled simultaneously.
 
+### Server address resolution
+
+`server.address` and `server.port` describe the monitored server and are only emitted when the gate is
+enabled. When `endpoint` is a loopback address (`localhost`, `127.0.0.1`, or `::1`), the server is only
+reachable because it is co-located with the collector, so `server.address` reports the name of the
+machine running the collector rather than the loopback address, which every monitored host would
+otherwise report identically. This is the same host already used to derive `service.instance.id`, so
+the two attributes agree. Non-loopback endpoints are reported as configured, and with
+`transport: unix` the socket path is reported instead.
+
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)

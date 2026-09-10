@@ -2766,6 +2766,9 @@ func TestNewPostgreSQLScraperSemconvUnixServiceInstanceID(t *testing.T) {
 }
 
 func TestSetupSemconvResourceBuilder(t *testing.T) {
+	hostname, err := os.Hostname()
+	require.NoError(t, err)
+
 	cfg := createDefaultConfig().(*Config)
 	cfg.AddrConfig.Endpoint = "127.0.0.1:5432"
 	serviceInstanceID := uuid.NewSHA1(otelNamespaceUUID, []byte("collector-host:5432")).String()
@@ -2783,7 +2786,7 @@ func TestSetupSemconvResourceBuilder(t *testing.T) {
 
 	serverHost, ok := res.Attributes().Get("server.address")
 	require.True(t, ok)
-	assert.Equal(t, "127.0.0.1", serverHost.Str())
+	assert.Equal(t, hostname, serverHost.Str())
 
 	serverPort, ok := res.Attributes().Get("server.port")
 	require.True(t, ok)
@@ -2792,7 +2795,7 @@ func TestSetupSemconvResourceBuilder(t *testing.T) {
 	instanceID, ok := res.Attributes().Get("service.instance.id")
 	require.True(t, ok)
 	assert.Equal(t, serviceInstanceID, instanceID.Str())
-	_, err := uuid.Parse(instanceID.Str())
+	_, err = uuid.Parse(instanceID.Str())
 	require.NoError(t, err)
 
 	rb2 := scraper.mb.NewResourceBuilder()
@@ -2806,6 +2809,9 @@ func TestSetupSemconvResourceBuilder(t *testing.T) {
 }
 
 func TestServerEndpointAttributes(t *testing.T) {
+	hostname, err := os.Hostname()
+	require.NoError(t, err)
+
 	tests := []struct {
 		name            string
 		endpoint        string
@@ -2825,8 +2831,29 @@ func TestServerEndpointAttributes(t *testing.T) {
 			name:            "loopback IPv4",
 			endpoint:        "127.0.0.1:5433",
 			transport:       confignet.TransportTypeTCP,
-			expectedAddress: "127.0.0.1",
+			expectedAddress: hostname,
 			expectedPort:    5433,
+		},
+		{
+			name:            "loopback IPv6",
+			endpoint:        "[::1]:5432",
+			transport:       confignet.TransportTypeTCP,
+			expectedAddress: hostname,
+			expectedPort:    5432,
+		},
+		{
+			name:            "localhost",
+			endpoint:        "localhost:5432",
+			transport:       confignet.TransportTypeTCP,
+			expectedAddress: hostname,
+			expectedPort:    5432,
+		},
+		{
+			name:            "case-insensitive localhost",
+			endpoint:        "Localhost:5432",
+			transport:       confignet.TransportTypeTCP,
+			expectedAddress: hostname,
+			expectedPort:    5432,
 		},
 		{
 			name:            "IPv6",
@@ -2843,6 +2870,13 @@ func TestServerEndpointAttributes(t *testing.T) {
 			expectedPort:    5435,
 		},
 		{
+			name:            "Unix socket keeps a loopback-looking path",
+			endpoint:        "localhost:5432",
+			transport:       confignet.TransportTypeUnix,
+			expectedAddress: "/localhost/.s.PGSQL.5432",
+			expectedPort:    5432,
+		},
+		{
 			name:      "invalid endpoint",
 			endpoint:  "localhost",
 			transport: confignet.TransportTypeTCP,
@@ -2854,7 +2888,7 @@ func TestServerEndpointAttributes(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.AddrConfig.Endpoint = tt.endpoint
 			cfg.AddrConfig.Transport = tt.transport
-			address, port, err := serverEndpointAttributes(cfg)
+			address, port, err := serverEndpointAttributes(cfg, zap.NewNop())
 			if tt.wantErr {
 				require.Error(t, err)
 				return
@@ -2862,6 +2896,35 @@ func TestServerEndpointAttributes(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedAddress, address)
 			assert.Equal(t, tt.expectedPort, port)
+		})
+	}
+}
+
+// TestServerAddressAgreesWithServiceInstanceSeed guards against server.address and
+// service.instance.id resolving the same endpoint differently, which would leave a
+// single resource naming two different machines.
+func TestServerAddressAgreesWithServiceInstanceSeed(t *testing.T) {
+	endpoints := []string{
+		"localhost:5432",
+		"Localhost:5432",
+		"127.0.0.1:5432",
+		"[::1]:5432",
+		"db.example.com:5432",
+		"[2001:db8::1]:5432",
+	}
+
+	for _, endpoint := range endpoints {
+		t.Run(endpoint, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.AddrConfig.Endpoint = endpoint
+
+			address, _, err := serverEndpointAttributes(cfg, zap.NewNop())
+			require.NoError(t, err)
+
+			seedHost, _, err := net.SplitHostPort(resolveServiceInstanceSeed(cfg, zap.NewNop()))
+			require.NoError(t, err)
+
+			assert.Equal(t, seedHost, address)
 		})
 	}
 }

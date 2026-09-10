@@ -66,11 +66,17 @@ resource_attributes:
     enabled: true
     type: string
   server.address:
-    description: The address of the PostgreSQL server.
+    description: >-
+      The address of the PostgreSQL server. Only emitted when the receiver.postgresql.useOTelSemconv
+      feature gate is enabled. A loopback endpoint is reported as the name of the machine running the
+      collector, because the server is then co-located with it. With transport `unix` the socket path
+      is reported instead.
     enabled: true
     type: string
   server.port:
-    description: The port number of the PostgreSQL server.
+    description: >-
+      The port number of the PostgreSQL server. Only emitted when the receiver.postgresql.useOTelSemconv
+      feature gate is enabled.
     enabled: true
     type: int
   service.instance.id:

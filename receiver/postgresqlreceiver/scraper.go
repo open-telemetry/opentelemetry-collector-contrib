@@ -1270,7 +1270,7 @@ func (*postgreSQLScraper) retrieveBackends(
 func (p *postgreSQLScraper) setupSemconvResourceBuilder(rb *metadata.ResourceBuilder) *metadata.ResourceBuilder {
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
-	if address, port, err := serverEndpointAttributes(p.config); err == nil {
+	if address, port, err := serverEndpointAttributes(p.config, p.logger); err == nil {
 		rb.SetServerAddress(address)
 		rb.SetServerPort(port)
 	}
@@ -1278,7 +1278,7 @@ func (p *postgreSQLScraper) setupSemconvResourceBuilder(rb *metadata.ResourceBui
 	return rb
 }
 
-func serverEndpointAttributes(config *Config) (string, int64, error) {
+func serverEndpointAttributes(config *Config, logger *zap.Logger) (string, int64, error) {
 	host, portString, err := net.SplitHostPort(config.AddrConfig.Endpoint)
 	if err != nil {
 		return "", 0, err
@@ -1288,9 +1288,29 @@ func serverEndpointAttributes(config *Config) (string, int64, error) {
 		return "", 0, err
 	}
 	if config.AddrConfig.Transport == confignet.TransportTypeUnix {
-		host = path.Join("/", host, ".s.PGSQL."+portString)
+		return path.Join("/", host, ".s.PGSQL."+portString), port, nil
 	}
-	return host, port, nil
+	return resolveLoopbackHost(host, logger), port, nil
+}
+
+// resolveLoopbackHost returns the name of the machine running the collector when host
+// is a loopback address. A loopback endpoint is only reachable when the database is
+// co-located with the collector, so the collector's host name identifies the instance,
+// whereas "localhost" would be reported identically by every monitored host.
+func resolveLoopbackHost(host string, logger *zap.Logger) string {
+	parsedIP := net.ParseIP(host)
+	if !strings.EqualFold(host, "localhost") && (parsedIP == nil || !parsedIP.IsLoopback()) {
+		return host
+	}
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		logger.Warn("Failed to resolve the collector host name; reporting the configured loopback address instead",
+			zap.String("host", host),
+			zap.Error(err))
+		return host
+	}
+	return hostname
 }
 
 // setupLegacyResourceBuilder sets legacy per-entity resource attributes and host:port service.instance.id.
@@ -1326,7 +1346,7 @@ func (p *postgreSQLScraper) setupLogsResourceBuilder(rb *metadata.ResourceBuilde
 func resolveServiceInstanceSeed(config *Config, logger *zap.Logger) string {
 	endpoint := config.AddrConfig.Endpoint
 	if config.AddrConfig.Transport == confignet.TransportTypeUnix {
-		address, _, err := serverEndpointAttributes(config)
+		address, _, err := serverEndpointAttributes(config, logger)
 		if err != nil {
 			logger.Warn("Failed to parse Unix endpoint for service.instance.id; using raw endpoint in UUID seed",
 				zap.String("endpoint", endpoint),
@@ -1352,19 +1372,13 @@ func resolveServiceInstanceSeed(config *Config, logger *zap.Logger) string {
 		return endpoint
 	}
 
-	parsedIP := net.ParseIP(host)
-	if !strings.EqualFold(host, "localhost") && (parsedIP == nil || !parsedIP.IsLoopback()) {
+	// Returning the endpoint untouched when nothing was resolved keeps already
+	// published UUIDs stable instead of round-tripping them through JoinHostPort.
+	resolved := resolveLoopbackHost(host, logger)
+	if resolved == host {
 		return endpoint
 	}
-
-	hostname, err := os.Hostname()
-	if err != nil {
-		logger.Warn("Failed to resolve hostname for service.instance.id; UUID may not be unique for co-hosted receivers on different machines",
-			zap.String("endpoint", endpoint),
-			zap.Error(err))
-		return endpoint
-	}
-	return net.JoinHostPort(hostname, port)
+	return net.JoinHostPort(resolved, port)
 }
 
 func getInstanceID(instanceString string, logger *zap.Logger) string {
@@ -1375,13 +1389,5 @@ func getInstanceID(instanceString string, logger *zap.Logger) string {
 		return fallback
 	}
 
-	if strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback() {
-		localhost, hostNameErr := os.Hostname()
-		if hostNameErr != nil {
-			logger.Warn("Failed getting localhost machine name to construct service.instance.id.")
-		} else {
-			host = localhost
-		}
-	}
-	return host + ":" + port
+	return resolveLoopbackHost(host, logger) + ":" + port
 }

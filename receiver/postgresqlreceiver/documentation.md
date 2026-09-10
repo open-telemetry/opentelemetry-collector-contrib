@@ -725,8 +725,8 @@ top query
 | postgresql.index.name | The name of the index on a table. | Any Str | true | - | - |
 | postgresql.schema.name | The schema name. | Any Str | true | - | - |
 | postgresql.table.name | The table name. | Any Str | true | - | - |
-| server.address | The address of the PostgreSQL server. | Any Str | true | - | - |
-| server.port | The port number of the PostgreSQL server. | Any Int | true | - | - |
+| server.address | The address of the PostgreSQL server. Only emitted when the receiver.postgresql.useOTelSemconv feature gate is enabled. A loopback endpoint is reported as the name of the machine running the collector, because the server is then co-located with it. With transport `unix` the socket path is reported instead. | Any Str | true | - | - |
+| server.port | The port number of the PostgreSQL server. Only emitted when the receiver.postgresql.useOTelSemconv feature gate is enabled. | Any Int | true | - | - |
 | service.instance.id | A unique identifier of the PostgreSQL instance. | Any Str | true | - | - |
 | service.name | Logical name of the service. When enabled, defaults to unknown_service:postgresql. | Any Str | false | - | - |
 | service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |
