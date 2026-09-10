@@ -537,7 +537,6 @@ Available Converters:
 
 - [All](#all)
 - [Any](#any)
-- [Base64Decode](#base64decode-deprecated)
 - [Base64Encode](#base64encode)
 - [Bool](#bool)
 - [Decode](#decode)
@@ -709,23 +708,6 @@ Check whether any map key matches:
 Use in a condition:
 
 - `set(log.attributes["has_prod"], true) where Any(log.attributes["tags"], (_, v) => v == "prod")`
-
-### Base64Decode (Deprecated)
-
-*This function has been deprecated. Please use the [Decode](#decode) function instead.*
-
-`Base64Decode(value)`
-
-The `Base64Decode` Converter takes a base64 encoded string and returns the decoded string.
-
-`value` is a valid base64 encoded string.
-
-Examples:
-
-- `Base64Decode("aGVsbG8gd29ybGQ=")`
-
-
-- `Base64Decode(resource.attributes["encoded field"])`
 
 ### Base64Encode
 

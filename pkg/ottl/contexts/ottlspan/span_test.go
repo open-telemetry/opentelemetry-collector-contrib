@@ -685,7 +685,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			require.NoError(t, err)
 
 			rs, ss, span := createTelemetry()
-			tCtx := NewTransformContextPtr(rs, ss, span)
+			tCtx := NewTransformContext(rs, ss, span)
 			defer tCtx.Close()
 
 			got, err := accessor.Get(t.Context(), tCtx)
@@ -712,7 +712,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	instrumentationScope := rs.ScopeSpans().AppendEmpty().Scope()
 	instrumentationScope.SetName("instrumentation_scope")
 
-	tCtx := NewTransformContextPtr(rs, rs.ScopeSpans().At(0), ptrace.NewSpan())
+	tCtx := NewTransformContext(rs, rs.ScopeSpans().At(0), ptrace.NewSpan())
 	defer tCtx.Close()
 
 	tests := []struct {
