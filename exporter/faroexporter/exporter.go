@@ -47,8 +47,8 @@ const (
 func newExporter(cfg component.Config, set exporter.Settings) (*faroExporter, error) {
 	oCfg := cfg.(*Config)
 
-	if oCfg.Endpoint != "" {
-		_, err := url.Parse(oCfg.Endpoint)
+	if oCfg.ClientConfig.Endpoint != "" {
+		_, err := url.Parse(oCfg.ClientConfig.Endpoint)
 		if err != nil {
 			return nil, errors.New("endpoint must be a valid URL")
 		}
@@ -66,7 +66,7 @@ func newExporter(cfg component.Config, set exporter.Settings) (*faroExporter, er
 }
 
 func (fe *faroExporter) start(ctx context.Context, host component.Host) error {
-	client, err := fe.config.ToClient(ctx, host.GetExtensions(), fe.settings)
+	client, err := fe.config.ClientConfig.ToClient(ctx, host.GetExtensions(), fe.settings)
 	if err != nil {
 		return err
 	}
@@ -91,12 +91,12 @@ func (fe *faroExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 }
 
 func (fe *faroExporter) export(ctx context.Context, fp *faro.Payload) error {
-	fe.logger.Debug("Preparing to make HTTP request", zap.String("endpoint", fe.config.Endpoint))
+	fe.logger.Debug("Preparing to make HTTP request", zap.String("endpoint", fe.config.ClientConfig.Endpoint))
 	request, err := json.Marshal(fp)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fe.config.Endpoint, bytes.NewReader(request))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fe.config.ClientConfig.Endpoint, bytes.NewReader(request))
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -123,7 +123,7 @@ func (fe *faroExporter) export(ctx context.Context, fp *faro.Payload) error {
 
 	errString = fmt.Sprintf(
 		"error exporting items, request to %s responded with HTTP Status Code %d, Message=%s",
-		fe.config.Endpoint, resp.StatusCode, bodyContent)
+		fe.config.ClientConfig.Endpoint, resp.StatusCode, bodyContent)
 	formattedErr = newStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
 
 	if isRetryableStatusCode(resp.StatusCode) {

@@ -12,5 +12,5 @@ type Config struct {
 	// If true, metrics will be average load per cpu
 	CPUAverage bool `mapstructure:"cpu_average"`
 	// MetricsBuilderConfig allows to customize scraped metrics/attributes representation.
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }

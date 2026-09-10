@@ -40,38 +40,74 @@ type S3Service interface {
 
 // S3Provider expose contract to get S3Service
 type S3Provider interface {
-	GetService(ctx context.Context, options AWSOptions) (S3Service, error)
+	GetService(ctx context.Context) (S3Service, error)
+	GetServiceForConfig(ctx context.Context, options AWSOptions) (S3Service, error)
 }
 
 // S3ServiceProvider provides S3Service instances.
 type S3ServiceProvider struct {
-	service S3Service
-	err     error
+	mu sync.Mutex
 
-	once sync.Once
+	// defaultService is built with the default AWS credential chain.
+	defaultService S3Service
+
+	// configService is built with the optional static credential overrides.
+	configService S3Service
 }
 
-func (s *S3ServiceProvider) GetService(ctx context.Context, awsOptions AWSOptions) (S3Service, error) {
-	s.once.Do(func() {
-		cfg, err := config.LoadDefaultConfig(ctx)
-		if err != nil {
-			s.err = fmt.Errorf("unable to load AWS SDK config: %w", err)
-			return
-		}
+// GetService returns a service built from the default AWS credential chain.
+func (s *S3ServiceProvider) GetService(ctx context.Context) (S3Service, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-		// Use static creds if provided
-		if awsOptions.AccessKeyID != "" && awsOptions.SecretAccessKey != "" {
-			cfg.Credentials = credentials.NewStaticCredentialsProvider(
-				awsOptions.AccessKeyID,
-				string(awsOptions.SecretAccessKey),
-				string(awsOptions.SessionToken),
-			)
-		}
+	if s.defaultService != nil {
+		return s.defaultService, nil
+	}
 
-		s.service = &s3ServiceClient{api: s3.NewFromConfig(cfg)}
-	})
+	service, err := newS3Service(ctx, AWSOptions{})
+	if err != nil {
+		return nil, err
+	}
 
-	return s.service, s.err
+	s.defaultService = service
+	return s.defaultService, nil
+}
+
+// GetServiceForConfig returns a service honoring the optional static credential overrides in awsOptions.
+func (s *S3ServiceProvider) GetServiceForConfig(ctx context.Context, awsOptions AWSOptions) (S3Service, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.configService != nil {
+		return s.configService, nil
+	}
+
+	service, err := newS3Service(ctx, awsOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	s.configService = service
+	return s.configService, nil
+}
+
+// newS3Service is a helper to derive S3Service.
+func newS3Service(ctx context.Context, awsOptions AWSOptions) (S3Service, error) {
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("unable to load AWS SDK config: %w", err)
+	}
+
+	// Use static creds if provided
+	if awsOptions.AccessKeyID != "" && awsOptions.SecretAccessKey != "" {
+		cfg.Credentials = credentials.NewStaticCredentialsProvider(
+			awsOptions.AccessKeyID,
+			string(awsOptions.SecretAccessKey),
+			string(awsOptions.SessionToken),
+		)
+	}
+
+	return &s3ServiceClient{api: s3.NewFromConfig(cfg)}, nil
 }
 
 // s3ServiceClient implements the S3Service

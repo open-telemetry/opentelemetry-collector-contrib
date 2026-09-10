@@ -20,7 +20,7 @@ Number of bytes transferred from the disk by the container
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### container.blockio.io_service_bytes_recursive.write
 
@@ -30,7 +30,7 @@ Number of bytes transferred to the disk by the container
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### container.cpu.percent
 

@@ -216,8 +216,8 @@ func compareDatapointValues(expected, actual datapointAssertion) error {
 	if expected.ExplicitBounds != nil {
 		if actual.ExplicitBounds == nil {
 			errs = append(errs, errors.New("missing expected explicit_bounds"))
-		} else if !slices.Equal(expected.ExplicitBounds, actual.ExplicitBounds) {
-			errs = append(errs, fmt.Errorf("explicit_bounds mismatch: expected %v, got %v", expected.ExplicitBounds, actual.ExplicitBounds))
+		} else if !slices.Equal(*expected.ExplicitBounds, *actual.ExplicitBounds) {
+			errs = append(errs, fmt.Errorf("explicit_bounds mismatch: expected %v, got %v", *expected.ExplicitBounds, *actual.ExplicitBounds))
 		}
 	}
 	if expected.BucketCounts != nil {

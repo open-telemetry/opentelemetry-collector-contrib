@@ -1,0 +1,34 @@
+default:
+all_set:
+  metrics:
+    dnscheck.duration:
+      enabled: true
+      attributes: ["dns.domain","dns.record.type","dns.server"]
+    dnscheck.error:
+      enabled: true
+      attributes: ["dns.domain","dns.record.type","dns.server","error.message"]
+    dnscheck.status:
+      enabled: true
+      attributes: ["dns.domain","dns.rcode","dns.record.type","dns.resolved.all.ips","dns.resolved.ip","dns.server"]
+reaggregate_set:
+  metrics:
+    dnscheck.duration:
+      enabled: true
+      attributes: []
+    dnscheck.error:
+      enabled: true
+      attributes: []
+    dnscheck.status:
+      enabled: true
+      attributes: []
+none_set:
+  metrics:
+    dnscheck.duration:
+      enabled: false
+      attributes: ["dns.domain","dns.record.type","dns.server"]
+    dnscheck.error:
+      enabled: false
+      attributes: ["dns.domain","dns.record.type","dns.server","error.message"]
+    dnscheck.status:
+      enabled: false
+      attributes: ["dns.domain","dns.rcode","dns.record.type","dns.resolved.all.ips","dns.resolved.ip","dns.server"]

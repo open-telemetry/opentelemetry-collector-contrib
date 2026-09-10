@@ -183,14 +183,14 @@ func iterativeParse(partialLayout, format string, startIndex int, indexes [][]in
 	tryElements := func(elements ...string) (int, string) {
 		out, layout, err = iterativeParse(partialLayout+strings.Join(elements, ""), format, indexes[0][1], indexes[1:], parse)
 		var timeErr *time.ParseError
-		if errors.As(err, &timeErr) {
+		if errors.As(err, &timeErr) && timeErr.LayoutElem != "" {
 			if i := slices.Index(elements, timeErr.LayoutElem); i >= 0 {
 				timeErr.LayoutElem = directive
 				return i, timeErr.ValueElem
 			}
 		}
 		var lunesErr *lunes.ErrLayoutMismatch
-		if errors.As(err, &lunesErr) {
+		if errors.As(err, &lunesErr) && lunesErr.LayoutElem != "" {
 			if i := slices.Index(elements, lunesErr.LayoutElem); i >= 0 {
 				lunesErr.LayoutElem = directive
 				return i, "unknown"
@@ -237,7 +237,7 @@ func iterativeParse(partialLayout, format string, startIndex int, indexes [][]in
 		return out, layout, err
 	}
 	if subst, ok := ctimeSubstitutes[directive]; ok {
-		try("", subst)
+		try(subst)
 		return out, layout, err
 	}
 	return time.Time{}, "", fmt.Errorf("unsupported ctimefmt.FlexibleParse() directive: %s", directive)

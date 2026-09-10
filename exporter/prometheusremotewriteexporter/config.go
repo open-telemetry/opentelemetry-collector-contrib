@@ -6,6 +6,7 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 import (
 	"errors"
 	"fmt"
+	"net/textproto"
 
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"go.opentelemetry.io/collector/component"
@@ -20,8 +21,8 @@ import (
 
 // Config defines configuration for Remote Write exporter.
 type Config struct {
-	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	TimeoutSettings exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	BackOffConfig   configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 
 	// prefix attached to each exported metric name
 	// See: https://prometheus.io/docs/practices/naming/#metric-names
@@ -72,6 +73,16 @@ type Config struct {
 
 	// RemoteWriteProtoMsg controls whether prometheus remote write v1 or v2 is sent.
 	RemoteWriteProtoMsg remoteapi.WriteMessageType `mapstructure:"protobuf_message,omitempty"`
+
+	// IncludeMetadataKeys is a list of client metadata keys whose values are
+	// forwarded as HTTP request headers on every remote write call.
+	IncludeMetadataKeys []string `mapstructure:"include_metadata_keys"`
+
+	// ConvertExplicitHistogramsToNHCB converts explicit-bucket histograms to NHCB (schema -53) instead of classic series.
+	ConvertExplicitHistogramsToNHCB bool `mapstructure:"convert_explicit_histograms_to_nhcb"`
+
+	// KeepClassicHistograms also emits the classic series alongside NHCB; no effect unless convert_explicit_histograms_to_nhcb is set.
+	KeepClassicHistograms bool `mapstructure:"keep_classic_histograms"`
 }
 
 type translationStrategy string
@@ -118,6 +129,16 @@ type RemoteWriteQueue struct {
 
 // TODO(jbd): Add capacity, max_samples_per_send to QueueConfig.
 
+// reservedRemoteWriteHeaders are managed by the remote write protocol itself and
+// must not be overwritten by headers forwarded from client metadata. Keys are
+// stored in canonical MIME form for case-insensitive matching.
+var reservedRemoteWriteHeaders = map[string]struct{}{
+	textproto.CanonicalMIMEHeaderKey("Content-Encoding"):                  {},
+	textproto.CanonicalMIMEHeaderKey("Content-Type"):                      {},
+	textproto.CanonicalMIMEHeaderKey("User-Agent"):                        {},
+	textproto.CanonicalMIMEHeaderKey("X-Prometheus-Remote-Write-Version"): {},
+}
+
 var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
@@ -139,7 +160,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.MaxBatchSizeBytes < 0 {
-		return errors.New("max_batch_byte_size must be greater than 0")
+		return errors.New("max_batch_size_bytes must be greater than 0")
 	}
 	if cfg.MaxBatchSizeBytes == 0 {
 		// Defaults to ~2.81MB
@@ -169,6 +190,12 @@ func (cfg *Config) Validate() error {
 
 		if cfg.RemoteWriteProtoMsg == remoteapi.WriteV1MessageType && (cfg.TranslationStrategy == noUTF8EscapingWithSuffixes || cfg.TranslationStrategy == noTranslation) {
 			return fmt.Errorf("translation strategy %s requires Prometheus Remote Write 2.0 (UTF-8 support)", cfg.TranslationStrategy)
+		}
+	}
+
+	for _, key := range cfg.IncludeMetadataKeys {
+		if _, reserved := reservedRemoteWriteHeaders[textproto.CanonicalMIMEHeaderKey(key)]; reserved {
+			return fmt.Errorf("include_metadata_keys entry %q collides with a reserved remote write header", key)
 		}
 	}
 

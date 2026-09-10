@@ -18,6 +18,7 @@ beta_modules=(
   "go.opentelemetry.io/collector/config/configgrpc"
   "go.opentelemetry.io/collector/config/confighttp"
   "go.opentelemetry.io/collector/config/confighttp/xconfighttp"
+  "go.opentelemetry.io/collector/config/configstorage"
   "go.opentelemetry.io/collector/config/configtelemetry"
   "go.opentelemetry.io/collector/connector"
   "go.opentelemetry.io/collector/connector/connectortest"

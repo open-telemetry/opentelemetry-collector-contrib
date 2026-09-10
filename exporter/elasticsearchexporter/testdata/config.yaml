@@ -147,3 +147,13 @@ elasticsearch/backward_compat_for_deprecated_cfgs/fallback_to_old_cfg:
 elasticsearch/suppress_conflict_errors:
   endpoint: https://elastic.example.com:9200
   suppress_conflict_errors: true
+elasticsearch/retry_on_document_status:
+  endpoint: https://elastic.example.com:9200
+  retry:
+    retry_on_status: [429, 500]
+    retry_on_document_status: [400, 409]
+elasticsearch/retry_on_document_status_empty:
+  endpoint: https://elastic.example.com:9200
+  retry:
+    retry_on_status: [429, 500]
+    retry_on_document_status: []

@@ -143,6 +143,30 @@ func TestNewConfigComponent_WithOptions(t *testing.T) {
 	}
 }
 
+// TestWithAPIConfig_OverridesEnvVar guards against a regression where NewConfigComponent's
+// BuildSchema call rebuilds the config's environment-variable layer from the process
+// environment and silently discards an explicitly-configured API key/site if DD_API_KEY or
+// DD_SITE happen to be set (e.g. because the collector runs alongside a Datadog Agent that
+// injects those variables). The value passed to WithAPIConfig must always win.
+func TestWithAPIConfig_OverridesEnvVar(t *testing.T) {
+	t.Setenv("DD_API_KEY", "env-var-api-key")
+	t.Setenv("DD_SITE", "env-var-site.example.com")
+
+	configComponent := NewConfigComponent(
+		WithAPIConfig(&datadogconfig.Config{
+			API: datadogconfig.APIConfig{
+				Key:  configopaque.String("explicit-api-key"),
+				Site: "datadoghq.eu",
+			},
+		}),
+	)
+	require.NotNil(t, configComponent)
+
+	config := configComponent.(pkgconfigmodel.Config)
+	assert.Equal(t, "explicit-api-key", config.GetString("api_key"))
+	assert.Equal(t, "datadoghq.eu", config.GetString("site"))
+}
+
 func TestWithLogsConfig(t *testing.T) {
 	tests := []struct {
 		name           string

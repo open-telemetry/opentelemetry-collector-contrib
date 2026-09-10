@@ -22,6 +22,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	clienttesting "k8s.io/client-go/testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
@@ -76,6 +77,99 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, dataLen, md.DataPointCount())
 	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_expected.yaml")
+
+	// Uncomment to regenerate '*_expected.yaml' files
+	// golden.WriteMetrics(t, expectedFile, md)
+
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
+}
+
+func TestScraperWithCPUUsageScrapeBased(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, true)()
+
+	options := &scraperOptions{
+		metricGroupsToCollect: allMetricGroups,
+	}
+	r, err := newKubeletScraper(
+		&fakeRestClient{},
+		receivertest.NewNopSettings(metadata.Type),
+		options,
+		metadata.NewDefaultMetricsBuilderConfig(),
+		"worker-42",
+	)
+	require.NoError(t, err)
+
+	// First scrape: there is no previous CPU-time sample yet, so no *.cpu.usage metrics
+	// are emitted. container.cpu.time/k8s.pod.cpu.time/k8s.node.cpu.time (the cumulative
+	// counters the usage is calculated from) are unaffected and still emitted.
+	md, err := r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, dataLen-numNodes-numPods-numContainers, md.DataPointCount())
+
+	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_cpu_usage_scrape_based_expected.yaml")
+
+	// Uncomment to regenerate '*_expected.yaml' files
+	// golden.WriteMetrics(t, expectedFile, md)
+
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
+
+	// Second scrape: the fixture's kubelet CPU sample time is static, so the elapsed
+	// time between the two scrapes is 0 and usage still isn't recorded. This exercises
+	// the "stale/duplicate sample" guard against a real (non-synthetic) fixture.
+	md2, err := r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, dataLen-numNodes-numPods-numContainers, md2.DataPointCount())
+}
+
+func TestScraperWithCPUUsageScrapeBasedSecondScrape(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, true)()
+
+	// testdata/stats-summary-second-scrape.json is a copy of testdata/stats-summary.json
+	// with every resource's cpu.time advanced by 2 seconds and its cumulative
+	// usageCoreNanoSeconds advanced by 2 CPU-seconds, so every *.cpu.usage metric should
+	// come out to (2 CPU-seconds)/(2 seconds) = 1 core on the second scrape.
+	rc := &fakeRestClient{
+		statsSummaryFiles: []string{
+			"testdata/stats-summary.json",
+			"testdata/stats-summary-second-scrape.json",
+		},
+	}
+	options := &scraperOptions{
+		metricGroupsToCollect: allMetricGroups,
+	}
+	r, err := newKubeletScraper(
+		rc,
+		receivertest.NewNopSettings(metadata.Type),
+		options,
+		metadata.NewDefaultMetricsBuilderConfig(),
+		"worker-42",
+	)
+	require.NoError(t, err)
+
+	// First scrape: no previous CPU-time sample yet, so no *.cpu.usage metrics.
+	_, err = r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+
+	// Second scrape: a real rate can now be calculated for every resource.
+	md, err := r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, dataLen, md.DataPointCount())
+
+	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_cpu_usage_scrape_based_second_scrape_expected.yaml")
 
 	// Uncomment to regenerate '*_expected.yaml' files
 	// golden.WriteMetrics(t, expectedFile, md)
@@ -942,13 +1036,29 @@ var _ kubelet.RestClient = (*fakeRestClient)(nil)
 type fakeRestClient struct {
 	statsSummaryFail bool
 	podsFail         bool
+
+	// statsSummaryFiles, if non-empty, is consulted instead of the default
+	// testdata/stats-summary.json: each call to StatsSummary returns the next file in
+	// the list, and the last file is repeated for any calls beyond the list's length.
+	// This allows tests to simulate consecutive scrapes returning different data.
+	statsSummaryFiles     []string
+	statsSummaryCallCount int
 }
 
 func (f *fakeRestClient) StatsSummary() ([]byte, error) {
 	if f.statsSummaryFail {
 		return nil, errors.New("")
 	}
-	return os.ReadFile("testdata/stats-summary.json")
+	file := "testdata/stats-summary.json"
+	if len(f.statsSummaryFiles) > 0 {
+		idx := f.statsSummaryCallCount
+		if idx >= len(f.statsSummaryFiles) {
+			idx = len(f.statsSummaryFiles) - 1
+		}
+		file = f.statsSummaryFiles[idx]
+	}
+	f.statsSummaryCallCount++
+	return os.ReadFile(file)
 }
 
 func (f *fakeRestClient) Pods() ([]byte, error) {

@@ -19,9 +19,16 @@ import (
 func TestS3ServiceProvider(t *testing.T) {
 	provider := S3ServiceProvider{}
 
-	service, err := provider.GetService(t.Context(), AWSOptions{})
+	service, err := provider.GetService(t.Context())
 	require.NoError(t, err)
 	require.NotNil(t, service)
+
+	serviceWithCfg, err := provider.GetServiceForConfig(t.Context(), AWSOptions{})
+	require.NoError(t, err)
+	require.NotNil(t, service)
+
+	// Services are different instances
+	require.NotEqual(t, service, serviceWithCfg)
 }
 
 func TestS3ServiceReadObject(t *testing.T) {

@@ -31,7 +31,7 @@ func TestIntegration(t *testing.T) {
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
-				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, memcachedPort))
+				rCfg.AddrConfig.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, memcachedPort))
 			}),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),

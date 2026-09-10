@@ -11,7 +11,9 @@ import (
 
 type contextKey int
 
-const clientContextKey contextKey = iota
+const (
+	clientContextKey contextKey = iota
+)
 
 // ContextWithClient returns a new context.Context with the provided *http.Client stored as a value.
 func ContextWithClient(ctx context.Context, client *http.Client) context.Context {

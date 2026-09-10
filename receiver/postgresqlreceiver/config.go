@@ -9,12 +9,15 @@ import (
 	"net"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
@@ -25,6 +28,8 @@ const (
 	ErrNotSupported        = "invalid config: field '%s' not supported"
 	ErrTransportsSupported = "invalid config: 'transport' must be 'tcp' or 'unix'"
 	ErrHostPort            = "invalid config: 'endpoint' must be in the form <host>:<port> no matter what 'transport' is configured"
+	// #nosec G101 - not hardcoded credentials
+	ErrPasswordAndDBAuth = "invalid config: set either 'password' or 'db_auth', not both"
 )
 
 type TopQueryCollection struct {
@@ -46,17 +51,22 @@ type QuerySampleCollection struct {
 
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Username                       string                         `mapstructure:"username"`
-	Password                       configopaque.String            `mapstructure:"password"`
-	Databases                      []string                       `mapstructure:"databases"`
-	ExcludeDatabases               []string                       `mapstructure:"exclude_databases"`
-	confignet.AddrConfig           `mapstructure:",squash"`       // provides Endpoint and Transport
-	configtls.ClientConfig         `mapstructure:"tls,omitempty"` // provides SSL details
+	Username                       string                 `mapstructure:"username"`
+	Password                       configopaque.String    `mapstructure:"password"`
+	Databases                      []string               `mapstructure:"databases"`
+	ExcludeDatabases               []string               `mapstructure:"exclude_databases"`
+	AddrConfig                     confignet.AddrConfig   `mapstructure:",squash"`       // provides Endpoint and Transport
+	ClientConfig                   configtls.ClientConfig `mapstructure:"tls,omitempty"` // provides SSL details
 	ConnectionPool                 `mapstructure:"connection_pool,omitempty"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	metadata.LogsBuilderConfig     `mapstructure:",squash"`
+	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	LogsBuilderConfig              metadata.LogsBuilderConfig    `mapstructure:",squash"`
 	QuerySampleCollection          `mapstructure:"query_sample_collection,omitempty"`
 	TopQueryCollection             `mapstructure:"top_query_collection,omitempty"`
+	// DBAuth optionally sources the connection credential from a db_auth provider
+	// extension (e.g. AWS IAM) instead of a static password. When set, the provider
+	// supplies the password at connection-open time. Mutually exclusive with the
+	// top-level password field.
+	DBAuth configdbauth.ID `mapstructure:"db_auth,omitempty"`
 }
 
 type ConnectionPool struct {
@@ -71,24 +81,34 @@ func (cfg *Config) Validate() error {
 	if cfg.Username == "" {
 		err = multierr.Append(err, errors.New(ErrNoUsername))
 	}
-	if cfg.Password == "" {
+
+	// Credential source precedence (R12): a static password and a db_auth block
+	// are mutually exclusive. A username alongside a db_auth block is expected —
+	// the provider may use it as a mint input. When a db_auth block is configured,
+	// the password is supplied by the provider, so the top-level password is not
+	// required.
+	dbAuthConfigured := !cfg.DBAuth.IsEmpty()
+	switch {
+	case dbAuthConfigured && cfg.Password != "":
+		err = multierr.Append(err, errors.New(ErrPasswordAndDBAuth))
+	case !dbAuthConfigured && cfg.Password == "":
 		err = multierr.Append(err, errors.New(ErrNoPassword))
 	}
 
 	// The lib/pq module does not support overriding ServerName or specifying supported TLS versions
-	if cfg.ServerName != "" {
+	if cfg.ClientConfig.ServerName != "" {
 		err = multierr.Append(err, fmt.Errorf(ErrNotSupported, "ServerName"))
 	}
-	if cfg.MaxVersion != "" {
+	if cfg.ClientConfig.MaxVersion != "" {
 		err = multierr.Append(err, fmt.Errorf(ErrNotSupported, "MaxVersion"))
 	}
-	if cfg.MinVersion != "" {
+	if cfg.ClientConfig.MinVersion != "" {
 		err = multierr.Append(err, fmt.Errorf(ErrNotSupported, "MinVersion"))
 	}
 
-	switch cfg.Transport {
+	switch cfg.AddrConfig.Transport {
 	case confignet.TransportTypeTCP, confignet.TransportTypeUnix:
-		_, _, endpointErr := net.SplitHostPort(cfg.Endpoint)
+		_, _, endpointErr := net.SplitHostPort(cfg.AddrConfig.Endpoint)
 		if endpointErr != nil {
 			err = multierr.Append(err, errors.New(ErrHostPort))
 		}
@@ -97,4 +117,19 @@ func (cfg *Config) Validate() error {
 	}
 
 	return err
+}
+
+// resolveCredentialProvider resolves the db_auth credential provider named in the
+// db_auth block from the host extension map, or returns (nil, nil) when no db_auth
+// block is configured (the receiver then uses its static password). The receiver
+// imports no provider packages — the provider is referenced by component ID and
+// resolved from the declared extensions. Provider-wide inputs (such as the AWS IAM
+// provider's region) live on the extension's own config; the per-connection inputs
+// (endpoint and username) travel with each GetCredential call, keeping the receiver
+// agnostic to any provider's config.
+func (cfg *Config) resolveCredentialProvider(extensions map[component.ID]component.Component) (dbauth.Provider, error) {
+	if cfg.DBAuth.IsEmpty() {
+		return nil, nil
+	}
+	return cfg.DBAuth.GetProvider(extensions)
 }

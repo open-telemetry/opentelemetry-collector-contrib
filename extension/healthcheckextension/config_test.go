@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/metadata"
@@ -81,7 +81,7 @@ func TestLoadConfigLegacy(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "response-body"),
 			expected: func() component.Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.ResponseBody = &healthcheck.ResponseBodyConfig{
+				cfg.Config.ResponseBody = &healthcheck.ResponseBodyConfig{
 					Healthy:   "I'm OK",
 					Unhealthy: "I'm not well",
 				}
@@ -99,10 +99,10 @@ func TestLoadConfigLegacy(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 			if tt.expectedErr != nil {
-				assert.ErrorIs(t, xconfmap.Validate(cfg), tt.expectedErr)
+				assert.ErrorIs(t, confmap.Validate(cfg), tt.expectedErr)
 				return
 			}
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -116,11 +116,11 @@ func TestLoadConfigV2WithoutGate(t *testing.T) {
 	sub, err := cm.Sub("health_check/v2-http-only")
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	assert.NotNil(t, cfg.(*Config).HTTPConfig)
+	assert.NotNil(t, cfg.(*Config).Config.HTTPConfig)
 
 	// Without the feature gate, v2 config should cause a validation error.
 	// This makes it immediately obvious to users that the configuration is invalid.
-	err = xconfmap.Validate(cfg)
+	err = confmap.Validate(cfg)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "v2 healthcheck configuration")
 	assert.Contains(t, err.Error(), "feature gate is disabled")
@@ -141,7 +141,7 @@ func TestLoadConfigV2WithGate(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	assert.NoError(t, xconfmap.Validate(cfg))
+	assert.NoError(t, confmap.Validate(cfg))
 	legacyServerConfig := confighttp.NewDefaultServerConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	legacyServerConfig.WriteTimeout = 0

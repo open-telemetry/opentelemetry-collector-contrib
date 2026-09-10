@@ -38,7 +38,7 @@ func (sr *StefDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ cons
 	var err error
 	f := stefreceiver.NewFactory()
 	config := f.CreateDefaultConfig()
-	config.(*stefreceiver.Config).NetAddr.Endpoint = fmt.Sprintf("127.0.0.1:%d", sr.Port)
+	config.(*stefreceiver.Config).ServerConfig.NetAddr.Endpoint = fmt.Sprintf("127.0.0.1:%d", sr.Port)
 
 	set := receivertest.NewNopSettings(f.Type())
 	if sr.Logger != nil {

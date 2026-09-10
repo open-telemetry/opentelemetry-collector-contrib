@@ -1,0 +1,88 @@
+display_name: DNS Check Receiver
+type: dns_check
+
+description: |
+  The DNS Check Receiver can be used for synthetic checks against DNS servers.
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: [dmitryax]
+
+resource_attributes:
+
+attributes:
+  dns.domain:
+    description: Domain name queried.
+    type: string
+    requirement_level: recommended
+  dns.rcode:
+    description: >-
+      DNS response code (RCODE) returned for the query. Only present when a
+      response was received from the server, including non-success responses
+      such as NXDOMAIN, SERVFAIL, or REFUSED. Absent when no response was
+      received at all (e.g. timeout or network unreachable). See the RCODE
+      Reference table in the README for the meaning of each value, based on
+      the IANA DNS Parameters registry
+      (https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-6).
+    type: int
+    requirement_level: recommended
+  dns.record.type:
+    description: Record type queried.
+    type: string
+    requirement_level: recommended
+  dns.resolved.all.ips:
+    description: All resolved IP addresses.
+    type: string
+    requirement_level: recommended
+  dns.resolved.ip:
+    description: First/primary resolved IP address.
+    type: string
+    requirement_level: recommended
+  dns.server:
+    description: Address of the DNS server queried.
+    type: string
+    requirement_level: recommended
+  error.message:
+    description: Error message recorded when the DNS check fails.
+    type: string
+    requirement_level: recommended
+
+metrics:
+  dnscheck.duration:
+    description: Round-trip duration of the DNS query.
+    enabled: true
+    stability: development
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [dns.domain, dns.record.type, dns.server]
+  dnscheck.error:
+    description: Number of errors recorded during the DNS check.
+    enabled: false
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    unit: "{error}"
+    attributes: [dns.domain, dns.record.type, dns.server, error.message]
+  dnscheck.status:
+    description: >-
+      1 if the DNS query returned successfully, 0 otherwise. The
+      dns.resolved.ip and dns.resolved.all.ips attributes are only present
+      when the value is 1. The dns.rcode attribute is present whenever a
+      response was received from the server, including non-success responses
+      such as NXDOMAIN, SERVFAIL, or REFUSED; it is absent only when no
+      response was received at all (e.g. timeout or network unreachable).
+    enabled: true
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    unit: "1"
+    attributes: [dns.domain, dns.rcode, dns.record.type, dns.resolved.all.ips, dns.resolved.ip, dns.server]

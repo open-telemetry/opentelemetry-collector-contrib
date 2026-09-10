@@ -125,6 +125,9 @@ func (c *Consumer) ConsumeTimeSeries(
 			Type: datadog.PtrString("host"),
 		},
 	})
+	if unit := dims.Unit(); unit != "" {
+		met.SetUnit(unit)
+	}
 	c.ms = append(c.ms, met)
 }
 

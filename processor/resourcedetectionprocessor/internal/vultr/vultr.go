@@ -37,14 +37,14 @@ type Detector struct {
 }
 
 // NewDetector creates a new Vultr metadata detector.
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	return &Detector{
 		provider:              newVultrProvider(),
 		logger:                p.Logger,
 		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
-		failOnMissingMetadata: cfg.FailOnMissingMetadata,
+		failOnMissingMetadata: failOnMissingMetadata || cfg.FailOnMissingMetadata,
 	}, nil
 }
 

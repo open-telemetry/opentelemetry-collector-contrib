@@ -5,6 +5,7 @@ package metadata // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 )
@@ -36,6 +37,9 @@ func (rb *ResourceBuilder) SetZoneOrRegion(detect func() (string, gcp.LocationTy
 	switch locType {
 	case gcp.Zone:
 		rb.SetCloudAvailabilityZone(v)
+		if idx := strings.LastIndex(v, "-"); idx != -1 {
+			rb.SetCloudRegion(v[:idx])
+		}
 	case gcp.Region:
 		rb.SetCloudRegion(v)
 	default:

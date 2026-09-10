@@ -1,0 +1,5 @@
+change_type: breaking
+component: receiver/icmpcheckreceiver
+note: "Change RTT metric value type from int to double for sub-millisecond precision"
+issues: [49960]
+change_logs: [user]

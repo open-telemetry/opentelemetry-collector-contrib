@@ -157,12 +157,12 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 		// commits the offset after it's left the group.
 
 		kafkaClient, cfg := mustNewFakeCluster(tb, kfake.SeedTopics(1, topic))
-		cfg.GroupID = tb.Name()
-		cfg.AutoCommit = configkafka.AutoCommitConfig{Enable: true, Interval: 10 * time.Second}
+		cfg.ConsumerConfig.GroupID = tb.Name()
+		cfg.ConsumerConfig.AutoCommit = configkafka.AutoCommitConfig{Enable: true, Interval: 10 * time.Second}
 		// Set MinFetchSize to ensure all records are fetched at once
-		cfg.MinFetchSize = int32(len(data) * len(rs))
+		cfg.ConsumerConfig.MinFetchSize = int32(len(data) * len(rs))
 		// Use a very short MaxFetchWait to avoid delays when MinFetchSize cannot be met
-		cfg.MaxFetchWait = 10 * time.Millisecond
+		cfg.ConsumerConfig.MaxFetchWait = 10 * time.Millisecond
 		cfg.ErrorBackOff = testConfig.backOff
 		cfg.MessageMarking = testConfig.mark
 
@@ -259,9 +259,9 @@ func TestConsumerShutdownNotStarted(t *testing.T) {
 func TestRaceLostVsConsume(t *testing.T) {
 	topic := "otlp_spans"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
-	cfg.GroupID = t.Name()
-	cfg.MaxFetchSize = 1 // Force a lot of iterations of consume()
-	cfg.AutoCommit = configkafka.AutoCommitConfig{
+	cfg.ConsumerConfig.GroupID = t.Name()
+	cfg.ConsumerConfig.MaxFetchSize = 1 // Force a lot of iterations of consume()
+	cfg.ConsumerConfig.AutoCommit = configkafka.AutoCommitConfig{
 		Enable: true, Interval: 100 * time.Millisecond,
 	}
 
@@ -334,7 +334,7 @@ func TestLost(t *testing.T) {
 func TestResumePartitionsAfterRebalance(t *testing.T) {
 	topic := "otlp_spans"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
-	cfg.GroupID = t.Name()
+	cfg.ConsumerConfig.GroupID = t.Name()
 	cfg.MessageMarking = MessageMarking{
 		After:   true,
 		OnError: false, // errors are NOT marked -> triggers PauseFetchPartitions
@@ -419,7 +419,7 @@ func TestResumePartitionsAfterRebalance(t *testing.T) {
 func TestResumePartitionsAfterBackoff(t *testing.T) {
 	topic := "otlp_spans"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
-	cfg.GroupID = t.Name()
+	cfg.ConsumerConfig.GroupID = t.Name()
 	cfg.MessageMarking = MessageMarking{
 		After:   true,
 		OnError: false, // errors are NOT marked -> triggers SetOffsets rewind
@@ -493,7 +493,7 @@ func TestResumePartitionsAfterBackoff(t *testing.T) {
 func TestNoResumePartitionsAfterPermanentError(t *testing.T) {
 	topic := "otlp_spans"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
-	cfg.GroupID = t.Name()
+	cfg.ConsumerConfig.GroupID = t.Name()
 	cfg.MessageMarking = MessageMarking{
 		After:            true,
 		OnError:          false,
@@ -567,9 +567,9 @@ func TestNoResumePartitionsAfterPermanentError(t *testing.T) {
 func TestFranzConsumer_UseLeaderEpoch_Smoke(t *testing.T) {
 	topic := "otlp_spans"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
-	cfg.UseLeaderEpoch = false // <-- exercise the option
-	cfg.GroupID = t.Name()
-	cfg.AutoCommit = configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond}
+	cfg.ClientConfig.UseLeaderEpoch = false // <-- exercise the option
+	cfg.ConsumerConfig.GroupID = t.Name()
+	cfg.ConsumerConfig.AutoCommit = configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond}
 
 	var called atomic.Int64
 	settings, _, _ := mustNewSettings(t)
@@ -633,8 +633,8 @@ func TestExcludeTopicWithRegex(t *testing.T) {
 		kfake.SeedTopics(1, "logs-b"),
 		kfake.SeedTopics(1, "logs-c"),
 	)
-	cfg.GroupID = t.Name()
-	cfg.AutoCommit = configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond}
+	cfg.ConsumerConfig.GroupID = t.Name()
+	cfg.ConsumerConfig.AutoCommit = configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond}
 
 	// Prepare test data
 	traces := testdata.GenerateTraces(5)

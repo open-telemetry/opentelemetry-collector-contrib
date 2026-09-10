@@ -1,0 +1,9 @@
+change_type: enhancement
+component: receiver/sqlserver
+note: Add opt-in metrics for monitoring SQL Server Always On Availability Group database replicas.
+issues: [49633]
+subtext: |
+  - `sqlserver.availability_group.database_replica.secondary_lag`
+  - `sqlserver.availability_group.database_replica.queue.size`
+  - `sqlserver.availability_group.database_replica.queue.rate`
+change_logs: [user]

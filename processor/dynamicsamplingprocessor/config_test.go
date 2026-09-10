@@ -1,0 +1,281 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package dynamicsamplingprocessor
+
+import (
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestConfig_Validate(t *testing.T) {
+	baseCfg := func(rules ...RuleConfig) Config {
+		return Config{
+			TraceTimeout:  30 * time.Second,
+			DecisionDelay: time.Second,
+			NumTraces:     100,
+			Rules:         rules,
+		}
+	}
+
+	tests := []struct {
+		name    string
+		cfg     Config
+		wantErr string
+	}{
+		{
+			name: "valid_always_sample",
+			cfg: baseCfg(RuleConfig{
+				Name:    "default",
+				Sampler: SamplerConfig{Type: AlwaysSample},
+			}),
+		},
+		{
+			name: "valid_deterministic",
+			cfg: baseCfg(RuleConfig{
+				Name: "rule1",
+				Sampler: SamplerConfig{
+					Type:               Deterministic,
+					SamplingPercentage: 10,
+				},
+			}),
+		},
+		{
+			name: "valid_ema_dynamic",
+			cfg: baseCfg(RuleConfig{
+				Name: "rule1",
+				Sampler: SamplerConfig{
+					Type:                   EMADynamic,
+					GoalSamplingPercentage: 10,
+					KeyAttributes:          []string{"service.name"},
+					Weight:                 0.5,
+				},
+			}),
+		},
+		{
+			name:    "missing_trace_timeout",
+			cfg:     Config{DecisionDelay: time.Second, NumTraces: 100, Rules: []RuleConfig{{Name: "r"}}},
+			wantErr: "trace_timeout",
+		},
+		{
+			name:    "missing_decision_delay",
+			cfg:     Config{TraceTimeout: time.Second, NumTraces: 100, Rules: []RuleConfig{{Name: "r"}}},
+			wantErr: "decision_delay",
+		},
+		{
+			name:    "missing_num_traces",
+			cfg:     Config{TraceTimeout: time.Second, DecisionDelay: time.Second, Rules: []RuleConfig{{Name: "r"}}},
+			wantErr: "num_traces",
+		},
+		{
+			name:    "no_rules",
+			cfg:     Config{TraceTimeout: time.Second, DecisionDelay: time.Second, NumTraces: 100},
+			wantErr: "at least one rule",
+		},
+		{
+			name: "negative_sampled_cache_size",
+			cfg: Config{
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
+				DecisionCache: DecisionCacheConfig{SampledCacheSize: -1},
+				Rules:         []RuleConfig{{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}}},
+			},
+			wantErr: "sampled_cache_size",
+		},
+		{
+			name: "negative_non_sampled_cache_size",
+			cfg: Config{
+				TraceTimeout:  time.Second,
+				DecisionDelay: time.Second,
+				NumTraces:     100,
+				DecisionCache: DecisionCacheConfig{NonSampledCacheSize: -1},
+				Rules:         []RuleConfig{{Name: "r", Sampler: SamplerConfig{Type: AlwaysSample}}},
+			},
+			wantErr: "non_sampled_cache_size",
+		},
+		{
+			name: "zero_cache_sizes_allowed",
+			cfg: baseCfg(RuleConfig{
+				Name:    "r",
+				Sampler: SamplerConfig{Type: AlwaysSample},
+			}),
+		},
+		{
+			name: "rule_missing_name",
+			cfg: baseCfg(RuleConfig{
+				Sampler: SamplerConfig{Type: AlwaysSample},
+			}),
+			wantErr: "name is required",
+		},
+		{
+			name: "duplicate_rule_name",
+			cfg: baseCfg(
+				RuleConfig{Name: "a", Sampler: SamplerConfig{Type: AlwaysSample}},
+				RuleConfig{Name: "a", Sampler: SamplerConfig{Type: AlwaysSample}},
+			),
+			wantErr: "duplicate rule name",
+		},
+		{
+			name: "missing_sampler_type",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+			}),
+			wantErr: "sampler.type is required",
+		},
+		{
+			name: "unknown_sampler_type",
+			cfg: baseCfg(RuleConfig{
+				Name:    "r",
+				Sampler: SamplerConfig{Type: "magic"},
+			}),
+			wantErr: "unknown sampler.type",
+		},
+		{
+			name: "deterministic_zero_rate",
+			cfg: baseCfg(RuleConfig{
+				Name:    "r",
+				Sampler: SamplerConfig{Type: Deterministic},
+			}),
+			wantErr: "sampling_percentage",
+		},
+		{
+			name: "deterministic_too_high",
+			cfg: baseCfg(RuleConfig{
+				Name:    "r",
+				Sampler: SamplerConfig{Type: Deterministic, SamplingPercentage: 150},
+			}),
+			wantErr: "sampling_percentage",
+		},
+		{
+			name: "ema_missing_key_attributes",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                   EMADynamic,
+					GoalSamplingPercentage: 10,
+				},
+			}),
+			wantErr: "key_attributes",
+		},
+		{
+			name: "ema_invalid_weight",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                   EMADynamic,
+					GoalSamplingPercentage: 10,
+					KeyAttributes:          []string{"a"},
+					Weight:                 1.5,
+				},
+			}),
+			wantErr: "weight",
+		},
+		{
+			name: "valid_ema_throughput",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                 EMAThroughput,
+					GoalThroughputPerSec: 100,
+					KeyAttributes:        []string{"service.name"},
+					Weight:               0.5,
+				},
+			}),
+		},
+		{
+			name: "ema_throughput_missing_goal",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:          EMAThroughput,
+					KeyAttributes: []string{"a"},
+				},
+			}),
+			wantErr: "goal_throughput_per_sec",
+		},
+		{
+			name: "ema_throughput_missing_key_attributes",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                 EMAThroughput,
+					GoalThroughputPerSec: 100,
+				},
+			}),
+			wantErr: "key_attributes",
+		},
+		{
+			name: "valid_windowed_throughput",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                 WindowedThroughput,
+					GoalThroughputPerSec: 100,
+					KeyAttributes:        []string{"service.name"},
+					UpdateFrequency:      time.Second,
+					LookbackFrequency:    30 * time.Second,
+				},
+			}),
+		},
+		{
+			name: "windowed_throughput_missing_goal",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:          WindowedThroughput,
+					KeyAttributes: []string{"a"},
+				},
+			}),
+			wantErr: "goal_throughput_per_sec",
+		},
+		{
+			name: "windowed_throughput_missing_key_attributes",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                 WindowedThroughput,
+					GoalThroughputPerSec: 100,
+				},
+			}),
+			wantErr: "key_attributes",
+		},
+		{
+			name: "deterministic_rejects_ema_field",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:               Deterministic,
+					SamplingPercentage: 10,
+					KeyAttributes:      []string{"service.name"},
+				},
+			}),
+			wantErr: "deterministic does not use key_attributes",
+		},
+		{
+			name: "ema_dynamic_rejects_windowed_field",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                   EMADynamic,
+					GoalSamplingPercentage: 10,
+					KeyAttributes:          []string{"service.name"},
+					UpdateFrequency:        time.Second,
+				},
+			}),
+			wantErr: "ema_dynamic does not use update_frequency",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			assert.ErrorContains(t, err, tt.wantErr)
+		})
+	}
+}

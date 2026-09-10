@@ -69,7 +69,7 @@ func newCloudWatchMetricsScraper(cfg *Config, settings receiver.Settings) *cloud
 		cfg:                cfg,
 		period:             cfg.Metrics.Period,
 		delay:              cfg.Metrics.Delay,
-		collectionInterval: cfg.Metrics.CollectionInterval,
+		collectionInterval: cfg.Metrics.ControllerConfig.CollectionInterval,
 		metrics:            cfg.Metrics.Queries,
 		discovery:          discovery,
 	}

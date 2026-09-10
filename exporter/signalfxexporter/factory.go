@@ -90,17 +90,17 @@ func createTracesExporter(
 	cfg := eCfg.(*Config)
 	corrCfg := cfg.Correlation
 
-	if corrCfg.Endpoint == "" {
+	if corrCfg.ClientConfig.Endpoint == "" {
 		apiURL, err := cfg.getAPIURL()
 		if err != nil {
 			return nil, fmt.Errorf("unable to create API URL: %w", err)
 		}
-		corrCfg.Endpoint = apiURL.String()
+		corrCfg.ClientConfig.Endpoint = apiURL.String()
 	}
 	if cfg.AccessToken == "" {
 		return nil, errors.New("access_token is required")
 	}
-	set.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.Endpoint))
+	set.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.ClientConfig.Endpoint))
 	tracker := correlation.NewTracker(corrCfg, cfg.AccessToken, set)
 
 	return exporterhelper.NewTraces(
@@ -141,7 +141,7 @@ func createMetricsExporter(
 
 	// If AccessTokenPassthrough enabled, split the incoming Metrics data by splunk.SFxAccessTokenLabel,
 	// this ensures that we get batches of data for the same token when pushing to the backend.
-	if cfg.AccessTokenPassthrough {
+	if cfg.AccessTokenPassthroughConfig.AccessTokenPassthrough {
 		me = &baseMetricsExporter{
 			Component: me,
 			Metrics:   batchperresourceattr.NewBatchPerResourceMetrics(splunk.SFxAccessTokenLabel, me),
@@ -183,7 +183,7 @@ func createLogsExporter(
 
 	// If AccessTokenPassthrough enabled, split the incoming Metrics data by splunk.SFxAccessTokenLabel,
 	// this ensures that we get batches of data for the same token when pushing to the backend.
-	if expCfg.AccessTokenPassthrough {
+	if expCfg.AccessTokenPassthroughConfig.AccessTokenPassthrough {
 		le = &baseLogsExporter{
 			Component: le,
 			Logs:      batchperresourceattr.NewBatchPerResourceLogs(splunk.SFxAccessTokenLabel, le),

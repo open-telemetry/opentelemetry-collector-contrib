@@ -79,6 +79,11 @@ func (l *logExporter) Start(ctx context.Context, host component.Host) error {
 
 	l.client = client
 
+	if l.config.ManageIndexTemplate {
+		tm := newTemplateManager(client, l.telemetry.Logger)
+		tm.ensureTemplates(ctx)
+	}
+
 	return nil
 }
 

@@ -57,7 +57,7 @@ type K8sObjectsConfig struct {
 }
 
 type Config struct {
-	k8sconfig.APIConfig `mapstructure:",squash"`
+	APIConfig k8sconfig.APIConfig `mapstructure:",squash"`
 
 	Interval            time.Duration       `mapstructure:"interval"`
 	Objects             []*K8sObjectsConfig `mapstructure:"objects"`

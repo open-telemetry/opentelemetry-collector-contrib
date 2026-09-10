@@ -87,9 +87,9 @@ func TestExplicitConfigOverridesDefault(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	// Use the "cumulativetodelta" config that has max_staleness: 10s
+	// Use the "cumulative_to_delta" config that has max_staleness: 10s
 	cfg := factory.CreateDefaultConfig()
-	sub, err := cm.Sub("cumulativetodelta")
+	sub, err := cm.Sub("cumulative_to_delta")
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 

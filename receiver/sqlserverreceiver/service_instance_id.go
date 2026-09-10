@@ -39,6 +39,9 @@ func computeServiceInstanceID(cfg *Config) (string, error) {
 		host, port = h, p
 	case cfg.Server != "":
 		host, port = cfg.Server, int(cfg.Port)
+	case cfg.ComputerName != "":
+		// Windows Performance Counter mode with remote computer: use ComputerName as host
+		host, port = cfg.ComputerName, defaultSQLServerPort
 	default:
 		// No server specified, use hostname with default port
 		hostname, err := os.Hostname()

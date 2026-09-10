@@ -1,0 +1,266 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.database.name
+          value:
+            stringValue: UserDB
+        - key: sqlserver.instance.name
+          value:
+            stringValue: MSSQLSERVER
+    scopeMetrics:
+      - metrics:
+          - description: Rate at which log data is being sent or redone on a database replica, broken down by queue type (log_send for primary-to-secondary transmission, redo for applying log records on the secondary).
+            gauge:
+              dataPoints:
+                - asInt: "262144"
+                  attributes:
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG1
+                    - key: sqlserver.availability_group.queue.type
+                      value:
+                        stringValue: log_send
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: node2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "65536"
+                  attributes:
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG1
+                    - key: sqlserver.availability_group.queue.type
+                      value:
+                        stringValue: redo
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: node2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.availability_group.database_replica.queue.rate
+            unit: By/s
+          - description: Amount of log data waiting to be processed on a database replica, broken down by queue type (log_send for data not yet sent to the secondary, redo for data received but not yet applied).
+            gauge:
+              dataPoints:
+                - asInt: "524288"
+                  attributes:
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG1
+                    - key: sqlserver.availability_group.queue.type
+                      value:
+                        stringValue: log_send
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: node2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "131072"
+                  attributes:
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG1
+                    - key: sqlserver.availability_group.queue.type
+                      value:
+                        stringValue: redo
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: node2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.availability_group.database_replica.queue.size
+            unit: By
+          - description: Number of seconds the secondary replica is lagging behind the primary replica, measured as the time between the most recent hardened log block on the primary and on the secondary.
+            gauge:
+              dataPoints:
+                - asDouble: 0.5
+                  attributes:
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG1
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: node2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.availability_group.database_replica.secondary_lag
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.database.name
+          value:
+            stringValue: UserDB2
+        - key: sqlserver.instance.name
+          value:
+            stringValue: MSSQLSERVER
+    scopeMetrics:
+      - metrics:
+          - description: Rate at which log data is being sent or redone on a database replica, broken down by queue type (log_send for primary-to-secondary transmission, redo for applying log records on the secondary).
+            gauge:
+              dataPoints:
+                - asInt: "524288"
+                  attributes:
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG1
+                    - key: sqlserver.availability_group.queue.type
+                      value:
+                        stringValue: log_send
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: node3
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "131072"
+                  attributes:
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG1
+                    - key: sqlserver.availability_group.queue.type
+                      value:
+                        stringValue: redo
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: node3
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.availability_group.database_replica.queue.rate
+            unit: By/s
+          - description: Amount of log data waiting to be processed on a database replica, broken down by queue type (log_send for data not yet sent to the secondary, redo for data received but not yet applied).
+            gauge:
+              dataPoints:
+                - asInt: "1048576"
+                  attributes:
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG1
+                    - key: sqlserver.availability_group.queue.type
+                      value:
+                        stringValue: log_send
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: node3
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "262144"
+                  attributes:
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG1
+                    - key: sqlserver.availability_group.queue.type
+                      value:
+                        stringValue: redo
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: node3
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.availability_group.database_replica.queue.size
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.database.name
+          value:
+            stringValue: UserDB3
+        - key: sqlserver.instance.name
+          value:
+            stringValue: MSSQLSERVER
+    scopeMetrics:
+      - metrics:
+          - description: Rate at which log data is being sent or redone on a database replica, broken down by queue type (log_send for primary-to-secondary transmission, redo for applying log records on the secondary).
+            gauge:
+              dataPoints:
+                - asInt: "32768"
+                  attributes:
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG1
+                    - key: sqlserver.availability_group.queue.type
+                      value:
+                        stringValue: redo
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: node4
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.availability_group.database_replica.queue.rate
+            unit: By/s
+          - description: Amount of log data waiting to be processed on a database replica, broken down by queue type (log_send for data not yet sent to the secondary, redo for data received but not yet applied).
+            gauge:
+              dataPoints:
+                - asInt: "65536"
+                  attributes:
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG1
+                    - key: sqlserver.availability_group.queue.type
+                      value:
+                        stringValue: redo
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: node4
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.availability_group.database_replica.queue.size
+            unit: By
+          - description: Number of seconds the secondary replica is lagging behind the primary replica, measured as the time between the most recent hardened log block on the primary and on the secondary.
+            gauge:
+              dataPoints:
+                - asDouble: 1.2
+                  attributes:
+                    - key: sqlserver.availability_group.name
+                      value:
+                        stringValue: AG1
+                    - key: sqlserver.replica.name
+                      value:
+                        stringValue: node4
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.availability_group.database_replica.secondary_lag
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest

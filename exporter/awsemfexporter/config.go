@@ -22,7 +22,7 @@ var eMFSupportedUnits = newEMFSupportedUnits()
 type Config struct {
 	// AWSSessionSettings contains the common configuration options
 	// for creating AWS session to communicate with backend
-	awsutil.AWSSessionSettings `mapstructure:",squash"`
+	AWSSessionSettings awsutil.AWSSessionSettings `mapstructure:",squash"`
 	// LogGroupName is the name of CloudWatch log group which defines group of log streams
 	// that share the same retention, monitoring, and access control settings.
 	LogGroupName string `mapstructure:"log_group_name"`

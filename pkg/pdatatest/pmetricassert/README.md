@@ -35,6 +35,10 @@ The following are ignored:
 - batch boundaries — multiple `ResourceMetrics` / `ScopeMetrics` / `Metric`
   entries with the same identity are normalized before comparison.
 
+Use `IncludeValues()` to write supported datapoint values, or
+`IncludeHistogramExplicitBounds()` to write histogram bounds without other
+histogram values.
+
 `WriteAssertionFile` expects semantically valid metrics. It normalizes valid
 metrics into an assertion snapshot; it is not a validator for producer output.
 

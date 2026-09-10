@@ -595,7 +595,7 @@ func TestShutdownWithoutCheckpointer(t *testing.T) {
 func TestDeletedLogGroupContinuesPolling(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Region = "us-west-1"
-	cfg.Logs.PollInterval = 1 * time.Second
+	cfg.Logs.PollInterval = 100 * time.Millisecond
 	cfg.Logs.Groups = GroupConfig{
 		NamedConfigs: map[string]StreamConfig{
 			"existing-group": {
@@ -641,10 +641,10 @@ func TestDeletedLogGroupContinuesPolling(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
-		return sink.LogRecordCount() > 0
+		return sink.LogRecordCount() > 1
 	}, 2*time.Second, 10*time.Millisecond)
 	logs := sink.AllLogs()
-	require.Len(t, logs, 1)
+	require.GreaterOrEqual(t, len(logs), 2)
 	require.Equal(t, 1, logs[0].LogRecordCount())
 
 	logRecord := logs[0].ResourceLogs().At(0)

@@ -17,6 +17,8 @@ properties:
   raw_log:
     description: Export raw log string instead of log wrapper Required for emf logs
     type: boolean
+  retry_on_failure:
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   sending_queue:
     description: Queue settings frm the exporterhelper
     x-optional: true
@@ -27,5 +29,4 @@ properties:
     additionalProperties:
       type: string
 allOf:
-  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   - $ref: /internal/aws/awsutil.aws_session_settings

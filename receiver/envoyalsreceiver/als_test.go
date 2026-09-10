@@ -46,7 +46,7 @@ func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 	require.NoError(t, lr.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, lr.Shutdown(t.Context())) })
 
-	conn, err := grpc.NewClient(config.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(config.ServerConfig.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	return conn, sink
 }

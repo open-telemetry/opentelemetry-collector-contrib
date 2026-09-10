@@ -12,7 +12,8 @@ status:
   stability:
     alpha: [extension]
   codeowners:
-    active: [axw, constanca-m]
+    active: [constanca-m]
+    emeritus: [axw]
   distributions: [contrib]
 
 feature_gates:

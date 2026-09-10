@@ -48,7 +48,7 @@ func createDefaultConfig() component.Config {
 func createTracesExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
 
-	if cfg.Endpoint == "" {
+	if cfg.ClientConfig.Endpoint == "" {
 		return nil, errors.New(
 			"exporter config requires a non-empty \"endpoint\"")
 	}
@@ -58,7 +58,7 @@ func createTracesExporter(ctx context.Context, set exporter.Settings, config com
 func createLogsExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Logs, error) {
 	cfg := config.(*Config)
 
-	if cfg.Endpoint == "" {
+	if cfg.ClientConfig.Endpoint == "" {
 		return nil, errors.New(
 			"exporter config requires a non-empty \"endpoint\"")
 	}

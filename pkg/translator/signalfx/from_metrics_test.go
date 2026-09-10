@@ -521,6 +521,16 @@ func Test_FromMetrics(t *testing.T) {
 	}
 }
 
+func TestDpsBuilderAppendPointUsesBackingArray(t *testing.T) {
+	builder := newDpsBuilder(2)
+
+	first := builder.appendPoint("first", &sfxMetricTypeGauge, 1, nil)
+	second := builder.appendPoint("second", &sfxMetricTypeGauge, 2, nil)
+
+	require.Same(t, &builder.baseOut[0], first)
+	require.Same(t, &builder.baseOut[1], second)
+}
+
 func sortDimensions(points []*sfxpb.DataPoint) {
 	for _, point := range points {
 		if point.Dimensions == nil {

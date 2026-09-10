@@ -9,6 +9,7 @@ import (
 	"maps"
 	"regexp"
 	"slices"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -16,8 +17,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v4"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions/v2"
 	"github.com/huandu/go-clone"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -85,8 +86,9 @@ type metricsCompositeKey struct {
 }
 
 type azureResourceMetrics struct {
-	metrics              []string
-	metricsValuesUpdated time.Time
+	metrics               []string
+	metricsValuesUpdated  time.Time
+	lastEmittedTimestamps map[string]time.Time
 }
 
 type void struct{}
@@ -581,7 +583,10 @@ func (s *azureScraper) loadMetricsDefinition(subscriptionID, resourceID, metricN
 			s.resources[subscriptionID][resourceID].metricsByCompositeKey[compositeKey].metrics, metricName,
 		)
 	} else {
-		s.resources[subscriptionID][resourceID].metricsByCompositeKey[compositeKey] = &azureResourceMetrics{metrics: []string{metricName}}
+		s.resources[subscriptionID][resourceID].metricsByCompositeKey[compositeKey] = &azureResourceMetrics{
+			metrics:               []string{metricName},
+			lastEmittedTimestamps: make(map[string]time.Time),
+		}
 	}
 }
 
@@ -630,6 +635,7 @@ func (s *azureScraper) loadMetricsValues(ctx context.Context, subscriptionID, re
 			)
 			logFields := []zap.Field{
 				zap.Any("metrics", metricsByGrain.metrics[start:end]),
+				zap.String("metrics_namespace", compositeKey.namespace),
 				zap.String("dimensions", compositeKey.dimensions),
 				zap.String("aggregations", compositeKey.aggregations),
 				zap.String("timegrain", compositeKey.timeGrain),
@@ -647,6 +653,10 @@ func (s *azureScraper) loadMetricsValues(ctx context.Context, subscriptionID, re
 			logFields = append(logFields, zap.Int("metrics_count", len(result.Value)))
 			s.settings.Logger.Debug("Collected Azure Metrics values from Azure", logFields...)
 
+			if metricsByGrain.lastEmittedTimestamps == nil {
+				metricsByGrain.lastEmittedTimestamps = make(map[string]time.Time)
+			}
+
 			for _, metric := range result.Value {
 				for _, timeseriesElement := range metric.Timeseries {
 					if timeseriesElement.Data == nil {
@@ -662,8 +672,25 @@ func (s *azureScraper) loadMetricsValues(ctx context.Context, subscriptionID, re
 						name := tagPrefix + tagName
 						attributes[name] = value
 					}
+
+					var metricName string
+					if metric.Name != nil && metric.Name.Value != nil {
+						metricName = *metric.Name.Value
+					}
+					tsKeyPrefix := resourceID + "#" + metricName + "#" + serializeArmMetadataValues(timeseriesElement.Metadatavalues)
+
 					for _, metricValue := range timeseriesElement.Data {
-						s.processTimeseriesData(resourceID, metric, metricValue, attributes)
+						if metricValue == nil || metricValue.TimeStamp == nil {
+							continue
+						}
+						t := *metricValue.TimeStamp
+
+						lastTime, exists := metricsByGrain.lastEmittedTimestamps[tsKeyPrefix]
+						if !exists || t.After(lastTime) {
+							pts := pcommon.NewTimestampFromTime(t)
+							s.processTimeseriesData(resourceID, metric, metricValue, attributes, pts)
+							metricsByGrain.lastEmittedTimestamps[tsKeyPrefix] = t
+						}
 					}
 				}
 			}
@@ -703,11 +730,10 @@ func (s *azureScraper) processTimeseriesData(
 	metric *armmonitor.Metric,
 	metricValue *armmonitor.MetricValue,
 	attributes map[string]*string,
+	ts pcommon.Timestamp,
 ) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-
-	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	aggregationsData := []struct {
 		name  string
@@ -822,4 +848,18 @@ func filterResourceTags(tagFilterList map[string]struct{}, resourceTags map[stri
 	}
 
 	return includedTags
+}
+
+func serializeArmMetadataValues(metadataValues []*armmonitor.MetadataValue) string {
+	if len(metadataValues) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(metadataValues))
+	for _, val := range metadataValues {
+		if val.Name != nil && val.Name.Value != nil && val.Value != nil {
+			parts = append(parts, *val.Name.Value+"="+*val.Value)
+		}
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, ",")
 }

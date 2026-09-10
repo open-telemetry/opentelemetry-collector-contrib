@@ -25,6 +25,10 @@ resource_attributes:
     type: string
 
 attributes:
+  file.include:
+    description: The glob pattern configured via the `include` option that produced this count.
+    requirement_level: opt_in
+    type: string
   file.permissions:
     description: the permissions associated with the file, using an octal format.
     requirement_level: recommended
@@ -49,6 +53,8 @@ metrics:
       value_type: int
 
     unit: "{file}"
+    attributes:
+      - file.include
   file.ctime:
     description: Elapsed time since the last change of the file or folder, in seconds since Epoch. In addition to `file.mtime`, this metric tracks metadata changes such as permissions or renaming the file.
     enabled: false

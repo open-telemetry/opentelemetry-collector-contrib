@@ -18,9 +18,9 @@ import (
 
 type Config struct {
 	// confighttp.ClientConfig.Headers is the headers of doris stream load.
-	confighttp.ClientConfig   `mapstructure:",squash"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	ClientConfig  confighttp.ClientConfig                                  `mapstructure:",squash"`
+	BackOffConfig configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	QueueSettings configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// TableNames is the table name for logs, traces and metrics.
 	Table `mapstructure:"table"`
@@ -65,7 +65,7 @@ type Table struct {
 }
 
 func (cfg *Config) Validate() (err error) {
-	if cfg.Endpoint == "" {
+	if cfg.ClientConfig.Endpoint == "" {
 		err = errors.Join(err, errors.New("endpoint must be specified"))
 	}
 	if cfg.CreateSchema {

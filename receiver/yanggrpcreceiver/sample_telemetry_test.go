@@ -50,8 +50,8 @@ func TestSampleTelemetryData(t *testing.T) {
 
 	// Create receiver configuration
 	config := createDefaultConfig().(*Config)
-	config.NetAddr.Endpoint = "localhost:57404"
-	config.NetAddr.Transport = "tcp"
+	config.ServerConfig.NetAddr.Endpoint = "localhost:57404"
+	config.ServerConfig.NetAddr.Transport = "tcp"
 
 	settings := receiver.Settings{
 		ID:                component.NewID(metadata.Type),
@@ -73,7 +73,7 @@ func TestSampleTelemetryData(t *testing.T) {
 	// Wait until the gRPC server is ready to accept connections instead of using
 	// a fixed sleep, which is unreliable on slow or loaded CI machines.
 	require.Eventually(t, func() bool {
-		conn, err := net.DialTimeout(string(config.NetAddr.Transport), config.NetAddr.Endpoint, 100*time.Millisecond)
+		conn, err := net.DialTimeout(string(config.ServerConfig.NetAddr.Transport), config.ServerConfig.NetAddr.Endpoint, 100*time.Millisecond)
 		if err != nil {
 			return false
 		}

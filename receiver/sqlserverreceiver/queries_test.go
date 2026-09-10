@@ -67,6 +67,66 @@ func TestQueryContents(t *testing.T) {
 			getQuery:                 getSQLServerWaitStatsQuery,
 			expectedQueryValFilename: "waitStatsQueryWithInstanceName.txt",
 		},
+		{
+			name:                     "Test worker threads query without instance name",
+			instanceName:             "",
+			getQuery:                 getSQLServerWorkerThreadsQuery,
+			expectedQueryValFilename: "workerThreadsQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test worker threads query with instance name",
+			instanceName:             "instanceName",
+			getQuery:                 getSQLServerWorkerThreadsQuery,
+			expectedQueryValFilename: "workerThreadsQueryWithInstanceName.txt",
+		},
+		{
+			name:                     "Test index physical stats query without instance name",
+			instanceName:             "",
+			getQuery:                 getSQLServerIndexPhysicalStatsQuery,
+			expectedQueryValFilename: "indexPhysicalQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test index physical stats query with instance name",
+			instanceName:             "instanceName",
+			getQuery:                 getSQLServerIndexPhysicalStatsQuery,
+			expectedQueryValFilename: "indexPhysicalQueryWithInstanceName.txt",
+		},
+		{
+			name:                     "Test availability group query without instance name",
+			instanceName:             "",
+			getQuery:                 getSQLServerAvailabilityGroupQuery,
+			expectedQueryValFilename: "availabilityGroupQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test availability group query with instance name",
+			instanceName:             "instanceName",
+			getQuery:                 getSQLServerAvailabilityGroupQuery,
+			expectedQueryValFilename: "availabilityGroupQueryWithInstanceName.txt",
+		},
+		{
+			name:                     "Test CPU memory query without instance name",
+			instanceName:             "",
+			getQuery:                 getSQLServerCPUMemoryQuery,
+			expectedQueryValFilename: "cpuMemoryQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test CPU memory query with instance name",
+			instanceName:             "instanceName",
+			getQuery:                 getSQLServerCPUMemoryQuery,
+			expectedQueryValFilename: "cpuMemoryQueryWithInstanceName.txt",
+		},
+		{
+			name:                     "Test disk IO query without instance name",
+			instanceName:             "",
+			getQuery:                 getSQLServerDiskIOQuery,
+			expectedQueryValFilename: "diskIOQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test disk IO query with instance name",
+			instanceName:             "instanceName",
+			getQuery:                 getSQLServerDiskIOQuery,
+			expectedQueryValFilename: "diskIOQueryWithInstanceName.txt",
+		},
 	}
 
 	for _, tt := range queryTests {

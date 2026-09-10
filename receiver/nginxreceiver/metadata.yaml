@@ -30,7 +30,7 @@ metrics:
     enabled: true
     description: The total number of accepted client connections
     stability: development
-    unit: connections
+    unit: "{connections}"
     sum:
       value_type: int
       monotonic: true
@@ -40,7 +40,7 @@ metrics:
     enabled: true
     description: The current number of nginx connections by state
     stability: development
-    unit: connections
+    unit: "{connections}"
     sum:
       value_type: int
       monotonic: false
@@ -50,7 +50,7 @@ metrics:
     enabled: true
     description: The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit).
     stability: development
-    unit: connections
+    unit: "{connections}"
     sum:
       value_type: int
       monotonic: true
@@ -60,7 +60,7 @@ metrics:
     enabled: true
     description: Total number of requests made to the server since it started
     stability: development
-    unit: requests
+    unit: "{requests}"
     sum:
       value_type: int
       monotonic: true

@@ -33,7 +33,7 @@ func Test_ProcessScrape(t *testing.T) {
 		scraperinttest.WithCustomConfig(
 			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
-				rCfg.CollectionInterval = time.Second
+				rCfg.ControllerConfig.CollectionInterval = time.Second
 				f := processscraper.NewFactory()
 				pCfg := f.CreateDefaultConfig().(*processscraper.Config)
 				pCfg.MuteProcessExeError = true
@@ -68,7 +68,7 @@ func Test_ProcessScrapeWithCustomRootPath(t *testing.T) {
 			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rootPath := filepath.Join("testdata", "e2e")
 				rCfg := cfg.(*Config)
-				rCfg.CollectionInterval = time.Second
+				rCfg.ControllerConfig.CollectionInterval = time.Second
 				rCfg.RootPath = rootPath
 				f := processscraper.NewFactory()
 				pCfg := f.CreateDefaultConfig().(*processscraper.Config)
@@ -98,7 +98,7 @@ func Test_ProcessScrapeWithBadRootPathAndEnvVar(t *testing.T) {
 		scraperinttest.WithCustomConfig(
 			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
-				rCfg.CollectionInterval = time.Second
+				rCfg.ControllerConfig.CollectionInterval = time.Second
 				rCfg.RootPath = badRootPath
 				f := processscraper.NewFactory()
 				pCfg := f.CreateDefaultConfig().(*processscraper.Config)

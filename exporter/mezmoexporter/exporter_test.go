@@ -254,13 +254,13 @@ func Test404IngestError(t *testing.T) {
 	err := exporter.pushLogData(t.Context(), logs)
 	require.NoError(t, err)
 
-	assert.Equal(t, 2, logObserver.Len())
+	assert.Equal(t, 3, logObserver.Len())
 
-	logLine := logObserver.All()[0]
+	logLine := logObserver.All()[1]
 	assert.Equal(t, "got http status (/foobar): 404 Not Found", logLine.Message)
 	assert.Equal(t, zapcore.ErrorLevel, logLine.Level)
 
-	logLine = logObserver.All()[1]
+	logLine = logObserver.All()[2]
 	assert.Equal(t, "http response", logLine.Message)
 	assert.Equal(t, zapcore.DebugLevel, logLine.Level)
 

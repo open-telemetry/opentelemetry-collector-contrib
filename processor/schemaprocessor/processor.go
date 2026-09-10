@@ -242,7 +242,7 @@ func (t *schemaProcessor) start(ctx context.Context, host component.Host) error 
 		t.log.Warn("migration is enabled: attribute renames will preserve original attributes alongside renamed ones; this is a temporary migration aid",
 			zap.String("target", entry.Target), zap.String("from", entry.From))
 	}
-	client, err := t.config.ToClient(ctx, host.GetExtensions(), t.telemetry)
+	client, err := t.config.ClientConfig.ToClient(ctx, host.GetExtensions(), t.telemetry)
 	if err != nil {
 		return err
 	}

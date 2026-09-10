@@ -52,6 +52,9 @@ The following settings can be optionally configured:
 - `add_metric_suffixes`: If set to false, type and unit suffixes will not be added to metrics. Default: true. **Deprecated**: Use `translation_strategy` instead.
 - `translation_strategy`: Controls how OTLP metric and attribute names are translated into Prometheus metric and label names. Options are: `UnderscoreEscapingWithSuffixes` (default), `UnderscoreEscapingWithoutSuffixes`, `NoUTF8EscapingWithSuffixes`, and `NoTranslation`. When set, this takes precedence over `add_metric_suffixes`.
 - `send_metadata`: If set to true, prometheus metadata will be generated and sent. Default: false. This option is ignored when using PRW 2.0, which always includes metadata.
+- `include_metadata_keys`: list of client metadata keys whose values are forwarded as HTTP headers on every outbound remote write request.
+  - **Note**: Keys that collide with headers required by the remote write protocol (`Content-Encoding`, `Content-Type`, `User-Agent`, `X-Prometheus-Remote-Write-Version`) are rejected: configuration validation fails (case-insensitive) if any such key is listed.
+  - **Note**: When WAL is enabled, then this setting has no effect. The WAL persists only the raw protobuf bytes of each write request; the originating `client.Info` context is not serialized to disk so initial metadata are lost.
 - `remote_write_queue`: fine tuning for queueing and sending of the outgoing remote writes.
   - `enabled`: enable the sending queue (default: `true`)
   - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false` (default: `10000`)
@@ -76,6 +79,8 @@ The following settings can be optionally configured:
   - Protobuf message to use when writing to the remote write endpoint. This option is ignored unless the `exporter.prometheusremotewritexporter.enableSendingRW2` feature gate is enabled.
   - `prometheus.WriteRequest` is the message used in [Remote Write 1.0](https://prometheus.io/docs/specs/remote_write_spec/).
   - `io.prometheus.write.v2.Request` is the message used in [Remote Write 2.0](https://prometheus.io/docs/specs/remote_write_spec_2_0/). It is more efficient, always includes metadata, and adds support for the created timestamp and native histograms. Your remote storage provider must support PRW 2.0 to be able to use this message. PRW 2.0 support is currently **In Development** and is only partially implemented, thus, not ready for usage.
+- `convert_explicit_histograms_to_nhcb` (default = `false`): If `true`, OTLP explicit-bucket (classic) histograms are converted to [Native Histograms with Custom Buckets](https://prometheus.io/docs/specs/native_histograms/) (NHCB) on export, instead of being written as classic `_bucket`/`_sum`/`_count` series. The explicit bounds are carried as the histogram's custom values. Works on both the RW1 and RW2 paths.
+- `keep_classic_histograms` (default = `false`): If `true` (and `convert_explicit_histograms_to_nhcb` is enabled), the original classic `_bucket`/`_sum`/`_count` series are emitted alongside the NHCB series. This is intended for a migration window, allowing both representations to be queried in parallel before cutting over. It has no effect unless `convert_explicit_histograms_to_nhcb` is also `true`.
 
 
 Example:

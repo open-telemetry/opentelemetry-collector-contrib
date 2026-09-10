@@ -161,6 +161,7 @@ Format example can be found [here](./internal/translator/traces_translator_test.
 |-----------------------------|-------------|----------------------------|
 | /api/v1/series              | Development |                            |
 | /api/v2/series              | Development |                            |
+| /api/intake/metrics/v3/series | Development | Default series endpoint for Datadog Agent 7.81.0+; also served at /api/intake/metrics/v3beta/series |
 | /api/v1/check_run           | Development |                            |
 | /api/v1/sketches            | Development |                            |
 | /api/beta/sketches          | Development |                            |

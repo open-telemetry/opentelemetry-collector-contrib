@@ -202,7 +202,7 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 		kgo.WithHooks(hooks),
 	}
 
-	if !c.config.UseLeaderEpoch {
+	if !c.config.ClientConfig.UseLeaderEpoch {
 		opts = append(opts, kgo.AdjustFetchOffsetsFn(makeClearLeaderEpochAdjuster()))
 	}
 
@@ -419,7 +419,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 	})
 	// Wait for all records to be processed and commit if autocommit=false.
 	wg.Wait()
-	if !c.config.AutoCommit.Enable {
+	if !c.config.ConsumerConfig.AutoCommit.Enable {
 		if err := c.client.CommitMarkedOffsets(ctx); err != nil {
 			c.settings.Logger.Error("failed to commit offsets", zap.Error(err))
 			// Surface as recoverable error.

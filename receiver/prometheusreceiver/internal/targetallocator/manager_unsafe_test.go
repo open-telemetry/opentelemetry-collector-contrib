@@ -733,7 +733,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			allocator.Start()
 			defer allocator.Stop()
 
-			tc.cfg.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
+			tc.cfg.ClientConfig.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
 			scrapeManager, discoveryManager := initPrometheusManagers(ctx, t)
 
 			baseCfg, err := promconfig.Load("", nil)
@@ -819,7 +819,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 
 func TestConfigureSDHTTPClientConfigFromTA(t *testing.T) {
 	ta := &Config{}
-	ta.TLS = configtls.ClientConfig{
+	ta.ClientConfig.TLS = configtls.ClientConfig{
 		InsecureSkipVerify: true,
 		ServerName:         "test.server",
 		Config: configtls.Config{
@@ -833,7 +833,7 @@ func TestConfigureSDHTTPClientConfigFromTA(t *testing.T) {
 			MaxVersion: "1.3",
 		},
 	}
-	ta.ProxyURL = "http://proxy.test"
+	ta.ClientConfig.ProxyURL = "http://proxy.test"
 
 	httpSD := &promHTTP.SDConfig{RefreshInterval: model.Duration(30 * time.Second)}
 
@@ -940,7 +940,7 @@ func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
 
 	allocator.Start()
 	defer allocator.Stop()
-	cfg.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
+	cfg.ClientConfig.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
 	scrapeManager, discoveryManager := initPrometheusManagers(ctx, t)
 
 	baseCfg, err := promconfig.Load("", nil)

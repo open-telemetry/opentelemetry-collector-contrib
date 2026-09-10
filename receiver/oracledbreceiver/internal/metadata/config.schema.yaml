@@ -25,6 +25,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.buffer_cache.block.changes.rate:
+        description: "OracledbBufferCacheBlockChangesRateMetricConfig provides config for the oracledb.buffer_cache.block.changes.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.buffer_cache.block.gets:
         description: "OracledbBufferCacheBlockGetsMetricConfig provides config for the oracledb.buffer_cache.block.gets metric."
         type: object
@@ -83,6 +90,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.cpu.usage.rate:
+        description: "OracledbCPUUsageRateMetricConfig provides config for the oracledb.cpu.usage.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.cpu_time:
         description: "OracledbCPUTimeMetricConfig provides config for the oracledb.cpu_time metric."
         type: object
@@ -104,8 +118,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.cursor.cache.utilization:
+        description: "OracledbCursorCacheUtilizationMetricConfig provides config for the oracledb.cursor.cache.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.cursor.open:
         description: "OracledbCursorOpenMetricConfig provides config for the oracledb.cursor.open metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.cursor.open.rate:
+        description: "OracledbCursorOpenRateMetricConfig provides config for the oracledb.cursor.open.rate metric."
         type: object
         properties:
           enabled:
@@ -176,6 +204,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.enqueue.deadlocks.rate:
+        description: "OracledbEnqueueDeadlocksRateMetricConfig provides config for the oracledb.enqueue.deadlocks.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.enqueue.operations:
         description: "OracledbEnqueueOperationsMetricConfig provides config for the oracledb.enqueue.operations metric."
         type: object
@@ -199,6 +234,13 @@ $defs:
                 - "oracledb.enqueue.type"
             default:
               - "oracledb.enqueue.type"
+      oracledb.enqueue.timeouts.rate:
+        description: "OracledbEnqueueTimeoutsRateMetricConfig provides config for the oracledb.enqueue.timeouts.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.enqueue_deadlocks:
         description: "OracledbEnqueueDeadlocksMetricConfig provides config for the oracledb.enqueue_deadlocks metric."
         type: object
@@ -248,6 +290,20 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.executions.rate:
+        description: "OracledbExecutionsRateMetricConfig provides config for the oracledb.executions.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.gc.current_block.time:
+        description: "OracledbGcCurrentBlockTimeMetricConfig provides config for the oracledb.gc.current_block.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.hard_parses:
         description: "OracledbHardParsesMetricConfig provides config for the oracledb.hard_parses metric."
         type: object
@@ -255,6 +311,41 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.hard_parses.rate:
+        description: "OracledbHardParsesRateMetricConfig provides config for the oracledb.hard_parses.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.host.cpu.usage.rate:
+        description: "OracledbHostCPUUsageRateMetricConfig provides config for the oracledb.host.cpu.usage.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.io.requests.rate:
+        description: "OracledbIoRequestsRateMetricConfig provides config for the oracledb.io.requests.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.io.single_block.read.latency:
+        description: "OracledbIoSingleBlockReadLatencyMetricConfig provides config for the oracledb.io.single_block.read.latency metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.io.throughput.rate:
+        description: "OracledbIoThroughputRateMetricConfig provides config for the oracledb.io.throughput.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.lob.operations:
         description: "OracledbLobOperationsMetricConfig provides config for the oracledb.lob.operations metric."
         type: object
@@ -278,6 +369,34 @@ $defs:
                 - "disk.io.direction"
             default:
               - "disk.io.direction"
+      oracledb.jvm.memory.committed:
+        description: "OracledbJvmMemoryCommittedMetricConfig provides config for the oracledb.jvm.memory.committed metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.jvm.memory.live:
+        description: "OracledbJvmMemoryLiveMetricConfig provides config for the oracledb.jvm.memory.live metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.jvm.memory.used:
+        description: "OracledbJvmMemoryUsedMetricConfig provides config for the oracledb.jvm.memory.used metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.lock.time:
+        description: "OracledbLockTimeMetricConfig provides config for the oracledb.lock.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.logical_reads:
         description: "OracledbLogicalReadsMetricConfig provides config for the oracledb.logical_reads metric."
         type: object
@@ -285,8 +404,29 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.logical_reads.rate:
+        description: "OracledbLogicalReadsRateMetricConfig provides config for the oracledb.logical_reads.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.logons:
         description: "OracledbLogonsMetricConfig provides config for the oracledb.logons metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.logons.rate:
+        description: "OracledbLogonsRateMetricConfig provides config for the oracledb.logons.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.os.swaps:
+        description: "OracledbOsSwapsMetricConfig provides config for the oracledb.os.swaps metric."
         type: object
         properties:
           enabled:
@@ -355,6 +495,13 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.pga.cache.utilization:
+        description: "OracledbPgaCacheUtilizationMetricConfig provides config for the oracledb.pga.cache.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.pga_memory:
         description: "OracledbPgaMemoryMetricConfig provides config for the oracledb.pga_memory metric."
         type: object
@@ -394,6 +541,13 @@ $defs:
             default:
               - "disk.io.direction"
               - "disk.io.block_size"
+      oracledb.physical_io.requests.rate:
+        description: "OracledbPhysicalIoRequestsRateMetricConfig provides config for the oracledb.physical_io.requests.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.physical_io.transferred:
         description: "OracledbPhysicalIoTransferredMetricConfig provides config for the oracledb.physical_io.transferred metric."
         type: object
@@ -419,6 +573,20 @@ $defs:
             default:
               - "disk.io.direction"
               - "disk.io.type"
+      oracledb.physical_io.transferred.rate:
+        description: "OracledbPhysicalIoTransferredRateMetricConfig provides config for the oracledb.physical_io.transferred.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.physical_operations.rate:
+        description: "OracledbPhysicalOperationsRateMetricConfig provides config for the oracledb.physical_operations.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.physical_read_io_requests:
         description: "OracledbPhysicalReadIoRequestsMetricConfig provides config for the oracledb.physical_read_io_requests metric."
         type: object
@@ -482,6 +650,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.recovery.blocks:
+        description: "OracledbRecoveryBlocksMetricConfig provides config for the oracledb.recovery.blocks metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.recycle_bin.limit:
         description: "OracledbRecycleBinLimitMetricConfig provides config for the oracledb.recycle_bin.limit metric."
         type: object
@@ -519,6 +694,13 @@ $defs:
             default: false
       oracledb.redo.size:
         description: "OracledbRedoSizeMetricConfig provides config for the oracledb.redo.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.redo.size.rate:
+        description: "OracledbRedoSizeRateMetricConfig provides config for the oracledb.redo.size.rate metric."
         type: object
         properties:
           enabled:
@@ -563,6 +745,34 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.session.average:
+        description: "OracledbSessionAverageMetricConfig provides config for the oracledb.session.average metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.session.stored_procedure.memory:
+        description: "OracledbSessionStoredProcedureMemoryMetricConfig provides config for the oracledb.session.stored_procedure.memory metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.session.wait.time:
+        description: "OracledbSessionWaitTimeMetricConfig provides config for the oracledb.session.wait.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.session.waits:
+        description: "OracledbSessionWaitsMetricConfig provides config for the oracledb.session.waits metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.sessions.limit:
         description: "OracledbSessionsLimitMetricConfig provides config for the oracledb.sessions.limit metric."
         type: object
@@ -595,6 +805,13 @@ $defs:
             default:
               - "session_type"
               - "session_status"
+      oracledb.smon.posts:
+        description: "OracledbSmonPostsMetricConfig provides config for the oracledb.smon.posts metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.sort.operations:
         description: "OracledbSortOperationsMetricConfig provides config for the oracledb.sort.operations metric."
         type: object
@@ -710,6 +927,20 @@ $defs:
                 - "tablespace_name"
             default:
               - "tablespace_name"
+      oracledb.transaction.response.time:
+        description: "OracledbTransactionResponseTimeMetricConfig provides config for the oracledb.transaction.response.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.transaction.rollbacks:
+        description: "OracledbTransactionRollbacksMetricConfig provides config for the oracledb.transaction.rollbacks metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.transactions.limit:
         description: "OracledbTransactionsLimitMetricConfig provides config for the oracledb.transactions.limit metric."
         type: object
@@ -717,6 +948,13 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.transactions.rate:
+        description: "OracledbTransactionsRateMetricConfig provides config for the oracledb.transactions.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.transactions.usage:
         description: "OracledbTransactionsUsageMetricConfig provides config for the oracledb.transactions.usage metric."
         type: object

@@ -306,10 +306,11 @@ func (f *factory) createMetricsExporter(
 				Metrics: cfg.Metrics,
 			},
 			TimeoutConfig: exporterhelper.TimeoutConfig{
-				Timeout: cfg.Timeout,
+				Timeout: cfg.ClientConfig.Timeout,
 			},
-			ClientConfig:     cfg.TLS,
+			ClientConfig:     cfg.ClientConfig.TLS,
 			QueueBatchConfig: cfg.QueueSettings,
+			RetryConfig:      cfg.BackOffConfig,
 			API:              cfg.API,
 			HostProvider: func(ctx context.Context) (string, error) {
 				h, err2 := hostProvider.Source(ctx)

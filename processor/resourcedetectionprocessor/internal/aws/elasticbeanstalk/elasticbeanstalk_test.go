@@ -39,7 +39,7 @@ func (mfs *mockFileSystem) IsWindows() bool {
 
 func Test_windowsPath(t *testing.T) {
 	mfs := &mockFileSystem{windows: true, exists: true, contents: xrayConf}
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 	d.(*Detector).fs = mfs
 
@@ -73,7 +73,7 @@ func Test_fileMalformed(t *testing.T) {
 }
 
 func Test_AttributesDetectedSuccessfully(t *testing.T) {
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 	d.(*Detector).fs = &mockFileSystem{exists: true, contents: xrayConf}
 

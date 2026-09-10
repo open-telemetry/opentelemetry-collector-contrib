@@ -20,9 +20,9 @@ const (
 
 // Config defines configuration for the Splunk HEC receiver.
 type Config struct {
-	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
+	AccessTokenPassthroughConfig splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 
 	Ack `mapstructure:"ack"`
 

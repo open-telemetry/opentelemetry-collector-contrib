@@ -17,6 +17,9 @@ groups:
     brief: The number of files matched
     instrument: gauge
     unit: "{file}"
+    attributes:
+      - ref: file.include
+        requirement_level: opt_in
     annotations:
       scraper:
         enabled: false

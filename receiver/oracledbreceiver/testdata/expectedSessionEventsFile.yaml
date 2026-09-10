@@ -31,9 +31,12 @@ resourceLogs:
               - key: oracledb.wait.duration
                 value:
                   doubleValue: 25.5
+              - key: db.namespace
+                value:
+                  stringValue: ORCL
             body: {}
             eventName: db.server.session.wait_sample
-            timeUnixNano: "1759142300369458000"
+            timeUnixNano: "1783934168387678000"
           - attributes:
               - key: oracledb.sid
                 value:
@@ -53,9 +56,37 @@ resourceLogs:
               - key: oracledb.wait.duration
                 value:
                   doubleValue: 12.3
+              - key: db.namespace
+                value:
+                  stringValue: ORCL
             body: {}
             eventName: db.server.session.wait_sample
-            timeUnixNano: "1759142300369458000"
+            timeUnixNano: "1783934168387678000"
+          - attributes:
+              - key: oracledb.sid
+                value:
+                  stringValue: "102"
+              - key: oracledb.serial
+                value:
+                  stringValue: "12347"
+              - key: oracledb.event
+                value:
+                  stringValue: buffer busy waits
+              - key: oracledb.wait_class
+                value:
+                  stringValue: Concurrency
+              - key: oracledb.wait.count
+                value:
+                  intValue: "50"
+              - key: oracledb.wait.duration
+                value:
+                  doubleValue: 1.5
+              - key: db.namespace
+                value:
+                  stringValue: ""
+            body: {}
+            eventName: db.server.session.wait_sample
+            timeUnixNano: "1783934168387678000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
           version: latest

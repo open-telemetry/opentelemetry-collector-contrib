@@ -454,6 +454,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			err = accessor.Set(t.Context(), tCtx, tt.newVal)
 			if tt.expectSetterError {
 				assert.Error(t, err)
+				// A read-only setter (e.g. event_index) must also reject a nil value.
+				assert.Error(t, accessor.Set(t.Context(), tCtx, nil))
 				return
 			}
 			require.NoError(t, err)

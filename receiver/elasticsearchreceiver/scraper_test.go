@@ -35,33 +35,33 @@ func TestScraper(t *testing.T) {
 
 	config := createDefaultConfig().(*Config)
 
-	config.Metrics.ElasticsearchNodeOperationsGetCompleted.Enabled = true
-	config.Metrics.ElasticsearchNodeOperationsGetTime.Enabled = true
-	config.Metrics.ElasticsearchNodeSegmentsMemory.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchNodeOperationsGetCompleted.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchNodeOperationsGetTime.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchNodeSegmentsMemory.Enabled = true
 
-	config.Metrics.JvmMemoryHeapUtilization.Enabled = true
+	config.MetricsBuilderConfig.Metrics.JvmMemoryHeapUtilization.Enabled = true
 
-	config.Metrics.ElasticsearchNodeOperationsCurrent.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchNodeOperationsCurrent.Enabled = true
 
-	config.Metrics.ElasticsearchIndexOperationsMergeSize.Enabled = true
-	config.Metrics.ElasticsearchIndexOperationsMergeDocsCount.Enabled = true
-	config.Metrics.ElasticsearchIndexOperationsMergeCurrent.Enabled = true
-	config.Metrics.ElasticsearchIndexSegmentsCount.Enabled = true
-	config.Metrics.ElasticsearchIndexSegmentsSize.Enabled = true
-	config.Metrics.ElasticsearchIndexSegmentsMemory.Enabled = true
-	config.Metrics.ElasticsearchIndexTranslogOperations.Enabled = true
-	config.Metrics.ElasticsearchIndexTranslogSize.Enabled = true
-	config.Metrics.ElasticsearchIndexCacheMemoryUsage.Enabled = true
-	config.Metrics.ElasticsearchIndexCacheSize.Enabled = true
-	config.Metrics.ElasticsearchIndexCacheEvictions.Enabled = true
-	config.Metrics.ElasticsearchIndexDocuments.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexOperationsMergeSize.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexOperationsMergeDocsCount.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexOperationsMergeCurrent.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexSegmentsCount.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexSegmentsSize.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexSegmentsMemory.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexTranslogOperations.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexTranslogSize.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexCacheMemoryUsage.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexCacheSize.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexCacheEvictions.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexDocuments.Enabled = true
 
-	config.Metrics.ElasticsearchClusterIndicesCacheEvictions.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchClusterIndicesCacheEvictions.Enabled = true
 
-	config.Metrics.ElasticsearchNodeCacheSize.Enabled = true
-	config.Metrics.ElasticsearchProcessCPUUsage.Enabled = true
-	config.Metrics.ElasticsearchProcessCPUTime.Enabled = true
-	config.Metrics.ElasticsearchProcessMemoryVirtual.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchNodeCacheSize.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchProcessCPUUsage.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchProcessCPUTime.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchProcessMemoryVirtual.Enabled = true
 
 	sc := newElasticSearchScraper(receivertest.NewNopSettings(metadata.Type), config)
 
@@ -93,33 +93,33 @@ func TestScraperNoIOStats(t *testing.T) {
 
 	config := createDefaultConfig().(*Config)
 
-	config.Metrics.ElasticsearchNodeOperationsGetCompleted.Enabled = true
-	config.Metrics.ElasticsearchNodeOperationsGetTime.Enabled = true
-	config.Metrics.ElasticsearchNodeSegmentsMemory.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchNodeOperationsGetCompleted.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchNodeOperationsGetTime.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchNodeSegmentsMemory.Enabled = true
 
-	config.Metrics.JvmMemoryHeapUtilization.Enabled = true
+	config.MetricsBuilderConfig.Metrics.JvmMemoryHeapUtilization.Enabled = true
 
-	config.Metrics.ElasticsearchNodeOperationsCurrent.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchNodeOperationsCurrent.Enabled = true
 
-	config.Metrics.ElasticsearchIndexOperationsMergeSize.Enabled = true
-	config.Metrics.ElasticsearchIndexOperationsMergeDocsCount.Enabled = true
-	config.Metrics.ElasticsearchIndexOperationsMergeCurrent.Enabled = true
-	config.Metrics.ElasticsearchIndexSegmentsCount.Enabled = true
-	config.Metrics.ElasticsearchIndexSegmentsSize.Enabled = true
-	config.Metrics.ElasticsearchIndexSegmentsMemory.Enabled = true
-	config.Metrics.ElasticsearchIndexTranslogOperations.Enabled = true
-	config.Metrics.ElasticsearchIndexTranslogSize.Enabled = true
-	config.Metrics.ElasticsearchIndexCacheMemoryUsage.Enabled = true
-	config.Metrics.ElasticsearchIndexCacheSize.Enabled = true
-	config.Metrics.ElasticsearchIndexCacheEvictions.Enabled = true
-	config.Metrics.ElasticsearchIndexDocuments.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexOperationsMergeSize.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexOperationsMergeDocsCount.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexOperationsMergeCurrent.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexSegmentsCount.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexSegmentsSize.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexSegmentsMemory.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexTranslogOperations.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexTranslogSize.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexCacheMemoryUsage.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexCacheSize.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexCacheEvictions.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchIndexDocuments.Enabled = true
 
-	config.Metrics.ElasticsearchClusterIndicesCacheEvictions.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchClusterIndicesCacheEvictions.Enabled = true
 
-	config.Metrics.ElasticsearchNodeCacheSize.Enabled = true
-	config.Metrics.ElasticsearchProcessCPUUsage.Enabled = true
-	config.Metrics.ElasticsearchProcessCPUTime.Enabled = true
-	config.Metrics.ElasticsearchProcessMemoryVirtual.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchNodeCacheSize.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchProcessCPUUsage.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchProcessCPUTime.Enabled = true
+	config.MetricsBuilderConfig.Metrics.ElasticsearchProcessMemoryVirtual.Enabled = true
 
 	sc := newElasticSearchScraper(receivertest.NewNopSettings(metadata.Type), config)
 

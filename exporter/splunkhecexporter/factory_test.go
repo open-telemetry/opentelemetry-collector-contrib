@@ -27,7 +27,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopSettings(metadata.Type)
@@ -37,7 +37,7 @@ func TestCreateMetrics(t *testing.T) {
 
 func TestCreateTraces(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopSettings(metadata.Type)
@@ -47,7 +47,7 @@ func TestCreateTraces(t *testing.T) {
 
 func TestCreateLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopSettings(metadata.Type)
@@ -59,7 +59,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopSettings(metadata.Type)
 	exp, err := factory.CreateMetrics(
@@ -70,7 +70,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	// Set values that don't have a valid default.
 	cfg.Token = "testToken"
-	cfg.Endpoint = "https://example.com"
+	cfg.ClientConfig.Endpoint = "https://example.com"
 	exp, err = factory.CreateMetrics(
 		t.Context(), params,
 		cfg)

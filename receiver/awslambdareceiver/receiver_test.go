@@ -56,7 +56,7 @@ func TestCreateLogs(t *testing.T) {
 	goMock := gomock.NewController(t)
 	s3Service := internal.NewMockS3Service(goMock)
 	s3Provider := internal.NewMockS3Provider(goMock)
-	s3Provider.EXPECT().GetService(gomock.Any(), gomock.Any()).AnyTimes().Return(s3Service, nil)
+	s3Provider.EXPECT().GetServiceForConfig(gomock.Any(), gomock.Any()).AnyTimes().Return(s3Service, nil)
 
 	// Test data - mock S3 file content
 	testData := []byte("version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status\n2 627286350134 eni-0377aa710071c557e 172.31.31.124 140.82.121.6 52718 443 6 13 3777 1751375679 ENDTIME ACCEPT OK\n")
@@ -133,7 +133,7 @@ func TestCreateMetrics(t *testing.T) {
 	goMock := gomock.NewController(t)
 	s3Service := internal.NewMockS3Service(goMock)
 	s3Provider := internal.NewMockS3Provider(goMock)
-	s3Provider.EXPECT().GetService(gomock.Any(), gomock.Any()).AnyTimes().Return(s3Service, nil)
+	s3Provider.EXPECT().GetServiceForConfig(gomock.Any(), gomock.Any()).AnyTimes().Return(s3Service, nil)
 	s3Service.EXPECT().GetReader(gomock.Any(), gomock.Any(), gomock.Any()).
 		Times(1).
 		Return(io.NopCloser(bytes.NewReader([]byte("dummy data"))), nil)
@@ -188,7 +188,7 @@ func TestCustomHandlerRegistration(t *testing.T) {
 	goMock := gomock.NewController(t)
 	s3Service := internal.NewMockS3Service(goMock)
 	s3Provider := internal.NewMockS3Provider(goMock)
-	s3Provider.EXPECT().GetService(gomock.Any(), gomock.Any()).AnyTimes().Return(s3Service, nil)
+	s3Provider.EXPECT().GetServiceForConfig(gomock.Any(), gomock.Any()).AnyTimes().Return(s3Service, nil)
 
 	// A custom event payload that detectTriggerType classifies as customEvent.
 	customEventPayload := []byte(`{"custom":"payload"}`)
@@ -646,7 +646,7 @@ func TestNewLogsHandler_MultiEncodingS3_Branch(t *testing.T) {
 	ctr := gomock.NewController(t)
 	s3Service := internal.NewMockS3Service(ctr)
 	s3Provider := internal.NewMockS3Provider(ctr)
-	s3Provider.EXPECT().GetService(gomock.Any(), gomock.Any()).Return(s3Service, nil)
+	s3Provider.EXPECT().GetServiceForConfig(gomock.Any(), gomock.Any()).Return(s3Service, nil)
 
 	settings := receivertest.NewNopSettings(metadata.Type)
 	host := componenttest.NewNopHost() // no extensions needed — all raw passthrough

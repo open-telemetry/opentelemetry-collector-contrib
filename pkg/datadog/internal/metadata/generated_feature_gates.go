@@ -22,6 +22,14 @@ var DatadogEnableReceiveResourceSpansV2FeatureGate = featuregate.GlobalRegistry(
 	featuregate.WithRegisterFromVersion("v0.118.0"),
 )
 
+var ExporterDatadogexporterAddUnitsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.AddUnits",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the Datadog Exporter adds units to exported metrics."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/15280"),
+	featuregate.WithRegisterFromVersion("v0.157.0"),
+)
+
 var ExporterDatadogexporterDisableAllMetricRemappingFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.DisableAllMetricRemapping",
 	featuregate.StageBeta,

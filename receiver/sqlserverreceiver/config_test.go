@@ -11,8 +11,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
@@ -126,9 +126,9 @@ func TestValidate(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			if tc.expectedSuccess {
-				require.NoError(t, xconfmap.Validate(tc.cfg))
+				require.NoError(t, confmap.Validate(tc.cfg))
 			} else {
-				require.Error(t, xconfmap.Validate(tc.cfg))
+				require.Error(t, confmap.Validate(tc.cfg))
 			}
 		})
 	}
@@ -145,7 +145,7 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, sub.Unmarshal(cfg))
 
-		assert.NoError(t, xconfmap.Validate(cfg))
+		assert.NoError(t, confmap.Validate(cfg))
 		assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 	})
 
@@ -231,7 +231,7 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, sub.Unmarshal(cfg))
 
-		assert.NoError(t, xconfmap.Validate(cfg))
+		assert.NoError(t, confmap.Validate(cfg))
 		if diff := cmp.Diff(expected, cfg, cmp.FilterPath(func(p cmp.Path) bool {
 			if sf, ok := p.Last().(cmp.StructField); ok {
 				name := sf.Name()

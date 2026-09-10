@@ -30,7 +30,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					FileCount: FileCountMetricConfig{
-						Enabled: true,
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []FileCountMetricAttributeKey{FileCountMetricAttributeKeyFileInclude},
 					},
 					FileCtime: FileCtimeMetricConfig{
 						Enabled:             true,
@@ -58,7 +60,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					FileCount: FileCountMetricConfig{
-						Enabled: false,
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []FileCountMetricAttributeKey{FileCountMetricAttributeKeyFileInclude},
 					},
 					FileCtime: FileCtimeMetricConfig{
 						Enabled:             false,
@@ -86,6 +90,18 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+
+func TestFileCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().FileCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []FileCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric file.count doesn't have an attribute invalid, valid attributes: [file.include]")
+
+	cfg = DefaultMetricsConfig().FileCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func TestFileCtimeMetricsConfig_Validate(t *testing.T) {

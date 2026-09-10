@@ -2169,6 +2169,60 @@ func TestStatsDParser_HistogramExplicitBucket(t *testing.T) {
 	}
 }
 
+func TestStatsDParser_TimingExplicitBucket(t *testing.T) {
+	originalTimeNowFunc := timeNowFunc
+	timeNowFunc = func() time.Time {
+		return time.Unix(711, 0)
+	}
+	t.Cleanup(func() {
+		timeNowFunc = originalTimeNowFunc
+	})
+
+	expected := pmetric.NewMetrics()
+	ilm := expected.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	m := ilm.Metrics().AppendEmpty()
+	m.SetName("timer.duration")
+	histogram := m.SetEmptyHistogram()
+	histogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	dp := histogram.DataPoints().AppendEmpty()
+	dp.SetCount(4)
+	dp.SetSum(555.5)
+	dp.SetMin(0.5)
+	dp.SetMax(500)
+	dp.BucketCounts().FromRaw([]uint64{1, 1, 1, 1})
+	dp.ExplicitBounds().FromRaw([]float64{1, 10, 100})
+
+	p := &StatsDParser{}
+	require.NoError(t, p.Initialize(false, false, false, false, false, []protocol.TimerHistogramMapping{
+		{
+			StatsdType:   "timing",
+			ObserverType: "histogram",
+			Histogram: protocol.HistogramConfig{
+				ExplicitBuckets: []protocol.ExplicitBucket{
+					{
+						MatcherPattern: "timer.*",
+						Buckets:        []float64{1, 10, 100},
+					},
+				},
+				MaxSize: 10,
+			},
+		},
+	}, protocol.CounterTypeInt))
+
+	addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
+	for _, input := range []string{
+		"timer.duration:0.5|ms",
+		"timer.duration:5|ms",
+		"timer.duration:50|ms",
+		"timer.duration:500|ms",
+	} {
+		require.NoError(t, p.Aggregate(input, addr))
+	}
+
+	var nodiffs []*metricstestutil.MetricDiff
+	assert.Equal(t, nodiffs, metricstestutil.DiffMetrics(nodiffs, expected, p.GetMetrics()[0].Metrics))
+}
+
 func TestStatsDParser_IPOnlyAggregation(t *testing.T) {
 	const devVersion = "dev-0.0.1"
 	p := &StatsDParser{

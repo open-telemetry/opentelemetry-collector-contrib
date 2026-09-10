@@ -77,10 +77,10 @@ type Config struct {
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html
 	Pipeline string `mapstructure:"pipeline"`
 
-	confighttp.ClientConfig `mapstructure:",squash"`
-	Authentication          AuthenticationSettings `mapstructure:",squash"`
-	Discovery               DiscoverySettings      `mapstructure:"discover"`
-	Retry                   RetrySettings          `mapstructure:"retry"`
+	ClientConfig   confighttp.ClientConfig `mapstructure:",squash"`
+	Authentication AuthenticationSettings  `mapstructure:",squash"`
+	Discovery      DiscoverySettings       `mapstructure:"discover"`
+	Retry          RetrySettings           `mapstructure:"retry"`
 
 	// Deprecated: [v0.136.0] This config is now deprecated. Use `sending_queue::batch` instead.
 	// If this config is defined then it will be used to configure sending queue's batch provided
@@ -271,8 +271,12 @@ type RetrySettings struct {
 	// MaxInterval configures the max waiting time if consecutive requests failed.
 	MaxInterval time.Duration `mapstructure:"max_interval"`
 
-	// RetryOnStatus configures the status codes that trigger request or document level retries.
+	// RetryOnStatus configures the status codes that trigger request level retries.
 	RetryOnStatus []int `mapstructure:"retry_on_status"`
+
+	// RetryOnDocumentStatus configures the status codes that trigger document level retries.
+	// If unset, RetryOnDocumentStatus defaults to RetryOnStatus.
+	RetryOnDocumentStatus []int `mapstructure:"retry_on_document_status"`
 }
 
 type MappingsSettings struct {
@@ -349,6 +353,11 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 			qbCfg.MaxSize = int64(cfg.Flush.Bytes)
 		}
 	}
+
+	if !conf.IsSet("retry::retry_on_document_status") {
+		cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
+	}
+
 	return nil
 }
 
@@ -373,7 +382,7 @@ func (cfg *Config) Validate() error {
 		canonicalAllowedModes[i] = canonicalName
 	}
 
-	if cfg.Compression != "none" && cfg.Compression != configcompression.TypeGzip {
+	if cfg.ClientConfig.Compression != "none" && cfg.ClientConfig.Compression != configcompression.TypeGzip {
 		return errors.New("compression must be one of [none, gzip]")
 	}
 
@@ -444,9 +453,9 @@ func (cfg *Config) endpoints() ([]string, error) {
 	// If none are set, then $ELASTICSEARCH_URL may be specified instead.
 	var endpoints []string
 	var numEndpointConfigs int
-	if cfg.Endpoint != "" {
+	if cfg.ClientConfig.Endpoint != "" {
 		numEndpointConfigs++
-		endpoints = []string{cfg.Endpoint}
+		endpoints = []string{cfg.ClientConfig.Endpoint}
 	}
 	if len(cfg.Endpoints) > 0 {
 		numEndpointConfigs++

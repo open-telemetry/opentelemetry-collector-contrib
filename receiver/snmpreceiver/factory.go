@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
@@ -106,5 +106,5 @@ func addMissingConfigDefaults(cfg *Config) error {
 		}
 	}
 
-	return xconfmap.Validate(cfg)
+	return confmap.Validate(cfg)
 }

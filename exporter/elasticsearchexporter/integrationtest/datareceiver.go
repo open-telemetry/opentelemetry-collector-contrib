@@ -112,7 +112,7 @@ func (es *esDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc cons
 		return fmt.Errorf("invalid ES URL specified %s: %w", es.endpoint, err)
 	}
 	cfg := factory.CreateDefaultConfig().(*config)
-	cfg.NetAddr.Endpoint = esURL.Host
+	cfg.ServerConfig.NetAddr.Endpoint = esURL.Host
 	cfg.DecodeBulkRequests = es.decodeBulkRequest
 
 	set := receivertest.NewNopSettings(metadata.Type)
@@ -194,7 +194,7 @@ func (*esDataReceiver) ProtocolName() string {
 }
 
 type config struct {
-	confighttp.ServerConfig
+	ServerConfig confighttp.ServerConfig
 
 	// DecodeBulkRequests controls decoding of the bulk request in the mock
 	// ES receiver. Decoding requests would consume resources and might
@@ -283,9 +283,9 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		return nil
 	}
 
-	ln, err := es.config.ToListener(ctx)
+	ln, err := es.config.ServerConfig.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", es.config.NetAddr.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", es.config.ServerConfig.NetAddr.Endpoint, err)
 	}
 
 	r := mux.NewRouter()
@@ -377,7 +377,7 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		}
 	})
 
-	es.server, err = es.config.ToServer(ctx, host.GetExtensions(), es.params.TelemetrySettings, r)
+	es.server, err = es.config.ServerConfig.ToServer(ctx, host.GetExtensions(), es.params.TelemetrySettings, r)
 	if err != nil {
 		return fmt.Errorf("failed to create mock ES server: %w", err)
 	}

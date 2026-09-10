@@ -700,6 +700,7 @@ multimod-verify:
 .PHONY: multimod-prerelease
 multimod-prerelease:
 	$(MULTIMOD) prerelease -s=true -b=false -v ./versions.yaml -m contrib-base
+	$(MULTIMOD) prerelease -s=true -b=false -v ./versions.yaml -m stable-base
 	$(MAKE) gotidy
 
 .PHONY: multimod-sync

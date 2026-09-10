@@ -163,8 +163,12 @@ func NewConfigComponent(options ...ConfigOption) coreconfig.Component {
 // WithAPIConfig configures API-related settings
 func WithAPIConfig(cfg *datadogconfig.Config) ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
-		pkgconfig.Set("api_key", string(cfg.API.Key), pkgconfigmodel.SourceFile)
-		pkgconfig.Set("site", cfg.API.Site, pkgconfigmodel.SourceFile)
+		// Use SourceAgentRuntime because nodetreemodel's BuildSchema rebuilds the SourceEnvVar layer
+		// from actual DD_* env vars, which would erase a manually-set SourceFile value (e.g. DD_API_KEY
+		// or DD_SITE set in the process environment would otherwise silently win over the already-resolved
+		// value coming from the collector's own configuration).
+		pkgconfig.Set("api_key", string(cfg.API.Key), pkgconfigmodel.SourceAgentRuntime)
+		pkgconfig.Set("site", cfg.API.Site, pkgconfigmodel.SourceAgentRuntime)
 	}
 }
 
@@ -276,9 +280,9 @@ func setProxy(cfg *datadogconfig.Config, pkgconfig pkgconfigmodel.Config) {
 	}
 
 	// proxy_url takes precedence over proxy environment variables if set
-	if cfg.ProxyURL != "" {
-		pkgconfig.Set("proxy.http", cfg.ProxyURL, pkgconfigmodel.SourceFile)
-		pkgconfig.Set("proxy.https", cfg.ProxyURL, pkgconfigmodel.SourceFile)
+	if cfg.ClientConfig.ProxyURL != "" {
+		pkgconfig.Set("proxy.http", cfg.ClientConfig.ProxyURL, pkgconfigmodel.SourceFile)
+		pkgconfig.Set("proxy.https", cfg.ClientConfig.ProxyURL, pkgconfigmodel.SourceFile)
 	}
 
 	// If this is set to an empty []string, viper will have a type conflict when merging
@@ -294,8 +298,8 @@ func setProxy(cfg *datadogconfig.Config, pkgconfig pkgconfigmodel.Config) {
 }
 
 func setTLSSetting(cfg *datadogconfig.Config, pkgconfig pkgconfigmodel.Config) {
-	if cfg.TLS.InsecureSkipVerify {
-		pkgconfig.Set("skip_ssl_validation", cfg.TLS.InsecureSkipVerify, pkgconfigmodel.SourceFile)
+	if cfg.ClientConfig.TLS.InsecureSkipVerify {
+		pkgconfig.Set("skip_ssl_validation", cfg.ClientConfig.TLS.InsecureSkipVerify, pkgconfigmodel.SourceFile)
 	}
 }
 

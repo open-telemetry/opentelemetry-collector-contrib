@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters/internal/third_party/telegraf/win_perf_counters"
 )
 
@@ -42,18 +44,28 @@ type perfCounter struct {
 	path   string
 	query  win_perf_counters.PerformanceQuery
 	handle win_perf_counters.PDH_HCOUNTER
+	logger *zap.Logger
+}
+
+type WatcherOption func(*perfCounter)
+
+func WithLogger(l *zap.Logger) WatcherOption {
+	return func(pc *perfCounter) { pc.logger = l }
 }
 
 // NewWatcher creates new PerfCounterWatcher by provided parts of its path.
-func NewWatcher(object, instance, counterName string) (PerfCounterWatcher, error) {
-	return NewWatcherFromPath(counterPath(object, instance, counterName))
+func NewWatcher(object, instance, counterName string, opts ...WatcherOption) (PerfCounterWatcher, error) {
+	return NewWatcherFromPath(counterPath(object, instance, counterName), opts...)
 }
 
 // NewWatcherFromPath creates new PerfCounterWatcher by provided path.
-func NewWatcherFromPath(path string) (PerfCounterWatcher, error) {
+func NewWatcherFromPath(path string, opts ...WatcherOption) (PerfCounterWatcher, error) {
 	counter, err := newPerfCounter(path, true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create perf counter with path %v: %w", path, err)
+	}
+	for _, opt := range opts {
+		opt(counter)
 	}
 	return counter, nil
 }
@@ -144,6 +156,13 @@ func (pc *perfCounter) ScrapeData() ([]CounterValue, error) {
 
 	vals, err := pc.query.GetFormattedCounterArrayDouble(pc.handle)
 	if err != nil {
+		if IsIgnorableError(err) {
+			if pc.logger != nil {
+				pc.logger.Debug("Transient error scraping performance counter", zap.String("counter", pc.path), zap.Error(err))
+			}
+			return nil, err
+		}
+
 		return nil, fmt.Errorf("failed to format data for performance counter '%s': %w", pc.path, err)
 	}
 
@@ -162,6 +181,13 @@ func (pc *perfCounter) ScrapeRawValues() ([]RawCounterValue, error) {
 
 	vals, err := pc.query.GetRawCounterArray(pc.handle)
 	if err != nil {
+		if IsIgnorableError(err) {
+			if pc.logger != nil {
+				pc.logger.Debug("Transient error scraping raw performance counter", zap.String("counter", pc.path), zap.Error(err))
+			}
+			return nil, err
+		}
+
 		return nil, fmt.Errorf("failed to get raw data for performance counter '%s': %w", pc.path, err)
 	}
 
@@ -181,10 +207,33 @@ func (pc *perfCounter) ScrapeRawValue(rawValue *int64) (bool, error) {
 
 	*rawValue, err = pc.query.GetRawCounterValue(pc.handle)
 	if err != nil {
+		if IsIgnorableError(err) {
+			if pc.logger != nil {
+				pc.logger.Debug("Transient error scraping raw performance counter value", zap.String("counter", pc.path), zap.Error(err))
+			}
+			return false, err
+		}
+
 		return false, fmt.Errorf("failed to get raw data for performance counter '%s': %w", pc.path, err)
 	}
 
 	return true, nil
+}
+
+// IsIgnorableError checks if an error is a transient PDH error that can be safely ignored.
+func IsIgnorableError(err error) bool {
+	var pdhErr *win_perf_counters.PdhError
+	if errors.As(err, &pdhErr) && (pdhErr.ErrorCode == win_perf_counters.PDH_INVALID_DATA || pdhErr.ErrorCode == win_perf_counters.PDH_NO_DATA || pdhErr.ErrorCode == win_perf_counters.PDH_CALC_NEGATIVE_DENOMINATOR) {
+		return true
+	}
+	type ignorable interface {
+		IsIgnorable() bool
+	}
+	var ignErr ignorable
+	if errors.As(err, &ignErr) {
+		return ignErr.IsIgnorable()
+	}
+	return false
 }
 
 // ExpandWildCardPath examines the local computer and returns those counter paths that match the given counter path which contains wildcard characters.
@@ -270,6 +319,9 @@ func (pc *perfCounter) collectDataForScrape() (bool, error) {
 		}
 
 		if pdhErr.ErrorCode == win_perf_counters.PDH_NO_DATA {
+			if pc.logger != nil {
+				pc.logger.Debug("Transient error collecting data for performance counter", zap.String("counter", pc.path), zap.Error(err))
+			}
 			// No data is available for the counter, so no error but also no data
 			return false, nil
 		}
@@ -280,6 +332,9 @@ func (pc *perfCounter) collectDataForScrape() (bool, error) {
 			// Wait one second and retry once
 			time.Sleep(time.Second)
 			if retryErr := pc.query.CollectData(); retryErr != nil {
+				if pc.logger != nil {
+					pc.logger.Debug("Transient error collecting data for performance counter after retry", zap.String("counter", pc.path), zap.Error(err))
+				}
 				return false, fmt.Errorf("failed retry for performance counter '%s': %w", pc.path, err)
 			}
 		}

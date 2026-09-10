@@ -14,7 +14,7 @@ status:
 feature_gates:
   - id: connector.routing.defaultErrorModeIgnore
     description: When enabled, the default error_mode is `ignore` instead of `propagate`.
-    stage: alpha
+    stage: beta
     from_version: v0.155.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48418
 

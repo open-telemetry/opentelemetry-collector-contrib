@@ -84,7 +84,7 @@ func Test_truncateAll(t *testing.T) {
 				},
 			}
 
-			exprFunc, err := TruncateAll(target, tt.limit, ottl.Optional[bool]{}, zap.NewNop())
+			exprFunc, err := TruncateAll(target, tt.limit, ottl.Optional[bool]{}, ottl.Optional[string]{}, zap.NewNop())
 			require.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
@@ -156,7 +156,7 @@ func Test_truncateAll_UTF8(t *testing.T) {
 			}
 
 			utf8SafeOpt := ottl.NewTestingOptional(true)
-			exprFunc, err := TruncateAll(target, tt.limit, utf8SafeOpt, zap.NewNop())
+			exprFunc, err := TruncateAll(target, tt.limit, utf8SafeOpt, ottl.Optional[string]{}, zap.NewNop())
 			require.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
@@ -170,9 +170,19 @@ func Test_truncateAll_UTF8(t *testing.T) {
 }
 
 func Test_truncateAll_validation(t *testing.T) {
-	_, err := TruncateAll[any](&ottl.StandardPMapGetSetter[any]{}, -1, ottl.Optional[bool]{}, zap.NewNop())
+	_, err := TruncateAll[any](&ottl.StandardPMapGetSetter[any]{}, -1, ottl.Optional[bool]{}, ottl.Optional[string]{}, zap.NewNop())
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "invalid limit for truncate_all function, -1 cannot be negative")
+
+	truncateMarkerOpt := ottl.NewTestingOptional("long_marker")
+	_, err = TruncateAll[any](&ottl.StandardPMapGetSetter[any]{}, 3, ottl.Optional[bool]{}, truncateMarkerOpt, zap.NewNop())
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "invalid truncation marker for truncate_all function, length of marker 11 cannot be greater than limit 3")
+
+	truncateUtf8MarkerOpt := ottl.NewTestingOptional("[✄]")
+	_, err = TruncateAll[any](&ottl.StandardPMapGetSetter[any]{}, 3, ottl.Optional[bool]{}, truncateUtf8MarkerOpt, zap.NewNop())
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "invalid truncation marker for truncate_all function, length of marker 5 cannot be greater than limit 3")
 }
 
 func Test_truncateAll_bad_input(t *testing.T) {
@@ -186,7 +196,7 @@ func Test_truncateAll_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := TruncateAll[any](target, 1, ottl.Optional[bool]{}, zap.NewNop())
+	exprFunc, err := TruncateAll[any](target, 1, ottl.Optional[bool]{}, ottl.Optional[string]{}, zap.NewNop())
 	require.NoError(t, err)
 
 	_, err = exprFunc(nil, input)
@@ -203,9 +213,133 @@ func Test_truncateAll_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := TruncateAll[any](target, 1, ottl.Optional[bool]{}, zap.NewNop())
+	exprFunc, err := TruncateAll[any](target, 1, ottl.Optional[bool]{}, ottl.Optional[string]{}, zap.NewNop())
 	require.NoError(t, err)
 
 	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)
+}
+
+func Test_truncateAll_truncationMarker(t *testing.T) {
+	input := pcommon.NewMap()
+	input.PutInt("test2", 3)
+	input.PutBool("test3", true)
+
+	tests := []struct {
+		name       string
+		testString string
+		limit      int64
+		marker     string
+		utf8Safe   bool
+		want       func(pcommon.Map)
+	}{
+		{
+			name:       "truncate map with marker",
+			testString: "hello world",
+			limit:      7,
+			marker:     "(...)",
+			utf8Safe:   true,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutInt("test2", 3)
+				expectedMap.PutBool("test3", true)
+				expectedMap.PutStr("test", "he(...)")
+			},
+		},
+		{
+			name:       "truncate map unsafe with marker",
+			testString: "hello world",
+			limit:      7,
+			marker:     "(...)",
+			utf8Safe:   false,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutInt("test2", 3)
+				expectedMap.PutBool("test3", true)
+				expectedMap.PutStr("test", "he(...)")
+			},
+		},
+		{
+			name:       "truncate map to only marker",
+			testString: "hello world",
+			limit:      5,
+			marker:     "(...)",
+			utf8Safe:   true,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutInt("test2", 3)
+				expectedMap.PutBool("test3", true)
+				expectedMap.PutStr("test", "(...)")
+			},
+		},
+		{
+			name:       "truncate correct size with utf-8 marker",
+			testString: "hello world",
+			limit:      10,
+			marker:     "[✄]",
+			utf8Safe:   true,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutInt("test2", 3)
+				expectedMap.PutBool("test3", true)
+				expectedMap.PutStr("test", "hello[✄]")
+			},
+		},
+		{
+			name:       "truncate utf-8 safe with marker",
+			testString: "hell😀 w😀rld",
+			limit:      16, // Truncates in the middle of the second emoji. Backs up to the preceding char and adds the marker.
+			marker:     "(...)",
+			utf8Safe:   true,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutInt("test2", 3)
+				expectedMap.PutBool("test3", true)
+				expectedMap.PutStr("test", "hell😀 w(...)")
+			},
+		},
+		{
+			name:       "truncate utf-8 unsafe with marker",
+			testString: "hell😀 w😀rld",
+			limit:      16, // Truncates in the middle of the second emoji. Results in non-utf8 trailing bytes.
+			marker:     "(...)",
+			utf8Safe:   false,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutInt("test2", 3)
+				expectedMap.PutBool("test3", true)
+				expectedMap.PutStr("test", "hell😀 w\xf0(...)")
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scenarioMap := pcommon.NewMap()
+			input.CopyTo(scenarioMap)
+			scenarioMap.PutStr("test", tt.testString)
+
+			setterWasCalled := false
+			target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+				Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+					return tCtx, nil
+				},
+				Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+					setterWasCalled = true
+					if v, ok := m.(pcommon.Map); ok {
+						v.CopyTo(tCtx)
+						return nil
+					}
+					return errors.New("expected pcommon.Map")
+				},
+			}
+
+			truncateMarkerOpt := ottl.NewTestingOptional(tt.marker)
+			utf8SafeOpt := ottl.NewTestingOptional(tt.utf8Safe)
+			exprFunc, err := TruncateAll(target, tt.limit, utf8SafeOpt, truncateMarkerOpt, zap.NewNop())
+			require.NoError(t, err)
+
+			_, err = exprFunc(nil, scenarioMap)
+			require.NoError(t, err)
+			assert.True(t, setterWasCalled)
+
+			expected := pcommon.NewMap()
+			tt.want(expected)
+
+			assert.Equal(t, expected, scenarioMap)
+		})
+	}
 }

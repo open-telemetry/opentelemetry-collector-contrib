@@ -137,9 +137,9 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 
 	receiverCfg.GRPC.NetAddr.Endpoint = addr
 
-	exporterCfg.Endpoint = addr
-	exporterCfg.WaitForReady = true
-	exporterCfg.TLS.Insecure = true
+	exporterCfg.ClientConfig.Endpoint = addr
+	exporterCfg.ClientConfig.WaitForReady = true
+	exporterCfg.ClientConfig.TLS.Insecure = true
 	exporterCfg.TimeoutSettings.Timeout = time.Minute
 	exporterCfg.QueueSettings = configoptional.None[exporterhelper.QueueBatchConfig]()
 	exporterCfg.RetryConfig.Enabled = true

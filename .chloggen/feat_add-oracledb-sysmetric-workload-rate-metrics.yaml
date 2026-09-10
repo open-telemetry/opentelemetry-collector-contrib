@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/oracledb
+
+note: "Add real-time workload rate metrics."
+
+issues: [49749]
+
+subtext:
+
+change_logs: [user]

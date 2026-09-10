@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
+	pkgsampling "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
@@ -42,6 +43,11 @@ func (e *batchSizeTrackingEvaluator) Evaluate(_ context.Context, _ pcommon.Trace
 	decision := e.decisions[0]
 	e.decisions = e.decisions[1:]
 	return decision, nil
+}
+
+func (e *batchSizeTrackingEvaluator) EvaluateWithThreshold(ctx context.Context, traceID pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, pkgsampling.Threshold, error) {
+	d, err := e.Evaluate(ctx, traceID, trace)
+	return d, pkgsampling.AlwaysSampleThreshold, err
 }
 
 func (*batchSizeTrackingEvaluator) IsStateful() bool {

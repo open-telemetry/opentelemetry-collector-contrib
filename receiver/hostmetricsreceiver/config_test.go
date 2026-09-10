@@ -10,8 +10,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
@@ -104,7 +104,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			require.NoError(t, xconfmap.Validate(cfg))
+			require.NoError(t, confmap.Validate(cfg))
 			require.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -187,7 +187,7 @@ func TestLoadDeprecatedConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			require.NoError(t, xconfmap.Validate(cfg))
+			require.NoError(t, confmap.Validate(cfg))
 			require.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -201,7 +201,7 @@ func TestLoadInvalidConfig_NoScrapers(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, cm.Unmarshal(cfg))
-	require.ErrorContains(t, xconfmap.Validate(cfg), "must specify at least one scraper when using host_metrics receiver")
+	require.ErrorContains(t, confmap.Validate(cfg), "must specify at least one scraper when using host_metrics receiver")
 }
 
 func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {

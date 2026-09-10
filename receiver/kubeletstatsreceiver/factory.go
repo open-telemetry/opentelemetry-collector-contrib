@@ -79,7 +79,7 @@ func createMetricsReceiver(
 }
 
 func restClient(logger *zap.Logger, cfg *Config) (kubelet.RestClient, error) {
-	clientProvider, err := kube.NewClientProvider(cfg.Endpoint, &cfg.ClientConfig, logger)
+	clientProvider, err := kube.NewClientProvider(cfg.TCPAddrConfig.Endpoint, &cfg.ClientConfig, logger)
 	if err != nil {
 		return nil, err
 	}

@@ -9,17 +9,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/metadata"
-)
-
-var useNewTypeNameGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.awscontainerinsightreceiver.useNewTypeName",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, the receiver uses the new component type name 'awscontainerinsight' instead of 'awscontainerinsightreceiver'."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44052"),
 )
 
 // Factory for awscontainerinsight
@@ -43,7 +35,7 @@ const (
 // NewFactory creates a factory for AWS container insight receiver
 func NewFactory() receiver.Factory {
 	var componentType component.Type
-	if useNewTypeNameGate.IsEnabled() {
+	if metadata.ReceiverAwscontainerinsightreceiverUseNewTypeNameFeatureGate.IsEnabled() {
 		componentType = component.MustNewType("awscontainerinsight")
 	} else {
 		componentType = component.MustNewType("awscontainerinsightreceiver")
@@ -73,7 +65,7 @@ func createMetricsReceiver(
 	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	if !useNewTypeNameGate.IsEnabled() {
+	if !metadata.ReceiverAwscontainerinsightreceiverUseNewTypeNameFeatureGate.IsEnabled() {
 		params.Logger.Warn(
 			"The component type name 'awscontainerinsightreceiver' is deprecated and will be changed to 'awscontainerinsight' in a future release. " +
 				"Please enable the feature gate 'receiver.awscontainerinsightreceiver.useNewTypeName' to use the new component type name. " +

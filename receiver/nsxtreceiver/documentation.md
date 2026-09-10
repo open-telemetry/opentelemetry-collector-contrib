@@ -54,7 +54,7 @@ The size of the node's memory cache.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| KBy | Sum | Int | Cumulative | false | Development |
+| kBy | Sum | Int | Cumulative | false | Development |
 
 ### nsxt.node.memory.usage
 
@@ -62,7 +62,7 @@ The memory usage of the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| KBy | Sum | Int | Cumulative | false | Development |
+| kBy | Sum | Int | Cumulative | false | Development |
 
 ### nsxt.node.network.io
 

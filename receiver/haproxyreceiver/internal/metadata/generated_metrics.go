@@ -318,7 +318,7 @@ type metricHaproxyBytesInput struct {
 func (m *metricHaproxyBytesInput) init() {
 	m.data.SetName("haproxy.bytes.input")
 	m.data.SetDescription("Bytes in. Corresponds to HAProxy's `bin` metric.")
-	m.data.SetUnit("by")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -370,7 +370,7 @@ type metricHaproxyBytesOutput struct {
 func (m *metricHaproxyBytesOutput) init() {
 	m.data.SetName("haproxy.bytes.output")
 	m.data.SetDescription("Bytes out. Corresponds to HAProxy's `bout` metric.")
-	m.data.SetUnit("by")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -474,7 +474,7 @@ type metricHaproxyCompressionBypass struct {
 func (m *metricHaproxyCompressionBypass) init() {
 	m.data.SetName("haproxy.compression.bypass")
 	m.data.SetDescription("Number of bytes that bypassed the HTTP compressor (CPU/BW limit). Corresponds to HAProxy's `comp_byp` metric.")
-	m.data.SetUnit("by")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -578,7 +578,7 @@ type metricHaproxyCompressionInput struct {
 func (m *metricHaproxyCompressionInput) init() {
 	m.data.SetName("haproxy.compression.input")
 	m.data.SetDescription("Number of HTTP response bytes fed to the compressor. Corresponds to HAProxy's `comp_in` metric.")
-	m.data.SetUnit("by")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -630,7 +630,7 @@ type metricHaproxyCompressionOutput struct {
 func (m *metricHaproxyCompressionOutput) init() {
 	m.data.SetName("haproxy.compression.output")
 	m.data.SetDescription("Number of HTTP response bytes emitted by the compressor. Corresponds to HAProxy's `comp_out` metric.")
-	m.data.SetUnit("by")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

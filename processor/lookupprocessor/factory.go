@@ -19,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/source/csv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/source/dns"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/source/noop"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/source/yaml"
@@ -61,6 +62,7 @@ func defaultSources() map[string]lookupsource.SourceFactory {
 	return map[string]lookupsource.SourceFactory{
 		"noop": noop.NewFactory(),
 		"yaml": yaml.NewFactory(),
+		"csv":  csv.NewFactory(),
 		"dns":  dns.NewFactory(),
 	}
 }

@@ -32,7 +32,7 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812
     skip_strict_validation: true
   - id: filelog.protobufCheckpointEncoding
-    stage: alpha
+    stage: beta
     description: >-
       Use protobuf encoding for checkpoint storage instead of JSON.
     from_version: v0.148.0

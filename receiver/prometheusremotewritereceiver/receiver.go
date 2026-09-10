@@ -144,11 +144,11 @@ func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host compon
 		return fmt.Errorf("failed to create obsreport: %w", err)
 	}
 
-	prw.server, err = prw.config.ToServer(ctx, host.GetExtensions(), prw.settings.TelemetrySettings, mux)
+	prw.server, err = prw.config.ServerConfig.ToServer(ctx, host.GetExtensions(), prw.settings.TelemetrySettings, mux)
 	if err != nil {
 		return fmt.Errorf("failed to create server definition: %w", err)
 	}
-	listener, err := prw.config.ToListener(ctx)
+	listener, err := prw.config.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create prometheus remote-write listener: %w", err)
 	}

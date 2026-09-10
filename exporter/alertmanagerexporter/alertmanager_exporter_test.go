@@ -372,7 +372,7 @@ func TestAlertManagerPostAlert(t *testing.T) {
 		GeneratorURL: "http://example.com/alert",
 	})
 
-	cfg.Endpoint = mock.mockserver.URL
+	cfg.ClientConfig.Endpoint = mock.mockserver.URL
 	set := exportertest.NewNopSettings(metadata.Type)
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 	err := am.start(t.Context(), componenttest.NewNopHost())

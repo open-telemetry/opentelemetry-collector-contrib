@@ -1261,7 +1261,7 @@ type metricSplunkIndexerAvgRate struct {
 func (m *metricSplunkIndexerAvgRate) init() {
 	m.data.SetName("splunk.indexer.avg.rate")
 	m.data.SetDescription("Gauge tracking the average rate of indexed data. **Note:** Search is best run against a Cluster Manager.")
-	m.data.SetUnit("KBy")
+	m.data.SetUnit("kBy")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -2986,7 +2986,7 @@ type metricSplunkPipelineSetCount struct {
 func (m *metricSplunkPipelineSetCount) init() {
 	m.data.SetName("splunk.pipeline.set.count")
 	m.data.SetDescription("Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best run against a Cluster Manager.")
-	m.data.SetUnit("KBy")
+	m.data.SetUnit("kBy")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]

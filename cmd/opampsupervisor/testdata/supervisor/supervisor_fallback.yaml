@@ -16,6 +16,10 @@ storage:
 
 agent:
   executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
+  {{- if .agent_argument }}
+  args:
+    - '{{.agent_argument}}'
+  {{- end }}
   {{- if .local_config }}
   config_files:
     - '{{.local_config}}'
