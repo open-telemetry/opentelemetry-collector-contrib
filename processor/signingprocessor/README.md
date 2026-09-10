@@ -80,13 +80,15 @@ processors:
       # bao:
       #   address:     https://bao.example.com   # optional, falls back to BAO_ADDR
       #   token:       s.xxxx                    # optional, falls back to BAO_TOKEN
-      #   secret_path: secret/data/signing
+      #   mount_path:  secret                    # KV v2 mount point; default: "secret"
+      #   secret_path: signing                   # path within the mount
       #   cert_field:  certificate
       #   key_field:   private_key
 
       # --- OpenBao / Vault provider — HMAC-SHA256 ---
       # bao:
-      #   secret_path:   secret/data/signing
+      #   mount_path:    secret
+      #   secret_path:   signing
       #   hmac_key_field: hmac_key
 ```
 

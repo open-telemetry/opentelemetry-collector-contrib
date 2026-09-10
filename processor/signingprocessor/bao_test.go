@@ -10,9 +10,15 @@ import (
 	"testing"
 )
 
-// baoResponse builds the JSON body the openbao client expects for a KV read.
+// baoResponse builds the JSON body the openbao client expects for a KV v2 read.
+// The KV v2 wire format nests secret fields under data.data.
 func baoResponse(data map[string]any) []byte {
-	b, _ := json.Marshal(map[string]any{"data": data})
+	b, _ := json.Marshal(map[string]any{
+		"data": map[string]any{
+			"data":     data,
+			"metadata": map[string]any{"version": 1},
+		},
+	})
 	return b
 }
 
@@ -37,7 +43,8 @@ func baoTestCfg(addr string) *BaoKeyConfig {
 	return &BaoKeyConfig{
 		Address:    addr,
 		Token:      "test-token",
-		SecretPath: "secret/data/signing",
+		MountPath:  "secret",
+		SecretPath: "signing",
 		CertField:  "certificate",
 		KeyField:   "private_key",
 	}
@@ -116,12 +123,12 @@ func TestBaoProviderConnectionError(t *testing.T) {
 }
 
 func TestBaoProviderEmptySecret(t *testing.T) {
-	// Server returns 200 with null body — openbao client returns nil secret
-	srv := newBaoTestServer(t, http.StatusOK, []byte(`null`))
+	// KV v2 returns 404 when the secret does not exist.
+	srv := newBaoTestServer(t, http.StatusNotFound, []byte(`{"errors":[]}`))
 
 	_, err := newBaoKeyMaterialProviderWithAddress(t.Context(), baoTestCfg(srv.URL), srv.URL)
 	if err == nil {
-		t.Error("expected error for null/empty secret")
+		t.Error("expected error for non-existent secret")
 	}
 }
 

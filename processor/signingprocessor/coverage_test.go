@@ -294,7 +294,8 @@ func TestLoadConfig(t *testing.T) {
 					Type: KeySourceBao,
 					Bao: &BaoKeyConfig{
 						Address:    "https://bao.example.com",
-						SecretPath: "secret/data/signing",
+						MountPath:  "secret",
+						SecretPath: "signing",
 						CertField:  "certificate",
 						KeyField:   "private_key",
 					},
@@ -647,7 +648,8 @@ func TestNewKeyMaterialProviderBaoError(t *testing.T) {
 			Type: KeySourceBao,
 			Bao: &BaoKeyConfig{
 				Address:    "http://127.0.0.1:19999",
-				SecretPath: "secret/data/signing",
+				MountPath:  "secret",
+				SecretPath: "signing",
 				CertField:  "certificate",
 				KeyField:   "private_key",
 			},

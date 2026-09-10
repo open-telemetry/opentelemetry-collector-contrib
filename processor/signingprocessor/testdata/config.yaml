@@ -41,7 +41,8 @@ signing/bao:
     type: bao
     bao:
       address:     https://bao.example.com
-      secret_path: secret/data/signing
+      mount_path:  secret
+      secret_path: signing
       cert_field:  certificate
       key_field:   private_key
 
