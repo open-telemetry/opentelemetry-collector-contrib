@@ -21,8 +21,9 @@ feature_gates:
 
   - id: "ottl.contexts.enableOTelColContext"
     description: Enable the `otelcol` context for OTTL. This allows users using `otelcol.*` paths in their OTTL statements and conditions.
-    stage: beta
+    stage: stable
     from_version: v0.147.0
+    to_version: v0.161.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46437
 
   - id: "ottl.functions.enableLambda"
