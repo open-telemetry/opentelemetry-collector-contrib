@@ -41,8 +41,8 @@ type TransformContext struct {
 	resource              pcommon.Resource
 	cache                 pcommon.Map
 	externalCache         *pcommon.Map
-	scopeSchemaURLItem    ctxcommon.SchemaURLItem
-	resourceSchemaURLItem ctxcommon.SchemaURLItem
+	scopeSchemaURLItem    ottl.SchemaURLItem
+	resourceSchemaURLItem ottl.SchemaURLItem
 }
 
 // MarshalLogObject serializes the TransformContext into a zapcore.ObjectEncoder for logging.
@@ -69,7 +69,7 @@ func WithCache(cache *pcommon.Map) TransformContextOption {
 
 // NewTransformContext returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
-func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeSchemaURLItem, resourceSchemaURLItem ctxcommon.SchemaURLItem, options ...TransformContextOption) *TransformContext {
+func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeSchemaURLItem, resourceSchemaURLItem ottl.SchemaURLItem, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
 	tCtx.instrumentationScope = instrumentationScope
 	tCtx.resource = resource
@@ -104,12 +104,12 @@ func (tCtx *TransformContext) GetResource() pcommon.Resource {
 }
 
 // GetScopeSchemaURLItem returns the schema URL item for the scope from the TransformContext.
-func (tCtx *TransformContext) GetScopeSchemaURLItem() ctxcommon.SchemaURLItem {
+func (tCtx *TransformContext) GetScopeSchemaURLItem() ottl.SchemaURLItem {
 	return tCtx.scopeSchemaURLItem
 }
 
 // GetResourceSchemaURLItem returns the schema URL item for the resource from the TransformContext.
-func (tCtx *TransformContext) GetResourceSchemaURLItem() ctxcommon.SchemaURLItem {
+func (tCtx *TransformContext) GetResourceSchemaURLItem() ottl.SchemaURLItem {
 	return tCtx.resourceSchemaURLItem
 }
 
