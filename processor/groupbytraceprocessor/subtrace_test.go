@@ -363,3 +363,96 @@ func TestSplitCalls_TerminatesOnCycle(t *testing.T) {
 		t.Fatal("splitCalls() did not terminate on a cycle")
 	}
 }
+
+// Moving a span into the assembled batch must carry its whole payload, not just
+// the fields the grouping happens to look at.
+func TestAssemble_PreservesSpanPayload(t *testing.T) {
+	r := pcommon.NewResource()
+	r.Attributes().PutStr("service.name", "svc-a")
+	sc := pcommon.NewInstrumentationScope()
+	sc.SetName("lib")
+	sc.SetVersion("1.2.3")
+
+	s := ptrace.NewSpan()
+	s.SetTraceID(makeTraceID(1))
+	s.SetSpanID(makeSpanID(1))
+	s.SetParentSpanID(makeSpanID(2))
+	s.SetName("GET /api/checkout")
+	s.SetKind(ptrace.SpanKindServer)
+	s.SetStartTimestamp(pcommon.Timestamp(1_000))
+	s.SetEndTimestamp(pcommon.Timestamp(2_000))
+	s.Status().SetCode(ptrace.StatusCodeError)
+	s.Status().SetMessage("boom")
+	s.Attributes().PutStr("http.request.method", "GET")
+	s.Attributes().PutInt("http.response.status_code", 500)
+	ev := s.Events().AppendEmpty()
+	ev.SetName("exception")
+	ev.Attributes().PutStr("exception.type", "TimeoutError")
+	lk := s.Links().AppendEmpty()
+	lk.SetTraceID(makeTraceID(9))
+	lk.Attributes().PutStr("link.kind", "follows_from")
+
+	td := assemble([]*bufferedSpan{newBufferedSpan(newSpanContext(newResourceContext(r), sc), s)})
+
+	require.Equal(t, 1, td.ResourceSpans().Len())
+	rs := td.ResourceSpans().At(0)
+	svc, ok := rs.Resource().Attributes().Get("service.name")
+	require.True(t, ok)
+	assert.Equal(t, "svc-a", svc.Str())
+
+	require.Equal(t, 1, rs.ScopeSpans().Len())
+	ss := rs.ScopeSpans().At(0)
+	assert.Equal(t, "lib", ss.Scope().Name())
+	assert.Equal(t, "1.2.3", ss.Scope().Version())
+
+	require.Equal(t, 1, ss.Spans().Len())
+	got := ss.Spans().At(0)
+	assert.Equal(t, makeTraceID(1), got.TraceID())
+	assert.Equal(t, makeSpanID(1), got.SpanID())
+	assert.Equal(t, makeSpanID(2), got.ParentSpanID())
+	assert.Equal(t, "GET /api/checkout", got.Name())
+	assert.Equal(t, ptrace.SpanKindServer, got.Kind())
+	assert.Equal(t, pcommon.Timestamp(1_000), got.StartTimestamp())
+	assert.Equal(t, pcommon.Timestamp(2_000), got.EndTimestamp())
+	assert.Equal(t, ptrace.StatusCodeError, got.Status().Code())
+	assert.Equal(t, "boom", got.Status().Message())
+	assert.Equal(t, map[string]any{
+		"http.request.method":       "GET",
+		"http.response.status_code": int64(500),
+	}, got.Attributes().AsRaw())
+
+	require.Equal(t, 1, got.Events().Len())
+	assert.Equal(t, "exception", got.Events().At(0).Name())
+	assert.Equal(t, map[string]any{"exception.type": "TimeoutError"}, got.Events().At(0).Attributes().AsRaw())
+
+	require.Equal(t, 1, got.Links().Len())
+	assert.Equal(t, makeTraceID(9), got.Links().At(0).TraceID())
+	assert.Equal(t, map[string]any{"link.kind": "follows_from"}, got.Links().At(0).Attributes().AsRaw())
+}
+
+// assemble takes ownership of the spans it is given: they are moved into the
+// result rather than copied, so a caller must not read them afterwards. Storage
+// has already handed them over by the time assemble sees them, and each is
+// assembled exactly once.
+func TestAssemble_TakesOwnershipOfSpans(t *testing.T) {
+	r := pcommon.NewResource()
+	r.Attributes().PutStr("service.name", "svc-a")
+	ctx := newSpanContext(newResourceContext(r), pcommon.NewInstrumentationScope())
+
+	s := ptrace.NewSpan()
+	s.SetSpanID(makeSpanID(1))
+	s.SetName("GET /api/checkout")
+	s.Attributes().PutStr("http.request.method", "GET")
+	bs := newBufferedSpan(ctx, s)
+
+	td := assemble([]*bufferedSpan{bs})
+	require.Equal(t, 1, td.SpanCount())
+
+	assert.True(t, bs.span.SpanID().IsEmpty(), "the span should have been moved out, not copied")
+	assert.Empty(t, bs.span.Name())
+	assert.Equal(t, 0, bs.span.Attributes().Len())
+
+	// The resource and scope are shared with other buffered spans, so they are
+	// copied and must survive.
+	assert.Equal(t, map[string]any{"service.name": "svc-a"}, bs.resource.Attributes().AsRaw())
+}

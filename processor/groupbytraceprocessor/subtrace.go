@@ -249,6 +249,13 @@ func splitCalls(serviceSpans map[pcommon.SpanID]*bufferedSpan, spanToService map
 
 // assemble reconstructs a ptrace.Traces from a slice of bufferedSpans,
 // coalescing spans that share the same (Resource, Scope) pair.
+//
+// It takes ownership of the spans: each is moved into the result rather than
+// copied again, which halves the copying a span is put through on its way
+// through the processor. Callers pass spans that storage has already handed
+// over, and must not read them afterwards. The resource and scope are still
+// copied, because bufferedSpans that share a resource or scope share the same
+// pdata object and it may back other calls still buffered.
 func assemble(members []*bufferedSpan) ptrace.Traces {
 	td := ptrace.NewTraces()
 
@@ -275,7 +282,7 @@ func assemble(members []*bufferedSpan) ptrace.Traces {
 			rsMap[key] = ss
 		}
 
-		bs.span.CopyTo(ss.Spans().AppendEmpty())
+		bs.span.MoveTo(ss.Spans().AppendEmpty())
 	}
 
 	return td
