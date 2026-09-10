@@ -57,38 +57,38 @@ type KeySourceConfig struct {
 }
 
 // K8sSecretConfig configures a Kubernetes Secret key source.
-// For asymmetric algorithms set CertKey and KeyKey.
+// For asymmetric algorithms set Certificate and PrivateKey.
 // For HMAC-SHA256 set HMACKey instead.
 type K8sSecretConfig struct {
 	Name      string `mapstructure:"name"`
 	Namespace string `mapstructure:"namespace"`
 	// Asymmetric key fields
-	CertKey string `mapstructure:"cert_key"`
-	KeyKey  string `mapstructure:"key_key"`
+	Certificate string `mapstructure:"certificate"`
+	PrivateKey  string `mapstructure:"private_key"`
 	// HMAC-SHA256 field
 	HMACKey string `mapstructure:"hmac_key"`
 }
 
 // EnvKeyConfig configures environment-variable key material.
-// For asymmetric algorithms set CertEnvVar and KeyEnvVar.
-// For HMAC-SHA256 set HMACKeyEnvVar instead.
+// For asymmetric algorithms set Certificate and PrivateKey.
+// For HMAC-SHA256 set HMACKey instead.
 type EnvKeyConfig struct {
 	// Asymmetric key fields
-	CertEnvVar string `mapstructure:"cert_env_var"`
-	KeyEnvVar  string `mapstructure:"key_env_var"`
+	Certificate string `mapstructure:"certificate"`
+	PrivateKey  string `mapstructure:"private_key"`
 	// HMAC-SHA256 field
-	HMACKeyEnvVar string `mapstructure:"hmac_key_env_var"`
+	HMACKey string `mapstructure:"hmac_key"`
 }
 
 // FileKeyConfig configures file-based key material.
-// For asymmetric algorithms set CertFile and KeyFile.
-// For HMAC-SHA256 set HMACKeyFile instead.
+// For asymmetric algorithms set Certificate and PrivateKey.
+// For HMAC-SHA256 set HMACKey instead.
 type FileKeyConfig struct {
 	// Asymmetric key fields
-	CertFile string `mapstructure:"cert_file"`
-	KeyFile  string `mapstructure:"key_file"`
+	Certificate string `mapstructure:"certificate"`
+	PrivateKey  string `mapstructure:"private_key"`
 	// HMAC-SHA256 field
-	HMACKeyFile string `mapstructure:"hmac_key_file"`
+	HMACKey string `mapstructure:"hmac_key"`
 }
 
 // BaoKeyConfig configures the OpenBao (Vault-compatible) key material source.
@@ -96,18 +96,18 @@ type FileKeyConfig struct {
 // BAO_TOKEN (or any other supported BAO_* environment variables) automatically.
 // MountPath is the KV v2 engine mount point (default: "secret").
 // SecretPath is the path to the secret within that mount (e.g. "signing").
-// For asymmetric algorithms set CertField and KeyField.
-// For HMAC-SHA256 set HMACKeyField instead.
+// For asymmetric algorithms set Certificate and PrivateKey.
+// For HMAC-SHA256 set HMACKey instead.
 type BaoKeyConfig struct {
 	Address    string `mapstructure:"address"`
 	Token      string `mapstructure:"token"`
 	MountPath  string `mapstructure:"mount_path"`
 	SecretPath string `mapstructure:"secret_path"`
 	// Asymmetric key fields
-	CertField string `mapstructure:"cert_field"`
-	KeyField  string `mapstructure:"key_field"`
+	Certificate string `mapstructure:"certificate"`
+	PrivateKey  string `mapstructure:"private_key"`
 	// HMAC-SHA256 field
-	HMACKeyField string `mapstructure:"hmac_key_field"`
+	HMACKey string `mapstructure:"hmac_key"`
 }
 
 func createDefaultConfig() component.Config {
@@ -158,11 +158,11 @@ func (c *Config) Validate() error {
 				return errors.New("key_source.k8s_secret.hmac_key is required for HMAC-SHA256")
 			}
 		} else {
-			if c.KeySource.K8sSecret.CertKey == "" {
-				return errors.New("key_source.k8s_secret.cert_key is required")
+			if c.KeySource.K8sSecret.Certificate == "" {
+				return errors.New("key_source.k8s_secret.certificate is required")
 			}
-			if c.KeySource.K8sSecret.KeyKey == "" {
-				return errors.New("key_source.k8s_secret.key_key is required")
+			if c.KeySource.K8sSecret.PrivateKey == "" {
+				return errors.New("key_source.k8s_secret.private_key is required")
 			}
 		}
 	case KeySourceEnv:
@@ -170,15 +170,15 @@ func (c *Config) Validate() error {
 			return errMissingKeySourceConfig
 		}
 		if isHMAC {
-			if c.KeySource.Env.HMACKeyEnvVar == "" {
-				return errors.New("key_source.env.hmac_key_env_var is required for HMAC-SHA256")
+			if c.KeySource.Env.HMACKey == "" {
+				return errors.New("key_source.env.hmac_key is required for HMAC-SHA256")
 			}
 		} else {
-			if c.KeySource.Env.CertEnvVar == "" {
-				return errors.New("key_source.env.cert_env_var is required")
+			if c.KeySource.Env.Certificate == "" {
+				return errors.New("key_source.env.certificate is required")
 			}
-			if c.KeySource.Env.KeyEnvVar == "" {
-				return errors.New("key_source.env.key_env_var is required")
+			if c.KeySource.Env.PrivateKey == "" {
+				return errors.New("key_source.env.private_key is required")
 			}
 		}
 	case KeySourceFile:
@@ -186,15 +186,15 @@ func (c *Config) Validate() error {
 			return errMissingKeySourceConfig
 		}
 		if isHMAC {
-			if c.KeySource.File.HMACKeyFile == "" {
-				return errors.New("key_source.file.hmac_key_file is required for HMAC-SHA256")
+			if c.KeySource.File.HMACKey == "" {
+				return errors.New("key_source.file.hmac_key is required for HMAC-SHA256")
 			}
 		} else {
-			if c.KeySource.File.CertFile == "" {
-				return errors.New("key_source.file.cert_file is required")
+			if c.KeySource.File.Certificate == "" {
+				return errors.New("key_source.file.certificate is required")
 			}
-			if c.KeySource.File.KeyFile == "" {
-				return errors.New("key_source.file.key_file is required")
+			if c.KeySource.File.PrivateKey == "" {
+				return errors.New("key_source.file.private_key is required")
 			}
 		}
 	case KeySourceBao:
@@ -205,15 +205,15 @@ func (c *Config) Validate() error {
 			return errors.New("key_source.bao.secret_path is required")
 		}
 		if isHMAC {
-			if c.KeySource.Bao.HMACKeyField == "" {
-				return errors.New("key_source.bao.hmac_key_field is required for HMAC-SHA256")
+			if c.KeySource.Bao.HMACKey == "" {
+				return errors.New("key_source.bao.hmac_key is required for HMAC-SHA256")
 			}
 		} else {
-			if c.KeySource.Bao.CertField == "" {
-				return errors.New("key_source.bao.cert_field is required")
+			if c.KeySource.Bao.Certificate == "" {
+				return errors.New("key_source.bao.certificate is required")
 			}
-			if c.KeySource.Bao.KeyField == "" {
-				return errors.New("key_source.bao.key_field is required")
+			if c.KeySource.Bao.PrivateKey == "" {
+				return errors.New("key_source.bao.private_key is required")
 			}
 		}
 	default:

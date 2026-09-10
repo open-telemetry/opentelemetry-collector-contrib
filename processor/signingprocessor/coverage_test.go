@@ -96,7 +96,7 @@ var _ consumer.Logs = (*logSink)(nil)
 // ---------------------------------------------------------------------------
 
 func TestConfigValidate(t *testing.T) {
-	validFile := &FileKeyConfig{CertFile: "c.pem", KeyFile: "k.pem"}
+	validFile := &FileKeyConfig{Certificate: "c.pem", PrivateKey: "k.pem"}
 
 	tests := []struct {
 		name    string
@@ -135,22 +135,22 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name:    "k8s_secret missing name",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{CertKey: "c", KeyKey: "k"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Certificate: "c", PrivateKey: "k"}}},
 			wantErr: true,
 		},
 		{
 			name:    "k8s_secret missing cert_key",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Name: "s", KeyKey: "k"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Name: "s", PrivateKey: "k"}}},
 			wantErr: true,
 		},
 		{
 			name:    "k8s_secret missing key_key",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Name: "s", CertKey: "c"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Name: "s", Certificate: "c"}}},
 			wantErr: true,
 		},
 		{
 			name:    "k8s_secret valid with namespace",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Name: "s", Namespace: "ns", CertKey: "c", KeyKey: "k"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Name: "s", Namespace: "ns", Certificate: "c", PrivateKey: "k"}}},
 			wantErr: false,
 		},
 		{
@@ -160,12 +160,12 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name:    "env missing cert_env_var",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "env", Env: &EnvKeyConfig{KeyEnvVar: "K"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "env", Env: &EnvKeyConfig{PrivateKey: "K"}}},
 			wantErr: true,
 		},
 		{
 			name:    "env missing key_env_var",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "env", Env: &EnvKeyConfig{CertEnvVar: "C"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "env", Env: &EnvKeyConfig{Certificate: "C"}}},
 			wantErr: true,
 		},
 		{
@@ -175,12 +175,12 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name:    "file missing cert_file",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "file", File: &FileKeyConfig{KeyFile: "k.pem"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "file", File: &FileKeyConfig{PrivateKey: "k.pem"}}},
 			wantErr: true,
 		},
 		{
 			name:    "file missing key_file",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "file", File: &FileKeyConfig{CertFile: "c.pem"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "file", File: &FileKeyConfig{Certificate: "c.pem"}}},
 			wantErr: true,
 		},
 		{
@@ -190,17 +190,17 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name:    "bao missing secret_path",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "bao", Bao: &BaoKeyConfig{CertField: "c", KeyField: "k"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "bao", Bao: &BaoKeyConfig{Certificate: "c", PrivateKey: "k"}}},
 			wantErr: true,
 		},
 		{
 			name:    "bao missing cert_field",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "bao", Bao: &BaoKeyConfig{SecretPath: "s", KeyField: "k"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "bao", Bao: &BaoKeyConfig{SecretPath: "s", PrivateKey: "k"}}},
 			wantErr: true,
 		},
 		{
 			name:    "bao missing key_field",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "bao", Bao: &BaoKeyConfig{SecretPath: "s", CertField: "c"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "bao", Bao: &BaoKeyConfig{SecretPath: "s", Certificate: "c"}}},
 			wantErr: true,
 		},
 	}
@@ -235,8 +235,8 @@ func TestLoadConfig(t *testing.T) {
 				KeySource: KeySourceConfig{
 					Type: KeySourceFile,
 					File: &FileKeyConfig{
-						CertFile: "/etc/otelcol/signing-cert.pem",
-						KeyFile:  "/etc/otelcol/signing-key.pem",
+						Certificate: "/etc/otelcol/signing-cert.pem",
+						PrivateKey:  "/etc/otelcol/signing-key.pem",
 					},
 				},
 			},
@@ -249,8 +249,8 @@ func TestLoadConfig(t *testing.T) {
 				KeySource: KeySourceConfig{
 					Type: KeySourceFile,
 					File: &FileKeyConfig{
-						CertFile: "/etc/otelcol/signing-cert.pem",
-						KeyFile:  "/etc/otelcol/signing-key.pem",
+						Certificate: "/etc/otelcol/signing-cert.pem",
+						PrivateKey:  "/etc/otelcol/signing-key.pem",
 					},
 				},
 			},
@@ -263,8 +263,8 @@ func TestLoadConfig(t *testing.T) {
 				KeySource: KeySourceConfig{
 					Type: KeySourceEnv,
 					Env: &EnvKeyConfig{
-						CertEnvVar: "SIGNING_CERT_PEM",
-						KeyEnvVar:  "SIGNING_KEY_PEM",
+						Certificate: "SIGNING_CERT_PEM",
+						PrivateKey:  "SIGNING_KEY_PEM",
 					},
 				},
 			},
@@ -277,10 +277,10 @@ func TestLoadConfig(t *testing.T) {
 				KeySource: KeySourceConfig{
 					Type: KeySourceK8sSecret,
 					K8sSecret: &K8sSecretConfig{
-						Name:      "signing-secret",
-						Namespace: "default",
-						CertKey:   "tls.crt",
-						KeyKey:    "tls.key",
+						Name:        "signing-secret",
+						Namespace:   "default",
+						Certificate: "tls.crt",
+						PrivateKey:  "tls.key",
 					},
 				},
 			},
@@ -293,11 +293,11 @@ func TestLoadConfig(t *testing.T) {
 				KeySource: KeySourceConfig{
 					Type: KeySourceBao,
 					Bao: &BaoKeyConfig{
-						Address:    "https://bao.example.com",
-						MountPath:  "secret",
-						SecretPath: "signing",
-						CertField:  "certificate",
-						KeyField:   "private_key",
+						Address:     "https://bao.example.com",
+						MountPath:   "secret",
+						SecretPath:  "signing",
+						Certificate: "certificate",
+						PrivateKey:  "private_key",
 					},
 				},
 			},
@@ -309,7 +309,7 @@ func TestLoadConfig(t *testing.T) {
 				CertificateRef: "fingerprint",
 				KeySource: KeySourceConfig{
 					Type: KeySourceEnv,
-					Env:  &EnvKeyConfig{HMACKeyEnvVar: "SIGNING_HMAC_KEY"},
+					Env:  &EnvKeyConfig{HMACKey: "SIGNING_HMAC_KEY"},
 				},
 			},
 		},
@@ -389,7 +389,7 @@ func TestCreateLogsProcessorFileProvider(t *testing.T) {
 		CertificateRef: CertificateRefFingerprint,
 		KeySource: KeySourceConfig{
 			Type: KeySourceFile,
-			File: &FileKeyConfig{CertFile: certFile, KeyFile: keyFile},
+			File: &FileKeyConfig{Certificate: certFile, PrivateKey: keyFile},
 		},
 	}
 
@@ -550,7 +550,7 @@ func TestFileKeyMaterialProvider(t *testing.T) {
 	certFile := writeTempFile(t, certPEM)
 	keyFile := writeTempFile(t, keyPEM)
 
-	prov, err := newFileKeyMaterialProvider(&FileKeyConfig{CertFile: certFile, KeyFile: keyFile})
+	prov, err := newFileKeyMaterialProvider(&FileKeyConfig{Certificate: certFile, PrivateKey: keyFile})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -563,7 +563,7 @@ func TestFileKeyMaterialProvider(t *testing.T) {
 }
 
 func TestFileKeyMaterialProviderMissingFiles(t *testing.T) {
-	_, err := newFileKeyMaterialProvider(&FileKeyConfig{CertFile: "/nonexistent/cert.pem", KeyFile: "/nonexistent/key.pem"})
+	_, err := newFileKeyMaterialProvider(&FileKeyConfig{Certificate: "/nonexistent/cert.pem", PrivateKey: "/nonexistent/key.pem"})
 	if err == nil {
 		t.Error("expected error for missing cert file")
 	}
@@ -578,7 +578,7 @@ func TestEnvKeyMaterialProvider(t *testing.T) {
 	t.Setenv("TEST_CERT", string(certPEM))
 	t.Setenv("TEST_KEY", string(keyPEM))
 
-	prov, err := newEnvKeyMaterialProvider(&EnvKeyConfig{CertEnvVar: "TEST_CERT", KeyEnvVar: "TEST_KEY"})
+	prov, err := newEnvKeyMaterialProvider(&EnvKeyConfig{Certificate: "TEST_CERT", PrivateKey: "TEST_KEY"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -593,7 +593,7 @@ func TestEnvKeyMaterialProvider(t *testing.T) {
 func TestEnvKeyMaterialProviderMissingEnv(t *testing.T) {
 	os.Unsetenv("MISSING_CERT")
 	os.Unsetenv("MISSING_KEY")
-	_, err := newEnvKeyMaterialProvider(&EnvKeyConfig{CertEnvVar: "MISSING_CERT", KeyEnvVar: "MISSING_KEY"})
+	_, err := newEnvKeyMaterialProvider(&EnvKeyConfig{Certificate: "MISSING_CERT", PrivateKey: "MISSING_KEY"})
 	if err == nil {
 		t.Error("expected error for missing env vars")
 	}
@@ -612,7 +612,7 @@ func TestNewKeyMaterialProviderEnv(t *testing.T) {
 		Algorithm: "RS256",
 		KeySource: KeySourceConfig{
 			Type: KeySourceEnv,
-			Env:  &EnvKeyConfig{CertEnvVar: "NKM_CERT", KeyEnvVar: "NKM_KEY"},
+			Env:  &EnvKeyConfig{Certificate: "NKM_CERT", PrivateKey: "NKM_KEY"},
 		},
 	}
 	prov, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())
@@ -631,7 +631,7 @@ func TestNewKeyMaterialProviderK8sError(t *testing.T) {
 			Type: KeySourceK8sSecret,
 			K8sSecret: &K8sSecretConfig{
 				Name: "signing-secret", Namespace: "default",
-				CertKey: "tls.crt", KeyKey: "tls.key",
+				Certificate: "tls.crt", PrivateKey: "tls.key",
 			},
 		},
 	}
@@ -647,11 +647,11 @@ func TestNewKeyMaterialProviderBaoError(t *testing.T) {
 		KeySource: KeySourceConfig{
 			Type: KeySourceBao,
 			Bao: &BaoKeyConfig{
-				Address:    "http://127.0.0.1:19999",
-				MountPath:  "secret",
-				SecretPath: "signing",
-				CertField:  "certificate",
-				KeyField:   "private_key",
+				Address:     "http://127.0.0.1:19999",
+				MountPath:   "secret",
+				SecretPath:  "signing",
+				Certificate: "certificate",
+				PrivateKey:  "private_key",
 			},
 		},
 	}
@@ -680,7 +680,7 @@ func TestBuildCertificateRef(t *testing.T) {
 	certPEM, keyPEM, _ := generateTestPEM(t)
 	certFile := writeTempFile(t, certPEM)
 	keyFile := writeTempFile(t, keyPEM)
-	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{CertFile: certFile, KeyFile: keyFile})
+	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{Certificate: certFile, PrivateKey: keyFile})
 
 	t.Run("fingerprint", func(t *testing.T) {
 		ref, err := buildCertificateRef(prov, CertificateRefFingerprint)
@@ -733,7 +733,7 @@ func TestProcessorStartShutdown(t *testing.T) {
 	certPEM, keyPEM, _ := generateTestPEM(t)
 	certFile := writeTempFile(t, certPEM)
 	keyFile := writeTempFile(t, keyPEM)
-	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{CertFile: certFile, KeyFile: keyFile})
+	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{Certificate: certFile, PrivateKey: keyFile})
 
 	p := &signingProcessor{
 		config:       &Config{Algorithm: "RS256", CertificateRef: CertificateRefFingerprint},
@@ -759,7 +759,7 @@ func TestValueToInterface(t *testing.T) {
 	certPEM, keyPEM, _ := generateTestPEM(t)
 	certFile := writeTempFile(t, certPEM)
 	keyFile := writeTempFile(t, keyPEM)
-	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{CertFile: certFile, KeyFile: keyFile})
+	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{Certificate: certFile, PrivateKey: keyFile})
 
 	p := &signingProcessor{
 		config:   &Config{Algorithm: "RS256"},
@@ -806,7 +806,7 @@ func TestValueToInterface(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestNewProcessorUnsupportedHash(t *testing.T) {
-	if err := (&Config{Algorithm: "MD5", KeySource: KeySourceConfig{Type: KeySourceFile, File: &FileKeyConfig{CertFile: "c", KeyFile: "k"}}}).Validate(); err == nil {
+	if err := (&Config{Algorithm: "MD5", KeySource: KeySourceConfig{Type: KeySourceFile, File: &FileKeyConfig{Certificate: "c", PrivateKey: "k"}}}).Validate(); err == nil {
 		t.Error("Validate() should reject MD5")
 	}
 }
@@ -824,7 +824,7 @@ func TestNewProcessorMissingKeyFiles(t *testing.T) {
 	cfg := &Config{
 		Algorithm:      "RS256",
 		CertificateRef: CertificateRefFingerprint,
-		KeySource:      KeySourceConfig{Type: KeySourceFile, File: &FileKeyConfig{CertFile: "/no/such/cert.pem", KeyFile: "/no/such/key.pem"}},
+		KeySource:      KeySourceConfig{Type: KeySourceFile, File: &FileKeyConfig{Certificate: "/no/such/cert.pem", PrivateKey: "/no/such/key.pem"}},
 	}
 	f := NewFactory()
 	settings := processortest.NewNopSettings(f.Type())
@@ -902,7 +902,7 @@ func TestConsumeLogsSignError(t *testing.T) {
 	certPEM, keyPEM, _ := generateTestPEM(t)
 	certFile := writeTempFile(t, certPEM)
 	keyFile := writeTempFile(t, keyPEM)
-	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{CertFile: certFile, KeyFile: keyFile})
+	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{Certificate: certFile, PrivateKey: keyFile})
 
 	p := &signingProcessor{
 		config:       &Config{Algorithm: "RS256"},
@@ -933,7 +933,7 @@ func TestSerializeLogRecordNonStringBody(t *testing.T) {
 	certPEM, keyPEM, _ := generateTestPEM(t)
 	certFile := writeTempFile(t, certPEM)
 	keyFile := writeTempFile(t, keyPEM)
-	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{CertFile: certFile, KeyFile: keyFile})
+	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{Certificate: certFile, PrivateKey: keyFile})
 
 	p := &signingProcessor{
 		config:   &Config{Algorithm: "RS256"},

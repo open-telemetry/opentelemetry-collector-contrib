@@ -43,11 +43,11 @@ func newK8sKeyMaterialProviderWithClient(ctx context.Context, client kubernetes.
 	}
 
 	// Asymmetric mode: load cert + private key
-	certPEM, err := fetchSecretDataWithClient(ctx, client, cfg.Name, cfg.Namespace, cfg.CertKey, logger)
+	certPEM, err := fetchSecretDataWithClient(ctx, client, cfg.Name, cfg.Namespace, cfg.Certificate, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch certificate from k8s secret: %w", err)
 	}
-	keyPEM, err := fetchSecretDataWithClient(ctx, client, cfg.Name, cfg.Namespace, cfg.KeyKey, logger)
+	keyPEM, err := fetchSecretDataWithClient(ctx, client, cfg.Name, cfg.Namespace, cfg.PrivateKey, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch private key from k8s secret: %w", err)
 	}
