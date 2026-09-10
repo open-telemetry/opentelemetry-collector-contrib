@@ -192,8 +192,6 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	m.scrapeHealth(now)
 
-	errs := &scrapererror.ScrapeErrors{}
-
 	// collect innodb metrics.
 	m.scrapeInnodbStats(now, errs)
 	m.scrapeInnodbTransactionStats(now, errs)
