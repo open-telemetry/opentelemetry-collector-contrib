@@ -8,13 +8,13 @@ require (
 	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.66.1-0.20260910145229-33b7c530844a
-	go.opentelemetry.io/collector/component/componenttest v0.160.1-0.20260903163450-cc4b33fc673f
+	go.opentelemetry.io/collector/component/componenttest v0.160.1-0.20260910145229-33b7c530844a
 	go.opentelemetry.io/collector/config/configoptional v1.66.1-0.20260910145229-33b7c530844a
 	go.opentelemetry.io/collector/confmap v1.66.1-0.20260910145229-33b7c530844a
 	go.opentelemetry.io/collector/extension v1.66.1-0.20260910145229-33b7c530844a
 	go.opentelemetry.io/collector/extension/extensionauth v1.66.1-0.20260910145229-33b7c530844a
-	go.opentelemetry.io/collector/extension/extensiontest v0.160.1-0.20260903163450-cc4b33fc673f
-	go.opentelemetry.io/collector/extension/xextension v0.160.1-0.20260903163450-cc4b33fc673f
+	go.opentelemetry.io/collector/extension/extensiontest v0.160.1-0.20260910145229-33b7c530844a
+	go.opentelemetry.io/collector/extension/xextension v0.160.1-0.20260910145229-33b7c530844a
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 	golang.org/x/oauth2 v0.37.0
@@ -45,7 +45,7 @@ require (
 	github.com/stretchr/objx v0.5.3 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.66.1-0.20260910145229-33b7c530844a // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.160.1-0.20260903163450-cc4b33fc673f // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.160.1-0.20260910145229-33b7c530844a // indirect
 	go.opentelemetry.io/collector/pdata v1.66.1-0.20260910145229-33b7c530844a // indirect
 	go.opentelemetry.io/otel v1.46.0 // indirect
 	go.opentelemetry.io/otel/metric v1.46.0 // indirect
