@@ -8,10 +8,11 @@ import (
 
 var OttlPanicDuplicateNameFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"ottl.PanicDuplicateName",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, the CreateFactoryMap panics if the name is duplicated."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/44630"),
 	featuregate.WithRegisterFromVersion("v0.141.0"),
+	featuregate.WithRegisterToVersion("v0.161.0"),
 )
 
 var OttlContextsEnableOTelColContextFeatureGate = featuregate.GlobalRegistry().MustRegister(
