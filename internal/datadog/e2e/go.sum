@@ -156,8 +156,8 @@ github.com/DataDog/datadog-agent/pkg/obfuscate v0.82.0 h1:d0qTccmgcy/cCFlX7uz6m+
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.82.0/go.mod h1:pW+H9lCruFxEq4JrxTKvatD+7hIsEXNd8InZyBmVYco=
 github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.83.0-devel.0.20260714134811-fee4bbf7ff73 h1:DcH0iCTkFUCsTHmB9ru2fKmnDLcxU8z3ifqIkaK8TS8=
 github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.83.0-devel.0.20260714134811-fee4bbf7ff73/go.mod h1:ss7uy5zwPGDzWRdpG8EEQOgp6cf1XaotvXaQGqC+1Ss=
-github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260820131110-fe8b14bb7618 h1:+YfCUcsVj6v/JwdpsV/GDGxhDNUDvbBqXXG55GCxdDc=
-github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260820131110-fe8b14bb7618/go.mod h1:anUf6vGll/4NFHSyBlhntVx4/SDPjnvtiux7mv7jUW4=
+github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260909110724-8eae69d2b9ee h1:6uIYjwJRvD6p1suLfEiybuTrDPEteMNu1dTfdCM897M=
+github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20260909110724-8eae69d2b9ee/go.mod h1:PwrQE7ofFnqOafr0TmGFCOTVuJz3WPKk7ihT566Y1Og=
 github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/logs v0.83.0-devel.0.20260714134811-fee4bbf7ff73 h1:Q+73xDZ8mT2m0kvv1J6UcObQ40pPSksL7q6xJ+ixKlc=
 github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/logs v0.83.0-devel.0.20260714134811-fee4bbf7ff73/go.mod h1:GhMY3dh0q2Cz/C5saswdMyLhqUyT6WnGaHqu//+azGU=
 github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.83.0-devel.0.20260714134811-fee4bbf7ff73 h1:39mNeiSRqQ6nGUmgtOP11RLetA7saj/ra/sfnzf3VZc=
@@ -586,10 +586,10 @@ github.com/grafana/regexp v0.0.0-20250905093917-f7b3be9d1853 h1:cLN4IBkmkYZNnk7E
 github.com/grafana/regexp v0.0.0-20250905093917-f7b3be9d1853/go.mod h1:+JKpmjMGhpgPL+rXZ5nsZieVzvarn86asRlBg4uNGnk=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 h1:5VipnvEpbqr2gA2VbM+nYVbkIF28c5ZQfqCBQ5g2xfk=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0/go.mod h1:Hyl3n6Twe1hvtd9XUXDec4pTvgMSEixRuQKPTMH2bNs=
-github.com/hashicorp/consul/api v1.33.7 h1:apLZVzX7O7BLgHyh4pvczcsBzPmYSVXGKZQbOaA1ae0=
-github.com/hashicorp/consul/api v1.33.7/go.mod h1:SjR3cjwCUSLLDfVw5dFg76rnnKjOySxr8W8lC5s01C8=
-github.com/hashicorp/consul/sdk v0.17.3 h1:oZMMxzQGSsiT+ToOH50y3Qcs0nc9Ud+7L5lRx+EmMU0=
-github.com/hashicorp/consul/sdk v0.17.3/go.mod h1:jnOmYjiNfVRpBaujQ1DFFVs0N6g3S1y6wygSjLTzYfc=
+github.com/hashicorp/consul/api v1.34.4 h1:0U4YZ1Yp7K9WK9ex0gTJraFim26l02wCvsmf2ukalVE=
+github.com/hashicorp/consul/api v1.34.4/go.mod h1:vz5gBNeycefpAAVNVbLBFObUu3isju6EK8UVZjXSTWc=
+github.com/hashicorp/consul/sdk v0.18.1 h1:RDTeBvAeOveI2xI86sV+8WkaN7OkP4zz+cG3fOobDCM=
+github.com/hashicorp/consul/sdk v0.18.1/go.mod h1:XdP2tEJmAvlK4jgoKTTtohGkRJlS4mU44mv9/sjU21s=
 github.com/hashicorp/cronexpr v1.1.3 h1:rl5IkxXN2m681EfivTlccqIryzYJSXRGRNa0xeG7NA4=
 github.com/hashicorp/cronexpr v1.1.3/go.mod h1:P4wA0KBl9C5q2hABiMO7cp6jcIg96CDh1Efb3g1PWA4=
 github.com/hashicorp/errwrap v1.0.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
@@ -605,7 +605,6 @@ github.com/hashicorp/go-immutable-radix v1.3.1 h1:DKHmCUm2hRBK510BaiZlwvpD40f8bJ
 github.com/hashicorp/go-immutable-radix v1.3.1/go.mod h1:0y9vanUI8NX6FsYoO3zeMjhV/C5i9g4Q3DwcSNZ4P60=
 github.com/hashicorp/go-metrics v0.6.0 h1:+kjWqHRH2HxAocneVfB/BI6EeWUUHyPhyQZozMT8Ed4=
 github.com/hashicorp/go-metrics v0.6.0/go.mod h1:0B52B5pZ7+qm5Zhzs8Fygr87isvmUgr0Zv9rmJ9qsnQ=
-github.com/hashicorp/go-msgpack v0.5.5 h1:i9R9JSrqIz0QVLz3sz+i3YJdT7TTSLcfLLzJi9aZTuI=
 github.com/hashicorp/go-msgpack/v2 v2.1.5 h1:Ue879bPnutj/hXfmUk6s/jtIK90XxgiUIcXRl656T44=
 github.com/hashicorp/go-msgpack/v2 v2.1.5/go.mod h1:bjCsRXpZ7NsJdk45PoCQnzRGDaK8TKm5ZnDI/9y3J4M=
 github.com/hashicorp/go-multierror v1.1.1 h1:H5DkEtf6CXdFp0N0Em5UCwQpXMWke8IA0+lD48awMYo=

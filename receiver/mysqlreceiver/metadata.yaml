@@ -549,6 +549,30 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [operations]
+  mysql.innodb.redo_log.checkpoint.age:
+    enabled: false
+    description: The difference, in bytes, between the current InnoDB redo log sequence number and the most recent checkpoint log sequence number.
+    extended_documentation: Only emitted for MySQL 8.0.11 and later. MySQL 8.0.11 through 8.0.29 requires SELECT and BACKUP_ADMIN. MySQL 8.0.30 and later versions do not require BACKUP_ADMIN. MariaDB is not supported for this metric.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+  mysql.innodb.redo_log.lsn.checkpoint:
+    enabled: false
+    description: The InnoDB redo log sequence number of the most recent checkpoint.
+    extended_documentation: Only emitted for MySQL 8.0.11 and later. MySQL 8.0.11 through 8.0.29 requires SELECT and BACKUP_ADMIN. MySQL 8.0.30 and later versions do not require BACKUP_ADMIN. MariaDB is not supported for this metric.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+  mysql.innodb.redo_log.lsn.current:
+    enabled: false
+    description: The current InnoDB redo log sequence number.
+    extended_documentation: Only emitted for MySQL 8.0.11 and later. MySQL 8.0.11 through 8.0.29 requires SELECT and BACKUP_ADMIN. MySQL 8.0.30 and later versions do not require BACKUP_ADMIN. MariaDB is not supported for this metric.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
   mysql.innodb.row_lock.wait.count:
     enabled: false
     description: The number of InnoDB row lock waits currently pending.
@@ -766,6 +790,16 @@ metrics:
       input_type: string
       monotonic: true
       aggregation_temporality: cumulative
+  mysql.query.execution.time:
+    enabled: false
+    description: The total execution time of SQL statements tracked by the server.
+    extended_documentation: This metric reports cumulative statement execution time in seconds, including statements issued by the receiver. Values reset when statement summary state is reset or the server restarts.
+    stability: development
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
   mysql.query.slow.count:
     enabled: false
     description: The number of slow queries.
@@ -834,6 +868,22 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [row_operations]
+  mysql.server.healthy:
+    enabled: false
+    description: The health status of the MySQL server.
+    extended_documentation: A value of '1' indicates healthy and '0' indicates unhealthy.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.session.active.count:
+    enabled: false
+    description: The number of active MySQL sessions with query text and state.
+    extended_documentation: Idle sessions and the receiver's own query are excluded.
+    stability: development
+    unit: "{session}"
+    gauge:
+      value_type: int
   mysql.sorts:
     enabled: true
     description: The number of MySQL sorts.
