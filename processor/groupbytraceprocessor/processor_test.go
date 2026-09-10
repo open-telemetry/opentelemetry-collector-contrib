@@ -1012,15 +1012,14 @@ func TestSubtrace_Matrix_ThreeServices_MissingEntrySpan(t *testing.T) {
 // batchSpanIDs collects the set of span IDs contained in a batch.
 func batchSpanIDs(td ptrace.Traces) map[pcommon.SpanID]bool {
 	ids := map[pcommon.SpanID]bool{}
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		rs := td.ResourceSpans().At(i)
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
-			ss := rs.ScopeSpans().At(j)
-			for k := 0; k < ss.Spans().Len(); k++ {
-				ids[ss.Spans().At(k).SpanID()] = true
+	for _, rs := range td.ResourceSpans().All() {
+		for _, ss := range rs.ScopeSpans().All() {
+			for _, s := range ss.Spans().All() {
+				ids[s.SpanID()] = true
 			}
 		}
 	}
+
 	return ids
 }
 
@@ -1239,7 +1238,7 @@ func TestSubtrace_ParentlessSiblingsGroupPerService(t *testing.T) {
 	svcB := map[pcommon.SpanID]bool{}
 	specsA := make([]spanSpec, 0, perService)
 	specsB := make([]spanSpec, 0, perService)
-	for i := 0; i < perService; i++ {
+	for i := range perService {
 		a, b := makeSpanID(byte(1+i)), makeSpanID(byte(20+i))
 		specsA = append(specsA, spanSpec{id: a, parent: missingParent})
 		specsB = append(specsB, spanSpec{id: b, parent: missingParent})
@@ -1316,18 +1315,18 @@ func TestSubtrace_MultiResourceMultiScopeBatch(t *testing.T) {
 	}{{"svc-a", 1, rootA}, {"svc-b", 20, rootB}} {
 		rs := td.ResourceSpans().AppendEmpty()
 		rs.Resource().Attributes().PutStr("service.name", svc.name)
-		for scope := 0; scope < 2; scope++ {
+		for scope := range 2 {
 			ss := rs.ScopeSpans().AppendEmpty()
 			ss.Scope().SetName(fmt.Sprintf("lib-%d", scope))
-			for k := 0; k < 2; k++ {
+			for k := range 2 {
 				s := ss.Spans().AppendEmpty()
 				s.SetTraceID(traceID)
 				id := makeSpanID(svc.base + byte(scope*2+k))
 				s.SetSpanID(id)
-				switch {
-				case id == rootA:
+				switch id {
+				case rootA:
 					s.SetParentSpanID(pcommon.NewSpanIDEmpty())
-				case id == rootB:
+				case rootB:
 					s.SetParentSpanID(rootA)
 					s.SetFlags(spanFlagsContextHasIsRemoteMask | spanFlagsContextIsRemoteMask)
 				default:
@@ -1367,12 +1366,10 @@ func spanIDAt(i int) pcommon.SpanID {
 func spanIDCounts(batches []ptrace.Traces) map[pcommon.SpanID]int {
 	counts := map[pcommon.SpanID]int{}
 	for _, b := range batches {
-		for i := 0; i < b.ResourceSpans().Len(); i++ {
-			rs := b.ResourceSpans().At(i)
-			for j := 0; j < rs.ScopeSpans().Len(); j++ {
-				ss := rs.ScopeSpans().At(j)
-				for k := 0; k < ss.Spans().Len(); k++ {
-					counts[ss.Spans().At(k).SpanID()]++
+		for _, rs := range b.ResourceSpans().All() {
+			for _, ss := range rs.ScopeSpans().All() {
+				for _, s := range ss.Spans().All() {
+					counts[s.SpanID()]++
 				}
 			}
 		}
@@ -1725,11 +1722,24 @@ func TestSubtrace_LaterCallGetsItsOwnWindow(t *testing.T) {
 	require.NoError(t, p.ConsumeTraces(t.Context(), buildSpecTrace(traceID, "svc-b",
 		spanSpec{id: entryB2, parent: viaC, remote: true})))
 
+	// return the span ID sets of the batches emitted for one service, in
+	// the order they were emitted.
+	svcSpanIDs := func() []map[pcommon.SpanID]bool {
+		var out []map[pcommon.SpanID]bool
+		for _, b := range sink.AllTraces() {
+			svc, ok := b.ResourceSpans().At(0).Resource().Attributes().Get("service.name")
+			if ok && svc.AsString() == "svc-b" {
+				out = append(out, batchSpanIDs(b))
+			}
+		}
+		return out
+	}
+
 	// The first call goes out on schedule, without the second.
 	require.Eventually(t, func() bool {
-		return svcSpanIDs(sink, "svc-b") != nil && len(svcSpanIDs(sink, "svc-b")) == 1
+		return svcSpanIDs() != nil && len(svcSpanIDs()) == 1
 	}, 5*time.Second, 5*time.Millisecond)
-	assert.Equal(t, map[pcommon.SpanID]bool{entryB1: true, childB1: true}, svcSpanIDs(sink, "svc-b")[0])
+	assert.Equal(t, map[pcommon.SpanID]bool{entryB1: true, childB1: true}, svcSpanIDs()[0])
 
 	// A span belonging to the second call arrives after the first was released.
 	// It must still be waited for, because the second call's own window is open.
@@ -1737,26 +1747,13 @@ func TestSubtrace_LaterCallGetsItsOwnWindow(t *testing.T) {
 		spanSpec{id: childB2, parent: entryB2})))
 
 	require.Eventually(t, func() bool {
-		return len(svcSpanIDs(sink, "svc-b")) == 2
+		return len(svcSpanIDs()) == 2
 	}, 5*time.Second, 5*time.Millisecond)
 	assert.Never(t, func() bool {
-		return len(svcSpanIDs(sink, "svc-b")) != 2
+		return len(svcSpanIDs()) != 2
 	}, 2*waitDuration, 10*time.Millisecond)
 
-	calls := svcSpanIDs(sink, "svc-b")
+	calls := svcSpanIDs()
 	assert.Equal(t, map[pcommon.SpanID]bool{entryB2: true, childB2: true}, calls[1],
 		"the second call must be released whole, not cut off at the first call's deadline")
-}
-
-// svcSpanIDs returns the span ID sets of the batches emitted for one service, in
-// the order they were emitted.
-func svcSpanIDs(sink *consumertest.TracesSink, service string) []map[pcommon.SpanID]bool {
-	var out []map[pcommon.SpanID]bool
-	for _, b := range sink.AllTraces() {
-		svc, ok := b.ResourceSpans().At(0).Resource().Attributes().Get("service.name")
-		if ok && svc.AsString() == service {
-			out = append(out, batchSpanIDs(b))
-		}
-	}
-	return out
 }

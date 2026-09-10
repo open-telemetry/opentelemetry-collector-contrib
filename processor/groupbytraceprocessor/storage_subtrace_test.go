@@ -65,7 +65,7 @@ func TestSubtraceStorage_BuffersPerService(t *testing.T) {
 	require.Len(t, calls, 1)
 	assert.Equal(t, map[pcommon.SpanID]bool{makeSpanID(1): true, makeSpanID(2): true}, spanIDSet(calls[0]))
 
-	// svc-b is untouched, and its entry span is still recognisable as one even
+	// svc-b is untouched, and its entry span is still recognizable as one even
 	// though the span it was called from has now been released.
 	remaining := st.subtraceIDs()
 	require.Len(t, remaining, 1)
@@ -281,7 +281,7 @@ func BenchmarkSubtraceBufferAndRelease(b *testing.B) {
 }
 
 // Services are released one at a time, usually the caller before the callee. A
-// span whose parent has already been released must still be recognised as an
+// span whose parent has already been released must still be recognized as an
 // entry span, or two calls into a service would collapse into one batch.
 func TestSubtraceStorage_EntrySurvivesParentRelease(t *testing.T) {
 	st := newTestSubtraceStorage()
