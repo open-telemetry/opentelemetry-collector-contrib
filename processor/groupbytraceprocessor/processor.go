@@ -176,20 +176,14 @@ func (sp *groupByTraceProcessor) onTraceReceived(trace tracesWithID, worker *eve
 }
 
 func (sp *groupByTraceProcessor) onTraceReceivedSubtrace(trace tracesWithID, worker *eventMachineWorker) error {
-	rss := trace.td.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
-		rs := rss.At(i)
-		// Copying and hashing the resource is per-ResourceSpans work and the same
-		// for the scope is per-ScopeSpans work, so the spans share both results
-		// rather than rebuilding them one span at a time.
+	for _, rs := range trace.td.ResourceSpans().All() {
 		rctx := newResourceContext(rs.Resource())
 		id := subtraceID{traceID: trace.id, serviceID: rctx.serviceID}
 
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
-			ss := rs.ScopeSpans().At(j)
+		for _, ss := range rs.ScopeSpans().All() {
 			sctx := newSpanContext(rctx, ss.Scope())
-			for k := 0; k < ss.Spans().Len(); k++ {
-				if err := sp.subSt.insertSpan(id, sctx, ss.Spans().At(k)); err != nil {
+			for _, s := range ss.Spans().All() {
+				if err := sp.subSt.insertSpan(id, sctx, s); err != nil {
 					return fmt.Errorf("couldn't insert span: %w", err)
 				}
 			}

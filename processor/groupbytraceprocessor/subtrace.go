@@ -164,20 +164,20 @@ func hashMapAttrs(attrs pcommon.Map) string {
 // one call to the service, which is the price of the information not being
 // there; the alternative loses the grouping entirely.
 //
-// traceSpanIDs maps every span ID buffered for the trace to the service holding
+// spanToService maps every span ID buffered for the trace to the service holding
 // it, and is what tells "entered from another service" apart from "the parent
 // never arrived".
-func splitCalls(spans map[pcommon.SpanID]*bufferedSpan, traceSpanIDs map[pcommon.SpanID]string) [][]*bufferedSpan {
+func splitCalls(serviceSpans map[pcommon.SpanID]*bufferedSpan, spanToService map[pcommon.SpanID]string) [][]*bufferedSpan {
 	children := make(map[pcommon.SpanID][]pcommon.SpanID)
 	var entries, parentless []pcommon.SpanID
 
-	for spanID, bs := range spans {
+	for spanID, bs := range serviceSpans {
 		parent := bs.span.ParentSpanID()
-		if _, sameService := spans[parent]; sameService && !hasRemoteParent(bs) {
+		if _, sameService := serviceSpans[parent]; sameService && !hasRemoteParent(bs) {
 			children[parent] = append(children[parent], spanID)
 			continue
 		}
-		if _, elsewhere := traceSpanIDs[parent]; parent.IsEmpty() || elsewhere || hasRemoteParent(bs) {
+		if _, elsewhere := spanToService[parent]; parent.IsEmpty() || elsewhere || hasRemoteParent(bs) {
 			entries = append(entries, spanID)
 		} else {
 			parentless = append(parentless, spanID)
@@ -186,7 +186,7 @@ func splitCalls(spans map[pcommon.SpanID]*bufferedSpan, traceSpanIDs map[pcommon
 
 	// An entry span is never recorded as anyone's child, so descending from one
 	// can't wander into another call.
-	visited := make(map[pcommon.SpanID]struct{}, len(spans))
+	visited := make(map[pcommon.SpanID]struct{}, len(serviceSpans))
 	descend := func(roots []pcommon.SpanID) []*bufferedSpan {
 		var call []*bufferedSpan
 		pending := append([]pcommon.SpanID(nil), roots...)
@@ -197,7 +197,7 @@ func splitCalls(spans map[pcommon.SpanID]*bufferedSpan, traceSpanIDs map[pcommon
 				continue
 			}
 			visited[spanID] = struct{}{}
-			call = append(call, spans[spanID])
+			call = append(call, serviceSpans[spanID])
 			pending = append(pending, children[spanID]...)
 		}
 		return call
@@ -216,7 +216,7 @@ func splitCalls(spans map[pcommon.SpanID]*bufferedSpan, traceSpanIDs map[pcommon
 	// Malformed input can make a span its own ancestor, leaving a ring that
 	// nothing heads. Release it rather than hold it forever.
 	var unreachable []pcommon.SpanID
-	for spanID := range spans {
+	for spanID := range serviceSpans {
 		if _, seen := visited[spanID]; !seen {
 			unreachable = append(unreachable, spanID)
 		}
