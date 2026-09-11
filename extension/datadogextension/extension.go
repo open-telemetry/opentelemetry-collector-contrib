@@ -112,11 +112,8 @@ func (e *datadogExtension) NotifyConfigSnapshot(_ context.Context, configSnapsho
 	e.configs.mutex.Lock()
 	defer e.configs.mutex.Unlock()
 
-	var conf *confmap.Conf
-
-	if configSnapshot.Effective() != nil {
-		conf = configSnapshot.Effective()
-	} else {
+	conf := configSnapshot.Effective()
+	if conf == nil {
 		conf = confmap.New()
 	}
 
