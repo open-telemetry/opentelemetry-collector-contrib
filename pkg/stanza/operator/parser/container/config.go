@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -23,6 +24,7 @@ const (
 	recombineSourceIdentifier = attrs.LogFilePath
 	recombineIsLastEntry      = "attributes.logtag == 'F'"
 	defaultMaxLogSize         = 1024 * 1024
+	defaultPathCacheSize      = 1024
 )
 
 func init() {
@@ -76,6 +78,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		ParserOperator:          parserOperator,
 		format:                  c.Format,
 		addMetadataFromFilepath: c.AddMetadataFromFilePath,
+		cache:                   newCacheOrNil(defaultPathCacheSize, c.AddMetadataFromFilePath),
 	}
 	var cLogEmitter helper.LogEmitter
 	if metadata.StanzaSynchronousLogEmitterFeatureGate.IsEnabled() {
@@ -132,4 +135,18 @@ func createRecombineConfig(c Config) *recombine.Config {
 	recombineParserCfg.MaxUnmatchedBatchSize = 0
 
 	return recombineParserCfg
+}
+
+// creates cache with given size or returns nil depending on the boolean argument
+func newCacheOrNil(size int, shouldCreate bool) *lru.Cache[string, map[string]any] {
+	if !shouldCreate {
+		return nil
+	}
+
+	if size <= 0 {
+		size = defaultPathCacheSize
+	}
+	// lru will only return error when the size is less than 0
+	cache, _ := lru.New[string, map[string]any](size)
+	return cache
 }
