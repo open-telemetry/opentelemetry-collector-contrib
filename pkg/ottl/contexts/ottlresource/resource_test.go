@@ -381,7 +381,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			resource := createTelemetry()
 
-			tCtx := NewTransformContextPtr(resource, pmetric.NewResourceMetrics())
+			tCtx := NewTransformContext(resource, pmetric.NewResourceMetrics())
 			defer tCtx.Close()
 			got, err := accessor.Get(t.Context(), tCtx)
 			require.NoError(t, err)

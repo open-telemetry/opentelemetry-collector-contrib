@@ -8,18 +8,20 @@ import (
 
 var OttlPanicDuplicateNameFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"ottl.PanicDuplicateName",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, the CreateFactoryMap panics if the name is duplicated."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/44630"),
 	featuregate.WithRegisterFromVersion("v0.141.0"),
+	featuregate.WithRegisterToVersion("v0.161.0"),
 )
 
 var OttlContextsEnableOTelColContextFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"ottl.contexts.enableOTelColContext",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("Enable the `otelcol` context for OTTL. This allows users using `otelcol.*` paths in their OTTL statements and conditions."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46437"),
 	featuregate.WithRegisterFromVersion("v0.147.0"),
+	featuregate.WithRegisterToVersion("v0.161.0"),
 )
 
 var OttlFunctionsEnableLambdaFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -32,7 +34,7 @@ var OttlFunctionsEnableLambdaFeatureGate = featuregate.GlobalRegistry().MustRegi
 
 var OttlSetAllowNilFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"ottl.set.allowNil",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, the set function passes nil values directly to the target."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49741"),
 	featuregate.WithRegisterFromVersion("v0.158.0"),
