@@ -125,7 +125,7 @@ func (*Config) validateExplicitBuckets(explicitBuckets []protocol.ExplicitBucket
 			return multierr.Append(errs, fmt.Errorf("explicit bucket [%d] buckets must not be empty", i))
 		}
 		for j := 0; j < len(eb.Buckets)-1; j++ {
-			if eb.Buckets[j] > eb.Buckets[j+1] {
+			if eb.Buckets[j] >= eb.Buckets[j+1] {
 				errs = multierr.Append(errs, fmt.Errorf("explicit bucket [%d] buckets are not unique or not ascendingly sorted %+v", i, eb.Buckets))
 				break
 			}

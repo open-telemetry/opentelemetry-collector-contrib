@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: receiver/statsd
+note: Reject duplicate explicit histogram bucket boundaries during configuration validation.
+issues: [50782]
+subtext: Previously, adjacent duplicate boundaries were accepted and could produce histogram bucket counts whose sum exceeded the total count.
+change_logs: [user]
