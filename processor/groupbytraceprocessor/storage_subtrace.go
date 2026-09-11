@@ -1,0 +1,232 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
+
+import (
+	"sync"
+	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/metadata"
+)
+
+// subtraceStorage buffers spans per (trace, service). It is used exclusively
+// when EmitStrategy == EmitStrategyService.
+type subtraceStorage interface {
+	// insertSpan deep-copies and buffers one span under the given subtrace. A
+	// span ID already held replaces the earlier copy, wherever it was held.
+	insertSpan(subtraceID, spanContext, ptrace.Span) error
+
+	// releaseDue removes and returns the service's calls whose first span arrived
+	// at or before cutoff, each as its own slice, together with the first arrival
+	// among the calls left behind. That time is zero when nothing is left, and is
+	// otherwise what the next release should be scheduled from.
+	releaseDue(subtraceID, time.Time) ([][]*bufferedSpan, time.Time, error)
+
+	// deleteSubtrace removes a service's buffered spans however recently they
+	// arrived, and returns them divided into separate calls. It is used where
+	// waiting any longer isn't an option: eviction and shutdown.
+	deleteSubtrace(subtraceID) ([][]*bufferedSpan, error)
+
+	// subtraceIDs returns every subtrace currently held.
+	subtraceIDs() []subtraceID
+
+	start() error
+	shutdown() error
+}
+
+var _ subtraceStorage = (*subtraceMemoryStorage)(nil)
+
+// traceBuffer holds everything buffered for one trace: the spans grouped by
+// service, and every span ID the trace has carried.
+//
+// spanIDs serves two purposes. Its keys record which span IDs this trace has
+// been seen to contain, which is what lets a service-entry span be told apart
+// from a span whose parent never arrived. Its values name the service currently
+// holding each span, which keeps a span from being buffered under two services
+// at once if it is resubmitted under a different resource.
+//
+// Entries deliberately outlive the spans themselves. Services are released one
+// at a time, usually the caller before the callee, and a span whose parent has
+// already gone would otherwise look parentless and lose its place.
+//
+// They do not outlive their usefulness, though: see forgetUnreferencedSpanIDs.
+type traceBuffer struct {
+	services map[string]map[pcommon.SpanID]*bufferedSpan
+	spanIDs  map[pcommon.SpanID]string
+}
+
+// liveSpans counts the spans the trace still holds, across every service.
+func (tb *traceBuffer) liveSpans() int {
+	n := 0
+	for _, spans := range tb.services {
+		n += len(spans)
+	}
+	return n
+}
+
+// forgetUnreferencedSpanIDs drops the record of span IDs that are neither
+// buffered any more nor named as a parent by something that is.
+//
+// A span's ID cannot simply be forgotten as the span is emitted: services are
+// released one at a time, usually the caller before the callee, and the callee's
+// entry spans are recognizable only because they point at spans the caller has
+// already taken with it. What can be forgotten is an ID nothing points at any
+// more, because the span is then far enough in the past that anything arriving
+// for it now is better treated as parentless.
+//
+// Without this a trace that always has some service buffered would accumulate
+// every span ID it ever carried.
+func (tb *traceBuffer) forgetUnreferencedSpanIDs() {
+	kept := make(map[pcommon.SpanID]string, len(tb.spanIDs))
+	for service, spans := range tb.services {
+		for spanID := range spans {
+			kept[spanID] = service
+		}
+	}
+	for _, spans := range tb.services {
+		for _, bs := range spans {
+			parent := bs.span.ParentSpanID()
+			if _, alreadyKept := kept[parent]; alreadyKept {
+				continue
+			}
+			if service, known := tb.spanIDs[parent]; known {
+				kept[parent] = service
+			}
+		}
+	}
+	tb.spanIDs = kept
+}
+
+type subtraceMemoryStorage struct {
+	sync.RWMutex
+	traces    map[pcommon.TraceID]*traceBuffer
+	telemetry *metadata.TelemetryBuilder
+}
+
+func newSubtraceMemoryStorage(telemetry *metadata.TelemetryBuilder) *subtraceMemoryStorage {
+	return &subtraceMemoryStorage{
+		traces:    make(map[pcommon.TraceID]*traceBuffer),
+		telemetry: telemetry,
+	}
+}
+
+func (s *subtraceMemoryStorage) insertSpan(id subtraceID, ctx spanContext, span ptrace.Span) error {
+	bs := newBufferedSpan(ctx, span)
+
+	s.Lock()
+	defer s.Unlock()
+
+	tb, ok := s.traces[id.traceID]
+	if !ok {
+		tb = &traceBuffer{
+			services: make(map[string]map[pcommon.SpanID]*bufferedSpan),
+			spanIDs:  make(map[pcommon.SpanID]string),
+		}
+		s.traces[id.traceID] = tb
+	}
+
+	spanID := bs.span.SpanID()
+	// A resubmission naming a different service would otherwise leave the span
+	// buffered under both, and so emitted twice.
+	if previous, held := tb.spanIDs[spanID]; held && previous != id.serviceID {
+		delete(tb.services[previous], spanID)
+		if len(tb.services[previous]) == 0 {
+			delete(tb.services, previous)
+		}
+	}
+
+	spans, ok := tb.services[id.serviceID]
+	if !ok {
+		spans = make(map[pcommon.SpanID]*bufferedSpan)
+		tb.services[id.serviceID] = spans
+	}
+	spans[spanID] = bs
+	tb.spanIDs[spanID] = id.serviceID
+	return nil
+}
+
+func (s *subtraceMemoryStorage) releaseDue(id subtraceID, cutoff time.Time) ([][]*bufferedSpan, time.Time, error) {
+	s.Lock()
+	defer s.Unlock()
+	return s.takeLocked(id, cutoff)
+}
+
+func (s *subtraceMemoryStorage) deleteSubtrace(id subtraceID) ([][]*bufferedSpan, error) {
+	s.Lock()
+	defer s.Unlock()
+	// A cutoff no arrival can be after takes everything.
+	calls, _, err := s.takeLocked(id, time.Now().Add(time.Hour*1_000_000))
+	return calls, err
+}
+
+// takeLocked divides a service's spans into calls and removes the ones due at
+// cutoff, returning them along with the first arrival among those left.
+//
+// Dividing into calls under the same write lock as the removal is what keeps a
+// concurrent release from observing, and so emitting, the same spans twice.
+func (s *subtraceMemoryStorage) takeLocked(id subtraceID, cutoff time.Time) ([][]*bufferedSpan, time.Time, error) {
+	tb, ok := s.traces[id.traceID]
+	if !ok {
+		return nil, time.Time{}, nil
+	}
+	spans, ok := tb.services[id.serviceID]
+	if !ok {
+		return nil, time.Time{}, nil
+	}
+
+	var due [][]*bufferedSpan
+	var nextArrival time.Time
+	for _, call := range splitCalls(spans, tb.spanIDs) {
+		first := firstArrival(call)
+		if first.After(cutoff) {
+			// This call started later than the one whose timer just fired, so it
+			// has time left on its own.
+			if nextArrival.IsZero() || first.Before(nextArrival) {
+				nextArrival = first
+			}
+			continue
+		}
+		due = append(due, call)
+		for _, bs := range call {
+			delete(spans, bs.span.SpanID())
+		}
+	}
+
+	if len(spans) == 0 {
+		delete(tb.services, id.serviceID)
+		if len(tb.services) == 0 {
+			delete(s.traces, id.traceID)
+			return due, nextArrival, nil
+		}
+	}
+
+	// Rebuilding costs a pass over everything the trace still holds, so only do it
+	// once at least half the record is spans that have come and gone. Running it
+	// on every release would scale that pass with the number of services a trace
+	// passes through. Retention is bounded either way, at twice what is buffered.
+	if live := tb.liveSpans(); len(tb.spanIDs) > 2*live {
+		tb.forgetUnreferencedSpanIDs()
+	}
+
+	return due, nextArrival, nil
+}
+
+func (s *subtraceMemoryStorage) subtraceIDs() []subtraceID {
+	s.RLock()
+	defer s.RUnlock()
+
+	var ids []subtraceID
+	for traceID, tb := range s.traces {
+		for serviceID := range tb.services {
+			ids = append(ids, subtraceID{traceID: traceID, serviceID: serviceID})
+		}
+	}
+	return ids
+}
+
+func (*subtraceMemoryStorage) start() error    { return nil }
+func (*subtraceMemoryStorage) shutdown() error { return nil }

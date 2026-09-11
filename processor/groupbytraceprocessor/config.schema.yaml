@@ -1,9 +1,16 @@
+$defs:
+  emit_strategy:
+    description: EmitStrategy controls how the processor groups spans before releasing them to the next consumer.
+    type: string
 description: Config is the configuration for the processor.
 type: object
 properties:
   discard_orphans:
     description: 'DiscardOrphans instructs the processor to discard traces without the root span. This typically indicates that the trace is incomplete. Default: false. Not yet implemented, and an error will be returned when this option is used.'
     type: boolean
+  emit_strategy:
+    description: 'EmitStrategy controls the span-emit granularity. Valid values: "trace" (default), "service".'
+    $ref: emit_strategy
   num_traces:
     description: 'NumTraces is the max number of traces to keep in memory waiting for the duration. Default: 1_000_000.'
     type: integer
