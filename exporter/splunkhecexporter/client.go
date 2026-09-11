@@ -47,7 +47,7 @@ type iterState struct {
 }
 
 func (s iterState) empty() bool {
-	return s.resource == 0 && s.library == 0 && s.record == 0
+	return !s.done && s.resource == 0 && s.library == 0 && s.record == 0
 }
 
 // client sends the data to the splunk backend.
@@ -167,7 +167,72 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 		}
 	}
 
-	return c.pushLogDataInBatches(ctx, ld, localHeaders)
+	return c.pushLogsWithSplitOn413(ctx, ld, localHeaders)
+}
+
+// pushLogsWithSplitOn413 sends ld through the normal batching path. If the server
+// rejects a batch as too large (HTTP 413), it splits the unsent logs in half and
+// retries each half, recursively, down to a single record. A single record that
+// is still rejected is dropped as a permanent error, mirroring Splunk, which
+// disregards events larger than its configured maximum event size. The two halves'
+// outcomes are merged by combineSplitResults so that every still-retryable record
+// is preserved for retry and only genuinely-permanent drops are dropped.
+func (c *client) pushLogsWithSplitOn413(ctx context.Context, ld plog.Logs, headers map[string]string) error {
+	err := c.pushLogDataInBatches(ctx, ld, headers)
+	if err == nil || !errors.Is(err, errPayloadTooLarge) {
+		return err
+	}
+
+	// Recover the logs the server did not accept; fall back to the whole batch.
+	unsent := ld
+	var logsErr consumererror.Logs
+	if errors.As(err, &logsErr) {
+		unsent = logsErr.Data()
+	}
+
+	if unsent.LogRecordCount() <= 1 {
+		c.logger.Warn("Dropping a log record that Splunk rejected as too large (HTTP 413); it cannot be split further")
+		return consumererror.NewPermanent(err)
+	}
+
+	head, tail := splitLogs(unsent, unsent.LogRecordCount()/2)
+	return combineSplitResults(
+		c.pushLogsWithSplitOn413(ctx, head, headers),
+		c.pushLogsWithSplitOn413(ctx, tail, headers),
+	)
+}
+
+// combineSplitResults merges the outcomes of retrying the two halves of a batch
+// that Splunk rejected as too large (HTTP 413) into a single error that preserves
+// consumererror semantics. Joining the two errors with errors.Join would lose data:
+// a permanent half would make the whole result permanent (dropping the retryable
+// half), and the retry/queue sender extracts only the first consumererror.Logs it
+// finds (dropping any later half's records). Instead, every still-retryable record
+// from either half is returned in one consumererror.Logs so all of them are retried,
+// while records that failed permanently are excluded from the payload (and thus
+// dropped) without making the combined error permanent.
+func combineSplitResults(results ...error) error {
+	retryable := plog.NewLogs()
+	var permanentErrs []error
+	for _, err := range results {
+		if err == nil {
+			continue
+		}
+		var logsErr consumererror.Logs
+		if !consumererror.IsPermanent(err) && errors.As(err, &logsErr) {
+			logsErr.Data().ResourceLogs().MoveAndAppendTo(retryable.ResourceLogs())
+			continue
+		}
+		permanentErrs = append(permanentErrs, err)
+	}
+
+	if retryable.LogRecordCount() > 0 {
+		return consumererror.NewLogs(
+			fmt.Errorf("%w: resending %d log record(s) Splunk did not accept", errPayloadTooLarge, retryable.LogRecordCount()),
+			retryable,
+		)
+	}
+	return errors.Join(permanentErrs...)
 }
 
 func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) error {
@@ -611,6 +676,78 @@ func (c *client) postEvents(ctx context.Context, buf buffer, headers map[string]
 		return err
 	}
 	return c.hecWorker.send(ctx, buf, headers)
+}
+
+// iterStateAtRecord returns the iterState positioned at the nth log record (0-based),
+// or a done state if n is at or beyond the end.
+func iterStateAtRecord(ld plog.Logs, n int) iterState {
+	seen := 0
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		sls := rls.At(i).ScopeLogs()
+		for j := 0; j < sls.Len(); j++ {
+			recs := sls.At(j).LogRecords().Len()
+			if seen+recs > n {
+				return iterState{resource: i, library: j, record: n - seen}
+			}
+			seen += recs
+		}
+	}
+	// n is at or beyond the last record: return a state that points past every
+	// record so headLogs yields the whole set and subLogs yields nothing.
+	return iterState{resource: rls.Len(), done: true}
+}
+
+// splitLogs partitions ld into two: head with the first n log records and tail
+// with the remainder, preserving resource and scope structure. It is the inverse
+// of concatenation: head and tail together contain exactly the records of ld.
+func splitLogs(ld plog.Logs, n int) (head, tail plog.Logs) {
+	mid := iterStateAtRecord(ld, n)
+	return headLogs(ld, mid), subLogs(ld, mid)
+}
+
+// headLogs returns the log records that come before end, preserving resource and
+// scope structure. It is the complement of subLogs: headLogs(src, s) and
+// subLogs(src, s) together contain exactly the records of src.
+func headLogs(src plog.Logs, end iterState) plog.Logs {
+	dst := plog.NewLogs()
+	if end.empty() {
+		return dst
+	}
+	resources := src.ResourceLogs()
+	resourcesSub := dst.ResourceLogs()
+
+	for i := 0; i <= end.resource && i < resources.Len(); i++ {
+		newSub := resourcesSub.AppendEmpty()
+		resources.At(i).Resource().CopyTo(newSub.Resource())
+
+		libraries := resources.At(i).ScopeLogs()
+		librariesSub := newSub.ScopeLogs()
+
+		maxJ := libraries.Len()
+		if i == end.resource {
+			maxJ = end.library + 1
+		}
+		for j := 0; j < maxJ && j < libraries.Len(); j++ {
+			lib := libraries.At(j)
+
+			newLibSub := librariesSub.AppendEmpty()
+			lib.Scope().CopyTo(newLibSub.Scope())
+
+			logs := lib.LogRecords()
+			logsSub := newLibSub.LogRecords()
+
+			maxK := logs.Len()
+			if i == end.resource && j == end.library {
+				maxK = end.record
+			}
+			for k := 0; k < maxK && k < logs.Len(); k++ {
+				logs.At(k).CopyTo(logsSub.AppendEmpty())
+			}
+		}
+	}
+
+	return dst
 }
 
 // subLogs returns a subset of logs starting from the state.
