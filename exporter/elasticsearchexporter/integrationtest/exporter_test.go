@@ -317,7 +317,8 @@ func testExporterRetriesAfterElasticsearchRecovers(t *testing.T, persistent bool
 	defer tc.Stop()
 
 	// Start the collector without the mock Elasticsearch backend, send one
-	// full batch, and allow the first export attempt to time out.
+	// full batch, and let the exporter cycle through several failed export
+	// attempts against the unreachable endpoint.
 	tc.StartAgent()
 	tc.StartLoad(loadOpts)
 	require.Eventually(t, func() bool {
@@ -328,8 +329,15 @@ func testExporterRetriesAfterElasticsearchRecovers(t *testing.T, persistent bool
 
 	// Once Elasticsearch recovers, the queue should retry the request and
 	// deliver every log in the batch.
+	//
+	// The bound must cover an attempt that is already in flight when the
+	// backend comes up. Dialing a closed port is nearly instantaneous on
+	// Linux, but on Windows it has been observed to take several seconds
+	// before the connection is refused; only then does the retry back off
+	// (up to retry::max_interval) and finally reach the backend, which
+	// still has to decode the whole batch under the race detector.
 	tc.StartBackend()
 	require.Eventually(t, func() bool {
 		return tc.MockBackend.DataItemsReceived() == tc.LoadGenerator.DataItemsSent()
-	}, 3*time.Second, 10*time.Millisecond)
+	}, 15*time.Second, 10*time.Millisecond)
 }
