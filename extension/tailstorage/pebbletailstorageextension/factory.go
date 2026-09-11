@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate make mdatagen
+
 //go:build !aix
 
 package pebbletailstorageextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension"
@@ -29,5 +31,5 @@ func createDefaultConfig() component.Config {
 }
 
 func createExtension(_ context.Context, settings extension.Settings, cfg component.Config) (extension.Extension, error) {
-	return newExtension(settings, cfg.(*Config)), nil
+	return newExtension(settings, cfg.(*Config))
 }
