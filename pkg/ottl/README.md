@@ -54,8 +54,8 @@ To see a list of available Paths for each context, checkout the links below.
 | `Datapoint`             | [DataPoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoint/README.md)          |
 | `Exemplar`              | [Exemplar](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlexemplar/README.md)            |
 | `Log`                   | [Log](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottllog/README.md)                      |
-| `Profile`               | [Profile](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/xprofile/ottlprofile/README.md)              |
-| `Profile Sample`        | [Profile Sample](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/xprofile/ottlprofilesample/README.md) |
+| `Profile`               | [Profile](contexts/xprofile/ottlprofile/README.md)              |
+| `Profile Sample`        | [Profile Sample](contexts/xprofile/ottlprofilesample/README.md) |
 
 For the complete list of contexts, see the [contexts documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/README.md).
 

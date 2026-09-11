@@ -8,7 +8,7 @@ This document contains documentation for both types of OTTL functions:
 - [Editors](#editors) that transform telemetry.
 - [Converters](#converters) that provide utilities for transforming telemetry.
 
-Experimental functions that fall outside of OTTL's stability guarantees are documented separately. See the [`xprofile` module](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/xprofile/README.md) for the profiles converters, including `ProfileID`.
+Experimental functions that fall outside of OTTL's stability guarantees are documented separately. See the [`xprofile` module](../contexts/xprofile/README.md) for the profiles converters, including `ProfileID`.
 
 ## Design principles
 
