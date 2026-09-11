@@ -11,9 +11,12 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func TestNewFactoryWithLogs(t *testing.T) {
@@ -107,4 +110,23 @@ func TestNewFactoryWithLogs(t *testing.T) {
 	} {
 		t.Run(tc.name, tc.f)
 	}
+}
+
+func TestCreateDefaultConfig(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*config.Config)
+	require.Equal(t, ottl.PropagateError, cfg.ErrorMode)
+}
+
+func TestCreateDefaultConfigWithFeatureGate(t *testing.T) {
+	gate := metadata.ConnectorSignaltometricsconnectorDefaultIgnoreErrorModeFeatureGate
+	prev := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
+	})
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*config.Config)
+	require.Equal(t, ottl.IgnoreError, cfg.ErrorMode)
 }

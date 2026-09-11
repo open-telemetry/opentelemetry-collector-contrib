@@ -1,0 +1,7 @@
+change_type: enhancement
+component: connector/signaltometrics
+note: "Introduce `connector.signaltometricsconnector.defaultIgnoreErrorMode` feature gate to set default `error_mode` to `ignore`"
+issues: [48419]
+subtext: |
+  When the feature gate is enabled, the connector defaults `error_mode` to `ignore` instead of `propagate` to prevent dropping valid data on OTTL evaluation errors.
+change_logs: [user]
