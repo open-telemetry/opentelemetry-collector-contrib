@@ -38,6 +38,9 @@ data:
           - from: cronjob
             key: workload
             tag_name: simple-cronjob-workload-annotation
+          - from: horizontalpodautoscaler
+            key: workload
+            tag_name: simple-hpa-workload-annotation
           labels:
           - from: pod
             key: app
