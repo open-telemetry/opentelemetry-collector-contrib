@@ -59,6 +59,26 @@ func TestLoadConfig(t *testing.T) {
 				RetryInterval: 5 * time.Minute,
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "condition"),
+			expected: &Config{
+				QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				PipelinePriority: [][]pipeline.ID{
+					{
+						pipeline.NewIDWithName(pipeline.SignalTraces, "first"),
+					},
+					{
+						pipeline.NewIDWithName(pipeline.SignalTraces, "second"),
+					},
+				},
+				RetryInterval: 5 * time.Minute,
+				Condition: configoptional.Some(ConditionsConfig{
+					ErrorCond: &ErrorCondition{
+						Contains: "network failure",
+					},
+				}),
+			},
+		},
 	}
 
 	for _, tc := range testcases {
@@ -94,6 +114,11 @@ func TestValidateConfig(t *testing.T) {
 			name: "invalid retry_interval",
 			id:   component.NewIDWithName(metadata.Type, "invalid"),
 			err:  errInvalidRetryIntervals,
+		},
+		{
+			name: "empty condition block",
+			id:   component.NewIDWithName(metadata.Type, "emptycondition"),
+			err:  errNoConditionDefined,
 		},
 	}
 
