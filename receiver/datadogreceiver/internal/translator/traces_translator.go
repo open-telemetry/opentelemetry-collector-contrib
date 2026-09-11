@@ -515,7 +515,16 @@ func decodeLinkSpanID(spanID json.RawMessage) (pcommon.SpanID, error) {
 		if err := json.Unmarshal(spanID, &s); err != nil {
 			return pcommon.SpanID{}, err
 		}
-		raw, err := oteltrace.SpanIDFromHex(s)
+		// dd-trace-java serializes link span IDs with Long.toHexString, which drops
+		// leading zeroes. Its IDs are 63-bit, so the leading nibble is 0-7 and
+		// roughly one in eight arrives shorter than the canonical 16 characters
+		// SpanIDFromHex requires. Link trace IDs are unaffected: those are padded
+		// to the full 32 characters even when 128-bit generation is off.
+		padded := s
+		if len(padded) < 16 {
+			padded = strings.Repeat("0", 16-len(padded)) + padded
+		}
+		raw, err := oteltrace.SpanIDFromHex(padded)
 		if err != nil {
 			return pcommon.SpanID{}, fmt.Errorf("error converting span id (%s) from hex: %w", s, err)
 		}
