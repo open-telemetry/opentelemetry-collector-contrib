@@ -25,11 +25,11 @@ resource_attributes:
     enabled: true
     type: string
   server.address:
-    description: Name of the database host.
+    description: The address of the monitored SQL Server instance. A loopback target (for example localhost or 127.0.0.1) is reported as the host name of the machine running the collector, since the instance is co-located with it.
     enabled: true
     type: string
   server.port:
-    description: Server port number.
+    description: The port of the monitored SQL Server instance, defaulting to 1433 when not configured.
     enabled: true
     type: int
   service.instance.id:

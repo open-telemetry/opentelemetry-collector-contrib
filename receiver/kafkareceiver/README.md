@@ -31,8 +31,7 @@ headers to the downstream pipeline, giving access to the rest of the pipeline to
 > To enable this feature, prefix your topic with the `^` character. This is identical to how the `librdkafka`
 > client works.
 >
-> If you use the `^` prefix, in the deprecated `topic` setting, if **any** of the topics have the `^` prefix,
-> regex consuming will be enabled.
+> If **any** of the topics have the `^` prefix, regex consuming will be enabled and `exclude_topics` can be used (see [Regex topic patterns with exclusions](#regex-topic-patterns-with-exclusions) for an example).
 
 There are no required settings.
 
@@ -42,37 +41,21 @@ The following settings can be optionally configured:
 - `protocol_version` (default = 2.1.0): Kafka protocol version.
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup
 - `logs`
-  - `topic` (Deprecated [v0.142.0]: use `topics`)
-     (default = otlp\_logs): If this is set, it will take precedence over default value of `topics`
   - `topics` (default = otlp\_logs): List of kafka topics from which to consume logs
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
-  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
-     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
-  - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
+  - `exclude_topics` (default = []): When at least one entry in topics is a regex pattern (prefix with ^), topics matching any of these regular expressions are excluded.
 - `metrics`
-  - `topic` (Deprecated [v0.142.0]: use `topics`)
-     (default = otlp\_metrics): If this is set, it will take precedence over default value of `topics`
   - `topics` (default = otlp\_metrics): List of Kafka topic from which to consume metrics.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
-  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
-     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
-  - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
+  - `exclude_topics` (default = []): When at least one entry in topics is a regex pattern (prefix with ^), topics matching any of these regular expressions are excluded.
 - `traces`
-  - `topic` (Deprecated [v0.142.0]: use `topics`)
-     (default = otlp\_spans): If this is set, it will take precedence over default value of `topics`
   - `topics` (default = otlp\_spans): List of Kafka topic from which to consume traces.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
-  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
-     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
-  - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
+  - `exclude_topics` (default = []): When at least one entry in topics is a regex pattern (prefix with ^), topics matching any of these regular expressions are excluded.
 - `profiles`
-  - `topic`  (Deprecated [v0.142.0]: use `topics`)
-     (default = otlp\_profiles): If this is set, it will take precedence over default value of `topics`
   - `topics` (default = otlp\_profiles): List of Kafka topic from which to consume profiles.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
-  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
-     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
-  - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
+  - `exclude_topics` (default = []): When at least one entry in topics is a regex pattern (prefix with ^), topics matching any of these regular expressions are excluded.
 - `group_id` (default = otel-collector): The consumer group that receiver will be consuming messages from
 - `client_id` (default = otel-collector): The consumer client ID that receiver will use
 - `rack_id` (default = ""): The rack identifier for this client. When set and brokers are configured with a rack-aware replica selector, the client will prefer fetching from the closest replica.
@@ -288,8 +271,13 @@ When using the `franz-go` client, you can consume from multiple topics using reg
 and exclude specific topics from consumption. This is useful when you want to consume from
 a dynamic set of topics but need to filter out certain ones.
 
-**Note:** Both `topic` and `exclude_topic` must use regex patterns (prefix with `^`) for
-exclusion to work. This feature is only available with the franz-go client.
+[!NOTE]
+`exclude_topics` only takes effect when at least one entry in `topics` is a regex pattern
+(prefixed with `^`); the receiver fails config validation otherwise.
+
+Entries in `exclude_topics` are regular expressions matched **unanchored**, so
+`exclude_topics: ["test"]` also excludes a topic named `prod-test-1`. Prefix them with `^`
+(and anchor with `$` where appropriate), as in the example below.
 
 ```yaml
 receivers:
