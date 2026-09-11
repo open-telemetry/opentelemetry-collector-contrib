@@ -1,0 +1,13 @@
+change_type: bug_fix
+
+component: processor/cumulative_to_delta
+
+note: Fix histogram and exponential histogram reset recovery by updating prevPoint on reset detection
+
+issues: [50828]
+
+subtext: |
+  The reset point is now stored as the new baseline so post-reset deltas are
+  computed correctly instead of being silently dropped or understated.
+
+change_logs: [user]
