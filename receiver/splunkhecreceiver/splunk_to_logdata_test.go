@@ -332,6 +332,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := splunkHecToLogData(zap.NewNop(), tt.events, func(pcommon.Resource) {}, tt.hecConfig)
 			assert.Equal(t, tt.wantErr, err)
+			clearObservedTimestamps(result)
 			require.Equal(t, tt.output.Len(), result.ResourceLogs().Len())
 			for i := 0; i < result.ResourceLogs().Len(); i++ {
 				assert.Equal(t, tt.output.At(i), result.ResourceLogs().At(i))
@@ -480,6 +481,48 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 			require.NoError(t, err)
 			tt.assertResource(t, result, slLen)
 		})
+	}
+}
+
+func Test_SplunkHecToLogData_SetsObservedTimestamp(t *testing.T) {
+	events := []*translator.Event{
+		{Time: 0, Host: "localhost", Source: "mysource", SourceType: "mysourcetype", Index: "myindex", Event: "value"},
+	}
+	before := pcommon.NewTimestampFromTime(time.Now())
+	result, err := splunkHecToLogData(zap.NewNop(), events, func(pcommon.Resource) {}, defaultTestingHecConfig)
+	after := pcommon.NewTimestampFromTime(time.Now())
+	require.NoError(t, err)
+	lr := result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.GreaterOrEqual(t, lr.ObservedTimestamp(), before)
+	assert.LessOrEqual(t, lr.ObservedTimestamp(), after)
+}
+
+func Test_SplunkHecRawToLogData_SetsObservedTimestamp(t *testing.T) {
+	reader := io.NopCloser(bytes.NewReader([]byte("line1\nline2")))
+	before := pcommon.NewTimestampFromTime(time.Now())
+	result, slLen, err := splunkHecRawToLogData(reader, map[string][]string{}, func(pcommon.Resource) {}, &Config{}, 0)
+	after := pcommon.NewTimestampFromTime(time.Now())
+	require.NoError(t, err)
+	require.Equal(t, 2, slLen)
+	for i := 0; i < slLen; i++ {
+		lr := result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(i)
+		assert.GreaterOrEqual(t, lr.ObservedTimestamp(), before)
+		assert.LessOrEqual(t, lr.ObservedTimestamp(), after)
+	}
+}
+
+// clearObservedTimestamps zeroes the non-deterministic ObservedTimestamp so
+// deep-equality assertions against fixed expected logs remain stable.
+func clearObservedTimestamps(logs plog.Logs) {
+	rls := logs.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		sls := rls.At(i).ScopeLogs()
+		for j := 0; j < sls.Len(); j++ {
+			lrs := sls.At(j).LogRecords()
+			for k := 0; k < lrs.Len(); k++ {
+				lrs.At(k).SetObservedTimestamp(0)
+			}
+		}
 	}
 }
 
