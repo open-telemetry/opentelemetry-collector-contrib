@@ -58,6 +58,8 @@ type redaction struct {
 	urlSanitizer *url.URLSanitizer
 	// Database obfuscator
 	dbObfuscator *db.Obfuscator
+	//Masking string used to replace redacted values
+	maskingString string
 }
 
 // newRedaction creates a new instance of the redaction processor
@@ -95,6 +97,11 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 	}
 	dbObfuscator := db.NewObfuscator(config.DBSanitizer, logger)
 
+	maskingString := "****"
+	if config.MaskingString != "" {
+		maskingString = config.MaskingString
+	}
+
 	return &redaction{
 		allowList:          allowList,
 		ignoreList:         ignoreList,
@@ -107,6 +114,7 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 		logger:             logger,
 		urlSanitizer:       urlSanitizer,
 		dbObfuscator:       dbObfuscator,
+		maskingString:      maskingString,
 	}, nil
 }
 
@@ -389,10 +397,6 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 
 //nolint:gosec
 func (s *redaction) maskValue(val string, regex *regexp.Regexp) string {
-	defaultMaskingString := "****"
-	if s.config.MaskingString != "" {
-		defaultMaskingString = s.config.MaskingString
-	}
 	hashFunc := func(match string) string {
 		switch s.hashFunction {
 		case SHA1:
@@ -406,7 +410,7 @@ func (s *redaction) maskValue(val string, regex *regexp.Regexp) string {
 		case HMACSHA512:
 			return hashStringHMAC(match, s.config.HMACKey, sha512.New)
 		default:
-			return defaultMaskingString
+			return s.maskingString
 		}
 	}
 	return regex.ReplaceAllStringFunc(val, hashFunc)

@@ -53,6 +53,12 @@ func TestLoadConfig(t *testing.T) {
 			id:       component.NewIDWithName(metadata.Type, "empty"),
 			expected: createDefaultConfig(),
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "masking_string"),
+			expected: &Config{
+				MaskingString: "[REDACTED]",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -69,6 +75,36 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestLoadInvalidConfig(t *testing.T) {
+	tests := []struct {
+		id            component.ID
+		errorContains string
+	}{
+		{
+			id:            component.NewIDWithName(metadata.Type, "hash_function_and_masking_string_set"),
+			errorContains: "masking_string must not be set when hash_function is defined",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_invalid.yaml"))
+			require.NoError(t, err)
+
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+
+			err = confmap.Validate(cfg)
+			require.Error(t, err)
+			assert.ErrorContains(t, err, tt.errorContains)
 		})
 	}
 }

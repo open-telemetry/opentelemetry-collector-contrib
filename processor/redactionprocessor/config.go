@@ -89,8 +89,8 @@ type Config struct {
 	URLSanitization url.URLSanitizationConfig `mapstructure:"url_sanitizer"`
 
 	// MaskingString is the string that replaces the values being redacted.
-	// If not set, the redacted values with be replaced with "****".
-	// If HashFunction is set, this value will not be used.
+	// If not set, the redacted values will be replaced with "****".
+	// If HashFunction is set, this value must not be set
 	MaskingString string `mapstructure:"masking_string"`
 }
 
@@ -146,6 +146,10 @@ func (cfg *Config) Validate() error {
 		if len(key) < minLength {
 			return fmt.Errorf("hmac_key must be at least %d bytes long for %q, got %d bytes", minLength, cfg.HashFunction, len(key))
 		}
+	}
+
+	if cfg.MaskingString != "" && cfg.HashFunction != None {
+		return fmt.Errorf("masking_string must not be set when hash_function is defined")
 	}
 
 	return nil

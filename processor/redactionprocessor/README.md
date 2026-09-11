@@ -120,8 +120,8 @@ processors:
       # Set to false to disable span name sanitization while keeping attribute sanitization active
       sanitize_span_name: true
     # masking_string is the string that replaces the values being redacted.
-    # If not set, the redacted values with be replaced with "****".
-    # If hash_function is set, this value will not be used.
+    # If not set, the redacted values will be replaced with "****".
+    # If hash_function is set, this value must not be set.
     masking_string: "****"
 ```
 
