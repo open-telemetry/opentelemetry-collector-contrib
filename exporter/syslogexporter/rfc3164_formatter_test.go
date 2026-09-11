@@ -54,3 +54,29 @@ func TestRFC3164Formatter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
 }
+
+func TestRFC3164Formatter_Sanitization(t *testing.T) {
+	expected := "<34>Sep  3 23:12:35 myhost appname: test    message\n"
+	logRecord := plog.NewLogRecord()
+	logRecord.Attributes().PutStr("appname", "app\nname")
+	logRecord.Attributes().PutStr("hostname", "my\rhost")
+	logRecord.Attributes().PutStr("message", "test \n\r message")
+	logRecord.Attributes().PutInt("priority", 34)
+	timestamp, err := time.Parse(time.RFC3339Nano, "2024-09-03T23:12:35.000000Z")
+	require.NoError(t, err)
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
+
+	actual := newRFC3164Formatter().format(logRecord)
+	assert.Equal(t, expected, actual)
+
+	expected = "<165>Sep  3 23:12:35 myhost app: message\n"
+	logRecord = plog.NewLogRecord()
+	logRecord.Attributes().PutStr("appname", "app")
+	logRecord.Attributes().PutStr("hostname", "myhost")
+	logRecord.Attributes().PutStr("message", "message")
+	logRecord.Attributes().PutStr("priority", "invalid_priority\n")
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
+
+	actual = newRFC3164Formatter().format(logRecord)
+	assert.Equal(t, expected, actual)
+}
