@@ -113,9 +113,12 @@ func newGoSNMPWrapper() goSNMPWrapper {
 	}
 }
 
-// Close closes the GoSNMP connection
+// Close closes the GoSNMP connection. It delegates to gosnmp's Close rather
+// than closing the Conn field directly: Conn is nil after a failed (re)connect
+// — e.g. when the connection-reset path in client.go times out mid-scrape and
+// the re-dial fails — and gosnmp's Close is nil-safe and idempotent.
 func (w *otelGoSNMPWrapper) Close() error {
-	return w.Conn.Close()
+	return w.GoSNMP.Close()
 }
 
 // GetTransport gets the Transport
