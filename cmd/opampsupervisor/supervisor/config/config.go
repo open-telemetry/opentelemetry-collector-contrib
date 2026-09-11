@@ -223,6 +223,7 @@ type Agent struct {
 	Description                 AgentDescription  `mapstructure:"description"`
 	ConfigApplyTimeout          time.Duration     `mapstructure:"config_apply_timeout"`
 	BootstrapTimeout            time.Duration     `mapstructure:"bootstrap_timeout"`
+	StopGracePeriod             time.Duration     `mapstructure:"stop_grace_period"`
 	OpAMPServerPort             int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs             bool              `mapstructure:"passthrough_logs"`
 	CollectorCrashLogSnippetKiB int               `mapstructure:"collector_crash_log_snippet_kib"`
@@ -277,6 +278,10 @@ func (a Agent) Validate() error {
 
 	if a.ConfigApplyTimeout <= 0 {
 		return errors.New("agent::config_apply_timeout must be valid duration")
+	}
+
+	if a.StopGracePeriod < 0 {
+		return errors.New("agent::stop_grace_period must not be negative")
 	}
 
 	for _, file := range a.ConfigFiles {
@@ -479,6 +484,7 @@ func DefaultSupervisor() Supervisor {
 			OrphanDetectionInterval:     5 * time.Second,
 			ConfigApplyTimeout:          5 * time.Second,
 			BootstrapTimeout:            3 * time.Second,
+			StopGracePeriod:             10 * time.Second,
 			PassthroughLogs:             false,
 			CollectorCrashLogSnippetKiB: 0,
 			ValidateConfig:              false,
