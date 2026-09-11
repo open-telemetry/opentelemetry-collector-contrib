@@ -1,0 +1,25 @@
+change_type: bug_fix
+
+component: receiver/prometheus_remote_write
+
+note: Attach exemplars once, to the series that sent them, rather than to every metric built from the same labels.
+
+issues: [50334, 50546]
+
+subtext: |
+  Exemplars were keyed by a few fields, and the attribute hash among them came
+  from labels that already had job, instance, the metric name and every
+  otel_scope_ label taken out. Two targets sending one metric name therefore
+  shared a key: a histogram carrying an ordinary label found no exemplars at
+  all, and on the counter path one received exemplar could be written to both
+  targets. The key is the whole label set now, which is how Prometheus
+  identifies a series, so nothing that tells two series apart can be left out.
+  The histogram lookup also copied into the first data point of the metric,
+  which belongs to whichever series was translated first. Histogram exemplars go
+  to the data point the current conversion appended, and a histogram the
+  converter drops no longer reaches a data point built for an earlier series.
+  Both paths consume the entry once they have attached it, so a second metric
+  built from the same labels, differing only by type or unit, cannot publish a
+  second copy of what the sender wrote once.
+
+change_logs: [user]

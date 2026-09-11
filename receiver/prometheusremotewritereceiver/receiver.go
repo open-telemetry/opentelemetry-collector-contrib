@@ -117,6 +117,10 @@ func createMetricIdentity(res identity.Resource, metricName, unit string, si sco
 	}
 }
 
+// sep is a byte that is not valid UTF-8, used as a field separator to prevent
+// hash collisions between different field boundary combinations (e.g. "ab"+"c" vs "a"+"bc").
+var sep = []byte{0xff}
+
 // Hash generates a unique hash for the metric identity using the identity library's hasher
 // as a foundation, extended with scope and metric fields.
 func (mi metricIdentity) Hash() uint64 {
@@ -337,7 +341,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// This ensures that future requests start with the enriched resource attributes already applied.
 		modifiedResourceMetric = make(map[uint64]pmetric.ResourceMetrics)
 
-		// exemplarMap keeps track of exemplars and key is composed by scope_name:scope_version:metric_name:type
+		// exemplarMap holds exemplars under the series key collectExemplars builds.
 		exemplarMap = collectExemplars(req, prw.settings, &stats)
 
 		// bucketBudget bounds what every Native Histogram in this request may expand into
@@ -477,20 +481,19 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts, &stats)
 		case writev2.Metadata_METRIC_TYPE_COUNTER, writev2.Metadata_METRIC_TYPE_INFO, writev2.Metadata_METRIC_TYPE_STATESET:
 			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts, &stats)
-			attrsHash := pdatautil.MapHash(extractAttributes(ls))
-			key := exemplarKey{
-				ScopeName:    si.Name,
-				ScopeVersion: si.Version,
-				MetricName:   metricName,
-				MetricType:   ts.Metadata.Type,
-				AttrsHash:    attrsHash,
-			}
-			if ex, ok := exemplarMap[key.hash()]; ok && ex.Len() > 0 {
-				dataPoints := metric.Sum().DataPoints()
-				for i := 0; i < dataPoints.Len(); i++ {
-					if pdatautil.MapHash(dataPoints.At(i).Attributes()) == attrsHash {
-						ex.CopyTo(dataPoints.At(i).Exemplars())
-						break
+			// Consuming the entry stops a second metric identity built from the same labels,
+			// differing only by type or unit, from taking a copy of the same exemplars.
+			if len(exemplarMap) > 0 {
+				key := makeExemplarKey(ls)
+				if ex, ok := exemplarMap[key]; ok && ex.Len() > 0 {
+					attrsHash := pdatautil.MapHash(extractAttributes(ls))
+					dataPoints := metric.Sum().DataPoints()
+					for i := 0; i < dataPoints.Len(); i++ {
+						if pdatautil.MapHash(dataPoints.At(i).Attributes()) == attrsHash {
+							ex.CopyTo(dataPoints.At(i).Exemplars())
+							delete(exemplarMap, key)
+							break
+						}
 					}
 				}
 			}
@@ -522,7 +525,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	scopeCache map[scopeCacheKey]pmetric.ScopeMetrics,
 	stats *promremote.WriteResponseStats,
 	modifiedRM map[uint64]pmetric.ResourceMetrics,
-	exemplarMap map[uint64]pmetric.ExemplarSlice,
+	exemplarMap map[exemplarKey]pmetric.ExemplarSlice,
 	bucketBudget *histogramBucketBudget,
 ) {
 	// Drop classic histogram series (those with samples)
@@ -532,6 +535,20 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		return
 	}
 	attrs := extractAttributes(ls)
+
+	// One TimeSeries is one series, so every histogram below shares the key its exemplars were
+	// collected under.
+	var (
+		exemplars     pmetric.ExemplarSlice
+		exemplarsKey  exemplarKey
+		haveExemplars bool
+	)
+	if len(exemplarMap) > 0 {
+		exemplarsKey = makeExemplarKey(ls)
+		if ex, ok := exemplarMap[exemplarsKey]; ok && ex.Len() > 0 {
+			exemplars, haveExemplars = ex, true
+		}
+	}
 
 	var (
 		hashedLabels uint64
@@ -652,31 +669,36 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			// Reference to this behavior: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model-producer-recommendations
 			histMetric.SetDescription(description)
 		}
-		// all the exemplars for a given histogram are attached to first data point.
-		exemplarSlice := pmetric.NewExemplarSlice()
-		// Process the individual histogram
+		// One metric holds the data points of every series with its identity, so only the point
+		// the conversion appends below is known to be this histogram's.
+		var (
+			exemplarSlice pmetric.ExemplarSlice
+			appended      bool
+		)
 		if histogramType == "nhcb" {
-			prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, attrs, stats)
-			if histMetric.Histogram().DataPoints().Len() > 0 {
-				exemplarSlice = histMetric.Histogram().DataPoints().At(0).Exemplars()
+			dps := histMetric.Histogram().DataPoints()
+			before := dps.Len()
+			prw.addNHCBDatapoint(dps, histogram, attrs, stats)
+			if appended = dps.Len() > before; appended {
+				exemplarSlice = dps.At(dps.Len() - 1).Exemplars()
 			}
 		} else {
-			prw.addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, expLayout, attrs, ls, stats)
-			if histMetric.ExponentialHistogram().DataPoints().Len() > 0 {
-				exemplarSlice = histMetric.ExponentialHistogram().DataPoints().At(0).Exemplars()
+			dps := histMetric.ExponentialHistogram().DataPoints()
+			before := dps.Len()
+			prw.addExponentialHistogramDatapoint(dps, histogram, expLayout, attrs, ls, stats)
+			if appended = dps.Len() > before; appended {
+				exemplarSlice = dps.At(dps.Len() - 1).Exemplars()
 			}
 		}
 
-		key := exemplarKey{
-			ScopeName:    si.Name,
-			ScopeVersion: si.Version,
-			MetricName:   metricName,
-			MetricType:   ts.Metadata.Type,
+		// A dropped histogram has no data point of its own, so attaching here would land on one
+		// built for an earlier series. Its exemplars stay in the map for a later one to claim.
+		if !appended || !haveExemplars {
+			continue
 		}
-
-		if ex, ok := exemplarMap[key.hash()]; ok && ex.Len() > 0 {
-			ex.CopyTo(exemplarSlice)
-		}
+		exemplars.CopyTo(exemplarSlice)
+		delete(exemplarMap, exemplarsKey)
+		haveExemplars = false
 	}
 }
 
