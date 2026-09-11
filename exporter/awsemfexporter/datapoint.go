@@ -77,6 +77,16 @@ type deltaMetricMetadata struct {
 	logStream                  string
 }
 
+// deltaMetricKey identifies the series a data point belongs to for rate/delta
+// calculation. The start timestamp is part of the identity because OTLP signals
+// a counter reset by reporting a new start timestamp: a restarted counter must
+// begin a new series rather than be diffed against the value from before the
+// restart, which would report no change at all.
+type deltaMetricKey struct {
+	deltaMetricMetadata
+	startTimestamp pcommon.Timestamp
+}
+
 // numberDataPointSlice is a wrapper for pmetric.NumberDataPointSlice
 type numberDataPointSlice struct {
 	deltaMetricMetadata
@@ -154,7 +164,7 @@ func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationS
 
 	if dps.adjustToDelta {
 		var deltaVal any
-		mKey := aws.NewKey(dps.deltaMetricMetadata, labels)
+		mKey := aws.NewKey(deltaMetricKey{dps.deltaMetricMetadata, metric.StartTimestamp()}, labels)
 		deltaVal, retained = calculators.delta.Calculate(mKey, metricVal, metric.Timestamp().AsTime())
 
 		// If a delta to the previous data point could not be computed use the current metric value instead
@@ -442,7 +452,7 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentation
 
 	if dps.adjustToDelta {
 		var delta any
-		mKey := aws.NewKey(dps.deltaMetricMetadata, labels)
+		mKey := aws.NewKey(deltaMetricKey{dps.deltaMetricMetadata, metric.StartTimestamp()}, labels)
 		delta, retained = calculators.summary.Calculate(mKey, summaryMetricEntry{sum, count}, metric.Timestamp().AsTime())
 
 		// If a delta to the previous data point could not be computed use the current metric value instead
