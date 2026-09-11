@@ -196,33 +196,28 @@ func (s *Stream) run(ctx context.Context, dc doneCancel, streamClient StreamClie
 
 	// the result from read() is processed after cancel and wait,
 	// so we can set s.client = nil in case of a delayed Unimplemented.
-	// TODO: SA4023(related information): the lhs of the comparison is the 1st return value of this function call
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50420
-	err = s.read(ctx) //nolint:staticcheck
+	err = s.read(ctx)
 
 	// Wait for the writer to ensure that all waiters are known.
 	dc.cancel()
 	ww.Wait()
 
-	// TODO: SA4023: this comparison is always true
-	if err != nil { //nolint:staticcheck
-		// This branch is reached with an unimplemented status
-		// with or without the WaitForReady flag.
-		if status, ok := status.FromError(err); ok && status.Code() == codes.Unimplemented {
-			// This (client == nil) signals the controller to
-			// downgrade when all streams have returned in that
-			// status.
-			//
-			// This is a special case because we reset s.client,
-			// which sets up a downgrade after the streams return.
-			s.client = nil
-			s.telemetry.Logger.Info("arrow is not supported",
-				zap.String("message", status.Message()),
-			)
-		} else {
-			// All other cases, use the standard log handler.
-			s.logStreamError("reader", err)
-		}
+	// This branch is reached with an unimplemented status
+	// with or without the WaitForReady flag.
+	if status, ok := status.FromError(err); ok && status.Code() == codes.Unimplemented {
+		// This (client == nil) signals the controller to
+		// downgrade when all streams have returned in that
+		// status.
+		//
+		// This is a special case because we reset s.client,
+		// which sets up a downgrade after the streams return.
+		s.client = nil
+		s.telemetry.Logger.Info("arrow is not supported",
+			zap.String("message", status.Message()),
+		)
+	} else {
+		// All other cases, use the standard log handler.
+		s.logStreamError("reader", err)
 	}
 	if writeErr != nil {
 		s.logStreamError("writer", writeErr)
