@@ -978,7 +978,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{sequential_scan}'
-          - description: Disk space used by a table.
+          - description: Total disk space used by a table, including its indexes and TOAST data.
             name: postgresql.table.size
             sum:
               aggregationTemporality: 2
@@ -1144,7 +1144,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{sequential_scan}'
-          - description: Disk space used by a table.
+          - description: Total disk space used by a table, including its indexes and TOAST data.
             name: postgresql.table.size
             sum:
               aggregationTemporality: 2
@@ -1310,7 +1310,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{sequential_scan}'
-          - description: Disk space used by a table.
+          - description: Total disk space used by a table, including its indexes and TOAST data.
             name: postgresql.table.size
             sum:
               aggregationTemporality: 2
@@ -1476,7 +1476,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{sequential_scan}'
-          - description: Disk space used by a table.
+          - description: Total disk space used by a table, including its indexes and TOAST data.
             name: postgresql.table.size
             sum:
               aggregationTemporality: 2
@@ -1642,7 +1642,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{sequential_scan}'
-          - description: Disk space used by a table.
+          - description: Total disk space used by a table, including its indexes and TOAST data.
             name: postgresql.table.size
             sum:
               aggregationTemporality: 2
@@ -1808,7 +1808,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{sequential_scan}'
-          - description: Disk space used by a table.
+          - description: Total disk space used by a table, including its indexes and TOAST data.
             name: postgresql.table.size
             sum:
               aggregationTemporality: 2
