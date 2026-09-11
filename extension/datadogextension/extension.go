@@ -100,17 +100,25 @@ type datadogExtension struct {
 }
 
 var (
-	_ extensioncapabilities.ConfigWatcher   = (*datadogExtension)(nil)
-	_ extensioncapabilities.PipelineWatcher = (*datadogExtension)(nil)
-	_ componentstatus.Watcher               = (*datadogExtension)(nil)
+	_ extensioncapabilities.ConfigSnapshotWatcher = (*datadogExtension)(nil)
+	_ extensioncapabilities.PipelineWatcher       = (*datadogExtension)(nil)
+	_ componentstatus.Watcher                     = (*datadogExtension)(nil)
 )
 
-// NotifyConfig implements the extensioncapabilities.ConfigWatcher interface, which allows
+// NotifyConfigSnapshot implements the extensioncapabilities.ConfigSnapshotWatcher interface, which allows
 // this extension to be notified of the Collector's effective configuration.
 // This method is called during startup by the Collector's service after calling Start.
-func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) error {
+func (e *datadogExtension) NotifyConfigSnapshot(_ context.Context, configSnapshot extensioncapabilities.ConfigSnapshot) error {
 	e.configs.mutex.Lock()
 	defer e.configs.mutex.Unlock()
+
+	var conf *confmap.Conf
+
+	if configSnapshot.Effective() != nil {
+		conf = configSnapshot.Effective()
+	} else {
+		conf = confmap.New()
+	}
 
 	e.configs.collector = conf
 
