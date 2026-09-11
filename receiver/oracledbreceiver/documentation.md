@@ -1795,7 +1795,7 @@ Aggregated performance metrics for the top stored procedures by elapsed time, de
 | oracledb.rows_processed | The total number of rows that a query has read, returned, or affected during its execution (reporting delta). | Any Int | - |
 | oracledb.physical_read_bytes | The total number of bytes read from disk by a query (reporting delta). | Any Int | - |
 | oracledb.physical_write_bytes | The total number of bytes written to disk by a query (reporting delta). | Any Int | - |
-| oracledb.procedure.first_load_time | Earliest load time across the procedure's cached statements, in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS | Any Str | - |
+| oracledb.procedure.first_load_time | Earliest load time across the procedure's cached statements, in ISO 8601 format (UTC). | Any Str | - |
 | oracledb.procedure.last_active_time | The most recent time any of the procedure's cached statements were active, in ISO 8601 format (UTC). | Any Str | - |
 
 ### db.server.top_query

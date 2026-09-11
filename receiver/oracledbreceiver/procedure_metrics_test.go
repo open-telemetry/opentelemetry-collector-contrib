@@ -103,7 +103,7 @@ func procedureRow(service string, overrides map[string]string) metricRow {
 		"EXECUTIONS": "300413", "CPU_TIME": "39736887", "ELAPSED_TIME": "99172810",
 		"BUFFER_GETS": "3997614", "DISK_READS": "15", "DIRECT_WRITES": "10",
 		"ROWS_PROCESSED": "399856", "PHYSICAL_READ_BYTES": "400", "PHYSICAL_WRITE_BYTES": "18",
-		"FIRST_LOAD_TIME": "2025-12-31/23:00:00", "LAST_ACTIVE_TIME": "2026-01-01T12:00:00Z",
+		"FIRST_LOAD_TIME": "2025-12-31T23:00:00Z", "LAST_ACTIVE_TIME": "2026-01-01T12:00:00Z",
 	}
 	maps.Copy(row, overrides)
 	return row
