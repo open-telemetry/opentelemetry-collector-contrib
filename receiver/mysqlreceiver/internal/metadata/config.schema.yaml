@@ -343,6 +343,27 @@ $defs:
                 - "operation"
             default:
               - "operation"
+      mysql.innodb.redo_log.checkpoint.age:
+        description: "MysqlInnodbRedoLogCheckpointAgeMetricConfig provides config for the mysql.innodb.redo_log.checkpoint.age metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      mysql.innodb.redo_log.lsn.checkpoint:
+        description: "MysqlInnodbRedoLogLsnCheckpointMetricConfig provides config for the mysql.innodb.redo_log.lsn.checkpoint metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      mysql.innodb.redo_log.lsn.current:
+        description: "MysqlInnodbRedoLogLsnCurrentMetricConfig provides config for the mysql.innodb.redo_log.lsn.current metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       mysql.innodb.row_lock.wait.count:
         description: "MysqlInnodbRowLockWaitCountMetricConfig provides config for the mysql.innodb.row_lock.wait.count metric."
         type: object

@@ -212,10 +212,10 @@ func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error)
 		data["event_name"] = lr.EventName()
 	}
 
-	if lr.Body().Type() == pcommon.ValueTypeStr {
-		body := lr.Body().Str()
-		if !utf8.ValidString(body) {
-			return nil, errors.New("log record body contains invalid UTF-8")
+	if lr.Body().Type() != pcommon.ValueTypeEmpty {
+		body, err := p.valueToInterface(lr.Body(), 0)
+		if err != nil {
+			return nil, fmt.Errorf("log record body: %w", err)
 		}
 		data["body"] = body
 	}
@@ -284,13 +284,13 @@ func (*signingProcessor) marshalJCS(v any) ([]byte, error) {
 
 func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, error) {
 	if depth > jsonMaxDepth {
-		return nil, fmt.Errorf("attribute value exceeds nesting depth limit (%d)", jsonMaxDepth)
+		return nil, fmt.Errorf("value exceeds nesting depth limit (%d)", jsonMaxDepth)
 	}
 	switch v.Type() {
 	case pcommon.ValueTypeStr:
 		s := v.Str()
 		if !utf8.ValidString(s) {
-			return nil, errors.New("attribute string value contains invalid UTF-8")
+			return nil, errors.New("string value contains invalid UTF-8")
 		}
 		return s, nil
 	case pcommon.ValueTypeInt:

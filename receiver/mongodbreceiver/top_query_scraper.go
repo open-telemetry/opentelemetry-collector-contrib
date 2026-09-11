@@ -175,7 +175,7 @@ func (s *mongodbScraper) scrapeTopQueryLogs(ctx context.Context) (plog.Logs, err
 	}
 
 	rb := s.lb.NewResourceBuilder()
-	setResourceAttributes(rb, serverAddress, serverPort)
+	setResourceAttributes(rb, serverAddress, serverPort, s.mongoVersion)
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
 
 	s.lastScrapeTime = serverNow
