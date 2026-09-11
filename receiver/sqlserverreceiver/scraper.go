@@ -183,19 +183,19 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 // statistics down with it. mdatagen always sets every attribute declared for an event, so the
 // attribute has to be removed after the fact rather than skipped while recording.
 //
-// A single scrape emits one resource with one scope, so the records are reached directly. The event
-// name must still be checked: db.server.query_plan records sit in the same scope and have to keep
-// their sqlserver.query_plan.
+// The event name must be checked: db.server.query_plan records sit in the same scope and have to
+// keep their sqlserver.query_plan.
 func removeQueryPlanFromTopQuery(logs plog.Logs) {
 	resourceLogs := logs.ResourceLogs()
-	if resourceLogs.Len() == 0 {
-		return
-	}
-
-	logRecords := resourceLogs.At(0).ScopeLogs().At(0).LogRecords()
-	for i := 0; i < logRecords.Len(); i++ {
-		if logRecord := logRecords.At(i); logRecord.EventName() == "db.server.top_query" {
-			logRecord.Attributes().Remove("sqlserver.query_plan")
+	for i := 0; i < resourceLogs.Len(); i++ {
+		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			logRecords := scopeLogs.At(j).LogRecords()
+			for k := 0; k < logRecords.Len(); k++ {
+				if logRecord := logRecords.At(k); logRecord.EventName() == "db.server.top_query" {
+					logRecord.Attributes().Remove("sqlserver.query_plan")
+				}
+			}
 		}
 	}
 }
