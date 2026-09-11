@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: internal/k8sinventory
+
+note: Limit the List used solely to obtain a resourceVersion for the watch, avoiding a full collection fetch
+
+issues: [50600]
+
+subtext: "Affects the `k8s_events` receiver and the `k8sobjects` receiver in `mode: watch`."
+
+change_logs: [user]
