@@ -229,6 +229,10 @@ component_management:
     name: exporter_mezmo
     paths:
     - exporter/mezmoexporter/**
+  - component_id: exporter_nats
+    name: exporter_nats
+    paths:
+    - exporter/natsexporter/**
   - component_id: exporter_opensearch
     name: exporter_opensearch
     paths:
