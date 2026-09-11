@@ -1528,6 +1528,7 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		querySampleSimpleColumns := []string{
 			querySampleColumnClientHostname,
 			querySampleColumnQueryStart,
+			querySampleColumnBackendStart,
 			querySampleColumnWaitEventType,
 			querySampleColumnWaitEvent,
 			querySampleColumnQueryID,

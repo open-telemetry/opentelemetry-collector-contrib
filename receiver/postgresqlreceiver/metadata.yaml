@@ -152,6 +152,9 @@ attributes:
   postgresql.application_name:
     description: Name of the application that is connected to this backend.
     type: string
+  postgresql.backend.connection.start:
+    description: UTC timestamp (RFC3339) when this backend was started.
+    type: string
   postgresql.blocking.lock.mode:
     description: The lock mode being requested by the blocked session (e.g. RowExclusiveLock, AccessExclusiveLock). Empty string when not blocked.
     type: string
@@ -298,6 +301,7 @@ events:
       - user.name
       - postgresql.state
       - postgresql.pid
+      - postgresql.backend.connection.start
       - postgresql.application_name
       - network.peer.address
       - network.peer.port
