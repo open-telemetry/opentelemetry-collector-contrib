@@ -1,0 +1,24 @@
+change_type: breaking
+
+component: processor/signing
+
+note: Include the log record body in the signed payload whatever its type. Previously only a string body was signed, so a record with a structured body and a record with no body produced identical canonical bytes and shared a signature.
+
+issues: [50911]
+
+subtext: |
+  The body is now routed through the same `valueToInterface` conversion as
+  attributes, which handles every `pcommon.Value` type, enforces the existing
+  nesting depth cap, and preserves the UTF-8 validation that previously guarded
+  the string-only path. An unset body is still omitted rather than encoded as
+  null, so records without a body are unaffected.
+
+  This changes the canonical form for any record carrying a non-string body, so
+  signatures produced by earlier versions over such records will not reproduce.
+
+  Two new failure modes follow from the body no longer being discarded: a record
+  whose structured body pushes the canonical payload past the 2 MiB limit, or
+  whose body nests deeper than 128 levels, now fails to sign where it previously
+  signed with the body silently omitted.
+
+change_logs: []
