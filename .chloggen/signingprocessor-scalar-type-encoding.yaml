@@ -1,0 +1,16 @@
+change_type: breaking
+
+component: processor/signing
+
+note: Wrap attribute scalar values in type-tagged objects (`{"intValue":"…"}`, `{"stringValue":"…"}`, etc.) to eliminate scalar type collisions in the JCS-canonical signed payload.
+
+issues: [50884]
+
+subtext: |
+  Previously, `PutInt("k", 123)` and `PutStr("k", "123")` produced identical
+  canonical JSON, so one signature covered both values. Each scalar type is now
+  wrapped in a single-key object keyed by type name (matching OTLP/JSON
+  conventions), making every type distinct. Existing signatures are invalidated
+  by this change.
+  `SeverityNumber` and `SeverityText` are no longer included in the signed
+  payload; the audit logging spec marks them as SHOULD NOT.
