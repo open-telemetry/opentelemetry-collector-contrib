@@ -151,3 +151,10 @@ azuredataexplorer/9:
   cluster_uri: "https://CLUSTER.kusto.windows.net"
   # weather to use the default azure auth
   use_azure_auth: true
+azuredataexplorer/10:
+  # Kusto cluster uri
+  cluster_uri: "https://CLUSTER.kusto.windows.net"
+  # weather to use the default azure auth
+  use_azure_auth: true
+  # opt in to exporting metric exemplars
+  include_exemplars: true
