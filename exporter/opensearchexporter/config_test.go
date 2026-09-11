@@ -118,6 +118,25 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "otel_v1_ism"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.ClientConfig.Endpoint = sampleEndpoint
+				config.BulkAction = defaultBulkAction
+				config.MappingsSettings = MappingsSettings{
+					Mode:                "otel-v1",
+					ManageIndexTemplate: true,
+					IndexTemplateFile:   "/etc/otelcol/otel-v1-overlay.json",
+					ISM: ISMConfig{
+						Enabled:             true,
+						RolloverMinSize:     "25gb",
+						RolloverMinIndexAge: "12h",
+						RolloverPriority:    200,
+					},
+				}
+			}),
+			configValidateAssert: assert.NoError,
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "dynamic_log_indexing"),
 			expected: withDefaultConfig(func(config *Config) {
 				config.ClientConfig.Endpoint = sampleEndpoint
@@ -371,6 +390,80 @@ func TestOTelV1MappingModeValidation(t *testing.T) {
 				config.ClientConfig.Endpoint = "http://localhost:9200"
 				config.MappingsSettings.Mode = tt.mode
 				config.MappingsSettings.ManageIndexTemplate = tt.manageTpl
+			})
+			err := cfg.Validate()
+			if tt.expectError != "" {
+				assert.ErrorContains(t, err, tt.expectError)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestISMAndCustomMappingValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		mutate      func(*Config)
+		expectError string
+	}{
+		{
+			name: "ism enabled with otel-v1 is valid",
+			mutate: func(c *Config) {
+				c.MappingsSettings.Mode = "otel-v1"
+				c.MappingsSettings.ISM.Enabled = true
+			},
+		},
+		{
+			name: "ism enabled with ss4o is invalid",
+			mutate: func(c *Config) {
+				c.MappingsSettings.Mode = "ss4o"
+				c.MappingsSettings.ISM.Enabled = true
+			},
+			expectError: errISMInvalidMode.Error(),
+		},
+		{
+			name: "ism enabled with dynamic logs_index is invalid",
+			mutate: func(c *Config) {
+				c.MappingsSettings.Mode = "otel-v1"
+				c.MappingsSettings.ISM.Enabled = true
+				c.LogsIndex = "otel-logs-%{service.name}"
+			},
+			expectError: errISMDynamicLogsIndex.Error(),
+		},
+		{
+			name: "ism enabled with dynamic traces_index is invalid",
+			mutate: func(c *Config) {
+				c.MappingsSettings.Mode = "otel-v1"
+				c.MappingsSettings.ISM.Enabled = true
+				c.TracesIndex = "otel-traces-%{service.name}"
+			},
+			expectError: errISMDynamicTracesIndex.Error(),
+		},
+		{
+			name: "index_template_file with otel-v1 and manage_index_template is valid",
+			mutate: func(c *Config) {
+				c.MappingsSettings.Mode = "otel-v1"
+				c.MappingsSettings.ManageIndexTemplate = true
+				c.MappingsSettings.IndexTemplateFile = "/tmp/custom.json"
+			},
+		},
+		{
+			name: "index_template_file without manage_index_template is invalid",
+			mutate: func(c *Config) {
+				c.MappingsSettings.Mode = "otel-v1"
+				c.MappingsSettings.ManageIndexTemplate = false
+				c.MappingsSettings.IndexTemplateFile = "/tmp/custom.json"
+			},
+			expectError: errIndexTemplateFileInvalidMode.Error(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := withDefaultConfig(func(config *Config) {
+				config.ClientConfig.Endpoint = "http://localhost:9200"
+				tt.mutate(config)
 			})
 			err := cfg.Validate()
 			if tt.expectError != "" {
