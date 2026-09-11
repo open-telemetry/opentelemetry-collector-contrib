@@ -497,6 +497,10 @@ component_management:
     name: pkg_ottl
     paths:
     - pkg/ottl/**
+  - component_id: pkg_ottl_contexts_xprofile
+    name: pkg_ottl_contexts_xprofile
+    paths:
+    - pkg/ottl/contexts/xprofile/**
   - component_id: pkg_pdatautil
     name: pkg_pdatautil
     paths:
