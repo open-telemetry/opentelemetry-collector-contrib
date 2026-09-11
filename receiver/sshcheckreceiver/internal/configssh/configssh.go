@@ -125,6 +125,7 @@ func (scs *SSHClientSettings) ToClient(component.Host, component.TelemetrySettin
 			Auth:            []ssh.AuthMethod{auth},
 			HostKeyCallback: hkc,
 			ClientVersion:   defaultClientVersion,
+			Timeout:         scs.Timeout,
 		},
 		DialFunc: ssh.Dial,
 	}, nil
