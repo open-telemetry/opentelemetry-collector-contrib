@@ -1788,3 +1788,24 @@ func TestTopProcedureRanksByElapsedTimeDelta(t *testing.T) {
 	assert.Equal(t, "[sales].[usp_UpdateInventory]", name.Str(),
 		"the procedure with the largest elapsed-time delta should win, not the largest cumulative total")
 }
+
+// procedureLookbackSeconds has no config knob of its own: on the first scrape it falls back to
+// CollectionInterval, and afterwards it tracks the actual time since the last successful scrape
+// (plus a fixed scheduling buffer), mirroring how oracledbreceiver derives its own lookback window.
+func TestProcedureLookbackSeconds(t *testing.T) {
+	t.Run("falls back to the collection interval on the first scrape", func(t *testing.T) {
+		scraper := newTopProcedureScraper(t)
+		scraper.config.TopProcedureCollection.CollectionInterval = 90 * time.Second
+
+		assert.Equal(t, 90, scraper.procedureLookbackSeconds())
+	})
+
+	t.Run("tracks elapsed time since the last scrape plus the scheduling buffer", func(t *testing.T) {
+		scraper := newTopProcedureScraper(t)
+		scraper.lastExecutionTimestamp = time.Now().Add(-65 * time.Second)
+
+		got := scraper.procedureLookbackSeconds()
+		assert.GreaterOrEqual(t, got, 75, "expected roughly 65s elapsed plus a 10s buffer")
+		assert.LessOrEqual(t, got, 80, "expected roughly 65s elapsed plus a 10s buffer, with some slack for test timing")
+	})
+}

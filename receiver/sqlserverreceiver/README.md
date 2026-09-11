@@ -109,7 +109,10 @@ The following settings are optional:
     once per interval: the scraper still runs on the global interval and skips the collection until
     this much time has passed since the last one, so a value below the global interval has no
     effect. It also sets the window the reported deltas cover, so raising it rolls the counters up
-    over a longer period.
+    over a longer period. Candidates are also bounded to procedures that actually ran within that
+    same window (derived automatically from the time since the last successful scrape, with no
+    separate setting to tune), so a procedure is only sampled if it executed recently, not merely
+    because it has a large lifetime total.
 
 Direct connection options (optional, but all must be specified to enable):
 - `username`: The username used to connect to the SQL Server instance.

@@ -25,12 +25,13 @@ SELECT TOP (@maxSampleCount)
     ps.total_spills,
     ps.min_elapsed_time,
     ps.max_elapsed_time,
-    CONVERT(NVARCHAR, TODATETIMEOFFSET(ps.last_execution_time, DATEPART(TZOFFSET, SYSDATETIMEOFFSET())), 126) AS last_execution_time
+    CONVERT(NVARCHAR(34), TODATETIMEOFFSET(ps.last_execution_time, DATEPART(TZOFFSET, SYSDATETIMEOFFSET())), 126) AS last_execution_time
 FROM sys.dm_exec_procedure_stats AS ps
 WHERE ps.database_id > 4
   AND ps.execution_count > 0
   AND DB_NAME(ps.database_id) IS NOT NULL
   AND OBJECT_NAME(ps.object_id, ps.database_id) IS NOT NULL
   AND OBJECT_SCHEMA_NAME(ps.object_id, ps.database_id) IS NOT NULL
+  AND DATEADD(ms, ps.last_elapsed_time / 1000, ps.last_execution_time) > DATEADD(SECOND, @lookbackTime, GETDATE())
 %s
-ORDER BY ps.total_elapsed_time DESC
+ORDER BY ps.last_execution_time DESC
