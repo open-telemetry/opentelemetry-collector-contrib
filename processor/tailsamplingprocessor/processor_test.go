@@ -1113,6 +1113,7 @@ type mockPolicyEvaluator struct {
 	mu sync.Mutex
 
 	nextDecision    samplingpolicy.Decision
+	nextThreshold   pkgsampling.Threshold
 	nextError       error
 	evaluationCount int
 }
@@ -1132,7 +1133,10 @@ func (m *mockPolicyEvaluator) Evaluate(context.Context, pcommon.TraceID, *sampli
 
 func (m *mockPolicyEvaluator) EvaluateWithThreshold(ctx context.Context, traceID pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, pkgsampling.Threshold, error) {
 	d, err := m.Evaluate(ctx, traceID, trace)
-	return d, pkgsampling.AlwaysSampleThreshold, err
+	m.mu.Lock()
+	th := m.nextThreshold
+	m.mu.Unlock()
+	return d, th, err
 }
 
 func (*mockPolicyEvaluator) IsStateful() bool {
@@ -1143,6 +1147,12 @@ func (m *mockPolicyEvaluator) SetDecision(decision samplingpolicy.Decision) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.nextDecision = decision
+}
+
+func (m *mockPolicyEvaluator) SetThreshold(threshold pkgsampling.Threshold) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.nextThreshold = threshold
 }
 
 func (m *mockPolicyEvaluator) SetError(nextError error) {

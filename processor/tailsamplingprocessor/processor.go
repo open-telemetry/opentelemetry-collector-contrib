@@ -53,8 +53,9 @@ type policy struct {
 // needed by any sampler implementations.
 type TraceData struct {
 	samplingpolicy.TraceData
-	FinalDecision samplingpolicy.Decision
-	PolicyName    string
+	FinalDecision  samplingpolicy.Decision
+	FinalThreshold pkgsampling.Threshold
+	PolicyName     string
 
 	arrivalTime   time.Time
 	decisionTime  time.Time
@@ -613,6 +614,9 @@ func (tsp *tailSamplingSpanProcessor) processCachedTrace(traceID pcommon.TraceID
 			}
 			sampling.SetBoolAttrOnScopeSpans(traceTd, "tailsampling.cached_decision", true)
 		}
+		if tsp.useTracestate {
+			sampling.WriteEffectiveThreshold(tsp.ctx, traceTd, metadata.Threshold, tsp.telemetry.ProcessorTailSamplingCountSpansWithUnparseableTracestate)
+		}
 		tsp.forwardSpans(tsp.ctx, traceTd)
 		tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
 			Add(tsp.ctx, spanCount, attrSampledTrue)
@@ -820,12 +824,13 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 
 	for _, c := range notDropped {
 		c.trace.decisionTime = time.Now()
-		decision, policyName := tsp.makeDecision(ctx, numDropPolicies, c.id, c.data, metrics)
+		decision, policyName, threshold := tsp.makeDecision(ctx, numDropPolicies, c.id, c.data, metrics)
 		globalTracesSampledByDecision[decision]++
 		// Keep release paths working with tail storage by attaching the
 		// retrieved batches back to trace state for this decision.
 		c.trace.ReceivedBatches = c.data.ReceivedBatches
 		c.trace.FinalDecision = decision
+		c.trace.FinalThreshold = threshold
 		c.trace.PolicyName = policyName
 
 		if decision == samplingpolicy.Sampled {
@@ -876,7 +881,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 
 // makeDecision evaluates tsp.policies[numDropPolicies:], skipping a
 // drop-policy prefix the caller already ruled out via evaluateDropPolicies.
-func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, numDropPolicies int, id pcommon.TraceID, traceData *samplingpolicy.TraceData, metrics *policyEvaluationMetrics) (samplingpolicy.Decision, string) {
+func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, numDropPolicies int, id pcommon.TraceID, traceData *samplingpolicy.TraceData, metrics *policyEvaluationMetrics) (samplingpolicy.Decision, string, pkgsampling.Threshold) {
 	finalDecision := samplingpolicy.NotSampled
 	samplingDecisions := map[samplingpolicy.Decision]*policy{
 		samplingpolicy.Error:      nil,
@@ -889,7 +894,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, numDropP
 		samplingpolicy.Dropped:          nil,
 	}
 
-	effectiveThreshold := pkgsampling.NeverSampleThreshold
+	threshold := pkgsampling.Threshold{}
 	haveThreshold := false
 
 	for i := numDropPolicies; i < len(tsp.policies); i++ {
@@ -909,15 +914,18 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, numDropP
 
 		metrics.addDecision(i, decision, traceData.SpanCount, int64(traceData.SizeBytes))
 
-		// We associate the first policy with the sampling decision to understand what policy sampled a span
+		// Keep track of which policy was used so that we can understand which
+		// policy sampled/dropped a span.
 		if samplingDecisions[decision] == nil {
 			samplingDecisions[decision] = p
 		}
 
 		if decision == samplingpolicy.Sampled {
-			if !haveThreshold || pkgsampling.ThresholdLessThan(th, effectiveThreshold) {
-				effectiveThreshold = th
+			if !haveThreshold || pkgsampling.ThresholdLessThan(th, threshold) {
+				threshold = th
 				haveThreshold = true
+				// Ensure we record the policy that will match the span's threshold.
+				samplingDecisions[samplingpolicy.Sampled] = p
 			}
 		}
 
@@ -954,8 +962,8 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, numDropP
 		sampling.SetAttrOnScopeSpans(traceData.ReceivedBatches, "tailsampling.policy", sampledPolicy.name)
 	}
 
-	if finalDecision == samplingpolicy.Sampled && haveThreshold && tsp.useTracestate {
-		sampling.WriteEffectiveThreshold(ctx, traceData.ReceivedBatches, effectiveThreshold, tsp.telemetry.ProcessorTailSamplingCountSpansWithUnparseableTracestate)
+	if finalDecision == samplingpolicy.Sampled && tsp.useTracestate {
+		sampling.WriteEffectiveThreshold(ctx, traceData.ReceivedBatches, threshold, tsp.telemetry.ProcessorTailSamplingCountSpansWithUnparseableTracestate)
 	}
 
 	switch finalDecision {
@@ -967,12 +975,12 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, numDropP
 		metrics.decisionDropped++
 	}
 
-	return finalDecision, getPolicyName(sampledPolicy)
+	return finalDecision, getPolicyName(sampledPolicy), threshold
 }
 
 // makeDecisionOnSpanIngest is used by span-ingest mode. It only returns
 // terminal decisions at ingest time. All other outcomes remain pending.
-func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceID, trace *samplingpolicy.TraceData, metrics *policyEvaluationMetrics) (samplingpolicy.Decision, string) {
+func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceID, trace *samplingpolicy.TraceData, metrics *policyEvaluationMetrics) (samplingpolicy.Decision, string, pkgsampling.Threshold) {
 	ctx := context.Background()
 	// Track whether a drop policy didn't match this batch. A drop policy
 	// returning NotSampled means it didn't match these spans but could still
@@ -1000,7 +1008,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceI
 
 		if decision == samplingpolicy.Dropped {
 			metrics.decisionDropped++
-			return samplingpolicy.Dropped, p.name
+			return samplingpolicy.Dropped, p.name, pkgsampling.AlwaysSampleThreshold
 		}
 
 		if p.isDrop {
@@ -1018,10 +1026,10 @@ func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceI
 			if tsp.useTracestate {
 				sampling.WriteEffectiveThreshold(ctx, trace.ReceivedBatches, th, tsp.telemetry.ProcessorTailSamplingCountSpansWithUnparseableTracestate)
 			}
-			return samplingpolicy.Sampled, p.name
+			return samplingpolicy.Sampled, p.name, th
 		}
 	}
-	return samplingpolicy.Pending, ""
+	return samplingpolicy.Pending, "", pkgsampling.AlwaysSampleThreshold
 }
 
 func groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]spanAndScope {
@@ -1108,7 +1116,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 				ReceivedBatches: ptrace.NewTraces(),
 			}
 			appendToTraces(spanIngestTraceData.ReceivedBatches, rss)
-			decision, policyName := tsp.makeDecisionOnSpanIngest(id, &spanIngestTraceData, metrics)
+			decision, policyName, threshold := tsp.makeDecisionOnSpanIngest(id, &spanIngestTraceData, metrics)
 			tsp.recordImmediateDecisionMetrics(decision, metrics, time.Since(evaluationStart))
 
 			if decision == samplingpolicy.Sampled || decision == samplingpolicy.Dropped {
@@ -1128,6 +1136,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 				actualData.FinalDecision = decision
 				actualData.PolicyName = policyName
 				if decision == samplingpolicy.Sampled {
+					actualData.FinalThreshold = threshold
 					tsp.releaseSampledTrace(tsp.ctx, id, actualData)
 				} else {
 					tsp.releaseNotSampledTrace(id, actualData)
@@ -1155,6 +1164,9 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 	case samplingpolicy.Sampled:
 		traceTd := ptrace.NewTraces()
 		appendToTraces(traceTd, rss)
+		if tsp.useTracestate {
+			sampling.WriteEffectiveThreshold(tsp.ctx, traceTd, actualData.FinalThreshold, tsp.telemetry.ProcessorTailSamplingCountSpansWithUnparseableTracestate)
+		}
 		tsp.forwardSpans(tsp.ctx, traceTd)
 	case samplingpolicy.NotSampled:
 		// TODO: I don't think this is correct? If it isn't sampled shouldn't we just do nothing?
@@ -1250,7 +1262,10 @@ func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, i
 	for _, hook := range tsp.sampledHooks {
 		hook(ctx, id, td)
 	}
-	tsp.sampledIDCache.Put(id, cache.DecisionMetadata{PolicyName: td.PolicyName})
+	tsp.sampledIDCache.Put(id, cache.DecisionMetadata{
+		PolicyName: td.PolicyName,
+		Threshold:  td.FinalThreshold,
+	})
 	tsp.forwardSpans(ctx, td.ReceivedBatches)
 	_, ok := tsp.sampledIDCache.Get(id)
 	if ok {
