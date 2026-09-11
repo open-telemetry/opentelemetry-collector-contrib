@@ -5,6 +5,8 @@ package rollingspanlatencyprocessor // import "github.com/open-telemetry/opentel
 
 import (
 	"context"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -38,14 +40,22 @@ type rollingSpanLatencyProcessor struct {
 }
 
 // buildKey returns a composite stats-map key from an ordered slice of resource
-// attribute values and the span name. \x00 is the separator; it cannot appear
-// in OTel attribute values in practice, so collisions are not possible.
+// attribute values and the span name. Each component is length-prefixed
+// (decimal length + ':' + literal bytes) rather than joined with a separator
+// character, so the encoding stays unambiguous regardless of what bytes the
+// component values contain — including a separator byte itself, since pcommon
+// string attributes are arbitrary Go strings with no forbidden bytes.
 func buildKey(resourceVals []string, spanName string) string {
-	key := spanName
+	var b strings.Builder
 	for _, v := range resourceVals {
-		key = v + "\x00" + key
+		b.WriteString(strconv.Itoa(len(v)))
+		b.WriteByte(':')
+		b.WriteString(v)
 	}
-	return key
+	b.WriteString(strconv.Itoa(len(spanName)))
+	b.WriteByte(':')
+	b.WriteString(spanName)
+	return b.String()
 }
 
 // newRollingSpanLatencyProcessor builds the rolling_span_latency processor,
@@ -151,9 +161,11 @@ func (p *rollingSpanLatencyProcessor) evict(now time.Time) {
 			zap.Int64("dropped_since_last_sweep", sinceLastSweep),
 		}
 		// Churn warning: evicted count exceeded the configured ratio of the
-		// post-eviction map size. This indicates keys are turning over rapidly,
+		// pre-eviction map size. This indicates keys are turning over rapidly,
 		// which often means span names contain high-cardinality values.
-		if after > 0 && float64(evicted)/float64(after) > p.config.ChurnWarningRatio {
+		// Deliberately keyed on before, not after: a sweep that evicts every
+		// tracked key (after=0) is the worst-case churn and must still warn.
+		if before > 0 && float64(evicted)/float64(before) > p.config.ChurnWarningRatio {
 			p.logger.Warn("high baseline key churn detected — check for high-cardinality span names",
 				fields...,
 			)
@@ -225,6 +237,13 @@ func (p *rollingSpanLatencyProcessor) processSpan(span ptrace.Span, resourceVals
 	effectiveStddev := preStddev
 	if effectiveStddev < minStddev {
 		effectiveStddev = minStddev
+	}
+	if effectiveStddev == 0 {
+		// No meaningful deviation count can be computed against a baseline
+		// with zero variance (only possible when min_stddev is also 0).
+		// Dividing by zero below would produce +Inf, which compares >= any
+		// finite threshold and would mislabel every span as very_slow.
+		return
 	}
 
 	deviations := (durationNs - preMean) / effectiveStddev

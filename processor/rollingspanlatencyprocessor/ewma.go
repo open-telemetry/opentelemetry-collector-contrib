@@ -31,7 +31,6 @@ func (s *spanStats) update(durationNs float64, now time.Time, halfLife time.Dura
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	alpha := s.decayAlpha(now, halfLife)
 	s.lastSeen = now
 	s.count++
 
@@ -39,6 +38,18 @@ func (s *spanStats) update(durationNs float64, now time.Time, halfLife time.Dura
 		s.mean = durationNs
 		s.variance = 0
 		return s.mean, 0
+	}
+
+	// Floor alpha at 1/count so that samples arriving with little or no
+	// elapsed wall-clock time between them (e.g. spans in the same
+	// ConsumeTraces batch) still contribute a meaningful weight instead of
+	// collapsing to alpha≈0 and freezing the baseline at the first sample.
+	// This makes a same-instant burst behave like a running (Welford) mean
+	// until enough real time has elapsed for the half-life decay to exceed
+	// 1/count, at which point time-based decay takes over as intended.
+	alpha := s.decayAlpha(now, halfLife)
+	if floor := 1 / float64(s.count); floor > alpha {
+		alpha = floor
 	}
 
 	diff := durationNs - s.mean
