@@ -1,0 +1,6 @@
+change_type: enhancement
+component: pkg/ottl
+note: Allow `Concat` to accept slice values produced by paths and converter expressions.
+issues: [27821, 38690]
+subtext:
+change_logs: [user]

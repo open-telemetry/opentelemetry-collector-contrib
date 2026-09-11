@@ -1,0 +1,9 @@
+change_type: bug_fix
+
+component: receiver/receiver_creator
+
+note: Log configuration annotations are no longer applied to subsequently discovered pods
+
+issues: [50818]
+
+change_logs: [user]
