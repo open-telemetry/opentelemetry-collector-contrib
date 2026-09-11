@@ -73,19 +73,29 @@ func (r *rabbitmqScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	var scrapeErrors scrapererror.ScrapeErrors
+	var clusterName *string
+	if r.cfg.MetricsBuilderConfig.ResourceAttributes.RabbitmqClusterName.Enabled {
+		var err error
+		name, err := r.client.GetClusterName(ctx)
+		if err != nil {
+			scrapeErrors.AddPartial(0, fmt.Errorf("failed to collect cluster name: %w", err))
+		} else {
+			clusterName = &name
+		}
+	}
 
 	// Collect queue metrics
-	if err := r.collectQueueMetrics(ctx, now); err != nil {
+	if err := r.collectQueueMetrics(ctx, now, clusterName); err != nil {
 		scrapeErrors.AddPartial(0, fmt.Errorf("failed to collect queue metrics: %w", err))
 	}
 
 	// Collect node metrics
-	if err := r.collectNodeMetrics(ctx, now); err != nil {
+	if err := r.collectNodeMetrics(ctx, now, clusterName); err != nil {
 		scrapeErrors.AddPartial(0, fmt.Errorf("failed to collect node metrics: %w", err))
 	}
 
 	// Collect exchange metrics
-	if err := r.collectExchangeMetrics(ctx, now); err != nil {
+	if err := r.collectExchangeMetrics(ctx, now, clusterName); err != nil {
 		scrapeErrors.AddPartial(0, fmt.Errorf("failed to collect exchange metrics: %w", err))
 	}
 
@@ -103,7 +113,7 @@ func (r *rabbitmqScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	return metrics, err
 }
 
-func (r *rabbitmqScraper) collectQueueMetrics(ctx context.Context, now pcommon.Timestamp) error {
+func (r *rabbitmqScraper) collectQueueMetrics(ctx context.Context, now pcommon.Timestamp, clusterName *string) error {
 	queues, err := r.client.GetQueues(ctx)
 	if err != nil {
 		return err
@@ -111,35 +121,35 @@ func (r *rabbitmqScraper) collectQueueMetrics(ctx context.Context, now pcommon.T
 
 	// Collect metrics for each queue
 	for _, queue := range queues {
-		r.collectQueue(queue, now)
+		r.collectQueue(queue, now, clusterName)
 	}
 	return nil
 }
 
-func (r *rabbitmqScraper) collectNodeMetrics(ctx context.Context, now pcommon.Timestamp) error {
+func (r *rabbitmqScraper) collectNodeMetrics(ctx context.Context, now pcommon.Timestamp, clusterName *string) error {
 	nodes, err := r.client.GetNodes(ctx)
 	if err != nil {
 		return err
 	}
 	for _, node := range nodes {
-		r.collectNode(node, now)
+		r.collectNode(node, now, clusterName)
 	}
 	return nil
 }
 
-func (r *rabbitmqScraper) collectExchangeMetrics(ctx context.Context, now pcommon.Timestamp) error {
+func (r *rabbitmqScraper) collectExchangeMetrics(ctx context.Context, now pcommon.Timestamp, clusterName *string) error {
 	exchanges, err := r.client.GetExchanges(ctx)
 	if err != nil {
 		return err
 	}
 	for _, exchange := range exchanges {
-		r.collectExchange(exchange, now)
+		r.collectExchange(exchange, now, clusterName)
 	}
 	return nil
 }
 
 // collectQueue collects metrics
-func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestamp) {
+func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestamp, clusterName *string) {
 	r.mb.RecordRabbitmqConsumerCountDataPoint(now, queue.Consumers)
 	r.mb.RecordRabbitmqMessageCurrentDataPoint(now, queue.UnacknowledgedMessages, metadata.AttributeMessageStateUnacknowledged)
 	r.mb.RecordRabbitmqMessageCurrentDataPoint(now, queue.ReadyMessages, metadata.AttributeMessageStateReady)
@@ -176,11 +186,12 @@ func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestam
 	rb.SetRabbitmqQueueName(queue.Name)
 	rb.SetRabbitmqNodeName(queue.Node)
 	rb.SetRabbitmqVhostName(queue.VHost)
+	setClusterName(rb, clusterName)
 	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 // collectNode collects metrics for a specific RabbitMQ node
-func (r *rabbitmqScraper) collectNode(node *models.Node, now pcommon.Timestamp) {
+func (r *rabbitmqScraper) collectNode(node *models.Node, now pcommon.Timestamp, clusterName *string) {
 	r.mb.RecordRabbitmqNodeDiskFreeDataPoint(now, node.DiskFree)
 	r.mb.RecordRabbitmqNodeDiskFreeLimitDataPoint(now, node.DiskFreeLimit)
 	r.mb.RecordRabbitmqNodeDiskFreeAlarmDataPoint(now, boolToInt64(node.DiskFreeAlarm))
@@ -275,11 +286,12 @@ func (r *rabbitmqScraper) collectNode(node *models.Node, now pcommon.Timestamp) 
 
 	rb := r.mb.NewResourceBuilder()
 	rb.SetRabbitmqNodeName(node.Name)
+	setClusterName(rb, clusterName)
 	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 // collectExchange collects metrics for a specific RabbitMQ exchange
-func (r *rabbitmqScraper) collectExchange(exchange *models.Exchange, now pcommon.Timestamp) {
+func (r *rabbitmqScraper) collectExchange(exchange *models.Exchange, now pcommon.Timestamp, clusterName *string) {
 	r.mb.RecordRabbitmqExchangeMessagesPublishedInDataPoint(now, exchange.MessageStats.PublishIn)
 	r.mb.RecordRabbitmqExchangeMessagesPublishedOutDataPoint(now, exchange.MessageStats.PublishOut)
 
@@ -287,7 +299,14 @@ func (r *rabbitmqScraper) collectExchange(exchange *models.Exchange, now pcommon
 	rb.SetRabbitmqExchangeName(exchange.Name)
 	rb.SetRabbitmqExchangeType(exchange.Type)
 	rb.SetRabbitmqVhostName(exchange.VHost)
+	setClusterName(rb, clusterName)
 	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+}
+
+func setClusterName(rb *metadata.ResourceBuilder, clusterName *string) {
+	if clusterName != nil {
+		rb.SetRabbitmqClusterName(*clusterName)
+	}
 }
 
 func boolToInt64(b bool) int64 {

@@ -25,6 +25,9 @@ const (
 
 	// exchangePath is the endpoint for RabbitMQ exchanges.
 	exchangePath = "/api/exchanges"
+
+	// clusterNamePath is the endpoint for the RabbitMQ cluster name.
+	clusterNamePath = "/api/cluster-name"
 )
 
 type client interface {
@@ -34,6 +37,8 @@ type client interface {
 	GetNodes(ctx context.Context) ([]*models.Node, error)
 	// GetExchanges calls "/api/exchanges" endpoint to get list of exchanges for the target node
 	GetExchanges(ctx context.Context) ([]*models.Exchange, error)
+	// GetClusterName calls "/api/cluster-name" endpoint to get the cluster name.
+	GetClusterName(ctx context.Context) (string, error)
 }
 
 var _ client = (*rabbitmqClient)(nil)
@@ -98,6 +103,17 @@ func (c *rabbitmqClient) GetExchanges(ctx context.Context) ([]*models.Exchange, 
 	}
 
 	return exchanges, nil
+}
+
+func (c *rabbitmqClient) GetClusterName(ctx context.Context) (string, error) {
+	var clusterName models.ClusterName
+
+	if err := c.get(ctx, clusterNamePath, &clusterName); err != nil {
+		c.logger.Debug("Failed to retrieve cluster name", zap.Error(err))
+		return "", err
+	}
+
+	return clusterName.Name, nil
 }
 
 func (c *rabbitmqClient) get(ctx context.Context, path string, respObj any) error {
