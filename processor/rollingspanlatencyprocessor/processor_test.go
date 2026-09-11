@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/noop"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 // errMeter is a metric.Meter stub whose Int64ObservableGauge always errors.
@@ -58,6 +60,17 @@ func newTestProcessor(t *testing.T, cfg *Config) (*rollingSpanLatencyProcessor, 
 	p, ok := tp.(*rollingSpanLatencyProcessor)
 	require.True(t, ok, "expected *rollingSpanLatencyProcessor, got %T", tp)
 	return p, sink
+}
+
+// newTestProcessorWithObservedLogs is newTestProcessorWithClock plus a zap
+// observed logger wired into p.logger, for tests that need to assert on log
+// output.
+func newTestProcessorWithObservedLogs(t *testing.T, cfg *Config) (*rollingSpanLatencyProcessor, *observer.ObservedLogs, *fakeClock) {
+	t.Helper()
+	p, _, clock := newTestProcessorWithClock(t, cfg)
+	core, logs := observer.New(zap.WarnLevel)
+	p.logger = zap.New(core)
+	return p, logs, clock
 }
 
 // fakeClock is an injectable, manually-advanced stand-in for time.Now. Tests
@@ -112,6 +125,28 @@ func makeTraces(resAttrs map[string]string, spanName string, durationNs int64, n
 	endNs := now.UnixNano()
 	sp.SetStartTimestamp(pcommon.Timestamp(endNs - durationNs))
 	sp.SetEndTimestamp(pcommon.Timestamp(endNs))
+	return td
+}
+
+// makeTracesBatch builds a ptrace.Traces containing one span per entry in
+// durationsNs, all in the same ResourceSpans/ScopeSpans — i.e. a single batch
+// as ConsumeTraces would receive it in one call. now sets every span's
+// event-time end timestamp identically, mirroring how little the processing
+// clock advances between spans processed within the same batch.
+func makeTracesBatch(resAttrs map[string]string, spanName string, durationsNs []int64, now time.Time) ptrace.Traces {
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	for k, v := range resAttrs {
+		rs.Resource().Attributes().PutStr(k, v)
+	}
+	ss := rs.ScopeSpans().AppendEmpty()
+	endNs := now.UnixNano()
+	for _, durationNs := range durationsNs {
+		sp := ss.Spans().AppendEmpty()
+		sp.SetName(spanName)
+		sp.SetStartTimestamp(pcommon.Timestamp(endNs - durationNs))
+		sp.SetEndTimestamp(pcommon.Timestamp(endNs))
+	}
 	return td
 }
 
@@ -465,6 +500,85 @@ func TestProcessor_OutOfOrderEventTimestampDoesNotCorruptBaseline(t *testing.T) 
 	assert.False(t, math.IsNaN(stddev), "stddev must not become NaN from an out-of-order event timestamp")
 }
 
+// TestProcessor_MixedDurationBatchBuildsRealBaseline processes a single batch
+// (one ConsumeTraces call) of spans with mixed durations. The processing
+// clock does not advance between spans within a batch, so without the
+// count-based alpha floor in spanStats.update the baseline would freeze at
+// the first span's duration instead of reflecting the whole batch.
+func TestProcessor_MixedDurationBatchBuildsRealBaseline(t *testing.T) {
+	cfg := defaultConfig()
+	cfg.WarmupCount = 5
+	p, _, clock := newTestProcessorWithClock(t, cfg)
+
+	durations := make([]int64, 0, cfg.WarmupCount+5)
+	var wantMean float64
+	for i := range cfg.WarmupCount + 5 {
+		d := int64(100e6)
+		if i%3 == 0 {
+			d = int64(500e6)
+		}
+		durations = append(durations, d)
+		wantMean += float64(d)
+	}
+	wantMean /= float64(len(durations))
+
+	now := clock.Advance(time.Second)
+	require.NoError(t, p.ConsumeTraces(t.Context(), makeTracesBatch(baseAttrs, "op", durations, now)))
+
+	key := keyFor(cfg, baseAttrs, "op")
+	mean, stddev, count := p.getOrCreateStats(key).snapshot()
+	require.EqualValues(t, len(durations), count)
+	assert.False(t, math.IsNaN(mean))
+	assert.False(t, math.IsNaN(stddev))
+	assert.InDelta(t, wantMean, mean, wantMean*0.01, "a same-batch mixed-duration burst must build a baseline reflecting the whole batch, not just the first span")
+	assert.Greater(t, stddev, 0.0, "a mixed-duration batch must produce non-zero stddev")
+}
+
+// TestProcessor_ZeroVarianceBaselineNotLabeled warms a baseline on identical
+// durations (variance stays exactly 0) with min_stddev explicitly set to 0,
+// then feeds a span with a much larger duration. Without a zero-stddev guard,
+// deviations = diff/effectiveStddev divides by zero: diff>0 produces +Inf,
+// which always compares >= any finite threshold, so an otherwise-meaningless
+// baseline would still label the span as very_slow. min_stddev: 0 must remain
+// a legal config value that simply makes the zero-variance case a no-op.
+func TestProcessor_ZeroVarianceBaselineNotLabeled(t *testing.T) {
+	cfg := defaultConfig()
+	cfg.MinStddev = 0
+	p, sink, clock := newTestProcessorWithClock(t, cfg)
+
+	for range cfg.WarmupCount + 5 {
+		now := clock.Advance(time.Second)
+		require.NoError(t, p.ConsumeTraces(t.Context(), makeTraces(baseAttrs, "op", int64(100e6), now)))
+	}
+	sink.Reset()
+
+	key := keyFor(cfg, baseAttrs, "op")
+	_, preStddev, _ := p.getOrCreateStats(key).snapshot()
+	require.Zero(t, preStddev, "precondition: baseline variance must be exactly zero")
+
+	now := clock.Advance(time.Second)
+	require.NoError(t, p.ConsumeTraces(t.Context(), makeTraces(baseAttrs, "op", int64(500e6), now)))
+
+	assert.Empty(t, collectLabels(sink, cfg.AttributeKey), "a zero-variance baseline has no meaningful deviation count and must not label")
+
+	_, stddev, _ := p.getOrCreateStats(key).snapshot()
+	assert.False(t, math.IsNaN(stddev), "stddev must not become NaN")
+	assert.False(t, math.IsInf(stddev, 0), "stddev must not become Inf")
+}
+
+// TestBuildKey_NoCollisionOnEmbeddedSeparator demonstrates that buildKey does
+// not rely on a separator character absent from the input. pcommon string
+// attribute values are arbitrary Go strings and may contain any byte,
+// including a NUL. A naive `strings.Join(vals, "\x00")`-style key would
+// collide here: resourceVals=["a\x00b"], spanName="c" and
+// resourceVals=["a"], spanName="b\x00c" both join to "a\x00b\x00c". buildKey
+// must produce distinct keys for these distinct inputs.
+func TestBuildKey_NoCollisionOnEmbeddedSeparator(t *testing.T) {
+	k1 := buildKey([]string{"a\x00b"}, "c")
+	k2 := buildKey([]string{"a"}, "b\x00c")
+	assert.NotEqual(t, k1, k2, "distinct (resourceVals, spanName) tuples must not collide even with embedded NUL bytes")
+}
+
 func TestEvict_RemovesStaleEntries(t *testing.T) {
 	cfg := defaultConfig()
 	cfg.IdleTimeout = time.Hour
@@ -646,6 +760,32 @@ func TestEvict_ChurnWarningWhenHighTurnover(t *testing.T) {
 
 	assert.False(t, aExists, "op-a should have been evicted")
 	assert.True(t, bExists, "op-b should remain")
+}
+
+// TestEvict_ChurnWarningOnFullWipe covers the case where every tracked
+// baseline is evicted in one sweep (after=0). The churn ratio must be
+// computed against the pre-eviction count so this worst-case churn is still
+// warned about — a denominator of the post-eviction count would divide by
+// zero worth of remaining keys and never fire.
+func TestEvict_ChurnWarningOnFullWipe(t *testing.T) {
+	cfg := defaultConfig()
+	cfg.IdleTimeout = time.Hour
+	cfg.ChurnWarningRatio = 0.5
+	p, logs, clock := newTestProcessorWithObservedLogs(t, cfg)
+
+	now := clock.Now()
+	require.NoError(t, p.ConsumeTraces(t.Context(), makeTraces(baseAttrs, "op-a", int64(100e6), now)))
+	require.NoError(t, p.ConsumeTraces(t.Context(), makeTraces(baseAttrs, "op-b", int64(100e6), now)))
+
+	p.evict(clock.Advance(cfg.IdleTimeout + time.Second))
+
+	p.statsMu.RLock()
+	remaining := len(p.statsMap)
+	p.statsMu.RUnlock()
+	require.Zero(t, remaining, "precondition: sweep must evict every tracked baseline")
+
+	assert.Equal(t, 1, logs.FilterMessage("high baseline key churn detected — check for high-cardinality span names").Len(),
+		"a full-wipe sweep is the worst-case churn and must still warn")
 }
 
 func TestProcessor_Capabilities(t *testing.T) {

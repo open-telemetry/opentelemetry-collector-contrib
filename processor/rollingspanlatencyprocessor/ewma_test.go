@@ -79,6 +79,40 @@ func TestSpanStats_VarianceGrowsWithSpread(t *testing.T) {
 	}
 }
 
+// TestSpanStats_SameInstantBurstBuildsRealVariance simulates a batch of spans
+// processed at the same wall-clock instant (dt=0 between updates, as happens
+// when a single ConsumeTraces call advances the processing clock far less
+// than one nanosecond between spans). With a pure time-decay alpha this
+// degenerates to alpha≈0 for every sample after the first, freezing the
+// baseline at the first sample's value regardless of how different the rest
+// of the burst is. The count-floor (alpha = max(timeDecayAlpha, 1/count))
+// must let a same-instant burst build a real running mean/variance instead.
+func TestSpanStats_SameInstantBurstBuildsRealVariance(t *testing.T) {
+	s := &spanStats{}
+	now := time.Now()
+	durations := []float64{100e6, 100e6, 100e6, 500e6, 100e6, 100e6, 500e6, 100e6, 100e6, 500e6}
+	for _, d := range durations {
+		s.update(d, now, 2*time.Hour) // now never advances: dt=0 for every update after the first
+	}
+	mean, stddev, _ := s.snapshot()
+
+	// A plain running (unweighted) average/variance over the same samples is
+	// the target: the burst should be scored like an ordinary sample set, not
+	// pinned to the first observation.
+	var wantMean float64
+	for _, d := range durations {
+		wantMean += d
+	}
+	wantMean /= float64(len(durations))
+
+	if math.Abs(mean-wantMean)/wantMean > 0.01 {
+		t.Errorf("same-instant burst mean should track the running average: got %.2fms, want ~%.2fms", mean/1e6, wantMean/1e6)
+	}
+	if stddev <= 0 {
+		t.Errorf("same-instant burst with mixed durations must produce non-zero stddev, got %v", stddev)
+	}
+}
+
 func TestDecayAlpha_ZeroElapsed(t *testing.T) {
 	s := &spanStats{}
 	now := time.Now()
