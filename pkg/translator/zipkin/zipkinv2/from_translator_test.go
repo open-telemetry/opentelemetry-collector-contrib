@@ -180,12 +180,23 @@ func TestExtractScopeTags(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.name == "with attributes and name/version (v1)" {
+			// The Scope semconv gates default to Beta (enabled). Pin them per-case so
+			// both the v0 (otel.library.*) and v1 (otel.scope.*) outputs stay covered,
+			// restoring the Beta default afterwards.
+			switch tt.name {
+			case "with attributes and name/version":
+				require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0ScopeConventions", false))
+				require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1ScopeConventions", false))
+				defer func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0ScopeConventions", true))
+					require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1ScopeConventions", true))
+				}()
+			case "with attributes and name/version (v1)":
 				require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0ScopeConventions", true))
 				require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1ScopeConventions", true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0ScopeConventions", false))
-					require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1ScopeConventions", false))
+					require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0ScopeConventions", true))
+					require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1ScopeConventions", true))
 				}()
 			}
 
