@@ -37,6 +37,22 @@ const (
 // replaced SHOW SLAVE STATUS. Initialized at package load; panics on bad literal.
 var minMySQLReplicaStatusVersion = version.Must(version.NewVersion("8.0.22"))
 
+// minMySQLPerfSchemaLogStatusVersion is the MySQL version at which
+// performance_schema.log_status was introduced.
+var minMySQLPerfSchemaLogStatusVersion = version.Must(version.NewVersion("8.0.11"))
+
+// minMySQLGlobalStatusRedoLogVersion is the MySQL version at which the
+// structured InnoDB redo-log status variables were added to SHOW GLOBAL STATUS.
+var minMySQLGlobalStatusRedoLogVersion = version.Must(version.NewVersion("8.0.30"))
+
+type innodbRedoLogStatsSource int
+
+const (
+	innodbRedoLogStatsSourceUnsupported innodbRedoLogStatsSource = iota
+	innodbRedoLogStatsSourceGlobalStatus
+	innodbRedoLogStatsSourceLogStatus
+)
+
 // dbVersion holds the parsed database version and product identity.
 // Capability predicates keep version-specific branching out of callers.
 type dbVersion struct {
@@ -111,6 +127,27 @@ func (v dbVersion) supportsProcesslist() bool {
 	return v.product == dbProductMySQL && !v.version.LessThan(minMySQLReplicaStatusVersion)
 }
 
+func (v dbVersion) supportsInnodbRedoLogStats() bool {
+	return v.innodbRedoLogStatsSource() != innodbRedoLogStatsSourceUnsupported
+}
+
+func (v dbVersion) requiresBackupAdminForInnodbRedoLogStats() bool {
+	return v.innodbRedoLogStatsSource() == innodbRedoLogStatsSourceLogStatus
+}
+
+func (v dbVersion) innodbRedoLogStatsSource() innodbRedoLogStatsSource {
+	if !v.isValid() || v.product != dbProductMySQL {
+		return innodbRedoLogStatsSourceUnsupported
+	}
+	if !v.version.LessThan(minMySQLGlobalStatusRedoLogVersion) {
+		return innodbRedoLogStatsSourceGlobalStatus
+	}
+	if !v.version.LessThan(minMySQLPerfSchemaLogStatusVersion) {
+		return innodbRedoLogStatsSourceLogStatus
+	}
+	return innodbRedoLogStatsSourceUnsupported
+}
+
 type client interface {
 	Connect() error
 	checkDBAvailability() error
@@ -120,6 +157,7 @@ type client interface {
 	getInnodbTransactionStats() (innodbTransactionStats, error)
 	getQueryExecutionTime() (float64, error)
 	getActiveSessionCount() (int64, error)
+	getInnodbRedoLogStatsFromLogStatus() (innodbRedoLogStats, error)
 	getTableStats() ([]tableStats, error)
 	getTableIoWaitsStats() ([]tableIoWaitsStats, error)
 	getIndexIoWaitsStats() ([]indexIoWaitsStats, error)
@@ -180,6 +218,12 @@ type innodbTransactionStats struct {
 	historyListLength            int64
 	activeTransactions           int64
 	maxActiveTransactionDuration int64
+}
+
+type innodbRedoLogStats struct {
+	currentLSN    int64
+	checkpointLSN int64
+	checkpointAge int64
 }
 
 type statementEventStats struct {
@@ -496,6 +540,31 @@ func (c *mySQLClient) getInnodbTransactionStats() (innodbTransactionStats, error
 		&stats.maxActiveTransactionDuration,
 	)
 	return stats, err
+}
+
+// getInnodbRedoLogStatsFromLogStatus queries performance_schema.log_status for
+// InnoDB redo log metrics on MySQL versions before the structured global status
+// variables were introduced.
+func (c *mySQLClient) getInnodbRedoLogStatsFromLogStatus() (innodbRedoLogStats, error) {
+	q := "SELECT " +
+		"CAST(JSON_UNQUOTE(JSON_EXTRACT(STORAGE_ENGINES, '$.InnoDB.LSN')) AS SIGNED), " +
+		"CAST(JSON_UNQUOTE(JSON_EXTRACT(STORAGE_ENGINES, '$.InnoDB.LSN_checkpoint')) AS SIGNED) " +
+		"FROM performance_schema.log_status"
+	var currentLSN, checkpointLSN sql.NullInt64
+	if err := c.client.QueryRow(q).Scan(&currentLSN, &checkpointLSN); err != nil {
+		return innodbRedoLogStats{}, err
+	}
+	if !currentLSN.Valid {
+		return innodbRedoLogStats{}, errors.New("missing InnoDB redo log current LSN in performance_schema.log_status")
+	}
+	if !checkpointLSN.Valid {
+		return innodbRedoLogStats{}, errors.New("missing InnoDB redo log checkpoint LSN in performance_schema.log_status")
+	}
+	return innodbRedoLogStats{
+		currentLSN:    currentLSN.Int64,
+		checkpointLSN: checkpointLSN.Int64,
+		checkpointAge: currentLSN.Int64 - checkpointLSN.Int64,
+	}, nil
 }
 
 // getTableStats queries the db for information_schema table size metrics.
