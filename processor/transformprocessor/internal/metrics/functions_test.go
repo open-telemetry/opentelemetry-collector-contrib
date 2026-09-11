@@ -57,6 +57,7 @@ func Test_MetricFunctions(t *testing.T) {
 	expected["aggregate_on_attribute_value"] = newAggregateOnAttributeValueFactory()
 	expected["extract_sum_metric"] = newExtractSumMetricFactory()
 	expected["extract_count_metric"] = newExtractCountMetricFactory()
+	expected["extract_avg_metric"] = newExtractAvgMetricFactory()
 	expected["copy_metric"] = newCopyMetricFactory()
 	expected["scale_metric"] = newScaleMetricFactory()
 	expected["convert_exponential_histogram_to_histogram"] = newconvertExponentialHistToExplicitHistFactory()
