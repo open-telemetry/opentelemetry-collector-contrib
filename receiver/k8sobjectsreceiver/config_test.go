@@ -350,6 +350,18 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: "initial_delay must be less than interval",
 		},
+		{
+			desc: "negative cache_sync_timeout is invalid",
+			cfg: &Config{
+				APIConfig:        k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ErrorMode:        PropagateError,
+				CacheSyncTimeout: -1 * time.Second,
+				Objects: []*K8sObjectsConfig{
+					{Name: "pods", Mode: k8sinventory.PullMode},
+				},
+			},
+			expectedErr: "cache_sync_timeout must be positive",
+		},
 	}
 
 	for _, tt := range tests {
