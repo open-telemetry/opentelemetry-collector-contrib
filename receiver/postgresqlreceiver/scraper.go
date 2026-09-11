@@ -207,9 +207,7 @@ type dbRetrieval struct {
 	executionTimeMap map[databaseName]float64
 }
 
-// connectDatabase returns the database the receiver connects to for
-// cluster-wide queries: the configured ConnectDatabase, or "postgres" when
-// unset.
+// connectDatabase returns ConnectDatabase, or "postgres" when unset.
 func (p *postgreSQLScraper) connectDatabase() string {
 	if p.config.ConnectDatabase != "" {
 		return p.config.ConnectDatabase

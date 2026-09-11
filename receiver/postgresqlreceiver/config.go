@@ -55,12 +55,8 @@ type Config struct {
 	Password         configopaque.String            `mapstructure:"password"`
 	Databases        []string                       `mapstructure:"databases"`
 	ExcludeDatabases []string                       `mapstructure:"exclude_databases"`
-	// ConnectDatabase is the database the receiver connects to for cluster-wide
-	// queries (database discovery, pg_stat_statements, bgwriter/WAL/replication
-	// stats, query samples, top query). Defaults to "postgres". Independent of
-	// Databases (the reporting scope) — pg_stat_statements exposes cluster-wide,
-	// per-database stats via a dbid join regardless of which database the
-	// connection is on.
+	// ConnectDatabase is the connection target for cluster-wide queries.
+	// Defaults to "postgres". Independent of Databases (the reporting scope).
 	ConnectDatabase       string                        `mapstructure:"connect_database,omitempty"`
 	AddrConfig            confignet.AddrConfig          `mapstructure:",squash"`       // provides Endpoint and Transport
 	ClientConfig          configtls.ClientConfig        `mapstructure:"tls,omitempty"` // provides SSL details
