@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -1716,6 +1717,133 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	require.EqualError(t, err, "HTTP \"/v1/endpoint\" 500 \"Internal Server Error\"")
 	// The returned error should not contain the response body responseBody.
 	assert.NotContains(t, err.Error(), responseBody)
+}
+
+// logRecordNames returns the DefaultNameLabel attribute of every log record in
+// ld, in resource/scope/record iteration order. createLogData stamps each record
+// with a unique "<resource>_<scope>_<record>" name, so the sequence identifies
+// both which records are present and their order.
+func logRecordNames(ld plog.Logs) []string {
+	var names []string
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		sls := rls.At(i).ScopeLogs()
+		for j := 0; j < sls.Len(); j++ {
+			lrs := sls.At(j).LogRecords()
+			for k := 0; k < lrs.Len(); k++ {
+				v, _ := lrs.At(k).Attributes().Get(splunk.DefaultNameLabel)
+				names = append(names, v.Str())
+			}
+		}
+	}
+	return names
+}
+
+func Test_splitLogs(t *testing.T) {
+	logs := createLogData(2, 2, 3) // 2 resources x 2 scopes x 3 records = 12 records
+	require.Equal(t, 12, logs.LogRecordCount())
+
+	// Splitting at 5 lands inside the second scope, so the head crosses a scope
+	// (ScopeLogs) boundary: all of the first scope's records plus part of the second.
+	head, tail := splitLogs(logs, 5)
+	assert.Equal(t, 5, head.LogRecordCount())
+	assert.Equal(t, 7, tail.LogRecordCount())
+	assert.Equal(t, []string{"0_0_0", "0_0_1", "0_0_2", "0_1_0", "0_1_1"}, logRecordNames(head),
+		"head must be the first n records in order, spanning the scope boundary")
+	assert.Equal(t, []string{"0_1_2", "1_0_0", "1_0_1", "1_0_2", "1_1_0", "1_1_1", "1_1_2"}, logRecordNames(tail),
+		"tail must be the remaining records in order")
+
+	// Boundaries: n == 0 gives an empty head and the whole set as tail; n == total
+	// and n > total give the whole set as head and an empty tail (a "first n" caller
+	// must not get an inverted result).
+	for _, tc := range []struct{ n, wantHead, wantTail int }{
+		{0, 0, 12},
+		{12, 12, 0},
+		{100, 12, 0},
+	} {
+		head, tail := splitLogs(logs, tc.n)
+		assert.Equal(t, tc.wantHead, head.LogRecordCount(), "n=%d: head record count", tc.n)
+		assert.Equal(t, tc.wantTail, tail.LogRecordCount(), "n=%d: tail record count", tc.n)
+	}
+}
+
+func Test_pushLogData_SplitsOversizedBatchOn413(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.DisableCompression = true
+	url := &url.URL{Scheme: "http", Host: "splunk", Path: "/v1/endpoint"}
+	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+	logs := createLogData(1, 1, 2) // two records in a single batch
+
+	// The full batch is rejected as too large (413); each half (one record) is accepted.
+	httpClient, _ := newTestClientWithPresetResponses([]int{413, 200, 200}, []string{"", "", ""}, func(_ []byte) {})
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	err := c.pushLogData(t.Context(), logs)
+	require.NoError(t, err, "oversized batch should be split and resent successfully")
+}
+
+// When one half of a 413-split batch is dropped permanently (a single record that
+// is still too large) and the other half fails retryably, the retryable half's
+// records must be preserved for retry rather than dropped with the permanent half.
+func Test_pushLogData_SplitOn413_RetriesRetryableHalfWhenOtherHalfPermanent(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.DisableCompression = true
+	url := &url.URL{Scheme: "http", Host: "splunk", Path: "/v1/endpoint"}
+	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+	logs := createLogData(1, 1, 2) // two records; split into two single-record halves
+
+	// Full batch -> 413; head (1 record) -> 413 (dropped permanently); tail (1 record) -> 500 (retryable).
+	httpClient, _ := newTestClientWithPresetResponses([]int{413, 413, 500}, []string{"", "", ""}, func(_ []byte) {})
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	err := c.pushLogData(t.Context(), logs)
+	require.Error(t, err)
+	require.False(t, consumererror.IsPermanent(err),
+		"the retryable half must not be dropped just because the other half failed permanently")
+	var logsErr consumererror.Logs
+	require.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, 1, logsErr.Data().LogRecordCount(), "the retryable half's record must be preserved for retry")
+}
+
+// When both halves of a 413-split batch fail retryably, every record across both
+// halves must be preserved for retry, not just the first half's.
+func Test_pushLogData_SplitOn413_RetriesAllRecordsWhenBothHalvesRetryable(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.DisableCompression = true
+	url := &url.URL{Scheme: "http", Host: "splunk", Path: "/v1/endpoint"}
+	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+	logs := createLogData(1, 1, 2)
+
+	// Full batch -> 413; both single-record halves -> 500 (retryable).
+	httpClient, _ := newTestClientWithPresetResponses([]int{413, 500, 500}, []string{"", "", ""}, func(_ []byte) {})
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	err := c.pushLogData(t.Context(), logs)
+	require.Error(t, err)
+	require.False(t, consumererror.IsPermanent(err))
+	var logsErr consumererror.Logs
+	require.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, 2, logsErr.Data().LogRecordCount(),
+		"records from both retryable halves must be preserved, not just the first half's")
+}
+
+func Test_pushLogData_DropsUnsplittableRecordOn413(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.DisableCompression = true
+	url := &url.URL{Scheme: "http", Host: "splunk", Path: "/v1/endpoint"}
+	core, observed := observer.New(zap.WarnLevel)
+	set := exportertest.NewNopSettings(metadata.Type)
+	set.Logger = zap.New(core)
+	c := newLogsClient(set, config)
+	logs := createLogData(1, 1, 1) // a single record
+
+	httpClient, _ := newTestClient(413, "") // always rejects as too large
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	err := c.pushLogData(t.Context(), logs)
+	require.Error(t, err)
+	require.True(t, consumererror.IsPermanent(err), "an unsplittable oversized record must be dropped, not retried")
+	assert.Positive(t, observed.FilterMessageSnippet("too large").Len(), "expected a warning about dropping the oversized record")
 }
 
 func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
