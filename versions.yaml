@@ -327,6 +327,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmptrapreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver

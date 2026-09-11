@@ -353,6 +353,7 @@ receiver/saphanareceiver/                                        @open-telemetry
 receiver/signalfxreceiver/                                       @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/skywalkingreceiver/                                     @open-telemetry/collector-contrib-approvers @JaredTan95
 receiver/snmpreceiver/                                           @open-telemetry/collector-contrib-approvers @tamir-michaeli
+receiver/snmptrapreceiver/                                       @open-telemetry/collector-contrib-approvers @Mesverrum
 receiver/snowflakereceiver/                                      @open-telemetry/collector-contrib-approvers @dmitryax @shalper2
 receiver/solacereceiver/                                         @open-telemetry/collector-contrib-approvers @mcardy
 receiver/splunkenterprisereceiver/                               @open-telemetry/collector-contrib-approvers @shalper2 @MovieStoreGuy @greatestusername
