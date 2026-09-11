@@ -1124,6 +1124,20 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
+	if c.Rules.OwnerKind || c.Rules.OwnerName || c.Rules.OwnerUID {
+		if owner, ok := findControllerOwnerReference(pod.OwnerReferences); ok {
+			if c.Rules.OwnerKind {
+				tags[string(K8sOwnerKind)] = owner.Kind
+			}
+			if c.Rules.OwnerName {
+				tags[string(K8sOwnerName)] = owner.Name
+			}
+			if c.Rules.OwnerUID {
+				tags[string(K8sOwnerUID)] = string(owner.UID)
+			}
+		}
+	}
+
 	if c.Rules.Node {
 		tags[string(conventions.K8SNodeNameKey)] = pod.Spec.NodeName
 	}
@@ -2258,6 +2272,22 @@ func ignoreDeletedFinalStateUnknown(obj any) any {
 func automaticServiceInstanceID(pod *api_v1.Pod, containerName string) string {
 	resNames := []string{pod.Namespace, pod.Name, containerName}
 	return strings.Join(resNames, ".")
+}
+
+// findControllerOwnerReference returns the OwnerReference (see
+// https://kubernetes.io/docs/reference/kubernetes-api/definitions/owner-reference-v1-meta/#OwnerReference)
+// marked as the controlling owner (Controller: true) among refs. A pod's
+// OwnerReferences can contain multiple entries (e.g. for garbage collection
+// purposes), but at most one is ever marked as the controller - the same
+// single reference client-go's meta_v1.GetControllerOf returns, which this
+// mirrors. Returns false if refs contains no such entry.
+func findControllerOwnerReference(refs []meta_v1.OwnerReference) (meta_v1.OwnerReference, bool) {
+	for _, ref := range refs {
+		if ref.Controller != nil && *ref.Controller {
+			return ref, true
+		}
+	}
+	return meta_v1.OwnerReference{}, false
 }
 
 // extractDeploymentNameFromReplicaSet attempts to extract deployment name from replicaset name

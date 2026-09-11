@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/otel/attribute"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/selection"
 
@@ -39,6 +40,17 @@ const (
 
 	ResourceSource   = "resource_attribute"
 	ConnectionSource = "connection"
+)
+
+// K8sOwnerKind, K8sOwnerName, and K8sOwnerUID describe a pod's controlling
+// owner reference (https://kubernetes.io/docs/reference/kubernetes-api/definitions/owner-reference-v1-meta/#OwnerReference).
+// They are not (yet) part of the go.opentelemetry.io/otel/semconv package,
+// unlike most other extraction keys in this package, so they're declared here
+// with the same attribute.Key type those use rather than pulled from there.
+const (
+	K8sOwnerKind attribute.Key = "k8s.owner.kind"
+	K8sOwnerName attribute.Key = "k8s.owner.name"
+	K8sOwnerUID  attribute.Key = "k8s.owner.uid"
 )
 
 // PodIdentifierAttribute represents AssociationSource with matching value for pod
@@ -249,6 +261,9 @@ type ExtractionRules struct {
 	StatefulSetName           bool
 	Node                      bool
 	NodeUID                   bool
+	OwnerKind                 bool
+	OwnerName                 bool
+	OwnerUID                  bool
 	StartTime                 bool
 	ContainerName             bool
 	ContainerID               bool
@@ -281,6 +296,9 @@ func (rules *ExtractionRules) IncludesOwnerMetadata() bool {
 		rules.ReplicaSetName,
 		rules.StatefulSetUID,
 		rules.StatefulSetName,
+		rules.OwnerKind,
+		rules.OwnerName,
+		rules.OwnerUID,
 	}
 	for _, ruleEnabled := range rulesNeedingOwnerMetadata {
 		if ruleEnabled {
