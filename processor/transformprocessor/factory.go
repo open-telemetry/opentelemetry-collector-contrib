@@ -66,11 +66,6 @@ func WithDataPointFunctions(dataPointFunctions []ottl.Factory[*ottldatapoint.Tra
 	}
 }
 
-// Deprecated: [v0.152.0] Use WithDataPointFunctions.
-func WithDataPointFunctionsNew(dataPointFunctions []ottl.Factory[*ottldatapoint.TransformContext]) FactoryOption {
-	return WithDataPointFunctions(dataPointFunctions)
-}
-
 // WithExemplarFunctions will override the default OTTL exemplar context functions with the provided exemplarFunctions in resulting processor.
 // Subsequent uses of WithExemplarFunctions will merge the provided exemplarFunctions with the previously registered functions.
 func WithExemplarFunctions(exemplarFunctions []ottl.Factory[*ottlexemplar.TransformContext]) FactoryOption {
@@ -95,11 +90,6 @@ func WithLogFunctions(logFunctions []ottl.Factory[*ottllog.TransformContext]) Fa
 	}
 }
 
-// Deprecated: [v0.152.0] Use WithLogFunctions.
-func WithLogFunctionsNew(logFunctions []ottl.Factory[*ottllog.TransformContext]) FactoryOption {
-	return WithLogFunctions(logFunctions)
-}
-
 // WithMetricFunctions will override the default OTTL metric context functions with the provided metricFunctions in the resulting processor.
 // Subsequent uses of WithMetricFunctions will merge the provided metricFunctions with the previously registered functions.
 func WithMetricFunctions(metricFunctions []ottl.Factory[*ottlmetric.TransformContext]) FactoryOption {
@@ -110,11 +100,6 @@ func WithMetricFunctions(metricFunctions []ottl.Factory[*ottlmetric.TransformCon
 		}
 		factory.metricFunctions = mergeFunctionsToMap(factory.metricFunctions, metricFunctions)
 	}
-}
-
-// Deprecated: [v0.152.0] Use WithMetricFunctions.
-func WithMetricFunctionsNew(metricFunctions []ottl.Factory[*ottlmetric.TransformContext]) FactoryOption {
-	return WithMetricFunctions(metricFunctions)
 }
 
 // WithSpanEventFunctions will override the default OTTL spanevent context functions with the provided spanEventFunctions in the resulting processor.
@@ -129,11 +114,6 @@ func WithSpanEventFunctions(spanEventFunctions []ottl.Factory[*ottlspanevent.Tra
 	}
 }
 
-// Deprecated: [v0.152.0] Use WithSpanEventFunctions.
-func WithSpanEventFunctionsNew(spanEventFunctions []ottl.Factory[*ottlspanevent.TransformContext]) FactoryOption {
-	return WithSpanEventFunctions(spanEventFunctions)
-}
-
 // WithSpanFunctions will override the default OTTL span context functions with the provided spanFunctions in the resulting processor.
 // Subsequent uses of WithSpanFunctions will merge the provided spanFunctions with the previously registered functions.
 func WithSpanFunctions(spanFunctions []ottl.Factory[*ottlspan.TransformContext]) FactoryOption {
@@ -146,11 +126,6 @@ func WithSpanFunctions(spanFunctions []ottl.Factory[*ottlspan.TransformContext])
 	}
 }
 
-// Deprecated: [v0.152.0] use WithSpanFunctions.
-func WithSpanFunctionsNew(spanFunctions []ottl.Factory[*ottlspan.TransformContext]) FactoryOption {
-	return WithSpanFunctions(spanFunctions)
-}
-
 // WithProfileFunctions will override the default OTTL profile context functions with the provided profileFunctions in the resulting processor.
 // Subsequent uses of WithProfileFunctions will merge the provided profileFunctions with the previously registered functions.
 func WithProfileFunctions(profileFunctions []ottl.Factory[*ottlprofile.TransformContext]) FactoryOption {
@@ -161,11 +136,6 @@ func WithProfileFunctions(profileFunctions []ottl.Factory[*ottlprofile.Transform
 		}
 		factory.profileFunctions = mergeFunctionsToMap(factory.profileFunctions, profileFunctions)
 	}
-}
-
-// Deprecated: [v0.152.0] use WithProfileFunctions.
-func WithProfileFunctionsNew(profileFunctions []ottl.Factory[*ottlprofile.TransformContext]) FactoryOption {
-	return WithProfileFunctions(profileFunctions)
 }
 
 func NewFactory() processor.Factory {

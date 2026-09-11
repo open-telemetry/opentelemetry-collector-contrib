@@ -415,7 +415,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			is, res := createTelemetry()
 
-			tCtx := NewTransformContextPtr(is, res, pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			tCtx := NewTransformContext(is, res, pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 			defer tCtx.Close()
 			got, err := accessor.Get(t.Context(), tCtx)
 			require.NoError(t, err)
@@ -448,7 +448,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl("resource_schema")
 
-	ctx := NewTransformContextPtr(scope, resource, sm, rm)
+	ctx := NewTransformContext(scope, resource, sm, rm)
 	defer ctx.Close()
 
 	tests := []struct {

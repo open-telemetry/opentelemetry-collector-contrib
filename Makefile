@@ -203,6 +203,13 @@ gomoddownload:
 gotest:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="test"
 
+# gotest-no-race runs only packages that contain //go:build !race test files,
+# without the race detector. Most modules will skip silently because they have
+# no such files, keeping the total CI cost small.
+.PHONY: gotest-no-race
+gotest-no-race:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-no-race"
+
 .PHONY: gotest-with-cover
 gotest-with-cover:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-cover"
@@ -426,7 +433,7 @@ gendistributions:
 
 .PHONY: gencodecov
 gencodecov:
-	cd $(SRC_ROOT)/cmd/codecovgen && go run . --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules '**/*test,**/examples/**,pkg/**,cmd/**,internal/**,*/encoding/**' --dir $(SRC_ROOT)
+	cd $(SRC_ROOT)/cmd/codecovgen && go run . --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules '**/*test,**/examples/**,cmd/**,internal/**,*/encoding/**' --dir $(SRC_ROOT)
 
 # Regenerates all code, then updates CODEOWNERS, issue templates and component labels in .github
 .PHONY: update-codeowners
