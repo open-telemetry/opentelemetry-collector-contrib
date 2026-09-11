@@ -812,6 +812,62 @@ metrics:
     enabled: true
 ```
 
+### vcenter.datastore.alarm.count
+
+The number of triggered alarms on the datastore.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {alarms} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` | Recommended | - |
+
+### vcenter.datastore.maintenance_mode
+
+The current maintenance mode of the datastore.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {state} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| maintenance_mode | The current maintenance mode of the datastore. | Str: ``normal``, ``entering_maintenance``, ``in_maintenance`` | Recommended | - |
+
+### vcenter.host.alarm.count
+
+The number of triggered alarms on the host.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {alarms} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` | Recommended | - |
+
+### vcenter.host.connection_state
+
+The current connection state of the host.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {state} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| connection_state | The current connection state of the host. | Str: ``connected``, ``disconnected``, ``not_responding`` | Recommended | - |
+
 ### vcenter.host.memory.active
 
 The amount of memory the host's powered-on VMs are actively using.
@@ -849,6 +905,28 @@ As measured over the most recent 20s interval.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | MiBy | Sum | Int | Cumulative | false | Development |
+
+### vcenter.host.power_state
+
+The current power state of the host.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {state} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| power_state | The current power state of the host. | Str: ``on``, ``off``, ``standby``, ``unknown`` | Recommended | - |
+
+### vcenter.host.uptime
+
+Total time elapsed since last operating system boot-up.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Int | Cumulative | true | Development |
 
 ### vcenter.vm.cpu.time
 
@@ -908,6 +986,20 @@ As measured over the most recent 20s interval.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended | - |
 | object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
+
+### vcenter.vm.power_state
+
+The current power state of the virtual machine.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {state} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended``, ``unknown`` | Recommended | - |
 
 ## Resource Attributes
 

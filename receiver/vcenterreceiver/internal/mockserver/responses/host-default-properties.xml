@@ -46,6 +46,35 @@
                     <val xsi:type="ManagedEntityStatus">green</val>
                 </propSet>
                     <propSet>
+                        <name>runtime.connectionState</name>
+                        <val xsi:type="HostSystemConnectionState">connected</val>
+                    </propSet>
+                    <propSet>
+                        <name>runtime.bootTime</name>
+                        <val xsi:type="xsd:dateTime">2026-08-01T10:00:00Z</val>
+                    </propSet>
+                    <propSet>
+                        <name>triggeredAlarmState</name>
+                        <val xsi:type="ArrayOfAlarmState">
+                            <AlarmState xsi:type="AlarmState">
+                                <key>alarm-7.host-1002</key>
+                                <entity type="HostSystem">host-1002</entity>
+                                <alarm type="Alarm">alarm-7</alarm>
+                                <overallStatus>red</overallStatus>
+                                <time>2026-09-10T08:00:00Z</time>
+                                <acknowledged>false</acknowledged>
+                            </AlarmState>
+                            <AlarmState xsi:type="AlarmState">
+                                <key>alarm-9.host-1002</key>
+                                <entity type="HostSystem">host-1002</entity>
+                                <alarm type="Alarm">alarm-9</alarm>
+                                <overallStatus>yellow</overallStatus>
+                                <time>2026-09-10T09:00:00Z</time>
+                                <acknowledged>false</acknowledged>
+                            </AlarmState>
+                        </val>
+                    </propSet>
+                    <propSet>
                         <name>vm</name>
                         <val xsi:type="ArrayOfManagedObjectReference">
                             <ManagedObjectReference type="VirtualMachine" xsi:type="ManagedObjectReference">vm-1040</ManagedObjectReference>
@@ -98,6 +127,10 @@
                     <name>summary.overallStatus</name>
                     <val xsi:type="ManagedEntityStatus">green</val>
                 </propSet>
+                    <propSet>
+                        <name>runtime.connectionState</name>
+                        <val xsi:type="HostSystemConnectionState">notResponding</val>
+                    </propSet>
                     <propSet>
                         <name>vm</name>
                         <val xsi:type="ArrayOfManagedObjectReference">

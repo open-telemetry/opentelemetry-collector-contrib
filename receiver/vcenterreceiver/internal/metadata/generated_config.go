@@ -623,6 +623,54 @@ func (ms *VcenterDatacenterVMCountMetricConfig) Validate() error {
 	return nil
 }
 
+// VcenterDatastoreAlarmCountMetricAttributeKey specifies the key of an attribute for the vcenter.datastore.alarm.count metric.
+type VcenterDatastoreAlarmCountMetricAttributeKey string
+
+const (
+	VcenterDatastoreAlarmCountMetricAttributeKeyEntityStatus VcenterDatastoreAlarmCountMetricAttributeKey = "status"
+)
+
+// VcenterDatastoreAlarmCountMetricConfig provides config for the vcenter.datastore.alarm.count metric.
+type VcenterDatastoreAlarmCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []VcenterDatastoreAlarmCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *VcenterDatastoreAlarmCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *VcenterDatastoreAlarmCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case VcenterDatastoreAlarmCountMetricAttributeKeyEntityStatus:
+		default:
+			return fmt.Errorf("metric vcenter.datastore.alarm.count doesn't have an attribute %v, valid attributes: [status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // VcenterDatastoreDiskUsageMetricAttributeKey specifies the key of an attribute for the vcenter.datastore.disk.usage metric.
 type VcenterDatastoreDiskUsageMetricAttributeKey string
 
@@ -688,6 +736,150 @@ func (ms *VcenterDatastoreDiskUtilizationMetricConfig) Unmarshal(parser *confmap
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// VcenterDatastoreMaintenanceModeMetricAttributeKey specifies the key of an attribute for the vcenter.datastore.maintenance_mode metric.
+type VcenterDatastoreMaintenanceModeMetricAttributeKey string
+
+const (
+	VcenterDatastoreMaintenanceModeMetricAttributeKeyDatastoreMaintenanceMode VcenterDatastoreMaintenanceModeMetricAttributeKey = "maintenance_mode"
+)
+
+// VcenterDatastoreMaintenanceModeMetricConfig provides config for the vcenter.datastore.maintenance_mode metric.
+type VcenterDatastoreMaintenanceModeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []VcenterDatastoreMaintenanceModeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *VcenterDatastoreMaintenanceModeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *VcenterDatastoreMaintenanceModeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case VcenterDatastoreMaintenanceModeMetricAttributeKeyDatastoreMaintenanceMode:
+		default:
+			return fmt.Errorf("metric vcenter.datastore.maintenance_mode doesn't have an attribute %v, valid attributes: [maintenance_mode]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// VcenterHostAlarmCountMetricAttributeKey specifies the key of an attribute for the vcenter.host.alarm.count metric.
+type VcenterHostAlarmCountMetricAttributeKey string
+
+const (
+	VcenterHostAlarmCountMetricAttributeKeyEntityStatus VcenterHostAlarmCountMetricAttributeKey = "status"
+)
+
+// VcenterHostAlarmCountMetricConfig provides config for the vcenter.host.alarm.count metric.
+type VcenterHostAlarmCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []VcenterHostAlarmCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *VcenterHostAlarmCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *VcenterHostAlarmCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case VcenterHostAlarmCountMetricAttributeKeyEntityStatus:
+		default:
+			return fmt.Errorf("metric vcenter.host.alarm.count doesn't have an attribute %v, valid attributes: [status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// VcenterHostConnectionStateMetricAttributeKey specifies the key of an attribute for the vcenter.host.connection_state metric.
+type VcenterHostConnectionStateMetricAttributeKey string
+
+const (
+	VcenterHostConnectionStateMetricAttributeKeyHostConnectionState VcenterHostConnectionStateMetricAttributeKey = "connection_state"
+)
+
+// VcenterHostConnectionStateMetricConfig provides config for the vcenter.host.connection_state metric.
+type VcenterHostConnectionStateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []VcenterHostConnectionStateMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *VcenterHostConnectionStateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *VcenterHostConnectionStateMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case VcenterHostConnectionStateMetricAttributeKeyHostConnectionState:
+		default:
+			return fmt.Errorf("metric vcenter.host.connection_state doesn't have an attribute %v, valid attributes: [connection_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -1306,6 +1498,74 @@ func (ms *VcenterHostNetworkUsageMetricConfig) Validate() error {
 		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
 	}
 
+	return nil
+}
+
+// VcenterHostPowerStateMetricAttributeKey specifies the key of an attribute for the vcenter.host.power_state metric.
+type VcenterHostPowerStateMetricAttributeKey string
+
+const (
+	VcenterHostPowerStateMetricAttributeKeyHostPowerState VcenterHostPowerStateMetricAttributeKey = "power_state"
+)
+
+// VcenterHostPowerStateMetricConfig provides config for the vcenter.host.power_state metric.
+type VcenterHostPowerStateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []VcenterHostPowerStateMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *VcenterHostPowerStateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *VcenterHostPowerStateMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case VcenterHostPowerStateMetricAttributeKeyHostPowerState:
+		default:
+			return fmt.Errorf("metric vcenter.host.power_state doesn't have an attribute %v, valid attributes: [power_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// VcenterHostUptimeMetricConfig provides config for the vcenter.host.uptime metric.
+type VcenterHostUptimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *VcenterHostUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -2426,6 +2686,54 @@ func (ms *VcenterVMNetworkUsageMetricConfig) Validate() error {
 	return nil
 }
 
+// VcenterVMPowerStateMetricAttributeKey specifies the key of an attribute for the vcenter.vm.power_state metric.
+type VcenterVMPowerStateMetricAttributeKey string
+
+const (
+	VcenterVMPowerStateMetricAttributeKeyVMCountPowerState VcenterVMPowerStateMetricAttributeKey = "power_state"
+)
+
+// VcenterVMPowerStateMetricConfig provides config for the vcenter.vm.power_state metric.
+type VcenterVMPowerStateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []VcenterVMPowerStateMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *VcenterVMPowerStateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *VcenterVMPowerStateMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case VcenterVMPowerStateMetricAttributeKeyVMCountPowerState:
+		default:
+			return fmt.Errorf("metric vcenter.vm.power_state doesn't have an attribute %v, valid attributes: [power_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // VcenterVMVsanLatencyAvgMetricAttributeKey specifies the key of an attribute for the vcenter.vm.vsan.latency.avg metric.
 type VcenterVMVsanLatencyAvgMetricAttributeKey string
 
@@ -2590,8 +2898,12 @@ type MetricsConfig struct {
 	VcenterDatacenterHostCount          VcenterDatacenterHostCountMetricConfig          `mapstructure:"vcenter.datacenter.host.count"`
 	VcenterDatacenterMemoryLimit        VcenterDatacenterMemoryLimitMetricConfig        `mapstructure:"vcenter.datacenter.memory.limit"`
 	VcenterDatacenterVMCount            VcenterDatacenterVMCountMetricConfig            `mapstructure:"vcenter.datacenter.vm.count"`
+	VcenterDatastoreAlarmCount          VcenterDatastoreAlarmCountMetricConfig          `mapstructure:"vcenter.datastore.alarm.count"`
 	VcenterDatastoreDiskUsage           VcenterDatastoreDiskUsageMetricConfig           `mapstructure:"vcenter.datastore.disk.usage"`
 	VcenterDatastoreDiskUtilization     VcenterDatastoreDiskUtilizationMetricConfig     `mapstructure:"vcenter.datastore.disk.utilization"`
+	VcenterDatastoreMaintenanceMode     VcenterDatastoreMaintenanceModeMetricConfig     `mapstructure:"vcenter.datastore.maintenance_mode"`
+	VcenterHostAlarmCount               VcenterHostAlarmCountMetricConfig               `mapstructure:"vcenter.host.alarm.count"`
+	VcenterHostConnectionState          VcenterHostConnectionStateMetricConfig          `mapstructure:"vcenter.host.connection_state"`
 	VcenterHostCPUCapacity              VcenterHostCPUCapacityMetricConfig              `mapstructure:"vcenter.host.cpu.capacity"`
 	VcenterHostCPUReserved              VcenterHostCPUReservedMetricConfig              `mapstructure:"vcenter.host.cpu.reserved"`
 	VcenterHostCPUUsage                 VcenterHostCPUUsageMetricConfig                 `mapstructure:"vcenter.host.cpu.usage"`
@@ -2610,6 +2922,8 @@ type MetricsConfig struct {
 	VcenterHostNetworkPacketRate        VcenterHostNetworkPacketRateMetricConfig        `mapstructure:"vcenter.host.network.packet.rate"`
 	VcenterHostNetworkThroughput        VcenterHostNetworkThroughputMetricConfig        `mapstructure:"vcenter.host.network.throughput"`
 	VcenterHostNetworkUsage             VcenterHostNetworkUsageMetricConfig             `mapstructure:"vcenter.host.network.usage"`
+	VcenterHostPowerState               VcenterHostPowerStateMetricConfig               `mapstructure:"vcenter.host.power_state"`
+	VcenterHostUptime                   VcenterHostUptimeMetricConfig                   `mapstructure:"vcenter.host.uptime"`
 	VcenterHostVsanCacheHitRate         VcenterHostVsanCacheHitRateMetricConfig         `mapstructure:"vcenter.host.vsan.cache.hit_rate"`
 	VcenterHostVsanCongestions          VcenterHostVsanCongestionsMetricConfig          `mapstructure:"vcenter.host.vsan.congestions"`
 	VcenterHostVsanLatencyAvg           VcenterHostVsanLatencyAvgMetricConfig           `mapstructure:"vcenter.host.vsan.latency.avg"`
@@ -2643,6 +2957,7 @@ type MetricsConfig struct {
 	VcenterVMNetworkPacketRate          VcenterVMNetworkPacketRateMetricConfig          `mapstructure:"vcenter.vm.network.packet.rate"`
 	VcenterVMNetworkThroughput          VcenterVMNetworkThroughputMetricConfig          `mapstructure:"vcenter.vm.network.throughput"`
 	VcenterVMNetworkUsage               VcenterVMNetworkUsageMetricConfig               `mapstructure:"vcenter.vm.network.usage"`
+	VcenterVMPowerState                 VcenterVMPowerStateMetricConfig                 `mapstructure:"vcenter.vm.power_state"`
 	VcenterVMVsanLatencyAvg             VcenterVMVsanLatencyAvgMetricConfig             `mapstructure:"vcenter.vm.vsan.latency.avg"`
 	VcenterVMVsanOperations             VcenterVMVsanOperationsMetricConfig             `mapstructure:"vcenter.vm.vsan.operations"`
 	VcenterVMVsanThroughput             VcenterVMVsanThroughputMetricConfig             `mapstructure:"vcenter.vm.vsan.throughput"`
@@ -2722,6 +3037,11 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []VcenterDatacenterVMCountMetricAttributeKey{VcenterDatacenterVMCountMetricAttributeKeyEntityStatus, VcenterDatacenterVMCountMetricAttributeKeyVMCountPowerState},
 		},
+		VcenterDatastoreAlarmCount: VcenterDatastoreAlarmCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []VcenterDatastoreAlarmCountMetricAttributeKey{VcenterDatastoreAlarmCountMetricAttributeKeyEntityStatus},
+		},
 		VcenterDatastoreDiskUsage: VcenterDatastoreDiskUsageMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
@@ -2729,6 +3049,21 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		VcenterDatastoreDiskUtilization: VcenterDatastoreDiskUtilizationMetricConfig{
 			Enabled: true,
+		},
+		VcenterDatastoreMaintenanceMode: VcenterDatastoreMaintenanceModeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []VcenterDatastoreMaintenanceModeMetricAttributeKey{VcenterDatastoreMaintenanceModeMetricAttributeKeyDatastoreMaintenanceMode},
+		},
+		VcenterHostAlarmCount: VcenterHostAlarmCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []VcenterHostAlarmCountMetricAttributeKey{VcenterHostAlarmCountMetricAttributeKeyEntityStatus},
+		},
+		VcenterHostConnectionState: VcenterHostConnectionStateMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []VcenterHostConnectionStateMetricAttributeKey{VcenterHostConnectionStateMetricAttributeKeyHostConnectionState},
 		},
 		VcenterHostCPUCapacity: VcenterHostCPUCapacityMetricConfig{
 			Enabled: true,
@@ -2801,6 +3136,14 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []VcenterHostNetworkUsageMetricAttributeKey{VcenterHostNetworkUsageMetricAttributeKeyObjectName},
+		},
+		VcenterHostPowerState: VcenterHostPowerStateMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []VcenterHostPowerStateMetricAttributeKey{VcenterHostPowerStateMetricAttributeKeyHostPowerState},
+		},
+		VcenterHostUptime: VcenterHostUptimeMetricConfig{
+			Enabled: false,
 		},
 		VcenterHostVsanCacheHitRate: VcenterHostVsanCacheHitRateMetricConfig{
 			Enabled: true,
@@ -2932,6 +3275,11 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []VcenterVMNetworkUsageMetricAttributeKey{VcenterVMNetworkUsageMetricAttributeKeyObjectName},
+		},
+		VcenterVMPowerState: VcenterVMPowerStateMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []VcenterVMPowerStateMetricAttributeKey{VcenterVMPowerStateMetricAttributeKeyVMCountPowerState},
 		},
 		VcenterVMVsanLatencyAvg: VcenterVMVsanLatencyAvgMetricConfig{
 			Enabled:             true,

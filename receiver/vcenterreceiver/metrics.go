@@ -99,6 +99,39 @@ func getHostPowerStateAttribute(state string) (metadata.AttributeHostPowerState,
 	return attr, ok
 }
 
+func getHostConnectionStateAttribute(state types.HostSystemConnectionState) (metadata.AttributeHostConnectionState, bool) {
+	hostConnectionStateToAttribute := map[types.HostSystemConnectionState]metadata.AttributeHostConnectionState{
+		types.HostSystemConnectionStateConnected:     metadata.AttributeHostConnectionStateConnected,
+		types.HostSystemConnectionStateNotResponding: metadata.AttributeHostConnectionStateNotResponding,
+		types.HostSystemConnectionStateDisconnected:  metadata.AttributeHostConnectionStateDisconnected,
+	}
+	attr, ok := hostConnectionStateToAttribute[state]
+	return attr, ok
+}
+
+func getDatastoreMaintenanceModeAttribute(mode string) (metadata.AttributeDatastoreMaintenanceMode, bool) {
+	datastoreMaintenanceModeToAttribute := map[string]metadata.AttributeDatastoreMaintenanceMode{
+		string(types.DatastoreSummaryMaintenanceModeStateNormal):              metadata.AttributeDatastoreMaintenanceModeNormal,
+		string(types.DatastoreSummaryMaintenanceModeStateEnteringMaintenance): metadata.AttributeDatastoreMaintenanceModeEnteringMaintenance,
+		string(types.DatastoreSummaryMaintenanceModeStateInMaintenance):       metadata.AttributeDatastoreMaintenanceModeInMaintenance,
+	}
+	attr, ok := datastoreMaintenanceModeToAttribute[mode]
+	return attr, ok
+}
+
+// countTriggeredAlarmsByStatus returns the number of triggered red and yellow alarms
+func countTriggeredAlarmsByStatus(alarms []types.AlarmState) (red, yellow int64) {
+	for i := range alarms {
+		switch alarms[i].OverallStatus {
+		case types.ManagedEntityStatusRed:
+			red++
+		case types.ManagedEntityStatusYellow:
+			yellow++
+		}
+	}
+	return red, yellow
+}
+
 // recordDatastoreStats records stat metrics for a vSphere Datastore
 func (v *vcenterMetricScraper) recordDatastoreStats(
 	ts pcommon.Timestamp,
@@ -110,6 +143,14 @@ func (v *vcenterMetricScraper) recordDatastoreStats(
 	v.mb.RecordVcenterDatastoreDiskUsageDataPoint(ts, diskUsage, metadata.AttributeDiskStateUsed)
 	v.mb.RecordVcenterDatastoreDiskUsageDataPoint(ts, s.FreeSpace, metadata.AttributeDiskStateAvailable)
 	v.mb.RecordVcenterDatastoreDiskUtilizationDataPoint(ts, diskUtilization)
+
+	if maintenanceMode, ok := getDatastoreMaintenanceModeAttribute(s.MaintenanceMode); ok {
+		v.mb.RecordVcenterDatastoreMaintenanceModeDataPoint(ts, 1, maintenanceMode)
+	}
+
+	redAlarms, yellowAlarms := countTriggeredAlarmsByStatus(ds.TriggeredAlarmState)
+	v.mb.RecordVcenterDatastoreAlarmCountDataPoint(ts, redAlarms, metadata.AttributeEntityStatusRed)
+	v.mb.RecordVcenterDatastoreAlarmCountDataPoint(ts, yellowAlarms, metadata.AttributeEntityStatusYellow)
 }
 
 // recordClusterStats records stat metrics for a vSphere Cluster
@@ -198,6 +239,24 @@ func (v *vcenterMetricScraper) recordHostSystemStats(
 	ts pcommon.Timestamp,
 	hs *mo.HostSystem,
 ) {
+	if hostPowerState, ok := getHostPowerStateAttribute(string(hs.Runtime.PowerState)); ok {
+		v.mb.RecordVcenterHostPowerStateDataPoint(ts, 1, hostPowerState)
+	} else {
+		v.mb.RecordVcenterHostPowerStateDataPoint(ts, 1, metadata.AttributeHostPowerStateUnknown)
+	}
+
+	if hostConnectionState, ok := getHostConnectionStateAttribute(hs.Runtime.ConnectionState); ok {
+		v.mb.RecordVcenterHostConnectionStateDataPoint(ts, 1, hostConnectionState)
+	}
+
+	if hs.Runtime.PowerState == types.HostSystemPowerStatePoweredOn && hs.Runtime.BootTime != nil {
+		v.mb.RecordVcenterHostUptimeDataPoint(ts, int64(ts.AsTime().Sub(*hs.Runtime.BootTime).Seconds()))
+	}
+
+	redAlarms, yellowAlarms := countTriggeredAlarmsByStatus(hs.TriggeredAlarmState)
+	v.mb.RecordVcenterHostAlarmCountDataPoint(ts, redAlarms, metadata.AttributeEntityStatusRed)
+	v.mb.RecordVcenterHostAlarmCountDataPoint(ts, yellowAlarms, metadata.AttributeEntityStatusYellow)
+
 	s := hs.Summary
 	h := s.Hardware
 	z := s.QuickStats
@@ -250,6 +309,12 @@ func (v *vcenterMetricScraper) recordVMStats(
 	vm *mo.VirtualMachine,
 	hs *mo.HostSystem,
 ) {
+	if vm.Config == nil || !vm.Config.Template {
+		if vmPowerState, ok := getVMPowerStateAttribute(string(vm.Runtime.PowerState)); ok {
+			v.mb.RecordVcenterVMPowerStateDataPoint(ts, 1, vmPowerState)
+		}
+	}
+
 	if vm.Summary.Storage == nil || vm.Config == nil || hs == nil || hs.Summary.Hardware == nil {
 		return
 	}
