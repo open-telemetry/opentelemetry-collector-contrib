@@ -17,7 +17,15 @@ The `host_observer` looks at the current host for listening network endpoints.
 
 It will look for all listening sockets on TCP and UDP over IPv4 and IPv6.
 
-It uses the /proc filesystem and requires the SYS_PTRACE and DAC_READ_SEARCH capabilities so that it can determine what processes own the listening sockets.
+It is cross-platform, using [gopsutil](https://github.com/shirou/gopsutil) to enumerate listening sockets and
+resolve the owning process for each one: the `/proc` filesystem on Linux, and `iphlpapi.dll`
+(`GetExtendedTcpTable`/`GetExtendedUdpTable`) plus the Windows process APIs on Windows.
+
+Resolving the owning process's name and command line requires permission to inspect that process. On Linux this
+means the `SYS_PTRACE` and `DAC_READ_SEARCH` capabilities; on Windows it means running as `LocalSystem` or under an
+account with `SeDebugPrivilege` enabled. Without the right permissions, sockets owned by processes running under a
+different account (e.g. most built-in OS services) are still reported, but without a resolved process name or
+command.
 
 ### Configuration
 
