@@ -155,6 +155,26 @@ func TestLogsConsumer_Errors(t *testing.T) {
 	}
 }
 
+func TestLogsConsumer_NextRecordError(t *testing.T) {
+	lc := &logsConsumer{
+		unmarshaler: unmarshalertest.NewNopLogs(),
+		consumer:    consumertest.NewNop(),
+	}
+	t.Run("WithDecompressionLimitExceeded", func(t *testing.T) {
+		nextRecord := func() ([]byte, error) { return nil, errDecompressedRecordTooLarge }
+		gotStatus, gotErr := lc.Consume(t.Context(), nextRecord, nil)
+		require.Equal(t, http.StatusRequestEntityTooLarge, gotStatus)
+		require.ErrorIs(t, gotErr, errDecompressedRecordTooLarge)
+	})
+	t.Run("WithOtherError", func(t *testing.T) {
+		testErr := errors.New("test error")
+		nextRecord := func() ([]byte, error) { return nil, testErr }
+		gotStatus, gotErr := lc.Consume(t.Context(), nextRecord, nil)
+		require.Equal(t, http.StatusBadRequest, gotStatus)
+		require.Equal(t, testErr, gotErr)
+	})
+}
+
 func TestLogsConsumer(t *testing.T) {
 	t.Run("WithCommonAttributes", func(t *testing.T) {
 		base := plog.NewLogs()
