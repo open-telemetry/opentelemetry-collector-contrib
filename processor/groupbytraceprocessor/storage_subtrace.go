@@ -51,12 +51,54 @@ var _ subtraceStorage = (*subtraceMemoryStorage)(nil)
 //
 // Entries deliberately outlive the spans themselves. Services are released one
 // at a time, usually the caller before the callee, and a span whose parent has
-// already gone would otherwise look parentless and lose its place. The whole
-// buffer is discarded once no service holds anything, so the set lives no longer
-// than the trace stays active.
+// already gone would otherwise look parentless and lose its place.
+//
+// They do not outlive their usefulness, though: see forgetUnreferencedSpanIDs.
 type traceBuffer struct {
 	services map[string]map[pcommon.SpanID]*bufferedSpan
 	spanIDs  map[pcommon.SpanID]string
+}
+
+// liveSpans counts the spans the trace still holds, across every service.
+func (tb *traceBuffer) liveSpans() int {
+	n := 0
+	for _, spans := range tb.services {
+		n += len(spans)
+	}
+	return n
+}
+
+// forgetUnreferencedSpanIDs drops the record of span IDs that are neither
+// buffered any more nor named as a parent by something that is.
+//
+// A span's ID cannot simply be forgotten as the span is emitted: services are
+// released one at a time, usually the caller before the callee, and the callee's
+// entry spans are recognisable only because they point at spans the caller has
+// already taken with it. What can be forgotten is an ID nothing points at any
+// more, because the span is then far enough in the past that anything arriving
+// for it now is better treated as parentless.
+//
+// Without this a trace that always has some service buffered would accumulate
+// every span ID it ever carried.
+func (tb *traceBuffer) forgetUnreferencedSpanIDs() {
+	kept := make(map[pcommon.SpanID]string, len(tb.spanIDs))
+	for service, spans := range tb.services {
+		for spanID := range spans {
+			kept[spanID] = service
+		}
+	}
+	for _, spans := range tb.services {
+		for _, bs := range spans {
+			parent := bs.span.ParentSpanID()
+			if _, alreadyKept := kept[parent]; alreadyKept {
+				continue
+			}
+			if service, known := tb.spanIDs[parent]; known {
+				kept[parent] = service
+			}
+		}
+	}
+	tb.spanIDs = kept
 }
 
 type subtraceMemoryStorage struct {
@@ -158,8 +200,18 @@ func (s *subtraceMemoryStorage) takeLocked(id subtraceID, cutoff time.Time) ([][
 		delete(tb.services, id.serviceID)
 		if len(tb.services) == 0 {
 			delete(s.traces, id.traceID)
+			return due, nextArrival, nil
 		}
 	}
+
+	// Rebuilding costs a pass over everything the trace still holds, so only do it
+	// once at least half the record is spans that have come and gone. Running it
+	// on every release would scale that pass with the number of services a trace
+	// passes through. Retention is bounded either way, at twice what is buffered.
+	if live := tb.liveSpans(); len(tb.spanIDs) > 2*live {
+		tb.forgetUnreferencedSpanIDs()
+	}
+
 	return due, nextArrival, nil
 }
 

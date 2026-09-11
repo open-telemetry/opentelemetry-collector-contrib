@@ -437,3 +437,72 @@ func TestSubtraceStorage_ParentInAnotherTraceIsNotFound(t *testing.T) {
 	require.Len(t, calls, 1, "a parent in a different trace must not make these separate calls")
 	assert.Equal(t, map[pcommon.SpanID]bool{entry: true, other: true}, spanIDSet(calls[0]))
 }
+
+// A trace that always has some service buffered must not accumulate every span
+// ID it has ever carried. What it retains is bounded by what it still holds.
+func TestSubtraceStorage_RetainedSpanIDsStayBounded(t *testing.T) {
+	const (
+		rounds   = 50
+		perRound = 200
+	)
+	st := newTestSubtraceStorage()
+	tid := makeTraceID(1)
+
+	// A service that never drains, so the trace buffer is never discarded.
+	insertTestSpan(t, st, tid, makeSpanID(0xFF), pcommon.NewSpanIDEmpty(), "keeper")
+
+	churn := subtraceIDFor(tid, "svc-a")
+	for r := 0; r < rounds; r++ {
+		for i := 0; i < perRound; i++ {
+			insertTestSpan(t, st, tid, spanIDAt(r*perRound+i), pcommon.NewSpanIDEmpty(), "svc-a")
+		}
+		_, _, err := st.releaseDue(churn, time.Now().Add(time.Hour))
+		require.NoError(t, err)
+	}
+
+	st.RLock()
+	retained := len(st.traces[tid].spanIDs)
+	live := st.traces[tid].liveSpans()
+	st.RUnlock()
+
+	assert.LessOrEqual(t, retained, 2*live+perRound,
+		"released %d spans but still remembers %d IDs against %d live", rounds*perRound, retained, live)
+	assert.Less(t, retained, rounds*perRound/10, "retention is tracking total throughput, not live data")
+}
+
+// Pruning must not forget a released span that something still buffered points
+// at, which is what keeps two calls into a service apart.
+func TestSubtraceStorage_PruningKeepsReferencedParents(t *testing.T) {
+	st := newTestSubtraceStorage()
+	tid := makeTraceID(1)
+	caller1, caller2 := makeSpanID(1), makeSpanID(2)
+	entry1, entry2 := makeSpanID(3), makeSpanID(4)
+
+	insertTestSpan(t, st, tid, caller1, pcommon.NewSpanIDEmpty(), "svc-a")
+	insertTestSpan(t, st, tid, caller2, caller1, "svc-a")
+	insertTestSpan(t, st, tid, entry1, caller1, "svc-b")
+	insertTestSpan(t, st, tid, entry2, caller2, "svc-b")
+
+	// Fill svc-a with spans nothing points at, so releasing it triggers a prune.
+	for i := 0; i < 50; i++ {
+		insertTestSpan(t, st, tid, spanIDAt(100+i), caller1, "svc-a")
+	}
+
+	_, _, err := st.releaseDue(subtraceIDFor(tid, "svc-a"), time.Now().Add(time.Hour))
+	require.NoError(t, err)
+
+	st.RLock()
+	_, keptCaller1 := st.traces[tid].spanIDs[caller1]
+	_, keptCaller2 := st.traces[tid].spanIDs[caller2]
+	_, keptUnreferenced := st.traces[tid].spanIDs[spanIDAt(100)]
+	st.RUnlock()
+
+	assert.True(t, keptCaller1, "a released span still pointed at must be remembered")
+	assert.True(t, keptCaller2, "a released span still pointed at must be remembered")
+	assert.False(t, keptUnreferenced, "a released span nothing points at should be forgotten")
+
+	// And svc-b still splits into two calls because of it.
+	calls, err := st.deleteSubtrace(subtraceIDFor(tid, "svc-b"))
+	require.NoError(t, err)
+	assert.Len(t, calls, 2)
+}
