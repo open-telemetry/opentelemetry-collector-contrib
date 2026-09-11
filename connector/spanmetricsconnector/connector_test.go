@@ -3829,7 +3829,7 @@ func BenchmarkConnectorConsumeTraces_AdjustedCountCache(b *testing.B) {
 // BenchmarkConnectorConsumeTraces_EventsEnabled measures the events.enabled path with
 // several resource attributes and multiple events per span.
 func BenchmarkConnectorConsumeTraces_EventsEnabled(b *testing.B) {
-	conn, err := newConnectorImp(stringp("defaultNullValue"), disabledHistogramsConfig, disabledExemplarsConfig, enabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+	conn, err := newConnectorImp(new("defaultNullValue"), disabledHistogramsConfig, disabledExemplarsConfig, enabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
 	require.NoError(b, err)
 
 	traces := buildEventsHeavyTrace(50, 5, 20)
@@ -3846,7 +3846,7 @@ func BenchmarkConnectorConsumeTraces_EventsEnabled(b *testing.B) {
 // when a small key attribute list is configured on resources with many attributes.
 func BenchmarkConnectorConsumeTraces_ResourceMetricsKeyAttributes(b *testing.B) {
 	keyAttrs := []string{"service.name", "telemetry.sdk.language"}
-	conn, err := newConnectorImp(stringp("defaultNullValue"), disabledHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, keyAttrs, 1000, clockwork.NewFakeClock(), false)
+	conn, err := newConnectorImp(new("defaultNullValue"), disabledHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, keyAttrs, 1000, clockwork.NewFakeClock(), false)
 	require.NoError(b, err)
 
 	traces := buildResourceHeavyTrace(20, 30)
