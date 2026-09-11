@@ -73,25 +73,28 @@ func (p *pc) cancelContext(err error) {
 	p.cancel(err)
 }
 
+// Cancellation causes for a partition consumer. lost() picks one when it
+// cancels, so the reason cannot change afterwards.
+var (
+	errPartitionRevoked = errors.New("stopping processing: partition reassigned or lost")
+	errReceiverStopping = errors.New("stopping processing: receiver shutting down")
+)
+
 // revoked reports whether a revocation, not receiver shutdown, cancelled the
 // partition consumer. Both cancel p.ctx, but only a revocation gives the
 // partition to another member, which redelivers what is left unmarked.
 //
-// p.ctx is checked first. triggerShutdown closes closing before it closes the
-// client, and closing the client cancels p.ctx, so whoever sees p.ctx done also
-// sees closing closed.
-func (p *pc) revoked(closing <-chan struct{}) bool {
+// Any other cause, including a cancellation from closing the client, counts as
+// shutdown: no one takes the remaining records over, so the batch is finished.
+func (p *pc) revoked() bool {
 	select {
 	case <-p.ctx.Done():
 	default:
+		// Fast path for the common case, so a live partition never reads the
+		// cause.
 		return false
 	}
-	select {
-	case <-closing:
-		return false
-	default:
-		return true
-	}
+	return errors.Is(context.Cause(p.ctx), errPartitionRevoked)
 }
 
 // addPauseReason records why fetching must remain paused.
@@ -200,7 +203,7 @@ func (c *franzConsumer) processPartitionBatch(ctx context.Context, pc *pc, p kgo
 		//
 		// break, not return, so processed records still get their After mark and
 		// lag telemetry below.
-		if pc.revoked(c.closing) {
+		if pc.revoked() {
 			pc.logger.Debug("leaving remaining records to the next partition owner",
 				zap.Int64("offset", msg.Offset),
 			)

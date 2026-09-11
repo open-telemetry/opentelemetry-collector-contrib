@@ -5,7 +5,6 @@ package kafkareceiver
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -69,6 +68,7 @@ func TestProcessPartitionBatchStopsOnRevoke(t *testing.T) {
 		independent      bool
 		marking          MessageMarking
 		shutdown         bool
+		closeClosing     bool
 		revokeBeforeLoop bool
 		wantConsumed     int
 		wantMarkedOffset int64
@@ -110,6 +110,14 @@ func TestProcessPartitionBatchStopsOnRevoke(t *testing.T) {
 			wantMarkedOffset: -1,
 		},
 		{
+			// Shutdown starting after the revocation must not turn the tail
+			// into shutdown work: the partition still has a next owner.
+			name:             "shutdown starts after the revocation",
+			closeClosing:     true,
+			wantConsumed:     1,
+			wantMarkedOffset: 1,
+		},
+		{
 			// No one takes the rest of the batch over while the receiver is
 			// leaving, so finish it instead of dropping it.
 			name:             "shutdown finishes the batch",
@@ -135,7 +143,7 @@ func TestProcessPartitionBatchStopsOnRevoke(t *testing.T) {
 			consumer, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, nil)
 			require.NoError(t, err)
 			consumer.client = kafkaClient
-			if tc.shutdown {
+			if tc.shutdown || tc.closeClosing {
 				close(consumer.closing)
 			}
 
@@ -149,10 +157,14 @@ func TestProcessPartitionBatchStopsOnRevoke(t *testing.T) {
 			}
 			consumer.assignments[topicPartition{topic: topic, partition: 0}] = partitionConsumer
 
-			// Stands in for lost(), which cancels the partition context on every
-			// revocation before it waits for the in-flight call.
+			// Stands in for lost(), which picks the cause and cancels the
+			// partition context before it waits for the in-flight call.
 			revoke := func() {
-				partitionConsumer.cancelContext(errors.New("partition revoked"))
+				cause := errPartitionRevoked
+				if tc.shutdown {
+					cause = errReceiverStopping
+				}
+				partitionConsumer.cancelContext(cause)
 			}
 			if tc.revokeBeforeLoop {
 				revoke()
