@@ -103,8 +103,6 @@ func testScrape(ctx context.Context, t *testing.T, cfg *Config, fileName string)
 		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreMetricDataPointsOrder(),
-		// Uptime is derived from the scrape time, so its value changes on every run.
-		pmetrictest.IgnoreMetricValues("vcenter.host.uptime"),
 	)
 	require.NoError(t, err)
 	require.NoError(t, scraper.Shutdown(ctx))

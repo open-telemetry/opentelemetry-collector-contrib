@@ -94,6 +94,7 @@ const (
 	AttributeDatastoreMaintenanceModeNormal
 	AttributeDatastoreMaintenanceModeEnteringMaintenance
 	AttributeDatastoreMaintenanceModeInMaintenance
+	AttributeDatastoreMaintenanceModeUnknown
 )
 
 // String returns the string representation of the AttributeDatastoreMaintenanceMode.
@@ -105,6 +106,8 @@ func (av AttributeDatastoreMaintenanceMode) String() string {
 		return "entering_maintenance"
 	case AttributeDatastoreMaintenanceModeInMaintenance:
 		return "in_maintenance"
+	case AttributeDatastoreMaintenanceModeUnknown:
+		return "unknown"
 	}
 	return ""
 }
@@ -114,6 +117,7 @@ var MapAttributeDatastoreMaintenanceMode = map[string]AttributeDatastoreMaintena
 	"normal":               AttributeDatastoreMaintenanceModeNormal,
 	"entering_maintenance": AttributeDatastoreMaintenanceModeEnteringMaintenance,
 	"in_maintenance":       AttributeDatastoreMaintenanceModeInMaintenance,
+	"unknown":              AttributeDatastoreMaintenanceModeUnknown,
 }
 
 // AttributeDiskDirection specifies the value disk_direction attribute.
@@ -236,6 +240,7 @@ const (
 	AttributeHostConnectionStateConnected
 	AttributeHostConnectionStateDisconnected
 	AttributeHostConnectionStateNotResponding
+	AttributeHostConnectionStateUnknown
 )
 
 // String returns the string representation of the AttributeHostConnectionState.
@@ -247,6 +252,8 @@ func (av AttributeHostConnectionState) String() string {
 		return "disconnected"
 	case AttributeHostConnectionStateNotResponding:
 		return "not_responding"
+	case AttributeHostConnectionStateUnknown:
+		return "unknown"
 	}
 	return ""
 }
@@ -256,6 +263,7 @@ var MapAttributeHostConnectionState = map[string]AttributeHostConnectionState{
 	"connected":      AttributeHostConnectionStateConnected,
 	"disconnected":   AttributeHostConnectionStateDisconnected,
 	"not_responding": AttributeHostConnectionStateNotResponding,
+	"unknown":        AttributeHostConnectionStateUnknown,
 }
 
 // AttributeHostPowerState specifies the value host_power_state attribute.
@@ -2417,9 +2425,11 @@ type metricVcenterDatastoreMaintenanceMode struct {
 func (m *metricVcenterDatastoreMaintenanceMode) init() {
 	m.data.SetName("vcenter.datastore.maintenance_mode")
 	m.data.SetDescription("The current maintenance mode of the datastore.")
-	m.data.SetUnit("{state}")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
@@ -2436,7 +2446,7 @@ func (m *metricVcenterDatastoreMaintenanceMode) recordDataPoint(start pcommon.Ti
 	}
 
 	var s string
-	dps := m.data.Gauge().DataPoints()
+	dps := m.data.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
 		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
@@ -2466,17 +2476,17 @@ func (m *metricVcenterDatastoreMaintenanceMode) recordDataPoint(start pcommon.Ti
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricVcenterDatastoreMaintenanceMode) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcenterDatastoreMaintenanceMode) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
-				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
 			}
 		}
 		m.updateCapacity()
@@ -2597,9 +2607,11 @@ type metricVcenterHostConnectionState struct {
 func (m *metricVcenterHostConnectionState) init() {
 	m.data.SetName("vcenter.host.connection_state")
 	m.data.SetDescription("The current connection state of the host.")
-	m.data.SetUnit("{state}")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
@@ -2616,7 +2628,7 @@ func (m *metricVcenterHostConnectionState) recordDataPoint(start pcommon.Timesta
 	}
 
 	var s string
-	dps := m.data.Gauge().DataPoints()
+	dps := m.data.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
 		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
@@ -2646,17 +2658,17 @@ func (m *metricVcenterHostConnectionState) recordDataPoint(start pcommon.Timesta
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricVcenterHostConnectionState) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcenterHostConnectionState) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
-				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
 			}
 		}
 		m.updateCapacity()
@@ -3995,9 +4007,11 @@ type metricVcenterHostPowerState struct {
 func (m *metricVcenterHostPowerState) init() {
 	m.data.SetName("vcenter.host.power_state")
 	m.data.SetDescription("The current power state of the host.")
-	m.data.SetUnit("{state}")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
@@ -4014,7 +4028,7 @@ func (m *metricVcenterHostPowerState) recordDataPoint(start pcommon.Timestamp, t
 	}
 
 	var s string
-	dps := m.data.Gauge().DataPoints()
+	dps := m.data.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
 		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
@@ -4044,17 +4058,17 @@ func (m *metricVcenterHostPowerState) recordDataPoint(start pcommon.Timestamp, t
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricVcenterHostPowerState) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcenterHostPowerState) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
-				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
 			}
 		}
 		m.updateCapacity()
@@ -4084,31 +4098,29 @@ func (m *metricVcenterHostUptime) init() {
 	m.data.SetName("vcenter.host.uptime")
 	m.data.SetDescription("Total time elapsed since last operating system boot-up.")
 	m.data.SetUnit("s")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.SetEmptyGauge()
 }
 
-func (m *metricVcenterHostUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricVcenterHostUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricVcenterHostUptime) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcenterHostUptime) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -6501,9 +6513,11 @@ type metricVcenterVMPowerState struct {
 func (m *metricVcenterVMPowerState) init() {
 	m.data.SetName("vcenter.vm.power_state")
 	m.data.SetDescription("The current power state of the virtual machine.")
-	m.data.SetUnit("{state}")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
@@ -6520,7 +6534,7 @@ func (m *metricVcenterVMPowerState) recordDataPoint(start pcommon.Timestamp, ts 
 	}
 
 	var s string
-	dps := m.data.Gauge().DataPoints()
+	dps := m.data.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
 		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
@@ -6550,17 +6564,17 @@ func (m *metricVcenterVMPowerState) recordDataPoint(start pcommon.Timestamp, ts 
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricVcenterVMPowerState) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcenterVMPowerState) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
-				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
 			}
 		}
 		m.updateCapacity()
@@ -7521,7 +7535,7 @@ func (mb *MetricsBuilder) RecordVcenterHostPowerStateDataPoint(ts pcommon.Timest
 }
 
 // RecordVcenterHostUptimeDataPoint adds a data point to vcenter.host.uptime metric.
-func (mb *MetricsBuilder) RecordVcenterHostUptimeDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordVcenterHostUptimeDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricVcenterHostUptime.recordDataPoint(mb.startTime, ts, val)
 }
 

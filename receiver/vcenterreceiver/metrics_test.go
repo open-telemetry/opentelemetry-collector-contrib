@@ -217,41 +217,55 @@ func cpuMetricValues(metrics pmetric.Metrics) map[string]float64 {
 	return values
 }
 
+var (
+	hostPowerStates           = []string{"on", "off", "standby", "unknown"}
+	hostConnectionStates      = []string{"connected", "disconnected", "not_responding", "unknown"}
+	datastoreMaintenanceModes = []string{"normal", "entering_maintenance", "in_maintenance", "unknown"}
+	vmPowerStates             = []string{"on", "off", "suspended", "unknown"}
+)
+
 func TestRecordHostSystemStats_StateMetrics(t *testing.T) {
 	testCases := []struct {
 		name                string
 		powerState          types.HostSystemPowerState
 		connectionState     types.HostSystemConnectionState
-		wantPowerState      map[string]int64
-		wantConnectionState map[string]int64
+		wantPowerState      map[string]float64
+		wantConnectionState map[string]float64
 	}{
 		{
 			name:                "powered on and connected host",
 			powerState:          types.HostSystemPowerStatePoweredOn,
 			connectionState:     types.HostSystemConnectionStateConnected,
-			wantPowerState:      map[string]int64{"power_state=on": 1},
-			wantConnectionState: map[string]int64{"connection_state=connected": 1},
+			wantPowerState:      stateValues("power_state", "on", hostPowerStates),
+			wantConnectionState: stateValues("connection_state", "connected", hostConnectionStates),
 		},
 		{
 			name:                "powered off and not responding host",
 			powerState:          types.HostSystemPowerStatePoweredOff,
 			connectionState:     types.HostSystemConnectionStateNotResponding,
-			wantPowerState:      map[string]int64{"power_state=off": 1},
-			wantConnectionState: map[string]int64{"connection_state=not_responding": 1},
+			wantPowerState:      stateValues("power_state", "off", hostPowerStates),
+			wantConnectionState: stateValues("connection_state", "not_responding", hostConnectionStates),
 		},
 		{
-			name:                "unrecognized power state is reported as unknown",
+			name:                "host in standby",
+			powerState:          types.HostSystemPowerStateStandBy,
+			connectionState:     types.HostSystemConnectionStateConnected,
+			wantPowerState:      stateValues("power_state", "standby", hostPowerStates),
+			wantConnectionState: stateValues("connection_state", "connected", hostConnectionStates),
+		},
+		{
+			name:                "unrecognized states are reported as unknown",
+			powerState:          "someNewState",
+			connectionState:     "someNewState",
+			wantPowerState:      stateValues("power_state", "unknown", hostPowerStates),
+			wantConnectionState: stateValues("connection_state", "unknown", hostConnectionStates),
+		},
+		{
+			name:                "missing states are not reported",
 			powerState:          "",
-			connectionState:     types.HostSystemConnectionStateDisconnected,
-			wantPowerState:      map[string]int64{"power_state=unknown": 1},
-			wantConnectionState: map[string]int64{"connection_state=disconnected": 1},
-		},
-		{
-			name:                "unrecognized connection state is not reported",
-			powerState:          types.HostSystemPowerStatePoweredOn,
 			connectionState:     "",
-			wantPowerState:      map[string]int64{"power_state=on": 1},
-			wantConnectionState: map[string]int64{},
+			wantPowerState:      map[string]float64{},
+			wantConnectionState: map[string]float64{},
 		},
 	}
 
@@ -271,33 +285,52 @@ func TestRecordHostSystemStats_StateMetrics(t *testing.T) {
 	}
 }
 
-func TestRecordHostSystemStats_Uptime(t *testing.T) {
-	now := time.Now()
-	bootTime := now.Add(-40 * 24 * time.Hour)
+func TestRecordDatacenterStats_HostPowerState(t *testing.T) {
+	scraper := &vcenterMetricScraper{
+		mb: metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+	}
+	dcStats := &datacenterStats{
+		HostStats: map[string]map[types.ManagedEntityStatus]int64{
+			string(types.HostSystemPowerStatePoweredOn): {types.ManagedEntityStatusGreen: 2},
+			string(types.HostSystemPowerStateStandBy):   {types.ManagedEntityStatusGreen: 1},
+		},
+	}
 
+	scraper.recordDatacenterStats(pcommon.NewTimestampFromTime(time.Now()), dcStats)
+
+	require.Equal(t,
+		map[string]float64{
+			"status=green,power_state=on":      2,
+			"status=green,power_state=standby": 1,
+		},
+		metricDataPoints(scraper.mb.Emit(), "vcenter.datacenter.host.count"),
+	)
+}
+
+func TestRecordHostSystemStats_Uptime(t *testing.T) {
 	testCases := []struct {
 		name       string
 		powerState types.HostSystemPowerState
-		bootTime   *time.Time
-		wantUptime map[string]int64
+		uptime     int32
+		wantUptime map[string]float64
 	}{
 		{
-			name:       "powered on host reports seconds since boot",
+			name:       "powered on host reports the uptime from the host",
 			powerState: types.HostSystemPowerStatePoweredOn,
-			bootTime:   &bootTime,
-			wantUptime: map[string]int64{"": 40 * 24 * 60 * 60},
+			uptime:     3456000,
+			wantUptime: map[string]float64{"": 3456000},
 		},
 		{
 			name:       "powered off host reports no uptime",
 			powerState: types.HostSystemPowerStatePoweredOff,
-			bootTime:   &bootTime,
-			wantUptime: map[string]int64{},
+			uptime:     3456000,
+			wantUptime: map[string]float64{},
 		},
 		{
-			name:       "host without boot time reports no uptime",
+			name:       "host without uptime reports no uptime",
 			powerState: types.HostSystemPowerStatePoweredOn,
-			bootTime:   nil,
-			wantUptime: map[string]int64{},
+			uptime:     0,
+			wantUptime: map[string]float64{},
 		},
 	}
 
@@ -306,9 +339,9 @@ func TestRecordHostSystemStats_Uptime(t *testing.T) {
 			scraper := newStateMetricsScraper()
 			host := newTestHost()
 			host.Runtime.PowerState = tc.powerState
-			host.Runtime.BootTime = tc.bootTime
+			host.Summary.QuickStats.Uptime = tc.uptime
 
-			scraper.recordHostSystemStats(pcommon.NewTimestampFromTime(now), host)
+			scraper.recordHostSystemStats(pcommon.NewTimestampFromTime(time.Now()), host)
 
 			require.Equal(t, tc.wantUptime, metricDataPoints(scraper.mb.Emit(), "vcenter.host.uptime"))
 		})
@@ -327,7 +360,7 @@ func TestRecordHostSystemStats_AlarmCount(t *testing.T) {
 	scraper.recordHostSystemStats(pcommon.NewTimestampFromTime(time.Now()), host)
 
 	require.Equal(t,
-		map[string]int64{"status=red": 2, "status=yellow": 1},
+		map[string]float64{"status=red": 2, "status=yellow": 1},
 		metricDataPoints(scraper.mb.Emit(), "vcenter.host.alarm.count"),
 	)
 }
@@ -369,37 +402,45 @@ func TestCountTriggeredAlarmsByStatus(t *testing.T) {
 }
 
 func TestRecordDatastoreStats_StateMetrics(t *testing.T) {
+	noAlarms := map[string]float64{"status=red": 0, "status=yellow": 0}
+
 	testCases := []struct {
 		name                string
 		maintenanceMode     string
 		alarms              []types.AlarmState
-		wantMaintenanceMode map[string]int64
-		wantAlarmCount      map[string]int64
+		wantMaintenanceMode map[string]float64
+		wantAlarmCount      map[string]float64
 	}{
 		{
 			name:                "datastore in normal mode with a red alarm",
 			maintenanceMode:     string(types.DatastoreSummaryMaintenanceModeStateNormal),
 			alarms:              []types.AlarmState{{OverallStatus: types.ManagedEntityStatusRed}},
-			wantMaintenanceMode: map[string]int64{"maintenance_mode=normal": 1},
-			wantAlarmCount:      map[string]int64{"status=red": 1, "status=yellow": 0},
+			wantMaintenanceMode: stateValues("maintenance_mode", "normal", datastoreMaintenanceModes),
+			wantAlarmCount:      map[string]float64{"status=red": 1, "status=yellow": 0},
 		},
 		{
 			name:                "datastore entering maintenance",
 			maintenanceMode:     string(types.DatastoreSummaryMaintenanceModeStateEnteringMaintenance),
-			wantMaintenanceMode: map[string]int64{"maintenance_mode=entering_maintenance": 1},
-			wantAlarmCount:      map[string]int64{"status=red": 0, "status=yellow": 0},
+			wantMaintenanceMode: stateValues("maintenance_mode", "entering_maintenance", datastoreMaintenanceModes),
+			wantAlarmCount:      noAlarms,
 		},
 		{
 			name:                "datastore in maintenance",
 			maintenanceMode:     string(types.DatastoreSummaryMaintenanceModeStateInMaintenance),
-			wantMaintenanceMode: map[string]int64{"maintenance_mode=in_maintenance": 1},
-			wantAlarmCount:      map[string]int64{"status=red": 0, "status=yellow": 0},
+			wantMaintenanceMode: stateValues("maintenance_mode", "in_maintenance", datastoreMaintenanceModes),
+			wantAlarmCount:      noAlarms,
 		},
 		{
-			name:                "datastore without maintenance mode reports no maintenance mode",
+			name:                "unrecognized maintenance mode is reported as unknown",
+			maintenanceMode:     "someNewMode",
+			wantMaintenanceMode: stateValues("maintenance_mode", "unknown", datastoreMaintenanceModes),
+			wantAlarmCount:      noAlarms,
+		},
+		{
+			name:                "missing maintenance mode is not reported",
 			maintenanceMode:     "",
-			wantMaintenanceMode: map[string]int64{},
-			wantAlarmCount:      map[string]int64{"status=red": 0, "status=yellow": 0},
+			wantMaintenanceMode: map[string]float64{},
+			wantAlarmCount:      noAlarms,
 		},
 	}
 
@@ -436,38 +477,50 @@ func TestRecordVMStats_PowerState(t *testing.T) {
 		powerState     types.VirtualMachinePowerState
 		template       bool
 		host           *mo.HostSystem
-		wantPowerState map[string]int64
+		wantPowerState map[string]float64
 	}{
 		{
 			name:           "powered on vm",
 			powerState:     types.VirtualMachinePowerStatePoweredOn,
 			host:           validHost,
-			wantPowerState: map[string]int64{"power_state=on": 1},
+			wantPowerState: stateValues("power_state", "on", vmPowerStates),
 		},
 		{
 			name:           "powered off vm",
 			powerState:     types.VirtualMachinePowerStatePoweredOff,
 			host:           validHost,
-			wantPowerState: map[string]int64{"power_state=off": 1},
+			wantPowerState: stateValues("power_state", "off", vmPowerStates),
 		},
 		{
 			name:           "suspended vm",
 			powerState:     types.VirtualMachinePowerStateSuspended,
 			host:           validHost,
-			wantPowerState: map[string]int64{"power_state=suspended": 1},
+			wantPowerState: stateValues("power_state", "suspended", vmPowerStates),
+		},
+		{
+			name:           "unrecognized power state is reported as unknown",
+			powerState:     "someNewState",
+			host:           validHost,
+			wantPowerState: stateValues("power_state", "unknown", vmPowerStates),
+		},
+		{
+			name:           "missing power state is not reported",
+			powerState:     "",
+			host:           validHost,
+			wantPowerState: map[string]float64{},
 		},
 		{
 			name:           "template reports no power state",
 			powerState:     types.VirtualMachinePowerStatePoweredOff,
 			template:       true,
 			host:           validHost,
-			wantPowerState: map[string]int64{},
+			wantPowerState: map[string]float64{},
 		},
 		{
 			name:           "power state is reported even without host hardware",
 			powerState:     types.VirtualMachinePowerStatePoweredOn,
 			host:           &mo.HostSystem{},
-			wantPowerState: map[string]int64{"power_state=on": 1},
+			wantPowerState: stateValues("power_state", "on", vmPowerStates),
 		},
 	}
 
@@ -517,10 +570,20 @@ func newTestHost() *mo.HostSystem {
 	}
 }
 
-// metricDataPoints returns the int values of every data point of the named metric,
+// stateValues returns the expected data points of a state metric: 1 for the current state and 0 for every other state.
+func stateValues(attribute, current string, states []string) map[string]float64 {
+	values := map[string]float64{}
+	for _, state := range states {
+		values[attribute+"="+state] = 0
+	}
+	values[attribute+"="+current] = 1
+	return values
+}
+
+// metricDataPoints returns the value of every data point of the named metric,
 // keyed by the data point's attributes formatted as "key=value".
-func metricDataPoints(metrics pmetric.Metrics, name string) map[string]int64 {
-	values := map[string]int64{}
+func metricDataPoints(metrics pmetric.Metrics, name string) map[string]float64 {
+	values := map[string]float64{}
 	rms := metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		sms := rms.At(i).ScopeMetrics()
@@ -547,7 +610,11 @@ func metricDataPoints(metrics pmetric.Metrics, name string) map[string]int64 {
 						attrs = append(attrs, key+"="+value.AsString())
 						return true
 					})
-					values[strings.Join(attrs, ",")] = dp.IntValue()
+					if dp.ValueType() == pmetric.NumberDataPointValueTypeInt {
+						values[strings.Join(attrs, ",")] = float64(dp.IntValue())
+					} else {
+						values[strings.Join(attrs, ",")] = dp.DoubleValue()
+					}
 				}
 			}
 		}
