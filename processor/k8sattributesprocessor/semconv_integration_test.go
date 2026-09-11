@@ -9,9 +9,10 @@ package k8sattributesprocessor
 // against the OpenTelemetry semantic conventions, using a Weaver live-check
 // container via pkg/semconvtest. By default the check runs against the
 // latest published semantic-conventions registry, which Weaver downloads at
-// startup, on the otel/weaver:latest image. Both can be pinned with
-// semconvtest.WithVersion and semconvtest.WithRegistry when deterministic
-// results are needed.
+// startup, on the tested otel/weaver version pinned in pkg/semconvtest.
+// The registry can be pinned with semconvtest.WithRegistry when
+// deterministic results are needed; semconvtest.WithVersion selects a
+// different image version.
 
 import (
 	"net"
