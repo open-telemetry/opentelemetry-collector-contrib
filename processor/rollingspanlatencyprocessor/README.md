@@ -56,8 +56,10 @@ processors:
     # Floor applied to a baseline's rolling standard deviation.
     min_stddev: 1ms
 
-    # Maximum number of concurrently tracked baselines (0 = unlimited).
-    max_baselines: 1000
+    # Maximum number of concurrently tracked baselines. Default is 0 (unlimited);
+    # set this when resource_key_attributes plus span name can produce high
+    # cardinality, to bound memory growth.
+    max_baselines: 0
 
     # Observations a baseline must accumulate before spans are labeled against it.
     warmup_count: 30
