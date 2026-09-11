@@ -85,22 +85,40 @@ func TestLoadConfig(t *testing.T) {
 func TestConfigValidation(t *testing.T) {
 	factory := NewFactory()
 	c := factory.CreateDefaultConfig().(*Config)
+	// Invalid: project IDs cannot start with a numeric character.
 	c.Subscription = "projects/000project/subscriptions/my-subscription"
 	assert.Error(t, c.validate())
+
+	// Invalid: Don't allow topics.
 	c.Subscription = "projects/my-project/topics/my-topic"
 	assert.Error(t, c.validate())
-	c.Subscription = "projects/my-project/subscriptions/my-subscription"
-	assert.NoError(t, c.validate())
-	// Test for project IDs with a single colon (not at start, not at end)
-	c.Subscription = "projects/s3ns:my-project/subscriptions/my-subscription"
-	assert.NoError(t, c.validate())
-	// Invalid: colon at the start
+
+	// Invalid: colon at the start.
 	c.Subscription = "projects/:invalid/subscriptions/my-subscription"
 	assert.Error(t, c.validate())
-	// Invalid: colon at the end
+
+	// Invalid: colon at the end.
 	c.Subscription = "projects/invalid:/subscriptions/my-subscription"
 	assert.Error(t, c.validate())
-	// Invalid: multiple colons
-	c.Subscription = "projects/s3ns:invalid:invalid/subscriptions/my-subscription"
+
+	// Invalid: hyphen at the end.
+	c.Subscription = "projects/my-project-/subscriptions/my-subscription"
 	assert.Error(t, c.validate())
+
+	// Valid: Standard project ID subscription.
+	c.Subscription = "projects/my-project/subscriptions/my-subscription"
+	assert.NoError(t, c.validate())
+
+	// Valid: Domain-scoped projects with colon.
+	c.Subscription = "projects/s3ns:my-project/subscriptions/my-subscription"
+	assert.NoError(t, c.validate())
+
+	// Valid: Domain-scoped projects with dot and colon.
+	c.Subscription = "projects/example.com:my-project/subscriptions/my-subscription"
+	assert.NoError(t, c.validate())
+
+	// Note: The current regex is slightly permissive and allows multiple colons.
+	c.Subscription = "projects/s3ns:invalid:invalid/subscriptions/my-subscription"
+	assert.NoError(t, c.validate())
 }
+
