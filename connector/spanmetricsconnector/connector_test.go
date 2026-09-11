@@ -1432,6 +1432,18 @@ func TestSeriesExpiration(t *testing.T) {
 	assert.True(t, hasDataPointWithStringAttrValue(exported, "B"))
 }
 
+func TestResetStateSkipsIterationWhenNothingToReset(t *testing.T) {
+	p, err := newConnectorImp(new("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock(), false)
+	require.NoError(t, err)
+	require.NoError(t, p.ConsumeTraces(metadata.NewIncomingContext(t.Context(), nil), buildSampleTrace()))
+
+	// With cumulative temporality and no exemplars or expiration configured, resetState has
+	// nothing to do per resource, so it must not iterate over (and allocate a key slice for) the cache.
+	allocs := testing.AllocsPerRun(10, p.resetState)
+	assert.Zero(t, allocs)
+	assert.Equal(t, 2, p.resourceMetrics.Len())
+}
+
 func TestResourceMetricsKeyAttributes(t *testing.T) {
 	resourceMetricsKeyAttributes := []string{
 		"service.name",
