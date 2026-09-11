@@ -6,6 +6,8 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"bytes"
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -15,6 +17,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
+
+// errPayloadTooLarge marks a batch the server rejected as too large (HTTP 413).
+// It is wrapped in a permanent error so signals that cannot split treat it as a
+// drop, while the logs path detects it (errors.Is) and splits the batch.
+var errPayloadTooLarge = errors.New("splunk hec payload too large")
 
 type hecWorker interface {
 	send(context.Context, buffer, map[string]string) error
@@ -60,6 +67,12 @@ func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[s
 
 	if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable {
 		hec.logger.Error("Splunk is unable to receive data. Please investigate the health of the cluster", zap.Int("status", resp.StatusCode), zap.String("host", hec.url.String()))
+	}
+
+	if resp.StatusCode == http.StatusRequestEntityTooLarge {
+		_, _ = io.Copy(io.Discard, resp.Body)
+		return consumererror.NewPermanent(fmt.Errorf("%w: HTTP %q %d %q", errPayloadTooLarge,
+			resp.Request.URL.Path, resp.StatusCode, http.StatusText(resp.StatusCode)))
 	}
 
 	err = splunk.HandleHTTPCode(resp)
