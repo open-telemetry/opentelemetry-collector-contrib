@@ -127,6 +127,11 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 
 		if c.Timeout > 0 {
 			clientOptions.SetConnectTimeout(c.Timeout)
+			// A secondary that connects but stops responding would otherwise stall a scrape
+			// indefinitely, because the scrape context carries no deadline unless one is
+			// configured. The driver honors an operation's own deadline over this value, so
+			// a configured scrape timeout still wins.
+			clientOptions.SetTimeout(c.Timeout)
 		}
 
 		// Set up authentication if username/password are provided or if an auth mechanism is specified
@@ -134,6 +139,12 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 		if c.Username != "" && c.Password != "" || c.AuthMechanism != "" {
 			credential := c.buildCredential()
 			clientOptions.SetAuth(credential)
+		}
+
+		// Secondaries are members of the same deployment as the primary, so they need the
+		// same transport security.
+		if tlsConfig, err := c.ClientConfig.LoadTLSConfig(context.Background()); err == nil && tlsConfig != nil {
+			clientOptions.SetTLSConfig(tlsConfig)
 		}
 
 		return clientOptions
