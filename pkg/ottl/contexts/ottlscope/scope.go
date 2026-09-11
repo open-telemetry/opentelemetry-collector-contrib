@@ -27,7 +27,6 @@ var tcPool = sync.Pool{
 }
 
 // ContextName is the name of the context for instrumentation scopes.
-// Experimental: *NOTE* this constant is subject to change or removal in the future.
 const ContextName = ctxscope.Name
 
 var (
@@ -42,8 +41,8 @@ type TransformContext struct {
 	resource              pcommon.Resource
 	cache                 pcommon.Map
 	externalCache         *pcommon.Map
-	scopeSchemaURLItem    ctxcommon.SchemaURLItem
-	resourceSchemaURLItem ctxcommon.SchemaURLItem
+	scopeSchemaURLItem    ottl.SchemaURLItem
+	resourceSchemaURLItem ottl.SchemaURLItem
 }
 
 // MarshalLogObject serializes the TransformContext into a zapcore.ObjectEncoder for logging.
@@ -70,7 +69,7 @@ func WithCache(cache *pcommon.Map) TransformContextOption {
 
 // NewTransformContext returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
-func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeSchemaURLItem, resourceSchemaURLItem ctxcommon.SchemaURLItem, options ...TransformContextOption) *TransformContext {
+func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeSchemaURLItem, resourceSchemaURLItem ottl.SchemaURLItem, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
 	tCtx.instrumentationScope = instrumentationScope
 	tCtx.resource = resource
@@ -105,20 +104,18 @@ func (tCtx *TransformContext) GetResource() pcommon.Resource {
 }
 
 // GetScopeSchemaURLItem returns the schema URL item for the scope from the TransformContext.
-func (tCtx *TransformContext) GetScopeSchemaURLItem() ctxcommon.SchemaURLItem {
+func (tCtx *TransformContext) GetScopeSchemaURLItem() ottl.SchemaURLItem {
 	return tCtx.scopeSchemaURLItem
 }
 
 // GetResourceSchemaURLItem returns the schema URL item for the resource from the TransformContext.
-func (tCtx *TransformContext) GetResourceSchemaURLItem() ctxcommon.SchemaURLItem {
+func (tCtx *TransformContext) GetResourceSchemaURLItem() ottl.SchemaURLItem {
 	return tCtx.resourceSchemaURLItem
 }
 
 // EnablePathContextNames enables the support for path's context names on statements.
 // When this option is configured, all statement's paths must have a valid context prefix,
 // otherwise an error is reported.
-//
-// Experimental: *NOTE* this option is subject to change or removal in the future.
 func EnablePathContextNames() ottl.Option[*TransformContext] {
 	return func(p *ottl.Parser[*TransformContext]) {
 		ottl.WithPathContextNames[*TransformContext]([]string{
