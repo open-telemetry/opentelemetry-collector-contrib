@@ -3204,20 +3204,22 @@ The returned type is `int64`.
 
 Once OTTL is `1.0`, the standard functions returned by `StandardFuncs` and `StandardConverters` are **frozen**.
 For the life of `1.x` no standard function will be removed and no existing signature will change in a
-backward-incompatible way, so any OTTL statement that parses against a given `1.x` release keeps parsing and
-behaving the same against every later `1.x` release.
+backward-incompatible way.
 
 Because the standard set is frozen, new functions are introduced as experimental functions first, and become
 part of the frozen standard set only after they have proven stable.
 
 ### Experimental functions
 
-New functions are added to `StandardFuncs` / `StandardConverters` only when the
-`ottl.functions.enableExperimental` feature gate is enabled. When the gate is disabled the experimental functions
-are absent from the standard function maps entirely. Experimental functions:
+The `ottl.functions.enableExperimental` feature gate controls whether experimental functions are included in the
+maps returned by the `StandardFuncs` / `StandardConverters` helpers: they are added only when the gate is enabled,
+and are absent entirely when it is disabled. This gate governs **only** the `Standard*` helpers. A component that
+builds its own function map is free to register experimental functions directly, with or without the gate.
+
+Experimental functions:
 
 - Are **not available by default**. A user must enable the `ottl.functions.enableExperimental` feature gate before
-  an experimental function can be used; the gate makes every experimental function available at once. Because the
+  an experimental function can be used via the Standard helpers. Because the
   functions are simply not registered while the gate is disabled, a statement that references one without the gate
   fails to parse with an `undefined function` error.
 - Are **not covered by the stability guarantee**. Their names, signatures, and behavior may change, and the
@@ -3231,25 +3233,19 @@ are absent from the standard function maps entirely. Experimental functions:
 ### Promotion to standard
 
 Promotion moves the function out of the experimental set so it is registered unconditionally and available by
-default. This is an additive, backward-compatible change and ships in a **minor** release (never a patch).
-Promotion also **freezes the function's signature**: the signature a function has at promotion is the signature
-it keeps for the life of `1.x`, so any desired signature change must be made while the function is still
+default. This is an additive, backward-compatible change.
+Promotion also **freezes the function's signature** for the life of `1.x`, so any desired signature change must be made while the function is still
 experimental.
 
-A function may be promoted only when all of the following hold:
+A function may be promoted only when all the following hold:
 
 1. It has been available as an experimental function for at least two minor releases, giving users time to try
    it and give feedback.
-2. It has complete tests that validate its behavior and complete documentation in this README.
+2. It has complete tests (including e2e) that validate its behavior and complete documentation in this README.
 3. Its name, arguments, and behavior are settled — there are no open issues or pull requests proposing changes
    to them.
-4. It adheres to the [design principles](#design-principles) for standard functions (no I/O, no infinite loops,
-   communicates only through parameters and results).
+4. It adheres to the [design principles](#design-principles) for standard functions.
 5. There is demonstrated user demand for the function to be part of the stable, default set.
 6. It has sign-off from the OTTL code owners.
 
 A function that cannot meet these criteria stays experimental; there is no obligation to promote it.
-
-Examples:
-
-- `Year(Now())`
