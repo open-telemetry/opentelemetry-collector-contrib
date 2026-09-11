@@ -4891,6 +4891,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		resourceAttributeIncludeFilter:                    make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                    make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.RabbitmqClusterName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["rabbitmq.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqClusterName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.RabbitmqClusterName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["rabbitmq.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqClusterName.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.RabbitmqExchangeName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["rabbitmq.exchange.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqExchangeName.MetricsInclude)
 	}
