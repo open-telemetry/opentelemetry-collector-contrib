@@ -29,6 +29,7 @@ type azureTracesRecords struct {
 // https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/apprequests
 // https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/appdependencies
 type azureTracesRecord struct {
+	// Common fields across both AppRequests and AppDependencies tables
 	Time                  string             `json:"time"`
 	ResourceID            string             `json:"resourceId"`
 	ResourceGUID          string             `json:"ResourceGUID"`
@@ -50,13 +51,18 @@ type azureTracesRecord struct {
 	Measurements          map[string]float64 `json:"Measurements"`
 	SpanID                string             `json:"Id"`
 	Name                  string             `json:"Name"`
-	URL                   string             `json:"Url"`
-	Source                string             `json:"Source"`
 	Success               bool               `json:"Success"`
 	ResultCode            string             `json:"ResultCode"`
 	DurationMs            float64            `json:"DurationMs"`
 	PerformanceBucket     string             `json:"PerformanceBucket"`
 	ItemCount             float64            `json:"ItemCount"`
+	// Fields specific to AppRequests
+	URL    string `json:"Url"`
+	Source string `json:"Source"`
+	// Fields specific to AppDependencies
+	Target         string `json:"Target"`
+	DependencyType string `json:"DependencyType"`
+	Data           string `json:"Data"`
 }
 
 var _ ptrace.Unmarshaler = (*TracesUnmarshaler)(nil)
@@ -124,40 +130,84 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 		span.SetSpanID(spanID)
 		span.SetParentSpanID(parentID)
 
-		span.Attributes().PutStr("OperationName", azureTrace.OperationName)
-		span.Attributes().PutStr("AppRoleName", azureTrace.AppRoleName)
-		span.Attributes().PutStr("AppRoleInstance", azureTrace.AppRoleInstance)
-		span.Attributes().PutStr("Type", azureTrace.Type)
-
-		span.Attributes().PutStr("http.url", azureTrace.URL)
-
-		urlObj, _ := url.Parse(azureTrace.URL)
-		hostname := urlObj.Host
-		hostpath := urlObj.Path
-		scheme := urlObj.Scheme
-
-		span.Attributes().PutStr("http.host", hostname)
-		span.Attributes().PutStr("http.path", hostpath)
-		span.Attributes().PutStr("http.response.status_code", azureTrace.ResultCode)
-		span.Attributes().PutStr("http.client_ip", azureTrace.ClientIP)
-		span.Attributes().PutStr("http.client_city", azureTrace.ClientCity)
-		span.Attributes().PutStr("http.client_type", azureTrace.ClientType)
-		span.Attributes().PutStr("http.client_state", azureTrace.ClientStateOrProvince)
-		span.Attributes().PutStr("http.client_type", azureTrace.ClientType)
-		span.Attributes().PutStr("http.client_country", azureTrace.ClientCountryOrRegion)
-		span.Attributes().PutStr("http.scheme", scheme)
-		span.Attributes().PutStr("http.method", azureTrace.Properties["HTTP Method"])
-
-		for key, value := range azureTrace.Properties {
-			if key != "HTTP Method" { // HTTP Method is already mapped to http.method
-				span.Attributes().PutStr(key, value)
-			}
-		}
-
-		span.SetKind(ptrace.SpanKindServer)
+		// Common attributes for both AppRequests and AppDependencies
 		span.SetName(azureTrace.Name)
-		span.SetStartTimestamp(nanos)
-		span.SetEndTimestamp(nanos + pcommon.Timestamp(azureTrace.DurationMs*1e6))
+		span.Attributes().PutStr("azure.operation.name", azureTrace.OperationName)
+		span.Attributes().PutStr("azure.app.name", azureTrace.AppRoleName)
+		span.Attributes().PutStr("azure.app.instance", azureTrace.AppRoleInstance)
+		span.Attributes().PutStr("azure.category", azureTrace.Type)
+		span.Attributes().PutStr("azure.client.sdk.version", azureTrace.SDKVersion)
+		switch azureTrace.Success {
+		case true:
+			span.Status().SetCode(ptrace.StatusCodeOk)
+		case false:
+			span.Status().SetCode(ptrace.StatusCodeError)
+		default:
+			span.Status().SetCode(ptrace.StatusCodeUnset)
+		}
+		span.Attributes().PutStr(string(conventions.UserAgentOriginalKey), azureTrace.Properties["Request-User-Agent"])
+
+		switch azureTrace.Type {
+		case "AppRequests":
+			span.SetKind(ptrace.SpanKindServer)
+
+			urlObj, _ := url.Parse(azureTrace.URL)
+			hostname := urlObj.Host
+			hostpath := urlObj.Path
+			scheme := urlObj.Scheme
+
+			span.Attributes().PutStr(string(conventions.HTTPRequestMethodKey), azureTrace.Properties["HTTP Method"])
+			span.Attributes().PutStr(string(conventions.ServerAddressKey), hostname)
+			span.Attributes().PutStr(string(conventions.URLPathKey), hostpath)
+			span.Attributes().PutStr(string(conventions.URLSchemeKey), scheme)
+			span.Attributes().PutStr(string(conventions.ClientAddressKey), azureTrace.ClientIP)
+			span.Attributes().PutStr("client.geo.locality.name", azureTrace.ClientCity)
+			span.Attributes().PutStr("client.type", azureTrace.ClientType)
+			span.Attributes().PutStr("client.geo.region.iso_code", azureTrace.ClientStateOrProvince)
+			span.Attributes().PutStr("client.geo.country.iso_code", azureTrace.ClientCountryOrRegion)
+			span.Attributes().PutStr(string(conventions.HTTPResponseStatusCodeKey), azureTrace.ResultCode)
+			span.Attributes().PutDouble(string(conventions.HTTPResponseBodySizeKey), azureTrace.Measurements["Response Size"])
+			span.Attributes().PutDouble(string(conventions.HTTPRequestBodySizeKey), azureTrace.Measurements["Request Size"])
+			span.Attributes().PutStr(string(conventions.HTTPRouteKey), hostpath)
+			span.Attributes().PutStr(string(conventions.URLFullKey), azureTrace.URL)
+
+		case "AppDependencies":
+			span.SetKind(ptrace.SpanKindClient)
+
+			switch azureTrace.DependencyType {
+			case "Backend":
+				span.Attributes().PutStr(string(conventions.HTTPRequestMethodKey), azureTrace.Properties["Backend Method"])
+			case "HTTP":
+				span.Attributes().PutStr(string(conventions.HTTPRequestMethodKey), azureTrace.Properties["HTTP Method"])
+			}
+
+			urlObj, _ := url.Parse(azureTrace.Target)
+			hostname := urlObj.Host
+			scheme := urlObj.Scheme
+
+			var hostpath string
+			if azureTrace.Name != "" {
+				parts := bytes.Fields([]byte(azureTrace.Name))
+				if len(parts) > 1 {
+					hostpath = string(parts[1])
+				}
+			}
+
+			span.Attributes().PutStr(string(conventions.ServerAddressKey), hostname)
+			span.Attributes().PutStr(string(conventions.URLSchemeKey), scheme)
+			span.Attributes().PutStr(string(conventions.URLFullKey), azureTrace.Target)
+			span.Attributes().PutStr(string(conventions.URLPathKey), hostpath)
+
+			for key, value := range azureTrace.Properties {
+				// HTTP Method and Backend Method are already mapped to http.request.method
+				// Request-User-Agent is already mapped to user_agent.original
+				if key != "HTTP Method" && key != "Backend Method" && key != "Request-User-Agent" {
+					span.Attributes().PutStr(key, value)
+				}
+			}
+			span.SetStartTimestamp(nanos)
+			span.SetEndTimestamp(nanos + pcommon.Timestamp(azureTrace.DurationMs*1e6))
+		}
 	}
 
 	if resourceID != "" {
