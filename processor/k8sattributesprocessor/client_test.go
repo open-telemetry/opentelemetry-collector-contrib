@@ -35,6 +35,7 @@ type fakeClient struct {
 	ReplicaSets        map[string]*kube.ReplicaSet
 	Jobs               map[string]*kube.Job
 	CronJobs           map[string]*kube.CronJob
+	HPAs               map[string]*kube.HPA
 	StopCh             chan struct{}
 	stopOnce           sync.Once
 	stopWg             sync.WaitGroup
@@ -108,6 +109,11 @@ func (f *fakeClient) GetJob(jobUID string) (*kube.Job, bool) {
 func (f *fakeClient) GetCronJob(cronJobUID string) (*kube.CronJob, bool) {
 	j, ok := f.CronJobs[cronJobUID]
 	return j, ok
+}
+
+func (f *fakeClient) GetHPA(hpaUID string) (*kube.HPA, bool) {
+	h, ok := f.HPAs[hpaUID]
+	return h, ok
 }
 
 // Start is a noop for FakeClient.

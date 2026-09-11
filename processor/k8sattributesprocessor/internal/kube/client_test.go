@@ -2937,6 +2937,117 @@ func TestCronJobExtractionRules(t *testing.T) {
 	}
 }
 
+func TestHPAExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	hpa := &meta_v1.PartialObjectMetadata{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "k8s-hpa-example",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			CreationTimestamp: meta_v1.Now(),
+			Labels: map[string]string{
+				"label1": "lv1",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+		},
+	}
+
+	testCases := []struct {
+		name       string
+		rules      ExtractionRules
+		attributes map[string]string
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels and annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromHPA,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromHPA,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
+			},
+		},
+		{
+			name: "all-labels",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromHPA,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.hpa.label.label1": "lv1",
+			},
+		},
+		{
+			name: "all-annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromHPA,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.hpa.annotation.annotation1": "av1",
+			},
+		},
+		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromHPA,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.hpa.label.label1": "lv1",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			c.handleHPAAdd(hpa)
+			n, ok := c.GetHPA(string(hpa.UID))
+			require.True(t, ok)
+
+			assert.Len(t, tc.attributes, len(n.Attributes))
+			for k, v := range tc.attributes {
+				got, ok := n.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
 func TestFilters(t *testing.T) {
 	testCases := []struct {
 		name    string
@@ -4370,6 +4481,70 @@ func TestExtractCronJobLabelsAnnotations(t *testing.T) {
 	}
 }
 
+func TestExtractHPALabelsAnnotations(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	testCases := []struct {
+		name             string
+		shouldExtractHPA bool
+		rules            ExtractionRules
+	}{
+		{
+			name:             "empty-rules",
+			shouldExtractHPA: false,
+			rules:            ExtractionRules{},
+		}, {
+			name:             "pod-rules",
+			shouldExtractHPA: false,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					},
+				},
+			},
+		}, {
+			name:             "hpa-rules-only-annotations",
+			shouldExtractHPA: true,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromHPA,
+					},
+				},
+			},
+		}, {
+			name:             "hpa-rules-only-labels",
+			shouldExtractHPA: true,
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromHPA,
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			assert.Equal(t, tc.shouldExtractHPA, c.extractHPALabelsAnnotations())
+		})
+	}
+}
+
 func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *observer.ObservedLogs) {
 	set := componenttest.NewNopTelemetrySettings()
 	observedLogger, logs := observer.New(zapcore.WarnLevel)
@@ -5473,6 +5648,61 @@ func TestHandleCronJobDelete(t *testing.T) {
 	_, ok := c.GetCronJob(string(cronJob.UID))
 	assert.False(t, ok)
 	assert.Empty(t, c.CronJobs)
+}
+
+func TestHandleHPAUpdate(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	hpa := &meta_v1.PartialObjectMetadata{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-hpa",
+			Namespace: "default",
+			UID:       "hpa-uid-123",
+		},
+	}
+
+	// Add initial hpa
+	c.handleHPAAdd(hpa)
+	assert.Len(t, c.HPAs, 1)
+
+	// Update hpa
+	updatedHPA := &meta_v1.PartialObjectMetadata{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-hpa-updated",
+			Namespace: "default",
+			UID:       "hpa-uid-123",
+		},
+	}
+	c.handleHPAUpdate(hpa, updatedHPA)
+
+	// Verify update
+	h, ok := c.GetHPA(string(updatedHPA.UID))
+	require.True(t, ok)
+	assert.Equal(t, "test-hpa-updated", h.Name)
+}
+
+func TestHandleHPADelete(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	hpa := &meta_v1.PartialObjectMetadata{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-hpa",
+			Namespace: "default",
+			UID:       "hpa-uid-123",
+		},
+	}
+
+	// Add hpa
+	c.handleHPAAdd(hpa)
+	assert.Len(t, c.HPAs, 1)
+
+	// Delete hpa
+	c.handleHPADelete(hpa)
+
+	// Verify deletion
+	_, ok := c.GetHPA(string(hpa.UID))
+	assert.False(t, ok)
+	assert.Empty(t, c.HPAs)
 }
 
 func TestCreateRestConfigFailure(t *testing.T) {

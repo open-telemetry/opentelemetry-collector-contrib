@@ -382,6 +382,33 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    k8s.watcher.hpa.added:
+      prefix: otelcol.
+      enabled: true
+      description: Number of horizontalpodautoscaler add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.hpa.deleted:
+      prefix: otelcol.
+      enabled: true
+      description: Number of horizontalpodautoscaler delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.hpa.updated:
+      prefix: otelcol.
+      enabled: true
+      description: Number of horizontalpodautoscaler update events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
     k8s.watcher.job.added:
       prefix: otelcol.
       enabled: true
