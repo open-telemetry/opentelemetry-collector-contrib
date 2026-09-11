@@ -378,13 +378,9 @@ func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watch
 
 // fetchListResourceVersion performs a List operation and returns the latest resourceVersion.
 // Returns defaultResourceVersion if the API returns an empty or zero version.
-//
-// Limit is set to 1 because only the collection-level resourceVersion from
-// ListMeta is used; the returned items are discarded. ListMeta.resourceVersion
-// is the revision of the read's snapshot rather than a property of the items,
-// so a limited List yields an equally valid watch starting point while avoiding
-// materializing the whole collection into unstructured objects.
 func (o *Observer) fetchListResourceVersion(ctx context.Context, resource dynamic.ResourceInterface) (string, error) {
+	// Only ListMeta.resourceVersion is used, which is the revision of the read's snapshot
+	// rather than a property of the returned items, so the items themselves aren't needed.
 	objects, err := resource.List(ctx, metav1.ListOptions{
 		FieldSelector: o.config.FieldSelector,
 		LabelSelector: o.config.LabelSelector,

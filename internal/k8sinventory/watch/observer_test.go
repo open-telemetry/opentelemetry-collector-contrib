@@ -397,6 +397,70 @@ func TestSendInitialStateReturnsListRV(t *testing.T) {
 	assert.Equal(t, "999", listRV, "sendInitialState should return the list's own ResourceVersion")
 }
 
+// TestFetchListResourceVersionBoundsList verifies the List issued purely to obtain a
+// resourceVersion is bounded. An unbounded List decodes the whole collection into
+// unstructured objects just to read a single string from ListMeta.
+func TestFetchListResourceVersionBoundsList(t *testing.T) {
+	mockClient := newMockDynamicClient()
+	mockClient.setListResourceVersion("999")
+	mockClient.createPods(
+		generatePod("pod1", "default", nil, "100"),
+		generatePod("pod2", "default", nil, "200"),
+	)
+
+	cfg := Config{
+		Config: k8sinventory.Config{
+			Gvr:           schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"},
+			Namespaces:    []string{"default"},
+			LabelSelector: "environment=test",
+			FieldSelector: "metadata.name=pod1",
+		},
+	}
+
+	obs, err := New(mockClient, cfg, zap.NewNop(), nil, nil)
+	require.NoError(t, err)
+
+	recorder := &listOptionsRecorder{ResourceInterface: mockClient.Resource(cfg.Gvr).Namespace("default")}
+	version, err := obs.fetchListResourceVersion(t.Context(), recorder)
+	require.NoError(t, err)
+	assert.Equal(t, "999", version, "the collection-level RV should still be returned")
+
+	require.Len(t, recorder.opts, 1)
+	assert.Equal(t, int64(1), recorder.opts[0].Limit, "List must be bounded, see #50600")
+	// The selectors still have to be forwarded: they scope which collection is read,
+	// and therefore which snapshot revision the watch starts from.
+	assert.Equal(t, "environment=test", recorder.opts[0].LabelSelector)
+	assert.Equal(t, "metadata.name=pod1", recorder.opts[0].FieldSelector)
+}
+
+// TestSendInitialStateListsUnbounded guards the counterpart to the bound above:
+// sendInitialState emits the items it lists, so bounding it would drop initial state.
+func TestSendInitialStateListsUnbounded(t *testing.T) {
+	mockClient := newMockDynamicClient()
+	mockClient.setListResourceVersion("999")
+	mockClient.createPods(
+		generatePod("pod1", "default", nil, "100"),
+		generatePod("pod2", "default", nil, "200"),
+	)
+
+	cfg := Config{
+		Config: k8sinventory.Config{
+			Gvr:        schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"},
+			Namespaces: []string{"default"},
+		},
+		IncludeInitialState: true,
+	}
+
+	obs, err := New(mockClient, cfg, zap.NewNop(), nil, nil)
+	require.NoError(t, err)
+
+	recorder := &listOptionsRecorder{ResourceInterface: mockClient.Resource(cfg.Gvr).Namespace("default")}
+	obs.sendInitialState(t.Context(), recorder, "default", func(string) {})
+
+	require.Len(t, recorder.opts, 1)
+	assert.Zero(t, recorder.opts[0].Limit, "sendInitialState must list every object, not just the first")
+}
+
 // TestInitialStateListRVPersistedAsCheckpoint verifies that after sendInitialState
 // the checkpoint is updated with the list's RV (via setLatestRV in startWatch),
 // which is more accurate than the highest individual object RV.
@@ -620,6 +684,18 @@ func (r *resourceInterceptor) List(ctx context.Context, opts v1.ListOptions) (*u
 		list.SetResourceVersion(r.resourceVersion)
 	}
 	return list, err
+}
+
+// listOptionsRecorder records the ListOptions of each List call. The fake client's
+// action log cannot be used here: ListRestrictions carries only the selectors.
+type listOptionsRecorder struct {
+	dynamic.ResourceInterface
+	opts []v1.ListOptions
+}
+
+func (r *listOptionsRecorder) List(ctx context.Context, opts v1.ListOptions) (*unstructured.UnstructuredList, error) {
+	r.opts = append(r.opts, opts)
+	return r.ResourceInterface.List(ctx, opts)
 }
 
 func generatePod(name, namespace string, labels map[string]any, resourceVersion string) *unstructured.Unstructured {
