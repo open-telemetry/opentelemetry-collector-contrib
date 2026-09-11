@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: receiver/elasticsearch
+
+note: "Emit the `elasticsearch.index.shards.size` metric with `aggregation: primary_shards` in addition to `aggregation: total`"
+
+issues: [48918]
+
+subtext: |
+  The index shards size metric only reported the `total` aggregation, unlike the other index
+  metrics and its own documented attributes. It now also reports the `primary_shards` aggregation.

@@ -682,6 +682,13 @@ resourceMetrics:
                         stringValue: total
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
