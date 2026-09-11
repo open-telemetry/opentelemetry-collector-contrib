@@ -24,6 +24,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
+func defaultErrorMode() ottl.ErrorMode {
+	if metadata.ConnectorSignaltometricsDefaultErrorModeIgnoreFeatureGate.IsEnabled() {
+		return ottl.IgnoreError
+	}
+	return ottl.PropagateError
+}
+
 // NewFactory returns a ConnectorFactory.
 func NewFactory() connector.Factory {
 	return xconnector.NewFactory(
@@ -39,7 +46,7 @@ func NewFactory() connector.Factory {
 
 func createDefaultConfig() component.Config {
 	return &config.Config{
-		ErrorMode: ottl.PropagateError,
+		ErrorMode: defaultErrorMode(),
 	}
 }
 
