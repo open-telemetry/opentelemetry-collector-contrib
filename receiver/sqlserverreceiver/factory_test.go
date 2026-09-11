@@ -233,6 +233,43 @@ func TestFactory(t *testing.T) {
 				require.NoError(t, r.Shutdown(t.Context()))
 			},
 		},
+		{
+			desc: "[logs] db.server.query_plan alone does not run the query-text-and-plan scraper",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig().(*Config)
+				cfg.Username = "sa"
+				cfg.Password = "password"
+				cfg.Server = "0.0.0.0"
+				cfg.Port = 1433
+				require.NoError(t, cfg.Validate())
+				cfg.InstanceName = "instanceName"
+
+				// db.server.query_plan only splits the plan out of db.server.top_query, so on its own
+				// it collects nothing.
+				cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = true
+
+				params := receivertest.NewNopSettings(metadata.Type)
+				sqlScrapers, _ := setupSQLServerLogsScrapers(params, cfg)
+				require.Empty(t, sqlScrapers)
+
+				// Enabling db.server.top_query as well wires the shared scraper up.
+				cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+				sqlScrapers, _ = setupSQLServerLogsScrapers(params, cfg)
+
+				q := getSQLServerQueryTextAndPlanQuery()
+
+				databaseTopQueryScraperFound := false
+				for _, scraper := range sqlScrapers {
+					if scraper.sqlQuery == q {
+						databaseTopQueryScraperFound = true
+						break
+					}
+				}
+
+				require.True(t, databaseTopQueryScraperFound)
+			},
+		},
 	}
 
 	for _, tc := range testCases {
