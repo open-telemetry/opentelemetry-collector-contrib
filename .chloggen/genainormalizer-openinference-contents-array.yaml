@@ -1,0 +1,45 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: processor/gen_ai_normalizer
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Reconstruct text parts from OpenInference's indexed content array, and stop removing message attributes that were not folded into the reconstructed message
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [50133]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Instrumentors for provider APIs that model message content as a list (AWS Bedrock's `converse` takes
+  `content` as an array even for plain text) emit
+  `llm.{input,output}_messages.N.message.contents.M.message_content.*` and never set the flat
+  `message.content` string. Such messages were normalized to `gen_ai.input.messages` entries carrying
+  a role and `"parts": []`. Text entries are now reconstructed in source order, one part per content
+  block. The flat `message.content` string still takes precedence when both forms are present.
+
+  With `remove_originals: true` the source attributes were removed regardless of whether the
+  reconstruction had read them, so their values were dropped without appearing in
+  `gen_ai.input.messages` or `gen_ai.output.messages`. This affected attributes the processor does not
+  map (`message.function_call_name`, `message.function_call_arguments_json`,
+  `tool_call.reasoning_signature`, and non-text `message_content.*` payloads such as `image` and
+  `data`), and attributes belonging to a part source that lost the precedence chain, since a message
+  renders only one of `tool_call_id`, `tool_calls`, the flat `message.content`, or the indexed
+  `contents` array. An assistant turn carrying both text and a tool call lost its text, and a tool
+  response carrying its result in the `contents` array was emitted with an empty `response` and the
+  result deleted.
+
+  An attribute is now removed only when its value is represented in the reconstructed message. The
+  precedence rules are stated once and drive both rendering and removal, so anything the processor
+  does not map, or does not emit, is left on the span. Non-text content entries (image, audio,
+  reasoning) remain unsupported and are skipped, but their source attributes are preserved.
+
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
