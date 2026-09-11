@@ -1,0 +1,9 @@
+change_type: bug_fix
+component: receiver/http_check
+note: Reject an invalid `regex` validation at startup instead of silently failing every check.
+issues: [50271]
+subtext: |
+  An unparseable `regex` was previously never validated and its compile error was discarded, so the
+  check counted as failed on every scrape with nothing logged. Such a configuration is now rejected
+  when the collector starts.
+change_logs: [user]
