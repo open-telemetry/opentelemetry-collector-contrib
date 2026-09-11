@@ -11,12 +11,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -32,6 +35,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -576,6 +581,177 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			}
 		})
 	}
+}
+
+// deadlineRecorder is an http.ResponseWriter that records SetWriteDeadline
+// calls so tests can assert the receiver extends the write deadline on progress.
+type deadlineRecorder struct {
+	*httptest.ResponseRecorder
+	deadlines []time.Time
+}
+
+func (d *deadlineRecorder) SetWriteDeadline(t time.Time) error {
+	d.deadlines = append(d.deadlines, t)
+	return nil
+}
+
+func Test_handleReq_extendsWriteDeadlineOnProgress(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
+	require.NoError(t, err)
+	rcv.logsConsumer = new(consumertest.LogsSink)
+
+	splunkMsg := buildSplunkHecMsg(float64(time.Now().UnixNano())/1e6, 5)
+	msgBytes, err := json.Marshal(splunkMsg)
+	require.NoError(t, err)
+
+	rec := &deadlineRecorder{ResponseRecorder: httptest.NewRecorder()}
+	req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(msgBytes))
+	rcv.handleReq(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Result().StatusCode)
+	require.NotEmpty(t, rec.deadlines, "expected the write deadline to be extended while the request body is read")
+	for _, d := range rec.deadlines {
+		assert.True(t, d.After(time.Now()), "extended write deadline should be in the future")
+	}
+}
+
+func Test_handleRawReq_extendsWriteDeadlineOnProgress(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	config.RawPath = "/foo"
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
+	require.NoError(t, err)
+	rcv.logsConsumer = new(consumertest.LogsSink)
+
+	rec := &deadlineRecorder{ResponseRecorder: httptest.NewRecorder()}
+	req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", strings.NewReader("foo\nbar\nbaz"))
+	rcv.handleRawReq(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Result().StatusCode)
+	require.NotEmpty(t, rec.deadlines, "expected the write deadline to be extended while the raw request body is read")
+	for _, d := range rec.deadlines {
+		assert.True(t, d.After(time.Now()), "extended write deadline should be in the future")
+	}
+}
+
+func Test_handleReq_writeDeadlineDisabledWhenWriteTimeoutZero(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	config.ServerConfig.WriteTimeout = 0 // feature disabled
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
+	require.NoError(t, err)
+	rcv.logsConsumer = new(consumertest.LogsSink)
+
+	splunkMsg := buildSplunkHecMsg(float64(time.Now().UnixNano())/1e6, 5)
+	msgBytes, err := json.Marshal(splunkMsg)
+	require.NoError(t, err)
+
+	rec := &deadlineRecorder{ResponseRecorder: httptest.NewRecorder()}
+	req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(msgBytes))
+	rcv.handleReq(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Result().StatusCode)
+	require.Empty(t, rec.deadlines, "write deadline must not be manipulated when WriteTimeout is disabled")
+}
+
+func Test_handleReq_logsWriteDeadlineError(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
+	require.NoError(t, err)
+	rcv.logsConsumer = new(consumertest.LogsSink)
+
+	core, observed := observer.New(zap.DebugLevel)
+	rcv.settings.Logger = zap.New(core)
+
+	splunkMsg := buildSplunkHecMsg(float64(time.Now().UnixNano())/1e6, 5)
+	msgBytes, err := json.Marshal(splunkMsg)
+	require.NoError(t, err)
+
+	// A plain ResponseRecorder does not implement SetWriteDeadline, so the
+	// ResponseController.Unwrap chain fails and every SetWriteDeadline errors.
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(msgBytes))
+	rcv.handleReq(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Result().StatusCode)
+	require.NotEmpty(t, observed.FilterMessageSnippet("write deadline").All(),
+		"expected a debug log when SetWriteDeadline fails so a broken Unwrap chain is diagnosable")
+}
+
+// recordingConn records SetWriteDeadline calls so a test can prove the write
+// deadline is pushed down to the real connection through the confighttp/otelhttp
+// ResponseController.Unwrap chain.
+type recordingConn struct {
+	net.Conn
+	writeDeadlines *atomic.Int64
+}
+
+func (c *recordingConn) SetWriteDeadline(t time.Time) error {
+	c.writeDeadlines.Add(1)
+	return c.Conn.SetWriteDeadline(t)
+}
+
+type recordingListener struct {
+	net.Listener
+	writeDeadlines *atomic.Int64
+}
+
+func (l *recordingListener) Accept() (net.Conn, error) {
+	conn, err := l.Listener.Accept()
+	if err != nil {
+		return conn, err
+	}
+	return &recordingConn{Conn: conn, writeDeadlines: l.writeDeadlines}, nil
+}
+
+func Test_writeDeadlineExtendedThroughRealServerChain(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	config.RawPath = "/foo"
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
+	require.NoError(t, err)
+	rcv.logsConsumer = new(consumertest.LogsSink)
+
+	// Build the same handler chain Start builds and wrap it with the real
+	// confighttp/otelhttp middleware via ToServer.
+	mx := mux.NewRouter()
+	mx.NewRoute().Path(config.RawPath).HandlerFunc(rcv.handleRawReq)
+	mx.NewRoute().HandlerFunc(rcv.handleReq)
+	server, err := config.ServerConfig.ToServer(
+		t.Context(),
+		componenttest.NewNopHost().GetExtensions(),
+		rcv.settings.TelemetrySettings,
+		mx,
+	)
+	require.NoError(t, err)
+
+	rawListener, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	writeDeadlines := &atomic.Int64{}
+	ln := &recordingListener{Listener: rawListener, writeDeadlines: writeDeadlines}
+	go func() { _ = server.Serve(ln) }()
+	t.Cleanup(func() { _ = server.Close() })
+
+	// A large body forces many progress reads, so a working Unwrap chain drives
+	// SetWriteDeadline on the real connection far more than the server's own
+	// single WriteTimeout arming would.
+	var body strings.Builder
+	for range 20000 {
+		body.WriteString("some raw log line to fill the body with progress\n")
+	}
+	url := "http://" + rawListener.Addr().String() + "/foo"
+	resp, err := http.Post(url, "text/plain", strings.NewReader(body.String())) //nolint:gosec // G107: url targets a localhost test server
+	require.NoError(t, err)
+	require.NoError(t, resp.Body.Close())
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	require.Eventually(t, func() bool {
+		return writeDeadlines.Load() > 5
+	}, 5*time.Second, 10*time.Millisecond,
+		"expected the write deadline to be extended on the real connection through ResponseController.Unwrap")
 }
 
 func Test_consumer_err(t *testing.T) {

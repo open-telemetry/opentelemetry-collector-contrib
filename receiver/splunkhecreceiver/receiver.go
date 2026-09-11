@@ -304,11 +304,12 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		timestamp = pcommon.NewTimestampFromTime(time.Unix(t, 0))
 	}
 
-	ld, slLen, err := splunkHecRawToLogData(bodyReader, query, resourceCustomizer, r.config, timestamp)
+	ld, slLen, err := splunkHecRawToLogData(r.progressReader(resp, bodyReader), query, resourceCustomizer, r.config, timestamp)
 	if err != nil {
 		r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, err)
 		return
 	}
+	r.extendWriteDeadline(resp)
 	consumerErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 
 	_ = bodyReader.Close()
@@ -362,6 +363,56 @@ func (*splunkReceiver) validateChannelHeader(channelID string) error {
 	return nil
 }
 
+// setWriteDeadline pushes the response write deadline out by timeout. A failure
+// means the ResponseController could not Unwrap to a connection that supports
+// deadlines (a middleware in the chain does not forward Unwrap), so it is logged
+// at debug level rather than swallowed to keep a broken chain diagnosable.
+func setWriteDeadline(logger *zap.Logger, rc *http.ResponseController, timeout time.Duration) {
+	if err := rc.SetWriteDeadline(time.Now().Add(timeout)); err != nil {
+		logger.Debug("failed to extend write deadline; a slow or large request may be reset at WriteTimeout despite progress", zap.Error(err))
+	}
+}
+
+// progressDeadlineReader resets the response write deadline on every read so a
+// request that is actively transferring its body is not reset by the server's
+// WriteTimeout, which HTTP/2 arms when the handler starts and never extends. It
+// effectively turns WriteTimeout into an idle timeout for the body-read phase.
+type progressDeadlineReader struct {
+	reader  io.Reader
+	rc      *http.ResponseController
+	logger  *zap.Logger
+	timeout time.Duration
+}
+
+func (p *progressDeadlineReader) Read(b []byte) (int, error) {
+	setWriteDeadline(p.logger, p.rc, p.timeout)
+	return p.reader.Read(b)
+}
+
+// progressReader wraps body so the write deadline is extended as it is read. When
+// WriteTimeout is disabled (0) the body is returned unchanged. The deadline is
+// primed once up front so the body read begins with a full window.
+func (r *splunkReceiver) progressReader(resp http.ResponseWriter, body io.Reader) io.Reader {
+	timeout := r.config.ServerConfig.WriteTimeout
+	if timeout <= 0 {
+		return body
+	}
+	rc := http.NewResponseController(resp)
+	setWriteDeadline(r.settings.Logger, rc, timeout)
+	return &progressDeadlineReader{reader: body, rc: rc, logger: r.settings.Logger, timeout: timeout}
+}
+
+// extendWriteDeadline resets the response write deadline to a full WriteTimeout
+// window once, just before handing data to the pipeline (ConsumeLogs/ConsumeMetrics),
+// so the downstream call starts with a fresh window rather than whatever time was
+// left after the body read. It does not extend the deadline during consumption, so
+// a consumer that blocks longer than WriteTimeout is still reset.
+func (r *splunkReceiver) extendWriteDeadline(resp http.ResponseWriter) {
+	if timeout := r.config.ServerConfig.WriteTimeout; timeout > 0 {
+		setWriteDeadline(r.settings.Logger, http.NewResponseController(resp), timeout)
+	}
+}
+
 func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
@@ -401,7 +452,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	dec := json.NewDecoder(bodyReader)
+	dec := json.NewDecoder(r.progressReader(resp, bodyReader))
 
 	var unfiltered []*translator.Event
 	var firstEvent any
@@ -503,6 +554,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			r.failRequest(resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
 			return
 		}
+		r.extendWriteDeadline(resp)
 		ctx = r.obsrecv.StartLogsOp(ctx)
 		decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), len(events), nil)
@@ -513,6 +565,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 	if r.metricsConsumer != nil && len(metricEvents) > 0 {
 		md, _ := splunkHecToMetricsData(r.settings.Logger, metricEvents, resourceCustomizer, r.config)
+		r.extendWriteDeadline(resp)
 		ctx = r.obsrecv.StartMetricsOp(ctx)
 		decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
 		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(metricEvents), nil)
