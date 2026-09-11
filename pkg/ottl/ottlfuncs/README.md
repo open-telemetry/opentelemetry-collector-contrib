@@ -8,6 +8,14 @@ This document contains documentation for both types of OTTL functions:
 - [Editors](#editors) that transform telemetry.
 - [Converters](#converters) that provide utilities for transforming telemetry.
 
+## Contents
+
+- [Design principles](#design-principles)
+- [Working with functions](#working-with-functions)
+- [Editors](#editors)
+- [Converters](#converters)
+- [Function stability](#function-stability)
+
 ## Design principles
 
 For the standard OTTL functions described in this document, we specify design principles to ensure they are always
@@ -3191,6 +3199,56 @@ The `Year` Converter returns the year component from the specified time using th
 `value` is a `time.Time`. If `value` is another type, an error is returned.
 
 The returned type is `int64`.
+
+## Function stability
+
+Once OTTL is `1.0`, the standard functions returned by `StandardFuncs` and `StandardConverters` are **frozen**.
+For the life of `1.x` no standard function will be removed and no existing signature will change in a
+backward-incompatible way, so any OTTL statement that parses against a given `1.x` release keeps parsing and
+behaving the same against every later `1.x` release.
+
+Because the standard set is frozen, new functions are introduced as experimental functions first, and become
+part of the frozen standard set only after they have proven stable.
+
+### Experimental functions
+
+New functions are added to `StandardFuncs` / `StandardConverters` only when the
+`ottl.functions.enableExperimental` feature gate is enabled. When the gate is disabled the experimental functions
+are absent from the standard function maps entirely. Experimental functions:
+
+- Are **not available by default**. A user must enable the `ottl.functions.enableExperimental` feature gate before
+  an experimental function can be used; the gate makes every experimental function available at once. Because the
+  functions are simply not registered while the gate is disabled, a statement that references one without the gate
+  fails to parse with an `undefined function` error.
+- Are **not covered by the stability guarantee**. Their names, signatures, and behavior may change, and the
+  function may be removed entirely, in any release while it is experimental.
+- Are documented in this README alongside the standard functions and clearly marked as experimental, including
+  the feature gate required to enable them.
+- Are **not portable**. Because the gate is a process-wide setting, whether an experimental function is available
+  depends on the Collector distribution's configuration. Do not rely on experimental functions in OTTL statements
+  that must work across distributions.
+
+### Promotion to standard
+
+Promotion moves the function out of the experimental set so it is registered unconditionally and available by
+default. This is an additive, backward-compatible change and ships in a **minor** release (never a patch).
+Promotion also **freezes the function's signature**: the signature a function has at promotion is the signature
+it keeps for the life of `1.x`, so any desired signature change must be made while the function is still
+experimental.
+
+A function may be promoted only when all of the following hold:
+
+1. It has been available as an experimental function for at least two minor releases, giving users time to try
+   it and give feedback.
+2. It has complete tests that validate its behavior and complete documentation in this README.
+3. Its name, arguments, and behavior are settled — there are no open issues or pull requests proposing changes
+   to them.
+4. It adheres to the [design principles](#design-principles) for standard functions (no I/O, no infinite loops,
+   communicates only through parameters and results).
+5. There is demonstrated user demand for the function to be part of the stable, default set.
+6. It has sign-off from the OTTL code owners.
+
+A function that cannot meet these criteria stays experimental; there is no obligation to promote it.
 
 Examples:
 

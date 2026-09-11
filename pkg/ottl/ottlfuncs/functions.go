@@ -5,9 +5,13 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 )
 
-// StandardFuncs is a helper function to provide quick access to all functions (editors and converters) in this package
+// StandardFuncs is a helper function to provide quick access to all functions (editors and converters) in this package.
+// Lambda functions are included only when the ottl.functions.enableLambda feature gate is enabled, and experimental
+// functions only when the ottl.functions.enableExperimental feature gate is enabled; see the Function stability section
+// of README.md.
 func StandardFuncs[K any]() map[string]ottl.Factory[K] {
 	f := []ottl.Factory[K]{
 		// Editors
@@ -28,20 +32,51 @@ func StandardFuncs[K any]() map[string]ottl.Factory[K] {
 		NewTruncateAllFactory[K](),
 	}
 	f = append(f, converters[K]()...)
+	f = append(f, lambdaFuncs[K]()...)
+	f = append(f, experimentalFuncs[K]()...)
 
 	return ottl.CreateFactoryMap(f...)
 }
 
-// StandardConverters is a helper function to provide quick access to all converters in this package
+// StandardConverters is a helper function to provide quick access to all converters in this package.
+// Lambda converters are included only when the ottl.functions.enableLambda feature gate is enabled, and experimental
+// converters only when the ottl.functions.enableExperimental feature gate is enabled; see the Function stability section
+// of README.md.
 func StandardConverters[K any]() map[string]ottl.Factory[K] {
-	return ottl.CreateFactoryMap(converters[K]()...)
+	c := converters[K]()
+	c = append(c, lambdaFuncs[K]()...)
+	c = append(c, experimentalFuncs[K]()...)
+	return ottl.CreateFactoryMap(c...)
+}
+
+// lambdaFuncs returns the functions that require a lambda expression argument. Lambda expressions are an alpha language
+// feature, so these functions are registered only when the ottl.functions.enableLambda feature gate is enabled.
+func lambdaFuncs[K any]() []ottl.Factory[K] {
+	if !metadata.OttlFunctionsEnableLambdaFeatureGate.IsEnabled() {
+		return nil
+	}
+	return []ottl.Factory[K]{
+		NewAllFactory[K](),
+		NewAnyFactory[K](),
+		NewFilterFactory[K](),
+		NewFindFactory[K](),
+		NewMapEachFactory[K](),
+		NewMapKeysFactory[K](),
+		NewReduceFactory[K](),
+		NewWhenFactory[K](),
+	}
+}
+
+func experimentalFuncs[K any]() []ottl.Factory[K] {
+	if !metadata.OttlFunctionsEnableExperimentalFeatureGate.IsEnabled() {
+		return nil
+	}
+	return []ottl.Factory[K]{}
 }
 
 func converters[K any]() []ottl.Factory[K] {
 	return []ottl.Factory[K]{
 		// Converters
-		NewAllFactory[K](),
-		NewAnyFactory[K](),
 		NewBase64EncodeFactory[K](),
 		NewBoolFactory[K](),
 		NewDecodeFactory[K](),
@@ -57,8 +92,6 @@ func converters[K any]() []ottl.Factory[K] {
 		NewDurationFactory[K](),
 		NewExtractPatternsFactory[K](),
 		NewExtractGrokPatternsFactory[K](),
-		NewFilterFactory[K](),
-		NewFindFactory[K](),
 		NewFnvFactory[K](),
 		NewGetXMLFactory[K](),
 		NewHasPrefixFactory[K](),
@@ -79,8 +112,6 @@ func converters[K any]() []ottl.Factory[K] {
 		NewLenFactory[K](),
 		NewLogFactory[K](),
 		NewIsValidLuhnFactory[K](),
-		NewMapEachFactory[K](),
-		NewMapKeysFactory[K](),
 		NewMD5Factory[K](),
 		NewMicrosecondsFactory[K](),
 		NewMillisecondsFactory[K](),
@@ -97,7 +128,6 @@ func converters[K any]() []ottl.Factory[K] {
 		NewParseKeyValueFactory[K](),
 		NewParseSimplifiedXMLFactory[K](),
 		NewParseXMLFactory[K](),
-		NewReduceFactory[K](),
 		NewRemoveXMLFactory[K](),
 		NewSecondFactory[K](),
 		NewSecondsFactory[K](),
@@ -132,7 +162,6 @@ func converters[K any]() []ottl.Factory[K] {
 		NewURLFactory[K](),
 		NewValuesFactory[K](),
 		NewWeekdayFactory[K](),
-		NewWhenFactory[K](),
 		NewUserAgentFactory[K](),
 		NewAppendFactory[K](),
 		NewDeleteIndexFactory[K](),
