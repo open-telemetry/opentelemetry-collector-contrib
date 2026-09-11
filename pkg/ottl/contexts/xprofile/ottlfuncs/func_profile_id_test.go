@@ -5,6 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -70,6 +71,11 @@ func Test_profileID_validation(t *testing.T) {
 			err:   errProfileIDLength,
 		},
 		{
+			name:  "byte slice longer than 32 (33)",
+			value: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33},
+			err:   errProfileIDLength,
+		},
+		{
 			name:  "invalid hex string",
 			value: []byte("ZZ02030405060708090a0b0c0d0e0f10"),
 			err:   errProfileIDHexDecode,
@@ -98,6 +104,13 @@ func Test_ProfileIDFactory(t *testing.T) {
 		factory := NewProfileIDFactory[any]()
 		args := factory.CreateDefaultArguments()
 		assert.IsType(t, &ProfileIDArguments[any]{}, args)
+
+		typ := reflect.TypeOf(args).Elem()
+		got := make([]string, 0, typ.NumField())
+		for field := range typ.Fields() {
+			got = append(got, field.Name)
+		}
+		assert.Equal(t, []string{"Target"}, got)
 	})
 
 	t.Run("function creation", func(t *testing.T) {
