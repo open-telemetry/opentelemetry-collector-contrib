@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"hash"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -35,7 +36,9 @@ const (
 	// Slice/Map values onto the Go call stack. A fatal stack overflow from
 	// deep nesting cannot be caught by recover(); the Go runtime kills the
 	// collector at roughly 700k–800k levels for json.Marshal and somewhat
-	// higher for valueToInterface itself.
+	// higher for valueToInterface itself. 128 is a conservative cap for
+	// operator-supplied data; legitimate attribute nesting rarely exceeds
+	// single digits.
 	jsonMaxDepth = 128
 	// jsonMaxInputBytes caps the serialized JSON size before JCS canonicalization.
 	jsonMaxInputBytes = 1 << 21 // 2 MiB
@@ -127,9 +130,15 @@ func (p *signingProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error 
 }
 
 // processLogRecord computes a canonical JSON hash (RFC 8785) of the log record
-// (excluding audit.integrity.* attributes) and signs it with the configured algorithm.
-// It adds one attribute:
-//   - audit.integrity.value: base64-encoded signature
+// and signs it with the configured algorithm. It adds two attributes:
+//   - audit.integrity.value:  base64-encoded signature
+//   - audit.integrity.signer: "collector"
+//
+// Fields excluded from the signed payload (per spec or by design):
+//   - audit.integrity.* attributes (carry the proof itself)
+//   - SeverityNumber / SeverityText (SHOULD NOT be set on audit records per spec)
+//   - Flags (W3C trace-context sampling bit; observability concept, not audit-relevant;
+//     may be modified by intermediaries without breaking audit semantics)
 func (p *signingProcessor) processLogRecord(lr plog.LogRecord) error {
 	logData, err := p.serializeLogRecord(lr)
 	if err != nil {
@@ -142,6 +151,7 @@ func (p *signingProcessor) processLogRecord(lr plog.LogRecord) error {
 	}
 
 	lr.Attributes().PutStr("audit.integrity.value", base64.StdEncoding.EncodeToString(signature))
+	lr.Attributes().PutStr("audit.integrity.signer", "collector")
 	return nil
 }
 
@@ -202,9 +212,11 @@ func (p *signingProcessor) sign(payload []byte) ([]byte, error) {
 	}
 }
 
-// serializeLogRecord produces a canonical JSON representation of the full log
-// record. All audit.integrity.* attributes are excluded because they are added
-// after serialization and must not be part of the signed payload.
+// serializeLogRecord produces a canonical JSON representation of the log record
+// for signing. Excluded from the signed payload:
+//   - audit.integrity.* attributes (carry the proof; must not be part of the input)
+//   - SeverityNumber, SeverityText (SHOULD NOT be set on audit records per spec)
+//   - Flags (W3C trace-context sampling bit; not audit-relevant)
 func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error) {
 	data := make(map[string]any)
 
@@ -221,19 +233,11 @@ func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error)
 	}
 
 	if lr.Timestamp() != 0 {
-		data["timestamp"] = lr.Timestamp().AsTime().UnixNano()
+		data["timestamp"] = strconv.FormatInt(lr.Timestamp().AsTime().UnixNano(), 10)
 	}
 
 	if lr.ObservedTimestamp() != 0 {
-		data["observed_timestamp"] = lr.ObservedTimestamp().AsTime().UnixNano()
-	}
-
-	if lr.SeverityNumber() != 0 {
-		data["severity_number"] = lr.SeverityNumber()
-	}
-
-	if lr.SeverityText() != "" {
-		data["severity_text"] = lr.SeverityText()
+		data["observed_timestamp"] = strconv.FormatInt(lr.ObservedTimestamp().AsTime().UnixNano(), 10)
 	}
 
 	if !lr.TraceID().IsEmpty() {
@@ -292,15 +296,15 @@ func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, er
 		if !utf8.ValidString(s) {
 			return nil, errors.New("attribute string value contains invalid UTF-8")
 		}
-		return s, nil
+		return map[string]any{"stringValue": s}, nil
 	case pcommon.ValueTypeInt:
-		return v.Int(), nil
+		return map[string]any{"intValue": strconv.FormatInt(v.Int(), 10)}, nil
 	case pcommon.ValueTypeDouble:
-		return v.Double(), nil
+		return map[string]any{"doubleValue": v.Double()}, nil
 	case pcommon.ValueTypeBool:
-		return v.Bool(), nil
+		return map[string]any{"boolValue": v.Bool()}, nil
 	case pcommon.ValueTypeBytes:
-		return base64.StdEncoding.EncodeToString(v.Bytes().AsRaw()), nil
+		return map[string]any{"bytesValue": base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())}, nil
 	case pcommon.ValueTypeSlice:
 		slice := make([]any, v.Slice().Len())
 		for i := 0; i < v.Slice().Len(); i++ {

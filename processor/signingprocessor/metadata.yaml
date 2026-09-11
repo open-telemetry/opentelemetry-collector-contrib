@@ -15,5 +15,5 @@ tests:
     key_source:
       type: file
       file:
-        cert_file: testdata/test-cert.pem
-        key_file:  testdata/test-key.pem
+        certificate: testdata/test-cert.pem
+        private_key: testdata/test-key.pem

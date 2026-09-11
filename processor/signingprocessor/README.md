@@ -51,80 +51,111 @@ processors:
 
       # --- file provider ---
       file:
-        cert_file: /etc/otelcol/signing-cert.pem
-        key_file:  /etc/otelcol/signing-key.pem
+        certificate: /etc/otelcol/signing-cert.pem
+        private_key: /etc/otelcol/signing-key.pem
+
+      # --- file provider — HMAC-SHA256 ---
+      # file:
+      #   hmac_key: /etc/otelcol/hmac.key  # file content must be standard base64-encoded
 
       # --- env provider — asymmetric ---
       # env:
-      #   cert_env_var: SIGNING_CERT_PEM   # PEM or base64-encoded PEM
-      #   key_env_var:  SIGNING_KEY_PEM
+      #   certificate: SIGNING_CERT_PEM   # PEM or base64-encoded PEM
+      #   private_key: SIGNING_KEY_PEM
 
       # --- env provider — HMAC-SHA256 ---
       # env:
-      #   hmac_key_env_var: SIGNING_HMAC_KEY
+      #   hmac_key: SIGNING_HMAC_KEY   # value must be standard base64-encoded
 
       # --- Kubernetes Secret provider — asymmetric ---
       # k8s_secret:
-      #   name:      signing-secret
-      #   namespace: default              # optional, defaults to "default"
-      #   cert_key:  tls.crt
-      #   key_key:   tls.key
+      #   name:        signing-secret
+      #   namespace:   default              # optional, defaults to "default"
+      #   certificate: tls.crt
+      #   private_key: tls.key
 
       # --- Kubernetes Secret provider — HMAC-SHA256 ---
       # k8s_secret:
-      #   name:      signing-secret
+      #   name:     signing-secret
       #   namespace: default
-      #   hmac_key:  hmac.key
+      #   hmac_key: hmac.key                  # secret data value must be standard base64-encoded
 
       # --- OpenBao / Vault provider — asymmetric ---
       # bao:
       #   address:     https://bao.example.com   # optional, falls back to BAO_ADDR
       #   token:       s.xxxx                    # optional, falls back to BAO_TOKEN
-      #   secret_path: secret/data/signing
-      #   cert_field:  certificate
-      #   key_field:   private_key
+      #   mount_path:  secret                    # KV v2 mount point; default: "secret"
+      #   secret_path: signing                   # path within the mount
+      #   certificate: certificate
+      #   private_key: private_key
 
       # --- OpenBao / Vault provider — HMAC-SHA256 ---
       # bao:
-      #   secret_path:   secret/data/signing
-      #   hmac_key_field: hmac_key
+      #   mount_path:  secret
+      #   secret_path: signing
+      #   hmac_key:    hmac_key             # field value must be standard base64-encoded
 ```
 
 ## Key source providers
 
 | Provider | Description |
 | --- | --- |
-| `file` | Reads PEM-encoded certificate and private key (RSA, ECDSA, or Ed25519) from local files, or a raw HMAC secret. Supports plain PEM and base64-encoded PEM. |
-| `env` | Reads asymmetric key material (cert + private key) or an HMAC secret from environment variables. Useful for container deployments where secrets are injected via env. |
-| `k8s_secret` | Reads a Kubernetes Secret by name/namespace via the in-cluster or kubeconfig client. |
-| `bao` | Reads key material from an [OpenBao](https://openbao.org/) (Vault-compatible) secret engine. |
+| `file` | Reads PEM-encoded certificate and private key (RSA, ECDSA, or Ed25519) from local files, or a standard base64-encoded HMAC secret. Supports plain PEM and base64-encoded PEM for asymmetric keys. |
+| `env` | Reads asymmetric key material (cert + private key) or a standard base64-encoded HMAC secret from environment variables. Useful for container deployments where secrets are injected via env. |
+| `k8s_secret` | Reads a Kubernetes Secret by name/namespace via the in-cluster or kubeconfig client. HMAC key data must be standard base64-encoded. |
+| `bao` | Reads key material from an [OpenBao](https://openbao.org/) (Vault-compatible) KV v2 secret engine. HMAC key field value must be standard base64-encoded. |
 
 ## Output attributes
 
 ### Per log record
 
-| Attribute | Type | Description |
-|---|---|---|
+| Attribute               | Type   | Description                                                                                                     |
+|-------------------------|--------|-----------------------------------------------------------------------------------------------------------------|
 | `audit.integrity.value` | string | Base64-encoded signature (or MAC for HMAC-SHA256) of the JCS-canonical payload, using the configured algorithm. |
 
 ### Per Resource (set once per ResourceLogs block)
 
-| Attribute | Type | Description |
-| --- | --- | --- |
-| `audit.integrity.algorithm` | string | JWA/IANA algorithm identifier matching the configured `algorithm` field (e.g. `RS256`, `ES256`, `EdDSA`, `HMAC-SHA256`). |
+| Attribute                     | Type   | Description                                                                                                                    |
+|-------------------------------|--------|--------------------------------------------------------------------------------------------------------------------------------|
+| `audit.integrity.algorithm`   | string | JWA/IANA algorithm identifier matching the configured `algorithm` field (e.g. `RS256`, `ES256`, `EdDSA`, `HMAC-SHA256`).       |
 | `audit.integrity.certificate` | string | Certificate reference: `sha256:<hex>` fingerprint or full base64 DER, depending on `certificate_ref`. Not set for HMAC-SHA256. |
 
 ## Signed payload
 
 The processor serialises the following log-record fields into a JSON object,
-canonicalises it with RFC 8785 (JCS), and hashes the result.  All
-`audit.integrity.*` attributes are excluded so the signature can be verified before
-those attributes are removed.
+canonicalises it with RFC 8785 (JCS), and signs the result. All
+`audit.integrity.*` attributes are excluded so the signature can be verified
+before those attributes are removed.
 
-```
-event_name, body, timestamp, observed_timestamp, severity_number, severity_text,
-trace_id, span_id, attributes (all except audit.integrity.*)
-```
+| Field                | JSON key             | Encoding                                       |
+|----------------------|----------------------|------------------------------------------------|
+| `EventName`          | `event_name`         | string; omitted if empty                       |
+| `Body` (string only) | `body`               | string; omitted if not a string value          |
+| `Timestamp`          | `timestamp`          | nanoseconds since Unix epoch as decimal string |
+| `ObservedTimestamp`  | `observed_timestamp` | nanoseconds since Unix epoch as decimal string |
+| `TraceID`            | `trace_id`           | lowercase hex string; omitted if all-zero      |
+| `SpanID`             | `span_id`            | lowercase hex string; omitted if all-zero      |
+| `Attributes`         | `attributes`         | object; see scalar encoding below              |
+
+### Attribute scalar encoding
+
+Attribute values are encoded as follows to keep every scalar type distinct in the
+signed payload. Each scalar is wrapped in a type-tagged single-key object
+(e.g. `{"intValue":"123"}`) so that values of different types never produce
+identical canonical JSON.
+
+| OTLP type | JSON encoding                                                     |
+|-----------|-------------------------------------------------------------------|
+| `string`  | `{"stringValue": <string>}`                                       |
+| `int`     | `{"intValue": "<decimal>"}` — quoted to preserve full int64 range |
+| `double`  | `{"doubleValue": <number>}`                                       |
+| `bool`    | `{"boolValue": <boolean>}`                                        |
+| `bytes`   | `{"bytesValue": "<base64>"}`                                      |
+| `slice`   | JSON array (elements encoded recursively; max nesting depth 128)  |
+| `map`     | JSON object (values encoded recursively; max nesting depth 128)   |
+
+Serialization fails with a hard error if the total pre-JCS JSON size exceeds
+2 MiB or the attribute nesting depth exceeds 128 levels.
 
 ## Example pipeline
 
@@ -141,8 +172,8 @@ processors:
     key_source:
       type: file
       file:
-        cert_file: /etc/otelcol/cert.pem
-        key_file:  /etc/otelcol/key.pem
+        certificate: /etc/otelcol/cert.pem
+        private_key: /etc/otelcol/key.pem
 
 exporters:
   otlp:

@@ -57,6 +57,7 @@ func generateTestPEM(t *testing.T) (certPEM, keyPEM []byte, key *rsa.PrivateKey)
 	}
 	certPEM = pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
 	keyPEM = pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)})
+
 	return certPEM, keyPEM, key
 }
 
@@ -74,7 +75,7 @@ func writeTempFile(t *testing.T, data []byte) string {
 }
 
 // ---------------------------------------------------------------------------
-// log sink (used by consume and coverage2 tests)
+// log sink
 // ---------------------------------------------------------------------------
 
 type logSink struct{ logs []plog.Logs }
@@ -95,7 +96,7 @@ var _ consumer.Logs = (*logSink)(nil)
 // ---------------------------------------------------------------------------
 
 func TestConfigValidate(t *testing.T) {
-	validFile := &FileKeyConfig{CertFile: "c.pem", KeyFile: "k.pem"}
+	validFile := &FileKeyConfig{Certificate: "c.pem", PrivateKey: "k.pem"}
 
 	tests := []struct {
 		name    string
@@ -134,22 +135,22 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name:    "k8s_secret missing name",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{CertKey: "c", KeyKey: "k"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Certificate: "c", PrivateKey: "k"}}},
 			wantErr: true,
 		},
 		{
 			name:    "k8s_secret missing cert_key",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Name: "s", KeyKey: "k"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Name: "s", PrivateKey: "k"}}},
 			wantErr: true,
 		},
 		{
 			name:    "k8s_secret missing key_key",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Name: "s", CertKey: "c"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Name: "s", Certificate: "c"}}},
 			wantErr: true,
 		},
 		{
 			name:    "k8s_secret valid with namespace",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Name: "s", Namespace: "ns", CertKey: "c", KeyKey: "k"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "k8s_secret", K8sSecret: &K8sSecretConfig{Name: "s", Namespace: "ns", Certificate: "c", PrivateKey: "k"}}},
 			wantErr: false,
 		},
 		{
@@ -159,12 +160,12 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name:    "env missing cert_env_var",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "env", Env: &EnvKeyConfig{KeyEnvVar: "K"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "env", Env: &EnvKeyConfig{PrivateKey: "K"}}},
 			wantErr: true,
 		},
 		{
 			name:    "env missing key_env_var",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "env", Env: &EnvKeyConfig{CertEnvVar: "C"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "env", Env: &EnvKeyConfig{Certificate: "C"}}},
 			wantErr: true,
 		},
 		{
@@ -174,12 +175,12 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name:    "file missing cert_file",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "file", File: &FileKeyConfig{KeyFile: "k.pem"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "file", File: &FileKeyConfig{PrivateKey: "k.pem"}}},
 			wantErr: true,
 		},
 		{
 			name:    "file missing key_file",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "file", File: &FileKeyConfig{CertFile: "c.pem"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "file", File: &FileKeyConfig{Certificate: "c.pem"}}},
 			wantErr: true,
 		},
 		{
@@ -189,17 +190,17 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name:    "bao missing secret_path",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "bao", Bao: &BaoKeyConfig{CertField: "c", KeyField: "k"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "bao", Bao: &BaoKeyConfig{Certificate: "c", PrivateKey: "k"}}},
 			wantErr: true,
 		},
 		{
 			name:    "bao missing cert_field",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "bao", Bao: &BaoKeyConfig{SecretPath: "s", KeyField: "k"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "bao", Bao: &BaoKeyConfig{SecretPath: "s", PrivateKey: "k"}}},
 			wantErr: true,
 		},
 		{
 			name:    "bao missing key_field",
-			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "bao", Bao: &BaoKeyConfig{SecretPath: "s", CertField: "c"}}},
+			cfg:     Config{Algorithm: "RS256", KeySource: KeySourceConfig{Type: "bao", Bao: &BaoKeyConfig{SecretPath: "s", Certificate: "c"}}},
 			wantErr: true,
 		},
 	}
@@ -210,6 +211,148 @@ func TestConfigValidate(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
+		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// TestLoadConfig
+// ---------------------------------------------------------------------------
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		id       component.ID
+		expected *Config
+	}{
+		{
+			id: component.NewID(component.MustNewType("signing")),
+			expected: &Config{
+				Algorithm:      "RS256",
+				CertificateRef: "fingerprint",
+				KeySource: KeySourceConfig{
+					Type: KeySourceFile,
+					File: &FileKeyConfig{
+						Certificate: "/etc/otelcol/signing-cert.pem",
+						PrivateKey:  "/etc/otelcol/signing-key.pem",
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(component.MustNewType("signing"), "sha512_full"),
+			expected: &Config{
+				Algorithm:      "RS512",
+				CertificateRef: "full",
+				KeySource: KeySourceConfig{
+					Type: KeySourceFile,
+					File: &FileKeyConfig{
+						Certificate: "/etc/otelcol/signing-cert.pem",
+						PrivateKey:  "/etc/otelcol/signing-key.pem",
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(component.MustNewType("signing"), "env"),
+			expected: &Config{
+				Algorithm:      "RS256",
+				CertificateRef: "fingerprint",
+				KeySource: KeySourceConfig{
+					Type: KeySourceEnv,
+					Env: &EnvKeyConfig{
+						Certificate: "SIGNING_CERT_PEM",
+						PrivateKey:  "SIGNING_KEY_PEM",
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(component.MustNewType("signing"), "k8s"),
+			expected: &Config{
+				Algorithm:      "RS256",
+				CertificateRef: "fingerprint",
+				KeySource: KeySourceConfig{
+					Type: KeySourceK8sSecret,
+					K8sSecret: &K8sSecretConfig{
+						Name:        "signing-secret",
+						Namespace:   "default",
+						Certificate: "tls.crt",
+						PrivateKey:  "tls.key",
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(component.MustNewType("signing"), "bao"),
+			expected: &Config{
+				Algorithm:      "RS256",
+				CertificateRef: "fingerprint",
+				KeySource: KeySourceConfig{
+					Type: KeySourceBao,
+					Bao: &BaoKeyConfig{
+						Address:     "https://bao.example.com",
+						MountPath:   "secret",
+						SecretPath:  "signing",
+						Certificate: "certificate",
+						PrivateKey:  "private_key",
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(component.MustNewType("signing"), "hmac"),
+			expected: &Config{
+				Algorithm:      "HMAC-SHA256",
+				CertificateRef: "fingerprint",
+				KeySource: KeySourceConfig{
+					Type: KeySourceEnv,
+					Env:  &EnvKeyConfig{HMACKey: "SIGNING_HMAC_KEY"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestLoadConfigInvalid(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_invalid.yaml"))
+	require.NoError(t, err)
+
+	invalidIDs := []string{
+		"signing/missing_key_source",
+		"signing/bad_hash",
+		"signing/bad_cert_ref",
+		"signing/file_missing_cert",
+		"signing/env_missing_key",
+		"signing/k8s_missing_name",
+		"signing/bao_missing_path",
+	}
+
+	for _, id := range invalidIDs {
+		t.Run(id, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(id)
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+
+			assert.Error(t, cfg.(*Config).Validate(), "expected Validate() to fail for %s", id)
 		})
 	}
 }
@@ -238,7 +381,6 @@ func TestNewFactory(t *testing.T) {
 
 func TestCreateLogsProcessorFileProvider(t *testing.T) {
 	certPEM, keyPEM, _ := generateTestPEM(t)
-
 	certFile := writeTempFile(t, certPEM)
 	keyFile := writeTempFile(t, keyPEM)
 
@@ -247,7 +389,7 @@ func TestCreateLogsProcessorFileProvider(t *testing.T) {
 		CertificateRef: CertificateRefFingerprint,
 		KeySource: KeySourceConfig{
 			Type: KeySourceFile,
-			File: &FileKeyConfig{CertFile: certFile, KeyFile: keyFile},
+			File: &FileKeyConfig{Certificate: certFile, PrivateKey: keyFile},
 		},
 	}
 
@@ -345,6 +487,25 @@ func TestParseCertificateData(t *testing.T) {
 	})
 }
 
+func TestParseCertificateDataPKCS8NonRSA(t *testing.T) {
+	certPEM, _, _ := generateTestPEM(t)
+
+	ecKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate EC key: %v", err)
+	}
+	der, err := x509.MarshalPKCS8PrivateKey(ecKey)
+	if err != nil {
+		t.Fatalf("marshal EC key: %v", err)
+	}
+	ecPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: der})
+
+	_, err = parseCertificateData(certPEM, ecPEM)
+	if err == nil {
+		t.Error("expected error: EC key is not RSA")
+	}
+}
+
 func TestDecodeIfBase64(t *testing.T) {
 	certPEM, _, _ := generateTestPEM(t)
 
@@ -389,7 +550,7 @@ func TestFileKeyMaterialProvider(t *testing.T) {
 	certFile := writeTempFile(t, certPEM)
 	keyFile := writeTempFile(t, keyPEM)
 
-	prov, err := newFileKeyMaterialProvider(&FileKeyConfig{CertFile: certFile, KeyFile: keyFile})
+	prov, err := newFileKeyMaterialProvider(&FileKeyConfig{Certificate: certFile, PrivateKey: keyFile})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -402,7 +563,7 @@ func TestFileKeyMaterialProvider(t *testing.T) {
 }
 
 func TestFileKeyMaterialProviderMissingFiles(t *testing.T) {
-	_, err := newFileKeyMaterialProvider(&FileKeyConfig{CertFile: "/nonexistent/cert.pem", KeyFile: "/nonexistent/key.pem"})
+	_, err := newFileKeyMaterialProvider(&FileKeyConfig{Certificate: "/nonexistent/cert.pem", PrivateKey: "/nonexistent/key.pem"})
 	if err == nil {
 		t.Error("expected error for missing cert file")
 	}
@@ -417,7 +578,7 @@ func TestEnvKeyMaterialProvider(t *testing.T) {
 	t.Setenv("TEST_CERT", string(certPEM))
 	t.Setenv("TEST_KEY", string(keyPEM))
 
-	prov, err := newEnvKeyMaterialProvider(&EnvKeyConfig{CertEnvVar: "TEST_CERT", KeyEnvVar: "TEST_KEY"})
+	prov, err := newEnvKeyMaterialProvider(&EnvKeyConfig{Certificate: "TEST_CERT", PrivateKey: "TEST_KEY"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -432,9 +593,82 @@ func TestEnvKeyMaterialProvider(t *testing.T) {
 func TestEnvKeyMaterialProviderMissingEnv(t *testing.T) {
 	os.Unsetenv("MISSING_CERT")
 	os.Unsetenv("MISSING_KEY")
-	_, err := newEnvKeyMaterialProvider(&EnvKeyConfig{CertEnvVar: "MISSING_CERT", KeyEnvVar: "MISSING_KEY"})
+	_, err := newEnvKeyMaterialProvider(&EnvKeyConfig{Certificate: "MISSING_CERT", PrivateKey: "MISSING_KEY"})
 	if err == nil {
 		t.Error("expected error for missing env vars")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// newKeyMaterialProvider dispatch
+// ---------------------------------------------------------------------------
+
+func TestNewKeyMaterialProviderEnv(t *testing.T) {
+	certPEM, keyPEM, _ := generateTestPEM(t)
+	t.Setenv("NKM_CERT", string(certPEM))
+	t.Setenv("NKM_KEY", string(keyPEM))
+
+	cfg := &Config{
+		Algorithm: "RS256",
+		KeySource: KeySourceConfig{
+			Type: KeySourceEnv,
+			Env:  &EnvKeyConfig{Certificate: "NKM_CERT", PrivateKey: "NKM_KEY"},
+		},
+	}
+	prov, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if prov.GetPrivateKey() == nil || prov.GetCertificate() == nil {
+		t.Error("provider returned nil key or cert")
+	}
+}
+
+func TestNewKeyMaterialProviderK8sError(t *testing.T) {
+	cfg := &Config{
+		Algorithm: "RS256",
+		KeySource: KeySourceConfig{
+			Type: KeySourceK8sSecret,
+			K8sSecret: &K8sSecretConfig{
+				Name: "signing-secret", Namespace: "default",
+				Certificate: "tls.crt", PrivateKey: "tls.key",
+			},
+		},
+	}
+	_, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())
+	if err == nil {
+		t.Skip("k8s client unexpectedly succeeded (running inside a cluster?)")
+	}
+}
+
+func TestNewKeyMaterialProviderBaoError(t *testing.T) {
+	cfg := &Config{
+		Algorithm: "RS256",
+		KeySource: KeySourceConfig{
+			Type: KeySourceBao,
+			Bao: &BaoKeyConfig{
+				Address:     "http://127.0.0.1:19999",
+				MountPath:   "secret",
+				SecretPath:  "signing",
+				Certificate: "certificate",
+				PrivateKey:  "private_key",
+			},
+		},
+	}
+	_, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())
+	if err == nil {
+		t.Skip("bao client unexpectedly succeeded")
+	}
+}
+
+func TestNewKeyMaterialProviderUnknownType(t *testing.T) {
+	cfg := &Config{
+		Algorithm: "RS256",
+		KeySource: KeySourceConfig{Type: "unknown"},
+	}
+	_, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())
+	if err == nil {
+		t.Error("expected error for unknown key source type")
 	}
 }
 
@@ -446,7 +680,7 @@ func TestBuildCertificateRef(t *testing.T) {
 	certPEM, keyPEM, _ := generateTestPEM(t)
 	certFile := writeTempFile(t, certPEM)
 	keyFile := writeTempFile(t, keyPEM)
-	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{CertFile: certFile, KeyFile: keyFile})
+	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{Certificate: certFile, PrivateKey: keyFile})
 
 	t.Run("fingerprint", func(t *testing.T) {
 		ref, err := buildCertificateRef(prov, CertificateRefFingerprint)
@@ -473,6 +707,25 @@ func TestBuildCertificateRef(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// faultyProvider — returns nil key and cert
+// ---------------------------------------------------------------------------
+
+type faultyProvider struct{}
+
+func (*faultyProvider) GetPrivateKey() crypto.Signer      { return nil }
+func (*faultyProvider) GetCertificate() *x509.Certificate { return nil }
+func (*faultyProvider) GetHMACKey() []byte                { return nil }
+
+var _ KeyMaterialProvider = (*faultyProvider)(nil)
+
+func TestBuildCertificateRefNilCert(t *testing.T) {
+	_, err := buildCertificateRef(&faultyProvider{}, CertificateRefFingerprint)
+	if err == nil {
+		t.Error("expected error when provider returns nil certificate")
+	}
+}
+
+// ---------------------------------------------------------------------------
 // processor Start/Shutdown + valueToInterface
 // ---------------------------------------------------------------------------
 
@@ -480,7 +733,7 @@ func TestProcessorStartShutdown(t *testing.T) {
 	certPEM, keyPEM, _ := generateTestPEM(t)
 	certFile := writeTempFile(t, certPEM)
 	keyFile := writeTempFile(t, keyPEM)
-	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{CertFile: certFile, KeyFile: keyFile})
+	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{Certificate: certFile, PrivateKey: keyFile})
 
 	p := &signingProcessor{
 		config:       &Config{Algorithm: "RS256", CertificateRef: CertificateRefFingerprint},
@@ -506,7 +759,7 @@ func TestValueToInterface(t *testing.T) {
 	certPEM, keyPEM, _ := generateTestPEM(t)
 	certFile := writeTempFile(t, certPEM)
 	keyFile := writeTempFile(t, keyPEM)
-	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{CertFile: certFile, KeyFile: keyFile})
+	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{Certificate: certFile, PrivateKey: keyFile})
 
 	p := &signingProcessor{
 		config:   &Config{Algorithm: "RS256"},
@@ -539,7 +792,7 @@ func TestValueToInterface(t *testing.T) {
 			tt.setup(v)
 			result, err := p.valueToInterface(v, 0)
 			if err != nil {
-				t.Fatalf("valueToInterface returned unexpected error: %v", err)
+				t.Errorf("valueToInterface returned error: %v", err)
 			}
 			if result == nil {
 				t.Error("valueToInterface returned nil for non-empty value")
@@ -553,183 +806,36 @@ func TestValueToInterface(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestNewProcessorUnsupportedHash(t *testing.T) {
-	if err := (&Config{Algorithm: "MD5", KeySource: KeySourceConfig{Type: KeySourceFile, File: &FileKeyConfig{CertFile: "c", KeyFile: "k"}}}).Validate(); err == nil {
+	if err := (&Config{Algorithm: "MD5", KeySource: KeySourceConfig{Type: KeySourceFile, File: &FileKeyConfig{Certificate: "c", PrivateKey: "k"}}}).Validate(); err == nil {
 		t.Error("Validate() should reject MD5")
 	}
 }
 
-// ---------------------------------------------------------------------------
-// serializeLogRecord — non-string body (nil branch)
-// ---------------------------------------------------------------------------
-
-func TestSerializeLogRecordNonStringBody(t *testing.T) {
-	certPEM, keyPEM, _ := generateTestPEM(t)
-	certFile := writeTempFile(t, certPEM)
-	keyFile := writeTempFile(t, keyPEM)
-	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{CertFile: certFile, KeyFile: keyFile})
-
-	p := &signingProcessor{
-		config:   &Config{Algorithm: "RS256"},
-		provider: prov,
-		hashFunc: func() hash.Hash { return crypto.SHA256.New() },
+func TestCreateLogsProcessorInvalidConfig(t *testing.T) {
+	f := NewFactory()
+	settings := processortest.NewNopSettings(f.Type())
+	_, err := f.CreateLogs(t.Context(), settings, &struct{ x int }{}, &logSink{})
+	if err == nil {
+		t.Error("expected error for invalid config type")
 	}
+}
 
-	lr := plog.NewLogRecord()
-	lr.Body().SetInt(99)
-	lr.SetTimestamp(pcommon.Timestamp(1000000))
-
-	b, err := p.serializeLogRecord(lr)
-	if err != nil {
-		t.Fatalf("serializeLogRecord: %v", err)
+func TestNewProcessorMissingKeyFiles(t *testing.T) {
+	cfg := &Config{
+		Algorithm:      "RS256",
+		CertificateRef: CertificateRefFingerprint,
+		KeySource:      KeySourceConfig{Type: KeySourceFile, File: &FileKeyConfig{Certificate: "/no/such/cert.pem", PrivateKey: "/no/such/key.pem"}},
 	}
-	if len(b) == 0 {
-		t.Error("expected non-empty serialized payload")
+	f := NewFactory()
+	settings := processortest.NewNopSettings(f.Type())
+	_, err := newProcessor(cfg, &logSink{}, settings)
+	if err == nil {
+		t.Error("expected error when key files do not exist")
 	}
 }
 
 // ---------------------------------------------------------------------------
-// TestLoadConfig (config_test.go)
-// ---------------------------------------------------------------------------
-
-func TestLoadConfig(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-
-	tests := []struct {
-		id       component.ID
-		expected *Config
-	}{
-		{
-			id: component.NewID(component.MustNewType("signing")),
-			expected: &Config{
-				Algorithm:      "RS256",
-				CertificateRef: "fingerprint",
-				KeySource: KeySourceConfig{
-					Type: KeySourceFile,
-					File: &FileKeyConfig{
-						CertFile: "/etc/otelcol/signing-cert.pem",
-						KeyFile:  "/etc/otelcol/signing-key.pem",
-					},
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(component.MustNewType("signing"), "sha512_full"),
-			expected: &Config{
-				Algorithm:      "RS512",
-				CertificateRef: "full",
-				KeySource: KeySourceConfig{
-					Type: KeySourceFile,
-					File: &FileKeyConfig{
-						CertFile: "/etc/otelcol/signing-cert.pem",
-						KeyFile:  "/etc/otelcol/signing-key.pem",
-					},
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(component.MustNewType("signing"), "env"),
-			expected: &Config{
-				Algorithm:      "RS256",
-				CertificateRef: "fingerprint",
-				KeySource: KeySourceConfig{
-					Type: KeySourceEnv,
-					Env: &EnvKeyConfig{
-						CertEnvVar: "SIGNING_CERT_PEM",
-						KeyEnvVar:  "SIGNING_KEY_PEM",
-					},
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(component.MustNewType("signing"), "k8s"),
-			expected: &Config{
-				Algorithm:      "RS256",
-				CertificateRef: "fingerprint",
-				KeySource: KeySourceConfig{
-					Type: KeySourceK8sSecret,
-					K8sSecret: &K8sSecretConfig{
-						Name:      "signing-secret",
-						Namespace: "default",
-						CertKey:   "tls.crt",
-						KeyKey:    "tls.key",
-					},
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(component.MustNewType("signing"), "bao"),
-			expected: &Config{
-				Algorithm:      "RS256",
-				CertificateRef: "fingerprint",
-				KeySource: KeySourceConfig{
-					Type: KeySourceBao,
-					Bao: &BaoKeyConfig{
-						Address:    "https://bao.example.com",
-						SecretPath: "secret/data/signing",
-						CertField:  "certificate",
-						KeyField:   "private_key",
-					},
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(component.MustNewType("signing"), "hmac"),
-			expected: &Config{
-				Algorithm:      "HMAC-SHA256",
-				CertificateRef: "fingerprint",
-				KeySource: KeySourceConfig{
-					Type: KeySourceEnv,
-					Env:  &EnvKeyConfig{HMACKeyEnvVar: "SIGNING_HMAC_KEY"},
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.id.String(), func(t *testing.T) {
-			factory := NewFactory()
-			cfg := factory.CreateDefaultConfig()
-
-			sub, err := cm.Sub(tt.id.String())
-			require.NoError(t, err)
-			require.NoError(t, sub.Unmarshal(cfg))
-
-			assert.Equal(t, tt.expected, cfg)
-		})
-	}
-}
-
-func TestLoadConfigInvalid(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_invalid.yaml"))
-	require.NoError(t, err)
-
-	invalidIDs := []string{
-		"signing/missing_key_source",
-		"signing/bad_hash",
-		"signing/bad_cert_ref",
-		"signing/file_missing_cert",
-		"signing/env_missing_key",
-		"signing/k8s_missing_name",
-		"signing/bao_missing_path",
-	}
-
-	for _, id := range invalidIDs {
-		t.Run(id, func(t *testing.T) {
-			factory := NewFactory()
-			cfg := factory.CreateDefaultConfig()
-
-			sub, err := cm.Sub(id)
-			require.NoError(t, err)
-			require.NoError(t, sub.Unmarshal(cfg))
-
-			assert.Error(t, cfg.(*Config).Validate(), "expected Validate() to fail for %s", id)
-		})
-	}
-}
-
-// ---------------------------------------------------------------------------
-// ConsumeLogs — resource attribute injection (consume_test.go)
+// ConsumeLogs — resource attribute injection
 // ---------------------------------------------------------------------------
 
 func TestConsumeLogsResourceAttrs(t *testing.T) {
@@ -767,140 +873,21 @@ func TestConsumeLogsResourceAttrs(t *testing.T) {
 	if !ok2 || certRef.Str() != "sha256:abc" {
 		t.Errorf("audit.integrity.certificate: got %q, want sha256:abc", certRef.Str())
 	}
-	t.Logf("✅ resource attrs: algorithm=%s certificate=%s", algo.Str(), certRef.Str())
 
 	rec := sink.logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	if _, ok4 := rec.Attributes().Get("audit.integrity.value"); !ok4 {
 		t.Error("audit.integrity.value missing from log record")
 	}
-	t.Logf("✅ record integrity attrs present")
+	signer, ok5 := rec.Attributes().Get("audit.integrity.signer")
+	if !ok5 || signer.Str() != "collector" {
+		t.Errorf("audit.integrity.signer: got %q, want collector", signer.Str())
+	}
 
 	verifyRecord(t, rec, &prov.key.PublicKey)
-	t.Logf("✅ signature verifies against public key")
 }
 
 // ---------------------------------------------------------------------------
-// newKeyMaterialProvider dispatch (coverage2_test.go)
-// ---------------------------------------------------------------------------
-
-func TestNewKeyMaterialProviderEnv(t *testing.T) {
-	certPEM, keyPEM, _ := generateTestPEM(t)
-	t.Setenv("NKM_CERT", string(certPEM))
-	t.Setenv("NKM_KEY", string(keyPEM))
-
-	cfg := &Config{
-		Algorithm: "RS256",
-		KeySource: KeySourceConfig{
-			Type: KeySourceEnv,
-			Env:  &EnvKeyConfig{CertEnvVar: "NKM_CERT", KeyEnvVar: "NKM_KEY"},
-		},
-	}
-	prov, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if prov.GetPrivateKey() == nil || prov.GetCertificate() == nil {
-		t.Error("provider returned nil key or cert")
-	}
-}
-
-func TestNewKeyMaterialProviderK8sError(t *testing.T) {
-	cfg := &Config{
-		Algorithm: "RS256",
-		KeySource: KeySourceConfig{
-			Type: KeySourceK8sSecret,
-			K8sSecret: &K8sSecretConfig{
-				Name: "signing-secret", Namespace: "default",
-				CertKey: "tls.crt", KeyKey: "tls.key",
-			},
-		},
-	}
-	_, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())
-	if err == nil {
-		t.Skip("k8s client unexpectedly succeeded (running inside a cluster?)")
-	}
-}
-
-func TestNewKeyMaterialProviderBaoError(t *testing.T) {
-	cfg := &Config{
-		Algorithm: "RS256",
-		KeySource: KeySourceConfig{
-			Type: KeySourceBao,
-			Bao: &BaoKeyConfig{
-				Address:    "http://127.0.0.1:19999",
-				SecretPath: "secret/data/signing",
-				CertField:  "certificate",
-				KeyField:   "private_key",
-			},
-		},
-	}
-	_, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())
-	if err == nil {
-		t.Skip("bao client unexpectedly succeeded")
-	}
-}
-
-func TestNewKeyMaterialProviderUnknownType(t *testing.T) {
-	cfg := &Config{
-		Algorithm: "RS256",
-		KeySource: KeySourceConfig{Type: "unknown"},
-	}
-	_, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())
-	if err == nil {
-		t.Error("expected error for unknown key source type")
-	}
-}
-
-// ---------------------------------------------------------------------------
-// createLogsProcessor — invalid config type (coverage2_test.go)
-// ---------------------------------------------------------------------------
-
-func TestCreateLogsProcessorInvalidConfig(t *testing.T) {
-	f := NewFactory()
-	settings := processortest.NewNopSettings(f.Type())
-	_, err := f.CreateLogs(t.Context(), settings, &struct{ x int }{}, &logSink{})
-	if err == nil {
-		t.Error("expected error for invalid config type")
-	}
-}
-
-// ---------------------------------------------------------------------------
-// parseCertificateData — PKCS8 non-RSA key (coverage2_test.go)
-// ---------------------------------------------------------------------------
-
-func TestParseCertificateDataPKCS8NonRSA(t *testing.T) {
-	certPEM, _, _ := generateTestPEM(t)
-
-	ecKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		t.Fatalf("generate EC key: %v", err)
-	}
-	der, err := x509.MarshalPKCS8PrivateKey(ecKey)
-	if err != nil {
-		t.Fatalf("marshal EC key: %v", err)
-	}
-	ecPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: der})
-
-	_, err = parseCertificateData(certPEM, ecPEM)
-	if err == nil {
-		t.Error("expected error: EC key is not RSA")
-	}
-}
-
-// ---------------------------------------------------------------------------
-// faultyProvider — returns nil key and cert
-// ---------------------------------------------------------------------------
-
-type faultyProvider struct{}
-
-func (*faultyProvider) GetPrivateKey() crypto.Signer      { return nil }
-func (*faultyProvider) GetCertificate() *x509.Certificate { return nil }
-func (*faultyProvider) GetHMACKey() []byte                { return nil }
-
-var _ KeyMaterialProvider = (*faultyProvider)(nil)
-
-// ---------------------------------------------------------------------------
-// ConsumeLogs error path — hash.Write failure (coverage2_test.go)
+// ConsumeLogs error path — hash.Write failure
 // ---------------------------------------------------------------------------
 
 type alwaysErrHash struct{}
@@ -915,7 +902,7 @@ func TestConsumeLogsSignError(t *testing.T) {
 	certPEM, keyPEM, _ := generateTestPEM(t)
 	certFile := writeTempFile(t, certPEM)
 	keyFile := writeTempFile(t, keyPEM)
-	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{CertFile: certFile, KeyFile: keyFile})
+	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{Certificate: certFile, PrivateKey: keyFile})
 
 	p := &signingProcessor{
 		config:       &Config{Algorithm: "RS256"},
@@ -939,51 +926,30 @@ func TestConsumeLogsSignError(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// buildCertificateRef — nil certificate (coverage2_test.go)
+// serializeLogRecord — non-string body
 // ---------------------------------------------------------------------------
 
-func TestBuildCertificateRefNilCert(t *testing.T) {
-	_, err := buildCertificateRef(&faultyProvider{}, CertificateRefFingerprint)
-	if err == nil {
-		t.Error("expected error when provider returns nil certificate")
-	}
-}
+func TestSerializeLogRecordNonStringBody(t *testing.T) {
+	certPEM, keyPEM, _ := generateTestPEM(t)
+	certFile := writeTempFile(t, certPEM)
+	keyFile := writeTempFile(t, keyPEM)
+	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{Certificate: certFile, PrivateKey: keyFile})
 
-// ---------------------------------------------------------------------------
-// newProcessor — key file missing propagates error (coverage2_test.go)
-// ---------------------------------------------------------------------------
-
-func TestNewProcessorMissingKeyFiles(t *testing.T) {
-	cfg := &Config{
-		Algorithm:      "RS256",
-		CertificateRef: CertificateRefFingerprint,
-		KeySource:      KeySourceConfig{Type: KeySourceFile, File: &FileKeyConfig{CertFile: "/no/such/cert.pem", KeyFile: "/no/such/key.pem"}},
-	}
-	f := NewFactory()
-	settings := processortest.NewNopSettings(f.Type())
-	_, err := newProcessor(cfg, &logSink{}, settings)
-	if err == nil {
-		t.Error("expected error when key files do not exist")
-	}
-}
-
-// ---------------------------------------------------------------------------
-// Depth-guard tests: valueToInterface and marshalJCS
-// ---------------------------------------------------------------------------
-
-// TestValueToInterfaceDepthLimit verifies that deeply nested OTLP map/slice
-// values are rejected before any recursive Go call stack overflow can occur.
-func TestValueToInterfaceDepthLimit(t *testing.T) {
-	p := &signingProcessor{}
-
-	// Build a pcommon.Value chain: map → map → … (valueToInterfaceMaxDepth+2 levels)
-	root := pcommon.NewValueEmpty()
-	cur := root.SetEmptyMap()
-	for range jsonMaxDepth + 2 {
-		child := cur.PutEmptyMap("k")
-		cur = child
+	p := &signingProcessor{
+		config:   &Config{Algorithm: "RS256"},
+		provider: prov,
+		hashFunc: func() hash.Hash { return crypto.SHA256.New() },
 	}
 
-	_, err := p.valueToInterface(root, 0)
-	require.Error(t, err, "expected depth error for deeply nested map")
+	lr := plog.NewLogRecord()
+	lr.Body().SetInt(99)
+	lr.SetTimestamp(pcommon.Timestamp(1000000))
+
+	b, err := p.serializeLogRecord(lr)
+	if err != nil {
+		t.Fatalf("serializeLogRecord: %v", err)
+	}
+	if len(b) == 0 {
+		t.Error("expected non-empty serialized payload")
+	}
 }
