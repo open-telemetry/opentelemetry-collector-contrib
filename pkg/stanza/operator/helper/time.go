@@ -42,6 +42,7 @@ func NewTimeParser() TimeParser {
 
 // TimeParser is a helper that parses time onto an entry.
 type TimeParser struct {
+	DropFieldConfig   `mapstructure:",squash"`
 	ParseFrom         *entry.Field      `mapstructure:"parse_from"`
 	Layout            string            `mapstructure:"layout"`
 	LayoutType        string            `mapstructure:"layout_type"`
@@ -220,6 +221,7 @@ func (t *TimeParser) Parse(entry *entry.Entry) error {
 		return fmt.Errorf("unsupported layout type: %s", t.LayoutType)
 	}
 
+	t.Drop(entry, *t.ParseFrom)
 	return nil
 }
 

@@ -246,6 +246,42 @@ func TestParser(t *testing.T) {
 				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0,"array":[1,2]},"array":[3,4]}`,
 			},
 		},
+		{
+			"drop_field",
+			func(p *Config) {
+				p.DropField = true
+			},
+			&entry.Entry{
+				Body: `{"superkey":"superval"}`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"superkey": "superval",
+				},
+				Body: nil,
+			},
+		},
+		{
+			"drop_field_from_subfield",
+			func(p *Config) {
+				p.ParseFrom = entry.NewBodyField("raw_json")
+				p.DropField = true
+			},
+			&entry.Entry{
+				Body: map[string]any{
+					"raw_json": `{"superkey":"superval"}`,
+					"other":    "value",
+				},
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"superkey": "superval",
+				},
+				Body: map[string]any{
+					"other": "value",
+				},
+			},
+		},
 	}
 
 	for _, tc := range cases {
