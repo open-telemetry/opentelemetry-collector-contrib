@@ -16,7 +16,7 @@ import (
 	"go.uber.org/multierr"
 )
 
-var topicMatcher = regexp.MustCompile(`^projects/[a-z][a-z0-9\-]*/topics/`)
+var topicMatcher = regexp.MustCompile(`^projects/[a-z][a-z0-9\-]*(:[a-z0-9\-]+)?/topics/`)
 
 type Config struct {
 	// Timeout for all API calls. If not set, defaults to 12 seconds.
