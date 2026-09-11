@@ -93,7 +93,6 @@ func sortedIDs(set map[pcommon.SpanID]bool) []pcommon.SpanID {
 	return ids
 }
 
-// A service entered once is one call, however deep the spans go.
 func TestSplitCalls_SingleCall(t *testing.T) {
 	root, mid, leaf := makeSpanID(1), makeSpanID(2), makeSpanID(3)
 	spans, ids := buildCallInput("svc-a", nil,
@@ -107,7 +106,6 @@ func TestSplitCalls_SingleCall(t *testing.T) {
 	}, callIDSets(splitCalls(spans, ids)))
 }
 
-// Siblings under one entry span stay in the same call.
 func TestSplitCalls_Siblings(t *testing.T) {
 	root, left, right := makeSpanID(1), makeSpanID(2), makeSpanID(3)
 	spans, ids := buildCallInput("svc-a", nil,
@@ -121,8 +119,6 @@ func TestSplitCalls_Siblings(t *testing.T) {
 	}, callIDSets(splitCalls(spans, ids)))
 }
 
-// A service entered twice in one trace yields two calls, each with its own
-// descendants. This is the case service-level grouping alone would merge.
 func TestSplitCalls_ServiceEnteredTwice(t *testing.T) {
 	callerA, callerB := makeSpanID(0x10), makeSpanID(0x11)
 	entry1, child1 := makeSpanID(1), makeSpanID(2)
@@ -141,7 +137,6 @@ func TestSplitCalls_ServiceEnteredTwice(t *testing.T) {
 	}, callIDSets(splitCalls(spans, ids)))
 }
 
-// Two entry spans sharing one caller are still two separate calls.
 func TestSplitCalls_TwoEntriesOneCaller(t *testing.T) {
 	caller := makeSpanID(0x10)
 	entry1, entry2 := makeSpanID(1), makeSpanID(2)
@@ -154,8 +149,6 @@ func TestSplitCalls_TwoEntriesOneCaller(t *testing.T) {
 	assert.Len(t, splitCalls(spans, ids), 2)
 }
 
-// A remote parent marks an entry span even when the parent is held under the
-// same service identity, which is a service calling another instance of itself.
 func TestSplitCalls_RemoteParentInSameService(t *testing.T) {
 	root, entry := makeSpanID(1), makeSpanID(2)
 	spans, ids := buildCallInput("svc-a", nil,
@@ -169,8 +162,6 @@ func TestSplitCalls_RemoteParentInSameService(t *testing.T) {
 	}, callIDSets(splitCalls(spans, ids)))
 }
 
-// Spans whose parent is nowhere in the trace can't be told apart, so they leave
-// together rather than one batch per span.
 func TestSplitCalls_ParentlessSpansStayTogether(t *testing.T) {
 	missing := makeSpanID(0x63)
 	a, b, c := makeSpanID(1), makeSpanID(2), makeSpanID(3)
@@ -185,7 +176,6 @@ func TestSplitCalls_ParentlessSpansStayTogether(t *testing.T) {
 	}, callIDSets(splitCalls(spans, ids)))
 }
 
-// Parentless spans stay separate from a call that does have an entry span.
 func TestSplitCalls_ParentlessSpansSeparateFromKnownCall(t *testing.T) {
 	caller, missing := makeSpanID(0x10), makeSpanID(0x63)
 	entry, child, orphan := makeSpanID(1), makeSpanID(2), makeSpanID(3)
@@ -216,7 +206,6 @@ func TestSplitCalls_CycleIsStillReleased(t *testing.T) {
 	}, callIDSets(splitCalls(spans, ids)))
 }
 
-// A cycle hanging off a genuine call is released alongside it, not lost.
 func TestSplitCalls_CycleBesideRealCall(t *testing.T) {
 	root, x, y := makeSpanID(1), makeSpanID(2), makeSpanID(3)
 	spans, ids := buildCallInput("svc-a", nil,
@@ -269,8 +258,6 @@ func serviceIDOf(t *testing.T, attrs map[string]string) string {
 	return serviceIdentity(r)
 }
 
-// One service reporting from two pods is one service, so its spans group
-// together even though the resources differ.
 func TestServiceIdentity_IgnoresNonServiceAttributes(t *testing.T) {
 	a := serviceIDOf(t, map[string]string{"service.name": "svc-a", "k8s.pod.name": "pod-1"})
 	b := serviceIDOf(t, map[string]string{"service.name": "svc-a", "k8s.pod.name": "pod-2"})
@@ -284,7 +271,6 @@ func TestServiceIdentity_DistinguishesNamespaceAndInstance(t *testing.T) {
 	assert.NotEqual(t, base, serviceIDOf(t, map[string]string{"service.name": "svc-a", "service.instance.id": "i-1"}))
 }
 
-// Without service.name the whole resource stands in as the identity.
 func TestServiceIdentity_FallsBackToResourceHash(t *testing.T) {
 	a := serviceIDOf(t, map[string]string{"host.name": "node-1"})
 	assert.Equal(t, a, serviceIDOf(t, map[string]string{"host.name": "node-1"}))
@@ -325,8 +311,6 @@ func TestAssemble_SeparatesDistinctResources(t *testing.T) {
 	assert.Equal(t, 2, td.ResourceSpans().Len())
 }
 
-// Scope name and version are distinct parts of the grouping key, so a name that
-// happens to contain the separator can't be confused with a versioned scope.
 func TestAssemble_SeparatesAmbiguousScopeNameAndVersion(t *testing.T) {
 	r := pcommon.NewResource()
 	r.Attributes().PutStr("service.name", "svc-a")
@@ -346,7 +330,6 @@ func TestAssemble_SeparatesAmbiguousScopeNameAndVersion(t *testing.T) {
 	assert.Equal(t, 2, td.ResourceSpans().At(0).ScopeSpans().Len())
 }
 
-// splitCalls must terminate on cyclic input rather than looping forever.
 func TestSplitCalls_TerminatesOnCycle(t *testing.T) {
 	spans, ids := buildCallInput("svc-a", nil,
 		callInput{id: makeSpanID(1), parent: makeSpanID(2)},
@@ -364,8 +347,6 @@ func TestSplitCalls_TerminatesOnCycle(t *testing.T) {
 	}
 }
 
-// Moving a span into the assembled batch must carry its whole payload, not just
-// the fields the grouping happens to look at.
 func TestAssemble_PreservesSpanPayload(t *testing.T) {
 	r := pcommon.NewResource()
 	r.Attributes().PutStr("service.name", "svc-a")
@@ -430,10 +411,6 @@ func TestAssemble_PreservesSpanPayload(t *testing.T) {
 	assert.Equal(t, map[string]any{"link.kind": "follows_from"}, got.Links().At(0).Attributes().AsRaw())
 }
 
-// assemble takes ownership of the spans it is given: they are moved into the
-// result rather than copied, so a caller must not read them afterwards. Storage
-// has already handed them over by the time assemble sees them, and each is
-// assembled exactly once.
 func TestAssemble_TakesOwnershipOfSpans(t *testing.T) {
 	r := pcommon.NewResource()
 	r.Attributes().PutStr("service.name", "svc-a")
@@ -462,7 +439,7 @@ func TestAssemble_TakesOwnershipOfSpans(t *testing.T) {
 func TestSplitCalls_DeepChainResolvesToOneCall(t *testing.T) {
 	const depth = 200
 	inputs := make([]callInput, 0, depth)
-	for i := 0; i < depth; i++ {
+	for i := range depth {
 		in := callInput{id: makeSpanID(byte(i + 1))}
 		if i > 0 {
 			in.parent = makeSpanID(byte(i))
@@ -483,7 +460,7 @@ func TestSplitCalls_TwoDeepChainsStaySeparate(t *testing.T) {
 	callerOne, callerTwo := makeSpanID(0xF1), makeSpanID(0xF2)
 
 	inputs := make([]callInput, 0, 2*depth)
-	for i := 0; i < depth; i++ {
+	for i := range depth {
 		first := callInput{id: makeSpanID(byte(i + 1)), parent: makeSpanID(byte(i))}
 		second := callInput{id: makeSpanID(byte(i + 1 + depth)), parent: makeSpanID(byte(i + depth))}
 		if i == 0 {

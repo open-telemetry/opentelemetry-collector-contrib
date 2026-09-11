@@ -352,15 +352,6 @@ func (sp *groupByTraceProcessor) onSubtraceExpired(id subtraceID, worker *eventM
 	return nil
 }
 
-// bufferedSubtraceIDs returns every subtrace buffered across all workers.
-func (sp *groupByTraceProcessor) bufferedSubtraceIDs() []subtraceID {
-	var ids []subtraceID
-	for _, w := range sp.eventMachine.workers {
-		ids = append(ids, w.subSt.subtraceIDs()...)
-	}
-	return ids
-}
-
 func (sp *groupByTraceProcessor) onSubtraceReleased(td ptrace.Traces) error {
 	sp.telemetryBuilder.ProcessorGroupbytraceSpansReleased.Add(context.Background(), int64(td.SpanCount()))
 	sp.telemetryBuilder.ProcessorGroupbytraceTracesReleased.Add(context.Background(), 1)

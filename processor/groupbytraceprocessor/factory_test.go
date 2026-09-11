@@ -68,9 +68,6 @@ func TestCreateTestProcessorWithNotImplementedOptions(t *testing.T) {
 	}
 }
 
-// TestCreateProcessorServiceEmitNumTracesLessThanNumWorkers verifies that
-// num_traces < num_workers (integer division → 0-size ring buffer) does not
-// panic when the processor is created or used.
 func TestCreateProcessorServiceEmitNumTracesLessThanNumWorkers(t *testing.T) {
 	cfg := &Config{
 		NumTraces:    1,
@@ -83,9 +80,6 @@ func TestCreateProcessorServiceEmitNumTracesLessThanNumWorkers(t *testing.T) {
 	require.NotNil(t, p)
 }
 
-// Traces are routed to a worker by trace ID, so each worker keeps its own span
-// storage. Sharing one would put every worker behind a single lock for every
-// span buffered.
 func TestCreateProcessorServiceEmitGivesEachWorkerItsOwnStorage(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.NumTraces = 100
@@ -106,7 +100,6 @@ func TestCreateProcessorServiceEmitGivesEachWorkerItsOwnStorage(t *testing.T) {
 	}
 }
 
-// The trace strategy has no per-worker span storage to allocate.
 func TestCreateProcessorTraceEmitHasNoSubtraceStorage(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.NumWorkers = 2

@@ -792,7 +792,7 @@ func TestSubtrace_ShutdownDrain_OrphanSpans(t *testing.T) {
 
 	// Wait until the span is persisted in storage before shutting down.
 	require.Eventually(t, func() bool {
-		return len(p.bufferedSubtraceIDs()) > 0
+		return len(bufferedSubtraceIDs(p)) > 0
 	}, 2*time.Second, time.Millisecond)
 
 	// Shutdown before the timer fires; drain should emit the span.
@@ -836,7 +836,7 @@ func TestSubtrace_EvictedSubtracesAreReleasedNotDropped(t *testing.T) {
 	assert.Equal(t, evicted, spanIDsAcross(sink.AllTraces()))
 
 	// The rest are still buffered, waiting out their wait_duration.
-	assert.Len(t, p.bufferedSubtraceIDs(), capacity)
+	assert.Len(t, bufferedSubtraceIDs(p), capacity)
 
 	metadatatest.AssertEqualProcessorGroupbytraceTracesEvicted(t, tel,
 		[]metricdata.DataPoint[int64]{{Value: overflow}},
@@ -877,7 +877,7 @@ func TestSubtrace_ShutdownFlushesBufferedSpans(t *testing.T) {
 
 	// Wait until spans are persisted in storage before shutting down.
 	require.Eventually(t, func() bool {
-		return len(p.bufferedSubtraceIDs()) > 0
+		return len(bufferedSubtraceIDs(p)) > 0
 	}, 2*time.Second, time.Millisecond)
 
 	// Shutdown before the wait_duration expires.
@@ -1645,7 +1645,7 @@ func TestSubtrace_CycleReleasedOnTimer(t *testing.T) {
 	assert.Equal(t, map[pcommon.SpanID]bool{x: true, y: true}, batchSpanIDs(batches[0]))
 
 	// Released, so storage is empty and shutdown has nothing left to drain.
-	assert.Empty(t, p.bufferedSubtraceIDs())
+	assert.Empty(t, bufferedSubtraceIDs(p))
 	require.NoError(t, p.Shutdown(t.Context()))
 	assert.Equal(t, 2, sink.SpanCount())
 }
@@ -1836,4 +1836,12 @@ func TestSubtrace_TracesInOneSubmissionStaySeparate(t *testing.T) {
 	for _, b := range batches {
 		assert.Len(t, batchTraceIDs(b), 1, "a batch held spans from more than one trace")
 	}
+}
+
+func bufferedSubtraceIDs(sp *groupByTraceProcessor) []subtraceID {
+	var ids []subtraceID
+	for _, w := range sp.eventMachine.workers {
+		ids = append(ids, w.subSt.subtraceIDs()...)
+	}
+	return ids
 }

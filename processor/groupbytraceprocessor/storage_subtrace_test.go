@@ -452,8 +452,8 @@ func TestSubtraceStorage_RetainedSpanIDsStayBounded(t *testing.T) {
 	insertTestSpan(t, st, tid, makeSpanID(0xFF), pcommon.NewSpanIDEmpty(), "keeper")
 
 	churn := subtraceIDFor(tid, "svc-a")
-	for r := 0; r < rounds; r++ {
-		for i := 0; i < perRound; i++ {
+	for r := range rounds {
+		for i := range perRound {
 			insertTestSpan(t, st, tid, spanIDAt(r*perRound+i), pcommon.NewSpanIDEmpty(), "svc-a")
 		}
 		_, _, err := st.releaseDue(churn, time.Now().Add(time.Hour))

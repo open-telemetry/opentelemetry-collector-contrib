@@ -73,7 +73,7 @@ func (tb *traceBuffer) liveSpans() int {
 //
 // A span's ID cannot simply be forgotten as the span is emitted: services are
 // released one at a time, usually the caller before the callee, and the callee's
-// entry spans are recognisable only because they point at spans the caller has
+// entry spans are recognizable only because they point at spans the caller has
 // already taken with it. What can be forgotten is an ID nothing points at any
 // more, because the span is then far enough in the past that anything arriving
 // for it now is better treated as parentless.
