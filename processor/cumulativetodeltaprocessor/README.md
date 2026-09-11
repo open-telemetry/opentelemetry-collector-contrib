@@ -9,7 +9,7 @@ excluded from any conversion and forwarded without changes.
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib], [k8s] |
-| Warnings      | [Statefulness](#warnings) |
+| Warnings      | [Statefulness, Unsound Transformations](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fcumulativetodelta%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fcumulativetodelta) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fcumulativetodelta%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fcumulativetodelta) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_cumulativetodelta)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_cumulativetodelta&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@TylerHelmuth](https://www.github.com/TylerHelmuth) |
@@ -37,6 +37,7 @@ The following settings can be optionally configured:
     e.g. running the collector as a sidecar, the collector lifecycle is tied to the metric source.
   - `drop`: Keep the observed value but don't send.
     Suitable for gateway deployments, guarantees that all delta counts it produces haven't been observed before, but loses the values between thir first 2 observations.
+- `histogram_fields`: Optional allowlist of histogram data-point fields to convert to delta. Valid values: `bucket_counts`, `sum`, `count`. When empty (default), all three fields are converted — preserving prior behavior. When set, only the listed fields are written back as delta; the others remain cumulative. Applies to both `Histogram` and `ExponentialHistogram` data points.
 
 If neither include nor exclude are supplied, no filtering is applied.
 
@@ -134,6 +135,21 @@ processors:
         # convert all cumulative sum or histogram metrics to delta
 ```
 
+```yaml
+processors:
+    # processor name: cumulative_to_delta
+    cumulative_to_delta:
+
+        # Convert only the bucket_counts of every cumulative histogram to delta.
+        # The _sum and _count fields are left cumulative so downstream rate-based
+        # queries continue to work.
+        include:
+            metric_types:
+              - histogram
+        histogram_fields:
+          - bucket_counts
+```
+
 ## Troubleshooting
 
 When [Telemetry is
@@ -146,6 +162,7 @@ disabled by default and must be opted-in via the collector's
 ## Warnings
 
 - [Statefulness](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#statefulness): The cumulative_to_delta processor's calculates delta by remembering the previous value of a metric.  For this reason, the calculation is only accurate if the metric is continuously sent to the same instance of the collector.  As a result, the cumulative_to_delta processor may not work as expected if used in a deployment of multiple collectors.  When using this processor it is best for the data source to being sending data to a single collector.
+- [Unsound Transformations](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#unsound-transformations): Setting `histogram_fields` to a subset of fields produces a histogram whose `bucket_counts`, `sum`, and `count` no longer share a single aggregation temporality. The [metrics data model](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md) has no definition for a histogram with mixed temporalities, and downstream systems may reject or misinterpret it. Use this option only when you understand your downstream consumer and have confirmed it handles the resulting data point as intended.
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
