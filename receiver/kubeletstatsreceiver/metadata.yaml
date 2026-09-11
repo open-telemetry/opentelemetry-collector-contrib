@@ -396,6 +396,32 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: ["interface", "direction"]
+  k8s.node.process.count:
+    enabled: false
+    description: >-
+      Total number of existing processes and threads on the node.
+      Derived from the Kubelet Summary API (NodeStats.Rlimit.NumOfRunningProcesses), which reads the total count
+      of scheduling entities (threads/processes across all states) from /proc/loadavg. Unlike system.processes.count
+      in hostmetricsreceiver, this is an aggregate count collected via Kubelet without requiring host-level privileges.
+    unit: "{process}"
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
+  k8s.node.process.limit:
+    enabled: false
+    description: >-
+      Total number of processes/threads allowed by the operating system on the node.
+      Derived from the Kubelet Summary API (NodeStats.Rlimit.MaxPID), representing the maximum PID limit (pid_max).
+    unit: "{thread}"
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
   k8s.node.system_container.cpu.time:
     enabled: false
     description: "Total cumulative CPU time (sum of all cores) spent by the system container since its creation"

@@ -472,6 +472,22 @@ Number of free inodes in the node's root filesystem.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {inode} | Sum | Int | Cumulative | false | Development |
 
+### k8s.node.process.count
+
+Total number of existing processes and threads on the node. Derived from the Kubelet Summary API (NodeStats.Rlimit.NumOfRunningProcesses), which reads the total count of scheduling entities (threads/processes across all states) from /proc/loadavg. Unlike system.processes.count in hostmetricsreceiver, this is an aggregate count collected via Kubelet without requiring host-level privileges.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {process} | Sum | Int | Cumulative | false | Development |
+
+### k8s.node.process.limit
+
+Total number of processes/threads allowed by the operating system on the node. Derived from the Kubelet Summary API (NodeStats.Rlimit.MaxPID), representing the maximum PID limit (pid_max).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {thread} | Sum | Int | Cumulative | false | Development |
+
 ### k8s.node.system_container.cpu.time
 
 Total cumulative CPU time (sum of all cores) spent by the system container since its creation
