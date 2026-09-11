@@ -164,6 +164,7 @@ components:
     - pkg/kafka/configkafka
     - pkg/otelarrow
     - pkg/ottl
+    - pkg/ottl/contexts/xprofile
     - pkg/pdatatest
     - pkg/pdatautil
     - pkg/prometheus

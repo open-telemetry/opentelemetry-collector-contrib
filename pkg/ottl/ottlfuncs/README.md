@@ -8,6 +8,8 @@ This document contains documentation for both types of OTTL functions:
 - [Editors](#editors) that transform telemetry.
 - [Converters](#converters) that provide utilities for transforming telemetry.
 
+Experimental functions that fall outside of OTTL's stability guarantees are documented separately. See the [`xprofile` module](../contexts/xprofile/README.md) for the profiles converters, including `ProfileID`.
+
 ## Design principles
 
 For the standard OTTL functions described in this document, we specify design principles to ensure they are always
@@ -600,7 +602,6 @@ Available Converters:
 - [ParseSeverity](#parseseverity)
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
-- [ProfileID](#profileid)
 - [Reduce](#reduce)
 - [RemoveXML](#removexml)
 - [Second](#second)
@@ -2304,20 +2305,6 @@ Examples:
 - `ParseXML(log.attributes["xml"])`
 
 - `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
-
-### ProfileID
-
-`ProfileID(bytes|string)`
-
-The `ProfileID` Converter returns a `pprofile.ProfileID` struct from the given byte slice OR hex string.
-
-`bytes`  byte slice of exactly 16 bytes.
-`string` is a string of exactly 32 hex characters solely composed of valid hexadecimal chars.
-
-Examples:
-
-- `ProfileID(0x00112233445566778899aabbccddeeff)`
-- `ProfileID("a389023abaa839283293ed323892389d")`
 
 ### Reduce
 
