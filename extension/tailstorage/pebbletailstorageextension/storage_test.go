@@ -254,13 +254,30 @@ func TestStorageRecordsReadPathErrors(t *testing.T) {
 			},
 		},
 		{
-			name:       "iter terminal",
+			name:       "seek failed",
 			metricName: "otelcol_extension_pebble_tail_storage_read_errors",
 			desc:       "Count of Pebble tail storage read-path iterator creation, value read, payload decode, and iterator terminal errors [Development]",
 			newIter: func() (storageIter, error) {
 				return &fakeIter{
-					seekOK:  true,
+					seekOK:  false,
 					valid:   []bool{false},
+					iterErr: errors.New("seek failed"),
+				}, nil
+			},
+		},
+		{
+			name:       "iter terminal",
+			metricName: "otelcol_extension_pebble_tail_storage_read_errors",
+			desc:       "Count of Pebble tail storage read-path iterator creation, value read, payload decode, and iterator terminal errors [Development]",
+			newIter: func() (storageIter, error) {
+				val, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(ptrace.NewTraces())
+				if err != nil {
+					return nil, err
+				}
+				return &fakeIter{
+					seekOK:  true,
+					valid:   []bool{true, false},
+					values:  [][]byte{val},
 					iterErr: errors.New("iter terminal failed"),
 				}, nil
 			},

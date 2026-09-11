@@ -187,13 +187,11 @@ func (s *storage) readByTracePrefix(prefix []byte) ptrace.Traces {
 	}
 	defer iter.Close()
 
-	// SeekPrefixGE enables prefix bloom filter usage when configured in Pebble options.
-	if ok := iter.SeekPrefixGE(prefix); !ok {
-		return ptrace.NewTraces()
-	}
-
 	result := ptrace.NewTraces()
-	for ; iter.Valid(); iter.Next() {
+	// SeekPrefixGE enables prefix bloom filter usage when configured in Pebble options.
+	// Do not return early when the seek fails: SeekPrefixGE also returns false on
+	// iterator errors, which must be surfaced by the iter.Error() check below.
+	for valid := iter.SeekPrefixGE(prefix); valid; valid = iter.Next() {
 		val, err := iter.ValueAndErr()
 		if err != nil {
 			if s.telemetry != nil {
