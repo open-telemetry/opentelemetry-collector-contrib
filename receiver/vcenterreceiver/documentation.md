@@ -816,6 +816,8 @@ metrics:
 
 The number of triggered alarms on the datastore.
 
+Only triggered alarms with a red or yellow status are counted.
+
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {alarms} | Sum | Int | Cumulative | false | Development |
@@ -830,19 +832,23 @@ The number of triggered alarms on the datastore.
 
 The current maintenance mode of the datastore.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {state} | Gauge | Int | Development |
+A data point is reported for every state, with a value of 1 for the current state and 0 for all other states.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| maintenance_mode | The current maintenance mode of the datastore. | Str: ``normal``, ``entering_maintenance``, ``in_maintenance`` | Recommended | - |
+| maintenance_mode | The current maintenance mode of the datastore. | Str: ``normal``, ``entering_maintenance``, ``in_maintenance``, ``unknown`` | Recommended | - |
 
 ### vcenter.host.alarm.count
 
 The number of triggered alarms on the host.
+
+Only triggered alarms with a red or yellow status are counted.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -858,15 +864,17 @@ The number of triggered alarms on the host.
 
 The current connection state of the host.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {state} | Gauge | Int | Development |
+A data point is reported for every state, with a value of 1 for the current state and 0 for all other states.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| connection_state | The current connection state of the host. | Str: ``connected``, ``disconnected``, ``not_responding`` | Recommended | - |
+| connection_state | The current connection state of the host. | Str: ``connected``, ``disconnected``, ``not_responding``, ``unknown`` | Recommended | - |
 
 ### vcenter.host.memory.active
 
@@ -910,9 +918,11 @@ As measured over the most recent 20s interval.
 
 The current power state of the host.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {state} | Gauge | Int | Development |
+A data point is reported for every state, with a value of 1 for the current state and 0 for all other states.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -924,9 +934,11 @@ The current power state of the host.
 
 Total time elapsed since last operating system boot-up.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | true | Development |
+As reported by the host. Not reported when the host is not powered on.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
 
 ### vcenter.vm.cpu.time
 
@@ -991,9 +1003,11 @@ As measured over the most recent 20s interval.
 
 The current power state of the virtual machine.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {state} | Gauge | Int | Development |
+A data point is reported for every state, with a value of 1 for the current state and 0 for all other states.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 

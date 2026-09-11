@@ -50,8 +50,8 @@
                         <val xsi:type="HostSystemConnectionState">connected</val>
                     </propSet>
                     <propSet>
-                        <name>runtime.bootTime</name>
-                        <val xsi:type="xsd:dateTime">2026-08-01T10:00:00Z</val>
+                        <name>summary.quickStats.uptime</name>
+                        <val xsi:type="xsd:int">3456000</val>
                     </propSet>
                     <propSet>
                         <name>triggeredAlarmState</name>

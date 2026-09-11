@@ -3052,7 +3052,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		VcenterDatastoreMaintenanceMode: VcenterDatastoreMaintenanceModeMetricConfig{
 			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
+			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []VcenterDatastoreMaintenanceModeMetricAttributeKey{VcenterDatastoreMaintenanceModeMetricAttributeKeyDatastoreMaintenanceMode},
 		},
 		VcenterHostAlarmCount: VcenterHostAlarmCountMetricConfig{
@@ -3062,7 +3062,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		VcenterHostConnectionState: VcenterHostConnectionStateMetricConfig{
 			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
+			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []VcenterHostConnectionStateMetricAttributeKey{VcenterHostConnectionStateMetricAttributeKeyHostConnectionState},
 		},
 		VcenterHostCPUCapacity: VcenterHostCPUCapacityMetricConfig{
@@ -3139,7 +3139,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		VcenterHostPowerState: VcenterHostPowerStateMetricConfig{
 			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
+			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []VcenterHostPowerStateMetricAttributeKey{VcenterHostPowerStateMetricAttributeKeyHostPowerState},
 		},
 		VcenterHostUptime: VcenterHostUptimeMetricConfig{
@@ -3278,7 +3278,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		VcenterVMPowerState: VcenterVMPowerStateMetricConfig{
 			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
+			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []VcenterVMPowerStateMetricAttributeKey{VcenterVMPowerStateMetricAttributeKeyVMCountPowerState},
 		},
 		VcenterVMVsanLatencyAvg: VcenterVMVsanLatencyAvgMetricConfig{

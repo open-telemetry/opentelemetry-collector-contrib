@@ -113,7 +113,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 					VcenterDatastoreMaintenanceMode: VcenterDatastoreMaintenanceModeMetricConfig{
 						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
+						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []VcenterDatastoreMaintenanceModeMetricAttributeKey{VcenterDatastoreMaintenanceModeMetricAttributeKeyDatastoreMaintenanceMode},
 					},
 					VcenterHostAlarmCount: VcenterHostAlarmCountMetricConfig{
@@ -123,7 +123,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 					VcenterHostConnectionState: VcenterHostConnectionStateMetricConfig{
 						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
+						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []VcenterHostConnectionStateMetricAttributeKey{VcenterHostConnectionStateMetricAttributeKeyHostConnectionState},
 					},
 					VcenterHostCPUCapacity: VcenterHostCPUCapacityMetricConfig{
@@ -200,7 +200,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 					VcenterHostPowerState: VcenterHostPowerStateMetricConfig{
 						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
+						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []VcenterHostPowerStateMetricAttributeKey{VcenterHostPowerStateMetricAttributeKeyHostPowerState},
 					},
 					VcenterHostUptime: VcenterHostUptimeMetricConfig{
@@ -339,7 +339,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 					VcenterVMPowerState: VcenterVMPowerStateMetricConfig{
 						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
+						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []VcenterVMPowerStateMetricAttributeKey{VcenterVMPowerStateMetricAttributeKeyVMCountPowerState},
 					},
 					VcenterVMVsanLatencyAvg: VcenterVMVsanLatencyAvgMetricConfig{
@@ -465,7 +465,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 					VcenterDatastoreMaintenanceMode: VcenterDatastoreMaintenanceModeMetricConfig{
 						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
+						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []VcenterDatastoreMaintenanceModeMetricAttributeKey{VcenterDatastoreMaintenanceModeMetricAttributeKeyDatastoreMaintenanceMode},
 					},
 					VcenterHostAlarmCount: VcenterHostAlarmCountMetricConfig{
@@ -475,7 +475,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 					VcenterHostConnectionState: VcenterHostConnectionStateMetricConfig{
 						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
+						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []VcenterHostConnectionStateMetricAttributeKey{VcenterHostConnectionStateMetricAttributeKeyHostConnectionState},
 					},
 					VcenterHostCPUCapacity: VcenterHostCPUCapacityMetricConfig{
@@ -552,7 +552,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 					VcenterHostPowerState: VcenterHostPowerStateMetricConfig{
 						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
+						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []VcenterHostPowerStateMetricAttributeKey{VcenterHostPowerStateMetricAttributeKeyHostPowerState},
 					},
 					VcenterHostUptime: VcenterHostUptimeMetricConfig{
@@ -691,7 +691,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 					VcenterVMPowerState: VcenterVMPowerStateMetricConfig{
 						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
+						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []VcenterVMPowerStateMetricAttributeKey{VcenterVMPowerStateMetricAttributeKeyVMCountPowerState},
 					},
 					VcenterVMVsanLatencyAvg: VcenterVMVsanLatencyAvgMetricConfig{
