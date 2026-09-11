@@ -45,7 +45,7 @@ $defs:
 type: object
 properties:
   connect_database:
-    description: ConnectDatabase is the database the receiver connects to for cluster-wide queries (database discovery, pg_stat_statements, bgwriter/WAL/replication stats, query samples, top query). Defaults to "postgres". Independent of Databases (the reporting scope) — pg_stat_statements exposes cluster-wide, per-database stats via a dbid join regardless of which database the connection is on.
+    description: ConnectDatabase is the connection target for cluster-wide queries. Defaults to "postgres". Independent of Databases (the reporting scope).
     type: string
   connection_pool:
     $ref: connection_pool
