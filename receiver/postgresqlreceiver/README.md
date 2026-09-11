@@ -329,8 +329,9 @@ This gate is mutually exclusive with `receiver.postgresql.separateSchemaAttr` â€
 (`localhost`, `127.0.0.1`, or `::1`), the server is only reachable because it is co-located with the
 collector, so `server.address` reports the name of the machine running the collector rather than the
 loopback address, which every monitored host would otherwise report identically. This is the same host
-already used to derive `service.instance.id`, so the two attributes agree. Non-loopback endpoints are
-reported as configured, and with `transport: unix` the socket path is reported instead.
+already used to derive `service.instance.id`, and both are resolved once when the receiver starts, so
+the two attributes always agree and a host name change is picked up on restart. Non-loopback endpoints
+are reported as configured, and with `transport: unix` the socket path is reported instead.
 
 ## Metrics
 

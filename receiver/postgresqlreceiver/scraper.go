@@ -65,6 +65,7 @@ type postgreSQLScraper struct {
 	queryPlanCache         *expirable.LRU[string, string]
 	newestQueryTimestamp   float64
 	serviceInstanceID      string
+	serverEndpoint         serverEndpoint
 	lastExecutionTimestamp time.Time
 }
 
@@ -123,6 +124,7 @@ func newPostgreSQLScraper(
 	} else {
 		serviceInstanceID = getInstanceID(config.AddrConfig.Endpoint, settings.Logger)
 	}
+	endpoint := newServerEndpoint(config, settings.Logger)
 	mbConfig := metricsBuilderConfigForFeatureGate(config.MetricsBuilderConfig, useOTelSemconv)
 	return &postgreSQLScraper{
 		logger:             settings.Logger,
@@ -136,6 +138,7 @@ func newPostgreSQLScraper(
 		queryPlanCache:     queryPlanCache,
 		separateSchemaAttr: separateSchemaAttr,
 		serviceInstanceID:  serviceInstanceID,
+		serverEndpoint:     endpoint,
 		useOTelSemconv:     useOTelSemconv,
 	}, nil
 }
@@ -1273,10 +1276,34 @@ func (p *postgreSQLScraper) setServerResourceAttributes(rb *metadata.ResourceBui
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
 	rb.SetServiceInstanceID(p.serviceInstanceID)
-	if address, port, err := serverEndpointAttributes(p.config, p.logger); err == nil {
-		rb.SetServerAddress(address)
-		rb.SetServerPort(port)
+	if p.serverEndpoint.resolved {
+		rb.SetServerAddress(p.serverEndpoint.address)
+		rb.SetServerPort(p.serverEndpoint.port)
 	}
+}
+
+// serverEndpoint is the resolved network location of the monitored server. An unresolved endpoint
+// leaves both attributes unset rather than reporting empty values.
+type serverEndpoint struct {
+	address  string
+	port     int64
+	resolved bool
+}
+
+// newServerEndpoint resolves the endpoint once, at scraper construction. The endpoint is immutable
+// configuration, so resolving it per resource would repeat an os.Hostname call for every database,
+// table and index emitted in a scrape. Resolving alongside service.instance.id also keeps the two
+// consistent for the lifetime of the scraper: both name the same machine as of the same moment,
+// instead of service.instance.id being frozen at startup while server.address tracks later changes.
+func newServerEndpoint(config *Config, logger *zap.Logger) serverEndpoint {
+	address, port, err := serverEndpointAttributes(config, logger)
+	if err != nil {
+		logger.Warn("Failed to parse endpoint; server.address and server.port will not be reported",
+			zap.String("endpoint", config.AddrConfig.Endpoint),
+			zap.Error(err))
+		return serverEndpoint{}
+	}
+	return serverEndpoint{address: address, port: port, resolved: true}
 }
 
 // setupSemconvResourceBuilder sets the single per-server resource used in semantic conventions mode,

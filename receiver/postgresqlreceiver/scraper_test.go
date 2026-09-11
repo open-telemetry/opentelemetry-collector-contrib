@@ -110,6 +110,7 @@ func TestSemconvQueryConflictsPreserveDatabaseNamespace(t *testing.T) {
 		config:            cfg,
 		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
 		serviceInstanceID: "example.com:5432",
+		serverEndpoint:    newServerEndpoint(cfg, zap.NewNop()),
 		useOTelSemconv:    true,
 	}
 	retrieval := &dbRetrieval{
@@ -2771,6 +2772,7 @@ func TestSetupSemconvResourceBuilder(t *testing.T) {
 		config:            cfg,
 		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
 		serviceInstanceID: serviceInstanceID,
+		serverEndpoint:    newServerEndpoint(cfg, zap.NewNop()),
 		useOTelSemconv:    true,
 	}
 
@@ -2930,6 +2932,7 @@ func TestSetupLegacyResourceBuilder(t *testing.T) {
 		config:            cfg,
 		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
 		serviceInstanceID: "localhost:5432",
+		serverEndpoint:    newServerEndpoint(cfg, zap.NewNop()),
 		useOTelSemconv:    false,
 	}
 
@@ -2967,4 +2970,52 @@ func TestSetupLegacyResourceBuilder(t *testing.T) {
 	serverPort, ok := res.Attributes().Get("server.port")
 	require.True(t, ok)
 	assert.Equal(t, int64(5432), serverPort.Int())
+}
+
+// TestServerEndpointResolvedAtConstruction guards that the endpoint is resolved once when the
+// scraper is built rather than for every resource, which is what keeps server.address consistent
+// with the service.instance.id derived from the same endpoint at the same moment.
+func TestServerEndpointResolvedAtConstruction(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.AddrConfig.Endpoint = "db.example.com:5432"
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	cfg.AddrConfig.Endpoint = "other.example.com:5433"
+
+	rb := scraper.mb.NewResourceBuilder()
+	scraper.setupLegacyResourceBuilder(rb, "mydb", "", "", "")
+	res := rb.Emit()
+
+	serverAddress, ok := res.Attributes().Get("server.address")
+	require.True(t, ok)
+	assert.Equal(t, "db.example.com", serverAddress.Str())
+
+	serverPort, ok := res.Attributes().Get("server.port")
+	require.True(t, ok)
+	assert.Equal(t, int64(5432), serverPort.Int())
+}
+
+// TestServerEndpointUnresolvedOmitsAttributes checks that an endpoint that cannot be parsed leaves
+// both attributes unset for the lifetime of the scraper instead of reporting empty values.
+func TestServerEndpointUnresolvedOmitsAttributes(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.AddrConfig.Endpoint = "localhost"
+	scraper := &postgreSQLScraper{
+		logger:            zap.NewNop(),
+		config:            cfg,
+		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
+		serviceInstanceID: "unknown:5432",
+		serverEndpoint:    newServerEndpoint(cfg, zap.NewNop()),
+	}
+
+	rb := scraper.mb.NewResourceBuilder()
+	scraper.setupLegacyResourceBuilder(rb, "mydb", "", "", "")
+	res := rb.Emit()
+
+	_, ok := res.Attributes().Get("server.address")
+	assert.False(t, ok)
+
+	_, ok = res.Attributes().Get("server.port")
+	assert.False(t, ok)
 }
