@@ -76,7 +76,11 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["vcenter.datacenter.disk.space"] = mb.metricVcenterDatacenterDiskSpace.config.AggregationStrategy
 			aggMap["vcenter.datacenter.host.count"] = mb.metricVcenterDatacenterHostCount.config.AggregationStrategy
 			aggMap["vcenter.datacenter.vm.count"] = mb.metricVcenterDatacenterVMCount.config.AggregationStrategy
+			aggMap["vcenter.datastore.alarm.count"] = mb.metricVcenterDatastoreAlarmCount.config.AggregationStrategy
 			aggMap["vcenter.datastore.disk.usage"] = mb.metricVcenterDatastoreDiskUsage.config.AggregationStrategy
+			aggMap["vcenter.datastore.maintenance_mode"] = mb.metricVcenterDatastoreMaintenanceMode.config.AggregationStrategy
+			aggMap["vcenter.host.alarm.count"] = mb.metricVcenterHostAlarmCount.config.AggregationStrategy
+			aggMap["vcenter.host.connection_state"] = mb.metricVcenterHostConnectionState.config.AggregationStrategy
 			aggMap["vcenter.host.cpu.reserved"] = mb.metricVcenterHostCPUReserved.config.AggregationStrategy
 			aggMap["vcenter.host.disk.latency.avg"] = mb.metricVcenterHostDiskLatencyAvg.config.AggregationStrategy
 			aggMap["vcenter.host.disk.latency.max"] = mb.metricVcenterHostDiskLatencyMax.config.AggregationStrategy
@@ -86,6 +90,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["vcenter.host.network.packet.rate"] = mb.metricVcenterHostNetworkPacketRate.config.AggregationStrategy
 			aggMap["vcenter.host.network.throughput"] = mb.metricVcenterHostNetworkThroughput.config.AggregationStrategy
 			aggMap["vcenter.host.network.usage"] = mb.metricVcenterHostNetworkUsage.config.AggregationStrategy
+			aggMap["vcenter.host.power_state"] = mb.metricVcenterHostPowerState.config.AggregationStrategy
 			aggMap["vcenter.host.vsan.latency.avg"] = mb.metricVcenterHostVsanLatencyAvg.config.AggregationStrategy
 			aggMap["vcenter.host.vsan.operations"] = mb.metricVcenterHostVsanOperations.config.AggregationStrategy
 			aggMap["vcenter.host.vsan.throughput"] = mb.metricVcenterHostVsanThroughput.config.AggregationStrategy
@@ -102,6 +107,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["vcenter.vm.network.packet.rate"] = mb.metricVcenterVMNetworkPacketRate.config.AggregationStrategy
 			aggMap["vcenter.vm.network.throughput"] = mb.metricVcenterVMNetworkThroughput.config.AggregationStrategy
 			aggMap["vcenter.vm.network.usage"] = mb.metricVcenterVMNetworkUsage.config.AggregationStrategy
+			aggMap["vcenter.vm.power_state"] = mb.metricVcenterVMPowerState.config.AggregationStrategy
 			aggMap["vcenter.vm.vsan.latency.avg"] = mb.metricVcenterVMVsanLatencyAvg.config.AggregationStrategy
 			aggMap["vcenter.vm.vsan.operations"] = mb.metricVcenterVMVsanOperations.config.AggregationStrategy
 			aggMap["vcenter.vm.vsan.throughput"] = mb.metricVcenterVMVsanThroughput.config.AggregationStrategy
@@ -194,6 +200,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterDatacenterVMCountDataPoint(ts, 3, AttributeEntityStatusYellow, AttributeVMCountPowerStateOff)
 			}
+
+			allMetricsCount++
+			mb.RecordVcenterDatastoreAlarmCountDataPoint(ts, 1, AttributeEntityStatusRed)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterDatastoreAlarmCountDataPoint(ts, 3, AttributeEntityStatusYellow)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatastoreDiskUsageDataPoint(ts, 1, AttributeDiskStateAvailable)
@@ -203,6 +215,24 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatastoreDiskUtilizationDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordVcenterDatastoreMaintenanceModeDataPoint(ts, 1, AttributeDatastoreMaintenanceModeNormal)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterDatastoreMaintenanceModeDataPoint(ts, 3, AttributeDatastoreMaintenanceModeEnteringMaintenance)
+			}
+
+			allMetricsCount++
+			mb.RecordVcenterHostAlarmCountDataPoint(ts, 1, AttributeEntityStatusRed)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterHostAlarmCountDataPoint(ts, 3, AttributeEntityStatusYellow)
+			}
+
+			allMetricsCount++
+			mb.RecordVcenterHostConnectionStateDataPoint(ts, 1, AttributeHostConnectionStateConnected)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterHostConnectionStateDataPoint(ts, 3, AttributeHostConnectionStateDisconnected)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostCPUCapacityDataPoint(ts, 1)
@@ -284,6 +314,15 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostNetworkUsageDataPoint(ts, 3, "object_name-val-2")
 			}
+
+			allMetricsCount++
+			mb.RecordVcenterHostPowerStateDataPoint(ts, 1, AttributeHostPowerStateOn)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterHostPowerStateDataPoint(ts, 3, AttributeHostPowerStateOff)
+			}
+
+			allMetricsCount++
+			mb.RecordVcenterHostUptimeDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanCacheHitRateDataPoint(ts, 1)
@@ -431,6 +470,12 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMNetworkUsageDataPoint(ts, 3, "object_name-val-2")
 			}
+
+			allMetricsCount++
+			mb.RecordVcenterVMPowerStateDataPoint(ts, 1, AttributeVMCountPowerStateOn)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterVMPowerStateDataPoint(ts, 3, AttributeVMCountPowerStateOff)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMVsanLatencyAvgDataPoint(ts, 1, AttributeVsanLatencyTypeRead)
@@ -475,7 +520,11 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricVcenterDatacenterDiskSpace.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterDatacenterHostCount.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterDatacenterVMCount.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterDatastoreAlarmCount.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterDatastoreDiskUsage.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterDatastoreMaintenanceMode.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterHostAlarmCount.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterHostConnectionState.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterHostCPUReserved.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterHostDiskLatencyAvg.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterHostDiskLatencyMax.aggDataPoints)
@@ -485,6 +534,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricVcenterHostNetworkPacketRate.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterHostNetworkThroughput.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterHostNetworkUsage.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterHostPowerState.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterHostVsanLatencyAvg.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterHostVsanOperations.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterHostVsanThroughput.aggDataPoints)
@@ -501,6 +551,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricVcenterVMNetworkPacketRate.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterVMNetworkThroughput.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterVMNetworkUsage.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterVMPowerState.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterVMVsanLatencyAvg.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterVMVsanOperations.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterVMVsanThroughput.aggDataPoints)
@@ -1049,6 +1100,50 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("power_state")
 						assert.False(t, ok)
 					}
+				case "vcenter.datastore.alarm.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.datastore.alarm.count"], "Found a duplicate in the metrics slice: vcenter.datastore.alarm.count")
+						validatedMetrics["vcenter.datastore.alarm.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of triggered alarms on the datastore.", mi.Description())
+						assert.Equal(t, "{alarms}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						entityStatusAttrVal, ok := dp.Attributes().Get("status")
+						assert.True(t, ok)
+						assert.Equal(t, "red", entityStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.datastore.alarm.count"], "Found a duplicate in the metrics slice: vcenter.datastore.alarm.count")
+						validatedMetrics["vcenter.datastore.alarm.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of triggered alarms on the datastore.", mi.Description())
+						assert.Equal(t, "{alarms}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.datastore.alarm.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("status")
+						assert.False(t, ok)
+					}
 				case "vcenter.datastore.disk.usage":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["vcenter.datastore.disk.usage"], "Found a duplicate in the metrics slice: vcenter.datastore.disk.usage")
@@ -1105,6 +1200,130 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "vcenter.datastore.maintenance_mode":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.datastore.maintenance_mode"], "Found a duplicate in the metrics slice: vcenter.datastore.maintenance_mode")
+						validatedMetrics["vcenter.datastore.maintenance_mode"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The current maintenance mode of the datastore.", mi.Description())
+						assert.Equal(t, "{state}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						datastoreMaintenanceModeAttrVal, ok := dp.Attributes().Get("maintenance_mode")
+						assert.True(t, ok)
+						assert.Equal(t, "normal", datastoreMaintenanceModeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.datastore.maintenance_mode"], "Found a duplicate in the metrics slice: vcenter.datastore.maintenance_mode")
+						validatedMetrics["vcenter.datastore.maintenance_mode"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The current maintenance mode of the datastore.", mi.Description())
+						assert.Equal(t, "{state}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.datastore.maintenance_mode"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("maintenance_mode")
+						assert.False(t, ok)
+					}
+				case "vcenter.host.alarm.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.host.alarm.count"], "Found a duplicate in the metrics slice: vcenter.host.alarm.count")
+						validatedMetrics["vcenter.host.alarm.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of triggered alarms on the host.", mi.Description())
+						assert.Equal(t, "{alarms}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						entityStatusAttrVal, ok := dp.Attributes().Get("status")
+						assert.True(t, ok)
+						assert.Equal(t, "red", entityStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.host.alarm.count"], "Found a duplicate in the metrics slice: vcenter.host.alarm.count")
+						validatedMetrics["vcenter.host.alarm.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of triggered alarms on the host.", mi.Description())
+						assert.Equal(t, "{alarms}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.host.alarm.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("status")
+						assert.False(t, ok)
+					}
+				case "vcenter.host.connection_state":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.host.connection_state"], "Found a duplicate in the metrics slice: vcenter.host.connection_state")
+						validatedMetrics["vcenter.host.connection_state"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The current connection state of the host.", mi.Description())
+						assert.Equal(t, "{state}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						hostConnectionStateAttrVal, ok := dp.Attributes().Get("connection_state")
+						assert.True(t, ok)
+						assert.Equal(t, "connected", hostConnectionStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.host.connection_state"], "Found a duplicate in the metrics slice: vcenter.host.connection_state")
+						validatedMetrics["vcenter.host.connection_state"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The current connection state of the host.", mi.Description())
+						assert.Equal(t, "{state}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.host.connection_state"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("connection_state")
+						assert.False(t, ok)
+					}
 				case "vcenter.host.cpu.capacity":
 					assert.False(t, validatedMetrics["vcenter.host.cpu.capacity"], "Found a duplicate in the metrics slice: vcenter.host.cpu.capacity")
 					validatedMetrics["vcenter.host.cpu.capacity"] = true
@@ -1633,6 +1852,60 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("object")
 						assert.False(t, ok)
 					}
+				case "vcenter.host.power_state":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.host.power_state"], "Found a duplicate in the metrics slice: vcenter.host.power_state")
+						validatedMetrics["vcenter.host.power_state"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The current power state of the host.", mi.Description())
+						assert.Equal(t, "{state}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						hostPowerStateAttrVal, ok := dp.Attributes().Get("power_state")
+						assert.True(t, ok)
+						assert.Equal(t, "on", hostPowerStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.host.power_state"], "Found a duplicate in the metrics slice: vcenter.host.power_state")
+						validatedMetrics["vcenter.host.power_state"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The current power state of the host.", mi.Description())
+						assert.Equal(t, "{state}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.host.power_state"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("power_state")
+						assert.False(t, ok)
+					}
+				case "vcenter.host.uptime":
+					assert.False(t, validatedMetrics["vcenter.host.uptime"], "Found a duplicate in the metrics slice: vcenter.host.uptime")
+					validatedMetrics["vcenter.host.uptime"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total time elapsed since last operating system boot-up.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "vcenter.host.vsan.cache.hit_rate":
 					assert.False(t, validatedMetrics["vcenter.host.vsan.cache.hit_rate"], "Found a duplicate in the metrics slice: vcenter.host.vsan.cache.hit_rate")
 					validatedMetrics["vcenter.host.vsan.cache.hit_rate"] = true
@@ -2562,6 +2835,46 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
+				case "vcenter.vm.power_state":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.vm.power_state"], "Found a duplicate in the metrics slice: vcenter.vm.power_state")
+						validatedMetrics["vcenter.vm.power_state"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The current power state of the virtual machine.", mi.Description())
+						assert.Equal(t, "{state}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						vmCountPowerStateAttrVal, ok := dp.Attributes().Get("power_state")
+						assert.True(t, ok)
+						assert.Equal(t, "on", vmCountPowerStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.vm.power_state"], "Found a duplicate in the metrics slice: vcenter.vm.power_state")
+						validatedMetrics["vcenter.vm.power_state"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The current power state of the virtual machine.", mi.Description())
+						assert.Equal(t, "{state}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.vm.power_state"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("power_state")
 						assert.False(t, ok)
 					}
 				case "vcenter.vm.vsan.latency.avg":

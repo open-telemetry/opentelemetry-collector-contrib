@@ -87,6 +87,15 @@ attributes:
       - "ready"
       - "wait"
     requirement_level: recommended
+  datastore_maintenance_mode:
+    name_override: maintenance_mode
+    description: The current maintenance mode of the datastore.
+    type: string
+    enum:
+      - "normal"
+      - "entering_maintenance"
+      - "in_maintenance"
+    requirement_level: recommended
   disk_direction:
     name_override: direction
     description: The direction of disk latency.
@@ -118,6 +127,15 @@ attributes:
       - "yellow"
       - "green"
       - "gray"
+    requirement_level: recommended
+  host_connection_state:
+    name_override: connection_state
+    description: The current connection state of the host.
+    type: string
+    enum:
+      - "connected"
+      - "disconnected"
+      - "not_responding"
     requirement_level: recommended
   host_effective:
     type: bool
@@ -374,6 +392,16 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [entity_status, vm_count_power_state]
+  vcenter.datastore.alarm.count:
+    enabled: false
+    description: The number of triggered alarms on the datastore.
+    stability: development
+    unit: "{alarms}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [entity_status]
   vcenter.datastore.disk.usage:
     enabled: true
     description: The amount of space in the datastore.
@@ -392,6 +420,32 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  vcenter.datastore.maintenance_mode:
+    enabled: false
+    description: The current maintenance mode of the datastore.
+    stability: development
+    unit: "{state}"
+    gauge:
+      value_type: int
+    attributes: [datastore_maintenance_mode]
+  vcenter.host.alarm.count:
+    enabled: false
+    description: The number of triggered alarms on the host.
+    stability: development
+    unit: "{alarms}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [entity_status]
+  vcenter.host.connection_state:
+    enabled: false
+    description: The current connection state of the host.
+    stability: development
+    unit: "{state}"
+    gauge:
+      value_type: int
+    attributes: [host_connection_state]
   vcenter.host.cpu.capacity:
     enabled: true
     description: Total CPU capacity of the host system.
@@ -568,6 +622,24 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [object_name]
+  vcenter.host.power_state:
+    enabled: false
+    description: The current power state of the host.
+    stability: development
+    unit: "{state}"
+    gauge:
+      value_type: int
+    attributes: [host_power_state]
+  vcenter.host.uptime:
+    enabled: false
+    description: Total time elapsed since last operating system boot-up.
+    stability: development
+    unit: s
+    sum:
+      monotonic: true
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
   vcenter.host.vsan.cache.hit_rate:
     enabled: true
     description: The host's read IOs which could be satisfied by the local client cache.
@@ -878,6 +950,14 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [object_name]
     extended_documentation: As measured over the most recent 20s interval.
+  vcenter.vm.power_state:
+    enabled: false
+    description: The current power state of the virtual machine.
+    stability: development
+    unit: "{state}"
+    gauge:
+      value_type: int
+    attributes: [vm_count_power_state]
   vcenter.vm.vsan.latency.avg:
     enabled: true
     description: The virtual machine latency while accessing vSAN storage.

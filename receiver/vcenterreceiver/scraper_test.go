@@ -50,6 +50,13 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	optConfigs.Metrics.VcenterVMNetworkBroadcastPacketRate.Enabled = true
 	optConfigs.Metrics.VcenterVMNetworkMulticastPacketRate.Enabled = true
 	optConfigs.Metrics.VcenterVMCPUTime.Enabled = true
+	optConfigs.Metrics.VcenterHostPowerState.Enabled = true
+	optConfigs.Metrics.VcenterHostConnectionState.Enabled = true
+	optConfigs.Metrics.VcenterHostUptime.Enabled = true
+	optConfigs.Metrics.VcenterHostAlarmCount.Enabled = true
+	optConfigs.Metrics.VcenterDatastoreMaintenanceMode.Enabled = true
+	optConfigs.Metrics.VcenterDatastoreAlarmCount.Enabled = true
+	optConfigs.Metrics.VcenterVMPowerState.Enabled = true
 
 	cfg := &Config{
 		MetricsBuilderConfig: optConfigs,
@@ -96,6 +103,8 @@ func testScrape(ctx context.Context, t *testing.T, cfg *Config, fileName string)
 		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreMetricDataPointsOrder(),
+		// Uptime is derived from the scrape time, so its value changes on every run.
+		pmetrictest.IgnoreMetricValues("vcenter.host.uptime"),
 	)
 	require.NoError(t, err)
 	require.NoError(t, scraper.Shutdown(ctx))

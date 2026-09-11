@@ -139,6 +139,8 @@ func (vc *vcenterClient) Datastores(ctx context.Context, containerMoRef vt.Manag
 		"name",
 		"summary.capacity",
 		"summary.freeSpace",
+		"summary.maintenanceMode",
+		"triggeredAlarmState",
 	}, &datastores)
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve Datastores: %w", err)
@@ -182,6 +184,8 @@ func (vc *vcenterClient) HostSystems(ctx context.Context, containerMoRef vt.Mana
 	err = v.Retrieve(ctx, []string{"HostSystem"}, []string{
 		"name",
 		"runtime.powerState",
+		"runtime.connectionState",
+		"runtime.bootTime",
 		"summary.hardware.memorySize",
 		"summary.hardware.numCpuCores",
 		"summary.hardware.cpuMhz",
@@ -189,6 +193,7 @@ func (vc *vcenterClient) HostSystems(ctx context.Context, containerMoRef vt.Mana
 		"summary.quickStats.overallMemoryUsage",
 		"summary.quickStats.overallCpuUsage",
 		"summary.overallStatus",
+		"triggeredAlarmState",
 		"vm",
 		"parent",
 	}, &hosts)
