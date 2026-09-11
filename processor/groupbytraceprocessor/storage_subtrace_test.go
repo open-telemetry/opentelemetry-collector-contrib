@@ -484,7 +484,7 @@ func TestSubtraceStorage_PruningKeepsReferencedParents(t *testing.T) {
 	insertTestSpan(t, st, tid, entry2, caller2, "svc-b")
 
 	// Fill svc-a with spans nothing points at, so releasing it triggers a prune.
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		insertTestSpan(t, st, tid, spanIDAt(100+i), caller1, "svc-a")
 	}
 
