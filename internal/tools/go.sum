@@ -234,6 +234,7 @@ github.com/golangci/gofmt v0.0.0-20260820135601-e84e05053792 h1:WL8YKrt3UbOBqSRU
 github.com/golangci/gofmt v0.0.0-20260820135601-e84e05053792/go.mod h1:te5hX0dW4C5r6YbXs+6ysNr8Q5UTmdIqGbb+mlFiYmA=
 github.com/golangci/golangci-lint/v2 v2.13.1 h1:RuM4OcluM4xFQcGuRE6R7jA33pqxK/W1EsBxpugdZjg=
 github.com/golangci/golangci-lint/v2 v2.13.1/go.mod h1:HwX7mDzqHbcSxlhrTygjX1GJbAfQ3sJAqOx41qQlhDE=
+github.com/golangci/golangci-lint/v2 v2.13.2/go.mod h1:5xaMd1kAxV7GSBPEyngw8gnnjoRocqW9UVKdBR6627w=
 github.com/golangci/golines v0.15.0 h1:Qnph25g8Y1c5fdo1X7GaRDGgnMHgnxh4Gk4VfPTtRx0=
 github.com/golangci/golines v0.15.0/go.mod h1:AZjXd23tbHMpowhtnGlj9KCNsysj72aeZVVHnVcZx10=
 github.com/golangci/misspell v0.8.0 h1:qvxQhiE2/5z+BVRo1kwYA8yGz+lOlu5Jfvtx2b04Jbg=
@@ -575,6 +576,7 @@ github.com/uudashr/gocognit v1.2.1 h1:CSJynt5txTnORn/DkhiB4mZjwPuifyASC8/6Q0I/QS
 github.com/uudashr/gocognit v1.2.1/go.mod h1:acaubQc6xYlXFEMb9nWX2dYBzJ/bIjEkc1zzvyIZg5Q=
 github.com/uudashr/iface v1.5.0 h1:PgdMt4uAettGG8K/Kbamc4B9FABgUgnS3TLbl6fnjEk=
 github.com/uudashr/iface v1.5.0/go.mod h1:pbeBPlbuU2qkNDn0mmfrxP2X+wjPMIQAy+r1MBXSXtg=
+github.com/uudashr/iface v1.5.1/go.mod h1:5UWoT6SvTdTww/KToRj6clO+n4Kg3/NrAQvgOB+5Ggw=
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=
 github.com/xanzy/ssh-agent v0.3.3/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=
 github.com/xen0n/gosmopolitan v1.3.0 h1:zAZI1zefvo7gcpbCOrPSHJZJYA9ZgLfJqtKzZ5pHqQM=
@@ -785,7 +787,9 @@ gotest.tools/v3 v3.5.2 h1:7koQfIKdy+I8UTetycgUqXWSDwpgv193Ka+qRsmBY8Q=
 gotest.tools/v3 v3.5.2/go.mod h1:LtdLGcnqToBH83WByAAi/wiwSFCArdFIUV/xxN4pcjA=
 honnef.co/go/tools v0.8.0 h1:UacpzPr7D6i5BAjTkA7sNVcx4kIbhAZcQ4zYtKiXx68=
 honnef.co/go/tools v0.8.0/go.mod h1:XA+OnlRA9EDh/ukGvXMNSZNKGwFQJ+5dER0ioUkOxks=
+honnef.co/go/tools v0.8.1/go.mod h1:XA+OnlRA9EDh/ukGvXMNSZNKGwFQJ+5dER0ioUkOxks=
 mvdan.cc/gofumpt v0.11.0 h1:0H01XB95PnN2QgCSR9ELdZyTlJqNZ7181B0BTMh5VZc=
 mvdan.cc/gofumpt v0.11.0/go.mod h1:BeT5wCsOJt6J9zT2MZIOGszjUHzFkn1/l9g6xAzqsXo=
 mvdan.cc/unparam v0.0.0-20260818115549-3f964bcb5673 h1:dEE6li4OPIE54oojY2qaayFS1fSp17G14si0gXRxl0U=
 mvdan.cc/unparam v0.0.0-20260818115549-3f964bcb5673/go.mod h1:62roFV3D3nYOWIXv3PfGO4UYEKAotz2WgLywT87ONd8=
+mvdan.cc/unparam v0.0.0-20260823230713-2fa3d841b0c8/go.mod h1:MrS/+zJ1M2xvGXhKktiHbNQeQPyg3Qel+KkzT+f7/i4=
