@@ -848,3 +848,57 @@ func TestBoundaryStatistics(t *testing.T) {
 		require.InEpsilon(t, 0.5, float64(below)/float64(total), 0.06)
 	}
 }
+
+// TestMaxScaleStartingResolution checks that WithMaxScale selects the
+// scale a histogram starts at, and that a histogram configured with a
+// low enough max scale keeps that scale as the range of values grows.
+func TestMaxScaleStartingResolution(t *testing.T) {
+	// By default a histogram starts at the maximum scale and
+	// downscales until the index range fits within MaxSize.
+	def := NewFloat64(NewConfig(WithMaxSize(160)), 1, 1e6)
+	require.Less(t, def.Scale(), DefaultMaxScale)
+
+	// At scale 0 the same values span ~20 indices, well within
+	// MaxSize, so no downscaling happens.
+	fixed := NewFloat64(NewConfig(WithMaxSize(160), WithMaxScale(0)), 1, 1e6)
+	require.Equal(t, int32(0), fixed.Scale())
+
+	// Widening the range by orders of magnitude leaves the scale
+	// unchanged, because MaxSize still cannot be exceeded.
+	fixed.Update(1e12)
+	require.Equal(t, int32(0), fixed.Scale())
+}
+
+// TestMaxScaleRestoredByClear checks that Clear returns a histogram to
+// its configured max scale rather than to the package maximum.
+func TestMaxScaleRestoredByClear(t *testing.T) {
+	h := NewFloat64(NewConfig(WithMaxSize(160), WithMaxScale(2)), 1, 2, 4)
+	require.Equal(t, int32(2), h.Scale())
+
+	h.Clear()
+	h.Update(1)
+	require.Equal(t, int32(2), h.Scale())
+}
+
+// TestMaxScaleStillDownscales checks that MaxSize continues to bound
+// the number of buckets when the configured max scale is too fine for
+// the range of values recorded.
+func TestMaxScaleStillDownscales(t *testing.T) {
+	h := NewFloat64(NewConfig(WithMaxSize(2), WithMaxScale(MaximumMaxScale)), 1, 1e6)
+	require.Less(t, h.Scale(), MaximumMaxScale)
+	require.LessOrEqual(t, h.Positive().Len(), uint32(2))
+}
+
+// TestMaxScaleMergeUsesCoarserScale checks that merging into a
+// histogram configured with a coarser max scale does not raise the
+// destination's resolution.
+func TestMaxScaleMergeUsesCoarserScale(t *testing.T) {
+	src := NewFloat64(NewConfig(WithMaxSize(160)), 1, 2)
+	require.Greater(t, src.Scale(), int32(0))
+
+	dst := NewFloat64(NewConfig(WithMaxSize(160), WithMaxScale(0)), 1)
+	dst.MergeFrom(src)
+
+	require.Equal(t, int32(0), dst.Scale())
+	require.Equal(t, uint64(3), dst.Count())
+}
