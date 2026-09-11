@@ -98,6 +98,18 @@ func TestLogarithmBoundary(t *testing.T) {
 	}
 }
 
+func TestTableMappingBoundaries(t *testing.T) {
+	mapping, err := NewMapping(tableScale)
+	require.NoError(t, err)
+
+	for bucket := int32(1); bucket < 1<<tableScale; bucket++ {
+		bits := uint64(internal.ExponentBias)<<internal.SignificandWidth | boundaries[bucket+1]
+		boundary := math.Float64frombits(bits)
+		require.Equal(t, bucket, mapping.MapToIndex(boundary))
+		require.Equal(t, bucket-1, mapping.MapToIndex(math.Nextafter(boundary, 0)))
+	}
+}
+
 // roundedBoundary computes the correct boundary rounded to a float64
 // using math/big.  Note that this function uses a SquareRoot() where the
 // one in ../exponent uses a Square().
