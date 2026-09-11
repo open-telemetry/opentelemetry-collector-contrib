@@ -241,6 +241,11 @@ resource_attributes:
     type: string
     enabled: false
 
+  k8s.cluster.uid:
+    description: The Kubernetes cluster UID, derived from the kube-system namespace UID. When enabled, it is attached to all telemetry emitted by this receiver, and the collector needs the permission to get the kube-system namespace.
+    type: string
+    enabled: false
+
   k8s.container.name:
     description: The k8s container name
     type: string
