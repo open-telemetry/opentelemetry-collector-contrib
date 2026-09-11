@@ -1266,15 +1266,23 @@ func (*postgreSQLScraper) retrieveBackends(
 	r.Unlock()
 }
 
-// setupSemconvResourceBuilder sets service defaults, server.address, server.port, and UUID v5 service.instance.id.
-func (p *postgreSQLScraper) setupSemconvResourceBuilder(rb *metadata.ResourceBuilder) *metadata.ResourceBuilder {
+// setServerResourceAttributes sets the attributes that identify the monitored server. They describe
+// the scraped endpoint rather than how telemetry is grouped into resources, so both resource models
+// emit them.
+func (p *postgreSQLScraper) setServerResourceAttributes(rb *metadata.ResourceBuilder) {
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
+	rb.SetServiceInstanceID(p.serviceInstanceID)
 	if address, port, err := serverEndpointAttributes(p.config, p.logger); err == nil {
 		rb.SetServerAddress(address)
 		rb.SetServerPort(port)
 	}
-	rb.SetServiceInstanceID(p.serviceInstanceID)
+}
+
+// setupSemconvResourceBuilder sets the single per-server resource used in semantic conventions mode,
+// where service.instance.id is a UUID v5.
+func (p *postgreSQLScraper) setupSemconvResourceBuilder(rb *metadata.ResourceBuilder) *metadata.ResourceBuilder {
+	p.setServerResourceAttributes(rb)
 	return rb
 }
 
@@ -1313,11 +1321,10 @@ func resolveLoopbackHost(host string, logger *zap.Logger) string {
 	return hostname
 }
 
-// setupLegacyResourceBuilder sets legacy per-entity resource attributes and host:port service.instance.id.
+// setupLegacyResourceBuilder adds the legacy per-entity resource attributes on top of the server
+// attributes, with a host:port service.instance.id.
 func (p *postgreSQLScraper) setupLegacyResourceBuilder(rb *metadata.ResourceBuilder, database, schema, table, index string) *metadata.ResourceBuilder {
-	rb.SetServiceInstanceID(p.serviceInstanceID)
-	rb.SetServiceName(defaultServiceName)
-	rb.SetServiceNamespace("")
+	p.setServerResourceAttributes(rb)
 	if database != "" {
 		rb.SetPostgresqlDatabaseName(database)
 	}

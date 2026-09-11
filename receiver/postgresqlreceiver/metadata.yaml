@@ -40,11 +40,11 @@ feature_gates:
   - id: receiver.postgresql.useOTelSemconv
     stage: alpha
     description: >-
-      When enabled, uses a single resource per server with server.address, server.port,
-      and service.instance.id (UUID v5) resource attributes, aligning with OpenTelemetry
-      semantic conventions. When disabled, uses the legacy per-entity resource model with
-      postgresql.database.name, postgresql.table.name, postgresql.index.name, and
-      postgresql.schema.name resource attributes.
+      When enabled, uses a single resource per server with a service.instance.id (UUID v5)
+      resource attribute, aligning with OpenTelemetry semantic conventions. When disabled,
+      uses the legacy per-entity resource model with postgresql.database.name,
+      postgresql.table.name, postgresql.index.name, and postgresql.schema.name resource
+      attributes.
     from_version: "v0.156.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45347
 
@@ -67,16 +67,13 @@ resource_attributes:
     type: string
   server.address:
     description: >-
-      The address of the PostgreSQL server. Only emitted when the receiver.postgresql.useOTelSemconv
-      feature gate is enabled. A loopback endpoint is reported as the name of the machine running the
-      collector, because the server is then co-located with it. With transport `unix` the socket path
-      is reported instead.
+      The address of the PostgreSQL server. A loopback endpoint is reported as the name of the
+      machine running the collector, because the server is then co-located with it. With transport
+      `unix` the socket path is reported instead.
     enabled: true
     type: string
   server.port:
-    description: >-
-      The port number of the PostgreSQL server. Only emitted when the receiver.postgresql.useOTelSemconv
-      feature gate is enabled.
+    description: The port number of the PostgreSQL server.
     enabled: true
     type: int
   service.instance.id:

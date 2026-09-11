@@ -1,5 +1,15 @@
 resourceMetrics:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            intValue: "5432"
+        - key: service.instance.id
+          value:
+            stringValue: localhost:5432
     scopeMetrics:
       - metrics:
           - description: Number of buffers allocated.
@@ -144,6 +154,15 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            intValue: "5432"
+        - key: service.instance.id
+          value:
+            stringValue: localhost:5432
     scopeMetrics:
       - metrics:
           - description: The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.
@@ -201,6 +220,15 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: telemetry
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            intValue: "5432"
+        - key: service.instance.id
+          value:
+            stringValue: localhost:5432
     scopeMetrics:
       - metrics:
           - description: The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.
@@ -261,6 +289,15 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: public.table1
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            intValue: "5432"
+        - key: service.instance.id
+          value:
+            stringValue: localhost:5432
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -411,6 +448,15 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: public.table2
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            intValue: "5432"
+        - key: service.instance.id
+          value:
+            stringValue: localhost:5432
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -561,6 +607,15 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: public.table1
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            intValue: "5432"
+        - key: service.instance.id
+          value:
+            stringValue: localhost:5432
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -711,6 +766,15 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: public.table2
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            intValue: "5432"
+        - key: service.instance.id
+          value:
+            stringValue: localhost:5432
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -864,6 +928,15 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table1
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            intValue: "5432"
+        - key: service.instance.id
+          value:
+            stringValue: localhost:5432
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -898,6 +971,15 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table2
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            intValue: "5432"
+        - key: service.instance.id
+          value:
+            stringValue: localhost:5432
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -932,6 +1014,15 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table1
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            intValue: "5432"
+        - key: service.instance.id
+          value:
+            stringValue: localhost:5432
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -966,6 +1057,15 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table2
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            intValue: "5432"
+        - key: service.instance.id
+          value:
+            stringValue: localhost:5432
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
