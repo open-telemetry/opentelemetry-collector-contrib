@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor/internal/metrics"
 )
 
@@ -133,38 +134,53 @@ func (p *intervalProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 						return false
 					}
 
-					if sum.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
+					temporality := sum.AggregationTemporality()
+					if temporality != pmetric.AggregationTemporalityCumulative && temporality != pmetric.AggregationTemporalityDelta {
 						return false
 					}
 
 					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
 					cloneSum := mClone.Sum()
 
-					aggregateDataPoints(sum.DataPoints(), cloneSum.DataPoints(), metricID, p.numberLookup)
+					if temporality == pmetric.AggregationTemporalityCumulative {
+						aggregateDataPoints(sum.DataPoints(), cloneSum.DataPoints(), metricID, p.numberLookup)
+					} else {
+						aggregateDeltaDataPoints(sum.DataPoints(), cloneSum.DataPoints(), metricID, p.numberLookup, data.Adder{}.Numbers)
+					}
 					return true
 				case pmetric.MetricTypeHistogram:
 					histogram := m.Histogram()
 
-					if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
+					temporality := histogram.AggregationTemporality()
+					if temporality != pmetric.AggregationTemporalityCumulative && temporality != pmetric.AggregationTemporalityDelta {
 						return false
 					}
 
 					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
 					cloneHistogram := mClone.Histogram()
 
-					aggregateDataPoints(histogram.DataPoints(), cloneHistogram.DataPoints(), metricID, p.histogramLookup)
+					if temporality == pmetric.AggregationTemporalityCumulative {
+						aggregateDataPoints(histogram.DataPoints(), cloneHistogram.DataPoints(), metricID, p.histogramLookup)
+					} else {
+						aggregateDeltaDataPoints(histogram.DataPoints(), cloneHistogram.DataPoints(), metricID, p.histogramLookup, data.Adder{}.Histograms)
+					}
 					return true
 				case pmetric.MetricTypeExponentialHistogram:
 					expHistogram := m.ExponentialHistogram()
 
-					if expHistogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
+					temporality := expHistogram.AggregationTemporality()
+					if temporality != pmetric.AggregationTemporalityCumulative && temporality != pmetric.AggregationTemporalityDelta {
 						return false
 					}
 
 					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
 					cloneExpHistogram := mClone.ExponentialHistogram()
 
-					aggregateDataPoints(expHistogram.DataPoints(), cloneExpHistogram.DataPoints(), metricID, p.expHistogramLookup)
+					if temporality == pmetric.AggregationTemporalityCumulative {
+						aggregateDataPoints(expHistogram.DataPoints(), cloneExpHistogram.DataPoints(), metricID, p.expHistogramLookup)
+					} else {
+						aggregateDeltaDataPoints(expHistogram.DataPoints(), cloneExpHistogram.DataPoints(), metricID, p.expHistogramLookup, data.Adder{}.Exponential)
+					}
 					return true
 				default:
 					errs = errors.Join(fmt.Errorf("invalid MetricType %d", m.Type()))
@@ -203,6 +219,30 @@ func aggregateDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP
 		}
 
 		// Otherwise, we leave existing as-is
+	}
+}
+
+func aggregateDeltaDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP]](dataPoints, mCloneDataPoints DPS, metricID identity.Metric, dpLookup map[identity.Stream]DP, addFunc func(state, dp DP) error) {
+	for i := 0; i < dataPoints.Len(); i++ {
+		dp := dataPoints.At(i)
+
+		streamID := identity.OfStream(metricID, dp)
+		existingDP, ok := dpLookup[streamID]
+		if !ok {
+			dpClone := mCloneDataPoints.AppendEmpty()
+			dp.CopyTo(dpClone)
+			dpLookup[streamID] = dpClone
+			continue
+		}
+
+		_ = addFunc(existingDP, dp)
+
+		if dp.StartTimestamp() < existingDP.StartTimestamp() || existingDP.StartTimestamp() == 0 {
+			existingDP.SetStartTimestamp(dp.StartTimestamp())
+		}
+		if dp.Timestamp() > existingDP.Timestamp() {
+			existingDP.SetTimestamp(dp.Timestamp())
+		}
 	}
 }
 
