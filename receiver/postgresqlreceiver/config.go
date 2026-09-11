@@ -50,18 +50,25 @@ type QuerySampleCollection struct {
 }
 
 type Config struct {
-	ControllerConfig      scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Username              string                         `mapstructure:"username"`
-	Password              configopaque.String            `mapstructure:"password"`
-	Databases             []string                       `mapstructure:"databases"`
-	ExcludeDatabases      []string                       `mapstructure:"exclude_databases"`
-	AddrConfig            confignet.AddrConfig           `mapstructure:",squash"`       // provides Endpoint and Transport
-	ClientConfig          configtls.ClientConfig         `mapstructure:"tls,omitempty"` // provides SSL details
-	ConnectionPool        ConnectionPool                 `mapstructure:"connection_pool,omitempty"`
-	MetricsBuilderConfig  metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	LogsBuilderConfig     metadata.LogsBuilderConfig     `mapstructure:",squash"`
-	QuerySampleCollection QuerySampleCollection          `mapstructure:"query_sample_collection,omitempty"`
-	TopQueryCollection    TopQueryCollection             `mapstructure:"top_query_collection,omitempty"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
+	Username         string                         `mapstructure:"username"`
+	Password         configopaque.String            `mapstructure:"password"`
+	Databases        []string                       `mapstructure:"databases"`
+	ExcludeDatabases []string                       `mapstructure:"exclude_databases"`
+	// ConnectDatabase is the database the receiver connects to for cluster-wide
+	// queries (database discovery, pg_stat_statements, bgwriter/WAL/replication
+	// stats, query samples, top query). Defaults to "postgres". Independent of
+	// Databases (the reporting scope) — pg_stat_statements exposes cluster-wide,
+	// per-database stats via a dbid join regardless of which database the
+	// connection is on.
+	ConnectDatabase       string                        `mapstructure:"connect_database,omitempty"`
+	AddrConfig            confignet.AddrConfig          `mapstructure:",squash"`       // provides Endpoint and Transport
+	ClientConfig          configtls.ClientConfig        `mapstructure:"tls,omitempty"` // provides SSL details
+	ConnectionPool        ConnectionPool                `mapstructure:"connection_pool,omitempty"`
+	MetricsBuilderConfig  metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	LogsBuilderConfig     metadata.LogsBuilderConfig    `mapstructure:",squash"`
+	QuerySampleCollection QuerySampleCollection         `mapstructure:"query_sample_collection,omitempty"`
+	TopQueryCollection    TopQueryCollection            `mapstructure:"top_query_collection,omitempty"`
 	// DBAuth optionally sources the connection credential from a db_auth provider
 	// extension (e.g. AWS IAM) instead of a static password. When set, the provider
 	// supplies the password at connection-open time. Mutually exclusive with the

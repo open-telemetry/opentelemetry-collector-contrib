@@ -1296,6 +1296,83 @@ func TestScrapeTopQueriesHonorsExcludeDatabases(t *testing.T) {
 	}
 }
 
+func TestConnectDatabase(t *testing.T) {
+	t.Run("defaults to postgres when unset", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, mockSimpleClientFactory{}, newCache(1), newTTLCache[string](1, time.Second))
+		require.NoError(t, err)
+		require.Equal(t, defaultPostgreSQLDatabase, scraper.connectDatabase())
+	})
+
+	t.Run("uses the configured value when set", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.ConnectDatabase = "mon"
+		scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, mockSimpleClientFactory{}, newCache(1), newTTLCache[string](1, time.Second))
+		require.NoError(t, err)
+		require.Equal(t, "mon", scraper.connectDatabase())
+	})
+}
+
+func TestScrapeQuerySamplesHonorsConnectDatabase(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{"landonline"}
+	cfg.ConnectDatabase = "mon"
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
+
+	factory := &recordingClientFactory{mockSimpleClientFactory: mockSimpleClientFactory{db: db}}
+	scraper, err := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	mock.ExpectQuery(".*").WillReturnRows(sqlmock.NewRows(querySampleColumns))
+
+	_, err = scraper.scrapeQuerySamples(t.Context(), 30)
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+
+	// The connection target (mon) is independent of the reporting scope
+	// (landonline) — connecting to mon must not add it to Databases.
+	require.Equal(t, []string{"mon"}, factory.requestedDatabases)
+	require.Equal(t, []string{"landonline"}, cfg.Databases)
+}
+
+func TestScrapeTopQueryHonorsConnectDatabase(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{"landonline"}
+	cfg.ConnectDatabase = "mon"
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherRegexp))
+	require.NoError(t, err)
+	defer db.Close()
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{Logger: logger}
+
+	factory := &recordingClientFactory{mockSimpleClientFactory: mockSimpleClientFactory{db: db}}
+	scraper, err := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	mock.ExpectQuery(".*").WillReturnRows(sqlmock.NewRows(topQueryColumns))
+
+	_, err = scraper.scrapeTopQuery(t.Context(), 30, 5, 5, time.Minute)
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+
+	require.Equal(t, []string{"mon"}, factory.requestedDatabases)
+	require.Equal(t, []string{"landonline"}, cfg.Databases)
+}
+
 func TestScrapeQuerySamplesHonorsExcludeDatabases(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{}

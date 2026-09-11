@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/postgresql
+
+note: Add `connect_database` to configure which database the receiver connects to for cluster-wide statistics collection.
+
+issues: [50920]
+
+subtext:
+
+change_logs: [user]
