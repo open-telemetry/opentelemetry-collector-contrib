@@ -99,25 +99,6 @@ jobs:
             "^versions.yaml",
             "^cmd/otelcontribcol/"
             ]
-          ALL_TEST_GROUPS: >-
-            [
-            "receiver-0",
-            "receiver-1",
-            "receiver-2",
-            "receiver-3",
-            "processor-0",
-            "processor-1",
-            "exporter-0",
-            "exporter-1",
-            "exporter-2",
-            "exporter-3",
-            "extension",
-            "connector",
-            "internal",
-            "pkg",
-            "cmd-0",
-            "other"
-            ]
         run: ./.github/workflows/scripts/compute-ci-scope.sh
       - name: Filter matrix and derive mode
         id: post
@@ -194,29 +175,14 @@ jobs:
             false
           fi
   govulncheck:
+    needs: [setup-environment, ci-scope]
+    if: ${{ needs.ci-scope.outputs.matrix != '[]' && needs.ci-scope.outputs.matrix != '' }}
     strategy:
       fail-fast: false
       matrix:
-        group:
-          - receiver-0
-          - receiver-1
-          - receiver-2
-          - receiver-3
-          - processor-0
-          - processor-1
-          - exporter-0
-          - exporter-1
-          - exporter-2
-          - exporter-3
-          - extension
-          - connector
-          - internal
-          - pkg
-          - cmd-0
-          - other
+        group: ${{ fromJSON(needs.ci-scope.outputs.matrix) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    needs: [setup-environment]
     steps:
       - name: Checkout Repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -230,7 +196,9 @@ jobs:
           # is resolved.
           go-version: oldstable
       - name: Run `govulncheck`
-        run: make gogovulncheck GROUP=${{ matrix.group }}
+        env:
+          MATRIX_GROUP: ${{ matrix.group }}
+        run: make gogovulncheck GROUP="${MATRIX_GROUP}"
       - run: ./.github/workflows/scripts/check-disk-space.sh
   checks-matrix:
     runs-on: ubuntu-24.04
