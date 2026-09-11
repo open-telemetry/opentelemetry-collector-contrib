@@ -153,6 +153,25 @@ Use at most one of `version:`, `version/exists:`, or `version/regex:` per
 scope. `version/exists` accepts only `true`; any other value is a schema
 error.
 
+### Datapoint value precision matcher
+
+A `double_value` key can use the `/precision<n>` suffix when the value is a
+float whose trailing digits are not stable. Both sides are rounded to `n`
+decimal places before they are compared, matching `pmetrictest`'s
+`IgnoreMetricFloatPrecision`:
+
+```yaml
+datapoints:
+  - attributes:
+      state: user
+    double_value/precision3: 1.235
+```
+
+`n` must be between 0 and 15; beyond that a `float64` cannot distinguish the
+values. Use at most one of `double_value:` or `double_value/precision<n>:` per
+datapoint. The operator applies only to `double_value`, since integer values
+have no float precision to ignore.
+
 ### Shorthand: single empty-attribute datapoint
 
 A metric with exactly one datapoint that has no attributes can omit

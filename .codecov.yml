@@ -457,6 +457,122 @@ component_management:
     name: extension_tailstorage_pebbletailstorage
     paths:
     - extension/tailstorage/pebbletailstorageextension/**
+  - component_id: pkg_batchperresourceattr
+    name: pkg_batchperresourceattr
+    paths:
+    - pkg/batchperresourceattr/**
+  - component_id: pkg_batchpersignal
+    name: pkg_batchpersignal
+    paths:
+    - pkg/batchpersignal/**
+  - component_id: pkg_core_xidutils
+    name: pkg_core_xidutils
+    paths:
+    - pkg/core/xidutils/**
+  - component_id: pkg_datadog
+    name: pkg_datadog
+    paths:
+    - pkg/datadog/**
+  - component_id: pkg_experimentalmetricmetadata
+    name: pkg_experimentalmetricmetadata
+    paths:
+    - pkg/experimentalmetricmetadata/**
+  - component_id: pkg_expohisto
+    name: pkg_expohisto
+    paths:
+    - pkg/expohisto/**
+  - component_id: pkg_golden
+    name: pkg_golden
+    paths:
+    - pkg/golden/**
+  - component_id: pkg_kafka_configkafka
+    name: pkg_kafka_configkafka
+    paths:
+    - pkg/kafka/configkafka/**
+  - component_id: pkg_kafka_topic
+    name: pkg_kafka_topic
+    paths:
+    - pkg/kafka/topic/**
+  - component_id: pkg_ottl
+    name: pkg_ottl
+    paths:
+    - pkg/ottl/**
+  - component_id: pkg_pdatautil
+    name: pkg_pdatautil
+    paths:
+    - pkg/pdatautil/**
+  - component_id: pkg_resourcetotelemetry
+    name: pkg_resourcetotelemetry
+    paths:
+    - pkg/resourcetotelemetry/**
+  - component_id: pkg_sampling
+    name: pkg_sampling
+    paths:
+    - pkg/sampling/**
+  - component_id: pkg_stanza
+    name: pkg_stanza
+    paths:
+    - pkg/stanza/**
+  - component_id: pkg_status
+    name: pkg_status
+    paths:
+    - pkg/status/**
+  - component_id: pkg_translator_azure
+    name: pkg_translator_azure
+    paths:
+    - pkg/translator/azure/**
+  - component_id: pkg_translator_azurelogs
+    name: pkg_translator_azurelogs
+    paths:
+    - pkg/translator/azurelogs/**
+  - component_id: pkg_translator_faro
+    name: pkg_translator_faro
+    paths:
+    - pkg/translator/faro/**
+  - component_id: pkg_translator_jaeger
+    name: pkg_translator_jaeger
+    paths:
+    - pkg/translator/jaeger/**
+  - component_id: pkg_translator_loki
+    name: pkg_translator_loki
+    paths:
+    - pkg/translator/loki/**
+  - component_id: pkg_translator_pprof
+    name: pkg_translator_pprof
+    paths:
+    - pkg/translator/pprof/**
+  - component_id: pkg_translator_prometheus
+    name: pkg_translator_prometheus
+    paths:
+    - pkg/translator/prometheus/**
+  - component_id: pkg_translator_prometheusremotewrite
+    name: pkg_translator_prometheusremotewrite
+    paths:
+    - pkg/translator/prometheusremotewrite/**
+  - component_id: pkg_translator_signalfx
+    name: pkg_translator_signalfx
+    paths:
+    - pkg/translator/signalfx/**
+  - component_id: pkg_translator_skywalking
+    name: pkg_translator_skywalking
+    paths:
+    - pkg/translator/skywalking/**
+  - component_id: pkg_translator_splunk
+    name: pkg_translator_splunk
+    paths:
+    - pkg/translator/splunk/**
+  - component_id: pkg_translator_zipkin
+    name: pkg_translator_zipkin
+    paths:
+    - pkg/translator/zipkin/**
+  - component_id: pkg_winperfcounters
+    name: pkg_winperfcounters
+    paths:
+    - pkg/winperfcounters/**
+  - component_id: pkg_xstreamencoding
+    name: pkg_xstreamencoding
+    paths:
+    - pkg/xstreamencoding/**
   - component_id: processor_adaptivetailsampling
     name: processor_adaptivetailsampling
     paths:
