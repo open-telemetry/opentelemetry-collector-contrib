@@ -58,7 +58,7 @@ type redaction struct {
 	urlSanitizer *url.URLSanitizer
 	// Database obfuscator
 	dbObfuscator *db.Obfuscator
-	//Masking string used to replace redacted values
+	// Masking string used to replace redacted values
 	maskingString string
 }
 

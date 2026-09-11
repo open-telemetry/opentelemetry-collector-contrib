@@ -149,7 +149,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.MaskingString != "" && cfg.HashFunction != None {
-		return fmt.Errorf("masking_string must not be set when hash_function is defined")
+		return errors.New("masking_string must not be set when hash_function is defined")
 	}
 
 	return nil
