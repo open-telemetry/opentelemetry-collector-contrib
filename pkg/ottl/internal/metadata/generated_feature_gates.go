@@ -32,6 +32,14 @@ var OttlFunctionsEnableLambdaFeatureGate = featuregate.GlobalRegistry().MustRegi
 	featuregate.WithRegisterFromVersion("v0.155.0"),
 )
 
+var OttlFunctionsEnableExperimentalFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"ottl.functions.enableExperimental",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, experimental functions are added to the standard OTTL function maps. When disabled, experimental functions are not registered and cannot be used. This gate is a permanent opt-in for experimental functions and is never expected to move to beta or stable; individual functions instead graduate by being promoted out of the experimental set."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50927"),
+	featuregate.WithRegisterFromVersion("v0.161.0"),
+)
+
 var OttlSetAllowNilFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"ottl.set.allowNil",
 	featuregate.StageBeta,

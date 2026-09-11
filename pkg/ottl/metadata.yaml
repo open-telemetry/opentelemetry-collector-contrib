@@ -31,6 +31,12 @@ feature_gates:
     from_version: v0.155.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/48227
 
+  - id: "ottl.functions.enableExperimental"
+    description: When enabled, experimental functions are added to the standard OTTL function maps. When disabled, experimental functions are not registered and cannot be used. This gate is a permanent opt-in for experimental functions and is never expected to move to beta or stable; individual functions instead graduate by being promoted out of the experimental set.
+    stage: alpha
+    from_version: v0.161.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50927
+
   - id: "ottl.set.allowNil"
     description: When enabled, the set function passes nil values directly to the target.
     stage: beta
