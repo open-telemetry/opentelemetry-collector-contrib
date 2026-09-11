@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 
@@ -39,6 +40,11 @@ type Manager struct {
 	fileMatcher   *matcher.Matcher
 	tracker       tracker.Tracker
 	noTracking    bool
+
+	// keepFilesOpen controls whether file handles are retained between poll cycles.
+	// It is resolved once at build time (see keepFilesOpenBetweenPolls) and passed to
+	// the tracker, so runtime behavior never depends on the global feature-gate registry.
+	keepFilesOpen bool
 
 	pollInterval   time.Duration
 	persister      operator.Persister
@@ -93,9 +99,18 @@ func (m *Manager) instantiateTracker(ctx context.Context, persister operator.Per
 	if m.noTracking {
 		t = tracker.NewNoStateTracker(m.set, m.maxBatchFiles)
 	} else {
-		t = tracker.NewFileTracker(ctx, m.set, m.maxBatchFiles, m.pollsToArchive, persister)
+		t = tracker.NewFileTracker(ctx, m.set, m.maxBatchFiles, m.pollsToArchive, persister, m.keepFilesOpen)
 	}
 	m.tracker = t
+}
+
+// keepFilesOpenBetweenPolls reports whether the tracker should retain file handles
+// between poll cycles. On non-Windows platforms this is always the case. On Windows it
+// is opt-in via the filelog.windows.keepFilesOpen feature gate; when the gate is
+// disabled (the default) files are closed immediately after each poll, preserving the
+// legacy Windows behavior so users are unaffected until they choose to enable it.
+func keepFilesOpenBetweenPolls() bool {
+	return runtime.GOOS != "windows" || metadata.FilelogWindowsKeepFilesOpenFeatureGate.IsEnabled()
 }
 
 // Stop will stop the file monitoring process
@@ -174,6 +189,57 @@ func (m *Manager) poll(ctx context.Context) {
 	}
 	// rotate at end of every poll()
 	m.tracker.EndPoll(ctx)
+}
+
+// Take care of files which disappeared from the pattern since the last poll cycle
+// this can mean either files which were removed, or rotated into a name not matching the pattern
+// we do this before reading existing files to ensure we emit older log lines before newer ones
+func (m *Manager) readLostFiles(ctx context.Context) {
+	if m.readerFactory.DeleteAtEOF {
+		// Lost files are not expected when delete_at_eof is enabled
+		// since we are deleting the files before they can become lost.
+		return
+	}
+	previousPollFiles := m.tracker.PreviousPollFiles()
+	lostReaders := make([]*reader.Reader, 0, len(previousPollFiles))
+OUTER:
+	for _, oldReader := range previousPollFiles {
+		for _, newReader := range m.tracker.CurrentPollFiles() {
+			if newReader.Fingerprint.StartsWith(oldReader.Fingerprint) {
+				continue OUTER
+			}
+
+			if !newReader.NameEquals(oldReader) {
+				continue
+			}
+
+			// At this point, we know that the file has been rotated out of the matching pattern.
+			// However, we do not know if it was moved or truncated.
+			// If truncated, then both handles point to the same file, in which case
+			// we should only read from it using the new reader. We can use
+			// the Validate method to ensure that the file has not been truncated.
+			if !oldReader.Validate() {
+				m.set.Logger.Debug("File has been rotated(truncated)", zap.String("path", oldReader.GetFileName()))
+				continue OUTER
+			}
+			// oldreader points to the rotated file after the move/rename. We can still read from it.
+			m.set.Logger.Debug("File has been rotated(moved)", zap.String("path", oldReader.GetFileName()))
+		}
+		lostReaders = append(lostReaders, oldReader)
+	}
+
+	var lostWG sync.WaitGroup
+	for _, lostReader := range lostReaders {
+		lostWG.Add(1)
+		m.set.Logger.Debug("Reading lost file", zap.String("path", lostReader.GetFileName()))
+		go func(r *reader.Reader) {
+			defer lostWG.Done()
+			m.telemetryBuilder.FileconsumerReadingFiles.Add(ctx, 1)
+			r.ReadToEnd(ctx)
+			m.telemetryBuilder.FileconsumerReadingFiles.Add(ctx, -1)
+		}(lostReader)
+	}
+	lostWG.Wait()
 }
 
 func (m *Manager) consume(ctx context.Context, paths []string) {
