@@ -152,6 +152,33 @@ func TestScalarTypeCollision(t *testing.T) {
 			setA: func(lr plog.LogRecord) { lr.Attributes().PutDouble("k", 1.0) },
 			setB: func(lr plog.LogRecord) { lr.Attributes().PutStr("k", "1") },
 		},
+		{
+			name: "negative int vs string with same decimal representation",
+			setA: func(lr plog.LogRecord) { lr.Attributes().PutInt("k", -5) },
+			setB: func(lr plog.LogRecord) { lr.Attributes().PutStr("k", "-5") },
+		},
+		{
+			name: "slice of int vs slice of string with same value",
+			setA: func(lr plog.LogRecord) {
+				s := lr.Attributes().PutEmptySlice("k")
+				s.AppendEmpty().SetInt(7)
+			},
+			setB: func(lr plog.LogRecord) {
+				s := lr.Attributes().PutEmptySlice("k")
+				s.AppendEmpty().SetStr("7")
+			},
+		},
+		{
+			name: "slice of negative int vs slice of string with same decimal representation",
+			setA: func(lr plog.LogRecord) {
+				s := lr.Attributes().PutEmptySlice("k")
+				s.AppendEmpty().SetInt(-5)
+			},
+			setB: func(lr plog.LogRecord) {
+				s := lr.Attributes().PutEmptySlice("k")
+				s.AppendEmpty().SetStr("-5")
+			},
+		},
 	}
 
 	for _, tc := range cases {
