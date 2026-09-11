@@ -292,6 +292,9 @@ const (
 
 	defaultServiceName = "unknown_service:oracle"
 
+	// defaultOraclePort is the port the Oracle driver connects to when the target omits one.
+	defaultOraclePort = int64(1521)
+
 	queryExecutionMetric        = "EXECUTIONS"
 	elapsedTimeMetric           = "ELAPSED_TIME"
 	cpuTimeMetric               = "CPU_TIME"
@@ -402,6 +405,8 @@ type oracleScraper struct {
 	querySampleCfg           QuerySample
 	sessionWaitEventCfg      SessionWaitEvent
 	serviceInstanceID        string
+	serverAddress            string
+	serverPort               int64
 	lastExecutionTimestamp   time.Time
 	// instanceInfo holds Oracle deployment metadata detected once at start().
 	// All fields are best-effort: detection failures are logged and leave the
@@ -410,6 +415,7 @@ type oracleScraper struct {
 }
 
 func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName, hostName string) (scraper.Metrics, error) {
+	serverAddress, serverPort, serviceInstanceID := resolveInstanceIdentity(hostName, instanceName, logger)
 	s := &oracleScraper{
 		mb:                   metricsBuilder,
 		metricsBuilderConfig: metricsBuilderConfig,
@@ -419,7 +425,9 @@ func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig me
 		clientProviderFunc:   clientProviderFunc,
 		instanceName:         instanceName,
 		hostName:             hostName,
-		serviceInstanceID:    getInstanceID(instanceName, logger),
+		serviceInstanceID:    serviceInstanceID,
+		serverAddress:        serverAddress,
+		serverPort:           serverPort,
 	}
 	return scraper.NewMetrics(s.scrape, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
@@ -428,6 +436,7 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 	logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string, metricCache *lru.Cache[string, map[string]int64],
 	topQueryCollectCfg TopQueryCollection, querySampleCfg QuerySample, sessionWaitEventCfg SessionWaitEvent, hostName string,
 ) (scraper.Logs, error) {
+	serverAddress, serverPort, serviceInstanceID := resolveInstanceIdentity(hostName, instanceName, logger)
 	s := &oracleScraper{
 		lb:                  logsBuilder,
 		logsBuilderConfig:   logsBuilderConfig,
@@ -442,7 +451,9 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 		sessionWaitEventCfg: sessionWaitEventCfg,
 		hostName:            hostName,
 		obfuscator:          newObfuscator(),
-		serviceInstanceID:   getInstanceID(instanceName, logger),
+		serviceInstanceID:   serviceInstanceID,
+		serverAddress:       serverAddress,
+		serverPort:          serverPort,
 	}
 	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
@@ -2361,6 +2372,15 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
 
+	if s.serverAddress != "" {
+		rb.SetServerAddress(s.serverAddress)
+	}
+	serverPort := s.serverPort
+	if serverPort <= 0 {
+		serverPort = defaultOraclePort
+	}
+	rb.SetServerPort(serverPort)
+
 	if s.instanceInfo.dbVersion != "" {
 		rb.SetOracleDbVersion(s.instanceInfo.dbVersion)
 	}
@@ -2376,29 +2396,50 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	return rb
 }
 
-func getInstanceID(instanceString string, logger *zap.Logger) string {
-	hostAndPort, service, found := strings.Cut(instanceString, "/")
-	if !found {
-		logger.Info("No service name found in the connection string", zap.String("instanceString", instanceString))
-	}
+func resolveServerEndpoint(hostName string, logger *zap.Logger) (string, int64) {
+	port := defaultOraclePort
 
-	host, port, err := net.SplitHostPort(hostAndPort)
+	host, portStr, err := net.SplitHostPort(hostName)
 	if err != nil {
-		logger.Warn("Computing service.instance.id failed. Couldn't extract host and port from the connection data.", zap.Error(err))
-		return constructInstanceID("unknown", "1521", service)
+		host = hostName
+	} else if parsedPort, parseErr := strconv.ParseInt(portStr, 10, 32); parseErr == nil && parsedPort > 0 {
+		port = parsedPort
 	}
 
-	// Replace the host value with machine name if connecting to localhost target
+	host = strings.Trim(strings.TrimSpace(host), "[]")
+
+	if host == "" {
+		logger.Warn("Could not determine the Oracle host from the connection string; server.address will not be reported",
+			zap.String("hostName", hostName))
+		return "", port
+	}
+
 	if strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback() {
-		localhost, err := os.Hostname()
-		if err != nil {
-			logger.Warn("Failed getting localhost machine name for the service.instance.id.")
+		hostname, hostnameErr := os.Hostname()
+		if hostnameErr != nil {
+			logger.Warn("Failed resolving loopback to machine hostname for server.address", zap.Error(hostnameErr))
 		} else {
-			host = localhost
+			host = hostname
 		}
 	}
 
-	return constructInstanceID(host, port, service)
+	return host, port
+}
+
+// splitInstanceName splits a host[:port][/service] connection string into its target and service name.
+func splitInstanceName(instanceString string, logger *zap.Logger) (target, service string) {
+	target, service, found := strings.Cut(instanceString, "/")
+	if !found {
+		logger.Info("No service name found in the connection string", zap.String("instanceString", instanceString))
+	}
+	return target, service
+}
+
+func resolveInstanceIdentity(hostName, instanceName string, logger *zap.Logger) (address string, port int64, instanceID string) {
+	address, port = resolveServerEndpoint(hostName, logger)
+	_, service := splitInstanceName(instanceName, logger)
+
+	return address, port, constructInstanceID(address, strconv.FormatInt(port, 10), service)
 }
 
 func constructInstanceID(host, port, service string) string {
@@ -2406,7 +2447,7 @@ func constructInstanceID(host, port, service string) string {
 		host = "unknown"
 	}
 	if strings.TrimSpace(port) == "" {
-		port = "1521"
+		port = strconv.FormatInt(defaultOraclePort, 10)
 	}
 
 	if service != "" {

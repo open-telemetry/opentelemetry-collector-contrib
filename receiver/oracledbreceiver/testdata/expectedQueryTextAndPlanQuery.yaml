@@ -7,6 +7,12 @@ resourceLogs:
         - key: host.name
           value:
             stringValue: oraclehost:1521
+        - key: server.address
+          value:
+            stringValue: oraclehost
+        - key: server.port
+          value:
+            intValue: "1521"
         - key: service.instance.id
           value:
             stringValue: oraclehost:1521/ORCL

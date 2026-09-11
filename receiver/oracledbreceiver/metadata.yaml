@@ -40,8 +40,16 @@ resource_attributes:
     description: The name of the instance that data is coming from.
     enabled: true
     type: string
+  server.address:
+    description: The address of the monitored Oracle instance. A loopback target (for example localhost or 127.0.0.1) is reported as the host name of the machine running the collector, since the instance is co-located with it. Omitted when the connection string carries no parseable host, such as a TNS descriptor.
+    enabled: true
+    type: string
+  server.port:
+    description: The port of the monitored Oracle instance, defaulting to 1521 when the target does not specify one.
+    enabled: true
+    type: int
   service.instance.id:
-    description: A unique identifier of the Oracle DB instance in the format host:port/serviceName. (defaults to 'unknown:1521', in case of error in generating this value)
+    description: A unique identifier of the Oracle DB instance in the format host:port/serviceName, where host and port are resolved the same way as server.address and server.port. (defaults to 'unknown:1521' when the connection string carries no parseable host)
     enabled: true
     type: string
   service.name:
