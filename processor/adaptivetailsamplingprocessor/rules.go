@@ -57,7 +57,7 @@ func (r *rule) matchesSameSpan(ctx context.Context, spans []ptrace.ResourceSpans
 	for _, rs := range spans {
 		for _, ss := range rs.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
-				tCtx := ottlspan.NewTransformContextPtr(rs, ss, span)
+				tCtx := ottlspan.NewTransformContext(rs, ss, span)
 				allMatch := true
 				for _, cond := range r.conditions {
 					ok, err := cond.Eval(ctx, tCtx)
@@ -96,7 +96,7 @@ func (r *rule) anySpanSatisfies(ctx context.Context, spans []ptrace.ResourceSpan
 	for _, rs := range spans {
 		for _, ss := range rs.ScopeSpans().All() {
 			for _, span := range ss.Spans().All() {
-				tCtx := ottlspan.NewTransformContextPtr(rs, ss, span)
+				tCtx := ottlspan.NewTransformContext(rs, ss, span)
 				ok, err := cond.Eval(ctx, tCtx)
 				tCtx.Close()
 				if err != nil {

@@ -224,16 +224,44 @@ pool, so the row is discarded rather than emitted as a bogus value.
 > clamped to 0 instead of discarding the row. Resource counters (CPU, elapsed time, reads, writes, rows) are
 > summed across the procedure's statements and are not subject to this caveat.
 
-On a CDB-root connection the receiver reads `CDB_PROCEDURES` matched on `CON_ID`, so PDB-owned
-procedures are attributed to the right container. That needs container-wide `SELECT`:
+See "CDB-root connections and container-scoped dictionary views" below for how this event
+behaves on a CDB-root connection.
+
+### CDB-root connections and container-scoped dictionary views
+
+`DBA_*` dictionary views only expose the container you are connected to, while the `V$` views
+report rows for **every** container. Object ids are only unique within a container, so from a
+CDB root a dictionary join on object id alone is not just incomplete — it can attribute a PDB
+row to an unrelated root object that happens to share the id.
+
+When connected to a CDB root, the receiver therefore reads the `CDB_*` equivalents and matches
+on `CON_ID` as well as the object id:
+
+| Event | Affected lookup | Using `DBA_*` from a CDB root |
+|---|---|---|
+| `db.server.top_query` | `CDB_PROCEDURES`, plus `CON_ID` in the `PROCEDURE_EXECUTIONS` grouping | wrong or empty `procedure_name`; execution counts merged across PDBs |
+| `db.server.top_procedure` | `CDB_PROCEDURES` | wrong or empty `procedure_name`; procedures merged across PDBs |
+| `db.server.query_sample` | `CDB_PROCEDURES`, `CDB_OBJECTS` | wrong or empty `procedure_name` and blocked-object owner/name |
+
+`top_query` and `top_procedure` only need `CDB_PROCEDURES`; `query_sample` additionally needs
+`CDB_OBJECTS`. The two grants are probed independently at startup, so a CDB root with only
+`CDB_PROCEDURES` still gets container-qualified `top_query`/`top_procedure` results even while
+`query_sample` degrades to the `DBA_*` view:
 
 ```sql
 GRANT SELECT ON CDB_PROCEDURES TO <username> CONTAINER=ALL;
+GRANT SELECT ON CDB_OBJECTS TO <username> CONTAINER=ALL;
 ```
 
-`SELECT_CATALOG_ROLE` already includes it. The grant is probed once at startup; without it the
-receiver warns and falls back to `DBA_PROCEDURES`, which from a CDB root reports root-container
-procedures only. Non-CDB and direct-PDB connections need nothing extra.
+Users holding `SELECT_CATALOG_ROLE` inherit both and need no explicit grant. Non-CDB and
+direct-PDB connections continue to use the `DBA_*` views and need nothing extra.
+
+> [!NOTE]
+> Each grant is probed once at startup. If a grant is missing, the receiver logs a warning and
+> falls back to the `DBA_*` view for the event(s) that need it, so events keep flowing with the
+> container-attribution limitation described above rather than failing with `ORA-00942`. This
+> mirrors how per-PDB metrics already degrade when their grants are absent — no upgrade requires
+> new grants to keep working.
 
 #### Combined grant statement
 
@@ -248,6 +276,9 @@ GRANT SELECT ON V_$LOCK TO <username>;
 GRANT SELECT ON V_$CONTAINERS TO <username>;
 GRANT SELECT ON DBA_OBJECTS TO <username>;
 GRANT SELECT ON DBA_PROCEDURES TO <username>;
+-- Optional, CDB-root connections only (see "CDB-root connections" above):
+GRANT SELECT ON CDB_PROCEDURES TO <username> CONTAINER=ALL;
+GRANT SELECT ON CDB_OBJECTS TO <username> CONTAINER=ALL;
 ```
 
 ## Enabling metrics.

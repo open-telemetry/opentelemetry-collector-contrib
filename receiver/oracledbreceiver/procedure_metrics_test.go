@@ -142,7 +142,7 @@ func TestBuildProcedureMetricsSQL(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			scrpr := oracleScraper{useCDBDictionaryViews: test.useCDB}
+			scrpr := oracleScraper{useCDBProceduresView: test.useCDB}
 			got := scrpr.buildProcedureMetricsSQL()
 
 			assert.Contains(t, got, test.wantView)
@@ -165,7 +165,7 @@ func TestBuildProcedureMetricsSQL(t *testing.T) {
 // hot only in this interval could never reach the collector's delta ranking.
 func TestProcedureMetricsSQLDoesNotRankInDatabase(t *testing.T) {
 	for _, useCDB := range []bool{true, false} {
-		scrpr := oracleScraper{useCDBDictionaryViews: useCDB}
+		scrpr := oracleScraper{useCDBProceduresView: useCDB}
 
 		assert.NotContains(t, scrpr.buildProcedureMetricsSQL(), "ORDER BY",
 			"ranking must happen in the collector over deltas, not in SQL over cumulative totals")
