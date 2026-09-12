@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
-	github.com/gobwas/glob v0.2.3
+	github.com/gobwas/glob v1.0.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.160.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv v0.160.0
