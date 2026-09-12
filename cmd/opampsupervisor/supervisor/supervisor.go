@@ -76,7 +76,16 @@ var (
 	lastWorkingRemoteConfigFile    = "last_working_remote_config.dat"
 	lastRecvOwnTelemetryConfigFile = "last_recv_own_telemetry_config.dat"
 
-	errNonMatchingInstanceUID = errors.New("received collector instance UID does not match expected UID set by the supervisor")
+	errNonMatchingInstanceUID   = errors.New("received collector instance UID does not match expected UID set by the supervisor")
+	ownTelemetryMetricsCAFile   = "own_telemetry_metrics_ca.pem"
+	ownTelemetryMetricsCertFile = "own_telemetry_metrics_cert.pem"
+	ownTelemetryMetricsKeyFile  = "own_telemetry_metrics_key.pem"
+	ownTelemetryLogsCAFile      = "own_telemetry_logs_ca.pem"
+	ownTelemetryLogsCertFile    = "own_telemetry_logs_cert.pem"
+	ownTelemetryLogsKeyFile     = "own_telemetry_logs_key.pem"
+	ownTelemetryTracesCAFile    = "own_telemetry_traces_ca.pem"
+	ownTelemetryTracesCertFile  = "own_telemetry_traces_cert.pem"
+	ownTelemetryTracesKeyFile   = "own_telemetry_traces_key.pem"
 )
 
 const (
@@ -1740,12 +1749,31 @@ func (s *Supervisor) createEffectiveConfigMsg() *protobufs.EffectiveConfig {
 	}
 }
 
-func (*Supervisor) updateOwnTelemetryData(data map[string]any, signal string, settings *protobufs.TelemetryConnectionSettings) map[string]any {
+func ownTelemetryTLSFiles(signal string) (caFile, certFile, keyFile string) {
+	switch signal {
+	case "Metrics":
+		return ownTelemetryMetricsCAFile, ownTelemetryMetricsCertFile, ownTelemetryMetricsKeyFile
+	case "Logs":
+		return ownTelemetryLogsCAFile, ownTelemetryLogsCertFile, ownTelemetryLogsKeyFile
+	case "Traces":
+		return ownTelemetryTracesCAFile, ownTelemetryTracesCertFile, ownTelemetryTracesKeyFile
+	default:
+		return "", "", ""
+	}
+}
+
+func (s *Supervisor) updateOwnTelemetryData(data map[string]any, signal string, settings *protobufs.TelemetryConnectionSettings) map[string]any {
 	if settings == nil || settings.DestinationEndpoint == "" {
 		return data
 	}
 	data[fmt.Sprintf("%sEndpoint", signal)] = settings.DestinationEndpoint
 	data[fmt.Sprintf("%sHeaders", signal)] = []protobufs.Header{}
+
+	caFile, certFile, keyFile := ownTelemetryTLSFiles(signal)
+
+	data[fmt.Sprintf("%sTLSCAFile", signal)] = filepath.Join(s.config.Storage.Directory, caFile)
+	data[fmt.Sprintf("%sCertificateCertFile", signal)] = filepath.Join(s.config.Storage.Directory, certFile)
+	data[fmt.Sprintf("%sCertificateKeyFile", signal)] = filepath.Join(s.config.Storage.Directory, keyFile)
 
 	if settings.Headers != nil {
 		data[fmt.Sprintf("%sHeaders", signal)] = settings.Headers.Headers
@@ -1762,8 +1790,48 @@ func (*Supervisor) updateOwnTelemetryData(data map[string]any, signal string, se
 	return data
 }
 
+func (s *Supervisor) saveOwnTelemetryTLSFiles(signal string, settings *protobufs.TelemetryConnectionSettings) error {
+	if settings == nil {
+		return nil
+	}
+
+	caFile, certFile, keyFile := ownTelemetryTLSFiles(signal)
+
+	if settings.Tls != nil && settings.Tls.CaPemContents != "" {
+		if err := s.writeOwnTelemetryTLSFile(caFile, []byte(settings.Tls.CaPemContents)); err != nil {
+			return err
+		}
+	}
+
+	if settings.Certificate != nil {
+		if err := s.writeOwnTelemetryTLSFile(certFile, settings.Certificate.Cert); err != nil {
+			return err
+		}
+		if err := s.writeOwnTelemetryTLSFile(keyFile, settings.Certificate.PrivateKey); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.ConnectionSettingsOffers) (configChanged bool) {
 	var cfg bytes.Buffer
+
+	if err := s.saveOwnTelemetryTLSFiles("Metrics", settings.GetOwnMetrics()); err != nil {
+		s.telemetrySettings.Logger.Error("Could not save own telemetry metrics TLS files", zap.Error(err))
+		return configChanged
+	}
+
+	if err := s.saveOwnTelemetryTLSFiles("Logs", settings.GetOwnLogs()); err != nil {
+		s.telemetrySettings.Logger.Error("Could not save own telemetry logs TLS files", zap.Error(err))
+		return configChanged
+	}
+
+	if err := s.saveOwnTelemetryTLSFiles("Traces", settings.GetOwnTraces()); err != nil {
+		s.telemetrySettings.Logger.Error("Could not save own telemetry traces TLS files", zap.Error(err))
+		return configChanged
+	}
 
 	data := s.updateOwnTelemetryData(map[string]any{}, "Metrics", settings.GetOwnMetrics())
 	data = s.updateOwnTelemetryData(data, "Logs", settings.GetOwnLogs())
@@ -2640,6 +2708,13 @@ func (s *Supervisor) processRemoteConfigMessage(ctx context.Context, msg *protob
 
 	span.SetStatus(codes.Ok, "")
 	return configChanged
+}
+
+func (s *Supervisor) writeOwnTelemetryTLSFile(fileName string, contents []byte) error {
+	if len(contents) == 0 {
+		return nil
+	}
+	return os.WriteFile(filepath.Join(s.config.Storage.Directory, fileName), contents, 0o600)
 }
 
 // processOwnTelemetryConnSettingsMessage processes a TelemetryConnectionSettings message, returning true if the agent config has changed.
