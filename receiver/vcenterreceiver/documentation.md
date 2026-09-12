@@ -826,11 +826,11 @@ Only triggered alarms with a red or yellow status are counted.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` | Recommended | - |
+| vcenter.alarm.state | The state of the triggered alarm. | Str: ``red``, ``yellow`` | Recommended | - |
 
-### vcenter.datastore.maintenance_mode
+### vcenter.datastore.maintenance.status
 
-The current maintenance mode of the datastore.
+The current maintenance status of the datastore.
 
 A data point is reported for every state, with a value of 1 for the current state and 0 for all other states.
 
@@ -842,7 +842,7 @@ A data point is reported for every state, with a value of 1 for the current stat
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| maintenance_mode | The current maintenance mode of the datastore. | Str: ``normal``, ``entering_maintenance``, ``in_maintenance``, ``unknown`` | Recommended | - |
+| vcenter.datastore.maintenance.state | The maintenance state of the datastore. | Str: ``normal``, ``entering_maintenance``, ``in_maintenance``, ``unknown`` | Recommended | - |
 
 ### vcenter.host.alarm.count
 
@@ -858,11 +858,11 @@ Only triggered alarms with a red or yellow status are counted.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` | Recommended | - |
+| vcenter.alarm.state | The state of the triggered alarm. | Str: ``red``, ``yellow`` | Recommended | - |
 
-### vcenter.host.connection_state
+### vcenter.host.connection.status
 
-The current connection state of the host.
+The current connection status of the host.
 
 A data point is reported for every state, with a value of 1 for the current state and 0 for all other states.
 
@@ -874,7 +874,7 @@ A data point is reported for every state, with a value of 1 for the current stat
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| connection_state | The current connection state of the host. | Str: ``connected``, ``disconnected``, ``not_responding``, ``unknown`` | Recommended | - |
+| vcenter.host.connection.state | The connection state of the host. | Str: ``connected``, ``disconnected``, ``not_responding``, ``unknown`` | Recommended | - |
 
 ### vcenter.host.memory.active
 
@@ -914,7 +914,7 @@ As measured over the most recent 20s interval.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | MiBy | Sum | Int | Cumulative | false | Development |
 
-### vcenter.host.power_state
+### vcenter.host.power.status
 
 The current power state of the host.
 
@@ -999,7 +999,7 @@ As measured over the most recent 20s interval.
 | direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended | - |
 | object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
-### vcenter.vm.power_state
+### vcenter.vm.power.status
 
 The current power state of the virtual machine.
 

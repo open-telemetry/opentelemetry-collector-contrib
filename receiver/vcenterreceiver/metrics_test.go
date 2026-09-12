@@ -218,10 +218,10 @@ func cpuMetricValues(metrics pmetric.Metrics) map[string]float64 {
 }
 
 var (
-	hostPowerStates           = []string{"on", "off", "standby", "unknown"}
-	hostConnectionStates      = []string{"connected", "disconnected", "not_responding", "unknown"}
-	datastoreMaintenanceModes = []string{"normal", "entering_maintenance", "in_maintenance", "unknown"}
-	vmPowerStates             = []string{"on", "off", "suspended", "unknown"}
+	hostPowerStates            = []string{"on", "off", "standby", "unknown"}
+	hostConnectionStates       = []string{"connected", "disconnected", "not_responding", "unknown"}
+	datastoreMaintenanceStates = []string{"normal", "entering_maintenance", "in_maintenance", "unknown"}
+	vmPowerStates              = []string{"on", "off", "suspended", "unknown"}
 )
 
 func TestRecordHostSystemStats_StateMetrics(t *testing.T) {
@@ -237,28 +237,28 @@ func TestRecordHostSystemStats_StateMetrics(t *testing.T) {
 			powerState:          types.HostSystemPowerStatePoweredOn,
 			connectionState:     types.HostSystemConnectionStateConnected,
 			wantPowerState:      stateValues("power_state", "on", hostPowerStates),
-			wantConnectionState: stateValues("connection_state", "connected", hostConnectionStates),
+			wantConnectionState: stateValues("vcenter.host.connection.state", "connected", hostConnectionStates),
 		},
 		{
 			name:                "powered off and not responding host",
 			powerState:          types.HostSystemPowerStatePoweredOff,
 			connectionState:     types.HostSystemConnectionStateNotResponding,
 			wantPowerState:      stateValues("power_state", "off", hostPowerStates),
-			wantConnectionState: stateValues("connection_state", "not_responding", hostConnectionStates),
+			wantConnectionState: stateValues("vcenter.host.connection.state", "not_responding", hostConnectionStates),
 		},
 		{
 			name:                "host in standby",
 			powerState:          types.HostSystemPowerStateStandBy,
 			connectionState:     types.HostSystemConnectionStateConnected,
 			wantPowerState:      stateValues("power_state", "standby", hostPowerStates),
-			wantConnectionState: stateValues("connection_state", "connected", hostConnectionStates),
+			wantConnectionState: stateValues("vcenter.host.connection.state", "connected", hostConnectionStates),
 		},
 		{
 			name:                "unrecognized states are reported as unknown",
 			powerState:          "someNewState",
 			connectionState:     "someNewState",
 			wantPowerState:      stateValues("power_state", "unknown", hostPowerStates),
-			wantConnectionState: stateValues("connection_state", "unknown", hostConnectionStates),
+			wantConnectionState: stateValues("vcenter.host.connection.state", "unknown", hostConnectionStates),
 		},
 		{
 			name:                "missing states are not reported",
@@ -279,8 +279,8 @@ func TestRecordHostSystemStats_StateMetrics(t *testing.T) {
 			scraper.recordHostSystemStats(pcommon.NewTimestampFromTime(time.Now()), host)
 
 			metrics := scraper.mb.Emit()
-			require.Equal(t, tc.wantPowerState, metricDataPoints(metrics, "vcenter.host.power_state"))
-			require.Equal(t, tc.wantConnectionState, metricDataPoints(metrics, "vcenter.host.connection_state"))
+			require.Equal(t, tc.wantPowerState, metricDataPoints(metrics, "vcenter.host.power.status"))
+			require.Equal(t, tc.wantConnectionState, metricDataPoints(metrics, "vcenter.host.connection.status"))
 		})
 	}
 }
@@ -360,7 +360,7 @@ func TestRecordHostSystemStats_AlarmCount(t *testing.T) {
 	scraper.recordHostSystemStats(pcommon.NewTimestampFromTime(time.Now()), host)
 
 	require.Equal(t,
-		map[string]float64{"status=red": 2, "status=yellow": 1},
+		map[string]float64{"vcenter.alarm.state=red": 2, "vcenter.alarm.state=yellow": 1},
 		metricDataPoints(scraper.mb.Emit(), "vcenter.host.alarm.count"),
 	)
 }
@@ -402,45 +402,45 @@ func TestCountTriggeredAlarmsByStatus(t *testing.T) {
 }
 
 func TestRecordDatastoreStats_StateMetrics(t *testing.T) {
-	noAlarms := map[string]float64{"status=red": 0, "status=yellow": 0}
+	noAlarms := map[string]float64{"vcenter.alarm.state=red": 0, "vcenter.alarm.state=yellow": 0}
 
 	testCases := []struct {
-		name                string
-		maintenanceMode     string
-		alarms              []types.AlarmState
-		wantMaintenanceMode map[string]float64
-		wantAlarmCount      map[string]float64
+		name                 string
+		maintenanceMode      string
+		alarms               []types.AlarmState
+		wantMaintenanceState map[string]float64
+		wantAlarmCount       map[string]float64
 	}{
 		{
-			name:                "datastore in normal mode with a red alarm",
-			maintenanceMode:     string(types.DatastoreSummaryMaintenanceModeStateNormal),
-			alarms:              []types.AlarmState{{OverallStatus: types.ManagedEntityStatusRed}},
-			wantMaintenanceMode: stateValues("maintenance_mode", "normal", datastoreMaintenanceModes),
-			wantAlarmCount:      map[string]float64{"status=red": 1, "status=yellow": 0},
+			name:                 "datastore in normal mode with a red alarm",
+			maintenanceMode:      string(types.DatastoreSummaryMaintenanceModeStateNormal),
+			alarms:               []types.AlarmState{{OverallStatus: types.ManagedEntityStatusRed}},
+			wantMaintenanceState: stateValues("vcenter.datastore.maintenance.state", "normal", datastoreMaintenanceStates),
+			wantAlarmCount:       map[string]float64{"vcenter.alarm.state=red": 1, "vcenter.alarm.state=yellow": 0},
 		},
 		{
-			name:                "datastore entering maintenance",
-			maintenanceMode:     string(types.DatastoreSummaryMaintenanceModeStateEnteringMaintenance),
-			wantMaintenanceMode: stateValues("maintenance_mode", "entering_maintenance", datastoreMaintenanceModes),
-			wantAlarmCount:      noAlarms,
+			name:                 "datastore entering maintenance",
+			maintenanceMode:      string(types.DatastoreSummaryMaintenanceModeStateEnteringMaintenance),
+			wantMaintenanceState: stateValues("vcenter.datastore.maintenance.state", "entering_maintenance", datastoreMaintenanceStates),
+			wantAlarmCount:       noAlarms,
 		},
 		{
-			name:                "datastore in maintenance",
-			maintenanceMode:     string(types.DatastoreSummaryMaintenanceModeStateInMaintenance),
-			wantMaintenanceMode: stateValues("maintenance_mode", "in_maintenance", datastoreMaintenanceModes),
-			wantAlarmCount:      noAlarms,
+			name:                 "datastore in maintenance",
+			maintenanceMode:      string(types.DatastoreSummaryMaintenanceModeStateInMaintenance),
+			wantMaintenanceState: stateValues("vcenter.datastore.maintenance.state", "in_maintenance", datastoreMaintenanceStates),
+			wantAlarmCount:       noAlarms,
 		},
 		{
-			name:                "unrecognized maintenance mode is reported as unknown",
-			maintenanceMode:     "someNewMode",
-			wantMaintenanceMode: stateValues("maintenance_mode", "unknown", datastoreMaintenanceModes),
-			wantAlarmCount:      noAlarms,
+			name:                 "unrecognized maintenance mode is reported as unknown",
+			maintenanceMode:      "someNewMode",
+			wantMaintenanceState: stateValues("vcenter.datastore.maintenance.state", "unknown", datastoreMaintenanceStates),
+			wantAlarmCount:       noAlarms,
 		},
 		{
-			name:                "missing maintenance mode is not reported",
-			maintenanceMode:     "",
-			wantMaintenanceMode: map[string]float64{},
-			wantAlarmCount:      noAlarms,
+			name:                 "missing maintenance mode is not reported",
+			maintenanceMode:      "",
+			wantMaintenanceState: map[string]float64{},
+			wantAlarmCount:       noAlarms,
 		},
 	}
 
@@ -459,7 +459,7 @@ func TestRecordDatastoreStats_StateMetrics(t *testing.T) {
 			scraper.recordDatastoreStats(pcommon.NewTimestampFromTime(time.Now()), ds)
 
 			metrics := scraper.mb.Emit()
-			require.Equal(t, tc.wantMaintenanceMode, metricDataPoints(metrics, "vcenter.datastore.maintenance_mode"))
+			require.Equal(t, tc.wantMaintenanceState, metricDataPoints(metrics, "vcenter.datastore.maintenance.status"))
 			require.Equal(t, tc.wantAlarmCount, metricDataPoints(metrics, "vcenter.datastore.alarm.count"))
 		})
 	}
@@ -537,7 +537,7 @@ func TestRecordVMStats_PowerState(t *testing.T) {
 
 			scraper.recordVMStats(pcommon.NewTimestampFromTime(time.Now()), vm, tc.host)
 
-			require.Equal(t, tc.wantPowerState, metricDataPoints(scraper.mb.Emit(), "vcenter.vm.power_state"))
+			require.Equal(t, tc.wantPowerState, metricDataPoints(scraper.mb.Emit(), "vcenter.vm.power.status"))
 		})
 	}
 }
@@ -545,13 +545,13 @@ func TestRecordVMStats_PowerState(t *testing.T) {
 // newStateMetricsScraper returns a scraper with all host, datastore and VM state metrics enabled.
 func newStateMetricsScraper() *vcenterMetricScraper {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
-	cfg.Metrics.VcenterHostPowerState.Enabled = true
-	cfg.Metrics.VcenterHostConnectionState.Enabled = true
+	cfg.Metrics.VcenterHostPowerStatus.Enabled = true
+	cfg.Metrics.VcenterHostConnectionStatus.Enabled = true
 	cfg.Metrics.VcenterHostUptime.Enabled = true
 	cfg.Metrics.VcenterHostAlarmCount.Enabled = true
-	cfg.Metrics.VcenterDatastoreMaintenanceMode.Enabled = true
+	cfg.Metrics.VcenterDatastoreMaintenanceStatus.Enabled = true
 	cfg.Metrics.VcenterDatastoreAlarmCount.Enabled = true
-	cfg.Metrics.VcenterVMPowerState.Enabled = true
+	cfg.Metrics.VcenterVMPowerStatus.Enabled = true
 	return &vcenterMetricScraper{
 		mb: metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
 	}

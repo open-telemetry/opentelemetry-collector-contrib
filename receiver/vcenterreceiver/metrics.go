@@ -99,23 +99,23 @@ func getHostPowerStateAttribute(state string) (metadata.AttributeHostPowerState,
 	return attr, ok
 }
 
-func getHostConnectionStateAttribute(state types.HostSystemConnectionState) (metadata.AttributeHostConnectionState, bool) {
-	hostConnectionStateToAttribute := map[types.HostSystemConnectionState]metadata.AttributeHostConnectionState{
-		types.HostSystemConnectionStateConnected:     metadata.AttributeHostConnectionStateConnected,
-		types.HostSystemConnectionStateNotResponding: metadata.AttributeHostConnectionStateNotResponding,
-		types.HostSystemConnectionStateDisconnected:  metadata.AttributeHostConnectionStateDisconnected,
+func getHostConnectionStateAttribute(state types.HostSystemConnectionState) (metadata.AttributeVcenterHostConnectionState, bool) {
+	hostConnectionStateToAttribute := map[types.HostSystemConnectionState]metadata.AttributeVcenterHostConnectionState{
+		types.HostSystemConnectionStateConnected:     metadata.AttributeVcenterHostConnectionStateConnected,
+		types.HostSystemConnectionStateNotResponding: metadata.AttributeVcenterHostConnectionStateNotResponding,
+		types.HostSystemConnectionStateDisconnected:  metadata.AttributeVcenterHostConnectionStateDisconnected,
 	}
 	attr, ok := hostConnectionStateToAttribute[state]
 	return attr, ok
 }
 
-func getDatastoreMaintenanceModeAttribute(mode string) (metadata.AttributeDatastoreMaintenanceMode, bool) {
-	datastoreMaintenanceModeToAttribute := map[string]metadata.AttributeDatastoreMaintenanceMode{
-		string(types.DatastoreSummaryMaintenanceModeStateNormal):              metadata.AttributeDatastoreMaintenanceModeNormal,
-		string(types.DatastoreSummaryMaintenanceModeStateEnteringMaintenance): metadata.AttributeDatastoreMaintenanceModeEnteringMaintenance,
-		string(types.DatastoreSummaryMaintenanceModeStateInMaintenance):       metadata.AttributeDatastoreMaintenanceModeInMaintenance,
+func getDatastoreMaintenanceStateAttribute(mode string) (metadata.AttributeVcenterDatastoreMaintenanceState, bool) {
+	datastoreMaintenanceStateToAttribute := map[string]metadata.AttributeVcenterDatastoreMaintenanceState{
+		string(types.DatastoreSummaryMaintenanceModeStateNormal):              metadata.AttributeVcenterDatastoreMaintenanceStateNormal,
+		string(types.DatastoreSummaryMaintenanceModeStateEnteringMaintenance): metadata.AttributeVcenterDatastoreMaintenanceStateEnteringMaintenance,
+		string(types.DatastoreSummaryMaintenanceModeStateInMaintenance):       metadata.AttributeVcenterDatastoreMaintenanceStateInMaintenance,
 	}
-	attr, ok := datastoreMaintenanceModeToAttribute[mode]
+	attr, ok := datastoreMaintenanceStateToAttribute[mode]
 	return attr, ok
 }
 
@@ -157,18 +157,18 @@ func (v *vcenterMetricScraper) recordDatastoreStats(
 	v.mb.RecordVcenterDatastoreDiskUtilizationDataPoint(ts, diskUtilization)
 
 	if s.MaintenanceMode != "" {
-		maintenanceMode, ok := getDatastoreMaintenanceModeAttribute(s.MaintenanceMode)
+		maintenanceState, ok := getDatastoreMaintenanceStateAttribute(s.MaintenanceMode)
 		if !ok {
-			maintenanceMode = metadata.AttributeDatastoreMaintenanceModeUnknown
+			maintenanceState = metadata.AttributeVcenterDatastoreMaintenanceStateUnknown
 		}
-		recordStateDataPoints(maintenanceMode, metadata.MapAttributeDatastoreMaintenanceMode, func(val int64, state metadata.AttributeDatastoreMaintenanceMode) {
-			v.mb.RecordVcenterDatastoreMaintenanceModeDataPoint(ts, val, state)
+		recordStateDataPoints(maintenanceState, metadata.MapAttributeVcenterDatastoreMaintenanceState, func(val int64, state metadata.AttributeVcenterDatastoreMaintenanceState) {
+			v.mb.RecordVcenterDatastoreMaintenanceStatusDataPoint(ts, val, state)
 		})
 	}
 
 	redAlarms, yellowAlarms := countTriggeredAlarmsByStatus(ds.TriggeredAlarmState)
-	v.mb.RecordVcenterDatastoreAlarmCountDataPoint(ts, redAlarms, metadata.AttributeEntityStatusRed)
-	v.mb.RecordVcenterDatastoreAlarmCountDataPoint(ts, yellowAlarms, metadata.AttributeEntityStatusYellow)
+	v.mb.RecordVcenterDatastoreAlarmCountDataPoint(ts, redAlarms, metadata.AttributeVcenterAlarmStateRed)
+	v.mb.RecordVcenterDatastoreAlarmCountDataPoint(ts, yellowAlarms, metadata.AttributeVcenterAlarmStateYellow)
 }
 
 // recordClusterStats records stat metrics for a vSphere Cluster
@@ -263,17 +263,17 @@ func (v *vcenterMetricScraper) recordHostSystemStats(
 			hostPowerState = metadata.AttributeHostPowerStateUnknown
 		}
 		recordStateDataPoints(hostPowerState, metadata.MapAttributeHostPowerState, func(val int64, state metadata.AttributeHostPowerState) {
-			v.mb.RecordVcenterHostPowerStateDataPoint(ts, val, state)
+			v.mb.RecordVcenterHostPowerStatusDataPoint(ts, val, state)
 		})
 	}
 
 	if hs.Runtime.ConnectionState != "" {
 		hostConnectionState, ok := getHostConnectionStateAttribute(hs.Runtime.ConnectionState)
 		if !ok {
-			hostConnectionState = metadata.AttributeHostConnectionStateUnknown
+			hostConnectionState = metadata.AttributeVcenterHostConnectionStateUnknown
 		}
-		recordStateDataPoints(hostConnectionState, metadata.MapAttributeHostConnectionState, func(val int64, state metadata.AttributeHostConnectionState) {
-			v.mb.RecordVcenterHostConnectionStateDataPoint(ts, val, state)
+		recordStateDataPoints(hostConnectionState, metadata.MapAttributeVcenterHostConnectionState, func(val int64, state metadata.AttributeVcenterHostConnectionState) {
+			v.mb.RecordVcenterHostConnectionStatusDataPoint(ts, val, state)
 		})
 	}
 
@@ -283,8 +283,8 @@ func (v *vcenterMetricScraper) recordHostSystemStats(
 	}
 
 	redAlarms, yellowAlarms := countTriggeredAlarmsByStatus(hs.TriggeredAlarmState)
-	v.mb.RecordVcenterHostAlarmCountDataPoint(ts, redAlarms, metadata.AttributeEntityStatusRed)
-	v.mb.RecordVcenterHostAlarmCountDataPoint(ts, yellowAlarms, metadata.AttributeEntityStatusYellow)
+	v.mb.RecordVcenterHostAlarmCountDataPoint(ts, redAlarms, metadata.AttributeVcenterAlarmStateRed)
+	v.mb.RecordVcenterHostAlarmCountDataPoint(ts, yellowAlarms, metadata.AttributeVcenterAlarmStateYellow)
 
 	s := hs.Summary
 	h := s.Hardware
@@ -344,7 +344,7 @@ func (v *vcenterMetricScraper) recordVMStats(
 			vmPowerState = metadata.AttributeVMCountPowerStateUnknown
 		}
 		recordStateDataPoints(vmPowerState, metadata.MapAttributeVMCountPowerState, func(val int64, state metadata.AttributeVMCountPowerState) {
-			v.mb.RecordVcenterVMPowerStateDataPoint(ts, val, state)
+			v.mb.RecordVcenterVMPowerStatusDataPoint(ts, val, state)
 		})
 	}
 

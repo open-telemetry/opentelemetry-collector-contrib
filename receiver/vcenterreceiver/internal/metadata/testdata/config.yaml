@@ -48,21 +48,21 @@ all_set:
       attributes: ["status","power_state"]
     vcenter.datastore.alarm.count:
       enabled: true
-      attributes: ["status"]
+      attributes: ["vcenter.alarm.state"]
     vcenter.datastore.disk.usage:
       enabled: true
       attributes: ["disk_state"]
     vcenter.datastore.disk.utilization:
       enabled: true
-    vcenter.datastore.maintenance_mode:
+    vcenter.datastore.maintenance.status:
       enabled: true
-      attributes: ["maintenance_mode"]
+      attributes: ["vcenter.datastore.maintenance.state"]
     vcenter.host.alarm.count:
       enabled: true
-      attributes: ["status"]
-    vcenter.host.connection_state:
+      attributes: ["vcenter.alarm.state"]
+    vcenter.host.connection.status:
       enabled: true
-      attributes: ["connection_state"]
+      attributes: ["vcenter.host.connection.state"]
     vcenter.host.cpu.capacity:
       enabled: true
     vcenter.host.cpu.reserved:
@@ -108,7 +108,7 @@ all_set:
     vcenter.host.network.usage:
       enabled: true
       attributes: ["object"]
-    vcenter.host.power_state:
+    vcenter.host.power.status:
       enabled: true
       attributes: ["power_state"]
     vcenter.host.uptime:
@@ -195,7 +195,7 @@ all_set:
     vcenter.vm.network.usage:
       enabled: true
       attributes: ["object"]
-    vcenter.vm.power_state:
+    vcenter.vm.power.status:
       enabled: true
       attributes: ["power_state"]
     vcenter.vm.vsan.latency.avg:
@@ -287,13 +287,13 @@ reaggregate_set:
       attributes: []
     vcenter.datastore.disk.utilization:
       enabled: true
-    vcenter.datastore.maintenance_mode:
+    vcenter.datastore.maintenance.status:
       enabled: true
       attributes: []
     vcenter.host.alarm.count:
       enabled: true
       attributes: []
-    vcenter.host.connection_state:
+    vcenter.host.connection.status:
       enabled: true
       attributes: []
     vcenter.host.cpu.capacity:
@@ -341,7 +341,7 @@ reaggregate_set:
     vcenter.host.network.usage:
       enabled: true
       attributes: []
-    vcenter.host.power_state:
+    vcenter.host.power.status:
       enabled: true
       attributes: []
     vcenter.host.uptime:
@@ -428,7 +428,7 @@ reaggregate_set:
     vcenter.vm.network.usage:
       enabled: true
       attributes: []
-    vcenter.vm.power_state:
+    vcenter.vm.power.status:
       enabled: true
       attributes: []
     vcenter.vm.vsan.latency.avg:
@@ -514,21 +514,21 @@ none_set:
       attributes: ["status","power_state"]
     vcenter.datastore.alarm.count:
       enabled: false
-      attributes: ["status"]
+      attributes: ["vcenter.alarm.state"]
     vcenter.datastore.disk.usage:
       enabled: false
       attributes: ["disk_state"]
     vcenter.datastore.disk.utilization:
       enabled: false
-    vcenter.datastore.maintenance_mode:
+    vcenter.datastore.maintenance.status:
       enabled: false
-      attributes: ["maintenance_mode"]
+      attributes: ["vcenter.datastore.maintenance.state"]
     vcenter.host.alarm.count:
       enabled: false
-      attributes: ["status"]
-    vcenter.host.connection_state:
+      attributes: ["vcenter.alarm.state"]
+    vcenter.host.connection.status:
       enabled: false
-      attributes: ["connection_state"]
+      attributes: ["vcenter.host.connection.state"]
     vcenter.host.cpu.capacity:
       enabled: false
     vcenter.host.cpu.reserved:
@@ -574,7 +574,7 @@ none_set:
     vcenter.host.network.usage:
       enabled: false
       attributes: ["object"]
-    vcenter.host.power_state:
+    vcenter.host.power.status:
       enabled: false
       attributes: ["power_state"]
     vcenter.host.uptime:
@@ -661,7 +661,7 @@ none_set:
     vcenter.vm.network.usage:
       enabled: false
       attributes: ["object"]
-    vcenter.vm.power_state:
+    vcenter.vm.power.status:
       enabled: false
       attributes: ["power_state"]
     vcenter.vm.vsan.latency.avg:

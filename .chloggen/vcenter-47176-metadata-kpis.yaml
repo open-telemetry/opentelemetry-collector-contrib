@@ -17,13 +17,13 @@ issues: [47176]
 # Use pipe (|) for multiline entries.
 subtext: |
   The following metrics are added and disabled by default:
-  - `vcenter.host.power_state`
-  - `vcenter.host.connection_state`
+  - `vcenter.host.power.status`
+  - `vcenter.host.connection.status`
   - `vcenter.host.uptime`
   - `vcenter.host.alarm.count`
-  - `vcenter.datastore.maintenance_mode`
+  - `vcenter.datastore.maintenance.status`
   - `vcenter.datastore.alarm.count`
-  - `vcenter.vm.power_state`
+  - `vcenter.vm.power.status`
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
