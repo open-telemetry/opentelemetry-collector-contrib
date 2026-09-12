@@ -211,6 +211,34 @@ func TestValidateConfig(t *testing.T) {
 			},
 		},
 		{
+			desc:   "Path missing leading slash",
+			expect: errPathMissingLeadingSlash,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				Path:       "eventsource/receiver",
+				HealthPath: defaultHealthPath,
+			},
+		},
+		{
+			desc:   "HealthPath missing leading slash",
+			expect: errHealthPathMissingSlash,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				Path:       defaultPath,
+				HealthPath: "eventreceiver/healthcheck",
+			},
+		},
+		{
 			desc:   "Multiple invalid configs",
 			expect: errs,
 			conf: Config{
@@ -227,6 +255,12 @@ func TestValidateConfig(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
+			if test.conf.Path == "" {
+				test.conf.Path = defaultPath
+			}
+			if test.conf.HealthPath == "" {
+				test.conf.HealthPath = defaultHealthPath
+			}
 			err := test.conf.Validate()
 			if test.expect != nil {
 				require.ErrorContains(t, err, test.expect.Error())
@@ -344,6 +378,8 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
+			test.conf.Path = defaultPath
+			test.conf.HealthPath = defaultHealthPath
 			err := test.conf.Validate()
 			require.NoError(t, err)
 			require.Equal(t, test.expected, test.conf.ServerConfig.MaxRequestBodySize)
@@ -376,8 +412,8 @@ func TestLoadConfig(t *testing.T) {
 		ServerConfig: expectServerConfig,
 		ReadTimeout:  "500ms",
 		WriteTimeout: "500ms",
-		Path:         "some/path",
-		HealthPath:   "health/path",
+		Path:         "/some/path",
+		HealthPath:   "/health/path",
 		RequiredHeader: RequiredHeader{
 			Key:   "key-present",
 			Value: "value-present",
