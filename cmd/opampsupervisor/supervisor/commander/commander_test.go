@@ -229,3 +229,28 @@ func TestStopKillsUnresponsiveProcess(t *testing.T) {
 	require.NoError(t, cmdr.Stop(t.Context()))
 	require.False(t, cmdr.IsRunning())
 }
+
+// NewCommander uses the configured stop grace period, falling back to the
+// default when it is unset.
+func TestNewCommanderUsesConfiguredStopGracePeriod(t *testing.T) {
+	cmdr, err := NewCommander(
+		zap.NewNop(),
+		filepath.Join(t.TempDir(), "agent.log"),
+		config.Agent{
+			Executable:      os.Args[0],
+			StopGracePeriod: 3 * time.Second,
+		},
+	)
+	require.NoError(t, err)
+	require.Equal(t, 3*time.Second, cmdr.stopGracePeriod)
+
+	cmdrDefault, err := NewCommander(
+		zap.NewNop(),
+		filepath.Join(t.TempDir(), "agent.log"),
+		config.Agent{
+			Executable: os.Args[0],
+		},
+	)
+	require.NoError(t, err)
+	require.Equal(t, defaultStopGracePeriod, cmdrDefault.stopGracePeriod)
+}
