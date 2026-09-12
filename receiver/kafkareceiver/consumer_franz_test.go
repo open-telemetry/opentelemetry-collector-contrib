@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
@@ -1366,4 +1367,71 @@ func TestFranzConsumerBrokerCacheEvictOnDisconnect(t *testing.T) {
 	// Disconnect should evict both entries.
 	c.OnBrokerDisconnect(meta, nil)
 	require.Empty(t, c.brokerReadOpts)
+}
+
+func TestStartFailureShutdownDoesNotBlock(t *testing.T) {
+	// Reproduces issue #50631: Shutdown() must not block when Start() fails.
+	// Two failure modes are covered:
+	//   1. Client creation fails (bad TLS) — clientToClose deferred close never fires.
+	//   2. Client created but newConsumeFn fails — exercises the deferred client close.
+	const topic = "otlp_spans"
+	_, clientConfig := kafkatest.NewCluster(t, kfake.SeedTopics(int32(1), topic))
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.ClientConfig = clientConfig
+	cfg.ConsumerConfig.InitialOffset = "earliest"
+	cfg.ConsumerConfig.GroupID = t.Name()
+
+	// Configure bad TLS cert path to trigger failure in NewFranzConsumerGroup.
+	cfg.ClientConfig.TLS = &configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile:   "/this/goes/nowhere.cert",
+			CertFile: "/this/goes/nowhere.cert",
+			KeyFile:  "bunk",
+		},
+	}
+
+	settings, _, _ := mustNewSettings(t)
+	consumer, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, nil)
+	require.NoError(t, err)
+
+	// Start should fail due to bad TLS config. Assert on the stable wrapper
+	// message produced by NewFranzConsumerGroup, not the OS-specific syscall text.
+	err = consumer.Start(t.Context(), componenttest.NewNopHost())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to load TLS config")
+
+	// Shutdown should not block, even though Start failed.
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+	err = consumer.Shutdown(ctx)
+	require.NoError(t, err)
+	require.NoError(t, ctx.Err(), "Shutdown should not timeout")
+
+	// Case 2: client created successfully but newConsumeFn fails.
+	// This exercises the deferred client.Close() path added to fix the leak.
+	t.Run("newConsumeFn failure closes client", func(t *testing.T) {
+		_, clientConfig2 := kafkatest.NewCluster(t, kfake.SeedTopics(int32(1), topic))
+		cfg2 := createDefaultConfig().(*Config)
+		cfg2.ClientConfig = clientConfig2
+		cfg2.ConsumerConfig.InitialOffset = "earliest"
+		cfg2.ConsumerConfig.GroupID = t.Name()
+
+		failConsumeFn := func(_ component.Host, _ *receiverhelper.ObsReport, _ *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
+			return nil, errors.New("newConsumeFn failed")
+		}
+		settings2, _, _ := mustNewSettings(t)
+		consumer2, err2 := newFranzKafkaConsumer(cfg2, settings2, []string{topic}, nil, failConsumeFn)
+		require.NoError(t, err2)
+
+		err2 = consumer2.Start(t.Context(), componenttest.NewNopHost())
+		require.ErrorContains(t, err2, "newConsumeFn failed")
+
+		ctx2, cancel2 := context.WithTimeout(t.Context(), 2*time.Second)
+		defer cancel2()
+		require.ErrorIs(t, consumer2.client.Ping(ctx2), kgo.ErrClientClosed)
+		err2 = consumer2.Shutdown(ctx2)
+		require.NoError(t, err2)
+		require.NoError(t, ctx2.Err(), "Shutdown should not timeout")
+	})
 }

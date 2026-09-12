@@ -56,7 +56,8 @@ type franzConsumer struct {
 	consumeMessage   consumeMessageFunc
 
 	mu             sync.RWMutex
-	started        chan struct{}
+	startAttempted bool          // set on first Start() call; prevents retry after failure
+	started        chan struct{} // closed when Start() succeeds; signals triggerShutdown
 	consumerClosed chan struct{}
 	closing        chan struct{}
 
@@ -131,15 +132,25 @@ func (c *franzConsumer) reportRecoverable(err error) {
 
 func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 	c.mu.Lock()
+	// Declared before defer c.mu.Unlock() so this runs after the lock is released (LIFO).
+	// Closing the client under the lock risks a deadlock: Close() may invoke
+	// partition-assigned/lost callbacks that also acquire c.mu.
+	var clientToClose *kgo.Client
+	defer func() {
+		if clientToClose != nil {
+			clientToClose.Close()
+		}
+	}()
 	defer c.mu.Unlock()
 	select {
 	case <-c.closing:
 		return errors.New("franz kafka consumer already shut down")
-	case <-c.started:
-		return errors.New("franz kafka consumer already started")
 	default:
-		close(c.started)
 	}
+	if c.startAttempted {
+		return errors.New("franz kafka consumer already started")
+	}
+	c.startAttempted = true
 
 	// Report "Starting" as soon as Start() is called.
 	c.host = host
@@ -203,9 +214,13 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 
 	cm, err := c.newConsumeFn(host, c.obsrecv, c.telemetryBuilder)
 	if err != nil {
+		clientToClose = client
 		return err
 	}
 	c.consumeMessage = cm
+
+	// Signal that Start was successful only after all setup is complete.
+	close(c.started)
 
 	go c.consumeLoop(context.Background())
 	return nil
