@@ -222,16 +222,13 @@ func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attr
 	default:
 		strVal := body.AsString()
 		if s.shouldAllowValue(strVal) {
-			// TODO: this is assigned here, but return makes the assignment useless. Open an issue
-			// to investigate the correct behavior
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50417
-			allowedKeys = append(allowedKeys, "body") //nolint:staticcheck
-			return
-		}
-		processedValue := s.processStringValueForLogBody(strVal)
-		if strVal != processedValue {
-			maskedKeys = append(maskedKeys, "body")
-			body.SetStr(processedValue)
+			allowedKeys = append(allowedKeys, "body")
+		} else {
+			processedValue := s.processStringValueForLogBody(strVal)
+			if strVal != processedValue {
+				maskedKeys = append(maskedKeys, "body")
+				body.SetStr(processedValue)
+			}
 		}
 	}
 
