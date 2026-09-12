@@ -19,10 +19,7 @@ kafka/full:
       max: 10
       backoff: 5s
   conn_idle_timeout: 5m
-kafka/sasl_aws_msk_iam_oauthbearer:
-  auth:
-    sasl:
-      mechanism: AWS_MSK_IAM_OAUTHBEARER
+
 kafka/sasl_aws_msk_iam_oauthbearer_with_region:
   auth:
     sasl:
@@ -58,6 +55,11 @@ kafka/sasl_invalid_mechanism:
   auth:
     sasl:
       mechanism: FANCY
+
+kafka/sasl_aws_msk_iam_oauthbearer_missing_region:
+  auth:
+    sasl:
+      mechanism: AWS_MSK_IAM_OAUTHBEARER
 
 kafka/sasl_plain_username_required:
   auth:
