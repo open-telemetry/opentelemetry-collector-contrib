@@ -370,6 +370,160 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+func TestLoadCustomResourcesConfig(t *testing.T) {
+	t.Parallel()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub("k8s_objects/custom_resources")
+	require.NoError(t, err)
+
+	cfg := createDefaultConfig().(*Config)
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, cfg.Validate())
+	assert.Equal(t, &CustomResourcesConfig{
+		Interval:      15 * time.Minute,
+		InitialDelay:  time.Minute,
+		Namespaces:    []string{"default", "production"},
+		LabelSelector: "app.kubernetes.io/managed-by=argocd",
+		FieldSelector: "metadata.name!=example",
+		Include: []CustomResourceSelector{
+			{Group: "argoproj.io", Resources: []string{"applications"}},
+			{Group: "opentelemetry.io", Resources: []string{"*"}},
+		},
+		Exclude: []CustomResourceSelector{
+			{Group: "opentelemetry.io", Resources: []string{"instrumentations"}},
+		},
+	}, cfg.CustomResources)
+}
+
+func TestValidateCustomResources(t *testing.T) {
+	t.Parallel()
+
+	validInclude := []CustomResourceSelector{{Group: "*", Resources: []string{"*"}}}
+	tests := []struct {
+		name                 string
+		interval             time.Duration
+		customResources      CustomResourcesConfig
+		expectedErr          string
+		expectedPullInterval time.Duration
+	}{
+		{
+			name: "uses default interval",
+			customResources: CustomResourcesConfig{
+				Include: validInclude,
+			},
+			expectedPullInterval: time.Hour,
+		},
+		{
+			name:     "uses top-level interval",
+			interval: 15 * time.Minute,
+			customResources: CustomResourcesConfig{
+				Include: validInclude,
+			},
+			expectedPullInterval: 15 * time.Minute,
+		},
+		{
+			name:     "custom interval takes precedence",
+			interval: 15 * time.Minute,
+			customResources: CustomResourcesConfig{
+				Interval: 10 * time.Minute,
+				Include:  validInclude,
+			},
+			expectedPullInterval: 10 * time.Minute,
+		},
+		{
+			name: "rejects negative interval",
+			customResources: CustomResourcesConfig{
+				Interval: -time.Minute,
+				Include:  validInclude,
+			},
+			expectedErr: "custom_resources.interval must not be negative",
+		},
+		{
+			name: "allows negative initial delay",
+			customResources: CustomResourcesConfig{
+				Interval:     10 * time.Minute,
+				InitialDelay: -time.Minute,
+				Include:      validInclude,
+			},
+			expectedPullInterval: 10 * time.Minute,
+		},
+		{
+			name: "rejects initial delay equal to interval",
+			customResources: CustomResourcesConfig{
+				Interval:     10 * time.Minute,
+				InitialDelay: 10 * time.Minute,
+				Include:      validInclude,
+			},
+			expectedErr: "custom_resources.initial_delay must be less than interval",
+		},
+		{
+			name: "rejects namespace allow and deny lists together",
+			customResources: CustomResourcesConfig{
+				Namespaces: []string{"default"},
+				ExcludeNamespaces: []filter.Config{
+					{Strict: "kube-system"},
+				},
+				Include: validInclude,
+			},
+			expectedErr: "custom_resources.namespaces and custom_resources.exclude_namespaces cannot both be set at the same time",
+		},
+		{
+			name: "rejects invalid namespace filter",
+			customResources: CustomResourcesConfig{
+				ExcludeNamespaces: []filter.Config{
+					{Regex: "["},
+				},
+				Include: validInclude,
+			},
+			expectedErr: "custom_resources.exclude_namespaces[0]: error parsing regexp: missing closing ]: `[`",
+		},
+		{
+			name:        "rejects empty include",
+			expectedErr: "custom_resources.include must not be empty",
+		},
+		{
+			name: "rejects include without group",
+			customResources: CustomResourcesConfig{
+				Include: []CustomResourceSelector{{Resources: []string{"applications"}}},
+			},
+			expectedErr: "custom_resources.include[0].group must not be empty",
+		},
+		{
+			name: "rejects include without resources",
+			customResources: CustomResourcesConfig{
+				Include: []CustomResourceSelector{{Group: "argoproj.io"}},
+			},
+			expectedErr: "custom_resources.include[0].resources must not be empty",
+		},
+		{
+			name: "rejects empty exclude group",
+			customResources: CustomResourcesConfig{
+				Include: validInclude,
+				Exclude: []CustomResourceSelector{{Resources: []string{"applications"}}},
+			},
+			expectedErr: "custom_resources.exclude[0].group must not be empty",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Interval = test.interval
+			cfg.CustomResources = &test.customResources
+
+			err := cfg.Validate()
+			if test.expectedErr != "" {
+				assert.EqualError(t, err, test.expectedErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, test.expectedPullInterval, cfg.CustomResources.Interval)
+		})
+	}
+}
+
 func TestDeepCopy(t *testing.T) {
 	t.Parallel()
 

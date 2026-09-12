@@ -1,0 +1,112 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: k8s.namespace.name
+          value:
+            stringValue: default
+    scopeLogs:
+      - scope:
+          name: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
+          version: latest
+        logRecords:
+          - observedTimeUnixNano: "1696581884428415795"
+            body:
+              kvlistValue:
+                values:
+                  - key: apiVersion
+                    value:
+                      stringValue: e2e.opentelemetry.io/v1
+                  - key: kind
+                    value:
+                      stringValue: Widget
+                  - key: metadata
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: creationTimestamp
+                            value:
+                              stringValue: "2000-01-01T00:00:00Z"
+                          - key: generation
+                            value:
+                              intValue: "1"
+                          - key: labels
+                            value:
+                              kvlistValue:
+                                values:
+                                  - key: e2etest
+                                    value:
+                                      stringValue: k8sobjectsreceiver
+                          - key: managedFields
+                            value:
+                              arrayValue:
+                                values:
+                                  - kvlistValue:
+                                      values:
+                                        - key: apiVersion
+                                          value:
+                                            stringValue: e2e.opentelemetry.io/v1
+                                        - key: fieldsType
+                                          value:
+                                            stringValue: FieldsV1
+                                        - key: fieldsV1
+                                          value:
+                                            kvlistValue:
+                                              values:
+                                                - key: f:metadata
+                                                  value:
+                                                    kvlistValue:
+                                                      values:
+                                                        - key: f:labels
+                                                          value:
+                                                            kvlistValue:
+                                                              values:
+                                                                - key: .
+                                                                  value:
+                                                                    kvlistValue: {}
+                                                                - key: f:e2etest
+                                                                  value:
+                                                                    kvlistValue: {}
+                                                - key: f:spec
+                                                  value:
+                                                    kvlistValue:
+                                                      values:
+                                                        - key: .
+                                                          value:
+                                                            kvlistValue: {}
+                                                        - key: f:message
+                                                          value:
+                                                            kvlistValue: {}
+                                        - key: manager
+                                          value:
+                                            stringValue: k8sobjectsreceiver.test
+                                        - key: operation
+                                          value:
+                                            stringValue: Update
+                                        - key: time
+                                          value:
+                                            stringValue: "2000-01-01T00:00:00Z"
+                          - key: name
+                            value:
+                              stringValue: test-k8sobjects-receiver-widget
+                          - key: namespace
+                            value:
+                              stringValue: default
+                          - key: resourceVersion
+                            value:
+                              stringValue: "12345"
+                          - key: uid
+                            value:
+                              stringValue: "12345"
+                  - key: spec
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: message
+                            value:
+                              stringValue: collected
+            attributes:
+              - key: k8s.resource.name
+                value:
+                  stringValue: widgets
+            traceId: ""
+            spanId: ""

@@ -80,3 +80,19 @@ k8s_objects/top_level_interval:
     - name: nodes
       mode: pull
       interval: 5m
+k8s_objects/custom_resources:
+  auth_type: serviceAccount
+  custom_resources:
+    interval: 15m
+    initial_delay: 1m
+    namespaces: [default, production]
+    label_selector: app.kubernetes.io/managed-by=argocd
+    field_selector: metadata.name!=example
+    include:
+      - group: argoproj.io
+        resources: [applications]
+      - group: opentelemetry.io
+        resources: ["*"]
+    exclude:
+      - group: opentelemetry.io
+        resources: [instrumentations]
