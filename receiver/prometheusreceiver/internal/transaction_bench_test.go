@@ -72,6 +72,28 @@ func benchmarkAppend(b *testing.B) {
 	}
 }
 
+// BenchmarkAppendWithScopeAttributes benchmarks Append for series carrying scope attributes,
+// which BenchmarkAppend does not cover.
+func BenchmarkAppendWithScopeAttributes(b *testing.B) {
+	labelSets := generateLabelSetsWithScopeAttributes(numSeries, 50, 3)
+	timestamp := int64(1234567890)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		tx := newBenchmarkTransaction(b)
+		b.StartTimer()
+
+		for j, ls := range labelSets {
+			value := float64(j)
+			_, err := tx.Append(0, ls, 0, timestamp, value, nil, nil, storage.AOptions{})
+			assert.NoError(b, err)
+		}
+	}
+}
+
 // BenchmarkAppendHistogram benchmarks the AppendHistogram method of the transaction.
 // It tests the performance of appending native histogram metrics.
 func BenchmarkAppendHistogram(b *testing.B) {
@@ -215,6 +237,31 @@ func generateLabelSets(seriesCount, cardinality int) []labels.Labels {
 	for i := range seriesCount {
 		lbls := labels.NewBuilder(labels.EmptyLabels())
 		lbls.Set(model.MetricNameLabel, fmt.Sprintf("metric_%d", i))
+
+		for j := range cardinality {
+			lbls.Set(fmt.Sprintf("label_%d", j), fmt.Sprintf("value_%d_%d", i, j))
+		}
+
+		result[i] = lbls.Labels()
+	}
+
+	return result
+}
+
+// generateLabelSetsWithScopeAttributes is generateLabelSets plus scope name, version and
+// scopeAttrCount otel_scope_<attribute> labels.
+func generateLabelSetsWithScopeAttributes(seriesCount, cardinality, scopeAttrCount int) []labels.Labels {
+	result := make([]labels.Labels, seriesCount)
+
+	for i := range seriesCount {
+		lbls := labels.NewBuilder(labels.EmptyLabels())
+		lbls.Set(model.MetricNameLabel, fmt.Sprintf("metric_%d", i))
+		lbls.Set(prometheus.ScopeNameLabelKey, "benchmark.scope")
+		lbls.Set(prometheus.ScopeVersionLabelKey, "1.0.0")
+
+		for j := range scopeAttrCount {
+			lbls.Set(fmt.Sprintf("%sattr_%d", prometheus.ScopeLabelPrefix, j), fmt.Sprintf("scope_value_%d", j))
+		}
 
 		for j := range cardinality {
 			lbls.Set(fmt.Sprintf("label_%d", j), fmt.Sprintf("value_%d_%d", i, j))

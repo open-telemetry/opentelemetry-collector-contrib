@@ -68,6 +68,9 @@ type transaction struct {
 
 var emptyScopeID scopeID
 
+// emptyScopeAttributes is shared by every series without scope attributes, so it must stay empty.
+var emptyScopeAttributes = pcommon.NewMap()
+
 type scopeID struct {
 	name      string
 	version   string
@@ -491,7 +494,9 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 
 func getScopeID(ls labels.Labels) (scopeID, pcommon.Map) {
 	var scope scopeID
-	attrs := pcommon.NewMap()
+	// Only allocate once a scope attribute label is actually seen.
+	attrs := emptyScopeAttributes
+	ownAttrs := false
 	ls.Range(func(lbl labels.Label) {
 		switch lbl.Name {
 		case prometheus.ScopeNameLabelKey:
@@ -506,6 +511,10 @@ func getScopeID(ls labels.Labels) (scopeID, pcommon.Map) {
 		}
 		if !strings.HasPrefix(lbl.Name, prometheus.ScopeLabelPrefix) {
 			return
+		}
+		if !ownAttrs {
+			attrs = pcommon.NewMap()
+			ownAttrs = true
 		}
 		attrKey := strings.TrimPrefix(lbl.Name, prometheus.ScopeLabelPrefix)
 		attrs.PutStr(attrKey, lbl.Value)
