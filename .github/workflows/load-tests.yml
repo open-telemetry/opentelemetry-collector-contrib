@@ -37,6 +37,7 @@ jobs:
           go-version: oldstable
       - run: make genoteltestbedcol
       - run: make oteltestbedcol
+      - run: GOOS=linux GOARCH=arm64 make oteltestbedcol
       - name: Upload Testbed Binaries
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -48,11 +49,11 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   loadtest:
-    runs-on: oracle-bare-metal-64cpu-1024gb-x86-64-ubuntu-24
     needs: [setup-environment]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-environment.outputs.loadtest_matrix) }}
+    runs-on: "${{ matrix.runner }}"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -78,6 +79,7 @@ jobs:
       - name: Loadtest
         run: make -C testbed run-tests
         env:
+          RUN_TYPE: "${{ matrix.type == 'linux-arm64' && 'linux_arm64' || '' }}"
           TEST_ARGS: "-test.run=${{ matrix.test }}"
       - name: Set results filename
         if: ${{ failure() || success() }}
