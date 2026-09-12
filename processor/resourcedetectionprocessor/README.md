@@ -364,6 +364,10 @@ processors:
 > **Deprecated**: The per-detector `fail_on_missing_metadata` field is deprecated. Use the top-level
 > `fail_on_missing_metadata` in the processor config instead. See [Using the fail_on_missing_metadata parameter](#using-the-fail_on_missing_metadata-parameter).
 
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the instance ID, the instance identity document or the hostname cannot be retrieved from IMDS.
+> When `false` (default), any of those failures are logged and the detector returns what it has.
+> This matters on hosts whose metadata service implements the EC2-compatible `meta-data` tree but not the AWS-specific `dynamic/instance-identity` tree, such as OpenStack Nova based clouds.
+
 ### Amazon ECS
 
 Queries the [Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint.html) (TMDE) to record information about the current ECS Task. Only TMDE V4 and V3 are supported.

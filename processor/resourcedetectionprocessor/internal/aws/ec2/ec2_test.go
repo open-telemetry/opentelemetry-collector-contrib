@@ -438,7 +438,11 @@ func TestDetector_Detect(t *testing.T) {
 			failOnMissingMetadata: true,
 		},
 		{
-			name: "get fails",
+			// Regression test for clusters where the metadata service provides the EC2-compatible "meta-data" tree, but not the
+			// AWS-specific "dynamic/instance-identity" tree. Examples are clusters based on OpenStack Nova, like
+			// T Cloud Public/ECS. The instance ID probe succeeds and then the identity document lookup fails. Without
+			// fail_on_missing_metadata, this must not result in a startup error.
+			name: "get fails (identity document)",
 			fields: fields{metadataProvider: &mockMetadata{
 				retIDDoc:    imds.InstanceIdentityDocument{},
 				retErrIDDoc: errors.New("get failed"),
@@ -446,19 +450,63 @@ func TestDetector_Detect(t *testing.T) {
 			}},
 			args:    args{ctx: t.Context()},
 			want:    pcommon.NewResource(),
-			wantErr: true,
+			wantErr: false,
+		},
+		{
+			name: "get fails (identity document), with fail_on_missing_metadata",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc:    imds.InstanceIdentityDocument{},
+				retErrIDDoc: errors.New("get failed"),
+				isAvailable: true,
+			}},
+			args:                  args{ctx: t.Context()},
+			want:                  pcommon.NewResource(),
+			wantErr:               true,
+			failOnMissingMetadata: true,
 		},
 		{
 			name: "hostname fails",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc: imds.InstanceIdentityDocument{
+					Region:           "us-west-2",
+					AccountID:        "account1234",
+					AvailabilityZone: "us-west-2a",
+					InstanceID:       "i-abcd1234",
+					ImageID:          "abcdef",
+					InstanceType:     "c4.xlarge",
+				},
+				retHostname:    "",
+				retErrHostname: errors.New("hostname failed"),
+				isAvailable:    true,
+			}},
+			args: args{ctx: t.Context()},
+			want: func() pcommon.Resource {
+				res := pcommon.NewResource()
+				attr := res.Attributes()
+				attr.PutStr("cloud.account.id", "account1234")
+				attr.PutStr("cloud.provider", "aws")
+				attr.PutStr("cloud.platform", "aws_ec2")
+				attr.PutStr("cloud.region", "us-west-2")
+				attr.PutStr("cloud.availability_zone", "us-west-2a")
+				attr.PutStr("host.id", "i-abcd1234")
+				attr.PutStr("host.image.id", "abcdef")
+				attr.PutStr("host.type", "c4.xlarge")
+				return res
+			}(),
+			wantErr: false,
+		},
+		{
+			name: "hostname fails, with fail_on_missing_metadata",
 			fields: fields{metadataProvider: &mockMetadata{
 				retIDDoc:       imds.InstanceIdentityDocument{},
 				retHostname:    "",
 				retErrHostname: errors.New("hostname failed"),
 				isAvailable:    true,
 			}},
-			args:    args{ctx: t.Context()},
-			want:    pcommon.NewResource(),
-			wantErr: true,
+			args:                  args{ctx: t.Context()},
+			want:                  pcommon.NewResource(),
+			wantErr:               true,
+			failOnMissingMetadata: true,
 		},
 	}
 	for _, tt := range tests {
