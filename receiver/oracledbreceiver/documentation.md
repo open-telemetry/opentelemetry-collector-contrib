@@ -1810,8 +1810,8 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | oracledb.procedure_type | Type of the database object that a query is accessing. | Any Str | - |
 | db.query.comment_tags | Filtered SQL query comments extracted from leading block comments. Contains comma-separated key=value pairs for keys specified in allowed_comment_keys configuration. Used for correlation with APM traces. | Any Str | - |
 | oracledb.plan_hash_value | Numeric representation of the execution plan. | Any Str | - |
-| oracledb.plan.first_load | Time at which the plan was first loaded into the library cache, in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS | Any Str | - |
-| oracledb.plan.last_load | Plan load time in the server's local timezone. Format: YYYY-MM-DD/HH:MM:SS | Any Str | - |
+| oracledb.plan.first_load | Time at which the plan was first loaded into the library cache, in ISO 8601 format (UTC). | Any Str | - |
+| oracledb.plan.last_load | Plan load time, in ISO 8601 format (UTC). | Any Str | - |
 
 ## Resource Attributes
 

@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: receiver/oracledb
+
+note: Format the `oracledb.plan.first_load` and `oracledb.plan.last_load` attributes on `db.server.top_query` events as ISO 8601 UTC timestamps, consistent with `oracledb.query.started` and `oracledb.session.started`, instead of Oracle's native non-standard format.
+
+issues: [50882]
+
+subtext:
+
+change_logs: []
