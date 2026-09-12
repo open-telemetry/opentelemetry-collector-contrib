@@ -1,0 +1,4 @@
+change_type: enhancement
+component: pkg/ottl
+note: Add ToJSON converter that serializes any OTTL value to a compact JSON string
+issues: [49715]
