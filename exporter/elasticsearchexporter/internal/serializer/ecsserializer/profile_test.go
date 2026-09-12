@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package otelserializer
+package ecsserializer
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/ecsserializer/serializeprofiles"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
 )
 
@@ -122,31 +122,47 @@ func TestSerializeProfile(t *testing.T) {
 			wantErr: false,
 			expected: []map[string]any{
 				{
-					"@timestamp":  "1970-01-01T00:00:00Z",
-					"frame.ids":   "YA3K_koRAADyvzjEk_X7kgAAAAAAAABv",
-					"frame.types": "AQM",
+					"Stacktrace.frame.ids":   "YA3K_koRAADyvzjEk_X7kgAAAAAAAABv",
+					"Stacktrace.frame.types": "AQM",
+					"ecs.version":            "1.12.0",
 				},
 				{
-					"@timestamp":         "1970-01-01T00:00:00Z",
-					"count":              json.Number("1"),
-					"sampling_frequency": json.Number("20"),
-					"stacktrace.id":      "02VzuClbpt_P3xxwox83Ng",
-					"resource": map[string]any{
-						"attributes": map[string]any{
-							"host.id":                 "localhost",
-							"process.executable.name": "libc.so.6",
-							"thread.name":             "",
-						},
-					},
+					"@timestamp":                    "1970-01-01T00:00:00Z",
+					"Stacktrace.count":              json.Number("1"),
+					"Stacktrace.sampling_frequency": json.Number("20"),
+					"Stacktrace.id":                 "02VzuClbpt_P3xxwox83Ng",
+					"ecs.version":                   "1.12.0",
+					"host.id":                       "localhost",
+					"process.executable.name":       "libc.so.6",
+					"process.thread.name":           "",
+					"profiling.project.id":          json.Number("2"),
 				},
 				{
-					"@timestamp": json.Number(fmt.Sprintf("%d", serializeprofiles.GetStartOfWeekFromTime(time.Now()))),
-					"resource": map[string]any{
-						"attributes": map[string]any{
-							"process.executable.build_id.htlhash": "600DCAFE4A110000F2BF38C493F5FB92",
-							"process.executable.name":             "samples",
+					"script": map[string]any{
+						"params": map[string]any{
+							"buildid":     "YA3K_koRAADyvzjEk_X7kg",
+							"ecs.version": "1.12.0",
+							"filename":    "samples",
+							"timestamp":   json.Number(fmt.Sprintf("%d", serializeprofiles.GetStartOfWeekFromTime(time.Now()))),
 						},
+						"source": serializeprofiles.ExeMetadataUpsertScript,
 					},
+					"scripted_upsert": true,
+					"upsert":          map[string]any{},
+				},
+				{
+					"Stacktrace.frame.id":     []any{"YA3K_koRAADyvzjEk_X7kgAAAAAAAABv"},
+					"Symbolization.retries":   json.Number("0"),
+					"Symbolization.time.next": "",
+					"Time.created":            "",
+					"ecs.version":             serializeprofiles.EcsVersionString,
+				},
+				{
+					"Executable.file.id":      []any{"YA3K_koRAADyvzjEk_X7kg"},
+					"Symbolization.retries":   json.Number("0"),
+					"Symbolization.time.next": "",
+					"Time.created":            "",
+					"ecs.version":             serializeprofiles.EcsVersionString,
 				},
 			},
 		},
@@ -178,12 +194,27 @@ func TestSerializeProfile(t *testing.T) {
 				decoder := json.NewDecoder(v)
 				decoder.UseNumber()
 				require.NoError(t, decoder.Decode(&d))
+
+				// Remove timestamps to allow comparing test results with expected values.
+				for k, v := range d {
+					switch k {
+					case "Symbolization.time.next", "Time.created":
+						tm, err := time.Parse(time.RFC3339Nano, v.(string))
+						require.NoError(t, err)
+						assert.True(t, isWithinLastSecond(tm))
+						d[k] = ""
+					}
+				}
 				results = append(results, d)
 			}
 
 			assert.Equal(t, tt.expected, results)
 		})
 	}
+}
+
+func isWithinLastSecond(t time.Time) bool {
+	return time.Since(t) < time.Second
 }
 
 func BenchmarkSerializeProfile(b *testing.B) {

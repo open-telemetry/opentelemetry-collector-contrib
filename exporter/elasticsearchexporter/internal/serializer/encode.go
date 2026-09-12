@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package serializeprofiles // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
+package serializer // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
 
 import (
 	"bytes"
@@ -48,11 +48,11 @@ func runLengthEncodeFrameTypesReverseTo(dst *bytes.Buffer, values []libpf.FrameT
 	write()
 }
 
-// encodeFrameTypesTo applies run-length encoding to the frame types in reverse order
+// EncodeFrameTypesTo applies run-length encoding to the frame types in reverse order
 // and writes the results as base64url encoded string into dst.
 //
 // This function has been optimized to do zero heap allocations if dst has enough capacity.
-func encodeFrameTypesTo(dst *bytes.Buffer, frameTypes []libpf.FrameType) {
+func EncodeFrameTypesTo(dst *bytes.Buffer, frameTypes []libpf.FrameType) {
 	// Up to 255 consecutive identical frame types are converted into 2 bytes (binary).
 	// Switching between frame types does not happen often, so 128 is more than enough
 	// for the base64 representation, even to cover most corner cases.

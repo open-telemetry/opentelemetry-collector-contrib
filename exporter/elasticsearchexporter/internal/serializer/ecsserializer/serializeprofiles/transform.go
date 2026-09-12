@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package serializeprofiles // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
+package serializeprofiles // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/ecsserializer/serializeprofiles"
 
 import (
 	"bytes"
@@ -32,6 +32,7 @@ func Transform(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope
 		return data, err
 	}
 
+	// profileContainer is checked for nil inside stackPayloads().
 	payloads, err := stackPayloads(dic, resource, scope, profile)
 	if err != nil {
 		return nil, err
@@ -78,6 +79,8 @@ func checkProfileType(dic pprofile.ProfilesDictionary, profile pprofile.Profile)
 // stackPayloads creates a slice of StackPayloads from the given ResourceProfiles,
 // ScopeProfiles, and ProfileContainer.
 func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) ([]StackPayload, error) {
+	unsymbolizedLeafFramesSet := make(map[frameID]struct{}, profile.Samples().Len())
+	unsymbolizedExecutablesSet := make(map[libpf.FileID]struct{})
 	stackPayload := make([]StackPayload, 0, profile.Samples().Len())
 
 	commonResourceAttributes, err := populateResourceData(dic, resource, scope, profile)
@@ -92,7 +95,7 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 	}
 
 	for _, sample := range profile.Samples().All() {
-		frames, frameTypes, err := stackFrames(dic, sample)
+		frames, frameTypes, leafFrame, err := stackFrames(dic, sample)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create stackframes: %w", err)
 		}
@@ -107,20 +110,38 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 
 		event := stackTraceEvent(dic, traceID, sample, frequency, commonResourceAttributes)
 
-		ts := newUnixTime64(uint64(time.Now().UnixNano()))
-		if sample.TimestampsUnixNano().Len() > 0 {
-			ts = newUnixTime64(sample.TimestampsUnixNano().At(0))
-		}
-
 		// Set the stacktrace and stackframes to the payload.
 		// The docs only need to be written once.
 		stackPayload = append(stackPayload, StackPayload{
-			StackTrace:  stackTrace(traceID, frames, frameTypes, ts),
-			StackFrames: symbolizedFrames(frames, ts),
+			StackTrace:  stackTrace(traceID, frames, frameTypes),
+			StackFrames: symbolizedFrames(frames),
 			ResourceAttrs: ResourceData{
+				EcsVersion: EcsVersion{
+					V: EcsVersionString,
+				},
 				Data: commonResourceAttributes,
 			},
 		})
+
+		if !isFrameSymbolized(frames[len(frames)-1]) && leafFrame != nil {
+			unsymbolizedLeafFramesSet[*leafFrame] = struct{}{}
+		}
+
+		for j := range frames {
+			if frameTypes[j].IsError() {
+				// Artificial error frames can't be symbolized.
+				continue
+			}
+			if isFrameSymbolized(frames[j]) {
+				// Skip interpreted frames and already symbolized native frames (kernel, Golang is planned).
+				continue
+			}
+			fID, err := newFrameIDFromString(frames[j].DocID)
+			if err != nil {
+				return nil, fmt.Errorf("stackPayloads: %w", err)
+			}
+			unsymbolizedExecutablesSet[fID.FileID()] = struct{}{}
+		}
 
 		// Add one event per timestamp and its count value.
 		for j, t := range sample.TimestampsUnixNano().All() {
@@ -140,19 +161,57 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 
 	if len(stackPayload) > 0 {
 		if dic.MappingTable().Len() > 0 {
-			stackPayload[0].Executables = executables(dic, dic.MappingTable())
+			exeMetadata, err := executables(dic, dic.MappingTable())
+			if err != nil {
+				return nil, err
+			}
+
+			stackPayload[0].Executables = exeMetadata
 		}
+		stackPayload[0].UnsymbolizedLeafFrames = unsymbolizedLeafFrames(unsymbolizedLeafFramesSet)
+		stackPayload[0].UnsymbolizedExecutables = unsymbolizedExecutables(unsymbolizedExecutablesSet)
 	}
 
 	return stackPayload, nil
 }
 
+func unsymbolizedExecutables(executables map[libpf.FileID]struct{}) []UnsymbolizedExecutable {
+	now := time.Now()
+	unsymbolized := make([]UnsymbolizedExecutable, 0, len(executables))
+	for fileID := range executables {
+		unsymbolized = append(unsymbolized, UnsymbolizedExecutable{
+			EcsVersion: EcsVersion{V: EcsVersionString},
+			DocID:      fileID.Base64(),
+			FileID:     []string{fileID.Base64()},
+			Created:    now,
+			Next:       now,
+			Retries:    0,
+		})
+	}
+	return unsymbolized
+}
+
+func unsymbolizedLeafFrames(frameIDs map[frameID]struct{}) []UnsymbolizedLeafFrame {
+	now := time.Now()
+	unsymbolized := make([]UnsymbolizedLeafFrame, 0, len(frameIDs))
+	for frameID := range frameIDs {
+		unsymbolized = append(unsymbolized, UnsymbolizedLeafFrame{
+			EcsVersion: EcsVersion{V: EcsVersionString},
+			DocID:      frameID.String(),
+			FrameID:    []string{frameID.String()},
+			Created:    now,
+			Next:       now,
+			Retries:    0,
+		})
+	}
+	return unsymbolized
+}
+
 // symbolizedFrames returns a slice of StackFrames that have symbols.
-func symbolizedFrames(frames []StackFrame, ts unixTime64) []StackFrame {
+func symbolizedFrames(frames []StackFrame) []StackFrame {
 	framesWithSymbols := make([]StackFrame, 0, len(frames))
 	for i := range frames {
 		if isFrameSymbolized(frames[i]) {
-			frames[i].Timestamp = ts
 			framesWithSymbols = append(framesWithSymbols, frames[i])
 		}
 	}
@@ -167,15 +226,17 @@ func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample ppr
 	commonResourceAttrs map[string]string,
 ) StackTraceEvent {
 	event := StackTraceEvent{
+		EcsVersion:       EcsVersion{V: EcsVersionString},
 		HostID:           commonResourceAttrs[string(conventions.HostIDKey)],
 		StackTraceID:     traceID,
 		ContainerID:      commonResourceAttrs[string(conventions.ContainerIDKey)],
 		ContainerName:    commonResourceAttrs[string(conventions.ContainerNameKey)],
 		PodName:          commonResourceAttrs[string(conventions.K8SPodNameKey)],
 		K8sNamespaceName: commonResourceAttrs[string(conventions.K8SNamespaceNameKey)],
-		Count:            1,
+		Count:            1, // Elasticsearch v9.2+ doesn't read the count value any more.
 		Frequency:        frequency,
 		HostName:         commonResourceAttrs[string(conventions.HostNameKey)],
+		ProjectID:        2, // Use a project ID other than 1 to not conflict with ECH default value.
 		ServiceName:      commonResourceAttrs[string(conventions.ServiceNameKey)],
 		ExecutableName:   commonResourceAttrs[string(conventions.ProcessExecutableNameKey)],
 	}
@@ -196,7 +257,7 @@ func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample ppr
 	return event
 }
 
-func stackTrace(stackTraceID string, frames []StackFrame, frameTypes []libpf.FrameType, ts unixTime64) StackTrace {
+func stackTrace(stackTraceID string, frames []StackFrame, frameTypes []libpf.FrameType) StackTrace {
 	frameIDs := make([]string, 0, len(frames))
 	for i := range frames {
 		f := &frames[i]
@@ -212,14 +273,14 @@ func stackTrace(stackTraceID string, frames []StackFrame, frameTypes []libpf.Fra
 	encodeFrameTypesTo(buf, frameTypes)
 
 	return StackTrace{
-		DocID:     stackTraceID,
-		Timestamp: ts,
-		FrameIDs:  strings.Join(frameIDs, ""),
-		Types:     buf.String(),
+		EcsVersion: EcsVersion{V: EcsVersionString},
+		DocID:      stackTraceID,
+		FrameIDs:   strings.Join(frameIDs, ""),
+		Types:      buf.String(),
 	}
 }
 
-func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]StackFrame, []libpf.FrameType, error) {
+func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]StackFrame, []libpf.FrameType, *frameID, error) {
 	stack := dic.StackTable().At(int(sample.StackIndex()))
 	frames := make([]StackFrame, 0, stack.LocationIndices().Len())
 
@@ -230,14 +291,16 @@ func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]Sta
 	}
 	frameTypes := make([]libpf.FrameType, 0, totalFrames)
 
-	for _, location := range locations {
+	var leafFrameID *frameID
+
+	for locationIdx, location := range locations {
 		if location.MappingIndex() >= int32(dic.MappingTable().Len()) {
 			continue
 		}
 
 		frameTypeStr, err := getStringFromAttribute(dic, location, string(conventions.ProfileFrameTypeKey))
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		frameTypes = append(frameTypes, libpf.FrameTypeFromString(frameTypeStr))
 
@@ -255,8 +318,13 @@ func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]Sta
 
 		frameID := getFrameID(dic, location)
 
+		if locationIdx == 0 {
+			leafFrameID = frameID
+		}
+
 		frames = append([]StackFrame{
 			{
+				EcsVersion:   EcsVersion{V: EcsVersionString},
 				DocID:        frameID.String(),
 				FileName:     fileNames,
 				FunctionName: functionNames,
@@ -265,7 +333,7 @@ func stackFrames(dic pprofile.ProfilesDictionary, sample pprofile.Sample) ([]Sta
 		}, frames...)
 	}
 
-	return frames, frameTypes, nil
+	return frames, frameTypes, leafFrameID, nil
 }
 
 func getFrameID(dic pprofile.ProfilesDictionary, location pprofile.Location) *frameID {
@@ -346,7 +414,7 @@ func getBuildID(dic pprofile.ProfilesDictionary, mapping pprofile.Mapping) (libp
 	}
 }
 
-func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice) []ExeMetadata {
+func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice) ([]ExeMetadata, error) {
 	metadata := make([]ExeMetadata, 0, mappings.Len())
 	lastSeen := GetStartOfWeekFromTime(time.Now())
 
@@ -361,21 +429,22 @@ func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice
 			continue
 		}
 
-		buildIDStr, err := getStringFromAttribute(dic, mapping, string(conventions.ProcessExecutableBuildIDHtlhashKey))
-		if err != nil || buildIDStr == "" {
+		buildID, err := getBuildID(dic, mapping)
+		if err != nil {
+			return nil, err
+		}
+
+		if buildID.IsZero() {
 			// No build ID was specified or could be fetched.
 			continue
 		}
 
-		metadata = append(metadata, ExeMetadata{
-			DocID:     buildIDStr,
-			Timestamp: lastSeen,
-			BuildID:   buildIDStr,
-			Name:      filename,
-		})
+		docID := buildID.Base64()
+		executable := NewExeMetadata(docID, lastSeen, docID, filename)
+		metadata = append(metadata, executable)
 	}
 
-	return metadata
+	return metadata, nil
 }
 
 // stackTraceID creates a unique trace ID from the stack frames.
