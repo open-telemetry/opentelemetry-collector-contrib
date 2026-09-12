@@ -246,3 +246,47 @@ func TestBodyConversion(t *testing.T) {
 		},
 	).ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0), le))
 }
+
+func TestDecodeMsgExcessiveLengths(t *testing.T) {
+	t.Run("MessageEventExcessiveRecordMap", func(t *testing.T) {
+		var b []byte
+		b = msgp.AppendArrayHeader(b, 3)
+		b = msgp.AppendString(b, "my-tag")
+		b = msgp.AppendInt(b, 5000)
+		b = msgp.AppendMapHeader(b, maxFluentArrayLen+1)
+
+		reader := msgp.NewReader(bytes.NewReader(b))
+		var event messageEventLogRecord
+		err := event.DecodeMsg(reader)
+		require.ErrorContains(t, err, "exceeds max length")
+	})
+
+	t.Run("MessageEventExcessiveOptionsMap", func(t *testing.T) {
+		var b []byte
+		b = msgp.AppendArrayHeader(b, 4)
+		b = msgp.AppendString(b, "my-tag")
+		b = msgp.AppendInt(b, 5000)
+		b = msgp.AppendMapHeader(b, 1)
+		b = msgp.AppendString(b, "log")
+		b = msgp.AppendString(b, "hello")
+		b = msgp.AppendMapHeader(b, maxFluentArrayLen+1)
+
+		reader := msgp.NewReader(bytes.NewReader(b))
+		var event messageEventLogRecord
+		err := event.DecodeMsg(reader)
+		require.ErrorContains(t, err, "exceeds max length")
+	})
+
+	t.Run("ForwardEventExcessiveEntriesArray", func(t *testing.T) {
+		var b []byte
+		b = msgp.AppendArrayHeader(b, 2)
+		b = msgp.AppendString(b, "my-tag")
+		b = msgp.AppendArrayHeader(b, maxFluentArrayLen+1)
+
+		reader := msgp.NewReader(bytes.NewReader(b))
+		var event forwardEventLogRecords
+		err := event.DecodeMsg(reader)
+		require.ErrorContains(t, err, "exceeds max length")
+	})
+}
+
