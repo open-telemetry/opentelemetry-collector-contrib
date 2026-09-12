@@ -50,13 +50,13 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	optConfigs.Metrics.VcenterVMNetworkBroadcastPacketRate.Enabled = true
 	optConfigs.Metrics.VcenterVMNetworkMulticastPacketRate.Enabled = true
 	optConfigs.Metrics.VcenterVMCPUTime.Enabled = true
-	optConfigs.Metrics.VcenterHostPowerState.Enabled = true
-	optConfigs.Metrics.VcenterHostConnectionState.Enabled = true
+	optConfigs.Metrics.VcenterHostPowerStatus.Enabled = true
+	optConfigs.Metrics.VcenterHostConnectionStatus.Enabled = true
 	optConfigs.Metrics.VcenterHostUptime.Enabled = true
 	optConfigs.Metrics.VcenterHostAlarmCount.Enabled = true
-	optConfigs.Metrics.VcenterDatastoreMaintenanceMode.Enabled = true
+	optConfigs.Metrics.VcenterDatastoreMaintenanceStatus.Enabled = true
 	optConfigs.Metrics.VcenterDatastoreAlarmCount.Enabled = true
-	optConfigs.Metrics.VcenterVMPowerState.Enabled = true
+	optConfigs.Metrics.VcenterVMPowerStatus.Enabled = true
 
 	cfg := &Config{
 		MetricsBuilderConfig: optConfigs,

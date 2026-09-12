@@ -364,14 +364,14 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: status
+                    - key: vcenter.alarm.state
                       value:
                         stringValue: red
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: status
+                    - key: vcenter.alarm.state
                       value:
                         stringValue: yellow
                   startTimeUnixNano: "1000000"
@@ -405,35 +405,35 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.datastore.disk.utilization
             unit: '%'
-          - description: The current maintenance mode of the datastore.
-            name: vcenter.datastore.maintenance_mode
+          - description: The current maintenance status of the datastore.
+            name: vcenter.datastore.maintenance.status
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: maintenance_mode
+                    - key: vcenter.datastore.maintenance.state
                       value:
                         stringValue: entering_maintenance
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: maintenance_mode
+                    - key: vcenter.datastore.maintenance.state
                       value:
                         stringValue: in_maintenance
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
-                    - key: maintenance_mode
+                    - key: vcenter.datastore.maintenance.state
                       value:
                         stringValue: normal
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: maintenance_mode
+                    - key: vcenter.datastore.maintenance.state
                       value:
                         stringValue: unknown
                   startTimeUnixNano: "1000000"
@@ -459,48 +459,48 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: status
+                    - key: vcenter.alarm.state
                       value:
                         stringValue: red
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: status
+                    - key: vcenter.alarm.state
                       value:
                         stringValue: yellow
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{alarms}'
-          - description: The current connection state of the host.
-            name: vcenter.host.connection_state
+          - description: The current connection status of the host.
+            name: vcenter.host.connection.status
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: connection_state
+                    - key: vcenter.host.connection.state
                       value:
                         stringValue: connected
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: connection_state
+                    - key: vcenter.host.connection.state
                       value:
                         stringValue: disconnected
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
-                    - key: connection_state
+                    - key: vcenter.host.connection.state
                       value:
                         stringValue: not_responding
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: connection_state
+                    - key: vcenter.host.connection.state
                       value:
                         stringValue: unknown
                   startTimeUnixNano: "1000000"
@@ -1141,7 +1141,7 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
           - description: The current power state of the host.
-            name: vcenter.host.power_state
+            name: vcenter.host.power.status
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -1318,48 +1318,48 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: status
+                    - key: vcenter.alarm.state
                       value:
                         stringValue: red
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
-                    - key: status
+                    - key: vcenter.alarm.state
                       value:
                         stringValue: yellow
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{alarms}'
-          - description: The current connection state of the host.
-            name: vcenter.host.connection_state
+          - description: The current connection status of the host.
+            name: vcenter.host.connection.status
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: connection_state
+                    - key: vcenter.host.connection.state
                       value:
                         stringValue: connected
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: connection_state
+                    - key: vcenter.host.connection.state
                       value:
                         stringValue: disconnected
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: connection_state
+                    - key: vcenter.host.connection.state
                       value:
                         stringValue: not_responding
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
-                    - key: connection_state
+                    - key: vcenter.host.connection.state
                       value:
                         stringValue: unknown
                   startTimeUnixNano: "1000000"
@@ -2000,7 +2000,7 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
           - description: The current power state of the host.
-            name: vcenter.host.power_state
+            name: vcenter.host.power.status
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -3255,7 +3255,7 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
           - description: The current power state of the virtual machine.
-            name: vcenter.vm.power_state
+            name: vcenter.vm.power.status
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -4120,7 +4120,7 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
           - description: The current power state of the virtual machine.
-            name: vcenter.vm.power_state
+            name: vcenter.vm.power.status
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -5084,7 +5084,7 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
           - description: The current power state of the virtual machine.
-            name: vcenter.vm.power_state
+            name: vcenter.vm.power.status
             sum:
               aggregationTemporality: 2
               dataPoints:
