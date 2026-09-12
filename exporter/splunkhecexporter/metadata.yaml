@@ -9,6 +9,26 @@ status:
   distributions: [contrib]
   codeowners:
     active: [atoulme, dmitryax]
+
+telemetry:
+  metrics:
+    exporter_splunkhec_heartbeats_failed:
+      enabled: true
+      stability: development
+      description: Number of heartbeats failed by the Splunk HEC exporter.
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_splunkhec_heartbeats_sent:
+      enabled: true
+      stability: development
+      description: Number of heartbeats sent by the Splunk HEC exporter.
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+
 tests:
   config:
     token: "my_fake_token"
