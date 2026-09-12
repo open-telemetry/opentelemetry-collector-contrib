@@ -212,7 +212,9 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *PromConfig, error)
 		job := make(map[string]any)
 		job["job_name"] = tds[i].name
 		job["metrics_path"] = metricPaths[i]
-		job["scrape_interval"] = "100ms"
+		// Give scrapes timeout headroom; a short interval caps scrape_timeout and
+		// desyncs the page/scrape mapping under load (#50434).
+		job["scrape_interval"] = "500ms"
 		job["static_configs"] = []map[string]any{{"targets": []string{u.Host}}}
 		jobs = append(jobs, job)
 	}
