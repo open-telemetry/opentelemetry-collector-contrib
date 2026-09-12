@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status/testhelpers"
@@ -567,6 +568,26 @@ func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 		{
 			Healthy:            false,
 			Status:             "StatusPermanentError",
+			StatusTimeUnixNano: uint64(now.Add(3 * time.Second).UnixNano()),
+			LastError:          "error B",
+			ComponentHealthMap: map[string]*protobufs.ComponentHealth{
+				"test-receiver": {
+					Healthy:            false,
+					Status:             "StatusPermanentError",
+					StatusTimeUnixNano: uint64(now.Add(3 * time.Second).UnixNano()),
+					LastError:          "error B",
+				},
+				"test-exporter": {
+					Healthy:            false,
+					Status:             "StatusPermanentError",
+					StatusTimeUnixNano: uint64(now.Add(3 * time.Second).UnixNano()),
+					LastError:          "exporter error",
+				},
+			},
+		},
+		{
+			Healthy:            false,
+			Status:             "StatusPermanentError",
 			StatusTimeUnixNano: uint64(now.Add(4 * time.Second).UnixNano()),
 			LastError:          "exporter error",
 			ComponentHealthMap: map[string]*protobufs.ComponentHealth{
@@ -590,7 +611,7 @@ func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 		setHealthFunc: func(health *protobufs.ComponentHealth) error {
 			mtx.Lock()
 			defer mtx.Unlock()
-			require.Equal(t, expectedHealthUpdates[receivedHealthUpdates], health)
+			require.True(t, proto.Equal(expectedHealthUpdates[receivedHealthUpdates], health))
 			receivedHealthUpdates++
 			return nil
 		},
@@ -835,7 +856,7 @@ func TestHealthReportingExitsOnClosedContext(t *testing.T) {
 		setHealthFunc: func(health *protobufs.ComponentHealth) error {
 			mtx.Lock()
 			defer mtx.Unlock()
-			require.Equal(t, expectedHealthUpdates[receivedHealthUpdates], health)
+			require.True(t, proto.Equal(expectedHealthUpdates[receivedHealthUpdates], health))
 			receivedHealthUpdates++
 			return nil
 		},
@@ -1158,25 +1179,29 @@ func (mockOpAMPClient) SetAvailableComponents(*protobufs.AvailableComponents) er
 }
 
 type mockStatusEvent struct {
-	status    componentstatus.Status
-	err       error
-	timestamp time.Time
+	status     componentstatus.Status
+	err        error
+	timestamp  time.Time
+	attributes *pcommon.Map
 }
 
-func (m mockStatusEvent) Status() componentstatus.Status {
+func (m *mockStatusEvent) Status() componentstatus.Status {
 	return m.status
 }
 
-func (m mockStatusEvent) Err() error {
+func (m *mockStatusEvent) Err() error {
 	return m.err
 }
 
-func (m mockStatusEvent) Timestamp() time.Time {
+func (m *mockStatusEvent) Timestamp() time.Time {
 	return m.timestamp
 }
 
-func (mockStatusEvent) Attributes() pcommon.Map {
-	return pcommon.NewMap()
+func (m *mockStatusEvent) Attributes() pcommon.Map {
+	if m.attributes == nil {
+		return pcommon.NewMap()
+	}
+	return *m.attributes
 }
 
 func newTestOpampAgent(cfg *Config, set extension.Settings, mockOpampClient *mockOpAMPClient, sa *mockStatusAggregator) *opampAgent {
