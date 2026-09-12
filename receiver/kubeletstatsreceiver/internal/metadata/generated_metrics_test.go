@@ -74,6 +74,22 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["k8s.pod.network.io"] = mb.metricK8sPodNetworkIo.config.AggregationStrategy
 
 			expectedWarnings := 0
+			if tt.metricsSet == testDataSetAll {
+				assert.Equal(t, "[WARNING] `k8s.container.cpu.node.utilization` should not be enabled: This metric is deprecated and will be removed in a future release.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.metricsSet == testDataSetAll {
+				assert.Equal(t, "[WARNING] `k8s.container.memory.node.utilization` should not be enabled: This metric is deprecated and will be removed in a future release.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.metricsSet == testDataSetAll {
+				assert.Equal(t, "[WARNING] `k8s.pod.cpu.node.utilization` should not be enabled: This metric is deprecated and will be removed in a future release.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.metricsSet == testDataSetAll {
+				assert.Equal(t, "[WARNING] `k8s.pod.memory.node.utilization` should not be enabled: This metric is deprecated and will be removed in a future release.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 			if tt.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `aws.volume.id` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
