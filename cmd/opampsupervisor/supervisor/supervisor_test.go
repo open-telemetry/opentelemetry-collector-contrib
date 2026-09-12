@@ -2826,18 +2826,9 @@ service:
                 protocol: http/protobuf
                 endpoint: https://127.0.0.1:4318
                 tls:
-                  ca_pem: |
-                    -----BEGIN CERTIFICATE-----
-                    test-ca
-                    -----END CERTIFICATE-----
-                  cert_pem: |
-                    -----BEGIN CERTIFICATE-----
-                    test-cert
-                    -----END CERTIFICATE-----
-                  key_pem: |
-                    -----BEGIN PRIVATE KEY-----
-                    test-key
-                    -----END PRIVATE KEY-----
+                  ca_file: ` + filepath.Join(s.config.Storage.Directory, ownTelemetryMetricsCAFile) + `
+                  cert_file: ` + filepath.Join(s.config.Storage.Directory, ownTelemetryMetricsCertFile) + `
+                  key_file: ` + filepath.Join(s.config.Storage.Directory, ownTelemetryMetricsKeyFile) + `
                   insecure_skip_verify: true
                   include_system_ca_certs_pool: true
                   min_version: "1.2"
@@ -2846,6 +2837,22 @@ service:
                     - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
 `
 	assert.Equal(t, expected, got)
+
+	for fileName, want := range map[string]string{
+		ownTelemetryMetricsCAFile:   tlsSettings.CaPemContents,
+		ownTelemetryMetricsCertFile: string(cert.Cert),
+		ownTelemetryMetricsKeyFile:  string(cert.PrivateKey),
+	} {
+		filePath := filepath.Join(s.config.Storage.Directory, fileName)
+
+		info, err := os.Stat(filePath)
+		require.NoError(t, err)
+		assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+
+		contents, err := os.ReadFile(filePath)
+		require.NoError(t, err)
+		assert.Equal(t, want, string(contents))
+	}
 }
 
 type staticPIDProvider int
