@@ -541,3 +541,32 @@ metadata:
         data:
           type: "gauge"
         unit: "byte"
+#
+#----------------------------------------Split Stats-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#
+  - name: "top minute split stats"
+    query: "SELECT * FROM SPANNER_SYS.SPLIT_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, CPU_USAGE_SCORE DESC"
+    metric_name_prefix: "database/spanner/split_stats/top/"
+    timestamp_column_name: "INTERVAL_END"
+    high_cardinality: true
+    labels:
+      - name: "split_start"
+        column_name: "SPLIT_START"
+        value_type: "string"
+      - name: "split_limit"
+        column_name: "SPLIT_LIMIT"
+        value_type: "string"
+      - name: "affected_tables"
+        column_name: "AFFECTED_TABLES"
+        value_type: "string_slice"
+      - name: "unsplittable_reasons"
+        column_name: "UNSPLITTABLE_REASONS"
+        value_type: "string_slice"
+    metrics:
+      - name: "cpu_usage_score"
+        column_name: "CPU_USAGE_SCORE"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      
