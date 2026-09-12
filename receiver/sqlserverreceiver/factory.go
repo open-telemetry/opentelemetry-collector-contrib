@@ -69,39 +69,39 @@ func setupQueries(cfg *Config) []string {
 	var queries []string
 
 	if isAvailabilityGroupQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerAvailabilityGroupQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerAvailabilityGroupQuery())
 	}
 
 	if isDatabaseIOQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerDatabaseIOQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerDatabaseIOQuery())
 	}
 
 	if isPerfCounterQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerPerformanceCounterQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerPerformanceCounterQuery())
 	}
 
 	if cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseCount.Enabled || cfg.MetricsBuilderConfig.Metrics.SqlserverCPUCount.Enabled || cfg.MetricsBuilderConfig.Metrics.SqlserverComputerUptime.Enabled {
-		queries = append(queries, getSQLServerPropertiesQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerPropertiesQuery())
 	}
 
 	if isWaitStatsQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerWaitStatsQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerWaitStatsQuery())
 	}
 
 	if isWorkerThreadsQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerWorkerThreadsQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerWorkerThreadsQuery())
 	}
 
 	if isIndexPhysicalStatsQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerIndexPhysicalStatsQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerIndexPhysicalStatsQuery())
 	}
 
 	if isCPUMemoryQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerCPUMemoryQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerCPUMemoryQuery())
 	}
 
 	if isDiskIOQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerDiskIOQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerDiskIOQuery())
 	}
 
 	return queries

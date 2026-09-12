@@ -44,7 +44,6 @@ type sqlServerScraperHelper struct {
 	id                     component.ID
 	config                 *Config
 	sqlQuery               string
-	instanceName           string
 	clientProviderFunc     sqlquery.ClientProviderFunc
 	dbProviderFunc         sqlquery.DbProviderFunc
 	logger                 *zap.Logger
@@ -133,23 +132,23 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 	var err error
 
 	switch s.sqlQuery {
-	case getSQLServerAvailabilityGroupQuery(s.config.InstanceName):
+	case getSQLServerAvailabilityGroupQuery():
 		err = s.recordAvailabilityGroupMetrics(ctx)
-	case getSQLServerDatabaseIOQuery(s.config.InstanceName):
+	case getSQLServerDatabaseIOQuery():
 		err = s.recordDatabaseIOMetrics(ctx)
-	case getSQLServerPerformanceCounterQuery(s.config.InstanceName):
+	case getSQLServerPerformanceCounterQuery():
 		err = s.recordDatabasePerfCounterMetrics(ctx)
-	case getSQLServerPropertiesQuery(s.config.InstanceName):
+	case getSQLServerPropertiesQuery():
 		err = s.recordDatabaseStatusMetrics(ctx)
-	case getSQLServerWaitStatsQuery(s.config.InstanceName):
+	case getSQLServerWaitStatsQuery():
 		err = s.recordDatabaseWaitMetrics(ctx)
-	case getSQLServerWorkerThreadsQuery(s.config.InstanceName):
+	case getSQLServerWorkerThreadsQuery():
 		err = s.recordWorkerThreadMetrics(ctx)
-	case getSQLServerIndexPhysicalStatsQuery(s.config.InstanceName):
+	case getSQLServerIndexPhysicalStatsQuery():
 		err = s.recordIndexPhysicalMetrics(ctx)
-	case getSQLServerCPUMemoryQuery(s.config.InstanceName):
+	case getSQLServerCPUMemoryQuery():
 		err = s.recordCPUMemoryMetrics(ctx)
-	case getSQLServerDiskIOQuery(s.config.InstanceName):
+	case getSQLServerDiskIOQuery():
 		err = s.recordDiskIOMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)

@@ -558,8 +558,7 @@ ws.wait_type NOT IN (
 	N'XE_DISPATCHER_WAIT', N'XE_LIVE_TARGET_TVF', N'XE_TIMER_EVENT',
 	N'SOS_WORK_DISPATCHER','RESERVED_MEMORY_ALLOCATION_EXT')
 AND waiting_tasks_count > 0
-AND wait_time_ms > 100
-;
+AND wait_time_ms > 100;
 
 ELSE
 	SELECT
@@ -610,5 +609,4 @@ ELSE
 		N'XE_DISPATCHER_WAIT', N'XE_LIVE_TARGET_TVF', N'XE_TIMER_EVENT',
 		N'SOS_WORK_DISPATCHER','RESERVED_MEMORY_ALLOCATION_EXT')
 	AND waiting_tasks_count > 0
-	AND wait_time_ms > 100
-;
+	AND wait_time_ms > 100;
