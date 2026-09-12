@@ -100,8 +100,10 @@ The following settings are optional:
   It is only used when collecting Windows performance counters, where it selects the
   `MSSQL$<instance_name>` counter objects and sets the `sqlserver.instance.name` and
   `sqlserver.computer.name` resource attributes; `computer_name` must also be set in that case.
-  It has no effect when the receiver connects directly to SQL Server, because such a connection is
-  already scoped to a single instance and only exposes data from that instance.
+  It does not filter the queries issued over a direct SQL connection, because such a connection is
+  already scoped to a single instance and only exposes data from that instance. Both collection paths
+  can run side by side on Windows, so a named instance still needs `instance_name` for the performance
+  counter path even when direct connection options are also configured.
 - `top_procedure_collection` (optional): Tunes the `db.server.top_procedure` event.
   - `max_procedure_sample_count` (default = `1000`, max `10000`): How many procedures to read from
     `sys.dm_exec_procedure_stats` as candidates each run.
