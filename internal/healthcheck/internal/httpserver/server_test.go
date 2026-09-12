@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.uber.org/goleak"
@@ -3287,7 +3288,8 @@ func TestConfig(t *testing.T) {
 				},
 			},
 			setup: func() {
-				require.NoError(t, server.NotifyConfig(t.Context(), confMap))
+				snapshot := extensioncapabilities.NewConfigSnapshot(confMap, nil)
+				require.NoError(t, server.NotifyConfigSnapshot(t.Context(), snapshot))
 			},
 			expectedStatusCode: http.StatusOK,
 			expectedBody:       confJSON,

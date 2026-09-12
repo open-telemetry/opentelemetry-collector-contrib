@@ -31,6 +31,17 @@
     "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.7_0",
     "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.top_query"
   ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^pkg/semconvtest/semconvtest\\.go$/"
+      ],
+      "matchStrings": [
+        "// renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\n\\s*defaultWeaverVersion\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+      ]
+    }
+  ],
   "packageRules": [
     {
       "matchManagers": [
