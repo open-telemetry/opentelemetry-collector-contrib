@@ -10,9 +10,6 @@ import (
 	"strings"
 )
 
-// Direct access to queries is not recommended: The receiver allows filtering based on
-// instance name, which means the query will change based on configuration.
-// Please use getSQLServerDatabaseIOQuery
 const sqlServerDatabaseIOQuery = `
 SET DEADLOCK_PRIORITY -10;
 IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN /*NOT IN Standard,Enterprise,Express,Azure SQL Database, Azure SQL Managed Instance*/
