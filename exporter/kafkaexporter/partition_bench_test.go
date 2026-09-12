@@ -10,7 +10,27 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
+
+// generateTracesWithResources creates a ptrace.Traces with n distinct ResourceSpans,
+// each containing 1 ScopeSpans with 5 Spans. Resource attributes are unique per
+// resource to simulate high-cardinality partitioning.
+func generateTracesWithResources(n int) ptrace.Traces {
+	td := ptrace.NewTraces()
+	for i := range n {
+		rs := td.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("service.name", fmt.Sprintf("svc-%d", i))
+		rs.Resource().Attributes().PutStr("host.name", fmt.Sprintf("host-%d", i))
+		ss := rs.ScopeSpans().AppendEmpty()
+		for j := range 5 {
+			span := ss.Spans().AppendEmpty()
+			span.SetName(fmt.Sprintf("span-%d", j))
+			span.Attributes().PutStr("key", "value")
+		}
+	}
+	return td
+}
 
 // generateLogsWithResources creates a plog.Logs with n distinct ResourceLogs,
 // each containing 1 ScopeLogs with 5 LogRecords. Resource attributes are
@@ -64,6 +84,25 @@ func BenchmarkPartitionLogsByResourceAttributes(b *testing.B) {
 			b.ResetTimer()
 			for range b.N {
 				for key, data := range messenger.partitionData(ld) {
+					_ = key
+					_ = data
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkPartitionTracesByResourceAttributes(b *testing.B) {
+	for _, numResources := range []int{1, 10, 50, 100} {
+		b.Run(fmt.Sprintf("resources=%d", numResources), func(b *testing.B) {
+			td := generateTracesWithResources(numResources)
+			messenger := &kafkaTracesMessenger{
+				config: Config{PartitionTracesByResourceAttributes: []string{"service.name"}},
+			}
+			b.ReportAllocs()
+			b.ResetTimer()
+			for range b.N {
+				for key, data := range messenger.partitionData(td) {
 					_ = key
 					_ = data
 				}
