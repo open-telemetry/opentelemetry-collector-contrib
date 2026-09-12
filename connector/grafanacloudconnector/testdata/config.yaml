@@ -1,8 +1,8 @@
 # default configuration
-grafanacloud:
+grafana_cloud:
 
 # custom configuration
-grafanacloud/custom:
+grafana_cloud/custom:
   host_identifiers:
     - k8s.node.name
     - host.name
