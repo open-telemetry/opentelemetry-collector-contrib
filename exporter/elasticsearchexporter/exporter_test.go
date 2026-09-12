@@ -3135,8 +3135,7 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 		}
 	})
 	t.Run("profiles", func(t *testing.T) {
-		// Profiles are only supported by otel mode, so just verify that
-		// the metadata is picked up and invalid modes are rejected.
+		// Just verify that the metadata is picked up and invalid modes are rejected.
 		exporter := newTestProfilesExporter(t, "https://testing.invalid", setAllowedMappingModes, func(cfg *Config) {
 			// Set wait_for_result to be true so that errors are reported directly via Consume*
 			cfg.QueueBatchConfig.Get().WaitForResult = true
@@ -3411,7 +3410,9 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 
 	t.Run("profiles", func(t *testing.T) {
 		testHost, rec := setupTestHost(t)
-		exporter := newUnstartedTestProfilesExporter(t, "https://ignored", configSetupFn)
+		exporter := newUnstartedTestProfilesExporter(t, "https://ignored", configSetupFn, func(cfg *Config) {
+			cfg.Mapping.AllowedModes = []string{"ecs"}
+		})
 		require.NoError(t, exporter.Start(t.Context(), testHost))
 		defer func() {
 			require.NoError(t, exporter.Shutdown(t.Context()))
