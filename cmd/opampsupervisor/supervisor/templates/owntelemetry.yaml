@@ -17,20 +17,15 @@ service:
                 {{- end}}
 {{- if or .TracesTLS .TracesCertificate}}
                 tls:
-                  {{- if .TracesTLS}}
-                  {{- if .TracesTLS.CaPemContents}}
-                  ca_pem: |
-{{indentLines .TracesTLS.CaPemContents "                    "}}
+                  {{- if .TracesTLSCAFile}}
+                  ca_file: {{.TracesTLSCAFile}}
                   {{- end}}
+                  {{- if .TracesCertificateCertFile}}
+                  cert_file: {{.TracesCertificateCertFile}}
                   {{- end}}
-
-                  {{- if .TracesCertificate}}
-                  cert_pem: |
-{{indentLines (printf "%s" .TracesCertificate.Cert) "                    "}}
-                  key_pem: |
-{{indentLines (printf "%s" .TracesCertificate.PrivateKey) "                    "}}
+                  {{- if .TracesCertificateKeyFile}}
+                  key_file: {{.TracesCertificateKeyFile}}
                   {{- end}}
-
                   {{- if .TracesTLS}}
                   {{- if .TracesTLS.InsecureSkipVerify}}
                   insecure_skip_verify: true
@@ -69,20 +64,15 @@ service:
                 {{- end}}
 {{- if or .MetricsTLS .MetricsCertificate}}
                 tls:
-                  {{- if .MetricsTLS}}
-                  {{- if .MetricsTLS.CaPemContents}}
-                  ca_pem: |
-{{indentLines .MetricsTLS.CaPemContents "                    "}}
+                  {{- if .MetricsTLSCAFile}}
+                  ca_file: {{.MetricsTLSCAFile}}
                   {{- end}}
+                  {{- if .MetricsCertificateCertFile}}
+                  cert_file: {{.MetricsCertificateCertFile}}
                   {{- end}}
-
-                  {{- if .MetricsCertificate}}
-                  cert_pem: |
-{{indentLines (printf "%s" .MetricsCertificate.Cert) "                    "}}
-                  key_pem: |
-{{indentLines (printf "%s" .MetricsCertificate.PrivateKey) "                    "}}
+                  {{- if .MetricsCertificateKeyFile}}
+                  key_file: {{.MetricsCertificateKeyFile}}
                   {{- end}}
-
                   {{- if .MetricsTLS}}
                   {{- if .MetricsTLS.InsecureSkipVerify}}
                   insecure_skip_verify: true
@@ -121,17 +111,14 @@ service:
                 {{- end}}
 {{- if or .LogsTLS .LogsCertificate}}
                 tls:
-                  {{- if .LogsTLS}}
-                  {{- if .LogsTLS.CaPemContents}}
-                  ca_pem: |
-{{indentLines .LogsTLS.CaPemContents "                    "}}
+                  {{- if .LogsTLSCAFile}}
+                  ca_file: {{.LogsTLSCAFile}}
                   {{- end}}
+                  {{- if .LogsCertificateCertFile}}
+                  cert_file: {{.LogsCertificateCertFile}}
                   {{- end}}
-                  {{- if .LogsCertificate}}
-                  cert_pem: |
-{{indentLines (printf "%s" .LogsCertificate.Cert) "                    "}}
-                  key_pem: |
-{{indentLines (printf "%s" .LogsCertificate.PrivateKey) "                    "}}
+                  {{- if .LogsCertificateKeyFile}}
+                  key_file: {{.LogsCertificateKeyFile}}
                   {{- end}}
                   {{- if .LogsTLS}}
                   {{- if .LogsTLS.InsecureSkipVerify}}
@@ -154,4 +141,4 @@ service:
                   {{- end}}
                   {{- end}}
 {{- end}}
-{{- end}}
+{{end}}
