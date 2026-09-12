@@ -13,6 +13,7 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -38,6 +39,8 @@ type Config struct {
 	Username string `mapstructure:"username"`
 	// Password is the authentication password.
 	Password configopaque.String `mapstructure:"password"`
+	// Auth is an authenticator extension that supplies a JWT. Requires TLS.
+	Auth configoptional.Optional[configauth.Config] `mapstructure:"auth"`
 	// Database is the database name to export.
 	Database string `mapstructure:"database"`
 	// TLS is the TLS config for connecting to ClickHouse.
@@ -112,6 +115,8 @@ const (
 var (
 	errConfigNoEndpoint      = errors.New("endpoint must be specified")
 	errConfigInvalidEndpoint = errors.New("endpoint must be url format")
+	errAuthRequiresHost      = errors.New("auth is configured but component host is unavailable")
+	errAuthRequiresTLS       = errors.New("auth requires TLS: use an https endpoint, set secure=true, or configure tls")
 )
 
 func createDefaultConfig() component.Config {

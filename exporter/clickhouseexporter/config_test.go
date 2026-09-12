@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -130,6 +131,21 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		id:       component.NewIDWithName(metadata.Type, "batch"),
 		expected: batchCfg,
+	})
+
+	authCfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoint = "https://127.0.0.1:8443"
+		cfg.Auth = configoptional.Some(configauth.Config{
+			AuthenticatorID: component.MustNewID("bearertokenauth"),
+		})
+	})
+
+	tests = append(tests, struct {
+		id       component.ID
+		expected component.Config
+	}{
+		id:       component.NewIDWithName(metadata.Type, "with-auth"),
+		expected: authCfg,
 	})
 
 	for _, tt := range tests {
