@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"math"
 	"mime"
 	"net/http"
 	"sync"
@@ -290,15 +291,46 @@ func (*jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *httpErr
 		}
 	}
 
-	tdes := apacheThrift.NewTDeserializer()
 	batch := &jaeger.Batch{}
-	if err = tdes.Read(r.Context(), batch, bodyBytes); err != nil {
+	if err = deserializeThriftBatch(r.Context(), bodyBytes, batch); err != nil {
 		return nil, &httpError{
 			fmt.Sprintf("Unable to process request body: %v", err),
 			http.StatusBadRequest,
 		}
 	}
 	return batch, nil
+}
+
+// deserializeThriftBatch decodes a Thrift-binary-encoded Jaeger batch from body.
+//
+// It bounds the Thrift decoder's MaxMessageSize to the length of the payload
+// that was actually received. A valid message can never require more wire bytes
+// than the payload provides, so this bound is transparent to legitimate
+// requests. It does, however, reject a malicious payload that declares a
+// container (e.g. a list of spans) whose element count is far larger than the
+// bytes provided. Without it, a tiny request can force the generated Thrift code
+// to pre-allocate a huge slice (CWE-789, memory-amplification DoS), because the
+// decoder's default MaxMessageSize of 100MB is orders of magnitude larger than a
+// typical request body.
+func deserializeThriftBatch(ctx context.Context, body []byte, batch *jaeger.Batch) error {
+	cfg := &apacheThrift.TConfiguration{
+		MaxMessageSize: boundedThriftMessageSize(len(body)),
+	}
+	transport := apacheThrift.NewTMemoryBufferLen(len(body))
+	protocol := apacheThrift.NewTBinaryProtocolConf(transport, cfg)
+	tdes := &apacheThrift.TDeserializer{Transport: transport, Protocol: protocol}
+	return tdes.Read(ctx, batch, body)
+}
+
+// boundedThriftMessageSize clamps a payload length into the int32 range expected
+// by TConfiguration.MaxMessageSize. A non-positive length disables the bound (the
+// decoder then falls back to its default), and a length beyond math.MaxInt32 is
+// capped so the value never overflows.
+func boundedThriftMessageSize(bodyLen int) int32 {
+	if bodyLen > 0 && bodyLen < math.MaxInt32 {
+		return int32(bodyLen)
+	}
+	return math.MaxInt32
 }
 
 // HandleThriftHTTPBatch implements Jaeger HTTP Thrift handler.
