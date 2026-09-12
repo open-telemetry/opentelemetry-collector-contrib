@@ -1,0 +1,78 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: oracledb.instance.name
+          value:
+            stringValue: oraclehost:1521/ORCL
+        - key: host.name
+          value:
+            stringValue: oraclehost:1521
+        - key: service.instance.id
+          value:
+            stringValue: oraclehost:1521/ORCL
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: db.system.name
+                value:
+                  stringValue: oracle
+              - key: db.namespace
+                value:
+                  stringValue: ORCLPDB1
+              - key: db.server.name
+                value:
+                  stringValue: oraclehost:1521
+              - key: oracle.db.service
+                value:
+                  stringValue: ORCLPDB1
+              - key: oracledb.procedure_id
+                value:
+                  intValue: "98765"
+              - key: oracledb.procedure_name
+                value:
+                  stringValue: ADMIN.MY_PROCEDURE
+              - key: oracledb.procedure_type
+                value:
+                  stringValue: PROCEDURE
+              - key: oracledb.procedure.schema.name
+                value:
+                  stringValue: ADMIN
+              - key: oracledb.procedure_execution_count
+                value:
+                  intValue: "100000"
+              - key: oracledb.cpu_time
+                value:
+                  doubleValue: 9.915824
+              - key: oracledb.elapsed_time
+                value:
+                  doubleValue: 61
+              - key: oracledb.buffer_gets
+                value:
+                  intValue: "189417"
+              - key: oracledb.disk_reads
+                value:
+                  intValue: "3"
+              - key: oracledb.direct_writes
+                value:
+                  intValue: "4"
+              - key: oracledb.rows_processed
+                value:
+                  intValue: "199443"
+              - key: oracledb.physical_read_bytes
+                value:
+                  intValue: "100"
+              - key: oracledb.physical_write_bytes
+                value:
+                  intValue: "6"
+              - key: oracledb.procedure.first_load_time
+                value:
+                  stringValue: 2025-12-31T23:00:00Z
+              - key: oracledb.procedure.last_active_time
+                value:
+                  stringValue: "2026-01-01T12:00:00Z"
+            body: {}
+            eventName: db.server.top_procedure
+            timeUnixNano: "1789007174213515000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
+          version: latest

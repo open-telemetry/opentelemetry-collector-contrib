@@ -234,6 +234,15 @@ attributes:
   oracledb.plan_hash_value:
     description: Numeric representation of the execution plan.
     type: string
+  oracledb.procedure.first_load_time:
+    description: "Earliest load time across the procedure's cached statements, in ISO 8601 format (UTC)."
+    type: string
+  oracledb.procedure.last_active_time:
+    description: "The most recent time any of the procedure's cached statements were active, in ISO 8601 format (UTC)."
+    type: string
+  oracledb.procedure.schema.name:
+    description: The schema (owner) of the stored procedure or function.
+    type: string
   oracledb.procedure_execution_count:
     description: The number of times the stored procedure has been executed, derived from the minimum statement execution count across all statements in the procedure (reporting delta). Please note, this is best effort and may not be accurate in some scenarios. Use with caution.
     type: int
@@ -440,6 +449,29 @@ events:
       - oracledb.wait.timeouts
       - oracledb.wait.duration
       - db.namespace
+  db.server.top_procedure:
+    enabled: false
+    description: Aggregated performance metrics for the top stored procedures by elapsed time, derived from V$SQL grouped by PROGRAM_ID and joined to DBA_PROCEDURES, with delta computation on cumulative counters. Correlates with db.server.top_query and db.server.query_sample via oracledb.procedure_id.
+    attributes:
+      - db.system.name
+      - db.namespace
+      - db.server.name
+      - oracle.db.service
+      - oracledb.procedure_id
+      - oracledb.procedure_name
+      - oracledb.procedure_type
+      - oracledb.procedure.schema.name
+      - oracledb.procedure_execution_count
+      - oracledb.cpu_time
+      - oracledb.elapsed_time
+      - oracledb.buffer_gets
+      - oracledb.disk_reads
+      - oracledb.direct_writes
+      - oracledb.rows_processed
+      - oracledb.physical_read_bytes
+      - oracledb.physical_write_bytes
+      - oracledb.procedure.first_load_time
+      - oracledb.procedure.last_active_time
   db.server.top_query:
     enabled: false
     description: Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).
