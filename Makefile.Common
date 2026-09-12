@@ -17,6 +17,7 @@ COVER_DIR_ABS?=$(SRC_ROOT)/$(COVER_DIR)
 GO_BUILD_TAGS=""
 # These ldflags allow the build tool to omit the symbol table, debug information, and the DWARF symbol table to downscale binary size.
 GO_BUILD_LDFLAGS="-s -w"
+GO_COMPAT_VERSION=$(shell awk '/^go /{print $$2}' go.mod)
 GOTEST_TIMEOUT?= 900s
 GOCMD?= go
 GOOS=$(shell $(GOCMD) env GOOS)

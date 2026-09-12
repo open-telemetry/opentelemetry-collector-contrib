@@ -72,8 +72,8 @@ func verifyRecord(t *testing.T, lr plog.LogRecord, pubKey *rsa.PublicKey) {
 	if lr.EventName() != "" {
 		data["event_name"] = lr.EventName()
 	}
-	if lr.Body().Type() == pcommon.ValueTypeStr {
-		data["body"] = lr.Body().Str()
+	if lr.Body().Type() != pcommon.ValueTypeEmpty {
+		data["body"] = rawValue(lr.Body())
 	}
 	if lr.Timestamp() != 0 {
 		data["timestamp"] = lr.Timestamp().AsTime().UnixNano()
@@ -286,4 +286,68 @@ func TestSignVerifyEventName(t *testing.T) {
 	} else {
 		t.Logf("🔍 tampered EventName correctly invalidates signature: %v", err)
 	}
+}
+
+// rawValue converts a pcommon.Value to the shape the signed payload carries.
+// It is written out independently of the processor's own valueToInterface so
+// this helper stays a genuine re-derivation rather than a mirror of the code
+// under test.
+func rawValue(v pcommon.Value) any {
+	switch v.Type() {
+	case pcommon.ValueTypeStr:
+		return v.Str()
+	case pcommon.ValueTypeInt:
+		return v.Int()
+	case pcommon.ValueTypeDouble:
+		return v.Double()
+	case pcommon.ValueTypeBool:
+		return v.Bool()
+	case pcommon.ValueTypeBytes:
+		return base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())
+	case pcommon.ValueTypeSlice:
+		out := make([]any, 0, v.Slice().Len())
+		for i := 0; i < v.Slice().Len(); i++ {
+			out = append(out, rawValue(v.Slice().At(i)))
+		}
+		return out
+	case pcommon.ValueTypeMap:
+		out := make(map[string]any)
+		v.Map().Range(func(k string, mv pcommon.Value) bool {
+			out[k] = rawValue(mv)
+			return true
+		})
+		return out
+	default:
+		return nil
+	}
+}
+
+// TestSignVerifyStructuredBody drives a non-string body through the full
+// sign-then-verify path. It exists so verifyRecord's independent re-derivation
+// of the signed payload stays honest: every other test here feeds it a string
+// body, so a helper that only handled strings would go unnoticed.
+func TestSignVerifyStructuredBody(t *testing.T) {
+	prov := newTestProvider(t)
+	p := &signingProcessor{
+		config:       &Config{Algorithm: "RS256", CertificateRef: CertificateRefFingerprint},
+		provider:     prov,
+		hashFunc:     func() hash.Hash { return crypto.SHA256.New() },
+		jwaAlgorithm: "RS256",
+		certRef:      "sha256:test",
+	}
+
+	lr := plog.NewLogRecord()
+	body := lr.Body().SetEmptyMap()
+	body.PutStr("action", "delete-all")
+	body.PutInt("count", 3)
+	body.PutBool("dry_run", false)
+	body.PutEmptyMap("who").PutStr("id", "u8472")
+	lr.SetTimestamp(pcommon.Timestamp(1714041600000000000))
+	lr.Attributes().PutStr("audit.action", "DELETE")
+
+	if err := p.processLogRecord(lr); err != nil {
+		t.Fatalf("processLogRecord: %v", err)
+	}
+
+	verifyRecord(t, lr, &prov.key.PublicKey)
 }
