@@ -186,8 +186,10 @@ func TestNodeMemoryPressureMetrics(t *testing.T) {
 	metrics := indexedFakeMetrics(MetricsData(newTestLogger(), nodeSummaryWithPSI(), Metadata{}, nodeGroup, nil, mbs, NewCPUUsageCalculator()))
 
 	requireContains(t, metrics, "k8s.node.memory.pressure.avg")
-	requireContains(t, metrics, "k8s.node.memory.pressure.total")
-	assertPSITotalValue(t, metrics["k8s.node.memory.pressure.total"][0], metadata.AttributePressureTypeSome, int64(30_000_000_000))
+	totalMetric := metrics["k8s.node.memory.pressure.total"][0]
+	assert.Equal(t, 2, totalMetric.Sum().DataPoints().Len())
+	assertPSITotalValue(t, totalMetric, metadata.AttributePressureTypeSome, int64(30_000_000_000))
+	assertPSITotalValue(t, totalMetric, metadata.AttributePressureTypeFull, int64(1_000_000_000))
 }
 
 func TestNodeIOPressureMetrics(t *testing.T) {
@@ -200,8 +202,10 @@ func TestNodeIOPressureMetrics(t *testing.T) {
 	metrics := indexedFakeMetrics(MetricsData(newTestLogger(), nodeSummaryWithPSI(), Metadata{}, nodeGroup, nil, mbs, NewCPUUsageCalculator()))
 
 	requireContains(t, metrics, "k8s.node.io.pressure.avg")
-	requireContains(t, metrics, "k8s.node.io.pressure.total")
-	assertPSITotalValue(t, metrics["k8s.node.io.pressure.total"][0], metadata.AttributePressureTypeSome, int64(10_000_000_000))
+	totalMetric := metrics["k8s.node.io.pressure.total"][0]
+	assert.Equal(t, 2, totalMetric.Sum().DataPoints().Len())
+	assertPSITotalValue(t, totalMetric, metadata.AttributePressureTypeSome, int64(10_000_000_000))
+	assertPSITotalValue(t, totalMetric, metadata.AttributePressureTypeFull, int64(500_000_000))
 }
 
 // --- Pod PSI tests ---
@@ -230,7 +234,10 @@ func TestPodMemoryPressureMetrics(t *testing.T) {
 	metrics := indexedFakeMetrics(MetricsData(newTestLogger(), podSummaryWithPSI(), Metadata{}, podGroup, nil, mbs, NewCPUUsageCalculator()))
 
 	requireContains(t, metrics, "k8s.pod.memory.pressure.avg")
-	requireContains(t, metrics, "k8s.pod.memory.pressure.total")
+	totalMetric := metrics["k8s.pod.memory.pressure.total"][0]
+	assert.Equal(t, 2, totalMetric.Sum().DataPoints().Len())
+	assertPSITotalValue(t, totalMetric, metadata.AttributePressureTypeSome, int64(15_000_000_000))
+	assertPSITotalValue(t, totalMetric, metadata.AttributePressureTypeFull, int64(500_000_000))
 }
 
 func TestPodIOPressureMetrics(t *testing.T) {
@@ -243,7 +250,10 @@ func TestPodIOPressureMetrics(t *testing.T) {
 	metrics := indexedFakeMetrics(MetricsData(newTestLogger(), podSummaryWithPSI(), Metadata{}, podGroup, nil, mbs, NewCPUUsageCalculator()))
 
 	requireContains(t, metrics, "k8s.pod.io.pressure.avg")
-	requireContains(t, metrics, "k8s.pod.io.pressure.total")
+	totalMetric := metrics["k8s.pod.io.pressure.total"][0]
+	assert.Equal(t, 2, totalMetric.Sum().DataPoints().Len())
+	assertPSITotalValue(t, totalMetric, metadata.AttributePressureTypeSome, int64(5_000_000_000))
+	assertPSITotalValue(t, totalMetric, metadata.AttributePressureTypeFull, int64(100_000_000))
 }
 
 // --- Container PSI tests ---
@@ -272,7 +282,10 @@ func TestContainerMemoryPressureMetrics(t *testing.T) {
 	metrics := indexedFakeMetrics(MetricsData(newTestLogger(), containerSummaryWithPSI(), Metadata{}, containerGroup, nil, mbs, NewCPUUsageCalculator()))
 
 	requireContains(t, metrics, "container.memory.pressure.avg")
-	requireContains(t, metrics, "container.memory.pressure.total")
+	totalMetric := metrics["container.memory.pressure.total"][0]
+	assert.Equal(t, 2, totalMetric.Sum().DataPoints().Len())
+	assertPSITotalValue(t, totalMetric, metadata.AttributePressureTypeSome, int64(4_000_000_000))
+	assertPSITotalValue(t, totalMetric, metadata.AttributePressureTypeFull, int64(200_000_000))
 }
 
 func TestContainerIOPressureMetrics(t *testing.T) {
@@ -285,7 +298,10 @@ func TestContainerIOPressureMetrics(t *testing.T) {
 	metrics := indexedFakeMetrics(MetricsData(newTestLogger(), containerSummaryWithPSI(), Metadata{}, containerGroup, nil, mbs, NewCPUUsageCalculator()))
 
 	requireContains(t, metrics, "container.io.pressure.avg")
-	requireContains(t, metrics, "container.io.pressure.total")
+	totalMetric := metrics["container.io.pressure.total"][0]
+	assert.Equal(t, 2, totalMetric.Sum().DataPoints().Len())
+	assertPSITotalValue(t, totalMetric, metadata.AttributePressureTypeSome, int64(2_000_000_000))
+	assertPSITotalValue(t, totalMetric, metadata.AttributePressureTypeFull, int64(50_000_000))
 }
 
 // --- Nil-safety tests ---
@@ -338,19 +354,84 @@ func TestPSINilIO(t *testing.T) {
 	require.False(t, found, "no IO pressure metrics should be emitted when IO is nil")
 }
 
-// TestPSIDisabledByDefault verifies that PSI metrics are NOT emitted with default config.
-func TestPSIDisabledByDefault(t *testing.T) {
+// TestPSIIONilPSIField verifies that a node where IOStats exists but IOStats.PSI is nil
+// emits no IO PSI metrics. This is distinct from IO == nil (cgroup v1 vs partially-populated struct).
+func TestPSIIONilPSIField(t *testing.T) {
+	cfg := enablePSIConfig()
 	mbs := &metadata.MetricsBuilders{
-		NodeMetricsBuilder: metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		NodeMetricsBuilder: metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
 	}
 	nodeGroup := map[MetricGroup]bool{NodeMetricGroup: true}
 
-	metrics := indexedFakeMetrics(MetricsData(newTestLogger(), nodeSummaryWithPSI(), Metadata{}, nodeGroup, nil, mbs, NewCPUUsageCalculator()))
+	now := time.Now()
+	summary := &stats.Summary{
+		Node: stats.NodeStats{
+			NodeName:  "worker-1",
+			StartTime: v1.Time{Time: now.Add(-time.Hour)},
+			IO: &stats.IOStats{
+				Time: v1.Time{Time: now},
+				// PSI intentionally omitted — IOStats exists but carries no PSI data.
+			},
+		},
+	}
 
-	_, found := metrics["k8s.node.cpu.pressure.avg"]
-	require.False(t, found, "PSI metrics must be disabled by default")
-	_, found = metrics["k8s.node.cpu.pressure.total"]
-	require.False(t, found, "PSI metrics must be disabled by default")
+	metrics := indexedFakeMetrics(MetricsData(newTestLogger(), summary, Metadata{}, nodeGroup, nil, mbs, NewCPUUsageCalculator()))
+	_, found := metrics["k8s.node.io.pressure.total"]
+	require.False(t, found, "no IO pressure metrics should be emitted when IOStats.PSI is nil")
+}
+
+// TestPSIDisabledByDefault verifies that PSI metrics are NOT emitted with the default config
+// for any of the 9 scope×resource combinations (node/pod/container × CPU/memory/IO).
+func TestPSIDisabledByDefault(t *testing.T) {
+	defaultCfg := metadata.NewDefaultMetricsBuilderConfig()
+
+	// Node scope
+	nodeMBS := &metadata.MetricsBuilders{
+		NodeMetricsBuilder: metadata.NewMetricsBuilder(defaultCfg, receivertest.NewNopSettings(metadata.Type)),
+	}
+	nodeGrp := map[MetricGroup]bool{NodeMetricGroup: true}
+	nodeMetrics := indexedFakeMetrics(MetricsData(newTestLogger(), nodeSummaryWithPSI(), Metadata{}, nodeGrp, nil, nodeMBS, NewCPUUsageCalculator()))
+
+	for _, name := range []string{
+		"k8s.node.cpu.pressure.avg", "k8s.node.cpu.pressure.total",
+		"k8s.node.memory.pressure.avg", "k8s.node.memory.pressure.total",
+		"k8s.node.io.pressure.avg", "k8s.node.io.pressure.total",
+	} {
+		_, found := nodeMetrics[name]
+		require.False(t, found, "PSI metric %q must be disabled by default", name)
+	}
+
+	// Pod scope
+	podMBS := &metadata.MetricsBuilders{
+		PodMetricsBuilder: metadata.NewMetricsBuilder(defaultCfg, receivertest.NewNopSettings(metadata.Type)),
+	}
+	podGrp := map[MetricGroup]bool{PodMetricGroup: true}
+	podMetrics := indexedFakeMetrics(MetricsData(newTestLogger(), podSummaryWithPSI(), Metadata{}, podGrp, nil, podMBS, NewCPUUsageCalculator()))
+
+	for _, name := range []string{
+		"k8s.pod.cpu.pressure.avg", "k8s.pod.cpu.pressure.total",
+		"k8s.pod.memory.pressure.avg", "k8s.pod.memory.pressure.total",
+		"k8s.pod.io.pressure.avg", "k8s.pod.io.pressure.total",
+	} {
+		_, found := podMetrics[name]
+		require.False(t, found, "PSI metric %q must be disabled by default", name)
+	}
+
+	// Container scope
+	containerMBS := &metadata.MetricsBuilders{
+		ContainerMetricsBuilder: metadata.NewMetricsBuilder(defaultCfg, receivertest.NewNopSettings(metadata.Type)),
+	}
+	containerGrp := map[MetricGroup]bool{ContainerMetricGroup: true}
+	containerMetrics := indexedFakeMetrics(MetricsData(newTestLogger(), containerSummaryWithPSI(), Metadata{}, containerGrp, nil, containerMBS, NewCPUUsageCalculator()))
+
+	for _, name := range []string{
+		"container.cpu.pressure.avg", "container.cpu.pressure.total",
+		"container.memory.pressure.avg", "container.memory.pressure.total",
+		"container.io.pressure.avg", "container.io.pressure.total",
+	} {
+		_, found := containerMetrics[name]
+		require.False(t, found, "PSI metric %q must be disabled by default", name)
+	}
 }
 
 // TestPSIAvgAttributes verifies the pressure.type and pressure.window attributes are set correctly.
@@ -420,7 +501,7 @@ func TestPSITotalAttributes(t *testing.T) {
 
 // --- helpers ---
 
-// newTestLogger returns a no-op logger for tests (avoids import cycle with zap).
+// newTestLogger returns a no-op zap logger for use in tests.
 func newTestLogger() *zap.Logger {
 	return zap.NewNop()
 }
