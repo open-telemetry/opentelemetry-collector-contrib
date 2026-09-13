@@ -34,7 +34,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
@@ -1116,6 +1115,7 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 	// connection settings; the server only updates endpoint/headers/TLS.
 	newServerConfig := config.OpAMPServer{
 		Auth: s.config.Server.Auth,
+		TLS:  s.config.Server.TLS,
 	}
 
 	if settings.DestinationEndpoint != "" {
@@ -1134,9 +1134,14 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 		if len(settings.Certificate.PrivateKey) != 0 {
 			newServerConfig.TLS.KeyPem = configopaque.String(settings.Certificate.PrivateKey)
 		}
-	} else {
-		newServerConfig.TLS = configtls.NewDefaultClientConfig()
-		newServerConfig.TLS.InsecureSkipVerify = true
+	}
+
+	if settings.Tls != nil {
+		newServerConfig.TLS.InsecureSkipVerify = settings.Tls.InsecureSkipVerify
+		newServerConfig.TLS.IncludeSystemCACertsPool = settings.Tls.IncludeSystemCaCertsPool
+		newServerConfig.TLS.MinVersion = settings.Tls.MinVersion
+		newServerConfig.TLS.MaxVersion = settings.Tls.MaxVersion
+		newServerConfig.TLS.CipherSuites = settings.Tls.CipherSuites
 	}
 
 	if err := newServerConfig.Validate(); err != nil {
