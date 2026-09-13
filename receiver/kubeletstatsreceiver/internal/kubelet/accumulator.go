@@ -70,7 +70,9 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	if s.Memory != nil {
 		addPSIMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeMemoryPressureMetrics, s.Memory.PSI, currentTime)
 	}
-	addIOPSIMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeIOPressureMetrics, s.IO, currentTime)
+	if s.IO != nil {
+		addPSIMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeIOPressureMetrics, s.IO.PSI, currentTime)
+	}
 	// TODO(#ISSUE): add PSI for system containers (s.SystemContainers[i].CPU.PSI / Memory.PSI / IO).
 	// System containers include etcd, kube-apiserver, etc. Open a GitHub issue and replace #ISSUE.
 	// todo s.Runtime.ImageFs
@@ -115,7 +117,9 @@ func (a *metricDataAccumulator) podStats(s *stats.PodStats) {
 	if s.Memory != nil {
 		addPSIMetrics(a.mbs.PodMetricsBuilder, metadata.PodMemoryPressureMetrics, s.Memory.PSI, currentTime)
 	}
-	addIOPSIMetrics(a.mbs.PodMetricsBuilder, metadata.PodIOPressureMetrics, s.IO, currentTime)
+	if s.IO != nil {
+		addPSIMetrics(a.mbs.PodMetricsBuilder, metadata.PodIOPressureMetrics, s.IO.PSI, currentTime)
+	}
 
 	rb := a.mbs.PodMetricsBuilder.NewResourceBuilder()
 	rb.SetK8sPodUID(s.PodRef.UID)
@@ -160,7 +164,9 @@ func (a *metricDataAccumulator) containerStats(sPod *stats.PodStats, s *stats.Co
 	if s.Memory != nil {
 		addPSIMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerMemoryPressureMetrics, s.Memory.PSI, currentTime)
 	}
-	addIOPSIMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerIOPressureMetrics, s.IO, currentTime)
+	if s.IO != nil {
+		addPSIMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerIOPressureMetrics, s.IO.PSI, currentTime)
+	}
 
 	a.m = append(a.m, a.mbs.ContainerMetricsBuilder.Emit(
 		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),

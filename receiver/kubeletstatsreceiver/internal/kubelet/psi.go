@@ -37,16 +37,4 @@ func addPSIMetrics(
 	}
 }
 
-// addIOPSIMetrics records PSI metrics from an IOStats struct.
-// IOStats only carries PSI data; it is nil-safe at both the IOStats and PSIStats levels.
-func addIOPSIMetrics(
-	mb *metadata.MetricsBuilder,
-	m metadata.PSIMetrics,
-	s *stats.IOStats,
-	currentTime pcommon.Timestamp,
-) {
-	if s == nil {
-		return
-	}
-	addPSIMetrics(mb, m, s.PSI, currentTime)
-}
+
