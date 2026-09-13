@@ -1,0 +1,37 @@
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
+    DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+    RAISERROR (@ErrorMessage,11,1)
+    RETURN
+END
+
+IF COL_LENGTH('sys.dm_exec_procedure_stats','total_spills') IS NULL BEGIN
+    RAISERROR ('sys.dm_exec_procedure_stats.total_spills is not available on this build. db.server.top_procedure requires SQL Server 2017 CU3 or later.',11,1)
+    RETURN
+END
+
+SELECT TOP (@maxSampleCount)
+    DB_NAME(ps.database_id) AS database_name,
+    OBJECT_SCHEMA_NAME(ps.object_id, ps.database_id) AS schema_name,
+    QUOTENAME(OBJECT_SCHEMA_NAME(ps.object_id, ps.database_id)) + N'.' + QUOTENAME(OBJECT_NAME(ps.object_id, ps.database_id)) AS procedure_name,
+    CAST(ps.object_id AS nvarchar(50)) AS procedure_id,
+    ps.database_id,
+    ps.execution_count,
+    ps.total_worker_time,
+    ps.total_elapsed_time,
+    ps.total_physical_reads,
+    ps.total_logical_reads,
+    ps.total_logical_writes,
+    ps.total_spills,
+    ps.min_elapsed_time,
+    ps.max_elapsed_time,
+    CONVERT(NVARCHAR(34), TODATETIMEOFFSET(ps.last_execution_time, DATEPART(TZOFFSET, SYSDATETIMEOFFSET())), 126) AS last_execution_time
+FROM sys.dm_exec_procedure_stats AS ps
+WHERE ps.database_id > 4
+  AND ps.execution_count > 0
+  AND DB_NAME(ps.database_id) IS NOT NULL
+  AND OBJECT_NAME(ps.object_id, ps.database_id) IS NOT NULL
+  AND OBJECT_SCHEMA_NAME(ps.object_id, ps.database_id) IS NOT NULL
+  AND DATEADD(ms, ps.last_elapsed_time / 1000, ps.last_execution_time) > DATEADD(SECOND, @lookbackTime, GETDATE())
+%s
+ORDER BY ps.last_execution_time DESC
