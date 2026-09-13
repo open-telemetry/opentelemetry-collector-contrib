@@ -2847,7 +2847,9 @@ service:
 
 		info, err := os.Stat(filePath)
 		require.NoError(t, err)
-		assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+		if runtime.GOOS != "windows" {
+			assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+		}
 
 		contents, err := os.ReadFile(filePath)
 		require.NoError(t, err)
