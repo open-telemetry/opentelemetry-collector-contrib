@@ -5,6 +5,8 @@ package oracledbreceiver
 
 import (
 	"errors"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -477,7 +479,9 @@ func TestSetupResourceBuilder_NoPDB(t *testing.T) {
 		mb:                   metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
 		metricsBuilderConfig: cfg,
 		instanceName:         "myinstance",
-		hostName:             "myhost",
+		hostName:             "myhost:51521",
+		serverAddress:        "myhost",
+		serverPort:           51521,
 		instanceInfo:         oracleInstanceInfo{dbVersion: "19.0.0.0.0", isCDB: false},
 	}
 
@@ -488,10 +492,117 @@ func TestSetupResourceBuilder_NoPDB(t *testing.T) {
 
 	name, _ := res.Attributes().Get("oracledb.instance.name")
 	assert.Equal(t, "myinstance", name.Str())
+	// host.name keeps the configured target, only the server attributes are resolved.
 	host, _ := res.Attributes().Get("host.name")
-	assert.Equal(t, "myhost", host.Str())
+	assert.Equal(t, "myhost:51521", host.Str())
 	version, _ := res.Attributes().Get("oracle.db.version")
 	assert.Equal(t, "19.0.0.0.0", version.Str())
+
+	serverAddress, ok := res.Attributes().Get("server.address")
+	require.True(t, ok)
+	assert.Equal(t, "myhost", serverAddress.Str())
+	serverPort, ok := res.Attributes().Get("server.port")
+	require.True(t, ok)
+	assert.Equal(t, int64(51521), serverPort.Int())
+}
+
+func TestSetupResourceBuilder_LoopbackResolvesServerAddressOnly(t *testing.T) {
+	localhostName, err := os.Hostname()
+	require.NoError(t, err)
+
+	const target = "localhost:1521"
+	serverAddress, serverPort, serviceInstanceID := resolveInstanceIdentity(target, target+"/XE", zap.NewNop())
+
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	scrpr := oracleScraper{
+		mb:                   metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		metricsBuilderConfig: cfg,
+		instanceName:         target + "/XE",
+		hostName:             target,
+		serverAddress:        serverAddress,
+		serverPort:           serverPort,
+		serviceInstanceID:    serviceInstanceID,
+	}
+
+	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
+
+	hostName, ok := res.Attributes().Get("host.name")
+	require.True(t, ok)
+	assert.Equal(t, target, hostName.Str(), "host.name must keep the configured target")
+
+	address, ok := res.Attributes().Get("server.address")
+	require.True(t, ok)
+	assert.Equal(t, localhostName, address.Str())
+	port, ok := res.Attributes().Get("server.port")
+	require.True(t, ok)
+	assert.Equal(t, defaultOraclePort, port.Int())
+
+	instanceID, ok := res.Attributes().Get("service.instance.id")
+	require.True(t, ok)
+	assert.Equal(t, localhostName+":1521/XE", instanceID.Str())
+}
+
+func TestSetupResourceBuilder_EmptyServerAddressNotEmitted(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	scrpr := oracleScraper{
+		mb:                   metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		metricsBuilderConfig: cfg,
+	}
+
+	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
+
+	_, hasServerAddress := res.Attributes().Get("server.address")
+	assert.False(t, hasServerAddress, "server.address should not be emitted when the host is undetermined")
+
+	serverPort, ok := res.Attributes().Get("server.port")
+	require.True(t, ok, "server.port should always be emitted")
+	assert.Equal(t, defaultOraclePort, serverPort.Int())
+}
+
+// TestSetupResourceBuilder_UndeterminedHostNotEmitted walks the same path newScraper takes, from the
+// configured datasource through resolveInstanceIdentity, for datasources url.Parse cannot read.
+func TestSetupResourceBuilder_UndeterminedHostNotEmitted(t *testing.T) {
+	datasources := map[string]string{
+		"TNS descriptor":                         "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=XE)))",
+		"Easy Connect without the oracle prefix": "otel/password@localhost:51521/XE",
+	}
+
+	for name, datasource := range datasources {
+		t.Run(name, func(t *testing.T) {
+			hostName, hostNameErr := getHostName(datasource)
+			require.NoError(t, hostNameErr)
+			instanceName, instanceNameErr := getInstanceName(datasource)
+			require.NoError(t, instanceNameErr)
+
+			serverAddress, serverPort, serviceInstanceID := resolveInstanceIdentity(hostName, instanceName, zap.NewNop())
+
+			cfg := metadata.NewDefaultMetricsBuilderConfig()
+			scrpr := oracleScraper{
+				mb:                   metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+				metricsBuilderConfig: cfg,
+				instanceName:         instanceName,
+				hostName:             hostName,
+				serverAddress:        serverAddress,
+				serverPort:           serverPort,
+				serviceInstanceID:    serviceInstanceID,
+			}
+
+			res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
+
+			address, hasServerAddress := res.Attributes().Get("server.address")
+			assert.False(t, hasServerAddress,
+				"server.address should not be emitted when the datasource cannot be parsed, got %q", address.Str())
+
+			port, ok := res.Attributes().Get("server.port")
+			require.True(t, ok, "server.port should always be emitted")
+			assert.Equal(t, defaultOraclePort, port.Int())
+
+			instanceID, ok := res.Attributes().Get("service.instance.id")
+			require.True(t, ok)
+			assert.True(t, strings.HasPrefix(instanceID.Str(), "unknown:1521"),
+				"an unparseable datasource must not identify the collector host, got %q", instanceID.Str())
+		})
+	}
 }
 
 func TestSetupResourceBuilder_AllMetadataFields(t *testing.T) {
@@ -501,6 +612,8 @@ func TestSetupResourceBuilder_AllMetadataFields(t *testing.T) {
 		metricsBuilderConfig: cfg,
 		instanceName:         "myinstance",
 		hostName:             "myhost",
+		serverAddress:        "myhost",
+		serverPort:           1521,
 		instanceInfo: oracleInstanceInfo{
 			dbVersion:    "19.0.0.0.0",
 			databaseRole: "PRIMARY",
@@ -526,6 +639,13 @@ func TestSetupResourceBuilder_AllMetadataFields(t *testing.T) {
 	hostingType, ok := res.Attributes().Get("oracle.db.hosting_type")
 	require.True(t, ok)
 	assert.Equal(t, hostingTypeSelfManaged, hostingType.Str())
+
+	serverAddress, ok := res.Attributes().Get("server.address")
+	require.True(t, ok)
+	assert.Equal(t, "myhost", serverAddress.Str())
+	serverPort, ok := res.Attributes().Get("server.port")
+	require.True(t, ok)
+	assert.Equal(t, defaultOraclePort, serverPort.Int())
 }
 
 func TestSetupResourceBuilder_EmptyMetadataFieldsNotEmitted(t *testing.T) {
