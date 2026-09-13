@@ -61,6 +61,37 @@ receivers:
 - `initial_delay` (default = `1s`): The initial time period this receiver waits before starting.
 - `timeout` (default = `0`): Timeout for each Oracle DB request. Disabled by default.
 
+## Resource attributes
+
+`server.address` and `server.port` identify the monitored Oracle instance and are emitted by default.
+When the receiver connects over loopback (for example `datasource: oracle://otel:password@localhost:51521/XE`
+or `endpoint: 127.0.0.1:51521`), `server.address` reports the host name of the machine running the
+collector, because the monitored instance is co-located with it and `localhost` would otherwise be
+shared by every monitored host. `server.port` defaults to `1521` when the connection string omits it.
+`service.instance.id` uses the same resolution and is reported as `server.address:server.port/service`.
+`host.name` is unaffected and keeps reporting the configured target.
+
+A `datasource` that is not in `oracle://user:password@host:port/service` form — a TNS descriptor, or
+an Easy Connect string without the `oracle://` prefix — carries no host the receiver can read. In
+that case `server.address` is omitted rather than guessed, `server.port` falls back to `1521`, and
+`service.instance.id` reports `unknown:1521`. Note that the driver does not currently connect with
+those forms either, so prefer the full `oracle://` datasource or the `endpoint` option, both of
+which always populate the server attributes.
+
+To stop emitting the server attributes, disable them individually:
+
+```yaml
+receivers:
+  oracledb:
+    resource_attributes:
+      server.address:
+        enabled: false
+      server.port:
+        enabled: false
+```
+
+See [documentation.md](./documentation.md) for the full list of resource attributes.
+
 ## Permissions
 
 ### Instance detection
