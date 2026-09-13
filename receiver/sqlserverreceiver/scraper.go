@@ -2357,7 +2357,6 @@ func (s *sqlServerScraperHelper) recordDiskIOMetrics(ctx context.Context) error 
 	return errors.Join(errs...)
 }
 
-
 func (s *sqlServerScraperHelper) procedureLookbackSeconds() int {
 	const schedulingBuffer = 10 * time.Second
 	if s.lastExecutionTimestamp.Equal(time.Unix(0, 0)) {
