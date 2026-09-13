@@ -1,5 +1,0 @@
-change_type: deprecation
-component: exporter/prometheus
-note: "Deprecate `resource_to_telemetry_conversion` in favor of `resource_constant_labels` and add feature gate `exporter.prometheus.DisableResourceToTelemetryConversion`."
-issues: [48861]
-change_logs: [user]

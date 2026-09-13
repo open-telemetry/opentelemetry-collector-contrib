@@ -1770,6 +1770,34 @@ Per-session wait event statistics from v$session_event.
 | oracledb.wait.duration | Total time waited in seconds for the wait event. | Any Double | - |
 | db.namespace | The database name. | Any Str | - |
 
+### db.server.top_procedure
+
+Aggregated performance metrics for the top stored procedures by elapsed time, derived from V$SQL grouped by PROGRAM_ID and joined to DBA_PROCEDURES, with delta computation on cumulative counters. Correlates with db.server.top_query and db.server.query_sample via oracledb.procedure_id.
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str | - |
+| db.namespace | The database name. | Any Str | - |
+| db.server.name | The name of the server hosting the database. | Any Str | - |
+| oracle.db.service | The Oracle service name associated with the database connection. | Any Str | - |
+| oracledb.procedure_id | The identifier of the stored procedure or function being executed by the query. | Any Int | - |
+| oracledb.procedure_name | Name of the database object that a query is accessing. | Any Str | - |
+| oracledb.procedure_type | Type of the database object that a query is accessing. | Any Str | - |
+| oracledb.procedure.schema.name | The schema (owner) of the stored procedure or function. | Any Str | - |
+| oracledb.procedure_execution_count | The number of times the stored procedure has been executed, derived from the minimum statement execution count across all statements in the procedure (reporting delta). Please note, this is best effort and may not be accurate in some scenarios. Use with caution. | Any Int | - |
+| oracledb.cpu_time | Total time (in seconds) that the CPU spent actively processing a query, excluding time spent waiting (reporting delta). | Any Double | - |
+| oracledb.elapsed_time | The total time (in seconds) taken by a query from start to finish, including CPU time and all types of waits (reporting delta). | Any Double | - |
+| oracledb.buffer_gets | Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta). | Any Int | - |
+| oracledb.disk_reads | The number of physical reads a query performs — that is, the number of data blocks read from disk (reporting delta). | Any Int | - |
+| oracledb.direct_writes | The number of direct path write operations, where data is written directly to disk from user memory (reporting delta). | Any Int | - |
+| oracledb.rows_processed | The total number of rows that a query has read, returned, or affected during its execution (reporting delta). | Any Int | - |
+| oracledb.physical_read_bytes | The total number of bytes read from disk by a query (reporting delta). | Any Int | - |
+| oracledb.physical_write_bytes | The total number of bytes written to disk by a query (reporting delta). | Any Int | - |
+| oracledb.procedure.first_load_time | Earliest load time across the procedure's cached statements, in ISO 8601 format (UTC). | Any Str | - |
+| oracledb.procedure.last_active_time | The most recent time any of the procedure's cached statements were active, in ISO 8601 format (UTC). | Any Str | - |
+
 ### db.server.top_query
 
 Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).

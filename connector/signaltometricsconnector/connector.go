@@ -74,7 +74,7 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 					if !md.MatchAttributes(spanAttrs) {
 						continue
 					}
-					tCtx := ottlspan.NewTransformContextPtr(resourceSpan, scopeSpan, span)
+					tCtx := ottlspan.NewTransformContext(resourceSpan, scopeSpan, span)
 					resolvedAttrs, err := md.ResolveAttributes(ctx, tCtx)
 					if err != nil {
 						tCtx.Close()
@@ -155,7 +155,7 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 						if !md.MatchAttributes(dpAttrs) {
 							return nil
 						}
-						tCtx := ottldatapoint.NewTransformContextPtr(resourceMetric, scopeMetric, metric, dp)
+						tCtx := ottldatapoint.NewTransformContext(resourceMetric, scopeMetric, metric, dp)
 						defer tCtx.Close()
 						resolvedAttrs, err := md.ResolveAttributes(ctx, tCtx)
 						if err != nil {
@@ -270,7 +270,7 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 					if !md.MatchAttributes(logAttrs) {
 						continue
 					}
-					tCtx := ottllog.NewTransformContextPtr(resourceLog, scopeLog, log)
+					tCtx := ottllog.NewTransformContext(resourceLog, scopeLog, log)
 					resolvedAttrs, err := md.ResolveAttributes(ctx, tCtx)
 					if err != nil {
 						tCtx.Close()
@@ -354,7 +354,7 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 					if !md.MatchAttributes(profileAttrs) {
 						continue
 					}
-					tCtx := ottlprofile.NewTransformContextPtr(resourceProfile, scopeProfile, profile, profiles.Dictionary())
+					tCtx := ottlprofile.NewTransformContext(resourceProfile, scopeProfile, profile, profiles.Dictionary())
 					resolvedAttrs, err := md.ResolveAttributes(ctx, tCtx)
 					if err != nil {
 						tCtx.Close()
