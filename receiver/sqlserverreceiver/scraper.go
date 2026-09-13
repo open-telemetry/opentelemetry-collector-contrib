@@ -2357,14 +2357,9 @@ func (s *sqlServerScraperHelper) recordDiskIOMetrics(ctx context.Context) error 
 	return errors.Join(errs...)
 }
 
-// procedureLookbackSeconds bounds how far back a candidate procedure's last execution may be
-// for it to be selected. It mirrors the actual elapsed time since the last successful scrape
-// (padded to absorb scheduling jitter) rather than exposing a separate config knob, the same
-// way oracledbreceiver derives its top-query lookback window.
+
 func (s *sqlServerScraperHelper) procedureLookbackSeconds() int {
 	const schedulingBuffer = 10 * time.Second
-	// lastExecutionTimestamp is seeded to the Unix epoch rather than the zero time.Time (see
-	// newSQLServerScraperHelper), so that sentinel is the "no prior scrape" check here too.
 	if s.lastExecutionTimestamp.Equal(time.Unix(0, 0)) {
 		return int(s.config.TopProcedureCollection.CollectionInterval.Seconds())
 	}
