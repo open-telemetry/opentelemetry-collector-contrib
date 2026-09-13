@@ -79,6 +79,8 @@ sqlserver:
       enabled: true
     db.server.top_procedure:
       enabled: true
+    db.server.query_plan:
+      enabled: true
   top_query_collection:                        # this collection exports the most expensive queries as logs
     lookback_time: 60s                         # which time window should we look for the top queries
     max_query_sample_count: 1000               # maximum number query we store in cache for top queries.
@@ -153,6 +155,19 @@ Top-Query collection specific options (only useful when top-query collection are
     - For instance, you have global `collection_interval` as `10s` and `top_query_collection.collection_interval` as `5s`.
       - In this case, `top_query_collection.collection_internal` will make no effects to the collection
 
+By default, `db.server.top_query` carries the query's execution plan in its `sqlserver.query_plan`
+attribute. Execution plans can be large, so an oversized plan can push its record past a
+transport/buffer limit and take the lightweight query statistics down with it. Enabling the
+`db.server.query_plan` event (disabled by default, like the other events above) moves the plan onto
+its own record: `db.server.top_query` is then emitted without `sqlserver.query_plan`, and the plan
+is reported on `db.server.query_plan` instead, joined back via the composite key
+`sqlserver.query_hash` + `sqlserver.query_plan_hash` (the plan hash alone can collide across
+distinct queries with a similar shape). Leaving `db.server.query_plan` disabled preserves the
+previous behavior exactly.
+
+`db.server.query_plan` is sourced from the same query as `db.server.top_query` and only splits the
+plan out of it, so it collects nothing unless `db.server.top_query` is enabled too.
+
 Query sample collection related options (only useful when query sample is enabled)
 - `max_rows_per_query`: (optional, default = `100`) use this to limit rows returned by the sampling query.
 Example:
@@ -202,6 +217,26 @@ Top query collection enabled:
           top_query_count: 200
         query_sample_collection:
           max_rows_per_query: 1450
+```
+
+## Resource attributes
+
+`server.address` and `server.port` identify the monitored SQL Server instance and are emitted by default.
+When the receiver connects over loopback (for example `server: localhost` or `server: 127.0.0.1`),
+`server.address` reports the host name of the machine running the collector, because the monitored
+instance is co-located with it and `localhost` would otherwise be shared by every monitored host.
+`service.instance.id` resolves its host the same way, so it reports the collector host name rather than
+`localhost` for a loopback target.
+
+To stop emitting the server attributes, disable them individually:
+
+```yaml
+sqlserver:
+  resource_attributes:
+    server.address:
+      enabled: false
+    server.port:
+      enabled: false
 ```
 
 ## Metrics

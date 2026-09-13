@@ -1253,6 +1253,18 @@ events:
     enabled: true
 ```
 
+### db.server.query_plan
+
+query execution plan. When enabled, the plan is reported here instead of on db.server.top_query, so an oversized plan payload cannot drop the lightweight query statistics alongside it
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| sqlserver.query_hash | Binary hash value calculated on the query and used to identify queries with similar logic, reported in the HEX format. | Any Str | - |
+| sqlserver.query_plan | The query execution plan used by the SQL Server. | Any Str | - |
+| sqlserver.query_plan_hash | Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format. | Any Str | - |
+
 ### db.server.query_sample
 
 query sample
@@ -1360,8 +1372,8 @@ top query
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
 | host.name | The host name of SQL Server | Any Str | true | - | - |
-| server.address | Name of the database host. | Any Str | true | - | - |
-| server.port | Server port number. | Any Int | true | - | - |
+| server.address | The address of the monitored SQL Server instance. A loopback target (for example localhost or 127.0.0.1) is reported as the host name of the machine running the collector, since the instance is co-located with it. | Any Str | true | - | - |
+| server.port | The port of the monitored SQL Server instance, defaulting to 1433 when not configured. | Any Int | true | - | - |
 | service.instance.id | A unique identifier of the SQL Server instance. When using direct connection settings, the format is host:port. When using a datasource, the format is host\instance for a named instance and host:port otherwise; the port defaults to 1433 when omitted. In Windows Performance Counter mode, the format remains host:1433; host is computer_name for remote monitoring, or the local collector host when monitoring locally. | Any Str | true | - | - |
 | service.name | Logical name of the service. When enabled, defaults to unknown_service:microsoft.sql_server. | Any Str | false | - | - |
 | service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |

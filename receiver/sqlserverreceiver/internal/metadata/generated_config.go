@@ -3463,6 +3463,7 @@ func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
 
 // EventsConfig provides config for sqlserver events.
 type EventsConfig struct {
+	DbServerQueryPlan    EventConfig `mapstructure:"db.server.query_plan"`
 	DbServerQuerySample  EventConfig `mapstructure:"db.server.query_sample"`
 	DbServerTopProcedure EventConfig `mapstructure:"db.server.top_procedure"`
 	DbServerTopQuery     EventConfig `mapstructure:"db.server.top_query"`
@@ -3470,6 +3471,9 @@ type EventsConfig struct {
 
 func DefaultEventsConfig() EventsConfig {
 	return EventsConfig{
+		DbServerQueryPlan: EventConfig{
+			Enabled: false,
+		},
 		DbServerQuerySample: EventConfig{
 			Enabled: false,
 		},
@@ -3886,11 +3890,6 @@ func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
-}
-
-// Deprecated: Use NewDefaultMetricsBuilderConfig.
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return NewDefaultMetricsBuilderConfig()
 }
 
 // LogsBuilderConfig is a configuration for sqlserver logs builder.

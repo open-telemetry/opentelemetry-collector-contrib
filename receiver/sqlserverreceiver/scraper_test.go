@@ -137,6 +137,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueRate.Enabled = enabled
 	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = enabled
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = enabled
+	cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverCPUCount.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverComputerUptime.Enabled = enabled
 	// cfg.TopQueryCollection.Enabled = enabled
@@ -172,7 +173,9 @@ func TestEmptyScrape(t *testing.T) {
 
 func TestSuccessfulScrape(t *testing.T) {
 	tests := []struct {
-		name                  string
+		name string
+		// propertiesFixtureFile overrides the fixture returned for the server properties
+		// query. Empty means the default on-prem fixture (propertyQueryData.txt).
 		propertiesFixtureFile string
 	}{
 		{
@@ -400,6 +403,13 @@ type mockClient struct {
 
 type mockInvalidClient struct {
 	mockClient
+}
+
+// mockEmptyResultClient returns no rows for every query, so a scrape records nothing.
+type mockEmptyResultClient struct{}
+
+func (mockEmptyResultClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
+	return nil, nil
 }
 
 type mockMultiStatementProcClient struct {
@@ -695,6 +705,186 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
 	assert.Equal(t, "db.server.top_query", actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
 	assert.NoError(t, errs)
+}
+
+func TestQueryTextAndPlanQueryDbServerQueryPlanEvent(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	assert.NoError(t, cfg.Validate())
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = true
+	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
+
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotNil(t, scrapers)
+
+	scraper := scrapers[0]
+	assert.NotNil(t, scraper.cache)
+
+	const totalElapsedTime = "total_elapsed_time"
+	const rowsReturned = "total_rows"
+	const totalWorkerTime = "total_worker_time"
+	const logicalReads = "total_logical_reads"
+	const logicalWrites = "total_logical_writes"
+	const physicalReads = "total_physical_reads"
+	const executionCount = "execution_count"
+	const totalGrant = "total_grant_kb"
+	const procedureExecutionCount = "procedure_execution_count"
+
+	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
+	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
+	procedureID := "0"
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalElapsedTime, 846)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, rowsReturned, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalWrites, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, physicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, executionCount, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalWorkerTime, 845)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalGrant, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, procedureExecutionCount, 0)
+
+	scraper.client = mockClient{
+		instanceName:        scraper.config.InstanceName,
+		SQL:                 scraper.sqlQuery,
+		maxQuerySampleCount: 1000,
+		lookbackTime:        20,
+		topQueryCount:       200,
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+
+	logRecords := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	assert.Equal(t, 2, logRecords.Len())
+
+	var topQueryRecord, queryPlanRecord plog.LogRecord
+	for i := 0; i < logRecords.Len(); i++ {
+		switch logRecords.At(i).EventName() {
+		case "db.server.top_query":
+			topQueryRecord = logRecords.At(i)
+		case "db.server.query_plan":
+			queryPlanRecord = logRecords.At(i)
+		}
+	}
+
+	_, hasQueryPlanOnTopQuery := topQueryRecord.Attributes().Get("sqlserver.query_plan")
+	assert.False(t, hasQueryPlanOnTopQuery, "with db.server.query_plan enabled, the plan moves off db.server.top_query and onto the dedicated event")
+
+	queryHashAttr, ok := queryPlanRecord.Attributes().Get("sqlserver.query_hash")
+	assert.True(t, ok)
+	assert.Equal(t, queryHash, queryHashAttr.Str())
+
+	queryPlanHashAttr, ok := queryPlanRecord.Attributes().Get("sqlserver.query_plan_hash")
+	assert.True(t, ok)
+	assert.Equal(t, queryPlanHash, queryPlanHashAttr.Str())
+
+	queryPlanAttr, ok := queryPlanRecord.Attributes().Get("sqlserver.query_plan")
+	assert.True(t, ok)
+	assert.NotEmpty(t, queryPlanAttr.Str())
+}
+
+// TestQueryTextAndPlanQueryDbServerQueryPlanEventDisabled covers the default configuration, where
+// db.server.query_plan is off and db.server.top_query keeps carrying the plan as it always has.
+func TestQueryTextAndPlanQueryDbServerQueryPlanEventDisabled(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	assert.NoError(t, cfg.Validate())
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = false
+	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
+
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotNil(t, scrapers)
+
+	scraper := scrapers[0]
+	assert.NotNil(t, scraper.cache)
+
+	const totalElapsedTime = "total_elapsed_time"
+	const rowsReturned = "total_rows"
+	const totalWorkerTime = "total_worker_time"
+	const logicalReads = "total_logical_reads"
+	const logicalWrites = "total_logical_writes"
+	const physicalReads = "total_physical_reads"
+	const executionCount = "execution_count"
+	const totalGrant = "total_grant_kb"
+	const procedureExecutionCount = "procedure_execution_count"
+
+	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
+	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
+	procedureID := "0"
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalElapsedTime, 846)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, rowsReturned, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalWrites, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, physicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, executionCount, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalWorkerTime, 845)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalGrant, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, procedureExecutionCount, 0)
+
+	scraper.client = mockClient{
+		instanceName:        scraper.config.InstanceName,
+		SQL:                 scraper.sqlQuery,
+		maxQuerySampleCount: 1000,
+		lookbackTime:        20,
+		topQueryCount:       200,
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+
+	logRecords := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	assert.Equal(t, 1, logRecords.Len(), "only db.server.top_query is emitted while db.server.query_plan is disabled")
+
+	topQueryRecord := logRecords.At(0)
+	assert.Equal(t, "db.server.top_query", topQueryRecord.EventName())
+
+	queryPlanAttr, ok := topQueryRecord.Attributes().Get("sqlserver.query_plan")
+	assert.True(t, ok, "db.server.top_query keeps carrying the plan by default")
+	assert.NotEmpty(t, queryPlanAttr.Str())
+}
+
+// TestQueryTextAndPlanQueryDbServerQueryPlanEventNoRows covers a scrape that records nothing, which
+// emits no resource at all. db.server.query_plan is enabled, so the plan removal still runs and has
+// to cope with empty logs.
+func TestQueryTextAndPlanQueryDbServerQueryPlanEventNoRows(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	assert.NoError(t, cfg.Validate())
+
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = true
+	cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
+
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotNil(t, scrapers)
+
+	scraper := scrapers[0]
+	scraper.client = mockEmptyResultClient{}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, actualLogs.ResourceLogs().Len())
 }
 
 func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
@@ -1116,9 +1306,11 @@ func TestMultiStatementProcNoDuplicateRows(t *testing.T) {
 
 func TestSetupResourceBuilder(t *testing.T) {
 	tests := []struct {
-		name             string
-		config           *Config
-		expectedHostName string
+		name                  string
+		config                *Config
+		expectedHostName      string
+		expectedServerAddress string
+		expectedServerPort    int64
 	}{
 		{
 			name: "with server configuration",
@@ -1129,7 +1321,9 @@ func TestSetupResourceBuilder(t *testing.T) {
 				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
 				return cfg
 			}(),
-			expectedHostName: "testserver.example.com",
+			expectedHostName:      "testserver.example.com",
+			expectedServerAddress: "testserver.example.com",
+			expectedServerPort:    1433,
 		},
 		{
 			name: "with datasource configuration",
@@ -1139,7 +1333,9 @@ func TestSetupResourceBuilder(t *testing.T) {
 				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
 				return cfg
 			}(),
-			expectedHostName: "datasource-host.example.com",
+			expectedHostName:      "datasource-host.example.com",
+			expectedServerAddress: "datasource-host.example.com",
+			expectedServerPort:    1434,
 		},
 		{
 			name: "with datasource default port",
@@ -1149,7 +1345,24 @@ func TestSetupResourceBuilder(t *testing.T) {
 				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
 				return cfg
 			}(),
-			expectedHostName: "datasource-host2.example.com",
+			expectedHostName:      "datasource-host2.example.com",
+			expectedServerAddress: "datasource-host2.example.com",
+			expectedServerPort:    defaultSQLServerPort,
+		},
+		{
+			// A loopback target is only reachable when the instance is co-located with the
+			// collector, so server.address reports the collector's host name instead.
+			name: "with loopback server configuration",
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Server = "localhost"
+				cfg.Port = 1433
+				cfg.MetricsBuilderConfig.ResourceAttributes.HostName.Enabled = true
+				return cfg
+			}(),
+			expectedHostName:      "localhost",
+			expectedServerAddress: getTestHostname(),
+			expectedServerPort:    1433,
 		},
 	}
 
@@ -1181,6 +1394,14 @@ func TestSetupResourceBuilder(t *testing.T) {
 			hostName, exists := resource.Attributes().Get("host.name")
 			assert.True(t, exists)
 			assert.Equal(t, tt.expectedHostName, hostName.AsString())
+
+			serverAddress, exists := resource.Attributes().Get("server.address")
+			assert.True(t, exists)
+			assert.Equal(t, tt.expectedServerAddress, serverAddress.AsString())
+
+			serverPort, exists := resource.Attributes().Get("server.port")
+			assert.True(t, exists)
+			assert.Equal(t, tt.expectedServerPort, serverPort.Int())
 		})
 	}
 }
