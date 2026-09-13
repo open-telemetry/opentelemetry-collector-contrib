@@ -514,10 +514,8 @@ func TestAddPSIMetricsWithIOStatsPSI(t *testing.T) {
 		PSI: psiStats(7_000_000_000, 300_000_000),
 	}
 
-	// Inline pattern: guard the parent, then pass .PSI directly.
-	if io != nil {
-		addPSIMetrics(mb, metadata.NodeIOPressureMetrics, io.PSI, currentTime)
-	}
+	// Pass io.PSI directly; io is guaranteed non-nil above.
+	addPSIMetrics(mb, metadata.NodeIOPressureMetrics, io.PSI, currentTime)
 
 	emitted := mb.Emit()
 	require.Equal(t, 1, emitted.ResourceMetrics().Len())
@@ -545,11 +543,9 @@ func TestAddPSIMetricsNilIOStatsPSI(t *testing.T) {
 	mb := metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type))
 	currentTime := pcommon.NewTimestampFromTime(time.Now())
 
-	var io *stats.IOStats // nil — cgroup v1 / Windows
-
-	if io != nil {
-		addPSIMetrics(mb, metadata.NodeIOPressureMetrics, io.PSI, currentTime)
-	}
+	// Simulate the nil case: pass nil PSIStats directly.
+	// addPSIMetrics is nil-safe and must not emit any metrics when s == nil.
+	addPSIMetrics(mb, metadata.NodeIOPressureMetrics, nil, currentTime)
 
 	emitted := mb.Emit()
 	assert.Equal(t, 0, emitted.ResourceMetrics().Len(), "no metrics should be emitted when io is nil")
