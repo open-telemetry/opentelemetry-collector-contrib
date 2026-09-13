@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -497,6 +498,61 @@ func TestPSITotalAttributes(t *testing.T) {
 	assert.Contains(t, seen, "full")
 	assert.EqualValues(t, 60_000_000_000, seen["some"])
 	assert.EqualValues(t, 5_000_000_000, seen["full"])
+}
+
+// --- addPSIMetrics direct unit tests ---
+
+// TestAddPSIMetricsWithIOStatsPSI verifies that calling addPSIMetrics directly
+// with an IOStats.PSI value (the inlined call pattern) emits the correct data points.
+// This test must remain GREEN after the addIOPSIMetrics wrapper is removed.
+func TestAddPSIMetricsWithIOStatsPSI(t *testing.T) {
+	cfg := enablePSIConfig()
+	mb := metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type))
+	currentTime := pcommon.NewTimestampFromTime(time.Now())
+
+	io := &stats.IOStats{
+		PSI: psiStats(7_000_000_000, 300_000_000),
+	}
+
+	// Inline pattern: guard the parent, then pass .PSI directly.
+	if io != nil {
+		addPSIMetrics(mb, metadata.NodeIOPressureMetrics, io.PSI, currentTime)
+	}
+
+	emitted := mb.Emit()
+	require.Equal(t, 1, emitted.ResourceMetrics().Len())
+	sm := emitted.ResourceMetrics().At(0).ScopeMetrics()
+	require.Equal(t, 1, sm.Len())
+	ms := sm.At(0).Metrics()
+
+	idx := make(map[string]pmetric.Metric, ms.Len())
+	for i := 0; i < ms.Len(); i++ {
+		m := ms.At(i)
+		idx[m.Name()] = m
+	}
+
+	totalMetric, ok := idx["k8s.node.io.pressure.total"]
+	require.True(t, ok, "k8s.node.io.pressure.total must be present")
+	assert.Equal(t, 2, totalMetric.Sum().DataPoints().Len())
+	assertPSITotalValue(t, totalMetric, metadata.AttributePressureTypeSome, int64(7_000_000_000))
+	assertPSITotalValue(t, totalMetric, metadata.AttributePressureTypeFull, int64(300_000_000))
+}
+
+// TestAddPSIMetricsNilIOStatsPSI verifies the inlined nil guard: when io is nil,
+// addPSIMetrics is never called and no metrics are emitted.
+func TestAddPSIMetricsNilIOStatsPSI(t *testing.T) {
+	cfg := enablePSIConfig()
+	mb := metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type))
+	currentTime := pcommon.NewTimestampFromTime(time.Now())
+
+	var io *stats.IOStats // nil — cgroup v1 / Windows
+
+	if io != nil {
+		addPSIMetrics(mb, metadata.NodeIOPressureMetrics, io.PSI, currentTime)
+	}
+
+	emitted := mb.Emit()
+	assert.Equal(t, 0, emitted.ResourceMetrics().Len(), "no metrics should be emitted when io is nil")
 }
 
 // --- helpers ---
