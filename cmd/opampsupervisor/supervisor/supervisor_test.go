@@ -4173,6 +4173,45 @@ func TestSupervisor_onOpampConnectionSettings(t *testing.T) {
 		}
 		assert.EqualValues(t, 30, s.heartbeatIntervalSeconds, "interval must be reverted after failed reconnect")
 	})
+
+	t.Run("TLS settings remain unchanged when server sends no TLS settings", func(t *testing.T) {
+		s := newTestSupervisor(t, fmt.Sprintf("http://127.0.0.1:%d", freePort(t)), false)
+
+		s.config.Server.TLS.InsecureSkipVerify = false
+		s.config.Server.TLS.IncludeSystemCACertsPool = true
+
+		err := s.onOpampConnectionSettings(t.Context(), &protobufs.OpAMPConnectionSettings{
+			DestinationEndpoint: fmt.Sprintf("http://127.0.0.1:%d", freePort(t)),
+		})
+		require.NoError(t, err)
+
+		assert.False(t, s.config.Server.TLS.InsecureSkipVerify)
+		assert.True(t, s.config.Server.TLS.IncludeSystemCACertsPool)
+	})
+
+	t.Run("TLS settings are updated when server sends TLS settings", func(t *testing.T) {
+		s := newTestSupervisor(t, fmt.Sprintf("http://127.0.0.1:%d", freePort(t)), false)
+
+		settings := &protobufs.TLSConnectionSettings{
+			InsecureSkipVerify:       true,
+			IncludeSystemCaCertsPool: true,
+			MinVersion:               "1.2",
+			MaxVersion:               "1.3",
+			CipherSuites:             []string{"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"},
+		}
+
+		err := s.onOpampConnectionSettings(t.Context(), &protobufs.OpAMPConnectionSettings{
+			DestinationEndpoint: fmt.Sprintf("http://127.0.0.1:%d", freePort(t)),
+			Tls:                 settings,
+		})
+		require.NoError(t, err)
+
+		assert.True(t, s.config.Server.TLS.InsecureSkipVerify)
+		assert.True(t, s.config.Server.TLS.IncludeSystemCACertsPool)
+		assert.Equal(t, settings.MinVersion, s.config.Server.TLS.MinVersion)
+		assert.Equal(t, settings.MaxVersion, s.config.Server.TLS.MaxVersion)
+		assert.Equal(t, settings.CipherSuites, s.config.Server.TLS.CipherSuites)
+	})
 }
 
 func TestRemoteConfigConcurrentAccess(t *testing.T) {
