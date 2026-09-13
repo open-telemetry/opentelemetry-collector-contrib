@@ -44,8 +44,8 @@ func TestLoadConfig(t *testing.T) {
 
 	defaultClientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	defaultClientConfig.MaxIdleConns = 0
-	defaultClientConfig.IdleConnTimeout = 0
+	defaultClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	defaultClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	defaultClientConfig.ForceAttemptHTTP2 = false
 	defaultClientConfig.Timeout = 5 * time.Second
 	defaultClientConfig.Headers = configopaque.MapList{
@@ -54,8 +54,8 @@ func TestLoadConfig(t *testing.T) {
 
 	overrideClientConfig := confighttp.NewDefaultClientConfig()
 	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	overrideClientConfig.MaxIdleConns = 0
-	overrideClientConfig.IdleConnTimeout = 0
+	overrideClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
+	overrideClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
 	overrideClientConfig.ForceAttemptHTTP2 = false
 	overrideClientConfig.Timeout = 500 * time.Millisecond
 	overrideClientConfig.Headers = configopaque.MapList{

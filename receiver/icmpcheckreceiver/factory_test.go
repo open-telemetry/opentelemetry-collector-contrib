@@ -19,7 +19,7 @@ import (
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
 	require.NotNil(t, factory)
-	assert.Equal(t, "icmpcheckreceiver", factory.Type().String())
+	assert.Equal(t, "icmp_check", factory.Type().String())
 }
 
 func TestCreateDefaultConfig(t *testing.T) {

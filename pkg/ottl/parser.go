@@ -295,7 +295,7 @@ var (
 func parseStatement(raw string) (*parsedStatement, error) {
 	parsed, err := parser().ParseString("", raw)
 	if err != nil {
-		return nil, fmt.Errorf("statement has invalid syntax: %w", err)
+		return nil, formatParseError("statement", raw, err)
 	}
 	err = parsed.checkForCustomError()
 	if err != nil {
@@ -308,7 +308,7 @@ func parseStatement(raw string) (*parsedStatement, error) {
 func parseCondition(raw string) (*booleanExpression, error) {
 	parsed, err := conditionParser().ParseString("", raw)
 	if err != nil {
-		return nil, fmt.Errorf("condition has invalid syntax: %w", err)
+		return nil, formatParseError("condition", raw, err)
 	}
 	err = parsed.checkForCustomError()
 	if err != nil {
@@ -321,7 +321,7 @@ func parseCondition(raw string) (*booleanExpression, error) {
 func parseValueExpression(raw string) (*value, error) {
 	parsed, err := valueExpressionParser().ParseString("", raw)
 	if err != nil {
-		return nil, fmt.Errorf("expression has invalid syntax: %w", err)
+		return nil, formatParseError("expression", raw, err)
 	}
 	err = parsed.checkForCustomError()
 	if err != nil {
@@ -329,6 +329,36 @@ func parseValueExpression(raw string) (*value, error) {
 	}
 
 	return parsed, nil
+}
+
+func formatParseError(kind, raw string, err error) error {
+	var unexpected *participle.UnexpectedTokenError
+	if !errors.As(err, &unexpected) {
+		return fmt.Errorf("%s has invalid syntax: %w", kind, err)
+	}
+	pos := unexpected.Position()
+	var expected string
+	if msg := unexpected.Message(); msg != "" {
+		if idx := strings.Index(msg, "(expected "); idx >= 0 {
+			expected = " " + msg[idx:]
+		}
+	}
+	if near := nearParseError(raw, pos.Offset); near != "" {
+		return fmt.Errorf("%s has invalid syntax at %d:%d near `%s`:%s", kind, pos.Line, pos.Column, near, expected)
+	}
+	return fmt.Errorf("%s has invalid syntax at %d:%d:%s", kind, pos.Line, pos.Column, expected)
+}
+
+// parseErrorSnippetLen is the number of source characters shown after the error position in the "near" clause.
+const parseErrorSnippetLen = 10
+
+// nearParseError returns a short, UTF-8 safe snippet of raw starting at offset for use in error messages.
+func nearParseError(raw string, offset int) string {
+	if offset < 0 || offset >= len(raw) {
+		return ""
+	}
+	end := min(offset+parseErrorSnippetLen, len(raw))
+	return strings.TrimSpace(strings.ToValidUTF8(raw[offset:end], ""))
 }
 
 func insertContextIntoPathsOffsets(context, statement string, offsets []int) (string, error) {

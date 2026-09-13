@@ -194,3 +194,40 @@ func Test_limit_get_nil(t *testing.T) {
 	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)
 }
+
+func Test_LimitFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewLimitFactory[any]()
+		assert.Equal(t, "limit", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewLimitFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &LimitArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Limit", "PriorityKeys"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewLimitFactory[any]()
+		args := factory.CreateDefaultArguments()
+		limitArgs, ok := args.(*LimitArguments[any])
+		require.True(t, ok)
+		limitArgs.Target = &ottl.StandardPMapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return pcommon.NewMap(), nil
+			},
+		}
+		limitArgs.Limit = 10
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createLimitFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "LimitFactory args must be of type *LimitArguments[K]")
+	})
+}

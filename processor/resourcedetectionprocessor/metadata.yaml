@@ -21,6 +21,8 @@ attributes:
       - aks
       - alibaba_ecs
       - azure
+      - azureappservice
+      - azurecontainerapps
       - consul
       - digitalocean
       - docker

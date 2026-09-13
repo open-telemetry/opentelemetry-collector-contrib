@@ -144,7 +144,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkKvstoreReplicationStatus: SplunkKvstoreReplicationStatusMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkKvstoreReplicationStatusMetricAttributeKey{SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkKvstoreReplicationStatusMetricAttributeKey{SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStorageEngine, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion},
 					},
 					SplunkKvstoreStatus: SplunkKvstoreStatusMetricConfig{
 						Enabled:             true,
@@ -406,7 +406,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkKvstoreReplicationStatus: SplunkKvstoreReplicationStatusMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkKvstoreReplicationStatusMetricAttributeKey{SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkKvstoreReplicationStatusMetricAttributeKey{SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStorageEngine, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion},
 					},
 					SplunkKvstoreStatus: SplunkKvstoreStatusMetricConfig{
 						Enabled:             false,
@@ -836,7 +836,7 @@ func TestSplunkKvstoreReplicationStatusMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SplunkKvstoreReplicationStatusMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric splunk.kvstore.replication.status doesn't have an attribute invalid, valid attributes: [splunk.kvstore.status.value, splunk.splunkd.build, splunk.splunkd.version]")
+	require.ErrorContains(t, cfg.Validate(), "metric splunk.kvstore.replication.status doesn't have an attribute invalid, valid attributes: [splunk.kvstore.status.value, splunk.kvstore.storage_engine, splunk.splunkd.build, splunk.splunkd.version]")
 
 	cfg = DefaultMetricsConfig().SplunkKvstoreReplicationStatus
 	cfg.AggregationStrategy = "invalid"
@@ -848,7 +848,7 @@ func TestSplunkKvstoreStatusMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SplunkKvstoreStatusMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric splunk.kvstore.status doesn't have an attribute invalid, valid attributes: [splunk.kvstore.storage.engine, splunk.kvstore.external, splunk.kvstore.status.value, splunk.splunkd.build, splunk.splunkd.version]")
+	require.ErrorContains(t, cfg.Validate(), "metric splunk.kvstore.status doesn't have an attribute invalid, valid attributes: [splunk.kvstore.storage_engine, splunk.kvstore.external, splunk.kvstore.status.value, splunk.splunkd.build, splunk.splunkd.version]")
 
 	cfg = DefaultMetricsConfig().SplunkKvstoreStatus
 	cfg.AggregationStrategy = "invalid"

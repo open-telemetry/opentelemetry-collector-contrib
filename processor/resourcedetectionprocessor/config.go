@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/appservice"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/containerapps"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean"
@@ -106,6 +107,9 @@ type DetectorConfig struct {
 	// Aks contains user-specified configurations for the aks detector
 	AksConfig aks.Config `mapstructure:"aks"`
 
+	// AzureAppServiceConfig contains user-specified configurations for the Azure App Service detector
+	AzureAppServiceConfig appservice.Config `mapstructure:"azureappservice"`
+
 	// AzureContainerAppsConfig contains user-specified configurations for the Azure Container Apps detector
 	AzureContainerAppsConfig containerapps.Config `mapstructure:"azurecontainerapps"`
 
@@ -180,6 +184,7 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		LambdaConfig:             lambda.CreateDefaultConfig(),
 		AzureConfig:              azure.CreateDefaultConfig(),
 		AksConfig:                aks.CreateDefaultConfig(),
+		AzureAppServiceConfig:    appservice.CreateDefaultConfig(),
 		AzureContainerAppsConfig: containerapps.CreateDefaultConfig(),
 		ConsulConfig:             consul.CreateDefaultConfig(),
 		DigitalOceanConfig:       digitalocean.CreateDefaultConfig(),
@@ -222,6 +227,8 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.AzureConfig
 	case aks.TypeStr:
 		return d.AksConfig
+	case appservice.TypeStr:
+		return d.AzureAppServiceConfig
 	case containerapps.TypeStr:
 		return d.AzureContainerAppsConfig
 	case consul.TypeStr:

@@ -134,7 +134,6 @@ exporter/kafkaexporter
 exporter/loadbalancingexporter
 exporter/logicmonitorexporter
 exporter/logzioexporter
-exporter/mezmoexporter
 exporter/opensearchexporter
 exporter/pulsarexporter
 internal/rabbitmq
@@ -187,6 +186,7 @@ extension/opampcustommessages
 extension/opampextension
 extension/pprofextension
 extension/remotetapextension
+extension/sdnotifyextension
 extension/sigv4authextension
 extension/solarwindsapmsettingsextension
 extension/storage/dbstorage
@@ -199,6 +199,7 @@ internal/aws/k8s
 internal/aws/xray/testdata/sampleapp
 internal/aws/xray/testdata/sampleserver
 internal/collectd
+pkg/semconvtest
 processor/k8sattributesprocessor
 processor/probabilisticsamplerprocessor
 processor/resourcedetectionprocessor
@@ -215,6 +216,7 @@ pkg/expohisto
 pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
+processor/adaptivetailsamplingprocessor
 processor/attributesprocessor
 processor/awsecsattributesprocessor
 processor/cardinalityguardianprocessor
@@ -222,7 +224,6 @@ processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
 processor/deltatorateprocessor
 processor/drainprocessor
-processor/dynamicsamplingprocessor
 processor/filterprocessor
 processor/genainormalizerprocessor
 processor/geoipprocessor
@@ -239,7 +240,9 @@ processor/metricstransformprocessor
 processor/redactionprocessor
 processor/remotetapprocessor
 processor/resourceprocessor
+processor/rollingspanlatencyprocessor
 processor/schemaprocessor
+processor/signingprocessor
 processor/spanprocessor
 processor/spanpruningprocessor
 processor/sumologicprocessor
@@ -321,7 +324,6 @@ receiver/redfishreceiver
 receiver/redisreceiver
 receiver/riakreceiver
 receiver/saphanareceiver
-receiver/simpleprometheusreceiver/examples/federation/prom-counter
 receiver/simpleprometheusreceiver
 receiver/skywalkingreceiver
 receiver/snmpreceiver

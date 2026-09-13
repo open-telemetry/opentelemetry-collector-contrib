@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
@@ -113,7 +112,7 @@ func TestConvertMetric(t *testing.T) {
 			mapVals: map[string]metricFamily{
 				"testgauge": {
 					mf: &io_prometheus_client.MetricFamily{
-						Name: proto.String("testgauge"),
+						Name: new("testgauge"),
 						Type: io_prometheus_client.MetricType_COUNTER.Enum(),
 					},
 				},
@@ -127,9 +126,9 @@ func TestConvertMetric(t *testing.T) {
 			mapVals: map[string]metricFamily{
 				"testgauge": {
 					mf: &io_prometheus_client.MetricFamily{
-						Name: proto.String("testgauge"),
+						Name: new("testgauge"),
 						Type: io_prometheus_client.MetricType_GAUGE.Enum(),
-						Help: proto.String("test help value"),
+						Help: new("test help value"),
 					},
 				},
 			},

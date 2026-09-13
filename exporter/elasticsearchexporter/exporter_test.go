@@ -3743,3 +3743,74 @@ func actionGetValue(t *testing.T, actionJSON json.RawMessage, target string) str
 	require.True(t, ok, "the type of action.create.%s was not string", target)
 	return vString
 }
+
+func TestExporterTimeout_NoRetryOnTimeout(t *testing.T) {
+	var count atomic.Int32
+	done := make(chan struct{}, 1)
+	defer close(done)
+	server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, _ *http.Request) {
+		if count.Add(1) == 1 {
+			<-done
+		}
+		w.WriteHeader(http.StatusTeapot)
+	})
+
+	exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+		cfg.ClientConfig.Timeout = 50 * time.Millisecond
+		cfg.Retry.Enabled = true
+		cfg.Retry.MaxRetries = 1
+		cfg.Retry.InitialInterval = 1 * time.Millisecond
+		cfg.QueueBatchConfig.Get().Batch.Get().MinSize = 0
+		cfg.QueueBatchConfig.Get().WaitForResult = true
+	})
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.LogRecords().AppendEmpty()
+	logs.MarkReadOnly()
+	err := exporter.ConsumeLogs(t.Context(), logs)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Equal(t, int32(1), count.Load())
+}
+
+func TestExporterTimeout_Independent(t *testing.T) {
+	// Server responds with HTTP 429 for first few attempts.
+	// Ensure timeout is not shared across retries by
+	// checking the total time elapsed across attempts exceeds configured timeout
+	successfulOnAttempt := 3
+	var count atomic.Int32
+	server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, _ *http.Request) {
+		if int(count.Add(1)) < successfulOnAttempt {
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		w.WriteHeader(http.StatusTeapot)
+	})
+
+	timeout := 50 * time.Millisecond
+	exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+		cfg.ClientConfig.Timeout = timeout
+		cfg.Retry.Enabled = true
+		cfg.Retry.MaxRetries = 1000
+		// Since backoff uses equal jitter, the actual wait may be the configured interval / 2.
+		// Configure to 2 * timeout to offset that effect.
+		cfg.Retry.InitialInterval = 2 * timeout
+		cfg.Retry.MaxInterval = 2 * timeout
+
+		cfg.QueueBatchConfig.Get().Batch.Get().MinSize = 0
+		cfg.QueueBatchConfig.Get().WaitForResult = true
+	})
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.LogRecords().AppendEmpty()
+	logs.MarkReadOnly()
+
+	start := time.Now()
+	err := exporter.ConsumeLogs(t.Context(), logs)
+	var errFlushFailed docappender.ErrorFlushFailed
+	assert.ErrorAs(t, err, &errFlushFailed)
+	assert.ErrorContains(t, err, "418")
+	assert.Equal(t, int32(successfulOnAttempt), count.Load())
+	assert.GreaterOrEqual(t, time.Since(start), timeout)
+}

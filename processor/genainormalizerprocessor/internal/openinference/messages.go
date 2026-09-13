@@ -138,15 +138,15 @@ func reconstructPrefix(attrs pcommon.Map, prefix, target string, isOutput, remov
 
 // parseIndexedField splits "N.message.field.path" into (N, "field.path", true).
 func parseIndexedField(s string) (int, string, bool) {
-	dotIdx := strings.IndexByte(s, '.')
-	if dotIdx < 0 {
+	before, after, ok := strings.Cut(s, ".")
+	if !ok {
 		return 0, "", false
 	}
-	idx, err := strconv.Atoi(s[:dotIdx])
+	idx, err := strconv.Atoi(before)
 	if err != nil {
 		return 0, "", false
 	}
-	rest := s[dotIdx+1:]
+	rest := after
 	const msgPrefix = "message."
 	if !strings.HasPrefix(rest, msgPrefix) {
 		return 0, "", false
@@ -174,15 +174,15 @@ func applyField(mf *messageFields, fieldPath string, v pcommon.Value) {
 }
 
 func parseToolCallField(mf *messageFields, s string, v pcommon.Value) {
-	dotIdx := strings.IndexByte(s, '.')
-	if dotIdx < 0 {
+	before, after, ok := strings.Cut(s, ".")
+	if !ok {
 		return
 	}
-	idx, err := strconv.Atoi(s[:dotIdx])
+	idx, err := strconv.Atoi(before)
 	if err != nil {
 		return
 	}
-	rest := s[dotIdx+1:]
+	rest := after
 	const tcPrefix = "tool_call."
 	if !strings.HasPrefix(rest, tcPrefix) {
 		return

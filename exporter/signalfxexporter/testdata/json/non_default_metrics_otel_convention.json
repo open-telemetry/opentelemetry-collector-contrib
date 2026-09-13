@@ -56,9 +56,6 @@
     "container.memory.page_faults": null
   },
   {
-    "container.memory.rss": null
-  },
-  {
     "k8s.pod.memory.available": null
   },
   {

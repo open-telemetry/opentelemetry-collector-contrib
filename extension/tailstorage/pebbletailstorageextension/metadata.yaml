@@ -3,6 +3,13 @@ type: pebble_tail_storage
 
 description: Stores pending trace data for tail sampling in a local Pebble database.
 
+tests:
+  config:
+    directory: test-storage
+    max_storage_size_mib: 1
+  goleak:
+    setup: "setupTestMain(m)"
+
 status:
   class: extension
   stability:

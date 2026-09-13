@@ -160,3 +160,40 @@ func invalidXMLGetter() ottl.StandardStringGetter[any] {
 		},
 	}
 }
+
+func Test_RemoveXMLFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewRemoveXMLFactory[any]()
+		assert.Equal(t, "RemoveXML", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewRemoveXMLFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &RemoveXMLArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "XPath"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewRemoveXMLFactory[any]()
+		args := factory.CreateDefaultArguments()
+		removeArgs, ok := args.(*RemoveXMLArguments[any])
+		require.True(t, ok)
+		removeArgs.Target = ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "<a>b</a>", nil
+			},
+		}
+		removeArgs.XPath = "/a"
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createRemoveXMLFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "RemoveXML args must be of type *RemoveXMLAguments[K]")
+	})
+}
