@@ -142,3 +142,51 @@ For enhanced security, consider:
 - Running this receiver in an isolated collector instance with elevated privileges that only exports data (does not expose receiver ports like OTLP or Zipkin), forwarding metrics to your main collector via OTLP. This reduces the attack surface and RCE risk on the privileged container.
 
 For more information, see [issue #11791](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11791).
+
+## `receiver.dockerstatsreceiver.enableSemConvMetrics` feature gate
+
+This alpha feature gate switches the receiver over to metrics that follow the
+[container semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/container.md).
+
+### Metrics that are replaced
+
+Each metric below is swapped only if it was enabled. If you have already disabled a metric in the
+left column, its replacement is **not** turned on. Several old metrics collapse into a single new
+metric that distinguishes the data points with attributes.
+
+| Disabled when the gate is enabled | Replaced by |
+| --- | --- |
+| `container.cpu.usage.total` | `container.cpu.time` (no `cpu.mode` attribute) |
+| `container.cpu.usage.system` | `container.cpu.time` with `cpu.mode=system` |
+| `container.cpu.usage.kernelmode` | `container.cpu.time` with `cpu.mode=kernel` |
+| `container.cpu.usage.usermode` | `container.cpu.time` with `cpu.mode=user` |
+| `container.cpu.utilization` | `container.cpu.usage` |
+| `container.memory.usage.total` | `container.memory.usage` |
+| `container.memory.total_pgfault` | `container.memory.paging.faults` |
+| `container.network.io.usage.rx_bytes` | `container.network.io` with `network.io.direction=receive` |
+| `container.network.io.usage.tx_bytes` | `container.network.io` with `network.io.direction=transmit` |
+
+`container.cpu.usage.system` and `container.memory.total_pgfault` are disabled by default, so
+`cpu.mode=system` data points and `container.memory.paging.faults` only appear if you had explicitly
+enabled those metrics.
+
+### Metrics that are added
+
+These are enabled unconditionally and do not replace or disable anything:
+
+| Enabled when the gate is enabled | Notes |
+| --- | --- |
+| `container.memory.available` | |
+| `container.memory.working_set` | |
+| `container.disk.io` | Carries `system.device` (`major:minor`) and `disk.io.direction`. Does not disable `container.blockio.io_service_bytes_recursive`, so both are emitted. |
+
+### Net effect on the defaults
+
+With a default configuration and the gate enabled, the receiver emits `container.cpu.time`,
+`container.cpu.usage`, `container.memory.usage`, `container.memory.available`,
+`container.memory.working_set`, `container.disk.io`, and `container.network.io`, and stops emitting
+`container.cpu.usage.total`, `container.cpu.usage.kernelmode`, `container.cpu.usage.usermode`,
+`container.cpu.utilization`, `container.memory.usage.total`, `container.network.io.usage.rx_bytes`,
+and `container.network.io.usage.tx_bytes`. All other metrics are unaffected.
+
+More information regarding this change can be found at https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649.
