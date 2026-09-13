@@ -463,6 +463,14 @@ attributes:
   # attributes for events
   ## common
 events:
+  db.server.query_plan:
+    enabled: false
+    description: query execution plan. When enabled, the plan is reported here instead of on db.server.top_query, so an oversized plan payload cannot drop the lightweight query statistics alongside it
+    attributes:
+      - sqlserver.query_hash
+      - sqlserver.query_plan
+      - sqlserver.query_plan_hash
+
   db.server.query_sample:
     enabled: false
     description: query sample

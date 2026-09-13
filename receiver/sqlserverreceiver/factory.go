@@ -114,6 +114,8 @@ func setupLogQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerQuerySamplesQuery())
 	}
 
+	// db.server.query_plan is sourced from the same query as db.server.top_query and only splits the
+	// plan out of it, so it is collected as part of top query collection rather than on its own.
 	if cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		queries = append(queries, getSQLServerQueryTextAndPlanQuery())
 	}

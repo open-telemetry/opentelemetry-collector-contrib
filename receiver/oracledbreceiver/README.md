@@ -139,9 +139,10 @@ upgrading without adding new grants continue to work unchanged.
 
 ### Events collection
 
-The following grants are required for event collection. All three event types
-(`db.server.query_sample`, `db.server.top_query`, `db.server.session.wait_sample`)
-are disabled by default and must be explicitly enabled in configuration.
+The following grants are required for event collection. All four event types
+(`db.server.query_sample`, `db.server.top_query`, `db.server.session.wait_sample`,
+`db.server.top_procedure`) are disabled by default and must be explicitly enabled
+in configuration.
 
 #### All events (shared requirements)
 
@@ -193,6 +194,39 @@ Captures per-session wait event statistics from `V$SESSION_EVENT`:
 GRANT SELECT ON V_$SESSION_EVENT TO <username>;  -- Wait event names, counts, and durations
 ```
 
+#### `db.server.top_procedure`
+
+Captures aggregated performance metrics for stored procedures, derived by grouping `V$SQL` by
+`PROGRAM_ID` and joining to `DBA_PROCEDURES`. Correlates with `db.server.top_query` and
+`db.server.query_sample` via the `oracledb.procedure_id` attribute:
+
+```sql
+GRANT SELECT ON V_$SQL TO <username>;            -- Aggregated procedure execution/resource stats
+GRANT SELECT ON DBA_PROCEDURES TO <username>;    -- Stored procedure metadata (owner, name, type)
+```
+
+Cumulative counters are converted to per-scrape deltas. Rows are fetched up to
+`max_procedure_sample_count`, ranked in the collector by elapsed-time delta, and truncated to
+`top_procedure_count`. The fetch limit is deliberately larger than the reported set: ranking on
+deltas over a wider pool is what lets a procedure that is hot only in the current interval —
+newly deployed, a month-end batch, something that just started misbehaving — reach the report
+even though its lifetime totals are modest.
+
+A negative delta on any of the summed resource counters means a cursor aged out of the shared
+pool, so the row is discarded rather than emitted as a bogus value.
+
+> [!NOTE]
+> Oracle exposes no per-procedure cumulative execution counter, so
+> `oracledb.procedure_execution_count` is derived as the *minimum* statement execution count
+> across the procedure's cached statements. This is best effort: a newly loaded child cursor
+> starts at 1 and pulls the minimum down, and a statement in a branch that did not run holds it
+> flat. The receiver therefore treats this counter separately from the resource counters — it is
+> clamped to 0 instead of discarding the row. Resource counters (CPU, elapsed time, reads, writes, rows) are
+> summed across the procedure's statements and are not subject to this caveat.
+
+See "CDB-root connections and container-scoped dictionary views" below for how this event
+behaves on a CDB-root connection.
+
 ### CDB-root connections and container-scoped dictionary views
 
 `DBA_*` dictionary views only expose the container you are connected to, while the `V$` views
@@ -206,24 +240,28 @@ on `CON_ID` as well as the object id:
 | Event | Affected lookup | Using `DBA_*` from a CDB root |
 |---|---|---|
 | `db.server.top_query` | `CDB_PROCEDURES`, plus `CON_ID` in the `PROCEDURE_EXECUTIONS` grouping | wrong or empty `procedure_name`; execution counts merged across PDBs |
+| `db.server.top_procedure` | `CDB_PROCEDURES` | wrong or empty `procedure_name`; procedures merged across PDBs |
 | `db.server.query_sample` | `CDB_PROCEDURES`, `CDB_OBJECTS` | wrong or empty `procedure_name` and blocked-object owner/name |
 
-This requires container-wide `SELECT` on both views:
+`top_query` and `top_procedure` only need `CDB_PROCEDURES`; `query_sample` additionally needs
+`CDB_OBJECTS`. The two grants are probed independently at startup, so a CDB root with only
+`CDB_PROCEDURES` still gets container-qualified `top_query`/`top_procedure` results even while
+`query_sample` degrades to the `DBA_*` view:
 
 ```sql
 GRANT SELECT ON CDB_PROCEDURES TO <username> CONTAINER=ALL;
 GRANT SELECT ON CDB_OBJECTS TO <username> CONTAINER=ALL;
 ```
 
-Users holding `SELECT_CATALOG_ROLE` inherit these and need no explicit grant. Non-CDB and
+Users holding `SELECT_CATALOG_ROLE` inherit both and need no explicit grant. Non-CDB and
 direct-PDB connections continue to use the `DBA_*` views and need nothing extra.
 
 > [!NOTE]
-> These grants are probed once at startup. If they are missing, the receiver logs a warning and
-> falls back to the `DBA_*` views, so events keep flowing with the container-attribution
-> limitation described above rather than failing with `ORA-00942`. This mirrors how per-PDB
-> metrics already degrade when their grants are absent — no upgrade requires new grants to keep
-> working.
+> Each grant is probed once at startup. If a grant is missing, the receiver logs a warning and
+> falls back to the `DBA_*` view for the event(s) that need it, so events keep flowing with the
+> container-attribution limitation described above rather than failing with `ORA-00942`. This
+> mirrors how per-PDB metrics already degrade when their grants are absent — no upgrade requires
+> new grants to keep working.
 
 #### Combined grant statement
 
@@ -280,6 +318,8 @@ receivers:
         enabled: true
       db.server.session.wait_sample:
         enabled: true
+      db.server.top_procedure:
+        enabled: true
     top_query_collection:                        # this collection exports the most expensive queries as logs
       max_query_sample_count: 1000               # maximum number of samples collected from db to filter the top N
       top_query_count: 200                       # The maximum number of queries (N) for which the metrics would be reported
@@ -290,6 +330,10 @@ receivers:
       allowed_comment_keys: [application]        # keys to extract from leading SQL comments (see SQL Comment Extraction below)
     session_wait_event_collection:               # this collection exports per-session wait event statistics from v$session_event as logs
       max_rows_per_query: 100                    # the maximum number of session wait event rows to be reported                 
+    top_procedure_collection:                # this collection exports aggregated stored procedure performance metrics as logs
+      max_procedure_sample_count: 1000           # maximum number of rows fetched from db to rank the top N by delta
+      top_procedure_count: 250                   # The maximum number of procedures (N) for which the metrics would be reported
+      collection_interval: 60s                   # collection interval for procedure metrics collection specifically
 ```
 
 ## SQL Comment Extraction

@@ -65,6 +65,8 @@ sqlserver:
       enabled: true
     db.server.top_query:
       enabled: true
+    db.server.query_plan:
+      enabled: true
   top_query_collection:                        # this collection exports the most expensive queries as logs
     lookback_time: 60s                         # which time window should we look for the top queries
     max_query_sample_count: 1000               # maximum number query we store in cache for top queries.
@@ -118,6 +120,19 @@ Top-Query collection specific options (only useful when top-query collection are
       - However, the top queries collection will only run after 60 seconds have passed since the last collection.
     - For instance, you have global `collection_interval` as `10s` and `top_query_collection.collection_interval` as `5s`.
       - In this case, `top_query_collection.collection_internal` will make no effects to the collection
+
+By default, `db.server.top_query` carries the query's execution plan in its `sqlserver.query_plan`
+attribute. Execution plans can be large, so an oversized plan can push its record past a
+transport/buffer limit and take the lightweight query statistics down with it. Enabling the
+`db.server.query_plan` event (disabled by default, like the other events above) moves the plan onto
+its own record: `db.server.top_query` is then emitted without `sqlserver.query_plan`, and the plan
+is reported on `db.server.query_plan` instead, joined back via the composite key
+`sqlserver.query_hash` + `sqlserver.query_plan_hash` (the plan hash alone can collide across
+distinct queries with a similar shape). Leaving `db.server.query_plan` disabled preserves the
+previous behavior exactly.
+
+`db.server.query_plan` is sourced from the same query as `db.server.top_query` and only splits the
+plan out of it, so it collects nothing unless `db.server.top_query` is enabled too.
 
 Query sample collection related options (only useful when query sample is enabled)
 - `max_rows_per_query`: (optional, default = `100`) use this to limit rows returned by the sampling query.
