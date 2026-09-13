@@ -57,6 +57,8 @@ type sqlServerScraperHelper struct {
 	lastExecutionTimestamp time.Time
 	obfuscator             *obfuscator
 	serviceInstanceID      string
+	serverAddress          string
+	serverPort             int64
 }
 
 var (
@@ -80,6 +82,16 @@ func newSQLServerScraper(id component.ID,
 		serviceInstanceID = "unknown:1433"
 	}
 
+	// Resolve the network location of the monitored instance for server.address and server.port.
+	serverAddress, serverPort, err := resolveServerEndpoint(cfg)
+	if err != nil {
+		params.Logger.Warn("Failed to resolve server.address and server.port, using the configured values", zap.Error(err))
+		serverAddress, serverPort = cfg.Server, int(cfg.Port)
+		if serverPort == 0 {
+			serverPort = defaultSQLServerPort
+		}
+	}
+
 	return &sqlServerScraperHelper{
 		id:                     id,
 		config:                 cfg,
@@ -94,6 +106,8 @@ func newSQLServerScraper(id component.ID,
 		lastExecutionTimestamp: time.Unix(0, 0),
 		obfuscator:             newObfuscator(params.Logger),
 		serviceInstanceID:      serviceInstanceID,
+		serverAddress:          serverAddress,
+		serverPort:             int64(serverPort),
 	}
 }
 
@@ -170,8 +184,34 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	if isQuerySample {
 		sanitizeQuerySampleOptionalAttributes(logs)
 	}
+	if s.config.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled {
+		removeQueryPlanFromTopQuery(logs)
+	}
 
 	return logs, err
+}
+
+// removeQueryPlanFromTopQuery drops sqlserver.query_plan from db.server.top_query records, so the
+// plan is carried only by db.server.query_plan. An execution plan can be a large XML payload, and
+// keeping it out of db.server.top_query means an oversized plan cannot take the lightweight query
+// statistics down with it. mdatagen always sets every attribute declared for an event, so the
+// attribute has to be removed after the fact rather than skipped while recording.
+//
+// The event name must be checked: db.server.query_plan records sit in the same scope and have to
+// keep their sqlserver.query_plan.
+func removeQueryPlanFromTopQuery(logs plog.Logs) {
+	resourceLogs := logs.ResourceLogs()
+	for i := 0; i < resourceLogs.Len(); i++ {
+		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			logRecords := scopeLogs.At(j).LogRecords()
+			for k := 0; k < logRecords.Len(); k++ {
+				if logRecord := logRecords.At(k); logRecord.EventName() == "db.server.top_query" {
+					logRecord.Attributes().Remove("sqlserver.query_plan")
+				}
+			}
+		}
+	}
 }
 
 func sanitizeQuerySampleOptionalAttributes(logs plog.Logs) {
@@ -334,8 +374,6 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetSqlserverInstanceName(row[instanceNameKey])
 
 	hostName := s.config.Server
-	serverAddress := s.config.Server
-	serverPort := int64(s.config.Port)
 
 	if s.config.DataSource != "" {
 		config, err := parseDataSource(s.config.DataSource)
@@ -343,11 +381,6 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 			s.logger.Warn("Failed to parse datasource for host.name attribute, using fallback", zap.Error(err))
 		} else {
 			hostName = config.Host
-			serverAddress = config.Host
-			serverPort = int64(config.Port)
-			if serverPort == 0 {
-				serverPort = defaultSQLServerPort
-			}
 		}
 	}
 
@@ -355,8 +388,8 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetServiceInstanceID(s.serviceInstanceID)
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
-	rb.SetServerAddress(serverAddress)
-	rb.SetServerPort(serverPort)
+	rb.SetServerAddress(s.serverAddress)
+	rb.SetServerPort(s.serverPort)
 
 	return rb
 }
@@ -1767,6 +1800,13 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			row[storedProcedureName],
 			lastExecutionTimeVal,
 			planCreationTimeVal,
+		)
+		s.lb.RecordDbServerQueryPlanEvent(
+			context.Background(),
+			timestamp,
+			queryHashVal,
+			queryPlanVal.(string),
+			queryPlanHashVal,
 		)
 	}
 	return resources, errors.Join(errs...)

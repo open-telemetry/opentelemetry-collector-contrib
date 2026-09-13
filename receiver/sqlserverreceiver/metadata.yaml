@@ -25,11 +25,11 @@ resource_attributes:
     enabled: true
     type: string
   server.address:
-    description: Name of the database host.
+    description: The address of the monitored SQL Server instance. A loopback target (for example localhost or 127.0.0.1) is reported as the host name of the machine running the collector, since the instance is co-located with it.
     enabled: true
     type: string
   server.port:
-    description: Server port number.
+    description: The port of the monitored SQL Server instance, defaulting to 1433 when not configured.
     enabled: true
     type: int
   service.instance.id:
@@ -463,6 +463,14 @@ attributes:
   # attributes for events
   ## common
 events:
+  db.server.query_plan:
+    enabled: false
+    description: query execution plan. When enabled, the plan is reported here instead of on db.server.top_query, so an oversized plan payload cannot drop the lightweight query statistics alongside it
+    attributes:
+      - sqlserver.query_hash
+      - sqlserver.query_plan
+      - sqlserver.query_plan_hash
+
   db.server.query_sample:
     enabled: false
     description: query sample
