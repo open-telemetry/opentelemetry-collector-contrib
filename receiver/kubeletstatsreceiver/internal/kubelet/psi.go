@@ -36,5 +36,3 @@ func addPSIMetrics(
 		m.Avg(mb, currentTime, entry.data.Avg300, entry.psiType, metadata.AttributePressureWindow300s)
 	}
 }
-
-
