@@ -460,7 +460,7 @@ func TestPSIAvgAttributes(t *testing.T) {
 	}
 
 	// 2 types × 3 windows = 6 pairs
-	assert.Equal(t, 6, len(seen))
+	assert.Len(t, seen, 6)
 	assert.Contains(t, seen, attrPair{"some", "10s"})
 	assert.Contains(t, seen, attrPair{"some", "60s"})
 	assert.Contains(t, seen, attrPair{"some", "300s"})
@@ -570,7 +570,7 @@ func assertPSITotalValue(t *testing.T, metric pmetric.Metric, pressureType metad
 			continue
 		}
 		if pt.Str() == pressureType.String() {
-			assert.EqualValues(t, expected, dp.IntValue(), "pressure.total for type=%s", pressureType)
+			assert.Equal(t, expected, dp.IntValue(), "pressure.total for type=%s", pressureType)
 			return
 		}
 	}
