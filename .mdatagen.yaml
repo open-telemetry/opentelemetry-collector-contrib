@@ -698,6 +698,14 @@ exclusions:
     # see https://github.com/cihub/seelog/issues/182
     goleak:
       enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
+    # The component type is "docker_stats", but feature gate IDs cannot contain
+    # underscores (see idRegexp in go.opentelemetry.io/collector/featuregate), so the
+    # gate cannot use the "receiver.docker_stats." prefix strict validation expects.
+    feature_gates:
+      - name: receiver.dockerstatsreceiver.enableSemConvMetrics
+        validation:
+          enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver
     feature_gates:
       - name: receiver.githubreceiver.UseCheckRunID

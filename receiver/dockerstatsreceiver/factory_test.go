@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -36,4 +37,64 @@ func TestCreateReceiver(t *testing.T) {
 	metricReceiver, err := factory.CreateMetrics(t.Context(), params, config, consumertest.NewNop())
 	assert.NoError(t, err, "Metric receiver creation failed")
 	assert.NotNil(t, metricReceiver, "receiver creation failed")
+}
+
+func TestEnableSemConvMetricsFeatureGate(t *testing.T) {
+	factory := NewFactory()
+	config := factory.CreateDefaultConfig().(*Config)
+	// Enable container.cpu.usage.system as disabled by default
+	config.MetricsBuilderConfig.Metrics.ContainerCPUUsageSystem.Enabled = true
+	params := receivertest.NewNopSettings(metadata.Type)
+
+	err := featuregate.GlobalRegistry().Set("receiver.dockerstatsreceiver.enableSemConvMetrics", true)
+	assert.NoError(t, err)
+	receiver, err := createMetricsReceiver(t.Context(), params, config, consumertest.NewNop())
+	assert.NoError(t, err, "Metric receiver creation failed")
+	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsageTotal.Enabled)
+	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsageUsermode.Enabled)
+	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsageSystem.Enabled)
+	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsageKernelmode.Enabled)
+	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerCPUTime.Enabled)
+	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled)
+	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsage.Enabled)
+	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerMemoryUsageTotal.Enabled)
+	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerMemoryUsage.Enabled)
+	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerMemoryWorkingSet.Enabled)
+	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerDiskIo.Enabled)
+
+	t.Cleanup(func() {
+		err := featuregate.GlobalRegistry().Set("receiver.dockerstatsreceiver.enableSemConvMetrics", false)
+		assert.NoError(t, err, "Failed to reset feature gate to default state")
+		assert.NoError(t, receiver.Shutdown(t.Context()), "Failed to shutdown receiver")
+	})
+}
+
+func TestDisableSemConvMetricsFeatureGate(t *testing.T) {
+	factory := NewFactory()
+	config := factory.CreateDefaultConfig().(*Config)
+	// Enable container.cpu.usage.system as disabled by default
+	config.MetricsBuilderConfig.Metrics.ContainerCPUUsageSystem.Enabled = true
+	params := receivertest.NewNopSettings(metadata.Type)
+
+	err := featuregate.GlobalRegistry().Set("receiver.dockerstatsreceiver.enableSemConvMetrics", false)
+	assert.NoError(t, err)
+	receiver, err := createMetricsReceiver(t.Context(), params, config, consumertest.NewNop())
+	assert.NoError(t, err, "Metric receiver creation failed")
+	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsageTotal.Enabled)
+	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsageUsermode.Enabled)
+	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsageSystem.Enabled)
+	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsageKernelmode.Enabled)
+	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerCPUTime.Enabled)
+	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled)
+	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsage.Enabled)
+	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerMemoryUsageTotal.Enabled)
+	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerMemoryUsage.Enabled)
+	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerMemoryWorkingSet.Enabled)
+	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerDiskIo.Enabled)
+
+	t.Cleanup(func() {
+		err := featuregate.GlobalRegistry().Set("receiver.dockerstatsreceiver.enableSemConvMetrics", false)
+		assert.NoError(t, err, "Failed to reset feature gate to default state")
+		assert.NoError(t, receiver.Shutdown(t.Context()), "Failed to shutdown receiver")
+	})
 }
