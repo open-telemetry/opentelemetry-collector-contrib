@@ -115,7 +115,7 @@ func TestIndexPhysicalStatsScraper(t *testing.T) {
 	// Find the index physical stats scraper
 	var indexScraper *sqlServerScraperHelper
 	for _, s := range scrapers {
-		if s.sqlQuery == getSQLServerIndexPhysicalStatsQuery(cfg.InstanceName) {
+		if s.sqlQuery == getSQLServerIndexPhysicalStatsQuery() {
 			indexScraper = s
 			break
 		}

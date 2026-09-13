@@ -10,9 +10,6 @@ import (
 	"strings"
 )
 
-// Direct access to queries is not recommended: The receiver allows filtering based on
-// instance name, which means the query will change based on configuration.
-// Please use getSQLServerDatabaseIOQuery
 const sqlServerDatabaseIOQuery = `
 SET DEADLOCK_PRIORITY -10;
 IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN /*NOT IN Standard,Enterprise,Express,Azure SQL Database, Azure SQL Managed Instance*/
@@ -67,19 +64,14 @@ SELECT
 	+ @Columns + N'
 FROM sys.dm_io_virtual_file_stats(NULL, NULL) AS vfs'
 + @JoinClause + N'
-%s'
+'
 + @Tables;
 
 EXEC sp_executesql @SqlStatement
 `
 
-func getSQLServerDatabaseIOQuery(instanceName string) string {
-	if instanceName != "" {
-		whereClause := fmt.Sprintf("WHERE @@SERVERNAME = ''%s''", instanceName)
-		return fmt.Sprintf(sqlServerDatabaseIOQuery, whereClause)
-	}
-
-	return fmt.Sprintf(sqlServerDatabaseIOQuery, "")
+func getSQLServerDatabaseIOQuery() string {
+	return sqlServerDatabaseIOQuery
 }
 
 const sqlServerPerformanceCountersQuery string = `
@@ -338,19 +330,11 @@ LEFT OUTER JOIN @PCounters AS pc1
 	AND pc1.[counter_name] LIKE '%base'
 WHERE
 	pc.[counter_name] NOT LIKE '% base'
-{filter_instance_name}
 OPTION(RECOMPILE)
 `
 
-func getSQLServerPerformanceCounterQuery(instanceName string) string {
-	if instanceName != "" {
-		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
-		r := strings.NewReplacer("{filter_instance_name}", whereClause)
-		return r.Replace(sqlServerPerformanceCountersQuery)
-	}
-
-	r := strings.NewReplacer("{filter_instance_name}", "")
-	return r.Replace(sqlServerPerformanceCountersQuery)
+func getSQLServerPerformanceCounterQuery() string {
+	return sqlServerPerformanceCountersQuery
 }
 
 const sqlServerProperties = `
@@ -446,18 +430,13 @@ SELECT
 			,SUM(CASE WHEN [state] IN (6,10) THEN 1 ELSE 0 END) AS [db_offline]
 		FROM sys.databases
 	) AS dbs
-%s'
+'
 
 EXEC sp_executesql @SqlStatement
 `
 
-func getSQLServerPropertiesQuery(instanceName string) string {
-	if instanceName != "" {
-		whereClause := fmt.Sprintf("WHERE @@SERVERNAME = ''%s''", instanceName)
-		return fmt.Sprintf(sqlServerProperties, whereClause)
-	}
-
-	return fmt.Sprintf(sqlServerProperties, "")
+func getSQLServerPropertiesQuery() string {
+	return sqlServerProperties
 }
 
 //go:embed templates/dbQueryAndTextQuery.tmpl
@@ -1057,8 +1036,7 @@ ws.wait_type NOT IN (
 	N'XE_DISPATCHER_WAIT', N'XE_LIVE_TARGET_TVF', N'XE_TIMER_EVENT',
 	N'SOS_WORK_DISPATCHER','RESERVED_MEMORY_ALLOCATION_EXT')
 AND waiting_tasks_count > 0
-AND wait_time_ms > 100
-{filter_instance_name};
+AND wait_time_ms > 100;
 
 ELSE
 	SELECT
@@ -1109,8 +1087,7 @@ ELSE
 		N'XE_DISPATCHER_WAIT', N'XE_LIVE_TARGET_TVF', N'XE_TIMER_EVENT',
 		N'SOS_WORK_DISPATCHER','RESERVED_MEMORY_ALLOCATION_EXT')
 	AND waiting_tasks_count > 0
-	AND wait_time_ms > 100
-{filter_instance_name};
+	AND wait_time_ms > 100;
 `
 
 // sqlServerWorkerThreadsQuery queries sys.dm_os_schedulers for worker thread counts.
@@ -1134,31 +1111,16 @@ SELECT
 FROM sys.dm_os_schedulers s
 CROSS JOIN sys.dm_os_sys_info si
 WHERE s.status = 'VISIBLE ONLINE'
-{filter_instance_name}
 GROUP BY si.max_workers_count
 OPTION(RECOMPILE)
 `
 
-func getSQLServerWorkerThreadsQuery(instanceName string) string {
-	if instanceName != "" {
-		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
-		r := strings.NewReplacer("{filter_instance_name}", whereClause)
-		return r.Replace(sqlServerWorkerThreadsQuery)
-	}
-
-	r := strings.NewReplacer("{filter_instance_name}", "")
-	return r.Replace(sqlServerWorkerThreadsQuery)
+func getSQLServerWorkerThreadsQuery() string {
+	return sqlServerWorkerThreadsQuery
 }
 
-func getSQLServerWaitStatsQuery(instanceName string) string {
-	if instanceName != "" {
-		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
-		r := strings.NewReplacer("{filter_instance_name}", whereClause)
-		return r.Replace(sqlServerWaitStatsQuery)
-	}
-
-	r := strings.NewReplacer("{filter_instance_name}", "")
-	return r.Replace(sqlServerWaitStatsQuery)
+func getSQLServerWaitStatsQuery() string {
+	return sqlServerWaitStatsQuery
 }
 
 const sqlServerAvailabilityGroupQuery = `
@@ -1191,21 +1153,14 @@ INNER JOIN sys.availability_replicas AS ar WITH (NOLOCK)
 	ON sec.[replica_id] = ar.[replica_id]
 INNER JOIN sys.availability_groups AS ag WITH (NOLOCK)
 	ON ar.[group_id] = ag.[group_id]
-WHERE sec.[is_primary_replica] = 0{filter_instance_name}
+WHERE sec.[is_primary_replica] = 0
 ORDER BY ag.[name], ar.[replica_server_name], DB_NAME(sec.[database_id]);'
 
 EXEC sp_executesql @SqlStatement;
 `
 
-func getSQLServerAvailabilityGroupQuery(instanceName string) string {
-	if instanceName != "" {
-		whereClause := fmt.Sprintf("\n\tAND @@SERVERNAME = ''%s''", instanceName)
-		r := strings.NewReplacer("{filter_instance_name}", whereClause)
-		return r.Replace(sqlServerAvailabilityGroupQuery)
-	}
-
-	r := strings.NewReplacer("{filter_instance_name}", "")
-	return r.Replace(sqlServerAvailabilityGroupQuery)
+func getSQLServerAvailabilityGroupQuery() string {
+	return sqlServerAvailabilityGroupQuery
 }
 
 // sqlServerIndexPhysicalStatsQuery collects per-index physical stats (fragmentation, page count,
@@ -1314,21 +1269,13 @@ BEGIN
 		END
 	END CATCH
 
-	SELECT * FROM #IndexPhysStats
-	{filter_instance_name};
+	SELECT * FROM #IndexPhysStats;
 	DROP TABLE #IndexPhysStats;
 END
 `
 
-func getSQLServerIndexPhysicalStatsQuery(instanceName string) string {
-	if instanceName != "" {
-		whereClause := fmt.Sprintf("WHERE @@SERVERNAME = '%s'", instanceName)
-		r := strings.NewReplacer("{filter_instance_name}", whereClause)
-		return r.Replace(sqlServerIndexPhysicalStatsQuery)
-	}
-
-	r := strings.NewReplacer("{filter_instance_name}", "")
-	return r.Replace(sqlServerIndexPhysicalStatsQuery)
+func getSQLServerIndexPhysicalStatsQuery() string {
+	return sqlServerIndexPhysicalStatsQuery
 }
 
 // sqlServerCPUMemoryQuery collects host-level CPU utilization and physical memory from
@@ -1357,20 +1304,11 @@ FROM (
 	ORDER BY timestamp DESC
 ) y
 CROSS JOIN sys.dm_os_sys_memory m
-WHERE 1=1
-{filter_instance_name}
 OPTION(RECOMPILE)
 `
 
-func getSQLServerCPUMemoryQuery(instanceName string) string {
-	if instanceName != "" {
-		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
-		r := strings.NewReplacer("{filter_instance_name}", whereClause)
-		return r.Replace(sqlServerCPUMemoryQuery)
-	}
-
-	r := strings.NewReplacer("{filter_instance_name}", "")
-	return r.Replace(sqlServerCPUMemoryQuery)
+func getSQLServerCPUMemoryQuery() string {
+	return sqlServerCPUMemoryQuery
 }
 
 // sqlServerDiskIOQuery collects per-drive read/write IOPS and throughput for SQL Server database files.
@@ -1418,8 +1356,6 @@ SELECT
 	,SUM(vfs.num_of_bytes_written) AS [write_bytes]
 FROM sys.dm_io_virtual_file_stats(NULL, NULL) vfs'
 + @JoinClause + N'
-WHERE 1=1
-{filter_instance_name}
 GROUP BY CASE
 		WHEN mf.physical_name LIKE ''[A-Z]:\%'' THEN LEFT(mf.physical_name, 3)
 		WHEN mf.physical_name LIKE ''\\_%\_%\%'' THEN LEFT(mf.physical_name,
@@ -1432,13 +1368,6 @@ OPTION(RECOMPILE)'
 EXEC sp_executesql @SqlStatement
 `
 
-func getSQLServerDiskIOQuery(instanceName string) string {
-	if instanceName != "" {
-		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = ''%s''", instanceName)
-		r := strings.NewReplacer("{filter_instance_name}", whereClause)
-		return r.Replace(sqlServerDiskIOQuery)
-	}
-
-	r := strings.NewReplacer("{filter_instance_name}", "")
-	return r.Replace(sqlServerDiskIOQuery)
+func getSQLServerDiskIOQuery() string {
+	return sqlServerDiskIOQuery
 }

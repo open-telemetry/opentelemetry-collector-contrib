@@ -218,7 +218,6 @@ func TestSuccessfulScrape(t *testing.T) {
 				defer assert.NoError(t, scraper.Shutdown(t.Context()))
 
 				scraper.client = mockClient{
-					instanceName:          scraper.config.InstanceName,
 					SQL:                   scraper.sqlQuery,
 					maxQuerySampleCount:   1000,
 					lookbackTime:          20,
@@ -229,23 +228,23 @@ func TestSuccessfulScrape(t *testing.T) {
 				assert.NoError(t, err)
 				var expectedFile string
 				switch scraper.sqlQuery {
-				case getSQLServerAvailabilityGroupQuery(scraper.config.InstanceName):
+				case getSQLServerAvailabilityGroupQuery():
 					expectedFile = filepath.Join("testdata", "expectedAvailabilityGroupMetrics.yaml")
-				case getSQLServerDatabaseIOQuery(scraper.config.InstanceName):
+				case getSQLServerDatabaseIOQuery():
 					expectedFile = filepath.Join("testdata", "expectedDatabaseIO.yaml")
-				case getSQLServerPerformanceCounterQuery(scraper.config.InstanceName):
+				case getSQLServerPerformanceCounterQuery():
 					expectedFile = filepath.Join("testdata", "expectedPerfCounters.yaml")
-				case getSQLServerPropertiesQuery(scraper.config.InstanceName):
+				case getSQLServerPropertiesQuery():
 					expectedFile = filepath.Join("testdata", "expectedProperties.yaml")
-				case getSQLServerWaitStatsQuery(scraper.config.InstanceName):
+				case getSQLServerWaitStatsQuery():
 					expectedFile = filepath.Join("testdata", "expectedWaitStats.yaml")
-				case getSQLServerIndexPhysicalStatsQuery(scraper.config.InstanceName):
+				case getSQLServerIndexPhysicalStatsQuery():
 					expectedFile = filepath.Join("testdata", "expectedIndexPhysicalMetrics.yaml")
-				case getSQLServerWorkerThreadsQuery(scraper.config.InstanceName):
+				case getSQLServerWorkerThreadsQuery():
 					expectedFile = filepath.Join("testdata", "expectedWorkerThreads.yaml")
-				case getSQLServerCPUMemoryQuery(scraper.config.InstanceName):
+				case getSQLServerCPUMemoryQuery():
 					expectedFile = filepath.Join("testdata", "expectedCPUMemory.yaml")
-				case getSQLServerDiskIOQuery(scraper.config.InstanceName):
+				case getSQLServerDiskIOQuery():
 					expectedFile = filepath.Join("testdata", "expectedDiskIO.yaml")
 				}
 
@@ -287,8 +286,7 @@ func TestScrapeInvalidQuery(t *testing.T) {
 		defer assert.NoError(t, scraper.Shutdown(t.Context()))
 
 		scraper.client = mockClient{
-			instanceName: scraper.config.InstanceName,
-			SQL:          "Invalid SQL query",
+			SQL: "Invalid SQL query",
 		}
 
 		actualMetrics, err := scraper.ScrapeMetrics(t.Context())
@@ -386,7 +384,6 @@ var (
 
 type mockClient struct {
 	SQL                 string
-	instanceName        string
 	maxQuerySampleCount uint
 	lookbackTime        uint
 	topQueryCount       uint
@@ -489,27 +486,27 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 	var err error
 
 	switch mc.SQL {
-	case getSQLServerAvailabilityGroupQuery(mc.instanceName):
+	case getSQLServerAvailabilityGroupQuery():
 		queryResults, err = readFile("availabilityGroupQueryData.txt")
-	case getSQLServerDatabaseIOQuery(mc.instanceName):
+	case getSQLServerDatabaseIOQuery():
 		queryResults, err = readFile("database_io_scraped_data.txt")
-	case getSQLServerPerformanceCounterQuery(mc.instanceName):
+	case getSQLServerPerformanceCounterQuery():
 		queryResults, err = readFile("perfCounterQueryData.txt")
-	case getSQLServerPropertiesQuery(mc.instanceName):
+	case getSQLServerPropertiesQuery():
 		fixture := "propertyQueryData.txt"
 		if mc.propertiesFixtureFile != "" {
 			fixture = mc.propertiesFixtureFile
 		}
 		queryResults, err = readFile(fixture)
-	case getSQLServerWaitStatsQuery(mc.instanceName):
+	case getSQLServerWaitStatsQuery():
 		queryResults, err = readFile("waitStatsQueryData.txt")
-	case getSQLServerWorkerThreadsQuery(mc.instanceName):
+	case getSQLServerWorkerThreadsQuery():
 		queryResults, err = readFile("workerThreadsQueryData.txt")
-	case getSQLServerIndexPhysicalStatsQuery(mc.instanceName):
+	case getSQLServerIndexPhysicalStatsQuery():
 		queryResults, err = readFile("indexPhysicalQueryData.txt")
-	case getSQLServerCPUMemoryQuery(mc.instanceName):
+	case getSQLServerCPUMemoryQuery():
 		queryResults, err = readFile("cpuMemoryQueryData.txt")
-	case getSQLServerDiskIOQuery(mc.instanceName):
+	case getSQLServerDiskIOQuery():
 		queryResults, err = readFile("diskIOQueryData.txt")
 	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
@@ -583,7 +580,6 @@ func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testi
 	const procedureExecutionCount = "procedure_execution_count"
 
 	scraper.client = mockClient{
-		instanceName:        scraper.config.InstanceName,
 		SQL:                 scraper.sqlQuery,
 		maxQuerySampleCount: 1000,
 		lookbackTime:        20,
@@ -677,7 +673,6 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, procedureExecutionCount, 0)
 
 	scraper.client = mockClient{
-		instanceName:        scraper.config.InstanceName,
 		SQL:                 scraper.sqlQuery,
 		maxQuerySampleCount: 1000,
 		lookbackTime:        20,
@@ -920,7 +915,6 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 
 	scraper.client = mockInvalidClient{
 		mockClient: mockClient{
-			instanceName:        scraper.config.InstanceName,
 			SQL:                 scraper.sqlQuery,
 			maxQuerySampleCount: 1000,
 			lookbackTime:        20,
@@ -936,14 +930,13 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 func TestRecordDatabaseSampleQuery(t *testing.T) {
 	tests := map[string]struct {
 		expectedFile string
-		mockClient   func(instance, sql string) sqlquery.DbClient
+		mockClient   func(sql string) sqlquery.DbClient
 		errors       bool
 	}{
 		"valid data": {
 			expectedFile: "expectedRecordDatabaseSampleQuery.yaml",
-			mockClient: func(instance, sql string) sqlquery.DbClient {
+			mockClient: func(sql string) sqlquery.DbClient {
 				return mockClient{
-					instanceName:    instance,
 					SQL:             sql,
 					maxRowsPerQuery: 100,
 				}
@@ -952,10 +945,9 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 		},
 		"invalid data": {
 			expectedFile: "expectedRecordDatabaseSampleQueryWithInvalidData.yaml",
-			mockClient: func(instance, sql string) sqlquery.DbClient {
+			mockClient: func(sql string) sqlquery.DbClient {
 				return mockInvalidClient{
 					mockClient{
-						instanceName:    instance,
 						SQL:             sql,
 						maxRowsPerQuery: 100,
 					},
@@ -984,7 +976,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			scraper := scrapers[0]
 			assert.NotNil(t, scraper.cache)
 
-			scraper.client = tc.mockClient(scraper.instanceName, scraper.sqlQuery)
+			scraper.client = tc.mockClient(scraper.sqlQuery)
 
 			actualLogs, err := scraper.ScrapeLogs(t.Context())
 			if tc.errors {
@@ -1258,7 +1250,6 @@ func TestMultiStatementProcNoDuplicateRows(t *testing.T) {
 
 	scraper.client = mockMultiStatementProcClient{
 		mockClient: mockClient{
-			instanceName:        scraper.config.InstanceName,
 			SQL:                 scraper.sqlQuery,
 			maxQuerySampleCount: 1000,
 			lookbackTime:        20,
@@ -1411,7 +1402,6 @@ func TestRecordDatabaseSampleQueryUsesResourceBuilderForLogs(t *testing.T) {
 
 	scraper := scrapers[0]
 	scraper.client = mockClient{
-		instanceName:    scraper.config.InstanceName,
 		SQL:             scraper.sqlQuery,
 		maxRowsPerQuery: 100,
 	}
@@ -1475,7 +1465,6 @@ func TestRecordDatabaseQueryTextAndPlanUsesResourceBuilderForLogs(t *testing.T) 
 	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalGrant, 1)
 
 	scraper.client = mockClient{
-		instanceName:        scraper.config.InstanceName,
 		SQL:                 scraper.sqlQuery,
 		maxQuerySampleCount: 1000,
 		lookbackTime:        20,
@@ -1527,7 +1516,7 @@ func TestRecordWorkerThreadMetrics(t *testing.T) {
 
 	var workerScraper *sqlServerScraperHelper
 	for _, s := range scrapers {
-		if s.sqlQuery == getSQLServerWorkerThreadsQuery(cfg.InstanceName) {
+		if s.sqlQuery == getSQLServerWorkerThreadsQuery() {
 			workerScraper = s
 			break
 		}
@@ -1543,8 +1532,7 @@ func TestRecordWorkerThreadMetrics(t *testing.T) {
 	}()
 
 	workerScraper.client = mockClient{
-		instanceName: workerScraper.config.InstanceName,
-		SQL:          workerScraper.sqlQuery,
+		SQL: workerScraper.sqlQuery,
 	}
 
 	actualMetrics, err := workerScraper.ScrapeMetrics(t.Context())
@@ -1599,8 +1587,7 @@ func TestRecordDatabaseStatusMetricsUsesResourceBuilderForMetrics(t *testing.T) 
 
 	scraper := scrapers[0]
 	scraper.client = mockClient{
-		instanceName: scraper.config.InstanceName,
-		SQL:          scraper.sqlQuery,
+		SQL: scraper.sqlQuery,
 	}
 
 	actualMetrics, err := scraper.ScrapeMetrics(t.Context())
@@ -1650,7 +1637,7 @@ func TestRecordCPUMemoryMetrics(t *testing.T) {
 
 	var cpuMemScraper *sqlServerScraperHelper
 	for _, s := range scrapers {
-		if s.sqlQuery == getSQLServerCPUMemoryQuery(cfg.InstanceName) {
+		if s.sqlQuery == getSQLServerCPUMemoryQuery() {
 			cpuMemScraper = s
 			break
 		}
@@ -1662,8 +1649,7 @@ func TestRecordCPUMemoryMetrics(t *testing.T) {
 	defer assert.NoError(t, cpuMemScraper.Shutdown(t.Context()))
 
 	cpuMemScraper.client = mockClient{
-		instanceName: cpuMemScraper.config.InstanceName,
-		SQL:          cpuMemScraper.sqlQuery,
+		SQL: cpuMemScraper.sqlQuery,
 	}
 
 	actualMetrics, err := cpuMemScraper.ScrapeMetrics(t.Context())
@@ -1739,7 +1725,7 @@ func TestRecordDiskIOMetrics(t *testing.T) {
 
 	var diskScraper *sqlServerScraperHelper
 	for _, s := range scrapers {
-		if s.sqlQuery == getSQLServerDiskIOQuery(cfg.InstanceName) {
+		if s.sqlQuery == getSQLServerDiskIOQuery() {
 			diskScraper = s
 			break
 		}
@@ -1751,8 +1737,7 @@ func TestRecordDiskIOMetrics(t *testing.T) {
 	defer assert.NoError(t, diskScraper.Shutdown(t.Context()))
 
 	diskScraper.client = mockClient{
-		instanceName: diskScraper.config.InstanceName,
-		SQL:          diskScraper.sqlQuery,
+		SQL: diskScraper.sqlQuery,
 	}
 
 	actualMetrics, err := diskScraper.ScrapeMetrics(t.Context())
