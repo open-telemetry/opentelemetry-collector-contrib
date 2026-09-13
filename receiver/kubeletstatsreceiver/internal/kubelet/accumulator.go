@@ -71,7 +71,8 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 		addPSIMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeMemoryPressureMetrics, s.Memory.PSI, currentTime)
 	}
 	addIOPSIMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeIOPressureMetrics, s.IO, currentTime)
-	// TODO: add PSI for system containers (s.SystemContainers[i].CPU.PSI / Memory.PSI / IO)
+	// TODO(#ISSUE): add PSI for system containers (s.SystemContainers[i].CPU.PSI / Memory.PSI / IO).
+	// System containers include etcd, kube-apiserver, etc. Open a GitHub issue and replace #ISSUE.
 	// todo s.Runtime.ImageFs
 	rb := a.mbs.NodeMetricsBuilder.NewResourceBuilder()
 	rb.SetK8sNodeName(s.NodeName)

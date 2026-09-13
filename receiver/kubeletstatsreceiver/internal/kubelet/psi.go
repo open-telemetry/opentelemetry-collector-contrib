@@ -22,14 +22,15 @@ func addPSIMetrics(
 	if s == nil {
 		return
 	}
-	for _, entry := range []struct {
+	entries := [2]struct {
 		data    stats.PSIData
 		psiType metadata.AttributePressureType
 	}{
 		{s.Some, metadata.AttributePressureTypeSome},
 		{s.Full, metadata.AttributePressureTypeFull},
-	} {
-		m.Total(mb, currentTime, int64(entry.data.Total), entry.psiType) //nolint:gosec // Total is always positive
+	}
+	for _, entry := range entries {
+		m.Total(mb, currentTime, int64(entry.data.Total), entry.psiType) //nolint:gosec // G115: uint64→int64 safe; overflow would require 292+ years of cumulative stall. Kernel counters reset on reboot.
 		m.Avg(mb, currentTime, entry.data.Avg10, entry.psiType, metadata.AttributePressureWindow10s)
 		m.Avg(mb, currentTime, entry.data.Avg60, entry.psiType, metadata.AttributePressureWindow60s)
 		m.Avg(mb, currentTime, entry.data.Avg300, entry.psiType, metadata.AttributePressureWindow300s)
