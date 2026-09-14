@@ -2,8 +2,5 @@
 component: processor/k8s_attributes
 note: Reject an invalid `exclude.pods[].name` regex at config load instead of panicking at startup
 issues: [50957]
-subtext: |
-  An invalid regular expression in `exclude.pods[].name` was passed to `regexp.MustCompile`
-  while the processor was starting, crashing the collector. It is now compiled during config
-  validation and reported as a configuration error.
+subtext:
 change_logs: [user]
