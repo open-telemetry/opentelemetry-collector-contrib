@@ -191,9 +191,14 @@ func distribute(output []uint64, bounds []float64, lower, upper float64, count u
 func distributeWeighted(output []uint64, bounds []float64, lower, upper float64, count uint64, roundingOffset uint64) error {
 	first := explicitBucket(bounds, lower)
 	last := explicitBucket(bounds, upper)
-	weights := make([]float64, last-first+1)
-	var total float64
-	// Measure the source interval inside each destination bucket.
+	total := upper - lower
+	if !(total > 0) || math.IsInf(total, 0) || math.IsNaN(total) {
+		return fmt.Errorf("cannot distribute bucket interval (%v, %v]", lower, upper)
+	}
+
+	allocated := uint64(0)
+	cumulative := float64(0)
+	// Round cumulative expectations to preserve the exact total.
 	for bucket := first; bucket <= last; bucket++ {
 		bucketLower := math.Inf(-1)
 		if bucket != 0 {
@@ -208,24 +213,12 @@ func distributeWeighted(output []uint64, bounds []float64, lower, upper float64,
 		if overlapLower >= overlapUpper {
 			continue
 		}
-		weight := overlapUpper - overlapLower
-		weights[bucket-first] = weight
-		total += weight
-	}
-	if !(total > 0) || math.IsInf(total, 0) || math.IsNaN(total) {
-		return fmt.Errorf("cannot distribute bucket interval (%v, %v]", lower, upper)
-	}
 
-	allocated := uint64(0)
-	cumulative := float64(0)
-	// Round cumulative expectations to preserve the exact total.
-	for i, weight := range weights {
-		bucket := first + i
 		var next uint64
-		if i == len(weights)-1 {
+		if bucket == last {
 			next = count
 		} else {
-			cumulative += weight / total
+			cumulative += (overlapUpper - overlapLower) / total
 			next = roundedPrefix(count, cumulative, roundingOffset)
 			if next < allocated {
 				next = allocated
