@@ -46,9 +46,7 @@ type ExponentialHistogram struct {
 	Negative      Buckets
 }
 
-// ToExplicit converts an exponential histogram into explicit histogram bucket
-// counts. The distribution must be upper, midpoint, uniform, or random. The
-// returned slice always has len(bounds)+1 entries.
+// ToExplicit converts an exponential histogram into len(bounds)+1 explicit bucket counts using the requested distribution.
 func ToExplicit(input ExponentialHistogram, bounds []float64, distribution string) ([]uint64, error) {
 	if err := validateBounds(bounds); err != nil {
 		return nil, err
@@ -91,6 +89,7 @@ func ToExplicit(input ExponentialHistogram, bounds []float64, distribution strin
 	return output, nil
 }
 
+// sourceBucketCount sums all source buckets and reports integer overflow.
 func sourceBucketCount(input ExponentialHistogram) (uint64, error) {
 	total := input.ZeroCount
 	for _, buckets := range [...]Buckets{input.Negative, input.Positive} {
@@ -105,6 +104,7 @@ func sourceBucketCount(input ExponentialHistogram) (uint64, error) {
 	return total, nil
 }
 
+// validDistribution reports whether distribution names a supported allocation policy.
 func validDistribution(distribution string) bool {
 	switch distribution {
 	case "upper", "midpoint", "uniform", "random":
@@ -114,6 +114,7 @@ func validDistribution(distribution string) bool {
 	}
 }
 
+// validateBounds checks that bounds is non-empty, finite or infinite, and strictly increasing.
 func validateBounds(bounds []float64) error {
 	if len(bounds) == 0 {
 		return errors.New("explicit bounds cannot be empty")
@@ -129,6 +130,7 @@ func validateBounds(bounds []float64) error {
 	return nil
 }
 
+// newMapping constructs the exponential histogram mapping for scale.
 func newMapping(scale int32) (mapping.Mapping, error) {
 	if scale <= exponent.MaxScale {
 		return exponent.NewMapping(scale)
@@ -136,6 +138,7 @@ func newMapping(scale int32) (mapping.Mapping, error) {
 	return logarithm.NewMapping(scale)
 }
 
+// distributeBuckets maps one positive or negative exponential bucket range into explicit buckets.
 func distributeBuckets(mapper mapping.Mapping, output []uint64, bounds []float64, buckets Buckets, distribution string, negative bool) error {
 	if len(buckets.Counts) == 0 {
 		return nil
@@ -170,6 +173,7 @@ func distributeBuckets(mapper mapping.Mapping, output []uint64, bounds []float64
 	return nil
 }
 
+// distribute allocates one source bucket according to the selected distribution.
 func distribute(output []uint64, bounds []float64, lower, upper float64, count uint64, distribution string) error {
 	if lower == upper {
 		return addToBucket(output, explicitBucket(bounds, lower), count)
@@ -188,6 +192,7 @@ func distribute(output []uint64, bounds []float64, lower, upper float64, count u
 	}
 }
 
+// distributeWeighted apportions a source count by linear overlap using systematic rounding.
 func distributeWeighted(output []uint64, bounds []float64, lower, upper float64, count uint64, roundingOffset uint64) error {
 	first := explicitBucket(bounds, lower)
 	last := explicitBucket(bounds, upper)
@@ -232,12 +237,14 @@ func distributeWeighted(output []uint64, bounds []float64, lower, upper float64,
 	return nil
 }
 
+// explicitBucket returns the index of the explicit bucket containing value.
 func explicitBucket(bounds []float64, value float64) int {
 	return sort.Search(len(bounds), func(i int) bool {
 		return value <= bounds[i]
 	})
 }
 
+// roundedPrefix rounds a cumulative expected count using a fixed-point offset.
 func roundedPrefix(count uint64, cumulative float64, roundingOffset uint64) uint64 {
 	if cumulative <= 0 {
 		return 0
@@ -260,6 +267,7 @@ func roundedPrefix(count uint64, cumulative float64, roundingOffset uint64) uint
 	return min(high, count)
 }
 
+// addToBucket adds count to one output bucket and reports integer overflow.
 func addToBucket(output []uint64, bucket int, count uint64) error {
 	sum, overflow := addUint64(output[bucket], count)
 	if overflow {
@@ -269,6 +277,7 @@ func addToBucket(output []uint64, bucket int, count uint64) error {
 	return nil
 }
 
+// addUint64 returns the sum and whether unsigned addition overflowed.
 func addUint64(left, right uint64) (uint64, bool) {
 	sum, carry := bits.Add64(left, right, 0)
 	return sum, carry != 0
