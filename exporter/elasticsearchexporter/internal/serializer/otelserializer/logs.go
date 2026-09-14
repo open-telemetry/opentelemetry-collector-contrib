@@ -14,7 +14,7 @@ import (
 
 func (*Serializer) SerializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, record plog.LogRecord, idx elasticsearch.Index, buf *bytes.Buffer) error {
 	w := newJSONWriter(buf)
-	w.startObject()
+	w.StartObject()
 	docTimeStamp := record.Timestamp()
 	if docTimeStamp.AsTime().UnixNano() == 0 {
 		docTimeStamp = record.ObservedTimestamp()
@@ -37,7 +37,7 @@ func (*Serializer) SerializeLog(resource pcommon.Resource, resourceSchemaURL str
 	first = w.writeResource(resource, resourceSchemaURL, false, first)
 	first = w.writeScope(scope, scopeSchemaURL, false, first)
 	writeLogBody(&w, record, first)
-	w.endObject()
+	w.EndObject()
 	return nil
 }
 
@@ -45,8 +45,8 @@ func writeLogBody(w *jsonWriter, record plog.LogRecord, first bool) bool {
 	if record.Body().Type() == pcommon.ValueTypeEmpty {
 		return first
 	}
-	first = w.key("body", first)
-	w.startObject()
+	first = w.Key("body", first)
+	w.StartObject()
 
 	bodyType := "structured"
 	body := record.Body()
@@ -71,9 +71,9 @@ func writeLogBody(w *jsonWriter, record plog.LogRecord, first bool) bool {
 		bodyType = "text"
 	}
 	firstField := true
-	firstField = w.key(bodyType, firstField)
+	firstField = w.Key(bodyType, firstField)
 	_ = firstField
 	w.writeValue(body, false)
-	w.endObject()
+	w.EndObject()
 	return first
 }

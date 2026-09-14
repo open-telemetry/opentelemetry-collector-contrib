@@ -1706,8 +1706,10 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 				topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
 				instanceName:         "oraclehost:1521/ORCL",
 				hostName:             "oraclehost:1521",
+				serverAddress:        "oraclehost",
+				serverPort:           1521,
 				obfuscator:           newObfuscator(),
-				serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+				serviceInstanceID:    testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 			}
 
 			scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
@@ -1950,7 +1952,9 @@ func TestSamplesQuery(t *testing.T) {
 				logsBuilderConfig:  metadata.DefaultLogsBuilderConfig(),
 				obfuscator:         newObfuscator(),
 				instanceName:       "oraclehost:1521/ORCL",
-				serviceInstanceID:  getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+				serverAddress:      "oraclehost",
+				serverPort:         1521,
+				serviceInstanceID:  testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 			}
 			scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = false
 			scrpr.logsBuilderConfig.Events.DbServerQuerySample.Enabled = true
@@ -2018,7 +2022,9 @@ func TestSamplesQueryCursorAgedOut(t *testing.T) {
 		logsBuilderConfig: logsCfg,
 		obfuscator:        newObfuscator(),
 		instanceName:      "oraclehost:1521/ORCL",
-		serviceInstanceID: getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+		serverAddress:     "oraclehost",
+		serverPort:        1521,
+		serviceInstanceID: testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 	}
 	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
 	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
@@ -2156,7 +2162,9 @@ func TestSessionWaitEventsQuery(t *testing.T) {
 				logsBuilderConfig:   logsCfg,
 				obfuscator:          newObfuscator(),
 				instanceName:        "oraclehost:1521/ORCL",
-				serviceInstanceID:   getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+				serverAddress:       "oraclehost",
+				serverPort:          1521,
+				serviceInstanceID:   testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 				sessionWaitEventCfg: SessionWaitEvent{MaxRowsPerQuery: 200},
 			}
 			err := scrpr.start(t.Context(), componenttest.NewNopHost())
@@ -2507,37 +2515,112 @@ func sysmetricDirectionValues(metrics pmetric.MetricSlice) map[string]map[string
 	return out
 }
 
-func TestGetInstanceId(t *testing.T) {
-	localhostName, _ := os.Hostname()
+func TestResolveServerEndpoint(t *testing.T) {
+	localhostName, err := os.Hostname()
+	require.NoError(t, err)
 
-	instanceString := "example.com:1521/XE"
-	instanceID := getInstanceID(instanceString, zap.NewNop())
-	assert.Equal(t, "example.com:1521/XE", instanceID)
+	tests := []struct {
+		name         string
+		hostName     string
+		expectedHost string
+		expectedPort int64
+	}{
+		{name: "host and port", hostName: "oraclehost:1521", expectedHost: "oraclehost", expectedPort: 1521},
+		{name: "host without port", hostName: "oraclehost", expectedHost: "oraclehost", expectedPort: 1521},
+		{name: "host with non default port", hostName: "oraclehost:51521", expectedHost: "oraclehost", expectedPort: 51521},
+		{name: "container hostname is not loopback", hostName: "ora-docker:1521", expectedHost: "ora-docker", expectedPort: 1521},
+		{name: "docker host gateway is not loopback", hostName: "host.docker.internal:1521", expectedHost: "host.docker.internal", expectedPort: 1521},
+		{name: "localhost with port", hostName: "localhost:51521", expectedHost: localhostName, expectedPort: 51521},
+		{name: "localhost without port", hostName: "localhost", expectedHost: localhostName, expectedPort: 1521},
+		{name: "localhost is matched case insensitively", hostName: "Localhost", expectedHost: localhostName, expectedPort: 1521},
+		{name: "IPv4 loopback with port", hostName: "127.0.0.1:1521", expectedHost: localhostName, expectedPort: 1521},
+		{name: "IPv4 loopback without port", hostName: "127.0.0.1", expectedHost: localhostName, expectedPort: 1521},
+		{name: "IPv6 loopback with port", hostName: "[::1]:1521", expectedHost: localhostName, expectedPort: 1521},
+		{name: "bracketed IPv6 loopback without port", hostName: "[::1]", expectedHost: localhostName, expectedPort: 1521},
+		{name: "bare IPv6 loopback", hostName: "::1", expectedHost: localhostName, expectedPort: 1521},
+		{name: "bracketed IPv6 with port is not loopback", hostName: "[2001:db8::1]:1521", expectedHost: "2001:db8::1", expectedPort: 1521},
+		{name: "bare IPv6 is not loopback", hostName: "2001:db8::1", expectedHost: "2001:db8::1", expectedPort: 1521},
+		// An undetermined host is not co-located knowledge, so it is left unset rather than resolved.
+		{name: "empty target", hostName: "", expectedHost: "", expectedPort: 1521},
+		{name: "blank target", hostName: "   ", expectedHost: "", expectedPort: 1521},
+		{name: "port zero defaults", hostName: "oraclehost:0", expectedHost: "oraclehost", expectedPort: 1521},
+		{name: "empty port defaults", hostName: "oraclehost:", expectedHost: "oraclehost", expectedPort: 1521},
+		{name: "non numeric port defaults", hostName: "oraclehost:notaport", expectedHost: "oraclehost", expectedPort: 1521},
+	}
 
-	localHostStringUppercase := "Localhost:1521/XE"
-	localInstanceID := getInstanceID(localHostStringUppercase, zap.NewNop())
-	assert.NotNil(t, localInstanceID)
-	assert.Equal(t, localhostName+":1521/XE", localInstanceID)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			host, port := resolveServerEndpoint(test.hostName, zap.NewNop())
+			assert.Equal(t, test.expectedHost, host)
+			assert.Equal(t, test.expectedPort, port)
+		})
+	}
+}
 
-	localHostString := "127.0.0.1:1521/XE"
-	localInstanceID = getInstanceID(localHostString, zap.NewNop())
-	assert.NotNil(t, localInstanceID)
-	assert.Equal(t, localhostName+":1521/XE", localInstanceID)
+const undeterminedHostWarning = "Could not determine the Oracle host from the connection string; server.address will not be reported"
 
-	localHostStringIPV6 := "[::1]:1521/XE"
-	localInstanceID = getInstanceID(localHostStringIPV6, zap.NewNop())
-	assert.NotNil(t, localInstanceID)
-	assert.Equal(t, localhostName+":1521/XE", localInstanceID)
+func TestResolveServerEndpointWarnsOnUndeterminedHost(t *testing.T) {
+	core, logs := observer.New(zapcore.WarnLevel)
 
-	hostWithoutService := "127.0.0.1:1521"
-	localInstanceID = getInstanceID(hostWithoutService, zap.NewNop())
-	assert.NotNil(t, localInstanceID)
-	assert.Equal(t, localhostName+":1521", localInstanceID)
+	host, port := resolveServerEndpoint("", zap.New(core))
 
-	hostNameErrorSample := ""
-	localInstanceID = getInstanceID(hostNameErrorSample, zap.NewNop())
-	assert.NotNil(t, localInstanceID)
-	assert.Equal(t, "unknown:1521", localInstanceID)
+	assert.Empty(t, host)
+	assert.Equal(t, defaultOraclePort, port)
+	assert.Equal(t, 1, logs.FilterMessage(undeterminedHostWarning).Len())
+}
+
+func TestResolveServerEndpointDoesNotWarnOnDeterminedHost(t *testing.T) {
+	for _, hostName := range []string{"oraclehost:1521", "oraclehost", "localhost:1521", "127.0.0.1", "::1"} {
+		t.Run(hostName, func(t *testing.T) {
+			core, logs := observer.New(zapcore.WarnLevel)
+
+			host, _ := resolveServerEndpoint(hostName, zap.New(core))
+
+			assert.NotEmpty(t, host)
+			assert.Equal(t, 0, logs.FilterMessage(undeterminedHostWarning).Len(),
+				"a parseable host must not be reported as undetermined")
+		})
+	}
+}
+
+// testInstanceID mirrors what newScraper computes: one endpoint resolution feeding service.instance.id.
+func testInstanceID(hostName, instanceName string) string {
+	_, _, instanceID := resolveInstanceIdentity(hostName, instanceName, zap.NewNop())
+	return instanceID
+}
+
+func TestServiceInstanceID(t *testing.T) {
+	localhostName, err := os.Hostname()
+	require.NoError(t, err)
+
+	tests := []struct {
+		name           string
+		instanceString string
+		expected       string
+	}{
+		{name: "remote host and port", instanceString: "example.com:1521/XE", expected: "example.com:1521/XE"},
+		{name: "remote host without port", instanceString: "example.com/XE", expected: "example.com:1521/XE"},
+		{name: "localhost is resolved case insensitively", instanceString: "Localhost:1521/XE", expected: localhostName + ":1521/XE"},
+		{name: "localhost without port", instanceString: "localhost/XE", expected: localhostName + ":1521/XE"},
+		{name: "IPv4 loopback with port", instanceString: "127.0.0.1:1521/XE", expected: localhostName + ":1521/XE"},
+		{name: "IPv4 loopback without port", instanceString: "127.0.0.1/XE", expected: localhostName + ":1521/XE"},
+		{name: "IPv6 loopback with port", instanceString: "[::1]:1521/XE", expected: localhostName + ":1521/XE"},
+		{name: "IPv6 loopback without port", instanceString: "[::1]/XE", expected: localhostName + ":1521/XE"},
+		{name: "bare IPv6 loopback", instanceString: "::1/XE", expected: localhostName + ":1521/XE"},
+		// A non-loopback IPv6 host is not re-bracketed by constructInstanceID; unchanged from before.
+		{name: "non loopback IPv6 with port", instanceString: "[2001:db8::1]:1521/XE", expected: "2001:db8::1:1521/XE"},
+		{name: "host without service", instanceString: "127.0.0.1:1521", expected: localhostName + ":1521"},
+		// An undetermined host keeps the pre-existing "unknown" placeholder.
+		{name: "empty instance string", instanceString: "", expected: "unknown:1521"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// The receiver resolves the target the connection uses; the instance string only adds the service.
+			target, _, _ := strings.Cut(test.instanceString, "/")
+			assert.Equal(t, test.expected, testInstanceID(target, test.instanceString))
+		})
+	}
 }
 
 func TestTopNLogsDiscardedWhenExecutionCountUnchanged(t *testing.T) {
@@ -2597,8 +2680,10 @@ func TestTopNLogsDiscardedWhenExecutionCountUnchanged(t *testing.T) {
 		topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
 		instanceName:         "oraclehost:1521/ORCL",
 		hostName:             "oraclehost:1521",
+		serverAddress:        "oraclehost",
+		serverPort:           1521,
 		obfuscator:           newObfuscator(),
-		serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+		serviceInstanceID:    testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 	}
 
 	scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
@@ -2684,8 +2769,10 @@ func TestTopNLogsProcedureNameEmpty(t *testing.T) {
 		topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
 		instanceName:         "oraclehost:1521/ORCL",
 		hostName:             "oraclehost:1521",
+		serverAddress:        "oraclehost",
+		serverPort:           1521,
 		obfuscator:           newObfuscator(),
-		serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+		serviceInstanceID:    testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 	}
 
 	scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
@@ -2868,8 +2955,10 @@ func TestObfuscateCacheHitsHandlesTruncatedSQL(t *testing.T) {
 		topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
 		instanceName:         "oraclehost:1521/ORCL",
 		hostName:             "oraclehost:1521",
+		serverAddress:        "oraclehost",
+		serverPort:           1521,
 		obfuscator:           newObfuscator(),
-		serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+		serviceInstanceID:    testInstanceID("oraclehost:1521", "oraclehost:1521/ORCL"),
 	}
 
 	scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
@@ -2893,18 +2982,162 @@ func TestObfuscateCacheHitsHandlesTruncatedSQL(t *testing.T) {
 	assert.Equal(t, 0, warnLogs.Len(), "Expected no obfuscation failures")
 }
 
+// Object ids are unique only within a container, so from a CDB root a join on object id alone can attribute
+// a PDB row to an unrelated root object, and grouping by it alone merges values across containers.
+func TestCDBRootDictionaryJoinsMatchOnConID(t *testing.T) {
+	tests := []struct {
+		name       string
+		build      func(s *oracleScraper) string
+		cdbViews   []string
+		nonCDBView string
+		// conIDJoins are substrings that must each appear in the CDB variant.
+		conIDJoins []string
+	}{
+		{
+			name:       "top query",
+			build:      func(s *oracleScraper) string { return s.buildTopQuerySQL() },
+			cdbViews:   []string{"CDB_PROCEDURES"},
+			nonCDBView: "DBA_PROCEDURES",
+			conIDJoins: []string{
+				"P.CON_ID    = S.CON_ID",
+				"PE.CON_ID     = S.CON_ID",
+				"GROUP BY PROGRAM_ID, CON_ID",
+			},
+		},
+		{
+			name:       "query sample",
+			build:      func(s *oracleScraper) string { return s.buildQuerySampleSQL() },
+			cdbViews:   []string{"CDB_PROCEDURES", "CDB_OBJECTS"},
+			nonCDBView: "DBA_PROCEDURES",
+			conIDJoins: []string{
+				"P.CON_ID    = S.CON_ID",
+				"O.CON_ID    = S.CON_ID",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cdbSQL := test.build(&oracleScraper{useCDBProceduresView: true, useCDBDictionaryViews: true})
+			for _, view := range test.cdbViews {
+				assert.Contains(t, cdbSQL, view, "CDB-root variant must read cross-container dictionary views")
+			}
+			for _, join := range test.conIDJoins {
+				assert.Contains(t, cdbSQL, join,
+					"CDB-root variant must qualify the join/grouping by CON_ID")
+			}
+
+			nonCDBSQL := test.build(&oracleScraper{useCDBProceduresView: false, useCDBDictionaryViews: false})
+			assert.Contains(t, nonCDBSQL, test.nonCDBView,
+				"non-root variant should keep the container-local dictionary view")
+			for _, view := range test.cdbViews {
+				assert.NotContains(t, nonCDBSQL, view)
+			}
+
+			// The two variants are interchangeable only if they take the same binds.
+			assert.Equal(t, strings.Count(nonCDBSQL, ":1"), strings.Count(cdbSQL, ":1"),
+				"variants must keep the same bind parameter contract")
+			assert.Equal(t, strings.Count(nonCDBSQL, ":2"), strings.Count(cdbSQL, ":2"),
+				"variants must keep the same bind parameter contract")
+		})
+	}
+}
+
+// Without SELECT on CDB_PROCEDURES/CDB_OBJECTS a CDB root must degrade to the DBA_* variants rather than
+// failing every scrape with ORA-00942, so upgrades on granular grants keep working.
+func TestCDBDictionaryGrantsFallback(t *testing.T) {
+	tests := []struct {
+		name      string
+		probeErr  error
+		wantCDB   bool
+		wantWarns int
+	}{
+		{name: "grants present", probeErr: nil, wantCDB: true},
+		{name: "grants missing falls back", probeErr: errors.New("ORA-00942: table or view does not exist"), wantCDB: false, wantWarns: 1},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			core, observedLogs := observer.New(zapcore.WarnLevel)
+			scrpr := oracleScraper{logger: zap.New(core)}
+
+			got := scrpr.hasCDBDictionaryGrants(t.Context(), &fakeDbClient{
+				Responses: [][]metricRow{nil},
+				Err:       test.probeErr,
+			}, "oracledbreceiver: CDB_PROCEDURES/CDB_OBJECTS not readable; falling back to DBA_* dictionary views")
+
+			assert.Equal(t, test.wantCDB, got)
+			assert.Equal(t, test.wantWarns,
+				observedLogs.FilterMessageSnippet("falling back to DBA_* dictionary views").Len(),
+				"a missing grant must warn and point at the README")
+
+			// The fallback must actually change which views the event queries read.
+			scrpr.useCDBDictionaryViews = got
+			if test.wantCDB {
+				assert.Contains(t, scrpr.buildQuerySampleSQL(), "CDB_OBJECTS")
+			} else {
+				assert.Contains(t, scrpr.buildQuerySampleSQL(), "DBA_OBJECTS")
+			}
+		})
+	}
+}
+
+// top_query and top_procedure only join against CDB_PROCEDURES, so they must keep working on a CDB root that
+// has that grant but not CDB_OBJECTS, rather than being gated on query_sample's stricter probe.
+func TestCDBProceduresGrantFallback(t *testing.T) {
+	tests := []struct {
+		name      string
+		probeErr  error
+		wantCDB   bool
+		wantWarns int
+	}{
+		{name: "grant present", probeErr: nil, wantCDB: true},
+		{name: "grant missing falls back", probeErr: errors.New("ORA-00942: table or view does not exist"), wantCDB: false, wantWarns: 1},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			core, observedLogs := observer.New(zapcore.WarnLevel)
+			scrpr := oracleScraper{logger: zap.New(core)}
+
+			got := scrpr.hasCDBDictionaryGrants(t.Context(), &fakeDbClient{
+				Responses: [][]metricRow{nil},
+				Err:       test.probeErr,
+			}, "oracledbreceiver: CDB_PROCEDURES not readable; falling back to DBA_PROCEDURES")
+
+			assert.Equal(t, test.wantCDB, got)
+			assert.Equal(t, test.wantWarns,
+				observedLogs.FilterMessageSnippet("falling back to DBA_PROCEDURES").Len(),
+				"a missing grant must warn and point at the README")
+
+			// The fallback must actually change which views top_query and top_procedure read.
+			scrpr.useCDBProceduresView = got
+			if test.wantCDB {
+				assert.Contains(t, scrpr.buildTopQuerySQL(), "CDB_PROCEDURES")
+				assert.Contains(t, scrpr.buildProcedureMetricsSQL(), "CDB_PROCEDURES")
+			} else {
+				assert.Contains(t, scrpr.buildTopQuerySQL(), "DBA_PROCEDURES")
+				assert.Contains(t, scrpr.buildProcedureMetricsSQL(), "DBA_PROCEDURES")
+			}
+		})
+	}
+}
+
 func TestCalculateLookbackSeconds(t *testing.T) {
 	collectionInterval := 20 * time.Second
 	vsqlRefreshLagSec := 10 * time.Second
 	expectedMinimumLookbackTime := int((collectionInterval + vsqlRefreshLagSec).Seconds())
-	currentCollectionTime := time.Now()
 
-	scrpr := oracleScraper{
-		lastExecutionTimestamp: currentCollectionTime.Add(-collectionInterval),
-	}
-	lookbackTime := scrpr.calculateLookbackSeconds()
+	lookbackTime := calculateLookbackSeconds(time.Now().Add(-collectionInterval), collectionInterval)
 
 	assert.LessOrEqual(t, expectedMinimumLookbackTime, lookbackTime, "`lookbackTime` should be minimum %d", expectedMinimumLookbackTime)
+}
+
+// A zero timestamp must report a full interval so the first scrape collects immediately.
+func TestCalculateLookbackSecondsFirstScrape(t *testing.T) {
+	collectionInterval := 60 * time.Second
+
+	assert.Equal(t, int(collectionInterval.Seconds()), calculateLookbackSeconds(time.Time{}, collectionInterval))
 }
 
 func TestScraper_ScrapeSGAInfo(t *testing.T) {

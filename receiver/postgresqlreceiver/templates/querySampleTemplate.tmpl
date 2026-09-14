@@ -53,6 +53,10 @@ WHERE
     AND sa.pid != pg_backend_pid()
     {{/* Require query_start to be set -- rows without it have no meaningful timestamp */}}
     AND sa.query_start IS NOT NULL
+    {{- if .excludedDatabases }}
+    {{/* COALESCE: datname is NULL for background workers, and a bare NOT IN would drop them */}}
+    AND COALESCE(sa.datname, '') NOT IN ({{ .excludedDatabases }})
+    {{- end }}
     AND NOT (
     {{/* we only want query that is either still running that was started before our newestQueryTimestamp or idle but start after the newestQueryTimestamp */}}
       sa.query_start < TO_TIMESTAMP({{ .newestQueryTimestamp }})

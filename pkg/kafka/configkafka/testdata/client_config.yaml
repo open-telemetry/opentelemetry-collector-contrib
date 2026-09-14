@@ -71,6 +71,18 @@ kafka/sasl_plain_password_required:
       mechanism: PLAIN
       username: xyz
 
+kafka/sasl_and_kerberos:
+  auth:
+    sasl:
+      mechanism: PLAIN
+      username: abc
+      password: def
+    kerberos:
+      service_name: kafka
+      realm: EXAMPLE.COM
+      username: kafka
+      password: kafka
+
 kafka/foo:
   brokers:
     - "foo:123"

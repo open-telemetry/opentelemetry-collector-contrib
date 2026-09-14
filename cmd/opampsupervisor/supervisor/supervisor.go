@@ -384,6 +384,15 @@ func (s *Supervisor) Start(ctx context.Context) error {
 		return errors.New("accepts_packages capability is not yet fully implemented")
 	}
 
+	if s.config.Capabilities.ReportsRemoteConfig { //nolint:staticcheck // SA1019: deprecated field is read only to warn about its use
+		s.telemetrySettings.Logger.Error(
+			"The reports_remote_config capability is deprecated and has no effect. " +
+				"Remote config status is reported whenever accepts_remote_config is enabled. " +
+				"Remove reports_remote_config from the supervisor config; it will be removed in a future release. " +
+				"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49763 for details.",
+		)
+	}
+
 	if err = s.getFeatureGates(); err != nil {
 		return fmt.Errorf("could not get feature gates from the Collector: %w", err)
 	}
@@ -2436,7 +2445,7 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Connect
 
 // saveAndReportConfigStatus saves the config status to the persistent state and reports it to the server.
 func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) {
-	if !s.config.Capabilities.ReportsRemoteConfig {
+	if !s.config.Capabilities.AcceptsRemoteConfig {
 		s.telemetrySettings.Logger.Debug("supervisor is not configured to report remote config status")
 		return
 	}
@@ -2466,7 +2475,7 @@ func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStat
 // the status is reported without overwriting the persisted status of the
 // config that triggered the rollback, and true is returned.
 func (s *Supervisor) reportActiveConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) bool {
-	if !s.config.Capabilities.ReportsRemoteConfig {
+	if !s.config.Capabilities.AcceptsRemoteConfig {
 		s.telemetrySettings.Logger.Debug("supervisor is not configured to report remote config status")
 		return false
 	}
