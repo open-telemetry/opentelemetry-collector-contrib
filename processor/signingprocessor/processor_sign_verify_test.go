@@ -97,7 +97,7 @@ func verifyRecord(t *testing.T, lr plog.LogRecord, pubKey *rsa.PublicKey) {
 	attrs := make(map[string]any)
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		if !strings.HasPrefix(k, "audit.integrity.") {
-			attrs[k] = v.Str()
+			attrs[k] = rawValue(v)
 		}
 		return true
 	})
@@ -298,7 +298,7 @@ func rawValue(v pcommon.Value) any {
 	case pcommon.ValueTypeStr:
 		return v.Str()
 	case pcommon.ValueTypeInt:
-		return v.Int()
+		return strconv.FormatInt(v.Int(), 10)
 	case pcommon.ValueTypeDouble:
 		return v.Double()
 	case pcommon.ValueTypeBool:

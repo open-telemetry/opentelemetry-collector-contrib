@@ -46,7 +46,7 @@ func TestBodyIsSignedForEveryType(t *testing.T) {
 		{
 			name: "int body",
 			set:  func(lr plog.LogRecord) { lr.Body().SetInt(42) },
-			want: `"body":42`,
+			want: `"body":"42"`,
 		},
 		{
 			name: "double body",
