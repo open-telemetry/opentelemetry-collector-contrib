@@ -120,7 +120,7 @@ func (h handler) OnDelete(obj any) {
 	var ok bool
 
 	switch object := obj.(type) {
-	case *cache.DeletedFinalStateUnknown:
+	case cache.DeletedFinalStateUnknown:
 		h.OnDelete(object.Obj)
 		return
 	case *discoveryv1.EndpointSlice:
