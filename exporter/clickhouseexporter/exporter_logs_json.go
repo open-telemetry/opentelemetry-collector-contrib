@@ -45,13 +45,9 @@ func newLogsJSONExporter(logger *zap.Logger, cfg *Config) *logsJSONExporter {
 	}
 }
 
-func (e *logsJSONExporter) start(ctx context.Context, _ component.Host) error {
-	opt, err := e.cfg.buildClickHouseOptions()
-	if err != nil {
-		return err
-	}
-
-	e.db, err = internal.NewClickhouseClientFromOptions(opt, e.cfg.shouldCreateSchema())
+func (e *logsJSONExporter) start(ctx context.Context, host component.Host) error {
+	var err error
+	e.db, err = e.cfg.openClickHouse(ctx, host)
 	if err != nil {
 		return err
 	}

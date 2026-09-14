@@ -1,0 +1,6 @@
+# Use this changelog template to create an entry for release notes.
+change_type: enhancement
+component: exporter/clickhouse
+note: Add configauth support for JWT authentication
+issues: [50460]
+change_logs: [user]

@@ -31,6 +31,10 @@ properties:
   async_insert:
     description: AsyncInsert if true will enable async inserts. Default is `true`. Ignored if async inserts are configured in the `endpoint` or `connection_params`. Async inserts may still be overridden server-side.
     type: boolean
+  auth:
+    description: Auth is an authenticator extension that supplies a JWT. Requires TLS.
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/config/configauth.config
   cluster_name:
     description: ClusterName if set will append `ON CLUSTER` with the provided name when creating tables.
     type: string
