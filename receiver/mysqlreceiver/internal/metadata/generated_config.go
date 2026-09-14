@@ -740,6 +740,66 @@ func (ms *MysqlInnodbOperationPendingMetricConfig) Validate() error {
 	return nil
 }
 
+// MysqlInnodbRedoLogCheckpointAgeMetricConfig provides config for the mysql.innodb.redo_log.checkpoint.age metric.
+type MysqlInnodbRedoLogCheckpointAgeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlInnodbRedoLogCheckpointAgeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlInnodbRedoLogLsnCheckpointMetricConfig provides config for the mysql.innodb.redo_log.lsn.checkpoint metric.
+type MysqlInnodbRedoLogLsnCheckpointMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlInnodbRedoLogLsnCheckpointMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlInnodbRedoLogLsnCurrentMetricConfig provides config for the mysql.innodb.redo_log.lsn.current metric.
+type MysqlInnodbRedoLogLsnCurrentMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlInnodbRedoLogLsnCurrentMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MysqlInnodbRowLockWaitCountMetricConfig provides config for the mysql.innodb.row_lock.wait.count metric.
 type MysqlInnodbRowLockWaitCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -2594,6 +2654,9 @@ type MetricsConfig struct {
 	MysqlInnodbDataFileIo                   MysqlInnodbDataFileIoMetricConfig                   `mapstructure:"mysql.innodb.data_file.io"`
 	MysqlInnodbHistoryListLength            MysqlInnodbHistoryListLengthMetricConfig            `mapstructure:"mysql.innodb.history_list.length"`
 	MysqlInnodbOperationPending             MysqlInnodbOperationPendingMetricConfig             `mapstructure:"mysql.innodb.operation.pending"`
+	MysqlInnodbRedoLogCheckpointAge         MysqlInnodbRedoLogCheckpointAgeMetricConfig         `mapstructure:"mysql.innodb.redo_log.checkpoint.age"`
+	MysqlInnodbRedoLogLsnCheckpoint         MysqlInnodbRedoLogLsnCheckpointMetricConfig         `mapstructure:"mysql.innodb.redo_log.lsn.checkpoint"`
+	MysqlInnodbRedoLogLsnCurrent            MysqlInnodbRedoLogLsnCurrentMetricConfig            `mapstructure:"mysql.innodb.redo_log.lsn.current"`
 	MysqlInnodbRowLockWaitCount             MysqlInnodbRowLockWaitCountMetricConfig             `mapstructure:"mysql.innodb.row_lock.wait.count"`
 	MysqlInnodbRowLockWaitDurationAvg       MysqlInnodbRowLockWaitDurationAvgMetricConfig       `mapstructure:"mysql.innodb.row_lock.wait.duration.avg"`
 	MysqlInnodbRowLockWaitDurationMax       MysqlInnodbRowLockWaitDurationMaxMetricConfig       `mapstructure:"mysql.innodb.row_lock.wait.duration.max"`
@@ -2727,6 +2790,15 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlInnodbOperationPendingMetricAttributeKey{MysqlInnodbOperationPendingMetricAttributeKeyOperations},
+		},
+		MysqlInnodbRedoLogCheckpointAge: MysqlInnodbRedoLogCheckpointAgeMetricConfig{
+			Enabled: false,
+		},
+		MysqlInnodbRedoLogLsnCheckpoint: MysqlInnodbRedoLogLsnCheckpointMetricConfig{
+			Enabled: false,
+		},
+		MysqlInnodbRedoLogLsnCurrent: MysqlInnodbRedoLogLsnCurrentMetricConfig{
+			Enabled: false,
 		},
 		MysqlInnodbRowLockWaitCount: MysqlInnodbRowLockWaitCountMetricConfig{
 			Enabled: false,
@@ -3253,11 +3325,6 @@ func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
-}
-
-// Deprecated: Use NewDefaultMetricsBuilderConfig.
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return NewDefaultMetricsBuilderConfig()
 }
 
 // LogsBuilderConfig is a configuration for mysql logs builder.

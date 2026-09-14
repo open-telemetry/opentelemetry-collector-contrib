@@ -1,0 +1,11 @@
+change_type: breaking
+
+component: pkg/ottl
+
+note: Promote the `ottl.set.allowNil` feature gate to beta, enabling it by default.
+
+issues: [49741]
+
+subtext: When enabled, the `set` function passes `nil` values directly to the target instead of treating them as a no-op.
+
+change_logs: [user]

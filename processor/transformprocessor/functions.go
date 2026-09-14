@@ -25,27 +25,12 @@ func DefaultLogFunctions() []ottl.Factory[*ottllog.TransformContext] {
 	return slices.Collect(maps.Values(defaultLogFunctionsMap()))
 }
 
-// Deprecated: [v0.152.0] Use DefaultLogFunctions.
-func DefaultLogFunctionsNew() []ottl.Factory[*ottllog.TransformContext] {
-	return DefaultLogFunctions()
-}
-
 func DefaultMetricFunctions() []ottl.Factory[*ottlmetric.TransformContext] {
 	return slices.Collect(maps.Values(defaultMetricFunctionsMap()))
 }
 
-// Deprecated: [v0.152.0] Use DefaultMetricFunctions.
-func DefaultMetricFunctionsNew() []ottl.Factory[*ottlmetric.TransformContext] {
-	return DefaultMetricFunctions()
-}
-
 func DefaultDataPointFunctions() []ottl.Factory[*ottldatapoint.TransformContext] {
 	return slices.Collect(maps.Values(defaultDataPointFunctionsMap()))
-}
-
-// Deprecated: [v0.152.0] Use DefaultDataPointFunctions.
-func DefaultDataPointFunctionsNew() []ottl.Factory[*ottldatapoint.TransformContext] {
-	return DefaultDataPointFunctions()
 }
 
 func DefaultExemplarFunctions() []ottl.Factory[*ottlexemplar.TransformContext] {
@@ -56,27 +41,12 @@ func DefaultSpanFunctions() []ottl.Factory[*ottlspan.TransformContext] {
 	return slices.Collect(maps.Values(defaultSpanFunctionsMap()))
 }
 
-// Deprecated: [v0.152.0] Use DefaultSpanFunctions.
-func DefaultSpanFunctionsNew() []ottl.Factory[*ottlspan.TransformContext] {
-	return DefaultSpanFunctions()
-}
-
 func DefaultSpanEventFunctions() []ottl.Factory[*ottlspanevent.TransformContext] {
 	return slices.Collect(maps.Values(defaultSpanEventFunctionsMap()))
 }
 
-// Deprecated: [v0.152.0] Use DefaultSpanEventFunctions.
-func DefaultSpanEventFunctionsNew() []ottl.Factory[*ottlspanevent.TransformContext] {
-	return DefaultSpanEventFunctions()
-}
-
 func DefaultProfileFunctions() []ottl.Factory[*ottlprofile.TransformContext] {
 	return slices.Collect(maps.Values(defaultProfileFunctionsMap()))
-}
-
-// Deprecated: [v0.152.0] Use DefaultProfileFunctions.
-func DefaultProfileFunctionsNew() []ottl.Factory[*ottlprofile.TransformContext] {
-	return DefaultProfileFunctions()
 }
 
 func defaultLogFunctionsMap() map[string]ottl.Factory[*ottllog.TransformContext] {

@@ -3053,7 +3053,9 @@ receiver.postgresql.useOTelSemconv feature gate (alpha, disabled by default).
   The following resource attributes are deprecated and will now be disabled by default:
   `aws.volume.id`, `fs.type`, `gce.pd.name`, `glusterfs.endpoints.name`, `glusterfs.path`, and `partition`.
   All of these attributes will be removed in a future release.
-  
+- `exporter/datadog`: Promote `exporter.datadogexporter.DisableAllMetricRemapping` feature gate to beta. (#47212)
+  - All metrics remappings are now handled by the Datadog backend. If you run into any issues, please disable the feature gate by passing `--feature-gates=-exporter.datadogexporter.DisableAllMetricRemapping` and reach out to Datadog support (https://www.datadoghq.com/support/).
+    
 
 ### 🚩 Deprecations 🚩
 
@@ -3072,9 +3074,6 @@ receiver.postgresql.useOTelSemconv feature gate (alpha, disabled by default).
 
 ### 💡 Enhancements 💡
 
-- `exporter/datadog`: Promote `exporter.datadogexporter.DisableAllMetricRemapping` feature gate to beta. (#47212)
-  - All metrics remappings are now handled by the Datadog backend and this should be a transparent change. If you run into any issues, please disable the feature gate by passing `--feature-gates=-exporter.datadogexporter.DisableAllMetricRemapping` and reach out to Datadog support (https://www.datadoghq.com/support/).
-  
 - `exporter/elasticsearch`: Add suppress_conflict_errors config to optionally silence document level 409 version conflict logs (#47248)
 - `exporter/kafka`: Add `record_headers` configuration option to set static headers on outgoing records (#47193)
 - `exporter/kafka`: Add support for partitioning kafka records (#46931)

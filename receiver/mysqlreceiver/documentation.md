@@ -460,6 +460,36 @@ The number of pending InnoDB data file operations.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | operation | The operation types. | Str: ``fsyncs``, ``reads``, ``writes`` | Recommended | - |
 
+### mysql.innodb.redo_log.checkpoint.age
+
+The difference, in bytes, between the current InnoDB redo log sequence number and the most recent checkpoint log sequence number.
+
+Only emitted for MySQL 8.0.11 and later. MySQL 8.0.11 through 8.0.29 requires SELECT and BACKUP_ADMIN. MySQL 8.0.30 and later versions do not require BACKUP_ADMIN. MariaDB is not supported for this metric.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### mysql.innodb.redo_log.lsn.checkpoint
+
+The InnoDB redo log sequence number of the most recent checkpoint.
+
+Only emitted for MySQL 8.0.11 and later. MySQL 8.0.11 through 8.0.29 requires SELECT and BACKUP_ADMIN. MySQL 8.0.30 and later versions do not require BACKUP_ADMIN. MariaDB is not supported for this metric.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### mysql.innodb.redo_log.lsn.current
+
+The current InnoDB redo log sequence number.
+
+Only emitted for MySQL 8.0.11 and later. MySQL 8.0.11 through 8.0.29 requires SELECT and BACKUP_ADMIN. MySQL 8.0.30 and later versions do not require BACKUP_ADMIN. MariaDB is not supported for this metric.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
 ### mysql.innodb.row_lock.wait.count
 
 The number of InnoDB row lock waits currently pending.
