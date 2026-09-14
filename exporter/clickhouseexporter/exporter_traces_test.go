@@ -36,6 +36,7 @@ func TestRenderCreateTracesTableSQL(t *testing.T) {
 
 		require.Contains(t, sql, "INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter")
 		require.Contains(t, sql, "INDEX idx_span_attr_value mapValues(SpanAttributes) TYPE bloom_filter")
+		require.Contains(t, sql, "INDEX idx_lower_span_name lower(SpanName) TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 8")
 
 		require.NotContains(t, sql, "__otel_materialized")
 	})
@@ -54,6 +55,7 @@ func TestRenderCreateTracesTableSQL(t *testing.T) {
 		require.Contains(t, sql, "INDEX idx_span_attr_items SpanAttributeItems TYPE text(tokenizer = 'array')")
 		require.Contains(t, sql, "`test_db`.`otel_traces`")
 		require.Contains(t, sql, "TYPE minmax")
+		require.Contains(t, sql, "INDEX idx_lower_span_name lower(SpanName) TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 8")
 
 		require.NotContains(t, sql, "mapValues")
 		require.NotContains(t, sql, "idx_res_attr_value")

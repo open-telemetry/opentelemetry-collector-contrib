@@ -40,7 +40,8 @@ CREATE TABLE IF NOT EXISTS {{ident .Database}}.{{ident .TableName}} {{.ClusterSt
     INDEX idx_span_attr_key mapKeys(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
     INDEX idx_span_attr_value mapValues(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
 {{- end}}
-    INDEX idx_duration Duration TYPE minmax GRANULARITY 1
+    INDEX idx_duration Duration TYPE minmax GRANULARITY 1,
+    INDEX idx_lower_span_name lower(SpanName) TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 8
 ) ENGINE = {{.Engine}}
 PARTITION BY toDate(Timestamp)
 PRIMARY KEY (ServiceName, SpanName, toDateTime(Timestamp))
