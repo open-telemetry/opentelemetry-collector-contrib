@@ -65,12 +65,12 @@ func TestK8sEventToLogData(t *testing.T) {
 	attrs := lr.LogRecords().At(0).Attributes()
 	assert.Equal(t, 1, ld.ResourceLogs().Len())
 	assert.Equal(t, 7, resourceAttrs.Len())
-	assert.Equal(t, 9, attrs.Len())
+	assert.Equal(t, 8, attrs.Len())
 
-	// Count attribute will not be present in the LogData
-	k8sEvent.Count = 0
+	// Count attribute will not be present in the LogData when Series is nil.
+	k8sEvent.Series = nil
 	ld = k8sEventToLogData(zap.NewNop(), k8sEvent, "latest")
-	assert.Equal(t, 8, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len())
+	assert.Equal(t, 7, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len())
 }
 
 func TestK8sEventToLogDataWithApiAndResourceVersion(t *testing.T) {
@@ -87,7 +87,7 @@ func TestK8sEventToLogDataWithApiAndResourceVersion(t *testing.T) {
 	assert.Empty(t, attr.AsString())
 
 	// add ResourceVersion
-	k8sEvent.InvolvedObject.ResourceVersion = "7387066320"
+	k8sEvent.Regarding.ResourceVersion = "7387066320"
 	ld = k8sEventToLogData(zap.NewNop(), k8sEvent, "latest")
 	attrs = ld.ResourceLogs().At(0).Resource().Attributes()
 	attr, ok = attrs.Get("k8s.object.resource_version")
