@@ -784,7 +784,7 @@ func TestConvertExponentialHistToExplicitHistPreservesDataPoint(t *testing.T) {
 	source.Positive().BucketCounts().FromRaw([]uint64{4})
 	source.Exemplars().AppendEmpty().SetDoubleValue(1.5)
 
-	ctx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+	ctx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
 	defer ctx.Close()
 	exprFunc, err := convertExponentialHistToExplicitHist("uniform", []float64{-2, -1, 0, 1, 2})
 	require.NoError(t, err)
@@ -824,7 +824,7 @@ func TestConvertExponentialHistToExplicitHistIsAtomicOnError(t *testing.T) {
 	expected := pmetric.NewMetric()
 	metric.CopyTo(expected)
 
-	ctx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+	ctx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
 	defer ctx.Close()
 	exprFunc, err := convertExponentialHistToExplicitHist("random", []float64{1})
 	require.NoError(t, err)

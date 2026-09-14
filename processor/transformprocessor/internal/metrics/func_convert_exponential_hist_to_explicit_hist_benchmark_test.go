@@ -4,7 +4,6 @@
 package metrics
 
 import (
-	"context"
 	"testing"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -37,13 +36,12 @@ func BenchmarkConvertExponentialHistToExplicitHist(b *testing.B) {
 			metric := pmetric.NewMetric()
 			resourceMetrics := pmetric.NewResourceMetrics()
 			scopeMetrics := pmetric.NewScopeMetrics()
-			transformContext := ottlmetric.NewTransformContextPtr(resourceMetrics, scopeMetrics, metric)
-			ctx := context.Background()
+			transformContext := ottlmetric.NewTransformContext(resourceMetrics, scopeMetrics, metric)
 			b.Cleanup(transformContext.Close)
 			b.ReportAllocs()
 			for b.Loop() {
 				template.CopyTo(metric)
-				_, err = expr(ctx, transformContext)
+				_, err = expr(b.Context(), transformContext)
 				if err != nil {
 					b.Fatal(err)
 				}

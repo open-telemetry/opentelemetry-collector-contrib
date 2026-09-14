@@ -14,7 +14,7 @@
 
 // Package conversion translates exponential histogram buckets into other
 // histogram bucket layouts.
-package conversion
+package conversion // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto/conversion"
 
 import (
 	"errors"
@@ -64,7 +64,6 @@ func ToExplicit(input ExponentialHistogram, bounds []float64, distribution strin
 	}
 
 	mapper, err := newMapping(input.Scale)
-
 	if err != nil {
 		return nil, fmt.Errorf("invalid exponential histogram scale %d: %w", input.Scale, err)
 	}
@@ -261,9 +260,7 @@ func distributeWeighted(output []uint64, bounds []float64, destination *int, low
 		} else {
 			cumulative += (overlapUpper - overlapLower) / total
 			next = roundedPrefix(count, cumulative, roundingOffset)
-			if next < allocated {
-				next = allocated
-			}
+			next = max(next, allocated)
 		}
 		if err := addToBucket(output, *destination, next-allocated); err != nil {
 			return err
