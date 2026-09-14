@@ -95,6 +95,7 @@ components:
     - extension/ecs_observer
     - extension/encoding
     - extension/file_storage
+    - extension/file_telemetry_policy
     - extension/google_cloud_logentry_encoding
     - extension/googleclientauth
     - extension/headers_setter
