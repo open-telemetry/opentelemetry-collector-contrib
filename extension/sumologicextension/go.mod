@@ -8,8 +8,8 @@ require (
 	github.com/shirou/gopsutil/v4 v4.26.8
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.67.0
-	go.opentelemetry.io/collector/component/componenttest v0.160.1-0.20260911221045-a35b7a8db49d
-	go.opentelemetry.io/collector/config/confighttp v0.160.1-0.20260911221045-a35b7a8db49d
+	go.opentelemetry.io/collector/component/componenttest v0.161.0
+	go.opentelemetry.io/collector/config/confighttp v0.161.0
 	go.opentelemetry.io/collector/config/configopaque v1.67.0
 	go.opentelemetry.io/collector/confmap v1.67.0
 	go.opentelemetry.io/collector/extension v1.67.0
@@ -57,9 +57,9 @@ require (
 	go.opentelemetry.io/collector/config/confignet v1.67.0 // indirect
 	go.opentelemetry.io/collector/config/configoptional v1.67.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.67.0 // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.160.1-0.20260911221045-a35b7a8db49d // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.161.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.67.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.160.1-0.20260911221045-a35b7a8db49d // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.161.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.67.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0 // indirect
 	go.opentelemetry.io/otel v1.46.0 // indirect

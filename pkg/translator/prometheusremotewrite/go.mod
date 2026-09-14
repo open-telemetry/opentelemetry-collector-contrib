@@ -71,7 +71,7 @@ require (
 	github.com/prometheus/sigv4 v0.4.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.67.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.160.1-0.20260911221045-a35b7a8db49d // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.161.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
 	go.opentelemetry.io/otel/metric v1.46.0 // indirect
 	go.opentelemetry.io/otel/trace v1.46.0 // indirect
