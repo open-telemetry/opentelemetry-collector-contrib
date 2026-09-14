@@ -1,0 +1,14 @@
+/Users/satheesh.d/opentelemetry-collector-contrib/exporter/awsxrayexporter/java-translator/src/main/java/io/opentelemetry/contrib/awsxray/translator/AttributeConstants.java
+/Users/satheesh.d/opentelemetry-collector-contrib/exporter/awsxrayexporter/java-translator/src/main/java/io/opentelemetry/contrib/awsxray/translator/AwsTranslator.java
+/Users/satheesh.d/opentelemetry-collector-contrib/exporter/awsxrayexporter/java-translator/src/main/java/io/opentelemetry/contrib/awsxray/translator/CauseTranslator.java
+/Users/satheesh.d/opentelemetry-collector-contrib/exporter/awsxrayexporter/java-translator/src/main/java/io/opentelemetry/contrib/awsxray/translator/HttpTranslator.java
+/Users/satheesh.d/opentelemetry-collector-contrib/exporter/awsxrayexporter/java-translator/src/main/java/io/opentelemetry/contrib/awsxray/translator/SegmentTranslator.java
+/Users/satheesh.d/opentelemetry-collector-contrib/exporter/awsxrayexporter/java-translator/src/main/java/io/opentelemetry/contrib/awsxray/translator/SqlTranslator.java
+/Users/satheesh.d/opentelemetry-collector-contrib/exporter/awsxrayexporter/java-translator/src/main/java/io/opentelemetry/contrib/awsxray/translator/TranslationException.java
+/Users/satheesh.d/opentelemetry-collector-contrib/exporter/awsxrayexporter/java-translator/src/main/java/io/opentelemetry/contrib/awsxray/translator/model/AwsData.java
+/Users/satheesh.d/opentelemetry-collector-contrib/exporter/awsxrayexporter/java-translator/src/main/java/io/opentelemetry/contrib/awsxray/translator/model/CauseData.java
+/Users/satheesh.d/opentelemetry-collector-contrib/exporter/awsxrayexporter/java-translator/src/main/java/io/opentelemetry/contrib/awsxray/translator/model/HttpData.java
+/Users/satheesh.d/opentelemetry-collector-contrib/exporter/awsxrayexporter/java-translator/src/main/java/io/opentelemetry/contrib/awsxray/translator/model/Segment.java
+/Users/satheesh.d/opentelemetry-collector-contrib/exporter/awsxrayexporter/java-translator/src/main/java/io/opentelemetry/contrib/awsxray/translator/model/ServiceData.java
+/Users/satheesh.d/opentelemetry-collector-contrib/exporter/awsxrayexporter/java-translator/src/main/java/io/opentelemetry/contrib/awsxray/translator/model/SpanLinkData.java
+/Users/satheesh.d/opentelemetry-collector-contrib/exporter/awsxrayexporter/java-translator/src/main/java/io/opentelemetry/contrib/awsxray/translator/model/SqlData.java
