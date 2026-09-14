@@ -31,6 +31,14 @@ attributes:
     requirement_level: recommended
 
 metrics:
+  system.network.bandwidth.utilization:
+    enabled: false
+    description: The network bandwidth utilization as a fraction of the total bandwidth.
+    unit: "1"
+    stability: development
+    gauge:
+      value_type: double
+    attributes: [device]
   system.network.connections:
     enabled: true
     description: The number of connections.

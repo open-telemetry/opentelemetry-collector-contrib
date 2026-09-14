@@ -18,27 +18,34 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper/ucal"
 )
 
 const (
-	networkMetricsLen     = 4
+	networkMetricsLen     = 6
 	connectionsMetricsLen = 1
 )
 
 // scraper for Network Metrics
 type networkScraper struct {
-	settings  scraper.Settings
-	config    *Config
-	mb        *metadata.MetricsBuilder
-	startTime pcommon.Timestamp
-	includeFS filterset.FilterSet
-	excludeFS filterset.FilterSet
+	settings                          scraper.Settings
+	config                            *Config
+	mb                                *metadata.MetricsBuilder
+	ucal                              *ucal.NetworkUtilizationCalculator
+	startTime                         pcommon.Timestamp
+	hostBandwidthUtilization          float64
+	hostBandwidthUtilizationTimestamp pcommon.Timestamp
+	hasHostBandwidthUtilization       bool
+	includeFS                         filterset.FilterSet
+	excludeFS                         filterset.FilterSet
 
 	// for mocking
 	bootTime    func(context.Context) (uint64, error)
 	ioCounters  func(context.Context, bool) ([]net.IOCountersStat, error)
 	connections func(context.Context, string) ([]net.ConnectionStat, error)
 	conntrack   func(context.Context) ([]net.FilterStat, error)
+	linkInfo    func(context.Context, string) (ucal.LinkInfo, error)
+	now         func() time.Time
 }
 
 // newNetworkScraper creates a set of Network related metrics
@@ -50,6 +57,9 @@ func newNetworkScraper(_ context.Context, settings scraper.Settings, cfg *Config
 		ioCounters:  net.IOCountersWithContext,
 		connections: net.ConnectionsWithContext,
 		conntrack:   net.FilterCountersWithContext,
+		linkInfo:    readNetworkLinkInfo,
+		now:         time.Now,
+		ucal:        &ucal.NetworkUtilizationCalculator{},
 	}
 
 	var err error
@@ -84,6 +94,7 @@ func (s *networkScraper) start(ctx context.Context, _ component.Host) error {
 
 func (s *networkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var errors scrapererror.ScrapeErrors
+	s.hasHostBandwidthUtilization = false
 
 	err := s.recordNetworkCounterMetrics(ctx)
 	if err != nil {
@@ -100,11 +111,13 @@ func (s *networkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		errors.AddPartial(conntrackMetricsLen, err)
 	}
 
-	return s.mb.Emit(), errors.Combine()
+	md := s.mb.Emit()
+	s.appendHostNetworkBandwidthUtilization(md)
+	return md, errors.Combine()
 }
 
 func (s *networkScraper) recordNetworkCounterMetrics(ctx context.Context) error {
-	now := pcommon.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(s.now())
 
 	// get total stats only
 	ioCounters, err := s.ioCounters(ctx, true /*perNetworkInterfaceController=*/)
@@ -120,9 +133,59 @@ func (s *networkScraper) recordNetworkCounterMetrics(ctx context.Context) error 
 		s.recordNetworkDroppedPacketsMetric(now, ioCounters)
 		s.recordNetworkErrorPacketsMetric(now, ioCounters)
 		s.recordNetworkIOMetric(now, ioCounters)
+		if err := s.recordNetworkBandwidthMetrics(ctx, now, ioCounters); err != nil {
+			return err
+		}
 	}
 
 	return nil
+}
+
+func (s *networkScraper) recordNetworkBandwidthMetrics(ctx context.Context, now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) error {
+	if !s.config.Metrics.SystemNetworkBandwidthUtilization.Enabled {
+		return nil
+	}
+
+	utilizations, hostUtilization, hasHostUtilization, err := s.ucal.Calculate(now, ioCountersSlice, func(device string) (ucal.LinkInfo, error) {
+		return s.linkInfo(ctx, device)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to calculate network bandwidth utilization: %w", err)
+	}
+
+	for _, utilization := range utilizations {
+		if s.config.Metrics.SystemNetworkBandwidthUtilization.Enabled && utilization.HasUtilization {
+			s.mb.RecordSystemNetworkBandwidthUtilizationDataPoint(now, utilization.Utilization, utilization.Device)
+		}
+	}
+	if s.config.Metrics.SystemNetworkBandwidthUtilization.Enabled && hasHostUtilization {
+		s.hostBandwidthUtilization = hostUtilization
+		s.hostBandwidthUtilizationTimestamp = now
+		s.hasHostBandwidthUtilization = true
+	}
+
+	return nil
+}
+
+func (s *networkScraper) appendHostNetworkBandwidthUtilization(md pmetric.Metrics) {
+	if !s.hasHostBandwidthUtilization {
+		return
+	}
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		scopeMetrics := md.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			metrics := scopeMetrics.At(j).Metrics()
+			for k := 0; k < metrics.Len(); k++ {
+				metric := metrics.At(k)
+				if metric.Name() == "system.network.bandwidth.utilization" {
+					dp := metric.Gauge().DataPoints().AppendEmpty()
+					dp.SetTimestamp(s.hostBandwidthUtilizationTimestamp)
+					dp.SetDoubleValue(s.hostBandwidthUtilization)
+					return
+				}
+			}
+		}
+	}
 }
 
 func (s *networkScraper) recordNetworkPacketsMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
