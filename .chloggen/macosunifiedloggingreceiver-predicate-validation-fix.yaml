@@ -1,8 +1,8 @@
 change_type: bug_fix
 component: receiver/macos_unified_logging
-note: Fix messageType predicate validation
+note: Add eventType, eventMessage, and signpostName predicate fields
 issues: [50626]
 subtext: |-
-  Added missing 'messageType' field to validPredicateFields to fix validation error for the README example.
+  Added missing predicate fields to validPredicateFields: 'messageType', 'eventType', 'eventMessage', and 'signpostName'.
   Updated the README example to use the supported OR form for messageType/logType comparisons.
 change_logs: [user]

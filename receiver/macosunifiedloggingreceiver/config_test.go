@@ -221,6 +221,38 @@ func TestConfigValidate(t *testing.T) {
 				}
 			},
 		},
+		{
+			desc: "valid predicate with eventType field",
+			makeCfg: func(_ *testing.T) *Config {
+				return &Config{
+					Predicate: "eventType == 'logEvent'",
+				}
+			},
+		},
+		{
+			desc: "valid predicate with eventMessage field",
+			makeCfg: func(_ *testing.T) *Config {
+				return &Config{
+					Predicate: "eventMessage == 'error'",
+				}
+			},
+		},
+		{
+			desc: "valid predicate with signpostName field",
+			makeCfg: func(_ *testing.T) *Config {
+				return &Config{
+					Predicate: "signpostName == 'mySignpost'",
+				}
+			},
+		},
+		{
+			desc: "valid predicate with multiple alias fields",
+			makeCfg: func(_ *testing.T) *Config {
+				return &Config{
+					Predicate: "eventType == 'signpostEvent' AND signpostName == 'mySignpost'",
+				}
+			},
+		},
 	}
 
 	for _, tc := range testCases {
