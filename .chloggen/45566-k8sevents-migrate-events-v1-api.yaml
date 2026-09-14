@@ -1,6 +1,6 @@
 change_type: breaking
 
-component: receiver/k8sevents
+component: receiver/k8s_events
 
 note: >
   Migrate from deprecated `core/v1` Events API to `events.k8s.io/v1` (stable since k8s 1.25).
