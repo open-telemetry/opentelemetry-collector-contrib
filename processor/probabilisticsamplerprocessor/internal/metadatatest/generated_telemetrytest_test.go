@@ -7,9 +7,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor/internal/metadata"
 )
@@ -20,8 +21,12 @@ func TestSetupTelemetry(t *testing.T) {
 	require.NoError(t, err)
 	defer tb.Shutdown()
 	tb.ProcessorProbabilisticSamplerCountLogsSampled.Add(context.Background(), 1)
+	tb.ProcessorProbabilisticSamplerCountSpansProcessedTotal.Add(context.Background(), 1)
 	tb.ProcessorProbabilisticSamplerCountTracesSampled.Add(context.Background(), 1)
 	AssertEqualProcessorProbabilisticSamplerCountLogsSampled(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorProbabilisticSamplerCountSpansProcessedTotal(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorProbabilisticSamplerCountTracesSampled(t, testTel,
