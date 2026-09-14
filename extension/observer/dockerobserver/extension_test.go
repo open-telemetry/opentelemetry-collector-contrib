@@ -5,11 +5,13 @@ package dockerobserver
 
 import (
 	"encoding/json"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"testing"
 
 	ctypes "github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -48,6 +50,51 @@ func TestPortTypeToProtocol(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require.Equal(t, tt.want, portProtoToTransport(tt.name))
+		})
+	}
+}
+
+func TestContainerNetworkAddress(t *testing.T) {
+	tests := []struct {
+		name            string
+		networkSettings *network.EndpointSettings
+		want            string
+	}{
+		{
+			name: "IPv4 address",
+			networkSettings: &network.EndpointSettings{
+				IPAddress: netip.MustParseAddr("192.0.2.10"),
+			},
+			want: "192.0.2.10",
+		},
+		{
+			name: "IPv6-only address",
+			networkSettings: &network.EndpointSettings{
+				GlobalIPv6Address: netip.MustParseAddr("2001:db8::10"),
+			},
+			want: "2001:db8::10",
+		},
+		{
+			name: "IPv4 address preferred",
+			networkSettings: &network.EndpointSettings{
+				IPAddress:         netip.MustParseAddr("192.0.2.10"),
+				GlobalIPv6Address: netip.MustParseAddr("2001:db8::10"),
+			},
+			want: "192.0.2.10",
+		},
+		{
+			name:            "no address",
+			networkSettings: &network.EndpointSettings{},
+		},
+		{
+			name: "nil network settings",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			networks := map[string]*network.EndpointSettings{"network": tt.networkSettings}
+			require.Equal(t, tt.want, containerNetworkAddress(networks))
 		})
 	}
 }
@@ -272,6 +319,107 @@ func TestCollectEndpointsIncludeAllContainers(t *testing.T) {
 	}
 
 	require.Equal(t, want, cEndpoints)
+}
+
+func TestCollectEndpointsIPv6Only(t *testing.T) {
+	factory := NewFactory()
+	config := factory.CreateDefaultConfig().(*Config)
+	config.IncludeAllContainers = true
+	ext, err := newObserver(zap.NewNop(), config)
+	require.NoError(t, err)
+
+	c := containerJSON(t)
+	for _, networkSettings := range c.NetworkSettings.Networks {
+		networkSettings.IPAddress = netip.Addr{}
+		networkSettings.GlobalIPv6Address = netip.MustParseAddr("2001:db8::30")
+	}
+
+	endpoints := ext.(*dockerObserver).containerEndpoints(&c)
+	require.Len(t, endpoints, 2)
+
+	tests := []struct {
+		name         string
+		endpoint     observer.Endpoint
+		wantTarget   string
+		wantEndpoint string
+		wantPort     uint16
+	}{
+		{
+			name:         "port",
+			endpoint:     endpoints[0],
+			wantTarget:   "[2001:db8::30]:80",
+			wantEndpoint: "[2001:db8::30]:80",
+			wantPort:     80,
+		},
+		{
+			name:         "container",
+			endpoint:     endpoints[1],
+			wantTarget:   "2001:db8::30",
+			wantEndpoint: "2001:db8::30",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.wantTarget, tt.endpoint.Target)
+			details, ok := tt.endpoint.Details.(*observer.Container)
+			require.True(t, ok)
+			require.Equal(t, "2001:db8::30", details.Host)
+			require.Equal(t, tt.wantPort, details.Port)
+
+			env, err := tt.endpoint.Env()
+			require.NoError(t, err)
+			require.Equal(t, tt.wantEndpoint, env["endpoint"])
+			require.Equal(t, "2001:db8::30", env["host"])
+			require.Equal(t, string(observer.ContainerType), env["type"])
+		})
+	}
+}
+
+func TestCollectEndpointsIPv6HostBinding(t *testing.T) {
+	factory := NewFactory()
+	config := factory.CreateDefaultConfig().(*Config)
+	config.UseHostBindings = true
+	ext, err := newObserver(zap.NewNop(), config)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name       string
+		hostIP     string
+		wantHost   string
+		wantTarget string
+	}{
+		{
+			name:       "explicit address",
+			hostIP:     "2001:db8::40",
+			wantHost:   "2001:db8::40",
+			wantTarget: "[2001:db8::40]:8080",
+		},
+		{
+			name:       "unspecified address",
+			hostIP:     "::",
+			wantHost:   "::1",
+			wantTarget: "[::1]:8080",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := containerJSON(t)
+			port := network.MustParsePort("80/tcp")
+			bindings := c.NetworkSettings.Ports[port]
+			require.NotEmpty(t, bindings)
+			bindings[0].HostIP = netip.MustParseAddr(tt.hostIP)
+			c.NetworkSettings.Ports[port] = bindings
+
+			endpoints := ext.(*dockerObserver).containerEndpoints(&c)
+			require.Len(t, endpoints, 1)
+			require.Equal(t, tt.wantTarget, endpoints[0].Target)
+			details, ok := endpoints[0].Details.(*observer.Container)
+			require.True(t, ok)
+			require.Equal(t, tt.wantHost, details.Host)
+		})
+	}
 }
 
 func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
