@@ -247,6 +247,7 @@ processor/signingprocessor
 processor/spanprocessor
 processor/spanpruningprocessor
 processor/sumologicprocessor
+processor/telemetrypolicyprocessor
 processor/unrollprocessor
 receiver/activedirectorydsreceiver
 receiver/activedirectoryinvreceiver
