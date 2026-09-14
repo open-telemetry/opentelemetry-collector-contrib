@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.161.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.160.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.161.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.161.0
