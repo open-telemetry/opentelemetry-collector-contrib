@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: internal/k8sconfig
+
+note: Prevent in-cluster k8s API clients from using environment proxy settings
+
+issues: [50937]
+
+subtext:
+
+change_logs: [user]

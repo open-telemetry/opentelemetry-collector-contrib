@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: receiver/mysql
+
+note: Add MySQL health, query execution time, and active session count metrics.
+
+issues: [50726]
+
+change_logs: [user]

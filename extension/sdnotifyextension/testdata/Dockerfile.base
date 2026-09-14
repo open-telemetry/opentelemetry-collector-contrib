@@ -1,0 +1,33 @@
+# Shared base image for the integration tests.
+#
+# otelcontribcol (built from the repo's own source tree via `make
+# docker-otelcontribcol`, which must run before this Dockerfile is built)
+# already includes sdnotifyextension plus every other core+contrib
+# component, so it's reused here instead of running a separate,
+# version-pinned OCB build just for this extension's tests.
+
+FROM otelcontribcol AS build-stage
+
+FROM ghcr.io/fauust/docker-systemd:debian-13
+
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build-stage --chmod=755 /otelcontribcol /bin/otelcol
+
+# To allow systemd (and other programs) to identify that it is executed within
+# a container, please set the $container environment variable for PID 1 in the
+# container to a short lowercase string identifying your implementation.
+#
+# See the link below for more information:
+# https://github.com/systemd/systemd/blob/main/docs/CONTAINER_INTERFACE.md#environment-variables
+ENV container=docker
+
+# If the container manager wants to cleanly shut down the container, it might be
+# a good idea to send SIGRTMIN+3 to its init process. systemd will then do a clean shutdown.
+#
+# See the link below for more information:
+# https://github.com/systemd/systemd/blob/main/docs/CONTAINER_INTERFACE.md#advanced-integration
+STOPSIGNAL SIGRTMIN+3

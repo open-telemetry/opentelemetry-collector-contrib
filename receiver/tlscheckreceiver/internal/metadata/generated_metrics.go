@@ -23,7 +23,7 @@ const (
 var MetricsInfo = metricsInfo{
 	TlscheckTimeLeft: metricInfo{
 		Name:       "tlscheck.time_left",
-		Attributes: []string{"tlscheck.x509.issuer", "tlscheck.x509.cn", "tlscheck.x509.san"},
+		Attributes: []string{"tlscheck.x509.issuer", "tlscheck.x509.cn", "tlscheck.x509.san", "tlscheck.x509.fingerprint"},
 	},
 }
 
@@ -53,7 +53,7 @@ func (m *metricTlscheckTimeLeft) init() {
 	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
-func (m *metricTlscheckTimeLeft) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tlscheckX509IssuerAttributeValue string, tlscheckX509CnAttributeValue string, tlscheckX509SanAttributeValue []any) {
+func (m *metricTlscheckTimeLeft) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tlscheckX509IssuerAttributeValue string, tlscheckX509CnAttributeValue string, tlscheckX509SanAttributeValue []any, tlscheckX509FingerprintAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -69,6 +69,9 @@ func (m *metricTlscheckTimeLeft) recordDataPoint(start pcommon.Timestamp, ts pco
 	}
 	if slices.Contains(m.config.EnabledAttributes, TlscheckTimeLeftMetricAttributeKeyTlscheckX509San) {
 		dp.Attributes().PutEmptySlice("tlscheck.x509.san").FromRaw(tlscheckX509SanAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, TlscheckTimeLeftMetricAttributeKeyTlscheckX509Fingerprint) {
+		dp.Attributes().PutStr("tlscheck.x509.fingerprint", tlscheckX509FingerprintAttributeValue)
 	}
 
 	var s string
@@ -279,8 +282,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordTlscheckTimeLeftDataPoint adds a data point to tlscheck.time_left metric.
-func (mb *MetricsBuilder) RecordTlscheckTimeLeftDataPoint(ts pcommon.Timestamp, val int64, tlscheckX509IssuerAttributeValue string, tlscheckX509CnAttributeValue string, tlscheckX509SanAttributeValue []any) {
-	mb.metricTlscheckTimeLeft.recordDataPoint(mb.startTime, ts, val, tlscheckX509IssuerAttributeValue, tlscheckX509CnAttributeValue, tlscheckX509SanAttributeValue)
+func (mb *MetricsBuilder) RecordTlscheckTimeLeftDataPoint(ts pcommon.Timestamp, val int64, tlscheckX509IssuerAttributeValue string, tlscheckX509CnAttributeValue string, tlscheckX509SanAttributeValue []any, tlscheckX509FingerprintAttributeValue string) {
+	mb.metricTlscheckTimeLeft.recordDataPoint(mb.startTime, ts, val, tlscheckX509IssuerAttributeValue, tlscheckX509CnAttributeValue, tlscheckX509SanAttributeValue, tlscheckX509FingerprintAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
