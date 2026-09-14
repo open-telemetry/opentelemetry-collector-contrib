@@ -811,10 +811,16 @@ func TestConvertExponentialHistToExplicitHistPreservesDataPoint(t *testing.T) {
 
 func TestConvertExponentialHistToExplicitHistIsAtomicOnError(t *testing.T) {
 	metric := pmetric.NewMetric()
-	source := metric.SetEmptyExponentialHistogram().DataPoints().AppendEmpty()
-	source.SetCount(2)
-	source.SetScale(0)
-	source.Positive().BucketCounts().FromRaw([]uint64{1})
+	dps := metric.SetEmptyExponentialHistogram().DataPoints()
+	valid := dps.AppendEmpty()
+	valid.SetCount(1)
+	valid.SetScale(0)
+	valid.Positive().BucketCounts().FromRaw([]uint64{1})
+	valid.Attributes().PutStr("key", "value")
+	invalid := dps.AppendEmpty()
+	invalid.SetCount(2)
+	invalid.SetScale(0)
+	invalid.Positive().BucketCounts().FromRaw([]uint64{1})
 	expected := pmetric.NewMetric()
 	metric.CopyTo(expected)
 

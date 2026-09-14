@@ -30,7 +30,7 @@ func TestToExplicitAlignedBuckets(t *testing.T) {
 			Count: 8,
 			Scale: 0,
 			Positive: Buckets{
-				Counts: []uint64{8},
+				Counts: bucketCounts{8},
 			},
 		}, []float64{1, 2}, distribution)
 		require.NoError(t, err)
@@ -45,10 +45,10 @@ func TestToExplicitAllRanges(t *testing.T) {
 		ZeroThreshold: 1,
 		ZeroCount:     8,
 		Positive: Buckets{
-			Counts: []uint64{4},
+			Counts: bucketCounts{4},
 		},
 		Negative: Buckets{
-			Counts: []uint64{4},
+			Counts: bucketCounts{4},
 		},
 	}, []float64{-2, -1, 0, 1, 2}, "uniform")
 	require.NoError(t, err)
@@ -62,7 +62,7 @@ func TestToExplicitOverflow(t *testing.T) {
 			Scale: 0,
 			Positive: Buckets{
 				Offset: 10,
-				Counts: []uint64{5},
+				Counts: bucketCounts{5},
 			},
 		}, []float64{1, 2, 3}, distribution)
 		require.NoError(t, err)
@@ -90,11 +90,11 @@ func TestToExplicitConservesCounts(t *testing.T) {
 		ZeroCount:     7,
 		Positive: Buckets{
 			Offset: -5,
-			Counts: []uint64{2, 3, 5, 7},
+			Counts: bucketCounts{2, 3, 5, 7},
 		},
 		Negative: Buckets{
 			Offset: -2,
-			Counts: []uint64{4, 5, 6},
+			Counts: bucketCounts{4, 5, 6},
 		},
 	}
 	bounds := []float64{-10, -1, -0.1, 0, 0.1, 1, 10}
@@ -116,7 +116,7 @@ func TestToExplicitSignSymmetry(t *testing.T) {
 		Count: 9,
 		Scale: 0,
 		Positive: Buckets{
-			Counts: []uint64{4, 5},
+			Counts: bucketCounts{4, 5},
 		},
 	}, bounds, "uniform")
 	require.NoError(t, err)
@@ -124,7 +124,7 @@ func TestToExplicitSignSymmetry(t *testing.T) {
 		Count: 9,
 		Scale: 0,
 		Negative: Buckets{
-			Counts: []uint64{4, 5},
+			Counts: bucketCounts{4, 5},
 		},
 	}, bounds, "uniform")
 	require.NoError(t, err)
@@ -168,11 +168,11 @@ func TestToExplicitGeneratedInvariants(t *testing.T) {
 			ZeroCount:     zeroCount,
 			Positive: Buckets{
 				Offset: offset,
-				Counts: positive,
+				Counts: bucketCounts(positive),
 			},
 			Negative: Buckets{
 				Offset: offset,
-				Counts: negative,
+				Counts: bucketCounts(negative),
 			},
 		}
 		for _, distribution := range distributions {
@@ -267,3 +267,13 @@ func TestToExplicitValidation(t *testing.T) {
 }
 
 var distributions = []string{"upper", "midpoint", "uniform", "random"}
+
+type bucketCounts []uint64
+
+func (c bucketCounts) Len() int {
+	return len(c)
+}
+
+func (c bucketCounts) At(i int) uint64 {
+	return c[i]
+}

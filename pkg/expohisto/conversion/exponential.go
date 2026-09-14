@@ -29,10 +29,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto/mapping/logarithm"
 )
 
+// BucketCounts provides read-only access to exponential histogram bucket counts.
+type BucketCounts interface {
+	Len() int
+	At(int) uint64
+}
+
 // Buckets is an exponential histogram magnitude bucket range.
 type Buckets struct {
 	Offset int32
-	Counts []uint64
+	Counts BucketCounts
 }
 
 // ExponentialHistogram contains the fields needed to translate an exponential
@@ -93,9 +99,12 @@ func ToExplicit(input ExponentialHistogram, bounds []float64, distribution strin
 func sourceBucketCount(input ExponentialHistogram) (uint64, error) {
 	total := input.ZeroCount
 	for _, buckets := range [...]Buckets{input.Negative, input.Positive} {
-		for _, count := range buckets.Counts {
+		if buckets.Counts == nil {
+			continue
+		}
+		for i := 0; i < buckets.Counts.Len(); i++ {
 			var overflow bool
-			total, overflow = addUint64(total, count)
+			total, overflow = addUint64(total, buckets.Counts.At(i))
 			if overflow {
 				return 0, errors.New("source histogram bucket count overflow")
 			}
@@ -140,17 +149,17 @@ func newMapping(scale int32) (mapping.Mapping, error) {
 
 // distributeBuckets maps one positive or negative exponential bucket range into explicit buckets.
 func distributeBuckets(mapper mapping.Mapping, output []uint64, bounds []float64, buckets Buckets, distribution string, negative bool) error {
-	if len(buckets.Counts) == 0 {
+	if buckets.Counts == nil || buckets.Counts.Len() == 0 {
 		return nil
 	}
 	lower, err := mapper.LowerBoundary(buckets.Offset)
 	if err != nil {
 		return fmt.Errorf("bucket boundary index %d: %w", buckets.Offset, err)
 	}
-	for pos, count := range buckets.Counts {
+	for pos := 0; pos < buckets.Counts.Len(); pos++ {
 		upperIndex := buckets.Offset + int32(pos) + 1
 		upper, err := mapper.LowerBoundary(upperIndex)
-		if errors.Is(err, mapping.ErrOverflow) && pos == len(buckets.Counts)-1 {
+		if errors.Is(err, mapping.ErrOverflow) && pos == buckets.Counts.Len()-1 {
 			upper = math.MaxFloat64
 		} else if err != nil {
 			return fmt.Errorf("bucket boundary index %d: %w", upperIndex, err)
@@ -158,7 +167,7 @@ func distributeBuckets(mapper mapping.Mapping, output []uint64, bounds []float64
 		if !(lower < upper) {
 			return fmt.Errorf("invalid bucket interval (%v, %v]", lower, upper)
 		}
-		if count != 0 {
+		if count := buckets.Counts.At(pos); count != 0 {
 			bucketLower, bucketUpper := lower, upper
 			if negative {
 				// Negative buckets reverse the magnitude bounds.

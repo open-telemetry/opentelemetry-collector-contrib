@@ -58,26 +58,36 @@ func convertExponentialHistToExplicitHist(distribution string, explicitBounds []
 		explicitHist.SetAggregationTemporality(exponentialHist.AggregationTemporality())
 
 		dps := exponentialHist.DataPoints()
+		converted := make([][]uint64, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
 			source := dps.At(i)
-			bucketCounts, err := conversion.ToExplicit(conversion.ExponentialHistogram{
+			input := conversion.ExponentialHistogram{
 				Count:         source.Count(),
 				Scale:         source.Scale(),
 				ZeroThreshold: source.ZeroThreshold(),
 				ZeroCount:     source.ZeroCount(),
 				Positive: conversion.Buckets{
 					Offset: source.Positive().Offset(),
-					Counts: source.Positive().BucketCounts().AsRaw(),
 				},
 				Negative: conversion.Buckets{
 					Offset: source.Negative().Offset(),
-					Counts: source.Negative().BucketCounts().AsRaw(),
 				},
-			}, explicitBounds, distribution)
+			}
+			if counts := source.Positive().BucketCounts(); counts.Len() != 0 {
+				input.Positive.Counts = counts
+			}
+			if counts := source.Negative().BucketCounts(); counts.Len() != 0 {
+				input.Negative.Counts = counts
+			}
+			bucketCounts, err := conversion.ToExplicit(input, explicitBounds, distribution)
 			if err != nil {
 				return nil, fmt.Errorf("converting exponential histogram data point %d: %w", i, err)
 			}
+			converted[i] = bucketCounts
+		}
 
+		for i := 0; i < dps.Len(); i++ {
+			source := dps.At(i)
 			destination := explicitHist.DataPoints().AppendEmpty()
 			destination.SetStartTimestamp(source.StartTimestamp())
 			destination.SetTimestamp(source.Timestamp())
@@ -92,10 +102,10 @@ func convertExponentialHistToExplicitHist(distribution string, explicitBounds []
 			if source.HasMax() {
 				destination.SetMax(source.Max())
 			}
-			source.Exemplars().CopyTo(destination.Exemplars())
-			source.Attributes().CopyTo(destination.Attributes())
+			source.Exemplars().MoveAndAppendTo(destination.Exemplars())
+			source.Attributes().MoveTo(destination.Attributes())
 			destination.ExplicitBounds().FromRaw(explicitBounds)
-			destination.BucketCounts().FromRaw(bucketCounts)
+			destination.BucketCounts().FromRaw(converted[i])
 		}
 
 		newMetric.MoveTo(metric)
