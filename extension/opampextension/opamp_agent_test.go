@@ -32,7 +32,6 @@ import (
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status/testhelpers"
@@ -568,26 +567,6 @@ func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 		{
 			Healthy:            false,
 			Status:             "StatusPermanentError",
-			StatusTimeUnixNano: uint64(now.Add(3 * time.Second).UnixNano()),
-			LastError:          "error B",
-			ComponentHealthMap: map[string]*protobufs.ComponentHealth{
-				"test-receiver": {
-					Healthy:            false,
-					Status:             "StatusPermanentError",
-					StatusTimeUnixNano: uint64(now.Add(3 * time.Second).UnixNano()),
-					LastError:          "error B",
-				},
-				"test-exporter": {
-					Healthy:            false,
-					Status:             "StatusPermanentError",
-					StatusTimeUnixNano: uint64(now.Add(3 * time.Second).UnixNano()),
-					LastError:          "exporter error",
-				},
-			},
-		},
-		{
-			Healthy:            false,
-			Status:             "StatusPermanentError",
 			StatusTimeUnixNano: uint64(now.Add(4 * time.Second).UnixNano()),
 			LastError:          "exporter error",
 			ComponentHealthMap: map[string]*protobufs.ComponentHealth{
@@ -611,7 +590,7 @@ func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 		setHealthFunc: func(health *protobufs.ComponentHealth) error {
 			mtx.Lock()
 			defer mtx.Unlock()
-			require.True(t, proto.Equal(expectedHealthUpdates[receivedHealthUpdates], health))
+			require.Equal(t, expectedHealthUpdates[receivedHealthUpdates], health)
 			receivedHealthUpdates++
 			return nil
 		},
@@ -856,7 +835,7 @@ func TestHealthReportingExitsOnClosedContext(t *testing.T) {
 		setHealthFunc: func(health *protobufs.ComponentHealth) error {
 			mtx.Lock()
 			defer mtx.Unlock()
-			require.True(t, proto.Equal(expectedHealthUpdates[receivedHealthUpdates], health))
+			require.Equal(t, expectedHealthUpdates[receivedHealthUpdates], health)
 			receivedHealthUpdates++
 			return nil
 		},
@@ -1161,6 +1140,10 @@ func (mockOpAMPClient) SetPackageStatuses(*protobufs.PackageStatuses) error {
 }
 
 func (mockOpAMPClient) RequestConnectionSettings(*protobufs.ConnectionSettingsRequest) error {
+	return nil
+}
+
+func (mockOpAMPClient) SetConnectionSettingsStatus(*protobufs.ConnectionSettingsStatus) error {
 	return nil
 }
 
