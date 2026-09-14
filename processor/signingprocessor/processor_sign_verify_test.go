@@ -291,7 +291,7 @@ func rawValue(v pcommon.Value) any {
 	case pcommon.ValueTypeStr:
 		return v.Str()
 	case pcommon.ValueTypeInt:
-		return v.Int()
+		return strconv.FormatInt(v.Int(), 10)
 	case pcommon.ValueTypeDouble:
 		return v.Double()
 	case pcommon.ValueTypeBool:
