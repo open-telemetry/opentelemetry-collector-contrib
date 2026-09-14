@@ -171,3 +171,51 @@ There are some breaking changes from ScraperV1 to ScraperV2. The work done for t
 | BlockIO metrics names changed. The type of operation is no longer in the metric name suffix, and is now in an attribute. For example `container.blockio.io_merged_recursive.read` becomes `container.blockio.io_merged_recursive` with an `operation:read` attribute. | Be aware of the metric name changes and make any adjustments to what your downstream expects from BlockIO metrics. |
 | Memory metrics measured in Bytes are now [non-monotonic sums](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#opentelemetry-protocol-data-model-consumer-recommendations) instead of gauges. | Most likely there is no action. The aggregation type is different but the values are the same. Be aware of how your downstream handles gauges vs non-monotonic sums. |
 | Config option `provide_per_core_cpu_metrics` has been removed. | Enable the `container.cpu.usage.percpu` metric as per [documentation.md](./documentation.md). |
+
+### `receiver.dockerstatsreceiver.enableSemConvMetrics` feature gate
+
+This alpha feature gate switches the receiver over to metrics that follow the
+[container semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/container.md).
+
+#### Metrics that are replaced
+
+Each metric below is swapped only if it was enabled. If you have already disabled a metric in the
+left column, its replacement is **not** turned on. Several old metrics collapse into a single new
+metric that distinguishes the data points with attributes.
+
+| Disabled when the gate is enabled | Replaced by |
+| --- | --- |
+| `container.cpu.usage.total` | `container.cpu.time` (no `cpu.mode` attribute) |
+| `container.cpu.usage.system` | `container.cpu.time` with `cpu.mode=system` |
+| `container.cpu.usage.kernelmode` | `container.cpu.time` with `cpu.mode=kernel` |
+| `container.cpu.usage.usermode` | `container.cpu.time` with `cpu.mode=user` |
+| `container.cpu.utilization` | `container.cpu.usage` |
+| `container.memory.usage.total` | `container.memory.usage` |
+| `container.memory.total_pgfault` | `container.memory.paging.faults` |
+| `container.network.io.usage.rx_bytes` | `container.network.io` with `network.io.direction=receive` |
+| `container.network.io.usage.tx_bytes` | `container.network.io` with `network.io.direction=transmit` |
+
+`container.cpu.usage.system` and `container.memory.total_pgfault` are disabled by default, so
+`cpu.mode=system` data points and `container.memory.paging.faults` only appear if you had explicitly
+enabled those metrics.
+
+#### Metrics that are added
+
+These are enabled unconditionally and do not replace or disable anything:
+
+| Enabled when the gate is enabled | Notes |
+| --- | --- |
+| `container.memory.available` | |
+| `container.memory.working_set` | |
+| `container.disk.io` | Carries `system.device` (`major:minor`) and `disk.io.direction`. Does not disable `container.blockio.io_service_bytes_recursive`, so both are emitted. |
+
+#### Net effect on the defaults
+
+With a default configuration and the gate enabled, the receiver emits `container.cpu.time`,
+`container.cpu.usage`, `container.memory.usage`, `container.memory.available`,
+`container.memory.working_set`, `container.disk.io`, and `container.network.io`, and stops emitting
+`container.cpu.usage.total`, `container.cpu.usage.kernelmode`, `container.cpu.usage.usermode`,
+`container.cpu.utilization`, `container.memory.usage.total`, `container.network.io.usage.rx_bytes`,
+and `container.network.io.usage.tx_bytes`. All other metrics are unaffected.
+
+More information regarding this change can be found at https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649.
