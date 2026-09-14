@@ -22,7 +22,9 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
+	k8smetadata "k8s.io/client-go/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
@@ -37,6 +39,8 @@ type k8sobjectsreceiver struct {
 	objects         []*K8sObjectsConfig
 	stopperChanList []chan struct{}
 	client          dynamic.Interface
+	metadataClient  k8smetadata.Interface
+	discoveryClient discovery.ServerResourcesInterface
 	consumer        consumer.Logs
 	obsrecv         *receiverhelper.ObsReport
 	storageClient   storage.Client
@@ -141,11 +145,21 @@ func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K
 }
 
 func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) error {
-	client, err := kr.config.getDynamicClient()
-	if err != nil {
-		return err
+	var err error
+	if kr.config.CustomResources != nil {
+		clients, clientsErr := kr.config.getCustomResourceClients()
+		if clientsErr != nil {
+			return clientsErr
+		}
+		kr.client = clients.dynamic
+		kr.metadataClient = clients.metadata
+		kr.discoveryClient = clients.discovery
+	} else {
+		kr.client, err = kr.config.getDynamicClient()
+		if err != nil {
+			return err
+		}
 	}
-	kr.client = client
 
 	// Initialize storage client for resource version persistence if storage is configured
 	if kr.config.Storage != nil {
@@ -156,40 +170,49 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 		kr.storageClient = storageClient
 	}
 
-	// Validate objects against K8s API
-	validObjects, err := kr.config.getValidObjects()
-	if err != nil {
-		return err
-	}
-
 	var validConfigs []*K8sObjectsConfig
-	for _, object := range kr.objects {
-		gvrs, ok := validObjects[object.Name]
-		if !ok {
-			availableResource := make([]string, 0, len(validObjects))
-			for k := range validObjects {
-				availableResource = append(availableResource, k)
-			}
-			err = fmt.Errorf("resource not found: %s. Available resources in cluster: %v", object.Name, availableResource)
-			if handlerErr := kr.handleError(err, ""); handlerErr != nil {
-				return handlerErr
-			}
-			continue
+	if len(kr.objects) != 0 {
+		var (
+			validObjects map[string][]*schema.GroupVersionResource
+			discoveryErr error
+		)
+		if kr.discoveryClient == nil {
+			validObjects, discoveryErr = kr.config.getValidObjects()
+		} else {
+			validObjects, discoveryErr = getValidObjects(kr.discoveryClient)
+		}
+		if discoveryErr != nil {
+			return discoveryErr
 		}
 
-		gvr := gvrs[0]
-		for i := range gvrs {
-			if gvrs[i].Group == object.Group {
-				gvr = gvrs[i]
-				break
+		for _, object := range kr.objects {
+			gvrs, ok := validObjects[object.Name]
+			if !ok {
+				availableResource := make([]string, 0, len(validObjects))
+				for k := range validObjects {
+					availableResource = append(availableResource, k)
+				}
+				err = fmt.Errorf("resource not found: %s. Available resources in cluster: %v", object.Name, availableResource)
+				if handlerErr := kr.handleError(err, ""); handlerErr != nil {
+					return handlerErr
+				}
+				continue
 			}
-		}
 
-		object.gvr = gvr
-		validConfigs = append(validConfigs, object)
+			gvr := gvrs[0]
+			for i := range gvrs {
+				if gvrs[i].Group == object.Group {
+					gvr = gvrs[i]
+					break
+				}
+			}
+
+			object.gvr = gvr
+			validConfigs = append(validConfigs, object)
+		}
 	}
 
-	if len(validConfigs) == 0 {
+	if len(validConfigs) == 0 && kr.config.CustomResources == nil {
 		err = errors.New("no valid Kubernetes objects found to watch")
 		return err
 	}
@@ -217,6 +240,12 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 						kr.setting.Logger.Error("Could not start receiver for object type", zap.String("object", object.Name))
 					}
 				}
+				if customResourcesErr := kr.startCustomResources(cctx); customResourcesErr != nil {
+					kr.setting.Logger.Error("Could not start custom resource receiver", zap.Error(customResourcesErr))
+					cancel()
+					kr.stopWatches()
+					return
+				}
 				kr.setting.Logger.Info("Object Receiver started as leader")
 			},
 			func() {
@@ -237,8 +266,59 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 				return err
 			}
 		}
+		if err := kr.startCustomResources(cctx); err != nil {
+			cancel()
+			kr.stopWatches()
+			return err
+		}
 	}
 
+	return nil
+}
+
+func (kr *k8sobjectsreceiver) startCustomResources(ctx context.Context) error {
+	if kr.config.CustomResources == nil {
+		return nil
+	}
+
+	skipResources := make(map[schema.GroupResource]struct{})
+	for _, object := range kr.objects {
+		if object.gvr != nil {
+			skipResources[object.gvr.GroupResource()] = struct{}{}
+		}
+	}
+
+	collector, err := newCustomResourceCollector(
+		kr.config.CustomResources,
+		kr.client,
+		kr.metadataClient,
+		kr.discoveryClient,
+		skipResources,
+		kr.setting.Logger,
+		func(ctx context.Context, objects *unstructured.UnstructuredList, gvr schema.GroupVersionResource) {
+			object := &K8sObjectsConfig{
+				Name:  gvr.Resource,
+				Group: gvr.Group,
+				Mode:  k8sinventory.PullMode,
+				gvr:   &gvr,
+			}
+			logs := pullObjectsToLogData(objects, time.Now(), object, kr.setting.BuildInfo.Version)
+			obsCtx := kr.obsrecv.StartLogsOp(ctx)
+			logRecordCount := logs.LogRecordCount()
+			err := kr.consumer.ConsumeLogs(obsCtx, logs)
+			kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
+		},
+	)
+	if err != nil {
+		return err
+	}
+	stop, err := collector.Start(ctx, &kr.wg)
+	if err != nil {
+		return err
+	}
+	kr.mu.Lock()
+	kr.stopperChanList = append(kr.stopperChanList, stop)
+	kr.mu.Unlock()
 	return nil
 }
 
