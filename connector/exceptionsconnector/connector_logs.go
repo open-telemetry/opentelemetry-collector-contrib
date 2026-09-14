@@ -60,9 +60,10 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 		serviceName := serviceAttr.Str()
 		ilsSlice := rspans.ScopeSpans()
 		for j := 0; j < ilsSlice.Len(); j++ {
-			sl := c.newScopeLogs(ld, rspans.Resource())
+			sl := c.newScopeLogs(ld, rspans.Resource(), rspans.SchemaUrl())
 			ils := ilsSlice.At(j)
 			ils.Scope().CopyTo(sl.Scope())
+			sl.SetSchemaUrl(ils.SchemaUrl())
 			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
@@ -99,11 +100,13 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
 				if !haveRL {
 					outRL = ld.ResourceLogs().AppendEmpty()
 					rlogs.Resource().CopyTo(outRL.Resource())
+					outRL.SetSchemaUrl(rlogs.SchemaUrl())
 					haveRL = true
 				}
 				if !haveSL {
 					outSL = outRL.ScopeLogs().AppendEmpty()
 					slIn.Scope().CopyTo(outSL.Scope())
+					outSL.SetSchemaUrl(slIn.SchemaUrl())
 					haveSL = true
 				}
 				lr.CopyTo(outSL.LogRecords().AppendEmpty())
@@ -123,9 +126,10 @@ func (c *logsConnector) exportLogs(ctx context.Context, ld plog.Logs) error {
 
 // newScopeLogs starts a new ResourceLogs/ScopeLogs pair, copying the full source resource so
 // converted LogEvents carry the same resource context as natively-emitted ones.
-func (*logsConnector) newScopeLogs(ld plog.Logs, resource pcommon.Resource) plog.ScopeLogs {
+func (*logsConnector) newScopeLogs(ld plog.Logs, resource pcommon.Resource, resourceSchemaURL string) plog.ScopeLogs {
 	rl := ld.ResourceLogs().AppendEmpty()
 	resource.CopyTo(rl.Resource())
+	rl.SetSchemaUrl(resourceSchemaURL)
 	sl := rl.ScopeLogs().AppendEmpty()
 	return sl
 }

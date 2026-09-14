@@ -46,6 +46,32 @@ func TestConnectorLogConsumeTraces(t *testing.T) {
 	}
 }
 
+func TestConnectorLogConsumeTracesPropagatesSchemaURL(t *testing.T) {
+	lsink := new(consumertest.LogsSink)
+	c := newTestLogsConnector(lsink, zaptest.NewLogger(t))
+
+	traces := ptrace.NewTraces()
+	rspans := traces.ResourceSpans().AppendEmpty()
+	rspans.SetSchemaUrl("https://opentelemetry.io/schemas/1.31.0")
+	rspans.Resource().Attributes().PutStr(serviceNameKey, "service-a")
+	ils := rspans.ScopeSpans().AppendEmpty()
+	ils.SetSchemaUrl("https://opentelemetry.io/schemas/1.31.0/scope")
+
+	span := ils.Spans().AppendEmpty()
+	span.SetName("op")
+	exc := span.Events().AppendEmpty()
+	exc.SetName(eventNameExc)
+	exc.Attributes().PutStr(exceptionTypeKey, "boom")
+
+	require.NoError(t, c.ConsumeTraces(t.Context(), traces))
+
+	out := lsink.AllLogs()
+	require.Len(t, out, 1)
+	outRL := out[0].ResourceLogs().At(0)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.31.0", outRL.SchemaUrl())
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.31.0/scope", outRL.ScopeLogs().At(0).SchemaUrl())
+}
+
 func TestConnectorLogConsumeTracesRequiredAttrsIndependentOfDimensions(t *testing.T) {
 	lsink := new(consumertest.LogsSink)
 	// Empty dimensions: exception.type/message must still appear (unlike newTestLogsConnector's default config).
@@ -74,8 +100,10 @@ func TestConnectorLogsConsumeLogsFiltersNonExceptions(t *testing.T) {
 
 	// ResourceLogs #0: exception + plain record - only the exception survives, resource attrs kept.
 	rl0 := logs.ResourceLogs().AppendEmpty()
+	rl0.SetSchemaUrl("https://opentelemetry.io/schemas/1.31.0")
 	rl0.Resource().Attributes().PutStr(serviceNameKey, "service-a")
 	sl0 := rl0.ScopeLogs().AppendEmpty()
+	sl0.SetSchemaUrl("https://opentelemetry.io/schemas/1.31.0/scope")
 	sl0.Scope().SetName("scope-a")
 
 	exc := sl0.LogRecords().AppendEmpty()
@@ -103,10 +131,12 @@ func TestConnectorLogsConsumeLogsFiltersNonExceptions(t *testing.T) {
 	v, ok := outRL.Resource().Attributes().Get(serviceNameKey)
 	require.True(t, ok)
 	assert.Equal(t, "service-a", v.Str())
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.31.0", outRL.SchemaUrl())
 
 	require.Equal(t, 1, outRL.ScopeLogs().Len())
 	outSL := outRL.ScopeLogs().At(0)
 	assert.Equal(t, "scope-a", outSL.Scope().Name())
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.31.0/scope", outSL.SchemaUrl())
 
 	outRecords := outSL.LogRecords()
 	require.Equal(t, 1, outRecords.Len(), "only the exception record should be forwarded")
