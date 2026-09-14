@@ -93,7 +93,7 @@ In Prometheus Remote Write v2, this problem is solved since the time series are 
 
 ## Rejected data is reported as rejected
 
-A remote write request is translated as a whole. If any part of it cannot be translated, including the histograms this receiver does not support, the request is answered with a non-2xx status, nothing is handed to the pipeline, and the `X-Prometheus-Remote-Write-*-Written` headers report zero. That follows the Remote-Write 2.0 rule that a receiver must not answer 2xx when data it understood was not written, and that the headers carry the number actually written.
+A remote write request is translated as a whole. If any part of it cannot be translated, including the histograms this receiver does not support, the request is answered with a non-2xx status, nothing is handed to the pipeline, and the `X-Prometheus-Remote-Write-*-Written` headers report zero. The Remote-Write 2.0 rule behind this is that a receiver must not answer 2xx when data it understood was not written, and that the headers carry the number actually written. That rule is about the status code, not about what happens to the rest of the request: a receiver may also write the valid part and still answer non-2xx. Refusing the whole request is this receiver's choice between the two.
 
 The same applies once the data reaches the rest of the collector: the counts are only reported after the next consumer has accepted the batch, and the resource attributes a request carries in `target_info` are only remembered once that has happened. A request that fails therefore leaves no trace for later requests to pick up. A request that succeeds only replaces what the cache holds for a target when it actually learned something from `target_info`, so a slow request cannot undo attributes another one committed while it was waiting.
 
@@ -127,7 +127,7 @@ Summaries suffer from the same problem, a working Summary is composed by several
 
 ### Only integer, counter flavored Native Histograms are translated
 
-The Prometheus compatibility specification requires native histograms of the float or gauge flavors to be dropped, for both the standard schemas and custom buckets. A histogram whose reset hint is `GAUGE`, or whose counts arrive as floats, is not translated, and the request carrying it is rejected. Float bucket populations can be fractional or non-finite and have no faithful representation in an OpenTelemetry histogram, whose bucket counts are unsigned integers.
+The Prometheus compatibility specification requires native histograms of the float or gauge flavors to be dropped, for both the standard schemas and custom buckets. A histogram whose reset hint is `GAUGE`, or whose counts arrive as floats, is not translated. Dropping it is what the mapping asks for; refusing the request that carried it is this receiver's own rule, described under [Rejected data is reported as rejected](#rejected-data-is-reported-as-rejected). Float bucket populations can be fractional or non-finite and have no faithful representation in an OpenTelemetry histogram, whose bucket counts are unsigned integers.
 
 Custom bucket histograms are checked with Prometheus' own `Validate`, which is what a Prometheus server runs on every histogram it accepts over remote write. Spans and deltas that describe a different shape from the bounds are dropped rather than read as far as the shorter of the two, since reading part of them loses observations while leaving a count that agrees with the buckets that were emitted.
 

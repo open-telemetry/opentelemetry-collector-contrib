@@ -12,10 +12,11 @@ subtext: |
   spans, summary metrics, and custom bucket histograms that Prometheus itself
   would reject, were dropped or silently truncated and the request was still
   answered with 204. The Remote-Write 2.0 specification requires a non-2xx
-  response whenever data the receiver understood was not written. Such a request
-  is now rejected as a whole with 400, nothing is passed on, and the written
-  counts report zero. Those counts are also only reported after the next
-  consumer has accepted the batch, and resource attributes learned from
+  response whenever data the receiver understood was not written. The
+  specification leaves the receiver a choice there, and this one refuses the
+  whole request, so nothing is passed on and the written counts report zero.
+  Those counts are also only reported after the next consumer has accepted the
+  batch, and resource attributes learned from
   target_info are only remembered then, so a failed request no longer affects
   later ones. A series carrying both samples and histograms, or histograms
   attached to a metric type that does not have them, is rejected instead of
