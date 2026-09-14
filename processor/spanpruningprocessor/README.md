@@ -118,6 +118,11 @@ processors:
       # "mad": Median Absolute Deviation method (more robust to extreme outliers)
       method: iqr
 
+      # Transform applied to durations before the method measures their spread
+      # "none" (default): the method runs over durations unchanged
+      # "log": the method runs over log durations, for heavy-tailed latency
+      duration_transform: none
+
       # IQR multiplier for outlier detection threshold (when method=iqr)
       # Outliers are spans with duration > Q3 + (iqr_multiplier * IQR)
       # Common values: 1.5 (standard), 3.0 (extreme only)
@@ -207,6 +212,7 @@ processors:
 | `enable_bytes_metrics` | bool | false | Enable measurement of serialized trace sizes (bytes_received/bytes_processed_input/bytes_processed_output/bytes_emitted metrics) |
 | `enable_outlier_analysis` | bool | false | Enable outlier detection and correlation analysis |
 | `outlier_analysis.method` | string | "iqr" | Statistical method: "iqr" or "mad" |
+| `outlier_analysis.duration_transform` | string | "none" | Transform applied to durations before measuring spread: "none" or "log" |
 | `outlier_analysis.iqr_multiplier` | float64 | 1.5 | IQR threshold multiplier (when method=iqr) |
 | `outlier_analysis.mad_multiplier` | float64 | 3.0 | MAD threshold multiplier (when method=mad) |
 | `outlier_analysis.min_group_size` | int | 7 | Minimum group size for outlier analysis |
@@ -362,6 +368,20 @@ The processor supports two statistical methods for outlier detection:
 - **IQR**: Best for typical distributions with moderate outliers. Standard choice for most use cases.
 - **MAD**: Better when you have extreme outliers that would skew IQR calculations, or when you need more stable detection thresholds.
 
+#### Duration Transform
+
+`duration_transform` transforms each duration before the method above measures
+its spread.
+
+| `duration_transform` | The method runs over | Two spans are far apart when |
+|----------------------|----------------------|------------------------------|
+| `none` (default) | durations | their difference is large |
+| `log` | the natural log of each duration | their ratio is large |
+
+Use `log` for heavy-tailed latency, where durations within a group span orders
+of magnitude. Measuring spread in absolute time lets the tail inflate the
+threshold meant to exclude it, so a large share of the upper tail gets flagged.
+
 #### How It Works
 
 **IQR (Interquartile Range) Method:**
@@ -377,6 +397,9 @@ The processor supports two statistical methods for outlier detection:
 4. Flag spans with duration > median + (mad_multiplier × MAD × 1.4826) as outliers
 
 *Note: The 1.4826 scale factor makes MAD comparable to standard deviation for normal distributions.*
+
+Both methods apply `min_outlier_threshold_percent` as a floor; with
+`duration_transform: log` the steps above run over log durations.
 
 **Attribute Correlation** (same for both methods):
 - Compare attribute values between outliers and normal spans
