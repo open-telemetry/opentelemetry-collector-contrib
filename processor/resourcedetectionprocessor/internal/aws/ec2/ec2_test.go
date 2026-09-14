@@ -496,16 +496,72 @@ func TestDetector_Detect(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "hostname fails, tags are still fetched",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc: imds.InstanceIdentityDocument{
+					Region:           "us-west-2",
+					AccountID:        "account1234",
+					AvailabilityZone: "us-west-2a",
+					InstanceID:       "i-abcd1234",
+					ImageID:          "abcdef",
+					InstanceType:     "c4.xlarge",
+				},
+				retHostname:    "",
+				retErrHostname: errors.New("hostname failed"),
+				retTags:        map[string]string{"tag1": "val1"},
+				isAvailable:    true,
+			}},
+			tagKeyRegexes: []*regexp.Regexp{regexp.MustCompile("^tag1$")},
+			args:          args{ctx: t.Context()},
+			want: func() pcommon.Resource {
+				res := pcommon.NewResource()
+				attr := res.Attributes()
+				attr.PutStr("cloud.account.id", "account1234")
+				attr.PutStr("cloud.provider", "aws")
+				attr.PutStr("cloud.platform", "aws_ec2")
+				attr.PutStr("cloud.region", "us-west-2")
+				attr.PutStr("cloud.availability_zone", "us-west-2a")
+				attr.PutStr("host.id", "i-abcd1234")
+				attr.PutStr("host.image.id", "abcdef")
+				attr.PutStr("host.type", "c4.xlarge")
+				attr.PutStr("ec2.tag.tag1", "val1")
+				return res
+			}(),
+			tagsFromIMDS: true,
+			wantErr:      false,
+		},
+		{
+			// The hostname is optional independently of fail_on_missing_metadata: a missing hostname never fails the
+			// detector, it only omits the host.name attribute.
 			name: "hostname fails, with fail_on_missing_metadata",
 			fields: fields{metadataProvider: &mockMetadata{
-				retIDDoc:       imds.InstanceIdentityDocument{},
+				retIDDoc: imds.InstanceIdentityDocument{
+					Region:           "us-west-2",
+					AccountID:        "account1234",
+					AvailabilityZone: "us-west-2a",
+					InstanceID:       "i-abcd1234",
+					ImageID:          "abcdef",
+					InstanceType:     "c4.xlarge",
+				},
 				retHostname:    "",
 				retErrHostname: errors.New("hostname failed"),
 				isAvailable:    true,
 			}},
-			args:                  args{ctx: t.Context()},
-			want:                  pcommon.NewResource(),
-			wantErr:               true,
+			args: args{ctx: t.Context()},
+			want: func() pcommon.Resource {
+				res := pcommon.NewResource()
+				attr := res.Attributes()
+				attr.PutStr("cloud.account.id", "account1234")
+				attr.PutStr("cloud.provider", "aws")
+				attr.PutStr("cloud.platform", "aws_ec2")
+				attr.PutStr("cloud.region", "us-west-2")
+				attr.PutStr("cloud.availability_zone", "us-west-2a")
+				attr.PutStr("host.id", "i-abcd1234")
+				attr.PutStr("host.image.id", "abcdef")
+				attr.PutStr("host.type", "c4.xlarge")
+				return res
+			}(),
+			wantErr:               false,
 			failOnMissingMetadata: true,
 		},
 	}

@@ -100,11 +100,22 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	meta, err := d.metadataProvider.Get(ctx)
 	if err != nil {
+		// This is probably not an actual EC2 instance, even though the initial d.metadataProvider.InstanceID(ctx) has succeeded.
+		// Some cloud providers (for example OpenStack Nova, see processor/resourcedetectionprocessor/internal/openstack/nova)
+		// provide a partial implementation of the AWS EC2 metadata endpoint, so
+		// http://169.254.169.254/latest/meta-data/instance-id works but
+		// http://169.254.169.254/latest/dynamic/instance-identity/document does not.
 		d.logger.Debug("EC2 instance identity document unavailable", zap.Error(err))
 		if d.failOnMissingMetadata {
 			return pcommon.NewResource(), "", fmt.Errorf("failed getting identity document: %w", err)
 		}
 		return pcommon.NewResource(), "", nil
+	}
+
+	hostname, err := d.metadataProvider.Hostname(ctx)
+	if err != nil {
+		d.logger.Warn("EC2 hostname unavailable", zap.Error(err))
+		// Continue without the hostname, the remaining attributes and the tags below are still worth reporting.
 	}
 
 	d.rb.SetCloudProvider(conventions.CloudProviderAWS.Value.AsString())
@@ -115,17 +126,9 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	d.rb.SetHostID(meta.InstanceID)
 	d.rb.SetHostImageID(meta.ImageID)
 	d.rb.SetHostType(meta.InstanceType)
-
-	hostname, err := d.metadataProvider.Hostname(ctx)
-	if err != nil {
-		d.logger.Debug("EC2 hostname unavailable", zap.Error(err))
-		if d.failOnMissingMetadata {
-			return pcommon.NewResource(), "", fmt.Errorf("failed getting hostname: %w", err)
-		}
-		return d.rb.Emit(), conventions.SchemaURL, nil
+	if hostname != "" {
+		d.rb.SetHostName(hostname)
 	}
-
-	d.rb.SetHostName(hostname)
 	res := d.rb.Emit()
 
 	if len(d.tagKeyRegexes) != 0 {
