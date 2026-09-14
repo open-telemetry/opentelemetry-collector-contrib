@@ -34,21 +34,24 @@ func BenchmarkConvertExponentialHistToExplicitHist(b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
+			metric := pmetric.NewMetric()
 			resourceMetrics := pmetric.NewResourceMetrics()
 			scopeMetrics := pmetric.NewScopeMetrics()
+			transformContext := ottlmetric.NewTransformContextPtr(resourceMetrics, scopeMetrics, metric)
 			ctx := context.Background()
+			b.Cleanup(transformContext.Close)
 			b.ReportAllocs()
-			b.ResetTimer()
-			for range b.N {
-				metric := pmetric.NewMetric()
+			for b.Loop() {
 				template.CopyTo(metric)
-				transformContext := ottlmetric.NewTransformContextPtr(resourceMetrics, scopeMetrics, metric)
 				_, err = expr(ctx, transformContext)
-				transformContext.Close()
 				if err != nil {
 					b.Fatal(err)
 				}
 			}
+			if got := metric.Histogram().DataPoints().At(0).Count(); got != count {
+				b.Fatalf("converted count = %d, want %d", got, count)
+			}
+			b.ReportMetric(float64(dp.Positive().BucketCounts().Len()), "source-buckets/op")
 		})
 	}
 }
