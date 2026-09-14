@@ -30,7 +30,7 @@ func TestNewConnector(t *testing.T) {
 		{
 			name:                 "other config",
 			hostIdentifiers:      []string{"host.id", "host.name", "k8s.node.uid"},
-			metricsFlushInterval: durationPtr(15 * time.Second),
+			metricsFlushInterval: new(15 * time.Second),
 			expectedConfig: &Config{
 				HostIdentifiers:      []string{"host.id", "host.name", "k8s.node.uid"},
 				MetricsFlushInterval: 15 * time.Second,
@@ -169,8 +169,4 @@ func testTraces(attrs map[string]string) ptrace.Traces {
 		resourceSpans.Resource().Attributes().PutStr(k, v)
 	}
 	return traces
-}
-
-func durationPtr(t time.Duration) *time.Duration {
-	return &t
 }

@@ -1,5 +1,5 @@
 type: ibmcloudvpcdetector
-sem_conv_version: 1.40.0
+sem_conv_version: 1.43.0
 
 status:
   class: processor
@@ -75,7 +75,3 @@ resource_attributes:
     description: The instance profile name (e.g., bx2-2x8).
     type: string
     enabled: true
-
-tests:
-  skip_lifecycle: true
-  skip_shutdown: true

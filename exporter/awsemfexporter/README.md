@@ -99,14 +99,18 @@ The AWS EMF Exporter will interpret the following metric attributes to change ho
 
 
 ### Resource Attributes to Metric Labels
-`resource_to_telemetry_conversion`  option can be enabled to convert all the resource attributes to metric labels. By default, this option is disabled. Users need to set `enabled=true` to opt-in. See the config example below.
+
+The `resource_to_telemetry_conversion` option can be used to convert resource attributes to metric labels. By default, this option is disabled.
+You can specify `included` and `excluded` wildcard pattern lists to match attribute keys.
+Legacy options `enabled` and `exclude_service_attributes` are **deprecated** (and can be disabled via the `exporter.awsemf.DisableLegacyResourceToTelemetryConversion` feature gate). When migrating from `enabled: true`, the equivalent configuration is setting `included: ["*"]`. See the config example below:
 
 ```yaml
 exporters:
     awsemf:
         region: 'us-west-2'
         resource_to_telemetry_conversion:
-            enabled: true
+            included:
+                - "*"
 ```
 
 ### Metric Declaration

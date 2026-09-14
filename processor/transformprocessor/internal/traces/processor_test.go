@@ -1272,6 +1272,330 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 	}
 }
 
+func Test_ProcessTraces_SharedCache(t *testing.T) {
+	tests := []struct {
+		name       string
+		statements []common.ContextStatements
+		want       func(td ptrace.Traces)
+	}{
+		{
+			name: "resource cache shared across groups",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(resource.attributes["result"], resource.cache["k"])`}, SharedCache: true},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).Resource().Attributes().PutStr("result", "pass")
+			},
+		},
+		{
+			name: "scope cache shared across groups",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(scope.attributes["result"], scope.cache["k"])`}, SharedCache: true},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().PutStr("result", "pass")
+			},
+		},
+		{
+			name: "span cache shared across groups",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(span.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(span.attributes["result"], span.cache["k"]) where span.name == "operationA"`}, SharedCache: true},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("result", "pass")
+			},
+		},
+		{
+			name: "cache not shared with groups where SharedCache is false",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(span.cache["k"], "fail")`}, SharedCache: true},
+				{Statements: []string{`set(span.attributes["result"], "pass") where span.cache["k"] == nil`}},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("result", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("result", "pass")
+			},
+		},
+		{
+			name: "explicit context cache shared across groups",
+			statements: []common.ContextStatements{
+				{Context: common.Span, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
+				{Context: common.Span, Statements: []string{`set(attributes["result"], cache["k"]) where name == "operationA"`}, SharedCache: true},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("result", "pass")
+			},
+		},
+		{
+			name: "span event cache shared across groups",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(spanevent.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(spanevent.attributes["result"], spanevent.cache["k"])`}, SharedCache: true},
+			},
+			want: func(td ptrace.Traces) {
+				for _, span := range td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().All() {
+					for _, event := range span.Events().All() {
+						event.Attributes().PutStr("result", "pass")
+					}
+				}
+			},
+		},
+		{
+			name: "higher-level cache is not visible from a lower-level context",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.cache["k"], "fail")`}, SharedCache: true},
+				{Statements: []string{`set(span.attributes["result"], "pass") where span.cache["k"] == nil`}, SharedCache: true},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("result", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("result", "pass")
+			},
+		},
+		{
+			name: "lower-level cache is not visible from a higher-level context",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(span.cache["k"], "fail")`}, SharedCache: true},
+				{Statements: []string{`set(resource.attributes["result"], "pass") where resource.cache["k"] == nil`}, SharedCache: true},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).Resource().Attributes().PutStr("result", "pass")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructTraces()
+			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.NoError(t, err)
+
+			_, err = processor.ProcessTraces(t.Context(), td)
+			require.NoError(t, err)
+
+			exTd := constructTraces()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessTraces_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
+	tests := []struct {
+		name       string
+		statements []common.ContextStatements
+		want       func(td ptrace.Traces)
+	}{
+		{
+			name: "resource cache persists across resources",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.cache["k"], "seen") where resource.attributes["host.name"] == "host1"`}, SharedCache: true},
+				{Statements: []string{`set(resource.attributes["result"], "pass") where resource.cache["k"] == "seen"`}, SharedCache: true},
+			},
+			want: func(td ptrace.Traces) {
+				for _, rs := range td.ResourceSpans().All() {
+					rs.Resource().Attributes().PutStr("result", "pass")
+				}
+			},
+		},
+		{
+			name: "scope cache persists across scopes and resources",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1"`}, SharedCache: true},
+				{Statements: []string{`set(scope.attributes["result"], "pass") where scope.cache["k"] == "seen"`}, SharedCache: true},
+			},
+			want: func(td ptrace.Traces) {
+				for _, rs := range td.ResourceSpans().All() {
+					for _, ss := range rs.ScopeSpans().All() {
+						ss.Scope().Attributes().PutStr("result", "pass")
+					}
+				}
+			},
+		},
+		{
+			name: "span cache persists across scopes and resources",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(span.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and span.name == "operationA"`}, SharedCache: true},
+				{Statements: []string{`set(span.attributes["result"], "pass") where span.cache["k"] == "seen"`}, SharedCache: true},
+			},
+			want: func(td ptrace.Traces) {
+				for _, rs := range td.ResourceSpans().All() {
+					for _, ss := range rs.ScopeSpans().All() {
+						for _, span := range ss.Spans().All() {
+							span.Attributes().PutStr("result", "pass")
+						}
+					}
+				}
+			},
+		},
+		{
+			name: "span event cache persists across scopes and resources",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(spanevent.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and spanevent.name == "eventA"`}, SharedCache: true},
+				{Statements: []string{`set(spanevent.attributes["result"], "pass") where spanevent.cache["k"] == "seen"`}, SharedCache: true},
+			},
+			want: func(td ptrace.Traces) {
+				for _, rs := range td.ResourceSpans().All() {
+					for _, ss := range rs.ScopeSpans().All() {
+						for _, span := range ss.Spans().All() {
+							for _, event := range span.Events().All() {
+								event.Attributes().PutStr("result", "pass")
+							}
+						}
+					}
+				}
+			},
+		},
+		{
+			name: "span cache persists across scopes and resources within a single group",
+			statements: []common.ContextStatements{
+				{Statements: []string{
+					`set(span.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and span.name == "operationA"`,
+					`set(span.attributes["result"], "pass") where span.cache["k"] == "seen"`,
+				}, SharedCache: true},
+			},
+			want: func(td ptrace.Traces) {
+				for _, rs := range td.ResourceSpans().All() {
+					for _, ss := range rs.ScopeSpans().All() {
+						for _, span := range ss.Spans().All() {
+							span.Attributes().PutStr("result", "pass")
+						}
+					}
+				}
+			},
+		},
+		{
+			name: "cache does not persist across spans when SharedCache is false",
+			statements: []common.ContextStatements{
+				{Statements: []string{
+					`set(span.cache["k"], "seen") where span.name == "operationA"`,
+					`set(span.attributes["result"], "pass") where span.cache["k"] == "seen"`,
+				}},
+			},
+			want: func(td ptrace.Traces) {
+				for _, rs := range td.ResourceSpans().All() {
+					for _, ss := range rs.ScopeSpans().All() {
+						ss.Spans().At(0).Attributes().PutStr("result", "pass")
+					}
+				}
+			},
+		},
+		{
+			name: "cache does not persist across resources when SharedCache is false",
+			statements: []common.ContextStatements{
+				{Statements: []string{
+					`set(resource.cache["k"], "seen") where resource.attributes["host.name"] == "host1"`,
+					`set(resource.attributes["result"], "pass") where resource.cache["k"] == "seen"`,
+				}},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).Resource().Attributes().PutStr("result", "pass")
+			},
+		},
+		{
+			name: "cache does not persist across scopes when SharedCache is false",
+			statements: []common.ContextStatements{
+				{Statements: []string{
+					`set(scope.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1"`,
+					`set(scope.attributes["result"], "pass") where scope.cache["k"] == "seen"`,
+				}},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().PutStr("result", "pass")
+			},
+		},
+		{
+			name: "cache does not persist across span events when SharedCache is false",
+			statements: []common.ContextStatements{
+				{Statements: []string{
+					`set(spanevent.cache["k"], "seen") where spanevent.name == "eventA"`,
+					`set(spanevent.attributes["result"], "pass") where spanevent.cache["k"] == "seen"`,
+				}},
+			},
+			want: func(td ptrace.Traces) {
+				for _, rs := range td.ResourceSpans().All() {
+					for _, ss := range rs.ScopeSpans().All() {
+						for _, span := range ss.Spans().All() {
+							for _, event := range span.Events().All() {
+								if event.Name() == "eventA" {
+									event.Attributes().PutStr("result", "pass")
+								}
+							}
+						}
+					}
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructTracesMultipleResourcesScopes()
+			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.NoError(t, err)
+
+			_, err = processor.ProcessTraces(t.Context(), td)
+			require.NoError(t, err)
+
+			exTd := constructTracesMultipleResourcesScopes()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessTraces_SharedCacheCrossContextAccess(t *testing.T) {
+	tests := []struct {
+		name       string
+		statements []common.ContextStatements
+		wantErr    string
+	}{
+		{
+			name: "resource cache from an inferred span context",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(span.attributes["result"], resource.cache["k"])`}, SharedCache: true},
+			},
+			wantErr: `access to cache must be performed using the same context, please replace "resource.cache[k]" with "span.cache[k]"`,
+		},
+		{
+			name: "scope cache from an inferred span context",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(span.attributes["result"], scope.cache["k"])`}, SharedCache: true},
+			},
+			wantErr: `access to cache must be performed using the same context, please replace "scope.cache[k]" with "span.cache[k]"`,
+		},
+		{
+			name: "span cache from an inferred span event context",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(span.cache["k"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(spanevent.attributes["result"], span.cache["k"])`}, SharedCache: true},
+			},
+			wantErr: `access to cache must be performed using the same context, please replace "span.cache[k]" with "spanevent.cache[k]"`,
+		},
+		{
+			name: "resource cache from an explicit span context",
+			statements: []common.ContextStatements{
+				{Context: common.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
+				{Context: common.Span, Statements: []string{`set(attributes["result"], resource.cache["k"])`}, SharedCache: true},
+			},
+			wantErr: `access to cache must be performed using the same context, please replace "resource.cache[k]" with "span.cache[k]"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.ErrorContains(t, err, tt.wantErr)
+		})
+	}
+}
+
 func Test_ProcessTraces_InferredContextFromConditions(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -1616,6 +1940,23 @@ func constructTraces() ptrace.Traces {
 	rs0ils0.Scope().SetName("scope")
 	fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	fillSpanTwo(rs0ils0.Spans().AppendEmpty())
+	return td
+}
+
+func constructTracesMultipleResourcesScopes() ptrace.Traces {
+	td := ptrace.NewTraces()
+	for _, host := range []string{"host1", "host2"} {
+		rs := td.ResourceSpans().AppendEmpty()
+		rs.SetSchemaUrl("test_schema_url")
+		rs.Resource().Attributes().PutStr("host.name", host)
+		for _, scopeName := range []string{"scope1", "scope2"} {
+			ss := rs.ScopeSpans().AppendEmpty()
+			ss.SetSchemaUrl("test_schema_url")
+			ss.Scope().SetName(scopeName)
+			fillSpanOne(ss.Spans().AppendEmpty())
+			fillSpanTwo(ss.Spans().AppendEmpty())
+		}
+	}
 	return td
 }
 

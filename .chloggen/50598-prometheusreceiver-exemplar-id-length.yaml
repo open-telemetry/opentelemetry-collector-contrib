@@ -1,0 +1,16 @@
+change_type: bug_fix
+
+component: receiver/prometheus
+
+note: Only convert exemplar `trace_id` and `span_id` labels that are valid IDs, and keep the rest as filtered attributes
+
+issues: [50598]
+
+subtext: |
+  A `trace_id` or `span_id` label with an invalid length was previously zero padded
+  or truncated before being stored in the exemplar. This could create an ID that
+  the sender never wrote, while the original value was lost. The receiver now
+  converts only valid IDs with the expected OpenTelemetry width and preserves an
+  invalid value unchanged as a filtered attribute.
+
+change_logs: [user]

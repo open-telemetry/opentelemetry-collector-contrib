@@ -1,9 +1,0 @@
-change_type: enhancement
-
-component: processor/dynamic_sampling
-
-note: Document known limitations, the metric label contract (sentinel rule values, trigger values), and refresh the future work list
-
-issues: [49311]
-
-change_logs: [user]

@@ -126,7 +126,7 @@ func Test_copyMetric(t *testing.T) {
 
 			exprFunc, err := copyMetric(tt.name, tt.desc, tt.unit)
 			require.NoError(t, err)
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), ms, input)
+			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), ms, input)
 			defer tCtx.Close()
 			_, err = exprFunc(t.Context(), tCtx)
 			require.NoError(t, err)

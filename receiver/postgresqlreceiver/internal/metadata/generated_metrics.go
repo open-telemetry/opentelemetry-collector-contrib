@@ -1519,7 +1519,7 @@ type metricPostgresqlDatabaseLocks struct {
 // init fills postgresql.database.locks metric with initial data.
 func (m *metricPostgresqlDatabaseLocks) init() {
 	m.data.SetName("postgresql.database.locks")
-	m.data.SetDescription("The number of database locks.")
+	m.data.SetDescription("The number of database locks, including those held by the receiver's own connections.")
 	m.data.SetUnit("{lock}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)

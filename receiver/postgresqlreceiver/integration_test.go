@@ -83,7 +83,8 @@ func integrationTest(
 	for _, attribute := range additionalIgnoredResourceAttributeValues {
 		compareOptions = append(compareOptions, pmetrictest.IgnoreResourceAttributeValue(attribute))
 	}
-	compareOptions = append(compareOptions,
+	compareOptions = append(
+		compareOptions,
 		pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreMetricValues(
 			"postgresql.backends",
@@ -152,7 +153,13 @@ func integrationTest(
 					},
 				},
 				ExposedPorts: []string{postgresqlPort},
-				WaitingFor: wait.ForListeningPort(postgresqlPort).
+				// A listening port is not enough: the postgres image runs a temporary
+				// server for its init scripts, so the port accepts connections while the
+				// real server is still "starting up" (57P03). The readiness log line is
+				// emitted twice -- once for the init server, once for the real one -- so
+				// waiting for the second occurrence guarantees the DB is ready to query.
+				WaitingFor: wait.ForLog("database system is ready to accept connections").
+					WithOccurrence(2).
 					WithStartupTimeout(2 * time.Minute),
 			},
 		),
@@ -207,7 +214,13 @@ func TestGetDatabaseTableMetricsIgnoresAccessExclusiveLocks(t *testing.T) {
 					FileMode:          700,
 				}},
 				ExposedPorts: []string{postgresqlPort},
-				WaitingFor: wait.ForListeningPort(postgresqlPort).
+				// A listening port is not enough: the postgres image runs a temporary
+				// server for its init scripts, so the port accepts connections while the
+				// real server is still "starting up" (57P03). The readiness log line is
+				// emitted twice -- once for the init server, once for the real one -- so
+				// waiting for the second occurrence guarantees the DB is ready to query.
+				WaitingFor: wait.ForLog("database system is ready to accept connections").
+					WithOccurrence(2).
 					WithStartupTimeout(2 * time.Minute),
 			},
 		},
@@ -278,7 +291,13 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 					FileMode:          700,
 				}},
 				ExposedPorts: []string{postgresqlPort},
-				WaitingFor: wait.ForListeningPort(postgresqlPort).
+				// A listening port is not enough: the postgres image runs a temporary
+				// server for its init scripts, so the port accepts connections while the
+				// real server is still "starting up" (57P03). The readiness log line is
+				// emitted twice -- once for the init server, once for the real one -- so
+				// waiting for the second occurrence guarantees the DB is ready to query.
+				WaitingFor: wait.ForLog("database system is ready to accept connections").
+					WithOccurrence(2).
 					WithStartupTimeout(2 * time.Minute),
 			},
 		},
@@ -331,17 +350,17 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 	require.Contains(t, indexStats, indexKey("otel", "public", "table2", "table2_pkey"))
 }
 
-// TestExplainQueryParamCount verifies pg_prepared_statements reports the correct parameter
-// count for the two shapes that broke text-based $N counting: a placeholder repeated in the
-// query text, and a string literal that merely looks like one.
-func TestExplainQueryParamCount(t *testing.T) {
-	t.Skip("flaky test http://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50144")
+// TestLockCollectionIncludesNonRelationTargets asserts that targets which are not
+// relations are reported, each in the bucket matching its pg_locks.database.
+func TestLockCollectionIncludesNonRelationTargets(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
 			ProviderType: testcontainers.ProviderPodman,
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image: fmt.Sprintf("postgres:%s", post17TestVersion),
+				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
+				// Needed for the prepared transaction below.
+				Cmd: []string{"-c", "max_prepared_transactions=10"},
 				Env: map[string]string{
 					"POSTGRES_USER":     "root",
 					"POSTGRES_PASSWORD": "otel",
@@ -353,17 +372,68 @@ func TestExplainQueryParamCount(t *testing.T) {
 					FileMode:          700,
 				}},
 				ExposedPorts: []string{postgresqlPort},
-				WaitingFor: wait.ForListeningPort(postgresqlPort).
+				// A listening port is not enough: the postgres image runs a temporary
+				// server for its init scripts, so the port accepts connections while the
+				// real server is still "starting up" (57P03). The readiness log line is
+				// emitted twice -- once for the init server, once for the real one -- so
+				// waiting for the second occurrence guarantees the DB is ready to query.
+				WaitingFor: wait.ForLog("database system is ready to accept connections").
+					WithOccurrence(2).
 					WithStartupTimeout(2 * time.Minute),
 			},
 		},
 	)
 	require.NoError(t, err)
-	require.NoError(t, ci.Start(t.Context()))
+
+	err = ci.Start(t.Context())
+	require.NoError(t, err)
 	defer testcontainers.CleanupContainer(t, ci)
 
 	p, err := ci.MappedPort(t.Context(), postgresqlPort)
 	require.NoError(t, err)
+
+	lockDB, err := sql.Open("postgres", fmt.Sprintf("postgres://root:otel@localhost:%s/otel?sslmode=disable", p.Port()))
+	require.NoError(t, err)
+	defer lockDB.Close()
+
+	// A prepared transaction holds a transactionid lock with a NULL database.
+	prepConn, err := lockDB.Conn(t.Context())
+	require.NoError(t, err)
+	_, err = prepConn.ExecContext(t.Context(), "BEGIN")
+	require.NoError(t, err)
+	_, err = prepConn.ExecContext(t.Context(), "INSERT INTO table1 (id) VALUES (42)")
+	require.NoError(t, err)
+	_, err = prepConn.ExecContext(t.Context(), "PREPARE TRANSACTION 'otel_non_relation_locks'")
+	require.NoError(t, err)
+	require.NoError(t, prepConn.Close())
+	defer func() {
+		_, rollbackErr := lockDB.ExecContext(t.Context(), "ROLLBACK PREPARED 'otel_non_relation_locks'")
+		assert.NoError(t, rollbackErr)
+	}()
+
+	// A session-level advisory lock carries the connected database's OID.
+	advisoryConn, err := lockDB.Conn(t.Context())
+	require.NoError(t, err)
+	defer advisoryConn.Close()
+	_, err = advisoryConn.ExecContext(t.Context(), "SELECT pg_advisory_lock(4973300)")
+	require.NoError(t, err)
+	defer func() {
+		_, unlockErr := advisoryConn.ExecContext(t.Context(), "SELECT pg_advisory_unlock(4973300)")
+		assert.NoError(t, unlockErr)
+	}()
+
+	// Commenting on a database locks a shared object: database = 0, relation NULL.
+	objectConn, err := lockDB.Conn(t.Context())
+	require.NoError(t, err)
+	defer objectConn.Close()
+	_, err = objectConn.ExecContext(t.Context(), "BEGIN")
+	require.NoError(t, err)
+	_, err = objectConn.ExecContext(t.Context(), "COMMENT ON DATABASE otel IS 'otel shared object lock'")
+	require.NoError(t, err)
+	defer func() {
+		_, rollbackErr := objectConn.ExecContext(t.Context(), "ROLLBACK")
+		assert.NoError(t, rollbackErr)
+	}()
 
 	clientDB, err := getDB(t.Context(), postgreSQLConfig{
 		username: "otelu",
@@ -376,37 +446,221 @@ func TestExplainQueryParamCount(t *testing.T) {
 		},
 	}, "otel")
 	require.NoError(t, err)
+
 	client := postgreSQLClient{client: clientDB, closeFn: clientDB.Close}
 	defer func() {
 		require.NoError(t, client.Close())
 	}()
 
-	logger := zap.Must(zap.NewProduction())
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
 
-	testCases := []struct {
-		name  string
-		query string
-	}{
-		{
-			name:  "repeated placeholder counts as one parameter",
-			query: "SELECT * FROM table1 WHERE id = $1 OR id = $1",
-		},
-		{
-			name:  "dollar-sign inside a string literal is not a parameter",
-			query: "SELECT * FROM table1 WHERE id::text = '$123'",
-		},
+	dbLocks, err := client.getDatabaseLocks(ctx)
+	require.NoError(t, err)
+	require.Contains(t, dbLocks, databaseLocks{
+		relation: "",
+		mode:     "ExclusiveLock",
+		lockType: "advisory",
+		locks:    1,
+	})
+	// Relation locks keep their name, so the LEFT JOIN did not regress them.
+	relationLocks := filterLocksByType(dbLocks, "relation")
+	require.NotEmpty(t, relationLocks)
+	for _, lock := range relationLocks {
+		assert.NotEmpty(t, lock.relation)
+	}
+	assert.Empty(t, filterLocksByType(dbLocks, "transactionid"))
+	assert.Empty(t, filterLocksByType(dbLocks, "virtualxid"))
+
+	serverLocks, err := client.getServerScopedLocks(ctx)
+	require.NoError(t, err)
+
+	// The prepared transaction and the open COMMENT transaction each hold one
+	// transaction ID lock. The prepared one has a NULL pid, so a count that skips
+	// rows without a pid misses it. Autovacuum can hold more of these locks, so do
+	// not assert an exact count.
+	transactionIDLock, found := findLock(serverLocks, "transactionid", "ExclusiveLock")
+	require.True(t, found)
+	assert.Empty(t, transactionIDLock.relation)
+	assert.GreaterOrEqual(t, transactionIDLock.locks, int64(2))
+
+	// Every backend holds an ExclusiveLock on its own virtual transaction ID.
+	virtualXIDLock, found := findLock(serverLocks, "virtualxid", "ExclusiveLock")
+	require.True(t, found)
+	assert.Empty(t, virtualXIDLock.relation)
+	require.Positive(t, virtualXIDLock.locks)
+
+	// database = 0 with a NULL relation: only kept if the shared bucket allows it.
+	objectLocks := filterLocksByType(serverLocks, "object")
+	require.NotEmpty(t, objectLocks)
+	for _, lock := range objectLocks {
+		assert.Empty(t, lock.relation)
 	}
 
-	// A text-based $N count gets both cases wrong: 2 instead of 1 for the repeated
-	// placeholder (which PostgreSQL rejects outright -- "wrong number of parameters"), and
-	// 1 instead of 0 for the string literal (which happens to still run, just with an unused
-	// bound null). pg_prepared_statements reports the correct count either way.
-	for i, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			plan, err := client.explainQuery(t.Context(), tc.query, fmt.Sprintf("paramcount%d", i), logger)
-			require.NoError(t, err)
-			require.NotEmpty(t, plan)
-		})
+	// The advisory lock is scoped to a database, so it is not reported twice.
+	assert.Empty(t, filterLocksByType(serverLocks, "advisory"))
+}
+
+func filterLocksByType(locks []databaseLocks, lockType string) []databaseLocks {
+	var filtered []databaseLocks
+	for _, lock := range locks {
+		if lock.lockType == lockType {
+			filtered = append(filtered, lock)
+		}
+	}
+	return filtered
+}
+
+// findLock returns the single row for a lock type and mode. The query groups on
+// both, so at most one row matches.
+func findLock(locks []databaseLocks, lockType, mode string) (databaseLocks, bool) {
+	for _, lock := range locks {
+		if lock.lockType == lockType && lock.mode == mode {
+			return lock, true
+		}
+	}
+	return databaseLocks{}, false
+}
+
+// TestExplainQueryParamCount verifies explainQuery against a live PostgreSQL.
+// It covers the two shapes that broke text-based $N counting, and the
+// pg_stat_statements forms that are not valid SQL until repairNormalizedQuery
+// rewrites them.
+//
+// Both sides of the PG14 boundary are exercised because pg_catalog.extract, the
+// target of the EXTRACT repair, was added in 14. Cases carrying minMajor skip
+// below that; the typed-literal repairs have to prepare on either side.
+func TestExplainQueryParamCount(t *testing.T) {
+	t.Run("pre14", explainQueryParamCountTest(pre17TestVersion))
+	t.Run("post14", explainQueryParamCountTest(post17TestVersion))
+}
+
+func explainQueryParamCountTest(pgVersion string) func(*testing.T) {
+	return func(t *testing.T) {
+		ci, err := testcontainers.GenericContainer(
+			t.Context(),
+			testcontainers.GenericContainerRequest{
+				ProviderType: testcontainers.ProviderPodman,
+				ContainerRequest: testcontainers.ContainerRequest{
+					Image: fmt.Sprintf("postgres:%s", pgVersion),
+					Env: map[string]string{
+						"POSTGRES_USER":     "root",
+						"POSTGRES_PASSWORD": "otel",
+						"POSTGRES_DB":       "otel",
+					},
+					Files: []testcontainers.ContainerFile{{
+						HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+						FileMode:          700,
+					}},
+					ExposedPorts: []string{postgresqlPort},
+					// A listening port is not enough: the postgres image runs a temporary
+					// server for its init scripts, so the port accepts connections while the
+					// real server is still "starting up" (57P03). The readiness log line is
+					// emitted twice -- once for the init server, once for the real one -- so
+					// waiting for the second occurrence guarantees the DB is ready to query.
+					WaitingFor: wait.ForLog("database system is ready to accept connections").
+						WithOccurrence(2).
+						WithStartupTimeout(2 * time.Minute),
+				},
+			},
+		)
+		require.NoError(t, err)
+		require.NoError(t, ci.Start(t.Context()))
+		defer testcontainers.CleanupContainer(t, ci)
+
+		p, err := ci.MappedPort(t.Context(), postgresqlPort)
+		require.NoError(t, err)
+
+		clientDB, err := getDB(t.Context(), postgreSQLConfig{
+			username: "otelu",
+			password: "otelp",
+			address: confignet.AddrConfig{
+				Endpoint: net.JoinHostPort("localhost", p.Port()),
+			},
+			tls: configtls.ClientConfig{
+				Insecure: true,
+			},
+		}, "otel")
+		require.NoError(t, err)
+		client := postgreSQLClient{client: clientDB, closeFn: clientDB.Close}
+		defer func() {
+			require.NoError(t, client.Close())
+		}()
+
+		logger := zap.Must(zap.NewProduction())
+
+		testCases := []struct {
+			name  string
+			query string
+			// wantPlanContains is a substring of the returned plan JSON, so a case asserts
+			// that the plan describes the query rather than only that some plan came back.
+			// The obfuscator re-marshals the plan compactly, hence no space after the colon.
+			wantPlanContains string
+			// minMajor skips the case below that server major version.
+			minMajor int
+		}{
+			{
+				name:             "repeated placeholder counts as one parameter",
+				query:            "SELECT * FROM table1 WHERE id = $1 OR id = $1",
+				wantPlanContains: `"Relation Name":"table1"`,
+			},
+			{
+				name:             "dollar-sign inside a string literal is not a parameter",
+				query:            "SELECT * FROM table1 WHERE id::text = '$123'",
+				wantPlanContains: `"Relation Name":"table1"`,
+			},
+			{
+				name:             "extract with a parameter is repaired and explained",
+				query:            "SELECT id FROM table1 WHERE EXTRACT($1 FROM now()) = $2",
+				wantPlanContains: `"Relation Name":"table1"`,
+				minMajor:         14,
+			},
+			{
+				// Why the repair targets extract and not date_part: EXTRACT returns numeric
+				// from 14 on, and round(double precision, integer) does not exist, so a
+				// date_part rewrite would fail to prepare here for a new reason.
+				name:             "extract feeding a numeric-only function is repaired and explained",
+				query:            "SELECT round(EXTRACT($1 FROM now()), $2)",
+				wantPlanContains: `"Node Type":"Result"`,
+				minMajor:         14,
+			},
+			{
+				name:             "typed interval literal is repaired and explained",
+				query:            "SELECT now() - interval $1",
+				wantPlanContains: `"Node Type":"Result"`,
+			},
+			{
+				name:             "multi word typed literal is repaired and explained",
+				query:            "SELECT now() > timestamp with time zone $1",
+				wantPlanContains: `"Node Type":"Result"`,
+			},
+			{
+				name:             "typed interval literal with a field qualifier is repaired and explained",
+				query:            "SELECT now() - interval $1 day",
+				wantPlanContains: `"Node Type":"Result"`,
+			},
+		}
+
+		major, err := parseMajorVersion(pgVersion)
+		require.NoError(t, err)
+
+		// A text-based $N count gets the first two cases wrong: 2 instead of 1 for the repeated
+		// placeholder (which PostgreSQL rejects outright -- "wrong number of parameters"), and
+		// 1 instead of 0 for the string literal (which happens to still run, just with an unused
+		// bound null). pg_prepared_statements reports the correct count either way.
+		for i, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				if major < tc.minMajor {
+					t.Skipf("requires PostgreSQL %d or later", tc.minMajor)
+				}
+
+				plan, err := client.explainQuery(t.Context(), tc.query, fmt.Sprintf("paramcount%d", i), logger)
+				require.NoError(t, err)
+				require.NotEmpty(t, plan)
+				require.Contains(t, plan, tc.wantPlanContains)
+			})
+		}
 	}
 }
 
@@ -749,4 +1003,79 @@ func TestVectorInsertStatsIntegration(t *testing.T) {
 	// vector table are counted.
 	assert.Equal(t, int64(6), stats[0].rows)
 	assert.True(t, stats[0].totalExecTime > 0, "expected positive cumulative insert duration")
+}
+
+// pre17TestVersion/post17TestVersion also straddle the PG14 boundary this test
+// cares about (partitioned tables only appear in pg_stat_user_tables from PG14 on).
+func TestTableCountMatchesTableMetrics(t *testing.T) {
+	t.Run("pre14", tableCountEquivalenceTest(pre17TestVersion))
+	t.Run("post14", tableCountEquivalenceTest(post17TestVersion))
+}
+
+func tableCountEquivalenceTest(pgVersion string) func(*testing.T) {
+	return func(t *testing.T) {
+		ci, err := testcontainers.GenericContainer(
+			t.Context(),
+			testcontainers.GenericContainerRequest{
+				ContainerRequest: testcontainers.ContainerRequest{
+					Image: fmt.Sprintf("postgres:%s", pgVersion),
+					Env: map[string]string{
+						"POSTGRES_USER":     "root",
+						"POSTGRES_PASSWORD": "otel",
+						"POSTGRES_DB":       "otel",
+					},
+					Files: []testcontainers.ContainerFile{{
+						HostFilePath:      filepath.Join("testdata", "integration", "03-table-count-init.sql"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+						FileMode:          700,
+					}},
+					ExposedPorts: []string{postgresqlPort},
+					// A listening port is not enough: the postgres image runs a temporary
+					// server for its init scripts, so the port accepts connections while the
+					// real server is still "starting up" (57P03). The readiness log line is
+					// emitted twice -- once for the init server, once for the real one -- so
+					// waiting for the second occurrence guarantees the DB is ready to query.
+					WaitingFor: wait.ForLog("database system is ready to accept connections").
+						WithOccurrence(2).
+						WithStartupTimeout(2 * time.Minute),
+				},
+			},
+		)
+		require.NoError(t, err)
+		defer testcontainers.CleanupContainer(t, ci)
+
+		err = ci.Start(t.Context())
+		require.NoError(t, err)
+
+		p, err := ci.MappedPort(t.Context(), postgresqlPort)
+		require.NoError(t, err)
+
+		clientDB, err := getDB(t.Context(), postgreSQLConfig{
+			username: "otelu",
+			password: "otelp",
+			address: confignet.AddrConfig{
+				Endpoint: net.JoinHostPort("localhost", p.Port()),
+			},
+			tls: configtls.ClientConfig{
+				Insecure: true,
+			},
+		}, "otel")
+		require.NoError(t, err)
+
+		client := postgreSQLClient{client: clientDB, closeFn: clientDB.Close}
+		defer func() {
+			require.NoError(t, client.Close())
+		}()
+
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+
+		tableMetrics, err := client.getDatabaseTableMetrics(ctx, "otel")
+		require.NoError(t, err)
+		count, err := client.getTableCount(ctx)
+		require.NoError(t, err)
+
+		assert.Greater(t, len(tableMetrics), 2, "fixture should include partitions and materialized views, not just plain tables")
+		assert.Equal(t, int64(len(tableMetrics)), count, "cheap table count must equal the full per-table query's row count")
+	}
 }
