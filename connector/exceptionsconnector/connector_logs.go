@@ -143,6 +143,9 @@ func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, s
 	logRecord.SetEventName(eventNameExc)
 	logRecord.SetSpanID(span.SpanID())
 	logRecord.SetTraceID(span.TraceID())
+	// Only the low byte (the W3C trace-flags byte, e.g. the sampled bit) is valid on
+	// LogRecordFlags; the rest is reserved and must stay 0.
+	logRecord.SetFlags(plog.LogRecordFlags(span.Flags() & 0xFF))
 	eventAttrs := event.Attributes()
 	spanAttrs := span.Attributes()
 
