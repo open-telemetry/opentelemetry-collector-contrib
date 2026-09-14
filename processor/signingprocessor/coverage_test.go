@@ -20,6 +20,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -584,6 +585,11 @@ func TestSerializeLogRecordNonStringBody(t *testing.T) {
 	}
 	if len(b) == 0 {
 		t.Error("expected non-empty serialized payload")
+	}
+	// A non-empty payload is not enough: the body has to be in it. Without this
+	// the record would sign identically to one carrying no body at all.
+	if !strings.Contains(string(b), `"body":99`) {
+		t.Errorf("non-string body missing from signed payload: %s", b)
 	}
 }
 
