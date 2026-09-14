@@ -153,41 +153,37 @@ func distributeBuckets(mapper mapping.Mapping, output []uint64, bounds []float64
 		return nil
 	}
 	destination := 0
+	position := 0
+	step := 1
+	boundaryIndex := buckets.Offset
 	if negative {
-		upper, err := bucketBoundary(mapper, buckets.Offset+int32(buckets.Counts.Len()), true)
-		if err != nil {
-			return err
-		}
-		for pos := buckets.Counts.Len() - 1; pos >= 0; pos-- {
-			lower, err := bucketBoundary(mapper, buckets.Offset+int32(pos), false)
-			if err != nil {
-				return err
-			}
-			if count := buckets.Counts.At(pos); count != 0 {
-				if err := distribute(output, bounds, &destination, -upper, -lower, count, distribution); err != nil {
-					return err
-				}
-			}
-			upper = lower
-		}
-		return nil
+		position = buckets.Counts.Len() - 1
+		step = -1
+		boundaryIndex += int32(buckets.Counts.Len())
 	}
 
-	lower, err := bucketBoundary(mapper, buckets.Offset, false)
+	boundary, err := bucketBoundary(mapper, boundaryIndex, negative)
 	if err != nil {
 		return err
 	}
-	for pos := 0; pos < buckets.Counts.Len(); pos++ {
-		upper, err := bucketBoundary(mapper, buckets.Offset+int32(pos)+1, pos == buckets.Counts.Len()-1)
+	for remaining := buckets.Counts.Len(); remaining > 0; remaining-- {
+		nextIndex := boundaryIndex + int32(step)
+		next, err := bucketBoundary(mapper, nextIndex, !negative && remaining == 1)
 		if err != nil {
 			return err
 		}
-		if count := buckets.Counts.At(pos); count != 0 {
+		lower, upper := boundary, next
+		if negative {
+			lower, upper = -boundary, -next
+		}
+		if count := buckets.Counts.At(position); count != 0 {
 			if err := distribute(output, bounds, &destination, lower, upper, count, distribution); err != nil {
 				return err
 			}
 		}
-		lower = upper
+		position += step
+		boundaryIndex = nextIndex
+		boundary = next
 	}
 	return nil
 }
@@ -210,23 +206,13 @@ func distribute(output []uint64, bounds []float64, destination *int, lower, uppe
 		return fmt.Errorf("invalid bucket interval (%v, %v]", lower, upper)
 	}
 	if lower == upper {
-		for *destination < len(bounds) && lower > bounds[*destination] {
-			(*destination)++
-		}
-		return addToBucket(output, *destination, count)
+		return distributePoint(output, bounds, destination, lower, count)
 	}
 	switch distribution {
 	case "upper":
-		for *destination < len(bounds) && upper > bounds[*destination] {
-			(*destination)++
-		}
-		return addToBucket(output, *destination, count)
+		return distributePoint(output, bounds, destination, upper, count)
 	case "midpoint":
-		midpoint := lower/2 + upper/2
-		for *destination < len(bounds) && midpoint > bounds[*destination] {
-			(*destination)++
-		}
-		return addToBucket(output, *destination, count)
+		return distributePoint(output, bounds, destination, lower/2+upper/2, count)
 	case "uniform":
 		return distributeWeighted(output, bounds, destination, lower, upper, count, false)
 	case "random":
@@ -234,6 +220,14 @@ func distribute(output []uint64, bounds []float64, destination *int, lower, uppe
 	default:
 		panic("validated distribution")
 	}
+}
+
+// distributePoint places a point mass in its explicit bucket while advancing the sweep cursor.
+func distributePoint(output []uint64, bounds []float64, destination *int, value float64, count uint64) error {
+	for *destination < len(bounds) && value > bounds[*destination] {
+		(*destination)++
+	}
+	return addToBucket(output, *destination, count)
 }
 
 // distributeWeighted apportions a source count by linear overlap using systematic rounding.
@@ -246,10 +240,7 @@ func distributeWeighted(output []uint64, bounds []float64, destination *int, low
 	for *destination < len(bounds) && lower >= bounds[*destination] {
 		(*destination)++
 	}
-	destinationUpper := math.Inf(1)
-	if *destination < len(bounds) {
-		destinationUpper = bounds[*destination]
-	}
+	destinationUpper := explicitUpperBound(bounds, *destination)
 	if upper <= destinationUpper {
 		return addToBucket(output, *destination, count)
 	}
@@ -283,11 +274,16 @@ func distributeWeighted(output []uint64, bounds []float64, destination *int, low
 		allocated = next
 		overlapLower = overlapUpper
 		(*destination)++
-		destinationUpper = math.Inf(1)
-		if *destination < len(bounds) {
-			destinationUpper = bounds[*destination]
-		}
+		destinationUpper = explicitUpperBound(bounds, *destination)
 	}
+}
+
+// explicitUpperBound returns the numeric upper bound of an explicit bucket.
+func explicitUpperBound(bounds []float64, bucket int) float64 {
+	if bucket == len(bounds) {
+		return math.Inf(1)
+	}
+	return bounds[bucket]
 }
 
 // roundedPrefix rounds a cumulative expected count using a fixed-point offset.
