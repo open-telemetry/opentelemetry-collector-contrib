@@ -1290,11 +1290,11 @@ type serverEndpoint struct {
 	resolved bool
 }
 
-// newServerEndpoint resolves the endpoint once, at scraper construction. The endpoint is immutable
-// configuration, so resolving it per resource would repeat an os.Hostname call for every database,
-// table and index emitted in a scrape. Resolving alongside service.instance.id also keeps the two
-// consistent for the lifetime of the scraper: both name the same machine as of the same moment,
-// instead of service.instance.id being frozen at startup while server.address tracks later changes.
+// newServerEndpoint resolves the endpoint at scraper construction rather than per resource, since
+// the endpoint is immutable configuration and resolving it per resource would repeat an os.Hostname
+// call for every database, table and index emitted in a scrape. The host goes through the same
+// resolveLoopbackHost helper that service.instance.id uses, so the two cannot disagree about a
+// given endpoint, and both are fixed for the lifetime of the scraper.
 func newServerEndpoint(config *Config, logger *zap.Logger) serverEndpoint {
 	address, port, err := serverEndpointAttributes(config, logger)
 	if err != nil {
