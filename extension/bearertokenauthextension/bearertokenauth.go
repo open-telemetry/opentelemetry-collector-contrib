@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 	"google.golang.org/grpc/credentials"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile"
@@ -269,4 +270,20 @@ func (interceptor *bearerAuthRoundTripper) RoundTrip(req *http.Request) (*http.R
 	}
 	req2.Header.Set(interceptor.header, interceptor.auth.authorizationValue())
 	return interceptor.baseTransport.RoundTrip(req2)
+}
+
+// Token implements the Token(context.Context) (*oauth2.Token, error) interface so bearertokenauth
+// can be referenced as an oauthbearer_token_source (e.g. for Kafka SASL OAUTHBEARER).
+func (b *bearerTokenAuth) Token(_ context.Context) (*oauth2.Token, error) {
+	if b.tokenResolver == nil {
+		return nil, errors.New("token resolver is not configured")
+	}
+	token := b.tokenResolver.Value()
+	if token == "" {
+		return nil, errors.New("empty bearer token")
+	}
+	return &oauth2.Token{
+		AccessToken: token,
+		TokenType:   b.scheme,
+	}, nil
 }
