@@ -231,6 +231,7 @@ components:
     - processor/span_pruning
     - processor/sumologic
     - processor/tail_sampling
+    - processor/telemetry_policy
     - processor/tencentcvmdetector
     - processor/transform
     - processor/transformprocessor/internal/logparsingfuncs
