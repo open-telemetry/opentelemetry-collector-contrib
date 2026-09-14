@@ -179,6 +179,14 @@ func TestConfigValidate(t *testing.T) {
 			expectedErr: "predicate must contain at least one valid event type",
 		},
 		{
+			desc: "valid predicate with type field",
+			makeCfg: func(_ *testing.T) *Config {
+				return &Config{
+					Predicate: "type == 'logEvent'",
+				}
+			},
+		},
+		{
 			desc: "predicate must contain valid log type when logType is referenced",
 			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
@@ -186,6 +194,14 @@ func TestConfigValidate(t *testing.T) {
 				}
 			},
 			expectedErr: "predicate must contain at least one valid log type",
+		},
+		{
+			desc: "valid predicate with logType field",
+			makeCfg: func(_ *testing.T) *Config {
+				return &Config{
+					Predicate: "logType == 'error'",
+				}
+			},
 		},
 		{
 			desc: "predicate must contain valid signpost scope when signpostScope is referenced",
@@ -206,12 +222,21 @@ func TestConfigValidate(t *testing.T) {
 			expectedErr: "predicate must contain at least one valid signpost type",
 		},
 		{
-			desc: "valid predicate with messageType field",
+			desc: "valid predicate with messageType field (alias for logType)",
 			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					Predicate: "messageType == 'Error'",
 				}
 			},
+		},
+		{
+			desc: "predicate must contain valid log type when messageType is referenced",
+			makeCfg: func(_ *testing.T) *Config {
+				return &Config{
+					Predicate: "messageType == 'invalid'",
+				}
+			},
+			expectedErr: "predicate must contain at least one valid log type",
 		},
 		{
 			desc: "valid predicate with OR and messageType",
@@ -222,12 +247,21 @@ func TestConfigValidate(t *testing.T) {
 			},
 		},
 		{
-			desc: "valid predicate with eventType field",
+			desc: "valid predicate with eventType field (alias for type)",
 			makeCfg: func(_ *testing.T) *Config {
 				return &Config{
 					Predicate: "eventType == 'logEvent'",
 				}
 			},
+		},
+		{
+			desc: "predicate must contain valid event type when eventType is referenced",
+			makeCfg: func(_ *testing.T) *Config {
+				return &Config{
+					Predicate: "eventType == 'invalidEvent'",
+				}
+			},
+			expectedErr: "predicate must contain at least one valid event type",
 		},
 		{
 			desc: "valid predicate with eventMessage field",

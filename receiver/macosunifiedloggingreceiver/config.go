@@ -200,14 +200,14 @@ func validatePredicate(predicate *string) error {
 		errs = errors.Join(errs, errors.New("predicate must contain at least one valid operator"))
 	}
 
-	predicateUsesEventType := strings.Contains(*predicate, "type")
+	predicateUsesEventType := strings.Contains(*predicate, "type") || strings.Contains(*predicate, "eventType")
 	if predicateUsesEventType {
 		if !hasValidEventType(*predicate) {
 			errs = errors.Join(errs, errors.New("predicate must contain at least one valid event type"))
 		}
 	}
 
-	predicateUsesLogType := strings.Contains(*predicate, "logType")
+	predicateUsesLogType := strings.Contains(*predicate, "logType") || strings.Contains(*predicate, "messageType")
 	if predicateUsesLogType {
 		if !hasValidLogType(*predicate) {
 			errs = errors.Join(errs, errors.New("predicate must contain at least one valid log type"))
