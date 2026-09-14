@@ -522,87 +522,145 @@ func findLock(locks []databaseLocks, lockType, mode string) (databaseLocks, bool
 	return databaseLocks{}, false
 }
 
-// TestExplainQueryParamCount verifies pg_prepared_statements reports the correct parameter
-// count for the two shapes that broke text-based $N counting: a placeholder repeated in the
-// query text, and a string literal that merely looks like one.
+// TestExplainQueryParamCount verifies explainQuery against a live PostgreSQL.
+// It covers the two shapes that broke text-based $N counting, and the
+// pg_stat_statements forms that are not valid SQL until repairNormalizedQuery
+// rewrites them.
+//
+// Both sides of the PG14 boundary are exercised because pg_catalog.extract, the
+// target of the EXTRACT repair, was added in 14. Cases carrying minMajor skip
+// below that; the typed-literal repairs have to prepare on either side.
 func TestExplainQueryParamCount(t *testing.T) {
-	ci, err := testcontainers.GenericContainer(
-		t.Context(),
-		testcontainers.GenericContainerRequest{
-			ProviderType: testcontainers.ProviderPodman,
-			ContainerRequest: testcontainers.ContainerRequest{
-				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
-				Env: map[string]string{
-					"POSTGRES_USER":     "root",
-					"POSTGRES_PASSWORD": "otel",
-					"POSTGRES_DB":       "otel",
+	t.Run("pre14", explainQueryParamCountTest(pre17TestVersion))
+	t.Run("post14", explainQueryParamCountTest(post17TestVersion))
+}
+
+func explainQueryParamCountTest(pgVersion string) func(*testing.T) {
+	return func(t *testing.T) {
+		ci, err := testcontainers.GenericContainer(
+			t.Context(),
+			testcontainers.GenericContainerRequest{
+				ProviderType: testcontainers.ProviderPodman,
+				ContainerRequest: testcontainers.ContainerRequest{
+					Image: fmt.Sprintf("postgres:%s", pgVersion),
+					Env: map[string]string{
+						"POSTGRES_USER":     "root",
+						"POSTGRES_PASSWORD": "otel",
+						"POSTGRES_DB":       "otel",
+					},
+					Files: []testcontainers.ContainerFile{{
+						HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+						FileMode:          700,
+					}},
+					ExposedPorts: []string{postgresqlPort},
+					// A listening port is not enough: the postgres image runs a temporary
+					// server for its init scripts, so the port accepts connections while the
+					// real server is still "starting up" (57P03). The readiness log line is
+					// emitted twice -- once for the init server, once for the real one -- so
+					// waiting for the second occurrence guarantees the DB is ready to query.
+					WaitingFor: wait.ForLog("database system is ready to accept connections").
+						WithOccurrence(2).
+						WithStartupTimeout(2 * time.Minute),
 				},
-				Files: []testcontainers.ContainerFile{{
-					HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
-					ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
-					FileMode:          700,
-				}},
-				ExposedPorts: []string{postgresqlPort},
-				// A listening port is not enough: the postgres image runs a temporary
-				// server for its init scripts, so the port accepts connections while the
-				// real server is still "starting up" (57P03). The readiness log line is
-				// emitted twice -- once for the init server, once for the real one -- so
-				// waiting for the second occurrence guarantees the DB is ready to query.
-				WaitingFor: wait.ForLog("database system is ready to accept connections").
-					WithOccurrence(2).
-					WithStartupTimeout(2 * time.Minute),
 			},
-		},
-	)
-	require.NoError(t, err)
-	require.NoError(t, ci.Start(t.Context()))
-	defer testcontainers.CleanupContainer(t, ci)
+		)
+		require.NoError(t, err)
+		require.NoError(t, ci.Start(t.Context()))
+		defer testcontainers.CleanupContainer(t, ci)
 
-	p, err := ci.MappedPort(t.Context(), postgresqlPort)
-	require.NoError(t, err)
+		p, err := ci.MappedPort(t.Context(), postgresqlPort)
+		require.NoError(t, err)
 
-	clientDB, err := getDB(t.Context(), postgreSQLConfig{
-		username: "otelu",
-		password: "otelp",
-		address: confignet.AddrConfig{
-			Endpoint: net.JoinHostPort("localhost", p.Port()),
-		},
-		tls: configtls.ClientConfig{
-			Insecure: true,
-		},
-	}, "otel")
-	require.NoError(t, err)
-	client := postgreSQLClient{client: clientDB, closeFn: clientDB.Close}
-	defer func() {
-		require.NoError(t, client.Close())
-	}()
+		clientDB, err := getDB(t.Context(), postgreSQLConfig{
+			username: "otelu",
+			password: "otelp",
+			address: confignet.AddrConfig{
+				Endpoint: net.JoinHostPort("localhost", p.Port()),
+			},
+			tls: configtls.ClientConfig{
+				Insecure: true,
+			},
+		}, "otel")
+		require.NoError(t, err)
+		client := postgreSQLClient{client: clientDB, closeFn: clientDB.Close}
+		defer func() {
+			require.NoError(t, client.Close())
+		}()
 
-	logger := zap.Must(zap.NewProduction())
+		logger := zap.Must(zap.NewProduction())
 
-	testCases := []struct {
-		name  string
-		query string
-	}{
-		{
-			name:  "repeated placeholder counts as one parameter",
-			query: "SELECT * FROM table1 WHERE id = $1 OR id = $1",
-		},
-		{
-			name:  "dollar-sign inside a string literal is not a parameter",
-			query: "SELECT * FROM table1 WHERE id::text = '$123'",
-		},
-	}
+		testCases := []struct {
+			name  string
+			query string
+			// wantPlanContains is a substring of the returned plan JSON, so a case asserts
+			// that the plan describes the query rather than only that some plan came back.
+			// The obfuscator re-marshals the plan compactly, hence no space after the colon.
+			wantPlanContains string
+			// minMajor skips the case below that server major version.
+			minMajor int
+		}{
+			{
+				name:             "repeated placeholder counts as one parameter",
+				query:            "SELECT * FROM table1 WHERE id = $1 OR id = $1",
+				wantPlanContains: `"Relation Name":"table1"`,
+			},
+			{
+				name:             "dollar-sign inside a string literal is not a parameter",
+				query:            "SELECT * FROM table1 WHERE id::text = '$123'",
+				wantPlanContains: `"Relation Name":"table1"`,
+			},
+			{
+				name:             "extract with a parameter is repaired and explained",
+				query:            "SELECT id FROM table1 WHERE EXTRACT($1 FROM now()) = $2",
+				wantPlanContains: `"Relation Name":"table1"`,
+				minMajor:         14,
+			},
+			{
+				// Why the repair targets extract and not date_part: EXTRACT returns numeric
+				// from 14 on, and round(double precision, integer) does not exist, so a
+				// date_part rewrite would fail to prepare here for a new reason.
+				name:             "extract feeding a numeric-only function is repaired and explained",
+				query:            "SELECT round(EXTRACT($1 FROM now()), $2)",
+				wantPlanContains: `"Node Type":"Result"`,
+				minMajor:         14,
+			},
+			{
+				name:             "typed interval literal is repaired and explained",
+				query:            "SELECT now() - interval $1",
+				wantPlanContains: `"Node Type":"Result"`,
+			},
+			{
+				name:             "multi word typed literal is repaired and explained",
+				query:            "SELECT now() > timestamp with time zone $1",
+				wantPlanContains: `"Node Type":"Result"`,
+			},
+			{
+				name:             "typed interval literal with a field qualifier is repaired and explained",
+				query:            "SELECT now() - interval $1 day",
+				wantPlanContains: `"Node Type":"Result"`,
+			},
+		}
 
-	// A text-based $N count gets both cases wrong: 2 instead of 1 for the repeated
-	// placeholder (which PostgreSQL rejects outright -- "wrong number of parameters"), and
-	// 1 instead of 0 for the string literal (which happens to still run, just with an unused
-	// bound null). pg_prepared_statements reports the correct count either way.
-	for i, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			plan, err := client.explainQuery(t.Context(), tc.query, fmt.Sprintf("paramcount%d", i), logger)
-			require.NoError(t, err)
-			require.NotEmpty(t, plan)
-		})
+		major, err := parseMajorVersion(pgVersion)
+		require.NoError(t, err)
+
+		// A text-based $N count gets the first two cases wrong: 2 instead of 1 for the repeated
+		// placeholder (which PostgreSQL rejects outright -- "wrong number of parameters"), and
+		// 1 instead of 0 for the string literal (which happens to still run, just with an unused
+		// bound null). pg_prepared_statements reports the correct count either way.
+		for i, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				if major < tc.minMajor {
+					t.Skipf("requires PostgreSQL %d or later", tc.minMajor)
+				}
+
+				plan, err := client.explainQuery(t.Context(), tc.query, fmt.Sprintf("paramcount%d", i), logger)
+				require.NoError(t, err)
+				require.NotEmpty(t, plan)
+				require.Contains(t, plan, tc.wantPlanContains)
+			})
+		}
 	}
 }
 

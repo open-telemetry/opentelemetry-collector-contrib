@@ -456,6 +456,14 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			continue
 		}
 
+		// A dropped database can leave stats in pg_stat_statements with a NULL
+		// db.namespace; the template's WHERE/INNER JOIN filters these, but skip
+		// defensively so a regression cannot re-trigger the type-assertion panic.
+		if row[string(semconv.DBNamespaceKey)] == nil {
+			logger.Debug("skipping top query row with nil db.namespace (database may have been dropped)")
+			continue
+		}
+
 		for columnName, info := range updatedOnly {
 			var valInAtts float64
 			_val := row[dbAttributePrefix+columnName]

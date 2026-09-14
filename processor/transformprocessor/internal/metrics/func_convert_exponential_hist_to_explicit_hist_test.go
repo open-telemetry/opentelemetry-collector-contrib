@@ -253,7 +253,7 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			metric := pmetric.NewMetric()
 			tt.input().CopyTo(metric)
 
-			ctx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			ctx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
 			defer ctx.Close()
 
 			exprFunc, err := convertExponentialHistToExplicitHist(tt.distribution, tt.arg)
@@ -437,7 +437,7 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			metric := pmetric.NewMetric()
 			tt.input().CopyTo(metric)
 
-			ctx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			ctx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
 			defer ctx.Close()
 
 			exprFunc, err := convertExponentialHistToExplicitHist(tt.distribution, tt.arg)
@@ -567,7 +567,7 @@ func TestUniform_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			metric := pmetric.NewMetric()
 			tt.input().CopyTo(metric)
 
-			ctx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			ctx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
 			defer ctx.Close()
 
 			exprFunc, err := convertExponentialHistToExplicitHist(tt.distribution, tt.arg)
@@ -697,7 +697,7 @@ func TestRandom_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			metric := pmetric.NewMetric()
 			tt.input().CopyTo(metric)
 
-			ctx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			ctx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
 			defer ctx.Close()
 
 			exprFunc, err := convertExponentialHistToExplicitHist(tt.distribution, tt.arg)
