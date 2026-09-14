@@ -1,0 +1,6 @@
+change_type: enhancement
+component: processor/span_pruning
+note: Add `outlier_analysis.duration_transform` to measure outlier spread on log durations, which better suits common latency distributions.
+issues: [50981]
+subtext:
+change_logs: [user]
