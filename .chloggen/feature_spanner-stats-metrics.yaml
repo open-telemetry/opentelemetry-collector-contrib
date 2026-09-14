@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/googlecloudspanner
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Expand Spanner system stats coverage by adding previously uncovered metrics and columns.
+note: Expand Spanner system stats coverage by adding previously uncovered metrics and columns to bring the parity between GCP Query insights page and OTel receiver. 
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50843]
@@ -16,7 +16,7 @@ issues: [50843]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Syncs the OTel receiver with SPANNER_SYS tables to include missing columns for active queries summary, lock stats, query stats, transaction stats, and table sizes.
+  Syncs the OTel receiver with SPANNER_SYS tables to bring the parity between GCP Query insights page and OTel receiver.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
