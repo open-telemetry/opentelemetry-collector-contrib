@@ -285,19 +285,21 @@ func TestSignVerifyEventName(t *testing.T) {
 // rawValue converts a pcommon.Value to the shape the signed payload carries.
 // It is written out independently of the processor's own valueToInterface so
 // this helper stays a genuine re-derivation rather than a mirror of the code
-// under test.
+// under test. Scalars are wrapped in typed envelopes matching the OTLP JSON
+// encoding to avoid ambiguity between distinct pcommon types that share the
+// same JSON representation (e.g. int 1 vs bool true vs string "1").
 func rawValue(v pcommon.Value) any {
 	switch v.Type() {
 	case pcommon.ValueTypeStr:
-		return v.Str()
+		return map[string]any{"stringValue": v.Str()}
 	case pcommon.ValueTypeInt:
-		return strconv.FormatInt(v.Int(), 10)
+		return map[string]any{"intValue": strconv.FormatInt(v.Int(), 10)}
 	case pcommon.ValueTypeDouble:
-		return v.Double()
+		return map[string]any{"doubleValue": v.Double()}
 	case pcommon.ValueTypeBool:
-		return v.Bool()
+		return map[string]any{"boolValue": v.Bool()}
 	case pcommon.ValueTypeBytes:
-		return base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())
+		return map[string]any{"bytesValue": base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())}
 	case pcommon.ValueTypeSlice:
 		out := make([]any, 0, v.Slice().Len())
 		for i := 0; i < v.Slice().Len(); i++ {
