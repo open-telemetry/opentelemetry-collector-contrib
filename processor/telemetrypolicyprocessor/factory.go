@@ -53,7 +53,6 @@ func createLogsProcessor(
 	return processorhelper.NewLogs(
 		ctx, set, cfg, nextConsumer,
 		func(_ context.Context, ld plog.Logs) (plog.Logs, error) { return ld, nil },
-		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 	)
 }
 
@@ -73,7 +72,6 @@ func createMetricsProcessor(
 	return processorhelper.NewMetrics(
 		ctx, set, cfg, nextConsumer,
 		func(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) { return md, nil },
-		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 	)
 }
 
@@ -93,6 +91,5 @@ func createTracesProcessor(
 	return processorhelper.NewTraces(
 		ctx, set, cfg, nextConsumer,
 		func(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) { return td, nil },
-		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 	)
 }

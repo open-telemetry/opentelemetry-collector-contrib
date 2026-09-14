@@ -14,6 +14,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/telemetrypolicyprocessor/internal/metadata"
 )
 
+type wrongConfig struct{}
+
+func (wrongConfig) Validate() error { return nil }
+
 func TestFactoryCreateProcessors(t *testing.T) {
 	factory := NewFactory()
 	set := processortest.NewNopSettings(metadata.Type)
@@ -22,7 +26,7 @@ func TestFactoryCreateProcessors(t *testing.T) {
 		Providers: []component.ID{component.MustNewID("file_telemetry_policy")},
 	}
 	invalidCfg := &Config{}
-	wrongTypeCfg := struct{}{}
+	wrongTypeCfg := wrongConfig{}
 
 	t.Run("logs", func(t *testing.T) {
 		lp, err := factory.CreateLogs(t.Context(), set, validCfg, consumertest.NewNop())
