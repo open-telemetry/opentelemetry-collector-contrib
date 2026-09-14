@@ -13,13 +13,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor/internal/metadatatest"
 
 	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
@@ -1118,6 +1124,65 @@ func Test_tracesamplerprocessor_HashSeedTraceState(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_tracesamplerprocessor_SamplingMetricsCountSpans(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	sink := new(consumertest.TracesSink)
+	cfg := &Config{
+		SamplingPercentage: 100,
+		HashSeed:           defaultHashSeed,
+	}
+
+	tsp, err := newTracesProcessor(t.Context(), metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+
+	traces := ptrace.NewTraces()
+	resourceSpans := traces.ResourceSpans().AppendEmpty()
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1})
+	for i := 0; i < 3; i++ {
+		span := scopeSpans.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID{byte(i + 1)})
+		span.SetName("test-span")
+	}
+
+	require.NoError(t, tsp.ConsumeTraces(t.Context(), traces))
+	require.Equal(t, 3, sink.SpanCount())
+
+	metadatatest.AssertEqualProcessorProbabilisticSamplerCountSpansProcessedTotal(
+		t,
+		tt,
+		[]metricdata.DataPoint[int64]{{
+			Value: 3,
+			Attributes: attribute.NewSet(
+				attribute.String("policy", "trace_id_hash"),
+				attribute.String("sampled", "true"),
+			),
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
+
+	metadatatest.AssertEqualProcessorProbabilisticSamplerCountTracesSampled(
+		t,
+		tt,
+		[]metricdata.DataPoint[int64]{{
+			Value: 3,
+			Attributes: attribute.NewSet(
+				attribute.String("policy", "trace_id_hash"),
+				attribute.String("sampled", "true"),
+			),
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
 }
 
 func getSpanWithAttributes(key string, value pcommon.Value) ptrace.Span {
