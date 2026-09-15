@@ -358,7 +358,9 @@ func (s *azureScraper) loadResources(ctx context.Context, subscriptionID string)
 		s.settings.Logger.Debug("Collected Resource list from Azure", logFields...)
 		page++
 
-		for _, resource := range s.processResources(nextResult.Value) {
+		resources := filterResourcesByTags(nextResult.Value, s.cfg.ResourceTags)
+
+		for _, resource := range s.processResources(resources) {
 			if _, ok := s.resources[subscriptionID][*resource.ID]; !ok {
 				resourceGroup := getResourceGroupFromID(*resource.ID)
 				attributes := map[string]*string{

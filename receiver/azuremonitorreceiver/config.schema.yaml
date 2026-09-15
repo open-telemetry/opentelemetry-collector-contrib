@@ -60,6 +60,15 @@ properties:
     type: array
     items:
       type: string
+  resource_tags:
+    type: array
+    items:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          type: string
   services:
     type: array
     items:
