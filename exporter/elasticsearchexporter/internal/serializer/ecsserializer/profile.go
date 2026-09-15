@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package otelserializer // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer"
+package ecsserializer // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/ecsserializer"
 
 import (
 	"bytes"
@@ -12,16 +12,19 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/lru"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/ecsserializer/serializeprofiles"
 )
 
 const (
-	AllEventsIndex   = "profiling-events-all.otel-default"
-	StackTraceIndex  = "profiling-stacktraces.otel-default"
-	StackFrameIndex  = "profiling-stackframes.otel-default"
-	ExecutablesIndex = "profiling-executables.otel-default"
+	AllEventsIndex   = "profiling-events-all"
+	StackTraceIndex  = "profiling-stacktraces"
+	StackFrameIndex  = "profiling-stackframes"
+	ExecutablesIndex = "profiling-executables"
 
-	HostsMetadataIndex = "profiling-hosts.otel-default"
+	ExecutablesSymQueueIndex = "profiling-sq-executables"
+	LeafFramesSymQueueIndex  = "profiling-sq-leafframes"
+
+	HostsMetadataIndex = "profiling-hosts"
 )
 
 // SerializeProfile serializes a profile and calls the `pushData` callback for each generated document.
@@ -54,7 +57,7 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 				if err != nil {
 					return err
 				}
-				err = serializeprofiles.IndexDownsampledEvent(event, ".otel-default", pushDataAsJSON)
+				err = serializeprofiles.IndexDownsampledEvent(event, "", pushDataAsJSON)
 				if err != nil {
 					return err
 				}
@@ -115,6 +118,25 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 		return err
 	}
 
+	err = s.knownUnsymbolizedFrames.WithLock(func(unsymbolizedFramesSet lru.LockedLRUSet) error {
+		for i := range data {
+			payload := &data[i]
+			for _, frame := range payload.UnsymbolizedLeafFrames {
+				if !unsymbolizedFramesSet.CheckAndAdd(frame.DocID) {
+					err = pushDataAsJSON(frame, frame.DocID, LeafFramesSymQueueIndex)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
 	err = s.knownHosts.WithLock(func(hostMetadata lru.LockedLRUSet) error {
 		for i := range data {
 			payload := &data[i]
@@ -132,7 +154,25 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 		}
 		return nil
 	})
-	return err
+	if err != nil {
+		return err
+	}
+
+	return s.knownUnsymbolizedExecutables.WithLock(func(unsymbolizedExecutablesSet lru.LockedLRUSet) error {
+		for i := range data {
+			payload := &data[i]
+			for _, executable := range payload.UnsymbolizedExecutables {
+				if !unsymbolizedExecutablesSet.CheckAndAdd(executable.DocID) {
+					err = pushDataAsJSON(executable, executable.DocID, ExecutablesSymQueueIndex)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		return nil
+	})
 }
 
 func toJSON(d any) (*bytes.Buffer, error) {
@@ -164,6 +204,18 @@ func (s *Serializer) createLRUs() error {
 		s.knownExecutables, err = lru.NewLRUSet(knownExecutablesCacheSize, minILMRolloverTime)
 		if err != nil {
 			s.lruErr = fmt.Errorf("failed to create executables LRU: %w", err)
+			return
+		}
+
+		s.knownUnsymbolizedFrames, err = lru.NewLRUSet(knownUnsymbolizedFramesCacheSize, minILMRolloverTime)
+		if err != nil {
+			s.lruErr = fmt.Errorf("failed to create unsymbolized frames LRU: %w", err)
+			return
+		}
+
+		s.knownUnsymbolizedExecutables, err = lru.NewLRUSet(knownUnsymbolizedExecutablesCacheSize, minILMRolloverTime)
+		if err != nil {
+			s.lruErr = fmt.Errorf("failed to create unsymbolized executables LRU: %w", err)
 			return
 		}
 

@@ -6,6 +6,8 @@ package serializeprofiles
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"sort"
 	"testing"
 	"time"
 
@@ -18,11 +20,11 @@ import (
 var (
 	stacktraceIDBase64 = stacktraceIDFormat(0xcafebeef, 0xd00d1eaf)
 
-	buildID, buildIDEncoded = formatFileIDFormat(0x0011223344556677,
+	buildID, buildIDEncoded, buildIDBase64 = formatFileIDFormat(0x0011223344556677,
 		0x8899aabbccddeeff)
-	buildID2, buildID2Encoded = formatFileIDFormat(0x0112233445566778,
+	buildID2, buildID2Encoded, buildID2Base64 = formatFileIDFormat(0x0112233445566778,
 		0x899aabbccddeeffe)
-	buildID3, buildID3Encoded = formatFileIDFormat(0x1122334455667788,
+	buildID3, buildID3Encoded, _ = formatFileIDFormat(0x1122334455667788,
 		0x99aabbccddeeffee)
 
 	frameIDBase64  = newFrameID(buildID, address).String()
@@ -41,9 +43,13 @@ func stacktraceIDFormat(hi, lo uint64) string {
 	return libpf.NewFileID(hi, lo).Base64()
 }
 
-func formatFileIDFormat(hi, lo uint64) (libpf.FileID, string) {
-	fileID := libpf.NewFileID(hi, lo)
-	return fileID, fileID.StringNoQuotes()
+func formatFileIDFormat(hi, lo uint64) (fileID libpf.FileID, fileIDHex, fileIDBase64 string) {
+	// StringNoQuotes() is used in the host agent to encode stacktraceID and buildID.
+	// We should possibly switch to Base64 encoding.
+	fileID = libpf.NewFileID(hi, lo)
+	fileIDHex = fileID.StringNoQuotes()
+	fileIDBase64 = fileID.Base64()
+	return fileID, fileIDHex, fileIDBase64
 }
 
 func TestTransform(t *testing.T) {
@@ -216,9 +222,9 @@ func TestTransform(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						DocID:     wantedTraceID,
-						Timestamp: newUnixTime64(42),
-						FrameIDs:  frameID2Base64 + frameIDBase64,
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						DocID:      wantedTraceID,
+						FrameIDs:   frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.NativeFrame,
 							libpf.NativeFrame,
@@ -226,10 +232,40 @@ func TestTransform(t *testing.T) {
 					},
 					StackFrames: []StackFrame{},
 					Executables: []ExeMetadata{
-						{DocID: buildIDEncoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
-						{DocID: buildID2Encoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
+						NewExeMetadata(
+							buildIDBase64,
+							GetStartOfWeekFromTime(time.Now()),
+							buildIDBase64,
+							"firefox",
+						),
+						NewExeMetadata(
+							buildID2Base64,
+							GetStartOfWeekFromTime(time.Now()),
+							buildID2Base64,
+							"libc.so",
+						),
+					},
+					UnsymbolizedLeafFrames: []UnsymbolizedLeafFrame{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      frameIDBase64,
+							FrameID:    []string{frameIDBase64},
+						},
+					},
+					UnsymbolizedExecutables: []UnsymbolizedExecutable{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildIDBase64,
+							FileID:     []string{buildIDBase64},
+						},
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildID2Base64,
+							FileID:     []string{buildID2Base64},
+						},
 					},
 					ResourceAttrs: ResourceData{
+						EcsVersion: EcsVersion{V: EcsVersionString},
 						Data: map[string]string{
 							"service.name": "my_service.name",
 						},
@@ -237,11 +273,13 @@ func TestTransform(t *testing.T) {
 				},
 				{
 					StackTraceEvent: StackTraceEvent{
+						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    42000000000,
 						StackTraceID: wantedTraceID,
 						ServiceName:  "my_service.name",
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
 					ResourceAttrs: ResourceData{},
 				},
@@ -255,6 +293,9 @@ func TestTransform(t *testing.T) {
 			sp := rp.ScopeProfiles().At(0)
 
 			payload, err := Transform(dic, rp.Resource(), sp.Scope(), sp.Profiles().At(0))
+			require.NoError(t, checkAndResetTimes(payload))
+			sortPayloads(payload)
+			sortPayloads(tt.wantPayload)
 			require.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.wantPayload, payload)
 		})
@@ -335,9 +376,9 @@ func TestStackPayloads(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						DocID:     wantedTraceID,
-						Timestamp: newUnixTime64(1),
-						FrameIDs:  frameID2Base64 + frameIDBase64,
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						DocID:      wantedTraceID,
+						FrameIDs:   frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.FrameType(3),
 							libpf.FrameType(3),
@@ -345,19 +386,51 @@ func TestStackPayloads(t *testing.T) {
 					},
 					StackFrames: []StackFrame{},
 					Executables: []ExeMetadata{
-						{DocID: buildIDEncoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
-						{DocID: buildID2Encoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
+						NewExeMetadata(
+							buildIDBase64,
+							GetStartOfWeekFromTime(time.Now()),
+							buildIDBase64,
+							"firefox",
+						),
+						NewExeMetadata(
+							buildID2Base64,
+							GetStartOfWeekFromTime(time.Now()),
+							buildID2Base64,
+							"libc.so",
+						),
+					},
+					UnsymbolizedLeafFrames: []UnsymbolizedLeafFrame{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      frameIDBase64,
+							FrameID:    []string{frameIDBase64},
+						},
+					},
+					UnsymbolizedExecutables: []UnsymbolizedExecutable{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildIDBase64,
+							FileID:     []string{buildIDBase64},
+						},
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildID2Base64,
+							FileID:     []string{buildID2Base64},
+						},
 					},
 					ResourceAttrs: ResourceData{
-						Data: map[string]string{},
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						Data:       map[string]string{},
 					},
 				},
 				{
 					StackTraceEvent: StackTraceEvent{
+						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    1000000000,
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
 					ResourceAttrs: ResourceData{},
 				},
@@ -419,9 +492,9 @@ func TestStackPayloads(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						DocID:     wantedTraceID,
-						Timestamp: newUnixTime64(1),
-						FrameIDs:  frameID2Base64 + frameIDBase64,
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						DocID:      wantedTraceID,
+						FrameIDs:   frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.FrameType(3),
 							libpf.FrameType(3),
@@ -429,27 +502,61 @@ func TestStackPayloads(t *testing.T) {
 					},
 					StackFrames: []StackFrame{},
 					Executables: []ExeMetadata{
-						{DocID: buildIDEncoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
-						{DocID: buildID2Encoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
+						NewExeMetadata(
+							buildIDBase64,
+							GetStartOfWeekFromTime(time.Now()),
+							buildIDBase64,
+							"firefox",
+						),
+						NewExeMetadata(
+							buildID2Base64,
+							GetStartOfWeekFromTime(time.Now()),
+							buildID2Base64,
+							"libc.so",
+						),
+					},
+					UnsymbolizedLeafFrames: []UnsymbolizedLeafFrame{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      frameIDBase64,
+							FrameID:    []string{frameIDBase64},
+						},
+					},
+					UnsymbolizedExecutables: []UnsymbolizedExecutable{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildIDBase64,
+							FileID:     []string{buildIDBase64},
+						},
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildID2Base64,
+							FileID:     []string{buildID2Base64},
+						},
 					},
 					ResourceAttrs: ResourceData{
-						Data: map[string]string{},
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						Data:       map[string]string{},
 					},
 				},
 				{
 					StackTraceEvent: StackTraceEvent{
+						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    1000000000,
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
 				},
 				{
 					StackTraceEvent: StackTraceEvent{
+						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    1000000000,
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
 				},
 			},
@@ -513,9 +620,9 @@ func TestStackPayloads(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						DocID:     wantedTraceID,
-						Timestamp: newUnixTime64(1),
-						FrameIDs:  frameID2Base64 + frameIDBase64,
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						DocID:      wantedTraceID,
+						FrameIDs:   frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.FrameType(3),
 							libpf.FrameType(3),
@@ -523,20 +630,53 @@ func TestStackPayloads(t *testing.T) {
 					},
 					StackFrames: []StackFrame{},
 					Executables: []ExeMetadata{
-						{DocID: buildIDEncoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
-						{DocID: buildID2Encoded, Timestamp: GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
+						NewExeMetadata(
+							buildIDBase64,
+							GetStartOfWeekFromTime(time.Now()),
+							buildIDBase64,
+							"firefox",
+						),
+						NewExeMetadata(
+							buildID2Base64,
+							GetStartOfWeekFromTime(time.Now()),
+							buildID2Base64,
+							"libc.so",
+						),
 						// Note: no ExeMetadata for the third mapping since it has no BuildID
 					},
+					UnsymbolizedLeafFrames: []UnsymbolizedLeafFrame{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      frameIDBase64,
+							FrameID:    []string{frameIDBase64},
+						},
+					},
+					UnsymbolizedExecutables: []UnsymbolizedExecutable{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildIDBase64,
+							FileID:     []string{buildIDBase64},
+						},
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildID2Base64,
+							FileID:     []string{buildID2Base64},
+						},
+						// Note: no unsymbolized executable for the mapping without build ID
+					},
 					ResourceAttrs: ResourceData{
-						Data: map[string]string{},
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						Data:       map[string]string{},
 					},
 				},
 				{
 					StackTraceEvent: StackTraceEvent{
+						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    1000000000,
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
+						ProjectID:    2,
 					},
 				},
 			},
@@ -548,6 +688,9 @@ func TestStackPayloads(t *testing.T) {
 			sp := rp.ScopeProfiles().At(0)
 
 			payloads, err := stackPayloads(dic, rp.Resource(), sp.Scope(), sp.Profiles().At(0))
+			require.NoError(t, checkAndResetTimes(payloads))
+			sortPayloads(payloads)
+			sortPayloads(tt.wantPayload)
 			require.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.wantPayload, payloads)
 		})
@@ -586,9 +729,11 @@ func TestStackTraceEvent(t *testing.T) {
 			},
 
 			wantEvent: StackTraceEvent{
+				EcsVersion:   EcsVersion{V: EcsVersionString},
 				StackTraceID: stacktraceIDBase64,
 				Frequency:    20,
 				Count:        1,
+				ProjectID:    2,
 			},
 		},
 		{
@@ -611,10 +756,12 @@ func TestStackTraceEvent(t *testing.T) {
 			},
 
 			wantEvent: StackTraceEvent{
+				EcsVersion:   EcsVersion{V: EcsVersionString},
 				TimeStamp:    1000000000000000000,
 				StackTraceID: stacktraceIDBase64,
 				Frequency:    20,
 				Count:        1,
+				ProjectID:    2,
 			},
 		},
 		{
@@ -636,9 +783,11 @@ func TestStackTraceEvent(t *testing.T) {
 			},
 
 			wantEvent: StackTraceEvent{
+				EcsVersion:   EcsVersion{V: EcsVersionString},
 				StackTraceID: stacktraceIDBase64,
 				Frequency:    20,
 				Count:        1,
+				ProjectID:    2,
 			},
 		},
 		{
@@ -677,6 +826,7 @@ func TestStackTraceEvent(t *testing.T) {
 			},
 
 			wantEvent: StackTraceEvent{
+				EcsVersion:       EcsVersion{V: EcsVersionString},
 				PodName:          "my_pod",
 				K8sNamespaceName: "my_k8s_namespace_name",
 				ContainerName:    "my_container",
@@ -687,6 +837,7 @@ func TestStackTraceEvent(t *testing.T) {
 				StackTraceID:     stacktraceIDBase64,
 				Frequency:        20,
 				Count:            1,
+				ProjectID:        2,
 			},
 		},
 	} {
@@ -801,7 +952,8 @@ func TestStackTrace(t *testing.T) {
 			},
 
 			wantTrace: StackTrace{
-				FrameIDs: "5y1yFRb3UCHnLXIVFvdQIQAAAAAAAABj" + frameID3Base64 + frameID2Base64 + frameIDBase64,
+				EcsVersion: EcsVersion{V: EcsVersionString},
+				FrameIDs:   "5y1yFRb3UCHnLXIVFvdQIQAAAAAAAABj" + frameID3Base64 + frameID2Base64 + frameIDBase64,
 				Types: frameTypesToString([]libpf.FrameType{
 					libpf.KernelFrame,
 					libpf.DotnetFrame,
@@ -816,10 +968,10 @@ func TestStackTrace(t *testing.T) {
 			p := tt.buildProfile()
 			s := p.Samples().At(0)
 
-			frames, frameTypes, err := stackFrames(dic, s)
+			frames, frameTypes, _, err := stackFrames(dic, s)
 			require.NoError(t, err)
 
-			stacktrace := stackTrace("", frames, frameTypes, 0)
+			stacktrace := stackTrace("", frames, frameTypes)
 			assert.Equal(t, tt.wantTrace, stacktrace)
 
 			assert.Len(t, frameTypes, len(frames))
@@ -905,11 +1057,59 @@ func mkStackTraceID(t *testing.T, frameIDs []frameID) string {
 		stack.LocationIndices().Append(int32(dic.LocationTable().Len() - 1))
 	}
 
-	frames, _, err := stackFrames(dic, s)
+	frames, _, _, err := stackFrames(dic, s)
 	require.NoError(t, err)
 
 	traceID, err := stackTraceID(frames)
 	require.NoError(t, err)
 
 	return traceID
+}
+
+// sortPayloads brings the payloads into a deterministic form to allow comparisons.
+func sortPayloads(payloads []StackPayload) {
+	for idx := range payloads {
+		payload := &payloads[idx]
+		sort.Slice(payload.UnsymbolizedExecutables, func(i, j int) bool {
+			return payload.UnsymbolizedExecutables[i].DocID < payload.UnsymbolizedExecutables[j].DocID
+		})
+	}
+}
+
+func checkAndResetTimes(payloads []StackPayload) error {
+	var errs []error
+	for i := range payloads {
+		payload := &payloads[i]
+		for j := range payload.UnsymbolizedLeafFrames {
+			frame := &payload.UnsymbolizedLeafFrames[j]
+			if !isWithinLastSecond(frame.Created) {
+				errs = append(errs, fmt.Errorf("payload[%d].UnsymbolizedLeafFrames[%d].Created is too old: %v",
+					i, j, frame.Created))
+			}
+			if !isWithinLastSecond(frame.Next) {
+				errs = append(errs, fmt.Errorf("payload[%d].UnsymbolizedLeafFrames[%d].Next is too old: %v",
+					i, j, frame.Next))
+			}
+			frame.Created = time.Time{}
+			frame.Next = time.Time{}
+		}
+		for j := range payload.UnsymbolizedExecutables {
+			executable := &payload.UnsymbolizedExecutables[j]
+			if !isWithinLastSecond(executable.Created) {
+				errs = append(errs, fmt.Errorf("payload[%d].UnsymbolizedExecutables[%d].Created is too old: %v",
+					i, j, executable.Created))
+			}
+			if !isWithinLastSecond(executable.Next) {
+				errs = append(errs, fmt.Errorf("payload[%d].UnsymbolizedExecutables[%d].Next is too old: %v",
+					i, j, executable.Next))
+			}
+			executable.Created = time.Time{}
+			executable.Next = time.Time{}
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func isWithinLastSecond(t time.Time) bool {
+	return time.Since(t) < time.Second
 }
