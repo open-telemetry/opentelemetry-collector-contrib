@@ -225,10 +225,6 @@ component_management:
     name: exporter_logzio
     paths:
     - exporter/logzioexporter/**
-  - component_id: exporter_mezmo
-    name: exporter_mezmo
-    paths:
-    - exporter/mezmoexporter/**
   - component_id: exporter_opensearch
     name: exporter_opensearch
     paths:
